@@ -47,7 +47,7 @@ object SnapshotRecoveryWithEmptyJournalSpec {
                 probe ! state.reverse
                 Effect.none
               case _ =>
-                Effect.persist(s"$cmd-${EventSourcedBehavior.lastSequenceNumber(context) + 1}")
+                Effect.persist(s"$cmd-${EventSourcedBehavior.lastEventSequenceNumber(context) + 1}")
             },
           (state, event) => event :: state)
       }

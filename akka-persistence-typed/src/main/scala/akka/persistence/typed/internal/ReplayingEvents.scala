@@ -323,4 +323,5 @@ private[akka] final class ReplayingEvents[C, E, S](
 
   override def currentEventSequenceNumber: Long =
     state.eventSeqNr
+  override def currentIdempotencyKeySequenceNumber: Long = state.idempotencyKeySeqNr
 }

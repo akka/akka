@@ -98,9 +98,9 @@ object EventSourcedBehavior {
   }
 
   /**
-   * The last sequence number that was persisted, can only be called from inside the handlers of an `EventSourcedBehavior`
+   * The last event sequence number that was persisted, can only be called from inside the handlers of an `EventSourcedBehavior`
    */
-  def lastSequenceNumber(context: ActorContext[_]): Long = {
+  def lastEventSequenceNumber(context: ActorContext[_]): Long = {
     @tailrec
     def extractConcreteBehavior(beh: Behavior[_]): Behavior[_] =
       beh match {
@@ -111,7 +111,26 @@ object EventSourcedBehavior {
     extractConcreteBehavior(context.currentBehavior) match {
       case w: Running.WithSeqNrAccessible => w.currentEventSequenceNumber
       case s =>
-        throw new IllegalStateException(s"Cannot extract the lastSequenceNumber in state ${s.getClass.getName}")
+        throw new IllegalStateException(s"Cannot extract the lastEventSequenceNumber in state ${s.getClass.getName}")
+    }
+  }
+
+  /**
+   * The last idempotency key sequence number that was persisted, can only be called from inside the handlers of an `EventSourcedBehavior`
+   */
+  def lastIdempotencyKeySequenceNumber(context: ActorContext[_]): Long = {
+    @tailrec
+    def extractConcreteBehavior(beh: Behavior[_]): Behavior[_] =
+      beh match {
+        case interceptor: InterceptorImpl[_, _] => extractConcreteBehavior(interceptor.nestedBehavior)
+        case concrete                           => concrete
+      }
+
+    extractConcreteBehavior(context.currentBehavior) match {
+      case w: Running.WithSeqNrAccessible => w.currentIdempotencyKeySequenceNumber
+      case s =>
+        throw new IllegalStateException(
+          s"Cannot extract the lastIdempotencyKeySequenceNumber in state ${s.getClass.getName}")
     }
   }
 

@@ -8,13 +8,14 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit, TestProbe }
-import akka.actor.typed.ActorRef
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.typed.{ CheckIdempotencyKeyExistsSucceeded, PersistenceId, WriteIdempotencyKeySucceeded }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Future }
 import scala.concurrent.duration._
+import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Future }
 
 object EventSourcedBehaviorIdempotenceSpec {
 
@@ -45,36 +46,43 @@ object EventSourcedBehaviorIdempotenceSpec {
       override val writeConfig: IdempotenceKeyWriteConfig = OnlyWriteIdempotenceKeyWithPersist
     }
   }
+  private case class CurrentIdempotencyKey(replyTo: ActorRef[Long]) extends Command
 
   private case object AllGood
 
   private def idempotentState(
       persistenceId: PersistenceId,
       checks: ActorRef[String],
-      writes: ActorRef[String]): EventSourcedBehavior[Command, Int, Int] =
-    EventSourcedBehavior
-      .withEnforcedReplies[Command, Int, Int](
-        persistenceId,
-        emptyState = 0,
-        commandHandler = (_, command) => {
-          command match {
-            case SideEffect(_, replyTo) =>
-              Effect.persist(1).thenReply(replyTo)(_ => IdempotenceSuccess(AllGood))
-            case NoSideEffect.WriteAlways(_, replyTo) =>
-              Effect.none[Int, Int].thenReply(replyTo)(_ => IdempotenceSuccess(AllGood))
-            case NoSideEffect.WriteOnlyWithPersist(_, replyTo) =>
-              Effect.none[Int, Int].thenReply(replyTo)(_ => IdempotenceSuccess(AllGood))
-          }
-        },
-        eventHandler = (state, event) => {
-          state + event
-        })
-      .receiveSignal {
-        case (_, CheckIdempotencyKeyExistsSucceeded(idempotencyKey, exists)) =>
-          checks ! s"$idempotencyKey ${if (exists) "exists" else "not exists"}"
-        case (_, WriteIdempotencyKeySucceeded(idempotencyKey, sequenceNumber)) =>
-          writes ! s"$idempotencyKey $sequenceNumber written"
-      }
+      writes: ActorRef[String]): Behavior[Command] =
+    Behaviors.setup { ctx =>
+      EventSourcedBehavior
+        .withEnforcedReplies[Command, Int, Int](
+          persistenceId,
+          emptyState = 0,
+          commandHandler = (_, command) => {
+            command match {
+              case SideEffect(_, replyTo) =>
+                Effect.persist(1).thenReply(replyTo)(_ => IdempotenceSuccess(AllGood))
+              case NoSideEffect.WriteAlways(_, replyTo) =>
+                Effect.none[Int, Int].thenReply(replyTo)(_ => IdempotenceSuccess(AllGood))
+              case NoSideEffect.WriteOnlyWithPersist(_, replyTo) =>
+                Effect.none[Int, Int].thenReply(replyTo)(_ => IdempotenceSuccess(AllGood))
+              case CurrentIdempotencyKey(replyTo) =>
+                Effect
+                  .none[Int, Int]
+                  .thenReply(replyTo)(_ => EventSourcedBehavior.lastIdempotencyKeySequenceNumber(ctx))
+            }
+          },
+          eventHandler = (state, event) => {
+            state + event
+          })
+        .receiveSignal {
+          case (_, CheckIdempotencyKeyExistsSucceeded(idempotencyKey, exists)) =>
+            checks ! s"$idempotencyKey ${if (exists) "exists" else "not exists"}"
+          case (_, WriteIdempotencyKeySucceeded(idempotencyKey, sequenceNumber)) =>
+            writes ! s"$idempotencyKey $sequenceNumber written"
+        }
+    }
 }
 class EventSourcedBehaviorIdempotenceSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorIdempotenceSpec.conf)
@@ -118,10 +126,29 @@ class EventSourcedBehaviorIdempotenceSpec
       checksProbe.expectMessage(s"$idempotenceKey exists")
       writesProbe.expectNoMessage(3.seconds)
     }
+
+    "increment idempotency key sequence number" in {
+      val checksProbe = createTestProbe[String]()
+      val writesProbe = createTestProbe[String]()
+
+      val c = spawn(idempotentState(nextPid, checksProbe.ref, writesProbe.ref))
+      val probe = TestProbe[IdempotenceReply[AllGood.type, Int]]
+
+      def tell(idempotencyKey: String, sequenceNumber: Long) = {
+        c ! SideEffect(idempotencyKey, probe.ref)
+        probe.expectMessage(IdempotenceSuccess[AllGood.type, Int](AllGood))
+        checksProbe.expectMessage(s"$idempotencyKey not exists")
+        writesProbe.expectMessage(s"$idempotencyKey $sequenceNumber written")
+      }
+
+      tell(UUID.randomUUID().toString, 1)
+      tell(UUID.randomUUID().toString, 2)
+      tell(UUID.randomUUID().toString, 3)
+    }
   }
 
-  "not side-effecting idempotent command" should {
-    "fail consume the second time if key should always write" in {
+  "not side-effecting idempotent command if key should always write" should {
+    "fail consume the second time" in {
       val checksProbe = createTestProbe[String]()
       val writesProbe = createTestProbe[String]()
 
@@ -140,7 +167,28 @@ class EventSourcedBehaviorIdempotenceSpec
       writesProbe.expectNoMessage(3.seconds)
     }
 
-    "succeed consume the second time if key should write only with persist" in {
+    "increment idempotency key sequence number" in {
+      val checksProbe = createTestProbe[String]()
+      val writesProbe = createTestProbe[String]()
+
+      val c = spawn(idempotentState(nextPid, checksProbe.ref, writesProbe.ref))
+      val probe = TestProbe[IdempotenceReply[AllGood.type, Int]]
+
+      def tell(idempotencyKey: String, sequenceNumber: Long) = {
+        c ! NoSideEffect.WriteAlways(idempotencyKey, probe.ref)
+        probe.expectMessage(IdempotenceSuccess[AllGood.type, Int](AllGood))
+        checksProbe.expectMessage(s"$idempotencyKey not exists")
+        writesProbe.expectMessage(s"$idempotencyKey $sequenceNumber written")
+      }
+
+      tell(UUID.randomUUID().toString, 1)
+      tell(UUID.randomUUID().toString, 2)
+      tell(UUID.randomUUID().toString, 3)
+    }
+  }
+
+  "not side-effecting idempotent command if key should write only with persist" should {
+    "succeed consume the second time" in {
       val checksProbe = createTestProbe[String]()
       val writesProbe = createTestProbe[String]()
 
@@ -160,22 +208,45 @@ class EventSourcedBehaviorIdempotenceSpec
       writesProbe.expectNoMessage(3.seconds)
     }
 
-    "pattern match validly" in {
-      implicit val ec: ExecutionContextExecutor = ExecutionContext.global
+    "not increment idempotency key sequence number" in {
+      val checksProbe = createTestProbe[String]()
+      val writesProbe = createTestProbe[String]()
 
-      Await.result(Future[IdempotenceReply[AllGood.type, Int]](IdempotenceSuccess[AllGood.type, Int](AllGood)).map {
-        case IdempotenceSuccess(ag) =>
-          ag shouldEqual AllGood
-        case IdempotenceFailure(_) =>
-          fail()
-      }, 1.second)
+      val c = spawn(idempotentState(nextPid, checksProbe.ref, writesProbe.ref))
+      val probe = TestProbe[IdempotenceReply[AllGood.type, Int]]
 
-      Await.result(Future[IdempotenceReply[AllGood.type, Int]](IdempotenceFailure[AllGood.type, Int](0)).map {
-        case IdempotenceSuccess(_) =>
-          fail()
-        case IdempotenceFailure(state) =>
-          state shouldEqual 0
-      }, 1.second)
+      def tell(idempotencyKey: String) = {
+        c ! NoSideEffect.WriteOnlyWithPersist(idempotencyKey, probe.ref)
+        probe.expectMessage(IdempotenceSuccess[AllGood.type, Int](AllGood))
+        checksProbe.expectMessage(s"$idempotencyKey not exists")
+        writesProbe.expectNoMessage(3.seconds)
+      }
+
+      tell(UUID.randomUUID().toString)
+      tell(UUID.randomUUID().toString)
+      tell(UUID.randomUUID().toString)
+
+      val idempotencyKeyProbe = TestProbe[Long]
+      c ! CurrentIdempotencyKey(idempotencyKeyProbe.ref)
+      idempotencyKeyProbe.expectMessage(0L)
     }
+  }
+
+  "pattern match validly" in {
+    implicit val ec: ExecutionContextExecutor = ExecutionContext.global
+
+    Await.result(Future[IdempotenceReply[AllGood.type, Int]](IdempotenceSuccess[AllGood.type, Int](AllGood)).map {
+      case IdempotenceSuccess(ag) =>
+        ag shouldEqual AllGood
+      case IdempotenceFailure(_) =>
+        fail()
+    }, 1.second)
+
+    Await.result(Future[IdempotenceReply[AllGood.type, Int]](IdempotenceFailure[AllGood.type, Int](0)).map {
+      case IdempotenceSuccess(_) =>
+        fail()
+      case IdempotenceFailure(state) =>
+        state shouldEqual 0
+    }, 1.second)
   }
 }

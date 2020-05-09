@@ -218,7 +218,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    * The last sequence number that was persisted, can only be called from inside the handlers of an `EventSourcedBehavior`
    */
   final def lastSequenceNumber(ctx: ActorContext[_]): Long = {
-    scaladsl.EventSourcedBehavior.lastSequenceNumber(ctx.asScala)
+    scaladsl.EventSourcedBehavior.lastEventSequenceNumber(ctx.asScala)
   }
 
 }
