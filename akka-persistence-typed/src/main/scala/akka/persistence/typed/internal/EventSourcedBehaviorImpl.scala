@@ -127,6 +127,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       case (_, DeleteEventsFailed(toSequenceNr, failure)) =>
         ctx.log.warn2("Failed to delete events to sequence number [{}] due to: {}", toSequenceNr, failure.getMessage)
       case (_, EventSourcedBehaviorImpl.GetPersistenceId(replyTo)) => replyTo ! persistenceId
+      //TODO add idempotency related signal handlers
     }
 
     // do this once, even if the actor is restarted

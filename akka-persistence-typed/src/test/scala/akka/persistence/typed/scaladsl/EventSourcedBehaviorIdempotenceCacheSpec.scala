@@ -71,8 +71,8 @@ object EventSourcedBehaviorIdempotenceCacheSpec {
       .receiveSignal {
         case (_, CheckIdempotencyKeyExistsSucceeded(idempotencyKey, exists)) =>
           checks ! s"$idempotencyKey ${if (exists) "exists" else "not exists"}"
-        case (_, WriteIdempotencyKeySucceeded(idempotencyKey)) =>
-          writes ! s"$idempotencyKey written"
+        case (_, WriteIdempotencyKeySucceeded(idempotencyKey, sequenceNumber)) =>
+          writes ! s"$idempotencyKey $sequenceNumber written"
       }
       .idempotenceKeyCacheSize(1)
 }
@@ -100,7 +100,7 @@ class EventSourcedBehaviorIdempotenceCacheSpec
 
       c ! SideEffect(idempotenceKey, probe.ref)
       checksProbe.expectMessage(s"$idempotenceKey not exists")
-      writesProbe.expectMessage(s"$idempotenceKey written")
+      writesProbe.expectMessage(s"$idempotenceKey 1 written")
       c ! SideEffect(idempotenceKey, probe.ref)
       checksProbe.expectNoMessage(3.seconds)
     }
@@ -120,9 +120,11 @@ class EventSourcedBehaviorIdempotenceCacheSpec
 
       c ! NoSideEffect.WriteAlways(idempotenceKey, probe.ref)
       checksProbe.expectMessage(s"$idempotenceKey not exists")
-      writesProbe.expectMessage(s"$idempotenceKey written")
+      writesProbe.expectMessage(s"$idempotenceKey 1 written")
       c ! NoSideEffect.WriteAlways(idempotenceKey, probe.ref)
       checksProbe.expectNoMessage(3.seconds)
     }
   }
+
+  //TODO cache recovery test
 }

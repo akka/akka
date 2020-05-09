@@ -32,15 +32,28 @@ private[persistence] final case class NonPersistentRepr(payload: Any, sender: Ac
   override def size: Int = 1
 }
 
+sealed trait Idempotence
+
+/**
+ * When idempotency key is being written it's sequence number provides capability to balance partitions of persistent store
+ */
+case class IdempotenceWrite(key: String, sequenceNumber: Long) extends Idempotence
+
+/**
+ * If there's no idempotency key being written, highest sequence number should be applied for partition balancing of persistent store
+ */
+case class IdempotenceInfo(highestSequenceNumber: Long) extends Idempotence
+
 object AtomicWrite {
-  def apply(event: PersistentRepr): AtomicWrite = apply(List(event), None)
+  def apply(event: PersistentRepr): AtomicWrite = apply(List(event), IdempotenceInfo(0))
 
-  def apply(event: PersistentRepr, idempotenceKey: Option[String]): AtomicWrite = apply(List(event), idempotenceKey)
+  def apply(event: PersistentRepr, idempotence: Idempotence): AtomicWrite =
+    apply(List(event), idempotence) // EventSourcedBehavior calls only this
 
-  def apply(payload: immutable.Seq[PersistentRepr]): AtomicWrite = apply(payload, None)
+  def apply(payload: immutable.Seq[PersistentRepr]): AtomicWrite = apply(payload, IdempotenceInfo(0))
 }
 
-final case class AtomicWrite(payload: immutable.Seq[PersistentRepr], idempotenceKey: Option[String])
+final case class AtomicWrite(payload: immutable.Seq[PersistentRepr], idempotence: Idempotence)
     extends PersistentEnvelope
     with Message {
   require(payload.nonEmpty, "payload of AtomicWrite must not be empty!")

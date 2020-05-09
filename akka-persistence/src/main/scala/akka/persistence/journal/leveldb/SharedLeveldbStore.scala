@@ -5,15 +5,16 @@
 package akka.persistence.journal.leveldb
 
 import scala.concurrent.Future
+
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.NonFatal
-
 import com.typesafe.config.Config
 
 import akka.pattern.pipe
 import akka.persistence.AtomicWrite
+import akka.persistence.IdempotenceWrite
 import akka.persistence.journal.AsyncWriteTarget
 
 /**
@@ -32,7 +33,7 @@ class SharedLeveldbStore(cfg: Config) extends LeveldbStore {
     else context.system.settings.config.getConfig("akka.persistence.journal.leveldb-shared.store")
 
   def receive = receiveCompactionInternal.orElse {
-    case WriteMessages(messages) if messages.flatMap(_.idempotenceKey).nonEmpty =>
+    case WriteMessages(messages) if messages.map(_.idempotence).collect { case iw: IdempotenceWrite => iw }.nonEmpty =>
       throw new RuntimeException("Idempotency key writes not implemented")
     case WriteMessages(messages) =>
       // TODO it would be nice to DRY this with AsyncWriteJournal, but this is using
@@ -84,11 +85,5 @@ class SharedLeveldbStore(cfg: Config) extends LeveldbStore {
           case e => ReplayFailure(e)
         }
         .pipeTo(replyTo)
-
-    case CheckIdempotencyKeyExists(_, _) =>
-      throw new RuntimeException("Idempotency key check not implemented")
-
-    case WriteIdempotencyKey(_, _) =>
-      throw new RuntimeException("Idempotency key write not implemented")
   }
 }

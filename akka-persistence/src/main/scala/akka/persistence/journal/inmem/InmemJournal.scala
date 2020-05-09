@@ -14,11 +14,12 @@ import com.typesafe.config.ConfigFactory
 
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
-import akka.persistence.AtomicWrite
-import akka.persistence.PersistentRepr
+import akka.persistence.{ AtomicWrite, IdempotenceInfo, IdempotenceWrite, PersistentRepr }
 import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
 import akka.serialization.SerializationExtension
 import akka.serialization.Serializers
+
+import scala.collection.immutable.SortedMap
 
 /**
  * The InmemJournal publishes writes and deletes to the `eventStream`, which tests may use to
@@ -37,7 +38,7 @@ object InmemJournal {
 
   final case class CheckIdempotenceKeyExists(persistenceId: String, key: String) extends Operation
 
-  final case class WriteIdempotenceKey(persistenceId: String, key: String) extends Operation
+  final case class WriteIdempotenceKey(persistenceId: String, key: String, sequenceNr: Long) extends Operation
 }
 
 /**
@@ -67,9 +68,19 @@ object InmemJournal {
       for (w <- messages; p <- w.payload) {
         verifySerialization(p.payload)
         add(p)
-        w.idempotenceKey.foreach(addKey(w.persistenceId, _))
+        w.idempotence match {
+          case IdempotenceWrite(key, sequenceNumber) =>
+            addKey(w.persistenceId, key, sequenceNumber)
+          case _: IdempotenceInfo =>
+          // do nothing
+        }
         eventStream.publish(InmemJournal.Write(p.payload, p.persistenceId, p.sequenceNr))
-        w.idempotenceKey.foreach(key => eventStream.publish(InmemJournal.WriteIdempotenceKey(p.persistenceId, key)))
+        w.idempotence match {
+          case IdempotenceWrite(key, sequenceNumber) =>
+            eventStream.publish(InmemJournal.WriteIdempotenceKey(p.persistenceId, key, sequenceNumber))
+          case _: IdempotenceInfo =>
+          // do nothing
+        }
       }
       Future.successful(Nil) // all good
     } catch {
@@ -113,15 +124,28 @@ object InmemJournal {
   }
 
   override def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean] = {
-    val exists = keys.get(persistenceId).exists(_.contains(key))
+    val exists = keys.get(persistenceId).exists(_.valuesIterator.contains(key))
     eventStream.publish(InmemJournal.CheckIdempotenceKeyExists(persistenceId, key))
     Future.successful(exists)
   }
 
-  override def asyncWriteIdempotencyKey(persistenceId: String, key: String): Future[Unit] = {
-    addKey(persistenceId, key)
-    eventStream.publish(InmemJournal.WriteIdempotenceKey(persistenceId, key))
+  override def asyncWriteIdempotencyKey(
+      persistenceId: String,
+      key: String,
+      sequenceNr: Long,
+      highestEventSequenceNr: Long): Future[Unit] = {
+    addKey(persistenceId, key, sequenceNr)
+    eventStream.publish(InmemJournal.WriteIdempotenceKey(persistenceId, key, sequenceNr))
     Future.successful(())
+  }
+
+  override def asyncReadHighestIdempotencyKeySequenceNr(persistenceId: String): Future[Long] = {
+    Future.successful(highestIdempotencyKeySequenceNr(persistenceId))
+  }
+
+  override def asyncReadIdempotencyKeys(persistenceId: String, toSequenceNr: Long, max: Long)(
+      readCallback: (String, Long) => Unit): Future[Unit] = {
+    Future.fromTry(Try(readKeys(persistenceId, toSequenceNr, max).foreach(readCallback.tupled)))
   }
 }
 
@@ -171,11 +195,28 @@ object InmemJournal {
  */
 @InternalApi private[persistence] trait InmemIdempotencyKeys {
   // persistenceId -> idempotency key
-  var keys = Map.empty[String, Set[String]]
+  var keys = Map.empty[String, SortedMap[Long, String]]
 
-  def addKey(pid: String, k: String): Unit =
+  def addKey(pid: String, k: String, seqNr: Long): Unit =
     keys = keys + (keys.get(pid) match {
-        case Some(ks) => pid -> (ks + k)
-        case None     => pid -> Set(k)
+        case Some(ks) => pid -> (ks + (seqNr -> k))
+        case None     => pid -> SortedMap(seqNr -> k)
       })
+
+  def highestIdempotencyKeySequenceNr(pid: String): Long = {
+    keys.get(pid).map(_.lastKey).getOrElse(0)
+  }
+
+  def readKeys(pid: String, toSeqNr: Long, max: Long): immutable.Seq[(String, Long)] = {
+    val fromSeqNr = toSeqNr - max
+    keys.get(pid) match {
+      case Some(keys) =>
+        keys
+          .filterKeys(seqNr => fromSeqNr <= seqNr && seqNr <= toSeqNr)
+          .map { case (seqNr, key) => (key, seqNr) }
+          .to[immutable.Seq]
+      case None =>
+        Nil
+    }
+  }
 }

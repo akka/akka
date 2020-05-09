@@ -17,6 +17,8 @@ import akka.persistence.{
   DeleteMessagesFailure,
   DeleteSnapshotFailure,
   DeleteSnapshotsFailure,
+  IdempotenceInfo,
+  IdempotenceWrite,
   JournalProtocol,
   NonPersistentRepr,
   Persistence,
@@ -197,8 +199,11 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
               a.payload.foreach { p =>
                 persistentActor ! WriteMessageFailure(p, timeoutException(), actorInstanceId)
               }
-              a.idempotenceKey.foreach { k =>
-                persistentActor ! WriteIdempotencyKeyFailure(k, timeoutException, actorInstanceId)
+              a.idempotence match {
+                case IdempotenceWrite(k, seqNr) =>
+                  persistentActor ! WriteIdempotencyKeyFailure(k, seqNr, timeoutException, actorInstanceId)
+                case _: IdempotenceInfo =>
+                // do nothing
               }
             case r: NonPersistentRepr =>
               persistentActor ! LoopMessageSuccess(r.payload, actorInstanceId)
@@ -207,10 +212,12 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
           persistentActor ! ReplayMessagesFailure(timeoutException())
         case DeleteMessagesTo(_, toSequenceNr, persistentActor) =>
           persistentActor ! DeleteMessagesFailure(timeoutException(), toSequenceNr)
+        case RestoreIdempotency(_, _, persistentActor) =>
+          persistentActor ! RestoreIdempotencyFailure(timeoutException)
         case CheckIdempotencyKeyExists(_, _, persistentActor) =>
           persistentActor ! IdempotencyCheckFailure(timeoutException)
-        case WriteIdempotencyKey(_, key, persistentActor, actorInstanceId) =>
-          persistentActor ! WriteIdempotencyKeyFailure(key, timeoutException, actorInstanceId)
+        case WriteIdempotencyKey(_, key, seqNr, _, persistentActor, actorInstanceId) =>
+          persistentActor ! WriteIdempotencyKeyFailure(key, seqNr, timeoutException, actorInstanceId)
       }
 
     case req: SnapshotProtocol.Request =>

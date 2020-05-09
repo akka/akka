@@ -144,6 +144,20 @@ private[persistence] object JournalProtocol {
    */
   final case class ReplayMessagesFailure(cause: Throwable) extends Response with DeadLetterSuppression
 
+  /**
+   * Request to restore idempotency - fetch latest keys to fill up cache and highest sequence
+   * @param max maximum idempotency keys to return.
+   * @param persistenceId requesting persistent actor id.
+   * @param persistentActor requesting persistent actor.
+   */
+  final case class RestoreIdempotency(max: Long, persistenceId: String, persistentActor: ActorRef) extends Request
+
+  final case class RestoredIdempotencyKey(key: String, sequenceNr: Long) extends Response with DeadLetterSuppression
+
+  final case class RestoreIdempotencySuccess(highestSequenceNr: Long) extends Response with DeadLetterSuppression
+
+  final case class RestoreIdempotencyFailure(cause: Throwable) extends Response with DeadLetterSuppression
+
   final case class CheckIdempotencyKeyExists(persistenceId: String, idempotencyKey: String, persistentActor: ActorRef)
       extends Request
 
@@ -156,19 +170,29 @@ private[persistence] object JournalProtocol {
   final case class WriteIdempotencyKey(
       persistenceId: String,
       idempotencyKey: String,
+      sequenceNr: Long,
+      highestEventSequenceNr: Long,
       persistentActor: ActorRef,
       actorInstanceId: Int)
       extends Request
 
-  final case class WriteIdempotencyKeySuccess(idempotenceKey: String, actorInstanceId: Int)
+  final case class WriteIdempotencyKeySuccess(idempotenceKey: String, sequenceNr: Long, actorInstanceId: Int)
       extends Response
       with DeadLetterSuppression
 
-  final case class WriteIdempotencyKeyFailure(idempotenceKey: String, cause: Throwable, actorInstanceId: Int)
+  final case class WriteIdempotencyKeyFailure(
+      idempotenceKey: String,
+      sequenceNr: Long,
+      cause: Throwable,
+      actorInstanceId: Int)
       extends Response
       with DeadLetterSuppression
 
-  final case class WriteIdempotencyKeyRejected(idempotenceKey: String, cause: Throwable, actorInstanceId: Int)
+  final case class WriteIdempotencyKeyRejected(
+      idempotenceKey: String,
+      sequenceNr: Long,
+      cause: Throwable,
+      actorInstanceId: Int)
       extends Response
       with DeadLetterSuppression
 }

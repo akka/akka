@@ -15,6 +15,8 @@ import akka.persistence.typed.RecoveryFailed
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
 import akka.util.unused
 
+import scala.collection.immutable.SortedMap
+
 /**
  * INTERNAL API
  *
@@ -163,12 +165,17 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
     ReplayingEvents[C, E, S](
       setup,
       ReplayingEvents.ReplayingState(
-        lastSequenceNr,
-        state,
+        eventSeqNr = lastSequenceNr,
+        state = state,
         eventSeenInInterval = false,
-        toSnr,
-        receivedPoisonPill,
-        System.nanoTime()))
+        toSeqNr = toSnr,
+        receivedPoisonPill = receivedPoisonPill,
+        recoveryStartTime = System.nanoTime(),
+        idempotenceKeyCache = SortedMap.empty[Long, String],
+        idempotencyKeySeqNr = 0,
+        idempotencyKeySeenInInterval = false,
+        eventReplayDone = false,
+        idempotencyRestoreDone = false))
   }
 
 }

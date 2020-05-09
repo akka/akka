@@ -92,30 +92,25 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
       case None => storeNotInitialized
     }
 
-  override def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean] = {
-    store match {
-      case Some(s) =>
-        (s ? CheckIdempotencyKeyExists(persistenceId, key)).flatMap {
-          case IdempotencyCheckSuccess(result) =>
-            Future.successful(result)
-          case IdempotencyCheckFailure(cause) =>
-            Future.failed(cause)
-        }
-      case None => storeNotInitialized
-    }
+  override def asyncReadHighestIdempotencyKeySequenceNr(persistenceId: String): Future[Long] = {
+    Future.successful(0)
   }
 
-  override def asyncWriteIdempotencyKey(persistenceId: String, key: String): Future[Unit] = {
-    store match {
-      case Some(s) =>
-        (s ? WriteIdempotencyKey(persistenceId, key)).flatMap {
-          case WriteIdempotencyKeySuccess =>
-            Future.successful(())
-          case WriteIdempotencyKeyFailure(e) =>
-            Future.failed(e)
-        }
-      case None => storeNotInitialized
-    }
+  override def asyncReadIdempotencyKeys(persistenceId: String, toSequenceNr: Long, max: Long)(
+      readCallback: (String, Long) => Unit): Future[Unit] = {
+    Future.failed(new RuntimeException("Idempotency not implemented"))
+  }
+
+  override def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean] = {
+    Future.failed(new RuntimeException("Idempotency not implemented"))
+  }
+
+  override def asyncWriteIdempotencyKey(
+      persistenceId: String,
+      key: String,
+      sequenceNr: Long,
+      highestEventSequenceNr: Long): Future[Unit] = {
+    Future.failed(new RuntimeException("Idempotency not implemented"))
   }
 }
 
@@ -145,24 +140,6 @@ private[persistence] object AsyncWriteTarget {
 
   @SerialVersionUID(1L)
   final case class ReplayFailure(cause: Throwable)
-
-  @SerialVersionUID(1L)
-  final case class CheckIdempotencyKeyExists(persistenceId: String, idempotencyKey: String)
-
-  @SerialVersionUID(1L)
-  case class IdempotencyCheckSuccess(result: Boolean)
-
-  @SerialVersionUID(1L)
-  case class IdempotencyCheckFailure(cause: Throwable)
-
-  @SerialVersionUID(1L)
-  final case class WriteIdempotencyKey(persistenceId: String, idempotencyKey: String)
-
-  @SerialVersionUID(1L)
-  case object WriteIdempotencyKeySuccess
-
-  @SerialVersionUID(1L)
-  case class WriteIdempotencyKeyFailure(cause: Throwable)
 }
 
 /**

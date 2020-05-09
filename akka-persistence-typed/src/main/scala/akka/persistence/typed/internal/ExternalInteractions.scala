@@ -37,19 +37,28 @@ private[akka] trait JournalInteractions[C, E, S] {
       eventAdapterManifest: String,
       idempotenceKey: Option[String]): Running.RunningState[S] = {
 
-    val newState = state.nextSequenceNr()
+    var newState = state.nextEventSequenceNr()
 
     val repr = PersistentRepr(
       event,
       persistenceId = setup.persistenceId.id,
-      sequenceNr = newState.seqNr,
+      sequenceNr = newState.eventSeqNr,
       manifest = eventAdapterManifest,
       writerUuid = setup.writerIdentity.writerUuid,
       sender = ActorRef.noSender)
 
-    onWriteInitiated(ctx, cmd, repr)
+    val idempotencePayload = idempotenceKey
+      .map { key =>
+        newState = state.nextIdempotenceKeySequenceNr()
+        IdempotenceWrite(key, newState.idempotenceKeySeqNr)
+      }
+      .getOrElse {
+        IdempotenceInfo(newState.idempotenceKeySeqNr)
+      }
 
-    val write = AtomicWrite(repr, idempotenceKey) :: Nil
+    onWriteInitiated(ctx, cmd, repr)
+    val write = AtomicWrite(repr, idempotencePayload) :: Nil
+
     setup.journal
       .tell(JournalProtocol.WriteMessages(write, setup.selfClassic, setup.writerIdentity.instanceId), setup.selfClassic)
 
@@ -73,18 +82,27 @@ private[akka] trait JournalInteractions[C, E, S] {
 
       val writes = events.map {
         case (event, eventAdapterManifest) =>
-          newState = newState.nextSequenceNr()
+          newState = newState.nextEventSequenceNr()
           PersistentRepr(
             event,
             persistenceId = setup.persistenceId.id,
-            sequenceNr = newState.seqNr,
+            sequenceNr = newState.eventSeqNr,
             manifest = eventAdapterManifest,
             writerUuid = setup.writerIdentity.writerUuid,
             sender = ActorRef.noSender)
       }
 
+      val idempotencePayload = idempotenceKey
+        .map { key =>
+          newState = state.nextIdempotenceKeySequenceNr()
+          IdempotenceWrite(key, newState.idempotenceKeySeqNr)
+        }
+        .getOrElse {
+          IdempotenceInfo(newState.idempotenceKeySeqNr)
+        }
+
       onWritesInitiated(ctx, cmd, writes)
-      val write = AtomicWrite(writes, idempotenceKey)
+      val write = AtomicWrite(writes, idempotencePayload)
 
       setup.journal.tell(
         JournalProtocol.WriteMessages(write :: Nil, setup.selfClassic, setup.writerIdentity.instanceId),
@@ -150,17 +168,32 @@ private[akka] trait JournalInteractions[C, E, S] {
           toSequenceNr)
     }
 
+  protected def internalRestoreIdempotency(): Unit = {
+    val self = setup.selfClassic
+    setup.journal
+      .tell(JournalProtocol.RestoreIdempotency(setup.idempotenceKeyCacheSize, setup.persistenceId.id, self), self)
+  }
+
   protected def internalCheckIdempotencyKeyExists(idempotencyKey: String): Unit = {
     val self = setup.selfClassic
     setup.journal.tell(JournalProtocol.CheckIdempotencyKeyExists(setup.persistenceId.id, idempotencyKey, self), self)
   }
 
-  protected def internalWriteIdempotencyKey(idempotencyKey: String): Unit = {
+  protected def internalWriteIdempotencyKey(
+      state: Running.RunningState[S],
+      idempotencyKey: String): Running.RunningState[S] = {
+    val newState = state.nextIdempotenceKeySequenceNr()
     val self = setup.selfClassic
     setup.journal.tell(
-      JournalProtocol
-        .WriteIdempotencyKey(setup.persistenceId.id, idempotencyKey, self, setup.writerIdentity.instanceId),
+      JournalProtocol.WriteIdempotencyKey(
+        setup.persistenceId.id,
+        idempotencyKey,
+        newState.idempotenceKeySeqNr,
+        newState.eventSeqNr,
+        self,
+        setup.writerIdentity.instanceId),
       self)
+    newState
   }
 }
 
@@ -179,13 +212,13 @@ private[akka] trait SnapshotInteractions[C, E, S] {
   }
 
   protected def internalSaveSnapshot(state: Running.RunningState[S]): Unit = {
-    setup.log.debug("Saving snapshot sequenceNr [{}]", state.seqNr)
+    setup.log.debug("Saving snapshot sequenceNr [{}]", state.eventSeqNr)
     if (state.state == null)
       throw new IllegalStateException("A snapshot must not be a null state.")
     else
       setup.snapshotStore.tell(
         SnapshotProtocol.SaveSnapshot(
-          SnapshotMetadata(setup.persistenceId.id, state.seqNr),
+          SnapshotMetadata(setup.persistenceId.id, state.eventSeqNr),
           setup.snapshotAdapter.toJournal(state.state)),
         setup.selfClassic)
   }

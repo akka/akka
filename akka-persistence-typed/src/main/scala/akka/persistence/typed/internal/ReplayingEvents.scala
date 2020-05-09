@@ -27,6 +27,8 @@ import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.unused
 
+import scala.collection.immutable.SortedMap
+
 /***
  * INTERNAL API
  *
@@ -46,12 +48,20 @@ private[akka] object ReplayingEvents {
 
   @InternalApi
   private[akka] final case class ReplayingState[State](
-      seqNr: Long,
+      eventSeqNr: Long,
       state: State,
       eventSeenInInterval: Boolean,
       toSeqNr: Long,
       receivedPoisonPill: Boolean,
-      recoveryStartTime: Long)
+      recoveryStartTime: Long,
+      idempotenceKeyCache: SortedMap[Long, String],
+      idempotencyKeySeqNr: Long,
+      idempotencyKeySeenInInterval: Boolean,
+      eventReplayDone: Boolean,
+      idempotencyRestoreDone: Boolean) {
+
+    lazy val readyForRunning: Boolean = eventReplayDone && idempotencyRestoreDone
+  }
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: ReplayingState[S]): Behavior[InternalProtocol] =
     Behaviors.setup { _ =>
@@ -75,7 +85,8 @@ private[akka] final class ReplayingEvents[C, E, S](
   import InternalProtocol._
   import ReplayingEvents.ReplayingState
 
-  replayEvents(state.seqNr + 1L, state.toSeqNr)
+  replayEvents(state.eventSeqNr + 1L, state.toSeqNr)
+  internalRestoreIdempotency()
   onRecoveryStart(setup.context)
 
   @InternalStableApi
@@ -116,7 +127,7 @@ private[akka] final class ReplayingEvents[C, E, S](
 
             def handleEvent(event: E): Unit = {
               eventForErrorReporting = OptionVal.Some(event)
-              state = state.copy(seqNr = repr.sequenceNr)
+              state = state.copy(eventSeqNr = repr.sequenceNr)
               state = state.copy(state = setup.eventHandler(state.state, event), eventSeenInInterval = true)
             }
 
@@ -134,12 +145,36 @@ private[akka] final class ReplayingEvents[C, E, S](
           }
 
         case RecoverySuccess(highestJournalSeqNr) =>
-          val highestSeqNr = Math.max(highestJournalSeqNr, state.seqNr)
-          state = state.copy(seqNr = highestSeqNr)
-          setup.log.debug("Recovery successful, recovered until sequenceNr: [{}]", highestSeqNr)
-          onRecoveryCompleted(state)
+          val highestSeqNr = Math.max(highestJournalSeqNr, state.eventSeqNr)
+          state = state.copy(eventSeqNr = highestSeqNr, eventReplayDone = true)
+          setup.log.debug("Event replay successful, recovered until sequenceNr: [{}]", highestSeqNr)
+
+          if (state.readyForRunning) {
+            onRecoveryCompleted(state)
+          } else {
+            this
+          }
 
         case ReplayMessagesFailure(cause) =>
+          onRecoveryFailure(cause, Some(response))
+
+        case RestoredIdempotencyKey(key, sequenceNr) =>
+          state = state.copy(
+            idempotenceKeyCache = state.idempotenceKeyCache.updated(sequenceNr, key),
+            idempotencyKeySeqNr = sequenceNr)
+          this
+
+        case RestoreIdempotencySuccess(highestSequenceNr) =>
+          state = state.copy(idempotencyKeySeqNr = highestSequenceNr, idempotencyRestoreDone = true)
+          setup.log.debug("Idempotence restore successful, recovered until sequenceNr: [{}]", highestSequenceNr)
+
+          if (state.readyForRunning) {
+            onRecoveryCompleted(state)
+          } else {
+            this
+          }
+
+        case RestoreIdempotencyFailure(cause) =>
           onRecoveryFailure(cause, Some(response))
 
         case _ =>
@@ -167,13 +202,47 @@ private[akka] final class ReplayingEvents[C, E, S](
 
   protected def onRecoveryTick(snapshot: Boolean): Behavior[InternalProtocol] =
     if (!snapshot) {
-      if (state.eventSeenInInterval) {
-        state = state.copy(eventSeenInInterval = false)
-        this
+      val eventState = if (!state.eventReplayDone) {
+        if (state.eventSeenInInterval) {
+          Right((state: ReplayingState[S]) => state.copy(eventSeenInInterval = false))
+        } else {
+          Left(
+            s"didn't get event within [${setup.settings.recoveryEventTimeout}], highest sequence number seen [${state.eventSeqNr}]")
+        }
       } else {
-        val msg =
-          s"Replay timed out, didn't get event within [${setup.settings.recoveryEventTimeout}], highest sequence number seen [${state.seqNr}]"
-        onRecoveryFailure(new RecoveryTimedOut(msg), None)
+        Right((state: ReplayingState[S]) => state)
+      }
+
+      val idempotencyKeyState = if (!state.idempotencyRestoreDone) {
+        if (state.idempotencyKeySeenInInterval) {
+          Right((state: ReplayingState[S]) => state.copy(idempotencyKeySeenInInterval = false))
+        } else {
+          Left(
+            s"didn't get idempotency key within [${setup.settings.recoveryEventTimeout}], highest sequence number seen [${state.idempotencyKeySeqNr}]")
+        }
+      } else {
+        Right((state: ReplayingState[S]) => state)
+      }
+
+      val status = (eventState, idempotencyKeyState) match {
+        case (Right(e), Right(ik)) =>
+          Right(ik(e(state)))
+        case (e, ik) =>
+          val errs = Seq(e, ik)
+            .collect {
+              case Left(err) =>
+                err
+            }
+            .mkString(", ")
+          Left(s"Replay timed out$errs")
+      }
+
+      status match {
+        case Right(s) =>
+          state = s
+          this
+        case Left(err) =>
+          onRecoveryFailure(new RecoveryTimedOut(err), None)
       }
     } else {
       // snapshot timeout, but we're already in the events recovery phase
@@ -206,7 +275,7 @@ private[akka] final class ReplayingEvents[C, E, S](
         setup.persistenceId,
         (System.nanoTime() - state.recoveryStartTime).nanos.pretty)
     }
-    val sequenceNr = state.seqNr
+    val sequenceNr = state.eventSeqNr
 
     val msg = event match {
       case Some(_: Message) | None =>
@@ -239,7 +308,12 @@ private[akka] final class ReplayingEvents[C, E, S](
         val running =
           Running[C, E, S](
             setup,
-            Running.RunningState[S](state.seqNr, state.state, state.receivedPoisonPill, Vector.empty))
+            Running.RunningState[S](
+              state.eventSeqNr,
+              state.state,
+              state.receivedPoisonPill,
+              state.idempotencyKeySeqNr,
+              state.idempotenceKeyCache.values.toVector))
 
         tryUnstashOne(running)
       }
@@ -247,6 +321,6 @@ private[akka] final class ReplayingEvents[C, E, S](
       setup.cancelRecoveryTimer()
     }
 
-  override def currentSequenceNumber: Long =
-    state.seqNr
+  override def currentEventSequenceNumber: Long =
+    state.eventSeqNr
 }

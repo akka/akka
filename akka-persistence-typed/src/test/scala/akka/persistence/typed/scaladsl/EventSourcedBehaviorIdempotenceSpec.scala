@@ -72,8 +72,8 @@ object EventSourcedBehaviorIdempotenceSpec {
       .receiveSignal {
         case (_, CheckIdempotencyKeyExistsSucceeded(idempotencyKey, exists)) =>
           checks ! s"$idempotencyKey ${if (exists) "exists" else "not exists"}"
-        case (_, WriteIdempotencyKeySucceeded(idempotencyKey)) =>
-          writes ! s"$idempotencyKey written"
+        case (_, WriteIdempotencyKeySucceeded(idempotencyKey, sequenceNumber)) =>
+          writes ! s"$idempotencyKey $sequenceNumber written"
       }
 }
 class EventSourcedBehaviorIdempotenceSpec
@@ -97,7 +97,7 @@ class EventSourcedBehaviorIdempotenceSpec
       c ! SideEffect(idempotenceKey, probe.ref)
       probe.expectMessage(IdempotenceSuccess[AllGood.type, Int](AllGood))
       checksProbe.expectMessage(s"$idempotenceKey not exists")
-      writesProbe.expectMessage(s"$idempotenceKey written")
+      writesProbe.expectMessage(s"$idempotenceKey 1 written")
     }
 
     "fail consume idempotent command the second time" in {
@@ -111,7 +111,7 @@ class EventSourcedBehaviorIdempotenceSpec
       c ! SideEffect(idempotenceKey, probe.ref)
       probe.expectMessage(IdempotenceSuccess[AllGood.type, Int](AllGood))
       checksProbe.expectMessage(s"$idempotenceKey not exists")
-      writesProbe.expectMessage(s"$idempotenceKey written")
+      writesProbe.expectMessage(s"$idempotenceKey 1 written")
 
       c ! SideEffect(idempotenceKey, probe.ref)
       probe.expectMessage(IdempotenceFailure[AllGood.type, Int](1))
@@ -132,7 +132,7 @@ class EventSourcedBehaviorIdempotenceSpec
       c ! NoSideEffect.WriteAlways(idempotenceKey, probe.ref)
       probe.expectMessage(IdempotenceSuccess[AllGood.type, Int](AllGood))
       checksProbe.expectMessage(s"$idempotenceKey not exists")
-      writesProbe.expectMessage(s"$idempotenceKey written")
+      writesProbe.expectMessage(s"$idempotenceKey 1 written")
 
       c ! NoSideEffect.WriteAlways(idempotenceKey, probe.ref)
       probe.expectMessage(IdempotenceFailure[AllGood.type, Int](0))

@@ -74,7 +74,7 @@ private[persistence] trait LeveldbStore
   import Key._
 
   def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
-    if (messages.flatMap(_.idempotenceKey).nonEmpty) {
+    if (messages.map(_.idempotence).collect { case iw: IdempotenceWrite => iw }.nonEmpty) {
       Future.failed(new RuntimeException("Idempotency key writes not implemented for LevelDB Journal"))
     } else {
       var persistenceIds = Set.empty[String]
@@ -143,19 +143,31 @@ private[persistence] trait LeveldbStore
       case NonFatal(e) => Future.failed(e)
     }
 
-  def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean] = {
+  def asyncReadHighestIdempotencyKeySequenceNr(persistenceId: String): Future[Long] =
+    Future.successful(0)
+
+  def asyncReadIdempotencyKeys(persistenceId: String, toSequenceNr: Long, max: Long)(
+      readCallback: (String, Long) => Unit): Future[Unit] =
+    Future.failed(
+      new RuntimeException(
+        s"Idempotency key check not implemented for LevelDB Journal, " +
+        s"persistenceId [${persistenceId}]"))
+
+  def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean] =
     Future.failed(
       new RuntimeException(
         s"Idempotency key check not implemented for LevelDB Journal, " +
         s"persistenceId [${persistenceId}], idempotencyKey [$key]"))
-  }
 
-  def asyncWriteIdempotencyKey(persistenceId: String, key: String): Future[Unit] = {
+  def asyncWriteIdempotencyKey(
+      persistenceId: String,
+      key: String,
+      sequenceNr: Long,
+      highestEventSequenceNr: Long): Future[Unit] =
     Future.failed(
       new RuntimeException(
         s"Idempotency key write not implemented for LevelDB Journal, " +
         s"persistenceId [${persistenceId}], idempotencyKey [$key]"))
-  }
 
   def leveldbSnapshot(): ReadOptions = leveldbReadOptions.snapshot(leveldb.getSnapshot)
 

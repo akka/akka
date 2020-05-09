@@ -32,7 +32,6 @@ private object ChaosJournalIdempotencyKeys extends InmemIdempotencyKeys
 
 class ChaosJournal extends AsyncWriteJournal {
   import ChaosJournalMessages.{ delete => del, _ }
-  import ChaosJournalIdempotencyKeys._
 
   val config = context.system.settings.config.getConfig("akka.persistence.journal.chaos")
   val writeFailureRate = config.getDouble("write-failure-rate")
@@ -43,16 +42,19 @@ class ChaosJournal extends AsyncWriteJournal {
   def random = ThreadLocalRandom.current
 
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
-    try Future.successful {
-      if (shouldFail(writeFailureRate)) throw new WriteFailedException(messages.flatMap(_.payload))
-      else
-        for (a <- messages) yield {
-          a.payload.foreach(add)
-          a.idempotenceKey.foreach(addKey(a.persistenceId, _))
-          AsyncWriteJournal.successUnit
-        }
-    } catch {
-      case NonFatal(e) => Future.failed(e)
+    if (messages.map(_.idempotence).collect { case iw: IdempotenceWrite => iw }.nonEmpty) {
+      Future.failed(new RuntimeException("Idempotency not implemented"))
+    } else {
+      try Future.successful {
+        if (shouldFail(writeFailureRate)) throw new WriteFailedException(messages.flatMap(_.payload))
+        else
+          for (a <- messages) yield {
+            a.payload.foreach(add)
+            AsyncWriteJournal.successUnit
+          }
+      } catch {
+        case NonFatal(e) => Future.failed(e)
+      }
     }
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] = {
@@ -84,9 +86,20 @@ class ChaosJournal extends AsyncWriteJournal {
   def shouldFail(rate: Double): Boolean =
     random.nextDouble() < rate
 
-  override def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean] =
-    Future.successful(keys.get(persistenceId).exists(_.contains(key)))
+  override def asyncReadHighestIdempotencyKeySequenceNr(persistenceId: String): Future[Long] =
+    Future.successful(0)
 
-  override def asyncWriteIdempotencyKey(persistenceId: String, key: String): Future[Unit] =
-    Future.successful(addKey(persistenceId, key))
+  override def asyncReadIdempotencyKeys(persistenceId: String, toSequenceNr: Long, max: Long)(
+      readCallback: (String, Long) => Unit): Future[Unit] =
+    Future.failed(new RuntimeException("Idempotency not implemented"))
+
+  override def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean] =
+    Future.failed(new RuntimeException("Idempotency not implemented"))
+
+  override def asyncWriteIdempotencyKey(
+      persistenceId: String,
+      key: String,
+      sequenceNr: Long,
+      highestEventSequenceNr: Long): Future[Unit] =
+    Future.failed(new RuntimeException("Idempotency not implemented"))
 }

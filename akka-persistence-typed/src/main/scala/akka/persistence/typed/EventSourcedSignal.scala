@@ -145,7 +145,7 @@ object DeletionTarget {
   }
 }
 
-final case class WriteIdempotencyKeySucceeded(idempotencyKey: String) extends EventSourcedSignal {
+final case class WriteIdempotencyKeySucceeded(idempotencyKey: String, sequenceNumber: Long) extends EventSourcedSignal {
 
   /**
    * Java API
@@ -153,7 +153,8 @@ final case class WriteIdempotencyKeySucceeded(idempotencyKey: String) extends Ev
   def getIdempotencyKey(): String = idempotencyKey
 }
 
-final case class WriteIdempotencyKeyFailed(idempotencyKey: String, failure: Throwable) extends EventSourcedSignal {
+final case class WriteIdempotencyKeyFailed(idempotencyKey: String, sequenceNumber: Long, failure: Throwable)
+    extends EventSourcedSignal {
 
   /**
    * Java API

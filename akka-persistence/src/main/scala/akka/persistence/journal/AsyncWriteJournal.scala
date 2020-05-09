@@ -67,8 +67,8 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery w
           case (acc, m) =>
             acc + m.size + (
               m match {
-                case aw: AtomicWrite =>
-                  aw.idempotenceKey.map(_ => 1).getOrElse(0)
+                case AtomicWrite(_, IdempotenceWrite(_, _)) =>
+                  1
                 case _ =>
                   0
               }
@@ -110,30 +110,32 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery w
               case a: AtomicWrite =>
                 resultsIter.next() match {
                   case Success(_) =>
-                    a.idempotenceKey.foreach { k =>
-                      resequencer ! Desequenced(
-                        WriteIdempotencyKeySuccess(k, actorInstanceId),
-                        n,
-                        persistentActor,
-                        a.sender)
-                      n += 1
-
-//                      persistentActor ! WriteIdempotencyKeySuccess(k, actorInstanceId)
+                    a.idempotence match {
+                      case IdempotenceWrite(key, sequenceNumber) =>
+                        resequencer ! Desequenced(
+                          WriteIdempotencyKeySuccess(key, sequenceNumber, actorInstanceId),
+                          n,
+                          persistentActor,
+                          a.sender)
+                        n += 1
+                      case _: IdempotenceInfo =>
+                      // do nothing
                     }
                     a.payload.foreach { p =>
                       resequencer ! Desequenced(WriteMessageSuccess(p, actorInstanceId), n, persistentActor, p.sender)
                       n += 1
                     }
                   case Failure(e) =>
-                    a.idempotenceKey.foreach { k =>
-                      resequencer ! Desequenced(
-                        WriteIdempotencyKeyRejected(k, e, actorInstanceId),
-                        n,
-                        persistentActor,
-                        a.sender)
-                      n += 1
-
-//                      persistentActor ! WriteIdempotencyKeyRejected(k, e, actorInstanceId)
+                    a.idempotence match {
+                      case IdempotenceWrite(key, seqNr) =>
+                        resequencer ! Desequenced(
+                          WriteIdempotencyKeyRejected(key, seqNr, e, actorInstanceId),
+                          n,
+                          persistentActor,
+                          a.sender)
+                        n += 1
+                      case _: IdempotenceInfo =>
+                      // do nothing
                     }
                     a.payload.foreach { p =>
                       resequencer ! Desequenced(
@@ -155,15 +157,16 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery w
             var n = cctr + 1
             messages.foreach {
               case a: AtomicWrite =>
-                a.idempotenceKey.foreach { k =>
-                  resequencer ! Desequenced(
-                    WriteIdempotencyKeyFailure(k, e, actorInstanceId),
-                    n,
-                    persistentActor,
-                    a.sender)
-                  n += 1
-
-//                  persistentActor ! WriteIdempotencyKeyFailure(k, e, actorInstanceId)
+                a.idempotence match {
+                  case IdempotenceWrite(key, seqNr) =>
+                    resequencer ! Desequenced(
+                      WriteIdempotencyKeyFailure(key, seqNr, e, actorInstanceId),
+                      n,
+                      persistentActor,
+                      a.sender)
+                    n += 1
+                  case _: IdempotenceInfo =>
+                  // do nothing
                 }
                 a.payload.foreach { p =>
                   resequencer ! Desequenced(WriteMessageFailure(p, e, actorInstanceId), n, persistentActor, p.sender)
@@ -236,6 +239,28 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery w
             if (publish) eventStream.publish(d)
           }
 
+      case ri @ RestoreIdempotency(max, persistenceId, persistentActor) =>
+        breaker
+          .withCircuitBreaker(asyncReadHighestIdempotencyKeySequenceNr(persistenceId))
+          .flatMap { highSeqNr =>
+            if (highSeqNr == 0) {
+              Future.successful(highSeqNr)
+            } else {
+              asyncReadIdempotencyKeys(persistenceId, highSeqNr, max) {
+                case (key, sequenceNr) => persistentActor.tell(RestoredIdempotencyKey(key, sequenceNr), Actor.noSender)
+              }.map(_ => highSeqNr)
+            }
+          }
+          .map { highSeqNr =>
+            RestoreIdempotencySuccess(highSeqNr)
+          }
+          .recover {
+            case e => RestoreIdempotencyFailure(e)
+          }
+          .pipeTo(persistentActor)
+          .foreach { _ =>
+            if (publish) eventStream.publish(ri)
+          }
       case ci @ CheckIdempotencyKeyExists(persistenceId, idempotencyKey, persistentActor) =>
         breaker
           .withCircuitBreaker(asyncCheckIdempotencyKeyExists(persistenceId, idempotencyKey))
@@ -250,14 +275,21 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery w
             if (publish) eventStream.publish(ci)
           }
 
-      case wi @ WriteIdempotencyKey(persistenceId, idempotencyKey, persistentActor, actorInstanceId) =>
+      case wi @ WriteIdempotencyKey(
+            persistenceId,
+            idempotencyKey,
+            sequenceNr,
+            highestEventSequenceNr,
+            persistentActor,
+            actorInstanceId) =>
         breaker
-          .withCircuitBreaker(asyncWriteIdempotencyKey(persistenceId, idempotencyKey))
+          .withCircuitBreaker(
+            asyncWriteIdempotencyKey(persistenceId, idempotencyKey, sequenceNr, highestEventSequenceNr))
           .map { _ =>
-            WriteIdempotencyKeySuccess(idempotencyKey, actorInstanceId)
+            WriteIdempotencyKeySuccess(idempotencyKey, sequenceNr, actorInstanceId)
           }
           .recover {
-            case e => WriteIdempotencyKeyFailure(idempotencyKey, e, actorInstanceId)
+            case e => WriteIdempotencyKeyFailure(idempotencyKey, sequenceNr, e, actorInstanceId)
           }
           .pipeTo(persistentActor)
           .onComplete { _ =>
