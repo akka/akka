@@ -246,6 +246,9 @@ final class Source[+Out, +Mat](
       combineRest(2, rest.iterator)
     })
 
+  /**
+   * Transform this source whose element is ``e`` into a source producing tuple ``(e, f(e))``
+  **/
   def asSourceWithContext[Ctx](f: Out => Ctx): SourceWithContext[Out, Ctx, Mat] =
     new SourceWithContext(this.map(e => (e, f(e))))
 }
@@ -281,6 +284,17 @@ object Source {
       override def iterator: Iterator[T] = f()
       override def toString: String = "() => Iterator"
     })
+
+  /**
+   * Creates a source that wraps a Java 8 ``Stream``. ``Source`` uses a stream iterator to get all its
+   * elements and send them downstream on demand.
+   *
+   * You can use [[Source.async]] to create asynchronous boundaries between synchronous Java ``Stream``
+   * and the rest of flow.
+   */
+  def fromJavaStream[T, S <: java.util.stream.BaseStream[T, S]](
+      stream: () => java.util.stream.BaseStream[T, S]): Source[T, NotUsed] =
+    StreamConverters.fromJavaStream(stream);
 
   /**
    * Creates [[Source]] that will continually produce given elements in specified order.
@@ -497,6 +511,14 @@ object Source {
    */
   def future[T](futureElement: Future[T]): Source[T, NotUsed] =
     fromGraph(new FutureSource[T](futureElement))
+
+  /**
+   * Never emits any elements, never completes and never fails.
+   * This stream could be useful in tests.
+   */
+  def never[T]: Source[T, NotUsed] = _never
+  private[this] val _never: Source[Nothing, NotUsed] =
+    future(Future.never).withAttributes(DefaultAttributes.neverSource)
 
   /**
    * Emits a single value when the given `CompletionStage` is successfully completed and then completes the stream.

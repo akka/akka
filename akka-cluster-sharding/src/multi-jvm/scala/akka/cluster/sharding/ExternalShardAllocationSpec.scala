@@ -131,7 +131,7 @@ abstract class ExternalShardAllocationSpec
       val forthAddress = address(forth)
       runOn(second) {
         system.log.info("Allocating {} on {}", onForthShardId, forthAddress)
-        ExternalShardAllocation(system).clientFor(typeName).updateShardLocation(onForthShardId, forthAddress)
+        ExternalShardAllocation(system).clientFor(typeName).updateShardLocations(Map(onForthShardId -> forthAddress))
       }
       enterBarrier("allocated-to-new-node")
       runOn(forth) {

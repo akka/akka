@@ -101,6 +101,17 @@ object Source {
     new Source(scaladsl.Source.fromIterator(() => f.create().asScala))
 
   /**
+   * Creates a source that wraps a Java 8 ``Stream``. ``Source`` uses a stream iterator to get all its
+   * elements and send them downstream on demand.
+   *
+   * You can use [[Source.async]] to create asynchronous boundaries between synchronous java stream
+   * and the rest of flow.
+   */
+  def fromJavaStream[O, S <: java.util.stream.BaseStream[O, S]](
+      stream: function.Creator[java.util.stream.BaseStream[O, S]]): javadsl.Source[O, NotUsed] =
+    StreamConverters.fromJavaStream(stream)
+
+  /**
    * Helper to create 'cycled' [[Source]] from iterator provider.
    * Example usage:
    *
@@ -292,6 +303,13 @@ object Source {
    */
   def future[T](futureElement: Future[T]): Source[T, NotUsed] =
     scaladsl.Source.future(futureElement).asJava
+
+  /**
+   * Never emits any elements, never completes and never fails.
+   * This stream could be useful in tests.
+   */
+  def never[T]: Source[T, NotUsed] =
+    scaladsl.Source.never.asJava
 
   /**
    * Emits a single value when the given `CompletionStage` is successfully completed and then completes the stream.
@@ -4312,6 +4330,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def logWithMarker(name: String, marker: function.Function[Out, LogMarker]): javadsl.Source[Out, Mat] =
     this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], null)
 
+  /**
+   * Transform this source whose element is ``e`` into a source producing tuple ``(e, f(e))``
+   **/
   def asSourceWithContext[Ctx](extractContext: function.Function[Out, Ctx]): SourceWithContext[Out, Ctx, Mat] =
     new scaladsl.SourceWithContext(this.asScala.map(x => (x, extractContext.apply(x)))).asJava
 }

@@ -12,7 +12,7 @@ import sbtunidoc.GenJavadocPlugin.autoImport._
 import sbt.Keys._
 import sbt.File
 import scala.annotation.tailrec
-import DeployRsync.autoImport.deployRsyncArtifacts
+import com.lightbend.sbt.publishrsync.PublishRsyncPlugin.autoImport.publishRsyncArtifacts
 
 import sbt.ScopeFilter.ProjectFilter
 
@@ -138,17 +138,13 @@ object UnidocRoot extends AutoPlugin {
         if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
         else Seq("-Xdoclint:none", "--ignore-source-errors", "--no-module-directories")
       },
-      deployRsyncArtifacts ++= {
+      publishRsyncArtifacts ++= {
         val releaseVersion = if (isSnapshot.value) "snapshot" else version.value
         (Compile / unidoc).value match {
           case Seq(japi, api) =>
-            Seq(
-              (japi -> s"www/japi/akka/$releaseVersion"),
-              (api -> s"www/api/akka/$releaseVersion")
-            )
+            Seq((japi -> s"www/japi/akka/$releaseVersion"), (api -> s"www/api/akka/$releaseVersion"))
         }
-      }
-    ))
+      }))
     .getOrElse(Nil)
 
   override lazy val projectSettings = {
@@ -190,6 +186,6 @@ object BootstrapGenjavadoc extends AutoPlugin {
   override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled
     .ifTrue(Seq(
       unidocGenjavadocVersion := "0.16",
-      scalacOptions in Compile ++= Seq("-P:genjavadoc:fabricateParams=true", "-P:genjavadoc:suppressSynthetic=false")))
+      scalacOptions in Compile ++= Seq("-P:genjavadoc:fabricateParams=false", "-P:genjavadoc:suppressSynthetic=false")))
     .getOrElse(Nil)
 }

@@ -1,4 +1,4 @@
-# actorRef
+# Source.actorRef
 
 Materialize an `ActorRef`; sending messages to it will emit them on the stream.
 

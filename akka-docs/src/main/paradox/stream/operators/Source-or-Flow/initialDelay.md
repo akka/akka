@@ -4,13 +4,11 @@ Delays the initial element by the specified duration.
 
 @ref[Timer driven operators](../index.md#timer-driven-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #initialDelay }
+@apidoc[Source.initialDelay](Source$) { scala="#initialDelay(delay:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[Out]" java="#initialDelay(java.time.Duration)" }
+@apidoc[Flow.initialDelay](Flow) { scala="#initialDelay(delay:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[Out]" java="#initialDelay(java.time.Duration)" }
 
-@@@
 
 ## Description
 

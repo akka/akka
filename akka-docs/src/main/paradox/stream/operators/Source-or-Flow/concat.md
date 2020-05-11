@@ -4,13 +4,11 @@ After completion of the original upstream the elements of the given source will 
 
 @ref[Fan-in operators](../index.md#fan-in-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #concat }
+@apidoc[Source.concat](Source) { scala="#concat[U&gt;:Out,Mat2](that:akka.stream.Graph[akka.stream.SourceShape[U],Mat2]):FlowOps.this.Repr[U]" java="#concat(akka.stream.Graph)" }
+@apidoc[Flow.concat](Flow) { scala="#concat[U&gt;:Out,Mat2](that:akka.stream.Graph[akka.stream.SourceShape[U],Mat2]):FlowOps.this.Repr[U]" java="#concat(akka.stream.Graph)" }
 
-@@@
 
 ## Description
 

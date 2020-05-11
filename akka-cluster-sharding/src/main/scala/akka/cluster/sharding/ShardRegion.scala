@@ -223,6 +223,7 @@ object ShardRegion {
   /**
    * Send this message to the `ShardRegion` actor to request for [[CurrentRegions]],
    * which contains the addresses of all registered regions.
+   *
    * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
    * the state of the shard regions.
    */
@@ -281,6 +282,7 @@ object ShardRegion {
    * Send this message to the `ShardRegion` actor to request for [[ShardRegionStats]],
    * which contains statistics about the currently running sharded entities in the
    * entire region.
+   *
    * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
    * the state of the shard regions.
    *

@@ -4,13 +4,11 @@ Drop elements as long as a predicate function return true for the element
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #dropWhile }
+@apidoc[Source.dropWhile](Source) { scala="#dropWhile(p:Out=&gt;Boolean):FlowOps.this.Repr[Out]" java="#dropWhile(akka.japi.function.Predicate)" }
+@apidoc[Flow.dropWhile](Flow) { scala="#dropWhile(p:Out=&gt;Boolean):FlowOps.this.Repr[Out]" java="#dropWhile(akka.japi.function.Predicate)" }
 
-@@@
 
 ## Description
 

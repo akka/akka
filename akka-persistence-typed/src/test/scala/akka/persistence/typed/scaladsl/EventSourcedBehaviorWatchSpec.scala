@@ -12,7 +12,7 @@ import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, LoggingTestKit, ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.persistence.Recovery
+import akka.persistence.{ Recovery => ClassicRecovery }
 import akka.persistence.typed.{ NoOpEventAdapter, PersistenceId, RecoveryCompleted }
 import akka.persistence.typed.internal.{
   BehaviorSetup,
@@ -62,7 +62,7 @@ class EventSourcedBehaviorWatchSpec
       NoOpEventAdapter.instance[String],
       NoOpSnapshotAdapter.instance[String],
       snapshotWhen = ConstantFun.scalaAnyThreeToFalse,
-      Recovery(),
+      ClassicRecovery(),
       RetentionCriteria.disabled,
       holdingRecoveryPermit = false,
       settings = settings,

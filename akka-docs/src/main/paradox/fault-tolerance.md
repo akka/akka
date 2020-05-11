@@ -9,7 +9,7 @@ The concept of fault tolerance relates to actors, so in order to use these make 
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-actor_$scala.binary_version$"
+  artifact="akka-actor_$scala.binary.version$"
   version="$akka.version$"
 }
 

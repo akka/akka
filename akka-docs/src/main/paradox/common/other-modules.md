@@ -8,7 +8,7 @@ A full server- and client-side HTTP stack on top of akka-actor and akka-stream.
 
 Alpakka is a Reactive Enterprise Integration library for Java and Scala, based on Reactive Streams and Akka.
 
-## [Alpakka Kafka Connector](https://doc.akka.io/docs/akka-stream-kafka/current/)
+## [Alpakka Kafka Connector](https://doc.akka.io/docs/alpakka-kafka/current/)
 
 The Alpakka Kafka Connector connects Apache Kafka with Akka Streams.
 

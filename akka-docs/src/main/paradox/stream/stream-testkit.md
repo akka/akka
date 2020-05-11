@@ -6,7 +6,7 @@ To use Akka Stream TestKit, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-stream-testkit_$scala.binary_version$"
+  artifact="akka-stream-testkit_$scala.binary.version$"
   version="$akka.version$"
   scope="test"
 }

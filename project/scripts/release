@@ -67,7 +67,7 @@
 #
 # 3.3) Also make it available for publishing snapshots.
 #      From the command line:
-#        shell> cp ~/.ssh/id_rsa.pub ~/.ssh/id_rsa_gustav.pem
+#        shell> cp ~/.ssh/id_rsa ~/.ssh/id_rsa_gustav.pem
 #        shell> ssh-keygen -p -f ~/.ssh/id_rsa_gustav.pem -m pem
 #
 # 4) Have access to github.com/akka/akka. This should be a given.
@@ -322,11 +322,11 @@ fi
 echolog "Building docs and pushing to the server..."
 if [ $dry_run ]; then
   echodry "Not actually pushing to server. Commands:"
-  echodry "  sbt $RELEASE_OPT deployRsync"
+  echodry "  sbt $RELEASE_OPT publishRsync"
 else
   important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'before publishing version $version'; true"
   # using Scala 2.13 here to avoid the infamous problem with missing AskSupport in classpath
-  important sbt -Dakka.build.scalaVersion=2.13.0 $RELEASE_OPT "deployRsync ${release_server}"
+  important sbt -Dakka.build.scalaVersion=2.13.0 $RELEASE_OPT publishRsync
   important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'publish version $version'"
 fi
 
