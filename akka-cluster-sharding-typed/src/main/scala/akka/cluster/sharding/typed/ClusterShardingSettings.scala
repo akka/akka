@@ -8,6 +8,7 @@ import scala.concurrent.duration.FiniteDuration
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.sharding.typed.ClusterShardingSettings.RememberEntitiesStoreModeDData
 import akka.cluster.sharding.{ ClusterShardingSettings => ClassicShardingSettings }
 import akka.cluster.singleton.{ ClusterSingletonManagerSettings => ClassicClusterSingletonManagerSettings }
 import akka.cluster.typed.Cluster
@@ -45,7 +46,7 @@ object ClusterShardingSettings {
       passivateIdleEntityAfter = classicSettings.passivateIdleEntityAfter,
       shardRegionQueryTimeout = classicSettings.shardRegionQueryTimeout,
       stateStoreMode = StateStoreMode.byName(classicSettings.stateStoreMode),
-      rememberedEntitiesStoreMode = RememberEntitiesStoreMode.byName(classicSettings.rememberEntitiesStore),
+      rememberEntitiesStoreMode = RememberEntitiesStoreMode.byName(classicSettings.rememberEntitiesStore),
       new TuningParameters(classicSettings.tuningParameters),
       new ClusterSingletonManagerSettings(
         classicSettings.coordinatorSingletonSettings.singletonName,
@@ -62,7 +63,7 @@ object ClusterShardingSettings {
       journalPluginId = settings.journalPluginId,
       snapshotPluginId = settings.snapshotPluginId,
       stateStoreMode = settings.stateStoreMode.name,
-      rememberEntitiesStore = settings.rememberedEntitiesStoreMode.name,
+      rememberEntitiesStore = settings.rememberEntitiesStoreMode.name,
       passivateIdleEntityAfter = settings.passivateIdleEntityAfter,
       shardRegionQueryTimeout = settings.shardRegionQueryTimeout,
       new ClassicShardingSettings.TuningParameters(
@@ -282,11 +283,36 @@ final class ClusterShardingSettings(
     val passivateIdleEntityAfter: FiniteDuration,
     val shardRegionQueryTimeout: FiniteDuration,
     val stateStoreMode: ClusterShardingSettings.StateStoreMode,
-    val rememberedEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode,
+    val rememberEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings) {
 
-  // TODO bincompat ctr
+  @deprecated("Use constructor with rememberEntitiesStoreMOde", "2.6.6") // FIXME update version once merged
+  def this(
+      numberOfShards: Int,
+      role: Option[String],
+      dataCenter: Option[DataCenter],
+      rememberEntities: Boolean,
+      journalPluginId: String,
+      snapshotPluginId: String,
+      passivateIdleEntityAfter: FiniteDuration,
+      shardRegionQueryTimeout: FiniteDuration,
+      stateStoreMode: ClusterShardingSettings.StateStoreMode,
+      tuningParameters: ClusterShardingSettings.TuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
+    this(
+      numberOfShards,
+      role,
+      dataCenter,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      passivateIdleEntityAfter,
+      shardRegionQueryTimeout,
+      stateStoreMode,
+      RememberEntitiesStoreModeDData,
+      tuningParameters,
+      coordinatorSingletonSettings)
 
   /**
    * INTERNAL API
@@ -348,7 +374,7 @@ final class ClusterShardingSettings(
       journalPluginId: String = journalPluginId,
       snapshotPluginId: String = snapshotPluginId,
       stateStoreMode: ClusterShardingSettings.StateStoreMode = stateStoreMode,
-      rememberedEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode = rememberedEntitiesStoreMode,
+      rememberedEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode = rememberEntitiesStoreMode,
       tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
       coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
       passivateIdleEntityAfter: FiniteDuration = passivateIdleEntityAfter,

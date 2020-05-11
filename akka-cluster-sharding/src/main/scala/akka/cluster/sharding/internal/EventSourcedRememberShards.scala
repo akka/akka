@@ -43,7 +43,7 @@ private[akka] object EventSourcedRememberShards {
 /**
  * INTERNAL API
  *
- * TODO add snapshotting and then the migration event adapter can be removed
+ * FIXME add snapshotting and then the migration event adapter can be removed
  */
 @InternalApi
 private[akka] final class EventSourcedRememberShards(typeName: String) extends PersistentActor with ActorLogging {
