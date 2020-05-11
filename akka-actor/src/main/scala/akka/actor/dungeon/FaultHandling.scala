@@ -261,7 +261,6 @@ private[akka] trait FaultHandling { this: ActorCell =>
       finally clearFailed() // must happen in any case, so that failure is propagated
 
       val freshActor = newActor()
-      actor = freshActor // this must happen before postRestart has a chance to fail
 
       freshActor.aroundPostRestart(cause)
       checkReceiveTimeout(reschedule = true) // user may have set a receive timeout in preStart which is called from postRestart

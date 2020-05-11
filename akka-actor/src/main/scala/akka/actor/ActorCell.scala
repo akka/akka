@@ -422,7 +422,7 @@ private[akka] class ActorCell(
     with dungeon.FaultHandling {
 
   private[this] var _props = _initialProps
-  def props = _props
+  def props: Props = _props
 
   import ActorCell._
 
@@ -438,7 +438,6 @@ private[akka] class ActorCell(
   protected def uid: Int = self.path.uid
   private[this] var _actor: Actor = _
   def actor: Actor = _actor
-  protected def actor_=(a: Actor): Unit = _actor = a
   var currentMessage: Envelope = _
   private var behaviorStack: List[Actor.Receive] = emptyBehaviorStack
   private[this] var sysmsgStash: LatestFirstSystemMessageList = SystemMessageList.LNil
@@ -618,6 +617,7 @@ private[akka] class ActorCell(
 
       // If no becomes were issued, the actors behavior is its receive method
       behaviorStack = if (behaviorStack.isEmpty) instance.receive :: behaviorStack else behaviorStack
+      _actor = instance
       instance
     } finally {
       val stackAfter = contextStack.get
@@ -627,30 +627,28 @@ private[akka] class ActorCell(
   }
 
   protected def create(failure: Option[ActorInitializationException]): Unit = {
-    def clearOutActorIfNonNull(): Unit = {
-      if (actor != null) {
+    def failActor(): Unit =
+      if (_actor != null) {
         clearActorFields()
         setFailedFatally()
-        actor = null // ensure that we know that we failed during creation
+        _actor = null // ensure that we know that we failed during creation
       }
-    }
 
     failure.foreach { throw _ }
 
     try {
       val created = newActor()
-      actor = created
       created.aroundPreStart()
       checkReceiveTimeout(reschedule = true)
       if (system.settings.DebugLifecycle)
         publish(Debug(self.path.toString, clazz(created), "started (" + created + ")"))
     } catch {
       case e: InterruptedException =>
-        clearOutActorIfNonNull()
+        failActor()
         Thread.currentThread().interrupt()
         throw ActorInitializationException(self, "interruption during creation", e)
       case NonFatal(e) =>
-        clearOutActorIfNonNull()
+        failActor()
         e match {
           case i: InstantiationException =>
             throw ActorInitializationException(
@@ -695,7 +693,7 @@ private[akka] class ActorCell(
   final protected def clearFieldsForTermination(): Unit = {
     unstashAll()
     _props = ActorCell.terminatedProps
-    actor = null
+    _actor = null
   }
 
   // logging is not the main purpose, and if it fails there’s nothing we can do
