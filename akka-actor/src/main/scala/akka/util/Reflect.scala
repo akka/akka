@@ -140,33 +140,6 @@ private[akka] object Reflect {
 
   /**
    * INTERNAL API
-   * Set a val inside a class.
-   */
-  @tailrec protected[akka] final def lookupAndSetField(
-      clazz: Class[_],
-      instance: AnyRef,
-      name: String,
-      value: Any): Boolean = {
-    @tailrec def clearFirst(fields: Array[java.lang.reflect.Field], idx: Int): Boolean =
-      if (idx < fields.length) {
-        val field = fields(idx)
-        if (field.getName == name) {
-          field.setAccessible(true)
-          field.set(instance, value)
-          true
-        } else clearFirst(fields, idx + 1)
-      } else false
-
-    clearFirst(clazz.getDeclaredFields, 0) || {
-      clazz.getSuperclass match {
-        case null => false // clazz == classOf[AnyRef]
-        case sc   => lookupAndSetField(sc, instance, name, value)
-      }
-    }
-  }
-
-  /**
-   * INTERNAL API
    */
   private[akka] def findClassLoader(): ClassLoader = {
     def findCaller(get: Int => Class[_]): ClassLoader =
