@@ -20,7 +20,24 @@ object ClusterShardingSettings {
 
   val StateStoreModePersistence = "persistence"
   val StateStoreModeDData = "ddata"
-  val StateStoreModeCustom = "custom"
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] val RememberEntitiesStoreCustom = "custom"
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] val RememberEntitiesStoreDData = "ddata"
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] val RememberEntitiesStoreEventsourced = "eventsourced"
 
   /**
    * Create settings from the default configuration
@@ -301,9 +318,9 @@ final class ClusterShardingSettings(
       tuningParameters,
       coordinatorSingletonSettings)
 
-  import ClusterShardingSettings.{ StateStoreModeCustom, StateStoreModeDData, StateStoreModePersistence }
+  import ClusterShardingSettings.{ RememberEntitiesStoreCustom, StateStoreModeDData, StateStoreModePersistence }
   require(
-    stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData || stateStoreMode == StateStoreModeCustom,
+    stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData || stateStoreMode == RememberEntitiesStoreCustom,
     s"Unknown 'state-store-mode' [$stateStoreMode], valid values are '$StateStoreModeDData' or '$StateStoreModePersistence'")
 
   /** If true, this node should run the shard region, otherwise just a shard proxy should started on this node. */

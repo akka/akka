@@ -34,8 +34,11 @@ object RememberEntitiesFailureSpec {
       akka.remote.artery.canonical.port = 0
       akka.remote.classic.netty.tcp.port = 0
       akka.cluster.sharding.distributed-data.durable.keys = []
-      akka.cluster.sharding.state-store-mode = custom
-      akka.cluster.sharding.custom-store = "akka.cluster.sharding.RememberEntitiesFailureSpec$$FakeStore"
+      # must be ddata or else remember entities store is ignored
+      akka.cluster.sharding.state-store-mode = ddata
+      akka.cluster.sharding.remember-entities = on
+      akka.cluster.sharding.remember-entities-store = custom
+      akka.cluster.sharding.remember-entities-custom-store = "akka.cluster.sharding.RememberEntitiesFailureSpec$$FakeStore"
       # quick backoffs
       akka.cluster.sharding.entity-restart-backoff = 1s
       akka.cluster.sharding.shard-failure-backoff = 1s

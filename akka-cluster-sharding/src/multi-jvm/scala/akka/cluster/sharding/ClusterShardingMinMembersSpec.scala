@@ -67,7 +67,7 @@ abstract class ClusterShardingMinMembersSpec(multiNodeConfig: ClusterShardingMin
   s"Cluster with min-nr-of-members using sharding ($mode)" must {
 
     "use all nodes" in within(30.seconds) {
-      startPersistenceIfNotDdataMode(startOn = first, setStoreOn = Seq(first, second, third))
+      startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second, third))
 
       // the only test not asserting join status before starting to shard
       join(first, first, onJoinedRunOnFrom = startSharding(), assertNodeUp = false)

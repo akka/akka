@@ -721,7 +721,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
 
   private def replicator(settings: ClusterShardingSettings): ActorRef = {
     if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData ||
-        settings.stateStoreMode == ClusterShardingSettings.StateStoreModeCustom) {
+        settings.stateStoreMode == ClusterShardingSettings.RememberEntitiesStoreCustom) {
       // one Replicator per role
       replicatorByRole.get(settings.role) match {
         case Some(ref) => ref
@@ -754,16 +754,23 @@ private[akka] class ClusterShardingGuardian extends Actor {
         val rep = replicator(settings)
         val rememberEntitiesStoreProvider: Option[RememberEntitiesProvider] =
           if (!settings.rememberEntities) None
-          else
-            // FIXME separate setting for state and remember entities store https://github.com/akka/akka/issues/28961
-            Some(settings.stateStoreMode match {
-              case ClusterShardingSettings.StateStoreModeDData =>
+          else {
+            // with the deprecated persistence state store mode we always use the event sourced provider for shard regions
+            // and no store for coordinator (the coordinator is a PersistentActor in that case)
+            val rememberEntitiesProvider =
+              if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
+                ClusterShardingSettings.RememberEntitiesStoreEventsourced
+              // FIXME move to setting
+              else context.system.settings.config.getString("akka.cluster.sharding.remember-entities-store")
+            Some(rememberEntitiesProvider match {
+              case ClusterShardingSettings.RememberEntitiesStoreDData =>
                 new DDataRememberEntitiesProvider(typeName, settings, majorityMinCap, rep)
-              case ClusterShardingSettings.StateStoreModePersistence =>
+              case ClusterShardingSettings.RememberEntitiesStoreEventsourced =>
                 new EventSourcedRememberEntitiesProvider(typeName, settings)
-              case ClusterShardingSettings.StateStoreModeCustom =>
+              case ClusterShardingSettings.RememberEntitiesStoreCustom =>
                 new CustomStateStoreModeProvider(typeName, context.system, settings)
             })
+          }
 
         val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
         val cName = coordinatorSingletonManagerName(encName)

@@ -20,7 +20,7 @@ import akka.testkit.WithLogCapturing
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
-object RememberEntitiesSpec {
+object PersistentStartEntitySpec {
   class EntityActor extends Actor {
     override def receive: Receive = {
       case "give-me-shard" => sender() ! context.parent
@@ -49,13 +49,14 @@ object RememberEntitiesSpec {
     """.stripMargin)
 }
 
-class RememberEntitiesSpec
-    extends AkkaSpec(RememberEntitiesSpec.config)
+// this test covers remember entities + StartEntity for the deprecated persistent state store
+class PersistentStartEntitySpec
+    extends AkkaSpec(PersistentStartEntitySpec.config)
     with AnyWordSpecLike
     with ImplicitSender
     with WithLogCapturing {
 
-  import RememberEntitiesSpec._
+  import PersistentStartEntitySpec._
 
   override def atStartup(): Unit = {
     // Form a one node cluster
