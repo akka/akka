@@ -2369,8 +2369,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def shuffle: Boolean
 
   import context.dispatcher
-  var sendToSecondarySchedule = context.system.scheduler.scheduleOnce(timeout / 5, self, SendToSecondary)
-  var timeoutSchedule = context.system.scheduler.scheduleOnce(timeout, self, ReceiveTimeout)
+  private val sendToSecondarySchedule = context.system.scheduler.scheduleOnce(timeout / 5, self, SendToSecondary)
+  private val timeoutSchedule = context.system.scheduler.scheduleOnce(timeout, self, ReceiveTimeout)
 
   var remaining = nodes.iterator.map(_.address).toSet
 
