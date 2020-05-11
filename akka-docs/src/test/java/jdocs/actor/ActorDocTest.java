@@ -847,51 +847,11 @@ public class ActorDocTest extends AbstractJavaTest {
     };
   }
 
-  private CompletionStage<Done> cleanup() {
-    return null;
-  }
-
-  @Test
-  public void coordinatedShutdown() {
-    final ActorRef someActor = system.actorOf(Props.create(FirstActor.class));
-    // #coordinated-shutdown-addTask
-    CoordinatedShutdown.get(system)
-        .addTask(
-            CoordinatedShutdown.PhaseBeforeServiceUnbind(),
-            "someTaskName",
-            () -> {
-              return akka.pattern.Patterns.ask(someActor, "stop", Duration.ofSeconds(5))
-                  .thenApply(reply -> Done.getInstance());
-            });
-    // #coordinated-shutdown-addTask
-
-    // #coordinated-shutdown-cancellable
-    Cancellable cancellable =
-        CoordinatedShutdown.get(system)
-            .addCancellableTask(
-                CoordinatedShutdown.PhaseBeforeServiceUnbind(), "someTaskCleanup", () -> cleanup());
-    // much later...
-    cancellable.cancel();
-    // #coordinated-shutdown-cancellable
-
-    // #coordinated-shutdown-jvm-hook
-    CoordinatedShutdown.get(system)
-        .addJvmShutdownHook(() -> System.out.println("custom JVM shutdown hook..."));
-    // #coordinated-shutdown-jvm-hook
-
-    // don't run this
-    if (false) {
-      // #coordinated-shutdown-run
-      CompletionStage<Done> done =
-          CoordinatedShutdown.get(system).runAll(CoordinatedShutdown.unknownReason());
-      // #coordinated-shutdown-run
-    }
-  }
-
   @Test
   public void coordinatedShutdownActorTermination() {
     ActorRef someActor = system.actorOf(Props.create(FirstActor.class));
     someActor.tell(PoisonPill.getInstance(), ActorRef.noSender());
+    // https://github.com/akka/akka/issues/29056
     // #coordinated-shutdown-addActorTerminationTask
     CoordinatedShutdown.get(system)
         .addActorTerminationTask(
