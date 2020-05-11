@@ -130,7 +130,8 @@ class RemoteConfigSpec extends AkkaSpec("""
       sslSettings.SSLTrustStore should ===("truststore")
       sslSettings.SSLTrustStorePassword should ===("changeme")
       sslSettings.SSLProtocol should ===("TLSv1.2")
-      sslSettings.SSLEnabledAlgorithms should ===(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
+      sslSettings.SSLEnabledAlgorithms should ===(
+        Set("TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"))
       sslSettings.SSLRandomNumberGenerator should ===("")
     }
 
