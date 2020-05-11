@@ -343,7 +343,8 @@ object ShardCoordinator {
     }
 
     /**
-     * Persistent state of the event sourced ShardCoordinator.
+     * State of the shard coordinator.
+     * Was also used as the persistent state in the old persistent coordinator.
      */
     @SerialVersionUID(1L) final case class State private[akka] (
         // region for each shard
@@ -351,6 +352,7 @@ object ShardCoordinator {
         // shards for each region
         regions: Map[ActorRef, Vector[ShardId]] = Map.empty,
         regionProxies: Set[ActorRef] = Set.empty,
+        // Only used if remembered entities is enabled
         unallocatedShards: Set[ShardId] = Set.empty,
         rememberEntities: Boolean = false)
         extends ClusterShardingSerializable {

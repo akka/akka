@@ -758,10 +758,11 @@ private[akka] class ClusterShardingGuardian extends Actor {
             // with the deprecated persistence state store mode we always use the event sourced provider for shard regions
             // and no store for coordinator (the coordinator is a PersistentActor in that case)
             val rememberEntitiesProvider =
-              if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
+              if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence) {
                 ClusterShardingSettings.RememberEntitiesStoreEventsourced
-              // FIXME move to setting
-              else context.system.settings.config.getString("akka.cluster.sharding.remember-entities-store")
+              } else {
+                settings.rememberEntitiesStore
+              }
             Some(rememberEntitiesProvider match {
               case ClusterShardingSettings.RememberEntitiesStoreDData =>
                 new DDataRememberEntitiesProvider(typeName, settings, majorityMinCap, rep)
@@ -778,11 +779,12 @@ private[akka] class ClusterShardingGuardian extends Actor {
         val shardRegion = context.child(encName).getOrElse {
           if (context.child(cName).isEmpty) {
             val coordinatorProps =
-              if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
+              if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence) {
                 ShardCoordinator.props(typeName, settings, allocationStrategy)
-              else
+              } else {
                 ShardCoordinator
                   .props(typeName, settings, allocationStrategy, rep, majorityMinCap, rememberEntitiesStoreProvider)
+              }
             val singletonProps =
               BackoffOpts
                 .onStop(

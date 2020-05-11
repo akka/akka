@@ -45,6 +45,7 @@ object ClusterShardingSettings {
       passivateIdleEntityAfter = classicSettings.passivateIdleEntityAfter,
       shardRegionQueryTimeout = classicSettings.shardRegionQueryTimeout,
       stateStoreMode = StateStoreMode.byName(classicSettings.stateStoreMode),
+      rememberedEntitiesStoreMode = RememberEntitiesStoreMode.byName(classicSettings.rememberEntitiesStore),
       new TuningParameters(classicSettings.tuningParameters),
       new ClusterSingletonManagerSettings(
         classicSettings.coordinatorSingletonSettings.singletonName,
@@ -61,6 +62,7 @@ object ClusterShardingSettings {
       journalPluginId = settings.journalPluginId,
       snapshotPluginId = settings.snapshotPluginId,
       stateStoreMode = settings.stateStoreMode.name,
+      rememberEntitiesStore = settings.rememberedEntitiesStoreMode.name,
       passivateIdleEntityAfter = settings.passivateIdleEntityAfter,
       shardRegionQueryTimeout = settings.shardRegionQueryTimeout,
       new ClassicShardingSettings.TuningParameters(
@@ -102,10 +104,25 @@ object ClusterShardingSettings {
       if (name == StateStoreModePersistence.name) StateStoreModePersistence
       else if (name == StateStoreModeDData.name) StateStoreModeDData
       else
-        throw new IllegalArgumentException("Not recognized StateStoreMode, only 'ddata' is supported.")
+        throw new IllegalArgumentException(
+          s"Not recognized StateStoreMode, only '${StateStoreModePersistence.name}' and '${StateStoreModeDData.name}' are supported.")
   }
   final case object StateStoreModePersistence extends StateStoreMode { override def name = "persistence" }
   final case object StateStoreModeDData extends StateStoreMode { override def name = "ddata" }
+
+  sealed trait RememberEntitiesStoreMode { def name: String }
+  object RememberEntitiesStoreMode {
+    def byName(name: String): RememberEntitiesStoreMode =
+      if (name == RememberEntitiesModeEventSourced.name) RememberEntitiesModeEventSourced
+      else if (name == RememberEntitiesStoreModeDData.name) RememberEntitiesStoreModeDData
+      else
+        throw new IllegalArgumentException(
+          s"Not recognized RememberEntitiesStore, only '${RememberEntitiesStoreModeDData.name}' and '${RememberEntitiesModeEventSourced.name}' are supported.")
+  }
+  final case object RememberEntitiesModeEventSourced extends RememberEntitiesStoreMode {
+    override def name = "eventsourced"
+  }
+  final case object RememberEntitiesStoreModeDData extends RememberEntitiesStoreMode { override def name = "ddata" }
 
   // generated using kaze-class
   final class TuningParameters private (
@@ -265,15 +282,11 @@ final class ClusterShardingSettings(
     val passivateIdleEntityAfter: FiniteDuration,
     val shardRegionQueryTimeout: FiniteDuration,
     val stateStoreMode: ClusterShardingSettings.StateStoreMode,
+    val rememberedEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings) {
 
-  import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModeDData
-  import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModePersistence
-  require(
-    stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData,
-    s"Unknown 'state-store-mode' [$stateStoreMode], " +
-    s"valid values are '${StateStoreModeDData.name}' or '${StateStoreModePersistence.name}'")
+  // TODO bincompat ctr
 
   /**
    * INTERNAL API
@@ -335,6 +348,7 @@ final class ClusterShardingSettings(
       journalPluginId: String = journalPluginId,
       snapshotPluginId: String = snapshotPluginId,
       stateStoreMode: ClusterShardingSettings.StateStoreMode = stateStoreMode,
+      rememberedEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode = rememberedEntitiesStoreMode,
       tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
       coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
       passivateIdleEntityAfter: FiniteDuration = passivateIdleEntityAfter,
@@ -349,6 +363,7 @@ final class ClusterShardingSettings(
       passivateIdleEntityAfter,
       shardRegionQueryTimeout,
       stateStoreMode,
+      rememberedEntitiesStoreMode,
       tuningParameters,
       coordinatorSingletonSettings)
 }
