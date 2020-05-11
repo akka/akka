@@ -692,7 +692,7 @@ private[akka] class ActorCell(
     currentMessage = null
     behaviorStack = emptyBehaviorStack
   }
-  protected def clearFieldsForTermination(): Unit = {
+  final protected def clearFieldsForTermination(): Unit = {
     unstashAll()
     _props = ActorCell.terminatedProps
     actor = null
