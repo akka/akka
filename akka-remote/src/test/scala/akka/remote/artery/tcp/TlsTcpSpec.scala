@@ -8,12 +8,12 @@ package tcp
 import java.io.ByteArrayOutputStream
 import java.security.NoSuchAlgorithmException
 import java.util.zip.GZIPOutputStream
+import javax.net.ssl.SSLEngine
 
 import scala.concurrent.duration._
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import javax.net.ssl.SSLEngine
 
 import akka.actor.ActorIdentity
 import akka.actor.ActorPath

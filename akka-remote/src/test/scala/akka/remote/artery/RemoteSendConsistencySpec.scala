@@ -7,7 +7,9 @@ package akka.remote.artery
 import java.util.UUID
 
 import scala.concurrent.duration._
+
 import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorPath

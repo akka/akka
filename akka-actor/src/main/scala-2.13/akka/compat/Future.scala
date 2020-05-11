@@ -4,9 +4,10 @@
 
 package akka.compat
 
-import akka.annotation.InternalApi
-import scala.concurrent.{ ExecutionContext, Future => SFuture }
 import scala.collection.immutable
+import scala.concurrent.{ ExecutionContext, Future => SFuture }
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

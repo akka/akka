@@ -4,11 +4,11 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.{ StreamSpec, TestSubscriber }
-import akka.testkit.DefaultTimeout
-
 import scala.concurrent.duration._
+
+import akka.stream.testkit.{ StreamSpec, TestSubscriber }
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.DefaultTimeout
 
 class NeverSourceSpec extends StreamSpec with DefaultTimeout {
 

@@ -5,7 +5,6 @@
 package akka.cluster
 
 import java.lang.management.ManagementFactory
-
 import javax.management.InstanceAlreadyExistsException
 import javax.management.InstanceNotFoundException
 import javax.management.ObjectName

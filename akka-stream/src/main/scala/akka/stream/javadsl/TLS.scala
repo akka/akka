@@ -6,12 +6,12 @@ package akka.stream.javadsl
 
 import java.util.Optional
 import java.util.function.{ Consumer, Supplier }
+import javax.net.ssl.{ SSLContext, SSLEngine, SSLSession }
 
 import scala.compat.java8.OptionConverters
 import scala.util.Try
 
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import javax.net.ssl.{ SSLContext, SSLEngine, SSLSession }
 
 import akka.{ japi, NotUsed }
 import akka.stream._

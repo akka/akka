@@ -921,7 +921,6 @@ class TcpSpec extends StreamSpec("""
 
     // #setting-up-ssl-engine
     import java.security.KeyStore
-
     import javax.net.ssl.KeyManagerFactory
     import javax.net.ssl.SSLContext
     import javax.net.ssl.SSLEngine
@@ -1010,9 +1009,9 @@ class TcpSpec extends StreamSpec("""
     def initSslMess() = {
       // #setting-up-ssl-context
       import java.security.KeyStore
+      import javax.net.ssl._
 
       import com.typesafe.sslconfig.akka.AkkaSSLConfig
-      import javax.net.ssl._
 
       import akka.stream.TLSClientAuth
       import akka.stream.TLSProtocol

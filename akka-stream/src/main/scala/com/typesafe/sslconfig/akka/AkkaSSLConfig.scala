@@ -7,11 +7,11 @@ package com.typesafe.sslconfig.akka
 import java.security.KeyStore
 import java.security.cert.CertPathValidatorException
 import java.util.Collections
+import javax.net.ssl._
 
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
 import com.typesafe.sslconfig.ssl._
 import com.typesafe.sslconfig.util.LoggerFactory
-import javax.net.ssl._
 
 import akka.actor._
 import akka.annotation.InternalApi

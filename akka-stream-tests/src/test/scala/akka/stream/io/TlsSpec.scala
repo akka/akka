@@ -8,14 +8,13 @@ import java.security.KeyStore
 import java.security.SecureRandom
 import java.security.cert.CertificateException
 import java.util.concurrent.TimeoutException
+import javax.net.ssl._
 
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
-
-import javax.net.ssl._
 
 import akka.NotUsed
 import akka.pattern.{ after => later }

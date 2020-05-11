@@ -5,15 +5,14 @@
 package akka.stream.impl.io
 
 import java.nio.ByteBuffer
-
-import scala.annotation.tailrec
-import scala.util.{ Failure, Success, Try }
-import scala.util.control.NonFatal
-
 import javax.net.ssl._
 import javax.net.ssl.SSLEngineResult.HandshakeStatus
 import javax.net.ssl.SSLEngineResult.HandshakeStatus._
 import javax.net.ssl.SSLEngineResult.Status._
+
+import scala.annotation.tailrec
+import scala.util.{ Failure, Success, Try }
+import scala.util.control.NonFatal
 
 import akka.actor._
 import akka.annotation.InternalApi

@@ -15,8 +15,7 @@ addCommandAlias(
 
 addCommandAlias(
   name = "sortImports",
-  value = ";scalafixEnable;compile:scalafix SortImports;test:scalafix SortImports;multi-jvm:scalafix SortImports;" +
-    "CompileJdk9:scalafix SortImports;TestJdk9:scalafix SortImports;scalafmtAll;test:compile;multi-jvm:compile;reload")
+  value = ";scalafixEnable;compile:scalafix SortImports;test:scalafix SortImports;scalafmtAll")
 
 import akka.AkkaBuild._
 import akka.{AkkaBuild, Dependencies, OSGi, Protobuf, SigarLoader, VersionGenerator}
