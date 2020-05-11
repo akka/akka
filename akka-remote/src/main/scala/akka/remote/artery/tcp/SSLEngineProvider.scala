@@ -12,6 +12,10 @@ import java.nio.file.Paths
 import java.security.GeneralSecurityException
 import java.security.KeyStore
 import java.security.SecureRandom
+
+import scala.util.Try
+
+import com.typesafe.config.Config
 import javax.net.ssl.KeyManager
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
@@ -19,10 +23,6 @@ import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
-
-import scala.util.Try
-
-import com.typesafe.config.Config
 
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
@@ -65,6 +65,11 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
  *
  * Subclass may override protected methods to replace certain parts, such as key and trust manager.
  */
+@deprecated(
+  "Subclasses of akka.remote.artery.tcp.ConfigSSLEngineProvider should be " +
+  "reimplemented preferring composition over inheritance. See akka.remote.artery.tcp.ssl.ConfigSSLEngineProvider " +
+  "for an example.",
+  "2.6.6")
 class ConfigSSLEngineProvider(protected val config: Config, protected val log: MarkerLoggingAdapter)
     extends SSLEngineProvider {
 
@@ -214,31 +219,3 @@ object SSLEngineProviderSetup {
  * Constructor is *Internal API*, use factories in [[SSLEngineProviderSetup]]
  */
 class SSLEngineProviderSetup private (val sslEngineProvider: ExtendedActorSystem => SSLEngineProvider) extends Setup
-
-/**
- * INTERNAL API
- */
-@InternalApi private[akka] object SecureRandomFactory {
-  def createSecureRandom(randomNumberGenerator: String, log: MarkerLoggingAdapter): SecureRandom = {
-    val rng = randomNumberGenerator match {
-      case s @ ("SHA1PRNG" | "NativePRNG") =>
-        log.debug("SSL random number generator set to: {}", s)
-        // SHA1PRNG needs /dev/urandom to be the source on Linux to prevent problems with /dev/random blocking
-        // However, this also makes the seed source insecure as the seed is reused to avoid blocking (not a problem on FreeBSD).
-        SecureRandom.getInstance(s)
-
-      case "" | "SecureRandom" =>
-        log.debug("SSL random number generator set to [SecureRandom]")
-        new SecureRandom
-
-      case unknown =>
-        log.warning(
-          LogMarker.Security,
-          "Unknown SSL random number generator [{}] falling back to SecureRandom",
-          unknown)
-        new SecureRandom
-    }
-    rng.nextInt() // prevent stall on first access
-    rng
-  }
-}
