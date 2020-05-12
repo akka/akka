@@ -1968,8 +1968,8 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' the materialized flow cancels.
    *  When downstream cancels before materialization of the nested flow, the operator's default behaviour is to cancel immediately,
-   *  this behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy]] attribute to the flow.
-   *  When this attribute is configured to true, downstream cancellation is delayed until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
+   *  this behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy]] attribute on the flow.
+   *  When this attribute is configured to true, downstream cancellation is delayed until the nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
    *
    *  @param n the number of elements to accumulate before materializing the downstream flow.
    *  @param f a function that produces the downstream flow based on the upstream's prefix.
