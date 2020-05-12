@@ -71,6 +71,6 @@ object PEMDecoder {
   }
 
   @ApiMayChange
-  class DERData(val label: String, val bytes: Array[Byte])
+  final class DERData(val label: String, val bytes: Array[Byte])
 
 }

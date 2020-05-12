@@ -197,7 +197,12 @@ object Dependencies {
 
   val actorTestkitTyped = l ++= Seq(Provided.logback, Provided.junit, Provided.scalatest, Test.scalatestJUnit)
 
-  val pki = l ++= Seq(asnOne, Test.scalatest)
+  val pki = l ++=
+      Seq(
+        asnOne,
+        // pull up slf4j version from the one provided transitively in asnOne to fix unidoc
+        Compile.slf4jApi % "provided",
+        Test.scalatest)
 
   val remoteDependencies = Seq(netty, aeronDriver, aeronClient)
   val remoteOptionalDependencies = remoteDependencies.map(_ % "optional")

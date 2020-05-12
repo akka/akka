@@ -19,7 +19,7 @@ import com.hierynomus.asn1.encodingrules.der.DERDecoder
 import com.hierynomus.asn1.types.constructed.ASN1Sequence
 import com.hierynomus.asn1.types.primitive.ASN1Integer
 
-class PEMLoadingException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
+final class PEMLoadingException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
   def this(msg: String) = this(msg, null)
 }
 
@@ -27,10 +27,12 @@ object DERPrivateKeyLoader {
 
   /**
    * Converts the DER payload in [[PEMDecoder.DERData]] into a [[java.security.PrivateKey]]. The received DER
-   * data must be a valid PKCS#1 (identified in PEM as "RSA PRIVATE KEY") or non-ecrypted PKCS#8 (identified
+   * data must be a valid PKCS#1 (identified in PEM as "RSA PRIVATE KEY") or non-ecnrypted PKCS#8 (identified
    * in PEM as "PRIVATE KEY").
+   * @throws PEMLoadingException when the `derData` is for an unsupported format
    */
   @ApiMayChange
+  @throws[PEMLoadingException]("when the `derData` is for an unsupported format")
   def load(derData: DERData): PrivateKey = {
     derData.label match {
       case "RSA PRIVATE KEY" =>
@@ -45,7 +47,13 @@ object DERPrivateKeyLoader {
   private def loadPkcs1PrivateKey(bytes: Array[Byte]) = {
     val derInputStream = new ASN1InputStream(new DERDecoder, bytes)
     // Here's the specification: https://tools.ietf.org/html/rfc3447#appendix-A.1.2
-    val sequence = derInputStream.readObject[ASN1Sequence]()
+    val sequence = {
+      try {
+        derInputStream.readObject[ASN1Sequence]()
+      } finally {
+        derInputStream.close()
+      }
+    }
     val version = getInteger(sequence, 0, "version").intValueExact()
     if (version < 0 || version > 1) {
       throw new IllegalArgumentException(s"Unsupported PKCS1 version: $version")
