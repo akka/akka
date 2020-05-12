@@ -50,19 +50,17 @@ class MaterializerStateSpec extends StreamSpec {
     }
 
     "snapshot a running stream that includes a TLSActor" in {
-      Source
-        .never
+      Source.never
         .via(Tcp().outgoingConnectionWithTls(InetSocketAddress.createUnresolved("akka.io", 443), () => {
           val engine = SSLContext.getDefault.createSSLEngine("akka.io", 443)
           engine.setUseClientMode(true)
           engine
         }))
         .runWith(Sink.seq)
-      // This currently fails because TlsModulePhase uses materializer.actorOf
-      // to create the TLSActor, but StreamSupervisor.takeSnapshotsOfChildren
-      // expects all children to understand the ActorGraphInterpreter.Snapshot
-      // message.
-      MaterializerState.streamSnapshots(system).futureValue
+
+      val snapshots = MaterializerState.streamSnapshots(system).futureValue
+      snapshots.size should be(2)
+      snapshots.toString should include("TLS-")
     }
 
     "snapshot a stream that has a stopped stage" in {
