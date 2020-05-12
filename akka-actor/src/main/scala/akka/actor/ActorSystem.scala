@@ -1178,9 +1178,11 @@ private[akka] class ActorSystemImpl(
      *    when the extension cannot be found at all we throw regardless of this setting)
      */
     def loadExtensions(key: String, throwOnLoadFail: Boolean): Unit = {
+
       immutableSeq(settings.config.getStringList(key)).foreach { fqcn =>
         dynamicAccess.getObjectFor[AnyRef](fqcn).recoverWith {
-          case _ => dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil)
+          case firstProblem =>
+            dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil).recoverWith { case _ => Failure(firstProblem) }
         } match {
           case Success(p: ExtensionIdProvider) =>
             registerExtension(p.lookup())
