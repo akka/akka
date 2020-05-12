@@ -8,7 +8,7 @@ import java.util.UUID
 import akka.actor.{ ActorRef, ActorSystem, Props }
 import akka.cluster.Cluster
 import akka.persistence.PersistentActor
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe, WithLogCapturing }
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -18,7 +18,8 @@ import com.typesafe.config.ConfigFactory
  */
 object PersistentShardingMigrationSpec {
   val config = ConfigFactory.parseString(s"""
-       akka.loglevel = WARNING
+       akka.loglevel = DEBUG
+       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
        akka.actor.provider = "cluster"
        akka.cluster.sharding {
         remember-entities = on
@@ -91,7 +92,10 @@ object PersistentShardingMigrationSpec {
   }
 }
 
-class PersistentShardingMigrationSpec extends AkkaSpec(PersistentShardingMigrationSpec.config) with ImplicitSender {
+class PersistentShardingMigrationSpec
+    extends AkkaSpec(PersistentShardingMigrationSpec.config)
+    with ImplicitSender
+    with WithLogCapturing {
 
   import PersistentShardingMigrationSpec._
 
