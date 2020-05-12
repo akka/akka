@@ -37,7 +37,7 @@ private[akka] final class EventSourcedRememberEntitiesProvider(typeName: String,
   // Note that this one is never used for the deprecated persistent state store mode, only when state store is ddata
   // combined with eventsourced remember entities storage
   override def coordinatorStoreProps(): Props =
-    EventSourcedRememberShards.props(typeName)
+    EventSourcedRememberShards.props(typeName, settings)
 }
 
 /**

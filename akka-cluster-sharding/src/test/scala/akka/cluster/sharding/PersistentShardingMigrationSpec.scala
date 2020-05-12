@@ -9,7 +9,10 @@ import akka.actor.{ ActorRef, ActorSystem, Props }
 import akka.cluster.Cluster
 import akka.persistence.PersistentActor
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe, WithLogCapturing }
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 /**
  * Test migration from old persistent shard coordinator with remembered
@@ -18,9 +21,9 @@ import com.typesafe.config.ConfigFactory
  */
 object PersistentShardingMigrationSpec {
   val config = ConfigFactory.parseString(s"""
-       akka.loglevel = DEBUG
-       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+       akka.loglevel = INFO
        akka.actor.provider = "cluster"
+       akka.remote.artery.canonical.port = 0 
        akka.cluster.sharding {
         remember-entities = on
         remember-entities-store = "eventsourced"
@@ -30,7 +33,7 @@ object PersistentShardingMigrationSpec {
         state-store-mode = "persistence"
        
         # make sure we test snapshots
-        snapshot-after = 2
+        snapshot-after = 5
        }
        
        akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
@@ -44,7 +47,7 @@ object PersistentShardingMigrationSpec {
       }
       """)
 
-  val configForAfterMigration = ConfigFactory
+  val configForNewMode = ConfigFactory
     .parseString(
       """
        akka.cluster.sharding {
@@ -92,42 +95,25 @@ object PersistentShardingMigrationSpec {
   }
 }
 
-class PersistentShardingMigrationSpec
-    extends AkkaSpec(PersistentShardingMigrationSpec.config)
-    with ImplicitSender
-    with WithLogCapturing {
+class PersistentShardingMigrationSpec extends AkkaSpec(PersistentShardingMigrationSpec.config) with ImplicitSender {
 
   import PersistentShardingMigrationSpec._
 
   "Migration" should {
-    "work" in {
-      Cluster(system).join(Cluster(system).selfAddress)
+    "allow migration of remembered shards and now allow going back" in {
+      val typeName = "Migration"
 
-      {
-        val rememberedEntitiesProbe = TestProbe()
-        val region = ClusterSharding(system).start(
-          "PA",
-          Props(new PA()),
-          extractEntityId,
-          extractShardId(rememberedEntitiesProbe.ref))
+      withSystem(config, typeName, "OldMode") { (system, region, probe) =>
         region ! Message(1)
         expectMsg("ack")
         region ! Message(2)
         expectMsg("ack")
         region ! Message(3)
         expectMsg("ack")
-        system.terminate().futureValue
       }
-      {
-        val secondSystem = ActorSystem("PersistentMigration2", configForAfterMigration)
-        val rememberedEntitiesProbe = TestProbe()(secondSystem)
-        Cluster(secondSystem).join(Cluster(secondSystem).selfAddress)
-        val region = ClusterSharding(secondSystem).start(
-          "PA",
-          Props(new PA()),
-          extractEntityId,
-          extractShardId(rememberedEntitiesProbe.ref))
-        val probe = TestProbe()(secondSystem)
+
+      withSystem(configForNewMode, typeName, "NewMode") { (system, region, rememberedEntitiesProbe) =>
+        val probe = TestProbe()(system)
         region.tell(Message(1), probe.ref)
         probe.expectMsg("ack")
         Set(
@@ -136,6 +122,46 @@ class PersistentShardingMigrationSpec
           rememberedEntitiesProbe
             .expectMsgType[String]) shouldEqual Set("1", "2", "3") // 1-2 from the snapshot, 3 from a replayed message
         rememberedEntitiesProbe.expectNoMessage()
+      }
+
+      withSystem(config, typeName, "OldModeAfterMigration") { (system, region, rememberedEntitiesProbe) =>
+        val probe = TestProbe()(system)
+        region.tell(Message(1), probe.ref)
+        import scala.concurrent.duration._
+        probe.expectNoMessage(5.seconds) // sharding should have failed to start
+      }
+    }
+    "not allow going back to persistence mode based on a snapshot" in {
+      val typeName = "Snapshots"
+      withSystem(configForNewMode, typeName, "NewMode") { (system, region, _) =>
+        val probe = TestProbe()(system)
+        for (i <- 1 to 5) {
+          region.tell(Message(i), probe.ref)
+          probe.expectMsg("ack")
+        }
+      }
+
+      withSystem(config, typeName, "OldMode") { (system, region, _) =>
+        val probe = TestProbe()(system)
+        region.tell(Message(1), probe.ref)
+        probe.expectNoMessage(2.seconds)
+      }
+    }
+
+    def withSystem(config: Config, typeName: String, systemName: String)(
+        f: (ActorSystem, ActorRef, TestProbe) => Unit) = {
+      val system = ActorSystem(systemName, config)
+      Cluster(system).join(Cluster(system).selfAddress)
+      try {
+        val rememberedEntitiesProbe = TestProbe()(system)
+        val region = ClusterSharding(system).start(
+          typeName,
+          Props(new PA()),
+          extractEntityId,
+          extractShardId(rememberedEntitiesProbe.ref))
+        f(system, region, rememberedEntitiesProbe)
+      } finally {
+        Await.ready(system.terminate(), 20.seconds)
       }
     }
   }
