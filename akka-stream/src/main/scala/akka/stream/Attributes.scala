@@ -452,7 +452,8 @@ object Attributes {
    * , otherwise these stages will immediately cancel without materializing the nested flow.
    */
   @ApiMayChange
-  class NestedMaterializationCancellationPolicy private[NestedMaterializationCancellationPolicy] (val propagateToNestedMaterialization: Boolean)
+  class NestedMaterializationCancellationPolicy private[NestedMaterializationCancellationPolicy] (
+      val propagateToNestedMaterialization: Boolean)
       extends MandatoryAttribute
 
   @ApiMayChange

@@ -21,9 +21,9 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
   def src10(i: Int = 0) = Source(i until (i + 10))
 
   for {
-    att <- List(Attributes.NestedMaterializationCancellationPolicy.EagerCancellation,
-      Attributes.NestedMaterializationCancellationPolicy.PropagateToNested
-    )
+    att <- List(
+      Attributes.NestedMaterializationCancellationPolicy.EagerCancellation,
+      Attributes.NestedMaterializationCancellationPolicy.PropagateToNested)
     delayDownstreanCancellation = att.propagateToNestedMaterialization
     attributes = Attributes(att)
   } {

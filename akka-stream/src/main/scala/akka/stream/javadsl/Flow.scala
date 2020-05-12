@@ -6,7 +6,6 @@ package akka.stream.javadsl
 
 import java.util.Comparator
 import java.util.Optional
-import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 import java.util.function.Supplier
@@ -303,8 +302,12 @@ object Flow {
    * The materialized completion stage value is completed with the materialized value of the future flow or failed with a
    * [[NeverMaterializedException]] if upstream fails or downstream cancels before the completion stage has completed.
    */
-  def completionStageFlow[I, O, M](flow: CompletionStage[Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] =
-    lazyCompletionStageFlow(() => flow)
+  def completionStageFlow[I, O, M](flow: CompletionStage[Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] = {
+    import scala.compat.java8.FutureConverters._
+    val sflow =
+      scaladsl.Flow.futureFlow(flow.toScala.map(_.asScala)(ExecutionContexts.parasitic)).mapMaterializedValue(_.toJava)
+    new javadsl.Flow(sflow)
+  }
 
   /**
    * Defers invoking the `create` function to create a future flow until there is downstream demand and passing
@@ -321,8 +324,15 @@ object Flow {
    *
    * '''Cancels when''' downstream cancels
    */
-  def lazyFlow[I, O, M](create: Creator[Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] =
-    lazyCompletionStageFlow(() => CompletableFuture.completedFuture(create.create()))
+  def lazyFlow[I, O, M](create: Creator[Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] = {
+    import scala.compat.java8.FutureConverters._
+    val sflow = scaladsl.Flow
+      .lazyFlow { () =>
+        create.create().asScala
+      }
+      .mapMaterializedValue(_.toJava)
+    new javadsl.Flow(sflow)
+  }
 
   /**
    * Defers invoking the `create` function to create a future flow until there downstream demand has caused upstream

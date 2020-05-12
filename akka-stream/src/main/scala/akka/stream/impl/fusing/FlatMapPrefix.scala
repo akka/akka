@@ -28,7 +28,9 @@ import akka.util.OptionVal
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
     val propagateToNestedMaterialization =
-      inheritedAttributes.mandatoryAttribute[Attributes.NestedMaterializationCancellationPolicy].propagateToNestedMaterialization
+      inheritedAttributes
+        .mandatoryAttribute[Attributes.NestedMaterializationCancellationPolicy]
+        .propagateToNestedMaterialization
     val matPromise = Promise[M]
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
       val accumulated = collection.mutable.Buffer.empty[In]
