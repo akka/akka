@@ -21,8 +21,8 @@ import scala.util.{ Failure, Success, Try }
   override val shape: FlowShape[In, Out] = FlowShape(in, out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
-    val Attributes.NestedMaterializationCancellationPolicy(propagateToNestedMaterialization) =
-      inheritedAttributes.mandatoryAttribute[Attributes.NestedMaterializationCancellationPolicy]
+    val propagateToNestedMaterialization =
+      inheritedAttributes.mandatoryAttribute[Attributes.NestedMaterializationCancellationPolicy].propagateToNestedMaterialization
     val innerMatValue = Promise[M]
     val logic = new GraphStageLogic(shape) {
 

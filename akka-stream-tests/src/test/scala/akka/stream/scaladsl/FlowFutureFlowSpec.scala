@@ -24,8 +24,10 @@ class FlowFutureFlowSpec extends StreamSpec {
   //so we run all tests cases using both modes of the attributes.
   //please notice most of the cases don't exhibit any difference in behaviour between the two modes
   for {
-    delayDownstreanCancellation <- List(false, true)
-    att = Attributes.NestedMaterializationCancellationPolicy(delayDownstreanCancellation)
+    att <- List(Attributes.NestedMaterializationCancellationPolicy.EagerCancellation,
+      Attributes.NestedMaterializationCancellationPolicy.PropagateToNested
+    )
+    delayDownstreanCancellation = att.propagateToNestedMaterialization
     attributes = Attributes(att)
   } {
 
