@@ -100,7 +100,19 @@ object ClusterShardingSettings {
     if (role == "" || role == null) None else Option(role)
 
   sealed trait StateStoreMode { def name: String }
+
+  /**
+   * Java API
+   */
+  def stateStoreModePersistence(): StateStoreMode = StateStoreModePersistence
+
+  /**
+   * Java API
+   */
+  def stateStoreModeDdata(): StateStoreMode = StateStoreModePersistence
+
   object StateStoreMode {
+
     def byName(name: String): StateStoreMode =
       if (name == StateStoreModePersistence.name) StateStoreModePersistence
       else if (name == StateStoreModeDData.name) StateStoreModeDData
@@ -108,19 +120,33 @@ object ClusterShardingSettings {
         throw new IllegalArgumentException(
           s"Not recognized StateStoreMode, only '${StateStoreModePersistence.name}' and '${StateStoreModeDData.name}' are supported.")
   }
+
   final case object StateStoreModePersistence extends StateStoreMode { override def name = "persistence" }
+
   final case object StateStoreModeDData extends StateStoreMode { override def name = "ddata" }
 
+  /**
+   * Java API
+   */
+  def rememberEntitiesStoreModeEventSourced(): RememberEntitiesStoreMode = RememberEntitiesStoreModeEventSourced
+
+  /**
+   * Java API
+   */
+  def rememberEntitiesStoreModeDdata(): RememberEntitiesStoreMode = RememberEntitiesStoreModeDData
+
   sealed trait RememberEntitiesStoreMode { def name: String }
+
   object RememberEntitiesStoreMode {
+
     def byName(name: String): RememberEntitiesStoreMode =
-      if (name == RememberEntitiesModeEventSourced.name) RememberEntitiesModeEventSourced
+      if (name == RememberEntitiesStoreModeEventSourced.name) RememberEntitiesStoreModeEventSourced
       else if (name == RememberEntitiesStoreModeDData.name) RememberEntitiesStoreModeDData
       else
         throw new IllegalArgumentException(
-          s"Not recognized RememberEntitiesStore, only '${RememberEntitiesStoreModeDData.name}' and '${RememberEntitiesModeEventSourced.name}' are supported.")
+          s"Not recognized RememberEntitiesStore, only '${RememberEntitiesStoreModeDData.name}' and '${RememberEntitiesStoreModeEventSourced.name}' are supported.")
   }
-  final case object RememberEntitiesModeEventSourced extends RememberEntitiesStoreMode {
+  final case object RememberEntitiesStoreModeEventSourced extends RememberEntitiesStoreMode {
     override def name = "eventsourced"
   }
   final case object RememberEntitiesStoreModeDData extends RememberEntitiesStoreMode { override def name = "ddata" }
@@ -287,7 +313,7 @@ final class ClusterShardingSettings(
     val tuningParameters: ClusterShardingSettings.TuningParameters,
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings) {
 
-  @deprecated("Use constructor with rememberEntitiesStoreMOde", "2.6.6") // FIXME update version once merged
+  @deprecated("Use constructor with rememberEntitiesStoreMode", "2.6.6") // FIXME update version once merged
   def this(
       numberOfShards: Int,
       role: Option[String],
@@ -347,6 +373,10 @@ final class ClusterShardingSettings(
   def withStateStoreMode(stateStoreMode: ClusterShardingSettings.StateStoreMode): ClusterShardingSettings =
     copy(stateStoreMode = stateStoreMode)
 
+  def withRememberEntitiesStoreMode(
+      rememberEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode): ClusterShardingSettings =
+    copy(rememberEntitiesStoreMode = rememberEntitiesStoreMode)
+
   def withPassivateIdleEntityAfter(duration: FiniteDuration): ClusterShardingSettings =
     copy(passivateIdleEntityAfter = duration)
 
@@ -374,7 +404,7 @@ final class ClusterShardingSettings(
       journalPluginId: String = journalPluginId,
       snapshotPluginId: String = snapshotPluginId,
       stateStoreMode: ClusterShardingSettings.StateStoreMode = stateStoreMode,
-      rememberedEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode = rememberEntitiesStoreMode,
+      rememberEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode = rememberEntitiesStoreMode,
       tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
       coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
       passivateIdleEntityAfter: FiniteDuration = passivateIdleEntityAfter,
@@ -389,7 +419,7 @@ final class ClusterShardingSettings(
       passivateIdleEntityAfter,
       shardRegionQueryTimeout,
       stateStoreMode,
-      rememberedEntitiesStoreMode,
+      rememberEntitiesStoreMode,
       tuningParameters,
       coordinatorSingletonSettings)
 }
