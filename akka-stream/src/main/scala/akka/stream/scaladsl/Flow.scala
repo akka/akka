@@ -578,7 +578,11 @@ object Flow {
    *
    * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
    *
-   * '''Cancels when''' downstream cancels
+   * '''Cancels when''' downstream cancels (see below)
+   *
+   * The operator's default behaviour in case of downstream cancellation before nested flow materialization (future completion) is to cancel immediately.
+   * This behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy]] attribute to true,
+   * this will delay downstream cancellation until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
    */
   @deprecated(
     "Use 'Flow.futureFlow' in combination with prefixAndTail(1) instead, see `futureFlow` operator docs for details",
@@ -605,7 +609,11 @@ object Flow {
    *
    * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
    *
-   * '''Cancels when''' downstream cancels
+   * '''Cancels when''' downstream cancels (see below)
+   *
+   * The operator's default behaviour in case of downstream cancellation before nested flow materialization (future completion) is to cancel immediately.
+   * This behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy]] attribute to true,
+   * this will delay downstream cancellation until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
    */
   @deprecated("Use 'Flow.lazyFutureFlow' instead", "2.6.0")
   def lazyInitAsync[I, O, M](flowFactory: () => Future[Flow[I, O, M]]): Flow[I, O, Future[Option[M]]] =
@@ -647,7 +655,11 @@ object Flow {
    *
    * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
    *
-   * '''Cancels when''' downstream cancels
+   * '''Cancels when''' downstream cancels (see below)
+   *
+   * The operator's default behaviour in case of downstream cancellation before nested flow materialization (future completion) is to cancel immediately.
+   * This behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy]] attribute to true,
+   * this will delay downstream cancellation until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
    */
   def lazyFlow[I, O, M](create: () => Flow[I, O, M]): Flow[I, O, Future[M]] =
     lazyFutureFlow(() => Future.successful(create()))
@@ -671,7 +683,11 @@ object Flow {
    *
    * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
    *
-   * '''Cancels when''' downstream cancels
+   * '''Cancels when''' downstream cancels (see below)
+   *
+   * The operator's default behaviour in case of downstream cancellation before nested flow materialization (future completion) is to cancel immediately.
+   * This behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy]] attribute to true,
+   * this will delay downstream cancellation until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
    */
   def lazyFutureFlow[I, O, M](create: () => Future[Flow[I, O, M]]): Flow[I, O, Future[M]] =
     Flow[I]
