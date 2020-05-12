@@ -13,7 +13,11 @@ trait AsyncIdempotency {
   def asyncReadIdempotencyKeys(persistenceId: String, toSequenceNr: Long, max: Long)(
       readCallback: (String, Long) => Unit): Future[Unit]
 
-  def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean]
+  def asyncCheckIdempotencyKeyExists(
+      persistenceId: String,
+      key: String,
+      highestIdempotencyKeySequenceNr: Long,
+      highestEventSequenceNr: Long): Future[Boolean]
 
   def asyncWriteIdempotencyKey(
       persistenceId: String,

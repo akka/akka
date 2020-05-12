@@ -153,7 +153,11 @@ private[persistence] trait LeveldbStore
         s"Idempotency key check not implemented for LevelDB Journal, " +
         s"persistenceId [${persistenceId}]"))
 
-  def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean] =
+  def asyncCheckIdempotencyKeyExists(
+      persistenceId: String,
+      key: String,
+      highestIdempotencyKeySequenceNr: Long,
+      highestEventSequenceNr: Long): Future[Boolean] =
     Future.failed(
       new RuntimeException(
         s"Idempotency key check not implemented for LevelDB Journal, " +

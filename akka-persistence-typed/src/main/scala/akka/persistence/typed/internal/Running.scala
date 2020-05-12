@@ -211,7 +211,7 @@ private[akka] object Running {
             ic.replyTo ! IdempotenceFailure(newState.state)
             new HandlingCommands(newState)
           } else {
-            internalCheckIdempotencyKeyExists(ic.idempotencyKey)
+            internalCheckIdempotencyKeyExists(ic.idempotencyKey, state.idempotenceKeySeqNr, state.eventSeqNr)
             new CheckingIdempotenceKey(newState, ic.asInstanceOf[C with IdempotentCommand[Any, S]], ic.idempotencyKey) // TODO can we avoid the cast?
           }
         case _ =>

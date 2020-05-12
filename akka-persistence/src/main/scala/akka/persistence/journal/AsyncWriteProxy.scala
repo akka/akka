@@ -101,7 +101,11 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
     Future.failed(new RuntimeException("Idempotency not implemented"))
   }
 
-  override def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean] = {
+  override def asyncCheckIdempotencyKeyExists(
+      persistenceId: String,
+      key: String,
+      highestIdempotencyKeySequenceNr: Long,
+      highestEventSequenceNr: Long): Future[Boolean] = {
     Future.failed(new RuntimeException("Idempotency not implemented"))
   }
 

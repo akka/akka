@@ -123,7 +123,11 @@ object InmemJournal {
     }
   }
 
-  override def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean] = {
+  override def asyncCheckIdempotencyKeyExists(
+      persistenceId: String,
+      key: String,
+      highestIdempotencyKeySequenceNr: Long,
+      highestEventSequenceNr: Long): Future[Boolean] = {
     val exists = keys.get(persistenceId).exists(_.valuesIterator.contains(key))
     eventStream.publish(InmemJournal.CheckIdempotenceKeyExists(persistenceId, key))
     Future.successful(exists)

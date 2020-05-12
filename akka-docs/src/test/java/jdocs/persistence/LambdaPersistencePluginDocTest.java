@@ -142,7 +142,7 @@ public class LambdaPersistencePluginDocTest {
       }
 
       @Override
-      public Future<Object> asyncCheckIdempotencyKeyExists(String persistenceId, String key) {
+      public Future<Object> asyncCheckIdempotencyKeyExists(String persistenceId, String key, long highestIdempotencyKeySequenceNr, long highestEventSequenceNr) {
           return null;
       }
 

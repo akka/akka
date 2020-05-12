@@ -261,9 +261,19 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery w
           .foreach { _ =>
             if (publish) eventStream.publish(ri)
           }
-      case ci @ CheckIdempotencyKeyExists(persistenceId, idempotencyKey, persistentActor) =>
+      case ci @ CheckIdempotencyKeyExists(
+            persistenceId,
+            idempotencyKey,
+            highestIdempotencyKeySequenceNr,
+            highestEventSequenceNr,
+            persistentActor) =>
         breaker
-          .withCircuitBreaker(asyncCheckIdempotencyKeyExists(persistenceId, idempotencyKey))
+          .withCircuitBreaker(
+            asyncCheckIdempotencyKeyExists(
+              persistenceId,
+              idempotencyKey,
+              highestIdempotencyKeySequenceNr,
+              highestEventSequenceNr))
           .map { exists =>
             IdempotencyCheckSuccess(exists)
           }

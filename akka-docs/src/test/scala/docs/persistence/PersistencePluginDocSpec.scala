@@ -173,7 +173,11 @@ class MyJournal extends AsyncWriteJournal {
   override def asyncReadIdempotencyKeys(persistenceId: String, toSequenceNr: Long, max: Long)(
       readCallback: (String, Long) => Unit): Future[Unit] = ???
 
-  override def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean] = ???
+  override def asyncCheckIdempotencyKeyExists(
+      persistenceId: String,
+      key: String,
+      highestIdempotencyKeySequenceNr: Long,
+      highestEventSequenceNr: Long): Future[Boolean] = ???
   override def asyncWriteIdempotencyKey(
       persistenceId: String,
       key: String,

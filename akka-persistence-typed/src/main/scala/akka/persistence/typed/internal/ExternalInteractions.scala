@@ -174,9 +174,19 @@ private[akka] trait JournalInteractions[C, E, S] {
       .tell(JournalProtocol.RestoreIdempotency(setup.idempotenceKeyCacheSize, setup.persistenceId.id, self), self)
   }
 
-  protected def internalCheckIdempotencyKeyExists(idempotencyKey: String): Unit = {
+  protected def internalCheckIdempotencyKeyExists(
+      idempotencyKey: String,
+      highestIdempotencyKeySequenceNr: Long,
+      highestEventSequenceNr: Long): Unit = {
     val self = setup.selfClassic
-    setup.journal.tell(JournalProtocol.CheckIdempotencyKeyExists(setup.persistenceId.id, idempotencyKey, self), self)
+    setup.journal.tell(
+      JournalProtocol.CheckIdempotencyKeyExists(
+        setup.persistenceId.id,
+        idempotencyKey,
+        highestIdempotencyKeySequenceNr,
+        highestEventSequenceNr,
+        self),
+      self)
   }
 
   protected def internalWriteIdempotencyKey(

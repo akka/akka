@@ -93,7 +93,11 @@ class ChaosJournal extends AsyncWriteJournal {
       readCallback: (String, Long) => Unit): Future[Unit] =
     Future.failed(new RuntimeException("Idempotency not implemented"))
 
-  override def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean] =
+  override def asyncCheckIdempotencyKeyExists(
+      persistenceId: String,
+      key: String,
+      highestIdempotencyKeySequenceNr: Long,
+      highestEventSequenceNr: Long): Future[Boolean] =
     Future.failed(new RuntimeException("Idempotency not implemented"))
 
   override def asyncWriteIdempotencyKey(
