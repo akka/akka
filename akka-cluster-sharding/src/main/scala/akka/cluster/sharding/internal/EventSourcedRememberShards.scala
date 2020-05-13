@@ -58,6 +58,8 @@ private[akka] final class EventSourcedRememberShards(typeName: String, settings:
   // Uses the same persistence id as the old persistent coordinator so that the old data can be migrated
   // without any user action
   override def persistenceId = s"/sharding/${typeName}Coordinator"
+  override def journalPluginId: String = settings.journalPluginId
+  override def snapshotPluginId: String = settings.snapshotPluginId
 
   private val shards = mutable.Set.empty[ShardId]
   private var writtenMarker = false

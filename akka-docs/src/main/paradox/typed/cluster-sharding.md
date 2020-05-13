@@ -311,7 +311,7 @@ akka.cluster.sharding.snapshot-plugin-id = <plugin>
 
 ### Migrating from Persistence mode
 
-Persistence mode for shard coordinator state is deprecated. If not using rememered entities you can migrate to ddata with a full cluster restart.
+Persistence mode for shard coordinator state is deprecated. If not using remembered entities you can migrate to ddata with a full cluster restart.
 
 If using remembered entities there are two migration options: 
 
