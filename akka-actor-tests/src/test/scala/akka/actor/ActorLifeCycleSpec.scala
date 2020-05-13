@@ -165,7 +165,14 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
             latch.await()
             Thread.sleep(50)
             "po"
-          }.flatMap(x => Future { x + "ng" }).recover { case _: NullPointerException => "npe" }.pipeTo(replyTo)
+          }
+          // Here, we implicitly close over the actor instance and access the context
+          // when the flatMap thunk is run. Previously, the context was nulled when the actor
+          // was terminated. This isn't done any more. Still, the pattern of `import context.dispatcher`
+          // is discouraged as closing over `context` is unsafe in general.
+            .flatMap(x => Future { x + "ng" } /* implicitly: (this.context.dispatcher) */ )
+            .recover { case _: NullPointerException => "npe" }
+            .pipeTo(replyTo)
       }
     }
 
