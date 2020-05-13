@@ -8,7 +8,7 @@ import java.util.UUID
 import akka.actor.{ ActorRef, ActorSystem, Props }
 import akka.cluster.Cluster
 import akka.persistence.PersistentActor
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe, WithLogCapturing }
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.concurrent.Await
@@ -103,7 +103,7 @@ class PersistentShardingMigrationSpec extends AkkaSpec(PersistentShardingMigrati
     "allow migration of remembered shards and now allow going back" in {
       val typeName = "Migration"
 
-      withSystem(config, typeName, "OldMode") { (system, region, probe) =>
+      withSystem(config, typeName, "OldMode") { (_, region, _) =>
         region ! Message(1)
         expectMsg("ack")
         region ! Message(2)
@@ -124,7 +124,7 @@ class PersistentShardingMigrationSpec extends AkkaSpec(PersistentShardingMigrati
         rememberedEntitiesProbe.expectNoMessage()
       }
 
-      withSystem(config, typeName, "OldModeAfterMigration") { (system, region, rememberedEntitiesProbe) =>
+      withSystem(config, typeName, "OldModeAfterMigration") { (system, region, _) =>
         val probe = TestProbe()(system)
         region.tell(Message(1), probe.ref)
         import scala.concurrent.duration._
