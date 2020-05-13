@@ -15,7 +15,7 @@ import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 
-final class PemManagerProviders(config: Config) extends SslManagersProvider {
+final class PemManagersProvider(config: Config) extends SslManagersProvider {
   // TODO: support password-protected PKCS#8
   private val SSLKeyFile: String = config.getString("key-file")
   private val SSLCertFile: String = config.getString("cert-file")
@@ -43,7 +43,7 @@ final class PemManagerProviders(config: Config) extends SslManagersProvider {
     val keyStore = KeyStore.getInstance("JKS")
     keyStore.load(null)
     // Load the private key
-    val privateKey = PemManagerProviders.loadPrivateKey(new File(SSLKeyFile))
+    val privateKey = PemManagersProvider.loadPrivateKey(new File(SSLKeyFile))
 
     keyStore.setCertificateEntry("cert", peerCertificate)
     keyStore.setCertificateEntry("cacert", caCertificate)
@@ -59,9 +59,9 @@ final class PemManagerProviders(config: Config) extends SslManagersProvider {
 
 // This is a stub for code introduced in https://github.com/akka/akka/pull/29039
 // TODO: remove
-object PemManagerProviders {
+object PemManagersProvider {
   val loadPrivateKey: File => PrivateKey =
-    PemManagerProviders.readPath.andThen(PemManagerProviders.decode).andThen(PemManagerProviders.load)
+    PemManagersProvider.readPath.andThen(PemManagersProvider.decode).andThen(PemManagersProvider.load)
   val readPath: File => String = ???
   val decode: String => DERData = ???
   val load: DERData => PrivateKey = ???

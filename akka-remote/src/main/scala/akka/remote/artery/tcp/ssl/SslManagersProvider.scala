@@ -1,6 +1,5 @@
 package akka.remote.artery.tcp.ssl
 
-import java.io.FileInputStream
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.KeyStore
@@ -16,6 +15,7 @@ import javax.net.ssl.TrustManagerFactory
 
 import scala.util.Try
 
+// TODO: docs
 trait SslManagersProvider {
   def trustManagers: Array[TrustManager]
   def keyManagers: Array[KeyManager]
@@ -24,20 +24,14 @@ trait SslManagersProvider {
   val peerCertificate: X509Certificate
 }
 
-// This constructor is provided for backwards compat in ConfigSSLEngineProvider
-final class JksManagerProviders(config: Config, loadKeystore: (String, String) => KeyStore)
-    extends SslManagersProvider {
-
-  // Preferred constructor
-  def this(config: Config) =
-    this(config, JksManagerProviders.loadKeystore)
+// TODO: docs
+final class JksManagersProvider private[tcp] (config: Config) extends SslManagersProvider {
 
   val SSLKeyStore: String = config.getString("key-store")
   val SSLTrustStore: String = config.getString("trust-store")
   val SSLKeyStorePassword: String = config.getString("key-store-password")
   val SSLKeyPassword: String = config.getString("key-password")
   val SSLTrustStorePassword: String = config.getString("trust-store-password")
-
 
   val caCertificate: Certificate = ???
   val peerCertificate: X509Certificate = ???
@@ -53,14 +47,12 @@ final class JksManagerProviders(config: Config, loadKeystore: (String, String) =
     factory.init(loadKeystore(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray)
     factory.getKeyManagers
   }
-}
 
-/**
- * INTERNAL API
- */
-@InternalApi
-private[akka] object JksManagerProviders {
-  def loadKeystore(filename: String, password: String): KeyStore = {
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private def loadKeystore(filename: String, password: String): KeyStore = {
     val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
     val fin = Files.newInputStream(Paths.get(filename))
     try keyStore.load(fin, password.toCharArray)

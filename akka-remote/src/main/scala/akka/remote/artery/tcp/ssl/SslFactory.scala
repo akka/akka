@@ -15,18 +15,22 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 
 /**
+ * TODO: I'm not sure this class should be private. Users may write their SSLEngineProviders and use it.
  * INTERNAL API
  */
 @InternalApi
-private[tcp] class SslFactory(config: Config, val sslManagersProvider: SslManagersProvider, prng: SecureRandom)(
-    protected val log: MarkerLoggingAdapter) {
+private[tcp] final class SslFactory(
+    config: Config,
+// This is a val since it's useful to traceback from an SSLContext to the SslManagersProvider used to create it.
+    val sslManagersProvider: SslManagersProvider,
+    prng: SecureRandom)(log: MarkerLoggingAdapter) {
 
-  val SSLProtocol: String = config.getString("protocol")
+  private val SSLProtocol: String = config.getString("protocol")
 
-  val SSLEnabledAlgorithms: Set[String] =
+  private val SSLEnabledAlgorithms: Set[String] =
     immutableSeq(config.getStringList("enabled-algorithms")).toSet
-  val SSLRequireMutualAuthentication: Boolean = config.getBoolean("require-mutual-authentication")
-  val HostnameVerification: Boolean = config.getBoolean("hostname-verification")
+  private val SSLRequireMutualAuthentication: Boolean = config.getBoolean("require-mutual-authentication")
+  private val HostnameVerification: Boolean = config.getBoolean("hostname-verification")
 
   // log hostname verification warning once
   if (HostnameVerification)
@@ -78,8 +82,10 @@ private[tcp] class SslFactory(config: Config, val sslManagersProvider: SslManage
 
   // Server-side
   private def requireMutualAuthentication()(engine: SSLEngine): SSLEngine = {
-    // TODO: warn when mTLS is disabled
     if (SSLRequireMutualAuthentication) engine.setNeedClientAuth(true)
+    else
+      log.info(LogMarker.Security,
+        "mTLS (aka TLS Client Authentication) is disabled. See Akka reference documentation for more information.")
     engine
   }
 
@@ -91,7 +97,6 @@ private[tcp] class SslFactory(config: Config, val sslManagersProvider: SslManage
 
   //Client-side
   private def withHostnameVerification()(engine: SSLEngine): SSLEngine = {
-    // TODO: validate subject-based authorization is disabled.
     if (HostnameVerification) {
       val sslParams = sslContext.getDefaultSSLParameters
       sslParams.setEndpointIdentificationAlgorithm("HTTPS")

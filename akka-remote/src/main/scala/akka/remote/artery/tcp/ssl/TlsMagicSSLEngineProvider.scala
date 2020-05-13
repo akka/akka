@@ -43,7 +43,7 @@ final class TlsMagicSSLEngineProvider(protected val config: Config, protected va
         //  I'm just trying to demonstrate usage of different implementations
         val rng = new SecureRandom()
         // This line is where all pieces are instantiated and put together.
-        val context = new SslFactory(config, new PemManagerProviders(config), rng)(log)
+        val context = new SslFactory(config, new PemManagersProvider(config), rng)(log)
         val cache = Cache(context, SSLContextCacheTime.fromNow)
         contextRef.set(Some(cache))
         cache
