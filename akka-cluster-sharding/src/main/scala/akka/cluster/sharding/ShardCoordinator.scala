@@ -21,6 +21,7 @@ import akka.pattern.{ pipe, AskTimeoutException }
 import akka.persistence._
 import akka.cluster.ClusterEvent
 import akka.cluster.ddata.SelfUniqueAddress
+import akka.cluster.sharding.DDataShardCoordinator.RememberEntitiesLoadTimeout
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.EventSourcedRememberShards.MigrationMarker
 import akka.cluster.sharding.internal.{
@@ -1132,21 +1133,20 @@ private[akka] class DDataShardCoordinator(
 
   implicit val node = Cluster(context.system)
   private implicit val selfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
-  val CoordinatorStateKey = LWWRegisterKey[State](s"${typeName}CoordinatorState")
-  val initEmptyState = State.empty.withRememberEntities(settings.rememberEntities)
+  private val CoordinatorStateKey = LWWRegisterKey[State](s"${typeName}CoordinatorState")
+  private val initEmptyState = State.empty.withRememberEntities(settings.rememberEntities)
 
-  var terminating = false
-  var getShardHomeRequests: Set[(ActorRef, GetShardHome)] = Set.empty
+  private var terminating = false
+  private var getShardHomeRequests: Set[(ActorRef, GetShardHome)] = Set.empty
 
-  val rememberEntitiesStore =
+  private val rememberEntitiesStore =
     rememberEntitiesStoreProvider.map { provider =>
       log.debug("Starting remember entities store from provider {}", provider)
       context.watchWith(
         context.actorOf(provider.coordinatorStoreProps(), "RememberEntitiesStore"),
         RememberEntitiesStoreStopped)
     }
-  val rememberEntities = rememberEntitiesStore.isDefined
-
+  private val rememberEntities = rememberEntitiesStore.isDefined
   node.subscribe(self, ClusterEvent.InitialStateAsEvents, ClusterShuttingDown.getClass)
 
   // get state from ddata replicator, repeat until GetSuccess
@@ -1155,25 +1155,17 @@ private[akka] class DDataShardCoordinator(
     getAllRememberedShards()
 
   override def receive: Receive =
-    waitingForInitialState(
-      None,
-      if (rememberEntities) None
-      else Some(Set.empty))
+    waitingForInitialState(Set.empty)
 
   // This state will drop all other messages since they will be retried
-  // Note remembered entities query retries forever in store rather than here
-  def waitingForInitialState(initialState: Option[State], initialShards: Option[Set[ShardId]]): Receive =
+  // Note remembered entities initial set of shards can arrive here or later, does not keep us in this state
+  def waitingForInitialState(rememberedShards: Set[ShardId]): Receive =
     ({
 
       case g @ GetSuccess(CoordinatorStateKey, _) =>
         val existingState = g.get(CoordinatorStateKey).value.withRememberEntities(settings.rememberEntities)
         log.debug("Received initial coordinator state [{}]", existingState)
-        initialShards match {
-          case Some(shards) =>
-            onInitialState(existingState, shards)
-          case None =>
-            context.become(waitingForInitialState(Some(existingState), None))
-        }
+        onInitialState(existingState, rememberedShards)
 
       case GetFailure(CoordinatorStateKey, _) =>
         log.error(
@@ -1184,22 +1176,13 @@ private[akka] class DDataShardCoordinator(
 
       case NotFound(CoordinatorStateKey, _) =>
         log.debug("Initial coordinator unknown using empty state")
-        initialShards match {
-          case Some(shards) =>
-            // this.state is empty initially
-            onInitialState(this.state, shards)
-          case None =>
-            context.become(waitingForInitialState(Some(initEmptyState), None))
-        }
+        // this.state is empty initially
+        onInitialState(this.state, rememberedShards)
 
       case RememberEntitiesCoordinatorStore.RememberedShards(shardIds) =>
-        log.debug("Received [{}] remembered shard ids", shardIds.size)
-        initialState match {
-          case Some(state) =>
-            onInitialState(state, shardIds)
-          case None =>
-            context.become(waitingForInitialState(None, Some(shardIds)))
-        }
+        log.debug("Received [{}] remembered shard ids (when waitingForInitialState)", shardIds.size)
+        context.become(waitingForInitialState(shardIds))
+        timers.cancel(RememberEntitiesTimeoutKey)
 
       case RememberEntitiesLoadTimeout =>
         // repeat until successful
@@ -1211,8 +1194,8 @@ private[akka] class DDataShardCoordinator(
     }: Receive).orElse[Any, Unit](receiveTerminated)
 
   private def onInitialState(loadedState: State, rememberedShards: Set[ShardId]): Unit = {
-    timers.cancel(RememberEntitiesTimeoutKey)
     state = if (settings.rememberEntities && rememberedShards.nonEmpty) {
+      // Note that we don't wait for shards from store so they could also arrive later
       val newUnallocatedShards = state.unallocatedShards.union(rememberedShards.diff(state.shards.keySet))
       loadedState.copy(unallocatedShards = newUnallocatedShards)
     } else loadedState
@@ -1241,6 +1224,16 @@ private[akka] class DDataShardCoordinator(
     case ShardCoordinator.Internal.Terminate =>
       log.debug("Received termination message while waiting for state initialized")
       context.stop(self)
+
+    case RememberEntitiesCoordinatorStore.RememberedShards(rememberedShards) =>
+      log.debug("Received [{}] remembered shard ids (when waitingForStateInitialized)", rememberedShards.size)
+      val newUnallocatedShards = state.unallocatedShards.union(rememberedShards.diff(state.shards.keySet))
+      state.copy(unallocatedShards = newUnallocatedShards)
+      timers.cancel(RememberEntitiesTimeoutKey)
+
+    case RememberEntitiesLoadTimeout =>
+      // repeat until successful
+      getAllRememberedShards()
 
     case RememberEntitiesStoreStopped =>
       onRememberEntitiesStoreStopped()
@@ -1369,8 +1362,24 @@ private[akka] class DDataShardCoordinator(
   }
 
   def activate() = {
-    context.become(active)
+    context.become(active.orElse(receiveLateRememberedEntities))
     log.info("ShardCoordinator was moved to the active state {}", state)
+  }
+
+  // only used once the coordinator is initialized
+  def receiveLateRememberedEntities: Receive = {
+    case RememberEntitiesCoordinatorStore.RememberedShards(shardIds) =>
+      log.debug("Received [{}] remembered shard ids (when after state initialized)", shardIds.size)
+      if (shardIds.nonEmpty) {
+        val newUnallocatedShards = state.unallocatedShards.union(shardIds.diff(state.shards.keySet))
+        state = state.copy(unallocatedShards = newUnallocatedShards)
+        newUnallocatedShards.foreach { self ! GetShardHome(_) }
+      }
+      timers.cancel(RememberEntitiesTimeoutKey)
+
+    case RememberEntitiesLoadTimeout =>
+      // repeat until successful
+      getAllRememberedShards()
   }
 
   def update[E <: DomainEvent](evt: E)(f: E => Unit): Unit = {
