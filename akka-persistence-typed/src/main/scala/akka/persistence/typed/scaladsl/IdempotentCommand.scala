@@ -13,7 +13,7 @@ trait IdempotentCommand[T, S] {
   val writeConfig: IdempotenceKeyWriteConfig = AlwaysWriteIdempotenceKey
 }
 
-trait IdempotenceReply[T, S]
+sealed trait IdempotenceReply[T, S]
 case class IdempotenceSuccess[T, S](data: T) extends IdempotenceReply[T, S]
 case class IdempotenceFailure[T, S](state: S) extends IdempotenceReply[T, S]
 
