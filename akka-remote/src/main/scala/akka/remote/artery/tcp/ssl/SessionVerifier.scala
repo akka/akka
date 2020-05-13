@@ -5,7 +5,7 @@ import java.security.cert.X509Certificate
 import javax.net.ssl.SSLSession
 
 /**
- * 
+ * TODO: docs
  */
 trait SessionVerifier {
 
@@ -14,13 +14,19 @@ trait SessionVerifier {
 
 }
 
+/**
+ * TODO: docs
+ */
 object NoopSessionVerifier extends SessionVerifier{
   override def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable] = None
 
   override def verifyServerSession(hostname: String, session: SSLSession): Option[Throwable] = None
 }
 
-class PeerSubjectVerifier(peerCertificate:X509Certificate) extends SessionVerifier {
+/**
+ * TODO: docs
+ */
+final class PeerSubjectVerifier(peerCertificate:X509Certificate) extends SessionVerifier {
 
   override def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable] =
     verifyPeerCertificates(session)

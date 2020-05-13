@@ -5,6 +5,7 @@ import java.io.IOException
 import java.security.GeneralSecurityException
 import java.security.SecureRandom
 
+import akka.annotation.InternalApi
 import akka.event.LogMarker
 import akka.event.MarkerLoggingAdapter
 import akka.japi.Util.immutableSeq
@@ -13,6 +14,10 @@ import com.typesafe.config.Config
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[tcp] class SslFactory(config: Config, val sslManagersProvider: SslManagersProvider, prng: SecureRandom)(
     protected val log: MarkerLoggingAdapter) {
 

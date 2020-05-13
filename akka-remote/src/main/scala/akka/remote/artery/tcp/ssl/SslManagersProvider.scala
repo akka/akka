@@ -7,6 +7,7 @@ import java.security.KeyStore
 import java.security.cert.Certificate
 import java.security.cert.X509Certificate
 
+import akka.annotation.InternalApi
 import com.typesafe.config.Config
 import javax.net.ssl.KeyManager
 import javax.net.ssl.KeyManagerFactory
@@ -54,6 +55,10 @@ final class JksManagerProviders(config: Config, loadKeystore: (String, String) =
   }
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] object JksManagerProviders {
   def loadKeystore(filename: String, password: String): KeyStore = {
     val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)

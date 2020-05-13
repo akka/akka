@@ -5,6 +5,7 @@ import java.security.cert.X509Certificate
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.event.MarkerLoggingAdapter
 import akka.remote.artery.tcp.SSLEngineProvider
@@ -63,7 +64,11 @@ final class TlsMagicSSLEngineProvider(protected val config: Config, protected va
 
 }
 
-private case class Cache(sslFactory: SslFactory, expires: Deadline) {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[ssl] case class Cache(sslFactory: SslFactory, expires: Deadline) {
   val sslContext: SSLContext = sslFactory.sslContext
   val peerCertificate: X509Certificate = sslFactory.sslManagersProvider.peerCertificate
   val sessionVerifier: PeerSubjectVerifier = new PeerSubjectVerifier(sslFactory.sslManagersProvider.peerCertificate)

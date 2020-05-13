@@ -15,7 +15,7 @@ import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 
-class PemManagerProviders(config: Config) extends SslManagersProvider {
+final class PemManagerProviders(config: Config) extends SslManagersProvider {
   // TODO: support password-protected PKCS#8
   private val SSLKeyFile: String = config.getString("key-file")
   private val SSLCertFile: String = config.getString("cert-file")
