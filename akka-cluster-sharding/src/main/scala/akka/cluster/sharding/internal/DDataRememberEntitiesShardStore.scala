@@ -63,11 +63,6 @@ private[akka] object DDataRememberEntitiesShardStore {
 
 /**
  * INTERNAL API
- *
- * TODO would it be worth responding with a subset of the ids that have been updated? See if the Shard
- * could continue with anything in that case
- *
- * FIXME write isolated tests for this class
  */
 @InternalApi
 private[akka] final class DDataRememberEntitiesShardStore(
@@ -186,7 +181,6 @@ private[akka] final class DDataRememberEntitiesShardStore(
         context.become(idle)
       } else {
         context.become(waitingForUpdates(requestor, allIds, remaining))
-
       }
 
     case UpdateTimeout(_, Some(ids: Set[EntityId] @unchecked)) =>

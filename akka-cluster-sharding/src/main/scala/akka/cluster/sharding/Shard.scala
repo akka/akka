@@ -344,7 +344,6 @@ private[akka] class Shard(
   def waitForAsyncWrite(entityIds: Set[EntityId], command: RememberEntitiesShardStore.Command)(
       whenDone: Set[EntityId] => Unit): Unit = {
 
-//    log.info("waiting for async write {} {} {}", entityIds, command, rememberEntitiesStore)
     rememberEntitiesStore match {
       case None =>
         whenDone(entityIds)
@@ -364,14 +363,12 @@ private[akka] class Shard(
         def waitingForUpdate(pendingStarts: Map[EntityId, Option[ActorRef]]): Receive = {
           // none of the current impls will send back a partial update, yet!
           case RememberEntitiesShardStore.UpdateDone(ids) if ids == ids =>
-//            log.error("Update of [{}] {} done", entityIds, command)
             timers.cancel(RememberEntityTimeoutKey)
             whenDone(entityIds)
             if (pendingStarts.isEmpty) {
               context.become(idle)
               unstashAll()
             } else {
-//              log.error("Batching starting entities: {}", pendingStarts)
               startEntities(pendingStarts)
               // FIXME what if all these are already in entities? Need a become idle/unstashAll
             }
@@ -395,11 +392,8 @@ private[akka] class Shard(
           case msg if extractEntityId.isDefinedAt(msg) =>
             val (id, _) = extractEntityId(msg)
             if (entityIds.contains(id)) {
-//              log.error("Entity id already know about, delivering or stashing")
               deliverMessage(msg, sender(), OptionVal.Some(entityIds))
             } else {
-//              log.error("New entity id, adding to batch to start next")
-//              appendToMessageBuffer(id, msg, sender())
               stash()
               context.become(waitingForUpdate(pendingStarts + (id -> None)))
             }
@@ -438,7 +432,8 @@ private[akka] class Shard(
     case RestartEntities(ids) => restartEntities(ids)
   }
 
-  // this could be because of a new message or due to a new message
+  // this could be because of a start message or due to a new message for the entity
+  // if it is a start entity then start entity ack is sent after it is created
   private def startEntities(entities: Map[EntityId, Option[ActorRef]]): Unit = {
     val alreadyStarted = entities.filterKeys(entity => entityIds(entity))
     val needStarting = entities -- alreadyStarted.keySet
@@ -471,7 +466,7 @@ private[akka] class Shard(
     if (ack.shardId != shardId && entityIds(ack.entityId)) {
       log.debug("Entity [{}] previously owned by shard [{}] started in shard [{}]", ack.entityId, shardId, ack.shardId)
 
-      waitForAsyncWrite(Set(ack.entityId), RememberEntitiesShardStore.RemoveEntity(ack.entityId)) { _ =>
+      waitForAsyncWrite(ack.entityId, RememberEntitiesShardStore.RemoveEntity(ack.entityId)) { _ =>
         entityIds = entityIds - ack.entityId
         messageBuffers.remove(ack.entityId)
       }
@@ -545,7 +540,7 @@ private[akka] class Shard(
         context.system.scheduler.scheduleOnce(entityRestartBackoff, self, RestartEntity(id))
       } else {
         // FIXME optional wait for completion as optimization where stops are not critical
-        waitForAsyncWrite(Set(id), RememberEntitiesShardStore.RemoveEntity(id))(_ => passivateCompleted(id))
+        waitForAsyncWrite(id, RememberEntitiesShardStore.RemoveEntity(id))(_ => passivateCompleted(id))
       }
     }
 
@@ -591,7 +586,7 @@ private[akka] class Shard(
     entityIds = entityIds - entityId
     if (hasBufferedMessages) {
       log.debug("Entity stopped after passivation [{}], but will be started again due to buffered messages", entityId)
-      waitForAsyncWrite(Set(entityId), RememberEntitiesShardStore.AddEntities(Set(entityId))) { _ =>
+      waitForAsyncWrite(entityId, RememberEntitiesShardStore.AddEntities(Set(entityId))) { _ =>
         sendMsgBuffer(entityId)
       }
     } else {

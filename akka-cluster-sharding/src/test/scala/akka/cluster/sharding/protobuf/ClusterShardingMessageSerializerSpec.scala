@@ -13,6 +13,7 @@ import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore.EntitiesStarted
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 
@@ -33,8 +34,6 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
     val ref = serializer.fromBinary(blob, serializer.manifest(obj))
     ref should ===(obj)
   }
-
-  // FIXME, add tests for entity started now gets turned into entities started
 
   "ClusterShardingMessageSerializer" must {
 
@@ -76,8 +75,15 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
     }
 
     "be able to serialize PersistentShard domain events" in {
-      checkSerialization(EventSourcedRememberEntitiesStore.EntityStarted("e1"))
+      checkSerialization(EventSourcedRememberEntitiesStore.EntitiesStarted(Set("e1", "e2")))
       checkSerialization(EventSourcedRememberEntitiesStore.EntityStopped("e1"))
+    }
+
+    "be able to deserialize old entity started event into entities started" in {
+      import akka.cluster.sharding.protobuf.msg.{ ClusterShardingMessages => sm }
+
+      val asBytes = sm.EntityStarted.newBuilder().setEntityId("e1").build().toByteArray
+      SerializationExtension(system).deserialize(asBytes, 13, "CB").get shouldEqual EntitiesStarted(Set("e1"))
     }
 
     "be able to serialize GetShardStats" in {

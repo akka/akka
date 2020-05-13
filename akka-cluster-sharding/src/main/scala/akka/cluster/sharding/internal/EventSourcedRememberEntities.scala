@@ -58,11 +58,8 @@ private[akka] object EventSourcedRememberEntitiesStore {
   final case class State private[akka] (entities: Set[EntityId] = Set.empty) extends ClusterShardingSerializable
 
   /**
-   * TODO remove this and just turn it into an EntitiesStarted
-   * `State` change for starting an entity in this `Shard`
+   * `State` change for starting a set of entities in this `Shard`
    */
-  final case class EntityStarted(entityId: EntityId) extends StateChange
-
   final case class EntitiesStarted(entities: Set[String]) extends StateChange
 
   case object StartedAck
@@ -100,7 +97,6 @@ private[akka] final class EventSourcedRememberEntitiesStore(
   override def snapshotPluginId: String = settings.snapshotPluginId
 
   override def receiveRecover: Receive = {
-    case EntityStarted(id)                 => state = state.copy(state.entities + id)
     case EntitiesStarted(ids)              => state = state.copy(state.entities ++ ids)
     case EntityStopped(id)                 => state = state.copy(state.entities - id)
     case SnapshotOffer(_, snapshot: State) => state = snapshot

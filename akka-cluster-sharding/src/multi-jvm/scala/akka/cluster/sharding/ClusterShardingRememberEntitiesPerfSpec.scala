@@ -91,9 +91,9 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
   lazy val region3 = ClusterSharding(system).shardRegion("Entity3")
 
   // use 5 for "real" testing
-  private val nrIterations = 5
+  private val nrIterations = 2
   // use 5 for "real" testing
-  private val numberOfMessagesFactor = 5
+  private val numberOfMessagesFactor = 1
 
   s"Cluster sharding with remember entities performance" must {
 

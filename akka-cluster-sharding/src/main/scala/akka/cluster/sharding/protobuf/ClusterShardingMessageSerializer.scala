@@ -41,11 +41,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   import ShardCoordinator.Internal._
   import Shard.{ CurrentShardState, GetCurrentShardState }
   import Shard.{ GetShardStats, ShardStats }
-  import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore.{
-    State => EntityState,
-    EntityStarted,
-    EntityStopped
-  }
+  import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore.{ State => EntityState, EntityStopped }
 
   private final val BufferSize = 1024 * 4
 
@@ -202,7 +198,6 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
 
   override def manifest(obj: AnyRef): String = obj match {
     case _: EntityState     => EntityStateManifest
-    case _: EntityStarted   => EntityStartedManifest
     case _: EntitiesStarted => EntitiesStartedManifest
     case _: EntityStopped   => EntityStoppedManifest
 
@@ -275,8 +270,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case GracefulShutdownReq(ref) =>
       actorRefMessageToProto(ref).toByteArray
 
-    case m: EntityState => entityStateToProto(m).toByteArray
-//    case m: EntityStarted => entityStartedToProto(m).toByteArray
+    case m: EntityState     => entityStateToProto(m).toByteArray
     case m: EntitiesStarted => entitiesStartedToProto(m).toByteArray
     case m: EntityStopped   => entityStoppedToProto(m).toByteArray
 
@@ -409,9 +403,6 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
 
   private def entityStateFromBinary(bytes: Array[Byte]): EntityState =
     EntityState(sm.EntityState.parseFrom(bytes).getEntitiesList.asScala.toSet)
-
-//  private def entityStartedToProto(evt: EntityStarted): sm.EntityStarted =
-//    sm.EntityStarted.newBuilder().setEntityId(evt.entityId).build()
 
   private def entityStartedFromBinary(bytes: Array[Byte]): EntitiesStarted =
     EntitiesStarted(Set(sm.EntityStarted.parseFrom(bytes).getEntityId))

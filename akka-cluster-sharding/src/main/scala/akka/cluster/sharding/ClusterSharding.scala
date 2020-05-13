@@ -751,8 +751,6 @@ private[akka] class ClusterShardingGuardian extends Actor {
         import settings.role
         import settings.tuningParameters.coordinatorFailureBackoff
 
-        println(s"CHECK ${settings.rememberEntities} ${settings.stateStoreMode} ${settings.rememberEntitiesStore}")
-
         val rep = replicator(settings)
         val rememberEntitiesStoreProvider: Option[RememberEntitiesProvider] =
           if (!settings.rememberEntities) None
