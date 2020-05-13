@@ -15,8 +15,8 @@ import com.typesafe.config.Config
  * INTERNAL API
  */
 @InternalApi private[akka] object SecureRandomFactory {
-  def createSecureRandom(config:Config, log: MarkerLoggingAdapter): SecureRandom = {
-    createSecureRandom( config.getString("random-number-generator"), log)
+  def createSecureRandom(config: Config, log: MarkerLoggingAdapter): SecureRandom = {
+    createSecureRandom(config.getString("random-number-generator"), log)
   }
   def createSecureRandom(randomNumberGenerator: String, log: MarkerLoggingAdapter): SecureRandom = {
     val rng = randomNumberGenerator match {

@@ -88,7 +88,8 @@ private[tcp] final class SslFactory(
   private def requireMutualAuthentication()(engine: SSLEngine): SSLEngine = {
     if (SSLRequireMutualAuthentication) engine.setNeedClientAuth(true)
     else
-      log.info(LogMarker.Security,
+      log.info(
+        LogMarker.Security,
         "mTLS (aka TLS Client Authentication) is disabled. See Akka reference documentation for more information.")
     engine
   }

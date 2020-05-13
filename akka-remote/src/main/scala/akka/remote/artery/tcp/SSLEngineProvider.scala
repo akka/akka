@@ -65,11 +65,13 @@ class SslTransportException(message: String, cause: Throwable) extends RuntimeEx
  *
  * Subclass may override protected methods to replace certain parts, such as key and trust manager.
  */
-@deprecated("Subclasses of akka.remote.artery.tcp.ConfigSSLEngineProvider should be " +
+@deprecated(
+  "Subclasses of akka.remote.artery.tcp.ConfigSSLEngineProvider should be " +
   "reimplemented preferring composition over inheritance. See akka.remote.artery.tcp.ssl.ConfigSSLEngineProvider " +
-  "for an example.", "2.6.6")
+  "for an example.",
+  "2.6.6")
 class ConfigSSLEngineProvider(protected val config: Config, protected val log: MarkerLoggingAdapter)
-  extends SSLEngineProvider {
+    extends SSLEngineProvider {
 
   def this(system: ActorSystem) =
     this(
@@ -203,7 +205,7 @@ object SSLEngineProviderSetup {
    * is created rather than creating one from configured class name.
    */
   def create(
-              sslEngineProvider: java.util.function.Function[ExtendedActorSystem, SSLEngineProvider]): SSLEngineProviderSetup =
+      sslEngineProvider: java.util.function.Function[ExtendedActorSystem, SSLEngineProvider]): SSLEngineProviderSetup =
     apply(sys => sslEngineProvider(sys))
 
 }
