@@ -5,6 +5,7 @@
 package akka.stream.impl.io
 
 import java.nio.ByteBuffer
+
 import javax.net.ssl._
 import javax.net.ssl.SSLEngineResult.HandshakeStatus
 import javax.net.ssl.SSLEngineResult.HandshakeStatus._
@@ -21,6 +22,8 @@ import akka.stream.TLSProtocol._
 import akka.stream.impl._
 import akka.stream.impl.FanIn.InputBunch
 import akka.stream.impl.FanOut.OutputBunch
+import akka.stream.impl.fusing.ActorGraphInterpreter
+import akka.stream.snapshot.StreamSnapshotImpl
 import akka.util.ByteString
 
 /**
@@ -441,7 +444,10 @@ import akka.util.ByteString
     }
   }
 
-  override def receive = inputBunch.subreceive.orElse[Any, Unit](outputBunch.subreceive)
+  override def receive = inputBunch.subreceive.orElse[Any, Unit](outputBunch.subreceive).orElse {
+    case ActorGraphInterpreter.Snapshot =>
+      sender() ! StreamSnapshotImpl(self.path, Seq.empty, Seq.empty)
+  }
 
   initialPhase(2, bidirectional)
 

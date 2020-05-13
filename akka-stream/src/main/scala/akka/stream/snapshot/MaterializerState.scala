@@ -170,8 +170,9 @@ final private[akka] case class StreamSnapshotImpl(
     self: ActorPath,
     activeInterpreters: Seq[RunningInterpreter],
     newShells: Seq[UninitializedInterpreter])
-    extends StreamSnapshot
-    with HideImpl
+    extends StreamSnapshot {
+  override def toString: String = s"StreamSnapshot($self, $activeInterpreters, $newShells)"
+}
 
 /**
  * INTERNAL API
