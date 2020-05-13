@@ -17,14 +17,14 @@ import javax.net.ssl.SSLSession
 
 import scala.concurrent.duration._
 
-// TODO: rename
+// TODO: rename this class (rename the settings namespace!)
 final class TlsMagicSSLEngineProvider(protected val config: Config, protected val log: MarkerLoggingAdapter)
     extends SSLEngineProvider {
 
   def this(system: ActorSystem) =
     this(
       system.settings.config
-      // TODO: when renaming, review the namespace in config
+      // TODO: when renaming the class, review the namespace in config
         .getConfig("akka.remote.artery.ssl.tls-magic-engine"),
       Logging.withMarker(system, classOf[TlsMagicSSLEngineProvider].getName))
 
