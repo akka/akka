@@ -14,7 +14,7 @@ import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.typed.ClusterShardingSettings
-import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModeDData
+import akka.cluster.sharding.typed.ClusterShardingSettings.{ RememberEntitiesStoreModeDData, StateStoreModeDData }
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.ShardingMessageExtractor
 import akka.cluster.sharding.typed.scaladsl
@@ -130,6 +130,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
         Duration.Zero, // passivation disabled
         shardingBaseSettings.shardRegionQueryTimeout,
         StateStoreModeDData,
+        RememberEntitiesStoreModeDData, // not used as remembered entities is off
         shardingBaseSettings.tuningParameters,
         shardingBaseSettings.coordinatorSingletonSettings)
     }

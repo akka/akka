@@ -117,3 +117,8 @@ message CurrentShardRegionState {
   repeated ShardState shards = 1;
   repeated string failed = 2;
 }
+
+message RememberedShardState {
+    repeated string shardId = 1;
+    optional bool marker = 2;
+}

@@ -19,6 +19,7 @@ import akka.actor.ExtendedActorSystem
 import akka.cluster.sharding.Shard
 import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.protobuf.msg.{ ClusterShardingMessages => sm }
+import akka.cluster.sharding.internal.EventSourcedRememberShards.{ MigrationMarker, State => RememberShardsState }
 import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
@@ -90,6 +91,9 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   private val GetShardRegionStateManifest = "FC"
   private val ShardStateManifest = "FD"
   private val CurrentShardRegionStateManifest = "FE"
+
+  private val EventSourcedRememberShardsMigrationMarkerManifest = "SM"
+  private val EventSourcedRememberShardsState = "SS"
 
   private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] => AnyRef](
     EntityStateManifest -> entityStateFromBinary,
@@ -170,8 +174,8 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     CurrentRegionsManifest -> { bytes =>
       currentRegionsFromBinary(bytes)
     },
-    StartEntityManifest -> { startEntityFromBinary(_) },
-    StartEntityAckManifest -> { startEntityAckFromBinary(_) },
+    StartEntityManifest -> { startEntityFromBinary },
+    StartEntityAckManifest -> { startEntityAckFromBinary },
     GetCurrentShardStateManifest -> { _ =>
       GetCurrentShardState
     },
@@ -186,6 +190,12 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     },
     CurrentShardRegionStateManifest -> { bytes =>
       currentShardRegionStateFromBinary(bytes)
+    },
+    EventSourcedRememberShardsMigrationMarkerManifest -> { _ =>
+      MigrationMarker
+    },
+    EventSourcedRememberShardsState -> { bytes =>
+      rememberShardsStateFromBinary(bytes)
     })
 
   override def manifest(obj: AnyRef): String = obj match {
@@ -231,6 +241,9 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case GetShardRegionState        => GetShardRegionStateManifest
     case _: ShardState              => ShardStateManifest
     case _: CurrentShardRegionState => CurrentShardRegionStateManifest
+
+    case MigrationMarker        => EventSourcedRememberShardsMigrationMarkerManifest
+    case _: RememberShardsState => EventSourcedRememberShardsState
 
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
@@ -281,6 +294,9 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case m: ShardState              => shardStateToProto(m).toByteArray
     case m: CurrentShardRegionState => currentShardRegionStateToProto(m).toByteArray
 
+    case MigrationMarker        => Array.emptyByteArray
+    case m: RememberShardsState => rememberShardsStateToProto(m).toByteArray
+
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
@@ -292,6 +308,18 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
         throw new NotSerializableException(
           s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
     }
+
+  private def rememberShardsStateToProto(state: RememberShardsState): sm.RememberedShardState = {
+    val builder = sm.RememberedShardState.newBuilder()
+    builder.addAllShardId(state.shards.toList.asJava)
+    builder.setMarker(state.writtenMigrationMarker)
+    builder.build()
+  }
+
+  private def rememberShardsStateFromBinary(bytes: Array[Byte]): RememberShardsState = {
+    val proto = sm.RememberedShardState.parseFrom(bytes)
+    RememberShardsState(proto.getShardIdList.asScala.toSet, proto.getMarker)
+  }
 
   private def coordinatorStateToProto(state: State): sm.CoordinatorState = {
     val builder = sm.CoordinatorState.newBuilder()

@@ -22,8 +22,12 @@ import akka.persistence._
 import akka.cluster.ClusterEvent
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.sharding.ShardRegion.ShardId
-import akka.cluster.sharding.internal.RememberEntitiesCoordinatorStore
-import akka.cluster.sharding.internal.RememberEntitiesProvider
+import akka.cluster.sharding.internal.EventSourcedRememberShards.MigrationMarker
+import akka.cluster.sharding.internal.{
+  EventSourcedRememberShards,
+  RememberEntitiesCoordinatorStore,
+  RememberEntitiesProvider
+}
 import akka.event.BusLogging
 import akka.event.Logging
 import akka.util.PrettyDuration._
@@ -343,7 +347,8 @@ object ShardCoordinator {
     }
 
     /**
-     * Persistent state of the event sourced ShardCoordinator.
+     * State of the shard coordinator.
+     * Was also used as the persistent state in the old persistent coordinator.
      */
     @SerialVersionUID(1L) final case class State private[akka] (
         // region for each shard
@@ -351,6 +356,7 @@ object ShardCoordinator {
         // shards for each region
         regions: Map[ActorRef, Vector[ShardId]] = Map.empty,
         regionProxies: Set[ActorRef] = Set.empty,
+        // Only used if remembered entities is enabled
         unallocatedShards: Set[ShardId] = Set.empty,
         rememberEntities: Boolean = false)
         extends ClusterShardingSerializable {
@@ -991,6 +997,9 @@ class PersistentShardCoordinator(
   override def snapshotPluginId: String = settings.snapshotPluginId
 
   override def receiveRecover: Receive = {
+    case MigrationMarker | SnapshotOffer(_, _: EventSourcedRememberShards.State) =>
+      throw new IllegalStateException(
+        "state-store is set to persistence but a migration has taken place to remember-entities-store=eventsourced. You can not downgrade.")
     case evt: DomainEvent =>
       log.debug("receiveRecover {}", evt)
       evt match {

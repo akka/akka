@@ -210,23 +210,24 @@ See the API documentation of @scala[`akka.cluster.sharding.ShardAllocationStrate
 
 See @ref:[Cluster Sharding concepts](cluster-sharding-concepts.md).
 
-## Sharding State Store Mode
+## Sharding State 
 
 There are two cluster sharding states managed:
 
 1. @ref:[ShardCoordinator State](cluster-sharding-concepts.md#shardcoordinator-state) - the `Shard` locations
-1. @ref:[Remembering Entities](#remembering-entities) - the entities in each `Shard`, which is optional, and disabled by default
+1. @ref:[Remembering Entities](#remembering-entities) - the active shards and the entities in each `Shard`, which is optional, and disabled by default
  
-For these, there are currently two modes which define how these states are stored:
+
+### State Store Mode 
+
+For shard coordinator state, there are two modes which define how these states are stored.
 
 * @ref:[Distributed Data Mode](#distributed-data-mode) - uses Akka @ref:[Distributed Data](distributed-data.md) (CRDTs) (the default)
 * @ref:[Persistence Mode](#persistence-mode) - (deprecated) uses Akka @ref:[Persistence](persistence.md) (Event Sourcing)
 
 @@include[cluster.md](../includes/cluster.md) { #sharding-persistence-mode-deprecated }
- 
-Changing the mode requires @ref:[a full cluster restart](../additional/rolling-updates.md#cluster-sharding-configuration-change).
 
-### Distributed Data Mode
+#### Distributed Data Mode
 
 This mode is enabled with configuration (enabled by default):
 
@@ -237,9 +238,6 @@ akka.cluster.sharding.state-store-mode = ddata
 The state of the `ShardCoordinator` is replicated across the cluster but is not durable, not stored to disk.
 The `ShardCoordinator` state replication is handled by @ref:[Distributed Data](distributed-data.md) with `WriteMajority`/`ReadMajority` consistency.
 When all nodes in the cluster have been stopped, the state is no longer needed and dropped.
-
-The state of @ref:[Remembering Entities](#remembering-entities) is durable and stored to
-disk. This means remembered entities are restarted even after a complete (non-rolling) cluster restart when the disk is still available.
 
 Cluster Sharding uses its own Distributed Data `Replicator` per node. 
 If using roles with sharding there is one `Replicator` per role, which enables a subset of
@@ -252,9 +250,9 @@ The settings for Distributed Data are configured in the section
 `akka.cluster.sharding.distributed-data`. It's not possible to have different
 `distributed-data` settings for different sharding entity types.
 
-### Persistence Mode
+#### Persistence Mode
 
-This mode is enabled with configuration:
+Enable persistence with configuration:
 
 ```
 akka.cluster.sharding.state-store-mode = persistence
@@ -262,14 +260,65 @@ akka.cluster.sharding.state-store-mode = persistence
 
 Since it is running in a cluster @ref:[Persistence](persistence.md) must be configured with a distributed journal.
 
-@@@ note
+@@@ warning 
 
-Persistence mode for @ref:[Remembering Entities](#remembering-entities) will be replaced by a pluggable data access API with storage implementations,
-see @github[#27763](#27763).
-New sharding applications should no longer choose persistence mode. Existing users of persistence mode
-[can eventually migrate to the replacement options](https://github.com/akka/akka/issues/26177). 
+Persistence mode for @ref:[Remembering Entities](#remembering-entities) has been replaced by a remember entities state mode. It should not be
+used for new projects and existing projects should migrate as soon as possible.
 
 @@@
+
+### Remember Entities State Store 
+
+For remember entities state store the options are:
+
+1. `ddata` 
+1. `eventsourced` 
+
+#### Distributed Data Mode
+
+Enable ddata mode with (enabled by default):
+
+```
+akka.cluster.sharding.remember-entities-store = ddata
+```
+
+The state of @ref:[Remembering Entities](#remembering-entities) is durable and stored to
+disk. This means remembered entities are restarted even after a complete (non-rolling) cluster restart when the disk is still available.
+
+If you are running in an environment that doesn't have access to disk between restarts you can either disable the durable storage in
+ddata by setting:
+
+```
+akka.cluster.sharding.distributed-data.durable.keys = []
+```
+
+To support remembering entities in this type of environment after a full cluster shutdown use the `eventsourced` remember entities store instead.
+
+#### Event sourced mode
+
+Enable `eventsourced` mode with:
+
+```
+akka.cluster.sharding.remember-entities-store = eventsourced
+```
+
+This mode uses @ref:[Event Sourcing](./persistence.md) to store the active shards and active entities for each shard so a persistence and snapshot plugin must be configured.
+
+```
+akka.cluster.sharding.journal-plugin-id = <plugin>
+akka.cluster.sharding.snapshot-plugin-id = <plugin>
+```
+
+### Migrating from Persistence mode
+
+Persistence mode for shard coordinator state is deprecated. If not using remembered entities you can migrate to ddata with a full cluster restart.
+
+If using remembered entities there are two migration options: 
+
+* `ddata` for the state store and `ddata` for remembering entities. All remembered entities will be lost after a full cluster restart.
+* `ddata` for the state store and `eventsourced` for remembering entities. The new `eventsourced` remembering entities store will read the data written by the old `persistence` mode so your remembered entities will be remembered.
+
+Once you have migrated you can not go back to the old persistence store.
 
 ## Passivation
 
