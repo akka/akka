@@ -34,6 +34,8 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
     ref should ===(obj)
   }
 
+  // FIXME, add tests for entity started now gets turned into entities started
+
   "ClusterShardingMessageSerializer" must {
 
     "be able to serialize ShardCoordinator snapshot State" in {

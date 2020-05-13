@@ -46,6 +46,10 @@ message EntityStarted {
   required string entityId = 1;
 }
 
+message EntitiesStarted {
+    repeated string entityId = 1;
+}
+
 message EntityStopped {
   required string entityId = 1;
 }
