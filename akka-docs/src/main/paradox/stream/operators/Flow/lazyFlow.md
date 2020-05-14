@@ -15,8 +15,7 @@ Defers `Flow` creation and materialization until when the first element arrives 
 that the stream behaves as if the nested flow replaced the `lazyFlow`.
 The nested `Flow` will not be created if the outer flow completes or fails before any elements arrive.
 
-Note that asynchronous boundaries and many other operators in the stream may do pre-fetching or trigger demand causing an element
-and therefore creation of the inner flow earlier than you would expect.
+Note that asynchronous boundaries and many other operators in the stream may do pre-fetching or trigger demand and thereby making an early element come throught the stream leading to creation of the inner flow earlier than you would expect.
 
 The materialized value of the `Flow` is a @scala[`Future`]@java[`CompletionStage`] that is completed with the 
 materialized value of the nested flow once that is constructed.
