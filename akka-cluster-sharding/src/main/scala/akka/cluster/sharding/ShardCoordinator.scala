@@ -978,6 +978,9 @@ abstract class ShardCoordinator(
 /**
  * Singleton coordinator that decides where to allocate shards.
  *
+ * Users can migrate to using DData to store state then either event sourcing or ddata to store
+ * the remembered entities.
+ *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 @deprecated("Use `ddata` mode, persistence mode is deprecated.", "2.6.0")
@@ -1102,6 +1105,9 @@ private[akka] object DDataShardCoordinator {
 /**
  * INTERNAL API
  * Singleton coordinator (with state based on ddata) that decides where to allocate shards.
+ *
+ * The plan is for this to be the only type of ShardCoordinator. A full cluster shutdown will rely
+ * on remembered entities to re-initialize and reallocate the existing shards.
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */

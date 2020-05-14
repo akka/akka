@@ -59,6 +59,7 @@ class PersistentClusterShardingRememberEntitiesSpecConfig(rememberEntities: Bool
       rememberEntities)
 class DDataClusterShardingRememberEntitiesSpecConfig(rememberEntities: Boolean)
     extends ClusterShardingRememberEntitiesSpecConfig(ClusterShardingSettings.StateStoreModeDData, rememberEntities)
+
 class DDataClusterShardingEventSourcedRememberEntitiesSpecConfig(rememberEntities: Boolean)
     extends ClusterShardingRememberEntitiesSpecConfig(
       ClusterShardingSettings.StateStoreModeDData,

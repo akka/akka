@@ -32,20 +32,25 @@ object ClusterShardingRememberEntitiesPerfSpec {
     case id: Int => (id.toString, id)
   }
 
-  val extractShardId: ShardRegion.ExtractShardId = msg =>
-    msg match {
-      case _: Int                     => "0" // only one shard
-      case ShardRegion.StartEntity(_) => "0"
-    }
+  val extractShardId: ShardRegion.ExtractShardId = {
+    case _: Int                     => "0" // only one shard
+    case ShardRegion.StartEntity(_) => "0"
+  }
 
 }
 
-object ClusterShardingRememberEntitiesPerfSpecConfig extends MultiNodeClusterShardingConfig(additionalConfig = s"""
+object ClusterShardingRememberEntitiesPerfSpecConfig
+    extends MultiNodeClusterShardingConfig(
+      rememberEntities = true,
+      additionalConfig = s"""
     akka.testconductor.barrier-timeout = 3 minutes
     akka.remote.artery.advanced.outbound-message-queue-size = 10000
     akka.remote.artery.advanced.maximum-frame-size = 512 KiB
     # comment next line to enable durable lmdb storage
     akka.cluster.sharding.distributed-data.durable.keys = []
+    akka.cluster.sharding {
+      remember-entities = on
+    }
     """) {
 
   val first = role("first")

@@ -30,7 +30,8 @@ import akka.persistence.SnapshotSelectionCriteria
 private[akka] final class EventSourcedRememberEntitiesProvider(typeName: String, settings: ClusterShardingSettings)
     extends RememberEntitiesProvider {
 
-  // this is backed by an actor using the same events as for state-store-mode=persistence
+  // this is backed by an actor using the same events, at the serailisation level, as the now removed PersistentShard when state-store-mode=persistence
+  // new events can be added but the old events should continue to be handled
   override def shardStoreProps(shardId: ShardId): Props =
     EventSourcedRememberEntitiesStore.props(typeName, shardId, settings)
 
@@ -42,15 +43,14 @@ private[akka] final class EventSourcedRememberEntitiesProvider(typeName: String,
 
 /**
  * INTERNAL API
+ *
  */
 private[akka] object EventSourcedRememberEntitiesStore {
 
   /**
    * A case class which represents a state change for the Shard
    */
-  sealed trait StateChange extends ClusterShardingSerializable {
-    val entityId: EntityId
-  }
+  sealed trait StateChange extends ClusterShardingSerializable
 
   /**
    * Persistent state of the Shard.
@@ -58,9 +58,9 @@ private[akka] object EventSourcedRememberEntitiesStore {
   final case class State private[akka] (entities: Set[EntityId] = Set.empty) extends ClusterShardingSerializable
 
   /**
-   * `State` change for starting an entity in this `Shard`
+   * `State` change for starting a set of entities in this `Shard`
    */
-  final case class EntityStarted(entityId: EntityId) extends StateChange
+  final case class EntitiesStarted(entities: Set[String]) extends StateChange
 
   case object StartedAck
 
@@ -97,7 +97,7 @@ private[akka] final class EventSourcedRememberEntitiesStore(
   override def snapshotPluginId: String = settings.snapshotPluginId
 
   override def receiveRecover: Receive = {
-    case EntityStarted(id)                 => state = state.copy(state.entities + id)
+    case EntitiesStarted(ids)              => state = state.copy(state.entities ++ ids)
     case EntityStopped(id)                 => state = state.copy(state.entities - id)
     case SnapshotOffer(_, snapshot: State) => state = snapshot
     case RecoveryCompleted =>
@@ -105,15 +105,15 @@ private[akka] final class EventSourcedRememberEntitiesStore(
   }
 
   override def receiveCommand: Receive = {
-    case RememberEntitiesShardStore.AddEntity(id) =>
-      persist(EntityStarted(id)) { started =>
-        sender() ! RememberEntitiesShardStore.UpdateDone(id)
-        state.copy(state.entities + started.entityId)
+    case RememberEntitiesShardStore.AddEntities(ids) =>
+      persist(EntitiesStarted(ids)) { started =>
+        sender() ! RememberEntitiesShardStore.UpdateDone(ids)
+        state.copy(state.entities ++ started.entities)
         saveSnapshotWhenNeeded()
       }
     case RememberEntitiesShardStore.RemoveEntity(id) =>
       persist(EntityStopped(id)) { stopped =>
-        sender() ! RememberEntitiesShardStore.UpdateDone(id)
+        sender() ! RememberEntitiesShardStore.UpdateDone(Set(id))
         state.copy(state.entities - stopped.entityId)
         saveSnapshotWhenNeeded()
       }

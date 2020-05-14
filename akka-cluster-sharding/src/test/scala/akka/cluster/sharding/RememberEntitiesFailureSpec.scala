@@ -88,15 +88,16 @@ object RememberEntitiesFailureSpec {
   object FakeShardStoreActor {
     def props(shardId: ShardId): Props = Props(new FakeShardStoreActor(shardId))
 
-    case class FailAddEntity(entityId: EntityId, whichWay: Fail)
+    case class FailAddEntity(entityId: Set[EntityId], whichWay: Fail)
     case class FailRemoveEntity(entityId: EntityId, whichWay: Fail)
-    case class ClearFail(entityId: EntityId)
+    case class ClearAddFail(entityId: Set[EntityId])
+    case class ClearRemoveFail(entityId: EntityId)
   }
   class FakeShardStoreActor(shardId: ShardId) extends Actor with ActorLogging {
     import FakeShardStoreActor._
 
     implicit val ec = context.system.dispatcher
-    private var failAddEntity = Map.empty[EntityId, Fail]
+    private var failAddEntity = Map.empty[Set[EntityId], Fail]
     private var failRemoveEntity = Map.empty[EntityId, Fail]
 
     context.system.eventStream.publish(ShardStoreCreated(self, shardId))
@@ -109,7 +110,7 @@ object RememberEntitiesFailureSpec {
           case Some(CrashStore) => throw TestException("store crash on GetEntities")
           case Some(StopStore)  => context.stop(self)
         }
-      case RememberEntitiesShardStore.AddEntity(entityId) =>
+      case RememberEntitiesShardStore.AddEntities(entityId) =>
         failAddEntity.get(entityId) match {
           case None             => sender ! RememberEntitiesShardStore.UpdateDone(entityId)
           case Some(NoResponse) => log.debug("Sending no response for AddEntity")
@@ -118,7 +119,7 @@ object RememberEntitiesFailureSpec {
         }
       case RememberEntitiesShardStore.RemoveEntity(entityId) =>
         failRemoveEntity.get(entityId) match {
-          case None             => sender ! RememberEntitiesShardStore.UpdateDone(entityId)
+          case None             => sender ! RememberEntitiesShardStore.UpdateDone(Set(entityId))
           case Some(NoResponse) => log.debug("Sending no response for RemoveEntity")
           case Some(CrashStore) => throw TestException("store crash on AddEntity")
           case Some(StopStore)  => context.stop(self)
@@ -129,8 +130,10 @@ object RememberEntitiesFailureSpec {
       case FailRemoveEntity(id, whichWay) =>
         failRemoveEntity = failRemoveEntity.updated(id, whichWay)
         sender() ! Done
-      case ClearFail(id) =>
+      case ClearAddFail(id) =>
         failAddEntity = failAddEntity - id
+        sender() ! Done
+      case ClearRemoveFail(id) =>
         failRemoveEntity = failRemoveEntity - id
         sender() ! Done
     }
@@ -243,7 +246,7 @@ class RememberEntitiesFailureSpec
         probe.expectMsg("hello-1")
 
         // hit shard with other entity that will fail
-        shardStore.tell(FakeShardStoreActor.FailAddEntity("11", wayToFail), storeProbe.ref)
+        shardStore.tell(FakeShardStoreActor.FailAddEntity(Set("11"), wayToFail), storeProbe.ref)
         storeProbe.expectMsg(Done)
 
         sharding.tell(EntityEnvelope(11, "hello-11"), probe.ref)
@@ -256,7 +259,7 @@ class RememberEntitiesFailureSpec
         }
 
         val stopFailingProbe = TestProbe()
-        shardStore.tell(FakeShardStoreActor.ClearFail("11"), stopFailingProbe.ref)
+        shardStore.tell(FakeShardStoreActor.ClearAddFail(Set("11")), stopFailingProbe.ref)
         stopFailingProbe.expectMsg(Done)
 
         // it takes a while - timeout hits and then backoff
@@ -292,7 +295,7 @@ class RememberEntitiesFailureSpec
         // FIXME restart without passivating is not saved and re-started again without storing the stop so this isn't testing anything
         sharding ! EntityEnvelope(1, "stop")
 
-        shard1Store.tell(FakeShardStoreActor.ClearFail("1"), storeProbe.ref)
+        shard1Store.tell(FakeShardStoreActor.ClearRemoveFail("1"), storeProbe.ref)
         storeProbe.expectMsg(Done)
 
         // it takes a while - timeout hits and then backoff
@@ -329,7 +332,7 @@ class RememberEntitiesFailureSpec
 
         sharding ! EntityEnvelope(1, "graceful-stop")
 
-        shard1Store.tell(FakeShardStoreActor.ClearFail("1"), storeProbe.ref)
+        shard1Store.tell(FakeShardStoreActor.ClearRemoveFail("1"), storeProbe.ref)
         storeProbe.expectMsg(Done)
 
         // it takes a while?
