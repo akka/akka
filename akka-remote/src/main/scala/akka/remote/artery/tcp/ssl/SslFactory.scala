@@ -8,6 +8,7 @@ import java.io.FileNotFoundException
 import java.io.IOException
 import java.security.GeneralSecurityException
 import java.security.SecureRandom
+import java.util.concurrent.atomic.AtomicReference
 
 import akka.annotation.InternalApi
 import akka.event.LogMarker
@@ -18,6 +19,9 @@ import com.typesafe.config.Config
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
+
 /**
  * TODO: I'm not sure this class should be private. Users may write their SSLEngineProviders and use it.
  * INTERNAL API
@@ -25,16 +29,17 @@ import javax.net.ssl.SSLEngine
 @InternalApi
 private[tcp] final class SslFactory(
     config: Config,
-// This is a val since it's useful to traceback from an SSLContext to the SslManagersProvider used to create it.
-    val sslManagersProvider: SslManagersProvider,
-    prng: SecureRandom)(log: MarkerLoggingAdapter) {
+    sslManagersProviderFactory: (Config) => SslManagersProvider,
+    prng: SecureRandom,
+    sessionVerifierFactory: SslManagersProvider => SessionVerifier)(log: MarkerLoggingAdapter) {
 
   private val SSLProtocol: String = config.getString("protocol")
-
   private val SSLEnabledAlgorithms: Set[String] =
     immutableSeq(config.getStringList("enabled-algorithms")).toSet
   private val SSLRequireMutualAuthentication: Boolean = config.getBoolean("require-mutual-authentication")
   private val HostnameVerification: Boolean = config.getBoolean("hostname-verification")
+  private val SSLContextCacheTime: FiniteDuration =
+    config.getDuration("ssl-context-cache-ttl").toMillis.millis
 
   // log hostname verification warning once
   if (HostnameVerification)
@@ -44,10 +49,29 @@ private[tcp] final class SslFactory(
       LogMarker.Security,
       "TLS/SSL hostname verification is disabled. See Akka reference documentation for more information.")
 
-  val sslContext: SSLContext = {
+//  val sslManagersProvider: SslManagersProvider = getCache.sslManagersProvider
+  val sessionVerifier: SessionVerifier = getCache.sessionVerifier
+
+  val sslContext: SSLContext = getCache.sslContext
+  private val contextRef = new AtomicReference[Option[Cache]](None)
+  private def getCache: Cache = {
+    contextRef.get() match {
+      case Some(cache: Cache) if cache.expires.hasTimeLeft() =>
+        contextRef.get().get
+      case _ =>
+        val managersProvider: SslManagersProvider = sslManagersProviderFactory(config)
+        val sessionVerifier: SessionVerifier = sessionVerifierFactory(managersProvider)
+        val context = constructContext(managersProvider)
+        val cache = new Cache(context, managersProvider, sessionVerifier, SSLContextCacheTime.fromNow)
+        contextRef.set(Some(cache))
+        cache
+    }
+  }
+
+  private def constructContext(managersProvider: SslManagersProvider) = {
     try {
       val ctx: SSLContext = SSLContext.getInstance(SSLProtocol)
-      ctx.init(sslManagersProvider.keyManagers, sslManagersProvider.trustManagers, prng)
+      ctx.init(managersProvider.keyManagers, managersProvider.trustManagers, prng)
       ctx
     } catch {
       case e: FileNotFoundException =>
@@ -110,3 +134,13 @@ private[tcp] final class SslFactory(
   }
 
 }
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[ssl] class Cache(
+    val sslContext: SSLContext,
+    val sslManagersProvider: SslManagersProvider,
+    val sessionVerifier: SessionVerifier,
+    val expires: Deadline)
