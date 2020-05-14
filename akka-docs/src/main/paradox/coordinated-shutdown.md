@@ -67,7 +67,7 @@ Tasks should typically be registered as early as possible after system startup. 
 the coordinated shutdown tasks that have been registered will be performed but tasks that are
 added too late will not be run.
 
-To start the coordinated shutdown process you can invoke @scala[`run`] @java[`runAll`] on the `CoordinatedShutdown`
+To start the coordinated shutdown process you can either invoke `terminate()` on the `ActorSystem`, or @scala[`run`] @java[`runAll`] on the `CoordinatedShutdown`
 extension and pass it class implementing @apidoc[CoordinatedShutdown.Reason] for informational purposes:
 
 Scala

@@ -1,8 +1,8 @@
 package docs.actor.typed
 
 import akka.Done
-import akka.actor.{Cancellable, CoordinatedShutdown}
-import akka.actor.typed.{ActorRef, ActorSystem, Behavior}
+import akka.actor.{ Cancellable, CoordinatedShutdown }
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.util.Timeout
@@ -31,7 +31,6 @@ class CoordinatedActorShutdownSpec {
 
   //#coordinated-shutdown-addTask
 
-
   def root = Behaviors.setup { context =>
     implicit val system = context.system
     val myActor = context.spawn(MyActor.behavior, "my-actor")
@@ -52,13 +51,13 @@ class CoordinatedActorShutdownSpec {
     def cleanup(): Unit = {}
     import system.executionContext
     //#coordinated-shutdown-cancellable
-    val c: Cancellable = CoordinatedShutdown(system).addCancellableTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "cleanup") {
-      () =>
+    val c: Cancellable =
+      CoordinatedShutdown(system).addCancellableTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "cleanup") { () =>
         Future {
           cleanup()
           Done
         }
-    }
+      }
 
     // much later...
     c.cancel()
@@ -73,7 +72,9 @@ class CoordinatedActorShutdownSpec {
     // don't run this
     def dummy(): Unit = {
       //#coordinated-shutdown-run
-      val done: Future[Done] = CoordinatedShutdown(system).run(CoordinatedShutdown.UnknownReason)
+      case object UserInitiatedShutdown extends CoordinatedShutdown.Reason
+
+      val done: Future[Done] = CoordinatedShutdown(system).run(UserInitiatedShutdown)
       //#coordinated-shutdown-run
     }
   }

@@ -109,8 +109,15 @@ public class CoordinatedActorShutdownTest {
         // don't run this
         if (false) {
             // #coordinated-shutdown-run
+            class UserInitiatedShutdown implements CoordinatedShutdown.Reason {
+                @Override
+                public String toString() {
+                    return "UserInitiatedShutdown";
+                }
+            }
+
             CompletionStage<Done> done =
-                    CoordinatedShutdown.get(system).runAll(CoordinatedShutdown.unknownReason());
+                    CoordinatedShutdown.get(system).runAll(new UserInitiatedShutdown());
             // #coordinated-shutdown-run
         }
     }
