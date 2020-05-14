@@ -28,8 +28,9 @@ final class ConfigSSLEngineProvider(protected val config: Config, protected val 
 
   private val rng: SecureRandom = SecureRandomFactory.createSecureRandom(config, log)
   // Creating a new factory requires creating a new managersProvider so certificates are freshly read.
-  private val managersProvider = new JksManagersProvider(config)
-  private lazy val sslFactory: SslFactory = new SslFactory(config, managersProvider, rng)(log)
+  def providerFactory: (Config) => SslManagersProvider = new JksManagersProvider(_)
+  val sessionVerifierFactory: SslManagersProvider => SessionVerifier = _ => NoopSessionVerifier
+  private lazy val sslFactory: SslFactory = new SslFactory(config, providerFactory, rng, sessionVerifierFactory)(log)
 
   override def createServerSSLEngine(hostname: String, port: Int): SSLEngine =
     sslFactory.createServerSSLEngine(hostname, port)
@@ -38,9 +39,8 @@ final class ConfigSSLEngineProvider(protected val config: Config, protected val 
     sslFactory.createClientSSLEngine(hostname, port)
 
   override def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable] =
-    NoopSessionVerifier.verifyClientSession(hostname, session)
+    sslFactory.sessionVerifier.verifyClientSession(hostname, session)
 
   override def verifyServerSession(hostname: String, session: SSLSession): Option[Throwable] =
-    NoopSessionVerifier.verifyServerSession(hostname, session)
-
+    sslFactory.sessionVerifier.verifyServerSession(hostname, session)
 }

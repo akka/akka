@@ -5,15 +5,7 @@
 package akka.remote.artery
 package tcp
 
-import java.io.ByteArrayOutputStream
 import java.security.NoSuchAlgorithmException
-import java.util.zip.GZIPOutputStream
-import javax.net.ssl.SSLEngine
-
-import scala.concurrent.duration._
-
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 
 import akka.actor.ActorIdentity
 import akka.actor.ActorPath
@@ -26,6 +18,11 @@ import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import javax.net.ssl.SSLEngine
+
+import scala.concurrent.duration._
 
 class TlsTcpWithDefaultConfigSpec extends TlsTcpSpec(ConfigFactory.empty())
 
@@ -121,43 +118,6 @@ abstract class TlsTcpSpec(config: Config)
   "Artery with TLS/TCP" must {
 
     if (isSupported) {
-
-      "generate random" in {
-        val provider = new ConfigSSLEngineProvider(system)
-        val rng = provider.createSecureRandom()
-        val bytes = Array.ofDim[Byte](16)
-        // Reproducer of the specific issue described at
-        // https://doc.akka.io/docs/akka/current/security/2018-08-29-aes-rng.html
-        // awaitAssert just in case we are very unlucky to get same sequence more than once
-        awaitAssert {
-          val randomBytes = List
-            .fill(10) {
-              rng.nextBytes(bytes)
-              bytes.toVector
-            }
-            .toSet
-          randomBytes.size should ===(10)
-        }
-      }
-
-      "have random numbers that are not compressable, because then they are not random" in {
-        val provider = new ConfigSSLEngineProvider(system)
-        val rng = provider.createSecureRandom()
-
-        val randomData = new Array[Byte](1024 * 1024)
-        rng.nextBytes(randomData)
-
-        val baos = new ByteArrayOutputStream()
-        val gzipped = new GZIPOutputStream(baos)
-        try gzipped.write(randomData)
-        finally gzipped.close()
-
-        val compressed = baos.toByteArray
-        // random data should not be compressible
-        // Another reproducer of https://doc.akka.io/docs/akka/current/security/2018-08-29-aes-rng.html
-        // with the broken implementation the compressed size was <5k
-        compressed.size should be > randomData.length
-      }
 
       "deliver messages" in {
         systemB.actorOf(TestActors.echoActorProps, "echo")
