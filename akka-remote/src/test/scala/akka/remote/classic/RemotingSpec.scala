@@ -73,7 +73,7 @@ object RemotingSpec {
       key-password = "changeme"
       trust-store-password = "changeme"
       protocol = "TLSv1.2"
-      enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
+      enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA, TLS_DHE_RSA_WITH_AES_256_GCM_SHA384]
     }
 
     common-netty-settings {
