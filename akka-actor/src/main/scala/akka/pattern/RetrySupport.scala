@@ -142,7 +142,7 @@ trait RetrySupport {
   }
 }
 
-object RetrySupport extends RetrySupport {
+object RetrySupport {
 
   private def retry[T](attempt: () => Future[T], maxAttempts: Int, attempted: Int)(
       implicit ec: ExecutionContext): Future[T] =
