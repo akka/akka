@@ -13,8 +13,15 @@ import java.security.GeneralSecurityException
 import java.security.KeyStore
 import java.security.SecureRandom
 
-import scala.util.Try
-
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
+import akka.actor.setup.Setup
+import akka.event.LogMarker
+import akka.event.Logging
+import akka.event.MarkerLoggingAdapter
+import akka.japi.Util.immutableSeq
+import akka.stream.TLSRole
+import akka.util.ccompat._
 import com.typesafe.config.Config
 import javax.net.ssl.KeyManager
 import javax.net.ssl.KeyManagerFactory
@@ -24,16 +31,7 @@ import javax.net.ssl.SSLSession
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.actor.setup.Setup
-import akka.annotation.InternalApi
-import akka.event.LogMarker
-import akka.event.Logging
-import akka.event.MarkerLoggingAdapter
-import akka.japi.Util.immutableSeq
-import akka.stream.TLSRole
-import akka.util.ccompat._
+import scala.util.Try
 
 @ccompatUsedUntil213
 trait SSLEngineProvider {
