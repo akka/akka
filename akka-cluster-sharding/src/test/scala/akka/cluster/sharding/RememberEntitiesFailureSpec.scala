@@ -8,7 +8,6 @@ import akka.Done
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Timers }
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
-import akka.cluster.sharding.RememberEntitiesFailureSpec.FakeShardStoreActor.Delayed
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.RememberEntitiesCoordinatorStore
@@ -160,6 +159,7 @@ object RememberEntitiesFailureSpec {
   }
   class FakeCoordinatorStoreActor extends Actor with ActorLogging with Timers {
     import FakeCoordinatorStoreActor._
+    import FakeShardStoreActor.Delayed
 
     context.system.eventStream.publish(CoordinatorStoreCreated(context.self))
 
