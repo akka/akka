@@ -30,7 +30,7 @@ import akka.persistence.SnapshotSelectionCriteria
 private[akka] final class EventSourcedRememberEntitiesProvider(typeName: String, settings: ClusterShardingSettings)
     extends RememberEntitiesProvider {
 
-  // this is backed by an actor using the same events, at the serailisation level, as the now removed PersistentShard when state-store-mode=persistence
+  // this is backed by an actor using the same events, at the serialization level, as the now removed PersistentShard when state-store-mode=persistence
   // new events can be added but the old events should continue to be handled
   override def shardStoreProps(shardId: ShardId): Props =
     EventSourcedRememberEntitiesStore.props(typeName, shardId, settings)
@@ -97,7 +97,7 @@ private[akka] final class EventSourcedRememberEntitiesStore(
   override def snapshotPluginId: String = settings.snapshotPluginId
 
   override def receiveRecover: Receive = {
-    case EntitiesStarted(ids)              => state = state.copy(state.entities ++ ids)
+    case EntitiesStarted(ids)              => state = state.copy(state.entities.union(ids))
     case EntityStopped(id)                 => state = state.copy(state.entities - id)
     case SnapshotOffer(_, snapshot: State) => state = snapshot
     case RecoveryCompleted =>
