@@ -5,6 +5,7 @@
 package akka.cluster.sharding
 
 import java.net.URLEncoder
+import java.util
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
@@ -122,7 +123,7 @@ private[akka] object Shard {
   case object RememberedButNotCreated extends EntityState
 
   /**
-   * When remember entities is enabled an entity is in this stage while
+   * When remember entities is enabled an entity is in this state while
    * its existence is being recorded in the remember entities store.
    */
   case object Remembering extends EntityState
@@ -198,66 +199,71 @@ private[akka] class Shard(
 
   final class Entities {
 
-    private var entities: Map[EntityId, EntityState] = Map.empty
+    private val entities: java.util.Map[EntityId, EntityState] = new util.HashMap[EntityId, EntityState]()
     // needed to look up entity by reg when a Passivating is recieved
     private var byRef: Map[ActorRef, EntityId] = Map.empty
 
     def alreadyRemembered(set: Set[EntityId]): Entities = {
-      entities = set.toList.map((_, RememberedButNotCreated)).toMap
+      set.foreach { id =>
+        entities.put(id, RememberedButNotCreated)
+      }
       this
     }
     def remembering(entity: EntityId) = {
-      entities += entity -> Remembering
+      entities.put(entity, Remembering)
     }
     def terminated(ref: ActorRef): Entities = {
       val id = byRef(ref)
-      entities = entities.updated(id, Stopped)
+      entities.put(id, Stopped)
       byRef -= ref
       this
     }
     def waitingForRestart(id: EntityId) = {
-      entities = entities.updated(id, WaitingForRestart)
+      entities.put(id, WaitingForRestart)
     }
     def removeEntity(entityId: EntityId): Entities = {
-      entities(entityId) match {
+      entities.get(entityId) match {
         case wr: WithRef =>
           byRef -= wr.ref
         case _ =>
       }
-      entities -= entityId
+      entities.remove(entityId)
       this
     }
     def addEntity(entityId: EntityId, ref: ActorRef): Entities = {
-      entities += (entityId -> Active(ref))
+      entities.put(entityId, Active(ref))
       byRef += (ref -> entityId)
       this
     }
-    def entity(entityId: EntityId): Option[ActorRef] = entities.get(entityId) match {
-      case Some(wr: WithRef) => Some(wr.ref)
-      case _ =>
-        None
+    def entity(entityId: EntityId): OptionVal[ActorRef] = entities.get(entityId) match {
+      case wr: WithRef => OptionVal.Some(wr.ref)
+      case _           => OptionVal.None
+
     }
-    def entityState(id: EntityId): Option[EntityState] = {
-      entities.get(id)
+    def entityState(id: EntityId): OptionVal[EntityState] = {
+      OptionVal(entities.get(id))
     }
     def entityId(ref: ActorRef): Option[EntityId] = byRef.get(ref)
     def isPassivating(id: EntityId): Boolean = {
-      entities.get(id).exists(_.isInstanceOf[Passivating])
+      entities.get(id) match {
+        case _: Passivating => true
+        case _              => false
+      }
     }
     def entityPassivating(entityId: EntityId): Entities = {
       if (VerboseDebug) log.debug("{} passivating, all entities: {}", entityId, entities)
       entities.get(entityId) match {
-        case Some(wf: WithRef) =>
-          entities = entities.updated(entityId, Passivating(wf.ref))
+        case wf: WithRef =>
+          entities.put(entityId, Passivating(wf.ref))
         case other =>
           throw new IllegalStateException(
-            s"Tried to passivate entity without an actor ref ${entityId}. Current state ${other}")
+            s"Tried to passivate entity without an actor ref $entityId. Current state $other")
       }
       this
     }
     def activeEntities(): Set[ActorRef] = byRef.keySet
-    def allEntityIds: Set[EntityId] = entities.keySet
-    def entityIdExists(id: EntityId): Boolean = entities.contains(id)
+    def activeEntityIds(): Set[EntityId] = byRef.values.toSet
+    def entityIdExists(id: EntityId): Boolean = entities.get(id) != null
     def size: Int = entities.size
   }
 
@@ -427,15 +433,15 @@ private[akka] class Shard(
   }
 
   def sendToRememberStore(entityId: EntityId, command: RememberEntitiesShardStore.Command)(
-      whenDone: EntityId => Unit): Unit = {
-    sendToRememberStore(Set(entityId), command)(_ => whenDone(entityId))
+      whenDone: () => Unit): Unit = {
+    sendToRememberStore(Set(entityId), command)(() => whenDone())
   }
 
   def sendToRememberStore(entityIds: Set[EntityId], command: RememberEntitiesShardStore.Command)(
-      whenDone: Set[EntityId] => Unit): Unit = {
+      whenDone: () => Unit): Unit = {
     rememberEntitiesStore match {
       case None =>
-        whenDone(entityIds)
+        whenDone()
 
       case Some(store) =>
         if (VerboseDebug) log.debug("Update of [{}] [{}] triggered", entityIds, command)
@@ -456,7 +462,7 @@ private[akka] class Shard(
           case RememberEntitiesShardStore.UpdateDone(ids) =>
             if (VerboseDebug) log.debug("Update done for ids {}", ids)
             timers.cancel(RememberEntityTimeoutKey)
-            whenDone(ids)
+            whenDone()
             if (pendingStarts.isEmpty) {
               if (VerboseDebug) log.debug("No pending entities, going to idle")
               context.become(idle)
@@ -552,7 +558,7 @@ private[akka] class Shard(
     }
 
     if (needStarting.nonEmpty) {
-      sendToRememberStore(needStarting.keySet, RememberEntitiesShardStore.AddEntities(needStarting.keySet)) { _ =>
+      sendToRememberStore(needStarting.keySet, RememberEntitiesShardStore.AddEntities(needStarting.keySet)) { () =>
         needStarting.foreach {
           case (entityId, requestor) =>
             getOrCreateEntity(entityId)
@@ -567,7 +573,7 @@ private[akka] class Shard(
     if (ack.shardId != shardId && entities.entityIdExists(ack.entityId)) {
       log.debug("Entity [{}] previously owned by shard [{}] started in shard [{}]", ack.entityId, shardId, ack.shardId)
 
-      sendToRememberStore(ack.entityId, RememberEntitiesShardStore.RemoveEntity(ack.entityId)) { _ =>
+      sendToRememberStore(ack.entityId, RememberEntitiesShardStore.RemoveEntity(ack.entityId)) { () =>
         entities.removeEntity(ack.entityId)
         messageBuffers.remove(ack.entityId)
       }
@@ -586,7 +592,7 @@ private[akka] class Shard(
   }
 
   def receiveShardQuery(msg: ShardQuery): Unit = msg match {
-    case GetCurrentShardState => sender() ! CurrentShardState(shardId, entities.allEntityIds)
+    case GetCurrentShardState => sender() ! CurrentShardState(shardId, entities.activeEntityIds())
     case GetShardStats        => sender() ! ShardStats(shardId, entities.size)
   }
 
@@ -595,7 +601,7 @@ private[akka] class Shard(
     case None =>
       log.debug("HandOff shard [{}]", shardId)
 
-      if (entities.activeEntities().nonEmpty) {
+      if (entities.size > 0) {
         val entityHandOffTimeout = (settings.tuningParameters.handOffTimeout - 5.seconds).max(1.seconds)
         log.debug(
           "Starting HandOffStopper for shard [{}] to terminate [{}] entities.",
@@ -641,7 +647,7 @@ private[akka] class Shard(
         context.system.scheduler.scheduleOnce(entityRestartBackoff, self, RestartEntity(id))
       } else {
         // FIXME optional wait for completion as optimization where stops are not critical
-        sendToRememberStore(id, RememberEntitiesShardStore.RemoveEntity(id))(_ => passivateCompleted(id))
+        sendToRememberStore(id, RememberEntitiesShardStore.RemoveEntity(id))(() => passivateCompleted(id))
       }
     }
   }
@@ -687,7 +693,7 @@ private[akka] class Shard(
     entities.removeEntity(entityId)
     if (hasBufferedMessages) {
       log.debug("Entity stopped after passivation [{}], but will be started again due to buffered messages", entityId)
-      sendToRememberStore(entityId, RememberEntitiesShardStore.AddEntities(Set(entityId))) { _ =>
+      sendToRememberStore(entityId, RememberEntitiesShardStore.AddEntities(Set(entityId))) { () =>
         sendMsgBuffer(entityId)
       }
     } else {
@@ -714,15 +720,15 @@ private[akka] class Shard(
           else stash()
         case _ =>
           entities.entityState(id) match {
-            case Some(Remembering) =>
+            case OptionVal.Some(Remembering) =>
               appendToMessageBuffer(id, msg, snd)
-            case Some(Passivating(_)) =>
+            case OptionVal.Some(Passivating(_)) =>
               appendToMessageBuffer(id, msg, snd)
-            case Some(Active(ref)) =>
+            case OptionVal.Some(Active(ref)) =>
               if (VerboseDebug) log.debug("Delivering message of type [{}] to [{}]", payload.getClass, id)
               touchLastMessageTimestamp(id)
               ref.tell(payload, snd)
-            case Some(RememberedButNotCreated) | Some(WaitingForRestart) =>
+            case OptionVal.Some(RememberedButNotCreated | WaitingForRestart) =>
               if (VerboseDebug)
                 log.debug(
                   "Delivering message of type [{}] to [{}] (starting because known but not running)",
@@ -732,14 +738,13 @@ private[akka] class Shard(
               val actor = getOrCreateEntity(id)
               touchLastMessageTimestamp(id)
               actor.tell(payload, snd)
-            case None if !entityIdsWaitingForWrite.isDefined =>
+            case OptionVal.None if entityIdsWaitingForWrite.isEmpty =>
               // No actor running and no write in progress, start actor and deliver message when started
-              // Note; we only do this if remembering, otherwise the buffer is an overhead
               if (VerboseDebug)
                 log.debug("Buffering message [{}] to [{}] and starting actor", payload.getClass, id)
               appendToMessageBuffer(id, msg, snd)
-              sendToRememberStore(id, RememberEntitiesShardStore.AddEntities(Set(id)))(sendMsgBuffer)
-            case None =>
+              sendToRememberStore(id, RememberEntitiesShardStore.AddEntities(Set(id)))(() => sendMsgBuffer(id))
+            case OptionVal.None =>
               // No actor running and write in progress for some other entity id, stash message for deliver when
               // unstash happens on async write complete
               if (VerboseDebug)
@@ -757,8 +762,8 @@ private[akka] class Shard(
   @InternalStableApi
   def getOrCreateEntity(id: EntityId): ActorRef = {
     entities.entity(id) match {
-      case Some(child) => child
-      case None =>
+      case OptionVal.Some(child) => child
+      case OptionVal.None =>
         val name = URLEncoder.encode(id, "utf-8")
         val a = context.actorOf(entityProps(id), name)
         context.watchWith(a, EntityTerminated(id, a))
