@@ -13,7 +13,7 @@ Defers creation and materialization of a `Flow` until there is a first element.
 
 Defers `Flow` creation and materialization until when the first element arrives at the `lazyFlow` from upstream. After
 that the stream behaves as if the nested flow replaced the `lazyFlow`.
-The nested `Flow` will not be created if there are no elements on completion or failure of up or downstream.
+The nested `Flow` will not be created if the outer flow completes or fails before any elements arrive.
 
 Note that asynchronous boundaries and many other operators in the stream may do pre-fetching or trigger demand causing an element
 and therefore creation of the inner flow earlier than you would expect.
@@ -65,4 +65,3 @@ all materialization and what is even worse, unsafely across threads.
 **completes** when upstream completes and all futures have been completed and all elements have been emitted
 
 @@@
-
