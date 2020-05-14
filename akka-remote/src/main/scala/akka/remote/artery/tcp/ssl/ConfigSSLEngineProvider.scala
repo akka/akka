@@ -12,7 +12,6 @@ import akka.event.MarkerLoggingAdapter
 import akka.remote.artery.tcp.SSLEngineProvider
 import akka.remote.artery.tcp.SecureRandomFactory
 import com.typesafe.config.Config
-import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
 
@@ -27,10 +26,10 @@ final class ConfigSSLEngineProvider(protected val config: Config, protected val 
       system.settings.config.getConfig("akka.remote.artery.ssl.config-ssl-engine"),
       Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName))
 
-  private val keyStoreProviders = new JksManagersProvider(config)
   private val rng: SecureRandom = SecureRandomFactory.createSecureRandom(config, log)
-  private lazy val sslFactory: SslFactory = new SslFactory(config, keyStoreProviders, rng)(log)
-  private lazy val sslContext: SSLContext = sslFactory.sslContext
+  // Creating a new factory requires creating a new managersProvider so certificates are freshly read.
+  private val managersProvider = new JksManagersProvider(config)
+  private lazy val sslFactory: SslFactory = new SslFactory(config, managersProvider, rng)(log)
 
   override def createServerSSLEngine(hostname: String, port: Int): SSLEngine =
     sslFactory.createServerSSLEngine(hostname, port)

@@ -46,9 +46,8 @@ private[tcp] final class SslFactory(
 
   val sslContext: SSLContext = {
     try {
-      val rng = prng
       val ctx: SSLContext = SSLContext.getInstance(SSLProtocol)
-      ctx.init(sslManagersProvider.keyManagers, sslManagersProvider.trustManagers, rng)
+      ctx.init(sslManagersProvider.keyManagers, sslManagersProvider.trustManagers, prng)
       ctx
     } catch {
       case e: FileNotFoundException =>
@@ -80,12 +79,12 @@ private[tcp] final class SslFactory(
 
   // 2. customize the engine depending on the peer role
   private val forServer: SSLEngine => SSLEngine =
-    requireMutualAuthentication()
+    requireMutualAuthentication
   private val forClient: SSLEngine => SSLEngine =
-    setClientMode().andThen(withHostnameVerification())
+    setClientMode.andThen(withHostnameVerification)
 
   // Server-side
-  private def requireMutualAuthentication()(engine: SSLEngine): SSLEngine = {
+  private def requireMutualAuthentication: SSLEngine => SSLEngine = { engine =>
     if (SSLRequireMutualAuthentication) engine.setNeedClientAuth(true)
     else
       log.info(
@@ -95,13 +94,13 @@ private[tcp] final class SslFactory(
   }
 
   //Client-side
-  private def setClientMode()(engine: SSLEngine): SSLEngine = {
+  private def setClientMode: SSLEngine => SSLEngine = { engine =>
     engine.setUseClientMode(true)
     engine
   }
 
   //Client-side
-  private def withHostnameVerification()(engine: SSLEngine): SSLEngine = {
+  private def withHostnameVerification: SSLEngine => SSLEngine = { engine =>
     if (HostnameVerification) {
       val sslParams = sslContext.getDefaultSSLParameters
       sslParams.setEndpointIdentificationAlgorithm("HTTPS")

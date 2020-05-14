@@ -7,7 +7,6 @@ package akka.remote.artery.tcp.ssl
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.security.KeyStore
-import java.security.cert.Certificate
 import java.security.cert.X509Certificate
 
 import akka.annotation.InternalApi
@@ -19,12 +18,15 @@ import javax.net.ssl.TrustManagerFactory
 
 import scala.util.Try
 
-// TODO: docs
+/**
+ * TODO
+ * Implementations of this trait may memoize the keys and certificates. Clients should create a new
+ * instance to guarantee data is reloaded or use implementation-specific mechanisms to force a reload.
+ */
 trait SslManagersProvider {
   def trustManagers: Array[TrustManager]
   def keyManagers: Array[KeyManager]
 
-  val caCertificate: Certificate
   val peerCertificate: X509Certificate
 }
 
@@ -37,18 +39,35 @@ final class JksManagersProvider private[tcp] (config: Config) extends SslManager
   val SSLKeyPassword: String = config.getString("key-password")
   val SSLTrustStorePassword: String = config.getString("trust-store-password")
 
-  val caCertificate: Certificate = ???
-  val peerCertificate: X509Certificate = ???
+  private def keyStore() = loadKeystore(SSLKeyStore, SSLKeyStorePassword)
 
-  def trustManagers: Array[TrustManager] = {
+  // Take the first non-CA certificate in the keyStore
+  // TODO: Improve this adding a setting so users can indicate the `alias` in the keyStore
+  //  containing the peer certificate
+  val peerCertificate: X509Certificate = {
+    import scala.collection.JavaConverters._
+    val ks = keyStore()
+    ks.aliases()
+      .asScala
+      .filter(ks.isCertificateEntry)
+      .map(ks.getCertificate)
+      .map(_.asInstanceOf[X509Certificate])
+      // BasicConstraints == -1 means it is a certificate that's not a CA
+      .filter(_.getBasicConstraints == -1)
+      .next()
+  }
+
+  // data is read once. To force a reload create a new instance of this SslManagersProvider
+  val trustManagers: Array[TrustManager] = {
     val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
     trustManagerFactory.init(loadKeystore(SSLTrustStore, SSLTrustStorePassword))
     trustManagerFactory.getTrustManagers
   }
 
-  def keyManagers: Array[KeyManager] = {
+  // data is read once. To force a reload create a new instance of this SslManagersProvider
+  val keyManagers: Array[KeyManager] = {
     val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
-    factory.init(loadKeystore(SSLKeyStore, SSLKeyStorePassword), SSLKeyPassword.toCharArray)
+    factory.init(keyStore(), SSLKeyPassword.toCharArray)
     factory.getKeyManagers
   }
 
