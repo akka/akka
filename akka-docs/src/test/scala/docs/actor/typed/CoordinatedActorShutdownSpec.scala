@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.actor.typed
 
 import akka.Done
@@ -31,7 +35,9 @@ class CoordinatedActorShutdownSpec {
 
   //#coordinated-shutdown-addTask
 
-  def root = Behaviors.setup { context =>
+  trait Message
+
+  def root: Behavior[Message] = Behaviors.setup[Message] { context =>
     implicit val system = context.system
     val myActor = context.spawn(MyActor.behavior, "my-actor")
     //#coordinated-shutdown-addTask
@@ -72,6 +78,10 @@ class CoordinatedActorShutdownSpec {
     // don't run this
     def dummy(): Unit = {
       //#coordinated-shutdown-run
+      // shut down with `ActorSystemTerminateReason`
+      system.terminate()
+
+      // or define a specific reason
       case object UserInitiatedShutdown extends CoordinatedShutdown.Reason
 
       val done: Future[Done] = CoordinatedShutdown(system).run(UserInitiatedShutdown)
