@@ -29,5 +29,9 @@ and failed with a `akka.stream.NeverMaterializedException` if the stream fails o
 
 **completes** when upstream completes and all futures have been completed and all elements have been emitted
 
+**cancels** when downstream cancels (keep reading)
+    The operator's default behaviour in case of downstream cancellation before nested flow materialization (future completion) is to cancel immediately.
+     This behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy.PropagateToNested]] attribute,
+    this will delay downstream cancellation until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
 @@@
 

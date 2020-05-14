@@ -439,6 +439,78 @@ object Attributes {
       strategy: CancellationStrategy.Strategy): CancellationStrategy.Strategy =
     CancellationStrategy.AfterDelay(delay, strategy)
 
+  /**
+   * Nested materialization cancellation strategy provides a way to configure the cancellation behavior of stages that materialize a nested flow.
+   *
+   * When cancelled before materializing their nested flows, these stages can either immediately cancel (default behaviour) without materializing the nested flow
+   * or wait for the nested flow to materialize and then propagate the cancellation signal through it.
+   *
+   * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] (and derivations such as [[akka.stream.scaladsl.Flow.lazyFutureFlow]]).
+   * These operators either delay the nested flow's materialization or wait for a future to complete before doing so,
+   * in this period of time they may receive a downstream cancellation signal. When this happens these operators will behave according to
+   * this [[Attribute]]: when set to true they will 'stash' the signal and later deliver it to the materialized nested flow
+   * , otherwise these stages will immediately cancel without materializing the nested flow.
+   */
+  @ApiMayChange
+  class NestedMaterializationCancellationPolicy private[NestedMaterializationCancellationPolicy] (
+      val propagateToNestedMaterialization: Boolean)
+      extends MandatoryAttribute
+
+  @ApiMayChange
+  object NestedMaterializationCancellationPolicy {
+
+    /**
+     * A [[NestedMaterializationCancellationPolicy]] that configures graph stages
+     * delaying nested flow materialization to cancel immediately when downstream cancels before
+     * nested flow materialization.
+     * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
+     */
+    val EagerCancellation = new NestedMaterializationCancellationPolicy(false)
+
+    /**
+     * A [[NestedMaterializationCancellationPolicy]] that configures graph stages
+     * delaying nested flow materialization to delay cancellation when downstream cancels before
+     * nested flow materialization. Once the nested flow is materialized it will be cancelled immediately.
+     * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
+     */
+    val PropagateToNested = new NestedMaterializationCancellationPolicy(true)
+
+    /**
+     * Default [[NestedMaterializationCancellationPolicy]],
+     * please see [[akka.stream.Attributes.NestedMaterializationCancellationPolicy.EagerCancellation()]] for details.
+     */
+    val Default = EagerCancellation
+  }
+
+  /**
+   * JAVA API
+   * A [[NestedMaterializationCancellationPolicy]] that configures graph stages
+   * delaying nested flow materialization to cancel immediately when downstream cancels before
+   * nested flow materialization.
+   * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
+   */
+  @ApiMayChange
+  def nestedMaterializationCancellationPolicyEagerCancellation(): NestedMaterializationCancellationPolicy =
+    NestedMaterializationCancellationPolicy.EagerCancellation
+
+  /**
+   * JAVA API
+   * A [[NestedMaterializationCancellationPolicy]] that configures graph stages
+   * delaying nested flow materialization to delay cancellation when downstream cancels before
+   * nested flow materialization. Once the nested flow is materialized it will be cancelled immediately.
+   * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
+   */
+  @ApiMayChange
+  def nestedMaterializationCancellationPolicyPropagateToNested(): NestedMaterializationCancellationPolicy =
+    NestedMaterializationCancellationPolicy.PropagateToNested
+
+  /**
+   * Default [[NestedMaterializationCancellationPolicy]],
+   * please see [[akka.stream.Attributes#nestedMaterializationCancellationPolicyEagerCancellation()]] for details.
+   */
+  def nestedMaterializationCancellationPolicyDefault(): NestedMaterializationCancellationPolicy =
+    NestedMaterializationCancellationPolicy.Default
+
   object LogLevels {
 
     /** Use to disable logging on certain operations when configuring [[Attributes#logLevels]] */
