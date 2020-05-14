@@ -12,6 +12,7 @@ import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InH
 import akka.util.OptionVal
 
 import scala.concurrent.{ Future, Promise }
+import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 
 @InternalApi private[akka] final class FutureFlow[In, Out, M](futureFlow: Future[Flow[In, Out, M]])
@@ -31,7 +32,7 @@ import scala.util.{ Failure, Success, Try }
       //seems like we must set handlers BEFORE preStart
       setHandlers(in, out, Initializing)
 
-      override def preStart(): Unit = {
+      override def preStart(): Unit =
         futureFlow.value match {
           case Some(tryFlow) =>
             Initializing.onFuture(tryFlow)
@@ -41,13 +42,10 @@ import scala.util.{ Failure, Success, Try }
             //in case both ports are closed before future completion
             setKeepGoing(true)
         }
-      }
 
-      override def postStop(): Unit = {
-        if (!innerMatValue.isCompleted) {
+      override def postStop(): Unit =
+        if (!innerMatValue.isCompleted)
           innerMatValue.failure(new AbruptStageTerminationException(this))
-        }
-      }
 
       object Initializing extends InHandler with OutHandler {
         // we don't expect a push since we bever pull upstream during initialization
@@ -93,49 +91,37 @@ import scala.util.{ Failure, Success, Try }
           subSource.setHandler {
             new OutHandler {
               override def onPull(): Unit = if (!isClosed(in)) tryPull(in)
-
               override def onDownstreamFinish(cause: Throwable): Unit = if (!isClosed(in)) cancel(in, cause)
             }
           }
           subSink.setHandler {
             new InHandler {
               override def onPush(): Unit = push(out, subSink.grab())
-
               override def onUpstreamFinish(): Unit = complete(out)
-
               override def onUpstreamFailure(ex: Throwable): Unit = fail(out, ex)
             }
           }
-          Try {
-            Source.fromGraph(subSource.source).viaMat(flow)(Keep.right).to(subSink.sink).run()(subFusingMaterializer)
-          } match {
-            case Success(matVal) =>
-              innerMatValue.success(matVal)
-              upstreamFailure match {
-                case OptionVal.Some(ex) =>
-                  subSource.fail(ex)
-                case OptionVal.None =>
-                  if (isClosed(in))
-                    subSource.complete()
-              }
-              downstreamCause match {
-                case OptionVal.Some(cause) =>
-                  subSink.cancel(cause)
-                case OptionVal.None =>
-                  if (isAvailable(out)) subSink.pull()
-              }
-              setHandlers(in, out, new InHandler with OutHandler {
-                override def onPull(): Unit = subSink.pull()
-
-                override def onDownstreamFinish(cause: Throwable): Unit = subSink.cancel(cause)
-
-                override def onPush(): Unit = subSource.push(grab(in))
-
-                override def onUpstreamFinish(): Unit = subSource.complete()
-
-                override def onUpstreamFailure(ex: Throwable): Unit = subSource.fail(ex)
-              })
-            case Failure(ex) =>
+          try {
+            val matVal =
+              Source.fromGraph(subSource.source).viaMat(flow)(Keep.right).to(subSink.sink).run()(subFusingMaterializer)
+            innerMatValue.success(matVal)
+            upstreamFailure match {
+              case OptionVal.Some(ex) => subSource.fail(ex)
+              case OptionVal.None     => if (isClosed(in)) subSource.complete()
+            }
+            downstreamCause match {
+              case OptionVal.Some(cause) => subSink.cancel(cause)
+              case OptionVal.None        => if (isAvailable(out)) subSink.pull()
+            }
+            setHandlers(in, out, new InHandler with OutHandler {
+              override def onPull(): Unit = subSink.pull()
+              override def onDownstreamFinish(cause: Throwable): Unit = subSink.cancel(cause)
+              override def onPush(): Unit = subSource.push(grab(in))
+              override def onUpstreamFinish(): Unit = subSource.complete()
+              override def onUpstreamFailure(ex: Throwable): Unit = subSource.fail(ex)
+            })
+          } catch {
+            case NonFatal(ex) =>
               innerMatValue.failure(new NeverMaterializedException(ex))
               failStage(ex)
           }
