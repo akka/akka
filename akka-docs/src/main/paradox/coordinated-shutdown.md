@@ -68,7 +68,7 @@ the coordinated shutdown tasks that have been registered will be performed but t
 added too late will not be run.
 
 To start the coordinated shutdown process you can either invoke `terminate()` on the `ActorSystem`, or @scala[`run`] @java[`runAll`] on the `CoordinatedShutdown`
-extension and pass it class implementing @apidoc[CoordinatedShutdown.Reason] for informational purposes:
+extension and pass it a class implementing @apidoc[CoordinatedShutdown.Reason] for informational purposes:
 
 Scala
 :  @@snip [snip](/akka-docs/src/test/scala/docs/actor/typed/CoordinatedActorShutdownSpec.scala) { #coordinated-shutdown-run }
