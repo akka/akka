@@ -26,6 +26,7 @@ import akka.cluster.sharding.internal.RememberEntitiesProvider
 import akka.cluster.sharding.internal.RememberEntityStarter
 import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
+import akka.event.LoggingAdapter
 import akka.pattern.pipe
 import akka.util.MessageBufferMap
 import akka.util.OptionVal
@@ -141,6 +142,79 @@ private[akka] object Shard {
   case object Stopped extends EntityState
 
   final case class EntityTerminated(id: EntityId, ref: ActorRef)
+
+  final class Entities(log: LoggingAdapter) {
+
+    private val entities: java.util.Map[EntityId, EntityState] = new util.HashMap[EntityId, EntityState]()
+    // needed to look up entity by reg when a Passivating is received
+    private var byRef = new util.HashMap[ActorRef, EntityId]()
+
+    def alreadyRemembered(set: Set[EntityId]): Unit = {
+      set.foreach { id =>
+        entities.put(id, RememberedButNotCreated)
+      }
+    }
+    def remembering(entity: EntityId): Unit = {
+      entities.put(entity, Remembering)
+    }
+    def terminated(ref: ActorRef): Unit = {
+      val id = byRef.get(ref)
+      entities.put(id, Stopped)
+      byRef.remove(id)
+    }
+    def waitingForRestart(id: EntityId): Unit = {
+      entities.put(id, WaitingForRestart)
+    }
+    def removeEntity(entityId: EntityId): Unit = {
+      entities.get(entityId) match {
+        case wr: WithRef =>
+          byRef.remove(wr.ref)
+        case _ =>
+      }
+      entities.remove(entityId)
+    }
+    def addEntity(entityId: EntityId, ref: ActorRef): Unit = {
+      entities.put(entityId, Active(ref))
+      byRef.put(ref, entityId)
+    }
+    def entity(entityId: EntityId): OptionVal[ActorRef] = entities.get(entityId) match {
+      case wr: WithRef => OptionVal.Some(wr.ref)
+      case _           => OptionVal.None
+
+    }
+    def entityState(id: EntityId): OptionVal[EntityState] = {
+      OptionVal(entities.get(id))
+    }
+
+    def entityId(ref: ActorRef): OptionVal[EntityId] = OptionVal(byRef.get(ref))
+
+    def isPassivating(id: EntityId): Boolean = {
+      entities.get(id) match {
+        case _: Passivating => true
+        case _              => false
+      }
+    }
+    def entityPassivating(entityId: EntityId): Unit = {
+      if (VerboseDebug) log.debug("{} passivating, all entities: {}", entityId, entities)
+      entities.get(entityId) match {
+        case wf: WithRef =>
+          entities.put(entityId, Passivating(wf.ref))
+        case other =>
+          throw new IllegalStateException(
+            s"Tried to passivate entity without an actor ref $entityId. Current state $other")
+      }
+    }
+
+    import akka.util.ccompat.JavaConverters._
+    // only called once during handoff
+    def activeEntities(): Set[ActorRef] = byRef.keySet.asScala.toSet
+
+    // only called for getting shard stats
+    def activeEntityIds(): Set[EntityId] = byRef.values.asScala.toSet
+
+    def entityIdExists(id: EntityId): Boolean = entities.get(id) != null
+    def size: Int = entities.size
+  }
 }
 
 /**
@@ -197,77 +271,7 @@ private[akka] class Shard(
     }
   }
 
-  final class Entities {
-
-    private val entities: java.util.Map[EntityId, EntityState] = new util.HashMap[EntityId, EntityState]()
-    // needed to look up entity by reg when a Passivating is recieved
-    private var byRef: Map[ActorRef, EntityId] = Map.empty
-
-    def alreadyRemembered(set: Set[EntityId]): Entities = {
-      set.foreach { id =>
-        entities.put(id, RememberedButNotCreated)
-      }
-      this
-    }
-    def remembering(entity: EntityId) = {
-      entities.put(entity, Remembering)
-    }
-    def terminated(ref: ActorRef): Entities = {
-      val id = byRef(ref)
-      entities.put(id, Stopped)
-      byRef -= ref
-      this
-    }
-    def waitingForRestart(id: EntityId) = {
-      entities.put(id, WaitingForRestart)
-    }
-    def removeEntity(entityId: EntityId): Entities = {
-      entities.get(entityId) match {
-        case wr: WithRef =>
-          byRef -= wr.ref
-        case _ =>
-      }
-      entities.remove(entityId)
-      this
-    }
-    def addEntity(entityId: EntityId, ref: ActorRef): Entities = {
-      entities.put(entityId, Active(ref))
-      byRef += (ref -> entityId)
-      this
-    }
-    def entity(entityId: EntityId): OptionVal[ActorRef] = entities.get(entityId) match {
-      case wr: WithRef => OptionVal.Some(wr.ref)
-      case _           => OptionVal.None
-
-    }
-    def entityState(id: EntityId): OptionVal[EntityState] = {
-      OptionVal(entities.get(id))
-    }
-    def entityId(ref: ActorRef): Option[EntityId] = byRef.get(ref)
-    def isPassivating(id: EntityId): Boolean = {
-      entities.get(id) match {
-        case _: Passivating => true
-        case _              => false
-      }
-    }
-    def entityPassivating(entityId: EntityId): Entities = {
-      if (VerboseDebug) log.debug("{} passivating, all entities: {}", entityId, entities)
-      entities.get(entityId) match {
-        case wf: WithRef =>
-          entities.put(entityId, Passivating(wf.ref))
-        case other =>
-          throw new IllegalStateException(
-            s"Tried to passivate entity without an actor ref $entityId. Current state $other")
-      }
-      this
-    }
-    def activeEntities(): Set[ActorRef] = byRef.keySet
-    def activeEntityIds(): Set[EntityId] = byRef.values.toSet
-    def entityIdExists(id: EntityId): Boolean = entities.get(id) != null
-    def size: Int = entities.size
-  }
-
-  private val entities = new Entities()
+  private val entities = new Entities(log)
 
   private var lastMessageTimestamp = Map.empty[EntityId, Long]
 
@@ -601,14 +605,14 @@ private[akka] class Shard(
     case None =>
       log.debug("HandOff shard [{}]", shardId)
 
-      if (entities.size > 0) {
+      // does conversion so only do once
+      val activeEntities = entities.activeEntities()
+      if (activeEntities.size > 0) {
         val entityHandOffTimeout = (settings.tuningParameters.handOffTimeout - 5.seconds).max(1.seconds)
-        log.debug(
-          "Starting HandOffStopper for shard [{}] to terminate [{}] entities.",
-          shardId,
-          entities.activeEntities().size)
-        handOffStopper = Some(context.watch(context.actorOf(
-          handOffStopperProps(shardId, replyTo, entities.activeEntities(), handOffStopMessage, entityHandOffTimeout))))
+        log.debug("Starting HandOffStopper for shard [{}] to terminate [{}] entities.", shardId, activeEntities.size)
+        handOffStopper = Some(
+          context.watch(context.actorOf(
+            handOffStopperProps(shardId, replyTo, activeEntities, handOffStopMessage, entityHandOffTimeout))))
 
         //During hand off we only care about watching for termination of the hand off stopper
         context.become {
@@ -654,7 +658,7 @@ private[akka] class Shard(
 
   private def passivate(entity: ActorRef, stopMessage: Any): Unit = {
     entities.entityId(entity) match {
-      case Some(id) =>
+      case OptionVal.Some(id) =>
         if (!messageBuffers.contains(id)) {
           if (VerboseDebug)
             log.debug("Passivation started for {}", entity)
@@ -665,7 +669,7 @@ private[akka] class Shard(
         } else {
           log.debug("Passivation already in progress for {}. Not sending stopMessage back to entity", entity)
         }
-      case None => log.debug("Unknown entity {}. Not sending stopMessage back to entity", entity)
+      case OptionVal.None => log.debug("Unknown entity {}. Not sending stopMessage back to entity", entity)
     }
   }
 
