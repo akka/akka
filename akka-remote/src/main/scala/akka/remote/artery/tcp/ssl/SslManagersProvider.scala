@@ -9,6 +9,7 @@ import java.nio.file.Paths
 import java.security.KeyStore
 import java.security.cert.X509Certificate
 
+import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import com.typesafe.config.Config
 import javax.net.ssl.KeyManager
@@ -27,30 +28,41 @@ trait SslManagersProvider {
   def trustManagers: Array[TrustManager]
   def keyManagers: Array[KeyManager]
 
-  val peerCertificate: X509Certificate
+  @ApiMayChange
+  val nodeCertificate: X509Certificate
 }
 
 // TODO: docs
-final class JksManagersProvider private[tcp] (config: Config) extends SslManagersProvider {
+final class JksManagersProvider private[tcp] (
+    val SSLKeyStore: String,
+    val SSLTrustStore: String,
+    val SSLKeyStorePassword: String,
+    val SSLKeyPassword: String,
+    val SSLTrustStorePassword: String)
+    extends SslManagersProvider {
+  def this(config: Config) {
+    this(
+      SSLKeyStore = config.getString("key-store"),
+      SSLTrustStore = config.getString("trust-store"),
+      SSLKeyStorePassword = config.getString("key-store-password"),
+      SSLKeyPassword = config.getString("key-password"),
+      SSLTrustStorePassword = config.getString("trust-store-password"))
+  }
 
-  val SSLKeyStore: String = config.getString("key-store")
-  val SSLTrustStore: String = config.getString("trust-store")
-  val SSLKeyStorePassword: String = config.getString("key-store-password")
-  val SSLKeyPassword: String = config.getString("key-password")
-  val SSLTrustStorePassword: String = config.getString("trust-store-password")
-
-  private def keyStore() = loadKeystore(SSLKeyStore, SSLKeyStorePassword)
+  private[ssl] def keyStore() = loadKeystore(SSLKeyStore, SSLKeyStorePassword)
 
   // Take the first non-CA certificate in the keyStore
   // TODO: Improve this adding a setting so users can indicate the `alias` in the keyStore
   //  containing the peer certificate
-  val peerCertificate: X509Certificate = {
-    import scala.collection.JavaConverters._
+  val nodeCertificate: X509Certificate = {
+    import collection.JavaConverters._
     val ks = keyStore()
     ks.aliases()
       .asScala
-      .filter(ks.isCertificateEntry)
-      .map(ks.getCertificate)
+      // extract all certificates from the store. Key entries in the keystore may have
+      // a certificate chain bound to the key so the method returns the last certificate
+      // in the chain (which is what we want anyway)
+      .flatMap(alias => Option(ks.getCertificate(alias)))
       .map(_.asInstanceOf[X509Certificate])
       // BasicConstraints == -1 means it is a certificate that's not a CA
       .filter(_.getBasicConstraints == -1)
@@ -67,7 +79,7 @@ final class JksManagersProvider private[tcp] (config: Config) extends SslManager
   // data is read once. To force a reload create a new instance of this SslManagersProvider
   val keyManagers: Array[KeyManager] = {
     val factory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
-    factory.init(keyStore(), SSLKeyPassword.toCharArray)
+    factory.init(keyStore, SSLKeyPassword.toCharArray)
     factory.getKeyManagers
   }
 

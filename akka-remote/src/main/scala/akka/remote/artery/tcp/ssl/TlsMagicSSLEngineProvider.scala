@@ -27,7 +27,7 @@ final class TlsMagicSSLEngineProvider(protected val config: Config, protected va
   val rng = new SecureRandom()
   def providerFactory: (Config) => SslManagersProvider = new PemManagersProvider(_)
   val sessionVerifierFactory: SslManagersProvider => SessionVerifier = smp =>
-    new PeerSubjectVerifier(smp.peerCertificate)
+    new PeerSubjectVerifier(smp.nodeCertificate)
   val sslFactory = new SslFactory(config, providerFactory, rng, sessionVerifierFactory)(log)
 
   override def createServerSSLEngine(hostname: String, port: Int): SSLEngine =

@@ -22,20 +22,28 @@ import javax.net.ssl.TrustManagerFactory
 
 import scala.util.Try
 
-final class PemManagersProvider(config: Config) extends SslManagersProvider {
+// TODO: docs
+final class PemManagersProvider private[tcp] (
+    val SSLKeyFile: String,
+    val SSLCertFile: String,
+    val SSLCACertFile: String)
+    extends SslManagersProvider {
   // TODO: support password-protected PKCS#8
-  private val SSLKeyFile: String = config.getString("key-file")
-  private val SSLCertFile: String = config.getString("cert-file")
-  private val SSLCACertFile: String = config.getString("ca-cert-file")
+  def this(config: Config) {
+    this(
+      SSLKeyFile = config.getString("key-file"),
+      SSLCertFile = config.getString("cert-file"),
+      SSLCACertFile = config.getString("ca-cert-file"))
+  }
 
   private val certFactory = CertificateFactory.getInstance("X.509")
 
   private val caCertificate: Certificate = loadCertificate(SSLCACertFile)
-  val peerCertificate: X509Certificate = loadCertificate(SSLCertFile).asInstanceOf[X509Certificate]
+  val nodeCertificate: X509Certificate = loadCertificate(SSLCertFile).asInstanceOf[X509Certificate]
 
   // data is read once. To force a reload create a new instance of this SslManagersProvider
   val trustManagers: Array[TrustManager] = {
-    val trustStore = KeyStore.getInstance(KeyStore.getDefaultType )
+    val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
     trustStore.load(null)
     trustStore.setCertificateEntry("cacert", caCertificate)
 
@@ -50,11 +58,11 @@ final class PemManagersProvider(config: Config) extends SslManagersProvider {
     val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
     keyStore.load(null)
     keyStore.setCertificateEntry("cacert", caCertificate)
-    keyStore.setCertificateEntry("cert", peerCertificate)
+    keyStore.setCertificateEntry("cert", nodeCertificate)
 
     // Load the private key
     val privateKey = PemManagersProvider.loadPrivateKey(new File(SSLKeyFile))
-    keyStore.setKeyEntry("private-key", privateKey, "changeit".toCharArray, Array(peerCertificate, caCertificate))
+    keyStore.setKeyEntry("private-key", privateKey, "changeit".toCharArray, Array(nodeCertificate, caCertificate))
 
     val kmf =
       KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
