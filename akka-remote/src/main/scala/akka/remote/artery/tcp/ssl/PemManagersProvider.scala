@@ -61,7 +61,7 @@ final class PemManagersProvider private[tcp] (
     keyStore.setCertificateEntry("cert", nodeCertificate)
 
     // Load the private key
-    val privateKey = PemManagersProvider.loadPrivateKey(new File(SSLKeyFile))
+    val privateKey = PemManagersProviderTools.loadPrivateKey(new File(SSLKeyFile))
     keyStore.setKeyEntry("private-key", privateKey, "changeit".toCharArray, Array(nodeCertificate, caCertificate))
 
     val kmf =
@@ -83,12 +83,12 @@ final class PemManagersProvider private[tcp] (
 
 // This is a stub for code introduced in https://github.com/akka/akka/pull/29039
 // TODO: remove
-object PemManagersProvider {
-  val loadPrivateKey: File => PrivateKey =
-    PemManagersProvider.readPath.andThen(PemManagersProvider.decode).andThen(PemManagersProvider.load)
+object PemManagersProviderTools {
   val readPath: File => String = null
   val decode: String => DERData = null
   val load: DERData => PrivateKey = null
+  val loadPrivateKey: File => PrivateKey =
+    readPath.andThen(decode).andThen(load)
   @ApiMayChange
   class DERData(val label: String, val bytes: Array[Byte])
 
