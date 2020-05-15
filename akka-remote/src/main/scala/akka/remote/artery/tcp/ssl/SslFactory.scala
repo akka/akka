@@ -49,10 +49,9 @@ private[tcp] final class SslFactory(
       LogMarker.Security,
       "TLS/SSL hostname verification is disabled. See Akka reference documentation for more information.")
 
-//  val sslManagersProvider: SslManagersProvider = getCache.sslManagersProvider
-  val sessionVerifier: SessionVerifier = getCache.sessionVerifier
+  def sessionVerifier: SessionVerifier = getCache.sessionVerifier
 
-  val sslContext: SSLContext = getCache.sslContext
+  def sslContext: SSLContext = getCache.sslContext
   private val contextRef = new AtomicReference[Option[Cache]](None)
   private def getCache: Cache = {
     contextRef.get() match {

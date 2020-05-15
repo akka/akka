@@ -15,14 +15,14 @@ import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
 
 // TODO: rename this class (rename the settings namespace!)
-final class TlsMagicSSLEngineProvider(protected val config: Config, protected val log: MarkerLoggingAdapter)
+final class CloudNativeSSLEngineProvider(protected val config: Config, protected val log: MarkerLoggingAdapter)
     extends SSLEngineProvider {
 
   def this(system: ActorSystem) =
     this(
       // TODO: when renaming the class, review the namespace in config
-      system.settings.config.getConfig("akka.remote.artery.ssl.tls-magic-engine"),
-      Logging.withMarker(system, classOf[TlsMagicSSLEngineProvider].getName))
+      system.settings.config.getConfig("akka.remote.artery.ssl.cloud-native-ssl-engine"),
+      Logging.withMarker(system, classOf[CloudNativeSSLEngineProvider].getName))
 
   val rng = new SecureRandom()
   def providerFactory: (Config) => SslManagersProvider = new PemManagersProvider(_)
