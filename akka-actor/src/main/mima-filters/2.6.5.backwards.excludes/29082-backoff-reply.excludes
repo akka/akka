@@ -1,0 +1,4 @@
+# Internals changed
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.ExtendedBackoffOptions.withHandlerWhileStopped")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOnFailureOptionsImpl.replyWhileStopped")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOnStopOptionsImpl.replyWhileStopped")
