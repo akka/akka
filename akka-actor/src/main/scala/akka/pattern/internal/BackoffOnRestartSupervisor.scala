@@ -4,12 +4,12 @@
 
 package akka.pattern.internal
 
-import scala.concurrent.duration._
-
-import akka.actor.{ OneForOneStrategy, _ }
 import akka.actor.SupervisorStrategy._
+import akka.actor.{OneForOneStrategy, _}
 import akka.annotation.InternalApi
-import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
+import akka.pattern.{BackoffReset, BackoffSupervisor, HandleBackoff}
+
+import scala.concurrent.duration._
 
 /**
  * INTERNAL API
@@ -19,22 +19,22 @@ import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
  * with ``akka.pattern.BackoffOpts.onFailure``.
  */
 @InternalApi private[pattern] class BackoffOnRestartSupervisor(
-    val childProps: Props,
-    val childName: String,
-    minBackoff: FiniteDuration,
-    maxBackoff: FiniteDuration,
-    val reset: BackoffReset,
-    randomFactor: Double,
-    strategy: OneForOneStrategy,
-    replyWhileStopped: Option[Any])
+                                                                  val childProps: Props,
+                                                                  val childName: String,
+                                                                  minBackoff: FiniteDuration,
+                                                                  maxBackoff: FiniteDuration,
+                                                                  val reset: BackoffReset,
+                                                                  randomFactor: Double,
+                                                                  strategy: OneForOneStrategy,
+                                                                  handlerWhileStopped: Option[PartialFunction[(Any, ActorRef), Unit]])
     extends Actor
-    with HandleBackoff
-    with ActorLogging {
+        with HandleBackoff
+        with ActorLogging {
 
   import BackoffSupervisor._
   import context._
 
-  override val supervisorStrategy =
+  override val supervisorStrategy: OneForOneStrategy =
     OneForOneStrategy(strategy.maxNrOfRetries, strategy.withinTimeRange, strategy.loggingEnabled) {
       case ex =>
         val defaultDirective: Directive =
@@ -94,9 +94,9 @@ import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
     case Some(c) =>
       c.forward(msg)
     case None =>
-      replyWhileStopped match {
-        case None    => context.system.deadLetters.forward(msg)
-        case Some(r) => sender() ! r
+      handlerWhileStopped match {
+        case Some(r) if r.isDefinedAt((msg, sender())) => r.apply((msg, sender()))
+        case _ => context.system.deadLetters.forward(msg)
       }
   }
 }

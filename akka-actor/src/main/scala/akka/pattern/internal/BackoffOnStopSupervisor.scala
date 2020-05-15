@@ -5,11 +5,10 @@
 package akka.pattern.internal
 
 import scala.concurrent.duration.FiniteDuration
-
-import akka.actor.{ Actor, ActorLogging, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
-import akka.actor.SupervisorStrategy.{ Directive, Escalate }
+import akka.actor.{Actor, ActorLogging, ActorRef, OneForOneStrategy, Props, SupervisorStrategy, Terminated}
+import akka.actor.SupervisorStrategy.{Directive, Escalate}
 import akka.annotation.InternalApi
-import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
+import akka.pattern.{BackoffReset, BackoffSupervisor, HandleBackoff}
 
 /**
  * INTERNAL API
@@ -26,7 +25,7 @@ import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
     val reset: BackoffReset,
     randomFactor: Double,
     strategy: SupervisorStrategy,
-    replyWhileStopped: Option[Any],
+    handlerWhileStopped: Option[PartialFunction[(Any, ActorRef), Unit]],
     finalStopMessage: Option[Any => Boolean])
     extends Actor
     with HandleBackoff
@@ -35,7 +34,7 @@ import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
   import BackoffSupervisor._
   import context.dispatcher
 
-  override val supervisorStrategy = strategy match {
+  override val supervisorStrategy: SupervisorStrategy = strategy match {
     case oneForOne: OneForOneStrategy =>
       OneForOneStrategy(oneForOne.maxNrOfRetries, oneForOne.withinTimeRange, oneForOne.loggingEnabled) {
         case ex =>
@@ -84,9 +83,9 @@ import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
         case None      =>
       }
     case None =>
-      replyWhileStopped match {
-        case Some(r) => sender() ! r
-        case None    => context.system.deadLetters.forward(msg)
+      handlerWhileStopped match {
+        case Some(r) if r.isDefinedAt((msg, sender())) => r.apply((msg, sender()))
+        case _    => context.system.deadLetters.forward(msg)
       }
       finalStopMessage match {
         case Some(fsm) if fsm(msg) => context.stop(self)
