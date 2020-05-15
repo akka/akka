@@ -36,6 +36,7 @@ class EntitiesSpec extends AnyWordSpec with Matchers {
       entities.addEntity("a", ref)
       entities.terminated(ref)
       entities.entityState("a") shouldEqual OptionVal.Some(Stopped)
+      entities.activeEntities() shouldEqual Set.empty
     }
 
     "set state to remembering" in {

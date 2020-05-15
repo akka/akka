@@ -160,9 +160,14 @@ private[akka] object Shard {
     def terminated(ref: ActorRef): Unit = {
       val id = byRef.get(ref)
       entities.put(id, Stopped)
-      byRef.remove(id)
+      byRef.remove(ref)
     }
     def waitingForRestart(id: EntityId): Unit = {
+      entities.get(id) match {
+        case wr: WithRef =>
+          byRef.remove(wr.ref)
+        case _ =>
+      }
       entities.put(id, WaitingForRestart)
     }
     def removeEntity(entityId: EntityId): Unit = {
@@ -607,7 +612,7 @@ private[akka] class Shard(
 
       // does conversion so only do once
       val activeEntities = entities.activeEntities()
-      if (activeEntities.size > 0) {
+      if (activeEntities.nonEmpty) {
         val entityHandOffTimeout = (settings.tuningParameters.handOffTimeout - 5.seconds).max(1.seconds)
         log.debug("Starting HandOffStopper for shard [{}] to terminate [{}] entities.", shardId, activeEntities.size)
         handOffStopper = Some(
