@@ -7,7 +7,6 @@ package akka.pattern
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import com.github.ghik.silencer.silent
 import org.scalatest.concurrent.Eventually
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
@@ -24,7 +23,7 @@ object BackoffSupervisorSpec {
   }
 
   class Child(probe: ActorRef) extends Actor {
-    def receive = {
+    def receive: Receive = {
       case "boom" => throw new TestException
       case msg    => probe ! msg
     }
@@ -36,7 +35,7 @@ object BackoffSupervisorSpec {
   }
 
   class ManualChild(probe: ActorRef) extends Actor {
-    def receive = {
+    def receive: Receive = {
       case "boom" => throw new TestException
       case msg =>
         probe ! msg
@@ -48,14 +47,13 @@ object BackoffSupervisorSpec {
 class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually {
   import BackoffSupervisorSpec._
 
-  @silent("deprecated")
-  def onStopOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) =
-    Backoff.onStop(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
-  @silent("deprecated")
-  def onFailureOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1) =
-    Backoff.onFailure(props, "c1", 100.millis, 3.seconds, 0.2, maxNrOfRetries)
-  @silent("deprecated")
-  def create(options: BackoffOptions) = system.actorOf(BackoffSupervisor.props(options))
+  def onStopOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1): BackoffOnStopOptions =
+    BackoffOpts.onStop(props, "c1", 100.millis, 3.seconds, 0.2).withMaxNrOfRetries(maxNrOfRetries)
+  def onFailureOptions(props: Props = Child.props(testActor), maxNrOfRetries: Int = -1): BackoffOnFailureOptions =
+    BackoffOpts.onFailure(props, "c1", 100.millis, 3.seconds, 0.2).withMaxNrOfRetries(maxNrOfRetries)
+
+  def create(options: BackoffOnStopOptions): ActorRef = system.actorOf(BackoffSupervisor.props(options))
+  def create(options: BackoffOnFailureOptions): ActorRef = system.actorOf(BackoffSupervisor.props(options))
 
   "BackoffSupervisor" must {
     "start child again when it stops when using `Backoff.onStop`" in {
@@ -179,10 +177,10 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
 
     "reply to sender if replyWhileStopped is specified" in {
       filterException[TestException] {
-        @silent("deprecated")
         val supervisor = create(
-          Backoff
-            .onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1)
+          BackoffOpts
+            .onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2)
+            .withMaxNrOfRetries(-1)
             .withReplyWhileStopped("child was stopped"))
         supervisor ! BackoffSupervisor.GetCurrentChild
         val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
@@ -205,9 +203,8 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
 
     "not reply to sender if replyWhileStopped is NOT specified" in {
       filterException[TestException] {
-        @silent("deprecated")
         val supervisor =
-          create(Backoff.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2, maxNrOfRetries = -1))
+          create(BackoffOpts.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2).withMaxNrOfRetries(-1))
         supervisor ! BackoffSupervisor.GetCurrentChild
         val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
         watch(c1)
