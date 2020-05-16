@@ -154,6 +154,7 @@ depending on being backpressured by downstream or not.
 |Source/Flow|<a name="frommaterializer"></a>@ref[fromMaterializer](Source-or-Flow/fromMaterializer.md)|Defer the creation of a `Source/Flow` until materialization and access `Materializer` and `Attributes`|
 |Flow|<a name="futureflow"></a>@ref[futureFlow](Flow/futureFlow.md)|Streams the elements through the given future flow once it successfully completes.|
 |Source/Flow|<a name="grouped"></a>@ref[grouped](Source-or-Flow/grouped.md)|Accumulate incoming events until the specified number of elements have been accumulated and then pass the collection of elements downstream.|
+|Source/Flow|<a name="groupedweighted"></a>@ref[groupedWeighted](Source-or-Flow/groupedWeighted.md)|Accumulate incoming events until the combined weight of elements is greater than or equal to the minimum weight and then pass the collection of elements downstream.|
 |Source/Flow|<a name="intersperse"></a>@ref[intersperse](Source-or-Flow/intersperse.md)|Intersperse stream with provided element similar to `List.mkString`.|
 |Flow|<a name="lazycompletionstageflow"></a>@ref[lazyCompletionStageFlow](Flow/lazyCompletionStageFlow.md)|Defers creation and materialization of a `Flow` until there is a first element.|
 |Flow|<a name="lazyflow"></a>@ref[lazyFlow](Flow/lazyFlow.md)|Defers creation and materialization of a `Flow` until there is a first element.|
@@ -442,6 +443,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [futureSource](Source/futureSource.md)
 * [groupBy](Source-or-Flow/groupBy.md)
 * [grouped](Source-or-Flow/grouped.md)
+* [groupedWeighted](Source-or-Flow/groupedWeighted.md)
 * [groupedWeightedWithin](Source-or-Flow/groupedWeightedWithin.md)
 * [groupedWithin](Source-or-Flow/groupedWithin.md)
 * [gunzip](Compression/gunzip.md)
