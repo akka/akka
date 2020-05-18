@@ -7,6 +7,8 @@ import java.lang.reflect.Constructor
 import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 
+import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.Try
@@ -18,6 +20,7 @@ import scala.util.control.NonFatal
  *
  * INTERNAL API
  */
+@InternalApi
 private[akka] object Reflect {
 
   /**
@@ -136,33 +139,6 @@ private[akka] object Reflect {
         }
     }
     rec(root)
-  }
-
-  /**
-   * INTERNAL API
-   * Set a val inside a class.
-   */
-  @tailrec protected[akka] final def lookupAndSetField(
-      clazz: Class[_],
-      instance: AnyRef,
-      name: String,
-      value: Any): Boolean = {
-    @tailrec def clearFirst(fields: Array[java.lang.reflect.Field], idx: Int): Boolean =
-      if (idx < fields.length) {
-        val field = fields(idx)
-        if (field.getName == name) {
-          field.setAccessible(true)
-          field.set(instance, value)
-          true
-        } else clearFirst(fields, idx + 1)
-      } else false
-
-    clearFirst(clazz.getDeclaredFields, 0) || {
-      clazz.getSuperclass match {
-        case null => false // clazz == classOf[AnyRef]
-        case sc   => lookupAndSetField(sc, instance, name, value)
-      }
-    }
   }
 
   /**
