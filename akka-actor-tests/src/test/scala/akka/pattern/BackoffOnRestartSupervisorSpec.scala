@@ -156,12 +156,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec("""
       val postStopLatch = new CountDownLatch(1)
       @silent
       val options = BackoffOpts
-        .onFailure(
-          Props(new SlowlyFailingActor(postStopLatch)),
-          "someChildName",
-          1 nanos,
-          1 nanos,
-          0.0)
+        .onFailure(Props(new SlowlyFailingActor(postStopLatch)), "someChildName", 1 nanos, 1 nanos, 0.0)
         .withMaxNrOfRetries(-1)
         .withSupervisorStrategy(OneForOneStrategy(loggingEnabled = false) {
           case _: TestActor.StoppingException => SupervisorStrategy.Stop

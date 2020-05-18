@@ -341,7 +341,7 @@ final class BackoffSupervisor @deprecated("Use `BackoffSupervisor.props` method 
       reset,
       randomFactor,
       strategy,
-      replyWhileStopped.map(msg => { case (_, sender) => sender ! msg}),
+      replyWhileStopped.map(msg => Left(msg)),
       finalStopMessage) {
 
   // for binary compatibility with 2.5.18

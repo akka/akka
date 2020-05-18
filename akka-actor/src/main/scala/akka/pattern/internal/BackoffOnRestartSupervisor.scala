@@ -5,9 +5,9 @@
 package akka.pattern.internal
 
 import akka.actor.SupervisorStrategy._
-import akka.actor.{OneForOneStrategy, _}
+import akka.actor.{ OneForOneStrategy, _ }
 import akka.annotation.InternalApi
-import akka.pattern.{BackoffReset, BackoffSupervisor, HandleBackoff}
+import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
 
 import scala.concurrent.duration._
 
@@ -19,17 +19,17 @@ import scala.concurrent.duration._
  * with ``akka.pattern.BackoffOpts.onFailure``.
  */
 @InternalApi private[pattern] class BackoffOnRestartSupervisor(
-                                                                  val childProps: Props,
-                                                                  val childName: String,
-                                                                  minBackoff: FiniteDuration,
-                                                                  maxBackoff: FiniteDuration,
-                                                                  val reset: BackoffReset,
-                                                                  randomFactor: Double,
-                                                                  strategy: OneForOneStrategy,
-                                                                  handlerWhileStopped: Option[PartialFunction[(Any, ActorRef), Unit]])
+    val childProps: Props,
+    val childName: String,
+    minBackoff: FiniteDuration,
+    maxBackoff: FiniteDuration,
+    val reset: BackoffReset,
+    randomFactor: Double,
+    strategy: OneForOneStrategy,
+    handlerWhileStopped: Option[Either[Any, Props]])
     extends Actor
-        with HandleBackoff
-        with ActorLogging {
+    with HandleBackoff
+    with ActorLogging {
 
   import BackoffSupervisor._
   import context._
@@ -95,8 +95,9 @@ import scala.concurrent.duration._
       c.forward(msg)
     case None =>
       handlerWhileStopped match {
-        case Some(r) if r.isDefinedAt((msg, sender())) => r.apply((msg, sender()))
-        case _ => context.system.deadLetters.forward(msg)
+        case None           => context.system.deadLetters.forward(msg)
+        case Some(Left(r))  => sender() ! r
+        case Some(Right(p)) => getOrCreateHandler(p).forward(msg)
       }
   }
 }

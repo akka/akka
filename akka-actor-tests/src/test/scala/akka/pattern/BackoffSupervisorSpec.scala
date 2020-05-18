@@ -203,12 +203,18 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
     }
 
     "reply to sender if withHandlerWhileStopped is specified" in {
+      val handlerProps = Props(new Actor {
+        override def receive: Receive = {
+          case msg =>
+            sender() ! TestReply(msg)
+        }
+      })
       filterException[TestException] {
         val supervisor = create(
           BackoffOpts
-              .onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2)
-              .withMaxNrOfRetries(-1)
-              .withHandlerWhileStopped({case (msg, sender) => sender ! TestReply(msg)}))
+            .onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2)
+            .withMaxNrOfRetries(-1)
+            .withHandlerWhileStopped(handlerProps))
         supervisor ! BackoffSupervisor.GetCurrentChild
         val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
         watch(c1)
@@ -231,7 +237,8 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
     "not reply to sender if replyWhileStopped is NOT specified" in {
       filterException[TestException] {
         val supervisor =
-          create(BackoffOpts.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2).withMaxNrOfRetries(-1))
+          create(
+            BackoffOpts.onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2).withMaxNrOfRetries(-1))
         supervisor ! BackoffSupervisor.GetCurrentChild
         val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
         watch(c1)
@@ -406,7 +413,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
       c1 ! PoisonPill
       expectTerminated(c1)
       // since actor stopped we can expect the two messages to end up in dead letters
-      EventFilter.warning(pattern = ".*(ping|stop).*", occurrences = 2).intercept {
+      EventFilter.warning(pattern = ".*(ping|stop).*", occurrences = 1).intercept {
         supervisor ! "ping"
         supervisorWatcher.expectNoMessage(20.millis) // supervisor must not terminate
 
