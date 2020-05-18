@@ -19,7 +19,6 @@ import akka.annotation.InternalApi
   def reset: BackoffReset
   protected def handleMessageToChild(m: Any): Unit
 
-  private var handler: Option[ActorRef] = None
   var child: Option[ActorRef] = None
   var restartCount = 0
   var finalStopMessageReceived = false
@@ -31,15 +30,6 @@ import akka.annotation.InternalApi
 
   def startChild(): Unit = if (child.isEmpty) {
     child = Some(context.watch(context.actorOf(childProps, childName)))
-  }
-
-  protected def getOrCreateHandler(p: Props): ActorRef = handler match {
-    case Some(h) =>
-      h
-    case None =>
-      val h = context.actorOf(p)
-      handler = Some(h)
-      h
   }
 
   def handleBackoff: Actor.Receive = {

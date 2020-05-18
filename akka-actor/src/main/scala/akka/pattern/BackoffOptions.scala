@@ -5,7 +5,7 @@
 package akka.pattern
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-import akka.actor.{ OneForOneStrategy, Props, SupervisorStrategy }
+import akka.actor.{ ActorRef, OneForOneStrategy, Props, SupervisorStrategy }
 import akka.annotation.DoNotInherit
 import akka.pattern.internal.{ BackoffOnRestartSupervisor, BackoffOnStopSupervisor }
 import akka.util.JavaDurationConverters._
@@ -301,11 +301,11 @@ private[akka] sealed trait ExtendedBackoffOptions[T <: ExtendedBackoffOptions[T]
   /**
    * Returns a new BackoffOptions with a custom handler for messages that the supervisor receives while its child is stopped.
    * By default, a message received while the child is stopped is forwarded to `deadLetters`.
-   * With this option, the message is forwarded to the handler actor which can reply to the sender with an appropriate message instead.
+   * Essentially, this handler replaces `deadLetters` allowing to implement custom handling instead of a static reply.
    *
    * @param handler PartialFunction of the received message and sender
    */
-  def withHandlerWhileStopped(handler: Props): T
+  def withHandlerWhileStopped(handler: ActorRef): T
 
   /**
    * Returns the props to create the back-off supervisor.
@@ -342,7 +342,7 @@ private final case class BackoffOnStopOptionsImpl[T](
     randomFactor: Double,
     reset: Option[BackoffReset] = None,
     supervisorStrategy: OneForOneStrategy = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
-    handlerWhileStopped: Option[Either[Any, Props]] = None,
+    handlerWhileStopped: Option[Either[Any, ActorRef]] = None,
     finalStopMessage: Option[Any => Boolean] = None)
     extends BackoffOnStopOptions {
 
@@ -353,7 +353,8 @@ private final case class BackoffOnStopOptionsImpl[T](
   def withManualReset = copy(reset = Some(ManualReset))
   def withSupervisorStrategy(supervisorStrategy: OneForOneStrategy) = copy(supervisorStrategy = supervisorStrategy)
   def withReplyWhileStopped(replyWhileStopped: Any) = copy(handlerWhileStopped = Some(Left(replyWhileStopped)))
-  def withHandlerWhileStopped(handlerWhileStopped: Props) = copy(handlerWhileStopped = Some(Right(handlerWhileStopped)))
+  def withHandlerWhileStopped(handlerWhileStopped: ActorRef) =
+    copy(handlerWhileStopped = Some(Right(handlerWhileStopped)))
   def withMaxNrOfRetries(maxNrOfRetries: Int) =
     copy(supervisorStrategy = supervisorStrategy.withMaxNrOfRetries(maxNrOfRetries))
 
@@ -396,7 +397,7 @@ private final case class BackoffOnFailureOptionsImpl[T](
     randomFactor: Double,
     reset: Option[BackoffReset] = None,
     supervisorStrategy: OneForOneStrategy = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
-    handlerWhileStopped: Option[Either[Any, Props]] = None)
+    handlerWhileStopped: Option[Either[Any, ActorRef]] = None)
     extends BackoffOnFailureOptions {
 
   private val backoffReset = reset.getOrElse(AutoReset(minBackoff))
@@ -406,7 +407,8 @@ private final case class BackoffOnFailureOptionsImpl[T](
   def withManualReset = copy(reset = Some(ManualReset))
   def withSupervisorStrategy(supervisorStrategy: OneForOneStrategy) = copy(supervisorStrategy = supervisorStrategy)
   def withReplyWhileStopped(replyWhileStopped: Any) = copy(handlerWhileStopped = Some(Left(replyWhileStopped)))
-  def withHandlerWhileStopped(handlerWhileStopped: Props) = copy(handlerWhileStopped = Some(Right(handlerWhileStopped)))
+  def withHandlerWhileStopped(handlerWhileStopped: ActorRef) =
+    copy(handlerWhileStopped = Some(Right(handlerWhileStopped)))
   def withMaxNrOfRetries(maxNrOfRetries: Int) =
     copy(supervisorStrategy = supervisorStrategy.withMaxNrOfRetries(maxNrOfRetries))
 

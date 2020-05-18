@@ -26,7 +26,7 @@ import scala.concurrent.duration._
     val reset: BackoffReset,
     randomFactor: Double,
     strategy: OneForOneStrategy,
-    handlerWhileStopped: Option[Either[Any, Props]])
+    handlerWhileStopped: Option[Either[Any, ActorRef]])
     extends Actor
     with HandleBackoff
     with ActorLogging {
@@ -95,9 +95,9 @@ import scala.concurrent.duration._
       c.forward(msg)
     case None =>
       handlerWhileStopped match {
-        case None           => context.system.deadLetters.forward(msg)
         case Some(Left(r))  => sender() ! r
-        case Some(Right(p)) => getOrCreateHandler(p).forward(msg)
+        case Some(Right(h)) => h.forward(msg)
+        case None           => context.system.deadLetters.forward(msg)
       }
   }
 }

@@ -16,7 +16,6 @@ import akka.testkit._
 object BackoffSupervisorSpec {
 
   class TestException extends RuntimeException with NoStackTrace
-  case class TestReply(receivedMsg: Any)
 
   object Child {
     def props(probe: ActorRef): Props =
@@ -202,19 +201,19 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
       }
     }
 
-    "reply to sender if withHandlerWhileStopped is specified" in {
-      val handlerProps = Props(new Actor {
+    "reply to sendt akker if withHandlerWhileStopped is specified" in {
+      val handler = system.actorOf(Props(new Actor {
         override def receive: Receive = {
-          case msg =>
-            sender() ! TestReply(msg)
+          case "still there?" =>
+            sender() ! "not here!"
         }
-      })
+      }))
       filterException[TestException] {
         val supervisor = create(
           BackoffOpts
             .onFailure(Child.props(testActor), "c1", 100.seconds, 300.seconds, 0.2)
             .withMaxNrOfRetries(-1)
-            .withHandlerWhileStopped(handlerProps))
+            .withHandlerWhileStopped(handler))
         supervisor ! BackoffSupervisor.GetCurrentChild
         val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
         watch(c1)
@@ -229,8 +228,8 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
           expectMsg(BackoffSupervisor.RestartCount(1))
         }
 
-        supervisor ! "boom"
-        expectMsg(TestReply("boom"))
+        supervisor ! "still there?"
+        expectMsg("not here!")
       }
     }
 
