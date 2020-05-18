@@ -26,6 +26,7 @@ To use Akka Streams, add the module to your project:
 * [stream-graphs](stream-graphs.md)
 * [stream-composition](stream-composition.md)
 * [stream-rate](stream-rate.md)
+* [stream-context](stream-context.md)
 * [stream-dynamic](stream-dynamic.md)
 * [stream-customize](stream-customize.md)
 * [futures-interop](futures-interop.md)
