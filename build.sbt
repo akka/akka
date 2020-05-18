@@ -152,6 +152,8 @@ lazy val clusterSharding = akkaModule("akka-cluster-sharding")
   .settings(Protobuf.settings)
   .configs(MultiJvm)
   .enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
+  .enablePlugins(Jdk9)
+  .configs(Jdk9.TestJdk9)
 
 lazy val clusterTools = akkaModule("akka-cluster-tools")
   .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm", coordination, jackson % "test->test")
