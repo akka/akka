@@ -29,6 +29,10 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    * Transform this flow by the regular flow. The given flow must support manual context propagation by
    * taking and producing tuples of (data, context).
    *
+   *  It is up to the implementer to ensure the inner flow does not exhibit any behaviour that is not expected
+   *  by the downstream elements, such as reordering. For more background on these requirements
+   *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
+   *
    * This can be used as an escape hatch for operations that are not (yet) provided with automatic
    * context propagation here.
    *
@@ -39,6 +43,10 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
   /**
    * Transform this flow by the regular flow. The given flow must support manual context propagation by
    * taking and producing tuples of (data, context).
+   *
+   *  It is up to the implementer to ensure the inner flow does not exhibit any behaviour that is not expected
+   *  by the downstream elements, such as reordering. For more background on these requirements
+   *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
    *
    * This can be used as an escape hatch for operations that are not (yet) provided with automatic
    * context propagation here.
