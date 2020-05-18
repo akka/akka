@@ -30,7 +30,7 @@ For this reason, @apidoc[FlowWithContext] allows filtering operations
 (such as `filter`, `filterNot`, `collect`, etc) and grouping operations
 (such as `grouped`, `sliding`, etc) but not reordering operations
 (such as `mapAsyncUnordered` and `statefulMapConcat`). Finally,
-also 'one-to-many' operations such as `mapConcat` are allowed.
+also 'one-to-n' operations such as `mapConcat` are allowed.
 
 Filtering operations will drop the context along with dropped elements,
 while grouping operations will keep all contexts from the elements in
