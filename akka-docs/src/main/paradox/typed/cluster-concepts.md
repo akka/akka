@@ -48,7 +48,7 @@ to the cluster state has an accompanying update to the vector clock.
 #### Gossip Convergence
 
 Information about the cluster converges locally at a node at certain points in time.
-This is when a node can prove that the cluster state he is observing has been observed
+This is when a node can prove that the cluster state it is observing has been observed
 by all other nodes in the cluster. Convergence is implemented by passing a set of nodes
 that have seen current state version during gossip. This information is referred to as the
 seen set in the gossip overview. When all nodes are included in the seen set there is
