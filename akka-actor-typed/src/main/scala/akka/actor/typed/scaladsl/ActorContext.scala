@@ -350,6 +350,6 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def checkCurrentActorThread(operationName: String): Unit
+  @InternalApi private[akka] def checkCurrentActorThread(): Unit
 
 }

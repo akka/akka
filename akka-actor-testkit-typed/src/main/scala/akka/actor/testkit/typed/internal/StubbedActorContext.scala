@@ -88,24 +88,24 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
       "No classic ActorContext available with the stubbed actor context, to spawn materializers and run streams you will need a real actor")
 
   override def children: Iterable[ActorRef[Nothing]] = {
-    checkCurrentActorThread("children")
+    checkCurrentActorThread()
     _children.values.map(_.context.self)
   }
   def childrenNames: Iterable[String] = _children.keys
 
   override def child(name: String): Option[ActorRef[Nothing]] = {
-    checkCurrentActorThread("child")
+    checkCurrentActorThread()
     _children.get(name).map(_.context.self)
   }
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
-    checkCurrentActorThread("spawnAnonymous")
+    checkCurrentActorThread()
     val btk = new BehaviorTestKitImpl[U]((path / childName.next()).withUid(rnd().nextInt()), behavior)
     _children += btk.context.self.path.name -> btk
     btk.context.self
   }
   override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
-    checkCurrentActorThread("spawn")
+    checkCurrentActorThread()
     _children.get(name) match {
       case Some(_) => throw classic.InvalidActorNameException(s"actor name $name is already taken")
       case None =>
@@ -120,7 +120,7 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
    * Removal is asynchronous, explicit removeInbox is needed from outside afterwards.
    */
   override def stop[U](child: ActorRef[U]): Unit = {
-    checkCurrentActorThread("stop")
+    checkCurrentActorThread()
     if (child.path.parent != self.path)
       throw new IllegalArgumentException(
         "Only direct children of an actor can be stopped through the actor context, " +
@@ -131,19 +131,19 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
     }
   }
   override def watch[U](other: ActorRef[U]): Unit = {
-    checkCurrentActorThread("watch")
+    checkCurrentActorThread()
   }
   override def watchWith[U](other: ActorRef[U], message: T): Unit = {
-    checkCurrentActorThread("watchWith")
+    checkCurrentActorThread()
   }
   override def unwatch[U](other: ActorRef[U]): Unit = {
-    checkCurrentActorThread("unwatch")
+    checkCurrentActorThread()
   }
   override def setReceiveTimeout(d: FiniteDuration, message: T): Unit = {
-    checkCurrentActorThread("setReceiveTimeout")
+    checkCurrentActorThread()
   }
   override def cancelReceiveTimeout(): Unit = {
-    checkCurrentActorThread("cancelReceiveTimeout")
+    checkCurrentActorThread()
   }
 
   override def scheduleOnce[U](delay: FiniteDuration, target: ActorRef[U], message: U): classic.Cancellable =
@@ -207,18 +207,18 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   override def toString: String = s"Inbox($self)"
 
   override def log: Logger = {
-    checkCurrentActorThread("log")
+    checkCurrentActorThread()
     logger
   }
 
   override def setLoggerName(name: String): Unit = {
     // nop as we don't track logger
-    checkCurrentActorThread("setLoggerName")
+    checkCurrentActorThread()
   }
 
   override def setLoggerName(clazz: Class[_]): Unit = {
     // nop as we don't track logger
-    checkCurrentActorThread("setLoggerName")
+    checkCurrentActorThread()
   }
 
   /**

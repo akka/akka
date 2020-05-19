@@ -104,7 +104,7 @@ import akka.util.Timeout
   def timer: TimerSchedulerImpl[T] = _timer match {
     case OptionVal.Some(timer) => timer
     case OptionVal.None =>
-      checkCurrentActorThread("timer")
+      checkCurrentActorThread()
       val timer = new TimerSchedulerImpl[T](this)
       _timer = OptionVal.Some(timer)
       timer
@@ -158,7 +158,7 @@ import akka.util.Timeout
   }
 
   override def log: Logger = {
-    checkCurrentActorThread("log")
+    checkCurrentActorThread()
     val logging = loggingContext()
     ActorMdc.setMdc(logging)
     logging.logger
@@ -167,7 +167,7 @@ import akka.util.Timeout
   override def getLog: Logger = log
 
   override def setLoggerName(name: String): Unit = {
-    checkCurrentActorThread("setLoggerName")
+    checkCurrentActorThread()
     _logging = OptionVal.Some(loggingContext().withLogger(LoggerFactory.getLogger(name)))
   }
 
@@ -255,7 +255,7 @@ import akka.util.Timeout
     internalMessageAdapter(messageClass, f.apply)
 
   private def internalMessageAdapter[U](messageClass: Class[U], f: U => T): ActorRef[U] = {
-    checkCurrentActorThread("messageAdapter")
+    checkCurrentActorThread()
     // replace existing adapter for same class, only one per class is supported to avoid unbounded growth
     // in case "same" adapter is added repeatedly
     val boxedMessageClass = BoxedType(messageClass).asInstanceOf[Class[U]]
@@ -302,19 +302,19 @@ import akka.util.Timeout
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def checkCurrentActorThread(operationName: String): Unit = {
+  @InternalApi private[akka] def checkCurrentActorThread(): Unit = {
     val callerThread = Thread.currentThread()
     _currentActorThread match {
       case OptionVal.Some(t) =>
         if (callerThread ne t) {
           throw new UnsupportedOperationException(
-            s"Unsupported access to [$operationName] from the outside of $self. " +
-            s"Current message is processed by $t, but [$operationName] was called from $callerThread.")
+            s"Unsupported access to ActorContext operation from the outside of $self. " +
+            s"Current message is processed by $t, but ActorContext was called from $callerThread.")
         }
       case OptionVal.None =>
         throw new UnsupportedOperationException(
-          s"Unsupported access to [$operationName] from the outside of $self. " +
-          s"No message is currently processed by the actor, but [$operationName] was called from $callerThread.")
+          s"Unsupported access to ActorContext from the outside of $self. " +
+          s"No message is currently processed by the actor, but ActorContext was called from $callerThread.")
     }
   }
 }
