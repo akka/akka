@@ -950,7 +950,7 @@ abstract class ShardCoordinator(
   }
 
   def continueRebalance(shards: Set[ShardId]): Unit = {
-    if ((log: BusLogging).isInfoEnabled && (shards.nonEmpty || rebalanceInProgress.nonEmpty)) {
+    if (log.isInfoEnabled && (shards.nonEmpty || rebalanceInProgress.nonEmpty)) {
       log.info(
         "Starting rebalance for shards [{}]. Current shards rebalancing: [{}]",
         shards.mkString(","),
