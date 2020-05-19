@@ -52,7 +52,7 @@ class ActorThreadSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
       probe.expectMessage("initialized")
       intercept[UnsupportedOperationException] {
         context.children
-      }.getMessage should include("[children]")
+      }.getMessage should include("Unsupported access to ActorContext")
 
     }
 
@@ -76,7 +76,7 @@ class ActorThreadSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
       val l = new CountDownLatch(1)
       try {
         ref ! l
-        probe.receiveMessage().getMessage should include("[children]")
+        probe.receiveMessage().getMessage should include("Unsupported access to ActorContext")
       } finally {
         l.countDown()
       }
@@ -107,7 +107,7 @@ class ActorThreadSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
       } finally {
         l.countDown()
       }
-      probe.receiveMessage().getMessage should include("[children]")
+      probe.receiveMessage().getMessage should include("Unsupported access to ActorContext")
     }
 
     "detect illegal access from child" in {
@@ -129,7 +129,7 @@ class ActorThreadSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
       })
 
       ref ! "hello"
-      probe.receiveMessage().getMessage should include("[children]")
+      probe.receiveMessage().getMessage should include("Unsupported access to ActorContext")
     }
 
     "allow access from message adapter" in {
@@ -227,34 +227,7 @@ class ActorThreadSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
         Behaviors.empty
       })
 
-      probe.receiveMessage().getMessage should include("[children]")
-    }
-
-    "detect illegal access from AbstractBehavior constructor when missing setup" in {
-      //FIXME
-      pending
-      val probe = createTestProbe[UnsupportedOperationException]()
-
-      spawn(Behaviors.setup[String] { context =>
-        // missing setup for the new AbstractBehavior and passing in parent's context
-        context.spawnAnonymous(new AbstractBehavior[String](context) {
-          try {
-            // FIXME this isn't detected as wrong because constructor is running in parent thread here (missing setup)
-            this.context.children
-          } catch {
-            case e: UnsupportedOperationException =>
-              probe.ref ! e
-          }
-
-          override def onMessage(msg: String): Behavior[String] = {
-            Behaviors.same
-          }
-        })
-
-        Behaviors.empty
-      })
-
-      probe.receiveMessage().getMessage should include("[children]")
+      probe.receiveMessage().getMessage should include("Unsupported access to ActorContext")
     }
 
     "detect sharing of same AbstractBehavior instance" in {
