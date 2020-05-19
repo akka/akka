@@ -70,6 +70,9 @@ private[cluster] class ClusterRemoteWatcher(
 
   override val log = Logging(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterCore))
 
+  // allowed to watch even though address not in cluster membership, i.e. remote watch
+  private val watchPathWhitelist = Set("/system/sharding/")
+
   private var pendingDelayedQuarantine: Set[UniqueAddress] = Set.empty
 
   var clusterNodes: Set[Address] = Set.empty
@@ -164,7 +167,19 @@ private[cluster] class ClusterRemoteWatcher(
     if (!clusterNodes(watchee.path.address)) super.watchNode(watchee)
 
   override protected def shouldWatch(watchee: InternalActorRef): Boolean =
-    clusterNodes(watchee.path.address) || super.shouldWatch(watchee)
+    clusterNodes(watchee.path.address) || super.shouldWatch(watchee) || isWatchOutsideClusterAllowed(watchee)
+
+  /**
+   * Allowed to watch some paths even though address not in cluster membership, i.e. remote watch.
+   * Needed for ShardCoordinator that has to watch old incarnations of region ActorRef from the
+   * recovered state.
+   */
+  private def isWatchOutsideClusterAllowed(watchee: InternalActorRef): Boolean = {
+    context.system.name == watchee.path.address.system && {
+      val pathPrefix = watchee.path.elements.take(2).mkString("/", "/", "/")
+      watchPathWhitelist.contains(pathPrefix)
+    }
+  }
 
   /**
    * When a cluster node is added this class takes over the
