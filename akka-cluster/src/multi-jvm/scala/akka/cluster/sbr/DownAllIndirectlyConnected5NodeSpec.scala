@@ -6,12 +6,14 @@ package akka.cluster.sbr
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
+import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter
-import com.typesafe.config.ConfigFactory
 
 object DownAllIndirectlyConnected5NodeSpec extends MultiNodeConfig {
   val node1 = role("node1")
@@ -52,10 +54,8 @@ class DownAllIndirectlyConnected5NodeSpecMultiJvmNode5 extends DownAllIndirectly
 
 class DownAllIndirectlyConnected5NodeSpec
     extends MultiNodeSpec(DownAllIndirectlyConnected5NodeSpec)
-    with STMultiNodeSpec {
+    with MultiNodeClusterSpec {
   import DownAllIndirectlyConnected5NodeSpec._
-
-  override def initialParticipants: Int = roles.size
 
   "A 5-node cluster with keep-one-indirectly-connected = off" should {
     "down all when indirectly connected combined with clean partition" in {

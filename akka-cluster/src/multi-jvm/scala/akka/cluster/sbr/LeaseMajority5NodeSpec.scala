@@ -7,7 +7,6 @@ package akka.cluster.sbr
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
@@ -15,6 +14,8 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
+
+import akka.cluster.MultiNodeClusterSpec
 
 object LeaseMajority5NodeSpec extends MultiNodeConfig {
   val node1 = role("node1")
@@ -66,12 +67,8 @@ class LeaseMajority5NodeSpecMultiJvmNode3 extends LeaseMajority5NodeSpec
 class LeaseMajority5NodeSpecMultiJvmNode4 extends LeaseMajority5NodeSpec
 class LeaseMajority5NodeSpecMultiJvmNode5 extends LeaseMajority5NodeSpec
 
-class LeaseMajority5NodeSpec extends MultiNodeSpec(LeaseMajority5NodeSpec) with STMultiNodeSpec {
+class LeaseMajority5NodeSpec extends MultiNodeSpec(LeaseMajority5NodeSpec) with MultiNodeClusterSpec {
   import LeaseMajority5NodeSpec._
-
-  override def initialParticipants: Int = roles.size
-
-  private val cluster = Cluster(system)
 
   def sortByAddress(roles: RoleName*): List[RoleName] = {
 

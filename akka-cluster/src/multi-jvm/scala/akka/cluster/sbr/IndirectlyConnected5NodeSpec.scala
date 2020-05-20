@@ -6,12 +6,14 @@ package akka.cluster.sbr
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
+import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter
-import com.typesafe.config.ConfigFactory
 
 object IndirectlyConnected5NodeSpec extends MultiNodeConfig {
   val node1 = role("node1")
@@ -50,10 +52,8 @@ class IndirectlyConnected5NodeSpecMultiJvmNode3 extends IndirectlyConnected5Node
 class IndirectlyConnected5NodeSpecMultiJvmNode4 extends IndirectlyConnected5NodeSpec
 class IndirectlyConnected5NodeSpecMultiJvmNode5 extends IndirectlyConnected5NodeSpec
 
-class IndirectlyConnected5NodeSpec extends MultiNodeSpec(IndirectlyConnected5NodeSpec) with STMultiNodeSpec {
+class IndirectlyConnected5NodeSpec extends MultiNodeSpec(IndirectlyConnected5NodeSpec) with MultiNodeClusterSpec {
   import IndirectlyConnected5NodeSpec._
-
-  override def initialParticipants: Int = roles.size
 
   "A 5-node cluster" should {
     "avoid a split brain when indirectly connected combined with clean partition" in {

@@ -8,9 +8,14 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.BeforeAndAfterEach
+
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
+import akka.cluster.MultiNodeClusterSpec
 import akka.cluster.sharding.ClusterSharding
 import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.singleton.ClusterSingletonManager
@@ -20,12 +25,10 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
+import akka.testkit.LongRunningTest
 import akka.testkit.TestKit
 import akka.testkit.TestProbe
 import akka.util.Timeout
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfterEach
 
 /*
  * Depends on akka private classes so needs to be in this package
@@ -99,14 +102,12 @@ class RandomizedSplitBrainResolverIntegrationSpecMultiJvmNode9 extends Randomize
 
 class RandomizedSplitBrainResolverIntegrationSpec
     extends MultiNodeSpec(RandomizedSplitBrainResolverIntegrationSpec)
-    with STMultiNodeSpec
+    with MultiNodeClusterSpec
     with ImplicitSender
     with BeforeAndAfterEach {
   import GlobalRegistry._
   import GremlinController._
   import RandomizedSplitBrainResolverIntegrationSpec._
-
-  override def initialParticipants = roles.size
 
   // counter for unique naming for each test
   var c = 0
@@ -401,7 +402,7 @@ class RandomizedSplitBrainResolverIntegrationSpec
   "SplitBrainResolver with lease" must {
 
     for (scenario <- scenarios) {
-      scenario.toString in {
+      scenario.toString taggedAs LongRunningTest in {
         DisposableSys(scenario).verify()
       }
     }

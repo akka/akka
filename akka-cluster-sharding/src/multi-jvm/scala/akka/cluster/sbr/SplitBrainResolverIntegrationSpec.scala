@@ -7,12 +7,18 @@ package akka.cluster.sbr
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigValueFactory
+import org.scalatest.BeforeAndAfterEach
+
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.ClusterSettings.DefaultDataCenter
 import akka.cluster.Member
 import akka.cluster.MemberStatus
+import akka.cluster.MultiNodeClusterSpec
 import akka.cluster.sharding.ClusterSharding
 import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.singleton.ClusterSingletonManager
@@ -22,13 +28,10 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
+import akka.testkit.LongRunningTest
 import akka.testkit.TestKit
 import akka.testkit.TestProbe
 import akka.util.Timeout
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigValueFactory
-import org.scalatest.BeforeAndAfterEach
 
 /*
  * Depends on akka private classes so needs to be in this package
@@ -84,7 +87,7 @@ class SplitBrainResolverIntegrationSpecMultiJvmNode9 extends SplitBrainResolverI
 
 class SplitBrainResolverIntegrationSpec
     extends MultiNodeSpec(SplitBrainResolverIntegrationSpec)
-    with STMultiNodeSpec
+    with MultiNodeClusterSpec
     with ImplicitSender
     with BeforeAndAfterEach {
   import GlobalRegistry._
@@ -455,7 +458,7 @@ class SplitBrainResolverIntegrationSpec
   "Cluster SplitBrainResolver" must {
 
     for (scenario <- scenarios) {
-      scenario.toString in {
+      scenario.toString taggedAs LongRunningTest in {
         DisposableSys(scenario).verify()
       }
     }
