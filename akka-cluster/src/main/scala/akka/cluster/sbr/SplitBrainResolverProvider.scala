@@ -11,13 +11,11 @@ import akka.actor.Props
 import akka.cluster.Cluster
 import akka.cluster.DowningProvider
 import akka.coordination.lease.scaladsl.LeaseProvider
-import com.github.ghik.silencer.silent
 
 final class SplitBrainResolverProvider(system: ActorSystem) extends DowningProvider {
 
   private val settings = new SplitBrainResolverSettings(system.settings.config)
 
-  @silent // deprecated use is on purpose
   override def downRemovalMargin: FiniteDuration = {
     // if down-removal-margin is defined we let it trump stable-after to allow
     // for two different values for SBR downing and cluster tool stop/start after downing

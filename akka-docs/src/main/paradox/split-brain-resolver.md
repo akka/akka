@@ -454,8 +454,8 @@ margin that makes sure that the new instance is not started before the old has b
 You would like to configure this to a short duration to have quick failover, but that will increase the
 risk of having multiple singleton/sharded instances running at the same time and it may take a different
 amount of time to act on the decision (dissemination of the down/removal). The duration is by default
-the same as the `stable-after` property (see @ref:[Stable after](#stable-after) above). It is recommended to leave this value as is, but it 
-can also be separately overriden with the `akka.cluster.down-removal-margin` property.
+the same as the `stable-after` property (see @ref:[Stable after](#stable-after) above). It is recommended to
+leave this value as is, but it can also be separately overriden with the `akka.cluster.down-removal-margin` property.
 
 Another concern for setting this `stable-after`/`akka.cluster.down-removal-margin` is dealing with JVM pauses e.g.
 garbage collection. When a node is unresponsive it is not known if it is due to a pause, overload, a crash or a 
