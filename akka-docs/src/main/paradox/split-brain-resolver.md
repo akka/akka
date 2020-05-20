@@ -94,26 +94,21 @@ in the configuration of the `ActorSystem` (`application.conf`):
 akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
 ```
 
-You must also carefully select a downing strategy and configure that before the Split Brain Resolver is
-ready to be used. See below for details on choosing a strategy.
-
 ## Strategies
 
-There is not a "one size fits all" solution to this problem. You have to pick a strategy that fits
-the characteristics of your system. Every strategy has a failure scenario where it makes a "wrong"
-decision. This section describes the different strategies and guidelines of when to use what.
+By default the @ref:[Keep Majority](#keep-majority) strategy will be used because it works well for
+most systems. However, it's wort considering the other available strategies and pick a strategy that fits
+the characteristics of your system. For example, in a Kubernetes environment the @ref:[Lease](#lease) strategy
+can be a good choice. 
+
+Every strategy has a failure scenario where it makes a "wrong" decision. This section describes the different
+strategies and guidelines of when to use what.
 
 When there is uncertainty it selects to down more nodes than necessary, or even downing of all nodes.
 Therefore Split Brain Resolver should always be combined with a mechanism to automatically start up nodes that
 have been shutdown, and join them to the existing cluster or form a new cluster again.
 
 You enable a strategy with the configuration property `akka.cluster.split-brain-resolver.active-strategy`.
-
-@@@ note
-
-You must also remove auto-down configuration, remove this property (or set to off): `akka.cluster.auto-down-unreachable-after`
-
-@@@
 
 ### Stable after
 
@@ -167,6 +162,45 @@ could replace the call to `System.exit(..)` with a call to Spring's ApplicationC
 (or with a HTTP call to Tomcat Manager's API to un-deploy the app).
 
 @@@
+
+### Keep Majority
+
+The strategy named `keep-majority` will down the unreachable nodes if the current node is in
+the majority part based on the last known membership information. Otherwise down the reachable nodes,
+i.e. the own part. If the parts are of equal size the part containing the node with the lowest
+address is kept.
+
+This strategy is a good choice when the number of nodes in the cluster change dynamically and you can
+therefore not use `static-quorum`.
+
+This strategy also handles the edge case that may occur when there are membership changes at the same
+time as the network partition occurs. For example, the status of two members are changed to `Up`
+on one side but that information is not disseminated to the other side before the connection is broken.
+Then one side sees two more nodes and both sides might consider themselves having a majority. It will
+detect this situation and make the safe decision to down all nodes on the side that could be in minority
+if the joining nodes were changed to `Up` on the other side. Note that this has the drawback that
+if the joining nodes were not changed to `Up` and becoming a majority on the other side then each part
+will shut down itself, terminating the whole cluster.
+
+Note that if there are more than two partitions and none is in majority each part will shut down
+itself, terminating the whole cluster.
+
+If more than half of the nodes crash at the same time the other running nodes will down themselves
+because they think that they are not in majority, and thereby the whole cluster is terminated.  
+
+The decision can be based on nodes with a configured `role` instead of all nodes in the cluster.
+This can be useful when some types of nodes are more valuable than others. You might for example
+have some nodes responsible for persistent data and some nodes with stateless worker services.
+Then it probably more important to keep as many persistent data nodes as possible even though
+it means shutting down more worker nodes.
+
+Configuration:
+
+```
+akka.cluster.split-brain-resolver.active-strategy=keep-majority
+```
+
+@@snip [reference.conf](/akka-cluster/src/main/resources/reference.conf) { #keep-majority }
 
 ### Static Quorum
 
@@ -233,45 +267,6 @@ akka.cluster.split-brain-resolver.active-strategy=static-quorum
 ```
 
 @@snip [reference.conf](/akka-cluster/src/main/resources/reference.conf) { #static-quorum }
-
-### Keep Majority
-
-The strategy named `keep-majority` will down the unreachable nodes if the current node is in
-the majority part based on the last known membership information. Otherwise down the reachable nodes,
-i.e. the own part. If the parts are of equal size the part containing the node with the lowest
-address is kept.
-
-This strategy is a good choice when the number of nodes in the cluster change dynamically and you can
-therefore not use `static-quorum`.
-
-This strategy also handles the edge case that may occur when there are membership changes at the same
-time as the network partition occurs. For example, the status of two members are changed to `Up`
-on one side but that information is not disseminated to the other side before the connection is broken.
-Then one side sees two more nodes and both sides might consider themselves having a majority. It will
-detect this situation and make the safe decision to down all nodes on the side that could be in minority
-if the joining nodes were changed to `Up` on the other side. Note that this has the drawback that
-if the joining nodes were not changed to `Up` and becoming a majority on the other side then each part
-will shut down itself, terminating the whole cluster.
-
-Note that if there are more than two partitions and none is in majority each part will shut down
-itself, terminating the whole cluster.
-
-If more than half of the nodes crash at the same time the other running nodes will down themselves
-because they think that they are not in majority, and thereby the whole cluster is terminated.  
-
-The decision can be based on nodes with a configured `role` instead of all nodes in the cluster.
-This can be useful when some types of nodes are more valuable than others. You might for example
-have some nodes responsible for persistent data and some nodes with stateless worker services.
-Then it probably more important to keep as many persistent data nodes as possible even though
-it means shutting down more worker nodes.
-
-Configuration:
-
-```
-akka.cluster.split-brain-resolver.active-strategy=keep-majority
-```
-
-@@snip [reference.conf](/akka-cluster/src/main/resources/reference.conf) { #keep-majority }
 
 ### Keep Oldest
 

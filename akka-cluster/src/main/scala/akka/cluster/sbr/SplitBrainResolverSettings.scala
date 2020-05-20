@@ -47,12 +47,10 @@ import akka.util.Helpers.Requiring
 
   val DowningStrategy: String =
     cc.getString("active-strategy").toLowerCase(Locale.ROOT) match {
-      case "off" | "" =>
-        throw new ConfigurationException(
-          s"Split brain downing provider enabled but no strategy selected. " +
-          "Please choose a strategy and set using akka.cluster.split-brain-resolver.active-strategy")
       case strategyName if allStrategyNames(strategyName) => strategyName
-      case unknown                                        => throw new ConfigurationException(s"Unknown downing strategy: [$unknown]")
+      case unknown =>
+        throw new ConfigurationException(
+          s"Unknown downing strategy [$unknown]. Select one of [${allStrategyNames.mkString(",")}]")
     }
 
   val DownAllWhenUnstable: FiniteDuration = {
