@@ -7,14 +7,16 @@ package akka.cluster.sbr
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Address
-import akka.actor.Cancellable
+import akka.actor.ExtendedActorSystem
 import akka.actor.Props
 import akka.actor.Stash
+import akka.actor.Timers
 import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent
@@ -109,7 +111,6 @@ import akka.pattern.pipe
   }
   override def postStop(): Unit = {
     cluster.unsubscribe(self)
-    tickTask.cancel()
     super.postStop()
   }
 
@@ -128,7 +129,8 @@ import akka.pattern.pipe
 @InternalApi private[sbr] abstract class SplitBrainResolverBase(stableAfter: FiniteDuration, strategy: DowningStrategy)
     extends Actor
     with ActorLogging
-    with Stash {
+    with Stash
+    with Timers {
 
   import DowningStrategy._
   import SplitBrainResolver.ReleaseLeaseCondition.NoLease
@@ -150,14 +152,13 @@ import akka.pattern.pipe
 
   def tickInterval: FiniteDuration = 1.second
 
-  import context.dispatcher
-  val tickTask: Cancellable = {
-    val interval = tickInterval
-    context.system.scheduler.scheduleWithFixedDelay(interval, interval, self, Tick)
-  }
+  timers.startTimerWithFixedDelay(Tick, Tick, tickInterval)
 
   var leader = false
   var selfMemberAdded = false
+
+  private def internalDispatcher: ExecutionContext =
+    context.system.asInstanceOf[ExtendedActorSystem].dispatchers.internalDispatcher
 
   // overridden in tests
   protected def newStableDeadline(): Deadline = Deadline.now + stableAfter
@@ -241,7 +242,6 @@ import akka.pattern.pipe
   private var unreachableDataCenters = Set.empty[DataCenter]
 
   override def postStop(): Unit = {
-    tickTask.cancel()
     if (releaseLeaseCondition != NoLease) {
       log.info(
         "SBR is stopped and owns the lease. The lease will not be released until after the " +
@@ -307,7 +307,7 @@ import akka.pattern.pipe
                   acquireLease() // reply message is AcquireLeaseResult
                 else {
                   log.debug("SBR delayed attempt to acquire lease for [{} ms]", decision.acquireDelay.toMillis)
-                  context.system.scheduler.scheduleOnce(decision.acquireDelay, self, AcquireLease)
+                  timers.startSingleTimer(AcquireLease, AcquireLease, decision.acquireDelay)
                 }
                 context.become(waitingForLease(decision))
               }
@@ -331,6 +331,7 @@ import akka.pattern.pipe
 
   private def acquireLease(): Unit = {
     log.debug("SBR trying to acquire lease")
+    implicit val ec: ExecutionContext = internalDispatcher
     strategy.lease.foreach(
       _.acquire()
         .recover {
@@ -565,6 +566,7 @@ import akka.pattern.pipe
   }
 
   private def releaseLease(): Unit = {
+    implicit val ec: ExecutionContext = internalDispatcher
     strategy.lease.foreach { l =>
       if (releaseLeaseCondition != NoLease) {
         log.info("SBR releasing lease")
