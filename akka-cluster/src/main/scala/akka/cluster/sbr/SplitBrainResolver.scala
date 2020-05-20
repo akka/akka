@@ -1,7 +1,6 @@
 /**
  * Copyright (C) 2015-2020 Lightbend Inc.  <https://www.lightbend.com>
  */
-
 package akka.cluster.sbr
 
 import java.time.Instant
@@ -583,41 +582,6 @@ private[akka] object SplitBrainResolver {
         oldestDecision(oldestIsReachable, reachableCount, unreachableCount)
       }
     }
-  }
-
-  /**
-   * Down the part that does not contain the given referee node.
-   * If the remaining number of nodes are less than the given `downAllIfLessThanNodes`
-   * all nodes will be downed.
-   * If the referee node itself is removed all nodes will be downed.
-   *
-   * It is only using members within the own data center, i.e. the referee must
-   * be in the own data center.
-   */
-  class KeepReferee(selfDc: DataCenter, val referee: Address, val downAllIfLessThanNodes: Int)
-      extends Strategy(selfDc) {
-
-    override def decide(): Decision = {
-      if (hasIndirectlyConnected) {
-        if (indirectlyConnected.exists(_.address == referee))
-          DownAll
-        else
-          DownIndirectlyConnected
-      } else {
-        val unrMbrs = unreachableMembers
-        if (unrMbrs.exists(_.address == referee)) {
-          // the referee is in the unreachable set
-          if (unrMbrs.size >= downAllIfLessThanNodes) DownReachable else DownAll
-        } else if (members.exists(_.address == referee)) {
-          // the referee is in the reachable set
-          if (members.size - unrMbrs.size >= downAllIfLessThanNodes) DownUnreachable else DownAll
-        } else
-          DownAll // referee was removed => down all
-      }
-    }
-
-    override def role = None
-
   }
 
   /**

@@ -1,7 +1,6 @@
 /**
  * Copyright (C) 2015-2020 Lightbend Inc.  <https://www.lightbend.com>
  */
-
 package akka.cluster.sbr
 
 import java.util.Locale
@@ -11,8 +10,6 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 
 import akka.ConfigurationException
-import akka.actor.Address
-import akka.actor.AddressFromURIString
 import akka.util.Helpers
 import akka.util.Helpers.Requiring
 import com.typesafe.config.Config
@@ -25,11 +22,10 @@ private[sbr] object SplitBrainResolverSettings {
   final val LeaseMajorityName = "lease-majority"
   final val StaticQuorumName = "static-quorum"
   final val KeepOldestName = "keep-oldest"
-  final val KeepRefereeName = "keep-referee"
   final val DownAllName = "down-all"
 
   def allStrategyNames =
-    Set(KeepMajorityName, LeaseMajorityName, StaticQuorumName, KeepOldestName, KeepRefereeName, DownAllName)
+    Set(KeepMajorityName, LeaseMajorityName, StaticQuorumName, KeepOldestName, DownAllName)
 }
 
 /**
@@ -89,17 +85,6 @@ private[sbr] class SplitBrainResolverSettings(config: Config) {
     KeepOldestSettings(downIfAlone, role(c))
   }
 
-  def keepRefereeSettings = {
-    val c = strategyConfig(KeepRefereeName)
-    val address = c.getString("address")
-    require(address != "", s"akka.cluster.split-brain-resolver.$KeepRefereeName.address must be defined")
-    val AddressFromURIString(a) = address
-    val downAllIfLessThanNodes = c
-      .getInt("down-all-if-less-than-nodes")
-      .requiring(_ >= 0, s"akka.cluster.split-brain-resolver.$KeepRefereeName.down-all-if-less-than-nodes must be >= 0")
-    KeepRefereeSettings(a, downAllIfLessThanNodes)
-  }
-
   def leaseMajoritySettings = {
     val c = strategyConfig(LeaseMajorityName)
 
@@ -132,11 +117,6 @@ private[sbr] final case class StaticQuorumSettings(size: Int, role: Option[Strin
  * Internal API
  */
 private[sbr] final case class KeepOldestSettings(downIfAlone: Boolean, role: Option[String])
-
-/**
- * Internal API
- */
-private[sbr] final case class KeepRefereeSettings(address: Address, downAllIfLessThanNodes: Int)
 
 /**
  * Internal API

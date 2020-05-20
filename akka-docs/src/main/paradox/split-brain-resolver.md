@@ -312,27 +312,6 @@ akka.cluster.split-brain-resolver.active-strategy=keep-oldest
 
 @@snip [reference.conf](/akka-cluster/src/main/resources/reference.conf) { #keep-oldest }
 
-### Keep Referee
-
-The strategy named `keep-referee` will down the part that does not contain the given
-referee node.
-
-If the remaining number of nodes are less than the configured *down-all-if-less-than-nodes*
-all nodes will be downed. If the referee node itself is removed all nodes will be downed.
-
-This strategy is good if you have one node that hosts some critical resource and the
-system cannot run without it. The drawback is that the referee node is a single point
-of failure, by design. `keep-referee` will never result in two separate clusters.
-
-Configuration:
-
-```
-akka.cluster.split-brain-resolver.active-strategy=keep-referee
-```
-
-@@snip [reference.conf](/akka-cluster/src/main/resources/reference.conf) { #keep-referee }
-
-
 ### Down All
 
 The strategy named `down-all` will down all nodes.

@@ -794,42 +794,6 @@ class SplitBrainResolverSpec
 
   }
 
-  "KeepReferee" must {
-    class Setup2(referee: Address, downAllIfLessThanNodes: Int = 1) extends StrategySetup {
-      override def createStrategy() = new KeepReferee(selfDc, referee, downAllIfLessThanNodes)
-    }
-
-    "keep partition with referee" in new Setup2(memberE.address) {
-      side1 = Set(memberA, memberE)
-      side2 = Set(memberB, memberC, memberD)
-      assertDowning(side2)
-    }
-
-    "down all when referee is removed" in new Setup2(memberE.address) {
-      side1 = Set(memberB, memberC, memberD)
-      side2 = Set(memberA)
-      assertDowning(side1 ++ side2)
-    }
-
-    "down all when too few" in new Setup2(memberE.address, downAllIfLessThanNodes = 4) {
-      side1 = Set(memberA, memberE)
-      side2 = Set(memberB, memberC, memberD)
-      assertDowning(side1 ++ side2)
-    }
-
-    "down indirectly connected, keep referee: {(A, B^), C} => {}" in new Setup2(memberB.address) {
-      side1 = Set(memberA, memberB, memberC)
-      indirectlyConnected = List(memberA -> memberB, memberB -> memberA)
-      assertDowning(Set(memberA, memberB, memberC))
-    }
-
-    "down indirectly connected, keep referee: {(A, B), C^} => {C^}" in new Setup2(memberC.address) {
-      side1 = Set(memberA, memberB, memberC)
-      indirectlyConnected = List(memberA -> memberB, memberB -> memberA)
-      assertDowning(Set(memberA, memberB))
-    }
-  }
-
   "DownAllNodes" must {
     class Setup2 extends StrategySetup {
       override def createStrategy() = new DownAllNodes(selfDc)

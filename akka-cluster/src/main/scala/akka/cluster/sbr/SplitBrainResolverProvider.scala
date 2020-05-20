@@ -1,7 +1,6 @@
 /**
  * Copyright (C) 2015-2020 Lightbend Inc.  <https://www.lightbend.com>
  */
-
 package akka.cluster.sbr
 
 import scala.concurrent.duration.Duration
@@ -42,9 +41,6 @@ final class SplitBrainResolverProvider(system: ActorSystem) extends DowningProvi
         case KeepOldestName =>
           val s = settings.keepOldestSettings
           new KeepOldest(selfDc, s.downIfAlone, s.role)
-        case KeepRefereeName =>
-          val s = settings.keepRefereeSettings
-          new KeepReferee(selfDc, s.address, s.downAllIfLessThanNodes)
         case DownAllName =>
           new DownAllNodes(selfDc)
         case LeaseMajorityName =>
