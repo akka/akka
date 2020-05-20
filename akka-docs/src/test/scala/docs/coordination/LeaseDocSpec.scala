@@ -39,11 +39,11 @@ object LeaseDocSpec {
 
   def config() =
     ConfigFactory.parseString("""
-      jdocs-lease.lease-class = "jdocs.akka.coordination.lease.LeaseDocTest$SampleLease"
+      jdocs-lease.lease-class = "jdocs.coordination.LeaseDocTest$SampleLease"
       #lease-config
       akka.actor.provider = cluster
       docs-lease {
-        lease-class = "docs.akka.coordination.SampleLease"
+        lease-class = "docs.coordination.SampleLease"
         heartbeat-timeout = 100s
         heartbeat-interval = 1s
         lease-operation-timeout = 1s
