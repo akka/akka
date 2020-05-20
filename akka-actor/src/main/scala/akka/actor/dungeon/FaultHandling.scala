@@ -9,11 +9,13 @@ import akka.actor.ActorRefScope
 import akka.actor.PostRestartException
 import akka.actor.PreRestartException
 import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import akka.event.Logging
 import akka.event.Logging.Debug
 import akka.event.Logging.Error
+
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.util.control.Exception._
@@ -92,7 +94,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
           val ex = PreRestartException(self, e, cause, optionalMessage)
           publish(Error(ex, self.path.toString, clazz(failedActor), e.getMessage))
         } finally {
-          clearActorFields()
+          clearActorFields(failedActor, recreate = true)
         }
       }
       assert(mailbox.isSuspended, "mailbox must be suspended during restart, status=" + mailbox.currentStatus)
@@ -196,6 +198,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
     }
   }
 
+  @InternalStableApi
   final def handleInvokeFailure(childrenNotToSuspend: immutable.Iterable[ActorRef], t: Throwable): Unit = {
     // prevent any further messages to be processed until the actor has been restarted
     if (!isFailed) try {
@@ -247,7 +250,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
       if (system.settings.DebugLifecycle)
         publish(Debug(self.path.toString, clazz(a), "stopped"))
 
-      clearActorFields()
+      clearActorFields(a, recreate = false)
       clearFieldsForTermination()
     }
   }
@@ -275,7 +278,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
           })
     } catch handleNonFatalOrInterruptedException { e =>
       setFailedFatally()
-      clearActorFields() // in order to prevent preRestart() from happening again
+      clearActorFields(actor, recreate = false) // in order to prevent preRestart() from happening again
       handleInvokeFailure(survivors, PostRestartException(self, e, cause))
     }
   }
