@@ -11,7 +11,9 @@ import scala.util.control.NoStackTrace
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.actor.Props
-import akka.cluster.{ Cluster, MemberStatus, TestLease, TestLeaseExt }
+import akka.cluster.{ Cluster, MemberStatus }
+import akka.coordination.lease.TestLease
+import akka.coordination.lease.TestLeaseExt
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.testkit.TestActors.EchoActor
 

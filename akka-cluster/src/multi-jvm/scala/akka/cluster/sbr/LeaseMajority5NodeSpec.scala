@@ -12,10 +12,11 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter
-import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 
 import akka.cluster.MultiNodeClusterSpec
+import akka.coordination.lease.TestLease
+import akka.coordination.lease.TestLeaseExt
 
 object LeaseMajority5NodeSpec extends MultiNodeConfig {
   val node1 = role("node1")
@@ -24,7 +25,7 @@ object LeaseMajority5NodeSpec extends MultiNodeConfig {
   val node4 = role("node4")
   val node5 = role("node5")
 
-  commonConfig(ConfigFactory.parseString("""
+  commonConfig(ConfigFactory.parseString(s"""
     akka {
       loglevel = INFO
       cluster {
@@ -51,7 +52,7 @@ object LeaseMajority5NodeSpec extends MultiNodeConfig {
     akka.actor.warn-about-java-serializer-usage = off
 
     test-lease {
-      lease-class = akka.cluster.sbr.TestLease
+      lease-class = ${classOf[TestLease].getName}
       heartbeat-interval = 1s
       heartbeat-timeout = 120s
       lease-operation-timeout = 3s
@@ -69,6 +70,8 @@ class LeaseMajority5NodeSpecMultiJvmNode5 extends LeaseMajority5NodeSpec
 
 class LeaseMajority5NodeSpec extends MultiNodeSpec(LeaseMajority5NodeSpec) with MultiNodeClusterSpec {
   import LeaseMajority5NodeSpec._
+
+  private val testLeaseName = "LeaseMajority5NodeSpec-akka-sbr"
 
   def sortByAddress(roles: RoleName*): List[RoleName] = {
 
@@ -106,14 +109,14 @@ class LeaseMajority5NodeSpec extends MultiNodeSpec(LeaseMajority5NodeSpec) with 
     }
 
     "keep the side that can acquire the lease" in {
-      val leaseProbe = TestProbe()
-      TestLeaseExt(system).getTestLease().setProbe(leaseProbe.ref)
+      val lease = TestLeaseExt(system).getTestLease(testLeaseName)
+      val leaseProbe = lease.probe
 
       runOn(node1, node2, node3) {
-        TestLeaseExt(system).getTestLease().setNextAcquireResult(Future.successful(true))
+        lease.setNextAcquireResult(Future.successful(true))
       }
       runOn(node4, node5) {
-        TestLeaseExt(system).getTestLease().setNextAcquireResult(Future.successful(false))
+        lease.setNextAcquireResult(Future.successful(false))
       }
       enterBarrier("lease-in-place")
       runOn(node1) {
@@ -153,11 +156,13 @@ class LeaseMajority5NodeSpec extends MultiNodeSpec(LeaseMajority5NodeSpec) with 
   }
 
   "keep the side that can acquire the lease, round 2" in {
+    val lease = TestLeaseExt(system).getTestLease(testLeaseName)
+
     runOn(node1) {
-      TestLeaseExt(system).getTestLease().setNextAcquireResult(Future.successful(true))
+      lease.setNextAcquireResult(Future.successful(true))
     }
     runOn(node2, node3) {
-      TestLeaseExt(system).getTestLease().setNextAcquireResult(Future.successful(false))
+      lease.setNextAcquireResult(Future.successful(false))
     }
     enterBarrier("lease-in-place-2")
     runOn(node1) {

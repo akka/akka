@@ -18,23 +18,21 @@ import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.Props
-import TestLeaseActor.Acquire
-import TestLeaseActor.Release
 import akka.coordination.lease.LeaseSettings
 import akka.coordination.lease.scaladsl.Lease
 import akka.pattern.ask
 import akka.util.Timeout
 
-object TestLeaseActor {
+object SbrTestLeaseActor {
   def props: Props =
-    Props(new TestLeaseActor)
+    Props(new SbrTestLeaseActor)
 
   final case class Acquire(owner: String)
   final case class Release(owner: String)
 }
 
-class TestLeaseActor extends Actor with ActorLogging {
-  import TestLeaseActor._
+class SbrTestLeaseActor extends Actor with ActorLogging {
+  import SbrTestLeaseActor._
 
   var owner: Option[String] = None
 
@@ -70,31 +68,33 @@ class TestLeaseActor extends Actor with ActorLogging {
 
 }
 
-object TestLeaseActorClientExt extends ExtensionId[TestLeaseActorClientExt] with ExtensionIdProvider {
-  override def get(system: ActorSystem): TestLeaseActorClientExt = super.get(system)
-  override def lookup = TestLeaseActorClientExt
-  override def createExtension(system: ExtendedActorSystem): TestLeaseActorClientExt =
-    new TestLeaseActorClientExt(system)
+object SbrTestLeaseActorClientExt extends ExtensionId[SbrTestLeaseActorClientExt] with ExtensionIdProvider {
+  override def get(system: ActorSystem): SbrTestLeaseActorClientExt = super.get(system)
+  override def lookup = SbrTestLeaseActorClientExt
+  override def createExtension(system: ExtendedActorSystem): SbrTestLeaseActorClientExt =
+    new SbrTestLeaseActorClientExt(system)
 }
 
-class TestLeaseActorClientExt(val system: ExtendedActorSystem) extends Extension {
+class SbrTestLeaseActorClientExt(val system: ExtendedActorSystem) extends Extension {
 
-  private val leaseClient = new AtomicReference[TestLeaseActorClient]()
+  private val leaseClient = new AtomicReference[SbrTestLeaseActorClient]()
 
-  def getActorLeaseClient(): TestLeaseActorClient = {
+  def getActorLeaseClient(): SbrTestLeaseActorClient = {
     val lease = leaseClient.get
     if (lease == null) throw new IllegalStateException("ActorLeaseClient must be set first")
     lease
   }
 
-  def setActorLeaseClient(client: TestLeaseActorClient): Unit =
+  def setActorLeaseClient(client: SbrTestLeaseActorClient): Unit =
     leaseClient.set(client)
 
 }
 
-class TestLeaseActorClient(settings: LeaseSettings, system: ExtendedActorSystem) extends Lease(settings) {
+class SbrTestLeaseActorClient(settings: LeaseSettings, system: ExtendedActorSystem) extends Lease(settings) {
+  import SbrTestLeaseActor.Acquire
+  import SbrTestLeaseActor.Release
 
-  TestLeaseActorClientExt(system).setActorLeaseClient(this)
+  SbrTestLeaseActorClientExt(system).setActorLeaseClient(this)
 
   private implicit val timeout = Timeout(3.seconds)
 

@@ -27,6 +27,7 @@ import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus._
 import akka.cluster._
 import akka.coordination.lease.LeaseSettings
+import akka.coordination.lease.TestLease
 import akka.coordination.lease.TimeoutSettings
 import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter

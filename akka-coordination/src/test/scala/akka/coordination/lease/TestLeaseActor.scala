@@ -2,7 +2,7 @@
  * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.cluster
+package akka.coordination.lease
 
 import java.util.concurrent.atomic.AtomicReference
 
@@ -19,8 +19,6 @@ import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.Props
-import akka.cluster.TestLeaseActor.{ Acquire, Create, Release }
-import akka.coordination.lease.LeaseSettings
 import akka.coordination.lease.scaladsl.Lease
 import akka.event.Logging
 import akka.pattern.ask
@@ -96,6 +94,9 @@ class TestLeaseActorClientExt(val system: ExtendedActorSystem) extends Extension
 }
 
 class TestLeaseActorClient(settings: LeaseSettings, system: ExtendedActorSystem) extends Lease(settings) {
+  import TestLeaseActor.Acquire
+  import TestLeaseActor.Create
+  import TestLeaseActor.Release
 
   private val log = Logging(system, getClass)
   val leaseActor = TestLeaseActorClientExt(system).getLeaseActor()

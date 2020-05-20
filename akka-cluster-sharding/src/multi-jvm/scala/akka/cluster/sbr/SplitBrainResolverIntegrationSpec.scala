@@ -136,7 +136,7 @@ class SplitBrainResolverIntegrationSpec
       system.actorOf(GlobalRegistry.props(singletonProbe.ref, false), s"singletonRegistry-$c")
       system.actorOf(GlobalRegistry.props(shardingProbe.ref, true), s"shardingRegistry-$c")
       if (scenario.usingLease)
-        system.actorOf(TestLeaseActor.props, s"lease-${sys.name}")
+        system.actorOf(SbrTestLeaseActor.props, s"lease-${sys.name}")
     }
     enterBarrier("registry-started")
 
@@ -148,7 +148,7 @@ class SplitBrainResolverIntegrationSpec
     if (scenario.usingLease) {
       system.actorSelection(node(node1) / "user" / s"lease-${sys.name}") ! Identify(None)
       val leaseRef: ActorRef = expectMsgType[ActorIdentity].ref.get
-      TestLeaseActorClientExt(sys).getActorLeaseClient().setActorLeaseRef(leaseRef)
+      SbrTestLeaseActorClientExt(sys).getActorLeaseClient().setActorLeaseRef(leaseRef)
     }
 
     enterBarrier("registry-located")
@@ -401,7 +401,7 @@ class SplitBrainResolverIntegrationSpec
         }
       }
       test-lease {
-        lease-class = akka.cluster.sbr.TestLeaseActorClient
+        lease-class = akka.cluster.sbr.SbrTestLeaseActorClient
         heartbeat-interval = 1s
         heartbeat-timeout = 120s
         lease-operation-timeout = 3s
