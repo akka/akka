@@ -76,6 +76,7 @@ class ReplicatorMessageSerializerSpec
       checkSerialization(Get(keyA, ReadLocal))
       checkSerialization(Get(keyA, ReadMajority(2.seconds), Some("x")))
       checkSerialization(Get(keyA, ReadMajority((Int.MaxValue.toLong + 50).milliseconds), Some("x")))
+      checkSerialization(Get(keyA, ReadMajority(2.seconds, minCap = 3), Some("x")))
       try {
         serializer.toBinary(Get(keyA, ReadMajority((Int.MaxValue.toLong * 3).milliseconds), Some("x")))
         fail("Our protobuf protocol does not support timeouts larger than unsigned ints")
@@ -83,6 +84,8 @@ class ReplicatorMessageSerializerSpec
         case e: IllegalArgumentException =>
           e.getMessage should include("unsigned int")
       }
+      checkSerialization(Get(keyA, ReadMajorityPlus(2.seconds, 3), Some("x")))
+      checkSerialization(Get(keyA, ReadMajorityPlus(2.seconds, 3, 5), Some("x")))
       checkSerialization(GetSuccess(keyA, None)(data1))
       checkSerialization(GetSuccess(keyA, Some("x"))(data1))
       checkSerialization(NotFound(keyA, Some("x")))

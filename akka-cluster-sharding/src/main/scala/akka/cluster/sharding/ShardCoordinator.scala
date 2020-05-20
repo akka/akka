@@ -339,6 +339,7 @@ object ShardCoordinator {
     @SerialVersionUID(1L) final case class ShardRegionProxyTerminated(regionProxy: ActorRef) extends DomainEvent
     @SerialVersionUID(1L) final case class ShardHomeAllocated(shard: ShardId, region: ActorRef) extends DomainEvent
     @SerialVersionUID(1L) final case class ShardHomeDeallocated(shard: ShardId) extends DomainEvent
+    @SerialVersionUID(1L) final case object ShardCoordinatorInitialized extends DomainEvent
 
     case object StateInitialized
 
@@ -409,6 +410,8 @@ object ShardCoordinator {
             shards = shards - shard,
             regions = regions.updated(region, regions(region).filterNot(_ == shard)),
             unallocatedShards = newUnallocatedShards)
+        case ShardCoordinatorInitialized =>
+          this
       }
     }
 
@@ -757,7 +760,12 @@ abstract class ShardCoordinator(
         sender() ! reply
 
       case ShardCoordinator.Internal.Terminate =>
-        log.debug("Received termination message")
+        if (rebalanceInProgress.isEmpty)
+          log.debug("Received termination message.")
+        else
+          log.debug(
+            "Received termination message. Rebalance in progress of shards [{}].",
+            rebalanceInProgress.keySet.mkString(", "))
         context.stop(self)
     }: Receive).orElse[Any, Unit](receiveTerminated)
 
@@ -1027,6 +1035,8 @@ class PersistentShardCoordinator(
           state = state.updated(evt)
         case _: ShardHomeDeallocated =>
           state = state.updated(evt)
+        case ShardCoordinatorInitialized =>
+          () // not used here
       }
 
     case SnapshotOffer(_, st: State) =>
@@ -1127,8 +1137,14 @@ private[akka] class DDataShardCoordinator(
   import ShardCoordinator.Internal._
   import akka.cluster.ddata.Replicator.Update
 
-  private val readMajority = ReadMajority(settings.tuningParameters.waitingForStateTimeout, majorityMinCap)
-  private val writeMajority = WriteMajority(settings.tuningParameters.updatingStateTimeout, majorityMinCap)
+  private val stateReadConsistency = settings.tuningParameters.coordinatorStateReadMajorityPlus match {
+    case Int.MaxValue => ReadAll(settings.tuningParameters.waitingForStateTimeout)
+    case additional   => ReadMajorityPlus(settings.tuningParameters.waitingForStateTimeout, majorityMinCap, additional)
+  }
+  private val stateWriteConsistency = settings.tuningParameters.coordinatorStateWriteMajorityPlus match {
+    case Int.MaxValue => WriteAll(settings.tuningParameters.waitingForStateTimeout)
+    case additional   => WriteMajorityPlus(settings.tuningParameters.waitingForStateTimeout, majorityMinCap, additional)
+  }
 
   implicit val node = Cluster(context.system)
   private implicit val selfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
@@ -1178,7 +1194,7 @@ private[akka] class DDataShardCoordinator(
       case GetFailure(CoordinatorStateKey, _) =>
         log.error(
           "The ShardCoordinator was unable to get an initial state within 'waiting-for-state-timeout': {} millis (retrying). Has ClusterSharding been started on all nodes?",
-          readMajority.timeout.toMillis)
+          stateReadConsistency.timeout.toMillis)
         // repeat until GetSuccess
         getCoordinatorState()
 
@@ -1208,6 +1224,13 @@ private[akka] class DDataShardCoordinator(
       case ShardCoordinator.Internal.Terminate =>
         log.debug("Received termination message while waiting for state")
         context.stop(self)
+
+      case Register(region) =>
+        log.debug("ShardRegion tried to register but ShardCoordinator not initialized yet: [{}]", region)
+
+      case RegisterProxy(region) =>
+        log.debug("ShardRegion proxy tried to register but ShardCoordinator not initialized yet: [{}]", region)
+
     }: Receive).orElse[Any, Unit](receiveTerminated)
 
   private def onInitialState(loadedState: State, rememberedShards: Set[ShardId]): Unit = {
@@ -1277,7 +1300,7 @@ private[akka] class DDataShardCoordinator(
       log.error(
         "The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': {} millis ({}). " +
         "Perhaps the ShardRegion has not started on all active nodes yet? event={}",
-        writeMajority.timeout.toMillis,
+        stateWriteConsistency.timeout.toMillis,
         if (terminating) "terminating" else "retrying",
         evt)
       if (terminating) {
@@ -1399,7 +1422,7 @@ private[akka] class DDataShardCoordinator(
   }
 
   def getCoordinatorState(): Unit = {
-    replicator ! Get(CoordinatorStateKey, readMajority)
+    replicator ! Get(CoordinatorStateKey, stateReadConsistency)
   }
 
   def getAllRememberedShards(): Unit = {
@@ -1412,10 +1435,13 @@ private[akka] class DDataShardCoordinator(
 
   def sendCoordinatorStateUpdate(evt: DomainEvent) = {
     val s = state.updated(evt)
-    log.debug("Publishing new coordinator state [{}]", state)
-    replicator ! Update(CoordinatorStateKey, LWWRegister(selfUniqueAddress, initEmptyState), writeMajority, Some(evt)) {
-      reg =>
-        reg.withValueOf(s)
+    log.debug("Storing new coordinator state [{}]", state)
+    replicator ! Update(
+      CoordinatorStateKey,
+      LWWRegister(selfUniqueAddress, initEmptyState),
+      stateWriteConsistency,
+      Some(evt)) { reg =>
+      reg.withValueOf(s)
     }
   }
 
