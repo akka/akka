@@ -1,7 +1,6 @@
 /**
  * Copyright (C) 2015-2020 Lightbend Inc.  <https://www.lightbend.com>
  */
-
 package akka.cluster.sbr
 
 import scala.collection.immutable
@@ -246,8 +245,7 @@ import akka.coordination.lease.scaladsl.Lease
 
   private def indirectlyConnectedFromIntersectionOfObserversAndSubjects: Set[UniqueAddress] = {
     // cycle in unreachability graph
-    // TODO can't use r.allObservers, because reachability.filterRecords doesn't update versions (issue #25950 in Akka)
-    val observers = reachability.records.map(_.observer).toSet
+    val observers = reachability.allObservers
     observers.intersect(reachability.allUnreachableOrTerminated)
   }
 
