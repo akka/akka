@@ -3,7 +3,8 @@
 When operating an Akka cluster you must consider how to handle
 [network partitions](http://en.wikipedia.org/wiki/Network_partition) (a.k.a. split brain scenarios)
 and machine crashes (including JVM and hardware failures). This is crucial for correct behavior if
-you use Cluster Singleton or Cluster Sharding, especially together with Akka Persistence.
+you use @ref:[Cluster Singleton](typed/cluster-singleton.md) or @ref:[Cluster Sharding](typed/cluster-sharding.md),
+especially together with Akka Persistence.
 
 ## Module info
 
@@ -17,6 +18,17 @@ dependency included. Otherwise, add the following dependency in your project:
 }
 
 @@project-info{ projectId="akka-cluster" }
+
+## Enable the Split Brain Resolver
+
+You need to enable the Split Brain Resolver by configuring it as downing provider in the configuration of
+the `ActorSystem` (`application.conf`):
+
+```
+akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
+```
+
+You should also consider the different available @ref:[downing strategies](#strategies).
 
 ## The Problem
 
@@ -85,15 +97,6 @@ undesirable.
 With that introduction of the problem domain, it is time to look at the provided strategies for
 handling network partition, unresponsive nodes and crashed nodes.
 
-## Using the Split Brain Resolver
-
-Then you need to enable the Split Brain Resolver by configuring it with *akka.cluster.downing-provider-class*
-in the configuration of the `ActorSystem` (`application.conf`):
-
-```
-akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
-```
-
 ## Strategies
 
 By default the @ref:[Keep Majority](#keep-majority) strategy will be used because it works well for
@@ -119,8 +122,8 @@ while there are unreachable nodes. Joining nodes are not counted in the logic of
 
 @@snip [reference.conf](/akka-cluster/src/main/resources/reference.conf) { #split-brain-resolver }
 
-Set `akka.cluster.split-brain-resolver.stable-after` to a shorter duration to have quicker removal of crashed nodes, at the price
-of risking too early action on transient network partitions that otherwise would have healed. Do not
+Set `akka.cluster.split-brain-resolver.stable-after` to a shorter duration to have quicker removal of crashed nodes,
+at the price of risking too early action on transient network partitions that otherwise would have healed. Do not
 set this to a shorter duration than the membership dissemination time in the cluster, which depends
 on the cluster size. Recommended minimum duration for different cluster sizes:
 
@@ -325,13 +328,6 @@ may fail.
 See also @ref[Down all when unstable](#down-all-when-unstable) and @ref:[indirectly connected nodes](#indirectly-connected-nodes).
 
 ### Lease
-
-@@@ warning
-
-The `lease-majority` is currently marked as @ref:[May Change](common/may-change.md) in the sense of
-that the configuration and behavior might be changed based on feedback from initial usage.
-
-@@@
 
 The strategy named `lease-majority` is using a distributed lease (lock) to decide what nodes that are allowed to
 survive. Only one SBR instance can acquire the lease make the decision to remain up. The other side will
