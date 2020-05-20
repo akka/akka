@@ -629,7 +629,7 @@ private[akka] class ActorCell(
   protected def create(failure: Option[ActorInitializationException]): Unit = {
     def failActor(): Unit =
       if (_actor != null) {
-        clearActorFields()
+        clearActorFields(actor, recreate = false)
         setFailedFatally()
         _actor = null // ensure that we know that we failed during creation
       }
@@ -686,7 +686,9 @@ private[akka] class ActorCell(
     case _                               =>
   }
 
-  final protected def clearActorFields(): Unit = {
+  @InternalStableApi
+  @silent("never used")
+  final protected def clearActorFields(actorInstance: Actor, recreate: Boolean): Unit = {
     currentMessage = null
     behaviorStack = emptyBehaviorStack
   }
