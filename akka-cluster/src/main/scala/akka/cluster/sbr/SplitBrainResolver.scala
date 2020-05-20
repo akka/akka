@@ -7,19 +7,28 @@ package akka.cluster.sbr
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
 
-import akka.actor._
+import akka.actor.Actor
+import akka.actor.ActorLogging
+import akka.actor.Address
+import akka.actor.Cancellable
+import akka.actor.Props
+import akka.actor.Stash
+import akka.annotation.InternalApi
+import akka.cluster.Cluster
+import akka.cluster.ClusterEvent
 import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterSettings.DataCenter
-import akka.cluster._
+import akka.cluster.Member
+import akka.cluster.Reachability
+import akka.cluster.UniqueAddress
 import akka.pattern.pipe
 
 /**
  * INTERNAL API
  */
-private[akka] object SplitBrainResolver {
+@InternalApi private[sbr] object SplitBrainResolver {
 
   def props(stableAfter: FiniteDuration, strategy: DowningStrategy): Props =
     Props(new SplitBrainResolver(stableAfter, strategy))
@@ -78,10 +87,10 @@ private[akka] object SplitBrainResolver {
  * The implementation is split into two classes SplitBrainResolver and SplitBrainResolverBase to be
  * able to unit test the logic without running cluster.
  */
-private[akka] class SplitBrainResolver(stableAfter: FiniteDuration, strategy: DowningStrategy)
+@InternalApi private[sbr] final class SplitBrainResolver(stableAfter: FiniteDuration, strategy: DowningStrategy)
     extends SplitBrainResolverBase(stableAfter, strategy) {
 
-  val cluster = Cluster(context.system)
+  private val cluster = Cluster(context.system)
 
   log.info(
     "SBR started. Config: stableAfter: {} ms, strategy: {}, selfUniqueAddress: {}, selfDc: {}",
@@ -90,8 +99,8 @@ private[akka] class SplitBrainResolver(stableAfter: FiniteDuration, strategy: Do
     selfUniqueAddress,
     selfDc)
 
-  override def selfUniqueAddress = cluster.selfUniqueAddress
-  override def selfDc = cluster.selfDataCenter
+  override def selfUniqueAddress: UniqueAddress = cluster.selfUniqueAddress
+  override def selfDc: DataCenter = cluster.selfDataCenter
 
   // re-subscribe when restart
   override def preStart(): Unit = {
@@ -116,7 +125,7 @@ private[akka] class SplitBrainResolver(stableAfter: FiniteDuration, strategy: Do
  * The implementation is split into two classes SplitBrainResolver and SplitBrainResolverBase to be
  * able to unit test the logic without running cluster.
  */
-private[akka] abstract class SplitBrainResolverBase(stableAfter: FiniteDuration, strategy: DowningStrategy)
+@InternalApi private[sbr] abstract class SplitBrainResolverBase(stableAfter: FiniteDuration, strategy: DowningStrategy)
     extends Actor
     with ActorLogging
     with Stash {
@@ -142,7 +151,7 @@ private[akka] abstract class SplitBrainResolverBase(stableAfter: FiniteDuration,
   def tickInterval: FiniteDuration = 1.second
 
   import context.dispatcher
-  val tickTask = {
+  val tickTask: Cancellable = {
     val interval = tickInterval
     context.system.scheduler.scheduleWithFixedDelay(interval, interval, self, Tick)
   }

@@ -360,7 +360,10 @@ import akka.coordination.lease.scaladsl.Lease
  *
  * It is only counting members within the own data center.
  */
-@InternalApi private[sbr] class StaticQuorum(selfDc: DataCenter, val quorumSize: Int, override val role: Option[String])
+@InternalApi private[sbr] final class StaticQuorum(
+    selfDc: DataCenter,
+    val quorumSize: Int,
+    override val role: Option[String])
     extends DowningStrategy(selfDc) {
   import DowningStrategy._
 
@@ -393,7 +396,7 @@ import akka.coordination.lease.scaladsl.Lease
  *
  * It is only counting members within the own data center.
  */
-@InternalApi private[sbr] class KeepMajority(selfDc: DataCenter, override val role: Option[String])
+@InternalApi private[sbr] final class KeepMajority(selfDc: DataCenter, override val role: Option[String])
     extends DowningStrategy(selfDc) {
   import DowningStrategy._
 
@@ -479,7 +482,7 @@ import akka.coordination.lease.scaladsl.Lease
  * It is only using members within the own data center, i.e. oldest within the
  * data center.
  */
-@InternalApi private[sbr] class KeepOldest(
+@InternalApi private[sbr] final class KeepOldest(
     selfDc: DataCenter,
     val downIfAlone: Boolean,
     override val role: Option[String])
@@ -559,7 +562,7 @@ import akka.coordination.lease.scaladsl.Lease
  *
  * Down all nodes unconditionally.
  */
-@InternalApi private[sbr] class DownAllNodes(selfDc: DataCenter) extends DowningStrategy(selfDc) {
+@InternalApi private[sbr] final class DownAllNodes(selfDc: DataCenter) extends DowningStrategy(selfDc) {
   import DowningStrategy._
 
   override def decide(): Decision =
@@ -580,7 +583,7 @@ import akka.coordination.lease.scaladsl.Lease
  * If the `role` is defined the majority/minority is based only on members with that `role`.
  * It is only counting members within the own data center.
  */
-@InternalApi private[sbr] class LeaseMajority(
+@InternalApi private[sbr] final class LeaseMajority(
     selfDc: DataCenter,
     override val role: Option[String],
     _lease: Lease,

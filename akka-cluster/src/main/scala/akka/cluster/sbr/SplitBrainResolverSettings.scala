@@ -10,15 +10,17 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 
-import akka.ConfigurationException
-import akka.util.Helpers
-import akka.util.Helpers.Requiring
 import com.typesafe.config.Config
 
+import akka.ConfigurationException
+import akka.annotation.InternalApi
+import akka.util.Helpers
+import akka.util.Helpers.Requiring
+
 /**
- * Internal API
+ * INTERNAL API
  */
-private[sbr] object SplitBrainResolverSettings {
+@InternalApi private[sbr] object SplitBrainResolverSettings {
   final val KeepMajorityName = "keep-majority"
   final val LeaseMajorityName = "lease-majority"
   final val StaticQuorumName = "static-quorum"
@@ -30,9 +32,9 @@ private[sbr] object SplitBrainResolverSettings {
 }
 
 /**
- * Internal API
+ * INTERNAL API
  */
-private[sbr] class SplitBrainResolverSettings(config: Config) {
+@InternalApi private[sbr] final class SplitBrainResolverSettings(config: Config) {
 
   import SplitBrainResolverSettings._
 
@@ -70,9 +72,9 @@ private[sbr] class SplitBrainResolverSettings(config: Config) {
 
   // the individual sub-configs below should only be called when the strategy has been selected
 
-  def keepMajorityRole = role(strategyConfig(KeepMajorityName))
+  def keepMajorityRole: Option[String] = role(strategyConfig(KeepMajorityName))
 
-  def staticQuorumSettings = {
+  def staticQuorumSettings: StaticQuorumSettings = {
     val c = strategyConfig(StaticQuorumName)
     val size = c
       .getInt("quorum-size")
@@ -80,13 +82,13 @@ private[sbr] class SplitBrainResolverSettings(config: Config) {
     StaticQuorumSettings(size, role(c))
   }
 
-  def keepOldestSettings = {
+  def keepOldestSettings: KeepOldestSettings = {
     val c = strategyConfig(KeepOldestName)
     val downIfAlone = c.getBoolean("down-if-alone")
     KeepOldestSettings(downIfAlone, role(c))
   }
 
-  def leaseMajoritySettings = {
+  def leaseMajoritySettings: LeaseMajoritySettings = {
     val c = strategyConfig(LeaseMajorityName)
 
     val leaseImplementation = c.getString("lease-implementation")
@@ -110,19 +112,19 @@ private[sbr] class SplitBrainResolverSettings(config: Config) {
 }
 
 /**
- * Internal API
+ * INTERNAL API
  */
-private[sbr] final case class StaticQuorumSettings(size: Int, role: Option[String])
+@InternalApi private[sbr] final case class StaticQuorumSettings(size: Int, role: Option[String])
 
 /**
- * Internal API
+ * INTERNAL API
  */
-private[sbr] final case class KeepOldestSettings(downIfAlone: Boolean, role: Option[String])
+@InternalApi private[sbr] final case class KeepOldestSettings(downIfAlone: Boolean, role: Option[String])
 
 /**
- * Internal API
+ * INTERNAL API
  */
-private[sbr] final case class LeaseMajoritySettings(
+@InternalApi private[sbr] final case class LeaseMajoritySettings(
     leaseImplementation: String,
     acquireLeaseDelayForMinority: FiniteDuration,
     role: Option[String])

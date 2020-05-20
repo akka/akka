@@ -6,12 +6,21 @@ package akka.cluster.sbr
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.cluster.Cluster
 import akka.cluster.DowningProvider
 import akka.coordination.lease.scaladsl.LeaseProvider
 
+/**
+ * See reference documentation: https://doc.akka.io/docs/akka/current/split-brain-resolver.html
+ *
+ * Enabled with configuration:
+ * {{{
+ * akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
+ * }}}
+ */
 final class SplitBrainResolverProvider(system: ActorSystem) extends DowningProvider {
 
   private val settings = new SplitBrainResolverSettings(system.settings.config)
