@@ -2,15 +2,17 @@
  * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package docs.akka.coordination
+package docs.coordination
+
+import scala.concurrent.Future
+
+import com.typesafe.config.ConfigFactory
 
 import akka.cluster.Cluster
 import akka.coordination.lease.LeaseSettings
-import akka.coordination.lease.scaladsl.{ Lease, LeaseProvider }
+import akka.coordination.lease.scaladsl.Lease
+import akka.coordination.lease.scaladsl.LeaseProvider
 import akka.testkit.AkkaSpec
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Future
 
 //#lease-example
 class SampleLease(settings: LeaseSettings) extends Lease(settings) {
