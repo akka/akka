@@ -1,6 +1,7 @@
 /**
  * Copyright (C) 2015-2020 Lightbend Inc.  <https://www.lightbend.com>
  */
+
 package akka.cluster.sbr
 
 import scala.concurrent.duration.Duration
@@ -26,9 +27,8 @@ final class SplitBrainResolverProvider(system: ActorSystem) extends DowningProvi
   }
 
   override def downingActorProps: Option[Props] = {
-
-    import SplitBrainResolver._
     import SplitBrainResolverSettings._
+
     val cluster = Cluster(system)
     val selfDc = cluster.selfDataCenter
     val strategy =

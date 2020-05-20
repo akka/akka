@@ -38,7 +38,7 @@ object SplitBrainResolverSpec {
   object DowningTestActor {
     def props(
         stableAfter: FiniteDuration,
-        strategy: SplitBrainResolver.Strategy,
+        strategy: DowningStrategy,
         probe: ActorRef,
         selfUniqueAddress: UniqueAddress,
         selfDc: DataCenter,
@@ -57,7 +57,7 @@ object SplitBrainResolverSpec {
 
   class DowningTestActor(
       stableAfter: FiniteDuration,
-      strategy: SplitBrainResolver.Strategy,
+      strategy: DowningStrategy,
       probe: ActorRef,
       override val selfUniqueAddress: UniqueAddress,
       override val selfDc: DataCenter,
@@ -100,7 +100,7 @@ class SplitBrainResolverSpec
   """.stripMargin)
     with Eventually {
 
-  import SplitBrainResolver._
+  import DowningStrategy._
   import SplitBrainResolverSpec._
   import TestAddresses._
 
@@ -120,7 +120,7 @@ class SplitBrainResolverSpec
   def extSystem: ExtendedActorSystem = system.asInstanceOf[ExtendedActorSystem]
 
   abstract class StrategySetup {
-    def createStrategy(): Strategy
+    def createStrategy(): DowningStrategy
 
     var side1: Set[Member] = Set.empty
     var side2: Set[Member] = Set.empty
@@ -132,7 +132,7 @@ class SplitBrainResolverSpec
 
     var indirectlyConnected: Seq[(Member, Member)] = Nil
 
-    private def initStrategy(): Strategy = {
+    private def initStrategy(): DowningStrategy = {
       val strategy = createStrategy()
       (side1 ++ side2 ++ side3).foreach(strategy.add)
       strategy
@@ -149,7 +149,7 @@ class SplitBrainResolverSpec
         strategy(side).nodesToDown() should be(members.map(_.uniqueAddress))
     }
 
-    def strategy(side: Set[Member]): Strategy = {
+    def strategy(side: Set[Member]): DowningStrategy = {
       val others = side1 ++ side2 ++ side3 -- side
       (side -- others) should be(side)
 
@@ -953,7 +953,7 @@ class SplitBrainResolverSpec
       testAddRemove(setup.strategy(setup.side1))
     }
 
-    def testAddRemove(strategy: Strategy) = {
+    def testAddRemove(strategy: DowningStrategy) = {
       strategy.add(joining(memberA))
       strategy.add(joining(memberB))
       strategy.allMembersInDC.size should ===(2)
@@ -1109,7 +1109,7 @@ class SplitBrainResolverSpec
 
     abstract class Setup(
         stableAfter: FiniteDuration,
-        strategy: SplitBrainResolver.Strategy,
+        strategy: DowningStrategy,
         selfUniqueAddress: UniqueAddress,
         downAllWhenUnstable: FiniteDuration = Duration.Zero,
         tickInterval: FiniteDuration = Duration.Zero) {
@@ -1149,7 +1149,7 @@ class SplitBrainResolverSpec
       def reachable(members: Member*): Unit =
         members.foreach(m => a ! ReachableMember(m))
 
-      def tick(): Unit = a ! Tick
+      def tick(): Unit = a ! SplitBrainResolver.Tick
 
       def expectDownCalled(members: Member*): Unit =
         receiveN(members.length).toSet should be(members.map(m => DownCalled(m.address)).toSet)
