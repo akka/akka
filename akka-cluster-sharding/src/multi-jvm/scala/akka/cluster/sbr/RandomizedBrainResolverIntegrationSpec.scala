@@ -46,7 +46,7 @@ object RandomizedSplitBrainResolverIntegrationSpec extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString(s"""
     akka {
-      loglevel = DEBUG
+      loglevel = INFO
       cluster {
         downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
         split-brain-resolver {
@@ -77,10 +77,6 @@ object RandomizedSplitBrainResolverIntegrationSpec extends MultiNodeConfig {
     }
 
     test.random-seed = ${System.currentTimeMillis()}
-
-    # FIXME when using Akka 2.6 we should use Jackson or JavaSerializable
-    akka.actor.allow-java-serialization = on
-    akka.actor.warn-about-java-serializer-usage = off
 
     akka.testconductor.barrier-timeout = 120 s
     akka.cluster.run-coordinated-shutdown-when-down = off
@@ -113,6 +109,8 @@ class RandomizedSplitBrainResolverIntegrationSpec
   var c = 0
   // to be shutdown in afterEach
   var disposableSys: DisposableSys = _
+
+  override def expectedTestDuration = 3.minutes
 
   object DisposableSys {
     def apply(scenario: Scenario): DisposableSys = {

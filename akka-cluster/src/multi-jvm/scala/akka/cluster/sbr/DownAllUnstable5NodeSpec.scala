@@ -24,7 +24,7 @@ object DownAllUnstable5NodeSpec extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString("""
     akka {
-      loglevel = DEBUG
+      loglevel = INFO
       cluster {
         downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
         failure-detector.acceptable-heartbeat-pause = 3s
@@ -43,10 +43,6 @@ object DownAllUnstable5NodeSpec extends MultiNodeConfig {
 
       test.filter-leeway = 10s
     }
-
-    # FIXME when using Akka 2.6 we should use Jackson or JavaSerializable
-    akka.actor.allow-java-serialization = on
-    akka.actor.warn-about-java-serializer-usage = off
   """))
 
   testTransport(on = true)

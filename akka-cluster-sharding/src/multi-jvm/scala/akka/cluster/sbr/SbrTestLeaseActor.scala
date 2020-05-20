@@ -21,14 +21,15 @@ import akka.actor.Props
 import akka.coordination.lease.LeaseSettings
 import akka.coordination.lease.scaladsl.Lease
 import akka.pattern.ask
+import akka.serialization.jackson.CborSerializable
 import akka.util.Timeout
 
 object SbrTestLeaseActor {
   def props: Props =
     Props(new SbrTestLeaseActor)
 
-  final case class Acquire(owner: String)
-  final case class Release(owner: String)
+  final case class Acquire(owner: String) extends CborSerializable
+  final case class Release(owner: String) extends CborSerializable
 }
 
 class SbrTestLeaseActor extends Actor with ActorLogging {

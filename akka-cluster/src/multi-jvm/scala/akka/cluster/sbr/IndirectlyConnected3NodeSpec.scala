@@ -35,10 +35,6 @@ object IndirectlyConnected3NodeSpec extends MultiNodeConfig {
 
       test.filter-leeway = 10s
     }
-
-    # FIXME when using Akka 2.6 we should use Jackson or JavaSerializable
-    akka.actor.allow-java-serialization = on
-    akka.actor.warn-about-java-serializer-usage = off
   """))
 
   testTransport(on = true)

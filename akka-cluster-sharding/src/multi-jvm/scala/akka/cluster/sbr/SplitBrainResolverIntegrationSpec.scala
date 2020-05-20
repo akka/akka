@@ -62,10 +62,6 @@ object SplitBrainResolverIntegrationSpec extends MultiNodeConfig {
       remote.log-remote-lifecycle-events = off
     }
 
-    # FIXME when using Akka 2.6 we should use Jackson or JavaSerializable
-    akka.actor.allow-java-serialization = on
-    akka.actor.warn-about-java-serializer-usage = off
-
     akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
     akka.coordinated-shutdown.terminate-actor-system = off
     akka.cluster.run-coordinated-shutdown-when-down = off
@@ -105,6 +101,8 @@ class SplitBrainResolverIntegrationSpec
   var c = 0
   // to be shutdown in afterEach
   var disposableSys: DisposableSys = _
+
+  override def expectedTestDuration = 10.minutes
 
   object DisposableSys {
     def apply(scenario: Scenario): DisposableSys = {

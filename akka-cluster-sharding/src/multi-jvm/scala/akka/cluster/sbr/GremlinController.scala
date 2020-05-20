@@ -17,11 +17,12 @@ import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
 import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
+import akka.serialization.jackson.CborSerializable
 
 object GremlinController {
-  case class BlackholeNode(target: Address)
-  case class PassThroughNode(target: Address)
-  case object GetAddress
+  final case class BlackholeNode(target: Address) extends CborSerializable
+  final case class PassThroughNode(target: Address) extends CborSerializable
+  case object GetAddress extends CborSerializable
 
   def props: Props =
     Props(new GremlinController)
