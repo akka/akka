@@ -14,7 +14,7 @@ import akka.annotation.InternalApi
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class JFRActorFlightRecorder(val system: ActorSystem[_]) extends ActorFlightRecorder {
+private[akka] final class JFRActorFlightRecorder() extends ActorFlightRecorder {
   override val delivery: DeliveryFlightRecorder = new JFRDeliveryFlightRecorder
 }
 

@@ -4,15 +4,10 @@
 
 package akka.actor.typed.internal
 
-import scala.util.Failure
-import scala.util.Success
-
 import akka.actor.ActorPath
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Extension
-import akka.actor.typed.ExtensionId
+import akka.actor.typed.{ ActorSystem, Extension, ExtensionId }
 import akka.annotation.InternalApi
-import akka.util.JavaVersion
+import akka.util.FlightRecorderLoader
 
 /**
  * INTERNAL API
@@ -21,20 +16,10 @@ import akka.util.JavaVersion
 object ActorFlightRecorder extends ExtensionId[ActorFlightRecorder] {
 
   override def createExtension(system: ActorSystem[_]): ActorFlightRecorder =
-    if (JavaVersion.majorVersion >= 11 && system.settings.config.getBoolean("akka.java-flight-recorder.enabled")) {
-      // Dynamic instantiation to not trigger class load on earlier JDKs
-      import scala.language.existentials
-      system.dynamicAccess.createInstanceFor[ActorFlightRecorder](
-        "akka.actor.typed.internal.jfr.JFRActorFlightRecorder",
-        (classOf[ActorSystem[_]], system) :: Nil) match {
-        case Success(jfr) => jfr
-        case Failure(ex) =>
-          system.log.warn("Failed to load JFR Actor flight recorder, falling back to noop. Exception: {}", ex.toString)
-          NoOpActorFlightRecorder
-      } // fallback if not possible to dynamically load for some reason
-    } else
-      // JFR not available on Java 8
-      NoOpActorFlightRecorder
+    FlightRecorderLoader.load[ActorFlightRecorder](
+      system,
+      "akka.actor.typed.internal.jfr.JFRActorFlightRecorder",
+      NoOpActorFlightRecorder)
 }
 
 /**
@@ -43,7 +28,6 @@ object ActorFlightRecorder extends ExtensionId[ActorFlightRecorder] {
 @InternalApi
 private[akka] trait ActorFlightRecorder extends Extension {
   val delivery: DeliveryFlightRecorder
-
 }
 
 /**

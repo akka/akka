@@ -4,12 +4,13 @@
 
 package akka.cluster.sharding
 
+import java.nio.file.Paths
 import java.util.concurrent.TimeUnit.NANOSECONDS
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor._
 import akka.cluster.MemberStatus
-import akka.cluster.sharding.ShardRegion.Passivate
+import akka.cluster.sharding.ShardRegion.{ CurrentShardRegionState, GetShardRegionState, Passivate }
 import akka.testkit._
 import akka.util.ccompat._
 import com.typesafe.config.ConfigFactory
@@ -20,40 +21,21 @@ import scala.concurrent.duration._
 @ccompatUsedUntil213
 object ClusterShardingRememberEntitiesPerfSpec {
 
-  def props(): Props = Props(new TestEntity)
-
-  class TestEntity extends Actor with ActorLogging {
-
-    log.debug("Started TestEntity: {}", self)
-
-    def receive = {
-      case _: Stop => context.parent ! Passivate("stop")
-      case "stop"  => context.stop(self)
-      case m       => sender() ! m
-    }
-  }
-
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int        => (id.toString, id)
-    case msg @ Stop(id) => (id.toString, msg)
-  }
-
-  val extractShardId: ShardRegion.ExtractShardId = {
-    case _: Int                     => "0" // only one shard
-    case _: Stop                    => "0"
-    case ShardRegion.StartEntity(_) => "0"
-  }
-
   case class In(id: Long, created: Long = System.currentTimeMillis())
   case class Out(latency: Long)
 
   class LatencyEntity extends Actor with ActorLogging {
 
     override def receive: Receive = {
-      case In(_, created) => sender() ! Out(System.currentTimeMillis() - created)
-      case _: Stop        => context.parent ! Passivate("stop")
-      case "stop"         => context.stop(self)
-      case msg            => throw new RuntimeException("unexpected msg " + msg)
+      case In(_, created) =>
+        sender() ! Out(System.currentTimeMillis() - created)
+      case _: Stop =>
+//        log.debug("Stop received {}", self.path.name)
+        context.parent ! Passivate("stop")
+      case "stop" =>
+//        log.debug("Final Stop received {}", self.path.name)
+        context.stop(self)
+      case msg => throw new RuntimeException("unexpected msg " + msg)
     }
   }
 
@@ -75,6 +57,7 @@ object ClusterShardingRememberEntitiesPerfSpecConfig
     extends MultiNodeClusterShardingConfig(
       rememberEntities = true,
       additionalConfig = s"""
+    akka.loglevel = DEBUG 
     akka.testconductor.barrier-timeout = 3 minutes
     akka.remote.artery.advanced.outbound-message-queue-size = 10000
     akka.remote.artery.advanced.maximum-frame-size = 512 KiB
@@ -110,14 +93,6 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
   val nrRegions = 6
 
   def startSharding(): Unit = {
-    (1 to 4).foreach { n =>
-      startSharding(
-        system,
-        typeName = s"Entity$n",
-        entityProps = ClusterShardingRememberEntitiesPerfSpec.props(),
-        extractEntityId = extractEntityId,
-        extractShardId = extractShardId)
-    }
     (1 to nrRegions).foreach { n =>
       startSharding(
         system,
@@ -129,69 +104,58 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
 
   }
 
-  lazy val region1 = ClusterSharding(system).shardRegion("Entity1")
-  lazy val region2 = ClusterSharding(system).shardRegion("Entity2")
-  lazy val region3 = ClusterSharding(system).shardRegion("Entity3")
-  lazy val regionStartStop = ClusterSharding(system).shardRegion("Entity4")
-
   var latencyRegions = Vector.empty[ActorRef]
 
   // use 5 for "real" testing
   private val nrIterations = 5
   // use 5 for "real" testing
-  private val numberOfMessagesFactor = 20
+  private val numberOfMessagesFactor = 5
 
   val latencyCount = new AtomicInteger(0)
 
-  "Cluster sharding with remember entities performance" must {
+  override protected def atStartup(): Unit = {
+    super.atStartup()
+    join(first, first)
 
-    "form cluster" in within(20.seconds) {
-      join(first, first)
+    startSharding()
 
-      startSharding()
-
-      // this will make it run on first
-      runOn(first) {
-        region1 ! 0
-        expectMsg(0)
-        region2 ! 0
-        expectMsg(0)
-        region3 ! 0
-        expectMsg(0)
-        regionStartStop ! 0
-        expectMsg(0)
-
-        latencyRegions = (1 to nrRegions).map { n =>
-          val region = ClusterSharding(system).shardRegion(s"EntityLatency$n")
-          region ! In(0)
-          expectMsgType[Out]
-          region
-        }.toVector
-      }
-      enterBarrier("allocated-on-first")
-
-      join(second, first)
-      join(third, first)
-
-      within(remaining) {
-        awaitAssert {
-          cluster.state.members.size should ===(3)
-          cluster.state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
-        }
-      }
-
-      enterBarrier("all-up")
+    // this will make it run on first
+    runOn(first) {
+      latencyRegions = (1 to nrRegions).map { n =>
+        val region = ClusterSharding(system).shardRegion(s"EntityLatency$n")
+        region ! In(0)
+        expectMsgType[Out]
+        region
+      }.toVector
     }
+    enterBarrier("allocated-on-first")
+
+    join(second, first)
+    join(third, first)
+
+    within(20.seconds) {
+      awaitAssert {
+        cluster.state.members.size should ===(3)
+        cluster.state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
+      }
+    }
+
+    enterBarrier("all-up")
+  }
+
+  "Cluster sharding with remember entities performance" must {
 
     val percentiles = List(99.9, 99.0, 95.0, 50.0)
 
-    def runBench(name: String)(logic: (Int, ActorRef, Histogram) => Int): Unit = {
+    def runBench(name: String)(logic: (Int, ActorRef, Histogram) => Long): Unit = {
       val testRun = latencyCount.getAndIncrement()
       runOn(first) {
+        val recording = new FlightRecording(system)
+        recording.start()
         val region = latencyRegions(testRun)
-        val fullHistogram = new Histogram(10 * 1000, 2)
+        val fullHistogram = new Histogram(10L * 1000L, 2)
         val throughputs = (1 to nrIterations).map { iteration =>
-          val histogram: Histogram = new Histogram(10 * 1000, 2)
+          val histogram: Histogram = new Histogram(10L * 1000L, 2)
           val startTime = System.nanoTime()
           val numberOfMessages = logic(iteration, region, histogram)
           val took = NANOSECONDS.toMillis(System.nanoTime - startTime)
@@ -206,9 +170,10 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
         }
         println(f"Average throughput: ${throughputs.sum / nrIterations}%,.0f msg/s")
         println("Combined latency figures:")
-        println(
-          s"max ${fullHistogram.getMaxValue} ${percentiles.map(p => s"$p% ${fullHistogram.getValueAtPercentile(p)}ms").mkString(" ")}")
-
+        println(s"total ${fullHistogram.getTotalCount} max ${fullHistogram.getMaxValue} ${percentiles
+          .map(p => s"$p% ${fullHistogram.getValueAtPercentile(p)}ms")
+          .mkString(" ")}")
+        recording.endAndDump(Paths.get("target", s"${name.replace(" ", "-")}.jfr"))
       }
       enterBarrier(s"after-start-stop-${testRun}")
     }
@@ -241,14 +206,55 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
 
     "test latency when starting new entity and sending a few messages to it and stopping" in {
       val numberOfMessages = 800 * numberOfMessagesFactor
+      // 160 entities, and an extra one for the intialization
+      // all but the first one are not removed
       runBench("start, few messages, stop") { (iteration, region, histogram) =>
-        for (n <- 1 to numberOfMessages / 5; m <- 1 to 6) {
-          region ! In(iteration * 100000 + n)
-          if (m == 6)
-            region ! Stop(iteration * 100000 + n)
+        for (n <- 1 to numberOfMessages / 5; m <- 1 to 5) {
+          val id = iteration * 100000 + n
+          region ! In(id)
+          if (m == 5) {
+            region ! Stop(id)
+          }
         }
         for (_ <- 1 to numberOfMessages) {
-          histogram.recordValue(expectMsgType[Out].latency)
+          try {
+            histogram.recordValue(expectMsgType[Out].latency)
+          } catch {
+            case e: AssertionError =>
+              log.error(s"Received ${histogram.getTotalCount} out of $numberOfMessages")
+              throw e
+          }
+        }
+
+        awaitAssert({
+          region ! GetShardRegionState
+          val stats = expectMsgType[CurrentShardRegionState]
+          stats.shards.head.shardId shouldEqual "0"
+          stats.shards.head.entityIds.toList.sorted shouldEqual List("0") // the init entity
+        }, 2.seconds)
+
+        numberOfMessages
+      }
+    }
+
+    "test latency when starting, few messages, stopping, few messages" in {
+      val numberOfMessages = 800 * numberOfMessagesFactor
+      runBench("start, few messages, stop, few messages") { (iteration, region, histogram) =>
+        for (n <- 1 to numberOfMessages / 5; m <- 1 to 5) {
+          val id = iteration * 100000 + n
+          region ! In(id)
+          if (m == 2) {
+            region ! Stop(id)
+          }
+        }
+        for (_ <- 1 to numberOfMessages) {
+          try {
+            histogram.recordValue(expectMsgType[Out].latency)
+          } catch {
+            case e: AssertionError =>
+              log.error(s"Received ${histogram.getTotalCount} out of $numberOfMessages")
+              throw e
+          }
         }
         numberOfMessages
       }
@@ -297,5 +303,4 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
       }
     }
   }
-
 }

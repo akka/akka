@@ -153,7 +153,6 @@ lazy val clusterSharding = akkaModule("akka-cluster-sharding")
   .configs(MultiJvm)
   .enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
   .enablePlugins(Jdk9)
-  .configs(Jdk9.TestJdk9)
 
 lazy val clusterTools = akkaModule("akka-cluster-tools")
   .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm", coordination, jackson % "test->test")
@@ -441,7 +440,7 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .dependsOn(
     actorTyped % "compile->CompileJdk9",
     clusterTyped % "compile->compile;test->test;multi-jvm->multi-jvm",
-    clusterSharding,
+    clusterSharding % "compile->compile;compile->CompileJdk9;multi-jvm->multi-jvm",
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     persistenceTyped % "test->test",

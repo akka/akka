@@ -5,9 +5,7 @@
 package akka.cluster.sharding
 import akka.actor.{ ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.annotation.InternalApi
-import akka.util.JavaVersion
-
-import scala.util.{ Failure, Success }
+import akka.util.FlightRecorderLoader
 
 /**
  * INTERNAL API
@@ -18,31 +16,21 @@ object ShardingFlightRecorder extends ExtensionId[ShardingFlightRecorder] with E
   override def lookup(): ExtensionId[_ <: Extension] = this
 
   override def createExtension(system: ExtendedActorSystem): ShardingFlightRecorder =
-    if (JavaVersion.majorVersion >= 11 && system.settings.config.getBoolean("akka.java-flight-recorder.enabled")) {
-      // Dynamic instantiation to not trigger class load on earlier JDKs
-      system.dynamicAccess.createInstanceFor[ShardingFlightRecorder](
-        "akka.cluster.sharding.internal.jfr.JFRShardingFlightRecorder",
-        Nil) match {
-        case Success(jfr) =>
-          // FIXME remove
-          system.log.info("Created sharding flight recorder")
-          jfr
-        case Failure(ex) =>
-          system.log
-            .warning("Failed to load JFR Actor flight recorder, falling back to noop. Exception: {}", ex.toString)
-          NoOpShardingFlightRecorder
-      } // fallback if not possible to dynamically load for some reason
-    } else
-      // JFR not available on Java 8
-      NoOpShardingFlightRecorder
+    FlightRecorderLoader.load[ShardingFlightRecorder](
+      system,
+      "akka.cluster.sharding.internal.jfr.JFRShardingFlightRecorder",
+      NoOpShardingFlightRecorder)
 }
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] trait ShardingFlightRecorder extends Extension {
-  def shardingBlockedOnRememberedEntities(duration: Long): Unit
-  def shardingRememberedEntityStore(): Unit
+  def rememberEntityOperation(duration: Long): Unit
+  def rememberEntityAdd(entityId: String): Unit
+  def rememberEntityRemove(entityId: String): Unit
+  def entityPassivate(entityId: String): Unit
+  def entityPassivateRestart(entityId: String): Unit
 }
 
 /**
@@ -50,6 +38,9 @@ object ShardingFlightRecorder extends ExtensionId[ShardingFlightRecorder] with E
  */
 @InternalApi
 private[akka] case object NoOpShardingFlightRecorder extends ShardingFlightRecorder {
-  override def shardingBlockedOnRememberedEntities(duration: Long): Unit = ()
-  override def shardingRememberedEntityStore(): Unit = ()
+  override def rememberEntityOperation(duration: Long): Unit = ()
+  override def rememberEntityAdd(entityId: String): Unit = ()
+  override def rememberEntityRemove(entityId: String): Unit = ()
+  override def entityPassivate(entityId: String): Unit = ???
+  override def entityPassivateRestart(entityId: String): Unit = ???
 }
