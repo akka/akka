@@ -1334,6 +1334,10 @@ private[akka] class DDataShardCoordinator(
     case RememberEntitiesStoreStopped =>
       onRememberEntitiesStoreStopped()
 
+    case _: RememberEntitiesCoordinatorStore.RememberedShards =>
+      log.debug("Late arrival of remembered shards while waiting for update, stashing")
+      stash()
+
     case _ => stash()
   }
 
@@ -1369,7 +1373,7 @@ private[akka] class DDataShardCoordinator(
   // only used once the coordinator is initialized
   def receiveLateRememberedEntities: Receive = {
     case RememberEntitiesCoordinatorStore.RememberedShards(shardIds) =>
-      log.debug("Received [{}] remembered shard ids (when after state initialized)", shardIds.size)
+      log.debug("Received [{}] remembered shard ids (after state initialized)", shardIds.size)
       if (shardIds.nonEmpty) {
         val newUnallocatedShards = state.unallocatedShards.union(shardIds.diff(state.shards.keySet))
         state = state.copy(unallocatedShards = newUnallocatedShards)
