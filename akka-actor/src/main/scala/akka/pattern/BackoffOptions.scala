@@ -6,7 +6,7 @@ package akka.pattern
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import akka.actor.{ ActorRef, OneForOneStrategy, Props, SupervisorStrategy }
-import akka.annotation.DoNotInherit
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.pattern.internal.{ BackoffOnRestartSupervisor, BackoffOnStopSupervisor }
 import akka.util.JavaDurationConverters._
 
@@ -342,7 +342,7 @@ private final case class BackoffOnStopOptionsImpl[T](
     randomFactor: Double,
     reset: Option[BackoffReset] = None,
     supervisorStrategy: OneForOneStrategy = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
-    handlerWhileStopped: Option[Either[Any, ActorRef]] = None,
+    handlingWhileStopped: HandlingWhileStopped = ForwardDeathLetters,
     finalStopMessage: Option[Any => Boolean] = None)
     extends BackoffOnStopOptions {
 
@@ -352,9 +352,9 @@ private final case class BackoffOnStopOptionsImpl[T](
   def withAutoReset(resetBackoff: FiniteDuration) = copy(reset = Some(AutoReset(resetBackoff)))
   def withManualReset = copy(reset = Some(ManualReset))
   def withSupervisorStrategy(supervisorStrategy: OneForOneStrategy) = copy(supervisorStrategy = supervisorStrategy)
-  def withReplyWhileStopped(replyWhileStopped: Any) = copy(handlerWhileStopped = Some(Left(replyWhileStopped)))
+  def withReplyWhileStopped(replyWhileStopped: Any) = copy(handlingWhileStopped = ReplyWith(replyWhileStopped))
   def withHandlerWhileStopped(handlerWhileStopped: ActorRef) =
-    copy(handlerWhileStopped = Some(Right(handlerWhileStopped)))
+    copy(handlingWhileStopped = ForwardTo(handlerWhileStopped))
   def withMaxNrOfRetries(maxNrOfRetries: Int) =
     copy(supervisorStrategy = supervisorStrategy.withMaxNrOfRetries(maxNrOfRetries))
 
@@ -384,7 +384,7 @@ private final case class BackoffOnStopOptionsImpl[T](
         backoffReset,
         randomFactor,
         supervisorStrategy,
-        handlerWhileStopped,
+        handlingWhileStopped,
         finalStopMessage))
   }
 }
@@ -397,7 +397,7 @@ private final case class BackoffOnFailureOptionsImpl[T](
     randomFactor: Double,
     reset: Option[BackoffReset] = None,
     supervisorStrategy: OneForOneStrategy = OneForOneStrategy()(SupervisorStrategy.defaultStrategy.decider),
-    handlerWhileStopped: Option[Either[Any, ActorRef]] = None)
+    handlingWhileStopped: HandlingWhileStopped = ForwardDeathLetters)
     extends BackoffOnFailureOptions {
 
   private val backoffReset = reset.getOrElse(AutoReset(minBackoff))
@@ -406,9 +406,9 @@ private final case class BackoffOnFailureOptionsImpl[T](
   def withAutoReset(resetBackoff: FiniteDuration) = copy(reset = Some(AutoReset(resetBackoff)))
   def withManualReset = copy(reset = Some(ManualReset))
   def withSupervisorStrategy(supervisorStrategy: OneForOneStrategy) = copy(supervisorStrategy = supervisorStrategy)
-  def withReplyWhileStopped(replyWhileStopped: Any) = copy(handlerWhileStopped = Some(Left(replyWhileStopped)))
+  def withReplyWhileStopped(replyWhileStopped: Any) = copy(handlingWhileStopped = ReplyWith(replyWhileStopped))
   def withHandlerWhileStopped(handlerWhileStopped: ActorRef) =
-    copy(handlerWhileStopped = Some(Right(handlerWhileStopped)))
+    copy(handlingWhileStopped = ForwardTo(handlerWhileStopped))
   def withMaxNrOfRetries(maxNrOfRetries: Int) =
     copy(supervisorStrategy = supervisorStrategy.withMaxNrOfRetries(maxNrOfRetries))
 
@@ -431,10 +431,17 @@ private final case class BackoffOnFailureOptionsImpl[T](
         backoffReset,
         randomFactor,
         supervisorStrategy,
-        handlerWhileStopped))
+        handlingWhileStopped))
   }
 }
 
+@InternalApi
 private[akka] sealed trait BackoffReset
 private[akka] case object ManualReset extends BackoffReset
 private[akka] final case class AutoReset(resetBackoff: FiniteDuration) extends BackoffReset
+
+@InternalApi
+private[akka] sealed trait HandlingWhileStopped
+private[akka] case object ForwardDeathLetters extends HandlingWhileStopped
+private[akka] case class ForwardTo(handler: ActorRef) extends HandlingWhileStopped
+private[akka] case class ReplyWith(msg: Any) extends HandlingWhileStopped

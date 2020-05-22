@@ -201,7 +201,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
       }
     }
 
-    "reply to sendt akker if withHandlerWhileStopped is specified" in {
+    "use provided actor while stopped and withHandlerWhileStopped is specified" in {
       val handler = system.actorOf(Props(new Actor {
         override def receive: Receive = {
           case "still there?" =>

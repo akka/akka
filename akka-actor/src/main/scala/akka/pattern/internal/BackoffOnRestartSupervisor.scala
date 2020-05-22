@@ -7,7 +7,15 @@ package akka.pattern.internal
 import akka.actor.SupervisorStrategy._
 import akka.actor.{ OneForOneStrategy, _ }
 import akka.annotation.InternalApi
-import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
+import akka.pattern.{
+  BackoffReset,
+  BackoffSupervisor,
+  ForwardDeathLetters,
+  ForwardTo,
+  HandleBackoff,
+  HandlingWhileStopped,
+  ReplyWith
+}
 
 import scala.concurrent.duration._
 
@@ -26,7 +34,7 @@ import scala.concurrent.duration._
     val reset: BackoffReset,
     randomFactor: Double,
     strategy: OneForOneStrategy,
-    handlerWhileStopped: Option[Either[Any, ActorRef]])
+    handlingWhileStopped: HandlingWhileStopped)
     extends Actor
     with HandleBackoff
     with ActorLogging {
@@ -94,10 +102,10 @@ import scala.concurrent.duration._
     case Some(c) =>
       c.forward(msg)
     case None =>
-      handlerWhileStopped match {
-        case Some(Left(r))  => sender() ! r
-        case Some(Right(h)) => h.forward(msg)
-        case None           => context.system.deadLetters.forward(msg)
+      handlingWhileStopped match {
+        case ForwardDeathLetters => context.system.deadLetters.forward(msg)
+        case ForwardTo(h)        => h.forward(msg)
+        case ReplyWith(r)        => sender() ! r
       }
   }
 }

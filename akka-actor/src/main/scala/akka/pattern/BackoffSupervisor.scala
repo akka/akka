@@ -184,7 +184,7 @@ object BackoffSupervisor {
         AutoReset(minBackoff),
         randomFactor,
         strategy,
-        None,
+        ForwardDeathLetters,
         None))
   }
 
@@ -341,7 +341,7 @@ final class BackoffSupervisor @deprecated("Use `BackoffSupervisor.props` method 
       reset,
       randomFactor,
       strategy,
-      replyWhileStopped.map(msg => Left(msg)),
+      replyWhileStopped.map(msg => ReplyWith(msg)).getOrElse(ForwardDeathLetters),
       finalStopMessage) {
 
   // for binary compatibility with 2.5.18
