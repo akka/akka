@@ -190,6 +190,10 @@ class JacksonSerializationBench {
   @Param(Array("jackson-json", "jackson-cbor")) // "java"
   private var serializerName: String = _
 
+  @silent("immutable val")
+  @Param(Array("off", "gzip", "lz4"))
+  private var compression: String = _
+
   @Setup(Level.Trial)
   def setupTrial(): Unit = {
     val config = ConfigFactory.parseString(s"""
@@ -208,7 +212,7 @@ class JacksonSerializationBench {
           }
         }
         akka.serialization.jackson.jackson-json.compression {
-          algorithm = off
+          algorithm = $compression
           compress-larger-than = 100 b
         }
       """)
@@ -222,10 +226,18 @@ class JacksonSerializationBench {
     Await.result(system.terminate(), 5.seconds)
   }
 
+  private var size = 0L
+
   private def serializeDeserialize[T <: AnyRef](msg: T): T = {
     serialization.findSerializerFor(msg) match {
       case serializer: SerializerWithStringManifest =>
         val blob = serializer.toBinary(msg)
+        if (size != blob.length) {
+          size = blob.length
+          println(
+            s"# Size is $size of ${msg.getClass.getName} with " +
+            s"${system.settings.config.getString("akka.serialization.jackson.jackson-json.compression.algorithm")}")
+        }
         serializer.fromBinary(blob, serializer.manifest(msg)).asInstanceOf[T]
       case serializer =>
         val blob = serializer.toBinary(msg)
