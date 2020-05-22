@@ -41,6 +41,6 @@ private[akka] case object NoOpShardingFlightRecorder extends ShardingFlightRecor
   override def rememberEntityOperation(duration: Long): Unit = ()
   override def rememberEntityAdd(entityId: String): Unit = ()
   override def rememberEntityRemove(entityId: String): Unit = ()
-  override def entityPassivate(entityId: String): Unit = ???
-  override def entityPassivateRestart(entityId: String): Unit = ???
+  override def entityPassivate(entityId: String): Unit = ()
+  override def entityPassivateRestart(entityId: String): Unit = ()
 }
