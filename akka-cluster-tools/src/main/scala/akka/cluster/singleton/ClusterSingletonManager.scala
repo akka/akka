@@ -626,6 +626,10 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
         goto(BecomingOldest).using(BecomingOldestData(oldest.filterNot(_ == cluster.selfUniqueAddress)))
       else
         goto(Younger).using(YoungerData(oldest.filterNot(_ == cluster.selfUniqueAddress)))
+
+    case Event(HandOverToMe, _) =>
+      // nothing to hand over in start
+      stay()
   }
 
   when(Younger) {
