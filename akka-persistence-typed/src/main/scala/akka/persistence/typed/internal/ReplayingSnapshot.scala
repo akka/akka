@@ -171,7 +171,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
         toSeqNr = toSnr,
         receivedPoisonPill = receivedPoisonPill,
         recoveryStartTime = System.nanoTime(),
-        idempotenceKeyCache = SortedMap.empty[Long, String],
+        idempotencyKeyCache = SortedMap.empty[Long, String],
         idempotencyKeySeqNr = 0,
         idempotencyKeySeenInInterval = false,
         eventReplayDone = false,

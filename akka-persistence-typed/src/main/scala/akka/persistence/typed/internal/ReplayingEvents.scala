@@ -55,7 +55,7 @@ private[akka] object ReplayingEvents {
       toSeqNr: Long,
       receivedPoisonPill: Boolean,
       recoveryStartTime: Long,
-      idempotenceKeyCache: SortedMap[Long, String],
+      idempotencyKeyCache: SortedMap[Long, String],
       idempotencyKeySeqNr: Long,
       idempotencyKeySeenInInterval: Boolean,
       eventReplayDone: Boolean,
@@ -160,7 +160,7 @@ private[akka] final class ReplayingEvents[C, E, S](
           onRecoveryFailure(cause, Some(response))
 
         case RestoredIdempotencyKey(key, sequenceNr) =>
-          if (state.idempotenceKeyCache.size == setup.idempotenceKeyCacheSize) {
+          if (state.idempotencyKeyCache.size == setup.idempotencyKeyCacheSize) {
             onRecoveryFailure(
               new IllegalArgumentException(
                 s"Journal attempted to restore too many idempotence keys, " +
@@ -169,7 +169,7 @@ private[akka] final class ReplayingEvents[C, E, S](
               Some(response))
           } else {
             state = state.copy(
-              idempotenceKeyCache = state.idempotenceKeyCache.updated(sequenceNr, key),
+              idempotencyKeyCache = state.idempotencyKeyCache.updated(sequenceNr, key),
               idempotencyKeySeqNr = sequenceNr)
             this
           }
@@ -181,7 +181,7 @@ private[akka] final class ReplayingEvents[C, E, S](
             "recovered until sequenceNr: [{}], " +
             "total restored idempotency keys [{}]",
             highestSequenceNr,
-            state.idempotenceKeyCache.size)
+            state.idempotencyKeyCache.size)
 
           if (state.readyForRunning) {
             onRecoveryCompleted(state)
@@ -328,12 +328,12 @@ private[akka] final class ReplayingEvents[C, E, S](
               state.state,
               state.receivedPoisonPill,
               state.idempotencyKeySeqNr,
-              if (setup.idempotenceKeyCacheSize == 0) {
+              if (setup.idempotencyKeyCacheSize == 0) {
                 Running.NoCache
               } else {
                 Running.LRUCache(
-                  mutable.LinkedHashSet.empty[String] ++ state.idempotenceKeyCache.values,
-                  setup.idempotenceKeyCacheSize)
+                  mutable.LinkedHashSet.empty[String] ++ state.idempotencyKeyCache.values,
+                  setup.idempotencyKeyCacheSize)
               }))
 
         tryUnstashOne(running)

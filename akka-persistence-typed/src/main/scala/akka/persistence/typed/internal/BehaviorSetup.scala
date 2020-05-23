@@ -44,7 +44,7 @@ private[akka] final class BehaviorSetup[C, E, S](
     val eventAdapter: EventAdapter[E, Any],
     val snapshotAdapter: SnapshotAdapter[S],
     val snapshotWhen: (S, E, Long) => Boolean,
-    val idempotenceKeyCacheSize: Long,
+    val idempotencyKeyCacheSize: Long,
     val recovery: Recovery,
     val retention: RetentionCriteria,
     var holdingRecoveryPermit: Boolean,

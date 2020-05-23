@@ -181,12 +181,12 @@ private[persistence] object JournalProtocol {
       actorInstanceId: Int)
       extends Request
 
-  final case class WriteIdempotencyKeySuccess(idempotenceKey: String, sequenceNr: Long, actorInstanceId: Int)
+  final case class WriteIdempotencyKeySuccess(idempotencyKey: String, sequenceNr: Long, actorInstanceId: Int)
       extends Response
       with DeadLetterSuppression
 
   final case class WriteIdempotencyKeyFailure(
-      idempotenceKey: String,
+      idempotencyKey: String,
       sequenceNr: Long,
       cause: Throwable,
       actorInstanceId: Int)
@@ -194,7 +194,7 @@ private[persistence] object JournalProtocol {
       with DeadLetterSuppression
 
   final case class WriteIdempotencyKeyRejected(
-      idempotenceKey: String,
+      idempotencyKey: String,
       sequenceNr: Long,
       cause: Throwable,
       actorInstanceId: Int)

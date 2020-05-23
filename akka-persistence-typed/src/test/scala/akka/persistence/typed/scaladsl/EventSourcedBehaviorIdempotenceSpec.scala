@@ -43,7 +43,7 @@ object EventSourcedBehaviorIdempotenceSpec {
         override val replyTo: ActorRef[IdempotenceReply[AllGood.type, Int]])
         extends Command
         with IdempotentCommand[AllGood.type, Int] {
-      override val writeConfig: IdempotenceKeyWriteConfig = OnlyWriteIdempotenceKeyWithPersist
+      override val writeConfig: IdempotencyKeyWriteConfig = OnlyWriteIdempotencyKeyWithPersist
     }
   }
   private case class CurrentIdempotencyKeySeqNr(replyTo: ActorRef[Long]) extends Command
@@ -98,32 +98,32 @@ class EventSourcedBehaviorIdempotenceSpec
       val checksProbe = createTestProbe[String]()
       val writesProbe = createTestProbe[String]()
 
-      val idempotenceKey = UUID.randomUUID().toString
+      val idempotencyKey = UUID.randomUUID().toString
       val c = spawn(idempotentState(nextPid, checksProbe.ref, writesProbe.ref))
       val probe = TestProbe[IdempotenceReply[AllGood.type, Int]]
 
-      c ! SideEffect(idempotenceKey, probe.ref)
+      c ! SideEffect(idempotencyKey, probe.ref)
       probe.expectMessage(IdempotenceSuccess[AllGood.type, Int](AllGood))
-      checksProbe.expectMessage(s"$idempotenceKey not exists")
-      writesProbe.expectMessage(s"$idempotenceKey 1 written")
+      checksProbe.expectMessage(s"$idempotencyKey not exists")
+      writesProbe.expectMessage(s"$idempotencyKey 1 written")
     }
 
     "fail consume idempotent command the second time" in {
       val checksProbe = createTestProbe[String]()
       val writesProbe = createTestProbe[String]()
 
-      val idempotenceKey = UUID.randomUUID().toString
+      val idempotencyKey = UUID.randomUUID().toString
       val c = spawn(idempotentState(nextPid, checksProbe.ref, writesProbe.ref))
       val probe = TestProbe[IdempotenceReply[AllGood.type, Int]]
 
-      c ! SideEffect(idempotenceKey, probe.ref)
+      c ! SideEffect(idempotencyKey, probe.ref)
       probe.expectMessage(IdempotenceSuccess[AllGood.type, Int](AllGood))
-      checksProbe.expectMessage(s"$idempotenceKey not exists")
-      writesProbe.expectMessage(s"$idempotenceKey 1 written")
+      checksProbe.expectMessage(s"$idempotencyKey not exists")
+      writesProbe.expectMessage(s"$idempotencyKey 1 written")
 
-      c ! SideEffect(idempotenceKey, probe.ref)
+      c ! SideEffect(idempotencyKey, probe.ref)
       probe.expectMessage(IdempotenceFailure[AllGood.type, Int](1))
-      checksProbe.expectMessage(s"$idempotenceKey exists")
+      checksProbe.expectMessage(s"$idempotencyKey exists")
       writesProbe.expectNoMessage(3.seconds)
     }
 
@@ -152,18 +152,18 @@ class EventSourcedBehaviorIdempotenceSpec
       val checksProbe = createTestProbe[String]()
       val writesProbe = createTestProbe[String]()
 
-      val idempotenceKey = UUID.randomUUID().toString
+      val idempotencyKey = UUID.randomUUID().toString
       val c = spawn(idempotentState(nextPid, checksProbe.ref, writesProbe.ref))
       val probe = TestProbe[IdempotenceReply[AllGood.type, Int]]
 
-      c ! NoSideEffect.WriteAlways(idempotenceKey, probe.ref)
+      c ! NoSideEffect.WriteAlways(idempotencyKey, probe.ref)
       probe.expectMessage(IdempotenceSuccess[AllGood.type, Int](AllGood))
-      checksProbe.expectMessage(s"$idempotenceKey not exists")
-      writesProbe.expectMessage(s"$idempotenceKey 1 written")
+      checksProbe.expectMessage(s"$idempotencyKey not exists")
+      writesProbe.expectMessage(s"$idempotencyKey 1 written")
 
-      c ! NoSideEffect.WriteAlways(idempotenceKey, probe.ref)
+      c ! NoSideEffect.WriteAlways(idempotencyKey, probe.ref)
       probe.expectMessage(IdempotenceFailure[AllGood.type, Int](0))
-      checksProbe.expectMessage(s"$idempotenceKey exists")
+      checksProbe.expectMessage(s"$idempotencyKey exists")
       writesProbe.expectNoMessage(3.seconds)
     }
 
@@ -192,19 +192,19 @@ class EventSourcedBehaviorIdempotenceSpec
       val checksProbe = createTestProbe[String]()
       val writesProbe = createTestProbe[String]()
 
-      val idempotenceKey = UUID.randomUUID().toString
+      val idempotencyKey = UUID.randomUUID().toString
       val c = spawn(idempotentState(nextPid, checksProbe.ref, writesProbe.ref))
       val probe = TestProbe[IdempotenceReply[AllGood.type, Int]]
 
-      c ! NoSideEffect.WriteOnlyWithPersist(idempotenceKey, probe.ref)
+      c ! NoSideEffect.WriteOnlyWithPersist(idempotencyKey, probe.ref)
 
       probe.expectMessage(IdempotenceSuccess[AllGood.type, Int](AllGood))
-      checksProbe.expectMessage(s"$idempotenceKey not exists")
+      checksProbe.expectMessage(s"$idempotencyKey not exists")
       writesProbe.expectNoMessage(3.seconds)
 
-      c ! NoSideEffect.WriteOnlyWithPersist(idempotenceKey, probe.ref)
+      c ! NoSideEffect.WriteOnlyWithPersist(idempotencyKey, probe.ref)
       probe.expectMessage(IdempotenceSuccess[AllGood.type, Int](AllGood))
-      checksProbe.expectMessage(s"$idempotenceKey not exists")
+      checksProbe.expectMessage(s"$idempotencyKey not exists")
       writesProbe.expectNoMessage(3.seconds)
     }
 

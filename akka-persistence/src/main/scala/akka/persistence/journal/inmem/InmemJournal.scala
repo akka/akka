@@ -36,9 +36,9 @@ object InmemJournal {
 
   final case class Delete(persistenceId: String, toSequenceNr: Long) extends Operation
 
-  final case class CheckIdempotenceKeyExists(persistenceId: String, key: String) extends Operation
+  final case class CheckIdempotencyKeyExists(persistenceId: String, key: String) extends Operation
 
-  final case class WriteIdempotenceKey(persistenceId: String, key: String, sequenceNr: Long) extends Operation
+  final case class WriteIdempotencyKey(persistenceId: String, key: String, sequenceNr: Long) extends Operation
 }
 
 /**
@@ -77,7 +77,7 @@ object InmemJournal {
         eventStream.publish(InmemJournal.Write(p.payload, p.persistenceId, p.sequenceNr))
         w.idempotence match {
           case IdempotenceWrite(key, sequenceNumber) =>
-            eventStream.publish(InmemJournal.WriteIdempotenceKey(p.persistenceId, key, sequenceNumber))
+            eventStream.publish(InmemJournal.WriteIdempotencyKey(p.persistenceId, key, sequenceNumber))
           case _: IdempotenceInfo =>
           // do nothing
         }
@@ -129,7 +129,7 @@ object InmemJournal {
       highestIdempotencyKeySequenceNr: Long,
       highestEventSequenceNr: Long): Future[Boolean] = {
     val exists = keys.get(persistenceId).exists(_.valuesIterator.contains(key))
-    eventStream.publish(InmemJournal.CheckIdempotenceKeyExists(persistenceId, key))
+    eventStream.publish(InmemJournal.CheckIdempotencyKeyExists(persistenceId, key))
     Future.successful(exists)
   }
 
@@ -139,7 +139,7 @@ object InmemJournal {
       sequenceNr: Long,
       highestEventSequenceNr: Long): Future[Unit] = {
     addKey(persistenceId, key, sequenceNr)
-    eventStream.publish(InmemJournal.WriteIdempotenceKey(persistenceId, key, sequenceNr))
+    eventStream.publish(InmemJournal.WriteIdempotencyKey(persistenceId, key, sequenceNr))
     Future.successful(())
   }
 

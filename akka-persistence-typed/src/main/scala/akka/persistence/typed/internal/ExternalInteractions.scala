@@ -35,7 +35,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       state: Running.RunningState[S],
       event: EventOrTagged,
       eventAdapterManifest: String,
-      idempotenceKey: Option[String]): Running.RunningState[S] = {
+      idempotencyKey: Option[String]): Running.RunningState[S] = {
 
     var newState = state.nextEventSequenceNr()
 
@@ -47,13 +47,13 @@ private[akka] trait JournalInteractions[C, E, S] {
       writerUuid = setup.writerIdentity.writerUuid,
       sender = ActorRef.noSender)
 
-    val idempotencePayload = idempotenceKey
+    val idempotencePayload = idempotencyKey
       .map { key =>
-        newState = state.nextIdempotenceKeySequenceNr()
-        IdempotenceWrite(key, newState.idempotenceKeySeqNr)
+        newState = state.nextIdempotencyKeySequenceNr()
+        IdempotenceWrite(key, newState.idempotencyKeySeqNr)
       }
       .getOrElse {
-        IdempotenceInfo(newState.idempotenceKeySeqNr)
+        IdempotenceInfo(newState.idempotencyKeySeqNr)
       }
 
     onWriteInitiated(ctx, cmd, repr)
@@ -76,7 +76,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       cmd: Any,
       state: Running.RunningState[S],
       events: immutable.Seq[(EventOrTagged, String)],
-      idempotenceKey: Option[String]): Running.RunningState[S] = {
+      idempotencyKey: Option[String]): Running.RunningState[S] = {
     if (events.nonEmpty) {
       var newState = state
 
@@ -92,13 +92,13 @@ private[akka] trait JournalInteractions[C, E, S] {
             sender = ActorRef.noSender)
       }
 
-      val idempotencePayload = idempotenceKey
+      val idempotencePayload = idempotencyKey
         .map { key =>
-          newState = state.nextIdempotenceKeySequenceNr()
-          IdempotenceWrite(key, newState.idempotenceKeySeqNr)
+          newState = state.nextIdempotencyKeySequenceNr()
+          IdempotenceWrite(key, newState.idempotencyKeySeqNr)
         }
         .getOrElse {
-          IdempotenceInfo(newState.idempotenceKeySeqNr)
+          IdempotenceInfo(newState.idempotencyKeySeqNr)
         }
 
       onWritesInitiated(ctx, cmd, writes)
@@ -171,7 +171,7 @@ private[akka] trait JournalInteractions[C, E, S] {
   protected def internalRestoreIdempotency(): Unit = {
     val self = setup.selfClassic
     setup.journal
-      .tell(JournalProtocol.RestoreIdempotency(setup.idempotenceKeyCacheSize, setup.persistenceId.id, self), self)
+      .tell(JournalProtocol.RestoreIdempotency(setup.idempotencyKeyCacheSize, setup.persistenceId.id, self), self)
   }
 
   protected def internalCheckIdempotencyKeyExists(
@@ -192,13 +192,13 @@ private[akka] trait JournalInteractions[C, E, S] {
   protected def internalWriteIdempotencyKey(
       state: Running.RunningState[S],
       idempotencyKey: String): Running.RunningState[S] = {
-    val newState = state.nextIdempotenceKeySequenceNr()
+    val newState = state.nextIdempotencyKeySequenceNr()
     val self = setup.selfClassic
     setup.journal.tell(
       JournalProtocol.WriteIdempotencyKey(
         setup.persistenceId.id,
         idempotencyKey,
-        newState.idempotenceKeySeqNr,
+        newState.idempotencyKeySeqNr,
         newState.eventSeqNr,
         self,
         setup.writerIdentity.instanceId),

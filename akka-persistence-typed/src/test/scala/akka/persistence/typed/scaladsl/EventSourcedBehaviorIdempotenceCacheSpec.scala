@@ -42,7 +42,7 @@ object EventSourcedBehaviorIdempotenceCacheSpec {
         override val replyTo: ActorRef[IdempotenceReply[AllGood.type, Int]])
         extends Command
         with IdempotentCommand[AllGood.type, Int] {
-      override val writeConfig: IdempotenceKeyWriteConfig = OnlyWriteIdempotenceKeyWithPersist
+      override val writeConfig: IdempotencyKeyWriteConfig = OnlyWriteIdempotencyKeyWithPersist
     }
   }
   private case class CurrentIdempotencyKeyCacheContent(replyTo: ActorRef[Seq[String]]) extends Command
@@ -79,7 +79,7 @@ object EventSourcedBehaviorIdempotenceCacheSpec {
           case (_, WriteIdempotencyKeySucceeded(idempotencyKey, sequenceNumber)) =>
             writes ! s"$idempotencyKey $sequenceNumber written"
         }
-        .idempotenceKeyCacheSize(3)
+        .idempotencyKeyCacheSize(3)
     }
 }
 
@@ -101,23 +101,23 @@ class EventSourcedBehaviorIdempotenceCacheSpec
       val idempotencyKeyCacheProbe = TestProbe[Seq[String]]
 
       val persistenceId = nextPid
-      val idempotenceKey = UUID.randomUUID().toString
+      val idempotencyKey = UUID.randomUUID().toString
 
       val c = spawn(idempotentState(persistenceId, checksProbe.ref, writesProbe.ref))
 
-      c ! SideEffect(idempotenceKey, probe.ref)
-      checksProbe.expectMessage(s"$idempotenceKey not exists")
-      writesProbe.expectMessage(s"$idempotenceKey 1 written")
+      c ! SideEffect(idempotencyKey, probe.ref)
+      checksProbe.expectMessage(s"$idempotencyKey not exists")
+      writesProbe.expectMessage(s"$idempotencyKey 1 written")
 
       c ! CurrentIdempotencyKeyCacheContent(idempotencyKeyCacheProbe.ref)
-      idempotencyKeyCacheProbe.expectMessage(Seq(idempotenceKey))
+      idempotencyKeyCacheProbe.expectMessage(Seq(idempotencyKey))
 
-      c ! SideEffect(idempotenceKey, probe.ref)
+      c ! SideEffect(idempotencyKey, probe.ref)
       checksProbe.expectNoMessage(3.seconds)
       writesProbe.expectNoMessage(3.seconds)
 
       c ! CurrentIdempotencyKeyCacheContent(idempotencyKeyCacheProbe.ref)
-      idempotencyKeyCacheProbe.expectMessage(Seq(idempotenceKey))
+      idempotencyKeyCacheProbe.expectMessage(Seq(idempotencyKey))
     }
   }
 
@@ -130,23 +130,23 @@ class EventSourcedBehaviorIdempotenceCacheSpec
       val idempotencyKeyCacheProbe = TestProbe[Seq[String]]
 
       val persistenceId = nextPid
-      val idempotenceKey = UUID.randomUUID().toString
+      val idempotencyKey = UUID.randomUUID().toString
 
       val c = spawn(idempotentState(persistenceId, checksProbe.ref, writesProbe.ref))
 
-      c ! NoSideEffect.WriteAlways(idempotenceKey, probe.ref)
-      checksProbe.expectMessage(s"$idempotenceKey not exists")
-      writesProbe.expectMessage(s"$idempotenceKey 1 written")
+      c ! NoSideEffect.WriteAlways(idempotencyKey, probe.ref)
+      checksProbe.expectMessage(s"$idempotencyKey not exists")
+      writesProbe.expectMessage(s"$idempotencyKey 1 written")
 
       c ! CurrentIdempotencyKeyCacheContent(idempotencyKeyCacheProbe.ref)
-      idempotencyKeyCacheProbe.expectMessage(Seq(idempotenceKey))
+      idempotencyKeyCacheProbe.expectMessage(Seq(idempotencyKey))
 
-      c ! NoSideEffect.WriteAlways(idempotenceKey, probe.ref)
+      c ! NoSideEffect.WriteAlways(idempotencyKey, probe.ref)
       checksProbe.expectNoMessage(3.seconds)
       writesProbe.expectNoMessage(3.seconds)
 
       c ! CurrentIdempotencyKeyCacheContent(idempotencyKeyCacheProbe.ref)
-      idempotencyKeyCacheProbe.expectMessage(Seq(idempotenceKey))
+      idempotencyKeyCacheProbe.expectMessage(Seq(idempotencyKey))
     }
   }
 
