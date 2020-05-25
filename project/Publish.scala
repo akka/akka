@@ -35,7 +35,7 @@ object Publish extends AutoPlugin {
       <developer>
         <id>akka-contributors</id>
         <name>Akka Contributors</name>
-        <email>akka-dev@googlegroups.com</email>
+        <email>akka.official@gmail.com</email>
         <url>https://github.com/akka/akka/graphs/contributors</url>
       </developer>
     </developers>
@@ -43,7 +43,8 @@ object Publish extends AutoPlugin {
 
   private def akkaPublishTo = Def.setting {
     val key = new java.io.File(
-      Option(System.getProperty("akka.gustav.key")).getOrElse(System.getProperty("user.home") + "/.ssh/id_rsa_gustav.pem"))
+      Option(System.getProperty("akka.gustav.key"))
+        .getOrElse(System.getProperty("user.home") + "/.ssh/id_rsa_gustav.pem"))
     if (isSnapshot.value)
       Resolver.sftp("Akka snapshots", "gustav.akka.io", "/home/akkarepo/www/snapshots").as("akkarepo", key)
     else
