@@ -800,7 +800,10 @@ abstract class ShardCoordinator(
       deferGetShardHomeRequest(shard, sender())
       true
     } else if (!hasAllRegionsRegistered()) {
-      log.debug("GetShardHome [{}] request ignored, because not all regions have registered yet.", shard)
+      log.debug(
+        "GetShardHome [{}] request from [{}] ignored, because not all regions have registered yet.",
+        shard,
+        sender())
       true
     } else {
       state.shards.get(shard) match {
