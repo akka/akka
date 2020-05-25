@@ -18,7 +18,6 @@ With a [Lightbend Platform Subscription](https://www.lightbend.com/lightbend-sub
 
 [Akka Resilience Enhancements](https://doc.akka.io/docs/akka-enhancements/current/akka-resilience-enhancements.html):
 
-* [Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html) &#8212; Detects and recovers from network partitions, eliminating data inconsistencies and possible downtime.
 * [Configuration Checker](https://doc.akka.io/docs/akka-enhancements/current/config-checker.html) &#8212; Checks for potential configuration issues and logs suggestions.
 * [Diagnostics Recorder](https://doc.akka.io/docs/akka-enhancements/current/diagnostics-recorder.html) &#8212; Captures configuration and system information in a format that makes it easy to troubleshoot issues during development and production.
 * [Thread Starvation Detector](https://doc.akka.io/docs/akka-enhancements/current/starvation-detector.html) &#8212; Monitors an Akka system dispatcher and logs warnings if it becomes unresponsive.

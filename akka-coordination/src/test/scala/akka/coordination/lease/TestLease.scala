@@ -2,18 +2,22 @@
  * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.cluster
+package akka.coordination.lease
 
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.Future
+import scala.concurrent.Promise
 
 import com.typesafe.config.ConfigFactory
 
-import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
-import akka.coordination.lease.LeaseSettings
+import akka.actor.ExtendedActorSystem
+import akka.actor.Extension
+import akka.actor.ExtensionId
+import akka.actor.ExtensionIdProvider
 import akka.coordination.lease.scaladsl.Lease
 import akka.event.Logging
 import akka.testkit.TestProbe
@@ -47,9 +51,9 @@ object TestLease {
   final case class AcquireReq(owner: String)
   final case class ReleaseReq(owner: String)
 
-  val config = ConfigFactory.parseString("""
+  val config = ConfigFactory.parseString(s"""
     test-lease {
-      lease-class = akka.cluster.TestLease
+      lease-class = ${classOf[TestLease].getName}
     }
     """.stripMargin)
 }

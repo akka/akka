@@ -2,14 +2,14 @@
  * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package jdocs.akka.coordination.lease;
+package jdocs.coordination;
 
 import akka.actor.ActorSystem;
 import akka.coordination.lease.LeaseSettings;
 import akka.coordination.lease.javadsl.Lease;
 import akka.coordination.lease.javadsl.LeaseProvider;
 import akka.testkit.javadsl.TestKit;
-import docs.akka.coordination.LeaseDocSpec;
+import docs.coordination.LeaseDocSpec;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

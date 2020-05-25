@@ -35,10 +35,10 @@ Any lease implementation should provide the following guarantees:
 To acquire a lease:
 
 Scala
-:  @@snip [LeaseDocSpec.scala](/akka-coordination/src/test/scala/docs/akka/coordination/LeaseDocSpec.scala) { #lease-usage }
+:  @@snip [LeaseDocSpec.scala](/akka-docs/src/test/scala/docs/coordination/LeaseDocSpec.scala) { #lease-usage }
 
 Java
-:  @@snip [LeaseDocTest.java](/akka-coordination/src/test/java/jdocs/akka/coordination/lease/LeaseDocTest.java) { #lease-usage }
+:  @@snip [LeaseDocTest.java](/akka-docs/src/test/java/jdocs/coordination/LeaseDocTest.java) { #lease-usage }
 
 Acquiring a lease returns a @scala[Future]@java[CompletionStage] as lease implementations typically are implemented 
 via a third party system such as the Kubernetes API server or Zookeeper.
@@ -53,10 +53,10 @@ It is important to pick a lease name that will be unique for your use case. If a
 in a Cluster the cluster host port can be use:
 
 Scala
-:  @@snip [LeaseDocSpec.scala](/akka-coordination/src/test/scala/docs/akka/coordination/LeaseDocSpec.scala) { #cluster-owner }
+:  @@snip [LeaseDocSpec.scala](/akka-docs/src/test/scala/docs/coordination/LeaseDocSpec.scala) { #cluster-owner }
 
 Java
-:  @@snip [LeaseDocTest.scala](/akka-coordination/src/test/java/jdocs/akka/coordination/lease/LeaseDocTest.java) { #cluster-owner }
+:  @@snip [LeaseDocTest.scala](/akka-docs/src/test/java/jdocs/coordination/LeaseDocTest.java) { #cluster-owner }
 
 For use cases where multiple different leases on the same node then something unique must be added to the name. For example
 a lease can be used with Cluster Sharding and in this case the shard Id is included in the lease name for each shard.
@@ -77,7 +77,7 @@ Leases can be used for @ref[Cluster Singletons](cluster-singleton.md#lease) and 
 
 ## Lease implementations
 
-* [Kubernetes API](https://doc.akka.io/docs/akka-enhancements/current/kubernetes-lease.html)
+* [Kubernetes API](https://doc.akka.io/docs/akka-management/current/kubernetes-lease.html)
 
 ## Implementing a lease
 
@@ -85,10 +85,10 @@ Implementations should extend
 the @scala[`akka.coordination.lease.scaladsl.Lease`]@java[`akka.coordination.lease.javadsl.Lease`] 
 
 Scala
-:  @@snip [LeaseDocSpec.scala](/akka-coordination/src/test/scala/docs/akka/coordination/LeaseDocSpec.scala) { #lease-example }
+:  @@snip [LeaseDocSpec.scala](/akka-docs/src/test/scala/docs/coordination/LeaseDocSpec.scala) { #lease-example }
 
 Java
-:  @@snip [LeaseDocTest.scala](/akka-coordination/src/test/java/jdocs/akka/coordination/lease/LeaseDocTest.java) { #lease-example }
+:  @@snip [LeaseDocTest.java](/akka-docs/src/test/java/jdocs/coordination/LeaseDocTest.java) { #lease-example }
 
 The methods should provide the following guarantees:
 
@@ -109,10 +109,10 @@ The lease implementation should have support for the following properties where 
 This configuration location is passed into `getLease`.
 
 Scala
-:  @@snip [LeaseDocSpec.scala](/akka-coordination/src/test/scala/docs/akka/coordination/LeaseDocSpec.scala) { #lease-config }
+:  @@snip [LeaseDocSpec.scala](/akka-docs/src/test/scala/docs/coordination/LeaseDocSpec.scala) { #lease-config }
 
 Java
-:  @@snip [LeaseDocSpec.scala](/akka-coordination/src/test/scala/docs/akka/coordination/LeaseDocSpec.scala) { #lease-config }
+:  @@snip [LeaseDocSpec.scala](/akka-docs/src/test/scala/docs/coordination/LeaseDocSpec.scala) { #lease-config }
 
 
 

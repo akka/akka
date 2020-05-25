@@ -119,7 +119,12 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
   .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
 
 lazy val cluster = akkaModule("akka-cluster")
-  .dependsOn(remote, remoteTests % "test->test", testkit % "test->test", jackson % "test->test")
+  .dependsOn(
+    remote,
+    coordination % "compile->compile;test->test",
+    remoteTests % "test->test",
+    testkit % "test->test",
+    jackson % "test->test")
   .settings(Dependencies.cluster)
   .settings(AutomaticModuleName.settings("akka.cluster"))
   .settings(OSGi.cluster)
@@ -161,7 +166,10 @@ lazy val clusterSharding = akkaModule("akka-cluster-sharding")
   .enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
 
 lazy val clusterTools = akkaModule("akka-cluster-tools")
-  .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm", coordination, jackson % "test->test")
+  .dependsOn(
+    cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
+    coordination % "compile->compile;test->test",
+    jackson % "test->test")
   .settings(Dependencies.clusterTools)
   .settings(AutomaticModuleName.settings("akka.cluster.tools"))
   .settings(OSGi.clusterTools)
@@ -500,7 +508,7 @@ lazy val discovery = akkaModule("akka-discovery")
   .settings(OSGi.discovery)
 
 lazy val coordination = akkaModule("akka-coordination")
-  .dependsOn(actor, testkit % "test->test", actorTests % "test->test", cluster % "test->test")
+  .dependsOn(actor, testkit % "test->test", actorTests % "test->test")
   .settings(Dependencies.coordination)
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)

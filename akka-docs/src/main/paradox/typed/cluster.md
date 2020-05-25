@@ -275,22 +275,21 @@ new joining members to 'Up'. The node must first become `reachable` again, or th
 status of the unreachable member must be changed to `Down`. Changing status to `Down`
 can be performed automatically or manually.
 
-By default, downing must be performed manually using @ref:[HTTP](../additional/operations.md#http) or @ref:[JMX](../additional/operations.md#jmx).
+We recommend that you enable the @ref:[Split Brain Resolver](../split-brain-resolver.md) that is part of the
+Akka Cluster module. You enable it with configuration:
+
+```
+akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
+```
+
+You should also consider the different available @ref:[downing strategies](../split-brain-resolver.md#strategies).
+
+If a downing provider is not configured downing must be performed manually using 
+@ref:[HTTP](../additional/operations.md#http) or @ref:[JMX](../additional/operations.md#jmx).
 
 Note that @ref:[Cluster Singleton](cluster-singleton.md) or @ref:[Cluster Sharding entities](cluster-sharding.md) that
 are running on a crashed (unreachable) node will not be started on another node until the previous node has
 been removed from the Cluster. Removal of crashed (unreachable) nodes is performed after a downing decision.
-
-A production solution for downing is provided by
-[Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html),
-which is part of the [Akka Platform](https://www.lightbend.com/akka-platform).
-If you don’t have a Lightbend Subscription, you should still carefully read the 
-[documentation](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html)
-of the Split Brain Resolver and make sure that the solution you are using handles the concerns and scenarios
-described there.
-
-A custom downing strategy can be implemented with a @apidoc[akka.cluster.DowningProvider] and enabled with
-configuration `akka.cluster.downing-provider-class`.  
 
 Downing can also be performed programmatically with @scala[`Cluster(system).manager ! Down(address)`]@java[`Cluster.get(system).manager().tell(Down(address))`],
 but that is mostly useful from tests and when implementing a `DowningProvider`.
