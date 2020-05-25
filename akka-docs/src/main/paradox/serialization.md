@@ -82,6 +82,7 @@ Scala
 Java
 :  @@snip [SerializationDocTest.java](/akka-docs/src/test/java/jdocs/serialization/SerializationDocTest.java) { #programmatic }
 
+
 The manifest is a type hint so that the same serializer can be used for different classes.
 
 Note that when deserializing from bytes the manifest and the identifier of the serializer are needed.
@@ -118,6 +119,21 @@ Scala
 
 Java
 :  @@snip [SerializationDocTest.java](/akka-docs/src/test/java/jdocs/serialization/SerializationDocTest.java) { #my-own-serializer }
+
+The `identifier` must be unique. The identifier is used when selecting which serializer to use for deserialization.
+If you have accidentally configured several serializers with the same identifier that will be detected and prevent
+the `ActorSystem` from being started. It can be a hardcoded value because it must remain the same value to support
+rolling updates. 
+
+@@@ div { .group-scala }
+
+If you prefer to define the identifier in cofiguration that is supported by the `BaseSerializer` trait, which
+implements the `def identifier` by reading it from configuration based on the serializer's class name:
+
+Scala
+:  @@snip [SerializationDocSpec.scala](/akka-docs/src/test/scala/docs/serialization/SerializationDocSpec.scala) { #serialization-identifiers-config }
+
+@@@
 
 The manifest is a type hint so that the same serializer can be used for different
 classes. The manifest parameter in @scala[`fromBinary`]@java[`fromBinaryJava`] is the class of the object that
