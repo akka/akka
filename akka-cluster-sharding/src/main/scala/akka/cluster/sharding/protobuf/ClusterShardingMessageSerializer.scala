@@ -22,6 +22,7 @@ import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.ShardRegion._
 import akka.cluster.sharding.protobuf.msg.{ ClusterShardingMessages => sm }
 import akka.cluster.sharding.internal.EventSourcedRememberShards.{ MigrationMarker, State => RememberShardsState }
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore.{ State => EntityState }
 import akka.cluster.sharding.protobuf.msg.ClusterShardingMessages
 import akka.protobufv3.internal.MessageLite
 import akka.serialization.BaseSerializer
@@ -32,7 +33,7 @@ import java.io.NotSerializableException
 
 import akka.actor.Address
 import akka.cluster.sharding.ShardRegion._
-import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore.EntitiesStarted
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore.{ EntitiesStarted, EntitiesStopped }
 import akka.cluster.sharding.protobuf.msg.ClusterShardingMessages
 
 /**
@@ -44,7 +45,6 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     with BaseSerializer {
   import Shard.{ CurrentShardState, GetCurrentShardState }
   import Shard.{ GetShardStats, ShardStats }
-  import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore.{ State => EntityState, EntityStopped }
   import ShardCoordinator.Internal._
 
   private final val BufferSize = 1024 * 4
@@ -74,6 +74,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   private val EntityStartedManifest = "CB"
   private val EntityStoppedManifest = "CD"
   private val EntitiesStartedManifest = "CE"
+  private val EntitiesStoppedManifest = "CF"
 
   private val StartEntityManifest = "EA"
   private val StartEntityAckManifest = "EB"
@@ -101,6 +102,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     EntityStartedManifest -> entityStartedFromBinary,
     EntitiesStartedManifest -> entitiesStartedFromBinary,
     EntityStoppedManifest -> entityStoppedFromBinary,
+    EntitiesStoppedManifest -> entitiesStoppedFromBinary,
     CoordinatorStateManifest -> coordinatorStateFromBinary,
     ShardRegionRegisteredManifest -> { bytes =>
       ShardRegionRegistered(actorRefMessageFromBinary(bytes))
@@ -203,7 +205,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   override def manifest(obj: AnyRef): String = obj match {
     case _: EntityState     => EntityStateManifest
     case _: EntitiesStarted => EntitiesStartedManifest
-    case _: EntityStopped   => EntityStoppedManifest
+    case _: EntitiesStopped => EntitiesStoppedManifest
 
     case _: State                      => CoordinatorStateManifest
     case _: ShardRegionRegistered      => ShardRegionRegisteredManifest
@@ -276,7 +278,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
 
     case m: EntityState     => entityStateToProto(m).toByteArray
     case m: EntitiesStarted => entitiesStartedToProto(m).toByteArray
-    case m: EntityStopped   => entityStoppedToProto(m).toByteArray
+    case m: EntitiesStopped => entitiesStoppedToProto(m).toByteArray
 
     case s: StartEntity    => startEntityToByteArray(s)
     case s: StartEntityAck => startEntityAckToByteArray(s)
@@ -417,11 +419,14 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   private def entitiesStartedFromBinary(bytes: Array[Byte]): EntitiesStarted =
     EntitiesStarted(sm.EntitiesStarted.parseFrom(bytes).getEntityIdList.asScala.toSet)
 
-  private def entityStoppedToProto(evt: EntityStopped): sm.EntityStopped =
-    sm.EntityStopped.newBuilder().setEntityId(evt.entityId).build()
+  private def entitiesStoppedToProto(evt: EntitiesStopped): sm.EntitiesStopped =
+    sm.EntitiesStopped.newBuilder().addAllEntityId(evt.entities.asJava).build()
 
-  private def entityStoppedFromBinary(bytes: Array[Byte]): EntityStopped =
-    EntityStopped(sm.EntityStopped.parseFrom(bytes).getEntityId)
+  private def entityStoppedFromBinary(bytes: Array[Byte]): EntitiesStopped =
+    EntitiesStopped(Set(sm.EntityStopped.parseFrom(bytes).getEntityId))
+
+  private def entitiesStoppedFromBinary(bytes: Array[Byte]): EntitiesStopped =
+    EntitiesStopped(sm.EntitiesStopped.parseFrom(bytes).getEntityIdList.asScala.toSet)
 
   private def shardStatsToProto(evt: ShardStats): sm.ShardStats =
     sm.ShardStats.newBuilder().setShard(evt.shardId).setEntityCount(evt.entityCount).build()

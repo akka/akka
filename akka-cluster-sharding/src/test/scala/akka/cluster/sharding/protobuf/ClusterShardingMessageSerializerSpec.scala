@@ -76,7 +76,7 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
 
     "be able to serialize PersistentShard domain events" in {
       checkSerialization(EventSourcedRememberEntitiesStore.EntitiesStarted(Set("e1", "e2")))
-      checkSerialization(EventSourcedRememberEntitiesStore.EntityStopped("e1"))
+      checkSerialization(EventSourcedRememberEntitiesStore.EntitiesStopped(Set("e1", "e2")))
     }
 
     "be able to deserialize old entity started event into entities started" in {

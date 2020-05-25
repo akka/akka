@@ -5,7 +5,14 @@
 package akka.cluster.sharding
 import akka.actor.ActorRef
 import akka.cluster.sharding
-import akka.cluster.sharding.Shard.{ Active, Passivating, RememberedButNotCreated, Remembering, Stopped }
+import akka.cluster.sharding.Shard.{
+  Active,
+  NoState,
+  Passivating,
+  RememberedButNotCreated,
+  RememberingStart,
+  RememberingStop
+}
 import akka.event.NoLogging
 import akka.util.OptionVal
 import org.scalatest.matchers.should.Matchers
@@ -27,29 +34,38 @@ class EntitiesSpec extends AnyWordSpec with Matchers {
       entities.activeEntities() shouldEqual Set.empty
       entities.size shouldEqual 3
       ids.foreach { id =>
-        entities.entityState(id) shouldEqual OptionVal.Some(RememberedButNotCreated)
+        entities.entityState(id) shouldEqual RememberedButNotCreated
       }
     }
-    "set state to terminating" in {
+
+    "set state to remembering start" in {
       val entities = new sharding.Shard.Entities(NoLogging)
-      val ref = ActorRef.noSender
-      entities.addEntity("a", ref)
-      entities.terminated(ref)
-      entities.entityState("a") shouldEqual OptionVal.Some(Stopped)
-      entities.activeEntities() shouldEqual Set.empty
+      entities.rememberingStart("a", None)
+      entities.entityState("a") shouldEqual RememberingStart(None)
+      entities.pendingRememberedEntitiesExist() should ===(true)
+      val (starts, stops) = entities.pendingRememberEntities()
+      starts.keySet should contain("a")
+      stops should be(empty)
+    }
+    "set state to remembering stop" in {
+      val entities = new sharding.Shard.Entities(NoLogging)
+      entities.addEntity("a", ActorRef.noSender) // need to go through active to passivate
+      entities.entityPassivating("a") // need to go through passivate to remember stop
+      entities.rememberingStop("a", Passivating)
+      entities.entityState("a") shouldEqual RememberingStop(Passivating)
+      entities.pendingRememberedEntitiesExist() should ===(true)
+      val (starts, stops) = entities.pendingRememberEntities()
+      stops should contain("a")
+      starts should be(empty)
     }
 
-    "set state to remembering" in {
-      val entities = new sharding.Shard.Entities(NoLogging)
-      entities.remembering("a")
-      entities.entityState("a") shouldEqual OptionVal.Some(Remembering)
-    }
     "fully remove an entity" in {
       val entities = new sharding.Shard.Entities(NoLogging)
       val ref = ActorRef.noSender
       entities.addEntity("a", ref)
+      entities.entityPassivating("a") // needs to go through passivating to be removed
       entities.removeEntity("a")
-      entities.entityState("a") shouldEqual OptionVal.None
+      entities.entityState("a") shouldEqual NoState
       entities.activeEntities() shouldEqual Set.empty
 
     }
@@ -57,7 +73,7 @@ class EntitiesSpec extends AnyWordSpec with Matchers {
       val entities = new sharding.Shard.Entities(NoLogging)
       val ref = ActorRef.noSender
       entities.addEntity("a", ref)
-      entities.entityState("a") shouldEqual OptionVal.Some(Active(ref))
+      entities.entityState("a") shouldEqual Active(ref)
     }
     "look up actor ref by id" in {
       val entities = new sharding.Shard.Entities(NoLogging)
@@ -70,7 +86,7 @@ class EntitiesSpec extends AnyWordSpec with Matchers {
       val ref = ActorRef.noSender
       entities.addEntity("a", ref)
       entities.entityPassivating("a")
-      entities.entityState("a") shouldEqual OptionVal.Some(Passivating(ref))
+      entities.entityState("a") shouldEqual Passivating(ref)
     }
   }
 
