@@ -18,6 +18,10 @@ import akka.testkit._
 class LocalDeathWatchSpec extends AkkaSpec with ImplicitSender with DefaultTimeout with DeathWatchSpec
 
 object DeathWatchSpec {
+  object Watcher {
+    def props(target: ActorRef, testActor: ActorRef) =
+      Props(classOf[Watcher], target, testActor)
+  }
   class Watcher(target: ActorRef, testActor: ActorRef) extends Actor {
     context.watch(target)
     def receive = {
@@ -25,9 +29,6 @@ object DeathWatchSpec {
       case x             => testActor.forward(x)
     }
   }
-
-  def props(target: ActorRef, testActor: ActorRef) =
-    Props(classOf[Watcher], target, testActor)
 
   class EmptyWatcher(target: ActorRef) extends Actor {
     context.watch(target)
@@ -70,6 +71,37 @@ object DeathWatchSpec {
   final case class FF(fail: Failed)
 
   final case class Latches(t1: TestLatch, t2: TestLatch) extends NoSerializationVerificationNeeded
+
+  object WatchWithVerifier {
+    case class WatchThis(ref: ActorRef)
+    case object Watching
+    case class CustomWatchMsg(ref: ActorRef)
+    case object StartStashing
+    case object StopStashing
+
+    def props(probe: ActorRef) = Props(new WatchWithVerifier(probe))
+  }
+  class WatchWithVerifier(probe: ActorRef) extends Actor with Stash {
+    import WatchWithVerifier._
+    private var stashing = false
+
+    override def receive: Receive = {
+      case StartStashing =>
+        stashing = true
+      case StopStashing =>
+        stashing = false
+        unstashAll()
+      case _ if stashing =>
+        stash()
+      case WatchThis(ref) =>
+        context.watchWith(ref, CustomWatchMsg(ref))
+        sender ! Watching
+      case msg @ CustomWatchMsg(_) =>
+        probe ! msg
+      case msg @ Terminated(_) =>
+        probe ! msg
+    }
+  }
 }
 
 @silent
@@ -79,7 +111,8 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
 
   lazy val supervisor = system.actorOf(Props(classOf[Supervisor], SupervisorStrategy.defaultStrategy), "watchers")
 
-  def startWatching(target: ActorRef) = Await.result((supervisor ? props(target, testActor)).mapTo[ActorRef], 3 seconds)
+  def startWatching(target: ActorRef) =
+    Await.result((supervisor ? Watcher.props(target, testActor)).mapTo[ActorRef], 3 seconds)
 
   "The Death Watch" must {
     def expectTerminationOf(actorRef: ActorRef) =
@@ -243,6 +276,33 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
       expectMsg(ActorIdentity((), Some(w)))
       w ! Identify(())
       expectMsg(ActorIdentity((), Some(w)))
+    }
+
+    "watch with custom message" in {
+      val verifierProbe = TestProbe()
+      val verifier = system.actorOf(WatchWithVerifier.props(verifierProbe.ref))
+      val subject = system.actorOf(Props[EmptyActor]())
+      verifier ! WatchWithVerifier.WatchThis(subject)
+      expectMsg(WatchWithVerifier.Watching)
+
+      subject ! PoisonPill
+      verifierProbe.expectMsg(WatchWithVerifier.CustomWatchMsg(subject))
+    }
+
+    // Coverage for #29101
+    "stash watchWith termination message correctly" in {
+      val verifierProbe = TestProbe()
+      val verifier = system.actorOf(WatchWithVerifier.props(verifierProbe.ref))
+      val subject = system.actorOf(Props[EmptyActor]())
+      verifier ! WatchWithVerifier.WatchThis(subject)
+      expectMsg(WatchWithVerifier.Watching)
+      verifier ! WatchWithVerifier.StartStashing
+
+      subject ! PoisonPill
+      // race: we want termination to happen before we stop stashing
+      Thread.sleep(200)
+      verifier ! WatchWithVerifier.StopStashing
+      verifierProbe.expectMsg(WatchWithVerifier.CustomWatchMsg(subject))
     }
   }
 
