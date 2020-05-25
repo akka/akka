@@ -496,24 +496,25 @@ private[akka] class Shard(
               context.become(waitingForUpdate(pendingStarts + (msg.entityId -> Some(sender()))))
 
           // below cases should handle same messages as in idle
-          case _: Terminated                   => stash()
-          case _: EntityTerminated             => stash()
-          case _: CoordinatorMessage           => stash()
-          case _: RememberEntityCommand        => stash()
-          case _: ShardRegion.StartEntityAck   => stash()
-          case _: ShardRegionCommand           => stash()
-          case msg: ShardQuery                 => receiveShardQuery(msg)
-          case PassivateIdleTick               => stash()
-          case msg: LeaseLost                  => receiveLeaseLost(msg)
-          case msg: RememberEntityStoreCrashed => rememberEntityStoreCrashed(msg)
+          case _: Terminated                           => stash()
+          case _: EntityTerminated                     => stash()
+          case _: CoordinatorMessage                   => stash()
+          case _: RememberEntityCommand                => stash()
+          case _: ShardRegion.StartEntityAck           => stash()
+          case _: ShardRegionCommand                   => stash()
+          case msg: ShardQuery                         => receiveShardQuery(msg)
+          case PassivateIdleTick                       => stash()
+          case msg: LeaseLost                          => receiveLeaseLost(msg)
+          case msg: RememberEntityStoreCrashed         => rememberEntityStoreCrashed(msg)
           case msg if extractEntityId.isDefinedAt(msg) =>
+            // FIXME now the delivery logic is again spread out across two places, is this needed over what is in deliverMessage?
             val (id, _) = extractEntityId(msg)
             if (entities.entityIdExists(id)) {
               if (VerboseDebug) log.debug("Entity already known about. Try and deliver. [{}]", id)
               deliverMessage(msg, sender(), OptionVal.Some(entityIds))
             } else {
               if (VerboseDebug) log.debug("New entity, add it to batch of pending starts. [{}]", id)
-              stash()
+              appendToMessageBuffer(id, msg, sender())
               context.become(waitingForUpdate(pendingStarts + (id -> None)))
             }
           case msg =>
@@ -768,11 +769,11 @@ private[akka] class Shard(
               // unstash happens on async write complete
               if (VerboseDebug)
                 log.debug(
-                  "Stashing message [{}] to [{}] because of write in progress for [{}]",
+                  "Buffer message [{}] to [{}] (which is not started) because of write in progress for [{}]",
                   payload.getClass,
                   id,
                   entityIdsWaitingForWrite.get)
-              stash()
+              appendToMessageBuffer(id, msg, snd)
           }
       }
     }
