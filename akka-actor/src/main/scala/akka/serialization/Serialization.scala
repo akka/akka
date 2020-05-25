@@ -508,11 +508,14 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
     serializers.foldLeft(zero) {
       case (acc, (_, ser)) =>
         val id = ser.identifier
-        if (acc.contains(id))
-          throw new IllegalArgumentException(
-            s"Serializer identifier [$id] of [${ser.getClass.getName}] " +
-            s"is not unique. It is also used by ${acc(id).getClass.getName}.")
-        acc.updated(id, ser)
+        acc.get(id) match {
+          case Some(existing) if existing != ser =>
+            throw new IllegalArgumentException(
+              s"Serializer identifier [$id] of [${ser.getClass.getName}] " +
+              s"is not unique. It is also used by [${acc(id).getClass.getName}].")
+          case _ =>
+            acc.updated(id, ser)
+        }
     }
   }
 
