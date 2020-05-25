@@ -395,7 +395,9 @@ import akka.util.ByteString
     result.getStatus match {
       case OK =>
         result.getHandshakeStatus match {
-          case NEED_WRAP => flushToUser()
+          case NEED_WRAP =>
+            flushToUser()
+            transportInChoppingBlock.putBack(transportInBuffer)
           case FINISHED =>
             flushToUser()
             handshakeFinished()
