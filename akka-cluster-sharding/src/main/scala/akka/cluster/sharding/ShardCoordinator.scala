@@ -1328,22 +1328,28 @@ private[akka] class DDataShardCoordinator(
       stash()
 
     case RememberEntitiesCoordinatorStore.UpdateDone(shard) =>
-      require(shardId.contains(shard))
-      if (!waitingForStateWrite) {
-        log.debug("The ShardCoordinator saw remember shard start successfully written {}", evt)
-        if (shardId.isDefined) timers.cancel(RememberEntitiesTimeoutKey)
-        unbecomeAfterUpdate(evt, afterUpdateCallback)
+      if (!shardId.contains(shard)) {
+        log.warning(
+          "Saw remember entities update complete for shard id [{}], while waiting for [{}]",
+          shard,
+          shardId.getOrElse(""))
       } else {
-        log.debug(
-          "The ShardCoordinator saw remember shard start successfully written {}, waiting for state update",
-          evt)
-        context.become(
-          waitingForUpdate(
-            evt,
-            shardId,
-            waitingForStateWrite = true,
-            waitingForRememberShard = false,
-            afterUpdateCallback = afterUpdateCallback))
+        if (!waitingForStateWrite) {
+          log.debug("The ShardCoordinator saw remember shard start successfully written {}", evt)
+          if (shardId.isDefined) timers.cancel(RememberEntitiesTimeoutKey)
+          unbecomeAfterUpdate(evt, afterUpdateCallback)
+        } else {
+          log.debug(
+            "The ShardCoordinator saw remember shard start successfully written {}, waiting for state update",
+            evt)
+          context.become(
+            waitingForUpdate(
+              evt,
+              shardId,
+              waitingForStateWrite = true,
+              waitingForRememberShard = false,
+              afterUpdateCallback = afterUpdateCallback))
+        }
       }
 
     case RememberEntitiesCoordinatorStore.UpdateFailed(shard) =>

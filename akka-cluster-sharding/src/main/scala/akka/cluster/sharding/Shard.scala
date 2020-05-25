@@ -453,7 +453,7 @@ private[akka] class Shard(
         whenDone()
 
       case Some(store) =>
-        if (VerboseDebug) log.debug("Update of [{}] [{}] triggered", entityIds, command)
+        if (VerboseDebug) log.debug("Update of [{}] [{}] triggered", entityIds.mkString(", "), command)
 
         entityIds.foreach(entities.remembering)
         store ! command
@@ -469,7 +469,7 @@ private[akka] class Shard(
         def waitingForUpdate(pendingStarts: Map[EntityId, Option[ActorRef]]): Receive = {
           // none of the current impls will send back a partial update, yet!
           case RememberEntitiesShardStore.UpdateDone(ids) =>
-            if (VerboseDebug) log.debug("Update done for ids {}", ids)
+            if (VerboseDebug) log.debug("Update done for ids [{}]", ids.mkString(", "))
             timers.cancel(RememberEntityTimeoutKey)
             whenDone()
             if (pendingStarts.isEmpty) {
@@ -477,7 +477,10 @@ private[akka] class Shard(
               context.become(idle)
               unstashAll()
             } else {
-              if (VerboseDebug) log.debug("New entities encountered while waiting starting those: {}", pendingStarts)
+              if (VerboseDebug)
+                log.debug(
+                  "New entities encountered while waiting starting those: [{}]",
+                  pendingStarts.keys.mkString(", "))
               startEntities(pendingStarts)
             }
           case RememberEntityTimeout(`command`) =>
@@ -486,9 +489,9 @@ private[akka] class Shard(
           case msg: ShardRegion.StartEntity =>
             if (VerboseDebug)
               log.debug(
-                "Start entity while a write already in progress. Pending writes {}. Writes in progress {}",
-                pendingStarts,
-                entityIds)
+                "Start entity while a write already in progress. Pending writes [{}]. Writes in progress [{}]",
+                pendingStarts.keys.mkString(", "),
+                entityIds.mkString(", "))
             if (!entities.entityIdExists(msg.entityId))
               context.become(waitingForUpdate(pendingStarts + (msg.entityId -> Some(sender()))))
 
@@ -506,19 +509,19 @@ private[akka] class Shard(
           case msg if extractEntityId.isDefinedAt(msg) =>
             val (id, _) = extractEntityId(msg)
             if (entities.entityIdExists(id)) {
-              if (VerboseDebug) log.debug("Entity already known about. Try and deliver. {}", id)
+              if (VerboseDebug) log.debug("Entity already known about. Try and deliver. [{}]", id)
               deliverMessage(msg, sender(), OptionVal.Some(entityIds))
             } else {
-              if (VerboseDebug) log.debug("New entity, add it to batch of pending starts. {}", id)
+              if (VerboseDebug) log.debug("New entity, add it to batch of pending starts. [{}]", id)
               stash()
               context.become(waitingForUpdate(pendingStarts + (id -> None)))
             }
           case msg =>
             // shouldn't be any other message types, but just in case
             log.warning(
-              "Stashing unexpected message [{}] while waiting for remember entities update of {}",
+              "Stashing unexpected message [{}] while waiting for remember entities update of [{}]",
               msg.getClass,
-              entityIds)
+              entityIds.mkString(", "))
             stash()
         }
     }
@@ -553,12 +556,12 @@ private[akka] class Shard(
   private def startEntities(entities: Map[EntityId, Option[ActorRef]]): Unit = {
     val alreadyStarted = entities.filterKeys(entity => this.entities.entityIdExists(entity))
     val needStarting = entities -- alreadyStarted.keySet
-    log.debug(
-      "Request to start entities {}. Already started {}. Need starting {}",
-      entities,
-      alreadyStarted,
-      needStarting)
-
+    if (log.isDebugEnabled) {
+      log.debug(
+        "Request to start entities. Already started [{}]. Need starting [{}]",
+        alreadyStarted.keys.mkString(", "),
+        needStarting.keys.mkString(", "))
+    }
     alreadyStarted.foreach {
       case (entityId, requestor) =>
         getOrCreateEntity(entityId)
