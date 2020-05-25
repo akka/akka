@@ -153,39 +153,44 @@ object RetrySupport extends RetrySupport {
       maxAttempts: Int,
       delayFunction: Int => Option[FiniteDuration],
       attempted: Int)(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
-    try {
-      require(maxAttempts >= 0, "Parameter maxAttempts must >= 0.")
-      require(attempt != null, "Parameter attempt should not be null.")
-      if (maxAttempts - attempted > 0) {
-        val result = attempt()
-        if (result eq null)
-          result
-        else {
-          val nextAttempt = attempted + 1
-          result.recoverWith {
-            case NonFatal(_) =>
-              delayFunction(nextAttempt) match {
-                case Some(delay) =>
-                  if (delay.length < 1)
-                    retry(attempt, maxAttempts, delayFunction, nextAttempt)
-                  else
-                    after(delay, scheduler) {
-                      retry(attempt, maxAttempts, delayFunction, nextAttempt)
-                    }
-                case None =>
-                  retry(attempt, maxAttempts, delayFunction, nextAttempt)
-                case _ =>
-                  Future.failed(new IllegalArgumentException("The delayFunction of retry should not return null."))
-              }
 
-          }
-        }
-
-      } else {
+    def tryAttempt(): Future[T] = {
+      try {
         attempt()
+      } catch {
+        case NonFatal(exc) => Future.failed(exc) // in case the `attempt` function throws
       }
-    } catch {
-      case NonFatal(error) => Future.failed(error)
+    }
+
+    require(maxAttempts >= 0, "Parameter maxAttempts must >= 0.")
+    require(attempt != null, "Parameter attempt should not be null.")
+    if (maxAttempts - attempted > 0) {
+      val result = tryAttempt()
+      if (result eq null)
+        result
+      else {
+        val nextAttempt = attempted + 1
+        result.recoverWith {
+          case NonFatal(_) =>
+            delayFunction(nextAttempt) match {
+              case Some(delay) =>
+                if (delay.length < 1)
+                  retry(attempt, maxAttempts, delayFunction, nextAttempt)
+                else
+                  after(delay, scheduler) {
+                    retry(attempt, maxAttempts, delayFunction, nextAttempt)
+                  }
+              case None =>
+                retry(attempt, maxAttempts, delayFunction, nextAttempt)
+              case _ =>
+                Future.failed(new IllegalArgumentException("The delayFunction of retry should not return null."))
+            }
+
+        }
+      }
+
+    } else {
+      tryAttempt()
     }
   }
 }
