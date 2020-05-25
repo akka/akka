@@ -635,6 +635,13 @@ private[akka] class Shard(
   private def receiveTerminated(ref: ActorRef): Unit = {
     if (handOffStopper.contains(ref))
       context.stop(self)
+    else {
+      // workaround for watchWith not working with stash #29101
+      entities.entityId(ref) match {
+        case OptionVal.Some(id) => entityTerminated(ref, id)
+        case _                  =>
+      }
+    }
   }
 
   @InternalStableApi
@@ -778,7 +785,7 @@ private[akka] class Shard(
       case OptionVal.None =>
         val name = URLEncoder.encode(id, "utf-8")
         val a = context.actorOf(entityProps(id), name)
-        context.watchWith(a, EntityTerminated(id, a))
+        context.watch(a)
         log.debug("Started entity [{}] with entity id [{}] in shard [{}]", a, id, shardId)
         entities.addEntity(id, a)
         touchLastMessageTimestamp(id)
