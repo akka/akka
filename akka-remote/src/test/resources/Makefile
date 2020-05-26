@@ -10,7 +10,7 @@ domain.crt: domain.csr domain.key
 	openssl x509 -req -in domain.csr -sha256 -extfile <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=DNS:localhost")) -out domain.crt -extensions SAN -signkey domain.key
 
 domain.csr:
-	openssl req -new -sha256 -key domain.key -subj "/C=ZA/ST=web/O=Lightbend/CN=akka-remote" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=DNS:localhost")) -out domain.csr -passout pass:changeme
+	openssl req -new -newkey rsa:2048 -keyout domain.key -subj "/C=ZA/ST=web/O=Lightbend/CN=akka-remote" -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[SAN]\nsubjectAltName=DNS:localhost")) -out domain.csr -passout pass:changeme
 
 .PHONY: clean
 clean:

@@ -10,10 +10,10 @@ import java.security.NoSuchAlgorithmException
 import akka.actor.ActorIdentity
 import akka.actor.ActorPath
 import akka.actor.ActorRef
-import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.actor.RootActorPath
 import akka.actor.setup.ActorSystemSetup
+import akka.remote.artery.tcp.ssl.CipherSuiteSupportCheck
 import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
@@ -21,6 +21,7 @@ import akka.testkit.TestProbe
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import javax.net.ssl.SSLEngine
+import javax.net.ssl.SSLSession
 
 import scala.concurrent.duration._
 
@@ -50,6 +51,18 @@ class TlsTcpWithCrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec
     }
     """))
 
+class TlsTcpWithCloudNativeSslEngineSpec
+    extends TlsTcpSpec(ConfigFactory.parseString(s"""
+    akka.remote.artery.ssl {
+       ssl-engine-provider = akka.remote.artery.tcp.ssl.CloudNativeSSLEngineProvider
+       cloud-native-ssl-engine {
+         key-file = ${getClass.getClassLoader.getResource("ssl/pem/pkcs1.pem").getPath}
+         cert-file = ${getClass.getClassLoader.getResource("ssl/pem/certificate.pem").getPath}
+         ca-cert-file = ${getClass.getClassLoader.getResource("ssl/pem/certificate.pem").getPath}
+       }
+    }
+    """))
+
 object TlsTcpSpec {
 
   lazy val config: Config = {
@@ -73,25 +86,8 @@ abstract class TlsTcpSpec(config: Config)
 
   def isSupported: Boolean = {
     try {
-      val provider = new ConfigSSLEngineProvider(system)
-
-      val rng = provider.createSecureRandom()
-      rng.nextInt() // Has to work
-      val sRng = provider.SSLRandomNumberGenerator
-      if (rng.getAlgorithm != sRng && sRng != "")
-        throw new NoSuchAlgorithmException(sRng)
-
-      val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-      val host = address.host.get
-      val port = address.port.get
-
-      val engine = provider.createServerSSLEngine(host, port)
-      val gotAllSupported = provider.SSLEnabledAlgorithms.diff(engine.getSupportedCipherSuites.toSet)
-      val gotAllEnabled = provider.SSLEnabledAlgorithms.diff(engine.getEnabledCipherSuites.toSet)
-      gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
-      gotAllEnabled.isEmpty || (throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled))
-      engine.getSupportedProtocols.contains(provider.SSLProtocol) ||
-      (throw new IllegalArgumentException("Protocol not supported: " + provider.SSLProtocol))
+      CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.cloud-native-ssl-engine").map(_ => true).get
+      CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.config-ssl-engine").map(_ => true).get
     } catch {
       case e @ (_: IllegalArgumentException | _: NoSuchAlgorithmException) =>
         info(e.toString)
@@ -217,17 +213,19 @@ class TlsTcpWithActorSystemSetupSpec extends ArteryMultiNodeSpec(TlsTcpSpec.conf
   val sslProviderClientProbe = TestProbe()
 
   val sslProviderSetup = SSLEngineProviderSetup(sys =>
-    new ConfigSSLEngineProvider(sys) {
+    new SSLEngineProvider {
+      val delegate = new ssl.ConfigSSLEngineProvider(sys)
       override def createServerSSLEngine(hostname: String, port: Int): SSLEngine = {
         sslProviderServerProbe.ref ! "createServerSSLEngine"
-        super.createServerSSLEngine(hostname, port)
+        delegate.createServerSSLEngine(hostname, port)
       }
 
       override def createClientSSLEngine(hostname: String, port: Int): SSLEngine = {
         sslProviderClientProbe.ref ! "createClientSSLEngine"
-        super.createClientSSLEngine(hostname, port)
+        delegate.createClientSSLEngine(hostname, port)
       }
-
+      override def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable] = delegate.verifyClientSession(hostname, session)
+      override def verifyServerSession(hostname: String, session: SSLSession): Option[Throwable] =delegate.verifyServerSession(hostname, session)
     })
 
   val systemB = newRemoteSystem(name = Some("systemB"), setup = Some(ActorSystemSetup(sslProviderSetup)))

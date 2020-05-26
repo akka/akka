@@ -20,9 +20,19 @@ import com.typesafe.config.Config
   val GeneratorNativePrng = "NativePRNG"
   val GeneratorJdkSecureRandom = "SecureRandom"
 
-  def createSecureRandom(config: Config, log: MarkerLoggingAdapter): SecureRandom = {
-    createSecureRandom(config.getString("random-number-generator"), log)
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  // extracted as a method for testing
+  private[tcp] def rngConfig(config: Config) = {
+    config.getString("random-number-generator")
   }
+
+  def createSecureRandom(config: Config, log: MarkerLoggingAdapter): SecureRandom = {
+    createSecureRandom(rngConfig(config), log)
+  }
+
   def createSecureRandom(randomNumberGenerator: String, log: MarkerLoggingAdapter): SecureRandom = {
     val rng = randomNumberGenerator match {
       case s @ (GeneratorSha1Prng | GeneratorNativePrng) =>
