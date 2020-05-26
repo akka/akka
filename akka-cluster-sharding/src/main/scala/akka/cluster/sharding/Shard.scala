@@ -460,7 +460,7 @@ private[akka] class Shard(
       case None =>
         whenDone()
       case Some(store) =>
-        entityIds.foreach { it =>
+        entityIds.foreach { id =>
           entities.remembering(id)
           flightRecorder.rememberEntityAdd(id)
         }
@@ -474,7 +474,7 @@ private[akka] class Shard(
    */
   def sendToRememberStore(store: ActorRef, entityIds: Set[EntityId], command: RememberEntitiesShardStore.Command)(
       whenDone: () => Unit): Unit = {
-    if (VerboseDebug) log.debug("Update of [{}] [{}] triggered", entityIds, command)
+    if (VerboseDebug) log.debug("Update of [{}] [{}] triggered", entityIds.mkString(", "), command)
     val startTime = System.nanoTime()
     store ! command
     timers.startSingleTimer(
@@ -490,7 +490,7 @@ private[akka] class Shard(
       // none of the current impls will send back a partial update, yet!
       case RememberEntitiesShardStore.UpdateDone(ids) =>
         val duration = System.nanoTime() - startTime
-        if (VerboseDebug) log.debug("Update done for ids {}. Duration {}", ids, duration)
+        if (VerboseDebug) log.debug("Update done for ids [{}]", ids.mkString(", "))
         flightRecorder.rememberEntityOperation(duration)
         timers.cancel(RememberEntityTimeoutKey)
         whenDone()
@@ -499,7 +499,8 @@ private[akka] class Shard(
           unstashAll()
           context.become(idle)
         } else {
-          if (VerboseDebug) log.debug("New entities encountered while waiting starting those: {}", pendingStarts)
+          if (VerboseDebug)
+            log.debug("New entities encountered while waiting starting those: [{}]", pendingStarts.keys.mkString(", "))
           startEntities(pendingStarts)
         }
       case RememberEntityTimeout(`command`) =>
@@ -515,34 +516,34 @@ private[akka] class Shard(
           context.become(waitingForUpdate(pendingStarts + (msg.entityId -> Some(sender()))))
 
       // below cases should handle same messages as in idle
-      case _: Terminated                   => stash()
-      case _: EntityTerminated             => stash()
-      case _: CoordinatorMessage           => stash()
-      case _: RememberEntityCommand        => stash()
-      case _: ShardRegion.StartEntityAck   => stash()
-      case _: StartEntityInternal          => stash()
-      case _: ShardRegionCommand           => stash()
-      case msg: ShardQuery                 => receiveShardQuery(msg)
-      case PassivateIdleTick               => stash()
-      case msg: LeaseLost                  => receiveLeaseLost(msg)
-      case msg: RememberEntityStoreCrashed => rememberEntityStoreCrashed(msg)
+      case _: Terminated                           => stash()
+      case _: EntityTerminated                     => stash()
+      case _: CoordinatorMessage                   => stash()
+      case _: RememberEntityCommand                => stash()
+      case _: ShardRegion.StartEntityAck           => stash()
+      case _: StartEntityInternal                  => stash()
+      case _: ShardRegionCommand                   => stash()
+      case msg: ShardQuery                         => receiveShardQuery(msg)
+      case PassivateIdleTick                       => stash()
+      case msg: LeaseLost                          => receiveLeaseLost(msg)
+      case msg: RememberEntityStoreCrashed         => rememberEntityStoreCrashed(msg)
       case msg if extractEntityId.isDefinedAt(msg) =>
+        // FIXME now the delivery logic is again spread out across two places, is this needed over what is in deliverMessage?
         val (id, _) = extractEntityId(msg)
         if (entities.entityIdExists(id)) {
-          if (VerboseDebug) log.debug("Entity already known about. Try and deliver. {}", id)
+          if (VerboseDebug) log.debug("Entity already known about. Try and deliver. [{}]", id)
           deliverMessage(msg, sender(), OptionVal.Some(entityIds))
         } else {
-          if (VerboseDebug) log.debug("New entity, add it to batch of pending starts. {}", id)
-          // FIXME, can this change the ordering? needs tests
-          stash()
+          if (VerboseDebug) log.debug("New entity, add it to batch of pending starts. [{}]", id)
+          appendToMessageBuffer(id, msg, sender())
           context.become(waitingForUpdate(pendingStarts + (id -> None)))
         }
       case msg =>
         // shouldn't be any other message types, but just in case
         log.warning(
-          "Stashing unexpected message [{}] while waiting for remember entities update of {}",
+          "Stashing unexpected message [{}] while waiting for remember entities update of [{}]",
           msg.getClass,
-          entityIds)
+          entityIds.mkString(", "))
         stash()
     }
   }
@@ -576,12 +577,12 @@ private[akka] class Shard(
   private def startEntities(entities: Map[EntityId, Option[ActorRef]]): Unit = {
     val alreadyStarted = entities.filterKeys(entity => this.entities.entityIdExists(entity))
     val needStarting = entities -- alreadyStarted.keySet
-    log.debug(
-      "Request to start entities {}. Already started {}. Need starting {}",
-      entities,
-      alreadyStarted,
-      needStarting)
-
+    if (log.isDebugEnabled) {
+      log.debug(
+        "Request to start entities. Already started [{}]. Need starting [{}]",
+        alreadyStarted.keys.mkString(", "),
+        needStarting.keys.mkString(", "))
+    }
     alreadyStarted.foreach {
       case (entityId, requestor) =>
         getOrCreateEntity(entityId)
@@ -655,11 +656,12 @@ private[akka] class Shard(
   private def receiveTerminated(ref: ActorRef): Unit = {
     if (handOffStopper.contains(ref))
       context.stop(self)
-
-    // FIXME https://github.com/akka/akka/issues/29101
-    entities.entityId(ref) match {
-      case OptionVal.Some(id) => entityTerminated(ref, id)
-      case _                  =>
+    else {
+      // workaround for watchWith not working with stash #29101
+      entities.entityId(ref) match {
+        case OptionVal.Some(id) => entityTerminated(ref, id)
+        case _                  =>
+      }
     }
   }
 
@@ -788,11 +790,11 @@ private[akka] class Shard(
               // unstash happens on async write complete
               if (VerboseDebug)
                 log.debug(
-                  "Stashing message [{}] to [{}] because of write in progress for [{}]",
+                  "Buffer message [{}] to [{}] (which is not started) because of write in progress for [{}]",
                   payload.getClass,
                   id,
                   entityIdsWaitingForWrite.get)
-              stash()
+              appendToMessageBuffer(id, msg, snd)
           }
       }
     }
@@ -805,7 +807,7 @@ private[akka] class Shard(
       case OptionVal.None =>
         val name = URLEncoder.encode(id, "utf-8")
         val a = context.actorOf(entityProps(id), name)
-        context.watchWith(a, EntityTerminated(id, a))
+        context.watch(a)
         log.debug("Started entity [{}] with entity id [{}] in shard [{}]", a, id, shardId)
         entities.addEntity(id, a)
         touchLastMessageTimestamp(id)

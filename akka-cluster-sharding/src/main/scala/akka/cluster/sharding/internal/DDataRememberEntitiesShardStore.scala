@@ -174,7 +174,8 @@ private[akka] final class DDataRememberEntitiesShardStore(
       allIds: Set[EntityId],
       updates: Map[Set[EntityId], (Update[ORSet[EntityId]], Int)]): Receive = {
     case UpdateSuccess(_, Some(ids: Set[EntityId] @unchecked)) =>
-      log.debug("The DDataShard state was successfully updated for [{}]", ids)
+      if (log.isDebugEnabled)
+        log.debug("The DDataShard state was successfully updated for [{}]", ids.mkString(", "))
       val remaining = updates - ids
       if (remaining.isEmpty) {
         requestor ! RememberEntitiesShardStore.UpdateDone(allIds)

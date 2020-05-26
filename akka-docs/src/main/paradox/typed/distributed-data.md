@@ -224,6 +224,9 @@ including the local replica
  * `WriteMajority` the value will immediately be written to a majority of replicas, i.e.
 at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
 (or cluster role group)
+ * `WriteMajorityPlus` is like `WriteMajority` but with the given number of `additional` nodes added
+   to the majority count. At most all nodes. This gives better tolerance for membership changes between
+   writes and reads.
  * `WriteAll` the value will immediately be written to all nodes in the cluster
 (or all nodes in the cluster role group)
 
@@ -232,7 +235,8 @@ If there are not enough Acks after a 1/5th of the timeout, the update will be re
 nodes. If there are less than n nodes left all of the remaining nodes are used. Reachable nodes
 are preferred over unreachable nodes.
 
-Note that `WriteMajority` has a `minCap` parameter that is useful to specify to achieve better safety for small clusters.
+Note that `WriteMajority` and `WriteMajorityPlus` have a `minCap` parameter that is useful to specify to
+achieve better safety for small clusters.
 
 #### Read consistency
 
@@ -254,10 +258,14 @@ including the local replica
  * `ReadMajority` the value will be read and merged from a majority of replicas, i.e.
 at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
 (or cluster role group)
+* `ReadMajorityPlus` is like `ReadMajority` but with the given number of `additional` nodes added
+   to the majority count. At most all nodes. This gives better tolerance for membership changes between
+   writes and reads.
  * `ReadAll` the value will be read and merged from all nodes in the cluster
 (or all nodes in the cluster role group)
 
-Note that `ReadMajority` has a `minCap` parameter that is useful to specify to achieve better safety for small clusters.
+Note that `ReadMajority` and `ReadMajorityPlus` have a `minCap` parameter that is useful to specify to achieve
+better safety for small clusters.
 
 #### Consistency and response types
 
@@ -305,7 +313,8 @@ read stale data if the cluster membership has changed between the `Update` and t
 For example, in cluster of 5 nodes when you `Update` and that change is written to 3 nodes:
 n1, n2, n3. Then 2 more nodes are added and a `Get` request is reading from 4 nodes, which
 happens to be n4, n5, n6, n7, i.e. the value on n1, n2, n3 is not seen in the response of the
-`Get` request.
+`Get` request. For additional tolerance of membership changes between writes and reads you can
+use `WriteMajorityPlus` and `ReadMajorityPlus`.
 
 @@@
 
@@ -515,7 +524,13 @@ This means that the timestamp is increased for changes on the same node that occ
 the same millisecond. It also means that it is safe to use the `LWWRegister` without
 synchronized clocks when there is only one active writer, e.g. a Cluster Singleton. Such a
 single writer should then first read current value with `ReadMajority` (or more) before
-changing and writing the value with `WriteMajority` (or more).
+changing and writing the value with `WriteMajority` (or more). When using `LWWRegister`
+with Cluster Singleton it's also recommended to enable:
+
+```
+# Update and Get operations are sent to oldest nodes first.
+akka.cluster.distributed-data.prefer-oldest = on
+```
 
 ### Delta-CRDT
 

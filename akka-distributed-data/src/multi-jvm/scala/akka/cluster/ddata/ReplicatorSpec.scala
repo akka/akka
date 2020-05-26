@@ -67,6 +67,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
   val KeyH = ORMapKey[String, Flag]("H")
   val KeyI = GSetKey[String]("I")
   val KeyJ = GSetKey[String]("J")
+  val KeyK = LWWRegisterKey[String]("K")
   val KeyX = GCounterKey("X")
   val KeyY = GCounterKey("Y")
   val KeyZ = GCounterKey("Z")
@@ -587,6 +588,50 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
     }
 
     changedProbe.expectNoMessage(1.second)
+
+    enterBarrierAfterTestStep()
+  }
+
+  "support prefer oldest members" in {
+    // disable gossip and delta replication to only verify the write and read operations
+    val oldestReplicator = system.actorOf(
+      Replicator.props(
+        ReplicatorSettings(system).withPreferOldest(true).withGossipInterval(1.minute).withDeltaCrdtEnabled(false)),
+      "oldestReplicator")
+    within(5.seconds) {
+      val countProbe = TestProbe()
+      awaitAssert {
+        oldestReplicator.tell(GetReplicaCount, countProbe.ref)
+        countProbe.expectMsg(ReplicaCount(3))
+      }
+    }
+    enterBarrier("oldest-replicator-started")
+
+    val probe = TestProbe()
+
+    runOn(second) {
+      oldestReplicator.tell(
+        Update(KeyK, LWWRegister(selfUniqueAddress, "0"), writeTwo)(_.withValue(selfUniqueAddress, "1")),
+        probe.ref)
+      probe.expectMsg(UpdateSuccess(KeyK, None))
+    }
+    enterBarrier("updated-1")
+
+    runOn(first) {
+      // replicated to oldest
+      oldestReplicator.tell(Get(KeyK, ReadLocal), probe.ref)
+      probe.expectMsgType[GetSuccess[LWWRegister[String]]].dataValue.value should ===("1")
+    }
+
+    runOn(third) {
+      // not replicated to third (not among the two oldest)
+      oldestReplicator.tell(Get(KeyK, ReadLocal), probe.ref)
+      probe.expectMsg(NotFound(KeyK, None))
+
+      // read from oldest
+      oldestReplicator.tell(Get(KeyK, readTwo), probe.ref)
+      probe.expectMsgType[GetSuccess[LWWRegister[String]]].dataValue.value should ===("1")
+    }
 
     enterBarrierAfterTestStep()
   }

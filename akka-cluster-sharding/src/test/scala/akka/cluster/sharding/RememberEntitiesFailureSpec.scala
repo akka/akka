@@ -5,10 +5,7 @@
 package akka.cluster.sharding
 
 import akka.Done
-import akka.actor.Actor
-import akka.actor.ActorLogging
-import akka.actor.ActorRef
-import akka.actor.Props
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Timers }
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardRegion.EntityId
@@ -71,6 +68,8 @@ object RememberEntitiesFailureSpec {
   case object NoResponse extends Fail
   case object CrashStore extends Fail
   case object StopStore extends Fail
+  // not really a failure but close enough
+  case class Delay(howLong: FiniteDuration) extends Fail
 
   // outside store since we need to be able to set them before sharding initializes
   @volatile var failShardGetEntities = Map.empty[ShardId, Fail]
@@ -92,8 +91,10 @@ object RememberEntitiesFailureSpec {
     case class FailRemoveEntity(entityId: EntityId, whichWay: Fail)
     case class ClearAddFail(entityId: Set[EntityId])
     case class ClearRemoveFail(entityId: EntityId)
+
+    case class Delayed(replyTo: ActorRef, msg: Any)
   }
-  class FakeShardStoreActor(shardId: ShardId) extends Actor with ActorLogging {
+  class FakeShardStoreActor(shardId: ShardId) extends Actor with ActorLogging with Timers {
     import FakeShardStoreActor._
 
     implicit val ec = context.system.dispatcher
@@ -109,6 +110,9 @@ object RememberEntitiesFailureSpec {
           case Some(NoResponse) => log.debug("Sending no response for GetEntities")
           case Some(CrashStore) => throw TestException("store crash on GetEntities")
           case Some(StopStore)  => context.stop(self)
+          case Some(Delay(howLong)) =>
+            log.debug("Delaying initial entities listing with {}", howLong)
+            timers.startSingleTimer("get-entities-delay", Delayed(sender(), Set.empty), howLong)
         }
       case RememberEntitiesShardStore.AddEntities(entityId) =>
         failAddEntity.get(entityId) match {
@@ -116,6 +120,9 @@ object RememberEntitiesFailureSpec {
           case Some(NoResponse) => log.debug("Sending no response for AddEntity")
           case Some(CrashStore) => throw TestException("store crash on AddEntity")
           case Some(StopStore)  => context.stop(self)
+          case Some(Delay(howLong)) =>
+            log.debug("Delaying response for AddEntity with {}", howLong)
+            timers.startSingleTimer("add-entity-delay", Delayed(sender(), Set.empty), howLong)
         }
       case RememberEntitiesShardStore.RemoveEntity(entityId) =>
         failRemoveEntity.get(entityId) match {
@@ -123,6 +130,9 @@ object RememberEntitiesFailureSpec {
           case Some(NoResponse) => log.debug("Sending no response for RemoveEntity")
           case Some(CrashStore) => throw TestException("store crash on AddEntity")
           case Some(StopStore)  => context.stop(self)
+          case Some(Delay(howLong)) =>
+            log.debug("Delaying response for RemoveEntity with {}", howLong)
+            timers.startSingleTimer("remove-entity-delay", Delayed(sender(), Set.empty), howLong)
         }
       case FailAddEntity(id, whichWay) =>
         failAddEntity = failAddEntity.updated(id, whichWay)
@@ -136,6 +146,8 @@ object RememberEntitiesFailureSpec {
       case ClearRemoveFail(id) =>
         failRemoveEntity = failRemoveEntity - id
         sender() ! Done
+      case Delayed(to, msg) =>
+        to ! msg
     }
   }
 
@@ -145,8 +157,9 @@ object RememberEntitiesFailureSpec {
     case class FailAddShard(shardId: ShardId, wayToFail: Fail)
     case class ClearFailShard(shardId: ShardId)
   }
-  class FakeCoordinatorStoreActor extends Actor with ActorLogging {
+  class FakeCoordinatorStoreActor extends Actor with ActorLogging with Timers {
     import FakeCoordinatorStoreActor._
+    import FakeShardStoreActor.Delayed
 
     context.system.eventStream.publish(CoordinatorStoreCreated(context.self))
 
@@ -159,6 +172,9 @@ object RememberEntitiesFailureSpec {
           case Some(NoResponse) =>
           case Some(CrashStore) => throw TestException("store crash on load")
           case Some(StopStore)  => context.stop(self)
+          case Some(Delay(howLong)) =>
+            log.debug("Delaying initial shard listing with {}", howLong)
+            timers.startSingleTimer("list-shards-delay", Delayed(sender(), Set.empty), howLong)
         }
       case RememberEntitiesCoordinatorStore.AddShard(shardId) =>
         failAddShard.get(shardId) match {
@@ -166,6 +182,9 @@ object RememberEntitiesFailureSpec {
           case Some(NoResponse) =>
           case Some(CrashStore) => throw TestException("store crash on add")
           case Some(StopStore)  => context.stop(self)
+          case Some(Delay(howLong)) =>
+            log.debug("Delaying adding shard with {}", howLong)
+            timers.startSingleTimer("add-shard-delay", Delayed(sender(), Set.empty), howLong)
         }
       case FailAddShard(shardId, wayToFail) =>
         log.debug("Failing store of {} with {}", shardId, wayToFail)
@@ -175,6 +194,8 @@ object RememberEntitiesFailureSpec {
         log.debug("No longer failing store of {}", shardId)
         failAddShard = failAddShard - shardId
         sender() ! Done
+      case Delayed(to, msg) =>
+        to ! msg
     }
   }
 
@@ -196,7 +217,7 @@ class RememberEntitiesFailureSpec
 
   "Remember entities handling in sharding" must {
 
-    List(NoResponse, CrashStore, StopStore).foreach { wayToFail: Fail =>
+    List(NoResponse, CrashStore, StopStore, Delay(1.second), Delay(2.seconds)).foreach { wayToFail: Fail =>
       s"recover when initial remember entities load fails $wayToFail" in {
         log.debug("Getting entities for shard 1 will fail")
         failShardGetEntities = Map("1" -> wayToFail)
