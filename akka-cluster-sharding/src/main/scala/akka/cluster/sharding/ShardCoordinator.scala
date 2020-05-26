@@ -560,11 +560,17 @@ abstract class ShardCoordinator(
   protected def typeName: String
 
   override def preStart(): Unit = {
+    log.debug("Shard coordinator starting up")
     allocationStrategy match {
       case strategy: StartableAllocationStrategy =>
         strategy.start()
       case _ =>
     }
+  }
+
+  override def postRestart(reason: Throwable): Unit = {
+    log.error(reason, "Coordinator restarting")
+    super.postRestart(reason)
   }
 
   override def postStop(): Unit = {
@@ -1356,12 +1362,24 @@ private[akka] class DDataShardCoordinator(
       }
 
     case RememberEntitiesCoordinatorStore.UpdateFailed(shard) =>
-      require(shardId.contains(shard))
-      onRememberEntitiesUpdateFailed(shard)
+      if (shardId.contains(shard)) {
+        onRememberEntitiesUpdateFailed(shard)
+      } else {
+        log.warning(
+          "Got an remember entities update failed for [{}] while waiting for [{}], ignoring",
+          shard,
+          shardId.getOrElse(""))
+      }
 
     case RememberEntitiesTimeout(shard) =>
-      require(shardId.contains(shard))
-      onRememberEntitiesUpdateFailed(shard)
+      if (shardId.contains(shard)) {
+        onRememberEntitiesUpdateFailed(shard)
+      } else {
+        log.warning(
+          "Got an remember entities update timeout for [{}] while waiting for [{}], ignoring",
+          shard,
+          shardId.getOrElse(""))
+      }
 
     case RememberEntitiesStoreStopped =>
       onRememberEntitiesStoreStopped()
