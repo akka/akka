@@ -244,7 +244,7 @@ class ActorThreadSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
         behv
       })
 
-      eventually(behv != null)
+      eventually(behv shouldNot equal(null))
 
       // spawning same instance again
       val ref2 = spawn(behv)
