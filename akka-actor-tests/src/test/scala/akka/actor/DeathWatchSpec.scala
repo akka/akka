@@ -90,10 +90,10 @@ object DeathWatchSpec {
       case StartStashing(messagesToStash) =>
         stashing = true
         stashNMessages = messagesToStash
-        sender ! StashingStarted
+        sender() ! StashingStarted
       case WatchThis(ref) =>
         context.watchWith(ref, CustomWatchMsg(ref))
-        sender ! Watching
+        sender() ! Watching
       case _ if stashing =>
         stash()
         stashNMessages -= 1
@@ -101,9 +101,7 @@ object DeathWatchSpec {
           stashing = false
           unstashAll()
         }
-      case msg @ CustomWatchMsg(_) =>
-        probe ! msg
-      case msg @ Terminated(_) =>
+      case msg: CustomWatchMsg =>
         probe ! msg
     }
   }
