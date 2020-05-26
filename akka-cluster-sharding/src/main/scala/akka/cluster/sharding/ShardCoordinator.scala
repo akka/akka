@@ -1356,12 +1356,24 @@ private[akka] class DDataShardCoordinator(
       }
 
     case RememberEntitiesCoordinatorStore.UpdateFailed(shard) =>
-      require(shardId.contains(shard))
-      onRememberEntitiesUpdateFailed(shard)
+      if (shardId.contains(shard)) {
+        onRememberEntitiesUpdateFailed(shard)
+      } else {
+        log.warning(
+          "Got an remember entities update failed for [{}] while waiting for [{}], ignoring",
+          shard,
+          shardId.getOrElse(""))
+      }
 
     case RememberEntitiesTimeout(shard) =>
-      require(shardId.contains(shard))
-      onRememberEntitiesUpdateFailed(shard)
+      if (shardId.contains(shard)) {
+        onRememberEntitiesUpdateFailed(shard)
+      } else {
+        log.warning(
+          "Got an remember entities update timeout for [{}] while waiting for [{}], ignoring",
+          shard,
+          shardId.getOrElse(""))
+      }
 
     case RememberEntitiesStoreStopped =>
       onRememberEntitiesStoreStopped()
