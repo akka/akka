@@ -97,9 +97,14 @@ private[akka] object Running {
   import InternalProtocol._
   import Running.RunningState
 
+  // Needed for WithSeqNrAccessible, when unstashing
+  private var _currentSequenceNumber = 0L
+
   final class HandlingCommands(state: RunningState[S])
       extends AbstractBehavior[InternalProtocol](setup.context)
       with WithSeqNrAccessible {
+
+    _currentSequenceNumber = state.seqNr
 
     def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
       case IncomingCommand(c: C @unchecked) => onCommand(state, c)
@@ -150,6 +155,7 @@ private[akka] object Running {
           // apply the event before persist so that validation exception is handled before persisting
           // the invalid event, in case such validation is implemented in the event handler.
           // also, ensure that there is an event handler for each single event
+          _currentSequenceNumber = state.seqNr + 1
           val newState = state.applyEvent(setup, event)
 
           val eventToPersist = adaptEvent(event)
@@ -166,12 +172,13 @@ private[akka] object Running {
             // apply the event before persist so that validation exception is handled before persisting
             // the invalid event, in case such validation is implemented in the event handler.
             // also, ensure that there is an event handler for each single event
-            var seqNr = state.seqNr
+            _currentSequenceNumber = state.seqNr
             val (newState, shouldSnapshotAfterPersist) = events.foldLeft((state, NoSnapshot: SnapshotAfterPersist)) {
               case ((currentState, snapshot), event) =>
-                seqNr += 1
+                _currentSequenceNumber += 1
                 val shouldSnapshot =
-                  if (snapshot == NoSnapshot) setup.shouldSnapshot(currentState.state, event, seqNr) else snapshot
+                  if (snapshot == NoSnapshot) setup.shouldSnapshot(currentState.state, event, _currentSequenceNumber)
+                  else snapshot
                 (currentState.applyEvent(setup, event), shouldSnapshot)
             }
 
@@ -212,7 +219,8 @@ private[akka] object Running {
 
     setup.setMdcPhase(PersistenceMdc.RunningCmds)
 
-    override def currentSequenceNumber: Long = state.seqNr
+    override def currentSequenceNumber: Long =
+      _currentSequenceNumber
   }
 
   // ===============================================
@@ -335,7 +343,9 @@ private[akka] object Running {
         else Behaviors.unhandled
     }
 
-    override def currentSequenceNumber: Long = visibleState.seqNr
+    override def currentSequenceNumber: Long = {
+      _currentSequenceNumber
+    }
   }
 
   // ===============================================
@@ -430,7 +440,8 @@ private[akka] object Running {
           Behaviors.unhandled
     }
 
-    override def currentSequenceNumber: Long = state.seqNr
+    override def currentSequenceNumber: Long =
+      _currentSequenceNumber
   }
 
   // --------------------------
