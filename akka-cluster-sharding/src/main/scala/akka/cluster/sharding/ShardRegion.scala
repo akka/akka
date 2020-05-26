@@ -981,7 +981,7 @@ private[akka] class ShardRegion(
   }
 
   def initializeShard(id: ShardId, shard: ActorRef): Unit = {
-    log.debug("{}: Shard was initialized {}", typeName, id)
+    log.debug("{}: Shard was initialized [{}]", typeName, id)
     startingShards -= id
     deliverBufferedMessages(id, shard)
   }
