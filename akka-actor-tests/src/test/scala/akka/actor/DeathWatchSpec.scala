@@ -298,9 +298,12 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
       expectMsg(WatchWithVerifier.Watching)
       verifier ! WatchWithVerifier.StartStashing
 
+      verifierProbe.watch(subject)
       subject ! PoisonPill
-      // race: we want termination to happen before we stop stashing
+      verifierProbe.expectTerminated(subject)
+      // race: give deathwatch a chance to trigger before we stop stashing
       Thread.sleep(200)
+
       verifier ! WatchWithVerifier.StopStashing
       verifierProbe.expectMsg(WatchWithVerifier.CustomWatchMsg(subject))
     }
