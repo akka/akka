@@ -336,6 +336,7 @@ lazy val remote =
     .dependsOn(
       actor,
       stream,
+      pki,
       protobuf % "test",
       actorTests % "test->test",
       testkit % "test->test",
