@@ -116,10 +116,8 @@ private[akka] final class ReplayingEvents[C, E, S](
 
             def handleEvent(event: E): Unit = {
               eventForErrorReporting = OptionVal.Some(event)
-              state = state.copy(
-                seqNr = repr.sequenceNr,
-                state = setup.eventHandler(state.state, event),
-                eventSeenInInterval = true)
+              state = state.copy(seqNr = repr.sequenceNr)
+              state = state.copy(state = setup.eventHandler(state.state, event), eventSeenInInterval = true)
             }
 
             eventSeq match {
@@ -247,5 +245,6 @@ private[akka] final class ReplayingEvents[C, E, S](
       setup.cancelRecoveryTimer()
     }
 
-  override def currentSequenceNumber: Long = state.seqNr
+  override def currentSequenceNumber: Long =
+    state.seqNr
 }
