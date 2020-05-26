@@ -76,26 +76,31 @@ object DeathWatchSpec {
     case class WatchThis(ref: ActorRef)
     case object Watching
     case class CustomWatchMsg(ref: ActorRef)
-    case object StartStashing
-    case object StopStashing
+    case class StartStashing(numberOfMessagesToStash: Int)
+    case object StashingStarted
 
     def props(probe: ActorRef) = Props(new WatchWithVerifier(probe))
   }
   class WatchWithVerifier(probe: ActorRef) extends Actor with Stash {
     import WatchWithVerifier._
     private var stashing = false
+    private var stashNMessages = 0
 
     override def receive: Receive = {
-      case StartStashing =>
+      case StartStashing(messagesToStash) =>
         stashing = true
-      case StopStashing =>
-        stashing = false
-        unstashAll()
-      case _ if stashing =>
-        stash()
+        stashNMessages = messagesToStash
+        sender ! StashingStarted
       case WatchThis(ref) =>
         context.watchWith(ref, CustomWatchMsg(ref))
         sender ! Watching
+      case _ if stashing =>
+        stash()
+        stashNMessages -= 1
+        if (stashNMessages == 0) {
+          stashing = false
+          unstashAll()
+        }
       case msg @ CustomWatchMsg(_) =>
         probe ! msg
       case msg @ Terminated(_) =>
@@ -296,15 +301,10 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
       val subject = system.actorOf(Props[EmptyActor]())
       verifier ! WatchWithVerifier.WatchThis(subject)
       expectMsg(WatchWithVerifier.Watching)
-      verifier ! WatchWithVerifier.StartStashing
+      verifier ! WatchWithVerifier.StartStashing(numberOfMessagesToStash = 1)
+      expectMsg(WatchWithVerifier.StashingStarted)
 
-      verifierProbe.watch(subject)
       subject ! PoisonPill
-      verifierProbe.expectTerminated(subject)
-      // race: give deathwatch a chance to trigger before we stop stashing
-      Thread.sleep(200)
-
-      verifier ! WatchWithVerifier.StopStashing
       verifierProbe.expectMsg(WatchWithVerifier.CustomWatchMsg(subject))
     }
   }
