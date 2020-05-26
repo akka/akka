@@ -6,14 +6,17 @@ package akka.remote.artery.tcp.ssl
 
 import java.io.File
 import java.io.FileInputStream
+import java.nio.charset.Charset
+import java.nio.file.Files
 import java.security.KeyStore
 import java.security.PrivateKey
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 
-import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
+import akka.pki.pem.DERPrivateKeyLoader
+import akka.pki.pem.PEMDecoder
 import com.typesafe.config.Config
 import javax.net.ssl.KeyManager
 import javax.net.ssl.KeyManagerFactory
@@ -61,7 +64,7 @@ final class PemManagersProvider private[tcp] (
     keyStore.setCertificateEntry("cert", nodeCertificate)
 
     // Load the private key
-    val privateKey = PemManagersProviderTools.loadPrivateKey(new File(SSLKeyFile))
+    val privateKey = loadPrivateKey(SSLKeyFile)
     keyStore.setKeyEntry("private-key", privateKey, "changeit".toCharArray, Array(nodeCertificate, caCertificate))
 
     val kmf =
@@ -74,22 +77,19 @@ final class PemManagersProvider private[tcp] (
    * INTERNAL API
    */
   @InternalApi
+  private def loadPrivateKey(filename: String): PrivateKey = {
+    val bytes = Files.readAllBytes(new File(filename).toPath)
+    val pemData = new String(bytes, Charset.forName("UTF-8"))
+    DERPrivateKeyLoader.load(PEMDecoder.decode(pemData))
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   private def loadCertificate(filename: String): Certificate = {
     val fin = new FileInputStream(filename)
     try certFactory.generateCertificate(fin)
     finally Try(fin.close())
   }
-}
-
-// This is a stub for code introduced in https://github.com/akka/akka/pull/29039
-// TODO: remove
-object PemManagersProviderTools {
-  val readPath: File => String = null
-  val decode: String => DERData = null
-  val load: DERData => PrivateKey = null
-  val loadPrivateKey: File => PrivateKey =
-    readPath.andThen(decode).andThen(load)
-  @ApiMayChange
-  class DERData(val label: String, val bytes: Array[Byte])
-
 }
