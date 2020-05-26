@@ -560,17 +560,11 @@ abstract class ShardCoordinator(
   protected def typeName: String
 
   override def preStart(): Unit = {
-    log.debug("Shard coordinator starting up")
     allocationStrategy match {
       case strategy: StartableAllocationStrategy =>
         strategy.start()
       case _ =>
     }
-  }
-
-  override def postRestart(reason: Throwable): Unit = {
-    log.error(reason, "Coordinator restarting")
-    super.postRestart(reason)
   }
 
   override def postStop(): Unit = {
