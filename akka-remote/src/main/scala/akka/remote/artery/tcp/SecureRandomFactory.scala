@@ -16,18 +16,22 @@ import com.typesafe.config.Config
  */
 @InternalApi private[akka] object SecureRandomFactory {
 
+  val GeneratorSha1Prng = "SHA1PRNG"
+  val GeneratorNativePrng = "NativePRNG"
+  val GeneratorJdkSecureRandom = "SecureRandom"
+
   def createSecureRandom(config: Config, log: MarkerLoggingAdapter): SecureRandom = {
     createSecureRandom(config.getString("random-number-generator"), log)
   }
   def createSecureRandom(randomNumberGenerator: String, log: MarkerLoggingAdapter): SecureRandom = {
     val rng = randomNumberGenerator match {
-      case s @ ("SHA1PRNG" | "NativePRNG") =>
+      case s @ (GeneratorSha1Prng | GeneratorNativePrng) =>
         log.debug("SSL random number generator set to: {}", s)
         // SHA1PRNG needs /dev/urandom to be the source on Linux to prevent problems with /dev/random blocking
         // However, this also makes the seed source insecure as the seed is reused to avoid blocking (not a problem on FreeBSD).
         SecureRandom.getInstance(s)
 
-      case "" | "SecureRandom" =>
+      case "" | GeneratorJdkSecureRandom =>
         log.debug("SSL random number generator set to [SecureRandom]")
         new SecureRandom
 
