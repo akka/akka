@@ -5,7 +5,6 @@
 package akka.actor.dungeon
 
 import akka.actor.{ Actor, ActorCell, ActorRef, ActorRefScope, Address, InternalActorRef, Terminated }
-import akka.dispatch.Envelope
 import akka.dispatch.sysmsg.{ DeathWatchNotification, Unwatch, Watch }
 import akka.event.AddressTerminatedTopic
 import akka.event.Logging.{ Debug, Warning }
@@ -65,15 +64,11 @@ private[akka] trait DeathWatch { this: ActorCell =>
     terminatedQueued.get(t.actor).foreach { optionalMessage =>
       terminatedQueued -= t.actor // here we know that it is the SAME ref which was put in
       optionalMessage match {
-        case Some(custom) =>
+        case Some(customTermination) =>
           // needed for stashing of custom watch messages to work (or stash will stash the Terminated message instead)
-          val originalMessage = currentMessage
-          currentMessage = Envelope(custom, sender())
-          try {
-            receiveMessage(custom)
-          } finally {
-            currentMessage = originalMessage
-          }
+          currentMessage = currentMessage.copy(message = customTermination)
+          receiveMessage(customTermination)
+
         case None =>
           receiveMessage(t)
       }
