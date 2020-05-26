@@ -899,9 +899,15 @@ private[remote] class EndpointWriter(
           remoteMetrics.logPayloadBytes(s.message, pduSize)
 
           if (pduSize > transport.maximumPayloadBytes) {
-            val reason = new OversizedPayloadException(
-              s"Discarding oversized payload sent to ${s.recipient}: max allowed size ${transport.maximumPayloadBytes} bytes, actual size of encoded ${s.message.getClass} was ${pdu.size} bytes.")
-            log.error(reason, "Transient association error (association remains live)")
+            val reasonText =
+              s"Discarding oversized payload sent to ${s.recipient}: max allowed size ${transport.maximumPayloadBytes} bytes, actual size of encoded ${s.message.getClass} was ${pdu.size} bytes."
+            log.error(
+              new OversizedPayloadException(reasonText),
+              "Transient association error (association remains live)")
+            extendedSystem.eventStream.publish(s.senderOption match {
+              case OptionVal.Some(msgSender) => Dropped(s.message, reasonText, msgSender, s.recipient)
+              case OptionVal.None            => Dropped(s.message, reasonText, s.recipient)
+            })
             true
           } else {
             val ok = h.write(pdu)
