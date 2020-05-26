@@ -460,10 +460,10 @@ private[akka] class Shard(
       case None =>
         whenDone()
       case Some(store) =>
-        entityIds.foreach(id => {
+        entityIds.foreach { it =>
           entities.remembering(id)
           flightRecorder.rememberEntityAdd(id)
-        })
+        }
         sendToRememberStore(store, entityIds, RememberEntitiesShardStore.AddEntities(entityIds))(whenDone)
     }
   }
@@ -656,7 +656,7 @@ private[akka] class Shard(
     if (handOffStopper.contains(ref))
       context.stop(self)
 
-    // FIXME fix the bug in stash
+    // FIXME https://github.com/akka/akka/issues/29101
     entities.entityId(ref) match {
       case OptionVal.Some(id) => entityTerminated(ref, id)
       case _                  =>

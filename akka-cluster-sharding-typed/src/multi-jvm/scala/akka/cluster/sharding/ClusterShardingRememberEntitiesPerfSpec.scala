@@ -20,6 +20,11 @@ import scala.concurrent.duration._
 
 @ccompatUsedUntil213
 object ClusterShardingRememberEntitiesPerfSpec {
+  val NrRegions = 6
+  // use 5 for "real" testing
+  val NrIterations = 2
+  // use 5 for "real" testing
+  val NrOfMessagesFactor = 1
 
   case class In(id: Long, created: Long = System.currentTimeMillis())
   case class Out(latency: Long)
@@ -78,6 +83,7 @@ object ClusterShardingRememberEntitiesPerfSpecConfig
       dir = "$targetDir/sharding-third"
     }
     """))
+
 }
 
 class ClusterShardingRememberEntitiesPerfSpecMultiJvmNode1 extends ClusterShardingRememberEntitiesPerfSpec
@@ -90,10 +96,10 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
   import ClusterShardingRememberEntitiesPerfSpec._
   import ClusterShardingRememberEntitiesPerfSpecConfig._
 
-  val nrRegions = 6
+  import ClusterShardingRememberEntitiesPerfSpec._
 
   def startSharding(): Unit = {
-    (1 to nrRegions).foreach { n =>
+    (1 to NrRegions).foreach { n =>
       startSharding(
         system,
         typeName = s"EntityLatency$n",
@@ -106,11 +112,6 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
 
   var latencyRegions = Vector.empty[ActorRef]
 
-  // use 5 for "real" testing
-  private val nrIterations = 5
-  // use 5 for "real" testing
-  private val numberOfMessagesFactor = 5
-
   val latencyCount = new AtomicInteger(0)
 
   override protected def atStartup(): Unit = {
@@ -121,7 +122,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
 
     // this will make it run on first
     runOn(first) {
-      latencyRegions = (1 to nrRegions).map { n =>
+      latencyRegions = (1 to NrRegions).map { n =>
         val region = ClusterSharding(system).shardRegion(s"EntityLatency$n")
         region ! In(0)
         expectMsgType[Out]
@@ -154,21 +155,21 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
         recording.start()
         val region = latencyRegions(testRun)
         val fullHistogram = new Histogram(10L * 1000L, 2)
-        val throughputs = (1 to nrIterations).map { iteration =>
+        val throughputs = (1 to NrIterations).map { iteration =>
           val histogram: Histogram = new Histogram(10L * 1000L, 2)
           val startTime = System.nanoTime()
           val numberOfMessages = logic(iteration, region, histogram)
           val took = NANOSECONDS.toMillis(System.nanoTime - startTime)
           val throughput = numberOfMessages * 1000.0 / took
           println(
-            s"### Test [${name}] stop with $numberOfMessages took ${(System.nanoTime() - startTime) / 1000 / 1000} ms, " +
+            s"### Test [${name}] stop with $numberOfMessages took $took ms, " +
             f"throughput $throughput%,.0f msg/s")
           //          println("Iteration Latencies: ")
           //          histogram.outputPercentileDistribution(System.out, 1.0)
           fullHistogram.add(histogram)
           throughput
         }
-        println(f"Average throughput: ${throughputs.sum / nrIterations}%,.0f msg/s")
+        println(f"Average throughput: ${throughputs.sum / NrIterations}%,.0f msg/s")
         println("Combined latency figures:")
         println(s"total ${fullHistogram.getTotalCount} max ${fullHistogram.getMaxValue} ${percentiles
           .map(p => s"$p% ${fullHistogram.getValueAtPercentile(p)}ms")
@@ -179,7 +180,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
     }
 
     "test when starting new entity" in {
-      val numberOfMessages = 200 * numberOfMessagesFactor
+      val numberOfMessages = 200 * NrOfMessagesFactor
       runBench("start new entities") { (iteration, region, histogram) =>
         (1 to numberOfMessages).foreach { n =>
           region ! In(iteration * 100000 + n)
@@ -192,7 +193,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
     }
 
     "test latency when starting new entity and sending a few messages" in {
-      val numberOfMessages = 800 * numberOfMessagesFactor
+      val numberOfMessages = 800 * NrOfMessagesFactor
       runBench("start, few messages") { (iteration, region, histogram) =>
         for (n <- 1 to numberOfMessages / 5; _ <- 1 to 5) {
           region ! In(iteration * 100000 + n)
@@ -205,7 +206,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
     }
 
     "test latency when starting new entity and sending a few messages to it and stopping" in {
-      val numberOfMessages = 800 * numberOfMessagesFactor
+      val numberOfMessages = 800 * NrOfMessagesFactor
       // 160 entities, and an extra one for the intialization
       // all but the first one are not removed
       runBench("start, few messages, stop") { (iteration, region, histogram) =>
@@ -238,7 +239,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
     }
 
     "test latency when starting, few messages, stopping, few messages" in {
-      val numberOfMessages = 800 * numberOfMessagesFactor
+      val numberOfMessages = 800 * NrOfMessagesFactor
       runBench("start, few messages, stop, few messages") { (iteration, region, histogram) =>
         for (n <- 1 to numberOfMessages / 5; m <- 1 to 5) {
           val id = iteration * 100000 + n
@@ -262,7 +263,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
 
     "test when starting some new entities mixed with sending to started" in {
       runBench("starting mixed with sending to started") { (iteration, region, histogram) =>
-        val numberOfMessages = 1600 * numberOfMessagesFactor
+        val numberOfMessages = 1600 * NrOfMessagesFactor
         (1 to numberOfMessages).foreach { n =>
           val msg =
             if (n % 20 == 0)
@@ -286,7 +287,7 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
 
     "test sending to started" in {
       runBench("sending to started") { (iteration, region, histogram) =>
-        val numberOfMessages = 1600 * numberOfMessagesFactor
+        val numberOfMessages = 1600 * NrOfMessagesFactor
         (1 to numberOfMessages).foreach { n =>
           region ! In(iteration * 100000 + (n % 10)) // these will go to same 10 started entities
 
