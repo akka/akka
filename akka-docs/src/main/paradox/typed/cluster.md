@@ -438,7 +438,11 @@ See @ref:[Cluster Sharding](cluster-sharding.md).
 @@include[cluster.md](../includes/cluster.md) { #cluster-ddata } 
 See @ref:[Distributed Data](distributed-data.md).
 
-@@include[cluster.md](../includes/cluster.md) { #cluster-pubsub } 
+@@include[cluster.md](../includes/cluster.md) { #cluster-pubsub }
+See @ref:[Distributed Publish Subscribe](distributed-pub-sub.md).
+
+@@include[cluster.md](../includes/cluster.md) { #cluster-router }
+See @ref:[Group Routers](routers.md#group-router). 
 
 @@include[cluster.md](../includes/cluster.md) { #cluster-multidc }
 See @ref:[Cluster Multi-DC](cluster-dc.md).
