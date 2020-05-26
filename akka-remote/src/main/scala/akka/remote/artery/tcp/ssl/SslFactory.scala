@@ -27,19 +27,29 @@ import scala.concurrent.duration._
  * INTERNAL API
  */
 @InternalApi
+private[tcp] class SslFactoryConfig(config:Config){
+  private[tcp] val SSLProtocol: String = config.getString("protocol")
+  private[tcp] val SSLEnabledAlgorithms: Set[String] =
+    immutableSeq(config.getStringList("enabled-algorithms")).toSet
+  private[tcp] val SSLRequireMutualAuthentication: Boolean = config.getBoolean("require-mutual-authentication")
+  private[tcp] val HostnameVerification: Boolean = config.getBoolean("hostname-verification")
+  private[tcp] val SSLContextCacheTime: FiniteDuration =
+    config.getDuration("ssl-context-cache-ttl").toMillis.millis
+}
+
+/**
+ * TODO: I'm not sure this class should be private. Users may write their SSLEngineProviders and use it.
+ * INTERNAL API
+ */
+@InternalApi
 private[tcp] final class SslFactory(
     config: Config,
     sslManagersProviderFactory: (Config) => SslManagersProvider,
     prng: SecureRandom,
     sessionVerifierFactory: SslManagersProvider => SessionVerifier)(log: MarkerLoggingAdapter) {
 
-  private val SSLProtocol: String = config.getString("protocol")
-  private val SSLEnabledAlgorithms: Set[String] =
-    immutableSeq(config.getStringList("enabled-algorithms")).toSet
-  private val SSLRequireMutualAuthentication: Boolean = config.getBoolean("require-mutual-authentication")
-  private val HostnameVerification: Boolean = config.getBoolean("hostname-verification")
-  private val SSLContextCacheTime: FiniteDuration =
-    config.getDuration("ssl-context-cache-ttl").toMillis.millis
+  private val sslFactoryConfig = new SslFactoryConfig(config)
+  import sslFactoryConfig._
 
   // log hostname verification warning once
   if (HostnameVerification)
@@ -102,7 +112,7 @@ private[tcp] final class SslFactory(
 
   // 2. customize the engine depending on the peer role
   private val forServer: SSLEngine => SSLEngine =
-    requireMutualAuthentication
+    setServerMode.andThen(requireMutualAuthentication)
   private val forClient: SSLEngine => SSLEngine =
     setClientMode.andThen(withHostnameVerification)
 
@@ -113,6 +123,11 @@ private[tcp] final class SslFactory(
       log.info(
         LogMarker.Security,
         "mTLS (aka TLS Client Authentication) is disabled. See Akka reference documentation for more information.")
+    engine
+  }
+  // Server-side
+  private def setServerMode: SSLEngine => SSLEngine = { engine =>
+    engine.setUseClientMode(false)
     engine
   }
 

@@ -44,13 +44,14 @@ class SslFactoryCachingSpec extends AnyWordSpec with Matchers with Eventually {
     }
 
     "provide a new SessionVerifier once the cache has expired" in {
-      val svFactory: SslManagersProvider => SessionVerifier = _ => new SessionVerifier {
-        override def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable] = None
+      val svFactory: SslManagersProvider => SessionVerifier = _ =>
+        new SessionVerifier {
+          override def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable] = None
 
-        override def verifyServerSession(hostname: String, session: SSLSession): Option[Throwable] = None
-      }
+          override def verifyServerSession(hostname: String, session: SSLSession): Option[Throwable] = None
+        }
 
-      val factory = new SslFactory(quickConfig(), managerProvider, prng, svFactory )(logger)
+      val factory = new SslFactory(quickConfig(), managerProvider, prng, svFactory)(logger)
       val sv1 = factory.sessionVerifier
       eventually {
         factory.sessionVerifier mustNot be(sv1)
@@ -59,7 +60,7 @@ class SslFactoryCachingSpec extends AnyWordSpec with Matchers with Eventually {
 
     "use the managerProvider to build a new SSLContext (e.g., reading the files again)" in {
       val inMemProvider = new InMemSslManagersProvider
-      val factory = new SslFactory(quickConfig(), _ => inMemProvider, prng,sessionVerifierFactory )(logger)
+      val factory = new SslFactory(quickConfig(), _ => inMemProvider, prng, sessionVerifierFactory)(logger)
 
       val c1 = factory.sslContext
       eventually {
