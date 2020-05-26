@@ -27,17 +27,15 @@ object AccountExampleWithEventHandlersInState {
   object AccountEntity {
     // Command
     //#reply-command
-    sealed trait Command[Reply <: CommandReply] extends CborSerializable {
-      def replyTo: ActorRef[Reply]
-    }
+    sealed trait Command extends CborSerializable
     //#reply-command
-    final case class CreateAccount(replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
-    final case class Deposit(amount: BigDecimal, replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
+    final case class CreateAccount(replyTo: ActorRef[OperationResult]) extends Command
+    final case class Deposit(amount: BigDecimal, replyTo: ActorRef[OperationResult]) extends Command
     //#reply-command
-    final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
+    final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[OperationResult]) extends Command
     //#reply-command
-    final case class GetBalance(replyTo: ActorRef[CurrentBalance]) extends Command[CurrentBalance]
-    final case class CloseAccount(replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
+    final case class GetBalance(replyTo: ActorRef[CurrentBalance]) extends Command
+    final case class CloseAccount(replyTo: ActorRef[OperationResult]) extends Command
 
     // Reply
     //#reply-command
@@ -89,20 +87,20 @@ object AccountExampleWithEventHandlersInState {
     }
 
     // when used with sharding, this TypeKey can be used in `sharding.init` and `sharding.entityRefFor`:
-    val TypeKey: EntityTypeKey[Command[_]] =
-      EntityTypeKey[Command[_]]("Account")
+    val TypeKey: EntityTypeKey[Command] =
+      EntityTypeKey[Command]("Account")
 
     // Note that after defining command, event and state classes you would probably start here when writing this.
     // When filling in the parameters of EventSourcedBehavior.apply you can use IntelliJ alt+Enter > createValue
     // to generate the stub with types for the command and event handlers.
 
     //#withEnforcedReplies
-    def apply(accountNumber: String, persistenceId: PersistenceId): Behavior[Command[_]] = {
+    def apply(accountNumber: String, persistenceId: PersistenceId): Behavior[Command] = {
       EventSourcedBehavior.withEnforcedReplies(persistenceId, EmptyAccount, commandHandler(accountNumber), eventHandler)
     }
     //#withEnforcedReplies
 
-    private def commandHandler(accountNumber: String): (Account, Command[_]) => ReplyEffect[Event, Account] = {
+    private def commandHandler(accountNumber: String): (Account, Command) => ReplyEffect[Event, Account] = {
       (state, cmd) =>
         state match {
           case EmptyAccount =>
@@ -122,16 +120,24 @@ object AccountExampleWithEventHandlersInState {
 
           case ClosedAccount =>
             cmd match {
-              case c @ (_: Deposit | _: Withdraw) =>
-                Effect.reply(c.replyTo)(Rejected(s"Account $accountNumber is closed"))
+              case c: Deposit =>
+                replyClosed(accountNumber, c.replyTo)
+              case c: Withdraw =>
+                replyClosed(accountNumber, c.replyTo)
               case GetBalance(replyTo) =>
                 Effect.reply(replyTo)(CurrentBalance(Zero))
               case CloseAccount(replyTo) =>
-                Effect.reply(replyTo)(Rejected(s"Account $accountNumber is already closed"))
+                replyClosed(accountNumber, replyTo)
               case CreateAccount(replyTo) =>
-                Effect.reply(replyTo)(Rejected(s"Account $accountNumber is already closed"))
+                replyClosed(accountNumber, replyTo)
             }
         }
+    }
+
+    private def replyClosed(
+        accountNumber: String,
+        replyTo: ActorRef[AccountEntity.OperationResult]): ReplyEffect[Event, Account] = {
+      Effect.reply(replyTo)(Rejected(s"Account $accountNumber is closed"))
     }
 
     private val eventHandler: (Account, Event) => Account = { (state, event) =>

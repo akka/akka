@@ -26,7 +26,7 @@ class AccountExampleDocSpec
     with LogCapturing {
 
   private val eventSourcedTestKit =
-    EventSourcedBehaviorTestKit[AccountEntity.Command[_], AccountEntity.Event, AccountEntity.Account](
+    EventSourcedBehaviorTestKit[AccountEntity.Command, AccountEntity.Event, AccountEntity.Account](
       system,
       AccountEntity("1", PersistenceId("Account", "1")))
 
