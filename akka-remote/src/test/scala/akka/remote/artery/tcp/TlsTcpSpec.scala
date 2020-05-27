@@ -53,9 +53,9 @@ class TlsTcpWithCloudNativeSslEngineSpec extends TlsTcpSpec(ConfigFactory.parseS
     akka.remote.artery.ssl {
        ssl-engine-provider = akka.remote.artery.tcp.ssl.CloudNativeSSLEngineProvider
        cloud-native-ssl-engine {
-         key-file = ${getClass.getClassLoader.getResource("ssl/pem/pkcs1.pem").getPath}
-         cert-file = ${getClass.getClassLoader.getResource("ssl/pem/certificate.pem").getPath}
-         ca-cert-file = ${getClass.getClassLoader.getResource("ssl/pem/certificate.pem").getPath}
+         key-file = ${getClass.getClassLoader.getResource("ssl/node.example.com.pem").getPath}
+         cert-file = ${getClass.getClassLoader.getResource("ssl/node.example.com.crt").getPath}
+         ca-cert-file = ${getClass.getClassLoader.getResource("ssl/exampleca.crt").getPath}
        }
     }
     """))
