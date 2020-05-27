@@ -60,6 +60,18 @@ class TlsTcpWithCloudNativeSslEngineSpec extends TlsTcpSpec(ConfigFactory.parseS
     }
     """))
 
+class TlsTcpWithMagicSslEngineSpec
+    extends TlsTcpSpec(ConfigFactory.parseString(s"""
+    akka.remote.artery.ssl {
+       ssl-engine-provider = akka.remote.artery.tcp.ssl.TlsMagicSSLEngineProvider
+       tls-magic-engine {
+         key-file = ${getClass.getClassLoader.getResource("ssl/node.example.com.pem").getPath}
+         cert-file = ${getClass.getClassLoader.getResource("ssl/node.example.com.crt").getPath}
+         ca-cert-file = ${getClass.getClassLoader.getResource("ssl/exampleca.crt").getPath}
+       }
+    }
+    """))
+
 object TlsTcpSpec {
 
   lazy val config: Config = {
@@ -88,6 +100,8 @@ abstract class TlsTcpSpec(config: Config)
         CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.cloud-native-ssl-engine")
       case "akka.remote.artery.tcp.ssl.ConfigSSLEngineProvider" =>
         CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.config-ssl-engine")
+      case "akka.remote.artery.tcp.ssl.TlsMagicSSLEngineProvider" =>
+        CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.tls-magic-engine")
       case other =>
         fail(
           s"Don't know how to determine whether the crypto building blocks in [$other] are available on this platform")
@@ -99,7 +113,7 @@ abstract class TlsTcpSpec(config: Config)
         info(e.toString)
         false
       case Failure(other) =>
-        fail(s"Unexpected failure checking whether the crypto building blocks are available on this platform: [$other]")
+        fail("Unexpected failure checking whether the crypto building blocks are available on this platform.", other)
     }
   }
 
