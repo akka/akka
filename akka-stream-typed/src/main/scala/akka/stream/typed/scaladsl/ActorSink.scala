@@ -4,9 +4,9 @@
 
 package akka.stream.typed.scaladsl
 
+import akka.NotUsed
 import akka.actor.typed._
 import akka.stream.scaladsl._
-import akka.NotUsed
 
 /**
  * Collection of Sinks aimed at integrating with typed Actors.

@@ -4,10 +4,11 @@
 
 package akka.remote
 
-import akka.testkit.AkkaSpec
+import scala.concurrent.duration._
+
 import akka.actor.{ Address, Props }
 import akka.remote.EndpointManager._
-import scala.concurrent.duration._
+import akka.testkit.AkkaSpec
 
 class EndpointRegistrySpec extends AkkaSpec {
 

@@ -5,9 +5,11 @@
 package akka.persistence.journal.leveldb
 
 import scala.concurrent.Future
+
+import org.iq80.leveldb.DBIterator
+
 import akka.persistence._
 import akka.persistence.journal.AsyncRecovery
-import org.iq80.leveldb.DBIterator
 import akka.persistence.journal.leveldb.LeveldbJournal.ReplayedTaggedMessage
 
 /**

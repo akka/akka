@@ -4,10 +4,10 @@
 
 package akka.pattern
 
+import scala.concurrent.{ Future, Promise }
+
 import akka.actor._
 import akka.util.Timeout
-
-import scala.concurrent.{ Future, Promise }
 
 /**
  * A combination of a Future and an ActorRef associated with it, which points

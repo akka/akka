@@ -6,13 +6,14 @@ package akka.stream
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.ActorSystem
-import akka.annotation.DoNotInherit
-import akka.stream.impl.streamref.StreamRefSettingsImpl
+import scala.concurrent.duration._
+
 import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
-import scala.concurrent.duration._
+import akka.actor.ActorSystem
+import akka.annotation.DoNotInherit
+import akka.stream.impl.streamref.StreamRefSettingsImpl
 
 @silent("deprecated")
 object StreamRefSettings {

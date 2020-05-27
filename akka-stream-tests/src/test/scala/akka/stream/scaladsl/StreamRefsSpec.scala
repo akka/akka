@@ -4,6 +4,14 @@
 
 package akka.stream.scaladsl
 
+import scala.collection.immutable
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
+import com.typesafe.config._
+
 import akka.{ Done, NotUsed }
 import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, ActorSystem, ActorSystemImpl, Identify, Props }
 import akka.actor.Status.Failure
@@ -15,13 +23,6 @@ import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl._
 import akka.testkit.{ AkkaSpec, TestKit, TestProbe }
 import akka.util.ByteString
-import com.typesafe.config._
-
-import scala.collection.immutable
-import scala.concurrent.Promise
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 object StreamRefsSpec {
 
@@ -33,8 +34,8 @@ object StreamRefsSpec {
 
   class DataSourceActor() extends Actor with ActorLogging {
 
-    import context.system
     import context.dispatcher
+    import context.system
 
     def receive = {
       case "give" =>

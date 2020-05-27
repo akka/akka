@@ -4,14 +4,14 @@
 
 package akka.stream.impl
 
+import scala.concurrent.duration._
+
 import akka.annotation.InternalApi
 import akka.pattern.BackoffSupervisor
+import akka.stream.{ Attributes, BidiShape, Inlet, Outlet }
 import akka.stream.SubscriptionWithCancelException.NonFailureCancellation
 import akka.stream.stage._
-import akka.stream.{ Attributes, BidiShape, Inlet, Outlet }
 import akka.util.OptionVal
-
-import scala.concurrent.duration._
 
 /**
  * INTERNAL API.

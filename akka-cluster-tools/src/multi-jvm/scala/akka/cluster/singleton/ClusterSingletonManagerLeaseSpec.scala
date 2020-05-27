@@ -4,16 +4,19 @@
 
 package akka.cluster.singleton
 
-import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, Address, Identify, PoisonPill, Props }
-import akka.cluster.MemberStatus.Up
-import akka.cluster.TestLeaseActor._
-import akka.cluster.singleton.ClusterSingletonManagerLeaseSpec.ImportantSingleton.Response
-import akka.cluster._
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
-import akka.testkit._
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.duration._
+import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, Address, Identify, PoisonPill, Props }
+import akka.cluster._
+import akka.cluster.MemberStatus.Up
+import akka.cluster.singleton.ClusterSingletonManagerLeaseSpec.ImportantSingleton.Response
+import akka.coordination.lease.TestLeaseActor
+import akka.coordination.lease.TestLeaseActorClient
+import akka.coordination.lease.TestLeaseActorClientExt
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
+import akka.testkit._
 
 object ClusterSingletonManagerLeaseSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -24,14 +27,14 @@ object ClusterSingletonManagerLeaseSpec extends MultiNodeConfig {
 
   testTransport(true)
 
-  commonConfig(ConfigFactory.parseString("""
+  commonConfig(ConfigFactory.parseString(s"""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
     akka.cluster.testkit.auto-down-unreachable-after = 0s
     test-lease {
-        lease-class = akka.cluster.TestLeaseActorClient
+        lease-class = ${classOf[TestLeaseActorClient].getName}
         heartbeat-interval = 1s
         heartbeat-timeout = 120s
         lease-operation-timeout = 3s
@@ -76,8 +79,9 @@ class ClusterSingletonManagerLeaseSpec
     with ImplicitSender
     with MultiNodeClusterSpec {
 
-  import ClusterSingletonManagerLeaseSpec.ImportantSingleton._
   import ClusterSingletonManagerLeaseSpec._
+  import ClusterSingletonManagerLeaseSpec.ImportantSingleton._
+  import TestLeaseActor._
 
   override def initialParticipants = roles.size
 
@@ -127,10 +131,11 @@ class ClusterSingletonManagerLeaseSpec
     }
 
     "Start singleton and ping from all nodes" in {
-      runOn(first, second, third, fourth) {
+      // fourth doesn't have the worker role
+      runOn(first, second, third) {
         system.actorOf(
           ClusterSingletonManager
-            .props(props(), PoisonPill, ClusterSingletonManagerSettings(system).withRole("worker")),
+            .props(ImportantSingleton.props(), PoisonPill, ClusterSingletonManagerSettings(system).withRole("worker")),
           "important")
       }
       enterBarrier("singleton-started")

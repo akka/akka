@@ -23,6 +23,10 @@ object ScalafixForMultiNodePlugin extends AutoPlugin with ScalafixSupport {
     Seq(MultiJvm).flatMap(c => inConfig(c)(scalafixConfigSettings(c))) ++
       scalafixIgnoredSetting ++ Seq(
       updateProjectCommands(
-        alias = "fix",
-        value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile;reload"))
+        alias = "fixall",
+        value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;scalafmtAll"),
+      updateProjectCommands(
+        alias = "sortImports",
+        value = ";scalafixEnable;compile:scalafix SortImports;test:scalafix SortImports;multi-jvm:scalafix SortImports;scalafmtAll")
+    )
 }

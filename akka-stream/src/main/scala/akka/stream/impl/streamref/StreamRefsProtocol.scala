@@ -72,6 +72,6 @@ private[akka] object StreamRefsProtocol {
    * Ack that failure or completion has been seen and the remote side can stop
    */
   @InternalApi
-  private[akka] final case object Ack extends StreamRefsProtocol with DeadLetterSuppression
+  private[akka] case object Ack extends StreamRefsProtocol with DeadLetterSuppression
 
 }

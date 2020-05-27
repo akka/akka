@@ -4,15 +4,16 @@
 
 package akka.stream.impl
 
-import akka.stream.AbruptTerminationException
-
 import scala.collection.immutable
+
+import org.reactivestreams.Subscription
+
 import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.stream.AbruptTerminationException
 import akka.stream.ActorAttributes
 import akka.stream.Attributes
 import akka.util.unused
-import org.reactivestreams.Subscription
 
 /**
  * INTERNAL API

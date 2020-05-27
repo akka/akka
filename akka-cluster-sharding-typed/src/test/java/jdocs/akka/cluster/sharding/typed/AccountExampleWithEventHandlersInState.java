@@ -38,10 +38,10 @@ public interface AccountExampleWithEventHandlersInState {
 
     // Command
     // #reply-command
-    interface Command<Reply> extends CborSerializable {}
+    interface Command extends CborSerializable {}
     // #reply-command
 
-    public static class CreateAccount implements Command<OperationResult> {
+    public static class CreateAccount implements Command {
       public final ActorRef<OperationResult> replyTo;
 
       @JsonCreator
@@ -50,7 +50,7 @@ public interface AccountExampleWithEventHandlersInState {
       }
     }
 
-    public static class Deposit implements Command<OperationResult> {
+    public static class Deposit implements Command {
       public final BigDecimal amount;
       public final ActorRef<OperationResult> replyTo;
 
@@ -60,7 +60,7 @@ public interface AccountExampleWithEventHandlersInState {
       }
     }
 
-    public static class Withdraw implements Command<OperationResult> {
+    public static class Withdraw implements Command {
       public final BigDecimal amount;
       public final ActorRef<OperationResult> replyTo;
 
@@ -70,7 +70,7 @@ public interface AccountExampleWithEventHandlersInState {
       }
     }
 
-    public static class GetBalance implements Command<CurrentBalance> {
+    public static class GetBalance implements Command {
       public final ActorRef<CurrentBalance> replyTo;
 
       @JsonCreator
@@ -79,7 +79,7 @@ public interface AccountExampleWithEventHandlersInState {
       }
     }
 
-    public static class CloseAccount implements Command<OperationResult> {
+    public static class CloseAccount implements Command {
       public final ActorRef<OperationResult> replyTo;
 
       @JsonCreator

@@ -4,12 +4,12 @@
 
 package akka.persistence.testkit
 
+import scala.util.Success
+
 import akka.annotation.InternalApi
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies
 import akka.persistence.testkit.internal.TestKitStorage
-
-import scala.util.Success
 
 /**
  * INTERNAL API

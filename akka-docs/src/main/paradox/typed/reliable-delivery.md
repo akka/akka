@@ -3,7 +3,7 @@ project.description: Reliable delivery and flow control of messages between acto
 ---
 # Reliable delivery
 
-For the Akka Classic documentation of this feature see @ref:[Classic At-Least-Once Delivery](../persistence.md#at-least-once-delivery).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic At-Least-Once Delivery](../persistence.md#at-least-once-delivery).
 
 @@@ warning
 
@@ -19,20 +19,20 @@ To use reliable delivery, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-actor-typed_$scala.binary_version$
+  artifact=akka-actor-typed_$scala.binary.version$
   version=$akka.version$
 }
 
 ## Introduction
 
-Normal @ref:[message delivery reliability](../general/message-delivery-reliability.md) is at-most once delivery, which
+Normal @ref:[message delivery reliability](../general/message-delivery-reliability.md) is at-most-once delivery, which
 means that messages may be lost. That should be rare, but still possible.
 
-For interactions between some actors that is not acceptable and at-least once delivery or effectively once processing
+For interactions between some actors, that is not acceptable and at-least-once delivery or effectively-once processing
 is needed. The tools for reliable delivery described here help with implementing that. It can't be achieved
-automatically under the hood without collaboration from the application because confirming when a message has been
+automatically under the hood without collaboration from the application. This is because confirming when a message has been
 fully processed is a business level concern. Only ensuring that it was transferred over the network or delivered to 
-the mailbox of the actor would not be enough, since it may crash right after without being processed.
+the mailbox of the actor would not be enough, since the actor may crash right before being able to process the message.
 
 Lost messages are detected, resent and deduplicated as needed. In addition, it also includes flow control for
 the sending of messages to avoid that a fast producer overwhelms a slower consumer or sends messages at
@@ -50,10 +50,10 @@ There are 3 supported patterns, which are described in the following sections:
 
 ## Point-to-point
 
-Point-to-point reliable delivery between a single producer actor sending messages and a single consumer actor
+This pattern implements point-to-point reliable delivery between a single producer actor sending messages and a single consumer actor
 receiving the messages.
 
-Messages are sent from the producer to @apidoc[ProducerController] and via @apidoc[ConsumerController] actors, which
+Messages are sent from the producer to @apidoc[ProducerController$] and via @apidoc[ConsumerController$] actors, which
 handle the delivery and confirmation of the processing in the destination consumer actor.
 
 ![delivery-p2p-1.png](./images/delivery-p2p-1.png)
@@ -65,33 +65,34 @@ The `ProducerController` sends `RequestNext` to the producer, which is then allo
 message to the `ProducerController`. Thereafter the producer will receive a new `RequestNext`
 when it's allowed to send one more message.
 
-The producer and `ProducerController` actors are supposed to be local so that these messages are
-fast and not lost. This is enforced by a runtime check.
+The producer and `ProducerController` actors are required to be local so that message delivery is
+both fast and guaranteed. This requirement is enforced by a runtime check.
 
 Similarly, on the consumer side the destination consumer actor will start the flow by sending an
 initial `ConsumerController.Start` message to the `ConsumerController`. 
 
-For the `ProducerController` to know where to send the messages it must be connected with the
-`ConsumerController`. You do this is with `ProducerController.RegisterConsumer` or
-`ConsumerController.RegisterToProducerController` messages. When using the the point-to-point pattern
-it is the application's responsibility to connect them together. For example, by sending the `ActorRef`
-in an ordinary message to the other side, or register the `ActorRef` in the @ref:[Receptionist](actor-discovery.md)
-and find it on the other side.
+For the `ProducerController` to know where to send the messages, it must be connected with the
+`ConsumerController`. This can be done with the `ProducerController.RegisterConsumer` or
+`ConsumerController.RegisterToProducerController` messages. When using the point-to-point pattern,
+it is the application's responsibility to connect them together. For example, this can be done by sending the `ActorRef`
+in an ordinary message to the other side, or by registering the `ActorRef` in the @ref:[Receptionist](actor-discovery.md)
+so it can be found on the other side.
 
 You must also take measures to reconnect them if any of the sides crashes, for example by watching it
 for termination.
 
-Received messages from the producer are wrapped in `ConsumerController.Delivery` when sent to the consumer,
-which is supposed to reply with `ConsumerController.Confirmed` when it has processed the message.
-Next message is not delivered until the previous is confirmed. More messages from the producer that arrive
+Messages sent by the producer are wrapped in `ConsumerController.Delivery` when received by a consumer and the consumer
+should reply with `ConsumerController.Confirmed` when it has processed the message.
+
+The next message is not delivered until the previous one is confirmed. Any messages from the producer that arrive
 while waiting for the confirmation are stashed by the `ConsumerController` and delivered when the previous
 message is confirmed.
 
-The consumer and the `ConsumerController` actors are supposed to be local so that these messages are fast
-and not lost. This is enforced by a runtime check.
+Similar to the producer side, the consumer and the `ConsumerController` actors are required to be local so that message delivery is
+both fast and guaranteed. This requirement is enforced by a runtime check.
 
 Many unconfirmed messages can be in flight between the `ProducerController` and `ConsumerController`, but
-it is limited by a flow control window. The flow control is driven by the consumer side, which means that
+their number is limited by a flow control window. The flow control is driven by the consumer side, which means that
 the `ProducerController` will not send faster than the demand requested by the `ConsumerController`.
 
 ### Point-to-point example
@@ -129,25 +130,25 @@ Java
 
 ### Point-to-point delivery semantics
 
-As long as neither producer nor consumer crash the messages are delivered to the consumer actor in the same order
-as they were sent as they were sent to the `ProducerController`, without loss or duplicates. Meaning effectively
-once processing without any business level deduplication.
+As long as neither producer nor consumer crash, the messages are delivered to the consumer actor in the same order
+as they were sent to the `ProducerController`, without loss or duplicates. This means effectively-once
+processing without any business level deduplication.
 
-Unconfirmed messages may be lost if the producer crashes. To avoid that you need to enable the @ref:[durable
-queue](#durable-producer) on the producer side. The stored unconfirmed messages will be redelivered when the
-corresponding producer is started again. Even if the same `ConsumerController` instance is used there may be
+Unconfirmed messages may be lost if the producer crashes. To avoid that, you need to enable the @ref:[durable
+queue](#durable-producer) on the producer side. By doing so, any stored unconfirmed messages will be redelivered when the
+corresponding producer is started again. Even if the same `ConsumerController` instance is used, there may be
 delivery of messages that had already been processed but the fact that they were confirmed had not been stored yet.
-Meaning at-least once delivery.
+This means that we have at-least-once delivery.
 
-If the consumer crashes a new `ConsumerController` can be connected to the original `ProducerConsumer`
+If the consumer crashes, a new `ConsumerController` can be connected to the original `ProducerConsumer`
 without restarting it. The `ProducerConsumer` will then redeliver all unconfirmed messages. In that case
-the unconfirmed messages will be delivered to the new consumer, and some of these may already have been
+the unconfirmed messages will be delivered to the new consumer and some of these may already have been
 processed by the previous consumer.
-Meaning at-least once delivery.
+Again, this means that we have at-least-once delivery.
 
 ## Work pulling
 
-Work pulling is a pattern where several worker actors pull tasks in their own pace from
+Work pulling is a pattern where several worker actors pull tasks at their own pace from
 a shared work manager instead of that the manager pushes work to the workers blindly
 without knowing their individual capacity and current availability.
 
@@ -155,7 +156,7 @@ One important property is that the order of the messages should not matter, beca
 message is routed randomly to one of the workers with demand. In other words, two subsequent
 messages may be routed to two different workers and processed independent of each other.
 
-Messages are sent from the producer to @apidoc[WorkPullingProducerController] and via @apidoc[ConsumerController]
+Messages are sent from the producer to @apidoc[WorkPullingProducerController$] and via @apidoc[ConsumerController$]
 actors, which handle the delivery and confirmation of the processing in the destination worker (consumer) actor.
 
 ![delivery-work-pulling-1.png](./images/delivery-work-pulling-1.png)
@@ -230,17 +231,17 @@ For work pulling the order of the messages should not matter, because each messa
 to one of the workers with demand and can therefore be processed in any order.
 
 As long as neither producers nor workers crash (or workers being removed for other reasons) the messages are
-delivered to the workers without loss or duplicates. Meaning effectively once processing without any
+delivered to the workers without loss or duplicates. Meaning effectively-once processing without any
 business level deduplication.
 
 Unconfirmed messages may be lost if the producer crashes. To avoid that you need to enable the @ref:[durable
 queue](#durable-producer) on the producer side. The stored unconfirmed messages will be redelivered when the
 corresponding producer is started again. Those messages may be routed to different workers than before
 and some of them may have already been processed but the fact that they were confirmed had not been stored
-yet. Meaning at-least once delivery.
+yet. Meaning at-least-once delivery.
 
 If a worker crashes or is stopped gracefully the unconfirmed messages will be redelivered to other workers.
-In that case some of these may already have been processed by the previous worker. Meaning at-least once delivery.
+In that case some of these may already have been processed by the previous worker. Meaning at-least-once delivery.
 
 ## Sharding
 
@@ -248,7 +249,7 @@ To use reliable delivery with Cluster Sharding, add the following module to your
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-cluster-sharding-typed_$scala.binary_version$
+  artifact=akka-cluster-sharding-typed_$scala.binary.version$
   version=$akka.version$
 }
 
@@ -265,7 +266,7 @@ and sending from another producer (different node)
 
 ![delivery-work-sharding-3.png](./images/delivery-sharding-3.png)
 
-The @apidoc[ShardingProducerController] should be used together with @apidoc[ShardingConsumerController].
+The @apidoc[ShardingProducerController$] should be used together with @apidoc[ShardingConsumerController$].
 
 A producer can send messages via a `ShardingProducerController` to any `ShardingConsumerController`
 identified by an `entityId`. A single `ShardingProducerController` per `ActorSystem` (node) can be
@@ -328,13 +329,13 @@ Java
 ### Sharding delivery semantics
 
 As long as neither producer nor consumer crash the messages are delivered to the consumer actor in the same order
-as they were sent to the `ShardingProducerController`, without loss or duplicates. Meaning effectively once
+as they were sent to the `ShardingProducerController`, without loss or duplicates. Meaning effectively-once
 processing without any business level deduplication.
 
 Unconfirmed messages may be lost if the producer crashes. To avoid that you need to enable the @ref:[durable
 queue](#durable-producer) on the producer side. The stored unconfirmed messages will be redelivered when the
 corresponding producer is started again. In that case there may be delivery of messages that had already been
-processed but the fact that they were confirmed had not been stored yet. Meaning at-least once delivery.
+processed but the fact that they were confirmed had not been stored yet. Meaning at-least-once delivery.
 
 If the consumer crashes or the shard is rebalanced the unconfirmed messages will be redelivered. In that case
 some of these may already have been processed by the previous consumer.
@@ -343,7 +344,7 @@ some of these may already have been processed by the previous consumer.
 
 Until sent messages have been confirmed the producer side keeps them in memory to be able to
 resend them. If the JVM of the producer side crashes those unconfirmed messages are lost.
-To make sure the messages can be delivered also in that scenario a @apidoc[DurableProducerQueue] can be used.
+To make sure the messages can be delivered also in that scenario a @apidoc[DurableProducerQueue$] can be used.
 Then the unconfirmed messages are stored in a durable way so that they can be redelivered when the producer
 is started again. An implementation of the `DurableProducerQueue` is provided by @apidoc[EventSourcedProducerQueue]
 in `akka-persistence-typed`.
@@ -354,7 +355,7 @@ When using the `EventSourcedProducerQueue` the following dependency is needed:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-persistence-typed_$scala.binary_version$
+  artifact=akka-persistence-typed_$scala.binary.version$
   version=$akka.version$
 } 
 

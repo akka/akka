@@ -7,13 +7,13 @@ package akka.stream.javadsl
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
-import akka.Done
-import akka.dispatch.ExecutionContexts
-import akka.stream.QueueOfferResult
-
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.Future
+
+import akka.Done
+import akka.dispatch.ExecutionContexts
+import akka.stream.QueueOfferResult
 
 /**
  * This trait allows to have a queue as a data source for some stream.

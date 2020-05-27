@@ -4,19 +4,15 @@
 
 package akka.stream.snapshot
 
+import scala.concurrent.Promise
+import java.net.InetSocketAddress
+
 import akka.stream.FlowShape
 import akka.stream.Materializer
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.GraphDSL
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.Merge
-import akka.stream.scaladsl.Partition
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Flow, GraphDSL, Keep, Merge, Partition, Sink, Source, Tcp }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
-
-import scala.concurrent.Promise
+import javax.net.ssl.SSLContext
 
 class MaterializerStateSpec extends StreamSpec {
 
@@ -51,6 +47,20 @@ class MaterializerStateSpec extends StreamSpec {
         snapshot.head.activeInterpreters.head.logics should have size (4) // all 4 operators
       }, remainingOrDefault)
       promise.success(1)
+    }
+
+    "snapshot a running stream that includes a TLSActor" in {
+      Source.never
+        .via(Tcp().outgoingConnectionWithTls(InetSocketAddress.createUnresolved("akka.io", 443), () => {
+          val engine = SSLContext.getDefault.createSSLEngine("akka.io", 443)
+          engine.setUseClientMode(true)
+          engine
+        }))
+        .runWith(Sink.seq)
+
+      val snapshots = MaterializerState.streamSnapshots(system).futureValue
+      snapshots.size should be(2)
+      snapshots.toString should include("TLS-")
     }
 
     "snapshot a stream that has a stopped stage" in {

@@ -6,9 +6,10 @@ package akka.actor.typed.delivery
 
 import scala.concurrent.duration._
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class ReliableDeliverySpec
     extends ScalaTestWithActorTestKit("""

@@ -78,7 +78,7 @@ private[akka] object Shard {
   final case class LeaseAcquireResult(acquired: Boolean, reason: Option[Throwable]) extends DeadLetterSuppression
   final case class LeaseLost(reason: Option[Throwable]) extends DeadLetterSuppression
 
-  final case object LeaseRetry extends DeadLetterSuppression
+  case object LeaseRetry extends DeadLetterSuppression
   private val LeaseRetryTimer = "lease-retry"
 
   def props(
@@ -255,9 +255,10 @@ private[akka] class Shard(
   import ShardRegion.Passivate
   import ShardRegion.ShardInitialized
   import ShardRegion.handOffStopperProps
+  import settings.tuningParameters._
+
   import akka.cluster.sharding.ShardCoordinator.Internal.CoordinatorMessage
   import akka.cluster.sharding.ShardRegion.ShardRegionCommand
-  import settings.tuningParameters._
 
   private val rememberEntitiesStore: Option[ActorRef] =
     rememberEntitiesProvider.map { provider =>

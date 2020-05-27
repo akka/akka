@@ -7,10 +7,9 @@ package akka.actor.typed.delivery
 import scala.collection.immutable
 
 import akka.actor.typed.ActorRef
+import akka.actor.typed.delivery.internal.DeliverySerializable
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
-
-import akka.actor.typed.delivery.internal.DeliverySerializable
 
 /**
  * Actor message protocol for storing and confirming reliable delivery of messages. A [[akka.actor.typed.Behavior]]

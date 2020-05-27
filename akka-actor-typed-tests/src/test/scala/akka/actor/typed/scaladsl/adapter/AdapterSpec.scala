@@ -5,25 +5,27 @@
 package akka.actor.typed.scaladsl.adapter
 
 import scala.util.control.NoStackTrace
+
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
+import akka.{ actor => classic }
+import akka.Done
+import akka.NotUsed
+import akka.actor.ActorInitializationException
 import akka.actor.InvalidMessageException
 import akka.actor.testkit.typed.TestException
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Terminated
-import akka.testkit._
-import akka.Done
-import akka.NotUsed
-import akka.actor.ActorInitializationException
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.typed.internal.adapter.SchedulerAdapter
+import akka.actor.typed.scaladsl.Behaviors
 import akka.serialization.SerializationExtension
-import akka.{ actor => classic }
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import akka.testkit._
 
 object AdapterSpec {
   val classic1: classic.Props = classic.Props(new Classic1)
@@ -184,7 +186,7 @@ object AdapterSpec {
 class AdapterSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with LogCapturing {
   import AdapterSpec._
 
-  implicit val system = akka.actor.ActorSystem("AdapterSpec")
+  implicit val system: classic.ActorSystem = akka.actor.ActorSystem("AdapterSpec")
   def typedSystem: ActorSystem[Nothing] = system.toTyped
 
   "ActorSystem adaption" must {

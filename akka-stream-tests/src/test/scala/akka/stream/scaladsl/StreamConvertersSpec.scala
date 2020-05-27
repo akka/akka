@@ -9,26 +9,26 @@ import java.util.function.BiConsumer
 import java.util.function.BinaryOperator
 import java.util.function.Supplier
 import java.util.function.ToIntFunction
-import java.util.stream.Collector.Characteristics
 import java.util.stream.BaseStream
 import java.util.stream.Collector
+import java.util.stream.Collector.Characteristics
 import java.util.stream.Collectors
-
-import akka.stream.ActorAttributes
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.Utils.TE
-import akka.util.ByteString
-
-import akka.testkit.DefaultTimeout
-import org.scalatest.time.Millis
-import org.scalatest.time.Span
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import org.scalatest.time.Millis
+import org.scalatest.time.Span
+
+import akka.stream.ActorAttributes
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.Utils.TE
+import akka.testkit.DefaultTimeout
+import akka.util.ByteString
+
 class StreamConvertersSpec extends StreamSpec with DefaultTimeout {
 
-  implicit val config = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
+  implicit val config: PatienceConfig = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
   "Java Stream source" must {
     import java.util.stream.IntStream

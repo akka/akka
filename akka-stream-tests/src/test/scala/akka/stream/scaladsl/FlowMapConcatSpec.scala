@@ -4,13 +4,13 @@
 
 package akka.stream.scaladsl
 
+import scala.util.control.NoStackTrace
+
+import akka.stream.ActorAttributes
+import akka.stream.Supervision
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.ActorAttributes
-import akka.stream.Supervision
-
-import scala.util.control.NoStackTrace
 
 class FlowMapConcatSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -30,7 +30,7 @@ class FlowMapConcatSpec extends StreamSpec("""
     }
 
     "map and concat grouping with slow downstream" in assertAllStagesStopped {
-      val s = TestSubscriber.manualProbe[Int]
+      val s = TestSubscriber.manualProbe[Int]()
       val input = (1 to 20).grouped(5).toList
       Source(input).mapConcat(identity).map(x => { Thread.sleep(10); x }).runWith(Sink.fromSubscriber(s))
       val sub = s.expectSubscription()

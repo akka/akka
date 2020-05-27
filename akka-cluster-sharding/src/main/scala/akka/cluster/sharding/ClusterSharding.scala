@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.util.control.NonFatal
-import akka.util.ccompat.JavaConverters._
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -40,6 +40,7 @@ import akka.event.Logging
 import akka.pattern.BackoffOpts
 import akka.pattern.ask
 import akka.util.ByteString
+import akka.util.ccompat.JavaConverters._
 
 /**
  * This extension provides sharding functionality of actors in a cluster.
@@ -185,7 +186,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     val guardianName: String =
       system.settings.config.getString("akka.cluster.sharding.guardian-name")
     val dispatcher = system.settings.config.getString("akka.cluster.sharding.use-dispatcher")
-    system.systemActorOf(Props[ClusterShardingGuardian].withDispatcher(dispatcher), guardianName)
+    system.systemActorOf(Props[ClusterShardingGuardian]().withDispatcher(dispatcher), guardianName)
   }
 
   /**

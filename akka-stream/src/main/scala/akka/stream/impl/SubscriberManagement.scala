@@ -5,8 +5,9 @@
 package akka.stream.impl
 
 import scala.annotation.tailrec
-import org.reactivestreams.{ Subscriber, Subscription }
+
 import SubscriberManagement.ShutDown
+import org.reactivestreams.{ Subscriber, Subscription }
 
 /**
  * INTERNAL API

@@ -5,29 +5,31 @@
 package akka.cluster.ddata.protobuf
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.actor.Props
+import akka.cluster.UniqueAddress
+import akka.cluster.ddata.DurableStore.DurableDataEnvelope
+import akka.cluster.ddata.GCounter
 import akka.cluster.ddata.GSet
 import akka.cluster.ddata.GSetKey
+import akka.cluster.ddata.ORMultiMap
+import akka.cluster.ddata.ORSet
 import akka.cluster.ddata.PruningState.PruningInitialized
 import akka.cluster.ddata.PruningState.PruningPerformed
 import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.Replicator.Internal._
+import akka.cluster.ddata.VersionVector
+import akka.remote.RARP
 import akka.testkit.TestKit
 import akka.util.{ unused, ByteString }
-import akka.cluster.UniqueAddress
-import akka.remote.RARP
-import com.typesafe.config.ConfigFactory
-import akka.cluster.ddata.DurableStore.DurableDataEnvelope
-import akka.cluster.ddata.GCounter
-import akka.cluster.ddata.VersionVector
-import akka.cluster.ddata.ORSet
-import akka.cluster.ddata.ORMultiMap
 
 class ReplicatorMessageSerializerSpec
     extends TestKit(

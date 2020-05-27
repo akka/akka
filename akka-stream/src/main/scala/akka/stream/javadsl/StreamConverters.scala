@@ -5,18 +5,18 @@
 package akka.stream.javadsl
 
 import java.io.{ InputStream, OutputStream }
+import java.util.concurrent.CompletionStage
 import java.util.stream.Collector
 
+import scala.concurrent.duration.FiniteDuration
+
+import com.github.ghik.silencer.silent
+
+import akka.NotUsed
 import akka.japi.function
 import akka.stream.{ javadsl, scaladsl }
 import akka.stream.IOResult
 import akka.util.ByteString
-
-import scala.concurrent.duration.FiniteDuration
-import java.util.concurrent.CompletionStage
-
-import akka.NotUsed
-import com.github.ghik.silencer.silent
 
 /**
  * Converters for interacting with the blocking `java.io` streams APIs and Java 8 Streams

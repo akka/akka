@@ -6,10 +6,10 @@ package akka.serialization
 
 import java.util.concurrent.CompletionStage
 
-import akka.actor.ExtendedActorSystem
-import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration.Duration
 
+import akka.actor.ExtendedActorSystem
 import akka.event.Logging
 
 /**

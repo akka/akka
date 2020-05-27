@@ -9,9 +9,8 @@ import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
-import akka.cluster.TestLeaseExt
 import akka.cluster.sharding.ShardRegion.ShardId
-import akka.coordination.lease.LeaseUsageSettings
+import akka.coordination.lease.{ LeaseUsageSettings, TestLeaseExt }
 import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import akka.testkit.TestProbe
@@ -32,7 +31,7 @@ object ShardWithLeaseSpec {
       akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       test-lease {
-          lease-class = akka.cluster.TestLease
+          lease-class = akka.coordination.lease.TestLease
           heartbeat-interval = 1s
           heartbeat-timeout = 120s
           lease-operation-timeout = 3s

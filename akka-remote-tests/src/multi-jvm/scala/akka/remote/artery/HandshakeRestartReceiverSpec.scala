@@ -9,6 +9,8 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.remote.AddressUidExtension
 import akka.remote.RARP
@@ -17,7 +19,6 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 
 object HandshakeRestartReceiverSpec extends MultiNodeConfig {
   val first = role("first")
@@ -81,7 +82,7 @@ abstract class HandshakeRestartReceiverSpec
 
     "detect restarted receiver and initiate new handshake" in {
       runOn(second) {
-        system.actorOf(Props[Subject], "subject")
+        system.actorOf(Props[Subject](), "subject")
       }
       enterBarrier("subject-started")
 
@@ -124,7 +125,7 @@ abstract class HandshakeRestartReceiverSpec
           ConfigFactory.parseString(s"""
               akka.remote.artery.canonical.port = ${address.port.get}
               """).withFallback(system.settings.config))
-        freshSystem.actorOf(Props[Subject], "subject2")
+        freshSystem.actorOf(Props[Subject](), "subject2")
 
         Await.result(freshSystem.whenTerminated, 45.seconds)
       }

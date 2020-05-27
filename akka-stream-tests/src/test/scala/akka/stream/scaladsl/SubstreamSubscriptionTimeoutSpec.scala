@@ -4,11 +4,11 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
+
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-
-import scala.concurrent.Await
 
 class SubstreamSubscriptionTimeoutSpec extends StreamSpec("""
   akka.stream.materializer {

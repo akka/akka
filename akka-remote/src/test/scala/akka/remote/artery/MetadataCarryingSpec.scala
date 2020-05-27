@@ -4,17 +4,16 @@
 
 package akka.remote.artery
 
+import java.nio.{ ByteBuffer, CharBuffer }
+import java.nio.charset.Charset
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor._
 import akka.testkit.ImplicitSender
+import akka.testkit.JavaSerializable
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
 import akka.util.ByteString
-import java.nio.{ ByteBuffer, CharBuffer }
-import java.nio.charset.Charset
-
-import akka.testkit.JavaSerializable
 
 object MetadataCarryingSpy extends ExtensionId[MetadataCarryingSpy] with ExtensionIdProvider {
   override def get(system: ActorSystem): MetadataCarryingSpy = super.get(system)

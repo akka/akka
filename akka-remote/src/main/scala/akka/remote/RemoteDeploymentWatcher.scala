@@ -4,12 +4,12 @@
 
 package akka.remote
 
-import akka.actor.InternalActorRef
-import akka.actor.Terminated
 import akka.actor.Actor
 import akka.actor.ActorRef
-import akka.dispatch.sysmsg.DeathWatchNotification
+import akka.actor.InternalActorRef
+import akka.actor.Terminated
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.sysmsg.DeathWatchNotification
 
 /**
  * INTERNAL API

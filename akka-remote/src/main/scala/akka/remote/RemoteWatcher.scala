@@ -7,16 +7,17 @@ package akka.remote
 import scala.collection.mutable
 import scala.concurrent.duration._
 
+import com.github.ghik.silencer.silent
+
 import akka.actor._
 import akka.annotation.InternalApi
-import akka.dispatch.sysmsg.{ DeathWatchNotification, Watch }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.Dispatchers
+import akka.dispatch.sysmsg.{ DeathWatchNotification, Watch }
 import akka.event.AddressTerminatedTopic
 import akka.remote.artery.ArteryMessage
-import akka.dispatch.Dispatchers
 import akka.remote.artery.ArteryTransport
 import akka.util.unused
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API

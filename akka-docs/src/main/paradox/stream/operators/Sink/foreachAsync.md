@@ -1,16 +1,13 @@
-# foreachAsync
+# Sink.foreachAsync
 
 Invoke a given procedure asynchronously for each element received.
 
 @ref[Sink operators](../index.md#sink-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #foreachAsync }
+@apidoc[Sink.foreachAsync](Sink$) { scala="#foreachAsync[T](parallelism:Int)(f:T=&gt;scala.concurrent.Future[Unit]):akka.stream.scaladsl.Sink[T,scala.concurrent.Future[akka.Done]]" java="#foreachAsync(int,akka.japi.function.Function)" }
 
-@@@
 
 ## Description
 

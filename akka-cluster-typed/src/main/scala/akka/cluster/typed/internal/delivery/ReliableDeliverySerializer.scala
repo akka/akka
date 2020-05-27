@@ -6,7 +6,6 @@ package akka.cluster.typed.internal.delivery
 
 import java.io.NotSerializableException
 
-import akka.util.ccompat.JavaConverters._
 import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.delivery.ConsumerController
 import akka.actor.typed.delivery.DurableProducerQueue
@@ -19,6 +18,7 @@ import akka.cluster.typed.internal.protobuf.ReliableDelivery.Confirmed
 import akka.remote.serialization.WrappedPayloadSupport
 import akka.serialization.BaseSerializer
 import akka.serialization.SerializerWithStringManifest
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API

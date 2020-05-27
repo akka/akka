@@ -8,6 +8,14 @@ package aeron
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import io.aeron.Aeron
+import io.aeron.driver.MediaDriver
+import org.agrona.IoUtil
+
 import akka.Done
 import akka.actor.ExtendedActorSystem
 import akka.actor.Props
@@ -20,13 +28,6 @@ import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Source
 import akka.testkit._
 import akka.util.ByteString
-import com.typesafe.config.ConfigFactory
-import io.aeron.Aeron
-import io.aeron.driver.MediaDriver
-import org.agrona.IoUtil
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 object AeronStreamConsistencySpec extends MultiNodeConfig {
   val first = role("first")
@@ -97,7 +98,7 @@ abstract class AeronStreamConsistencySpec
   "Message consistency of Aeron Streams" must {
 
     "start upd port" in {
-      system.actorOf(Props[UdpPortActor], "updPort")
+      system.actorOf(Props[UdpPortActor](), "updPort")
       enterBarrier("udp-port-started")
     }
 

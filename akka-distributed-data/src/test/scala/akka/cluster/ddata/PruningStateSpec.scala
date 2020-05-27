@@ -4,10 +4,11 @@
 
 package akka.cluster.ddata
 
-import akka.actor.Address
-import akka.cluster.UniqueAddress
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.Address
+import akka.cluster.UniqueAddress
 
 class PruningStateSpec extends AnyWordSpec with Matchers {
   import PruningState._

@@ -5,6 +5,7 @@
 package akka.serialization.jackson
 
 import com.fasterxml.jackson.databind.JsonNode
+
 import akka.util.unused
 
 /**

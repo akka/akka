@@ -4,13 +4,13 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
 import akka.actor._
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardRegion.{ ClusterShardingStats, GetClusterShardingStats }
 import akka.testkit._
 import akka.util.ccompat._
-
-import scala.concurrent.duration._
 
 @ccompatUsedUntil213
 abstract class ClusterShardingMinMembersSpecConfig(mode: String)

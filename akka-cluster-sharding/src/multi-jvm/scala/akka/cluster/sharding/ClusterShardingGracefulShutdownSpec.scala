@@ -4,12 +4,12 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
 import akka.actor._
 import akka.cluster.sharding.ShardRegion.GracefulShutdown
 import akka.remote.testconductor.RoleName
 import akka.testkit._
-
-import scala.concurrent.duration._
 
 abstract class ClusterShardingGracefulShutdownSpecConfig(mode: String)
     extends MultiNodeClusterShardingConfig(
@@ -56,7 +56,7 @@ abstract class ClusterShardingGracefulShutdownSpec(multiNodeConfig: ClusterShard
     startSharding(
       system,
       typeName,
-      entityProps = Props[ShardedEntity],
+      entityProps = Props[ShardedEntity](),
       extractEntityId = MultiNodeClusterShardingSpec.intExtractEntityId,
       extractShardId = MultiNodeClusterShardingSpec.intExtractShardId,
       allocationStrategy =

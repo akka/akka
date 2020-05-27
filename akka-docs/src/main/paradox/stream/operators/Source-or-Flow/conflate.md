@@ -4,13 +4,11 @@ Allow for a slower downstream by passing incoming elements and a summary into an
 
 @ref[Backpressure aware operators](../index.md#backpressure-aware-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #conflate }
+@apidoc[Source.conflate](Source) { scala="#conflate[O2&gt;:Out](aggregate:(O2,O2)=&gt;O2):FlowOps.this.Repr[O2]" java="#conflate(akka.japi.function.Function2)" }
+@apidoc[Flow.conflate](Flow) { scala="#conflate[O2&gt;:Out](aggregate:(O2,O2)=&gt;O2):FlowOps.this.Repr[O2]" java="#conflate(akka.japi.function.Function2)" }
 
-@@@
 
 ## Description
 

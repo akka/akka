@@ -6,15 +6,15 @@ package akka.stream.scaladsl
 
 import java.nio.ByteOrder
 
+import scala.annotation.tailrec
+import scala.reflect.ClassTag
+
 import akka.NotUsed
+import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
-import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
 import akka.util.{ ByteIterator, ByteString, OptionVal }
-
-import scala.annotation.tailrec
-import scala.reflect.ClassTag
 
 object Framing {
 
@@ -371,9 +371,8 @@ object Framing {
       extends GraphStage[FlowShape[ByteString, ByteString]] {
 
     //for the sake of binary compatibility
-    def this(lengthFieldLength: Int, lengthFieldOffset: Int, maximumFrameLength: Int, byteOrder: ByteOrder) {
+    def this(lengthFieldLength: Int, lengthFieldOffset: Int, maximumFrameLength: Int, byteOrder: ByteOrder) =
       this(lengthFieldLength, lengthFieldOffset, maximumFrameLength, byteOrder, None)
-    }
 
     private val minimumChunkSize = lengthFieldOffset + lengthFieldLength
     private val intDecoder = byteOrder match {

@@ -4,13 +4,11 @@ Transform each element into zero or more elements that are individually passed d
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #mapConcat }
+@apidoc[Source.mapConcat](Source) { scala="#mapConcat[T](f:Out=&gt;scala.collection.immutable.Iterable[T]):FlowOps.this.Repr[T]" java="#mapConcat(akka.japi.function.Function)" }
+@apidoc[Flow.mapConcat](Flow) { scala="#mapConcat[T](f:Out=&gt;scala.collection.immutable.Iterable[T]):FlowOps.this.Repr[T]" java="#mapConcat(akka.japi.function.Function)" }
 
-@@@
 
 ## Description
 

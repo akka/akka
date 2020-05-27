@@ -6,25 +6,25 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.stream.scaladsl.RestartWithBackoffFlow.Delay
-import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.TestPublisher
-import akka.stream.testkit.TestSubscriber
-import akka.stream.Attributes
-import akka.stream.OverflowStrategy
-import akka.testkit.DefaultTimeout
-import akka.testkit.TestDuration
-import akka.Done
-import akka.NotUsed
-
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
+
+import akka.Done
+import akka.NotUsed
+import akka.stream.Attributes
+import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.RestartWithBackoffFlow.Delay
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
+import akka.testkit.DefaultTimeout
+import akka.testkit.TestDuration
 
 class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "10s")) with DefaultTimeout {
 

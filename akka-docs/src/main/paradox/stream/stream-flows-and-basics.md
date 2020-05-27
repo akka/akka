@@ -6,7 +6,7 @@ To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
+  artifact="akka-stream_$scala.binary.version$"
   version="$akka.version$"
 }
 
@@ -77,7 +77,7 @@ RunnableGraph
 
 
 It is possible to attach a `Flow` to a `Source` resulting in a composite source, and it is also possible to prepend
-a `Flow` to a `Sink` to get a new sink. After a stream is properly terminated by having both a source and a sink,
+a `Flow` to a `Sink` to get a new sink. After a stream is properly constructed by having both a source and a sink,
 it will be represented by the `RunnableGraph` type, indicating that it is ready to be executed.
 
 It is important to remember that even after constructing the `RunnableGraph` by connecting all the source, sink and
@@ -190,7 +190,7 @@ of absence of a value we recommend using @scala[`scala.Option` or `scala.util.Ei
 
 ## Back-pressure explained
 
-Akka Streams implement an asynchronous non-blocking back-pressure protocol standardised by the [Reactive Streams](http://reactive-streams.org/)
+Akka Streams implement an asynchronous non-blocking back-pressure protocol standardised by the [Reactive Streams](https://www.reactive-streams.org/)
 specification, which Akka is a founding member of.
 
 The user of the library does not have to write any explicit back-pressure handling code — it is built in

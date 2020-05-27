@@ -2,15 +2,12 @@
 
 Watch a specific `ActorRef` and signal a failure downstream once the actor terminates.
 
-@ref[Simple operators](../index.md#simple-operators)
-
-@@@div { .group-scala }
+@ref[Actor interop operators](../index.md#actor-interop-operators)
 
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #watch }
-
-@@@
+@apidoc[Source.watch](Source) { scala="#watch(ref:akka.actor.ActorRef):FlowOps.this.Repr[Out]" java="#watch(akka.actor.ActorRef)" }
+@apidoc[Flow.watch](Flow) { scala="#watch(ref:akka.actor.ActorRef):FlowOps.this.Repr[Out]" java="#watch(akka.actor.ActorRef)" }
 
 ## Description
 

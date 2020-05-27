@@ -6,9 +6,10 @@ package akka.actor
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.BenchmarkActors._
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
+
+import akka.actor.BenchmarkActors._
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))

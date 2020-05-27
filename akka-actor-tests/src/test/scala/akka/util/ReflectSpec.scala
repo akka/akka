@@ -5,6 +5,7 @@
 package akka.util
 
 import scala.collection.immutable
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -16,8 +17,8 @@ object ReflectSpec {
   class Two(@unused a: A, @unused b: B)
 
   class MultipleOne(a: A, b: B) {
-    def this(a: A) { this(a, null) }
-    def this(b: B) { this(null, b) }
+    def this(a: A) = this(a, null)
+    def this(b: B) = this(null, b)
   }
 }
 

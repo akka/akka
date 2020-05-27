@@ -4,30 +4,29 @@
 
 package akka.actor
 
-import scala.concurrent.duration._
-import scala.compat.java8.FutureConverters._
-import scala.compat.java8.OptionConverters._
+import java.util.Optional
 import java.util.concurrent._
 import java.util.concurrent.TimeUnit.MILLISECONDS
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
-
-import akka.Done
-import com.typesafe.config.Config
-import scala.concurrent.duration.FiniteDuration
-import scala.annotation.tailrec
-
-import com.typesafe.config.ConfigFactory
-import akka.pattern.after
-import scala.util.control.NonFatal
-
-import akka.event.Logging
-import akka.dispatch.ExecutionContexts
-import scala.util.Try
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Supplier
-import java.util.Optional
 
+import scala.annotation.tailrec
+import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
+import scala.util.Try
+import scala.util.control.NonFatal
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
+import akka.Done
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
+import akka.event.Logging
+import akka.pattern.after
 import akka.util.{ OptionVal, Timeout }
 
 object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with ExtensionIdProvider {
@@ -710,7 +709,7 @@ final class CoordinatedShutdown private[akka] (
                 val deadline = Deadline.now + timeout
                 val timeoutFut = try {
                   after(timeout, system.scheduler) {
-                    if (phaseName == CoordinatedShutdown.PhaseActorSystemTerminate && deadline.hasTimeLeft) {
+                    if (phaseName == CoordinatedShutdown.PhaseActorSystemTerminate && deadline.hasTimeLeft()) {
                       // too early, i.e. triggered by system termination
                       result
                     } else if (result.isCompleted)

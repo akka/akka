@@ -8,11 +8,13 @@ import java.nio.channels.DatagramChannel
 
 import scala.collection.immutable
 import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+
+import akka.actor._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.Inet.SocketOption
 import akka.io.Udp._
-import akka.actor._
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API

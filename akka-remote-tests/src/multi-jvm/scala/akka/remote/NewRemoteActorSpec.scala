@@ -4,17 +4,17 @@
 
 package akka.remote
 
-import akka.actor.Terminated
+import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
 import language.postfixOps
+import testkit.MultiNodeConfig
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
+import akka.actor.Terminated
 import akka.util.unused
-import testkit.MultiNodeConfig
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 class NewRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
 
@@ -58,8 +58,8 @@ object NewRemoteActorSpec {
 
 abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
-  import multiNodeConfig._
   import NewRemoteActorSpec._
+  import multiNodeConfig._
 
   def initialParticipants = roles.size
 
@@ -70,7 +70,7 @@ abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
 
       runOn(master) {
-        val actor = system.actorOf(Props[SomeActor], "service-hello")
+        val actor = system.actorOf(Props[SomeActor](), "service-hello")
         actor.isInstanceOf[RemoteActorRef] should ===(true)
         actor.path.address should ===(node(slave).address)
 
@@ -100,7 +100,7 @@ abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef (with deployOnAll)" in {
 
       runOn(master) {
-        val actor = system.actorOf(Props[SomeActor], "service-hello2")
+        val actor = system.actorOf(Props[SomeActor](), "service-hello2")
         actor.isInstanceOf[RemoteActorRef] should ===(true)
         actor.path.address should ===(node(slave).address)
 
@@ -114,7 +114,7 @@ abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
 
     "be able to shutdown system when using remote deployed actor" in within(20 seconds) {
       runOn(master) {
-        val actor = system.actorOf(Props[SomeActor], "service-hello3")
+        val actor = system.actorOf(Props[SomeActor](), "service-hello3")
         actor.isInstanceOf[RemoteActorRef] should ===(true)
         actor.path.address should ===(node(slave).address)
         // This watch is in race with the shutdown of the watched system. This race should remain, as the test should

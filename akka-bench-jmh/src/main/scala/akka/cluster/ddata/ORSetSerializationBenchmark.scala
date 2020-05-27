@@ -9,13 +9,8 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.Props
-import akka.cluster.Cluster
-import akka.serialization.SerializationExtension
-import akka.serialization.Serializers
 import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations.{ Scope => JmhScope }
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.BenchmarkMode
 import org.openjdk.jmh.annotations.Fork
@@ -25,7 +20,13 @@ import org.openjdk.jmh.annotations.OutputTimeUnit
 import org.openjdk.jmh.annotations.State
 import org.openjdk.jmh.annotations.TearDown
 import org.openjdk.jmh.annotations.Warmup
-import org.openjdk.jmh.annotations.{ Scope => JmhScope }
+
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.Props
+import akka.cluster.Cluster
+import akka.serialization.SerializationExtension
+import akka.serialization.Serializers
 
 @Fork(2)
 @State(JmhScope.Benchmark)

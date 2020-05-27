@@ -4,6 +4,8 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
 import akka.actor.{ Actor, ActorRef, ExtendedActorSystem, NoSerializationVerificationNeeded, PoisonPill, Props }
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.ShardCoordinator.Internal.ShardStopped
@@ -11,8 +13,6 @@ import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.{ ExtractEntityId, ExtractShardId, HandOffStopper, Msg }
 import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, TestProbe }
-
-import scala.concurrent.duration._
 
 object ClusterShardingInternalsSpec {
   case class HandOffStopMessage() extends NoSerializationVerificationNeeded

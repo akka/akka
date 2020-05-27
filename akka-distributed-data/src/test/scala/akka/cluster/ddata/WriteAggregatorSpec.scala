@@ -4,6 +4,7 @@
 
 package akka.cluster.ddata
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 import akka.actor.Actor
@@ -12,14 +13,12 @@ import akka.actor.ActorSelection
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.Props
-import akka.testkit._
-import akka.cluster.ddata.Replicator.Internal._
-import akka.cluster.ddata.Replicator._
-import akka.remote.RARP
-import scala.concurrent.Future
-
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
+import akka.cluster.ddata.Replicator._
+import akka.cluster.ddata.Replicator.Internal._
+import akka.remote.RARP
+import akka.testkit._
 
 object WriteAggregatorSpec {
 

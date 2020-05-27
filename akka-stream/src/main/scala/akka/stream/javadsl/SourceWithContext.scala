@@ -6,6 +6,9 @@ package akka.stream.javadsl
 
 import java.util.concurrent.CompletionStage
 
+import scala.annotation.unchecked.uncheckedVariance
+import scala.compat.java8.FutureConverters._
+
 import akka.actor.ClassicActorSystemProvider
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.Pair
@@ -14,9 +17,6 @@ import akka.japi.function
 import akka.stream._
 import akka.util.ConstantFun
 import akka.util.ccompat.JavaConverters._
-
-import scala.annotation.unchecked.uncheckedVariance
-import scala.compat.java8.FutureConverters._
 
 object SourceWithContext {
 

@@ -4,17 +4,18 @@
 
 package akka.testkit
 
-import language.postfixOps
-import akka.actor._
-import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.actor.DeadLetter
-import akka.pattern.ask
+
 import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+import language.postfixOps
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor._
+import akka.actor.DeadLetter
+import akka.pattern.ask
 
 @silent
 class AkkaSpecSpec extends AnyWordSpec with Matchers {

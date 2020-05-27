@@ -4,14 +4,15 @@
 
 package akka.remote.classic
 
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config._
+
 import akka.actor._
 import akka.remote.EndpointException
 import akka.remote.transport._
 import akka.testkit._
-import com.typesafe.config._
-import scala.concurrent.duration._
-
-import com.github.ghik.silencer.silent
 
 // relies on test transport
 object RemoteDeploymentWhitelistSpec {
@@ -149,7 +150,7 @@ class RemoteDeploymentWhitelistSpec
   "RemoteDeployment Whitelist" must {
 
     "allow deploying Echo actor (included in whitelist)" in {
-      val r = system.actorOf(Props[EchoWhitelisted], "blub")
+      val r = system.actorOf(Props[EchoWhitelisted](), "blub")
       r.path.toString should ===(
         s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/blub")
       r ! 42
@@ -165,7 +166,7 @@ class RemoteDeploymentWhitelistSpec
     }
 
     "not deploy actor not listed in whitelist" in {
-      val r = system.actorOf(Props[EchoNotWhitelisted], "danger-mouse")
+      val r = system.actorOf(Props[EchoNotWhitelisted](), "danger-mouse")
       r.path.toString should ===(
         s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/danger-mouse")
       r ! 42

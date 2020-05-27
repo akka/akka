@@ -155,7 +155,7 @@ private[cluster] abstract class AutoDownBase(autoDownUnreachableAfter: FiniteDur
   var leader = false
 
   override def postStop(): Unit = {
-    scheduledUnreachable.values.foreach { _.cancel }
+    scheduledUnreachable.values.foreach { _.cancel() }
   }
 
   def receive = {
@@ -209,7 +209,7 @@ private[cluster] abstract class AutoDownBase(autoDownUnreachableAfter: FiniteDur
   }
 
   def remove(node: UniqueAddress): Unit = {
-    scheduledUnreachable.get(node).foreach { _.cancel }
+    scheduledUnreachable.get(node).foreach { _.cancel() }
     scheduledUnreachable -= node
     pendingUnreachable -= node
   }

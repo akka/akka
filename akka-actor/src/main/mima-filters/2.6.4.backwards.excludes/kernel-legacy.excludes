@@ -1,0 +1,5 @@
+# leftover from microkernel, removed in Akka 2.4
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.GlobalHome")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.SystemHome")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystem.EnvHome")
+

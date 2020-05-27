@@ -4,13 +4,14 @@
 
 package akka.actor.typed.internal.routing
 
-import akka.actor.Address
-import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit, TestProbe }
-import akka.actor.typed.internal.routing.RoutingLogics.ConsistentHashingLogic
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorSystem, Behavior }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.Address
+import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit, TestProbe }
+import akka.actor.typed.{ ActorSystem, Behavior }
+import akka.actor.typed.internal.routing.RoutingLogics.ConsistentHashingLogic
+import akka.actor.typed.scaladsl.Behaviors
 
 class RoutingLogicSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with Matchers with LogCapturing {
 
