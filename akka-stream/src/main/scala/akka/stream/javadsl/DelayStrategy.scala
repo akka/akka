@@ -4,11 +4,11 @@
 
 package akka.stream.javadsl
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.annotation.InternalApi
 import akka.stream.scaladsl
 import akka.util.JavaDurationConverters.JavaDurationOps
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * Allows to manage delay and can be stateful to compute delay for any sequence of elements,

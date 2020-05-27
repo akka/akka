@@ -6,15 +6,7 @@ Wrap the given @apidoc[Flow] and retry individual elements in that stream with a
 
 ## Signature
 
-Scala
-:   @@signature [RetryFlow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/RetryFlow.scala) { #withBackoff }
-
-Java
-:   @@snip [RetryFlowTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/RetryFlowTest.java) { #withBackoff-signature }
-
-## API documentation
-
-@apidoc[RetryFlow$]
+@apidoc[RetryFlow.withBackoff](RetryFlow$) { scala="#withBackoff[In,Out,Mat](minBackoff:scala.concurrent.duration.FiniteDuration,maxBackoff:scala.concurrent.duration.FiniteDuration,randomFactor:Double,maxRetries:Int,flow:akka.stream.scaladsl.Flow[In,Out,Mat])(decideRetry:(In,Out)=&gt;Option[In]):akka.stream.scaladsl.Flow[In,Out,Mat]" java="#withBackoff(java.time.Duration,java.time.Duration,double,int,akka.stream.javadsl.Flow,akka.japi.function.Function2)" }
 
 ## Description
 

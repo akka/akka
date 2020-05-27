@@ -9,7 +9,7 @@ section looks at one such actor in isolation, explaining the concepts you
 encounter while implementing it. For a more in depth reference with all the
 details please refer to @ref:[Introduction to Actors](../typed/actors.md).
 
-The [Actor Model](http://en.wikipedia.org/wiki/Actor_model) as defined by
+The [Actor Model](https://en.wikipedia.org/wiki/Actor_model) as defined by
 Hewitt, Bishop and Steiger in 1973 is a computational model that expresses
 exactly what it means for computation to be distributed. The processing
 units—Actors—can only communicate by exchanging messages and upon reception of a

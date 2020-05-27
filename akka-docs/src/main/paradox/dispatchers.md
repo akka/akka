@@ -9,7 +9,7 @@ Dispatchers are part of core Akka, which means that they are part of the akka-ac
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-actor_$scala.binary_version$"
+  artifact="akka-actor_$scala.binary.version$"
   version="$akka.version$"
 }
 

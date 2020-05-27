@@ -6,6 +6,14 @@ package akka.cluster.sharding
 
 import java.net.URLEncoder
 
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration._
+import scala.reflect.ClassTag
+import scala.runtime.AbstractFunction1
+import scala.util.{ Failure, Success }
+
 import akka.Done
 import akka.actor._
 import akka.annotation.InternalApi
@@ -207,7 +215,7 @@ object ShardRegion {
    * the `ShardRegion` and then the `ShardRegion` actor will be stopped. You can `watch`
    * it to know when it is completed.
    */
-  @SerialVersionUID(1L) final case object GracefulShutdown extends ShardRegionCommand
+  @SerialVersionUID(1L) case object GracefulShutdown extends ShardRegionCommand
 
   /**
    * We must be sure that a shard is initialized before to start send messages to it.
@@ -227,10 +235,11 @@ object ShardRegion {
   /**
    * Send this message to the `ShardRegion` actor to request for [[CurrentRegions]],
    * which contains the addresses of all registered regions.
+   *
    * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
    * the state of the shard regions.
    */
-  @SerialVersionUID(1L) final case object GetCurrentRegions extends ShardRegionQuery with ClusterShardingSerializable
+  @SerialVersionUID(1L) case object GetCurrentRegions extends ShardRegionQuery with ClusterShardingSerializable
 
   /**
    * Java API:
@@ -285,6 +294,7 @@ object ShardRegion {
    * Send this message to the `ShardRegion` actor to request for [[ShardRegionStats]],
    * which contains statistics about the currently running sharded entities in the
    * entire region.
+   *
    * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
    * the state of the shard regions.
    *

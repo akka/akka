@@ -4,14 +4,17 @@
 
 package akka.persistence
 
+import java.io.File
+
+import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import org.apache.commons.io.FileUtils
 import org.openjdk.jmh.annotations._
+import org.openjdk.jmh.annotations.Scope
+
 import akka.actor._
 import akka.testkit.TestProbe
-import java.io.File
-import org.apache.commons.io.FileUtils
-import org.openjdk.jmh.annotations.Scope
-import scala.concurrent.Await
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))

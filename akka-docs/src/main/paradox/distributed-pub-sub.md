@@ -9,7 +9,7 @@ To use Distributed Publish Subscribe you must add the following dependency in yo
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-cluster-tools_$scala.binary_version$"
+  artifact="akka-cluster-tools_$scala.binary.version$"
   version="$akka.version$"
 }
 

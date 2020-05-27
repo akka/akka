@@ -4,33 +4,34 @@
 
 package akka.cluster.sharding.typed.scaladsl
 
-import akka.actor.testkit.typed.scaladsl.LogCapturing
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
 import akka.cluster.sharding.ShardRegion.{ CurrentShardRegionState, ShardState }
-import akka.cluster.sharding.typed.scaladsl.ClusterShardingSpec._
 import akka.cluster.sharding.typed.{ GetShardRegionState, ShardingMessageExtractor }
+import akka.cluster.sharding.typed.scaladsl.ClusterShardingSpec._
 import akka.cluster.typed.{ Cluster, Join }
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class ClusterShardingStateSpec
     extends ScalaTestWithActorTestKit(ClusterShardingSpec.config)
     with AnyWordSpecLike
     with LogCapturing {
 
-  val sharding = ClusterSharding(system)
+  private val sharding = ClusterSharding(system)
 
-  val shardExtractor = ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
+  private val shardExtractor = ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
     case IdReplyPlz(id, _)  => id
     case IdWhoAreYou(id, _) => id
     case other              => throw new IllegalArgumentException(s"Unexpected message $other")
   }
 
-  val cluster = Cluster(system)
+  private val cluster = Cluster(system)
 
   val typeKey: EntityTypeKey[IdTestProtocol] = ClusterShardingSpec.typeKeyWithoutEnvelopes
 
-  "Cluster Sharding" must {
+  "Cluster Sharding CurrentShardRegionState query" must {
     "allow querying of the shard region state" in {
       val probe = TestProbe[CurrentShardRegionState]()
       cluster.manager ! Join(cluster.selfMember.address)

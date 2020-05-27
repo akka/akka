@@ -4,12 +4,12 @@
 
 package akka.cluster.ddata
 
-import akka.cluster.Cluster
-import akka.cluster.UniqueAddress
-import akka.util.HashCode
 import java.math.BigInteger
 
 import akka.annotation.InternalApi
+import akka.cluster.Cluster
+import akka.cluster.UniqueAddress
+import akka.util.HashCode
 
 object PNCounter {
   val empty: PNCounter = new PNCounter(GCounter.empty, GCounter.empty)

@@ -9,27 +9,28 @@ import java.util.Optional
 import java.util.concurrent.{ CompletableFuture, CompletionStage }
 import java.util.function.{ BiFunction, Supplier }
 
-import akka.actor.{ ActorRef, Cancellable, ClassicActorSystemProvider }
-import akka.dispatch.ExecutionContexts
-import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
-import akka.japi.function.Creator
-import akka.japi.{ function, JavaPartialFunction, Pair, Util }
-import akka.stream._
-import akka.stream.impl.LinearTraversalBuilder
-import akka.util.JavaDurationConverters._
-import akka.util.ccompat.JavaConverters._
-import akka.util.{ unused, _ }
-import akka.{ Done, NotUsed }
-import com.github.ghik.silencer.silent
-import org.reactivestreams.{ Publisher, Subscriber }
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
+
+import com.github.ghik.silencer.silent
+import org.reactivestreams.{ Publisher, Subscriber }
+
+import akka.{ Done, NotUsed }
+import akka.actor.{ ActorRef, Cancellable, ClassicActorSystemProvider }
+import akka.dispatch.ExecutionContexts
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
+import akka.japi.{ function, JavaPartialFunction, Pair, Util }
+import akka.japi.function.Creator
+import akka.stream._
+import akka.stream.impl.LinearTraversalBuilder
+import akka.util.{ unused, _ }
+import akka.util.JavaDurationConverters._
+import akka.util.ccompat.JavaConverters._
 
 /** Java API */
 object Source {
@@ -98,6 +99,17 @@ object Source {
    */
   def fromIterator[O](f: function.Creator[java.util.Iterator[O]]): javadsl.Source[O, NotUsed] =
     new Source(scaladsl.Source.fromIterator(() => f.create().asScala))
+
+  /**
+   * Creates a source that wraps a Java 8 ``Stream``. ``Source`` uses a stream iterator to get all its
+   * elements and send them downstream on demand.
+   *
+   * You can use [[Source.async]] to create asynchronous boundaries between synchronous java stream
+   * and the rest of flow.
+   */
+  def fromJavaStream[O, S <: java.util.stream.BaseStream[O, S]](
+      stream: function.Creator[java.util.stream.BaseStream[O, S]]): javadsl.Source[O, NotUsed] =
+    StreamConverters.fromJavaStream(stream)
 
   /**
    * Helper to create 'cycled' [[Source]] from iterator provider.
@@ -291,6 +303,13 @@ object Source {
    */
   def future[T](futureElement: Future[T]): Source[T, NotUsed] =
     scaladsl.Source.future(futureElement).asJava
+
+  /**
+   * Never emits any elements, never completes and never fails.
+   * This stream could be useful in tests.
+   */
+  def never[T]: Source[T, NotUsed] =
+    scaladsl.Source.never.asJava
 
   /**
    * Emits a single value when the given `CompletionStage` is successfully completed and then completes the stream.
@@ -1626,7 +1645,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def zipMat[T, M, M2](
       that: Graph[SourceShape[T], M],
       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
-    this.viaMat(Flow.create[Out].zipMat(that, Keep.right[NotUsed, M]), matF)
+    this.viaMat(Flow.create[Out]().zipMat(that, Keep.right[NotUsed, M]), matF)
 
   /**
    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
@@ -1689,7 +1708,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def zipLatestMat[T, M, M2](
       that: Graph[SourceShape[T], M],
       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
-    this.viaMat(Flow.create[Out].zipLatestMat(that, Keep.right[NotUsed, M]), matF)
+    this.viaMat(Flow.create[Out]().zipLatestMat(that, Keep.right[NotUsed, M]), matF)
 
   /**
    * Put together the elements of current [[Source]] and the given one
@@ -4311,6 +4330,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def logWithMarker(name: String, marker: function.Function[Out, LogMarker]): javadsl.Source[Out, Mat] =
     this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], null)
 
+  /**
+   * Transform this source whose element is ``e`` into a source producing tuple ``(e, f(e))``
+   **/
   def asSourceWithContext[Ctx](extractContext: function.Function[Out, Ctx]): SourceWithContext[Out, Ctx, Mat] =
     new scaladsl.SourceWithContext(this.asScala.map(x => (x, extractContext.apply(x)))).asJava
 }

@@ -7,16 +7,16 @@ package akka.cluster.typed.internal
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.{ Function => JFunction }
 
-import akka.actor.typed.internal.{ PoisonPill, PoisonPillInterceptor }
 import akka.actor.{ ExtendedActorSystem, InvalidActorNameException }
-import akka.annotation.InternalApi
-import akka.cluster.singleton.{ ClusterSingletonProxy, ClusterSingletonManager => OldSingletonManager }
-import akka.cluster.typed.{ Cluster, ClusterSingleton, ClusterSingletonImpl, ClusterSingletonSettings }
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
+import akka.actor.typed.internal.{ PoisonPill, PoisonPillInterceptor }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
+import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.singleton.{ ClusterSingletonProxy, ClusterSingletonManager => OldSingletonManager }
 import akka.cluster.typed
+import akka.cluster.typed.{ Cluster, ClusterSingleton, ClusterSingletonImpl, ClusterSingletonSettings }
 
 /**
  * INTERNAL API:
@@ -28,6 +28,7 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
     "only adapted actor systems can be used for the typed cluster singleton")
 
   import ClusterSingletonImpl._
+
   import akka.actor.typed.scaladsl.adapter._
 
   private lazy val cluster = Cluster(system)

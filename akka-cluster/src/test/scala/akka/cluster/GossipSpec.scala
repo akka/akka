@@ -4,13 +4,14 @@
 
 package akka.cluster
 
-import akka.actor.Address
-import akka.cluster.Gossip.vclockName
-import akka.cluster.ClusterSettings.DefaultDataCenter
-
 import scala.collection.immutable.SortedSet
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.Address
+import akka.cluster.ClusterSettings.DefaultDataCenter
+import akka.cluster.Gossip.vclockName
 
 class GossipSpec extends AnyWordSpec with Matchers {
 

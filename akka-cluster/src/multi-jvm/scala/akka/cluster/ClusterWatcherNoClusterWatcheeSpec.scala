@@ -6,6 +6,9 @@ package akka.cluster
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.ScalaFutures
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
@@ -20,8 +23,6 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
 
 class ClusterWatcherNoClusterWatcheeConfig(val useUnsafe: Boolean, artery: Boolean) extends MultiNodeConfig {
 

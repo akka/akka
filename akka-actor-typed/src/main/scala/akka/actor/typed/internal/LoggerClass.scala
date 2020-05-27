@@ -4,10 +4,10 @@
 
 package akka.actor.typed.internal
 
+import scala.util.control.NonFatal
+
 import akka.annotation.InternalApi
 import akka.util.OptionVal
-
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API

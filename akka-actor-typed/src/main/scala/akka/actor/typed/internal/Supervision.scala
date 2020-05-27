@@ -13,6 +13,8 @@ import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
 
+import org.slf4j.event.Level
+
 import akka.actor.DeadLetterSuppression
 import akka.actor.Dropped
 import akka.actor.typed.BehaviorInterceptor.PreStartTarget
@@ -25,7 +27,6 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.util.OptionVal
 import akka.util.unused
-import org.slf4j.event.Level
 
 /**
  * INTERNAL API
@@ -195,7 +196,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
 
   private def deadlineHasTimeLeft: Boolean = deadline match {
     case OptionVal.None    => true
-    case OptionVal.Some(d) => d.hasTimeLeft
+    case OptionVal.Some(d) => d.hasTimeLeft()
   }
 
   override def aroundSignal(ctx: TypedActorContext[Any], signal: Signal, target: SignalTarget[T]): Behavior[T] = {

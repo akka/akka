@@ -7,13 +7,22 @@ package akka
 import java.io.File
 
 import com.typesafe.config.ConfigFactory
-import sbt.AutoPlugin
-import sbt.Def
-import sbt.file
 import sbt.internal.sbtscalafix.Compat
 
 class ProjectFileIgnoreSupport(ignoreConfigFile: File, descriptor: String) {
   private val stdoutLogger = Compat.ConsoleLogger(System.out)
+
+  private val javaSourceDirectories = Set(
+    "java",
+    Jdk9.JAVA_SOURCE_DIRECTORY,
+    Jdk9.JAVA_TEST_SOURCE_DIRECTORY
+  )
+
+  private val scalaSourceDirectories = Set(
+    "scala",
+    Jdk9.SCALA_SOURCE_DIRECTORY,
+    Jdk9.SCALA_TEST_SOURCE_DIRECTORY
+  )
 
   private lazy val ignoreConfig = {
     require(ignoreConfigFile.exists(), s"Expected ignore configuration for $descriptor at ${ignoreConfigFile.getAbsolutePath} but was missing")
@@ -55,7 +64,7 @@ class ProjectFileIgnoreSupport(ignoreConfigFile: File, descriptor: String) {
         case Some(packageName) =>
           val ignored = packageName.startsWith(pkg)
           if (ignored) {
-            stdoutLogger.debug(s"$descriptor ignored file with pkg:$pkg file:[${file.toPath}] ")
+            stdoutLogger.debug(s"$descriptor ignored file with pkg:$pkg for package:$packageName file:[${file.toPath}] ")
           }
           ignored
         case None => false
@@ -65,22 +74,23 @@ class ProjectFileIgnoreSupport(ignoreConfigFile: File, descriptor: String) {
   }
 
   private def getPackageName(fileName: String): Option[String] = {
-    def getPackageName0(fileType: String): String = {
+    def getPackageName0(sourceDirectories:Set[String]): String = {
       import java.io.{File => JFile}
-      fileName.split(JFile.separatorChar)
-        .dropWhile(part => part != fileType)
+      val packageName = fileName.split(JFile.separatorChar)
+        .dropWhile(part => !sourceDirectories(part))
         .drop(1)
         .dropRight(1)
         .mkString(".")
+      packageName
     }
 
     fileName.split('.').lastOption match {
       case Some(fileType) =>
         fileType match {
           case "java" =>
-            Option(getPackageName0("java"))
+            Option(getPackageName0(javaSourceDirectories))
           case "scala" =>
-            Option(getPackageName0("scala"))
+            Option(getPackageName0(scalaSourceDirectories))
           case _ => None
         }
       case None => None

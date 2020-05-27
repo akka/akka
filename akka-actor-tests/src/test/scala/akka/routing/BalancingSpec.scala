@@ -4,14 +4,17 @@
 
 package akka.routing
 
+import java.net.URLEncoder
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.actor.{ Actor, Props }
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestLatch }
-import akka.actor.ActorRef
+
 import org.scalatest.BeforeAndAfterEach
-import java.net.URLEncoder
+
+import akka.actor.{ Actor, Props }
+import akka.actor.ActorRef
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestLatch }
 
 object BalancingSpec {
   val counter = new AtomicInteger(1)
@@ -118,14 +121,14 @@ class BalancingSpec extends AkkaSpec("""
 
     "work with anonymous actor names" in {
       // the dispatcher-id must not contain invalid config key characters (e.g. $a)
-      system.actorOf(Props[Parent]) ! 1000
+      system.actorOf(Props[Parent]()) ! 1000
       expectMsgType[Int]
     }
 
     "work with encoded actor names" in {
       val encName = URLEncoder.encode("abcå6#$€xyz", "utf-8")
       // % is a valid config key character (e.g. %C3%A5)
-      system.actorOf(Props[Parent], encName) ! 1001
+      system.actorOf(Props[Parent](), encName) ! 1001
       expectMsgType[Int]
     }
 

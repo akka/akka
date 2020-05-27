@@ -4,17 +4,18 @@
 
 package akka.actor.typed.scaladsl
 
-import akka.actor.ClassicActorContextProvider
-import akka.actor.typed._
-import akka.annotation.DoNotInherit
-import akka.util.Timeout
-
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
-import akka.annotation.InternalApi
+
 import org.slf4j.Logger
+
+import akka.actor.ClassicActorContextProvider
+import akka.actor.typed._
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
+import akka.util.Timeout
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in
@@ -335,5 +336,20 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
    */
   @InternalApi
   private[akka] def clearMdc(): Unit
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def setCurrentActorThread(): Unit
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def clearCurrentActorThread(): Unit
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def checkCurrentActorThread(): Unit
 
 }

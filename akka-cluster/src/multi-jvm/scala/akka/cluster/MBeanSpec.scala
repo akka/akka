@@ -4,12 +4,15 @@
 
 package akka.cluster
 
-import language.postfixOps
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
 import java.lang.management.ManagementFactory
+
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 import javax.management.InstanceNotFoundException
 import javax.management.ObjectName
+import language.postfixOps
+
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._

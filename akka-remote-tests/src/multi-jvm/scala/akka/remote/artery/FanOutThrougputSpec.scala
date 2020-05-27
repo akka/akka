@@ -7,14 +7,16 @@ package akka.remote.artery
 import java.util.concurrent.Executors
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.remote.{ RemoteActorRefProvider, RemotingMultiNodeSpec }
+import akka.remote.artery.MaxThroughputSpec._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.PerfFlamesSupport
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import akka.remote.artery.MaxThroughputSpec._
 
 object FanOutThroughputSpec extends MultiNodeConfig {
   val totalNumberOfNodes =

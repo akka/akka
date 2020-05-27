@@ -8,31 +8,32 @@ import java.util
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.concurrent.Promise
+import scala.util.control.NonFatal
+
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
+
 import akka.Done
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.event.Logging
 import akka.stream._
+import akka.stream.impl._
 import akka.stream.impl.ReactiveStreamsCompliance._
+import akka.stream.impl.SubFusingActorMaterializerImpl
 import akka.stream.impl.fusing.GraphInterpreter.Connection
 import akka.stream.impl.fusing.GraphInterpreter.DownstreamBoundaryStageLogic
 import akka.stream.impl.fusing.GraphInterpreter.UpstreamBoundaryStageLogic
-import akka.stream.impl.SubFusingActorMaterializerImpl
-import akka.stream.impl._
 import akka.stream.snapshot._
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.util.OptionVal
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
-import org.reactivestreams.Subscription
-
-import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.concurrent.Promise
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API

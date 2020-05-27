@@ -4,13 +4,13 @@
 
 package akka.remote.serialization
 
+import akka.actor.ExtendedActorSystem
+import akka.remote.MessageSerializer
+import akka.remote.ProtobufProtocol.MyMessage
+import akka.remote.WireFormats.SerializedMessage
+import akka.remote.protobuf.v3.ProtobufProtocolV3.MyMessageV3
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
-import akka.remote.WireFormats.SerializedMessage
-import akka.remote.ProtobufProtocol.MyMessage
-import akka.remote.MessageSerializer
-import akka.actor.ExtendedActorSystem
-import akka.remote.protobuf.v3.ProtobufProtocolV3.MyMessageV3
 import akka.util.unused
 
 // those must be defined as top level classes, to have static parseFrom

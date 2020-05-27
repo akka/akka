@@ -6,6 +6,8 @@ package akka.actor.typed.delivery
 
 import scala.concurrent.duration._
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -13,7 +15,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class WorkPullingSpec
     extends ScalaTestWithActorTestKit("""

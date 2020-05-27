@@ -4,7 +4,6 @@
 
 package akka.cluster.metrics
 
-import language.postfixOps
 import java.lang.management.ManagementFactory
 
 import scala.concurrent.Await
@@ -12,19 +11,21 @@ import scala.concurrent.duration._
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.MultiNodeClusterSpec
-import akka.pattern.ask
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
-import akka.routing.GetRoutees
-import akka.routing.FromConfig
-import akka.testkit.{ DefaultTimeout, ImplicitSender, LongRunningTest }
-import akka.routing.ActorRefRoutee
-import akka.routing.Routees
 import akka.cluster.routing.ClusterRouterPool
 import akka.cluster.routing.ClusterRouterPoolSettings
+import akka.pattern.ask
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
+import akka.routing.ActorRefRoutee
+import akka.routing.FromConfig
+import akka.routing.GetRoutees
+import akka.routing.Routees
 import akka.serialization.jackson.CborSerializable
+import akka.testkit.{ DefaultTimeout, ImplicitSender, LongRunningTest }
 import akka.util.unused
 
 object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {
@@ -150,7 +151,7 @@ abstract class AdaptiveLoadBalancingRouterSpec
       ClusterRouterPool(
         local = AdaptiveLoadBalancingPool(HeapMetricsSelector),
         settings = ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 1, allowLocalRoutees = true))
-        .props(Props[Echo]),
+        .props(Props[Echo]()),
       name)
     // it may take some time until router receives cluster member events
     awaitAssert { currentRoutees(router).size should ===(roles.size) }
@@ -201,7 +202,7 @@ abstract class AdaptiveLoadBalancingRouterSpec
 
       runOn(node2) {
         within(20.seconds) {
-          system.actorOf(Props[Memory], "memory") ! AllocateMemory
+          system.actorOf(Props[Memory](), "memory") ! AllocateMemory
           expectMsg("done")
         }
       }
@@ -230,7 +231,7 @@ abstract class AdaptiveLoadBalancingRouterSpec
 
     "create routees from configuration" taggedAs LongRunningTest in {
       runOn(node1) {
-        val router3 = system.actorOf(FromConfig.props(Props[Memory]), "router3")
+        val router3 = system.actorOf(FromConfig.props(Props[Memory]()), "router3")
         // it may take some time until router receives cluster member events
         awaitAssert { currentRoutees(router3).size should ===(9) }
         val routees = currentRoutees(router3)
@@ -241,7 +242,7 @@ abstract class AdaptiveLoadBalancingRouterSpec
 
     "create routees from cluster.enabled configuration" taggedAs LongRunningTest in {
       runOn(node1) {
-        val router4 = system.actorOf(FromConfig.props(Props[Memory]), "router4")
+        val router4 = system.actorOf(FromConfig.props(Props[Memory]()), "router4")
         // it may take some time until router receives cluster member events
         awaitAssert { currentRoutees(router4).size should ===(6) }
         val routees = currentRoutees(router4)

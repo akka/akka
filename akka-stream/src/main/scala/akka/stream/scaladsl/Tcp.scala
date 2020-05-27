@@ -6,28 +6,10 @@ package akka.stream.scaladsl
 
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
-
-import akka.actor._
-import akka.annotation.InternalApi
-import akka.io.Inet.SocketOption
-import akka.io.IO
-import akka.io.{ Tcp => IoTcp }
-import akka.stream.Attributes.Attribute
-import akka.stream.TLSProtocol.NegotiateNewSession
-import akka.stream._
-import akka.stream.impl.fusing.GraphStages.detacher
-import akka.stream.impl.io.ConnectionSourceStage
-import akka.stream.impl.io.OutgoingConnectionStage
-import akka.stream.impl.io.TcpIdleTimeout
-import akka.util.ByteString
-import akka.util.unused
-import akka.util.JavaDurationConverters._
-import akka.Done
-import akka.NotUsed
-import com.github.ghik.silencer.silent
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -36,6 +18,26 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.NoStackTrace
+
+import com.github.ghik.silencer.silent
+
+import akka.Done
+import akka.NotUsed
+import akka.actor._
+import akka.annotation.InternalApi
+import akka.io.{ Tcp => IoTcp }
+import akka.io.IO
+import akka.io.Inet.SocketOption
+import akka.stream._
+import akka.stream.Attributes.Attribute
+import akka.stream.TLSProtocol.NegotiateNewSession
+import akka.stream.impl.fusing.GraphStages.detacher
+import akka.stream.impl.io.ConnectionSourceStage
+import akka.stream.impl.io.OutgoingConnectionStage
+import akka.stream.impl.io.TcpIdleTimeout
+import akka.util.ByteString
+import akka.util.JavaDurationConverters._
+import akka.util.unused
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 

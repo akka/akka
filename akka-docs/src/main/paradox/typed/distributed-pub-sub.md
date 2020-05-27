@@ -1,6 +1,6 @@
 # Distributed Publish Subscribe in Cluster
 
-For the Akka Classic documentation of this feature see @ref:[Classic Distributed Publish Subscribe](../distributed-pub-sub.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Distributed Publish Subscribe](../distributed-pub-sub.md).
 
 ## Module info
 
@@ -9,7 +9,7 @@ when used in a clustered application:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-cluster-typed_$scala.binary_version$"
+  artifact="akka-cluster-typed_$scala.binary.version$"
   version="$akka.version$"
 }
 

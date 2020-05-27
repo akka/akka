@@ -4,9 +4,10 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit._
 import org.reactivestreams.Publisher
+
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class FlowInterleaveSpec extends BaseTwoStreamsSetup {
 
@@ -228,7 +229,7 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
         .asSubscriber[Int]
         .interleaveMat(Source.asSubscriber[Int], 2)((_, _))
         .toMat(Sink.fromSubscriber(down))(Keep.left)
-        .run
+        .run()
 
       val downstream = down.expectSubscription()
       downstream.cancel()
@@ -240,8 +241,8 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
 
     "work in example" in {
       //#interleave
-      import akka.stream.scaladsl.Source
       import akka.stream.scaladsl.Sink
+      import akka.stream.scaladsl.Source
 
       val sourceA = Source(List(1, 2, 3, 4))
       val sourceB = Source(List(10, 20, 30, 40))

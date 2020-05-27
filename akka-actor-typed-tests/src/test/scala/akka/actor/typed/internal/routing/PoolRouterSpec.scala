@@ -4,10 +4,11 @@
 
 package akka.actor.typed.internal.routing
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.{ ActorRef, Behavior, DispatcherSelector }
 import akka.actor.typed.scaladsl.{ Behaviors, Routers }
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object PoolRouterSpec {
 

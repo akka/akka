@@ -6,15 +6,15 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.Done
-import akka.NotUsed
-import akka.stream._
-import akka.stream.testkit._
-
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+
+import akka.Done
+import akka.NotUsed
+import akka.stream._
+import akka.stream.testkit._
 
 class GraphMatValueSpec extends StreamSpec {
 

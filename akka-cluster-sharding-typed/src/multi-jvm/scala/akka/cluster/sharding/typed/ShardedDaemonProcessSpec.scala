@@ -4,6 +4,11 @@
 
 package akka.cluster.sharding.typed
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.ScalaFutures
+
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
@@ -16,10 +21,6 @@ import akka.cluster.typed.MultiNodeTypedClusterSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.jackson.CborSerializable
-import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
-
-import scala.concurrent.duration._
 
 object ShardedDaemonProcessSpec extends MultiNodeConfig {
   val first = role("first")

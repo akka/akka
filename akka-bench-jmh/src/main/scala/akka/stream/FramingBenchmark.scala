@@ -7,6 +7,14 @@ package akka.stream
 import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.util.Random
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations._
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.remote.artery.BenchTestSourceSameElement
@@ -14,13 +22,6 @@ import akka.stream.scaladsl.Framing
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.openjdk.jmh.annotations._
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.util.Random
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)

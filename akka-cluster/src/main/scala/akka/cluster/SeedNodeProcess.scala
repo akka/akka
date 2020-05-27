@@ -186,7 +186,7 @@ private[cluster] final class FirstSeedNodeProcess(
 
   def receive: Receive = {
     case JoinSeedNode =>
-      if (timeout.hasTimeLeft) {
+      if (timeout.hasTimeLeft()) {
         // send InitJoin to remaining seed nodes (except myself)
         receiveJoinSeedNode(remainingSeedNodes)
       } else {

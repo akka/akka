@@ -4,6 +4,10 @@
 
 package akka.cluster.typed.internal
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
@@ -16,9 +20,6 @@ import akka.cluster.typed.MultiNodeTypedClusterSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 object ClusterReceptionistUnreachabilitySpecConfig extends MultiNodeConfig {
   val first = role("first")

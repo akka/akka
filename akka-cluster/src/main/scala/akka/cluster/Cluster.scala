@@ -8,26 +8,27 @@ import java.io.Closeable
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicBoolean
 
+import scala.annotation.varargs
+import scala.collection.immutable
+import scala.concurrent.{ Await, ExecutionContext }
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.ConfigurationException
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
 import akka.dispatch.MonitorableThreadFactory
 import akka.event.{ Logging, LoggingAdapter }
-import akka.japi.Util
-import akka.pattern._
-import akka.remote.{ UniqueAddress => _, _ }
-import com.typesafe.config.{ Config, ConfigFactory }
-import scala.annotation.varargs
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext }
-import scala.util.control.NonFatal
-
 import akka.event.LogMarker
 import akka.event.Logging.LogLevel
 import akka.event.MarkerLoggingAdapter
-import com.github.ghik.silencer.silent
+import akka.japi.Util
+import akka.pattern._
+import akka.remote.{ UniqueAddress => _, _ }
 
 /**
  * Cluster Extension Id and factory for creating Cluster extension.

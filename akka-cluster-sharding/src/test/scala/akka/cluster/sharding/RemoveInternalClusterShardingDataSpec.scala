@@ -9,6 +9,9 @@ import java.io.File
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Success
+
+import org.apache.commons.io.FileUtils
+
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.cluster.Cluster
@@ -23,7 +26,6 @@ import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors.EchoActor
 import akka.testkit.WithLogCapturing
-import org.apache.commons.io.FileUtils
 
 object RemoveInternalClusterShardingDataSpec {
   val config = """

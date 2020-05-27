@@ -8,24 +8,24 @@ package tcp
 import java.io.ByteArrayOutputStream
 import java.security.NoSuchAlgorithmException
 import java.util.zip.GZIPOutputStream
+import javax.net.ssl.SSLEngine
 
 import scala.concurrent.duration._
 
-import akka.actor.ActorRef
-import akka.actor.ActorPath
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorIdentity
+import akka.actor.ActorPath
+import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.actor.RootActorPath
 import akka.actor.setup.ActorSystemSetup
+import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import javax.net.ssl.SSLEngine
-
-import akka.testkit.EventFilter
 
 class TlsTcpWithDefaultConfigSpec extends TlsTcpSpec(ConfigFactory.empty())
 
@@ -33,7 +33,7 @@ class TlsTcpWithSHA1PRNGSpec
     extends TlsTcpSpec(ConfigFactory.parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       random-number-generator = "SHA1PRNG"
-      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA"]
+      enabled-algorithms = ["TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"]
     }
     """))
 
@@ -41,7 +41,7 @@ class TlsTcpWithDefaultRNGSecureSpec
     extends TlsTcpSpec(ConfigFactory.parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       random-number-generator = ""
-      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA"]
+      enabled-algorithms = ["TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"]
     }
     """))
 

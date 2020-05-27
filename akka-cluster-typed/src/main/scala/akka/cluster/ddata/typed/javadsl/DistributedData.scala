@@ -6,11 +6,11 @@ package akka.cluster.ddata.typed.javadsl
 
 import java.util.function.{ Function => JFunction }
 
+import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
 import akka.actor.typed.ExtensionSetup
 import akka.actor.typed.javadsl.Behaviors
 import akka.annotation.DoNotInherit

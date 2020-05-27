@@ -3,7 +3,7 @@ project.description: Share data between nodes and perform updates without coordi
 ---
 # Distributed Data
 
-For the Akka Classic documentation of this feature see @ref:[Classic Distributed Data](../distributed-data.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Distributed Data](../distributed-data.md).
 
 ## Module info
 
@@ -11,7 +11,7 @@ To use Akka Cluster Distributed Data, you must add the following dependency in y
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-cluster-typed_$scala.binary_version$
+  artifact=akka-cluster-typed_$scala.binary.version$
   version=$akka.version$
 }
 
@@ -270,8 +270,8 @@ better safety for small clusters.
 #### Consistency and response types
 
 When using `ReadLocal`, you will never receive a `GetFailure` response, since the local replica is always available to
-local readers. `WriteLocal` however may still reply with `UpdateFailure` messages, in the event that the `modify` function
-threw an exception, or, if using @ref:[durable storage](#durable-storage), if storing failed.
+local readers. `WriteLocal` however may still reply with `UpdateFailure` messages if the `modify` function
+throws an exception, or if it fails to persist to @ref:[durable storage](#durable-storage).
 
 #### Examples
 
@@ -534,7 +534,7 @@ akka.cluster.distributed-data.prefer-oldest = on
 
 ### Delta-CRDT
 
-[Delta State Replicated Data Types](http://arxiv.org/abs/1603.01529)
+[Delta State Replicated Data Types](https://arxiv.org/abs/1603.01529)
 are supported. A delta-CRDT is a way to reduce the need for sending the full state
 for updates. For example adding element `'c'` and `'d'` to set `{'a', 'b'}` would
 result in sending the delta `{'c', 'd'}` and merge that with the state on the
@@ -665,7 +665,7 @@ All entries can be made durable by specifying:
 akka.cluster.distributed-data.durable.keys = ["*"]
 ```
 
-@scala[[LMDB](https://symas.com/products/lightning-memory-mapped-database/)]@java[[LMDB](https://github.com/lmdbjava/lmdbjava/)] is the default storage implementation. It is
+@scala[[LMDB](https://symas.com/lmdb/technical/)]@java[[LMDB](https://github.com/lmdbjava/lmdbjava/)] is the default storage implementation. It is
 possible to replace that with another implementation by implementing the actor protocol described in
 `akka.cluster.ddata.DurableStore` and defining the `akka.cluster.distributed-data.durable.store-actor-class`
 property for the new implementation.
@@ -761,11 +761,9 @@ API documentation of the `Replicator` for details.
 
 ## Learn More about CRDTs
 
- * [Eventually Consistent Data Structures](https://vimeo.com/43903960)
-talk by Sean Cribbs
  * [Strong Eventual Consistency and Conflict-free Replicated Data Types (video)](https://www.youtube.com/watch?v=oyUHd894w18&amp;feature=youtu.be)
 talk by Mark Shapiro
- * [A comprehensive study of Convergent and Commutative Replicated Data Types](http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf)
+ * [A comprehensive study of Convergent and Commutative Replicated Data Types](https://hal.inria.fr/file/index/docid/555588/filename/techreport.pdf)
 paper by Mark Shapiro et. al.
 
 ## Configuration

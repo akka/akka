@@ -9,14 +9,14 @@ To use Finite State Machine actors, you must add the following dependency in you
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-actor_$scala.binary_version$"
+  artifact="akka-actor_$scala.binary.version$"
   version="$akka.version$"
 }
 
 ## Overview
 
 The FSM (Finite State Machine) is available as @scala[a mixin for the] @java[an abstract base class that implements an] Akka Actor and
-is best described in the [Erlang design principles](http://www.erlang.org/documentation/doc-4.8.2/doc/design_principles/fsm.html)
+is best described in the [Erlang design principles](https://www.erlang.org/documentation/doc-4.8.2/doc/design_principles/fsm.html)
 
 A FSM can be described as a set of relations of the form:
 

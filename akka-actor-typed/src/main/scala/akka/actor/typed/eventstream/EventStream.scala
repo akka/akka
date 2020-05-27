@@ -4,9 +4,10 @@
 
 package akka.actor.typed.eventstream
 
+import scala.reflect.ClassTag
+
 import akka.actor.typed.ActorRef
 import akka.annotation.{ DoNotInherit, InternalApi }
-import scala.reflect.ClassTag
 
 object EventStream {
 

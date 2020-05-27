@@ -4,9 +4,10 @@
 
 package akka.cluster
 
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.testkit.{ AkkaSpec, EventFilter, ImplicitSender }
-import com.typesafe.config.{ Config, ConfigFactory }
 
 object ClusterLogSpec {
   val config = """

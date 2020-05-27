@@ -5,8 +5,8 @@
 package akka.stream.impl
 
 import akka.annotation.InternalApi
-import akka.stream.Attributes._
 import akka.stream._
+import akka.stream.Attributes._
 
 /**
  * INTERNAL API
@@ -104,6 +104,7 @@ import akka.stream._
     val singleSource = name("singleSource")
     val emptySource = name("emptySource")
     val maybeSource = name("MaybeSource")
+    val neverSource = name("neverSource")
     val failedSource = name("failedSource")
     val concatSource = name("concatSource")
     val concatMatSource = name("concatMatSource")

@@ -6,9 +6,10 @@ package akka.cluster
 
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.remote.FailureDetector
 import com.typesafe.config.Config
+
 import akka.event.EventStream
+import akka.remote.FailureDetector
 import akka.util.unused
 
 /**

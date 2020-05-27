@@ -4,18 +4,18 @@
 
 package akka.actor
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
 import language.postfixOps
+import org.scalatest.BeforeAndAfterEach
+import org.scalatestplus.junit.JUnitSuiteLike
+
+import akka.pattern.ask
 import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
-
-import scala.concurrent.Await
-import akka.pattern.ask
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.duration._
-import org.scalatest.BeforeAndAfterEach
-import org.scalatestplus.junit.JUnitSuiteLike
 
 object ActorWithStashSpec {
 
@@ -24,7 +24,7 @@ object ActorWithStashSpec {
     def greeted: Receive = {
       case "bye" =>
         state.s = "bye"
-        state.finished.await
+        state.finished.await()
       case _ => // do nothing
     }
 
@@ -63,7 +63,7 @@ object ActorWithStashSpec {
             context.unbecome()
           case _ => stash()
         }
-      case "done" => state.finished.await
+      case "done" => state.finished.await()
       case _      => stash()
     }
   }
@@ -73,7 +73,7 @@ object ActorWithStashSpec {
   }
 
   class TerminatedMessageStashingActor(probe: ActorRef) extends Actor with Stash {
-    val watched = context.watch(context.actorOf(Props[WatchedActor]))
+    val watched = context.watch(context.actorOf(Props[WatchedActor]()))
     var stashed = false
 
     context.stop(watched)
@@ -109,7 +109,7 @@ class ActorWithStashSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfte
     system.eventStream.publish(Mute(EventFilter[Exception]("Crashing...")))
   }
 
-  override def beforeEach() = state.finished.reset
+  override def beforeEach() = state.finished.reset()
 
   "An Actor with Stash" must {
 
@@ -117,12 +117,12 @@ class ActorWithStashSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfte
       val stasher = system.actorOf(Props(new StashingActor))
       stasher ! "bye"
       stasher ! "hello"
-      state.finished.await
+      state.finished.await()
       state.s should ===("bye")
     }
 
     "support protocols" in {
-      val protoActor = system.actorOf(Props[ActorWithProtocol])
+      val protoActor = system.actorOf(Props[ActorWithProtocol]())
       protoActor ! "open"
       protoActor ! "write"
       protoActor ! "open"
@@ -130,12 +130,12 @@ class ActorWithStashSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfte
       protoActor ! "write"
       protoActor ! "close"
       protoActor ! "done"
-      state.finished.await
+      state.finished.await()
     }
 
     "throw an IllegalStateException if the same messages is stashed twice" in {
       state.expectedException = new TestLatch
-      val stasher = system.actorOf(Props[StashingTwiceActor])
+      val stasher = system.actorOf(Props[StashingTwiceActor]())
       stasher ! "hello"
       stasher ! "hello"
       Await.ready(state.expectedException, 10 seconds)

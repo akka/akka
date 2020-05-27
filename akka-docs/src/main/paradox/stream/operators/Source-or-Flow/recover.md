@@ -4,13 +4,11 @@ Allow sending of one last element downstream when a failure has happened upstrea
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #recover }
+@apidoc[Source.recover](Source) { scala="#recover[T&gt;:Out](pf:PartialFunction[Throwable,T]):FlowOps.this.Repr[T]" java="#recover(scala.PartialFunction)" java="#recover(java.lang.Class,java.util.function.Supplier)" }
+@apidoc[Flow.recover](Flow) { scala="#recover[T&gt;:Out](pf:PartialFunction[Throwable,T]):FlowOps.this.Repr[T]" java="#recover(scala.PartialFunction)" java="#recover(java.lang.Class,java.util.function.Supplier)" }
 
-@@@
 
 ## Description
 

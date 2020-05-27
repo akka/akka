@@ -7,14 +7,14 @@ package akka.remote.serialization
 import java.lang.reflect.Method
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.actor.{ ActorRef, ExtendedActorSystem }
-import akka.remote.WireFormats.ActorRefData
-import akka.serialization.{ BaseSerializer, Serialization }
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
+import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.event.LogMarker
 import akka.event.Logging
+import akka.remote.WireFormats.ActorRefData
+import akka.serialization.{ BaseSerializer, Serialization }
 import akka.serialization.SerializationExtension
 
 object ProtobufSerializer {

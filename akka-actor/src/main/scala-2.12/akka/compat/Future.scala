@@ -4,12 +4,13 @@
 
 package akka.compat
 
-import akka.annotation.InternalApi
-
-import scala.concurrent.{ ExecutionContext, Future => SFuture }
 import scala.collection.immutable
-import akka.util.ccompat._
+import scala.concurrent.{ ExecutionContext, Future => SFuture }
+
 import com.github.ghik.silencer.silent
+
+import akka.annotation.InternalApi
+import akka.util.ccompat._
 
 /**
  * INTERNAL API

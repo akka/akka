@@ -8,7 +8,7 @@ Persistent FSMs are part of Akka persistence, you must add the following depende
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-persistence_$scala.binary_version$"
+  artifact="akka-persistence_$scala.binary.version$"
   version="$akka.version$"
 }
 

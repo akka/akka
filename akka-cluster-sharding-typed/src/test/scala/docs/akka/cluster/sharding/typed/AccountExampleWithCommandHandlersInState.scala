@@ -24,14 +24,12 @@ object AccountExampleWithCommandHandlersInState {
   //#account-entity
   object AccountEntity {
     // Command
-    sealed trait Command[Reply <: CommandReply] extends CborSerializable {
-      def replyTo: ActorRef[Reply]
-    }
-    final case class CreateAccount(replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
-    final case class Deposit(amount: BigDecimal, replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
-    final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
-    final case class GetBalance(replyTo: ActorRef[CurrentBalance]) extends Command[CurrentBalance]
-    final case class CloseAccount(replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
+    sealed trait Command extends CborSerializable
+    final case class CreateAccount(replyTo: ActorRef[OperationResult]) extends Command
+    final case class Deposit(amount: BigDecimal, replyTo: ActorRef[OperationResult]) extends Command
+    final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[OperationResult]) extends Command
+    final case class GetBalance(replyTo: ActorRef[CurrentBalance]) extends Command
+    final case class CloseAccount(replyTo: ActorRef[OperationResult]) extends Command
 
     // Reply
     sealed trait CommandReply extends CborSerializable
@@ -54,11 +52,11 @@ object AccountExampleWithCommandHandlersInState {
 
     // State
     sealed trait Account extends CborSerializable {
-      def applyCommand(cmd: Command[_]): ReplyEffect
+      def applyCommand(cmd: Command): ReplyEffect
       def applyEvent(event: Event): Account
     }
     case object EmptyAccount extends Account {
-      override def applyCommand(cmd: Command[_]): ReplyEffect =
+      override def applyCommand(cmd: Command): ReplyEffect =
         cmd match {
           case CreateAccount(replyTo) =>
             Effect.persist(AccountCreated).thenReply(replyTo)(_ => Confirmed)
@@ -76,7 +74,7 @@ object AccountExampleWithCommandHandlersInState {
     case class OpenedAccount(balance: BigDecimal) extends Account {
       require(balance >= Zero, "Account balance can't be negative")
 
-      override def applyCommand(cmd: Command[_]): ReplyEffect =
+      override def applyCommand(cmd: Command): ReplyEffect =
         cmd match {
           case Deposit(amount, replyTo) =>
             Effect.persist(Deposited(amount)).thenReply(replyTo)(_ => Confirmed)
@@ -115,28 +113,33 @@ object AccountExampleWithCommandHandlersInState {
 
     }
     case object ClosedAccount extends Account {
-      override def applyCommand(cmd: Command[_]): ReplyEffect =
+      override def applyCommand(cmd: Command): ReplyEffect =
         cmd match {
-          case c @ (_: Deposit | _: Withdraw) =>
-            Effect.reply(c.replyTo)(Rejected("Account is closed"))
+          case c: Deposit =>
+            replyClosed(c.replyTo)
+          case c: Withdraw =>
+            replyClosed(c.replyTo)
           case GetBalance(replyTo) =>
             Effect.reply(replyTo)(CurrentBalance(Zero))
           case CloseAccount(replyTo) =>
-            Effect.reply(replyTo)(Rejected("Account is already closed"))
+            replyClosed(replyTo)
           case CreateAccount(replyTo) =>
-            Effect.reply(replyTo)(Rejected("Account is already created"))
+            replyClosed(replyTo)
         }
+
+      private def replyClosed(replyTo: ActorRef[AccountEntity.OperationResult]): ReplyEffect =
+        Effect.reply(replyTo)(Rejected(s"Account is closed"))
 
       override def applyEvent(event: Event): Account =
         throw new IllegalStateException(s"unexpected event [$event] in state [ClosedAccount]")
     }
 
     // when used with sharding, this TypeKey can be used in `sharding.init` and `sharding.entityRefFor`:
-    val TypeKey: EntityTypeKey[Command[_]] =
-      EntityTypeKey[Command[_]]("Account")
+    val TypeKey: EntityTypeKey[Command] =
+      EntityTypeKey[Command]("Account")
 
-    def apply(persistenceId: PersistenceId): Behavior[Command[_]] = {
-      EventSourcedBehavior.withEnforcedReplies[Command[_], Event, Account](
+    def apply(persistenceId: PersistenceId): Behavior[Command] = {
+      EventSourcedBehavior.withEnforcedReplies[Command, Event, Account](
         persistenceId,
         EmptyAccount,
         (state, cmd) => state.applyCommand(cmd),

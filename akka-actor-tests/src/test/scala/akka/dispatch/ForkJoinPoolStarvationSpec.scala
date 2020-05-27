@@ -4,9 +4,10 @@
 
 package akka.dispatch
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Actor, Props }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
-import com.typesafe.config.ConfigFactory
 
 object ForkJoinPoolStarvationSpec {
   val config = ConfigFactory.parseString("""

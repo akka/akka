@@ -16,6 +16,7 @@ import akka.persistence.typed.SnapshotFailed;
 import akka.persistence.typed.SnapshotSelectionCriteria;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.Effect;
+import akka.persistence.typed.javadsl.Recovery;
 import akka.persistence.typed.javadsl.EventHandler;
 // #behavior
 import akka.persistence.typed.javadsl.EventSourcedBehavior;
@@ -344,6 +345,13 @@ public class BasicPersistentBehaviorTest {
       }
       // #recovery
 
+      // #recovery-disabled
+      @Override
+      public Recovery recovery() {
+        return Recovery.disabled();
+      }
+      // #recovery-disabled
+
       // #tagging
       @Override
       public Set<String> tagsFor(Event event) {
@@ -555,8 +563,8 @@ public class BasicPersistentBehaviorTest {
 
     // #snapshotSelection
     @Override
-    public SnapshotSelectionCriteria snapshotSelectionCriteria() {
-      return SnapshotSelectionCriteria.none();
+    public Recovery recovery() {
+      return Recovery.withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none());
     }
     // #snapshotSelection
   }

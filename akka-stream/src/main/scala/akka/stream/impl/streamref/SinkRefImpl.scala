@@ -4,6 +4,10 @@
 
 package akka.stream.impl.streamref
 
+import scala.util.{ Failure, Success, Try }
+
+import com.github.ghik.silencer.silent
+
 import akka.Done
 import akka.NotUsed
 import akka.actor.{ ActorRef, Terminated }
@@ -13,9 +17,6 @@ import akka.stream._
 import akka.stream.scaladsl.Sink
 import akka.stream.stage._
 import akka.util.{ OptionVal, PrettyDuration }
-import com.github.ghik.silencer.silent
-
-import scala.util.{ Failure, Success, Try }
 
 /** INTERNAL API: Implementation class, not intended to be touched directly by end-users */
 @InternalApi

@@ -33,12 +33,12 @@ Add [sbt-native-packager](https://github.com/sbt/sbt-native-packager) in `projec
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.1.5")
 ```
 
-Follow the instructions for the `JavaAppPackaging` in the [sbt-native-packager plugin documentation](http://sbt-native-packager.readthedocs.io/en/latest/archetypes/java_app/index.html).
+Follow the instructions for the `JavaAppPackaging` in the [sbt-native-packager plugin documentation](https://sbt-native-packager.readthedocs.io/en/latest/archetypes/java_app/index.html).
 
 ## Maven: jarjar, onejar or assembly
 
-You can use the [Apache Maven Shade Plugin](http://maven.apache.org/plugins/maven-shade-plugin)
-support for [Resource Transformers](http://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#AppendingTransformer)
+You can use the [Apache Maven Shade Plugin](https://maven.apache.org/plugins/maven-shade-plugin/)
+support for [Resource Transformers](https://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#AppendingTransformer)
 to merge all the reference.confs on the build classpath into one.
 
 The plugin configuration might look like this:
