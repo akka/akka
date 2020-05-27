@@ -7,15 +7,15 @@ package akka.io
 import java.net.{ ConnectException, InetSocketAddress }
 import java.nio.channels.{ SelectionKey, SocketChannel }
 
-import akka.actor.Status.Failure
-
-import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.concurrent.duration._
+import scala.util.control.{ NoStackTrace, NonFatal }
+
 import akka.actor.{ ActorRef, ReceiveTimeout }
+import akka.actor.Status.Failure
 import akka.annotation.InternalApi
-import akka.io.TcpConnection.CloseInformation
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
+import akka.io.TcpConnection.CloseInformation
 import akka.io.dns.DnsProtocol
 
 /**
@@ -35,8 +35,8 @@ private[io] class TcpOutgoingConnection(
       connect.pullMode) {
 
   import TcpOutgoingConnection._
-  import context._
   import connect._
+  import context._
 
   signDeathPact(commander)
 

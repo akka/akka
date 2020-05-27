@@ -5,18 +5,19 @@
 package akka.stream.scaladsl
 
 import java.util.Collections
-
 import javax.net.ssl.{ SNIHostName, SSLContext, SSLEngine, SSLSession }
-import akka.stream.impl.io.{ TlsModule, TlsUtils }
+import javax.net.ssl.SSLParameters
+
+import scala.util.{ Failure, Success, Try }
+
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.TLSProtocol._
+import akka.stream.impl.io.{ TlsModule, TlsUtils }
 import akka.util.ByteString
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import scala.util.{ Failure, Success, Try }
-
-import javax.net.ssl.SSLParameters
 
 /**
  * Stream cipher support based upon JSSE.

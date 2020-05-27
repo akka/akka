@@ -4,8 +4,10 @@
 
 package akka.cluster.sharding
 
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
+
+import com.typesafe.config.Config
 
 import akka.actor.ActorSystem
 import akka.actor.NoSerializationVerificationNeeded
@@ -14,7 +16,6 @@ import akka.cluster.Cluster
 import akka.cluster.singleton.ClusterSingletonManagerSettings
 import akka.coordination.lease.LeaseUsageSettings
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
 
 object ClusterShardingSettings {
 

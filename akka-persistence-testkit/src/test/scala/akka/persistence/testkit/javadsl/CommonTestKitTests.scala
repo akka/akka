@@ -4,13 +4,14 @@
 
 package akka.persistence.testkit.javadsl
 
+import org.scalatest.matchers.should.Matchers._
+
 import akka.actor.Props
+import akka.actor.typed.javadsl.Adapter
 import akka.persistence._
 import akka.persistence.testkit._
 import akka.testkit.EventFilter
-import org.scalatest.matchers.should.Matchers._
 import akka.util.ccompat.JavaConverters._
-import akka.actor.typed.javadsl.Adapter
 
 trait CommonTestKitTests extends JavaDslUtils {
 
@@ -134,7 +135,7 @@ trait CommonTestKitTests extends JavaDslUtils {
 
       expectNextPersisted(pid, B(666))
 
-      returnDefaultPolicy()
+      resetPolicy()
 
     }
 

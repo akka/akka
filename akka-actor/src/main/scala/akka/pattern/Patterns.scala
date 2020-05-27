@@ -7,16 +7,19 @@ package akka.pattern
 import java.util.Optional
 import java.util.concurrent.{ Callable, CompletionStage, TimeUnit }
 
-import akka.actor.{ ActorSelection, Scheduler }
-import akka.util.JavaDurationConverters._
-
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext
+
+import akka.actor.{ ActorSelection, Scheduler }
+import akka.util.JavaDurationConverters._
 
 /**
  * Java API: for Akka patterns such as `ask`, `pipe` and others which work with [[java.util.concurrent.CompletionStage]].
  */
 object Patterns {
+  import scala.concurrent.Future
+  import scala.concurrent.duration._
+
   import akka.actor.ActorRef
   import akka.japi
   import akka.pattern.{
@@ -27,9 +30,6 @@ object Patterns {
     retry => scalaRetry
   }
   import akka.util.Timeout
-
-  import scala.concurrent.Future
-  import scala.concurrent.duration._
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>
@@ -574,12 +574,12 @@ object Patterns {
  */
 @deprecated("Use Patterns instead.", since = "2.5.19")
 object PatternsCS {
+  import scala.concurrent.duration._
+
   import akka.actor.ActorRef
   import akka.japi
   import akka.pattern.{ ask => scalaAsk, gracefulStop => scalaGracefulStop, retry => scalaRetry }
   import akka.util.Timeout
-
-  import scala.concurrent.duration._
 
   /**
    * <i>Java API for `akka.pattern.ask`:</i>

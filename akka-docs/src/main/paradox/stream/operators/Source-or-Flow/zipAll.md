@@ -4,13 +4,11 @@ Combines elements from two sources into @scala[tuples] @java[*Pair*] handling ea
 
 @ref[Fan-in operators](../index.md#fan-in-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #zipAll }
+@apidoc[Source.zipAll](Source) { scala="#zipAll[U,A&gt;:Out](that:akka.stream.Graph[akka.stream.SourceShape[U],_],thisElem:A,thatElem:U):FlowOps.this.Repr[(A,U)]" java="#zipAll(akka.stream.Graph,java.lang.Object,java.lang.Object)" }
+@apidoc[Flow.zipAll](Flow) { scala="#zipAll[U,A&gt;:Out](that:akka.stream.Graph[akka.stream.SourceShape[U],_],thisElem:A,thatElem:U):FlowOps.this.Repr[(A,U)]" java="#zipAll(akka.stream.Graph,java.lang.Object,java.lang.Object)" }
 
-@@@
 
 ## Description
 

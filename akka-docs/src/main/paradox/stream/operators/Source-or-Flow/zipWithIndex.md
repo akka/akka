@@ -4,13 +4,10 @@ Zips elements of current flow with its indices.
 
 @ref[Fan-in operators](../index.md#fan-in-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #zipWithIndex }
-
-@@@
+@apidoc[Source.zipWithIndex](Source) { scala="#zipWithIndex:FlowOps.this.Repr[(Out,Long)]" java="#zipWithIndex()" }
+@apidoc[Flow.zipWithIndex](Flow) { scala="#zipWithIndex:FlowOps.this.Repr[(Out,Long)]" java="#zipWithIndex()" }
 
 ## Description
 

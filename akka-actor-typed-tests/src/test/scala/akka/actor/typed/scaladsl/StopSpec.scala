@@ -4,15 +4,16 @@
 
 package akka.actor.typed.scaladsl
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed
 import akka.actor.typed.Behavior
 import akka.actor.typed.BehaviorInterceptor
 import akka.actor.typed.PostStop
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class StopSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
   import BehaviorInterceptor._

@@ -1,0 +1,7 @@
+# #25040 changes to ActorCell internals
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.setActorFields")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.clearActorCellFields")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.actor_=")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.FaultHandling.akka$actor$dungeon$FaultHandling$$_failed")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.FaultHandling.akka$actor$dungeon$FaultHandling$$_failed_=")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.Reflect.lookupAndSetField")

@@ -5,19 +5,20 @@
 package akka.actor
 
 import java.util
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
-
-import akka.Done
-import akka.testkit.{ AkkaSpec, EventFilter, TestKit, TestProbe }
-import com.typesafe.config.{ Config, ConfigFactory }
-import akka.actor.CoordinatedShutdown.Phase
-import akka.actor.CoordinatedShutdown.UnknownReason
-import akka.util.ccompat.JavaConverters._
 import java.util.concurrent.{ Executors, TimeoutException }
 
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.ConfigurationException
+import akka.Done
+import akka.actor.CoordinatedShutdown.Phase
+import akka.actor.CoordinatedShutdown.UnknownReason
 import akka.dispatch.ExecutionContexts
+import akka.testkit.{ AkkaSpec, EventFilter, TestKit, TestProbe }
+import akka.util.ccompat.JavaConverters._
 
 class CoordinatedShutdownSpec
     extends AkkaSpec(ConfigFactory.parseString("""

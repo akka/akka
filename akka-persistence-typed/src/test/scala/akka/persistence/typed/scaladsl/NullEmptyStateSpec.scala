@@ -4,14 +4,15 @@
 
 package akka.persistence.typed.scaladsl
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object NullEmptyStateSpec {
 
@@ -26,7 +27,7 @@ class NullEmptyStateSpec
     with AnyWordSpecLike
     with LogCapturing {
 
-  implicit val testSettings = TestKitSettings(system)
+  implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
   def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[String] =
     EventSourcedBehavior[String, String, String](

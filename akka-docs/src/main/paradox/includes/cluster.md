@@ -33,6 +33,14 @@ i.e. the sender does not have to know on which node the destination actor is run
 
 <!--- #cluster-pubsub --->
 
+<!--- #cluster-router --->
+### Cluster aware routers
+
+Distribute messages to actors on different nodes in the cluster with routing strategies
+like round-robin and consistent hashing.
+
+<!--- #cluster-router --->
+
 <!--- #cluster-multidc --->
 ### Cluster across multiple data centers
 

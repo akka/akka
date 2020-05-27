@@ -4,16 +4,17 @@
 
 package akka.cluster
 
+import scala.collection.immutable
+import scala.collection.immutable.SortedSet
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorSelection
 import akka.annotation.InternalApi
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.collection.immutable
-import scala.collection.immutable.SortedSet
-import scala.concurrent.duration._
 import akka.util.ccompat._
 
 @ccompatUsedUntil213

@@ -4,9 +4,10 @@
 
 package akka.testkit
 
-import akka.actor._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
+
+import akka.actor._
 
 /**
  * This is a specialized form of the TestActorRef with support for querying and

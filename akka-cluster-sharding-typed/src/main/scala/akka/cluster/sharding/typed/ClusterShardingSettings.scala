@@ -5,6 +5,9 @@
 package akka.cluster.sharding.typed
 
 import scala.concurrent.duration.FiniteDuration
+
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
@@ -13,7 +16,6 @@ import akka.cluster.sharding.{ ClusterShardingSettings => ClassicShardingSetting
 import akka.cluster.singleton.{ ClusterSingletonManagerSettings => ClassicClusterSingletonManagerSettings }
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.ClusterSingletonManagerSettings
-import com.typesafe.config.Config
 import akka.util.JavaDurationConverters._
 
 object ClusterShardingSettings {
@@ -123,9 +125,9 @@ object ClusterShardingSettings {
           s"Not recognized StateStoreMode, only '${StateStoreModePersistence.name}' and '${StateStoreModeDData.name}' are supported.")
   }
 
-  final case object StateStoreModePersistence extends StateStoreMode { override def name = "persistence" }
+  case object StateStoreModePersistence extends StateStoreMode { override def name = "persistence" }
 
-  final case object StateStoreModeDData extends StateStoreMode { override def name = "ddata" }
+  case object StateStoreModeDData extends StateStoreMode { override def name = "ddata" }
 
   /**
    * Java API
@@ -175,7 +177,7 @@ object ClusterShardingSettings {
       val coordinatorStateWriteMajorityPlus: Int,
       val coordinatorStateReadMajorityPlus: Int) {
 
-    def this(classic: ClassicShardingSettings.TuningParameters) {
+    def this(classic: ClassicShardingSettings.TuningParameters) =
       this(
         bufferSize = classic.bufferSize,
         coordinatorFailureBackoff = classic.coordinatorFailureBackoff,
@@ -196,8 +198,6 @@ object ClusterShardingSettings {
         entityRecoveryConstantRateStrategyNumberOfEntities = classic.entityRecoveryConstantRateStrategyNumberOfEntities,
         coordinatorStateWriteMajorityPlus = classic.coordinatorStateWriteMajorityPlus,
         coordinatorStateReadMajorityPlus = classic.coordinatorStateReadMajorityPlus)
-
-    }
 
     require(
       entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",

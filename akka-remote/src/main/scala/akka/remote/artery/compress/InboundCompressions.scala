@@ -7,13 +7,15 @@ package akka.remote.artery.compress
 import java.util.function.LongFunction
 
 import scala.annotation.tailrec
+
+import org.agrona.collections.Long2ObjectHashMap
+
 import akka.actor.{ ActorRef, ActorSystem, Address, InternalActorRef }
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.pattern.PromiseActorRef
 import akka.remote.artery._
 import akka.util.{ unused, OptionVal }
-import org.agrona.collections.Long2ObjectHashMap
 
 /**
  * INTERNAL API

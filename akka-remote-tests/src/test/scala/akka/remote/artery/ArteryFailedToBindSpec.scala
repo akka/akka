@@ -4,14 +4,15 @@
 
 package akka.remote.artery
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.ActorSystem
 import akka.remote.RARP
 import akka.remote.RemoteTransportException
 import akka.testkit.SocketUtil
 import akka.testkit.TestKit
-import com.typesafe.config.ConfigFactory
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class ArteryFailedToBindSpec extends AnyWordSpec with Matchers {
 

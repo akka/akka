@@ -3,7 +3,7 @@ project.description: Akka dispatchers and how to choose the right ones.
 ---
 # Dispatchers
 
-For the Akka Classic documentation of this feature see @ref:[Classic Dispatchers](../dispatchers.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Dispatchers](../dispatchers.md).
 
 ## Dependency
 
@@ -12,7 +12,7 @@ page describes how to use dispatchers with `akka-actor-typed`, which has depende
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-actor-typed_$scala.binary_version$"
+  artifact="akka-actor-typed_$scala.binary.version$"
   version="$akka.version$"
 }
 

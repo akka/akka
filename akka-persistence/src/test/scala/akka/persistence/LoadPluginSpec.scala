@@ -4,10 +4,11 @@
 
 package akka.persistence
 
-import akka.persistence.journal.inmem.InmemJournal
 import com.typesafe.config.Config
-import akka.testkit.ImplicitSender
+
 import akka.actor.Actor
+import akka.persistence.journal.inmem.InmemJournal
+import akka.testkit.ImplicitSender
 import akka.util.unused
 
 object LoadPluginSpec {

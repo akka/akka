@@ -17,8 +17,8 @@ private[akka] object ReceiveTimeout {
 
 private[akka] trait ReceiveTimeout { this: ActorCell =>
 
-  import ReceiveTimeout._
   import ActorCell._
+  import ReceiveTimeout._
 
   private var receiveTimeoutData: (Duration, Cancellable) = emptyReceiveTimeoutData
 

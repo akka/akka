@@ -7,9 +7,9 @@ package akka.persistence.testkit.javadsl
 import java.util
 
 import akka.actor.typed.ActorRef
-import akka.persistence.typed.javadsl.{ CommandHandler, EventHandler, EventSourcedBehavior, SignalHandler }
 import akka.persistence.testkit.{ Cmd, CommonUtils, EmptyState, Evt, Passivate, Recovered, Stopped, TestCommand }
 import akka.persistence.typed.{ PersistenceId, RecoveryCompleted }
+import akka.persistence.typed.javadsl.{ CommandHandler, EventHandler, EventSourcedBehavior, SignalHandler }
 
 trait JavaDslUtils extends CommonUtils {
 

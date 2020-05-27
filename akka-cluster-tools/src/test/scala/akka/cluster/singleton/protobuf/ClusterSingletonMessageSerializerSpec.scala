@@ -5,11 +5,11 @@
 package akka.cluster.singleton.protobuf
 
 import akka.actor.ExtendedActorSystem
-import akka.testkit.AkkaSpec
 import akka.cluster.singleton.ClusterSingletonManager.Internal.HandOverDone
 import akka.cluster.singleton.ClusterSingletonManager.Internal.HandOverInProgress
 import akka.cluster.singleton.ClusterSingletonManager.Internal.HandOverToMe
 import akka.cluster.singleton.ClusterSingletonManager.Internal.TakeOverFromMe
+import akka.testkit.AkkaSpec
 
 class ClusterSingletonMessageSerializerSpec extends AkkaSpec {
 

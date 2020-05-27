@@ -4,6 +4,8 @@
 
 package akka.persistence.query.journal.leveldb
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
@@ -25,8 +27,6 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogicWithLogging
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API

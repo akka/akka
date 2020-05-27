@@ -7,9 +7,16 @@ package akka.io
 import java.io.IOException
 import java.net.{ InetSocketAddress, SocketException }
 import java.nio.ByteBuffer
-import java.nio.channels.SelectionKey._
 import java.nio.channels.{ FileChannel, SocketChannel }
+import java.nio.channels.SelectionKey._
 import java.nio.file.{ Path, Paths }
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.util.control.{ NoStackTrace, NonFatal }
+
+import com.github.ghik.silencer.silent
 
 import akka.actor._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
@@ -17,12 +24,6 @@ import akka.io.Inet.SocketOption
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
-
-import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
  * Base class for TcpIncomingConnection and TcpOutgoingConnection.

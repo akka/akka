@@ -7,26 +7,26 @@ package akka.stream.impl.fusing
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.NotUsed
-import akka.annotation.InternalApi
-import akka.stream.ActorAttributes.StreamSubscriptionTimeout
-import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream._
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.fusing.GraphStages.SingleSource
-import akka.stream.impl.ActorSubscriberMessage
-import akka.stream.impl.SubscriptionTimeoutException
-import akka.stream.impl.TraversalBuilder
-import akka.stream.impl.{ Buffer => BufferImpl }
-import akka.stream.scaladsl._
-import akka.stream.stage._
-import akka.util.OptionVal
-import akka.util.ccompat.JavaConverters._
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
+
+import akka.NotUsed
+import akka.annotation.InternalApi
+import akka.stream._
+import akka.stream.ActorAttributes.StreamSubscriptionTimeout
+import akka.stream.ActorAttributes.SupervisionStrategy
+import akka.stream.impl.{ Buffer => BufferImpl }
+import akka.stream.impl.ActorSubscriberMessage
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.SubscriptionTimeoutException
+import akka.stream.impl.TraversalBuilder
+import akka.stream.impl.fusing.GraphStages.SingleSource
+import akka.stream.scaladsl._
+import akka.stream.stage._
+import akka.util.OptionVal
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API
@@ -221,7 +221,7 @@ import scala.util.control.NonFatal
     override def onUpstreamFinish(): Unit = {
       if (!prefixComplete) {
         // This handles the unpulled out case as well
-        emit(out, (builder.result, Source.empty), () => completeStage())
+        emit(out, (builder.result(), Source.empty), () => completeStage())
       } else {
         if (!tailSource.isClosed) tailSource.complete()
         completeStage()
@@ -413,7 +413,7 @@ import scala.util.control.NonFatal
 
         override def onPull(): Unit = {
           cancelTimer(key)
-          if (firstPush) {
+          if (firstPush()) {
             firstPushCounter -= 1
             push(firstElement)
             firstElement = null.asInstanceOf[T]

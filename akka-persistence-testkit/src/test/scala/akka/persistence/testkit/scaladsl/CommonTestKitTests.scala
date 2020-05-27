@@ -4,12 +4,13 @@
 
 package akka.persistence.testkit.scaladsl
 
-import akka.actor.Props
-import akka.persistence.{ DeleteMessagesFailure, DeleteMessagesSuccess }
-import akka.testkit.EventFilter
-import akka.persistence.testkit._
 import org.scalatest.matchers.should.Matchers._
+
+import akka.actor.Props
 import akka.actor.typed.scaladsl.adapter._
+import akka.persistence.{ DeleteMessagesFailure, DeleteMessagesSuccess }
+import akka.persistence.testkit._
+import akka.testkit.EventFilter
 
 trait CommonTestKitTests extends ScalaDslUtils {
 
@@ -150,7 +151,7 @@ trait CommonTestKitTests extends ScalaDslUtils {
       aa ! B(666)
 
       expectNextPersisted(pid, B(666))
-      returnDefaultPolicy()
+      resetPolicy()
 
     }
 

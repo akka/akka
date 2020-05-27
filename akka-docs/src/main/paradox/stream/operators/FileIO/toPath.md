@@ -4,13 +4,10 @@ Create a sink which will write incoming `ByteString` s to a given file path.
 
 @ref[File IO Sinks and Sources](../index.md#file-io-sinks-and-sources)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [FileIO.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/FileIO.scala) { #toPath }
+@apidoc[FileIO.toPath](FileIO$) { scala="#toPath(f:java.nio.file.Path,options:Set[java.nio.file.OpenOption],startPosition:Long):akka.stream.scaladsl.Sink[akka.util.ByteString,scala.concurrent.Future[akka.stream.IOResult]]" java="#toPath(java.nio.file.Path,java.util.Set,long)" }
 
-@@@
 
 ## Description
 

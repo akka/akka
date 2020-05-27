@@ -4,13 +4,10 @@ Streams the elements through the given future flow once it successfully complete
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #futureFlow }
+@apidoc[Flow.completionStageFlow](Flow$) { java="#completionStageFlow(java.util.concurrent.CompletionStage)" }
 
-@@@
 
 ## Description
 

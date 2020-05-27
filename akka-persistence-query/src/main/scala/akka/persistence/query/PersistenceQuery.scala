@@ -4,14 +4,15 @@
 
 package akka.persistence.query
 
-import akka.actor._
-import akka.annotation.InternalApi
-import akka.persistence.query.scaladsl.ReadJournal
-import akka.persistence.{ PersistencePlugin, PluginProvider }
-import akka.util.unused
+import scala.reflect.ClassTag
+
 import com.typesafe.config.{ Config, ConfigFactory }
 
-import scala.reflect.ClassTag
+import akka.actor._
+import akka.annotation.InternalApi
+import akka.persistence.{ PersistencePlugin, PluginProvider }
+import akka.persistence.query.scaladsl.ReadJournal
+import akka.util.unused
 
 /**
  * Persistence extension for queries.

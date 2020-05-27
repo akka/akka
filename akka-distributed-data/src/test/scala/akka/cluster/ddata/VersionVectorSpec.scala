@@ -4,13 +4,14 @@
 
 package akka.cluster.ddata
 
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.cluster.UniqueAddress
 import akka.testkit.TestKit
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class VersionVectorSpec
     extends TestKit(ActorSystem("VersionVectorSpec"))

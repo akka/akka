@@ -7,6 +7,9 @@ package akka.cluster.typed
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -15,8 +18,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.jackson.CborSerializable
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object ClusterSingletonApiSpec {
 
@@ -54,7 +55,7 @@ class ClusterSingletonApiSpec
     with LogCapturing {
   import ClusterSingletonApiSpec._
 
-  implicit val testSettings = TestKitSettings(system)
+  implicit val testSettings: TestKitSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)
   val classicSystem1 = system.toClassic
 

@@ -79,10 +79,8 @@ class AccountExampleSpec
     }
 
     "reject Withdraw overdraft" in {
-      // AccountCommand[_] is the command type, but it should also be possible to narrow it to
-      // AccountCommand[OperationResult]
       val probe = createTestProbe[OperationResult]()
-      val ref = ClusterSharding(system).entityRefFor[Command[OperationResult]](AccountEntity.TypeKey, "3")
+      val ref = ClusterSharding(system).entityRefFor[Command](AccountEntity.TypeKey, "3")
       ref ! CreateAccount(probe.ref)
       probe.expectMessage(Confirmed)
       ref ! Deposit(100, probe.ref)
@@ -90,10 +88,12 @@ class AccountExampleSpec
       ref ! Withdraw(110, probe.ref)
       probe.expectMessageType[Rejected]
 
+      // Account.Command is the command type, but it should also be possible to narrow it
       // ... thus restricting the entity ref from being sent other commands, e.g.:
+      // val ref2 = ClusterSharding(system).entityRefFor[Deposit](AccountEntity.TypeKey, "3")
       // val probe2 = createTestProbe[CurrentBalance]()
       // val msg = GetBalance(probe2.ref)
-      // ref ! msg // type mismatch: GetBalance NOT =:= AccountCommand[OperationResult]
+      // ref2 ! msg // type mismatch: GetBalance NOT =:= Deposit
     }
 
     "handle GetBalance" in {

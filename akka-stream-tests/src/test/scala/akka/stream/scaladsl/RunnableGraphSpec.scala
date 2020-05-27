@@ -28,7 +28,7 @@ class RunnableGraphSpec extends StreamSpec {
     }
 
     "allow conversion from java to scala" in {
-      val runnable: RunnableGraph[NotUsed] = javadsl.Source.empty.to(javadsl.Sink.ignore).asScala
+      val runnable: RunnableGraph[NotUsed] = javadsl.Source.empty().to(javadsl.Sink.ignore()).asScala
       runnable.run() shouldBe NotUsed
     }
 

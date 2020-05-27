@@ -109,6 +109,21 @@ package docs.serialization {
    */
   trait JsonSerializable
 
+  object SerializerIdConfig {
+    val config =
+      """
+        #//#serialization-identifiers-config
+        akka {
+          actor {
+            serialization-identifiers {
+              "docs.serialization.MyOwnSerializer" = 1234567
+            }
+          }
+        }
+        #//#serialization-identifiers-config
+        """
+  }
+
   class SerializationDocSpec extends AkkaSpec {
     "demonstrate configuration of serialize messages" in {
       val config = ConfigFactory.parseString("""

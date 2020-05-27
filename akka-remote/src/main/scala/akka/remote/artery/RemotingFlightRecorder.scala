@@ -6,6 +6,9 @@ package akka.remote.artery
 
 import java.net.InetSocketAddress
 
+import scala.util.Failure
+import scala.util.Success
+
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
@@ -14,9 +17,6 @@ import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalApi
 import akka.remote.UniqueAddress
 import akka.util.JavaVersion
-
-import scala.util.Failure
-import scala.util.Success
 
 /**
  * INTERNAL API

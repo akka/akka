@@ -4,16 +4,18 @@
 
 package akka.pattern
 
+import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.TimeoutException
+
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.Status.Failure
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-import java.util.concurrent.TimeoutException
 
 object CircuitBreakerStressSpec {
   case object JobDone

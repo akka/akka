@@ -6,6 +6,12 @@ package akka.remote.artery
 
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.NotUsed
 import akka.actor.ActorIdentity
 import akka.actor.ActorSystem
@@ -26,11 +32,6 @@ import akka.testkit.TestActors
 import akka.testkit.TestEvent
 import akka.testkit.TestProbe
 import akka.util.OptionVal
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 object SystemMessageDeliverySpec {
 

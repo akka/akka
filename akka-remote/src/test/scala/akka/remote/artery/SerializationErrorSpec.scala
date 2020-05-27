@@ -5,9 +5,9 @@
 package akka.remote.artery
 
 import akka.actor.{ ActorIdentity, Identify, RootActorPath }
+import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
-import akka.testkit.EventFilter
 
 object SerializationErrorSpec {
 

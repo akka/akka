@@ -6,6 +6,7 @@ package akka.cluster.sharding
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
 import akka.Done
 import akka.actor.ActorSystem
 import akka.actor.CoordinatedShutdown

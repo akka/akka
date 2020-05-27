@@ -4,8 +4,8 @@
 
 package akka.actor.typed.internal
 
-import akka.actor.typed.ActorTags
 import akka.actor.typed.{ DispatcherSelector, MailboxSelector, Props }
+import akka.actor.typed.ActorTags
 import akka.annotation.InternalApi
 
 /**

@@ -4,21 +4,22 @@
 
 package akka.testkit
 
-import java.util.concurrent.ThreadFactory
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicLong
 
 import scala.annotation.tailrec
-import akka.util.ccompat.JavaConverters._
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.Try
+
+import com.typesafe.config.Config
+
 import akka.actor.Cancellable
 import akka.actor.Scheduler
 import akka.event.LoggingAdapter
+import akka.util.ccompat.JavaConverters._
 import akka.util.unused
-import com.typesafe.config.Config
 
 /**
  * For testing: scheduler that does not look at the clock, but must be

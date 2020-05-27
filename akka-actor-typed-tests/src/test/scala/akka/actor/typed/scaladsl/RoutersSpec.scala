@@ -5,15 +5,20 @@
 package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.testkit.typed.scaladsl.{ LogCapturing, LoggingTestKit, ScalaTestWithActorTestKit, TestProbe }
-import akka.actor.typed.eventstream.EventStream
-import akka.actor.typed.internal.routing.{ GroupRouterImpl, RoutingLogics }
-import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.{ ActorRef, Behavior }
-import akka.actor.{ ActorSystem, Dropped }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.ActorSystem
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
+import akka.actor.typed.internal.routing.GroupRouterImpl
+import akka.actor.typed.internal.routing.RoutingLogics
+import akka.actor.typed.receptionist.Receptionist
+import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.typed.scaladsl.adapter._
 
 class RoutersSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel=debug
@@ -144,13 +149,12 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
     "publish Dropped messages when there are no routees available" in {
       val serviceKey = ServiceKey[String]("group-routing-2")
       val group = spawn(Routers.group(serviceKey), "group-router-2")
-      val probe = TestProbe[Dropped]()
-      system.eventStream ! EventStream.Subscribe(probe.ref)
+      val probe = createDroppedMessageProbe()
 
       (0 to 3).foreach { n =>
         val msg = s"message-$n"
         group ! msg
-        probe.expectMessageType[Dropped]
+        probe.receiveMessage()
       }
 
       testKit.stop(group)
@@ -207,8 +211,8 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       val router = spawn(Behaviors.setup[String](context =>
         new GroupRouterImpl(context, serviceKey, false, new RoutingLogics.RoundRobinLogic[String], true)))
 
-      val reachableProbe = createTestProbe[String]
-      val unreachableProbe = createTestProbe[String]
+      val reachableProbe = createTestProbe[String]()
+      val unreachableProbe = createTestProbe[String]()
       router
         .unsafeUpcast[Any] ! Receptionist.Listing(serviceKey, Set(reachableProbe.ref), Set(unreachableProbe.ref), false)
       router ! "one"
@@ -222,7 +226,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       val router = spawn(Behaviors.setup[String](context =>
         new GroupRouterImpl(context, serviceKey, false, new RoutingLogics.RoundRobinLogic[String], true)))
 
-      val unreachableProbe = createTestProbe[String]
+      val unreachableProbe = createTestProbe[String]()
       router.unsafeUpcast[Any] ! Receptionist.Listing(
         serviceKey,
         Set.empty[ActorRef[String]],

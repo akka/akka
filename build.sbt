@@ -1,4 +1,4 @@
-import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ParadoxSupport, ScalafixIgnoreFilePlugin }
+import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
 
 enablePlugins(
   UnidocRoot,
@@ -11,10 +11,15 @@ enablePlugins(
 disablePlugins(MimaPlugin)
 addCommandAlias(
   name = "fixall",
-  value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile;reload")
+  value =
+    ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;scalafmtAll;test:compile;multi-jvm:compile;reload")
+
+addCommandAlias(
+  name = "sortImports",
+  value = ";scalafixEnable;compile:scalafix SortImports;test:scalafix SortImports;scalafmtAll")
 
 import akka.AkkaBuild._
-import akka.{ AkkaBuild, Dependencies, GitHub, OSGi, Protobuf, SigarLoader, VersionGenerator }
+import akka.{ AkkaBuild, Dependencies, OSGi, Protobuf, SigarLoader, VersionGenerator }
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.tools.mima.plugin.MimaPlugin
 import sbt.Keys.{ initialCommands, parallelExecution }
@@ -63,6 +68,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   persistenceTestkit,
   protobuf,
   protobufV3,
+  pki,
   remote,
   remoteTests,
   slf4j,
@@ -75,6 +81,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
 
 lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
+  .enablePlugins(PublishRsyncPlugin)
   .settings(rootSettings: _*)
   .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, protobufV3, akkaScalaNightly, docs))
   .settings(unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get)
@@ -112,7 +119,12 @@ lazy val benchJmh = akkaModule("akka-bench-jmh")
   .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
 
 lazy val cluster = akkaModule("akka-cluster")
-  .dependsOn(remote, remoteTests % "test->test", testkit % "test->test", jackson % "test->test")
+  .dependsOn(
+    remote,
+    coordination % "compile->compile;test->test",
+    remoteTests % "test->test",
+    testkit % "test->test",
+    jackson % "test->test")
   .settings(Dependencies.cluster)
   .settings(AutomaticModuleName.settings("akka.cluster"))
   .settings(OSGi.cluster)
@@ -154,7 +166,10 @@ lazy val clusterSharding = akkaModule("akka-cluster-sharding")
   .enablePlugins(MultiNode, ScaladocNoVerificationOfDiagrams)
 
 lazy val clusterTools = akkaModule("akka-cluster-tools")
-  .dependsOn(cluster % "compile->compile;test->test;multi-jvm->multi-jvm", coordination, jackson % "test->test")
+  .dependsOn(
+    cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
+    coordination % "compile->compile;test->test",
+    jackson % "test->test")
   .settings(Dependencies.clusterTools)
   .settings(AutomaticModuleName.settings("akka.cluster.tools"))
   .settings(OSGi.clusterTools)
@@ -199,10 +214,10 @@ lazy val docs = akkaModule("akka-docs")
     persistenceTestkit % "compile->compile;test->test")
   .settings(Dependencies.docs)
   .settings(Paradox.settings)
-  .settings(ParadoxSupport.paradoxWithCustomDirectives)
+  .settings(javacOptions += "-parameters") // for Jackson
   .enablePlugins(
     AkkaParadoxPlugin,
-    DeployRsync,
+    PublishRsyncPlugin,
     NoPublish,
     ParadoxBrowse,
     ScaladocNoVerificationOfDiagrams,
@@ -274,6 +289,7 @@ lazy val persistenceTestkit = akkaModule("akka-persistence-testkit")
   .dependsOn(
     persistenceTyped % "compile->compile;provided->provided;test->test",
     testkit % "compile->compile;test->test",
+    actorTestkitTyped,
     persistenceTck % "test")
   .settings(Dependencies.persistenceTestKit)
   .settings(AutomaticModuleName.settings("akka.persistence.testkit"))
@@ -290,11 +306,11 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
   .settings(
-    libraryDependencies += Dependencies.Compile.protobufRuntime,
+    libraryDependencies += Dependencies.Compile.Provided.protobufRuntime,
     assemblyShadeRules in assembly := Seq(
         ShadeRule
           .rename("com.google.protobuf.**" -> "akka.protobufv3.internal.@1")
-          .inLibrary(Dependencies.Compile.protobufRuntime)),
+          .inLibrary(Dependencies.Compile.Provided.protobufRuntime)),
     assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, includeBin = false),
     autoScalaLibrary := false, // do not include scala dependency in pom
     exportJars := true, // in dependent projects, use assembled and shaded jar
@@ -306,6 +322,14 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
     fullClasspath in assembly := (managedClasspath in Runtime).value, // otherwise, there's a cyclic dependency between packageBin and assembly
     test in assembly := {}, // assembly runs tests for unknown reason which introduces another cyclic dependency to packageBin via exportedJars
     description := "Akka Protobuf V3 is a shaded version of the protobuf runtime. Original POM: https://github.com/protocolbuffers/protobuf/blob/v3.9.0/java/pom.xml")
+
+lazy val pki =
+  akkaModule("akka-pki")
+    .dependsOn(actor) // this dependency only exists for "@ApiMayChange"
+    .settings(Dependencies.pki)
+    .settings(AutomaticModuleName.settings("akka.pki"))
+    // The akka-pki artifact was added in Akka 2.6.2, no MiMa checks yet.
+    .disablePlugins(MimaPlugin)
 
 lazy val remote =
   akkaModule("akka-remote")
@@ -443,8 +467,10 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     persistenceTyped % "test->test",
+    persistenceTestkit % "test->test",
     remote % "compile->CompileJdk9;test->test",
     remoteTests % "test->test",
+    remoteTests % "test->test;multi-jvm->multi-jvm",
     jackson % "test->test")
   .settings(javacOptions += "-parameters") // for Jackson
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
@@ -482,7 +508,7 @@ lazy val discovery = akkaModule("akka-discovery")
   .settings(OSGi.discovery)
 
 lazy val coordination = akkaModule("akka-coordination")
-  .dependsOn(actor, testkit % "test->test", actorTests % "test->test", cluster % "test->test")
+  .dependsOn(actor, testkit % "test->test", actorTests % "test->test")
   .settings(Dependencies.coordination)
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)

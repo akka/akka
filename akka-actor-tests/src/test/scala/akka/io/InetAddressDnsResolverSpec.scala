@@ -7,9 +7,10 @@ package akka.io
 import java.security.Security
 import java.util.concurrent.TimeUnit
 
+import com.github.ghik.silencer.silent
+
 import akka.actor.Props
 import akka.testkit.{ AkkaSpec, TestActorRef }
-import com.github.ghik.silencer.silent
 
 @silent
 class InetAddressDnsResolverSpec extends AkkaSpec("""

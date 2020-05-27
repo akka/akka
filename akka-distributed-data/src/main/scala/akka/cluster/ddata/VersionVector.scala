@@ -5,11 +5,13 @@
 package akka.cluster.ddata
 
 import java.util.concurrent.atomic.AtomicLong
+
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeMap
+
+import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
-import akka.annotation.InternalApi
 
 /**
  * VersionVector module with helper classes and methods.

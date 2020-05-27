@@ -7,15 +7,16 @@ package akka.cluster.ddata
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import akka.pattern.ask
+import com.typesafe.config.ConfigFactory
+
 import akka.cluster.Cluster
+import akka.pattern.ask
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
 import akka.util.Timeout
-import com.typesafe.config.ConfigFactory
 
 object ReplicatorSpec extends MultiNodeConfig {
   val first = role("first")
@@ -38,13 +39,13 @@ class ReplicatorSpecMultiJvmNode2 extends ReplicatorSpec
 class ReplicatorSpecMultiJvmNode3 extends ReplicatorSpec
 
 class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec with ImplicitSender {
-  import ReplicatorSpec._
   import Replicator._
+  import ReplicatorSpec._
 
   override def initialParticipants = roles.size
 
   val cluster = Cluster(system)
-  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
+  implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
   val replicator = system.actorOf(
     Replicator.props(ReplicatorSettings(system).withGossipInterval(1.second).withMaxDeltaElements(10)),
     "replicator")

@@ -6,13 +6,14 @@ package akka.cluster
 
 import java.util
 
+import scala.collection.{ immutable => im }
+
+import com.typesafe.config.{ Config, ConfigFactory, ConfigValue }
+
 import akka.actor.ExtendedActorSystem
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.util.ccompat._
-import com.typesafe.config.{ Config, ConfigFactory, ConfigValue }
-
 import akka.util.ccompat.JavaConverters._
-import scala.collection.{ immutable => im }
 
 abstract class JoinConfigCompatChecker {
 

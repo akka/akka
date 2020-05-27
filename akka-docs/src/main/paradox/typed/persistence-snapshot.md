@@ -3,7 +3,7 @@ project.description: Append only event logs, snapshots and recovery with Akka ev
 ---
 # Snapshotting
 
-For the Akka Classic documentation of this feature see @ref:[Classic Akka Persistence](../persistence.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Akka Persistence](../persistence.md).
 
 ## Snapshots
 

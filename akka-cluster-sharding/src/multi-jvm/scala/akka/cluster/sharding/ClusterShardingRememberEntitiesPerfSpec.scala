@@ -6,13 +6,14 @@ package akka.cluster.sharding
 
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.cluster.MemberStatus
 import akka.testkit._
 import akka.util.ccompat._
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 @ccompatUsedUntil213
 object ClusterShardingRememberEntitiesPerfSpec {

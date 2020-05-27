@@ -1,6 +1,6 @@
 # Interaction Patterns
 
-For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Actors](../actors.md).
 
 ## Dependency
 
@@ -8,7 +8,7 @@ To use Akka Actor Typed, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-actor-typed_$scala.binary_version$
+  artifact=akka-actor-typed_$scala.binary.version$
   version=$akka.version$
 }
 
@@ -192,7 +192,10 @@ The response adapting function is running in the receiving actor and can safely 
 
 Sometimes you need to interact with actors from the outside of the actor system, this can be done with fire-and-forget as described above or through another version of `ask` that returns a @scala[`Future[Response]`]@java[`CompletionStage<Response>`] that is either completed with a successful response or failed with a `TimeoutException` if there was no response within the specified timeout.
  
-To do this we use @scala[`ActorRef.ask` (or the symbolic `ActorRef.?`) implicitly provided by `akka.actor.typed.scaladsl.AskPattern`]@java[`akka.actor.typed.javadsl.AskPattern.ask`] to send a message to an actor and get a @scala[`Future[Response]`]@java[`CompletionState[Response]`] back.
+@scala[To do this we use `ask` (or the symbolic `?`) implicitly added to `ActorRef` by `akka.actor.typed.scaladsl.AskPattern._`
+to send a message to an actor and get a `Future[Response]` back. `ask` takes implicit `Timeout` and `ActorSystem` parameters.]
+@java[To do this we use `akka.actor.typed.javadsl.AskPattern.ask` to send a message to an actor and get a 
+`CompletionState[Response]` back.]
 
 **Example:**
 
@@ -246,6 +249,7 @@ Java
 **Problems:**
 
 The returned `ActorRef` ignores all messages sent to it, therefore it should be used carefully.
+ 
  * Passing it around inadvertently as if it was a normal `ActorRef` may result in broken actor-to-actor interactions.
  * Using it when performing an `ask` from outside the Actor System will cause the @scala[`Future`]@java[`CompletionStage`] returned by the `ask` to timeout since it will never complete.
  * Finally, it's legal to `watch` it, but since it's of a special kind, it never terminates and therefore you will never receive a `Terminated` signal from it.

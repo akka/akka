@@ -35,9 +35,9 @@ public interface AccountExampleWithMutableState {
         EntityTypeKey.create(Command.class, "Account");
 
     // Command
-    interface Command<Reply> extends CborSerializable {}
+    interface Command extends CborSerializable {}
 
-    public static class CreateAccount implements Command<OperationResult> {
+    public static class CreateAccount implements Command {
       public final ActorRef<OperationResult> replyTo;
 
       @JsonCreator
@@ -46,7 +46,7 @@ public interface AccountExampleWithMutableState {
       }
     }
 
-    public static class Deposit implements Command<OperationResult> {
+    public static class Deposit implements Command {
       public final BigDecimal amount;
       public final ActorRef<OperationResult> replyTo;
 
@@ -56,7 +56,7 @@ public interface AccountExampleWithMutableState {
       }
     }
 
-    public static class Withdraw implements Command<OperationResult> {
+    public static class Withdraw implements Command {
       public final BigDecimal amount;
       public final ActorRef<OperationResult> replyTo;
 
@@ -66,7 +66,7 @@ public interface AccountExampleWithMutableState {
       }
     }
 
-    public static class GetBalance implements Command<CurrentBalance> {
+    public static class GetBalance implements Command {
       public final ActorRef<CurrentBalance> replyTo;
 
       @JsonCreator
@@ -75,7 +75,7 @@ public interface AccountExampleWithMutableState {
       }
     }
 
-    public static class CloseAccount implements Command<OperationResult> {
+    public static class CloseAccount implements Command {
       public final ActorRef<OperationResult> replyTo;
 
       @JsonCreator

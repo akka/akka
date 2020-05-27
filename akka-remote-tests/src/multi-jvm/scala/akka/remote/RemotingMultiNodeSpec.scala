@@ -4,11 +4,12 @@
 
 package akka.remote
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.Suite
+
 import akka.remote.artery.ArterySpecSupport
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit.{ DefaultTimeout, ImplicitSender }
-import com.typesafe.config.ConfigFactory
-import org.scalatest.Suite
 
 object RemotingMultiNodeSpec {
 

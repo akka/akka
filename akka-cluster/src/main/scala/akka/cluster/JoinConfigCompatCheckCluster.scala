@@ -4,10 +4,11 @@
 
 package akka.cluster
 
-import akka.annotation.InternalApi
+import scala.collection.{ immutable => im }
+
 import com.typesafe.config.Config
 
-import scala.collection.{ immutable => im }
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

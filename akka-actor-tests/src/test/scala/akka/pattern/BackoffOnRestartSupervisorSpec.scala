@@ -6,15 +6,15 @@ package akka.pattern
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
-import akka.pattern.TestActor.NormalException
-import akka.testkit.{ filterException, AkkaSpec, ImplicitSender, TestProbe }
-
 import scala.concurrent.duration._
-import akka.actor._
-import akka.testkit.WithLogCapturing
+import scala.language.postfixOps
+
 import com.github.ghik.silencer.silent
 
-import scala.language.postfixOps
+import akka.actor._
+import akka.pattern.TestActor.NormalException
+import akka.testkit.{ filterException, AkkaSpec, ImplicitSender, TestProbe }
+import akka.testkit.WithLogCapturing
 
 object TestActor {
 
@@ -119,7 +119,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec("""
         val supervisorChildSelection = system.actorSelection(supervisor.path / "*")
         supervisorChildSelection.tell("testmsg", probe.ref)
         probe.expectMsg("testmsg")
-        probe.expectNoMessage
+        probe.expectNoMessage()
       }
     }
 

@@ -18,11 +18,13 @@ import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 
+import com.github.ghik.silencer.silent
+
 import akka.Done
 import akka.NotUsed
+import akka.actor._
 import akka.actor.Actor
 import akka.actor.Props
-import akka.actor._
 import akka.annotation.InternalStableApi
 import akka.dispatch.Dispatchers
 import akka.event.Logging
@@ -37,8 +39,8 @@ import akka.remote.artery.Encoder.OutboundCompressionAccess
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
-import akka.remote.artery.compress.CompressionProtocol.CompressionMessage
 import akka.remote.artery.compress._
+import akka.remote.artery.compress.CompressionProtocol.CompressionMessage
 import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
 import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
 import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
@@ -49,7 +51,6 @@ import akka.stream.scaladsl.Sink
 import akka.util.OptionVal
 import akka.util.WildcardIndex
 import akka.util.unused
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -471,7 +472,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         bindAddress.uid)
     else {
       log.info(
-        s"Remoting started with transport [Artery ${settings.Transport}]; listening on address [{}] and bound to [{}] with UID [{}]",
+        "Remoting started with transport [Artery {}]; listening on address [{}] and bound to [{}] with UID [{}]",
+        settings.Transport,
         localAddress.address,
         bindAddress.address,
         localAddress.uid)

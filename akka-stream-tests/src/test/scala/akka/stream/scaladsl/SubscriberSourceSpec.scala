@@ -4,10 +4,10 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.StreamSpec
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.stream.testkit.StreamSpec
 
 class SubscriberSourceSpec extends StreamSpec {
 

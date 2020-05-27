@@ -8,19 +8,15 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
+import com.github.ghik.silencer.silent
 import akka.actor._
 import akka.actor.DeadLetterSuppression
 import akka.annotation.InternalApi
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent._
-import akka.cluster.ddata.LWWRegister
-import akka.cluster.ddata.LWWRegisterKey
-import akka.cluster.ddata.Replicator._
-import akka.dispatch.ExecutionContexts
-import akka.pattern.{ pipe, AskTimeoutException }
-import akka.persistence._
 import akka.cluster.ClusterEvent
-import akka.cluster.ddata.SelfUniqueAddress
+import akka.cluster.ClusterEvent.{ ClusterShuttingDown, InitialStateAsEvents }
+import akka.cluster.ddata.Replicator._
+import akka.cluster.ddata.{ LWWRegister, LWWRegisterKey, SelfUniqueAddress }
 import akka.cluster.sharding.DDataShardCoordinator.RememberEntitiesLoadTimeout
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.EventSourcedRememberShards.MigrationMarker
@@ -29,11 +25,13 @@ import akka.cluster.sharding.internal.{
   RememberEntitiesCoordinatorStore,
   RememberEntitiesProvider
 }
+import akka.dispatch.ExecutionContexts
 import akka.event.BusLogging
 import akka.event.Logging
+import akka.pattern.{ pipe, AskTimeoutException }
+import akka.persistence._
 import akka.util.PrettyDuration._
 import akka.util.Timeout
-import com.github.ghik.silencer.silent
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -1139,6 +1137,7 @@ private[akka] class DDataShardCoordinator(
 
   import DDataShardCoordinator._
   import ShardCoordinator.Internal._
+
   import akka.cluster.ddata.Replicator.Update
 
   private val stateReadConsistency = settings.tuningParameters.coordinatorStateReadMajorityPlus match {
@@ -1150,8 +1149,10 @@ private[akka] class DDataShardCoordinator(
     case additional   => WriteMajorityPlus(settings.tuningParameters.waitingForStateTimeout, majorityMinCap, additional)
   }
 
-  implicit val node = Cluster(context.system)
-  private implicit val selfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
+  // FIXME make the all shards consistency is reflected in the ddata remembered thingy
+
+  implicit val node: Cluster = Cluster(context.system)
+  private implicit val selfUniqueAddress: SelfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
   private val CoordinatorStateKey = LWWRegisterKey[State](s"${typeName}CoordinatorState")
   private val initEmptyState = State.empty.withRememberEntities(settings.rememberEntities)
 

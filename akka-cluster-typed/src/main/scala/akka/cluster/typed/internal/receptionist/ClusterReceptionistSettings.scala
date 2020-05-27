@@ -4,16 +4,17 @@
 
 package akka.cluster.typed.internal.receptionist
 
+import scala.concurrent.duration._
+import scala.concurrent.duration.{ FiniteDuration, MILLISECONDS }
+
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.ddata.Replicator
 import akka.cluster.ddata.Replicator.WriteConsistency
-import akka.util.Helpers.toRootLowerCase
-import com.typesafe.config.Config
-import scala.concurrent.duration._
-import scala.concurrent.duration.{ FiniteDuration, MILLISECONDS }
-
 import akka.cluster.ddata.ReplicatorSettings
+import akka.util.Helpers.toRootLowerCase
 
 /**
  * Internal API
@@ -40,6 +41,7 @@ private[akka] object ClusterReceptionistSettings {
     ClusterReceptionistSettings(
       writeConsistency,
       pruningInterval = config.getDuration("pruning-interval", MILLISECONDS).millis,
+      pruneRemovedOlderThan = config.getDuration("prune-removed-older-than", MILLISECONDS).millis,
       config.getInt("distributed-key-count"),
       replicatorSettings)
   }
@@ -52,5 +54,6 @@ private[akka] object ClusterReceptionistSettings {
 private[akka] case class ClusterReceptionistSettings(
     writeConsistency: WriteConsistency,
     pruningInterval: FiniteDuration,
+    pruneRemovedOlderThan: FiniteDuration,
     distributedKeyCount: Int,
     replicatorSettings: ReplicatorSettings)

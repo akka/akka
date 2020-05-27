@@ -4,6 +4,8 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
 import akka.actor._
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.cluster.sharding.ShardRegion.StartEntity
@@ -12,8 +14,6 @@ import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 import akka.util.ccompat._
-
-import scala.concurrent.duration._
 
 @ccompatUsedUntil213
 object ClusterShardingFailureSpec {
@@ -107,7 +107,7 @@ abstract class ClusterShardingFailureSpec(multiNodeConfig: ClusterShardingFailur
       startSharding(
         system,
         typeName = "Entity",
-        entityProps = Props[Entity],
+        entityProps = Props[Entity](),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId))
   }

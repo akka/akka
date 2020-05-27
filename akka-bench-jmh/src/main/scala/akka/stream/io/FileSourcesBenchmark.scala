@@ -8,19 +8,20 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+
+import org.openjdk.jmh.annotations._
+
+import akka.Done
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.Attributes
 import akka.stream.IOResult
 import akka.stream.scaladsl._
 import akka.util.ByteString
-import akka.Done
-import akka.NotUsed
-import org.openjdk.jmh.annotations._
-
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.Promise
 
 /**
  * Benchmark                         (bufSize)  Mode  Cnt    Score    Error  Units
@@ -31,7 +32,7 @@ import scala.concurrent.Promise
 @BenchmarkMode(Array(Mode.AverageTime))
 class FileSourcesBenchmark {
 
-  implicit val system = ActorSystem("file-sources-benchmark")
+  implicit val system: ActorSystem = ActorSystem("file-sources-benchmark")
 
   val file: Path = {
     val line = ByteString("x" * 2048 + "\n")

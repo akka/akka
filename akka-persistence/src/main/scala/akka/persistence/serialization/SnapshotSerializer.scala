@@ -5,6 +5,7 @@
 package akka.persistence.serialization
 
 import java.io._
+
 import akka.actor._
 import akka.serialization._
 import akka.util.ByteString.UTF_8

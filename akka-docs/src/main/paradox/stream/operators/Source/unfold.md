@@ -6,11 +6,8 @@ Stream the result of a function as long as it returns a @scala[`Some`] @java[non
 
 ## Signature
 
-Scala
-:   @@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #unfold }
+@apidoc[Source.unfold](Source$) { scala="#unfold[S,E](s:S)(f:S=&gt;Option[(S,E)]):akka.stream.scaladsl.Source[E,akka.NotUsed]" java="#unfold(java.lang.Object,akka.japi.function.Function)" }
 
-Java
-:   @@snip [SourceUnfoldTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/SourceUnfoldTest.java) { #signature }
 
 ## Description
 

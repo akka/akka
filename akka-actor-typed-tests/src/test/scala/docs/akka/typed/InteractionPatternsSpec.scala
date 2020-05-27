@@ -418,6 +418,8 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
     // keep this out of the sample as it uses the testkit spawn
     val cookieFabric = spawn(CookieFabric())
 
+    val theSystem = testKit.system
+
     // #standalone-ask
 
     import akka.actor.typed.scaladsl.AskPattern._
@@ -426,6 +428,8 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
     // asking someone requires a timeout if the timeout hits without response
     // the ask is failed with a TimeoutException
     implicit val timeout: Timeout = 3.seconds
+    // implicit ActorSystem in scope
+    implicit val system: ActorSystem[_] = theSystem
 
     val result: Future[CookieFabric.Reply] = cookieFabric.ask(ref => CookieFabric.GiveMeCookies(3, ref))
 

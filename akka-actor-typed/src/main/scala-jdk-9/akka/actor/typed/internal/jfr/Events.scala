@@ -4,12 +4,13 @@
 
 package akka.actor.typed.internal.jfr
 
-import akka.annotation.InternalApi
 import jdk.jfr.Category
 import jdk.jfr.Enabled
 import jdk.jfr.Event
 import jdk.jfr.Label
 import jdk.jfr.StackTrace
+
+import akka.annotation.InternalApi
 
 // requires jdk9+ to compile
 // for editing these in IntelliJ, open module settings, change JDK dependency to 11 for only this module
@@ -85,7 +86,8 @@ final class DeliveryProducerReceived(val producerId: String, val currentSeqNr: L
 @Enabled(true)
 @StackTrace(false)
 @Category(Array("Akka", "Delivery", "ProducerController")) @Label("Delivery ProducerController received demand request")
-final class DeliveryProducerReceivedRequest(val producerId: String, val requestedSeqNr: Long) extends Event
+final class DeliveryProducerReceivedRequest(val producerId: String, val requestedSeqNr: Long, confirmedSeqNr: Long)
+    extends Event
 
 /** INTERNAL API */
 @InternalApi
@@ -129,14 +131,14 @@ final class DeliveryConsumerReceivedPreviousInProgress(val producerId: String, v
 @Enabled(true)
 @StackTrace(false)
 @Category(Array("Akka", "Delivery", "ConsumerController")) @Label("Delivery ConsumerController received duplicate")
-final class DeliveryConsumerDuplicate(val pid: String, val expectedSeqNr: Long, val seqNr: Long) extends Event
+final class DeliveryConsumerDuplicate(val producerId: String, val expectedSeqNr: Long, val seqNr: Long) extends Event
 
 /** INTERNAL API */
 @InternalApi
 @Enabled(true)
 @StackTrace(false)
 @Category(Array("Akka", "Delivery", "ConsumerController")) @Label("Delivery ConsumerController received missing")
-final class DeliveryConsumerMissing(val pid: String, val expectedSeqNr: Long, val seqNr: Long) extends Event
+final class DeliveryConsumerMissing(val producerId: String, val expectedSeqNr: Long, val seqNr: Long) extends Event
 
 /** INTERNAL API */
 @InternalApi
@@ -159,3 +161,10 @@ final class DeliveryConsumerSentRequest(val producerId: String, val requestedSeq
 @StackTrace(false)
 @Category(Array("Akka", "Delivery", "ConsumerController")) @Label("Delivery ConsumerController producer changed")
 final class DeliveryConsumerChangedProducer(val producerId: String) extends Event
+
+/** INTERNAL API */
+@InternalApi
+@Enabled(true)
+@StackTrace(false)
+@Category(Array("Akka", "Delivery", "ConsumerController")) @Label("Delivery ConsumerController stash is full")
+final class DeliveryConsumerStashFull(val producerId: String, val seqNr: Long) extends Event

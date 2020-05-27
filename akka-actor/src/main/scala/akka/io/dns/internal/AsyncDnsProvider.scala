@@ -4,9 +4,10 @@
 
 package akka.io.dns.internal
 
+import com.github.ghik.silencer.silent
+
 import akka.annotation.InternalApi
 import akka.io._
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API

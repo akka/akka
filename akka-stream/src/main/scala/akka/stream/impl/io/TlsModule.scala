@@ -6,16 +6,16 @@ package akka.stream.impl.io
 
 import javax.net.ssl.{ SSLEngine, SSLSession }
 
+import scala.util.Try
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.stream._
-import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.TLSProtocol._
 import akka.stream.impl.{ TlsModuleIslandTag, TraversalBuilder }
+import akka.stream.impl.StreamLayout.AtomicModule
 import akka.util.ByteString
-
-import scala.util.Try
 
 /**
  * INTERNAL API.

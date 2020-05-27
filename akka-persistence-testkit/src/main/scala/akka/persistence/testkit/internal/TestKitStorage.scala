@@ -7,11 +7,11 @@ package akka.persistence.testkit.internal
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.collection.immutable
+
 import akka.actor.Extension
 import akka.annotation.InternalApi
 import akka.persistence.testkit.ProcessingPolicy
-
-import scala.collection.immutable
 
 /**
  * INTERNAL API
@@ -143,7 +143,7 @@ sealed trait PolicyOps[U] {
 
   def setPolicy(policy: Policy): Unit = _processingPolicy.set(policy)
 
-  def returnDefaultPolicy(): Unit = setPolicy(DefaultPolicy)
+  def resetPolicy(): Unit = setPolicy(DefaultPolicy)
 
 }
 
