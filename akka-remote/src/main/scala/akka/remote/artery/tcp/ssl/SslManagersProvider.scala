@@ -53,7 +53,7 @@ final class JksManagersProvider private[tcp] (
 
   // Take the first non-CA certificate in the keyStore
   // TODO: Improve this adding a setting so users can indicate the `alias` in the keyStore
-  //  containing the peer certificate
+  //  containing the peer certificate. Or return a Map[String,X509Certificate] with all the certs
   val nodeCertificate: X509Certificate = {
     import collection.JavaConverters._
     val ks = keyStore()
