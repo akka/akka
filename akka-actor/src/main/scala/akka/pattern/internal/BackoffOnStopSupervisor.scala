@@ -10,7 +10,6 @@ import akka.actor.{ Actor, ActorLogging, OneForOneStrategy, Props, SupervisorStr
 import akka.actor.SupervisorStrategy.{ Directive, Escalate }
 import akka.annotation.InternalApi
 import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
-import akka.util.PrettyDuration
 
 /**
  * INTERNAL API
@@ -52,7 +51,6 @@ import akka.util.PrettyDuration
     case Terminated(ref) if child.contains(ref) =>
       child = None
       if (finalStopMessageReceived) {
-        log.debug("Child terminated after final stop message, stopping supervisor")
         context.stop(self)
       } else {
         val maxNrOfRetries = strategy match {
@@ -63,14 +61,13 @@ import akka.util.PrettyDuration
 
         if (maxNrOfRetries == -1 || nextRestartCount <= maxNrOfRetries) {
           val restartDelay = calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
-          log.debug("Supervised child terminated, restarting after [{}] back off", PrettyDuration.format(restartDelay))
           context.system.scheduler.scheduleOnce(restartDelay, self, StartChild)
           restartCount = nextRestartCount
         } else {
-          log.warning(
-            "Supervised child exceeded max allowed number of restarts [{}] (restarded [{}] times), stopping supervisor",
-            maxNrOfRetries,
-            nextRestartCount)
+          log.debug(
+            s"Terminating on restart #{} which exceeds max allowed restarts ({})",
+            nextRestartCount,
+            maxNrOfRetries)
           context.stop(self)
         }
       }
@@ -89,13 +86,11 @@ import akka.util.PrettyDuration
     case None =>
       replyWhileStopped match {
         case Some(r) => sender() ! r
-        case _       =>
+        case None    => context.system.deadLetters.forward(msg)
       }
       finalStopMessage match {
         case Some(fsm) if fsm(msg) => context.stop(self)
         case _                     =>
-          // only send to dead letters if not replied nor final-stopped
-          if (replyWhileStopped.isEmpty) context.system.deadLetters.forward(msg)
       }
   }
 }
