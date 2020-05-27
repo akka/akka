@@ -25,11 +25,9 @@ class PemManagersProviderSpec extends AnyWordSpec with Matchers {
 
   }
 
-  private def withFiles(keyFile: String, certFile: String, caCertFile: String)(
-      block: (PemManagersProvider) => Unit) = {
+  private def withFiles(keyFile: String, certFile: String, caCertFile: String)(block: (PemManagersProvider) => Unit) = {
     val filesConfig = {
-      ConfigFactory.parseString(
-        s"""
+      ConfigFactory.parseString(s"""
         key-file = "${nameToPath(keyFile)}"
         cert-file = "${nameToPath(certFile)}"
         ca-cert-file = "${nameToPath(caCertFile)}"

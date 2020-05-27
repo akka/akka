@@ -21,16 +21,16 @@ object CipherSuiteSupportCheck {
    * Given a `configPath` runs a set of validations over the default protocols,
    * cipher suites, PRNG algorithm/provider, etc...
    */
-  def isSupported(system: ActorSystem, configPath:String): Try[Unit] = Try{
-      val config = system.settings.config
-      val subConfig = config.getConfig(configPath)
+  def isSupported(system: ActorSystem, configPath: String): Try[Unit] = Try {
+    val config = system.settings.config
+    val subConfig = config.getConfig(configPath)
 
-      isPrngSupported(subConfig)
-      val engine: SSLEngine = buildSslEngine(system)
-      val sslFactoryConfig = new SslFactoryConfig(subConfig)
+    isPrngSupported(subConfig)
+    val engine: SSLEngine = buildSslEngine(system)
+    val sslFactoryConfig = new SslFactoryConfig(subConfig)
 
-      areAlgorithmsSupported(sslFactoryConfig, engine)
-      isProtocolSupported(sslFactoryConfig, engine)
+    areAlgorithmsSupported(sslFactoryConfig, engine)
+    isProtocolSupported(sslFactoryConfig, engine)
   }
 
   private def isPrngSupported(config: Config): Unit = {
@@ -41,7 +41,7 @@ object CipherSuiteSupportCheck {
       throw new NoSuchAlgorithmException(setting)
   }
 
-  private def areAlgorithmsSupported(sslFactoryConfig: SslFactoryConfig, engine: SSLEngine)= {
+  private def areAlgorithmsSupported(sslFactoryConfig: SslFactoryConfig, engine: SSLEngine) = {
     import sslFactoryConfig._
     val gotAllSupported = SSLEnabledAlgorithms.diff(engine.getSupportedCipherSuites.toSet)
     val gotAllEnabled = SSLEnabledAlgorithms.diff(engine.getEnabledCipherSuites.toSet)
@@ -49,10 +49,10 @@ object CipherSuiteSupportCheck {
     gotAllEnabled.isEmpty || (throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled))
   }
 
-  private def isProtocolSupported(sslFactoryConfig: SslFactoryConfig, engine: SSLEngine)={
+  private def isProtocolSupported(sslFactoryConfig: SslFactoryConfig, engine: SSLEngine) = {
     import sslFactoryConfig._
     engine.getSupportedProtocols.contains(SSLProtocol) ||
-      (throw new IllegalArgumentException("Protocol not supported: " + SSLProtocol))
+    (throw new IllegalArgumentException("Protocol not supported: " + SSLProtocol))
 
   }
 

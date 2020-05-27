@@ -30,7 +30,7 @@ abstract class SecureRandomFactorySpec(alg: String) extends AkkaSpec {
         throw new NoSuchAlgorithmException(sRng)
       true
     } catch {
-      case e : NoSuchAlgorithmException =>
+      case e: NoSuchAlgorithmException =>
         info(e.toString)
         false
     }
