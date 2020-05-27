@@ -16,7 +16,7 @@ import akka.testkit._
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
-object ClusterShardCoordinatorDowningSpec {
+object ClusterShardCoordinatorDowning2Spec {
   case class Ping(id: String) extends CborSerializable
 
   class Entity extends Actor {
@@ -45,7 +45,7 @@ object ClusterShardCoordinatorDowningSpec {
   }
 }
 
-abstract class ClusterShardCoordinatorDowningSpecConfig(mode: String)
+abstract class ClusterShardCoordinatorDowning2SpecConfig(mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
       loglevel = "INFO",
@@ -55,7 +55,6 @@ abstract class ClusterShardCoordinatorDowningSpecConfig(mode: String)
         akka.cluster.down-removal-margin = 3 s
         akka.remote.watch-failure-detector.acceptable-heartbeat-pause = 3s
       """) {
-  val controller = role("controller")
   val first = role("first")
   val second = role("second")
 
@@ -63,30 +62,28 @@ abstract class ClusterShardCoordinatorDowningSpecConfig(mode: String)
 
 }
 
-object PersistentClusterShardCoordinatorDowningSpecConfig
-    extends ClusterShardCoordinatorDowningSpecConfig(ClusterShardingSettings.StateStoreModePersistence)
-object DDataClusterShardCoordinatorDowningSpecConfig
-    extends ClusterShardCoordinatorDowningSpecConfig(ClusterShardingSettings.StateStoreModeDData)
+object PersistentClusterShardCoordinatorDowning2SpecConfig
+    extends ClusterShardCoordinatorDowning2SpecConfig(ClusterShardingSettings.StateStoreModePersistence)
+object DDataClusterShardCoordinatorDowning2SpecConfig
+    extends ClusterShardCoordinatorDowning2SpecConfig(ClusterShardingSettings.StateStoreModeDData)
 
-class PersistentClusterShardCoordinatorDowningSpec
-    extends ClusterShardCoordinatorDowningSpec(PersistentClusterShardCoordinatorDowningSpecConfig)
-class DDataClusterShardCoordinatorDowningSpec
-    extends ClusterShardCoordinatorDowningSpec(DDataClusterShardCoordinatorDowningSpecConfig)
+class PersistentClusterShardCoordinatorDowning2Spec
+    extends ClusterShardCoordinatorDowning2Spec(PersistentClusterShardCoordinatorDowning2SpecConfig)
+class DDataClusterShardCoordinatorDowning2Spec
+    extends ClusterShardCoordinatorDowning2Spec(DDataClusterShardCoordinatorDowning2SpecConfig)
 
-class PersistentClusterShardCoordinatorDowningMultiJvmNode1 extends PersistentClusterShardCoordinatorDowningSpec
-class PersistentClusterShardCoordinatorDowningMultiJvmNode2 extends PersistentClusterShardCoordinatorDowningSpec
-class PersistentClusterShardCoordinatorDowningMultiJvmNode3 extends PersistentClusterShardCoordinatorDowningSpec
+class PersistentClusterShardCoordinatorDowning2MultiJvmNode1 extends PersistentClusterShardCoordinatorDowning2Spec
+class PersistentClusterShardCoordinatorDowning2MultiJvmNode2 extends PersistentClusterShardCoordinatorDowning2Spec
 
-class DDataClusterShardCoordinatorDowningMultiJvmNode1 extends DDataClusterShardCoordinatorDowningSpec
-class DDataClusterShardCoordinatorDowningMultiJvmNode2 extends DDataClusterShardCoordinatorDowningSpec
-class DDataClusterShardCoordinatorDowningMultiJvmNode3 extends DDataClusterShardCoordinatorDowningSpec
+class DDataClusterShardCoordinatorDowning2MultiJvmNode1 extends DDataClusterShardCoordinatorDowning2Spec
+class DDataClusterShardCoordinatorDowning2MultiJvmNode2 extends DDataClusterShardCoordinatorDowning2Spec
 
-abstract class ClusterShardCoordinatorDowningSpec(multiNodeConfig: ClusterShardCoordinatorDowningSpecConfig)
+abstract class ClusterShardCoordinatorDowning2Spec(multiNodeConfig: ClusterShardCoordinatorDowning2SpecConfig)
     extends MultiNodeClusterShardingSpec(multiNodeConfig)
     with ImplicitSender {
   import multiNodeConfig._
 
-  import ClusterShardCoordinatorDowningSpec._
+  import ClusterShardCoordinatorDowning2Spec._
 
   def startSharding(): Unit = {
     startSharding(
@@ -99,10 +96,10 @@ abstract class ClusterShardCoordinatorDowningSpec(multiNodeConfig: ClusterShardC
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
 
-  s"Cluster sharding ($mode) with down member, scenario 1" must {
+  s"Cluster sharding ($mode) with down member, scenario 2" must {
 
     "join cluster" in within(20.seconds) {
-      startPersistenceIfNotDdataMode(startOn = controller, setStoreOn = Seq(first, second))
+      startPersistenceIfNotDdataMode(startOn = first, setStoreOn = Seq(first, second))
 
       join(first, first, onJoinedRunOnFrom = startSharding())
       join(second, first, onJoinedRunOnFrom = startSharding(), assertNodeUp = false)
@@ -132,24 +129,22 @@ abstract class ClusterShardCoordinatorDowningSpec(multiNodeConfig: ClusterShardC
       enterBarrier("after-3")
     }
 
-    "recover after downing coordinator node" in within(20.seconds) {
-      val firstAddress = address(first)
-      system.actorSelection(node(first) / "user" / "shardLocations") ! GetLocations
-      val Locations(originalLocations) = expectMsgType[Locations]
+    "recover after downing other node (not coordinator)" in within(20.seconds) {
+      val secondAddress = address(second)
 
-      runOn(controller) {
+      runOn(first) {
         testConductor.blackhole(first, second, Direction.Both).await
       }
 
       Thread.sleep(3000)
 
-      runOn(second) {
-        cluster.down(first)
+      runOn(first) {
+        cluster.down(second)
         awaitAssert {
           cluster.state.members.size should ===(1)
         }
 
-        // start a few more new shards, could be allocated to first but should notice that it's terminated
+        // start a few more new shards, could be allocated to second but should notice that it's terminated
         val additionalLocations =
           awaitAssert {
             val probe = TestProbe()
@@ -161,12 +156,15 @@ abstract class ClusterShardCoordinatorDowningSpec(multiNodeConfig: ClusterShardC
           }
         system.log.debug("Additional locations: {}", additionalLocations)
 
+        system.actorSelection(node(first) / "user" / "shardLocations") ! GetLocations
+        val Locations(originalLocations) = expectMsgType[Locations]
+
         awaitAssert {
           val probe = TestProbe()
           (originalLocations ++ additionalLocations).foreach {
             case (id, ref) =>
               region.tell(Ping(id), probe.ref)
-              if (ref.path.address == firstAddress) {
+              if (ref.path.address == secondAddress) {
                 val newRef = probe.expectMsgType[ActorRef](1.second)
                 newRef should not be (ref)
                 system.log.debug("Moved [{}] from [{}] to [{}]", id, ref, newRef)

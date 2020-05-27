@@ -614,7 +614,7 @@ abstract class ShardCoordinator(
       case GetShardHome(shard) =>
         if (!handleGetShardHome(shard)) {
           // location not know, yet
-          val activeRegions = state.regions -- gracefulShutdownInProgress
+          val activeRegions = (state.regions -- gracefulShutdownInProgress) -- regionTerminationInProgress
           if (activeRegions.nonEmpty) {
             val getShardHomeSender = sender()
             val regionFuture = allocationStrategy.allocateShard(getShardHomeSender, shard, activeRegions)
@@ -923,7 +923,8 @@ abstract class ShardCoordinator(
       state.shards.get(shard) match {
         case Some(ref) => getShardHomeSender ! ShardHome(shard, ref)
         case None =>
-          if (state.regions.contains(region) && !gracefulShutdownInProgress.contains(region)) {
+          if (state.regions.contains(region) && !gracefulShutdownInProgress.contains(region) && !regionTerminationInProgress
+                .contains(region)) {
             update(ShardHomeAllocated(shard, region)) { evt =>
               state = state.updated(evt)
               log.debug(
