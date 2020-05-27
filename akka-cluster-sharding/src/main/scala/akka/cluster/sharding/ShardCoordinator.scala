@@ -1149,8 +1149,6 @@ private[akka] class DDataShardCoordinator(
     case additional   => WriteMajorityPlus(settings.tuningParameters.waitingForStateTimeout, majorityMinCap, additional)
   }
 
-  // FIXME make the all shards consistency is reflected in the ddata remembered thingy
-
   implicit val node: Cluster = Cluster(context.system)
   private implicit val selfUniqueAddress: SelfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
   private val CoordinatorStateKey = LWWRegisterKey[State](s"${typeName}CoordinatorState")
