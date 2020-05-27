@@ -7,11 +7,7 @@ package tcp
 
 import java.security.NoSuchAlgorithmException
 
-import akka.actor.ActorIdentity
-import akka.actor.ActorPath
-import akka.actor.ActorRef
-import akka.actor.Identify
-import akka.actor.RootActorPath
+import akka.actor.{ ActorIdentity, ActorPath, ActorRef, Identify, RootActorPath }
 import akka.actor.setup.ActorSystemSetup
 import akka.remote.artery.tcp.ssl.CipherSuiteSupportCheck
 import akka.testkit.EventFilter
@@ -22,8 +18,10 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
 
 class TlsTcpWithDefaultConfigSpec extends TlsTcpSpec(ConfigFactory.empty())
 
@@ -51,8 +49,7 @@ class TlsTcpWithCrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec
     }
     """))
 
-class TlsTcpWithCloudNativeSslEngineSpec
-    extends TlsTcpSpec(ConfigFactory.parseString(s"""
+class TlsTcpWithCloudNativeSslEngineSpec extends TlsTcpSpec(ConfigFactory.parseString(s"""
     akka.remote.artery.ssl {
        ssl-engine-provider = akka.remote.artery.tcp.ssl.CloudNativeSSLEngineProvider
        cloud-native-ssl-engine {
@@ -78,20 +75,31 @@ object TlsTcpSpec {
 
 abstract class TlsTcpSpec(config: Config)
     extends ArteryMultiNodeSpec(config.withFallback(TlsTcpSpec.config))
-    with ImplicitSender {
+    with ImplicitSender
+    with Matchers {
 
   val systemB = newRemoteSystem(name = Some("systemB"))
   val addressB = address(systemB)
   val rootB = RootActorPath(addressB)
 
   def isSupported: Boolean = {
-    try {
-      CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.cloud-native-ssl-engine").map(_ => true).get
-      CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.config-ssl-engine").map(_ => true).get
-    } catch {
-      case e @ (_: IllegalArgumentException | _: NoSuchAlgorithmException) =>
+    val checked = system.settings.config.getString("akka.remote.artery.ssl.ssl-engine-provider") match {
+      case "akka.remote.artery.tcp.ssl.CloudNativeSSLEngineProvider" =>
+        CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.cloud-native-ssl-engine")
+      case "akka.remote.artery.tcp.ssl.ConfigSSLEngineProvider" =>
+        CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.config-ssl-engine")
+      case other =>
+        fail(
+          s"Don't know how to determine whether the crypto building blocks in [$other] are available on this platform")
+    }
+    checked match {
+      case Success(()) =>
+        true
+      case Failure(e @ (_: IllegalArgumentException | _: NoSuchAlgorithmException)) =>
         info(e.toString)
         false
+      case Failure(other) =>
+        fail(s"Unexpected failure checking whether the crypto building blocks are available on this platform: [$other]")
     }
   }
 
@@ -224,8 +232,10 @@ class TlsTcpWithActorSystemSetupSpec extends ArteryMultiNodeSpec(TlsTcpSpec.conf
         sslProviderClientProbe.ref ! "createClientSSLEngine"
         delegate.createClientSSLEngine(hostname, port)
       }
-      override def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable] = delegate.verifyClientSession(hostname, session)
-      override def verifyServerSession(hostname: String, session: SSLSession): Option[Throwable] =delegate.verifyServerSession(hostname, session)
+      override def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable] =
+        delegate.verifyClientSession(hostname, session)
+      override def verifyServerSession(hostname: String, session: SSLSession): Option[Throwable] =
+        delegate.verifyServerSession(hostname, session)
     })
 
   val systemB = newRemoteSystem(name = Some("systemB"), setup = Some(ActorSystemSetup(sslProviderSetup)))

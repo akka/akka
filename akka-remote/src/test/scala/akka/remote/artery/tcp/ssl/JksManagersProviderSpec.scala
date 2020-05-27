@@ -22,12 +22,14 @@ class JksManagersProviderSpec extends AnyWordSpec with Matchers {
         provider.nodeCertificate.getSubjectDN.getName must be("CN=akka-remote, O=Lightbend, ST=web, C=ZA")
     }
 
-    "load keystore/PKCS12 stores reading files setup in config" in withFiles("ssl/client.p12", "ssl/clientca.p12", "kLnCu3rboe") {
-      provider =>
-        provider.trustManagers.length must be(1)
-        provider.keyManagers.length must be(1)
-        provider.nodeCertificate.getSubjectDN.getName must be(
-          "CN=client, OU=Example Org, O=Example Company, L=San Francisco, ST=California, C=US")
+    "load keystore/PKCS12 stores reading files setup in config" in withFiles(
+      "ssl/client.p12",
+      "ssl/clientca.p12",
+      "kLnCu3rboe") { provider =>
+      provider.trustManagers.length must be(1)
+      provider.keyManagers.length must be(1)
+      provider.nodeCertificate.getSubjectDN.getName must be(
+        "CN=client, OU=Example Org, O=Example Company, L=San Francisco, ST=California, C=US")
     }
 
   }
