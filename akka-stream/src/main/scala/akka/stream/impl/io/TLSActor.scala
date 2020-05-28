@@ -269,7 +269,7 @@ import akka.util.ByteString
   }
 
   def completeOrFlush(): Unit =
-    if (engine.isOutboundDone) nextPhase(completedPhase)
+    if (engine.isOutboundDone || (engine.isInboundDone && userInChoppingBlock.isEmpty)) nextPhase(completedPhase)
     else nextPhase(flushingOutbound)
 
   private def doInbound(isOutboundClosed: Boolean, inboundState: TransferState): Boolean =
@@ -395,7 +395,9 @@ import akka.util.ByteString
     result.getStatus match {
       case OK =>
         result.getHandshakeStatus match {
-          case NEED_WRAP => flushToUser()
+          case NEED_WRAP =>
+            flushToUser()
+            transportInChoppingBlock.putBack(transportInBuffer)
           case FINISHED =>
             flushToUser()
             handshakeFinished()
@@ -406,8 +408,7 @@ import akka.util.ByteString
         }
       case CLOSED =>
         flushToUser()
-        if (engine.isOutboundDone) nextPhase(completedPhase)
-        else nextPhase(flushingOutbound)
+        completeOrFlush()
       case BUFFER_UNDERFLOW =>
         flushToUser()
       case BUFFER_OVERFLOW =>
