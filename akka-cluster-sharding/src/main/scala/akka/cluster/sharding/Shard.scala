@@ -108,12 +108,13 @@ private[akka] object Shard {
   private final case object AsyncWriteDone
 
   private val RememberEntityTimeoutKey = "RememberEntityTimeout"
-  case class RememberEntityTimeout(operation: RememberEntitiesShardStore.Command)
+  final case class RememberEntityTimeout(operation: RememberEntitiesShardStore.Command)
 
   // FIXME Leaving this on while we are working on the remember entities refactor
   // should it go in settings perhaps, useful for tricky sharding bugs?
   final val VerboseDebug = true
 
+  // used for triggering start after passivation when there are buffered messages
   final case class StartEntityInternal(id: EntityId)
 
   /**
@@ -189,7 +190,7 @@ private[akka] object Shard {
    * its existence is being recorded in the remember entities store, or while the stop is queued up
    * to be stored in the next batch.
    */
-  case class RememberingStart(ackTo: Option[ActorRef]) extends EntityState {
+  final case class RememberingStart(ackTo: Option[ActorRef]) extends EntityState {
     override def transition(newState: EntityState): EntityState = newState match {
       case active: Active => active
       case r: RememberingStart =>
@@ -211,7 +212,7 @@ private[akka] object Shard {
    * its stop is being recorded in the remember entities store, or while the stop is queued up
    * to be stored in the next batch.
    */
-  case class RememberingStop(stopReason: StopReason) extends EntityState {
+  final case class RememberingStop(stopReason: StopReason) extends EntityState {
     override def transition(newState: EntityState): EntityState = newState match {
       case NoState => NoState
       case _       => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
@@ -666,8 +667,9 @@ private[akka] class Shard(
           // FIXME what would this Terminated be? Remember entities store stop?
           stash()
       }
-    case _: CoordinatorMessage         => stash()
-    case _: StartEntityInternal        => stash()
+    case _: CoordinatorMessage => stash()
+    case start: StartEntityInternal =>
+      entities.rememberingStart(start.id, None)
     case _: RememberEntityCommand      => stash()
     case l: LeaseLost                  => receiveLeaseLost(l)
     case _: ShardRegion.StartEntityAck =>
