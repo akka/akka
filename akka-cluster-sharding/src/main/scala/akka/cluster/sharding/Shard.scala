@@ -794,7 +794,6 @@ private[akka] class Shard(
     if (ack.shardId != shardId && entities.entityIdExists(ack.entityId)) {
       log.debug("Entity [{}] previously owned by shard [{}] started in shard [{}]", ack.entityId, shardId, ack.shardId)
 
-      // FIXME we need to pass a reason here to keep the old on-remembered logic
       entities.rememberingStop(ack.entityId, StartedElsewhere)
       rememberUpdate(remove = Set(ack.entityId))
     }
