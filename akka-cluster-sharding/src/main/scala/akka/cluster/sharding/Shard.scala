@@ -309,7 +309,7 @@ private[akka] object Shard {
       }
     }
     def entityPassivating(entityId: EntityId): Unit = {
-      if (VerboseDebug) log.debug("[{}] passivating, all entities: [{}]", entityId, entities)
+      if (VerboseDebug) log.debug("[{}] passivating", entityId)
       entities.get(entityId) match {
         case wf: WithRef =>
           val state = entities.getOrDefault(entityId, NoState).transition(Passivating(wf.ref))
@@ -667,14 +667,34 @@ private[akka] class Shard(
           // FIXME what would this Terminated be? Remember entities store stop?
           stash()
       }
-    case _: CoordinatorMessage => stash()
-    case start: StartEntityInternal =>
-      entities.rememberingStart(start.id, None)
-    case _: RememberEntityCommand      => stash()
-    case l: LeaseLost                  => receiveLeaseLost(l)
-    case _: ShardRegion.StartEntityAck =>
-      // FIXME if we got an ack it was started elsewhere we should probably make sure we don't have it in current or pending starts?
-      stash()
+    case _: CoordinatorMessage      => stash()
+    case start: StartEntityInternal => entities.rememberingStart(start.id, None)
+    case RestartEntity(entityId) =>
+      entities.entityState(entityId) match {
+        case WaitingForRestart =>
+          entities.rememberingStart(entityId, None)
+        case other =>
+          log.warning("Got RestartEntity for [{}] but it's not waiting to be restarted. Actual state {}", other)
+      }
+    case RestartEntities(entities) => restartEntities(entities)
+    case l: LeaseLost              => receiveLeaseLost(l)
+    case ShardRegion.StartEntityAck(entityId, _) =>
+      if (update.started.contains(entityId)) {
+        // currently in progress of starting, so we'll need to stop it when that is done
+        entities.rememberingStop(entityId, StartedElsewhere)
+      } else {
+        entities.entityState(entityId) match {
+          case _: RememberingStart =>
+            // queued up for batched start, let's just not start it
+            entities.removeEntity(entityId)
+          case _: Active =>
+            // add to stop batch
+            entities.rememberingStop(entityId, StartedElsewhere)
+          case _ =>
+            // not sure for other states, so deal with it later
+            stash()
+        }
+      }
     case ShardRegion.Passivate(stopMessage) =>
       if (VerboseDebug)
         log.debug(
@@ -732,7 +752,7 @@ private[akka] class Shard(
       unstashAll()
       context.become(idle)
     } else {
-      // FIXME no unstashing as long as we are batching, is that a problem?
+      // Note: no unstashing as long as we are batching, is that a problem?
       val pendingStartIds = pendingStarts.keySet
       if (VerboseDebug)
         log.debug(
