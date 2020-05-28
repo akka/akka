@@ -124,6 +124,23 @@ class RetrySpec extends AkkaSpec with RetrySupport {
         elapse <= 100 shouldBe true
       }
     }
+
+    "handle thrown exceptions in same way as failed Future" in {
+      @volatile var failCount = 0
+
+      def attempt() = {
+        if (failCount < 5) {
+          failCount += 1
+          throw new IllegalStateException(failCount.toString)
+        } else Future.successful(5)
+      }
+
+      val retried = retry(() => attempt(), 10, 100 milliseconds)
+
+      within(3 seconds) {
+        Await.result(retried, remaining) should ===(5)
+      }
+    }
   }
 
 }
