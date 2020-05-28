@@ -586,10 +586,6 @@ private[akka] class Shard(
     }
   }
 
-  /**
-   * The whenDone callback should not call become either directly or by calling this method again
-   * as it uses become.
-   */
   def sendToRememberStore(store: ActorRef, storingStarts: Set[EntityId], storingStops: Set[EntityId]): Unit = {
     if (VerboseDebug)
       log.debug(
