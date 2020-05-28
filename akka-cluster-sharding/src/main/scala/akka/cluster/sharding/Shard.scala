@@ -114,6 +114,8 @@ private[akka] object Shard {
   // should it go in settings perhaps, useful for tricky sharding bugs?
   final val VerboseDebug = true
 
+  final case class StartEntityInternal(id: EntityId)
+
   sealed trait EntityState
 
   /**
@@ -277,6 +279,8 @@ private[akka] class Shard(
     }
   }
 
+  private val flightRecorder = ShardingFlightRecorder(context.system)
+
   private val entities = new Entities(log)
 
   private var lastMessageTimestamp = Map.empty[EntityId, Long]
@@ -403,7 +407,7 @@ private[akka] class Shard(
     if (ids.nonEmpty) {
       entities.alreadyRemembered(ids)
       restartRememberedEntities(ids)
-    } else {}
+    }
     context.parent ! ShardInitialized(shardId)
     context.become(idle)
     unstashAll()
@@ -434,6 +438,7 @@ private[akka] class Shard(
     case msg: RememberEntityCommand              => receiveRememberEntityCommand(msg)
     case msg: ShardRegion.StartEntity            => startEntities(Map(msg.entityId -> Some(sender())))
     case msg: ShardRegion.StartEntityAck         => receiveStartEntityAck(msg)
+    case msg: StartEntityInternal                => startEntities(Map(msg.id -> None))
     case msg: ShardRegionCommand                 => receiveShardRegionCommand(msg)
     case msg: ShardQuery                         => receiveShardQuery(msg)
     case PassivateIdleTick                       => passivateIdleEntities()
@@ -442,90 +447,105 @@ private[akka] class Shard(
     case msg if extractEntityId.isDefinedAt(msg) => deliverMessage(msg, sender(), OptionVal.None)
   }
 
-  def sendToRememberStore(entityId: EntityId, command: RememberEntitiesShardStore.Command)(
-      whenDone: () => Unit): Unit = {
-    sendToRememberStore(Set(entityId), command)(() => whenDone())
-  }
-
-  def sendToRememberStore(entityIds: Set[EntityId], command: RememberEntitiesShardStore.Command)(
-      whenDone: () => Unit): Unit = {
+  def rememberRemove(entityId: String)(whenDone: () => Unit): Unit = {
     rememberEntitiesStore match {
       case None =>
         whenDone()
-
       case Some(store) =>
-        if (VerboseDebug) log.debug("Update of [{}] [{}] triggered", entityIds.mkString(", "), command)
-
-        entityIds.foreach(entities.remembering)
-        store ! command
-        timers.startSingleTimer(
-          RememberEntityTimeoutKey,
-          RememberEntityTimeout(command),
-          // FIXME this timeout needs to match the timeout used in the ddata shard write since that tries 3 times
-          // and this could always fail before ddata store completes retrying writes
-          settings.tuningParameters.updatingStateTimeout)
-
-        context.become(waitingForUpdate(Map.empty))
-
-        def waitingForUpdate(pendingStarts: Map[EntityId, Option[ActorRef]]): Receive = {
-          // none of the current impls will send back a partial update, yet!
-          case RememberEntitiesShardStore.UpdateDone(ids) =>
-            if (VerboseDebug) log.debug("Update done for ids [{}]", ids.mkString(", "))
-            timers.cancel(RememberEntityTimeoutKey)
-            whenDone()
-            if (pendingStarts.isEmpty) {
-              if (VerboseDebug) log.debug("No pending entities, going to idle")
-              context.become(idle)
-              unstashAll()
-            } else {
-              if (VerboseDebug)
-                log.debug(
-                  "New entities encountered while waiting starting those: [{}]",
-                  pendingStarts.keys.mkString(", "))
-              startEntities(pendingStarts)
-            }
-          case RememberEntityTimeout(`command`) =>
-            throw new RuntimeException(
-              s"Async write for entityIds $entityIds timed out after ${settings.tuningParameters.updatingStateTimeout.pretty}")
-          case msg: ShardRegion.StartEntity =>
-            if (VerboseDebug)
-              log.debug(
-                "Start entity while a write already in progress. Pending writes [{}]. Writes in progress [{}]",
-                pendingStarts.keys.mkString(", "),
-                entityIds.mkString(", "))
-            if (!entities.entityIdExists(msg.entityId))
-              context.become(waitingForUpdate(pendingStarts + (msg.entityId -> Some(sender()))))
-
-          // below cases should handle same messages as in idle
-          case _: Terminated                           => stash()
-          case _: EntityTerminated                     => stash()
-          case _: CoordinatorMessage                   => stash()
-          case _: RememberEntityCommand                => stash()
-          case _: ShardRegion.StartEntityAck           => stash()
-          case _: ShardRegionCommand                   => stash()
-          case msg: ShardQuery                         => receiveShardQuery(msg)
-          case PassivateIdleTick                       => stash()
-          case msg: LeaseLost                          => receiveLeaseLost(msg)
-          case msg: RememberEntityStoreCrashed         => rememberEntityStoreCrashed(msg)
-          case msg if extractEntityId.isDefinedAt(msg) =>
-            // FIXME now the delivery logic is again spread out across two places, is this needed over what is in deliverMessage?
-            val (id, _) = extractEntityId(msg)
-            if (entities.entityIdExists(id)) {
-              if (VerboseDebug) log.debug("Entity already known about. Try and deliver. [{}]", id)
-              deliverMessage(msg, sender(), OptionVal.Some(entityIds))
-            } else {
-              if (VerboseDebug) log.debug("New entity, add it to batch of pending starts. [{}]", id)
-              appendToMessageBuffer(id, msg, sender())
-              context.become(waitingForUpdate(pendingStarts + (id -> None)))
-            }
-          case msg =>
-            // shouldn't be any other message types, but just in case
-            log.warning(
-              "Stashing unexpected message [{}] while waiting for remember entities update of [{}]",
-              msg.getClass,
-              entityIds.mkString(", "))
-            stash()
+        flightRecorder.rememberEntityRemove(entityId)
+        sendToRememberStore(store, Set(entityId), RememberEntitiesShardStore.RemoveEntity(entityId))(whenDone)
+    }
+  }
+  def rememberAdd(entityIds: Set[EntityId])(whenDone: () => Unit): Unit = {
+    rememberEntitiesStore match {
+      case None =>
+        whenDone()
+      case Some(store) =>
+        entityIds.foreach { id =>
+          entities.remembering(id)
+          flightRecorder.rememberEntityAdd(id)
         }
+        sendToRememberStore(store, entityIds, RememberEntitiesShardStore.AddEntities(entityIds))(whenDone)
+    }
+  }
+
+  /**
+   * The whenDone callback should not call become either directly or by calling this method again
+   * as it uses become.
+   */
+  def sendToRememberStore(store: ActorRef, entityIds: Set[EntityId], command: RememberEntitiesShardStore.Command)(
+      whenDone: () => Unit): Unit = {
+    if (VerboseDebug) log.debug("Update of [{}] [{}] triggered", entityIds.mkString(", "), command)
+    val startTime = System.nanoTime()
+    store ! command
+    timers.startSingleTimer(
+      RememberEntityTimeoutKey,
+      RememberEntityTimeout(command),
+      // FIXME this timeout needs to match the timeout used in the ddata shard write since that tries 3 times
+      // and this could always fail before ddata store completes retrying writes
+      settings.tuningParameters.updatingStateTimeout)
+
+    context.become(waitingForUpdate(Map.empty))
+
+    def waitingForUpdate(pendingStarts: Map[EntityId, Option[ActorRef]]): Receive = {
+      // none of the current impls will send back a partial update, yet!
+      case RememberEntitiesShardStore.UpdateDone(ids) =>
+        val duration = System.nanoTime() - startTime
+        if (VerboseDebug) log.debug("Update done for ids [{}]", ids.mkString(", "))
+        flightRecorder.rememberEntityOperation(duration)
+        timers.cancel(RememberEntityTimeoutKey)
+        whenDone()
+        if (pendingStarts.isEmpty) {
+          if (VerboseDebug) log.debug("No pending entities, going to idle")
+          unstashAll()
+          context.become(idle)
+        } else {
+          if (VerboseDebug)
+            log.debug("New entities encountered while waiting starting those: [{}]", pendingStarts.keys.mkString(", "))
+          startEntities(pendingStarts)
+        }
+      case RememberEntityTimeout(`command`) =>
+        throw new RuntimeException(
+          s"Async write for entityIds $entityIds timed out after ${settings.tuningParameters.updatingStateTimeout.pretty}")
+      case msg: ShardRegion.StartEntity =>
+        if (VerboseDebug)
+          log.debug(
+            "Start entity while a write already in progress. Pending writes {}. Writes in progress {}",
+            pendingStarts,
+            entityIds)
+        if (!entities.entityIdExists(msg.entityId))
+          context.become(waitingForUpdate(pendingStarts + (msg.entityId -> Some(sender()))))
+
+      // below cases should handle same messages as in idle
+      case _: Terminated                           => stash()
+      case _: EntityTerminated                     => stash()
+      case _: CoordinatorMessage                   => stash()
+      case _: RememberEntityCommand                => stash()
+      case _: ShardRegion.StartEntityAck           => stash()
+      case _: StartEntityInternal                  => stash()
+      case _: ShardRegionCommand                   => stash()
+      case msg: ShardQuery                         => receiveShardQuery(msg)
+      case PassivateIdleTick                       => stash()
+      case msg: LeaseLost                          => receiveLeaseLost(msg)
+      case msg: RememberEntityStoreCrashed         => rememberEntityStoreCrashed(msg)
+      case msg if extractEntityId.isDefinedAt(msg) =>
+        // FIXME now the delivery logic is again spread out across two places, is this needed over what is in deliverMessage?
+        val (id, _) = extractEntityId(msg)
+        if (entities.entityIdExists(id)) {
+          if (VerboseDebug) log.debug("Entity already known about. Try and deliver. [{}]", id)
+          deliverMessage(msg, sender(), OptionVal.Some(entityIds))
+        } else {
+          if (VerboseDebug) log.debug("New entity, add it to batch of pending starts. [{}]", id)
+          appendToMessageBuffer(id, msg, sender())
+          context.become(waitingForUpdate(pendingStarts + (id -> None)))
+        }
+      case msg =>
+        // shouldn't be any other message types, but just in case
+        log.warning(
+          "Stashing unexpected message [{}] while waiting for remember entities update of [{}]",
+          msg.getClass,
+          entityIds.mkString(", "))
+        stash()
     }
   }
 
@@ -572,7 +592,7 @@ private[akka] class Shard(
     }
 
     if (needStarting.nonEmpty) {
-      sendToRememberStore(needStarting.keySet, RememberEntitiesShardStore.AddEntities(needStarting.keySet)) { () =>
+      rememberAdd(needStarting.keySet) { () =>
         needStarting.foreach {
           case (entityId, requestor) =>
             getOrCreateEntity(entityId)
@@ -587,7 +607,7 @@ private[akka] class Shard(
     if (ack.shardId != shardId && entities.entityIdExists(ack.entityId)) {
       log.debug("Entity [{}] previously owned by shard [{}] started in shard [{}]", ack.entityId, shardId, ack.shardId)
 
-      sendToRememberStore(ack.entityId, RememberEntitiesShardStore.RemoveEntity(ack.entityId)) { () =>
+      rememberRemove(ack.entityId) { () =>
         entities.removeEntity(ack.entityId)
         messageBuffers.remove(ack.entityId)
       }
@@ -658,6 +678,7 @@ private[akka] class Shard(
       // Note; because we're not persisting the EntityStopped, we don't need
       // to persist the EntityStarted either.
       log.debug("Starting entity [{}] again, there are buffered messages for it", id)
+      flightRecorder.entityPassivateRestart(id)
       // this will re-add the entity back
       sendMsgBuffer(id)
     } else {
@@ -668,7 +689,7 @@ private[akka] class Shard(
         context.system.scheduler.scheduleOnce(entityRestartBackoff, self, RestartEntity(id))
       } else {
         // FIXME optional wait for completion as optimization where stops are not critical
-        sendToRememberStore(id, RememberEntitiesShardStore.RemoveEntity(id))(() => passivateCompleted(id))
+        rememberRemove(id)(() => passivateCompleted(id))
       }
     }
   }
@@ -683,6 +704,7 @@ private[akka] class Shard(
           entities.entityPassivating(id)
           messageBuffers.add(id)
           entity ! stopMessage
+          flightRecorder.entityPassivate(id)
         } else {
           log.debug("Passivation already in progress for {}. Not sending stopMessage back to entity", entity)
         }
@@ -714,9 +736,9 @@ private[akka] class Shard(
     entities.removeEntity(entityId)
     if (hasBufferedMessages) {
       log.debug("Entity stopped after passivation [{}], but will be started again due to buffered messages", entityId)
-      sendToRememberStore(entityId, RememberEntitiesShardStore.AddEntities(Set(entityId))) { () =>
-        sendMsgBuffer(entityId)
-      }
+      // in case we're already writing to the remember store
+      flightRecorder.entityPassivateRestart(entityId)
+      self ! StartEntityInternal(entityId)
     } else {
       log.debug("Entity stopped after passivation [{}]", entityId)
       dropBufferFor(entityId)
@@ -755,7 +777,6 @@ private[akka] class Shard(
                   "Delivering message of type [{}] to [{}] (starting because known but not running)",
                   payload.getClass,
                   id)
-
               val actor = getOrCreateEntity(id)
               touchLastMessageTimestamp(id)
               actor.tell(payload, snd)
@@ -764,7 +785,7 @@ private[akka] class Shard(
               if (VerboseDebug)
                 log.debug("Buffering message [{}] to [{}] and starting actor", payload.getClass, id)
               appendToMessageBuffer(id, msg, snd)
-              sendToRememberStore(id, RememberEntitiesShardStore.AddEntities(Set(id)))(() => sendMsgBuffer(id))
+              rememberAdd(Set(id))(() => sendMsgBuffer(id))
             case OptionVal.None =>
               // No actor running and write in progress for some other entity id, stash message for deliver when
               // unstash happens on async write complete

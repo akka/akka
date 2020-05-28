@@ -9,7 +9,9 @@
         </encoder>
     </appender>
 
-    <root level="INFO">
+    <logger name="akka.cluster.sharding" level="INFO"/>
+
+    <root level="WARN">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>
