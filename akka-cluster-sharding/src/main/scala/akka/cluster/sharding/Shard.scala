@@ -191,9 +191,14 @@ private[akka] object Shard {
    */
   case class RememberingStart(ackTo: Option[ActorRef]) extends EntityState {
     override def transition(newState: EntityState): EntityState = newState match {
-      case active: Active      => active
-      case r: RememberingStart => r // FIXME is this really fine, will potentially replace ackTo
-      case _                   => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+      case active: Active => active
+      case r: RememberingStart =>
+        ackTo match {
+          case None => r
+          case Some(_) =>
+            r // FIXME is this really fine, replace ackTo with another one or None
+        }
+      case _ => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
     }
   }
 
@@ -560,9 +565,9 @@ private[akka] class Shard(
     case Terminated(ref)                         => receiveTerminated(ref)
     case msg: CoordinatorMessage                 => receiveCoordinatorMessage(msg)
     case msg: RememberEntityCommand              => receiveRememberEntityCommand(msg)
-    case msg: ShardRegion.StartEntity            => startEntities(Map(msg.entityId -> Some(sender())))
+    case msg: ShardRegion.StartEntity            => startEntity(msg.entityId, Some(sender()))
     case msg: ShardRegion.StartEntityAck         => receiveStartEntityAck(msg)
-    case msg: StartEntityInternal                => startEntities(Map(msg.id -> None))
+    case msg: StartEntityInternal                => startEntity(msg.id, None)
     case msg: ShardRegionCommand                 => receiveShardRegionCommand(msg)
     case msg: ShardQuery                         => receiveShardQuery(msg)
     case PassivateIdleTick                       => passivateIdleEntities()
@@ -634,7 +639,7 @@ private[akka] class Shard(
       if (!entities.entityIdExists(entityId)) {
         if (VerboseDebug)
           log.debug("Start entity [{}] while a write already in progress. Marking as pending", entityId)
-        entities.rememberingStart(entityId, ackTo = Some(sender))
+        entities.rememberingStart(entityId, ackTo = Some(sender()))
       } else {
         // it's already running, ack immediately
         sender() ! ShardRegion.StartEntityAck(entityId, shardId)
@@ -695,7 +700,7 @@ private[akka] class Shard(
     // entities can contain both ids from start/stops and pending ones, so we need
     // to mark the completed ones as complete to get the set of pending ones
     starts.foreach { entityId =>
-      val stateBeforeStart = entities.entity(entityId).getOrElse(NoState)
+      val stateBeforeStart = entities.entityState(entityId)
       // this will start the entity and transition the entity state in sessions to active
       getOrCreateEntity(entityId)
       sendMsgBuffer(entityId)
@@ -764,26 +769,23 @@ private[akka] class Shard(
 
   // this could be because of a start message or due to a new message for the entity
   // if it is a start entity then start entity ack is sent after it is created
-  private def startEntities(entitiesToStart: Map[EntityId, Option[ActorRef]]): Unit = {
-    val alreadyStarted = entitiesToStart.filterKeys(entity => this.entities.entityIdExists(entity))
-    val needStarting = entitiesToStart -- alreadyStarted.keySet
-    if (log.isDebugEnabled) {
-      log.debug(
-        "Request to start entities. Already started [{}]. Need starting [{}]",
-        alreadyStarted.keys.mkString(", "),
-        needStarting.keys.mkString(", "))
-    }
-    alreadyStarted.foreach {
-      case (entityId, requestor) =>
-        getOrCreateEntity(entityId)
+  private def startEntity(entityId: EntityId, ackTo: Option[ActorRef]): Unit = {
+    entities.entityState(entityId) match {
+      case Active(_) =>
+        log.debug("Request to start entity [{}] (Already started)", entityId)
         touchLastMessageTimestamp(entityId)
-        requestor.foreach(_ ! ShardRegion.StartEntityAck(entityId, shardId))
-    }
-    needStarting.foreach {
-      case (entityId, ackTo) =>
+        ackTo.foreach(_ ! ShardRegion.StartEntityAck(entityId, shardId))
+      case _: RememberingStart =>
+        // FIXME safe to replace ackTo?
         entities.rememberingStart(entityId, ackTo)
+      case NoState =>
+        log.debug("Request to start entity [{}] and ack to [{}]", entityId, ackTo)
+        entities.rememberingStart(entityId, ackTo)
+        rememberUpdate(add = Set(entityId))
+      case other =>
+        // FIXME what do we do here?
+        throw new IllegalStateException(s"Unhandled state when wanting to start $entityId: $other")
     }
-    rememberUpdate(add = entitiesToStart.keySet)
   }
 
   private def receiveStartEntityAck(ack: ShardRegion.StartEntityAck): Unit = {
@@ -939,9 +941,10 @@ private[akka] class Shard(
     } else {
       payload match {
         case start: ShardRegion.StartEntity =>
+          // FIXME why are we handling this here rather than the toplevel receive?
           // we can only start a new entity if we are not currently waiting for another write
           if (entities.pendingRememberedEntitiesExist()) entities.rememberingStart(entityId, ackTo = Some(snd))
-          else startEntities(Map(start.entityId -> Some(sender())))
+          else startEntity(start.entityId, Some(sender()))
         case _ =>
           entities.entityState(entityId) match {
             case Active(ref) =>
