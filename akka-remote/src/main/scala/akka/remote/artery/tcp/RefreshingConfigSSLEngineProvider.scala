@@ -10,16 +10,17 @@ import java.nio.charset.StandardCharsets
 import java.security.cert.{ CertificateFactory, X509Certificate }
 import java.security.{ GeneralSecurityException, KeyStore, PrivateKey, SecureRandom }
 import java.util.concurrent.atomic.AtomicReference
+import javax.naming.ldap.LdapName
+import javax.net.ssl.{ KeyManagerFactory, SSLContext, SSLEngine, SSLSession, TrustManagerFactory }
+
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
 
 import akka.actor.ActorSystem
 import akka.pki.pem.{ DERPrivateKeyLoader, PEMDecoder }
 import akka.stream.TLSRole
-import com.typesafe.config.Config
-import javax.naming.ldap.LdapName
-import javax.net.ssl.{ KeyManagerFactory, SSLContext, SSLEngine, SSLSession, TrustManagerFactory }
-
-import scala.collection.JavaConverters._
-import scala.concurrent.duration._
+import akka.util.ccompat.JavaConverters._
 
 final class RefreshingConfigSSLEngineProvider(val config: Config) extends SSLEngineProvider {
   import RefreshingConfigSSLEngineProvider._
