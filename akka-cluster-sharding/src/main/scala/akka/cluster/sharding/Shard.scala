@@ -780,7 +780,7 @@ private[akka] class Shard(
       case _: RememberingStart =>
         // FIXME safe to replace ackTo?
         entities.rememberingStart(entityId, ackTo)
-      case NoState =>
+      case RememberedButNotCreated | NoState =>
         log.debug("Request to start entity [{}] and ack to [{}]", entityId, ackTo)
         entities.rememberingStart(entityId, ackTo)
         rememberUpdate(add = Set(entityId))
