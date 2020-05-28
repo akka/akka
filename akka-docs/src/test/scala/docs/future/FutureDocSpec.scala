@@ -6,7 +6,7 @@ package docs.future
 
 import language.postfixOps
 import akka.testkit._
-import akka.actor.{Actor, ActorRef, Props, Status}
+import akka.actor.{ Actor, ActorRef, Props, Status }
 import akka.util.Timeout
 
 import scala.concurrent.duration._
@@ -14,8 +14,8 @@ import java.lang.IllegalStateException
 
 import akka.actor.typed.ActorSystem
 
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success}
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.util.{ Failure, Success }
 
 object FutureDocSpec {
 
@@ -485,14 +485,10 @@ class FutureDocSpec extends AkkaSpec {
     import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
     val system: ActorSystem[Nothing] = this.system.toTyped
     //#after
-    import akka.actor.typed.scaladsl.adapter._
     import akka.pattern.after
 
-    implicit val scheduler: akka.actor.Scheduler = system.scheduler.toClassic
-    implicit val ec: ExecutionContext = system.executionContext
-
     val delayed =
-      akka.pattern.after(200 millis, using = scheduler)(Future.failed(new IllegalStateException("OHNOES")))
+      akka.pattern.after(200 millis)(Future.failed(new IllegalStateException("OHNOES")))
 
     val future = Future { Thread.sleep(1000); "foo" }
     val result = Future.firstCompletedOf(Seq(future, delayed))

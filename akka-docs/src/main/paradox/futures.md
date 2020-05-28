@@ -10,16 +10,15 @@ Akka offers tiny helpers for use with @scala[@scaladoc[Future](scala.concurrent.
   version="$akka.version$"
 }
 
-@@@ div { .group-scala }
-
 ## After
 
-`akka.pattern.after` makes it easy to complete a Scala @scaladoc[Future](scala.concurrent.Future) with a value or exception after a timeout.
+@scala[`akka.pattern.after`]@java[@javadoc[akka.pattern.Patterns.after](akka.pattern.Patterns#after)] makes it easy to complete a @scala[@scaladoc[Future](scala.concurrent.Future)]@java[@javadoc[CompletionStage](java.util.concurrent.CompletionStage)] with a value or exception after a timeout.
 
 Scala
 :  @@snip [FutureDocSpec.scala](/akka-docs/src/test/scala/docs/future/FutureDocSpec.scala) { #after }
 
-@@@
+Java
+:   @@snip [FutureDocTest.java](/akka-docs/src/test/java/jdocs/future/FutureDocTest.java) { #imports #after }
 
 ## Retry
 
@@ -29,4 +28,4 @@ Scala
 :   @@snip [FutureDocSpec.scala](/akka-docs/src/test/scala/docs/future/FutureDocSpec.scala) { #retry }
 
 Java
-:   @@snip [FutureDocTest.java](/akka-docs/src/test/java/jdocs/future/FutureDocTest.java) { #imports-retry #retry }
+:   @@snip [FutureDocTest.java](/akka-docs/src/test/java/jdocs/future/FutureDocTest.java) { #imports #retry }
