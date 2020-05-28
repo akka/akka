@@ -8,7 +8,7 @@ import java.security.cert.X509Certificate
 
 import javax.naming.ldap.LdapName
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 /**
  *

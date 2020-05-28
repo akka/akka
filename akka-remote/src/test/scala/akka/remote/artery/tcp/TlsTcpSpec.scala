@@ -49,19 +49,7 @@ class TlsTcpWithCrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec
     }
     """))
 
-class TlsTcpWithCloudNativeSslEngineSpec extends TlsTcpSpec(ConfigFactory.parseString(s"""
-    akka.remote.artery.ssl {
-       ssl-engine-provider = akka.remote.artery.tcp.ssl.CloudNativeSSLEngineProvider
-       cloud-native-ssl-engine {
-         key-file = ${getClass.getClassLoader.getResource("ssl/node.example.com.pem").getPath}
-         cert-file = ${getClass.getClassLoader.getResource("ssl/node.example.com.crt").getPath}
-         ca-cert-file = ${getClass.getClassLoader.getResource("ssl/exampleca.crt").getPath}
-       }
-    }
-    """))
-
-class TlsTcpWithMagicSslEngineSpec
-    extends TlsTcpSpec(ConfigFactory.parseString(s"""
+class TlsTcpWithMagicSslEngineSpec extends TlsTcpSpec(ConfigFactory.parseString(s"""
     akka.remote.artery.ssl {
        ssl-engine-provider = akka.remote.artery.tcp.ssl.TlsMagicSSLEngineProvider
        tls-magic-engine {
@@ -96,9 +84,7 @@ abstract class TlsTcpSpec(config: Config)
 
   def isSupported: Boolean = {
     val checked = system.settings.config.getString("akka.remote.artery.ssl.ssl-engine-provider") match {
-      case "akka.remote.artery.tcp.ssl.CloudNativeSSLEngineProvider" =>
-        CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.cloud-native-ssl-engine")
-      case "akka.remote.artery.tcp.ssl.ConfigSSLEngineProvider" =>
+      case "akka.remote.artery.tcp.ConfigSSLEngineProvider" =>
         CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.config-ssl-engine")
       case "akka.remote.artery.tcp.ssl.TlsMagicSSLEngineProvider" =>
         CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.tls-magic-engine")
@@ -236,7 +222,7 @@ class TlsTcpWithActorSystemSetupSpec extends ArteryMultiNodeSpec(TlsTcpSpec.conf
 
   val sslProviderSetup = SSLEngineProviderSetup(sys =>
     new SSLEngineProvider {
-      val delegate = new ssl.ConfigSSLEngineProvider(sys)
+      val delegate = new ConfigSSLEngineProvider(sys)
       override def createServerSSLEngine(hostname: String, port: Int): SSLEngine = {
         sslProviderServerProbe.ref ! "createServerSSLEngine"
         delegate.createServerSSLEngine(hostname, port)

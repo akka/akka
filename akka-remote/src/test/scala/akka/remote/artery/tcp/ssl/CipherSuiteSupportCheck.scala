@@ -27,7 +27,7 @@ object CipherSuiteSupportCheck {
 
     isPrngSupported(subConfig)
     val engine: SSLEngine = buildSslEngine(system)
-    val sslFactoryConfig = new SslFactoryConfig(subConfig)
+    val sslFactoryConfig = new SSLEngineConfig(subConfig)
 
     areAlgorithmsSupported(sslFactoryConfig, engine)
     isProtocolSupported(sslFactoryConfig, engine)
@@ -41,7 +41,7 @@ object CipherSuiteSupportCheck {
       throw new NoSuchAlgorithmException(setting)
   }
 
-  private def areAlgorithmsSupported(sslFactoryConfig: SslFactoryConfig, engine: SSLEngine) = {
+  private def areAlgorithmsSupported(sslFactoryConfig: SSLEngineConfig, engine: SSLEngine) = {
     import sslFactoryConfig._
     val gotAllSupported = SSLEnabledAlgorithms.diff(engine.getSupportedCipherSuites.toSet)
     val gotAllEnabled = SSLEnabledAlgorithms.diff(engine.getEnabledCipherSuites.toSet)
@@ -49,7 +49,7 @@ object CipherSuiteSupportCheck {
     gotAllEnabled.isEmpty || (throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled))
   }
 
-  private def isProtocolSupported(sslFactoryConfig: SslFactoryConfig, engine: SSLEngine) = {
+  private def isProtocolSupported(sslFactoryConfig: SSLEngineConfig, engine: SSLEngine) = {
     import sslFactoryConfig._
     engine.getSupportedProtocols.contains(SSLProtocol) ||
     (throw new IllegalArgumentException("Protocol not supported: " + SSLProtocol))
@@ -60,14 +60,9 @@ object CipherSuiteSupportCheck {
     val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
     val host = address.host.get
     val port = address.port.get
-    val provider = new ConfigSSLEngineProvider(system)
+    val provider = new akka.remote.artery.tcp.ConfigSSLEngineProvider(system)
     val engine = provider.createServerSSLEngine(host, port)
     engine
   }
 
-  // secure random
-  // enabled algorithms from settings
-  //  - supported cipher suites (non empty)
-  //  - enabled cipher suits (non empty)
-  // supported Protocol
 }

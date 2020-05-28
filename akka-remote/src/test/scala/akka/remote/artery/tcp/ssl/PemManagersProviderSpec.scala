@@ -4,7 +4,10 @@
 
 package akka.remote.artery.tcp.ssl
 
-import com.typesafe.config.ConfigFactory
+import java.security.PrivateKey
+import java.security.cert.Certificate
+import java.security.cert.X509Certificate
+
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -21,32 +24,31 @@ class PemManagersProviderSpec extends AnyWordSpec with Matchers {
       // or the fact that the key's certificate is self-signed cause one of the following
       // errors: `certificate_unknown`, `certificate verify message signature error`/`bad_certificate`
       // during the SSLHandshake.
-      withFiles("ssl/pem/pkcs1.pem", "ssl/pem/selfsigned-certificate.pem", "ssl/pem/selfsigned-certificate.pem") { provider =>
-        provider.trustManagers.length must be(1)
-        provider.keyManagers.length must be(1)
-        provider.nodeCertificate.getSubjectDN.getName must be("CN=0d207b68-9a20-4ee8-92cb-bf9699581cf8")
+      withFiles("ssl/pem/pkcs1.pem", "ssl/pem/selfsigned-certificate.pem", "ssl/pem/selfsigned-certificate.pem") {
+        (pk, cert, cacert) =>
+          PemManagersProvider.buildKeyManagers(pk, cert, cacert).length must be(1)
+          PemManagersProvider.buildTrustManagers(cacert).length must be(1)
+          cert.getSubjectDN.getName must be("CN=0d207b68-9a20-4ee8-92cb-bf9699581cf8")
       }
     }
 
     "load stores reading files setup in config (keytool samples)" in {
-      withFiles("ssl/node.example.com.pem", "ssl/node.example.com.crt", "ssl/exampleca.crt") { provider =>
-        provider.trustManagers.length must be(1)
-        provider.keyManagers.length must be(1)
-        provider.nodeCertificate.getSubjectDN.getName must be("CN=node.example.com, OU=Example Org, O=Example Company, L=San Francisco, ST=California, C=US")
+      withFiles("ssl/node.example.com.pem", "ssl/node.example.com.crt", "ssl/exampleca.crt") { (pk, cert, cacert) =>
+        PemManagersProvider.buildKeyManagers(pk, cert, cacert).length must be(1)
+        PemManagersProvider.buildTrustManagers(cacert).length must be(1)
+        cert.getSubjectDN.getName must be(
+          "CN=node.example.com, OU=Example Org, O=Example Company, L=San Francisco, ST=California, C=US")
       }
     }
 
   }
 
-  private def withFiles(keyFile: String, certFile: String, caCertFile: String)(block: (PemManagersProvider) => Unit) = {
-    val filesConfig = {
-      ConfigFactory.parseString(s"""
-        key-file = "${nameToPath(keyFile)}"
-        cert-file = "${nameToPath(certFile)}"
-        ca-cert-file = "${nameToPath(caCertFile)}"
-    """)
-    }
-    block(new PemManagersProvider(filesConfig))
+  private def withFiles(keyFile: String, certFile: String, caCertFile: String)(
+      block: (PrivateKey, X509Certificate, Certificate) => Unit) = {
+    block(
+      PemManagersProvider.loadPrivateKey(nameToPath(keyFile)),
+      PemManagersProvider.loadCertificate(nameToPath(certFile)).asInstanceOf[X509Certificate],
+      PemManagersProvider.loadCertificate(nameToPath(caCertFile)))
   }
 
   private def nameToPath(name: String): String = getClass.getClassLoader.getResource(name).getPath

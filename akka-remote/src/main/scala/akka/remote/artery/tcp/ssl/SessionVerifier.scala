@@ -12,10 +12,8 @@ import javax.net.ssl.SSLSession
  * TODO: docs
  */
 trait SessionVerifier {
-
   def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable]
   def verifyServerSession(hostname: String, session: SSLSession): Option[Throwable]
-
 }
 
 /**
@@ -23,7 +21,6 @@ trait SessionVerifier {
  */
 object NoopSessionVerifier extends SessionVerifier {
   override def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable] = None
-
   override def verifyServerSession(hostname: String, session: SSLSession): Option[Throwable] = None
 }
 
@@ -31,10 +28,8 @@ object NoopSessionVerifier extends SessionVerifier {
  * TODO: docs
  */
 final class PeerSubjectVerifier(peerCertificate: X509Certificate) extends SessionVerifier {
-
   override def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable] =
     verifyPeerCertificates(session)
-
   override def verifyServerSession(hostname: String, session: SSLSession): Option[Throwable] =
     verifyPeerCertificates(session)
 

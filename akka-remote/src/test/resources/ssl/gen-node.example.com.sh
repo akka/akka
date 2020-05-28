@@ -39,6 +39,23 @@ keytool -gencert -v \
   -rfc \
   -validity 3650
 
+keytool -import -v \
+  -alias exampleca \
+  -file exampleca.crt \
+  -keystore node.example.com.p12 \
+  -storetype PKCS12 \
+  -storepass:env PW << EOF
+yes
+EOF
+
+# Import the signed certificate back into example.com.p12
+keytool -import -v \
+  -alias node.example.com \
+  -file node.example.com.crt \
+  -keystore node.example.com.p12 \
+  -storetype PKCS12 \
+  -storepass:env PW
+
 # Export the private key as a PEM. This export adds some extra PKCS#12 bag info.
 openssl pkcs12 -in node.example.com.p12 -nodes -nocerts -out tmp.pem -passin pass:kLnCu3rboe
 # A second pass extracts the PKCS#12 bag information and produces a clean PEM file.

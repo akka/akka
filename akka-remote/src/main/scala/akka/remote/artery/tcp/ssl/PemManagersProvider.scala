@@ -17,7 +17,6 @@ import java.security.cert.X509Certificate
 import akka.annotation.InternalApi
 import akka.pki.pem.DERPrivateKeyLoader
 import akka.pki.pem.PEMDecoder
-import com.typesafe.config.Config
 import javax.net.ssl.KeyManager
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.TrustManager
@@ -25,30 +24,42 @@ import javax.net.ssl.TrustManagerFactory
 
 import scala.util.Try
 
-// TODO: docs
-final class PemManagersProvider private[tcp] (
-    val SSLKeyFile: String,
-    val SSLCertFile: String,
-    val SSLCACertFile: String)
-    extends SslManagersProvider {
-  // TODO: support password-protected PKCS#8
-  def this(config: Config) {
-    this(
-      SSLKeyFile = config.getString("key-file"),
-      SSLCertFile = config.getString("cert-file"),
-      SSLCACertFile = config.getString("ca-cert-file"))
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[ssl] object PemManagersProvider {
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[ssl] def buildKeyManagers(
+      privateKey: PrivateKey,
+      cert: X509Certificate,
+      cacert: Certificate): Array[KeyManager] = {
+    val keyStore = KeyStore.getInstance("JKS")
+    keyStore.load(null)
+
+    keyStore.setCertificateEntry("cert", cert)
+    keyStore.setCertificateEntry("cacert", cacert)
+    keyStore.setKeyEntry("private-key", privateKey, "changeit".toCharArray, Array(cert, cacert))
+
+    val kmf =
+      KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
+    kmf.init(keyStore, "changeit".toCharArray)
+    val keyManagers = kmf.getKeyManagers
+    keyManagers
   }
 
-  private val certFactory = CertificateFactory.getInstance("X.509")
-
-  private val caCertificate: Certificate = loadCertificate(SSLCACertFile)
-  val nodeCertificate: X509Certificate = loadCertificate(SSLCertFile).asInstanceOf[X509Certificate]
-
-  // data is read once. To force a reload create a new instance of this SslManagersProvider
-  val trustManagers: Array[TrustManager] = {
-    val trustStore = KeyStore.getInstance(KeyStore.getDefaultType)
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[ssl] def buildTrustManagers(cacert: Certificate): Array[TrustManager] = {
+    val trustStore = KeyStore.getInstance("JKS")
     trustStore.load(null)
-    trustStore.setCertificateEntry("cacert", caCertificate)
+    trustStore.setCertificateEntry("cacert", cacert)
 
     val tmf =
       TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
@@ -56,40 +67,26 @@ final class PemManagersProvider private[tcp] (
     tmf.getTrustManagers
   }
 
-  // data is read once. To force a reload create a new instance of this SslManagersProvider
-  val keyManagers: Array[KeyManager] = {
-    val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
-    keyStore.load(null)
-    keyStore.setCertificateEntry("cacert", caCertificate)
-    keyStore.setCertificateEntry("cert", nodeCertificate)
-
-    // Load the private key
-    val privateKey = loadPrivateKey(SSLKeyFile)
-    keyStore.setKeyEntry("private-key", privateKey, "changeit".toCharArray, Array(nodeCertificate, caCertificate))
-
-    val kmf =
-      KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm)
-    kmf.init(keyStore, "changeit".toCharArray)
-    kmf.getKeyManagers
-  }
-
   /**
    * INTERNAL API
    */
   @InternalApi
-  private def loadPrivateKey(filename: String): PrivateKey = {
+  private[ssl] def loadPrivateKey(filename: String): PrivateKey = {
     val bytes = Files.readAllBytes(new File(filename).toPath)
     val pemData = new String(bytes, Charset.forName("UTF-8"))
     DERPrivateKeyLoader.load(PEMDecoder.decode(pemData))
   }
 
+  private val certFactory = CertificateFactory.getInstance("X.509")
+
   /**
    * INTERNAL API
    */
   @InternalApi
-  private def loadCertificate(filename: String): Certificate = {
+  private[ssl] def loadCertificate(filename: String): Certificate = {
     val fin = new FileInputStream(filename)
     try certFactory.generateCertificate(fin)
     finally Try(fin.close())
   }
+
 }

@@ -16,7 +16,7 @@ import akka.actor.ActorSystem
 import akka.event.LogMarker
 import akka.event.Logging
 import akka.event.MarkerLoggingAdapter
-import akka.japi.Util.immutableSeq
+import akka.remote.artery.tcp.ssl.SSLEngineConfig
 import akka.stream.TLSRole
 import com.typesafe.config.Config
 import javax.net.ssl.KeyManager
@@ -26,7 +26,6 @@ import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
-import akka.util.ccompat._
 
 import scala.util.Try
 
@@ -35,11 +34,6 @@ import scala.util.Try
  *
  * Subclass may override protected methods to replace certain parts, such as key and trust manager.
  */
-@deprecated(
-  "Subclasses of akka.remote.artery.tcp.ConfigSSLEngineProvider should be " +
-  "reimplemented preferring composition over inheritance. See akka.remote.artery.tcp.ssl.ConfigSSLEngineProvider " +
-  "for an example.",
-  "2.6.6")
 class ConfigSSLEngineProvider(protected val config: Config, protected val log: MarkerLoggingAdapter)
     extends SSLEngineProvider {
 
@@ -48,16 +42,18 @@ class ConfigSSLEngineProvider(protected val config: Config, protected val log: M
       system.settings.config.getConfig("akka.remote.artery.ssl.config-ssl-engine"),
       Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName))
 
+  val sslEngineConfig = new SSLEngineConfig(config)
+
   val SSLKeyStore: String = config.getString("key-store")
   val SSLTrustStore: String = config.getString("trust-store")
   val SSLKeyStorePassword: String = config.getString("key-store-password")
   val SSLKeyPassword: String = config.getString("key-password")
   val SSLTrustStorePassword: String = config.getString("trust-store-password")
-  val SSLEnabledAlgorithms: Set[String] = immutableSeq(config.getStringList("enabled-algorithms")).to(Set)
-  val SSLProtocol: String = config.getString("protocol")
-  val SSLRandomNumberGenerator: String = config.getString("random-number-generator")
-  val SSLRequireMutualAuthentication: Boolean = config.getBoolean("require-mutual-authentication")
-  val HostnameVerification: Boolean = config.getBoolean("hostname-verification")
+  val SSLEnabledAlgorithms: Set[String] = sslEngineConfig.SSLEnabledAlgorithms
+  val SSLProtocol: String = sslEngineConfig.SSLProtocol
+  val SSLRandomNumberGenerator: String = sslEngineConfig.SSLRandomNumberGenerator
+  val SSLRequireMutualAuthentication: Boolean = sslEngineConfig.SSLRequireMutualAuthentication
+  val HostnameVerification: Boolean = sslEngineConfig.HostnameVerification
 
   private lazy val sslContext: SSLContext = {
     // log hostname verification warning once
