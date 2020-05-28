@@ -2,7 +2,7 @@
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package com.lightbend.akka.tlsmagic
+package akka.remote.artery.tcp
 
 import java.io.{ File, FileInputStream, FileNotFoundException, IOException }
 import java.nio.file.Files
@@ -13,9 +13,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.ActorSystem
 import akka.pki.pem.{ DERPrivateKeyLoader, PEMDecoder }
-import akka.remote.artery.tcp.{ SSLEngineProvider, SslTransportException }
 import akka.stream.TLSRole
-import com.lightbend.akka.tlsmagic.TlsMagicSSLEngineProvider.{ CachedContext, ConfiguredContext }
 import com.typesafe.config.Config
 import javax.naming.ldap.LdapName
 import javax.net.ssl.{ KeyManagerFactory, SSLContext, SSLEngine, SSLSession, TrustManagerFactory }
@@ -23,7 +21,8 @@ import javax.net.ssl.{ KeyManagerFactory, SSLContext, SSLEngine, SSLSession, Tru
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 
-final class TlsMagicSSLEngineProvider(val config: Config) extends SSLEngineProvider {
+final class RefreshingConfigSSLEngineProvider(val config: Config) extends SSLEngineProvider {
+  import RefreshingConfigSSLEngineProvider._
 
   def this(system: ActorSystem) =
     this(system.settings.config.getConfig("akka.remote.artery.ssl.tls-magic-engine"))
@@ -176,7 +175,7 @@ final class TlsMagicSSLEngineProvider(val config: Config) extends SSLEngineProvi
 
 }
 
-object TlsMagicSSLEngineProvider {
+object RefreshingConfigSSLEngineProvider {
 
   private case class CachedContext(cached: ConfiguredContext, expires: Deadline)
 
