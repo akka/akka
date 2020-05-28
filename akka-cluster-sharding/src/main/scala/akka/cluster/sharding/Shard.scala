@@ -681,7 +681,6 @@ private[akka] class Shard(
           "Passivation of [{}] arrived while updating.",
           entities.entityId(sender()).getOrElse(s"Unknown actor ${sender()}"))
       passivate(sender(), stopMessage)
-    case _: ShardRegionCommand           => stash()
     case msg: ShardQuery                 => receiveShardQuery(msg)
     case PassivateIdleTick               => stash()
     case msg: RememberEntityStoreCrashed => rememberEntityStoreCrashed(msg)
@@ -713,7 +712,6 @@ private[akka] class Shard(
       touchLastMessageTimestamp(entityId)
     }
     stops.foreach { entityId =>
-      // FIXME actually stop it by sendint stop message or what used to happen when stop write completed
       entities.entityState(entityId) match {
         case RememberingStop(Passivating) =>
           // this updates entity state
