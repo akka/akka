@@ -4,21 +4,21 @@
 
 package com.lightbend.akka.tlsmagic
 
-import java.io.{File, FileInputStream, FileNotFoundException, IOException}
+import java.io.{ File, FileInputStream, FileNotFoundException, IOException }
 import java.nio.file.Files
 import java.nio.charset.StandardCharsets
-import java.security.cert.{CertificateFactory, X509Certificate}
-import java.security.{GeneralSecurityException, KeyStore, PrivateKey, SecureRandom}
+import java.security.cert.{ CertificateFactory, X509Certificate }
+import java.security.{ GeneralSecurityException, KeyStore, PrivateKey, SecureRandom }
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.ActorSystem
 import akka.pki.pem.{ DERPrivateKeyLoader, PEMDecoder }
-import akka.remote.artery.tcp.{SSLEngineProvider, SslTransportException}
+import akka.remote.artery.tcp.{ SSLEngineProvider, SslTransportException }
 import akka.stream.TLSRole
-import com.lightbend.akka.tlsmagic.TlsMagicSSLEngineProvider.{CachedContext, ConfiguredContext}
+import com.lightbend.akka.tlsmagic.TlsMagicSSLEngineProvider.{ CachedContext, ConfiguredContext }
 import com.typesafe.config.Config
 import javax.naming.ldap.LdapName
-import javax.net.ssl.{KeyManagerFactory, SSLContext, SSLEngine, SSLSession, TrustManagerFactory}
+import javax.net.ssl.{ KeyManagerFactory, SSLContext, SSLEngine, SSLSession, TrustManagerFactory }
 
 import scala.collection.JavaConverters._
 import scala.concurrent.duration._
@@ -145,7 +145,10 @@ final class TlsMagicSSLEngineProvider(val config: Config) extends SSLEngineProvi
       case x509: X509Certificate =>
         val peerSubjectNames = getAllSubjectNames(x509)
         if (mySubjectNames.exists(peerSubjectNames)) None
-        else Some(new IllegalArgumentException(s"None of the peer subject names $peerSubjectNames were in local subject names $mySubjectNames"))
+        else
+          Some(
+            new IllegalArgumentException(
+              s"None of the peer subject names $peerSubjectNames were in local subject names $mySubjectNames"))
       case other =>
         Some(new IllegalArgumentException(s"Unknown certificate type: ${other.getClass}"))
     }
@@ -153,11 +156,10 @@ final class TlsMagicSSLEngineProvider(val config: Config) extends SSLEngineProvi
   }
 
   private def getAllSubjectNames(cert: X509Certificate) = {
-    val maybeCommonName = new LdapName(cert.getSubjectX500Principal.getName).getRdns.asScala
-      .collectFirst {
-        case attr if attr.getType.equalsIgnoreCase("CN") =>
-          attr.getValue.toString
-      }
+    val maybeCommonName = new LdapName(cert.getSubjectX500Principal.getName).getRdns.asScala.collectFirst {
+      case attr if attr.getType.equalsIgnoreCase("CN") =>
+        attr.getValue.toString
+    }
 
     val alternates = Option(cert.getSubjectAlternativeNames).map(_.asScala).getOrElse(Nil).collect {
       // See the javadocs for what this list contains, first element should be an integer,
@@ -165,7 +167,7 @@ final class TlsMagicSSLEngineProvider(val config: Config) extends SSLEngineProvi
       case list if list.get(0) == 2 =>
         list.get(1) match {
           case dnsName: String => dnsName
-          case other => throw new IllegalArgumentException(s"Expected a string, but got a ${other.getClass}")
+          case other           => throw new IllegalArgumentException(s"Expected a string, but got a ${other.getClass}")
         }
     }
 
