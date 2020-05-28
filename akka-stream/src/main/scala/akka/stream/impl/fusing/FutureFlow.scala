@@ -32,7 +32,7 @@ import scala.util.{ Failure, Success, Try }
       //seems like we must set handlers BEFORE preStart
       setHandlers(in, out, Initializing)
 
-      override def preStart(): Unit =
+      override def preStart(): Unit = {
         futureFlow.value match {
           case Some(tryFlow) =>
             Initializing.onFuture(tryFlow)
@@ -42,10 +42,12 @@ import scala.util.{ Failure, Success, Try }
             //in case both ports are closed before future completion
             setKeepGoing(true)
         }
+      }
 
-      override def postStop(): Unit =
+      override def postStop(): Unit = {
         if (!innerMatValue.isCompleted)
           innerMatValue.failure(new AbruptStageTerminationException(this))
+      }
 
       object Initializing extends InHandler with OutHandler {
         // we don't expect a push since we bever pull upstream during initialization
