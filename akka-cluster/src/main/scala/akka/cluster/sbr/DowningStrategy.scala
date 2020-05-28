@@ -20,7 +20,7 @@ import akka.coordination.lease.scaladsl.Lease
 /**
  * INTERNAL API
  */
-@InternalApi private[sbr] object DowningStrategy {
+@InternalApi private[akka] object DowningStrategy {
   sealed trait Decision {
     def isIndirectlyConnected: Boolean
   }
@@ -53,7 +53,7 @@ import akka.coordination.lease.scaladsl.Lease
 /**
  * INTERNAL API
  */
-@InternalApi private[sbr] abstract class DowningStrategy(val selfDc: DataCenter) {
+@InternalApi private[akka] abstract class DowningStrategy(val selfDc: DataCenter) {
   import DowningStrategy._
 
   // may contain Joining and WeaklyUp
