@@ -42,7 +42,7 @@ class ConfigSSLEngineProvider(protected val config: Config, protected val log: M
       system.settings.config.getConfig("akka.remote.artery.ssl.config-ssl-engine"),
       Logging.withMarker(system, classOf[ConfigSSLEngineProvider].getName))
 
-  val sslEngineConfig = new SSLEngineConfig(config)
+  private val sslEngineConfig = new SSLEngineConfig(config)
 
   val SSLKeyStore: String = config.getString("key-store")
   val SSLTrustStore: String = config.getString("trust-store")

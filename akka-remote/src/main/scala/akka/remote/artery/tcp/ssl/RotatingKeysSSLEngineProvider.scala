@@ -46,7 +46,7 @@ final class RotatingKeysSSLEngineProvider(val config: Config, protected val log:
   private val SSLCertFile: String = config.getString("cert-file")
   private val SSLCACertFile: String = config.getString("ca-cert-file")
 
-  val sslEngineConfig = new SSLEngineConfig(config)
+  private val sslEngineConfig = new SSLEngineConfig(config)
   import sslEngineConfig._
 
   // build a PRNG (created once, reused on every isntance of SSLContext
