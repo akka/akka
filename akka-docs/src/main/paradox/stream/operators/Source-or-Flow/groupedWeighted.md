@@ -14,6 +14,12 @@ Accumulate incoming events until the combined weight of elements is greater than
 
 Chunk up this stream into groups of elements that have a cumulative weight greater than or equal to the `minWeight`, with the last group possibly smaller than requested `minWeight` due to end-of-stream.
 
+See also:
+
+* @ref[grouped](grouped.md) for a variant that groups based on number of elements
+* @ref[groupedWithin](groupedWithin.md) for a variant that groups based on number of elements and a time window
+* @ref[groupedWeightedWithin](groupedWeightedWithin.md) for a variant that groups based on element weight and a time window
+
 ## Examples
 
 The below example demonstrates how `groupedWeighted` groups the accumulated elements into @scala[`Seq`] @java[`List`]

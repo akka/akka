@@ -1,0 +1,3 @@
+# Disable compatibility check for @InternalApi private[akka] class
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.Grouped$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.fusing.Grouped")
