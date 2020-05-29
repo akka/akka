@@ -105,7 +105,6 @@ private[akka] object Shard {
 
   private final case class RememberedEntityIds(ids: Set[EntityId])
   private final case class RememberEntityStoreCrashed(store: ActorRef)
-  private final case object AsyncWriteDone
 
   private val RememberEntityTimeoutKey = "RememberEntityTimeout"
   final case class RememberEntityTimeout(operation: RememberEntitiesShardStore.Command)
@@ -246,7 +245,7 @@ private[akka] object Shard {
     }
   }
 
-  final class Entities(log: LoggingAdapter) {
+  final class Entities(log: LoggingAdapter, rememberingEntities: Boolean) {
     private val entities: java.util.Map[EntityId, EntityState] = new util.HashMap[EntityId, EntityState]()
     // needed to look up entity by reg when a Passivating is received
     private val byRef = new util.HashMap[ActorRef, EntityId]()
@@ -259,19 +258,22 @@ private[akka] object Shard {
       }
     }
     def rememberingStart(entityId: EntityId, ackTo: Option[ActorRef]): Unit = {
+      // FIXME we queue these without bounds, is that ok?
       val newState: RememberingStart = ackTo match {
         case None => RememberingStartNoAck // small optimization avoiding alloc for regular start
         case some => RememberingStart(some)
       }
       val state = entityState(entityId).transition(newState)
       entities.put(entityId, state)
-      remembering.add(entityId)
+      if (rememberingEntities)
+        remembering.add(entityId)
     }
     def rememberingStop(entityId: EntityId, reason: StopReason): Unit = {
       val state = entityState(entityId)
       removeRefIfThereIsOne(state)
       entities.put(entityId, state.transition(RememberingStop(reason)))
-      remembering.add(entityId)
+      if (rememberingEntities)
+        remembering.add(entityId)
     }
     def waitingForRestart(id: EntityId): Unit = {
       val state = entities.get(id) match {
@@ -289,13 +291,15 @@ private[akka] object Shard {
       state.transition(NoState)
       removeRefIfThereIsOne(state)
       entities.remove(entityId)
-      remembering.remove(entityId)
+      if (rememberingEntities)
+        remembering.remove(entityId)
     }
     def addEntity(entityId: EntityId, ref: ActorRef): Unit = {
       val state = entityState(entityId).transition(Active(ref))
       entities.put(entityId, state)
       byRef.put(ref, entityId)
-      remembering.remove(entityId)
+      if (rememberingEntities)
+        remembering.remove(entityId)
     }
     def entity(entityId: EntityId): OptionVal[ActorRef] = entities.get(entityId) match {
       case wr: WithRef => OptionVal.Some(wr.ref)
@@ -425,7 +429,7 @@ private[akka] class Shard(
 
   private val flightRecorder = ShardingFlightRecorder(context.system)
 
-  private val entities = new Entities(log)
+  private val entities = new Entities(log, settings.rememberEntities)
 
   private var lastMessageTimestamp = Map.empty[EntityId, Long]
 
@@ -953,10 +957,10 @@ private[akka] class Shard(
     entities.removeEntity(entityId)
     if (hasBufferedMessages) {
       log.debug("Entity stopped after passivation [{}], but will be started again due to buffered messages", entityId)
-      // FIXME we can add it to batch instead of this message in that case
-      // in case we're already writing to the remember store
       flightRecorder.entityPassivateRestart(entityId)
-      self ! StartEntityInternal(entityId)
+      // trigger start or batch in case we're already writing to the remember store
+      entities.rememberingStart(entityId, None)
+      if (!entities.pendingRememberedEntitiesExist()) rememberUpdate(Set(entityId))
     } else {
       log.debug("Entity stopped after passivation [{}]", entityId)
     }
