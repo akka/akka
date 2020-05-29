@@ -123,7 +123,7 @@ import akka.util.Timeout
 
   override def getChild(name: String): Optional[ActorRef[Void]] =
     child(name) match {
-      case Some(c) => Optional.of(c.unsafeUpcast[Void])
+      case Some(c) => Optional.ofNullable(c.unsafeUpcast[Void])
       case None    => Optional.empty()
     }
 

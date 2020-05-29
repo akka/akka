@@ -107,8 +107,8 @@ object CircuitBreaker {
   protected def convertJavaFailureFnToScala[T](
       javaFn: BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean]): Try[T] => Boolean = {
     val failureFnInScala: Try[T] => Boolean = {
-      case Success(t)   => javaFn(Optional.of(t), Optional.empty())
-      case Failure(err) => javaFn(Optional.empty(), Optional.of(err))
+      case Success(t)   => javaFn(Optional.ofNullable(t), Optional.empty())
+      case Failure(err) => javaFn(Optional.empty(), Optional.ofNullable(err))
     }
     failureFnInScala
   }
