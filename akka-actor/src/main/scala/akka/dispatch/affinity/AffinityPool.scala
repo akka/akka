@@ -22,9 +22,6 @@ import akka.event.Logging
 import akka.util.{ ImmutableIntMap, ReentrantGuard }
 import akka.util.Helpers.Requiring
 
-import scala.annotation.{ switch, tailrec }
-import scala.collection.{ immutable, mutable }
-
 @InternalApi
 @ApiMayChange
 private[affinity] object AffinityPool {

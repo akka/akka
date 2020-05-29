@@ -3,7 +3,7 @@ project.description: Shard a clustered compute process across the network with l
 ---
 # Cluster Sharding
 
-For the Akka Classic documentation of this feature see @ref:[Classic Cluster Sharding](../cluster-sharding.md)
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Cluster Sharding](../cluster-sharding.md)
 
 ## Module info
 
@@ -11,7 +11,7 @@ To use Akka Cluster Sharding, you must add the following dependency in your proj
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-cluster-sharding-typed_$scala.binary_version$
+  artifact=akka-cluster-sharding-typed_$scala.binary.version$
   version=$akka.version$
 }
 

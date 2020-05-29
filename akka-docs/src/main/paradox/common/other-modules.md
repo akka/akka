@@ -8,7 +8,7 @@ A full server- and client-side HTTP stack on top of akka-actor and akka-stream.
 
 Alpakka is a Reactive Enterprise Integration library for Java and Scala, based on Reactive Streams and Akka.
 
-## [Alpakka Kafka Connector](https://doc.akka.io/docs/akka-stream-kafka/current/)
+## [Alpakka Kafka Connector](https://doc.akka.io/docs/alpakka-kafka/current/)
 
 The Alpakka Kafka Connector connects Apache Kafka with Akka Streams.
 
@@ -26,6 +26,7 @@ An Akka Persistence journal and snapshot store backed by Couchbase.
 * [Akka Cluster Bootstrap](https://doc.akka.io/docs/akka-management/current/bootstrap/) helps bootstrapping an Akka cluster using Akka Discovery.
 * [Akka Management Cluster HTTP](https://doc.akka.io/docs/akka-management/current/cluster-http-management.html) provides HTTP endpoints for introspecting and managing Akka clusters.
 * [Akka Discovery for Kubernetes, Consul, Marathon, and AWS](https://doc.akka.io/docs/akka-management/current/discovery/)
+* [Kubernetes Lease](https://doc.akka.io/docs/akka-management/current/kubernetes-lease.html)
 
 ## [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/)
 
@@ -33,8 +34,6 @@ Akka gRPC provides support for building streaming gRPC servers and clients on to
 
 ## Akka Resilience Enhancements
 
-* [Akka Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html)
-* [Kubernetes Lease](https://doc.akka.io/docs/akka-enhancements/current/kubernetes-lease.html)
 * [Akka Thread Starvation Detector](https://doc.akka.io/docs/akka-enhancements/current/starvation-detector.html)
 * [Akka Configuration Checker](https://doc.akka.io/docs/akka-enhancements/current/config-checker.html)
 * [Akka Diagnostics Recorder](https://doc.akka.io/docs/akka-enhancements/current/diagnostics-recorder.html)
@@ -43,7 +42,6 @@ Akka gRPC provides support for building streaming gRPC servers and clients on to
 
 * [Akka Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
 * [Akka GDPR for Persistence](https://doc.akka.io/docs/akka-enhancements/current/gdpr/index.html)
-
 
 ## Community Projects
 

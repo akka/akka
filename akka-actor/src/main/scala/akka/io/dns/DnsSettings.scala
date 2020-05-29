@@ -165,7 +165,6 @@ object DnsSettings {
 
     def getNameserversUsingJNDI: Try[List[InetSocketAddress]] = {
       import java.util
-
       import javax.naming.Context
       import javax.naming.directory.InitialDirContext
       // Using jndi-dns to obtain the default name servers.

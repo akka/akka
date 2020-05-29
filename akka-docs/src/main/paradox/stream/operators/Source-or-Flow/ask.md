@@ -6,6 +6,7 @@ Use the "Ask Pattern" to send a request-reply message to the target `ref` actor 
 
 ## Signature
 
+@apidoc[Source.ask](Source) {scala="#ask[S](ref:akka.actor.ActorRef)(implicittimeout:akka.util.Timeout,implicittag:scala.reflect.ClassTag[S]):FlowOps.this.Repr[S]" java="#ask(akka.actor.ActorRef,java.lang.Class,akka.util.Timeout)" }
 @apidoc[Flow.ask](Flow$) { scala="#ask%5BS](ref:akka.actor.ActorRef)(implicittimeout:akka.util.Timeout,implicittag:scala.reflect.ClassTag%5BS]):FlowOps.this.Repr%5BS]" java="#ask(akka.actor.ActorRef,java.lang.Class,akka.util.Timeout)" }
 
 ## Description
@@ -15,7 +16,7 @@ If any of the asks times out it will fail the stream with a @apidoc[AskTimeoutEx
 
 The @java[`mapTo` class]@scala[`S` generic] parameter is used to cast the responses from the actor to the expected outgoing flow type.
 
-Similar to the plain ask pattern, the target actor is allowed to reply with @apidoc[akka.actor.Status].
+Similar to the plain ask pattern, the target actor is allowed to reply with @apidoc[akka.actor.Status$].
 An @apidoc[akka.actor.Status.Failure] will cause the operator to fail with the cause carried in the `Failure` message.
 
 Adheres to the @apidoc[ActorAttributes.SupervisionStrategy] attribute.

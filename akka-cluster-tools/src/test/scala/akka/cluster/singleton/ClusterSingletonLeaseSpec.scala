@@ -20,10 +20,8 @@ import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
-import akka.cluster.TestLease
-import akka.cluster.TestLease.AcquireReq
-import akka.cluster.TestLease.ReleaseReq
-import akka.cluster.TestLeaseExt
+import akka.coordination.lease.TestLease
+import akka.coordination.lease.TestLeaseExt
 import akka.testkit.AkkaSpec
 import akka.testkit.TestException
 import akka.testkit.TestProbe
@@ -55,6 +53,7 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString("""
        lease-retry-interval = 2000ms
      }
   """).withFallback(TestLease.config)) {
+  import TestLease.{ AcquireReq, ReleaseReq }
 
   val cluster = Cluster(system)
   val testLeaseExt = TestLeaseExt(system)

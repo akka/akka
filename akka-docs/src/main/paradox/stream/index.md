@@ -9,7 +9,7 @@ To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
+  artifact="akka-stream_$scala.binary.version$"
   version="$akka.version$"
 }
 

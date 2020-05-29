@@ -503,8 +503,21 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   /**
    * Maps from a Serializer Identity (Int) to a Serializer instance (optimization)
    */
-  val serializerByIdentity: Map[Int, Serializer] =
-    Map(NullSerializer.identifier -> NullSerializer) ++ serializers.map { case (_, v) => (v.identifier, v) }
+  val serializerByIdentity: Map[Int, Serializer] = {
+    val zero: Map[Int, Serializer] = Map(NullSerializer.identifier -> NullSerializer)
+    serializers.foldLeft(zero) {
+      case (acc, (_, ser)) =>
+        val id = ser.identifier
+        acc.get(id) match {
+          case Some(existing) if existing != ser =>
+            throw new IllegalArgumentException(
+              s"Serializer identifier [$id] of [${ser.getClass.getName}] " +
+              s"is not unique. It is also used by [${acc(id).getClass.getName}].")
+          case _ =>
+            acc.updated(id, ser)
+        }
+    }
+  }
 
   /**
    * Serializers with id 0 - 1023 are stored in an array for quick allocation free access

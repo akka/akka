@@ -4,8 +4,8 @@
 
 package akka.persistence.testkit.javadsl
 
-import java.util.function.{ Function => JFunction }
 import java.util.{ List => JList }
+import java.util.function.{ Function => JFunction }
 
 import scala.reflect.ClassTag
 

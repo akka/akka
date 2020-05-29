@@ -31,7 +31,11 @@ object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
       loggers = ["akka.testkit.TestEventListener"]
       loglevel = INFO
       remote.log-remote-lifecycle-events = off
-      cluster.failure-detector.monitored-by-nr-of-members = 3
+      cluster {
+        failure-detector.monitored-by-nr-of-members = 3
+        downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
+        split-brain-resolver.active-strategy = keep-majority
+      }
     }
     """))
 

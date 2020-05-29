@@ -6,14 +6,14 @@ package akka.stream.impl.io
 
 import java.nio.ByteBuffer
 
-import scala.annotation.tailrec
-import scala.util.{ Failure, Success, Try }
-import scala.util.control.NonFatal
-
 import javax.net.ssl._
 import javax.net.ssl.SSLEngineResult.HandshakeStatus
 import javax.net.ssl.SSLEngineResult.HandshakeStatus._
 import javax.net.ssl.SSLEngineResult.Status._
+
+import scala.annotation.tailrec
+import scala.util.{ Failure, Success, Try }
+import scala.util.control.NonFatal
 
 import akka.actor._
 import akka.annotation.InternalApi
@@ -22,6 +22,8 @@ import akka.stream.TLSProtocol._
 import akka.stream.impl._
 import akka.stream.impl.FanIn.InputBunch
 import akka.stream.impl.FanOut.OutputBunch
+import akka.stream.impl.fusing.ActorGraphInterpreter
+import akka.stream.snapshot.StreamSnapshotImpl
 import akka.util.ByteString
 
 /**
@@ -267,7 +269,7 @@ import akka.util.ByteString
   }
 
   def completeOrFlush(): Unit =
-    if (engine.isOutboundDone) nextPhase(completedPhase)
+    if (engine.isOutboundDone || (engine.isInboundDone && userInChoppingBlock.isEmpty)) nextPhase(completedPhase)
     else nextPhase(flushingOutbound)
 
   private def doInbound(isOutboundClosed: Boolean, inboundState: TransferState): Boolean =
@@ -393,7 +395,9 @@ import akka.util.ByteString
     result.getStatus match {
       case OK =>
         result.getHandshakeStatus match {
-          case NEED_WRAP => flushToUser()
+          case NEED_WRAP =>
+            flushToUser()
+            transportInChoppingBlock.putBack(transportInBuffer)
           case FINISHED =>
             flushToUser()
             handshakeFinished()
@@ -404,8 +408,7 @@ import akka.util.ByteString
         }
       case CLOSED =>
         flushToUser()
-        if (engine.isOutboundDone) nextPhase(completedPhase)
-        else nextPhase(flushingOutbound)
+        completeOrFlush()
       case BUFFER_UNDERFLOW =>
         flushToUser()
       case BUFFER_OVERFLOW =>
@@ -442,7 +445,10 @@ import akka.util.ByteString
     }
   }
 
-  override def receive = inputBunch.subreceive.orElse[Any, Unit](outputBunch.subreceive)
+  override def receive = inputBunch.subreceive.orElse[Any, Unit](outputBunch.subreceive).orElse {
+    case ActorGraphInterpreter.Snapshot =>
+      sender() ! StreamSnapshotImpl(self.path, Seq.empty, Seq.empty)
+  }
 
   initialPhase(2, bidirectional)
 

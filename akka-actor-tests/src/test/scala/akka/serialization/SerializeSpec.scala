@@ -270,6 +270,29 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
         ser.serialize(new Other).get
       }
     }
+
+    "detect duplicate serializer ids" in {
+      (intercept[IllegalArgumentException] {
+        val sys = ActorSystem(
+          "SerializeSpec",
+          ConfigFactory.parseString(s"""
+          akka {
+            actor {
+              serializers {
+                test = "akka.serialization.NoopSerializer"
+                test-same = "akka.serialization.NoopSerializerSameId"
+              }
+      
+              serialization-bindings {
+                "akka.serialization.SerializationTests$$Person" = test
+                "akka.serialization.SerializationTests$$Address" = test-same
+              }
+            }
+          }
+          """))
+        shutdown(sys)
+      }.getMessage should include).regex("Serializer identifier \\[9999\\].*is not unique")
+    }
   }
 }
 
@@ -577,6 +600,8 @@ protected[akka] class NoopSerializer2 extends Serializer {
 
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = null
 }
+
+protected[akka] class NoopSerializerSameId extends NoopSerializer
 
 @SerialVersionUID(1)
 protected[akka] final case class FakeThrowable(msg: String) extends Throwable(msg) with Serializable {

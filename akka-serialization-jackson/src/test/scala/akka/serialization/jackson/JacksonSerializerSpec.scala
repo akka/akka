@@ -508,6 +508,41 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       val bytes = serializeToBinary(msg)
       JacksonSerializer.isGZipped(bytes) should ===(false)
     }
+
+    "compress large payload with lz4" in withSystem("""
+        akka.serialization.jackson.jackson-json.compression {
+          algorithm = lz4
+          compress-larger-than = 32 KiB
+        }
+      """) { sys =>
+      val conf = JacksonObjectMapperProvider.configForBinding("jackson-json", sys.settings.config)
+      val compressLargerThan = conf.getBytes("compression.compress-larger-than")
+      def check(msg: AnyRef, compressed: Boolean): Unit = {
+        val bytes = serializeToBinary(msg, sys)
+        JacksonSerializer.isLZ4(bytes) should ===(compressed)
+        bytes.length should be < compressLargerThan.toInt
+        checkSerialization(msg, sys)
+      }
+      check(SimpleCommand("0" * (compressLargerThan + 1).toInt), true)
+    }
+
+    "not compress small payload with lz4" in withSystem("""
+        akka.serialization.jackson.jackson-json.compression {
+          algorithm = lz4
+          compress-larger-than = 32 KiB
+        }
+      """) { sys =>
+      val conf = JacksonObjectMapperProvider.configForBinding("jackson-json", sys.settings.config)
+      val compressLargerThan = conf.getBytes("compression.compress-larger-than")
+      def check(msg: AnyRef, compressed: Boolean): Unit = {
+        val bytes = serializeToBinary(msg, sys)
+        JacksonSerializer.isLZ4(bytes) should ===(compressed)
+        bytes.length should be < compressLargerThan.toInt
+        checkSerialization(msg, sys)
+      }
+      check(SimpleCommand("Bob"), false)
+      check(new SimpleCommandNotCaseClass("Bob"), false)
+    }
   }
 
   "JacksonJsonSerializer without type in manifest" should {
@@ -639,13 +674,13 @@ abstract class JacksonSerializerSpec(serializerName: String)
     val serializer = serializerFor(obj, sys)
     val manifest = serializer.manifest(obj)
     val serializerId = serializer.identifier
-    val blob = serializeToBinary(obj)
+    val blob = serializeToBinary(obj, sys)
 
     // Issue #28918, check that CBOR format is used (not JSON).
     if (blob.length > 0) {
       serializer match {
         case _: JacksonJsonSerializer =>
-          if (!JacksonSerializer.isGZipped(blob))
+          if (!JacksonSerializer.isGZipped(blob) && !JacksonSerializer.isLZ4(blob))
             new String(blob.take(1), StandardCharsets.UTF_8) should ===("{")
         case _: JacksonCborSerializer =>
           new String(blob.take(1), StandardCharsets.UTF_8) should !==("{")

@@ -9,7 +9,7 @@ To use Logging, you must at least use the Akka actors dependency in your project
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-actor_$scala.binary_version$"
+  artifact="akka-actor_$scala.binary.version$"
   version="$akka.version$"
 }
 
@@ -339,7 +339,7 @@ It has a single dependency: the slf4j-api jar. In your runtime, you also need a 
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-slf4j_$scala.binary_version$"
+  artifact="akka-slf4j_$scala.binary.version$"
   version="$akka.version$"
   group2="ch.qos.logback"
   artifact2="logback-classic"

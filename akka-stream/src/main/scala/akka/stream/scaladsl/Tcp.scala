@@ -6,6 +6,9 @@ package akka.stream.scaladsl
 
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLEngine
+import javax.net.ssl.SSLSession
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -17,9 +20,6 @@ import scala.util.Try
 import scala.util.control.NoStackTrace
 
 import com.github.ghik.silencer.silent
-import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLEngine
-import javax.net.ssl.SSLSession
 
 import akka.Done
 import akka.NotUsed

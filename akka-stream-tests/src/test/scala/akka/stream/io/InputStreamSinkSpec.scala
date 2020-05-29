@@ -263,10 +263,8 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "propagate error to InputStream" in {
       val readTimeout = 3.seconds
-      val (probe, inputStream) =
+      val (probe, inputStream: InputStream) =
         TestSource.probe[ByteString].toMat(StreamConverters.asInputStream(readTimeout))(Keep.both).run()
-
-      probe.sendNext(ByteString("one"))
       val error = new RuntimeException("failure")
       probe.sendError(error)
       val buffer = Array.ofDim[Byte](5)

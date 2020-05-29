@@ -78,15 +78,16 @@ object ExecutionContexts {
   def global(): ExecutionContextExecutor = ExecutionContext.global
 
   /**
+   * INTERNAL API
+   *
    * WARNING: Not A General Purpose ExecutionContext!
    *
    * This is an execution context which runs everything on the calling thread.
    * It is very useful for actions which are known to be non-blocking and
    * non-throwing in order to save a round-trip to the thread pool.
    *
-   * INTERNAL API
+   * Once Scala 2.12 is no longer supported this can be dropped in favour of directly using `ExecutionContext.parasitic`
    */
-  // Once Scala 2.12 is no longer supported this can be dropped in favour of directly using [[ExecutionContext.parasitic]]
   @InternalStableApi
   private[akka] val parasitic: ExecutionContext = SameThreadExecutionContext()
 

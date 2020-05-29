@@ -4,14 +4,19 @@ Stream the values of an @scala[`immutable.Seq`]@java[`Iterable`].
 
 @ref[Source operators](../index.md#source-operators)
 
+## Signature
 
 @@@div { .group-scala }
 
-## Signature
+@apidoc[Source.apply](Source$) { scala="#apply[T](iterable:scala.collection.immutable.Iterable[T]):akka.stream.scaladsl.Source[T,akka.NotUsed]"  }
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #apply }
+@@@ 
 
-@@@
+@@@div { .group-java }
+
+@apidoc[Source.from](Source$) { java="#from(java.lang.Iterable)" }
+
+@@@ 
 
 ## Description
 

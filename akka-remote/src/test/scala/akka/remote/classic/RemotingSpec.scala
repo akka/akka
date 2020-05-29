@@ -73,7 +73,7 @@ object RemotingSpec {
       key-password = "changeme"
       trust-store-password = "changeme"
       protocol = "TLSv1.2"
-      enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA]
+      enabled-algorithms = [TLS_RSA_WITH_AES_128_CBC_SHA, TLS_DHE_RSA_WITH_AES_256_GCM_SHA384]
     }
 
     common-netty-settings {
@@ -479,6 +479,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     }
 
     "drop sent messages over payload size" in {
+      val droppedProbe = TestProbe()
+      system.eventStream.subscribe(droppedProbe.ref, classOf[Dropped])
       val oversized = byteStringOfSize(maxPayloadBytes + 1)
       EventFilter[OversizedPayloadException](pattern = ".*Discarding oversized payload sent.*", occurrences = 1)
         .intercept {
@@ -486,6 +488,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
             expectNoMessage(1.second) // No AssocitionErrorEvent should be published
           }
         }
+      droppedProbe.expectMsgType[Dropped].message should ===(oversized)
     }
 
     "drop received messages over payload size" in {
