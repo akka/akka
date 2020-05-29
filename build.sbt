@@ -202,6 +202,7 @@ lazy val docs = akkaModule("akka-docs")
     actorTyped,
     clusterTools % "compile->compile;test->test",
     clusterSharding % "compile->compile;test->test",
+    discovery % "compile->compile;test->test",
     testkit % "compile->compile;test->test",
     remote % "compile->compile;test->test",
     persistence % "compile->compile;test->test",

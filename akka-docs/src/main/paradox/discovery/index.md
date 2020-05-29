@@ -84,29 +84,17 @@ The mapping between Akka service discovery terminology and SRV terminology:
 * SRV name = serviceName
 * SRV protocol = protocol
 
-Configure `akka-dns` to be used as the discovery implementation in your `application.conf`:
+Configure `akka-dns` to be used as the discovery implementation in your `application.conf` and enable the @ref[Akka-native DNS implementation](../io-dns.md):
 
-@@snip[application.conf](/akka-discovery/src/test/scala/akka/discovery/dns/DnsDiscoverySpec.scala){ #configure-dns }
+@@snip[application.conf](/akka-docs/src/test/scala/docs/discovery/DnsDiscoveryDocSpec.scala){ #configure-dns }
 
 From there on, you can use the generic API that hides the fact which discovery method is being used by calling:
 
 Scala
-:   ```scala
-    import akka.discovery.ServiceDiscovery
-    val system = ActorSystem("Example")
-    // ...
-    val discovery = ServiceDiscovery(system).discovery
-    val result: Future[Resolved] = discovery.lookup("service-name", resolveTimeout = 500 milliseconds)
-    ```
+:   @@snip[snip](/akka-docs/src/test/scala/docs/discovery/DnsDiscoveryDocSpec.scala){ #lookup-dns }
 
 Java
-:   ```java
-    import akka.discovery.ServiceDiscovery;
-    ActorSystem system = ActorSystem.create("Example");
-    // ...
-    SimpleServiceDiscovery discovery = ServiceDiscovery.get(system).discovery();
-    Future<SimpleServiceDiscovery.Resolved> result = discovery.lookup("service-name", Duration.create("500 millis"));
-    ```
+:   @@snip[snip](/akka-docs/src/test/java/jdocs/discovery/DnsDiscoveryDocTest.java){ #lookup-dns }
 
 ### DNS records used
 

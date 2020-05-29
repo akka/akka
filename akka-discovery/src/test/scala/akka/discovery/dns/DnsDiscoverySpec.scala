@@ -7,9 +7,7 @@ package akka.discovery.dns
 import java.net.InetAddress
 
 import scala.concurrent.duration._
-
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.ActorSystem
 import akka.discovery.{ Discovery, Lookup }
 import akka.discovery.ServiceDiscovery
@@ -20,13 +18,11 @@ import akka.testkit.{ AkkaSpec, SocketUtil, TestKit }
 object DnsDiscoverySpec {
 
   val config = ConfigFactory.parseString(s"""
-     //#configure-dns
      akka {
        discovery {
          method = akka-dns
        }
      }
-     //#configure-dns
      akka {
        loglevel = DEBUG
      }
