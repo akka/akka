@@ -49,10 +49,10 @@ class TlsTcpWithCrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec
     }
     """))
 
-class TlsTcpWithMagicSslEngineSpec extends TlsTcpSpec(ConfigFactory.parseString(s"""
+class TlsTcpWithRotatingKeysSSLEngineSpec extends TlsTcpSpec(ConfigFactory.parseString(s"""
     akka.remote.artery.ssl {
-       ssl-engine-provider = akka.remote.artery.tcp.ssl.TlsMagicSSLEngineProvider
-       tls-magic-engine {
+       ssl-engine-provider = akka.remote.artery.tcp.ssl.RotatingKeysSSLEngineProvider
+       rotating-keys-engine {
          key-file = ${getClass.getClassLoader.getResource("ssl/node.example.com.pem").getPath}
          cert-file = ${getClass.getClassLoader.getResource("ssl/node.example.com.crt").getPath}
          ca-cert-file = ${getClass.getClassLoader.getResource("ssl/exampleca.crt").getPath}
@@ -86,8 +86,8 @@ abstract class TlsTcpSpec(config: Config)
     val checked = system.settings.config.getString("akka.remote.artery.ssl.ssl-engine-provider") match {
       case "akka.remote.artery.tcp.ConfigSSLEngineProvider" =>
         CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.config-ssl-engine")
-      case "akka.remote.artery.tcp.ssl.TlsMagicSSLEngineProvider" =>
-        CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.tls-magic-engine")
+      case "akka.remote.artery.tcp.ssl.RotatingKeysSSLEngineProvider" =>
+        CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.rotating-keys-engine")
       case other =>
         fail(
           s"Don't know how to determine whether the crypto building blocks in [$other] are available on this platform")

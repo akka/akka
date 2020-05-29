@@ -14,13 +14,14 @@ import java.security.cert.X509Certificate
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.ActorSystem
+import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.event.MarkerLoggingAdapter
 import akka.remote.artery.tcp.SSLEngineProvider
 import akka.remote.artery.tcp.SecureRandomFactory
 import akka.remote.artery.tcp.SslTransportException
-import akka.remote.artery.tcp.ssl.TlsMagicSSLEngineProvider.CachedContext
-import akka.remote.artery.tcp.ssl.TlsMagicSSLEngineProvider.ConfiguredContext
+import akka.remote.artery.tcp.ssl.RotatingKeysSSLEngineProvider.CachedContext
+import akka.remote.artery.tcp.ssl.RotatingKeysSSLEngineProvider.ConfiguredContext
 import akka.stream.TLSRole
 import com.typesafe.config.Config
 import javax.net.ssl.KeyManager
@@ -31,13 +32,13 @@ import javax.net.ssl.TrustManager
 
 import scala.concurrent.duration._
 
-final class TlsMagicSSLEngineProvider(val config: Config, protected val log: MarkerLoggingAdapter)
+final class RotatingKeysSSLEngineProvider(val config: Config, protected val log: MarkerLoggingAdapter)
     extends SSLEngineProvider {
 
   def this(system: ActorSystem) =
     this(
-      system.settings.config.getConfig("akka.remote.artery.ssl.tls-magic-engine"),
-      Logging.withMarker(system, classOf[TlsMagicSSLEngineProvider].getName))
+      system.settings.config.getConfig("akka.remote.artery.ssl.rotating-keys-engine"),
+      Logging.withMarker(system, classOf[RotatingKeysSSLEngineProvider].getName))
 
   // read config
 
@@ -54,7 +55,10 @@ final class TlsMagicSSLEngineProvider(val config: Config, protected val log: Mar
   // handle caching
   private val contextRef = new AtomicReference[Option[CachedContext]](None)
 
-  private def getContext() = {
+  /** INTERNAL API */
+  @InternalApi
+  private[ssl] def getSSLContext() = getContext().context
+  private def getContext(): ConfiguredContext = {
     contextRef.get() match {
       case Some(CachedContext(_, expired)) if expired.isOverdue() =>
         val context = constructContext()
@@ -130,7 +134,7 @@ final class TlsMagicSSLEngineProvider(val config: Config, protected val log: Mar
 
 }
 
-object TlsMagicSSLEngineProvider {
+object RotatingKeysSSLEngineProvider {
 
   private case class CachedContext(cached: ConfiguredContext, expires: Deadline)
 
