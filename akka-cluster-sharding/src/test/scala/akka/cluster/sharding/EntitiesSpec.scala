@@ -9,6 +9,7 @@ import akka.cluster.sharding.Shard.{
   Active,
   NoState,
   Passivating,
+  PassivationComplete,
   RememberedButNotCreated,
   RememberingStart,
   RememberingStop
@@ -51,8 +52,8 @@ class EntitiesSpec extends AnyWordSpec with Matchers {
       val entities = new sharding.Shard.Entities(NoLogging)
       entities.addEntity("a", ActorRef.noSender) // need to go through active to passivate
       entities.entityPassivating("a") // need to go through passivate to remember stop
-      entities.rememberingStop("a", Passivating)
-      entities.entityState("a") shouldEqual RememberingStop(Passivating)
+      entities.rememberingStop("a", PassivationComplete)
+      entities.entityState("a") shouldEqual RememberingStop(PassivationComplete)
       entities.pendingRememberedEntitiesExist() should ===(true)
       val (starts, stops) = entities.pendingRememberEntities()
       stops should contain("a")

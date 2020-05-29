@@ -202,9 +202,10 @@ private[akka] object Shard {
       case _ => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
     }
   }
+  private val RememberingStartNoAck = RememberingStart(None)
 
   sealed trait StopReason
-  final case object Passivating extends StopReason
+  final case object PassivationComplete extends StopReason
   final case object StartedElsewhere extends StopReason
 
   /**
@@ -251,18 +252,23 @@ private[akka] object Shard {
     private val byRef = new util.HashMap[ActorRef, EntityId]()
 
     def alreadyRemembered(set: Set[EntityId]): Unit = {
-      set.foreach { id =>
-        val state = entities.getOrDefault(id, NoState).transition(RememberedButNotCreated)
-        entities.put(id, state)
+      set.foreach { entityId =>
+        val state = entityState(entityId).transition(RememberedButNotCreated)
+        entities.put(entityId, state)
       }
     }
-    def rememberingStart(entity: EntityId, ackTo: Option[ActorRef]): Unit = {
-      val state = entities.getOrDefault(entity, NoState).transition(RememberingStart(ackTo))
-      entities.put(entity, state)
+    def rememberingStart(entityId: EntityId, ackTo: Option[ActorRef]): Unit = {
+      val newState: RememberingStart = ackTo match {
+        case None => RememberingStartNoAck // small optimization avoiding alloc for regular start
+        case some => RememberingStart(some)
+      }
+      val state = entityState(entityId).transition(newState)
+      entities.put(entityId, state)
     }
-    def rememberingStop(entity: EntityId, reason: StopReason): Unit = {
-      val state = entities.getOrDefault(entity, NoState).transition(RememberingStop(reason))
-      entities.put(entity, state)
+    def rememberingStop(entityId: EntityId, reason: StopReason): Unit = {
+      val state = entityState(entityId)
+      removeRefIfThereIsOne(state)
+      entities.put(entityId, state.transition(RememberingStop(reason)))
     }
     def waitingForRestart(id: EntityId): Unit = {
       val state = entities.get(id) match {
@@ -275,19 +281,14 @@ private[akka] object Shard {
       entities.put(id, state.transition(WaitingForRestart))
     }
     def removeEntity(entityId: EntityId): Unit = {
-      val state = entities.get(entityId) match {
-        case wr: WithRef =>
-          byRef.remove(wr.ref)
-          wr
-        case null  => NoState
-        case other => other
-      }
+      val state = entityState(entityId)
       // just verify transition
       state.transition(NoState)
+      removeRefIfThereIsOne(state)
       entities.remove(entityId)
     }
     def addEntity(entityId: EntityId, ref: ActorRef): Unit = {
-      val state = entities.getOrDefault(entityId, NoState).transition(Active(ref))
+      val state = entityState(entityId).transition(Active(ref))
       entities.put(entityId, state)
       byRef.put(ref, entityId)
     }
@@ -312,11 +313,18 @@ private[akka] object Shard {
       if (VerboseDebug) log.debug("[{}] passivating", entityId)
       entities.get(entityId) match {
         case wf: WithRef =>
-          val state = entities.getOrDefault(entityId, NoState).transition(Passivating(wf.ref))
+          val state = entityState(entityId).transition(Passivating(wf.ref))
           entities.put(entityId, state)
         case other =>
           throw new IllegalStateException(
             s"Tried to passivate entity without an actor ref $entityId. Current state $other")
+      }
+    }
+    private def removeRefIfThereIsOne(state: EntityState): Unit = {
+      state match {
+        case wr: WithRef =>
+          byRef.remove(wr.ref)
+        case _ =>
       }
     }
 
@@ -351,6 +359,8 @@ private[akka] object Shard {
 
     def entityIdExists(id: EntityId): Boolean = entities.get(id) != null
     def size: Int = entities.size
+
+    override def toString: EntityId = entities.toString
   }
 }
 
@@ -621,7 +631,7 @@ private[akka] class Shard(
       val duration = System.nanoTime() - startTimeNanos
       if (VerboseDebug)
         log.debug(
-          "Update done for ids, started [{}], stopped [{}]. Duration {} ms.",
+          "Update done for ids, started [{}], stopped [{}]. Duration {} ms",
           storedStarts.mkString(", "),
           storedStops.mkString(", "),
           duration.nanos.toMillis)
@@ -635,7 +645,10 @@ private[akka] class Shard(
     case ShardRegion.StartEntity(entityId) =>
       if (!entities.entityIdExists(entityId)) {
         if (VerboseDebug)
-          log.debug("Start entity [{}] while a write already in progress. Marking as pending", entityId)
+          log.debug(
+            "StartEntity([{}]) from [{}] while a write already in progress. Marking as pending",
+            entityId,
+            sender())
         entities.rememberingStart(entityId, ackTo = Some(sender()))
       } else {
         // it's already running, ack immediately
@@ -645,22 +658,9 @@ private[akka] class Shard(
     // below cases should handle same messages as in idle
     case Terminated(ref) =>
       entities.entityId(ref) match {
-        case OptionVal.Some(entityId) =>
-          entities.entityState(entityId) match {
-            case RememberingStop(_) =>
-              log.debug("Stop of [{}] arrived, already is among the pending stops.", entityId)
-            case Active(_) =>
-              // FIXME should trigger backoff + restart?
-              log.warning("Stop of [{}] arrived, should lead to backoff restart, not implemented yet.", entityId)
-            case Passivating(_) =>
-              // will go in next batch update
-              log.debug("Stop of [{}] arrived while updating, adding it to batch of pending stops.", entityId)
-              entities.rememberingStop(entityId, Passivating)
-            case unexpected =>
-              log.warning("Got a terminated for [{}], entityId [{}] which is in state [{}]", ref, entityId, unexpected)
-          }
+        case OptionVal.Some(entityId) => entityTerminated(entityId)
         case OptionVal.None =>
-          // FIXME what would this Terminated be? Remember entities store stop?
+          log.warning("Unexpected Terminated([{}]) while busy, stashing", ref)
           stash()
       }
     case _: CoordinatorMessage      => stash()
@@ -670,7 +670,7 @@ private[akka] class Shard(
         case WaitingForRestart =>
           entities.rememberingStart(entityId, None)
         case other =>
-          log.warning("Got RestartEntity for [{}] but it's not waiting to be restarted. Actual state {}", other)
+          log.warning("Got RestartEntity for [{}] but it's not waiting to be restarted. Actual state [{}]", other)
       }
     case RestartEntities(entities) => restartEntities(entities)
     case l: LeaseLost              => receiveLeaseLost(l)
@@ -694,7 +694,7 @@ private[akka] class Shard(
     case ShardRegion.Passivate(stopMessage) =>
       if (VerboseDebug)
         log.debug(
-          "Passivation of [{}] arrived while updating.",
+          "Passivation of [{}] arrived while updating",
           entities.entityId(sender()).getOrElse(s"Unknown actor ${sender()}"))
       passivate(sender(), stopMessage)
     case msg: ShardQuery                 => receiveShardQuery(msg)
@@ -729,7 +729,7 @@ private[akka] class Shard(
     }
     stops.foreach { entityId =>
       entities.entityState(entityId) match {
-        case RememberingStop(Passivating) =>
+        case RememberingStop(PassivationComplete) =>
           // this updates entity state
           passivateCompleted(entityId)
         case RememberingStop(StartedElsewhere) =>
@@ -825,8 +825,11 @@ private[akka] class Shard(
   }
 
   def receiveShardQuery(msg: ShardQuery): Unit = msg match {
-    case GetCurrentShardState => sender() ! CurrentShardState(shardId, entities.activeEntityIds())
-    case GetShardStats        => sender() ! ShardStats(shardId, entities.size)
+    case GetCurrentShardState =>
+      if (VerboseDebug)
+        log.debug("GetCurrentShardState, full state: [{}], active: [{}]", entities, entities.activeEntityIds())
+      sender() ! CurrentShardState(shardId, entities.activeEntityIds())
+    case GetShardStats => sender() ! ShardStats(shardId, entities.size)
   }
 
   private def handOff(replyTo: ActorRef): Unit = handOffStopper match {
@@ -866,29 +869,39 @@ private[akka] class Shard(
   }
 
   @InternalStableApi
-  def entityTerminated(id: EntityId): Unit = {
+  def entityTerminated(entityId: EntityId): Unit = {
     import settings.tuningParameters._
-    val isPassivating = entities.isPassivating(id)
     if (passivateIdleTask.isDefined) {
-      lastMessageTimestamp -= id
+      lastMessageTimestamp -= entityId
     }
-    if (messageBuffers.getOrEmpty(id).nonEmpty) {
-      // Note; because we're not persisting the EntityStopped, we don't need
-      // to persist the EntityStarted either.
-      log.debug("Starting entity [{}] again, there are buffered messages for it", id)
-      flightRecorder.entityPassivateRestart(id)
-      // this will re-add the entity back
-      sendMsgBuffer(id)
-    } else {
-      if (!isPassivating) {
-        log.debug("Entity [{}] stopped without passivating, will restart after backoff", id)
-        entities.waitingForRestart(id)
+    entities.entityState(entityId) match {
+      case RememberingStop(_) =>
+        if (VerboseDebug)
+          log.debug("Stop of [{}] arrived, already is among the pending stops", entityId)
+      case Active(_) =>
+        log.debug("Entity [{}] stopped without passivating, will restart after backoff", entityId)
+        entities.waitingForRestart(entityId)
         import context.dispatcher
-        context.system.scheduler.scheduleOnce(entityRestartBackoff, self, RestartEntity(id))
-      } else {
-        entities.rememberingStop(id, Passivating)
-        rememberUpdate(remove = Set(id))
-      }
+        context.system.scheduler.scheduleOnce(entityRestartBackoff, self, RestartEntity(entityId))
+
+      case Passivating(_) =>
+        entities.rememberingStop(entityId, PassivationComplete)
+        if (entities.pendingRememberedEntitiesExist()) {
+          // will go in next batch update
+          if (VerboseDebug)
+            log.debug(
+              "Stop of [{}] after passivating, arrived while updating, adding it to batch of pending stops",
+              entityId)
+        } else {
+          rememberUpdate(remove = Set(entityId))
+        }
+      case unexpected =>
+        val ref = entities.entity(entityId)
+        log.warning(
+          "Got a terminated for [{}], entityId [{}] which is in unexpected state [{}]",
+          ref,
+          entityId,
+          unexpected)
     }
   }
 
@@ -898,20 +911,17 @@ private[akka] class Shard(
         if (entities.isPassivating(id)) {
           log.debug("Passivation already in progress for [{}]. Not sending stopMessage back to entity", id)
         } else if (messageBuffers.getOrEmpty(id).nonEmpty) {
-          log.debug(
-            "Passivation when there are buffered messages for [{}]. Not sending stopMessage back to entity. ({})",
-            id,
-            messageBuffers.getOrEmpty(id).getHead())
+          log.debug("Passivation when there are buffered messages for [{}], ignoring", id)
           // FIXME should we buffer the stop message then?
         } else {
           if (VerboseDebug)
             log.debug("Passivation started for [{}]", id)
           entities.entityPassivating(id)
-          messageBuffers.add(id)
           entity ! stopMessage
           flightRecorder.entityPassivate(id)
         }
-      case OptionVal.None => log.debug("Unknown entity [{}]. Not sending stopMessage back to entity", entity)
+      case OptionVal.None =>
+        log.debug("Unknown entity passivating [{}]. Not sending stopMessage back to entity", entity)
     }
   }
 
@@ -939,12 +949,12 @@ private[akka] class Shard(
     entities.removeEntity(entityId)
     if (hasBufferedMessages) {
       log.debug("Entity stopped after passivation [{}], but will be started again due to buffered messages", entityId)
+      // FIXME we can add it to batch instead of this message in that case
       // in case we're already writing to the remember store
       flightRecorder.entityPassivateRestart(entityId)
       self ! StartEntityInternal(entityId)
     } else {
       log.debug("Entity stopped after passivation [{}]", entityId)
-      dropBufferFor(entityId)
     }
   }
 
@@ -956,10 +966,19 @@ private[akka] class Shard(
     } else {
       payload match {
         case start: ShardRegion.StartEntity =>
-          // FIXME why are we handling this here rather than the toplevel receive?
+          // Handling StartEntity both here and in the receives allows for sending it both as is and in an envelope
+          // to be extracted by the entity id extractor
+
           // we can only start a new entity if we are not currently waiting for another write
-          if (entities.pendingRememberedEntitiesExist()) entities.rememberingStart(entityId, ackTo = Some(snd))
-          else startEntity(start.entityId, Some(sender()))
+          if (entities.pendingRememberedEntitiesExist()) {
+            if (VerboseDebug)
+              log.debug("StartEntity({}) from [{}], adding to batch", start.entityId, snd)
+            entities.rememberingStart(entityId, ackTo = Some(snd))
+          } else {
+            if (VerboseDebug)
+              log.debug("StartEntity({}) from [{}], starting", start.entityId, snd)
+            startEntity(start.entityId, Some(sender()))
+          }
         case _ =>
           entities.entityState(entityId) match {
             case Active(ref) =>
@@ -969,8 +988,7 @@ private[akka] class Shard(
               touchLastMessageTimestamp(entityId)
               ref.tell(payload, snd)
             case RememberingStart(_) =>
-              // FIXME can this happen, another start entity when we already saw one? replace who we ack to
-              entities.rememberingStart(entityId, ackTo = Some(snd))
+              appendToMessageBuffer(entityId, msg, snd)
             case RememberingStop(_) =>
               appendToMessageBuffer(entityId, msg, snd)
             case Passivating(_) =>
