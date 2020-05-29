@@ -113,9 +113,6 @@ private[akka] object Shard {
   // should it go in settings perhaps, useful for tricky sharding bugs?
   final val VerboseDebug = true
 
-  // used for triggering start after passivation when there are buffered messages
-  final case class StartEntityInternal(id: EntityId)
-
   /**
    * State machine for an entity:
    * {{{
@@ -415,18 +412,6 @@ private[akka] class Shard(
       store
     }
 
-  private val rememberedEntitiesRecoveryStrategy: EntityRecoveryStrategy = {
-    import settings.tuningParameters._
-    entityRecoveryStrategy match {
-      case "all" => EntityRecoveryStrategy.allStrategy()
-      case "constant" =>
-        EntityRecoveryStrategy.constantStrategy(
-          context.system,
-          entityRecoveryConstantRateStrategyFrequency,
-          entityRecoveryConstantRateStrategyNumberOfEntities)
-    }
-  }
-
   private val flightRecorder = ShardingFlightRecorder(context.system)
 
   private val entities = new Entities(log, settings.rememberEntities)
@@ -586,7 +571,6 @@ private[akka] class Shard(
     case msg: RememberEntityCommand              => receiveRememberEntityCommand(msg)
     case msg: ShardRegion.StartEntity            => startEntity(msg.entityId, Some(sender()))
     case msg: ShardRegion.StartEntityAck         => receiveStartEntityAck(msg)
-    case msg: StartEntityInternal                => startEntity(msg.id, None)
     case msg: ShardRegionCommand                 => receiveShardRegionCommand(msg)
     case msg: ShardQuery                         => receiveShardQuery(msg)
     case PassivateIdleTick                       => passivateIdleEntities()
@@ -648,6 +632,7 @@ private[akka] class Shard(
       onUpdateDone(storedStarts, storedStops)
 
     case RememberEntityTimeout(`update`) =>
+      log.error("Remember entity store did not respond, crashing shard")
       throw new RuntimeException(
         s"Async write timed out after ${settings.tuningParameters.updatingStateTimeout.pretty}")
     case ShardRegion.StartEntity(entityId) =>
@@ -663,16 +648,8 @@ private[akka] class Shard(
         sender() ! ShardRegion.StartEntityAck(entityId, shardId)
       }
 
-    // below cases should handle same messages as in idle
-    case Terminated(ref) =>
-      entities.entityId(ref) match {
-        case OptionVal.Some(entityId) => entityTerminated(entityId)
-        case OptionVal.None =>
-          log.warning("Unexpected Terminated([{}]) while busy, stashing", ref)
-          stash()
-      }
-    case _: CoordinatorMessage      => stash()
-    case start: StartEntityInternal => entities.rememberingStart(start.id, None)
+    case Terminated(ref)       => receiveTerminated(ref)
+    case _: CoordinatorMessage => stash()
     case RestartEntity(entityId) =>
       entities.entityState(entityId) match {
         case WaitingForRestart =>
@@ -889,18 +866,19 @@ private[akka] class Shard(
       case Active(_) =>
         log.debug("Entity [{}] stopped without passivating, will restart after backoff", entityId)
         entities.waitingForRestart(entityId)
-        import context.dispatcher
-        context.system.scheduler.scheduleOnce(entityRestartBackoff, self, RestartEntity(entityId))
+        val msg = RestartEntity(entityId)
+        timers.startSingleTimer(msg, msg, entityRestartBackoff)
 
       case Passivating(_) =>
-        entities.rememberingStop(entityId, PassivationComplete)
         if (entities.pendingRememberedEntitiesExist()) {
           // will go in next batch update
           if (VerboseDebug)
             log.debug(
               "Stop of [{}] after passivating, arrived while updating, adding it to batch of pending stops",
               entityId)
+          entities.rememberingStop(entityId, PassivationComplete)
         } else {
+          entities.rememberingStop(entityId, PassivationComplete)
           rememberUpdate(remove = Set(entityId))
         }
       case unexpected =>
@@ -1095,6 +1073,25 @@ private[akka] class Shard(
   }
 
   override def postStop(): Unit = {
+    if (entities.pendingRememberedEntitiesExist()) {
+      val (starts, stops) = entities.pendingRememberEntities()
+      log.warning(
+        "Shard [{}] shutting down with [{}] pending remember entity writes, those may be lost",
+        shardId,
+        starts.size + stops.size)
+    }
     passivateIdleTask.foreach(_.cancel())
+  }
+
+  private def rememberedEntitiesRecoveryStrategy: EntityRecoveryStrategy = {
+    import settings.tuningParameters._
+    entityRecoveryStrategy match {
+      case "all" => EntityRecoveryStrategy.allStrategy()
+      case "constant" =>
+        EntityRecoveryStrategy.constantStrategy(
+          context.system,
+          entityRecoveryConstantRateStrategyFrequency,
+          entityRecoveryConstantRateStrategyNumberOfEntities)
+    }
   }
 }
