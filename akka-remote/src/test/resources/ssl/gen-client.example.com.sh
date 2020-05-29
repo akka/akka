@@ -3,11 +3,11 @@
 export PW=`cat password`
 
 # Create a client certificate, under the example.com CA
-# Uses a 10 year validity to simplify maintenance. Consider what validity is more convenient for your use case
 keytool -genkeypair -v \
   -alias client.example.com \
   -dname "CN=client.example.com, OU=Example Org, O=Example Company, L=San Francisco, ST=California, C=US" \
-  -keystore example.com.p12 \
+  -keystore client.example.com.p12 \
+  -storetype PKCS12 \
   -keypass:env PW \
   -storepass:env PW \
   -keyalg EC \
@@ -19,7 +19,7 @@ keytool -certreq -v \
   -alias client.example.com \
   -keypass:env PW \
   -storepass:env PW \
-  -keystore example.com.p12 \
+  -keystore client.example.com.p12 \
   -file client.example.com.csr
 
 # Tell exampleCA to sign the certificate.
@@ -36,11 +36,22 @@ keytool -gencert -v \
   -rfc \
   -validity 3650
 
-# Import the signed certificate back into example.com.p12
+rm client.example.com.csr
+
+# Tell client.example.com.p12 it can trust exampleca as a signer.
+keytool -import -v \
+  -alias exampleca \
+  -file exampleca.crt \
+  -keystore client.example.com.p12 \
+  -storetype PKCS12 \
+  -storepass:env PW << EOF
+yes
+EOF
+
+# Import the signed certificate back into client.example.com.p12
 keytool -import -v \
   -alias client.example.com \
   -file client.example.com.crt \
-  -keystore example.com.p12 \
+  -keystore client.example.com.p12 \
   -storetype PKCS12 \
   -storepass:env PW
-

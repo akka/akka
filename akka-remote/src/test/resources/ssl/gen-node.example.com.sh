@@ -3,13 +3,13 @@
 export PW=`cat password`
 
 # Create a certificate used for peer-to-peer, under the example.com CA
-# Uses a 10 year validity to simplify maintenance. Consider what validity is more convenient
-# for your use case. Uses RSA/2048 because we'll export the private key to PEM an use
-# akka-pki to read it (akka-pki only supports RSA key formats ATM).
+# Uses RSA/2048 because we'll export the private key to PEM an use
+# akka-pki to read it.
 keytool -genkeypair -v \
   -alias node.example.com \
   -dname "CN=node.example.com, OU=Example Org, O=Example Company, L=San Francisco, ST=California, C=US" \
   -keystore node.example.com.p12 \
+  -storetype PKCS12 \
   -keypass:env PW \
   -storepass:env PW \
   -storetype PKCS12 \
@@ -39,6 +39,9 @@ keytool -gencert -v \
   -rfc \
   -validity 3650
 
+rm node.example.com.csr
+
+# Tell node.example.com.p12 it can trust exampleca as a signer.
 keytool -import -v \
   -alias exampleca \
   -file exampleca.crt \
@@ -48,7 +51,7 @@ keytool -import -v \
 yes
 EOF
 
-# Import the signed certificate back into example.com.p12
+# Import the signed certificate back into node.example.com.p12
 keytool -import -v \
   -alias node.example.com \
   -file node.example.com.crt \
@@ -60,7 +63,4 @@ keytool -import -v \
 openssl pkcs12 -in node.example.com.p12 -nodes -nocerts -out tmp.pem -passin pass:kLnCu3rboe
 # A second pass extracts the PKCS#12 bag information and produces a clean PEM file.
 openssl rsa -in tmp.pem -out node.example.com.pem
-
-
-rm -rf *.csr
 rm tmp.pem

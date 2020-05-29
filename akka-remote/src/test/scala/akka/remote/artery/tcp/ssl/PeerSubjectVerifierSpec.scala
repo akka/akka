@@ -14,24 +14,26 @@ import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class PeerSubjectVerifierSpec extends AnyWordSpec with Matchers {
-
+  import TlsResourcesSpec._
   "PeerSubjectVerifier" must {
 
     "accept a peer when both peers have the same subject name" in {
       // CN=one.example.com
       // SAN=DNS:number-one.example.com,DNS:example.com
       // see https://github.com/playframework/play-samples/pull/97
-      val exampleOne = X509ReadersSpec.loadCert("/ssl/one.example.com.crt")
+      val exampleOne = loadCert("/ssl/one.example.com.crt")
       // CN=two.example.com
       // SAN=DNS:number-two.example.com,DNS:example.com
-      val exampleTwo = X509ReadersSpec.loadCert("/ssl/two.example.com.crt")
+      val exampleTwo = loadCert("/ssl/two.example.com.crt")
       // verification passes because both certs have `example.com` in the SAN
       new PeerSubjectVerifier(exampleOne).verifyServerSession(null, inMemSession(exampleTwo)) mustBe None
     }
 
-    "reject a peer when both peers have the same subject name" in {
-      val client = X509ReadersSpec.loadCert("/ssl/client.crt")
-      val exampleTwo = X509ReadersSpec.loadCert("/ssl/two.example.com.crt")
+    "reject a peer when peers don't have the same subject name" in {
+      // `island.example.com` has no SAN and its only subject is not available on `two.example.com`
+      // the peer verification must fail.
+      val client = loadCert("/ssl/island.example.com.crt")
+      val exampleTwo = loadCert("/ssl/two.example.com.crt")
       new PeerSubjectVerifier(client).verifyServerSession(null, inMemSession(exampleTwo)) mustNot be(None)
     }
   }
