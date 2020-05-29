@@ -174,10 +174,9 @@ private[akka] object Shard {
   // do we really need to track it?
   case object RememberedButNotCreated extends EntityState {
     override def transition(newState: EntityState): EntityState = newState match {
-      case NoState                       => RememberedButNotCreated
-      case active: Active                => active
-      case remembering: RememberingStart => remembering
-      case _                             => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+      case NoState        => RememberedButNotCreated
+      case active: Active => active
+      case _              => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
     }
   }
 
@@ -400,10 +399,8 @@ private[akka] class Shard(
   import ShardRegion.Passivate
   import ShardRegion.ShardInitialized
   import ShardRegion.handOffStopperProps
-  import settings.tuningParameters._
 
   import akka.cluster.sharding.ShardCoordinator.Internal.CoordinatorMessage
-  import akka.cluster.sharding.ShardRegion.ShardRegionCommand
 
   private val rememberEntitiesStore: Option[ActorRef] =
     rememberEntitiesProvider.map { provider =>
@@ -571,7 +568,7 @@ private[akka] class Shard(
     case msg: RememberEntityCommand              => receiveRememberEntityCommand(msg)
     case msg: ShardRegion.StartEntity            => startEntity(msg.entityId, Some(sender()))
     case msg: ShardRegion.StartEntityAck         => receiveStartEntityAck(msg)
-    case msg: ShardRegionCommand                 => receiveShardRegionCommand(msg)
+    case Passivate(stopMessage)                  => passivate(sender(), stopMessage)
     case msg: ShardQuery                         => receiveShardQuery(msg)
     case PassivateIdleTick                       => passivateIdleEntities()
     case msg: LeaseLost                          => receiveLeaseLost(msg)
@@ -779,7 +776,12 @@ private[akka] class Shard(
       case _: RememberingStart =>
         // FIXME safe to replace ackTo?
         entities.rememberingStart(entityId, ackTo)
-      case RememberedButNotCreated | NoState =>
+      case RememberedButNotCreated =>
+        // already remembered, just start it
+        getOrCreateEntity(entityId)
+        touchLastMessageTimestamp(entityId)
+        ackTo.foreach(_ ! ShardRegion.StartEntityAck(entityId, shardId))
+      case NoState =>
         log.debug("Request to start entity [{}] and ack to [{}]", entityId, ackTo)
         entities.rememberingStart(entityId, ackTo)
         rememberUpdate(add = Set(entityId))
@@ -796,11 +798,6 @@ private[akka] class Shard(
       entities.rememberingStop(ack.entityId, StartedElsewhere)
       rememberUpdate(remove = Set(ack.entityId))
     }
-  }
-
-  private def receiveShardRegionCommand(msg: ShardRegionCommand): Unit = msg match {
-    case Passivate(stopMessage) => passivate(sender(), stopMessage)
-    case _                      => unhandled(msg)
   }
 
   private def receiveCoordinatorMessage(msg: CoordinatorMessage): Unit = msg match {
@@ -827,6 +824,7 @@ private[akka] class Shard(
       if (activeEntities.nonEmpty) {
         val entityHandOffTimeout = (settings.tuningParameters.handOffTimeout - 5.seconds).max(1.seconds)
         log.debug("Starting HandOffStopper for shard [{}] to terminate [{}] entities.", shardId, activeEntities.size)
+        activeEntities.foreach(context.unwatch(_))
         handOffStopper = Some(
           context.watch(context.actorOf(
             handOffStopperProps(shardId, replyTo, activeEntities, handOffStopMessage, entityHandOffTimeout))))
@@ -979,16 +977,17 @@ private[akka] class Shard(
               appendToMessageBuffer(entityId, msg, snd)
             case Passivating(_) =>
               appendToMessageBuffer(entityId, msg, snd)
-            case WaitingForRestart =>
+            case state @ (WaitingForRestart | RememberedButNotCreated) =>
               if (VerboseDebug)
                 log.debug(
-                  "Delivering message of type [{}] to [{}] (starting because known but not running)",
+                  "Delivering message of type [{}] to [{}] (starting because [{}])",
                   payload.getClass,
-                  entityId)
+                  entityId,
+                  state)
               val actor = getOrCreateEntity(entityId)
               touchLastMessageTimestamp(entityId)
               actor.tell(payload, snd)
-            case NoState | RememberedButNotCreated =>
+            case NoState =>
               if (entities.pendingRememberedEntitiesExist()) {
                 // No actor running and write in progress for some other entity id (can only happen with remember entities enabled)
                 if (VerboseDebug)
@@ -1030,7 +1029,7 @@ private[akka] class Shard(
 
   // ===== buffering while busy saving a start or stop when remembering entities =====
   def appendToMessageBuffer(id: EntityId, msg: Any, snd: ActorRef): Unit = {
-    if (messageBuffers.totalSize >= bufferSize) {
+    if (messageBuffers.totalSize >= settings.tuningParameters.bufferSize) {
       if (log.isDebugEnabled)
         log.debug("Buffer is full, dropping message of type [{}] for entity [{}]", msg.getClass.getName, id)
       context.system.deadLetters ! msg
@@ -1073,16 +1072,8 @@ private[akka] class Shard(
   }
 
   override def postStop(): Unit = {
-    if (entities.pendingRememberedEntitiesExist()) {
-      val (starts, stops) = entities.pendingRememberEntities()
-      log.warning(
-        "Shard [{}] shutting down with [{}] pending remember entity writes, those may be lost",
-        shardId,
-        starts.size + stops.size)
-    } else {
-      log.debug("Shard [{}] shutting down", shardId)
-    }
     passivateIdleTask.foreach(_.cancel())
+    log.debug("Shard [{}] shutting down", shardId)
   }
 
   private def rememberedEntitiesRecoveryStrategy: EntityRecoveryStrategy = {
