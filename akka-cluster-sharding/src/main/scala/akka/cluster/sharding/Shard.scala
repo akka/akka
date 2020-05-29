@@ -250,6 +250,7 @@ private[akka] object Shard {
     private val entities: java.util.Map[EntityId, EntityState] = new util.HashMap[EntityId, EntityState]()
     // needed to look up entity by reg when a Passivating is received
     private val byRef = new util.HashMap[ActorRef, EntityId]()
+    private val remembering = new util.HashSet[EntityId]()
 
     def alreadyRemembered(set: Set[EntityId]): Unit = {
       set.foreach { entityId =>
@@ -264,11 +265,13 @@ private[akka] object Shard {
       }
       val state = entityState(entityId).transition(newState)
       entities.put(entityId, state)
+      remembering.add(entityId)
     }
     def rememberingStop(entityId: EntityId, reason: StopReason): Unit = {
       val state = entityState(entityId)
       removeRefIfThereIsOne(state)
       entities.put(entityId, state.transition(RememberingStop(reason)))
+      remembering.add(entityId)
     }
     def waitingForRestart(id: EntityId): Unit = {
       val state = entities.get(id) match {
@@ -286,11 +289,13 @@ private[akka] object Shard {
       state.transition(NoState)
       removeRefIfThereIsOne(state)
       entities.remove(entityId)
+      remembering.remove(entityId)
     }
     def addEntity(entityId: EntityId, ref: ActorRef): Unit = {
       val state = entityState(entityId).transition(Active(ref))
       entities.put(entityId, state)
       byRef.put(ref, entityId)
+      remembering.remove(entityId)
     }
     def entity(entityId: EntityId): OptionVal[ActorRef] = entities.get(entityId) match {
       case wr: WithRef => OptionVal.Some(wr.ref)
@@ -339,23 +344,22 @@ private[akka] object Shard {
      * @return (remembering start, remembering stop)
      */
     def pendingRememberEntities(): (Map[EntityId, RememberingStart], Set[EntityId]) = {
-      // FIXME not very efficient, not sure if it is a problem, we call it once per completed write
-      entities.asScala.iterator.foldLeft((Map.empty[EntityId, RememberingStart], Set.empty[EntityId])) {
-        case (acc @ (starts, stops), (id, state)) =>
-          state match {
-            case r: RememberingStart => (starts + (id -> r), stops)
-            case _: RememberingStop  => (starts, stops + id)
-            case _                   => acc
-          }
+      if (remembering.isEmpty) {
+        (Map.empty, Set.empty)
+      } else {
+        val starts = Map.newBuilder[EntityId, RememberingStart]
+        val stops = Set.newBuilder[EntityId]
+        remembering.forEach(entityId =>
+          entityState(entityId) match {
+            case r: RememberingStart => starts += (entityId -> r)
+            case _: RememberingStop  => stops += entityId
+            case wat                 => throw new IllegalStateException(s"$entityId was in the remembering set but has state $wat")
+          })
+        (starts.result(), stops.result())
       }
     }
 
-    // FIXME not very efficient, called from deliverMessage but not for every message
-    def pendingRememberedEntitiesExist(): Boolean = entities.asScala.exists {
-      case (_, _: RememberingStop)  => true
-      case (_, _: RememberingStart) => true
-      case _                        => false
-    }
+    def pendingRememberedEntitiesExist(): Boolean = !remembering.isEmpty
 
     def entityIdExists(id: EntityId): Boolean = entities.get(id) != null
     def size: Int = entities.size
