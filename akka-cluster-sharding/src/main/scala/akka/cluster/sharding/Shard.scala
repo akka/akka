@@ -1079,6 +1079,8 @@ private[akka] class Shard(
         "Shard [{}] shutting down with [{}] pending remember entity writes, those may be lost",
         shardId,
         starts.size + stops.size)
+    } else {
+      log.debug("Shard [{}] shutting down", shardId)
     }
     passivateIdleTask.foreach(_.cancel())
   }
