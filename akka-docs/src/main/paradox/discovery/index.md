@@ -84,7 +84,7 @@ The mapping between Akka service discovery terminology and SRV terminology:
 * SRV name = serviceName
 * SRV protocol = protocol
 
-Configure `akka-dns` to be used as the discovery implementation in your `application.conf` and enable the @ref[Akka-native DNS implementation](../io-dns.md):
+Configure `akka-dns` to be used as the discovery implementation in your `application.conf`:
 
 @@snip[application.conf](/akka-docs/src/test/scala/docs/discovery/DnsDiscoveryDocSpec.scala){ #configure-dns }
 

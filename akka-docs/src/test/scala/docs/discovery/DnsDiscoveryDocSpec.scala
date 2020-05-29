@@ -18,9 +18,6 @@ object DnsDiscoveryDocSpec {
         method = akka-dns
       }
     }
-    # enable Akka-native DNS
-    # See https://doc.akka.io/docs/akka/current/io-dns.html
-    akka.io.dns.resolver = "async-dns"
     // #configure-dns
     """)
 }
