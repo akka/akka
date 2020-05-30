@@ -73,6 +73,12 @@ Port can be used when a service opens multiple ports e.g. a HTTP port and an Akk
 
 ## Discovery Method: DNS
 
+@@@ note { title="Async DNS" }
+
+Akka Discovery with DNS does always use the @ref[Akka-native "async-dns" implementation](../io-dns.md) (it is independent of the `akka.io.dns.resolver` setting).
+
+@@@
+
 DNS discovery maps `Lookup` queries as follows:
 
 * `serviceName`, `portName` and `protocol` set: SRV query in the form: `_port._protocol.name` Where the `_`s are added.
