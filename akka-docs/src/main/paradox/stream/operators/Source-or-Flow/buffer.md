@@ -6,7 +6,7 @@ Allow for a temporarily faster upstream events by buffering `size` elements.
 
 ## Signature
 
-@apidoc[Source.buffer](Source) { scala"#buffer(size:Int,overflowStrategy:akka.stream.OverflowStrategy):FlowOps.this.Repr[Out]" java="#buffer(int,akka.stream.OverflowStrategy)" }
+@apidoc[Source.buffer](Source) { scala="#buffer(size:Int,overflowStrategy:akka.stream.OverflowStrategy):FlowOps.this.Repr[Out]" java="#buffer(int,akka.stream.OverflowStrategy)" }
 @apidoc[Flow.buffer](Flow) { scala="#buffer(size:Int,overflowStrategy:akka.stream.OverflowStrategy):FlowOps.this.Repr[Out]" java="#buffer(int,akka.stream.OverflowStrategy)" }
 
 ## Description
