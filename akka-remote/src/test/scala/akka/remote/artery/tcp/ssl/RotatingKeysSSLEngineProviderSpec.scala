@@ -30,7 +30,7 @@ import javax.net.ssl.SSLSession
 // This is an integration tests specifically to test key rotation. Basic happy-path
 // integration of RotatingKeysSSLEngineSpec as an SSLEngineProvider for Akka Remote
 // is tested in `TlsTcpWithRotatingKeysSSLEngineSpec`
-object RotatingKeysSSLEngineSpec {
+object RotatingKeysSSLEngineProviderSpec {
   val cacheTtlInSeconds = 1
   val configStr: String = {
     s"""
@@ -51,8 +51,8 @@ object RotatingKeysSSLEngineSpec {
 
 // In this test each system reads keys/certs from a different temporal folder to control
 // which system gets keys rotated.
-class RotatingKeysSSLEngineSpec
-    extends ArteryMultiNodeSpec(RotatingKeysSSLEngineSpec.config.withFallback(TlsTcpSpec.config))
+class RotatingKeysSSLEngineProviderSpec
+    extends ArteryMultiNodeSpec(RotatingKeysSSLEngineProviderSpec.config.withFallback(TlsTcpSpec.config))
     with ImplicitSender {
   "Artery with TLS/TCP with RotatingKeysSSLEngine" must {
     "rotate keys and rebuild the SSLContext" in {
@@ -60,25 +60,28 @@ class RotatingKeysSSLEngineSpec
         pending
 
       // an initial connection between sysA (from the testkit) and sysB
-      // to get sysB up and runnning
+      // to get sysB up and running
       val remoteSysB = new RemoteSystem("systemB", newRemoteSystem, address)
       remoteSysB.actorSystem.actorOf(TestActors.echoActorProps, "echoB")
       val pathEchoB = remoteSysB.rootActorPath / "user" / "echoB"
-      system.actorSelection(pathEchoB) ! Identify(pathEchoB.name)
-      val echoBRef: ActorRef = expectMsgType[ActorIdentity].ref.get
-      echoBRef ! "ping-1"
-      expectMsg("ping-1")
+
+      val senderOnA = TestProbe()(system)
+      system.actorSelection(pathEchoB).tell(Identify(pathEchoB.name), senderOnA.ref)
+      val echoBRef: ActorRef = senderOnA.expectMsgType[ActorIdentity].ref.get
+      echoBRef.tell("ping-1", senderOnA.ref)
+      senderOnA.expectMsg("ping-1")
 
       remoteSysB.sslProviderServerProbe.expectMsg("createServerSSLEngine")
       remoteSysB.sslProviderClientProbe.expectMsg("createClientSSLEngine")
       val before = remoteSysB.sslContextRef.get()
 
       // sleep to force the cache in sysB's instance to expire
-      Thread.sleep((RotatingKeysSSLEngineSpec.cacheTtlInSeconds + 1) * 1000)
+      Thread.sleep((RotatingKeysSSLEngineProviderSpec.cacheTtlInSeconds + 1) * 1000)
       // Connect system C to system B because I can't get a reference to the SSLContext in system A
       val remoteSysC = new RemoteSystem("systemC", newRemoteSystem, address)
       remoteSysC.actorSystem.actorOf(TestActors.echoActorProps, "echoC")
       val pathEchoC = remoteSysC.rootActorPath / "user" / "echoC"
+
       val senderOnB = TestProbe()(remoteSysB.actorSystem)
       remoteSysB.actorSystem.actorSelection(pathEchoC).tell(Identify(pathEchoC.name), senderOnB.ref)
       val echoCRef: ActorRef = senderOnB.expectMsgType[ActorIdentity].ref.get
@@ -115,7 +118,10 @@ class RemoteSystem(
       sys => new ProbedSSLEngineProvider(sys, sslContextRef, sslProviderServerProbe, sslProviderClientProbe))
 
   val actorSystem =
-    newRemoteSystem(Some(RotatingKeysSSLEngineSpec.configStr), Some(name), Some(ActorSystemSetup(sslProviderSetup)))
+    newRemoteSystem(
+      Some(RotatingKeysSSLEngineProviderSpec.configStr),
+      Some(name),
+      Some(ActorSystemSetup(sslProviderSetup)))
   val remoteAddress = address(actorSystem)
   val rootActorPath = RootActorPath(remoteAddress)
 
