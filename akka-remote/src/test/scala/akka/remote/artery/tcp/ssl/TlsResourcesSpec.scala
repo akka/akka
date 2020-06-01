@@ -10,46 +10,69 @@ import java.security.cert.X509Certificate
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import scala.collection.JavaConverters._
 import scala.util.Try
+import scala.util.control.NonFatal
 
 /**
  *
  */
 class TlsResourcesSpec extends AnyWordSpec with Matchers {
+
   import TlsResourcesSpec._
+
+  val baseNode = "node"
+  val baseClient = "client"
+  val baseRsaClient = "rsa-client"
+  val baseIslandServer = "island"
+  val baseServers = Set("one", "two")
+  val arteryNodeSet = Set("artery-nodes/artery-node001", "artery-nodes/artery-node002", "artery-nodes/artery-node003")
+
   "example.com certificate family" must {
     "all include `example.com` as SAN" in {
-      Set("one", "two", "node", "client").foreach { prefix =>
+      val sameSan = baseServers + baseClient + baseNode + baseRsaClient
+      sameSan.foreach { prefix =>
         val serverCert = loadCert(s"/ssl/$prefix.example.com.crt")
         X509Readers.getAllSubjectNames(serverCert).contains("example.com") mustBe (true)
       }
     }
 
     "not add `example.com` as SAN on the `island.example.com` certificate" in {
-      val serverCert = loadCert(s"/ssl/island.example.com.crt")
-      X509Readers.getAllSubjectNames(serverCert).contains("example.com") mustBe (false)
+      val notExampleSan = arteryNodeSet + baseIslandServer
+      notExampleSan.foreach { prefix =>
+        val cert = loadCert(s"/ssl/$prefix.example.com.crt")
+        X509Readers.getAllSubjectNames(cert).contains("example.com") mustBe (false)
+      }
     }
 
-    import scala.collection.JavaConverters._
     val serverAuth = "1.3.6.1.5.5.7.3.1" // TLS Web server authentication
     val clientAuth = "1.3.6.1.5.5.7.3.2" // TLS Web client authentication
     "have certificates usable for client Auth" in {
-      Set("node", "client").foreach { prefix =>
+      val clients = Set(baseClient, baseNode, baseRsaClient) ++ arteryNodeSet
+      clients.foreach { prefix =>
         val cert = loadCert(s"/ssl/$prefix.example.com.crt")
         cert.getExtendedKeyUsage.asScala.contains(clientAuth) mustBe (true)
       }
     }
 
     "have certificates usable for server Auth" in {
-      Set("node", "one", "two", "island").foreach { prefix =>
+      val servers = baseServers + baseIslandServer + baseNode ++ arteryNodeSet
+      servers.foreach { prefix =>
         val serverCert = loadCert(s"/ssl/$prefix.example.com.crt")
         serverCert.getExtendedKeyUsage.asScala.contains(serverAuth) mustBe (true)
       }
     }
 
-    "have an RSA Private Key in PEM format" in {
-      val pk = PemManagersProvider.loadPrivateKey(getPrefixed("ssl/node.example.com.pem"))
-      pk.getAlgorithm must be("RSA")
+    "have RSA Private Keys in PEM format" in {
+      val nodes = arteryNodeSet + baseNode + baseRsaClient
+      nodes.foreach { prefix =>
+        try {
+          val pk = PemManagersProvider.loadPrivateKey(toAbsolutePath(s"ssl/$prefix.example.com.pem"))
+          pk.getAlgorithm must be("RSA")
+        } catch {
+          case NonFatal(t) => fail(s"Failed test for $prefix", t)
+        }
+      }
     }
 
   }
@@ -58,7 +81,7 @@ class TlsResourcesSpec extends AnyWordSpec with Matchers {
 
 object TlsResourcesSpec {
 
-  def getPrefixed(resourceName: String): String =
+  def toAbsolutePath(resourceName: String): String =
     getClass.getClassLoader.getResource(resourceName).getPath
 
   private val certFactory = CertificateFactory.getInstance("X.509")
