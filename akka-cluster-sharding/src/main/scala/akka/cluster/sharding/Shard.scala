@@ -26,6 +26,7 @@ import akka.cluster.sharding.internal.RememberEntitiesProvider
 import akka.cluster.sharding.internal.RememberEntityStarter
 import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
+import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.pattern.pipe
 import akka.util.MessageBufferMap
@@ -53,13 +54,13 @@ private[akka] object Shard {
    * When remembering entities and the entity stops without issuing a `Passivate`, we
    * restart it after a back off using this message.
    */
-  final case class RestartEntity(entity: EntityId) extends RememberEntityCommand
+  final case class RestartTerminatedEntity(entity: EntityId) extends RememberEntityCommand
 
   /**
    * When initialising a shard with remember entities enabled the following message is used
    * to restart batches of entity actors at a time.
    */
-  final case class RestartEntities(entity: Set[EntityId]) extends RememberEntityCommand
+  final case class RestartRememberedEntities(entity: Set[EntityId]) extends RememberEntityCommand
 
   /**
    * A query for information about the shard
@@ -548,9 +549,12 @@ private[akka] class Shard(
       "Shard starting [{}] remembered entities using strategy [{}]",
       ids.size,
       rememberedEntitiesRecoveryStrategy)
+    // FIXME Separation of concerns: shouldn't this future juggling be part of the RememberEntityStarter actor instead?
     rememberedEntitiesRecoveryStrategy.recoverEntities(ids).foreach { scheduledRecovery =>
-      import context.dispatcher
-      scheduledRecovery.filter(_.nonEmpty).map(RestartEntities).pipeTo(self)
+      scheduledRecovery
+        .filter(_.nonEmpty)(ExecutionContexts.parasitic)
+        .map(RestartRememberedEntities)(ExecutionContexts.parasitic)
+        .pipeTo(self)
     }
   }
 
@@ -592,7 +596,6 @@ private[akka] class Shard(
         storingStarts.mkString(", "),
         storingStops.mkString(", "))
 
-    // FIXME, handle order of add remove when an id is in both somehow?
     storingStarts.foreach { entityId =>
       flightRecorder.rememberEntityAdd(entityId)
     }
@@ -647,15 +650,18 @@ private[akka] class Shard(
 
     case Terminated(ref)       => receiveTerminated(ref)
     case _: CoordinatorMessage => stash()
-    case RestartEntity(entityId) =>
+    case RestartTerminatedEntity(entityId) =>
       entities.entityState(entityId) match {
         case WaitingForRestart =>
-          entities.rememberingStart(entityId, None)
+          if (VerboseDebug)
+            log.debug("Restarting terminated entity [{}]", entityId)
+          getOrCreateEntity(entityId)
         case other =>
-          log.warning("Got RestartEntity for [{}] but it's not waiting to be restarted. Actual state [{}]", other)
+          throw new IllegalStateException(
+            s"Got RestartTerminatedEntity for [$entityId] but it's not waiting to be restarted. Actual state [$other]")
       }
-    case RestartEntities(entities) => restartEntities(entities)
-    case l: LeaseLost              => receiveLeaseLost(l)
+    case RestartRememberedEntities(entities) => restartEntities(entities)
+    case l: LeaseLost                        => receiveLeaseLost(l)
     case ShardRegion.StartEntityAck(entityId, _) =>
       if (update.started.contains(entityId)) {
         // currently in progress of starting, so we'll need to stop it when that is done
@@ -757,12 +763,20 @@ private[akka] class Shard(
   }
 
   private def receiveRememberEntityCommand(msg: RememberEntityCommand): Unit = msg match {
-    // these are only used with remembering entities upon start
-    case RestartEntity(id) =>
-      // starting because it was remembered as started on shard startup (note that a message starting
-      // it up could already have arrived and in that case it will already be started)
-      getOrCreateEntity(id)
-    case RestartEntities(ids) => restartEntities(ids)
+    case RestartTerminatedEntity(entityId) =>
+      entities.entityState(entityId) match {
+        case WaitingForRestart =>
+          if (VerboseDebug) log.debug("Restarting entity unexpectedly terminated entity [{}]", entityId)
+          getOrCreateEntity(entityId)
+        case Active(_) =>
+          // it up could already have been started, that's fine
+          if (VerboseDebug) log.debug("Got RestartTerminatedEntity for [{}] but it is already running")
+        case other =>
+          throw new IllegalStateException(
+            s"Unexpected state for [$entityId] when getting RestartTerminatedEntity: [$other]")
+      }
+
+    case RestartRememberedEntities(ids) => restartEntities(ids)
   }
 
   // this could be because of a start message or due to a new message for the entity
@@ -777,7 +791,8 @@ private[akka] class Shard(
         // FIXME safe to replace ackTo?
         entities.rememberingStart(entityId, ackTo)
       case RememberedButNotCreated =>
-        // already remembered, just start it
+        // already remembered, just start it - this will be the normal path for initially remembered entities
+        log.debug("Request to start (already remembered) entity [{}]", entityId)
         getOrCreateEntity(entityId)
         touchLastMessageTimestamp(entityId)
         ackTo.foreach(_ ! ShardRegion.StartEntityAck(entityId, shardId))
@@ -864,7 +879,7 @@ private[akka] class Shard(
       case Active(_) =>
         log.debug("Entity [{}] stopped without passivating, will restart after backoff", entityId)
         entities.waitingForRestart(entityId)
-        val msg = RestartEntity(entityId)
+        val msg = RestartTerminatedEntity(entityId)
         timers.startSingleTimer(msg, msg, entityRestartBackoff)
 
       case Passivating(_) =>
@@ -951,7 +966,7 @@ private[akka] class Shard(
       payload match {
         case start: ShardRegion.StartEntity =>
           // Handling StartEntity both here and in the receives allows for sending it both as is and in an envelope
-          // to be extracted by the entity id extractor
+          // to be extracted by the entity id extractor.
 
           // we can only start a new entity if we are not currently waiting for another write
           if (entities.pendingRememberedEntitiesExist()) {
@@ -966,16 +981,11 @@ private[akka] class Shard(
         case _ =>
           entities.entityState(entityId) match {
             case Active(ref) =>
-              // FIXME remember to remove payload toString
               if (VerboseDebug)
-                log.debug("Delivering message of type [{}] to [{}] ({})", payload.getClass, entityId, payload)
+                log.debug("Delivering message of type [{}] to [{}]", payload.getClass, entityId)
               touchLastMessageTimestamp(entityId)
               ref.tell(payload, snd)
-            case RememberingStart(_) =>
-              appendToMessageBuffer(entityId, msg, snd)
-            case RememberingStop(_) =>
-              appendToMessageBuffer(entityId, msg, snd)
-            case Passivating(_) =>
+            case RememberingStart(_) | RememberingStop(_) | Passivating(_) =>
               appendToMessageBuffer(entityId, msg, snd)
             case state @ (WaitingForRestart | RememberedButNotCreated) =>
               if (VerboseDebug)
