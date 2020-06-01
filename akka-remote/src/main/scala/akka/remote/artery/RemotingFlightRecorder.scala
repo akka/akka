@@ -6,7 +6,11 @@ package akka.remote.artery
 
 import java.net.InetSocketAddress
 
-import akka.actor.{ Address, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.Address
+import akka.actor.ExtendedActorSystem
+import akka.actor.Extension
+import akka.actor.ExtensionId
+import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalApi
 import akka.remote.UniqueAddress
 import akka.util.FlightRecorderLoader

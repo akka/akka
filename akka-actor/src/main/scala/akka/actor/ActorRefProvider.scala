@@ -387,7 +387,14 @@ private[akka] class LocalActorRefProvider private[akka] (
   override val rootPath: ActorPath = RootActorPath(Address("akka", _systemName))
 
   private[akka] val log: MarkerLoggingAdapter =
-    Logging.withMarker(eventStream, getClass.getName + "(" + rootPath.address + ")")
+    Logging.withMarker(eventStream, getClass)
+
+  /*
+   * This dedicated logger is used whenever a deserialization failure occurs
+   * and can therefore be disabled/enabled independently
+   */
+  private[akka] val logDeser: MarkerLoggingAdapter =
+    Logging.withMarker(eventStream, getClass.getName + ".Deserialization")
 
   override val deadLetters: InternalActorRef =
     _deadLetters
@@ -587,14 +594,14 @@ private[akka] class LocalActorRefProvider private[akka] (
   def resolveActorRef(path: String): ActorRef = path match {
     case ActorPathExtractor(address, elems) if address == rootPath.address => resolveActorRef(rootGuardian, elems)
     case _ =>
-      log.debug("Resolve (deserialization) of unknown (invalid) path [{}], using deadLetters.", path)
+      logDeser.debug("Resolve (deserialization) of unknown (invalid) path [{}], using deadLetters.", path)
       deadLetters
   }
 
   def resolveActorRef(path: ActorPath): ActorRef = {
     if (path.root == rootPath) resolveActorRef(rootGuardian, path.elements)
     else {
-      log.debug(
+      logDeser.debug(
         "Resolve (deserialization) of foreign path [{}] doesn't match root path [{}], using deadLetters.",
         path,
         rootPath)
@@ -607,13 +614,13 @@ private[akka] class LocalActorRefProvider private[akka] (
    */
   private[akka] def resolveActorRef(ref: InternalActorRef, pathElements: Iterable[String]): InternalActorRef =
     if (pathElements.isEmpty) {
-      log.debug("Resolve (deserialization) of empty path doesn't match an active actor, using deadLetters.")
+      logDeser.debug("Resolve (deserialization) of empty path doesn't match an active actor, using deadLetters.")
       deadLetters
     } else
       ref.getChild(pathElements.iterator) match {
         case Nobody =>
           if (log.isDebugEnabled)
-            log.debug(
+            logDeser.debug(
               "Resolve (deserialization) of path [{}] doesn't match an active actor. " +
               "It has probably been stopped, using deadLetters.",
               pathElements.mkString("/"))

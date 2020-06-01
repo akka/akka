@@ -617,7 +617,7 @@ private final case class BackoffOptionsImpl(
             backoffReset,
             randomFactor,
             supervisorStrategy,
-            replyWhileStopped))
+            replyWhileStopped.map(msg => ReplyWith(msg)).getOrElse(ForwardDeathLetters)))
       //onStop method in companion object
       case StopImpliesFailure =>
         Props(
@@ -629,7 +629,7 @@ private final case class BackoffOptionsImpl(
             backoffReset,
             randomFactor,
             supervisorStrategy,
-            replyWhileStopped,
+            replyWhileStopped.map(msg => ReplyWith(msg)).getOrElse(ForwardDeathLetters),
             finalStopMessage))
     }
   }
