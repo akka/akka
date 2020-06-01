@@ -35,6 +35,11 @@ object RotatingKeysSSLEngineProviderSpec {
   val cacheTtlInSeconds = 1
   val configStr: String = {
     s"""
+      akka.remote.artery {
+        ## the large-messages channel in artery is not used for this tests 
+        ## but we're enabling it to test it also creates its own SSLEngine 
+        large-message-destinations = [ "/user/large" ]
+      }
       akka.remote.artery.ssl {
         ssl-engine-provider = akka.remote.artery.tcp.ssl.RotatingKeysSSLEngineProvider
         rotating-keys-engine {
@@ -81,21 +86,17 @@ class RotatingKeysSSLEngineProviderSpec
       before shouldNot be(after)
     }
 
-    "keep existing connections alive (No new engines created after cache expiration)" in {
+    "keep existing connections alive (no new engines created after cache expiration)" in {
       if (!arteryTcpTlsEnabled())
         pending
 
       // an initial connection between sysA (from the testkit) and sysB
       // to get sysB up and running
       val (remoteSysB, pathEchoB) = buildRemoteWithEchoActor("B-reused")
-      disableEngineProbes(remoteSysB)
-
-      // Artery uses pooled connections so there'll be a handful of
-      // SSLEngines created. Instead of coupling this test to that number
-      // let's warmup the pool and then... (cont'd)
-      (1 to 15).foreach(_ => contact(system, pathEchoB))
-      // ... (cont) we'll assert that new contacts don't create a new engine... (cont'd)
-      enableEngineProbes(remoteSysB)
+      contact(system, pathEchoB)
+      assertThreeChannelsAreCreated(remoteSysB)
+      // once the three channels are created, no new engines are required... (cont'd)
+      contact(system, pathEchoB)
       contact(system, pathEchoB)
       assertNoEnginesCreated(remoteSysB)
 
@@ -106,34 +107,31 @@ class RotatingKeysSSLEngineProviderSpec
       // be created.
       contact(system, pathEchoB)
       assertNoEnginesCreated(remoteSysB)
-
     }
 
   }
 
-  // Assert the RemoteSystem created both server and client engines
-  private def assertEnginesCreated(remoteSysB: RemoteSystem) = {
-    remoteSysB.sslProviderServerProbe.expectMsg("createServerSSLEngine")
-    remoteSysB.sslProviderClientProbe.expectMsg("createClientSSLEngine")
+  // Assert the RemoteSystem created three pairs of SSLEngines (main channel,
+  // large messages channel and control channel)
+  // NOTE: the large message channel is not enabled but default. In this test suite
+  // it's enabled via adding a value to the `large-message-destinations` setting
+  private def assertThreeChannelsAreCreated(remoteSystem: RemoteSystem) = {
+    assertEnginesCreated(remoteSystem)
+    assertEnginesCreated(remoteSystem)
+    assertEnginesCreated(remoteSystem)
   }
-
-  private def disableEngineProbes(remoteSysB: RemoteSystem) = {
-    remoteSysB.sslProviderServerProbe.ignoreMsg { case _ => true }
-    remoteSysB.sslProviderClientProbe.ignoreMsg { case _ => true }
+  private def assertEnginesCreated(remoteSystem: RemoteSystem) = {
+    remoteSystem.sslProviderServerProbe.expectMsg("createServerSSLEngine")
+    remoteSystem.sslProviderClientProbe.expectMsg("createClientSSLEngine")
   }
-  private def enableEngineProbes(remoteSysB: RemoteSystem) = {
-    remoteSysB.sslProviderServerProbe.ignoreNoMsg()
-    remoteSysB.sslProviderClientProbe.ignoreNoMsg()
-  }
-
-  private def assertNoEnginesCreated(remoteSysB: RemoteSystem) = {
-    remoteSysB.sslProviderServerProbe.expectNoMessage()
-    remoteSysB.sslProviderClientProbe.expectNoMessage()
+  private def assertNoEnginesCreated(remoteSystem: RemoteSystem) = {
+    remoteSystem.sslProviderServerProbe.expectNoMessage()
+    remoteSystem.sslProviderClientProbe.expectNoMessage()
   }
 
   // sleep to force the cache in sysB's instance to expire
   private def awaitCacheExpiration(): Unit = {
-    Thread.sleep((RotatingKeysSSLEngineProviderSpec.cacheTtlInSeconds + 1) * 1000)
+    Thread.sleep((RotatingKeysSSLEngineProviderSpec.cacheTtlInSeconds + 1) * 1500)
   }
 
   // Send a message from sourceSystem to targetPath (which should be on another actor system)
@@ -190,7 +188,7 @@ class ProbedSSLEngineProvider(
     println(s"  -----------------------  creating server engine - ${hostname}:$port  -----------------------==== ")
     sslProviderServerProbe.ref ! "createServerSSLEngine"
     val engine = delegate.createServerSSLEngine(hostname, port)
-    // invoke after to let `createEngine` trigger the SSL context reconstruction
+    // invoked last to let `createEngine` be the trigger of the SSL context reconstruction
     sslContextRef.set(delegate.getSSLContext())
     engine
   }
@@ -199,7 +197,7 @@ class ProbedSSLEngineProvider(
     println(s"  -----------------------  creating client engine - ${hostname}:$port  -----------------------==== ")
     sslProviderClientProbe.ref ! "createClientSSLEngine"
     val engine = delegate.createClientSSLEngine(hostname, port)
-    // invoke after to let `createEngine` trigger the SSL context reconstruction
+    // invoked last to let `createEngine` be the trigger of the SSL context reconstruction
     sslContextRef.set(delegate.getSSLContext())
     engine
   }
