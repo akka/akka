@@ -4,8 +4,8 @@
 
 package akka.remote.artery.tcp.ssl
 
+import java.io.ByteArrayInputStream
 import java.io.File
-import java.io.FileInputStream
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.security.KeyStore
@@ -22,7 +22,7 @@ import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 
-import scala.util.Try
+import scala.concurrent.blocking
 
 /**
  * INTERNAL API
@@ -71,7 +71,7 @@ private[ssl] object PemManagersProvider {
    * INTERNAL API
    */
   @InternalApi
-  private[ssl] def loadPrivateKey(filename: String): PrivateKey = {
+  private[ssl] def loadPrivateKey(filename: String): PrivateKey = blocking {
     val bytes = Files.readAllBytes(new File(filename).toPath)
     val pemData = new String(bytes, Charset.forName("UTF-8"))
     DERPrivateKeyLoader.load(PEMDecoder.decode(pemData))
@@ -83,10 +83,9 @@ private[ssl] object PemManagersProvider {
    * INTERNAL API
    */
   @InternalApi
-  private[ssl] def loadCertificate(filename: String): Certificate = {
-    val fin = new FileInputStream(filename)
-    try certFactory.generateCertificate(fin)
-    finally Try(fin.close())
+  private[ssl] def loadCertificate(filename: String): Certificate = blocking {
+    val bytes = Files.readAllBytes(new File(filename).toPath)
+    certFactory.generateCertificate(new ByteArrayInputStream(bytes))
   }
 
 }
