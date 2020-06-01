@@ -49,7 +49,7 @@ final class RotatingKeysSSLEngineProvider(val config: Config, protected val log:
   private val sslEngineConfig = new SSLEngineConfig(config)
   import sslEngineConfig._
 
-  // build a PRNG (created once, reused on every isntance of SSLContext
+  // build a PRNG (created once, reused on every instance of SSLContext
   private val rng: SecureRandom = SecureRandomFactory.createSecureRandom(SSLRandomNumberGenerator, log)
 
   // handle caching
