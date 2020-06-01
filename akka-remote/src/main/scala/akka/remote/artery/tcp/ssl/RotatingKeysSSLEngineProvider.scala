@@ -61,7 +61,7 @@ final class RotatingKeysSSLEngineProvider(val config: Config, protected val log:
   private def getContext(): ConfiguredContext = {
     contextRef.get() match {
       case Some(CachedContext(_, expired)) if expired.isOverdue() =>
-        val context = constructContext()
+        val context = constructContext(isReload = true)
         contextRef.set(Some(CachedContext(context, SSLContextCacheTime.fromNow)))
         context
       case Some(CachedContext(cached, _)) => cached
@@ -73,12 +73,9 @@ final class RotatingKeysSSLEngineProvider(val config: Config, protected val log:
   }
 
   // Construct the cached instance
-  private def constructContext(): ConfiguredContext = {
+  private def constructContext(isReload: Boolean = false): ConfiguredContext = {
+    val (privateKey, cert, cacert) = readFiles()
     try {
-      val cert: X509Certificate = PemManagersProvider.loadCertificate(SSLCertFile).asInstanceOf[X509Certificate]
-      val cacert: Certificate = PemManagersProvider.loadCertificate(SSLCACertFile)
-      val privateKey: PrivateKey = PemManagersProvider.loadPrivateKey(SSLKeyFile)
-
       val keyManagers: Array[KeyManager] = PemManagersProvider.buildKeyManagers(privateKey, cert, cacert)
       val trustManagers: Array[TrustManager] = PemManagersProvider.buildTrustManagers(cacert)
 
@@ -88,17 +85,27 @@ final class RotatingKeysSSLEngineProvider(val config: Config, protected val log:
       ctx.init(keyManagers, trustManagers, rng)
       ConfiguredContext(ctx, sessionVerifier)
     } catch {
-      case e: FileNotFoundException =>
-        throw new SslTransportException(
-          "Server SSL connection could not be established because a key or cert could not be loaded",
-          e)
-      case e: IOException =>
-        throw new SslTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
       case e: GeneralSecurityException =>
         throw new SslTransportException(
           "Server SSL connection could not be established because SSL context could not be constructed",
           e)
       case e: IllegalArgumentException =>
+        throw new SslTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
+    }
+  }
+
+  private def readFiles(): (PrivateKey, X509Certificate, Certificate) = {
+    try {
+      val cacert: Certificate = PemManagersProvider.loadCertificate(SSLCACertFile)
+      val cert: X509Certificate = PemManagersProvider.loadCertificate(SSLCertFile).asInstanceOf[X509Certificate]
+      val privateKey: PrivateKey = PemManagersProvider.loadPrivateKey(SSLKeyFile)
+      (privateKey, cert, cacert)
+    } catch {
+      case e: FileNotFoundException =>
+        throw new SslTransportException(
+          "Server SSL connection could not be established because a key or cert could not be loaded",
+          e)
+      case e: IOException =>
         throw new SslTransportException("Server SSL connection could not be established because: " + e.getMessage, e)
     }
   }

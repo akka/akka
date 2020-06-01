@@ -34,7 +34,6 @@ class FileSystemObserver extends Actor {
           attempts -= 1
           Thread.sleep(500)
           Files.readAllBytes(new File(absolutePath).toPath)
-          println(s"${context.system.name} looking for $absolutePath - FOUND")
           true
         } catch {
           case NonFatal(_) =>
