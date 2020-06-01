@@ -228,8 +228,9 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
         }
 
         awaitAssert({
-          region ! GetShardRegionState
-          val stats = expectMsgType[CurrentShardRegionState]
+          val probe = TestProbe()
+          region.tell(GetShardRegionState, probe.ref)
+          val stats = probe.expectMsgType[CurrentShardRegionState]
           stats.shards.head.shardId shouldEqual "0"
           stats.shards.head.entityIds.toList.sorted shouldEqual List("0") // the init entity
         }, 2.seconds)

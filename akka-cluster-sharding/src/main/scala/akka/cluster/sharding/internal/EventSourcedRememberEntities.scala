@@ -60,14 +60,14 @@ private[akka] object EventSourcedRememberEntitiesStore {
   /**
    * `State` change for starting a set of entities in this `Shard`
    */
-  final case class EntitiesStarted(entities: Set[String]) extends StateChange
+  final case class EntitiesStarted(entities: Set[EntityId]) extends StateChange
 
   case object StartedAck
 
   /**
    * `State` change for an entity which has terminated.
    */
-  final case class EntityStopped(entityId: EntityId) extends StateChange
+  final case class EntitiesStopped(entities: Set[EntityId]) extends StateChange
 
   def props(typeName: String, shardId: ShardRegion.ShardId, settings: ClusterShardingSettings): Props =
     Props(new EventSourcedRememberEntitiesStore(typeName, shardId, settings))
@@ -98,25 +98,28 @@ private[akka] final class EventSourcedRememberEntitiesStore(
 
   override def receiveRecover: Receive = {
     case EntitiesStarted(ids)              => state = state.copy(state.entities.union(ids))
-    case EntityStopped(id)                 => state = state.copy(state.entities - id)
+    case EntitiesStopped(ids)              => state = state.copy(state.entities -- ids)
     case SnapshotOffer(_, snapshot: State) => state = snapshot
     case RecoveryCompleted =>
       log.debug("Recovery completed for shard [{}] with [{}] entities", shardId, state.entities.size)
   }
 
   override def receiveCommand: Receive = {
-    case RememberEntitiesShardStore.AddEntities(ids) =>
-      persist(EntitiesStarted(ids)) { started =>
-        sender() ! RememberEntitiesShardStore.UpdateDone(ids)
-        state.copy(state.entities ++ started.entities)
-        saveSnapshotWhenNeeded()
+
+    case RememberEntitiesShardStore.Update(started, stopped) =>
+      val events =
+        (if (started.nonEmpty) EntitiesStarted(started) :: Nil else Nil) :::
+        (if (stopped.nonEmpty) EntitiesStopped(stopped) :: Nil else Nil)
+      var left = events.size
+      persistAll(events) { _ =>
+        left -= 1
+        if (left == 0) {
+          sender() ! RememberEntitiesShardStore.UpdateDone(started, stopped)
+          state.copy(state.entities.union(started) -- stopped)
+          saveSnapshotWhenNeeded()
+        }
       }
-    case RememberEntitiesShardStore.RemoveEntity(id) =>
-      persist(EntityStopped(id)) { stopped =>
-        sender() ! RememberEntitiesShardStore.UpdateDone(Set(id))
-        state.copy(state.entities - stopped.entityId)
-        saveSnapshotWhenNeeded()
-      }
+
     case RememberEntitiesShardStore.GetEntities =>
       sender() ! RememberEntitiesShardStore.RememberedEntities(state.entities)
 

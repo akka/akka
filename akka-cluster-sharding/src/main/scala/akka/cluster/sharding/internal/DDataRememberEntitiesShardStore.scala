@@ -29,7 +29,6 @@ import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.ShardRegion.ShardId
-import akka.cluster.sharding.internal.RememberEntitiesShardStore.{ AddEntities, RemoveEntity }
 import akka.util.PrettyDuration._
 
 import scala.concurrent.ExecutionContext
@@ -58,6 +57,12 @@ private[akka] object DDataRememberEntitiesShardStore {
 
   private def stateKeys(typeName: String, shardId: ShardId): Array[ORSetKey[EntityId]] =
     Array.tabulate(numberOfKeys)(i => ORSetKey[EntityId](s"shard-$typeName-$shardId-$i"))
+
+  private sealed trait Evt {
+    def id: EntityId
+  }
+  private case class Started(id: EntityId) extends Evt
+  private case class Stopped(id: EntityId) extends Evt
 
 }
 
@@ -104,9 +109,8 @@ private[akka] final class DDataRememberEntitiesShardStore(
   override def receive: Receive = idle
 
   def idle: Receive = {
-    case RememberEntitiesShardStore.GetEntities => onGetEntities()
-    case AddEntities(ids)                       => addEntities(ids)
-    case RemoveEntity(id)                       => removeEntity(id)
+    case RememberEntitiesShardStore.GetEntities    => onGetEntities()
+    case update: RememberEntitiesShardStore.Update => onUpdate(update)
   }
 
   def waitingForAllEntityIds(requestor: ActorRef, gotKeys: Set[Int], ids: Set[EntityId]): Receive = {
@@ -138,78 +142,82 @@ private[akka] final class DDataRememberEntitiesShardStore(
       case GetDataDeleted(_, _) =>
         log.error("Unable to get an initial state because it was deleted")
         context.stop(self)
+      case update: RememberEntitiesShardStore.Update =>
+        log.warning("Got an update before load of initial entities completed, dropping update: [{}]", update)
     }
   }
 
-  private def addEntities(ids: Set[EntityId]): Unit = {
-    val updates: Map[Set[EntityId], (Update[ORSet[EntityId]], Int)] = ids.groupBy(key).map {
-      case (key, ids) =>
-        (ids, (Update(key, ORSet.empty[EntityId], writeMajority, Some(ids)) { existing =>
-          ids.foldLeft(existing) {
-            case (acc, nextId) => acc :+ nextId
-          }
-        }, maxUpdateAttempts))
-    }
+  private def onUpdate(update: RememberEntitiesShardStore.Update): Unit = {
+    // FIXME what about ordering of adds/removes vs sets, I think we can lose one
+    val allEvts: Set[Evt] = (update.started.map(Started) ++ update.stopped.map(Stopped))
+    // map from set of evts (for same ddata key) to one update that applies each of them
+    val ddataUpdates: Map[Set[Evt], (Update[ORSet[EntityId]], Int)] =
+      allEvts.groupBy(evt => key(evt.id)).map {
+        case (key, evts) =>
+          (evts, (Update(key, ORSet.empty[EntityId], writeMajority, Some(evts)) { existing =>
+            evts.foldLeft(existing) {
+              case (acc, Started(id)) => acc :+ id
+              case (acc, Stopped(id)) => acc.remove(id)
+            }
+          }, maxUpdateAttempts))
+      }
 
-    updates.foreach {
+    ddataUpdates.foreach {
       case (_, (update, _)) =>
         replicator ! update
     }
 
-    context.become(waitingForUpdates(sender(), ids, updates))
-  }
-
-  private def removeEntity(id: EntityId): Unit = {
-    val keyForEntity = key(id)
-    val update = Update(keyForEntity, ORSet.empty[EntityId], writeMajority, Some(Set(id))) { existing =>
-      existing.remove(id)
-    }
-    replicator ! update
-
-    context.become(waitingForUpdates(sender(), Set(id), Map((Set(id), (update, maxUpdateAttempts)))))
+    context.become(waitingForUpdates(sender(), update, ddataUpdates))
   }
 
   private def waitingForUpdates(
       requestor: ActorRef,
-      allIds: Set[EntityId],
-      updates: Map[Set[EntityId], (Update[ORSet[EntityId]], Int)]): Receive = {
-    case UpdateSuccess(_, Some(ids: Set[EntityId] @unchecked)) =>
-      if (log.isDebugEnabled)
-        log.debug("The DDataShard state was successfully updated for [{}]", ids.mkString(", "))
-      val remaining = updates - ids
-      if (remaining.isEmpty) {
-        requestor ! RememberEntitiesShardStore.UpdateDone(allIds)
-        context.become(idle)
-      } else {
-        context.become(waitingForUpdates(requestor, allIds, remaining))
-      }
+      update: RememberEntitiesShardStore.Update,
+      allUpdates: Map[Set[Evt], (Update[ORSet[EntityId]], Int)]): Receive = {
 
-    case UpdateTimeout(_, Some(ids: Set[EntityId] @unchecked)) =>
-      val (update, retriesLeft) = updates(ids)
-      if (retriesLeft > 0) {
-        log.debug("Retrying update because of write timeout, tries left [{}]", retriesLeft)
-        replicator ! update
-        context.become(waitingForUpdates(requestor, allIds, updates.updated(ids, (update, retriesLeft - 1))))
-      } else {
-        log.error(
-          "Unable to update state, within 'updating-state-timeout'= [{}], gave up after [{}] retries",
-          writeMajority.timeout.pretty,
-          maxUpdateAttempts)
+    // updatesLeft used both to keep track of what work remains and for retrying on timeout up to a limit
+    def next(updatesLeft: Map[Set[Evt], (Update[ORSet[EntityId]], Int)]): Receive = {
+      case UpdateSuccess(_, Some(evts: Set[Evt] @unchecked)) =>
+        log.debug("The DDataShard state was successfully updated for [{}]", evts)
+        val remainingAfterThis = updatesLeft - evts
+        if (remainingAfterThis.isEmpty) {
+          requestor ! RememberEntitiesShardStore.UpdateDone(update.started, update.stopped)
+          context.become(idle)
+        } else {
+          context.become(next(remainingAfterThis))
+        }
+
+      case UpdateTimeout(_, Some(evts: Set[Evt] @unchecked)) =>
+        val (updateForEvts, retriesLeft) = updatesLeft(evts)
+        if (retriesLeft > 0) {
+          log.debug("Retrying update because of write timeout, tries left [{}]", retriesLeft)
+          replicator ! updateForEvts
+          context.become(next(updatesLeft.updated(evts, (updateForEvts, retriesLeft - 1))))
+        } else {
+          log.error(
+            "Unable to update state, within 'updating-state-timeout'= [{}], gave up after [{}] retries",
+            writeMajority.timeout.pretty,
+            maxUpdateAttempts)
+          // will trigger shard restart
+          context.stop(self)
+        }
+      case StoreFailure(_, _) =>
+        log.error("Unable to update state, due to store failure")
         // will trigger shard restart
         context.stop(self)
-      }
-    case StoreFailure(_, _) =>
-      log.error("Unable to update state, due to store failure")
-      // will trigger shard restart
-      context.stop(self)
-    case ModifyFailure(_, error, cause, _) =>
-      log.error(cause, "Unable to update state, due to modify failure: {}", error)
-      // will trigger shard restart
-      context.stop(self)
-    case UpdateDataDeleted(_, _) =>
-      log.error("Unable to update state, due to delete")
-      // will trigger shard restart
-      context.stop(self)
+      case ModifyFailure(_, error, cause, _) =>
+        log.error(cause, "Unable to update state, due to modify failure: {}", error)
+        // will trigger shard restart
+        context.stop(self)
+      case UpdateDataDeleted(_, _) =>
+        log.error("Unable to update state, due to delete")
+        // will trigger shard restart
+        context.stop(self)
+      case update: RememberEntitiesShardStore.Update =>
+        log.warning("Got a new update before write of previous completed, dropping update: [{}]", update)
+    }
+
+    next(allUpdates)
   }
 
   private def onGetEntities(): Unit = {

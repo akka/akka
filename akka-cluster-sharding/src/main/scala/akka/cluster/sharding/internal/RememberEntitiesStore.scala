@@ -46,10 +46,10 @@ private[akka] object RememberEntitiesShardStore {
   // SPI protocol for a remember entities shard store
   sealed trait Command
 
-  final case class AddEntities(entityIds: Set[EntityId]) extends Command
-  final case class RemoveEntity(entityId: EntityId) extends Command
-  // responses for UpdateEntity add and remove
-  final case class UpdateDone(entityIds: Set[EntityId])
+  // Note: the store is not expected to receive and handle new update before it has responded to the previous one
+  final case class Update(started: Set[EntityId], stopped: Set[EntityId]) extends Command
+  // responses for Update
+  final case class UpdateDone(started: Set[EntityId], stopped: Set[EntityId])
 
   case object GetEntities extends Command
   final case class RememberedEntities(entities: Set[EntityId])

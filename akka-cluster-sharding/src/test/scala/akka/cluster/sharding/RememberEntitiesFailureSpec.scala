@@ -8,7 +8,6 @@ import akka.Done
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Timers }
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
-import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.RememberEntitiesCoordinatorStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
@@ -44,6 +43,7 @@ object RememberEntitiesFailureSpec {
     """)
 
   class EntityActor extends Actor with ActorLogging {
+    log.info("Entity actor [{}] starting up", context.self.path.name)
     override def receive: Receive = {
       case "stop" =>
         log.info("Stopping myself!")
@@ -87,10 +87,8 @@ object RememberEntitiesFailureSpec {
   object FakeShardStoreActor {
     def props(shardId: ShardId): Props = Props(new FakeShardStoreActor(shardId))
 
-    case class FailAddEntity(entityId: Set[EntityId], whichWay: Fail)
-    case class FailRemoveEntity(entityId: EntityId, whichWay: Fail)
-    case class ClearAddFail(entityId: Set[EntityId])
-    case class ClearRemoveFail(entityId: EntityId)
+    case class FailUpdateEntity(whichWay: Fail)
+    case object ClearFail
 
     case class Delayed(replyTo: ActorRef, msg: Any)
   }
@@ -98,8 +96,7 @@ object RememberEntitiesFailureSpec {
     import FakeShardStoreActor._
 
     implicit val ec = context.system.dispatcher
-    private var failAddEntity = Map.empty[Set[EntityId], Fail]
-    private var failRemoveEntity = Map.empty[EntityId, Fail]
+    private var failUpdate: Option[Fail] = None
 
     context.system.eventStream.publish(ShardStoreCreated(self, shardId))
 
@@ -114,9 +111,9 @@ object RememberEntitiesFailureSpec {
             log.debug("Delaying initial entities listing with {}", howLong)
             timers.startSingleTimer("get-entities-delay", Delayed(sender(), Set.empty), howLong)
         }
-      case RememberEntitiesShardStore.AddEntities(entityId) =>
-        failAddEntity.get(entityId) match {
-          case None             => sender ! RememberEntitiesShardStore.UpdateDone(entityId)
+      case RememberEntitiesShardStore.Update(started, stopped) =>
+        failUpdate match {
+          case None             => sender ! RememberEntitiesShardStore.UpdateDone(started, stopped)
           case Some(NoResponse) => log.debug("Sending no response for AddEntity")
           case Some(CrashStore) => throw TestException("store crash on AddEntity")
           case Some(StopStore)  => context.stop(self)
@@ -124,27 +121,11 @@ object RememberEntitiesFailureSpec {
             log.debug("Delaying response for AddEntity with {}", howLong)
             timers.startSingleTimer("add-entity-delay", Delayed(sender(), Set.empty), howLong)
         }
-      case RememberEntitiesShardStore.RemoveEntity(entityId) =>
-        failRemoveEntity.get(entityId) match {
-          case None             => sender ! RememberEntitiesShardStore.UpdateDone(Set(entityId))
-          case Some(NoResponse) => log.debug("Sending no response for RemoveEntity")
-          case Some(CrashStore) => throw TestException("store crash on AddEntity")
-          case Some(StopStore)  => context.stop(self)
-          case Some(Delay(howLong)) =>
-            log.debug("Delaying response for RemoveEntity with {}", howLong)
-            timers.startSingleTimer("remove-entity-delay", Delayed(sender(), Set.empty), howLong)
-        }
-      case FailAddEntity(id, whichWay) =>
-        failAddEntity = failAddEntity.updated(id, whichWay)
+      case FailUpdateEntity(whichWay) =>
+        failUpdate = Some(whichWay)
         sender() ! Done
-      case FailRemoveEntity(id, whichWay) =>
-        failRemoveEntity = failRemoveEntity.updated(id, whichWay)
-        sender() ! Done
-      case ClearAddFail(id) =>
-        failAddEntity = failAddEntity - id
-        sender() ! Done
-      case ClearRemoveFail(id) =>
-        failRemoveEntity = failRemoveEntity - id
+      case ClearFail =>
+        failUpdate = None
         sender() ! Done
       case Delayed(to, msg) =>
         to ! msg
@@ -217,7 +198,7 @@ class RememberEntitiesFailureSpec
 
   "Remember entities handling in sharding" must {
 
-    List(NoResponse, CrashStore, StopStore, Delay(1.second), Delay(2.seconds)).foreach { wayToFail: Fail =>
+    List(NoResponse, CrashStore, StopStore, Delay(500.millis), Delay(1.second)).foreach { wayToFail: Fail =>
       s"recover when initial remember entities load fails $wayToFail" in {
         log.debug("Getting entities for shard 1 will fail")
         failShardGetEntities = Map("1" -> wayToFail)
@@ -267,7 +248,7 @@ class RememberEntitiesFailureSpec
         probe.expectMsg("hello-1")
 
         // hit shard with other entity that will fail
-        shardStore.tell(FakeShardStoreActor.FailAddEntity(Set("11"), wayToFail), storeProbe.ref)
+        shardStore.tell(FakeShardStoreActor.FailUpdateEntity(wayToFail), storeProbe.ref)
         storeProbe.expectMsg(Done)
 
         sharding.tell(EntityEnvelope(11, "hello-11"), probe.ref)
@@ -280,7 +261,7 @@ class RememberEntitiesFailureSpec
         }
 
         val stopFailingProbe = TestProbe()
-        shardStore.tell(FakeShardStoreActor.ClearAddFail(Set("11")), stopFailingProbe.ref)
+        shardStore.tell(FakeShardStoreActor.ClearFail, stopFailingProbe.ref)
         stopFailingProbe.expectMsg(Done)
 
         // it takes a while - timeout hits and then backoff
@@ -310,13 +291,13 @@ class RememberEntitiesFailureSpec
         probe.expectMsg("hello-1")
 
         // fail it when stopping
-        shard1Store.tell(FakeShardStoreActor.FailRemoveEntity("1", wayToFail), storeProbe.ref)
+        shard1Store.tell(FakeShardStoreActor.FailUpdateEntity(wayToFail), storeProbe.ref)
         storeProbe.expectMsg(Done)
 
         // FIXME restart without passivating is not saved and re-started again without storing the stop so this isn't testing anything
         sharding ! EntityEnvelope(1, "stop")
 
-        shard1Store.tell(FakeShardStoreActor.ClearRemoveFail("1"), storeProbe.ref)
+        shard1Store.tell(FakeShardStoreActor.ClearFail, storeProbe.ref)
         storeProbe.expectMsg(Done)
 
         // it takes a while - timeout hits and then backoff
@@ -348,13 +329,17 @@ class RememberEntitiesFailureSpec
         probe.expectMsg("hello-1")
 
         // fail it when stopping
-        shard1Store.tell(FakeShardStoreActor.FailRemoveEntity("1", wayToFail), storeProbe.ref)
+        shard1Store.tell(FakeShardStoreActor.FailUpdateEntity(wayToFail), storeProbe.ref)
         storeProbe.expectMsg(Done)
 
         sharding ! EntityEnvelope(1, "graceful-stop")
 
-        shard1Store.tell(FakeShardStoreActor.ClearRemoveFail("1"), storeProbe.ref)
-        storeProbe.expectMsg(Done)
+        if (wayToFail != CrashStore && wayToFail != StopStore) {
+          // race, give the shard some time to see the passivation before restoring the fake shard store
+          Thread.sleep(250)
+          shard1Store.tell(FakeShardStoreActor.ClearFail, probe.ref)
+          probe.expectMsg(Done)
+        }
 
         // it takes a while?
         awaitAssert({
