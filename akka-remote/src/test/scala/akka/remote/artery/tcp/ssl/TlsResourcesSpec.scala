@@ -10,9 +10,10 @@ import java.security.cert.X509Certificate
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.collection.JavaConverters._
 import scala.util.Try
 import scala.util.control.NonFatal
+
+import akka.util.ccompat.JavaConverters._
 
 /**
  *
