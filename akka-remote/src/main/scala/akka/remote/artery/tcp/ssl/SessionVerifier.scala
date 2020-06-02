@@ -6,27 +6,34 @@ package akka.remote.artery.tcp.ssl
 
 import java.security.cert.X509Certificate
 
+import akka.annotation.ApiMayChange
 import javax.net.ssl.SSLSession
 
 /**
- * TODO: docs
+ * Allows hooking in extra verification before finishing the SSL handshake.
  */
+@ApiMayChange
 trait SessionVerifier {
   def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable]
   def verifyServerSession(hostname: String, session: SSLSession): Option[Throwable]
 }
 
 /**
- * TODO: docs
+ * This verifier approves all sessions.
  */
+@ApiMayChange
 object NoopSessionVerifier extends SessionVerifier {
   override def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable] = None
   override def verifyServerSession(hostname: String, session: SSLSession): Option[Throwable] = None
 }
 
 /**
- * TODO: docs
+ * This is a TLS session verifier that checks the peer has a subject name that matches
+ * the subject name of the given certificate. This can be useful to prevent accidentally
+ * connecting with other nodes that have certificates that, while being signed by the
+ * same certificate authority, belong to different clusters.
  */
+@ApiMayChange
 final class PeerSubjectVerifier(peerCertificate: X509Certificate) extends SessionVerifier {
   override def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable] =
     verifyPeerCertificates(session)

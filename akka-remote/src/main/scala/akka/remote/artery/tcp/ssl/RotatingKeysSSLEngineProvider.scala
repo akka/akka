@@ -14,7 +14,7 @@ import java.security.cert.X509Certificate
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.ActorSystem
-import akka.annotation.InternalApi
+import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.event.Logging
 import akka.event.MarkerLoggingAdapter
 import akka.remote.artery.tcp.SSLEngineProvider
@@ -32,6 +32,7 @@ import javax.net.ssl.TrustManager
 
 import scala.concurrent.duration._
 
+@ApiMayChange
 final class RotatingKeysSSLEngineProvider(val config: Config, protected val log: MarkerLoggingAdapter)
     extends SSLEngineProvider {
 
