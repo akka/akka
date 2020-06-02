@@ -40,12 +40,13 @@ class DDataRememberEntitiesShardStoreSpec
   }
 
   "The DDataRememberEntitiesShardStore" must {
+    val replicatorSettings = ReplicatorSettings(system)
+    val replicator = system.actorOf(Replicator.props(replicatorSettings))
+
+    val shardingSettings = ClusterShardingSettings(system)
 
     "store starts and stops and list remembered entity ids" in {
-      val replicatorSettings = ReplicatorSettings(system)
-      val replicator = system.actorOf(Replicator.props(replicatorSettings))
 
-      val shardingSettings = ClusterShardingSettings(system)
       val store = system.actorOf(
         DDataRememberEntitiesShardStore
           .props("FakeShardId", "FakeTypeName", shardingSettings, replicator, majorityMinCap = 1))
@@ -72,7 +73,17 @@ class DDataRememberEntitiesShardStoreSpec
 
       storeIncarnation2 ! RememberEntitiesShardStore.GetEntities
       expectMsgType[RememberEntitiesShardStore.RememberedEntities].entities should ===(Set("1", "2", "4", "5"))
+    }
 
+    "handle a late request" in {
+      // the store does not support get after update
+      val storeIncarnation3 = system.actorOf(
+        DDataRememberEntitiesShardStore
+          .props("FakeShardId", "FakeTypeName", shardingSettings, replicator, majorityMinCap = 1))
+
+      Thread.sleep(500)
+      storeIncarnation3 ! RememberEntitiesShardStore.GetEntities
+      expectMsgType[RememberEntitiesShardStore.RememberedEntities].entities should ===(Set("1", "2", "4", "5")) // from previous test
     }
 
   }

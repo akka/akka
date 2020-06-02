@@ -114,7 +114,7 @@ private[akka] final class DDataRememberEntitiesShardStore(
   def idle: Receive = {
     case RememberEntitiesShardStore.GetEntities =>
       // not supported, but we may get several if the shard timed out and retried
-      log.debug("Another get entities request after responding to one, not expected/supported")
+      log.debug("Another get entities request after responding to one, not expected/supported, ignoring")
     case update: RememberEntitiesShardStore.Update => onUpdate(update)
   }
 
@@ -125,14 +125,15 @@ private[akka] final class DDataRememberEntitiesShardStore(
       if (newGotKeys.size == numberOfKeys) {
         shardWaiting match {
           case Some(shard) =>
+            log.debug("Shard waiting for remembered entities, sending remembered and going idle")
             shard ! RememberEntitiesShardStore.RememberedEntities(newIds)
             context.become(idle)
+            unstashAll()
           case None =>
             // we haven't seen request yet
-            context.become(waitingForAllEntityIds(newGotKeys, newIds, Some(sender())))
+            log.debug("Got remembered entities, waiting for shard to request them")
+            context.become(waitingForAllEntityIds(newGotKeys, newIds, None))
         }
-        unstashAll()
-        context.become(idle)
       } else {
         context.become(waitingForAllEntityIds(newGotKeys, newIds, shardWaiting))
       }
@@ -160,10 +161,13 @@ private[akka] final class DDataRememberEntitiesShardStore(
       case RememberEntitiesShardStore.GetEntities =>
         if (gotKeys.size == numberOfKeys) {
           // we already got all and was waiting for a request
+          log.debug("Got request from shard, sending remembered entities")
           sender() ! RememberEntitiesShardStore.RememberedEntities(ids)
           context.become(idle)
+          unstashAll()
         } else {
           // we haven't seen all ids yet
+          log.debug("Got request from shard, waiting for all remembered entities to arrive")
           context.become(waitingForAllEntityIds(gotKeys, ids, Some(sender())))
         }
       case _ =>
