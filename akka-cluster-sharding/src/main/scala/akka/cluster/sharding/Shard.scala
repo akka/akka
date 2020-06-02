@@ -67,7 +67,7 @@ private[akka] object Shard {
    * If the shard id extractor is changed, remembered entities will start in a different shard
    * and this message is sent to the shard to not leak `entityId -> RememberedButNotStarted` entries
    */
-  final case class ShardIdsMoved(ids: Set[ShardRegion.ShardId]) extends RememberEntityCommand
+  final case class EntitiesMovedToOtherShard(ids: Set[ShardRegion.ShardId]) extends RememberEntityCommand
 
   /**
    * A query for information about the shard
@@ -120,36 +120,36 @@ private[akka] object Shard {
   /**
    * State machine for an entity:
    * {{{
-   *                  Started on another shard / shard extractor changed
-   *        +-------------------------------------------------------+
-   *        |                                                       |
-   *        |     Entity id remembered on shard start     +-------------------------+                 restart (via region)
-   *        |          +--------------------------------->| RememberedButNotCreated |------------------------------+
-   *        |          |                                  +-------------------------+                              |
-   *        |          |                                           |                                               |
-   *        |          |                                           | early message for entity                      |
-   *        |          |                                           v                                               |
-   *        |          |   Remember entities entity start +-------------------+   start stored and entity started  |
-   *        v          |        +-----------------------> | RememberingStart  |-------------+                      v
-   * No state for id   |        |                         +-------------------+             |               +------------+
-   *      +---+        |        |                                                           +-------------> |   Active   |
-   *      |   |--------|--------|------------------------------------------------------------               +------------+
-   *      +---+                 |   Non remember entities entity start                                             |
-   *        ^                   |                                                                                  |
-   *        |                   |                                                                                  |
-   *        |                   |      restart after backoff                             entity terminated         |
-   *        |                   |      or message for entity    +-------------------+    without passivation       |    passivation initiated     +-------------+
-   *        |                   +<------------------------------| WaitingForRestart |<-----------------+-----------+----------------------------> | Passivating |
-   *        |                   |                               +-------------------+                  |                                          +-------------+
-   *        |                   |                                                                      |                                                |
-   *        |                   |                                                                      |                              entity terminated +--------------+
-   *        |                   |                                                                      |                                                v              |
-   *        |                   |                  There were buffered messages for entity             |                                      +-------------------+    |
-   *        |                   +<---------------------------------------------------------------------+                                      |   RememberingStop |    |
-   *        |                                                                                                                                 +-------------------+    |
-   *        |                                                                                                                                           |              |
-   *        |                                                                                                                                           |              |
-   *        +-------------------------------------------------------------------------------------------------------------------------------------------+<--------------
+   *                                                                       Started on another shard bc. shard id extractor changed (we need to store that)
+   *                                                                +------------------------------------------------------------------+
+   *                                                                |                                                                  |
+   *              Entity id remembered on shard start     +-------------------------+    StartEntity or early message for entity       |
+   *                   +--------------------------------->| RememberedButNotCreated |------------------------------+                   |
+   *                   |                                  +-------------------------+                              |                   |
+   *                   |                                                                                           |                   |
+   *                   |                                                                                           |                   |
+   *                   |   Remember entities                                                                       |                   |
+   *                   |   message or StartEntity         +-------------------+   start stored and entity started  |                   |
+   *                   |        +-----------------------> | RememberingStart  |-------------+                      v                   |
+   * No state for id   |        |                         +-------------------+             |               +------------+             |
+   *      +---+        |        |                                                           +-------------> |   Active   |             |
+   *      |   |--------|--------+-----------------------------------------------------------+               +------------+             |
+   *      +---+                 |   Non remember entities message or StartEntity                                   |                   |
+   *        ^                   |                                                                                  |                   |
+   *        |                   |                                                             entity terminated    |                   |
+   *        |                   |      restart after backoff                                  without passivation  |    passivation    |
+   *        |                   |      or message for entity    +-------------------+    remember ent.             |     initiated     \          +-------------+
+   *        |                   +<------------------------------| WaitingForRestart |<---+-------------+-----------+--------------------|-------> | Passivating |
+   *        |                   |                               +-------------------+    |             |                               /          +-------------+
+   *        |                   |                                                        |             | remember entities             |     entity     |
+   *        |                   |                                                        |             | not used                      |     terminated +--------------+
+   *        |                   |                                                        |             |                               |                v              |
+   *        |                   |            There were buffered messages for entity     |             |                               |      +-------------------+    |
+   *        |                   +<-------------------------------------------------------+             |                               +----> |   RememberingStop |    | remember entities
+   *        |                                                                                          |                                      +-------------------+    | not used
+   *        |                                                                                          |                                                |              |
+   *        |                                                                                          v                                                |              |
+   *        +------------------------------------------------------------------------------------------+------------------------------------------------+<-------------+
    *                       stop stored/passivation complete
    * }}}
    **/
@@ -178,9 +178,9 @@ private[akka] object Shard {
    */
   case object RememberedButNotCreated extends EntityState {
     override def transition(newState: EntityState): EntityState = newState match {
-      case NoState        => NoState
-      case active: Active => active
-      case _              => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+      case active: Active  => active // started on this shard
+      case RememberingStop => RememberingStop // started on other shard
+      case _               => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
     }
   }
 
@@ -740,18 +740,19 @@ private[akka] class Shard(
       }
 
     case RestartRememberedEntities(ids) => restartEntities(ids)
-    case ShardIdsMoved(entityIds) =>
+    case EntitiesMovedToOtherShard(movedEntityIds) =>
       log.info(
         "Clearing [{}] remembered entities started elsewhere because of changed shard id extractor",
-        entityIds.size)
-      entityIds.foreach { entityId =>
+        movedEntityIds.size)
+      movedEntityIds.foreach { entityId =>
         entities.entityState(entityId) match {
           case RememberedButNotCreated =>
-            entities.removeEntity(entityId)
+            entities.rememberingStop(entityId)
           case other =>
             throw new IllegalStateException(s"Unexpected state for [$entityId] when getting ShardIdsMoved: [$other]")
         }
       }
+      rememberUpdate(remove = movedEntityIds)
   }
 
   // this could be because of a start message or due to a new message for the entity
@@ -771,6 +772,8 @@ private[akka] class Shard(
         touchLastMessageTimestamp(entityId)
         ackTo.foreach(_ ! ShardRegion.StartEntityAck(entityId, shardId))
       case NoState =>
+        // started manually from the outside, or the shard id extractor was changed since the entity was remembered
+        // we need to store that it was started
         log.debug("Request to start entity [{}] and ack to [{}]", entityId, ackTo)
         entities.rememberingStart(entityId, ackTo)
         rememberUpdate(add = Set(entityId))

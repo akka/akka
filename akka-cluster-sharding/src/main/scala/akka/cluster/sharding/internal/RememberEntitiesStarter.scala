@@ -70,7 +70,7 @@ private[akka] final class RememberEntityStarter(
       waitingForAck -= entityId
       if (shardId != ackFromShardId) entitiesMoved += entityId
       if (waitingForAck.isEmpty) {
-        if (entitiesMoved.nonEmpty) shard ! Shard.ShardIdsMoved(ids)
+        if (entitiesMoved.nonEmpty) shard ! Shard.EntitiesMovedToOtherShard(ids)
         context.stop(self)
       }
 
