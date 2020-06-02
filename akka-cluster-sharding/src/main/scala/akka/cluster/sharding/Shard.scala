@@ -64,6 +64,12 @@ private[akka] object Shard {
   final case class RestartRememberedEntities(entity: Set[EntityId]) extends RememberEntityCommand
 
   /**
+   * If the shard id extractor is changed, remembered entities will start in a different shard
+   * and this message is sent to the shard to not leak `entityId -> RememberedButNotStarted` entries
+   */
+  final case class ShardIdsMoved(ids: Set[ShardRegion.ShardId]) extends RememberEntityCommand
+
+  /**
    * A query for information about the shard
    */
   sealed trait ShardQuery
@@ -114,14 +120,17 @@ private[akka] object Shard {
   /**
    * State machine for an entity:
    * {{{
-   *              Entity id remembered on shard start     +-------------------------+                 restart (via region) StartEntity
-   *                   +--------------------------------->| RememberedButNotCreated |------------------------------+
-   *                   |                                  +-------------------------+                              |
-   *                   |                                           |                                               |
-   *                   |                                           | early message for entity                      |
-   *                   |                                           v                                               |
-   *                   |   Remember entities entity start +-------------------+   start stored and entity started  |
-   *                   |        +-----------------------> | RememberingStart  |-------------+                      v
+   *                  Started on another shard / shard extractor changed
+   *        +-------------------------------------------------------+
+   *        |                                                       |
+   *        |     Entity id remembered on shard start     +-------------------------+                 restart (via region)
+   *        |          +--------------------------------->| RememberedButNotCreated |------------------------------+
+   *        |          |                                  +-------------------------+                              |
+   *        |          |                                           |                                               |
+   *        |          |                                           | early message for entity                      |
+   *        |          |                                           v                                               |
+   *        |          |   Remember entities entity start +-------------------+   start stored and entity started  |
+   *        v          |        +-----------------------> | RememberingStart  |-------------+                      v
    * No state for id   |        |                         +-------------------+             |               +------------+
    *      +---+        |        |                                                           +-------------> |   Active   |
    *      |   |--------|--------|------------------------------------------------------------               +------------+
@@ -165,14 +174,11 @@ private[akka] object Shard {
   /**
    * In this state we know the entity has been stored in the remember sore but
    * it hasn't been created yet. E.g. on restart when first getting all the
-   * remembered entity ids
+   * remembered entity ids.
    */
-  // FIXME: since remember entities on start has a hop via region this could be a (small) resource leak
-  // if the shard extractor has changed, the entities will stay in the map forever as RememberedButNotCreated
-  // do we really need to track it?
   case object RememberedButNotCreated extends EntityState {
     override def transition(newState: EntityState): EntityState = newState match {
-      case NoState        => RememberedButNotCreated
+      case NoState        => NoState
       case active: Active => active
       case _              => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
     }
@@ -207,16 +213,12 @@ private[akka] object Shard {
   }
   private val RememberingStartNoAck = new RememberingStart(Set.empty)
 
-  sealed trait StopReason
-  final case object PassivationComplete extends StopReason
-  final case object StartedElsewhere extends StopReason
-
   /**
    * When remember entities is enabled an entity is in this state while
    * its stop is being recorded in the remember entities store, or while the stop is queued up
    * to be stored in the next batch.
    */
-  final case class RememberingStop(stopReason: StopReason) extends EntityState {
+  final case object RememberingStop extends EntityState {
     override def transition(newState: EntityState): EntityState = newState match {
       case NoState => NoState
       case _       => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
@@ -235,9 +237,9 @@ private[akka] object Shard {
   }
   final case class Passivating(ref: ActorRef) extends WithRef {
     override def transition(newState: EntityState): EntityState = newState match {
-      case r: RememberingStop => r
-      case NoState            => NoState
-      case _                  => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+      case RememberingStop => RememberingStop
+      case NoState         => NoState
+      case _               => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
     }
   }
 
@@ -268,10 +270,10 @@ private[akka] object Shard {
       if (rememberingEntities)
         remembering.add(entityId)
     }
-    def rememberingStop(entityId: EntityId, reason: StopReason): Unit = {
+    def rememberingStop(entityId: EntityId): Unit = {
       val state = entityState(entityId)
       removeRefIfThereIsOne(state)
-      entities.put(entityId, state.transition(RememberingStop(reason)))
+      entities.put(entityId, state.transition(RememberingStop))
       if (rememberingEntities)
         remembering.add(entityId)
     }
@@ -356,7 +358,7 @@ private[akka] object Shard {
         remembering.forEach(entityId =>
           entityState(entityId) match {
             case r: RememberingStart => starts += (entityId -> r)
-            case _: RememberingStop  => stops += entityId
+            case RememberingStop     => stops += entityId
             case wat                 => throw new IllegalStateException(s"$entityId was in the remembering set but has state $wat")
           })
         (starts.result(), stops.result())
@@ -565,7 +567,9 @@ private[akka] class Shard(
 
   def restartEntities(ids: Set[EntityId]): Unit = {
     log.debug("Restarting set of [{}] entities", ids.size)
-    context.actorOf(RememberEntityStarter.props(context.parent, ids, settings), "RememberEntitiesStarter")
+    context.actorOf(
+      RememberEntityStarter.props(context.parent, self, shardId, ids, settings),
+      "RememberEntitiesStarter")
   }
 
   // ===== shard up and running =====
@@ -642,7 +646,6 @@ private[akka] class Shard(
     case _: CoordinatorMessage             => stash()
     case cmd: RememberEntityCommand        => receiveRememberEntityCommand(cmd)
     case l: LeaseLost                      => receiveLeaseLost(l)
-    case ack: ShardRegion.StartEntityAck   => receiveStartEntityAck(ack)
     case ShardRegion.Passivate(stopMessage) =>
       if (verboseDebug)
         log.debug(
@@ -681,13 +684,9 @@ private[akka] class Shard(
     }
     stops.foreach { entityId =>
       entities.entityState(entityId) match {
-        case RememberingStop(PassivationComplete) =>
+        case RememberingStop =>
           // this updates entity state
           passivateCompleted(entityId)
-        case RememberingStop(StartedElsewhere) =>
-          // Drop buffered messages if any (to not cause re-ordering)
-          dropBufferFor(entityId, "Entity started on another node")
-          entities.removeEntity(entityId)
         case state =>
           throw new IllegalStateException(
             s"Unexpected state [$state] when storing stop completed for entity id [$entityId]")
@@ -741,6 +740,18 @@ private[akka] class Shard(
       }
 
     case RestartRememberedEntities(ids) => restartEntities(ids)
+    case ShardIdsMoved(entityIds) =>
+      log.info(
+        "Clearing [{}] remembered entities started elsewhere because of changed shard id extractor",
+        entityIds.size)
+      entityIds.foreach { entityId =>
+        entities.entityState(entityId) match {
+          case RememberedButNotCreated =>
+            entities.removeEntity(entityId)
+          case other =>
+            throw new IllegalStateException(s"Unexpected state for [$entityId] when getting ShardIdsMoved: [$other]")
+        }
+      }
   }
 
   // this could be because of a start message or due to a new message for the entity
@@ -829,7 +840,7 @@ private[akka] class Shard(
       lastMessageTimestamp -= entityId
     }
     entities.entityState(entityId) match {
-      case RememberingStop(_) =>
+      case RememberingStop =>
         if (verboseDebug)
           log.debug("Stop of [{}] arrived, already is among the pending stops", entityId)
       case Active(_) =>
@@ -839,15 +850,14 @@ private[akka] class Shard(
         timers.startSingleTimer(msg, msg, entityRestartBackoff)
 
       case Passivating(_) =>
+        entities.rememberingStop(entityId)
         if (entities.pendingRememberedEntitiesExist()) {
           // will go in next batch update
           if (verboseDebug)
             log.debug(
               "Stop of [{}] after passivating, arrived while updating, adding it to batch of pending stops",
               entityId)
-          entities.rememberingStop(entityId, PassivationComplete)
         } else {
-          entities.rememberingStop(entityId, PassivationComplete)
           rememberUpdate(remove = Set(entityId))
         }
       case unexpected =>
@@ -941,7 +951,7 @@ private[akka] class Shard(
                 log.debug("Delivering message of type [{}] to [{}]", payload.getClass, entityId)
               touchLastMessageTimestamp(entityId)
               ref.tell(payload, snd)
-            case RememberingStart(_) | RememberingStop(_) | Passivating(_) =>
+            case RememberingStart(_) | RememberingStop | Passivating(_) =>
               appendToMessageBuffer(entityId, msg, snd)
             case state @ (WaitingForRestart | RememberedButNotCreated) =>
               if (verboseDebug)

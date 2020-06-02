@@ -12,6 +12,7 @@ import akka.actor.Props
 import akka.actor.Timers
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ClusterShardingSettings
+import akka.cluster.sharding.Shard
 import akka.cluster.sharding.ShardRegion
 
 import scala.collection.immutable.Set
@@ -21,8 +22,13 @@ import scala.collection.immutable.Set
  */
 @InternalApi
 private[akka] object RememberEntityStarter {
-  def props(region: ActorRef, ids: Set[ShardRegion.EntityId], settings: ClusterShardingSettings) =
-    Props(new RememberEntityStarter(region, ids, settings))
+  def props(
+      region: ActorRef,
+      shard: ActorRef,
+      shardId: ShardRegion.ShardId,
+      ids: Set[ShardRegion.EntityId],
+      settings: ClusterShardingSettings) =
+    Props(new RememberEntityStarter(region, shard, shardId, ids, settings))
 
   private case object Tick extends NoSerializationVerificationNeeded
 }
@@ -33,6 +39,8 @@ private[akka] object RememberEntityStarter {
 @InternalApi
 private[akka] final class RememberEntityStarter(
     region: ActorRef,
+    shard: ActorRef,
+    shardId: ShardRegion.ShardId,
     ids: Set[ShardRegion.EntityId],
     settings: ClusterShardingSettings)
     extends Actor
@@ -41,7 +49,8 @@ private[akka] final class RememberEntityStarter(
 
   import RememberEntityStarter.Tick
 
-  var waitingForAck = ids
+  private var waitingForAck = ids
+  private var entitiesMoved = Set.empty[ShardRegion.ShardId]
 
   sendStart(ids)
 
@@ -57,9 +66,13 @@ private[akka] final class RememberEntityStarter(
   }
 
   override def receive: Receive = {
-    case ack: ShardRegion.StartEntityAck =>
-      waitingForAck -= ack.entityId
-      if (waitingForAck.isEmpty) context.stop(self)
+    case ShardRegion.StartEntityAck(entityId, ackFromShardId) =>
+      waitingForAck -= entityId
+      if (shardId != ackFromShardId) entitiesMoved += entityId
+      if (waitingForAck.isEmpty) {
+        if (entitiesMoved.nonEmpty) shard ! Shard.ShardIdsMoved(ids)
+        context.stop(self)
+      }
 
     case Tick =>
       sendStart(waitingForAck)
