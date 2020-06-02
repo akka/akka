@@ -140,8 +140,6 @@ final class RotatingKeysSSLEngineProvider(val config: Config, protected val log:
 
     if (role != akka.stream.Client) engine.setNeedClientAuth(true)
 
-    // TODO: Hostname Verification?
-
     engine
   }
 
