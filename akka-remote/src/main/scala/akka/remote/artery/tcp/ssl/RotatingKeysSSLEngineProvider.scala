@@ -61,7 +61,7 @@ final class RotatingKeysSSLEngineProvider(val config: Config, protected val log:
   private def getContext(): ConfiguredContext = {
     contextRef.get() match {
       case Some(CachedContext(_, expired)) if expired.isOverdue() =>
-        val context = constructContext(isReload = true)
+        val context = constructContext()
         contextRef.set(Some(CachedContext(context, SSLContextCacheTime.fromNow)))
         context
       case Some(CachedContext(cached, _)) => cached
@@ -73,7 +73,7 @@ final class RotatingKeysSSLEngineProvider(val config: Config, protected val log:
   }
 
   // Construct the cached instance
-  private def constructContext(isReload: Boolean = false): ConfiguredContext = {
+  private def constructContext(): ConfiguredContext = {
     val (privateKey, cert, cacert) = readFiles()
     try {
       val keyManagers: Array[KeyManager] = PemManagersProvider.buildKeyManagers(privateKey, cert, cacert)
