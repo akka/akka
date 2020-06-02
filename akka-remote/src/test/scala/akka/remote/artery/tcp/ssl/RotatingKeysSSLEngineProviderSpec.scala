@@ -33,7 +33,8 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
 
-import scala.concurrent.blocking
+import scala.concurrent.{ Await, blocking }
+import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
 // This is a the real deal Spec. It relies on changing files on a particular folder.
@@ -45,11 +46,6 @@ class RotatingProviderWithChangingKeysSpec
     super.atStartup()
     deployCaCert()
     deployKeySet("ssl/artery-nodes/artery-node001.example.com")()
-  }
-
-  override def afterTermination(): Unit = {
-    cleanupTemporaryDirectory()
-    super.afterTermination()
   }
 
   "Artery with TLS/TCP with RotatingKeysSSLEngine" must {
@@ -235,11 +231,9 @@ object RotatingKeysSSLEngineProviderSpec {
     deployResource("ssl/exampleca.crt", cacertLocation.toPath)
   }
   def deployKeySet(setName: String)(actorSys: ActorSystem*): Unit = {
-    println(s"Deploying keyset $setName")
     deployResource(setName + ".crt", certLocation.toPath)
     deployResource(setName + ".pem", keyLocation.toPath)
     actorSys.foreach(ensureVisible)
-    println(s"keyset $setName - deployment complete")
   }
   def cleanupTemporaryDirectory(): Unit = {
     temporaryDirectory.toFile.listFiles().foreach { _.delete() }
@@ -252,6 +246,10 @@ object RotatingKeysSSLEngineProviderSpec {
 abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
     extends ArteryMultiNodeSpec(ConfigFactory.parseString(extraConfig).withFallback(TlsTcpSpec.config))
     with ImplicitSender {
+  import RotatingKeysSSLEngineProviderSpec._
+
+  var systemsToTerminate: Seq[ActorSystem] = Nil
+
   // Assert the RemoteSystem created three pairs of SSLEngines (main channel,
   // large messages channel and control channel)
   // NOTE: the large message channel is not enabled but default. In this test suite
@@ -285,12 +283,21 @@ abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
 
   def buildRemoteWithEchoActor(id: String): (RemoteSystem, ActorPath) = {
     val remoteSysB = new RemoteSystem(s"system$id", extraConfig, newRemoteSystem, address)
+    systemsToTerminate :+= remoteSysB.actorSystem
     val actorName = s"echo$id"
     remoteSysB.actorSystem.actorOf(TestActors.echoActorProps, actorName)
     val pathEchoB = remoteSysB.rootActorPath / "user" / actorName
     (remoteSysB, pathEchoB)
   }
 
+  override def afterTermination(): Unit = {
+    systemsToTerminate.foreach { systemToTerminate =>
+      system.log.info(s"Terminating $systemToTerminate...")
+      Await.result(systemToTerminate.terminate(), 10.seconds)
+    }
+    cleanupTemporaryDirectory()
+    super.afterTermination()
+  }
 }
 
 class RemoteSystem(
