@@ -109,8 +109,11 @@ object ClusterShardingSpec {
 
 }
 
-abstract class ClusterShardingSpecConfig(mode: String, val entityRecoveryStrategy: String = "all")
-    extends MultiNodeClusterShardingConfig(mode) {
+abstract class ClusterShardingSpecConfig(
+    mode: String,
+    rememberEntitiesStore: String,
+    val entityRecoveryStrategy: String = "all")
+    extends MultiNodeClusterShardingConfig(mode = mode, rememberEntitiesStore = rememberEntitiesStore) {
 
   val controller = role("controller")
   val first = role("first")
@@ -205,12 +208,24 @@ object ClusterShardingDocCode {
 }
 
 object PersistentClusterShardingSpecConfig
-    extends ClusterShardingSpecConfig(ClusterShardingSettings.StateStoreModePersistence)
-object DDataClusterShardingSpecConfig extends ClusterShardingSpecConfig(ClusterShardingSettings.StateStoreModeDData)
+    extends ClusterShardingSpecConfig(
+      ClusterShardingSettings.StateStoreModePersistence,
+      ClusterShardingSettings.RememberEntitiesStoreEventsourced)
+object DDataClusterShardingSpecConfig
+    extends ClusterShardingSpecConfig(
+      ClusterShardingSettings.StateStoreModeDData,
+      ClusterShardingSettings.RememberEntitiesStoreDData)
+
 object PersistentClusterShardingWithEntityRecoverySpecConfig
-    extends ClusterShardingSpecConfig(ClusterShardingSettings.StateStoreModePersistence, "constant")
+    extends ClusterShardingSpecConfig(
+      ClusterShardingSettings.StateStoreModePersistence,
+      ClusterShardingSettings.RememberEntitiesStoreEventsourced,
+      "constant")
 object DDataClusterShardingWithEntityRecoverySpecConfig
-    extends ClusterShardingSpecConfig(ClusterShardingSettings.StateStoreModeDData, "constant")
+    extends ClusterShardingSpecConfig(
+      ClusterShardingSettings.StateStoreModeDData,
+      ClusterShardingSettings.RememberEntitiesStoreDData,
+      "constant")
 
 class PersistentClusterShardingSpec extends ClusterShardingSpec(PersistentClusterShardingSpecConfig)
 class DDataClusterShardingSpec extends ClusterShardingSpec(DDataClusterShardingSpecConfig)
@@ -270,7 +285,7 @@ abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
     new DDataRememberEntitiesProvider(typeName, settings, majorityMinCap, replicator)
   }
 
-  def persistenceRememberEntitiesProvider(typeName: String, settings: ClusterShardingSettings) = {
+  def eventSourcedRememberEntitiesProvider(typeName: String, settings: ClusterShardingSettings) = {
     new EventSourcedRememberEntitiesProvider(typeName, settings)
   }
 
@@ -344,10 +359,10 @@ abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
     val rememberEntitiesProvider =
       if (!rememberEntities) None
       else
-        settings.stateStoreMode match {
-          case ClusterShardingSettings.StateStoreModeDData => Some(ddataRememberEntitiesProvider(typeName))
-          case ClusterShardingSettings.StateStoreModePersistence =>
-            Some(persistenceRememberEntitiesProvider(typeName, settings))
+        settings.rememberEntitiesStore match {
+          case ClusterShardingSettings.RememberEntitiesStoreDData => Some(ddataRememberEntitiesProvider(typeName))
+          case ClusterShardingSettings.RememberEntitiesStoreEventsourced =>
+            Some(eventSourcedRememberEntitiesProvider(typeName, settings))
         }
 
     system.actorOf(
