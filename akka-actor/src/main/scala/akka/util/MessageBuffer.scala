@@ -4,7 +4,7 @@
 
 package akka.util
 
-import akka.actor.ActorRef
+import akka.actor.{ ActorRef, Dropped }
 import akka.annotation.InternalApi
 import akka.japi.function.Procedure2
 
@@ -245,6 +245,19 @@ final class MessageBufferMap[I] {
    */
   def remove(id: I): Unit = {
     bufferMap.remove(id)
+  }
+
+  /**
+   * Remove the buffer for an id, but publish a [[akka.actor.Dropped]] for each dropped buffered message
+   * @return how many buffered messages were dropped
+   */
+  def drop(id: I, reason: String, deadLetters: ActorRef): Int = {
+    val entries = bufferMap.get(id)
+    if (entries.nonEmpty) {
+      entries.foreach((msg, ref) => deadLetters ! Dropped(msg, reason, ref, ActorRef.noSender))
+    }
+    remove(id)
+    entries.size
   }
 
   /**
