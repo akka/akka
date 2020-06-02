@@ -5,6 +5,7 @@
 package akka.remote.artery.tcp.ssl
 
 import java.security.cert.X509Certificate
+import java.util
 
 import akka.annotation.InternalApi
 import javax.naming.ldap.LdapName
@@ -23,9 +24,11 @@ object X509Readers {
           attr.getValue.toString
       }
 
-    val alternates = Option(cert.getSubjectAlternativeNames).map(_.asScala).getOrElse(Nil).collect {
-      // See the javadocs for what this list contains, first element should be an integer,
-      // if that integer is 2, then the second element is a String containing the DNS name.
+    val iterable: Iterable[util.List[_]] = Option(cert.getSubjectAlternativeNames).map(_.asScala).getOrElse(Nil)
+    val alternates = iterable.collect {
+      // See the javadocs of cert.getSubjectAlternativeNames for what this list contains,
+      // first element should be an integer, if that integer is 2, then the second element
+      // is a String containing the DNS name.
       case list if list.get(0) == 2 =>
         list.get(1) match {
           case dnsName: String => dnsName

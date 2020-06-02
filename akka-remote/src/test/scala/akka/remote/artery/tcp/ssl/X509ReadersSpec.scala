@@ -23,6 +23,13 @@ class X509ReadersSpec extends AnyWordSpec with Matchers {
       val serverCert = loadCert("/domain.crt")
       X509Readers.getAllSubjectNames(serverCert) mustBe (Set("akka-remote", "localhost"))
     }
+
+    "read a certificate that has no SAN extension" in {
+      // a self-signed CA without SAN
+      val island = loadCert("/ssl/pem/selfsigned-certificate.pem")
+      X509Readers.getAllSubjectNames(island) mustBe (Set("0d207b68-9a20-4ee8-92cb-bf9699581cf8"))
+    }
+
   }
 
 }
