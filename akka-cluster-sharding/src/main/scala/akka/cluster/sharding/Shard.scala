@@ -12,6 +12,7 @@ import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.DeadLetterSuppression
 import akka.actor.Deploy
+import akka.actor.Dropped
 import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.Props
 import akka.actor.Stash
@@ -722,7 +723,7 @@ private[akka] class Shard(
           passivateCompleted(entityId)
         case RememberingStop(StartedElsewhere) =>
           // Drop buffered messages if any (to not cause re-ordering)
-          messageBuffers.remove(entityId)
+          dropBufferFor(entityId, "Entity started on another node")
           entities.removeEntity(entityId)
         case state =>
           throw new IllegalStateException(
@@ -961,7 +962,7 @@ private[akka] class Shard(
     val (entityId, payload) = extractEntityId(msg)
     if (entityId == null || entityId == "") {
       log.warning("Id must not be empty, dropping message [{}]", msg.getClass.getName)
-      context.system.deadLetters ! msg
+      context.system.deadLetters ! Dropped(msg, "No recipient entity id", snd, self)
     } else {
       payload match {
         case start: ShardRegion.StartEntity =>
@@ -1042,7 +1043,7 @@ private[akka] class Shard(
     if (messageBuffers.totalSize >= settings.tuningParameters.bufferSize) {
       if (log.isDebugEnabled)
         log.debug("Buffer is full, dropping message of type [{}] for entity [{}]", msg.getClass.getName, id)
-      context.system.deadLetters ! msg
+      context.system.deadLetters ! Dropped(msg, s"Buffer for [$id] is full", snd, self)
     } else {
       if (log.isDebugEnabled)
         log.debug("Message of type [{}] for entity [{}] buffered", msg.getClass.getName, id)
@@ -1068,13 +1069,11 @@ private[akka] class Shard(
     }
   }
 
-  def dropBufferFor(entityId: EntityId): Unit = {
-    if (log.isDebugEnabled) {
-      val messages = messageBuffers.getOrEmpty(entityId)
-      if (messages.nonEmpty)
-        log.debug("Dropping [{}] buffered messages", entityId, messages.size)
+  def dropBufferFor(entityId: EntityId, reason: String): Unit = {
+    val count = messageBuffers.drop(entityId, reason, context.system.deadLetters)
+    if (log.isDebugEnabled && count > 0) {
+      log.debug("Dropping [{}] buffered messages for [{}] because {}", count, entityId, reason)
     }
-    messageBuffers.remove(entityId)
   }
 
   private def rememberEntityStoreCrashed(msg: RememberEntityStoreCrashed): Unit = {

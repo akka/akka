@@ -755,7 +755,13 @@ private[akka] class ShardRegion(
       // because they might be forwarded from other regions and there
       // is a risk or message re-ordering otherwise
       if (shardBuffers.contains(shard)) {
-        shardBuffers.remove(shard)
+        val dropped = shardBuffers
+          .drop(shard, "Avoiding reordering of buffered messages at shard handoff", context.system.deadLetters)
+        if (dropped > 0)
+          log.warning(
+            "Dropping [{}] buffered messages to shard [{}] during hand off to avoid re-ordering",
+            dropped,
+            shard)
         loggedFullBufferWarning = false
       }
 
