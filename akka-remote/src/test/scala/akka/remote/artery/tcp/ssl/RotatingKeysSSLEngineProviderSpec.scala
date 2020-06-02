@@ -33,7 +33,7 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
 
-import scala.concurrent.{ Await, blocking }
+import scala.concurrent.{ blocking, Await }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
