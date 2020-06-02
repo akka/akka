@@ -7,7 +7,7 @@ package akka.remote.artery.tcp.ssl
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util
+import java.nio.file.StandardCopyOption
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.ActorIdentity
@@ -23,8 +23,6 @@ import akka.remote.artery.ArteryMultiNodeSpec
 import akka.remote.artery.tcp.SSLEngineProvider
 import akka.remote.artery.tcp.SSLEngineProviderSetup
 import akka.remote.artery.tcp.TlsTcpSpec
-import akka.remote.artery.tcp.ssl.FileSystemObserver.CanRead
-import akka.remote.artery.tcp.ssl.FileSystemObserver.FileRead
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
@@ -33,70 +31,10 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
 
-import scala.concurrent.{ blocking, Await }
 import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.blocking
 import scala.util.control.NonFatal
-
-// This is a the real deal Spec. It relies on changing files on a particular folder.
-class RotatingProviderWithChangingKeysSpec
-    extends RotatingKeysSSLEngineProviderSpec(RotatingKeysSSLEngineProviderSpec.tempFileConfig) {
-  import RotatingKeysSSLEngineProviderSpec._
-
-  protected override def atStartup(): Unit = {
-    super.atStartup()
-    assert(temporaryDirectory.toFile.exists)
-    assert(temporaryDirectory.toFile.isDirectory)
-    assert(temporaryDirectory.toFile.canWrite)
-    assert(temporaryDirectory.toFile.canExecute)
-    deployCaCert()
-    deployKeySet("ssl/artery-nodes/artery-node001.example.com")()
-  }
-
-  "Artery with TLS/TCP with RotatingKeysSSLEngine" must {
-    "rebuild the SSLContext using new keys" in {
-      if (!arteryTcpTlsEnabled())
-        pending
-
-      // an initial connection between sysA (from the testkit) and sysB
-      // to get sysB up and running
-      val (remoteSysB, pathEchoB) = buildRemoteWithEchoActor("B-reread")
-      contact(system, pathEchoB)
-      assertEnginesCreated(remoteSysB)
-      val before = remoteSysB.sslContextRef.get()
-
-      // setup new (invalid) keys
-      // The `ssl/rsa-client.example.com` keyset can't be used in peer-to-peer connections
-      // it's only valid for `clientAuth`
-
-      deployKeySet("ssl/rsa-client.example.com")(system, remoteSysB.actorSystem)
-      awaitCacheExpiration()
-      val (remoteSysC, pathEchoC) = buildRemoteWithEchoActor("C-reread")
-      try {
-        contact(remoteSysB.actorSystem, pathEchoC)
-        fail("The credentials under `ssl/rsa-client` are not valid for Akka remote so contact() must fail.")
-      } catch {
-        case _: java.lang.AssertionError =>
-      }
-
-      // deploy a new key set
-      deployKeySet("ssl/artery-nodes/artery-node003.example.com")(
-        system,
-        remoteSysB.actorSystem,
-        remoteSysC.actorSystem)
-
-      // Send message to system C from system B.
-      // Using invalid keys, this should fail
-      val (remoteSysD, pathEchoD) = buildRemoteWithEchoActor("D-reread")
-      contact(remoteSysB.actorSystem, pathEchoD)
-      assertEnginesCreated(remoteSysB)
-      assertEnginesCreated(remoteSysD)
-      // the SSLContext references on sysB should differ
-      val after = remoteSysB.sslContextRef.get()
-      before shouldNot be(after)
-    }
-
-  }
-}
 
 // This is a simplification Spec. It doesn't rely on changing files.
 class RotatingProviderWithStaticKeysSpec
@@ -154,9 +92,66 @@ class RotatingProviderWithStaticKeysSpec
   }
 }
 
-// This is an integration tests specifically to test key rotation. Basic happy-path
-// integration of RotatingKeysSSLEngineSpec as an SSLEngineProvider for Akka Remote
-// is tested in `TlsTcpWithRotatingKeysSSLEngineSpec`
+// This is a the real deal Spec. It relies on changing files on a particular folder.
+class RotatingProviderWithChangingKeysSpec
+    extends RotatingKeysSSLEngineProviderSpec(RotatingKeysSSLEngineProviderSpec.tempFileConfig) {
+  import RotatingKeysSSLEngineProviderSpec._
+
+  protected override def atStartup(): Unit = {
+    super.atStartup()
+    assert(temporaryDirectory.toFile.exists)
+    assert(temporaryDirectory.toFile.isDirectory)
+    assert(temporaryDirectory.toFile.canWrite)
+    assert(temporaryDirectory.toFile.canExecute)
+    deployCaCert()
+    deployKeySet("ssl/artery-nodes/artery-node001.example.com")
+  }
+
+  "Artery with TLS/TCP with RotatingKeysSSLEngine" must {
+    "rebuild the SSLContext using new keys" in {
+      if (!arteryTcpTlsEnabled())
+        pending
+
+      // an initial connection between sysA (from the testkit) and sysB
+      // to get sysB up and running
+      val (remoteSysB, pathEchoB) = buildRemoteWithEchoActor("B-reread")
+      contact(system, pathEchoB)
+      assertEnginesCreated(remoteSysB)
+      val before = remoteSysB.sslContextRef.get()
+
+      // setup new (invalid) keys
+      // The `ssl/rsa-client.example.com` keyset can't be used in peer-to-peer connections
+      // it's only valid for `clientAuth`
+
+      deployKeySet("ssl/rsa-client.example.com")
+      awaitCacheExpiration()
+      val (_, pathEchoC) = buildRemoteWithEchoActor("C-reread")
+      try {
+        contact(remoteSysB.actorSystem, pathEchoC)
+        fail("The credentials under `ssl/rsa-client` are not valid for Akka remote so contact() must fail.")
+      } catch {
+        case _: java.lang.AssertionError =>
+        // This assertion error is expected because we expect a failure in contact() since
+        // the SSL credentials are invalid
+      }
+
+      // deploy a new key set
+      deployKeySet("ssl/artery-nodes/artery-node003.example.com")
+
+      // Send message to system C from system B.
+      // Using invalid keys, this should fail
+      val (remoteSysD, pathEchoD) = buildRemoteWithEchoActor("D-reread")
+      contact(remoteSysB.actorSystem, pathEchoD)
+      assertEnginesCreated(remoteSysB)
+      assertEnginesCreated(remoteSysD)
+      // the SSLContext references on sysB should differ
+      val after = remoteSysB.sslContextRef.get()
+      before shouldNot be(after)
+    }
+
+  }
+}
+
 object RotatingKeysSSLEngineProviderSpec {
   val cacheTtlInSeconds = 1
 
@@ -201,43 +196,18 @@ object RotatingKeysSSLEngineProviderSpec {
   private def deployResource(resourceName: String, to: Path): Unit = blocking {
     // manually ensuring files are deleted and copied to prevent races.
     try {
-      ensureDeleted(to)
       val from = new File(getClass.getClassLoader.getResource(resourceName).getPath).toPath
-      Files.copy(from, to)
-      ensureCopied(from, to)
+      Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING)
     } catch {
       case NonFatal(t) => throw new RuntimeException(s"Can't copy resource [$resourceName] to [$to].", t)
     }
   }
-
-  def ensureDeleted(to: Path): Unit = blocking {
-    do {
-      to.toFile.delete()
-    } while (to.toFile.exists())
-  }
-  def ensureCopied(resourcePath: Path, to: Path): Unit = blocking {
-    var equal = false
-    do {
-      equal = util.Arrays.equals(Files.readAllBytes(resourcePath), Files.readAllBytes(to))
-    } while (!equal)
-  }
-  private def ensureVisible(actorSystem: ActorSystem): Unit = {
-    ensureVisible(actorSystem, certLocation.toPath)
-    ensureVisible(actorSystem, keyLocation.toPath)
-  }
-  private def ensureVisible(actorSystem: ActorSystem, path: Path): Unit = {
-    val readProbe = TestProbe()(actorSystem)
-    val ref = actorSystem.actorOf(FileSystemObserver.props)
-    ref.tell(CanRead(path.toFile.getAbsolutePath), readProbe.ref)
-    readProbe.expectMsg(FileRead)
-  }
   def deployCaCert(): Unit = {
     deployResource("ssl/exampleca.crt", cacertLocation.toPath)
   }
-  def deployKeySet(setName: String)(actorSys: ActorSystem*): Unit = {
+  def deployKeySet(setName: String): Unit = {
     deployResource(setName + ".crt", certLocation.toPath)
     deployResource(setName + ".pem", keyLocation.toPath)
-    actorSys.foreach(ensureVisible)
   }
   def cleanupTemporaryDirectory(): Unit = {
     temporaryDirectory.toFile.listFiles().foreach { _.delete() }
@@ -245,8 +215,9 @@ object RotatingKeysSSLEngineProviderSpec {
   }
 }
 
-// In this test each system reads keys/certs from a different temporal folder to control
-// which system gets keys rotated.
+// Superclass to integration tests to test key rotation. Basic happy-path
+// integration tests of `RotatingKeysSSLEngineProvider` as an SSLEngineProvider for Akka Remote
+// are in `TlsTcpWithRotatingKeysSSLEngineSpec`
 abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
     extends ArteryMultiNodeSpec(ConfigFactory.parseString(extraConfig).withFallback(TlsTcpSpec.config))
     with ImplicitSender {
@@ -299,6 +270,7 @@ abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
       system.log.info(s"Terminating $systemToTerminate...")
       Await.result(systemToTerminate.terminate(), 10.seconds)
     }
+    // Don't cleanup folder until all systems have terminated
     cleanupTemporaryDirectory()
     super.afterTermination()
   }
