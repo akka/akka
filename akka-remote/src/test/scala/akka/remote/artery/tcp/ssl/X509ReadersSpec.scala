@@ -20,11 +20,10 @@ class X509ReadersSpec extends AnyWordSpec with Matchers {
     }
 
     "read both the CN and the subject alternative names" in {
-      val serverCert = loadCert("/ssl/one.example.com.crt")
+      val serverCert = loadCert("/domain.crt")
       X509Readers.getAllSubjectNames(serverCert) mustBe (Set(
-        "number-one.example.com",
-        "example.com",
-        "one.example.com"))
+        "akka-remote",
+        "localhost"))
     }
   }
 
