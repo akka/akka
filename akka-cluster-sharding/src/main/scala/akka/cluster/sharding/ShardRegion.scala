@@ -32,16 +32,6 @@ import akka.util.MessageBufferMap
 import akka.util.PrettyDuration
 import akka.util.Timeout
 
-import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.concurrent.duration._
-import scala.reflect.ClassTag
-import scala.runtime.AbstractFunction1
-import scala.util.Failure
-import scala.util.Success
-
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */

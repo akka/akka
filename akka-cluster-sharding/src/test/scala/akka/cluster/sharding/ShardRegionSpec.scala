@@ -8,14 +8,10 @@ import java.io.File
 
 import com.typesafe.config.ConfigFactory
 import org.apache.commons.io.FileUtils
-
 import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill, Props }
 import akka.cluster.{ Cluster, MemberStatus }
 import akka.cluster.ClusterEvent.CurrentClusterState
-import akka.cluster.{ Cluster, MemberStatus }
-import akka.testkit.TestEvent.Mute
-import akka.testkit.WithLogCapturing
-import akka.testkit.{ AkkaSpec, DeadLettersFilter, TestProbe }
+import akka.testkit.{ AkkaSpec, DeadLettersFilter, TestProbe, WithLogCapturing }
 import akka.testkit.TestEvent.Mute
 
 object ShardRegionSpec {

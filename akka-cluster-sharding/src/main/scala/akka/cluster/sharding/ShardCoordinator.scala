@@ -14,10 +14,11 @@ import akka.actor.DeadLetterSuppression
 import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent
-import akka.cluster.ClusterEvent.{ ClusterShuttingDown, InitialStateAsEvents }
+import akka.cluster.ClusterEvent._
+import akka.cluster.ddata.LWWRegister
+import akka.cluster.ddata.LWWRegisterKey
 import akka.cluster.ddata.Replicator._
-import akka.cluster.ddata.{ LWWRegister, LWWRegisterKey, SelfUniqueAddress }
-import akka.cluster.sharding.DDataShardCoordinator.RememberEntitiesLoadTimeout
+import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.EventSourcedRememberShards.MigrationMarker
 import akka.cluster.sharding.internal.{
@@ -617,7 +618,7 @@ abstract class ShardCoordinator(
       case GetShardHome(shard) =>
         if (!handleGetShardHome(shard)) {
           // location not know, yet
-          val activeRegions = state.regions -- gracefulShutdownInProgress
+          val activeRegions = (state.regions -- gracefulShutdownInProgress) -- regionTerminationInProgress
           if (activeRegions.nonEmpty) {
             val getShardHomeSender = sender()
             val regionFuture = allocationStrategy.allocateShard(getShardHomeSender, shard, activeRegions)
@@ -929,7 +930,8 @@ abstract class ShardCoordinator(
       state.shards.get(shard) match {
         case Some(ref) => getShardHomeSender ! ShardHome(shard, ref)
         case None =>
-          if (state.regions.contains(region) && !gracefulShutdownInProgress.contains(region)) {
+          if (state.regions.contains(region) && !gracefulShutdownInProgress.contains(region) && !regionTerminationInProgress
+                .contains(region)) {
             update(ShardHomeAllocated(shard, region)) { evt =>
               state = state.updated(evt)
               log.debug(

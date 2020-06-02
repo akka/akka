@@ -10,6 +10,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.Address
 import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.Member
 import akka.cluster.MemberStatus
@@ -20,7 +21,7 @@ import akka.coordination.lease.scaladsl.Lease
 /**
  * INTERNAL API
  */
-@InternalApi private[sbr] object DowningStrategy {
+@InternalApi private[akka] object DowningStrategy {
   sealed trait Decision {
     def isIndirectlyConnected: Boolean
   }
@@ -53,12 +54,13 @@ import akka.coordination.lease.scaladsl.Lease
 /**
  * INTERNAL API
  */
-@InternalApi private[sbr] abstract class DowningStrategy(val selfDc: DataCenter) {
+@InternalApi private[akka] abstract class DowningStrategy(val selfDc: DataCenter) {
   import DowningStrategy._
 
   // may contain Joining and WeaklyUp
   private var _unreachable: Set[UniqueAddress] = Set.empty[UniqueAddress]
 
+  @InternalStableApi
   def unreachable: Set[UniqueAddress] = _unreachable
 
   def unreachable(m: Member): Boolean = _unreachable(m.uniqueAddress)
@@ -79,11 +81,13 @@ import akka.coordination.lease.scaladsl.Lease
     _allMembers.filter(m => m.status == MemberStatus.Joining || m.status == MemberStatus.WeaklyUp)
 
   // all members in self DC, both joining and up.
+  @InternalStableApi
   def allMembersInDC: immutable.SortedSet[Member] = _allMembers
 
   /**
    * All members in self DC, but doesn't contain Joining, WeaklyUp, Down and Exiting.
    */
+  @InternalStableApi
   def members: immutable.SortedSet[Member] =
     members(includingPossiblyUp = false, excludingPossiblyExiting = false)
 
@@ -193,6 +197,7 @@ import akka.coordination.lease.scaladsl.Lease
     }
   }
 
+  @InternalStableApi
   def reachability: Reachability =
     _reachability
 

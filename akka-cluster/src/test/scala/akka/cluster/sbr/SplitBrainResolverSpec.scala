@@ -75,10 +75,10 @@ object SplitBrainResolverSpec {
 
     var downed = Set.empty[Address]
 
-    override def down(node: Address): Unit = {
-      if (leader && !downed(node)) {
-        downed += node
-        probe ! DownCalled(node)
+    override def down(node: UniqueAddress, decision: DowningStrategy.Decision): Unit = {
+      if (leader && !downed(node.address)) {
+        downed += node.address
+        probe ! DownCalled(node.address)
       } else if (!leader)
         probe ! "down must only be done by leader"
     }

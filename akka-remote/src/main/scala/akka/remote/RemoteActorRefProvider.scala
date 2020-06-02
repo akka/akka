@@ -715,7 +715,7 @@ private[akka] class RemoteActorRef private[akka] (
           else if (provider.remoteWatcher.isDefined)
             remote.send(message, OptionVal.None, this)
           else
-            provider.warnIfUnsafeDeathwatchWithoutCluster(watchee, watcher, "remote Watch")
+            provider.warnIfUnsafeDeathwatchWithoutCluster(watchee, watcher, "Watch")
 
         //Unwatch has a different signature, need to pattern match arguments against InternalActorRef
         case Unwatch(watchee: InternalActorRef, watcher: InternalActorRef) =>

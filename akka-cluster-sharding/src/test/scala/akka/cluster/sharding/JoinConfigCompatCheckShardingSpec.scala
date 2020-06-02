@@ -13,10 +13,6 @@ import akka.actor.ActorSystem
 import akka.cluster.{ Cluster, ClusterReadView }
 import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, LongRunningTest }
-import com.typesafe.config.{ Config, ConfigFactory }
-
-import scala.concurrent.duration._
-import scala.collection.{ immutable => im }
 
 class JoinConfigCompatCheckShardingSpec extends AkkaSpec() with WithLogCapturing {
 

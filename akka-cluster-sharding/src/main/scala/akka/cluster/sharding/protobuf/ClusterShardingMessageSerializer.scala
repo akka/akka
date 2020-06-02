@@ -13,6 +13,7 @@ import scala.annotation.tailrec
 import scala.concurrent.duration._
 import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
+import scala.concurrent.duration._
 
 import akka.actor.ActorRef
 import akka.actor.Address
@@ -21,20 +22,17 @@ import akka.cluster.sharding.Shard
 import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.ShardRegion._
 import akka.cluster.sharding.protobuf.msg.{ ClusterShardingMessages => sm }
+import akka.cluster.sharding.protobuf.msg.ClusterShardingMessages
 import akka.cluster.sharding.internal.EventSourcedRememberShards.{ MigrationMarker, State => RememberShardsState }
 import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore.{ State => EntityState }
-import akka.cluster.sharding.protobuf.msg.ClusterShardingMessages
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore.{ EntitiesStarted, EntitiesStopped }
 import akka.protobufv3.internal.MessageLite
 import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
 import akka.util.ccompat._
-import java.io.NotSerializableException
 
-import akka.actor.Address
-import akka.cluster.sharding.ShardRegion._
-import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore.{ EntitiesStarted, EntitiesStopped }
-import akka.cluster.sharding.protobuf.msg.ClusterShardingMessages
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API: Protobuf serializer of ClusterSharding messages.

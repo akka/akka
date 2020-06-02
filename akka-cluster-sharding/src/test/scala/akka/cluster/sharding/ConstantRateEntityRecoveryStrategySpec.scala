@@ -4,12 +4,12 @@
 
 package akka.cluster.sharding
 
-import akka.cluster.sharding.ShardRegion.EntityId
-import akka.cluster.sharding.internal.EntityRecoveryStrategy
-import akka.testkit.{ AkkaSpec, TimingTest }
-
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+
+import akka.cluster.sharding.internal.EntityRecoveryStrategy
+import akka.cluster.sharding.ShardRegion.EntityId
+import akka.testkit.{ AkkaSpec, TimingTest }
 
 class ConstantRateEntityRecoveryStrategySpec extends AkkaSpec {
 
