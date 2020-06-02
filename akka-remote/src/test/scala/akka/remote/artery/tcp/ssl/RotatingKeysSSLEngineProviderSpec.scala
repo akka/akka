@@ -44,6 +44,10 @@ class RotatingProviderWithChangingKeysSpec
 
   protected override def atStartup(): Unit = {
     super.atStartup()
+    assert(temporaryDirectory.toFile.exists)
+    assert(temporaryDirectory.toFile.isDirectory)
+    assert(temporaryDirectory.toFile.canWrite)
+    assert(temporaryDirectory.toFile.canExecute)
     deployCaCert()
     deployKeySet("ssl/artery-nodes/artery-node001.example.com")()
   }
