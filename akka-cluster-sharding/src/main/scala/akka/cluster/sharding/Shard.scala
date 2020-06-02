@@ -565,7 +565,7 @@ private[akka] class Shard(
 
   def restartEntities(ids: Set[EntityId]): Unit = {
     log.debug("Restarting set of [{}] entities", ids.size)
-    context.actorOf(RememberEntityStarter.props(context.parent, ids, settings, sender()))
+    context.actorOf(RememberEntityStarter.props(context.parent, ids, settings), "RememberEntitiesStarter")
   }
 
   // ===== shard up and running =====
@@ -576,7 +576,6 @@ private[akka] class Shard(
     case msg: CoordinatorMessage                 => receiveCoordinatorMessage(msg)
     case msg: RememberEntityCommand              => receiveRememberEntityCommand(msg)
     case msg: ShardRegion.StartEntity            => startEntity(msg.entityId, Some(sender()))
-    case msg: ShardRegion.StartEntityAck         => receiveStartEntityAck(msg)
     case Passivate(stopMessage)                  => passivate(sender(), stopMessage)
     case msg: ShardQuery                         => receiveShardQuery(msg)
     case PassivateIdleTick                       => passivateIdleEntities()
@@ -770,40 +769,6 @@ private[akka] class Shard(
     }
   }
 
-  // FIXME in what scenario do we get this to the shard?
-  private def receiveStartEntityAck(ack: ShardRegion.StartEntityAck): Unit = {
-    if (ack.shardId != shardId) {
-      entities.entityState(shardId) match {
-        case RememberingStart(_) | RememberingStop(_) =>
-          log.debug(
-            "Entity [{}] previously owned by shard [{}] started in shard [{}] while waiting to be written, stashing for later handling",
-            ack.entityId,
-            shardId,
-            ack.shardId)
-          stash()
-        case Active(ref) =>
-          log.debug(
-            "Entity [{}] previously owned by shard [{}] started in shard [{}]",
-            ack.entityId,
-            shardId,
-            ack.shardId)
-          entities.entityPassivating(ack.entityId)
-          ref ! handOffStopMessage
-        case RememberedButNotCreated =>
-          // FIXME could be pending with the starting strategy though, what happens when that arrives?
-          log.debug(
-            "Entity [{}] (remembered but not yet created) previously owned by shard [{}] started in shard [{}]",
-            ack.entityId,
-            shardId,
-            ack.shardId)
-          entities.removeEntity(ack.entityId)
-        case other =>
-          throw new IllegalStateException(
-            s"Unexpected state [$other] when start entity ack of entity [${ack.entityId}] was seen from shard [${ack.shardId}]")
-      }
-    }
-  }
-
   private def receiveCoordinatorMessage(msg: CoordinatorMessage): Unit = msg match {
     case HandOff(`shardId`) => handOff(sender())
     case HandOff(shard)     => log.warning("Shard [{}] can not hand off for another Shard [{}]", shardId, shard)
@@ -830,8 +795,10 @@ private[akka] class Shard(
         log.debug("Starting HandOffStopper for shard [{}] to terminate [{}] entities.", shardId, activeEntities.size)
         activeEntities.foreach(context.unwatch(_))
         handOffStopper = Some(
-          context.watch(context.actorOf(
-            handOffStopperProps(shardId, replyTo, activeEntities, handOffStopMessage, entityHandOffTimeout))))
+          context.watch(
+            context.actorOf(
+              handOffStopperProps(shardId, replyTo, activeEntities, handOffStopMessage, entityHandOffTimeout),
+              "HandOffStopper")))
 
         //During hand off we only care about watching for termination of the hand off stopper
         context.become {
