@@ -99,10 +99,6 @@ class RotatingProviderWithChangingKeysSpec
 
   protected override def atStartup(): Unit = {
     super.atStartup()
-    assert(temporaryDirectory.toFile.exists)
-    assert(temporaryDirectory.toFile.isDirectory)
-    assert(temporaryDirectory.toFile.canWrite)
-    assert(temporaryDirectory.toFile.canExecute)
     deployCaCert()
     deployKeySet("ssl/artery-nodes/artery-node001.example.com")
   }
@@ -197,6 +193,7 @@ object RotatingKeysSSLEngineProviderSpec {
     // manually ensuring files are deleted and copied to prevent races.
     try {
       val from = new File(getClass.getClassLoader.getResource(resourceName).getPath).toPath
+      to.toFile.getParentFile.mkdirs()
       Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING)
     } catch {
       case NonFatal(t) => throw new RuntimeException(s"Can't copy resource [$resourceName] to [$to].", t)
