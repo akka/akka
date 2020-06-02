@@ -8,6 +8,7 @@ import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Props
+import akka.actor.Stash
 import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.ddata.ORSet
@@ -77,6 +78,7 @@ private[akka] final class DDataRememberEntitiesShardStore(
     replicator: ActorRef,
     majorityMinCap: Int)
     extends Actor
+    with Stash
     with ActorLogging {
 
   import DDataRememberEntitiesShardStore._
@@ -86,8 +88,8 @@ private[akka] final class DDataRememberEntitiesShardStore(
   implicit val selfUniqueAddress: SelfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
 
   private val readMajority = ReadMajority(settings.tuningParameters.waitingForStateTimeout, majorityMinCap)
-  // Note that the timeout is actually updatingStateTimeout x 3 since we do 3 retries
-  private val writeMajority = WriteMajority(settings.tuningParameters.updatingStateTimeout, majorityMinCap)
+  // Note that the timeout is actually updatingStateTimeout / 4 so that we fit 3 retries and a response in the timeout before the shard sees it as a failure
+  private val writeMajority = WriteMajority(settings.tuningParameters.updatingStateTimeout / 4, majorityMinCap)
   private val maxUpdateAttempts = 3
   private val keys = stateKeys(typeName, shardId)
 
@@ -98,30 +100,41 @@ private[akka] final class DDataRememberEntitiesShardStore(
       settings.tuningParameters.updatingStateTimeout.pretty,
       majorityMinCap)
   }
-  // FIXME potential optimization: start loading entity ids immediately on start instead of waiting for request
-  // (then throw away after request has been seen)
+  loadAllEntities()
 
   private def key(entityId: EntityId): ORSetKey[EntityId] = {
     val i = math.abs(entityId.hashCode % numberOfKeys)
     keys(i)
   }
 
-  override def receive: Receive = idle
+  override def receive: Receive = {
+    waitingForAllEntityIds(Set.empty, Set.empty, None)
+  }
 
   def idle: Receive = {
-    case RememberEntitiesShardStore.GetEntities    => onGetEntities()
+    case RememberEntitiesShardStore.GetEntities =>
+      // not supported, but we may get several if the shard timed out and retried
+      log.debug("Another get entities request after responding to one, not expected/supported")
     case update: RememberEntitiesShardStore.Update => onUpdate(update)
   }
 
-  def waitingForAllEntityIds(requestor: ActorRef, gotKeys: Set[Int], ids: Set[EntityId]): Receive = {
+  def waitingForAllEntityIds(gotKeys: Set[Int], ids: Set[EntityId], shardWaiting: Option[ActorRef]): Receive = {
     def receiveOne(i: Int, idsForKey: Set[EntityId]): Unit = {
       val newGotKeys = gotKeys + i
       val newIds = ids.union(idsForKey)
       if (newGotKeys.size == numberOfKeys) {
-        requestor ! RememberEntitiesShardStore.RememberedEntities(newIds)
+        shardWaiting match {
+          case Some(shard) =>
+            shard ! RememberEntitiesShardStore.RememberedEntities(newIds)
+            context.become(idle)
+          case None =>
+            // we haven't seen request yet
+            context.become(waitingForAllEntityIds(newGotKeys, newIds, Some(sender())))
+        }
+        unstashAll()
         context.become(idle)
       } else {
-        context.become(waitingForAllEntityIds(requestor, newGotKeys, newIds))
+        context.become(waitingForAllEntityIds(newGotKeys, newIds, shardWaiting))
       }
     }
 
@@ -144,11 +157,23 @@ private[akka] final class DDataRememberEntitiesShardStore(
         context.stop(self)
       case update: RememberEntitiesShardStore.Update =>
         log.warning("Got an update before load of initial entities completed, dropping update: [{}]", update)
+      case RememberEntitiesShardStore.GetEntities =>
+        if (gotKeys.size == numberOfKeys) {
+          // we already got all and was waiting for a request
+          sender() ! RememberEntitiesShardStore.RememberedEntities(ids)
+          context.become(idle)
+        } else {
+          // we haven't seen all ids yet
+          context.become(waitingForAllEntityIds(gotKeys, ids, Some(sender())))
+        }
+      case _ =>
+        // if we get a write while waiting for the listing, defer it until we saw listing, if not we can get a mismatch
+        // of remembered with what the shard thinks it just wrote
+        stash()
     }
   }
 
   private def onUpdate(update: RememberEntitiesShardStore.Update): Unit = {
-    // FIXME what about ordering of adds/removes vs sets, I think we can lose one
     val allEvts: Set[Evt] = (update.started.map(Started) ++ update.stopped.map(Stopped))
     // map from set of evts (for same ddata key) to one update that applies each of them
     val ddataUpdates: Map[Set[Evt], (Update[ORSet[EntityId]], Int)] =
@@ -220,12 +245,11 @@ private[akka] final class DDataRememberEntitiesShardStore(
     next(allUpdates)
   }
 
-  private def onGetEntities(): Unit = {
+  private def loadAllEntities(): Unit = {
     (0 until numberOfKeys).toSet[Int].foreach { i =>
       val key = keys(i)
       replicator ! Get(key, readMajority, Some(i))
     }
-    context.become(waitingForAllEntityIds(sender(), Set.empty, Set.empty))
   }
 
 }

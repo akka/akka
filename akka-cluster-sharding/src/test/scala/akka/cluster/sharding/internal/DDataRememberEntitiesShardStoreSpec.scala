@@ -65,7 +65,12 @@ class DDataRememberEntitiesShardStoreSpec
       store ! RememberEntitiesShardStore.Update(Set("2"), Set.empty)
       expectMsg(RememberEntitiesShardStore.UpdateDone(Set("2"), Set.empty))
 
-      store ! RememberEntitiesShardStore.GetEntities
+      // the store does not support get after update
+      val storeIncarnation2 = system.actorOf(
+        DDataRememberEntitiesShardStore
+          .props("FakeShardId", "FakeTypeName", shardingSettings, replicator, majorityMinCap = 1))
+
+      storeIncarnation2 ! RememberEntitiesShardStore.GetEntities
       expectMsgType[RememberEntitiesShardStore.RememberedEntities].entities should ===(Set("1", "2", "4", "5"))
 
     }
