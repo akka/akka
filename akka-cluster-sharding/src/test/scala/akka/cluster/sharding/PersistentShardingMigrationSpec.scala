@@ -34,6 +34,8 @@ object PersistentShardingMigrationSpec {
        
         # make sure we test snapshots
         snapshot-after = 5
+        
+        verbose-debug-logging = on
        }
        
        akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"

@@ -49,6 +49,7 @@ object RememberEntitiesBatchedUpdatesSpec {
       akka.cluster.sharding.remember-entities = on
       # no leaks between test runs thank you
       akka.cluster.sharding.distributed-data.durable.keys = []
+      akka.cluster.sharding.verbose-debug-logging = on
     """.stripMargin)
 }
 class RememberEntitiesBatchedUpdatesSpec

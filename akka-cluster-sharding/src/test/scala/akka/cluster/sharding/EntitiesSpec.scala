@@ -5,15 +5,13 @@
 package akka.cluster.sharding
 import akka.actor.ActorRef
 import akka.cluster.sharding
-import akka.cluster.sharding.Shard.{
-  Active,
-  NoState,
-  Passivating,
-  PassivationComplete,
-  RememberedButNotCreated,
-  RememberingStart,
-  RememberingStop
-}
+import akka.cluster.sharding.Shard.Active
+import akka.cluster.sharding.Shard.NoState
+import akka.cluster.sharding.Shard.Passivating
+import akka.cluster.sharding.Shard.PassivationComplete
+import akka.cluster.sharding.Shard.RememberedButNotCreated
+import akka.cluster.sharding.Shard.RememberingStart
+import akka.cluster.sharding.Shard.RememberingStop
 import akka.event.NoLogging
 import akka.util.OptionVal
 import org.scalatest.matchers.should.Matchers
@@ -21,15 +19,18 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class EntitiesSpec extends AnyWordSpec with Matchers {
 
+  private def newEntities(rememberingEntities: Boolean) =
+    new sharding.Shard.Entities(NoLogging, rememberingEntities = rememberingEntities, false)
+
   "Entities" should {
     "start empty" in {
-      val entities = new sharding.Shard.Entities(NoLogging, rememberingEntities = false)
+      val entities = newEntities(rememberingEntities = false)
       entities.activeEntityIds() shouldEqual Set.empty
       entities.size shouldEqual 0
       entities.activeEntities() shouldEqual Set.empty
     }
     "set already remembered entities to state RememberedButNotStarted" in {
-      val entities = new sharding.Shard.Entities(NoLogging, rememberingEntities = true)
+      val entities = newEntities(rememberingEntities = true)
       val ids = Set("a", "b", "c")
       entities.alreadyRemembered(ids)
       entities.activeEntities() shouldEqual Set.empty
@@ -39,7 +40,7 @@ class EntitiesSpec extends AnyWordSpec with Matchers {
       }
     }
     "set state to remembering start" in {
-      val entities = new sharding.Shard.Entities(NoLogging, rememberingEntities = true)
+      val entities = newEntities(rememberingEntities = true)
       entities.rememberingStart("a", None)
       entities.entityState("a") shouldEqual RememberingStart(None)
       entities.pendingRememberedEntitiesExist() should ===(true)
@@ -53,7 +54,7 @@ class EntitiesSpec extends AnyWordSpec with Matchers {
       entities.pendingRememberEntities()._1 should be(empty)
     }
     "set state to remembering stop" in {
-      val entities = new sharding.Shard.Entities(NoLogging, rememberingEntities = true)
+      val entities = newEntities(rememberingEntities = true)
       entities.addEntity("a", ActorRef.noSender) // need to go through active to passivate
       entities.entityPassivating("a") // need to go through passivate to remember stop
       entities.rememberingStop("a", PassivationComplete)
@@ -70,7 +71,7 @@ class EntitiesSpec extends AnyWordSpec with Matchers {
     }
 
     "fully remove an entity" in {
-      val entities = new sharding.Shard.Entities(NoLogging, rememberingEntities = true)
+      val entities = newEntities(rememberingEntities = true)
       val ref = ActorRef.noSender
       entities.addEntity("a", ref)
       entities.entityPassivating("a") // needs to go through passivating to be removed
@@ -81,19 +82,19 @@ class EntitiesSpec extends AnyWordSpec with Matchers {
 
     }
     "add an entity as active" in {
-      val entities = new sharding.Shard.Entities(NoLogging, false)
+      val entities = newEntities(rememberingEntities = false)
       val ref = ActorRef.noSender
       entities.addEntity("a", ref)
       entities.entityState("a") shouldEqual Active(ref)
     }
     "look up actor ref by id" in {
-      val entities = new sharding.Shard.Entities(NoLogging, false)
+      val entities = newEntities(rememberingEntities = false)
       val ref = ActorRef.noSender
       entities.addEntity("a", ref)
       entities.entityId(ref) shouldEqual OptionVal.Some("a")
     }
     "set state to passivating" in {
-      val entities = new sharding.Shard.Entities(NoLogging, false)
+      val entities = newEntities(rememberingEntities = false)
       val ref = ActorRef.noSender
       entities.addEntity("a", ref)
       entities.entityPassivating("a")

@@ -23,6 +23,7 @@ object SupervisionSpec {
     akka.remote.classic.netty.tcp.port = 0
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.loglevel = DEBUG
+    akka.cluster.sharding.verbose-debug-logging = on
     """)
 
   case class Msg(id: Long, msg: Any)

@@ -26,7 +26,7 @@ object ConcurrentStartupShardingSpec {
     akka.remote.artery.canonical.port = 0
     akka.log-dead-letters = off
     akka.log-dead-letters-during-shutdown = off
-
+    akka.cluster.sharding.verbose-debug-logging = on
     akka.actor {
       default-dispatcher {
         executor = "fork-join-executor"

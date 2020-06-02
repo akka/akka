@@ -28,6 +28,7 @@ object ClusterShardingLeaseSpec {
        distributed-data.durable {
         keys = []
        }
+       verbose-debug-logging = on
      }
     """).withFallback(TestLease.config)
 
