@@ -162,11 +162,11 @@ object ActorSourceSinkExample {
 
     val sink: Sink[String, NotUsed] = ActorSink.actorRefWithBackpressure(
       ref = actor,
+      messageAdapter = (responseActorRef: ActorRef[Ack], element) => Message(responseActorRef, element),
+      onInitMessage = (responseActorRef: ActorRef[Ack]) => Init(responseActorRef),
+      ackMessage = Ack,
       onCompleteMessage = Complete,
-      onFailureMessage = Fail.apply,
-      messageAdapter = Message.apply,
-      onInitMessage = Init.apply,
-      ackMessage = Ack)
+      onFailureMessage = (exception) => Fail(exception))
 
     Source.single("msg1").runWith(sink)
     // #actor-sink-ref-with-backpressure
