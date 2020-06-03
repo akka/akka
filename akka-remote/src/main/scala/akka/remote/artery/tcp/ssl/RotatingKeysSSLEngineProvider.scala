@@ -11,10 +11,10 @@ import java.security.PrivateKey
 import java.security.SecureRandom
 import java.security.cert.Certificate
 import java.security.cert.X509Certificate
-import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.ActorSystem
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.ApiMayChange
+import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.event.MarkerLoggingAdapter
 import akka.remote.artery.tcp.SSLEngineProvider
@@ -66,21 +66,26 @@ final class RotatingKeysSSLEngineProvider(val config: Config, protected val log:
   private val rng: SecureRandom = SecureRandomFactory.createSecureRandom(SSLRandomNumberGenerator, log)
 
   // handle caching
-  private val contextRef = new AtomicReference[Option[CachedContext]](None)
+  @volatile private var contextRef: Option[CachedContext] = None
 
   /** INTERNAL API */
   @InternalApi
   private[ssl] def getSSLContext() = getContext().context
   private def getContext(): ConfiguredContext = {
-    contextRef.get() match {
+    contextRef match {
       case Some(CachedContext(_, expired)) if expired.isOverdue() =>
+        // Multiple connection requests arriving when the cache is overdue will
+        // create different CachedContext instances and only the last one will
+        // be cached. This is fine.
         val context = constructContext()
-        contextRef.set(Some(CachedContext(context, SSLContextCacheTime.fromNow)))
+        contextRef = Some(CachedContext(context, SSLContextCacheTime.fromNow))
         context
       case Some(CachedContext(cached, _)) => cached
-      case None =>
+      case None                           =>
+        // Multiple connection requests arriving when the cache is empty will
+        // create different CachedContext instances. This is fine.
         val context = constructContext()
-        contextRef.set(Some(CachedContext(context, SSLContextCacheTime.fromNow)))
+        contextRef = Some(CachedContext(context, SSLContextCacheTime.fromNow))
         context
     }
   }
