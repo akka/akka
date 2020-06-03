@@ -6,13 +6,14 @@ package akka.actor
 
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.routing._
-import akka.util.WildcardIndex
-import com.github.ghik.silencer.silent
-import com.typesafe.config._
 import scala.annotation.tailrec
 
+import com.github.ghik.silencer.silent
+import com.typesafe.config._
+
 import akka.annotation.InternalApi
+import akka.routing._
+import akka.util.WildcardIndex
 
 object Deploy {
   final val NoDispatcherGiven = ""
@@ -119,13 +120,13 @@ final class Deploy(
     new Deploy(path, config, routerConfig, scope, dispatcher, mailbox, tags)
 
   override def productElement(n: Int): Any = n match {
-    case 1 => path
-    case 2 => config
-    case 3 => routerConfig
-    case 4 => scope
-    case 5 => dispatcher
-    case 6 => mailbox
-    case 7 => tags
+    case 0 => path
+    case 1 => config
+    case 2 => routerConfig
+    case 3 => scope
+    case 4 => dispatcher
+    case 5 => mailbox
+    case 6 => tags
   }
 
   override def productArity: Int = 7

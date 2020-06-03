@@ -4,10 +4,11 @@
 
 package akka.remote
 
-import akka.actor.{ ActorContext, ActorSystem, ExtendedActorSystem }
 import com.typesafe.config.Config
-import akka.event.EventStream
+
 import akka.ConfigurationException
+import akka.actor.{ ActorContext, ActorSystem, ExtendedActorSystem }
+import akka.event.EventStream
 
 /**
  * Interface for a registry of Akka failure detectors. New resources are implicitly registered when heartbeat is first

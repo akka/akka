@@ -6,25 +6,25 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.CompletionStage
 
-import akka.actor.{ ActorRef, Cancellable }
-import akka.annotation.InternalApi
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.fusing.GraphStages
-import akka.stream.impl.fusing.GraphStages._
-import akka.stream.impl.{ PublisherSource, _ }
-import akka.stream.{ Outlet, SourceShape, _ }
-import akka.util.ConstantFun
-import akka.{ Done, NotUsed }
-import org.reactivestreams.{ Publisher, Subscriber }
-
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Future, Promise }
-import akka.stream.stage.GraphStageWithMaterializedValue
-
 import scala.compat.java8.FutureConverters._
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration.FiniteDuration
+
+import org.reactivestreams.{ Publisher, Subscriber }
+
+import akka.{ Done, NotUsed }
+import akka.actor.{ ActorRef, Cancellable }
+import akka.annotation.InternalApi
+import akka.stream.{ Outlet, SourceShape, _ }
+import akka.stream.impl.{ PublisherSource, _ }
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.impl.fusing.GraphStages._
+import akka.stream.stage.GraphStageWithMaterializedValue
+import akka.util.ConstantFun
 
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise
@@ -97,6 +97,15 @@ final class Source[+Out, +Mat](
     val (mat, pub) = toMat(Sink.asPublisher(fanout = true))(Keep.both).run()
     (mat, Source.fromPublisher(pub))
   }
+
+  /**
+   * Connect this `Source` to the `Sink.ignore` and run it. Elements from the stream will be consumed and discarded.
+   *
+   * Note that the `ActorSystem` can be used as the implicit `materializer` parameter to use the
+   * [[akka.stream.SystemMaterializer]] for running the stream.
+   */
+  def run()(implicit materializer: Materializer): Future[Done] =
+    toMat(Sink.ignore)(Keep.right).run()
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
@@ -237,6 +246,9 @@ final class Source[+Out, +Mat](
       combineRest(2, rest.iterator)
     })
 
+  /**
+   * Transform this source whose element is ``e`` into a source producing tuple ``(e, f(e))``
+  **/
   def asSourceWithContext[Ctx](f: Out => Ctx): SourceWithContext[Out, Ctx, Mat] =
     new SourceWithContext(this.map(e => (e, f(e))))
 }
@@ -272,6 +284,17 @@ object Source {
       override def iterator: Iterator[T] = f()
       override def toString: String = "() => Iterator"
     })
+
+  /**
+   * Creates a source that wraps a Java 8 ``Stream``. ``Source`` uses a stream iterator to get all its
+   * elements and send them downstream on demand.
+   *
+   * You can use [[Source.async]] to create asynchronous boundaries between synchronous Java ``Stream``
+   * and the rest of flow.
+   */
+  def fromJavaStream[T, S <: java.util.stream.BaseStream[T, S]](
+      stream: () => java.util.stream.BaseStream[T, S]): Source[T, NotUsed] =
+    StreamConverters.fromJavaStream(stream);
 
   /**
    * Creates [[Source]] that will continually produce given elements in specified order.
@@ -488,6 +511,14 @@ object Source {
    */
   def future[T](futureElement: Future[T]): Source[T, NotUsed] =
     fromGraph(new FutureSource[T](futureElement))
+
+  /**
+   * Never emits any elements, never completes and never fails.
+   * This stream could be useful in tests.
+   */
+  def never[T]: Source[T, NotUsed] = _never
+  private[this] val _never: Source[Nothing, NotUsed] =
+    future(Future.never).withAttributes(DefaultAttributes.neverSource)
 
   /**
    * Emits a single value when the given `CompletionStage` is successfully completed and then completes the stream.
@@ -808,11 +839,51 @@ object Source {
    * for downstream demand unless there is another message waiting for downstream demand, in that case
    * offer result will be completed according to the overflow strategy.
    *
+   * The materialized SourceQueue may only be used from a single producer.
+   *
    * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, SourceQueueWithComplete[T]] =
-    Source.fromGraph(new QueueSource(bufferSize, overflowStrategy).withAttributes(DefaultAttributes.queueSource))
+    queue(bufferSize, overflowStrategy, maxConcurrentOffers = 1)
+
+  /**
+   * Creates a `Source` that is materialized as an [[akka.stream.scaladsl.SourceQueueWithComplete]].
+   * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
+   * otherwise they will be buffered until request for demand is received. Elements in the buffer will be discarded
+   * if downstream is terminated.
+   *
+   * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements if
+   * there is no space available in the buffer.
+   *
+   * Acknowledgement mechanism is available.
+   * [[akka.stream.scaladsl.SourceQueueWithComplete.offer]] returns `Future[QueueOfferResult]` which completes with
+   * `QueueOfferResult.Enqueued` if element was added to buffer or sent downstream. It completes with
+   * `QueueOfferResult.Dropped` if element was dropped. Can also complete  with `QueueOfferResult.Failure` -
+   * when stream failed or `QueueOfferResult.QueueClosed` when downstream is completed.
+   *
+   * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete `maxConcurrentOffers` number of
+   * `offer():Future` call when buffer is full.
+   *
+   * You can watch accessibility of stream with [[akka.stream.scaladsl.SourceQueueWithComplete.watchCompletion]].
+   * It returns future that completes with success when the operator is completed or fails when the stream is failed.
+   *
+   * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait
+   * for downstream demand unless there is another message waiting for downstream demand, in that case
+   * offer result will be completed according to the overflow strategy.
+   *
+   * The materialized SourceQueue may be used by up to maxConcurrentOffers concurrent producers.
+   *
+   * @param bufferSize size of buffer in element count
+   * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
+   * @param maxConcurrentOffers maximum number of pending offers when buffer is full, should be greater than 0
+   */
+  def queue[T](
+      bufferSize: Int,
+      overflowStrategy: OverflowStrategy,
+      maxConcurrentOffers: Int): Source[T, SourceQueueWithComplete[T]] =
+    Source.fromGraph(
+      new QueueSource(bufferSize, overflowStrategy, maxConcurrentOffers).withAttributes(DefaultAttributes.queueSource))
 
   /**
    * Start a new `Source` from some resource which can be opened, read and closed.

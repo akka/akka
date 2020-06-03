@@ -6,6 +6,7 @@ package akka
 
 import sbt._
 import Keys._
+import scala.language.implicitConversions
 
 object Dependencies {
   import DependencyHelpers._
@@ -15,16 +16,16 @@ object Dependencies {
   val junitVersion = "4.13"
   val slf4jVersion = "1.7.30"
   // check agrona version when updating this
-  val aeronVersion = "1.26.0"
+  val aeronVersion = "1.27.0"
   // needs to be inline with the aeron version, check
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
-  val agronaVersion = "1.4.0"
+  val agronaVersion = "1.4.1"
   val nettyVersion = "3.10.6.Final"
-  val jacksonVersion = "2.10.3"
-  val protobufJavaVersion = "3.10.0"
+  val jacksonVersion = "2.10.4"
+  val protobufJavaVersion = "3.11.4"
   val logbackVersion = "1.2.3"
 
-  val scala212Version = "2.12.10"
+  val scala212Version = "2.12.11"
   val scala213Version = "2.13.1"
 
   val reactiveStreamsVersion = "1.0.3"
@@ -68,7 +69,7 @@ object Dependencies {
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
 
     // ssl-config
-    val sslConfigCore = Def.setting { "com.typesafe" %% "ssl-config-core" % sslConfigVersion } // ApacheV2
+    val sslConfigCore = "com.typesafe" %% "ssl-config-core" % sslConfigVersion // ApacheV2
 
     val lmdb = "org.lmdbjava" % "lmdbjava" % "0.7.0" // ApacheV2, OpenLDAP Public License
 
@@ -82,6 +83,8 @@ object Dependencies {
     // Added explicitly for when artery tcp is used
     val agrona = "org.agrona" % "agrona" % agronaVersion // ApacheV2
 
+    val asnOne = "com.hierynomus" % "asn-one" % "0.4.0" // ApacheV2
+
     val jacksonCore = "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion // ApacheV2
     val jacksonAnnotations = "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion // ApacheV2
     val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion // ApacheV2
@@ -90,8 +93,7 @@ object Dependencies {
     val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion // ApacheV2
     val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion // ApacheV2
     val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion // ApacheV2
-
-    val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion
+    val lz4Java = "org.lz4" % "lz4-java" % "1.7.1" // ApacheV2
 
     val logback = "ch.qos.logback" % "logback-classic" % logbackVersion // EPL 1.0
 
@@ -129,8 +131,8 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.5" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.5" % "test" // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.9" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.9" % "test" // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
       val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
@@ -160,6 +162,8 @@ object Dependencies {
       val scalatest = "org.scalatest" %% "scalatest" % scalaTestVersion % "optional;provided;test" // ApacheV2
 
       val logback = Compile.logback % "optional;provided;test" // EPL 1.0
+
+      val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % "optional;provided"
 
     }
 
@@ -192,11 +196,14 @@ object Dependencies {
         Provided.activation // dockerClient needs javax.activation.DataSource in JDK 11+
       )
 
-  val actorTestkitTyped = l ++= Seq(
-        Provided.logback,
-        Provided.junit,
-        Provided.scalatest,
-        Test.scalatestJUnit)
+  val actorTestkitTyped = l ++= Seq(Provided.logback, Provided.junit, Provided.scalatest, Test.scalatestJUnit)
+
+  val pki = l ++=
+      Seq(
+        asnOne,
+        // pull up slf4j version from the one provided transitively in asnOne to fix unidoc
+        Compile.slf4jApi % "provided",
+        Test.scalatest)
 
   val remoteDependencies = Seq(netty, aeronDriver, aeronClient)
   val remoteOptionalDependencies = remoteDependencies.map(_ % "optional")
@@ -238,18 +245,15 @@ object Dependencies {
         Test.commonsIo,
         Test.commonsCodec)
 
-  val persistenceQuery = l ++= Seq(
-        Test.scalatest,
-        Test.junit,
-        Test.commonsIo,
-        Provided.levelDB,
-        Provided.levelDBNative)
+  val persistenceQuery = l ++= Seq(Test.scalatest, Test.junit, Test.commonsIo, Provided.levelDB, Provided.levelDBNative)
 
   val persistenceTck = l ++= Seq(
         Test.scalatest.withConfigurations(Some("compile")),
         Test.junit.withConfigurations(Some("compile")),
         Provided.levelDB,
         Provided.levelDBNative)
+
+  val persistenceTestKit = l ++= Seq(Test.scalatest, Test.logback)
 
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 
@@ -262,6 +266,7 @@ object Dependencies {
         jacksonJsr310,
         jacksonParameterNames,
         jacksonCbor,
+        lz4Java,
         Test.junit,
         Test.scalatest)
 
@@ -277,11 +282,11 @@ object Dependencies {
 
   val docs = l ++= Seq(Test.scalatest, Test.junit, Docs.sprayJson, Docs.gson, Provided.levelDB)
 
-  val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative, Compile.jctools)
+  val benchJmh = l ++= Seq(logback, Provided.levelDB, Provided.levelDBNative, Compile.jctools)
 
   // akka stream
 
-  lazy val stream = l ++= Seq[sbt.ModuleID](reactiveStreams, sslConfigCore.value, Test.scalatest)
+  lazy val stream = l ++= Seq[sbt.ModuleID](reactiveStreams, sslConfigCore, Test.scalatest)
 
   lazy val streamTestkit = l ++= Seq(Test.scalatest, Test.scalacheck, Test.junit)
 

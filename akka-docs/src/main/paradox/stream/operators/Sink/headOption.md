@@ -4,13 +4,10 @@ Materializes into a @scala[`Future[Option[T]]`] @java[`CompletionStage<Optional<
 
 @ref[Sink operators](../index.md#sink-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #headOption }
+@apidoc[Sink.headOption](Sink$) { scala="#headOption[T]:akka.stream.scaladsl.Sink[T,scala.concurrent.Future[Option[T]]]" java="#headOption()" }
 
-@@@
 
 ## Description
 

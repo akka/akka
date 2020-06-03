@@ -4,8 +4,9 @@
 
 package akka.stream.scaladsl
 
-import akka.stream._
 import scala.annotation.unchecked.uncheckedVariance
+
+import akka.stream._
 
 /**
  * A “stream of streams” sub-flow of data elements, e.g. produced by `groupBy`.

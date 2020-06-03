@@ -9,8 +9,13 @@ import java.io.InputStream
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.TimeoutException
 
-import akka.stream.Attributes.inputBuffer
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
 import akka.stream._
+import akka.stream.Attributes.inputBuffer
 import akka.stream.impl.PhasedFusingActorMaterializer
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
@@ -18,17 +23,12 @@ import akka.stream.impl.io.InputStreamSinkStage
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.StreamConverters
-import akka.stream.testkit.Utils._
 import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.TestProbe
 import akka.util.ByteString
-
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
   import system.dispatcher
@@ -153,7 +153,7 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       an[IllegalArgumentException] shouldBe thrownBy(inputStream.read(buf, -1, 2))
       an[IllegalArgumentException] shouldBe thrownBy(inputStream.read(buf, 0, 5))
       an[IllegalArgumentException] shouldBe thrownBy(inputStream.read(new Array[Byte](0), 0, 1))
-      an[IllegalArgumentException] shouldBe thrownBy(inputStream.read(buf, 0, 0))
+      an[IllegalArgumentException] shouldBe thrownBy(inputStream.read(buf, 0, -1))
       inputStream.close()
     }
 
@@ -263,10 +263,8 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "propagate error to InputStream" in {
       val readTimeout = 3.seconds
-      val (probe, inputStream) =
+      val (probe, inputStream: InputStream) =
         TestSource.probe[ByteString].toMat(StreamConverters.asInputStream(readTimeout))(Keep.both).run()
-
-      probe.sendNext(ByteString("one"))
       val error = new RuntimeException("failure")
       probe.sendError(error)
       val buffer = Array.ofDim[Byte](5)
@@ -274,6 +272,18 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
         inputStream.read(buffer) should !==(-1)
       }
       thrown.getCause should ===(error)
+    }
+
+    "a read of length 0 should not request bytes from upstream" in assertAllStagesStopped {
+      val (probe, inputStream) = TestSource.probe[ByteString].toMat(StreamConverters.asInputStream())(Keep.both).run()
+      probe.ensureSubscription()
+      probe.expectRequest()
+
+      inputStream.read(new Array[Byte](byteString.size), 0, 0) should ===(0)
+      probe.expectNoMessage()
+
+      inputStream.close()
+      probe.expectCancellation()
     }
   }
 

@@ -6,26 +6,27 @@ package akka.cluster.sharding
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.{ Actor, ActorLogging, PoisonPill, Props }
-import akka.cluster.TestLeaseExt
-import akka.cluster.sharding.ShardRegion.ShardInitialized
-import akka.coordination.lease.LeaseUsageSettings
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
 import scala.util.control.NoStackTrace
 
+import akka.actor.{ Actor, ActorLogging, PoisonPill, Props }
+import akka.cluster.sharding.ShardRegion.ShardInitialized
+import akka.coordination.lease.LeaseUsageSettings
+import akka.coordination.lease.TestLease
+import akka.coordination.lease.TestLeaseExt
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
+
 object ShardSpec {
   val config =
-    """
+    s"""
   akka.loglevel = INFO
   akka.actor.provider = "cluster"
   akka.remote.classic.netty.tcp.port = 0
   akka.remote.artery.canonical.port = 0
   test-lease {
-      lease-class = akka.cluster.TestLease
+      lease-class = ${classOf[TestLease].getName}
       heartbeat-interval = 1s
       heartbeat-timeout = 120s
       lease-operation-timeout = 3s

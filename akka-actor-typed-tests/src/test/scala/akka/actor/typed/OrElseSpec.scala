@@ -6,10 +6,11 @@ package akka.actor.typed
 
 import scala.annotation.tailrec
 
-import akka.actor.testkit.typed.scaladsl._
-import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.testkit.typed.scaladsl._
+import akka.actor.typed.scaladsl.Behaviors
 
 /**
  * Background: Originally there was an `OrElseBehavior` that could compose two `Behavior`, but that

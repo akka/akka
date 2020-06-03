@@ -3,7 +3,7 @@ project.description: Logging options with Akka.
 ---
 # Logging
 
-For the Akka Classic documentation of this feature see @ref:[Classic Logging](../logging.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Logging](../logging.md).
 
 ## Dependency
 
@@ -12,7 +12,7 @@ via the SLF4J backend, such as Logback configuration.
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-actor-typed_$scala.binary_version$"
+  artifact="akka-actor-typed_$scala.binary.version$"
   version="$akka.version$"
 }
 
@@ -241,7 +241,7 @@ All MDC properties as key-value entries can be included with `%mdc`:
 
 ```
   <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} - %msg {%mdc}%n</pattern>
+    <pattern>%date{ISO8601} %-5level %logger{36} - %msg MDC: {%mdc}%n</pattern>
   </encoder>
 ```
 
@@ -426,7 +426,7 @@ All MDC properties as key-value entries can be included with `%mdc`:
 
 ```
   <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} - %msg {%mdc}%n</pattern>
+    <pattern>%date{ISO8601} %-5level %logger{36} - %msg MDC: {%mdc}%n</pattern>
   </encoder>
 ```
 
@@ -446,7 +446,7 @@ The marker can be included in the Logback output with `%marker` and all MDC prop
 
 ```
   <encoder>
-    <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg {%mdc}%n</pattern>
+    <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg MDC: {%mdc}%n</pattern>
   </encoder>
 ```
 

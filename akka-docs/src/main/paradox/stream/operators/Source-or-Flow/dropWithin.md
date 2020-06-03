@@ -4,13 +4,11 @@ Drop elements until a timeout has fired
 
 @ref[Timer driven operators](../index.md#timer-driven-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #dropWithin }
+@apidoc[Source.dropWithin](Source) { scala="#dropWithin(d:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[Out]" java="#dropWithin(java.time.Duration)" }
+@apidoc[Flow.dropWithin](Flow) { scala="#dropWithin(d:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[Out]" java="#dropWithin(java.time.Duration)" }
 
-@@@
 
 ## Description
 

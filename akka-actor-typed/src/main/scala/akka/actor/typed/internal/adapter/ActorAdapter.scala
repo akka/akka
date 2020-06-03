@@ -8,20 +8,20 @@ package adapter
 
 import java.lang.reflect.InvocationTargetException
 
-import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
-import akka.actor.typed.internal.BehaviorImpl.StoppedBehavior
-import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
-import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
-import akka.actor.ActorInitializationException
-import akka.actor.ActorRefWithCell
-import akka.annotation.InternalApi
-import akka.util.OptionVal
-import akka.{ actor => classic }
-
 import scala.annotation.switch
 import scala.annotation.tailrec
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
+
+import akka.{ actor => classic }
+import akka.actor.ActorInitializationException
+import akka.actor.ActorRefWithCell
+import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
+import akka.actor.typed.internal.BehaviorImpl.StoppedBehavior
+import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
+import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
+import akka.annotation.InternalApi
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -75,6 +75,7 @@ import scala.util.control.NonFatal
   def receive: Receive = ActorAdapter.DummyReceive
 
   override protected[akka] def aroundReceive(receive: Receive, msg: Any): Unit = {
+    ctx.setCurrentActorThread()
     try {
       // as we know we never become in "normal" typed actors, it is just the current behavior that
       // changes, we can avoid some overhead with the partial function/behavior stack of untyped entirely
@@ -104,7 +105,10 @@ import scala.util.control.NonFatal
         case msg: T @unchecked =>
           handleMessage(msg)
       }
-    } finally ctx.clearMdc()
+    } finally {
+      ctx.clearCurrentActorThread()
+      ctx.clearMdc()
+    }
   }
 
   private def handleMessage(msg: T): Unit = {
@@ -206,32 +210,38 @@ import scala.util.control.NonFatal
   }
 
   override val supervisorStrategy = classic.OneForOneStrategy(loggingEnabled = false) {
-    case TypedActorFailedException(cause) =>
-      // These have already been optionally logged by typed supervision
-      recordChildFailure(cause)
-      classic.SupervisorStrategy.Stop
     case ex =>
-      val isTypedActor = sender() match {
-        case afwc: ActorRefWithCell =>
-          afwc.underlying.props.producer.actorClass == classOf[ActorAdapter[_]]
+      ctx.setCurrentActorThread()
+      try ex match {
+        case TypedActorFailedException(cause) =>
+          // These have already been optionally logged by typed supervision
+          recordChildFailure(cause)
+          classic.SupervisorStrategy.Stop
         case _ =>
-          false
-      }
-      recordChildFailure(ex)
-      val logMessage = ex match {
-        case e: ActorInitializationException if e.getCause ne null =>
-          e.getCause match {
-            case ex: InvocationTargetException if ex.getCause ne null => ex.getCause.getMessage
-            case ex                                                   => ex.getMessage
+          val isTypedActor = sender() match {
+            case afwc: ActorRefWithCell =>
+              afwc.underlying.props.producer.actorClass == classOf[ActorAdapter[_]]
+            case _ =>
+              false
           }
-        case e => e.getMessage
+          recordChildFailure(ex)
+          val logMessage = ex match {
+            case e: ActorInitializationException if e.getCause ne null =>
+              e.getCause match {
+                case ex: InvocationTargetException if ex.getCause ne null => ex.getCause.getMessage
+                case ex                                                   => ex.getMessage
+              }
+            case e => e.getMessage
+          }
+          // log at Error as that is what the supervision strategy would have done.
+          ctx.log.error(logMessage, ex)
+          if (isTypedActor)
+            classic.SupervisorStrategy.Stop
+          else
+            ActorAdapter.classicSupervisorDecider(ex)
+      } finally {
+        ctx.clearCurrentActorThread()
       }
-      // log at Error as that is what the supervision strategy would have done.
-      ctx.log.error(logMessage, ex)
-      if (isTypedActor)
-        classic.SupervisorStrategy.Stop
-      else
-        ActorAdapter.classicSupervisorDecider(ex)
   }
 
   private def recordChildFailure(ex: Throwable): Unit = {
@@ -239,6 +249,30 @@ import scala.util.control.NonFatal
     if (context.asInstanceOf[classic.ActorCell].isWatching(ref)) {
       failures = failures.updated(ref, ex)
     }
+  }
+
+  override protected[akka] def aroundPreStart(): Unit = {
+    ctx.setCurrentActorThread()
+    try super.aroundPreStart()
+    finally ctx.clearCurrentActorThread()
+  }
+
+  override protected[akka] def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
+    ctx.setCurrentActorThread()
+    try super.aroundPreRestart(reason, message)
+    finally ctx.clearCurrentActorThread()
+  }
+
+  override protected[akka] def aroundPostRestart(reason: Throwable): Unit = {
+    ctx.setCurrentActorThread()
+    try super.aroundPostRestart(reason)
+    finally ctx.clearCurrentActorThread()
+  }
+
+  override protected[akka] def aroundPostStop(): Unit = {
+    ctx.setCurrentActorThread()
+    try super.aroundPostStop()
+    finally ctx.clearCurrentActorThread()
   }
 
   override def preStart(): Unit = {

@@ -4,12 +4,14 @@
 
 package akka.cluster
 
-import akka.actor.Address
-import akka.remote.FailureDetector
-import akka.remote.DefaultFailureDetectorRegistry
 import java.util.concurrent.ThreadLocalRandom
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.Address
+import akka.remote.DefaultFailureDetectorRegistry
+import akka.remote.FailureDetector
 
 object ClusterHeartbeatSenderStateSpec {
   class FailureDetectorStub extends FailureDetector {

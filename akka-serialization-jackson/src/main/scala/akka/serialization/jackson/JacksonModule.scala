@@ -4,7 +4,6 @@
 
 package akka.serialization.jackson
 
-import akka.annotation.InternalApi
 import com.fasterxml.jackson.core.Version
 import com.fasterxml.jackson.core.util.VersionUtil
 import com.fasterxml.jackson.databind.BeanDescription
@@ -19,6 +18,8 @@ import com.fasterxml.jackson.databind.`type`.TypeModifier
 import com.fasterxml.jackson.databind.deser.Deserializers
 import com.fasterxml.jackson.databind.ser.BeanSerializerModifier
 import com.fasterxml.jackson.databind.ser.Serializers
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

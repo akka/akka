@@ -4,13 +4,14 @@
 
 package akka.dispatch
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Promise
+
+import org.scalatest.matchers.should.Matchers
+
 import akka.Done
 import akka.dispatch.internal.SameThreadExecutionContext
 import akka.testkit.AkkaSpec
-import org.scalatest.matchers.should.Matchers
-
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Promise
 
 class SameThreadExecutionContextSpec extends AkkaSpec with Matchers {
 

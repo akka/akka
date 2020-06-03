@@ -4,10 +4,11 @@
 
 package akka.remote.artery
 
-import scala.concurrent.duration.Deadline
 import java.util.concurrent.atomic.AtomicReference
-import scala.concurrent.duration.FiniteDuration
+
 import scala.annotation.tailrec
+import scala.concurrent.duration.Deadline
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API

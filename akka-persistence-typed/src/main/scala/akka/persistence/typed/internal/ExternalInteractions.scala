@@ -16,11 +16,9 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
-
+import akka.persistence._
 import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
-import akka.persistence._
-
 import akka.util.unused
 
 /** INTERNAL API */
@@ -101,7 +99,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       @unused repr: immutable.Seq[PersistentRepr]): Unit = ()
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
-    setup.log.debug2("Replaying messages: from: {}, to: {}", fromSeqNr, toSeqNr)
+    setup.log.debug2("Replaying events: from: {}, to: {}", fromSeqNr, toSeqNr)
     setup.journal.tell(
       ReplayMessages(fromSeqNr, toSeqNr, setup.recovery.replayMax, setup.persistenceId.id, setup.selfClassic),
       setup.selfClassic)

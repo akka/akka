@@ -4,13 +4,11 @@ Intersperse stream with provided element similar to `List.mkString`.
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #intersperse }
+@apidoc[Source.intersperse](Source) { scala="#intersperse[T&gt;:Out](start:T,inject:T,end:T):FlowOps.this.Repr[T]" java="#intersperse(java.lang.Object,java.lang.Object,java.lang.Object)" }
+@apidoc[Flow.intersperse](Flow) {  scala="#intersperse[T&gt;:Out](start:T,inject:T,end:T):FlowOps.this.Repr[T]" java="#intersperse(java.lang.Object,java.lang.Object,java.lang.Object)" }
 
-@@@
 
 ## Description
 

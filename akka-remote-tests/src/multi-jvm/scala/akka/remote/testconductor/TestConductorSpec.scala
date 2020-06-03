@@ -4,15 +4,16 @@
 
 package akka.remote.testconductor
 
-import language.postfixOps
-import akka.actor.{ Actor, ActorIdentity, Deploy, Identify, Props }
-
 import scala.concurrent.duration._
-import akka.testkit.LongRunningTest
+
+import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
+import akka.actor.{ Actor, ActorIdentity, Deploy, Identify, Props }
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
-import com.typesafe.config.ConfigFactory
+import akka.testkit.LongRunningTest
 
 object TestConductorMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""

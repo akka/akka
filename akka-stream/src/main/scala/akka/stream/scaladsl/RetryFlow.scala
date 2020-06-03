@@ -4,10 +4,10 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
+
 import akka.annotation.ApiMayChange
 import akka.stream.impl.RetryFlowCoordinator
-
-import scala.concurrent.duration._
 
 object RetryFlow {
 

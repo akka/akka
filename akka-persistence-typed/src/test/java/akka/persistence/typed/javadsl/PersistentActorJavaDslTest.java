@@ -773,7 +773,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     probe.expectMessage("0 onRecoveryCompleted");
     ref.tell("cmd");
     probe.expectMessage("0 onCommand");
-    probe.expectMessage("0 applyEvent");
+    probe.expectMessage("1 applyEvent");
     probe.expectMessage("1 thenRun");
   }
 }

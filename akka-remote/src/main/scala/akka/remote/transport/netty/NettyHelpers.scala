@@ -4,13 +4,14 @@
 
 package akka.remote.transport.netty
 
-import akka.AkkaException
 import java.nio.channels.ClosedChannelException
 
-import akka.util.unused
+import scala.util.control.NonFatal
+
 import org.jboss.netty.channel._
 
-import scala.util.control.NonFatal
+import akka.AkkaException
+import akka.util.unused
 
 /**
  * INTERNAL API

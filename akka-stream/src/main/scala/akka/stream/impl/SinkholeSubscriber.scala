@@ -4,11 +4,12 @@
 
 package akka.stream.impl
 
+import scala.concurrent.Promise
+
+import org.reactivestreams.{ Subscriber, Subscription }
+
 import akka.Done
 import akka.annotation.InternalApi
-
-import scala.concurrent.Promise
-import org.reactivestreams.{ Subscriber, Subscription }
 
 /**
  * INTERNAL API

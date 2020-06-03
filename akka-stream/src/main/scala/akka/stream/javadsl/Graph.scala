@@ -6,14 +6,14 @@ package akka.stream.javadsl
 
 import java.util
 
-import akka.NotUsed
-import akka.stream._
-import akka.japi.{ function, Pair }
-import akka.util.ConstantFun
-
 import scala.annotation.unchecked.uncheckedVariance
-import akka.util.ccompat.JavaConverters._
+
+import akka.NotUsed
+import akka.japi.{ function, Pair }
+import akka.stream._
 import akka.stream.scaladsl.GenericGraph
+import akka.util.ConstantFun
+import akka.util.ccompat.JavaConverters._
 import akka.util.unused
 
 /**
@@ -380,8 +380,8 @@ object Balance {
  * '''Cancels when''' downstream cancels
  */
 object Zip {
-  import akka.japi.function.Function2
   import akka.japi.Pair
+  import akka.japi.function.Function2
 
   /**
    * Create a new `Zip` operator with the specified input types and zipping-function
@@ -409,8 +409,8 @@ object Zip {
  * '''Cancels when''' downstream cancels
  */
 object ZipLatest {
-  import akka.japi.function.Function2
   import akka.japi.Pair
+  import akka.japi.function.Function2
 
   /**
    * Create a new `ZipLatest` operator with the specified input types and zipping-function

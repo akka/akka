@@ -11,6 +11,8 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -20,7 +22,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
 
 /**
  * Point-to-point reliable delivery between a single producer actor sending messages and a single consumer
@@ -76,6 +77,9 @@ import com.typesafe.config.Config
  * The `producerId` is used in logging and included as MDC entry with key `"producerId"`. It's propagated
  * to the `ConsumerController` and is useful for correlating log messages. It can be any `String` but it's
  * recommended to use a unique identifier of representing the producer.
+ *
+ * If the `DurableProducerQueue` is defined it is created as a child actor of the `ProducerController` actor.
+ * It will use the same dispatcher as the parent `ProducerController`.
  */
 @ApiMayChange // TODO #28719 when removing ApiMayChange consider removing `case class` for some of the messages
 object ProducerController {
@@ -151,7 +155,8 @@ object ProducerController {
     def apply(config: Config): Settings = {
       new Settings(
         durableQueueRequestTimeout = config.getDuration("durable-queue.request-timeout").asScala,
-        durableQueueRetryAttempts = config.getInt("durable-queue.retry-attempts"))
+        durableQueueRetryAttempts = config.getInt("durable-queue.retry-attempts"),
+        durableQueueResendFirstInterval = config.getDuration("durable-queue.resend-first-interval").asScala)
     }
 
     /**
@@ -169,7 +174,10 @@ object ProducerController {
       apply(config)
   }
 
-  final class Settings private (val durableQueueRequestTimeout: FiniteDuration, val durableQueueRetryAttempts: Int) {
+  final class Settings private (
+      val durableQueueRequestTimeout: FiniteDuration,
+      val durableQueueRetryAttempts: Int,
+      val durableQueueResendFirstInterval: FiniteDuration) {
 
     def withDurableQueueRetryAttempts(newDurableQueueRetryAttempts: Int): Settings =
       copy(durableQueueRetryAttempts = newDurableQueueRetryAttempts)
@@ -181,10 +189,22 @@ object ProducerController {
       copy(durableQueueRequestTimeout = newDurableQueueRequestTimeout)
 
     /**
+     * Scala API
+     */
+    def withDurableQueueResendFirstInterval(newDurableQueueResendFirstInterval: FiniteDuration): Settings =
+      copy(durableQueueResendFirstInterval = newDurableQueueResendFirstInterval)
+
+    /**
      * Java API
      */
     def withDurableQueueRequestTimeout(newDurableQueueRequestTimeout: JavaDuration): Settings =
       copy(durableQueueRequestTimeout = newDurableQueueRequestTimeout.asScala)
+
+    /**
+     * Java API
+     */
+    def withDurableQueueResendFirstInterval(newDurableQueueResendFirstInterval: JavaDuration): Settings =
+      copy(durableQueueResendFirstInterval = newDurableQueueResendFirstInterval.asScala)
 
     /**
      * Java API
@@ -197,11 +217,12 @@ object ProducerController {
      */
     private def copy(
         durableQueueRequestTimeout: FiniteDuration = durableQueueRequestTimeout,
-        durableQueueRetryAttempts: Int = durableQueueRetryAttempts) =
-      new Settings(durableQueueRequestTimeout, durableQueueRetryAttempts)
+        durableQueueRetryAttempts: Int = durableQueueRetryAttempts,
+        durableQueueResendFirstInterval: FiniteDuration = durableQueueResendFirstInterval) =
+      new Settings(durableQueueRequestTimeout, durableQueueRetryAttempts, durableQueueResendFirstInterval)
 
     override def toString: String =
-      s"Settings($durableQueueRequestTimeout, $durableQueueRetryAttempts)"
+      s"Settings($durableQueueRequestTimeout, $durableQueueRetryAttempts, $durableQueueResendFirstInterval)"
   }
 
   def apply[A: ClassTag](

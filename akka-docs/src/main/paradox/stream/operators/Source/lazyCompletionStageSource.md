@@ -1,4 +1,4 @@
-# lazyCompletionStageSource
+# Source.lazyCompletionStageSource
 
 Defers creation of a future source until there is demand.
 

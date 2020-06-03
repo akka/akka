@@ -4,18 +4,19 @@
 
 package akka.persistence.typed.internal
 
-import akka.actor.typed.Signal
-import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.{ ActorRef, Cancellable }
-import akka.annotation.InternalApi
-import akka.persistence._
-import akka.persistence.typed.scaladsl.{ EventSourcedBehavior, RetentionCriteria }
-import akka.persistence.typed.{ EventAdapter, PersistenceId, SnapshotAdapter }
-import akka.util.OptionVal
-import org.slf4j.{ Logger, MDC }
-
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
+
+import org.slf4j.{ Logger, MDC }
+
+import akka.actor.{ ActorRef, Cancellable }
+import akka.actor.typed.Signal
+import akka.actor.typed.scaladsl.ActorContext
+import akka.annotation.InternalApi
+import akka.persistence._
+import akka.persistence.typed.{ EventAdapter, PersistenceId, SnapshotAdapter }
+import akka.persistence.typed.scaladsl.{ EventSourcedBehavior, RetentionCriteria }
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -51,6 +52,7 @@ private[akka] final class BehaviorSetup[C, E, S](
 
   import BehaviorSetup._
   import InternalProtocol.RecoveryTickEvent
+
   import akka.actor.typed.scaladsl.adapter._
 
   val persistence: Persistence = Persistence(context.system.toClassic)

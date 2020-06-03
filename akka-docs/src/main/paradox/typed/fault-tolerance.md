@@ -1,6 +1,6 @@
 # Fault Tolerance
 
-For the Akka Classic documentation of this feature see @ref:[Classic Fault Tolerance](../fault-tolerance.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Fault Tolerance](../fault-tolerance.md).
 
 When an actor throws an unexpected exception, a failure, while processing a message or during initialization, the actor
 will by default be stopped.

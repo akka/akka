@@ -5,23 +5,25 @@
 package akka.testkit
 
 import java.util.concurrent._
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
-import scala.language.postfixOps
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+
 import akka.actor._
-import akka.util.{ BoxedType, Timeout }
-import akka.actor.IllegalActorStateException
 import akka.actor.DeadLetter
+import akka.actor.IllegalActorStateException
 import akka.actor.Terminated
 import akka.annotation.InternalApi
-import com.github.ghik.silencer.silent
+import akka.util.{ BoxedType, Timeout }
 
 object TestActor {
   type Ignore = Option[PartialFunction[Any, Boolean]]
@@ -343,6 +345,44 @@ trait TestKitBase {
     }
 
     poll(_max min interval)
+  }
+
+  /**
+   * Evaluate the given assert every `interval` until exception is thrown or `max` timeout is expired.
+   *
+   * Returns the result of last evaluation of the assertion.
+   *
+   * If no timeout is given, take it from the innermost enclosing `within`
+   * block.
+   *
+   * Note that the timeout is scaled using Duration.dilated,
+   * which uses the configuration entry "akka.test.timefactor".
+   */
+  def assertForDuration[A](a: => A, max: FiniteDuration, interval: Duration = 100.millis): A = {
+    val _max = remainingOrDilated(max)
+    val stop = now + _max
+
+    @tailrec
+    def poll(t: Duration): A = {
+      // cannot use null-ness of result as signal it failed
+      // because Java API and not wanting to return a value will be "return null"
+      val instantNow = now
+      val result =
+        try {
+          a
+        } catch {
+          case e: Throwable => throw e
+        }
+
+      if (instantNow < stop) {
+        Thread.sleep(t.toMillis)
+        poll((stop - now) min interval)
+      } else {
+        result
+      }
+    }
+
+    poll(max min interval)
   }
 
   /**
@@ -926,7 +966,7 @@ trait TestKitBase {
  * @since 1.1
  */
 @silent // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
-class TestKit(_system: ActorSystem) extends { implicit val system = _system } with TestKitBase
+class TestKit(_system: ActorSystem) extends { implicit val system: ActorSystem = _system } with TestKitBase
 
 object TestKit {
 
@@ -1033,7 +1073,7 @@ object TestProbe {
 }
 
 trait ImplicitSender { this: TestKitBase =>
-  implicit def self = testActor
+  implicit def self: ActorRef = testActor
 }
 
 trait DefaultTimeout { this: TestKitBase =>

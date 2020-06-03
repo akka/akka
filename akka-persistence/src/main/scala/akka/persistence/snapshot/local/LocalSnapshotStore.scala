@@ -6,6 +6,13 @@ package akka.persistence.snapshot.local
 
 import java.io._
 import java.net.{ URLDecoder, URLEncoder }
+import java.nio.file.Files
+
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.util._
+
+import com.typesafe.config.Config
 
 import akka.actor.ActorLogging
 import akka.persistence._
@@ -14,12 +21,6 @@ import akka.persistence.snapshot._
 import akka.serialization.SerializationExtension
 import akka.util.ByteString.UTF_8
 import akka.util.ccompat._
-import com.typesafe.config.Config
-
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.util._
-import java.nio.file.Files
 
 /**
  * INTERNAL API
@@ -92,7 +93,7 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
   }
 
   private def snapshotFiles(metadata: SnapshotMetadata): immutable.Seq[File] = {
-    snapshotDir.listFiles(new SnapshotSeqNrFilenameFilter(metadata)).toVector
+    snapshotDir().listFiles(new SnapshotSeqNrFilenameFilter(metadata)).toVector
   }
 
   @scala.annotation.tailrec
@@ -144,13 +145,13 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
   /** Only by persistenceId and sequenceNr, timestamp is informational - accommodates for 2.13.x series files */
   protected def snapshotFileForWrite(metadata: SnapshotMetadata, extension: String = ""): File =
     new File(
-      snapshotDir,
+      snapshotDir(),
       s"snapshot-${URLEncoder.encode(metadata.persistenceId, UTF_8)}-${metadata.sequenceNr}-${metadata.timestamp}${extension}")
 
   private def snapshotMetadatas(
       persistenceId: String,
       criteria: SnapshotSelectionCriteria): immutable.Seq[SnapshotMetadata] = {
-    val files = snapshotDir.listFiles(new SnapshotFilenameFilter(persistenceId))
+    val files = snapshotDir().listFiles(new SnapshotFilenameFilter(persistenceId))
     if (files eq null) Nil // if the dir was removed
     else {
       files

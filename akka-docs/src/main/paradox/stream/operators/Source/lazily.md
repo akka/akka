@@ -1,16 +1,13 @@
-# lazily
+# Source.lazily
 
 Deprecated by @ref:[`Source.lazySource`](lazySource.md).
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #lazily }
+@apidoc[Source.lazily](Source$) { scala="#lazily[T,M](create:()=&gt;akka.stream.scaladsl.Source[T,M]):akka.stream.scaladsl.Source[T,scala.concurrent.Future[M]]" java="#lazily(akka.japi.function.Creator)" }
 
-@@@
 
 ## Description
 

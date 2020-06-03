@@ -10,21 +10,22 @@ import java.util.ArrayList
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
-import akka.actor.Address
-import akka.actor.typed.internal.adapter.ActorSystemAdapter
-
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
 import scala.util.Try
-import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
-import akka.util.{ BoxedType, Timeout }
-import akka.util.Timeout
-import akka.util.JavaDurationConverters._
-import akka.util.OptionVal
+
 import com.github.ghik.silencer.silent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
+import akka.actor.Address
+import akka.actor.typed.internal.adapter.ActorSystemAdapter
+import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
+import akka.util.{ BoxedType, Timeout }
+import akka.util.JavaDurationConverters._
+import akka.util.OptionVal
+import akka.util.Timeout
 
 /**
  * INTERNAL API
@@ -94,10 +95,16 @@ import org.slf4j.LoggerFactory
   private var _messageAdapters: List[(Class[_], Any => T)] = Nil
   private var _timer: OptionVal[TimerSchedulerImpl[T]] = OptionVal.None
 
+  // _currentActorThread is on purpose not volatile. Used from `checkCurrentActorThread`.
+  // It will always see the right value when accessed from the right thread.
+  // Possible that it would NOT detect illegal access sometimes but that's ok.
+  private var _currentActorThread: OptionVal[Thread] = OptionVal.None
+
   // context-shared timer needed to allow for nested timer usage
   def timer: TimerSchedulerImpl[T] = _timer match {
     case OptionVal.Some(timer) => timer
     case OptionVal.None =>
+      checkCurrentActorThread()
       val timer = new TimerSchedulerImpl[T](this)
       _timer = OptionVal.Some(timer)
       timer
@@ -151,6 +158,7 @@ import org.slf4j.LoggerFactory
   }
 
   override def log: Logger = {
+    checkCurrentActorThread()
     val logging = loggingContext()
     ActorMdc.setMdc(logging)
     logging.logger
@@ -159,6 +167,7 @@ import org.slf4j.LoggerFactory
   override def getLog: Logger = log
 
   override def setLoggerName(name: String): Unit = {
+    checkCurrentActorThread()
     _logging = OptionVal.Some(loggingContext().withLogger(LoggerFactory.getLogger(name)))
   }
 
@@ -246,6 +255,7 @@ import org.slf4j.LoggerFactory
     internalMessageAdapter(messageClass, f.apply)
 
   private def internalMessageAdapter[U](messageClass: Class[U], f: U => T): ActorRef[U] = {
+    checkCurrentActorThread()
     // replace existing adapter for same class, only one per class is supported to avoid unbounded growth
     // in case "same" adapter is added repeatedly
     val boxedMessageClass = BoxedType(messageClass).asInstanceOf[Class[U]]
@@ -267,4 +277,44 @@ import org.slf4j.LoggerFactory
    * INTERNAL API
    */
   @InternalApi private[akka] def messageAdapters: List[(Class[_], Any => T)] = _messageAdapters
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def setCurrentActorThread(): Unit = {
+    _currentActorThread match {
+      case OptionVal.None =>
+        _currentActorThread = OptionVal.Some(Thread.currentThread())
+      case OptionVal.Some(t) =>
+        throw new IllegalStateException(
+          s"Invalid access by thread from the outside of $self. " +
+          s"Current message is processed by $t, but also accessed from from ${Thread.currentThread()}.")
+    }
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def clearCurrentActorThread(): Unit = {
+    _currentActorThread = OptionVal.None
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def checkCurrentActorThread(): Unit = {
+    val callerThread = Thread.currentThread()
+    _currentActorThread match {
+      case OptionVal.Some(t) =>
+        if (callerThread ne t) {
+          throw new UnsupportedOperationException(
+            s"Unsupported access to ActorContext operation from the outside of $self. " +
+            s"Current message is processed by $t, but ActorContext was called from $callerThread.")
+        }
+      case OptionVal.None =>
+        throw new UnsupportedOperationException(
+          s"Unsupported access to ActorContext from the outside of $self. " +
+          s"No message is currently processed by the actor, but ActorContext was called from $callerThread.")
+    }
+  }
 }

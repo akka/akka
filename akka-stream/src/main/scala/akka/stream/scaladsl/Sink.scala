@@ -4,22 +4,6 @@
 
 package akka.stream.scaladsl
 
-import akka.actor.ActorRef
-import akka.actor.Status
-import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl._
-import akka.stream.impl.fusing.GraphStages
-import akka.stream.stage._
-import akka.stream.javadsl
-import akka.stream._
-import akka.util.ccompat._
-import akka.Done
-import akka.NotUsed
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
-
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
@@ -28,6 +12,23 @@ import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+
+import akka.Done
+import akka.NotUsed
+import akka.actor.ActorRef
+import akka.actor.Status
+import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
+import akka.stream._
+import akka.stream.impl._
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.javadsl
+import akka.stream.stage._
+import akka.util.ccompat._
 
 /**
  * A `Sink` is a set of stream processing steps that has one open input.

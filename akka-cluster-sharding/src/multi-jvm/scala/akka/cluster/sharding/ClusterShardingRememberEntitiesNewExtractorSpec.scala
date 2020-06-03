@@ -4,13 +4,14 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.cluster.{ Cluster, MemberStatus }
 import akka.persistence.journal.leveldb.SharedLeveldbJournal
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 object ClusterShardingRememberEntitiesNewExtractorSpec {
 

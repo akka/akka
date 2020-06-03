@@ -5,6 +5,7 @@
 package akka.stream.tck
 
 import org.reactivestreams.Publisher
+
 import akka.stream.scaladsl.{ Keep, Sink, Source }
 
 class MaybeSourceTest extends AkkaPublisherVerification[Int] {

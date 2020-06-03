@@ -4,6 +4,11 @@
 
 package akka.cluster.sharding.typed.scaladsl
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
@@ -14,10 +19,6 @@ import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.concurrent.duration._
 
 object ShardedDaemonProcessSpec {
   // single node cluster config
@@ -79,6 +80,7 @@ class ShardedDaemonProcessSpec
 
       val started = probe.receiveMessages(5)
       started.toSet.size should ===(5)
+      probe.expectNoMessage()
     }
 
     "restart actors if they stop" in {
@@ -114,7 +116,7 @@ class ShardedDaemonProcessSpec
 
   def docExample(): Unit = {
     // #tag-processing
-    val tags = "tag-1" :: "tag-2" :: "tag-3" :: Nil
+    val tags = Vector("tag-1", "tag-2", "tag-3")
     ShardedDaemonProcess(system).init("TagProcessors", tags.size, id => TagProcessor(tags(id)))
     // #tag-processing
   }

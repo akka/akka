@@ -4,9 +4,10 @@
 
 package akka.cluster.typed.internal.receptionist
 
+import com.typesafe.config.Config
+
 import akka.annotation.InternalApi
 import akka.cluster.{ ConfigValidation, JoinConfigCompatChecker, Valid }
-import com.typesafe.config.Config
 
 /**
  * INTERNAL API

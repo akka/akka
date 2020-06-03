@@ -4,14 +4,14 @@
 
 package akka.util
 
-import akka.util.Collections.EmptyImmutableSeq
-
 import java.nio.{ ByteBuffer, ByteOrder }
 
 import scala.annotation.tailrec
 import scala.collection.LinearSeq
 import scala.collection.mutable.ListBuffer
 import scala.reflect.ClassTag
+
+import akka.util.Collections.EmptyImmutableSeq
 
 object ByteIterator {
   object ByteArrayIterator {

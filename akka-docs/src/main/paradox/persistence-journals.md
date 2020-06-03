@@ -97,13 +97,13 @@ Don't run snapshot store tasks/futures on the system default dispatcher, since t
 
 ## Plugin TCK
 
-In order to help developers build correct and high quality storage plugins, we provide a Technology Compatibility Kit ([TCK](http://en.wikipedia.org/wiki/Technology_Compatibility_Kit) for short).
+In order to help developers build correct and high quality storage plugins, we provide a Technology Compatibility Kit ([TCK](https://en.wikipedia.org/wiki/Technology_Compatibility_Kit) for short).
 
 The TCK is usable from Java as well as Scala projects. To test your implementation (independently of language) you need to include the akka-persistence-tck dependency:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-persistence-tck_$scala.binary_version$"
+  artifact="akka-persistence-tck_$scala.binary.version$"
   version="$akka.version$"
 }
 

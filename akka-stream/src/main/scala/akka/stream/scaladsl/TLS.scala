@@ -5,18 +5,19 @@
 package akka.stream.scaladsl
 
 import java.util.Collections
-
 import javax.net.ssl.{ SNIHostName, SSLContext, SSLEngine, SSLSession }
-import akka.stream.impl.io.{ TlsModule, TlsUtils }
+import javax.net.ssl.SSLParameters
+
+import scala.util.{ Failure, Success, Try }
+
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.TLSProtocol._
+import akka.stream.impl.io.{ TlsModule, TlsUtils }
 import akka.util.ByteString
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import scala.util.{ Failure, Success, Try }
-
-import javax.net.ssl.SSLParameters
 
 /**
  * Stream cipher support based upon JSSE.
@@ -36,7 +37,7 @@ import javax.net.ssl.SSLParameters
  *
  * '''IMPORTANT NOTE'''
  *
- * The TLS specification does not permit half-closing of the user data session
+ * The TLS specification until version 1.2 did not permit half-closing of the user data session
  * that it transports—to be precise a half-close will always promptly lead to a
  * full close. This means that canceling the plaintext output or completing the
  * plaintext input of the SslTls operator will lead to full termination of the
@@ -50,7 +51,8 @@ import javax.net.ssl.SSLParameters
  * order to terminate the connection the client will then need to cancel the
  * plaintext output as soon as all expected bytes have been received. When
  * ignoring both types of events the operator will shut down once both events have
- * been received. See also [[TLSClosing]].
+ * been received. See also [[TLSClosing]]. For now, half-closing is also not
+ * supported with TLS 1.3 where the spec allows it.
  */
 object TLS {
 

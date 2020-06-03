@@ -7,6 +7,10 @@ package akka.cluster.ddata
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.CancelAfterFailure
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -16,8 +20,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import org.scalatest.CancelAfterFailure
 
 final case class DurableDataSpecConfig(writeBehind: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -84,7 +86,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
   override def initialParticipants = roles.size
 
   val cluster = Cluster(system)
-  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
+  implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
   val timeout = 14.seconds.dilated // initialization of lmdb can be very slow in CI environment
   val writeTwo = WriteTo(2, timeout)
   val readTwo = ReadFrom(2, timeout)

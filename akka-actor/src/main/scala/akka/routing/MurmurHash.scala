@@ -21,8 +21,9 @@ package akka.routing
 
 import java.lang.Integer.{ rotateLeft => rotl }
 
-import akka.util.ccompat._
 import com.github.ghik.silencer.silent
+
+import akka.util.ccompat._
 
 /**
  * An object designed to generate well-distributed non-cryptographic

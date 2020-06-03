@@ -67,7 +67,7 @@ Environments such as Kubernetes send a SIGTERM, however if the JVM is wrapped wi
 
 In case of network failures it may still be necessary to set the node's status to Down in order to complete the removal. 
 @ref:[Cluster Downing](../typed/cluster.md#downing) details downing nodes and downing providers. 
-[Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html) can be used to ensure 
+@ref:[Split Brain Resolver](../split-brain-resolver.md) can be used to ensure 
 the cluster continues to function during network partitions and node failures. For example
 if there is an unreachability problem Split Brain Resolver would make a decision based on the configured downing strategy. 
   

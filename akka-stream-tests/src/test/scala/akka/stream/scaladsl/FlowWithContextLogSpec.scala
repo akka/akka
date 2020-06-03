@@ -5,8 +5,8 @@
 package akka.stream.scaladsl
 
 import akka.event.Logging
-import akka.stream.Attributes.LogLevels
 import akka.stream._
+import akka.stream.Attributes.LogLevels
 import akka.stream.testkit.ScriptedTest
 import akka.stream.testkit.StreamSpec
 import akka.testkit.TestProbe

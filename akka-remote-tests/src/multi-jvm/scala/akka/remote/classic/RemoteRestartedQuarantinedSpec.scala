@@ -4,16 +4,17 @@
 
 package akka.remote.classic
 
-import akka.actor.{ ActorIdentity, Identify, _ }
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.{ AddressUidExtension, RARP, RemotingMultiNodeSpec, ThisActorSystemQuarantinedEvent }
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.language.postfixOps
+
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.{ ActorIdentity, Identify, _ }
+import akka.remote.{ AddressUidExtension, RARP, RemotingMultiNodeSpec, ThisActorSystemQuarantinedEvent }
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.MultiNodeConfig
+import akka.testkit._
 
 object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
   val first = role("first")
@@ -67,7 +68,7 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
 
     "should not crash the other system (#17213)" taggedAs LongRunningTest in {
 
-      system.actorOf(Props[Subject], "subject")
+      system.actorOf(Props[Subject](), "subject")
       enterBarrier("subject-started")
 
       runOn(first) {
@@ -140,7 +141,7 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
           30.seconds)
 
         // Now the other system will be able to pass, too
-        freshSystem.actorOf(Props[Subject], "subject")
+        freshSystem.actorOf(Props[Subject](), "subject")
 
         Await.ready(freshSystem.whenTerminated, 10.seconds)
       }

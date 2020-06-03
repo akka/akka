@@ -53,7 +53,6 @@ private[akka] class RequestingRecoveryPermit[C, E, S](override val setup: Behavi
               Behaviors.unhandled
             } else {
               stashInternal(other)
-              Behaviors.same
             }
 
         }

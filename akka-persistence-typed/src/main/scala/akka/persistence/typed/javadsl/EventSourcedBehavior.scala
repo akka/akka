@@ -13,8 +13,8 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.InternalApi
-import akka.persistence.typed.EventAdapter
 import akka.persistence.typed._
+import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.internal._
 import akka.util.unused
 
@@ -124,6 +124,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    * You may configure the behavior to skip replaying snapshots completely, in which case the recovery will be
    * performed by replaying all events -- which may take a long time.
    */
+  @deprecated("override recovery instead", "2.6.5")
   def snapshotSelectionCriteria: SnapshotSelectionCriteria = SnapshotSelectionCriteria.latest
 
   /**
@@ -150,6 +151,12 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    * By default, retention is disabled and snapshots are not saved and deleted automatically.
    */
   def retentionCriteria: RetentionCriteria = RetentionCriteria.disabled
+
+  /**
+   * Override to change the strategy for recovery of snapshots and events.
+   * By default, snapshots and events are recovered.
+   */
+  def recovery: Recovery = Recovery.default
 
   /**
    * The `tagger` function should give event tags, which will be used in persistence query
@@ -194,7 +201,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       .snapshotAdapter(snapshotAdapter())
       .withJournalPluginId(journalPluginId)
       .withSnapshotPluginId(snapshotPluginId)
-      .withSnapshotSelectionCriteria(snapshotSelectionCriteria)
+      .withRecovery(recovery.asScala)
 
     val handler = signalHandler()
     val behaviorWithSignalHandler =

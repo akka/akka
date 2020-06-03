@@ -78,6 +78,15 @@ public class SinkDocExamples {
     // #takeLast-operator-example
   }
 
+  static void headExample() {
+    // #head-operator-example
+    Source<Integer, NotUsed> source = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+    CompletionStage<Integer> result = source.runWith(Sink.head(), system);
+    result.thenAccept(System.out::println);
+    // 1
+    // #head-operator-example
+  }
+
   static void lastExample() {
     // #last-operator-example
     Source<Integer, NotUsed> source = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));

@@ -12,7 +12,7 @@ To use Akka Persistence, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-persistence_$scala.binary_version$"
+  artifact="akka-persistence_$scala.binary.version$"
   version="$akka.version$"
 }
 
@@ -804,7 +804,7 @@ to the application configuration. If not specified, an exception will be throw w
 
 For more advanced schema evolution techniques refer to the @ref:[Persistence - Schema Evolution](persistence-schema-evolution.md) documentation.
 
-## Testing
+## Testing with LevelDB journal
 
 When running tests with LevelDB default settings in `sbt`, make sure to set `fork := true` in your sbt project. Otherwise, you'll see an `UnsatisfiedLinkError`. Alternatively, you can switch to a LevelDB Java port by setting
 

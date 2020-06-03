@@ -1,4 +1,4 @@
-# asSubscriber
+# Source.asSubscriber
 
 Integration with Reactive Streams, materializes into a @javadoc[Subscriber](java.util.concurrent.Flow.Subscriber).
 

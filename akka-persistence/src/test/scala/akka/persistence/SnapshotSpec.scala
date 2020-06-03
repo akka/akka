@@ -84,8 +84,8 @@ object SnapshotSpec {
 }
 
 class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "SnapshotSpec")) with ImplicitSender {
-  import SnapshotSpec._
   import SnapshotProtocol._
+  import SnapshotSpec._
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()

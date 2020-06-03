@@ -36,6 +36,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static akka.NotUsed.notUsed;
@@ -1183,5 +1184,28 @@ public class SourceTest extends StreamTest {
     assertArrayEquals(
         new Boolean[] {false, true, false, true, false, true, false, true, false, true},
         future.get(1, TimeUnit.SECONDS).toArray());
+  }
+
+  @Test
+  public void mustRunSourceAndIgnoreElementsItOutputsAndOnlySignalTheCompletion() {
+    final Iterator<Integer> iterator = IntStream.range(1, 10).iterator();
+    final Creator<Iterator<Integer>> input = () -> iterator;
+    final Done completion =
+        Source.fromIterator(input).map(it -> it * 10).run(system).toCompletableFuture().join();
+    assertEquals(completion, Done.getInstance());
+  }
+
+  @Test
+  public void mustRunSourceAndIgnoreElementsItOutputsAndOnlySignalTheCompletionWithMaterializer() {
+    final Materializer materializer = Materializer.createMaterializer(system);
+    final Iterator<Integer> iterator = IntStream.range(1, 10).iterator();
+    final Creator<Iterator<Integer>> input = () -> iterator;
+    final Done completion =
+        Source.fromIterator(input)
+            .map(it -> it * 10)
+            .run(materializer)
+            .toCompletableFuture()
+            .join();
+    assertEquals(completion, Done.getInstance());
   }
 }

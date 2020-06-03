@@ -4,13 +4,11 @@ Just like @ref[`scan`](./scan.md) but receives a function that results in a @sca
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #scanAsync }
+@apidoc[Source.scanAsync](Source) { scala="#scanAsync[T](zero:T)(f:(T,Out)=&gt;scala.concurrent.Future[T]):FlowOps.this.Repr[T]" java="#scanAsync(java.lang.Object,akka.japi.function.Function2)" }
+@apidoc[Flow.scanAsync](Flow) { scala="#scanAsync[T](zero:T)(f:(T,Out)=&gt;scala.concurrent.Future[T]):FlowOps.this.Repr[T]" java="#scanAsync(java.lang.Object,akka.japi.function.Function2)" }
 
-@@@
 
 ## Description
 

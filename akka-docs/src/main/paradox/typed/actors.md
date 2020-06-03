@@ -3,7 +3,7 @@ project.description: The Actor model, managing internal state and changing behav
 ---
 # Introduction to Actors
 
-For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Actors](../actors.md).
 
 ## Module info
 
@@ -11,7 +11,7 @@ To use Akka Actors, add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-actor-typed_$scala.binary_version$
+  artifact=akka-actor-typed_$scala.binary.version$
   version=$akka.version$
 }
 
@@ -23,7 +23,7 @@ imports when working in Scala, or viceversa. See @ref:[IDE Tips](../additional/i
 
 ## Akka Actors
 
-The [Actor Model](http://en.wikipedia.org/wiki/Actor_model) provides a higher level of abstraction for writing concurrent
+The [Actor Model](https://en.wikipedia.org/wiki/Actor_model) provides a higher level of abstraction for writing concurrent
 and distributed systems. It alleviates the developer from having to deal with
 explicit locking and thread management, making it easier to write correct
 concurrent and parallel systems. Actors were defined in the 1973 paper by Carl

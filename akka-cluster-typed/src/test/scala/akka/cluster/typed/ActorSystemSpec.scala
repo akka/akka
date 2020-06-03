@@ -11,27 +11,28 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest._
+import org.scalatest.concurrent.Eventually
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.Span
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.Done
 import akka.actor.CoordinatedShutdown
 import akka.actor.ExtendedActorSystem
 import akka.actor.InvalidMessageException
-import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
-import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializerWithStringManifest
-import com.typesafe.config.ConfigFactory
-import org.scalatest._
-import org.scalatest.concurrent.Eventually
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.time.Span
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 object ActorSystemSpec {
 
@@ -186,7 +187,7 @@ class ActorSystemSpec
 
     "have a working thread factory" in {
       withSystem("thread", Behaviors.empty[String]) { sys =>
-        val p = Promise[Int]
+        val p = Promise[Int]()
         sys.threadFactory
           .newThread(new Runnable {
             def run(): Unit = p.success(42)

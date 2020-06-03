@@ -5,16 +5,16 @@
 package akka.remote.artery
 package tcp
 
+import scala.util.Random
+
 import akka.stream.impl.io.ByteStringParser.ParsingException
-import akka.stream.scaladsl.Framing.FramingException
 import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Framing.FramingException
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.util.ByteString
-
-import scala.util.Random
 
 class TcpFramingSpec extends AkkaSpec("""
     akka.stream.materializer.debug.fuzzing-mode = on

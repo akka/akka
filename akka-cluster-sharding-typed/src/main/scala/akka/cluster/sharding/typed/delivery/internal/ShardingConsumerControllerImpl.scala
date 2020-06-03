@@ -6,6 +6,7 @@ package akka.cluster.sharding.typed.delivery.internal
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.DispatcherSelector
 import akka.actor.typed.Terminated
 import akka.actor.typed.delivery.ConsumerController
 import akka.actor.typed.delivery.internal.ConsumerControllerImpl
@@ -92,7 +93,8 @@ private class ShardingConsumerControllerImpl[A](
               context.log.debug("Starting ConsumerController for producerId [{}].", seqMsg.producerId)
               val cc = context.spawn(
                 ConsumerController[A](settings.consumerControllerSettings),
-                s"consumerController-${seqMsg.producerId}")
+                s"consumerController-${seqMsg.producerId}",
+                DispatcherSelector.sameAsParent())
               context.watch(cc)
               cc ! ConsumerController.Start(deliverTo)
               cc ! seqMsg

@@ -4,10 +4,10 @@
 
 package akka.io
 
-import java.nio.channels.DatagramChannel
 import java.net.DatagramSocket
 import java.net.ServerSocket
 import java.net.Socket
+import java.nio.channels.DatagramChannel
 
 import akka.util.unused
 
