@@ -4,18 +4,19 @@
 
 package akka.remote
 
-import akka.event.Logging.Warning
-import akka.remote.FailureDetector.Clock
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
-import scala.collection.immutable
 
 import com.typesafe.config.Config
+
 import akka.event.EventStream
 import akka.event.Logging
+import akka.event.Logging.Warning
+import akka.remote.FailureDetector.Clock
 import akka.util.Helpers.ConfigOps
 
 /**

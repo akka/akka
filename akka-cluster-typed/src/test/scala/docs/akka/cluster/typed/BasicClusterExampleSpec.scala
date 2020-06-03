@@ -41,6 +41,8 @@ akka {
     seed-nodes = [
       "akka://ClusterSystem@127.0.0.1:2551",
       "akka://ClusterSystem@127.0.0.1:2552"]
+    
+    downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
   }
 }
 #config-seeds

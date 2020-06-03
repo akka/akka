@@ -4,6 +4,9 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+
 import akka.actor.ActorRef
 import akka.stream.Attributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
@@ -11,13 +14,10 @@ import akka.stream.stage.AsyncCallback
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogic
-import akka.stream.testkit.Utils._
 import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestDuration
-
-import scala.concurrent.Promise
-import scala.concurrent.duration._
 
 object GraphStageTimersSpec {
   case object TestSingleTimer

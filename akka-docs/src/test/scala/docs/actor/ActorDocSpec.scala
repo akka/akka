@@ -724,34 +724,8 @@ class ActorDocSpec extends AkkaSpec("""
   }
 
   "using CoordinatedShutdown" in {
-    val someActor = system.actorOf(Props(classOf[Replier], this))
-    //#coordinated-shutdown-addTask
-    CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "someTaskName") { () =>
-      import akka.pattern.ask
-      import system.dispatcher
-      implicit val timeout = Timeout(5.seconds)
-      (someActor ? "stop").map(_ => Done)
-    }
-    //#coordinated-shutdown-addTask
-
-    {
-      def cleanup(): Unit = {}
-      import system.dispatcher
-      //#coordinated-shutdown-cancellable
-      val c = CoordinatedShutdown(system).addCancellableTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "cleanup") {
-        () =>
-          Future {
-            cleanup()
-            Done
-          }
-      }
-
-      // much later...
-      c.cancel()
-      //#coordinated-shutdown-cancellable
-    }
-
-    {
+    // other snippets moved to docs.actor.typed.CoordinatedActorShutdownSpec
+    { // https://github.com/akka/akka/issues/29056
       val someActor = system.actorOf(Props(classOf[Replier], this))
       someActor ! PoisonPill
       //#coordinated-shutdown-addActorTerminationTask
@@ -761,19 +735,6 @@ class ActorDocSpec extends AkkaSpec("""
         someActor,
         Some("stop"))
       //#coordinated-shutdown-addActorTerminationTask
-    }
-
-    //#coordinated-shutdown-jvm-hook
-    CoordinatedShutdown(system).addJvmShutdownHook {
-      println("custom JVM shutdown hook...")
-    }
-    //#coordinated-shutdown-jvm-hook
-
-    // don't run this
-    def dummy(): Unit = {
-      //#coordinated-shutdown-run
-      val done: Future[Done] = CoordinatedShutdown(system).run(CoordinatedShutdown.UnknownReason)
-      //#coordinated-shutdown-run
     }
   }
 

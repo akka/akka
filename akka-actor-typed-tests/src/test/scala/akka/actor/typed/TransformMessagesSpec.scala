@@ -6,16 +6,18 @@ package akka.actor.typed
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.concurrent.duration._
+
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor
 import akka.actor.ActorInitializationException
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import scala.concurrent.duration._
-
-import akka.actor.testkit.typed.scaladsl.LoggingTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object TransformMessagesSpec {
 
@@ -35,7 +37,7 @@ object TransformMessagesSpec {
 
 class TransformMessagesSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
-  implicit val classicSystem = system.toClassic
+  implicit val classicSystem: actor.ActorSystem = system.toClassic
 
   def intToString(probe: ActorRef[String]): Behavior[Int] = {
     Behaviors

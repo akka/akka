@@ -8,12 +8,10 @@ import sbt._
 import Keys.{ scalacOptions, _ }
 import sbt.plugins.JvmPlugin
 
-object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
-
-  import scalafix.sbt.ScalafixPlugin
+object AkkaDisciplinePlugin extends AutoPlugin {
 
   override def trigger: PluginTrigger = allRequirements
-  override def requires: Plugins = JvmPlugin && ScalafixPlugin
+  override def requires: Plugins = JvmPlugin
   override lazy val projectSettings = disciplineSettings
 
   // allow toggling for pocs/exploration of ideas without discpline

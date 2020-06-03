@@ -4,17 +4,19 @@
 
 package akka.persistence.journal
 
+import scala.collection.immutable.Seq
+import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.duration._
+import scala.util.Try
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.pattern.ask
-import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.{ AtomicWrite, PersistentRepr }
-import akka.util.Timeout
+import akka.persistence.journal.inmem.InmemJournal
 import akka.testkit._
-import com.typesafe.config.{ Config, ConfigFactory }
-import scala.collection.immutable.Seq
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
-import scala.util.Try
+import akka.util.Timeout
 
 object SteppingInmemJournal {
 

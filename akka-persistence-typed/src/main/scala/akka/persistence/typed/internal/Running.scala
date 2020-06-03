@@ -6,6 +6,7 @@ package akka.persistence.typed.internal
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+
 import akka.actor.UnhandledMessage
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
@@ -25,17 +26,18 @@ import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SaveSnapshotSuccess
 import akka.persistence.SnapshotProtocol
 import akka.persistence.journal.Tagged
-import akka.persistence.typed.DeleteSnapshotsCompleted
-import akka.persistence.typed.DeleteSnapshotsFailed
 import akka.persistence.typed.DeleteEventsCompleted
 import akka.persistence.typed.DeleteEventsFailed
+import akka.persistence.typed.DeleteSnapshotsCompleted
+import akka.persistence.typed.DeleteSnapshotsFailed
 import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventRejectedException
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
-import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.SnapshotMetadata
 import akka.persistence.typed.SnapshotSelectionCriteria
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
+import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 import akka.util.unused
 
@@ -91,18 +93,24 @@ private[akka] object Running {
     extends JournalInteractions[C, E, S]
     with SnapshotInteractions[C, E, S]
     with StashManagement[C, E, S] {
+  import BehaviorSetup._
   import InternalProtocol._
   import Running.RunningState
-  import BehaviorSetup._
+
+  // Needed for WithSeqNrAccessible, when unstashing
+  private var _currentSequenceNumber = 0L
 
   final class HandlingCommands(state: RunningState[S])
       extends AbstractBehavior[InternalProtocol](setup.context)
       with WithSeqNrAccessible {
 
+    _currentSequenceNumber = state.seqNr
+
     def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
       case IncomingCommand(c: C @unchecked) => onCommand(state, c)
       case JournalResponse(r)               => onDeleteEventsJournalResponse(r, state.state)
       case SnapshotterResponse(r)           => onDeleteSnapshotResponse(r, state.state)
+      case get: GetState[S @unchecked]      => onGetState(get)
       case _                                => Behaviors.unhandled
     }
 
@@ -118,6 +126,12 @@ private[akka] object Running {
     def onCommand(state: RunningState[S], cmd: C): Behavior[InternalProtocol] = {
       val effect = setup.commandHandler(state.state, cmd)
       applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
+    }
+
+    // Used by EventSourcedBehaviorTestKit to retrieve the state.
+    def onGetState(get: GetState[S]): Behavior[InternalProtocol] = {
+      get.replyTo ! state.state
+      this
     }
 
     @tailrec def applyEffects(
@@ -141,6 +155,7 @@ private[akka] object Running {
           // apply the event before persist so that validation exception is handled before persisting
           // the invalid event, in case such validation is implemented in the event handler.
           // also, ensure that there is an event handler for each single event
+          _currentSequenceNumber = state.seqNr + 1
           val newState = state.applyEvent(setup, event)
 
           val eventToPersist = adaptEvent(event)
@@ -157,12 +172,13 @@ private[akka] object Running {
             // apply the event before persist so that validation exception is handled before persisting
             // the invalid event, in case such validation is implemented in the event handler.
             // also, ensure that there is an event handler for each single event
-            var seqNr = state.seqNr
+            _currentSequenceNumber = state.seqNr
             val (newState, shouldSnapshotAfterPersist) = events.foldLeft((state, NoSnapshot: SnapshotAfterPersist)) {
               case ((currentState, snapshot), event) =>
-                seqNr += 1
+                _currentSequenceNumber += 1
                 val shouldSnapshot =
-                  if (snapshot == NoSnapshot) setup.shouldSnapshot(currentState.state, event, seqNr) else snapshot
+                  if (snapshot == NoSnapshot) setup.shouldSnapshot(currentState.state, event, _currentSequenceNumber)
+                  else snapshot
                 (currentState.applyEvent(setup, event), shouldSnapshot)
             }
 
@@ -203,7 +219,8 @@ private[akka] object Running {
 
     setup.setMdcPhase(PersistenceMdc.RunningCmds)
 
-    override def currentSequenceNumber: Long = state.seqNr
+    override def currentSequenceNumber: Long =
+      _currentSequenceNumber
   }
 
   // ===============================================
@@ -235,6 +252,7 @@ private[akka] object Running {
       msg match {
         case JournalResponse(r)                => onJournalResponse(r)
         case in: IncomingCommand[C @unchecked] => onCommand(in)
+        case get: GetState[S @unchecked]       => stashInternal(get)
         case SnapshotterResponse(r)            => onDeleteSnapshotResponse(r, visibleState.state)
         case RecoveryTickEvent(_)              => Behaviors.unhandled
         case RecoveryPermitGranted             => Behaviors.unhandled
@@ -248,7 +266,6 @@ private[akka] object Running {
         Behaviors.unhandled
       } else {
         stashInternal(cmd)
-        this
       }
     }
 
@@ -307,7 +324,7 @@ private[akka] object Running {
           // ignore
           this
 
-        case WriteMessagesFailed(_) =>
+        case WriteMessagesFailed(_, _) =>
           // ignore
           this // it will be stopped by the first WriteMessageFailure message; not applying side effects
 
@@ -326,7 +343,9 @@ private[akka] object Running {
         else Behaviors.unhandled
     }
 
-    override def currentSequenceNumber: Long = visibleState.seqNr
+    override def currentSequenceNumber: Long = {
+      _currentSequenceNumber
+    }
   }
 
   // ===============================================
@@ -347,7 +366,6 @@ private[akka] object Running {
         Behaviors.unhandled
       } else {
         stashInternal(cmd)
-        Behaviors.same
       }
     }
 
@@ -405,6 +423,8 @@ private[akka] object Running {
           case _ =>
             onDeleteSnapshotResponse(response, state.state)
         }
+      case get: GetState[S @unchecked] =>
+        stashInternal(get)
       case _ =>
         Behaviors.unhandled
     }
@@ -420,7 +440,8 @@ private[akka] object Running {
           Behaviors.unhandled
     }
 
-    override def currentSequenceNumber: Long = state.seqNr
+    override def currentSequenceNumber: Long =
+      _currentSequenceNumber
   }
 
   // --------------------------

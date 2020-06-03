@@ -6,13 +6,13 @@ package akka.stream.impl
 
 import java.util.concurrent.{ TimeUnit, TimeoutException }
 
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
-
-import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
  * INTERNAL API
@@ -255,20 +255,27 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
             if (isClosed(in)) completeStage()
             else pull(in)
           } else {
-            val time = System.nanoTime
-            if (nextDeadline - time < 0) {
-              nextDeadline = time + timeout.toNanos
+            val now = System.nanoTime()
+            // Idle timeout triggered a while ago and we were just waiting for pull.
+            // In the case of now == deadline, the deadline has not passed strictly, but scheduling another thunk
+            // for that seems wasteful.
+            if (now - nextDeadline >= 0) {
+              nextDeadline = now + timeout.toNanos
               push(out, inject())
-            } else scheduleOnce(GraphStageLogicTimer, FiniteDuration(nextDeadline - time, TimeUnit.NANOSECONDS))
+            } else
+              scheduleOnce(GraphStageLogicTimer, FiniteDuration(nextDeadline - now, TimeUnit.NANOSECONDS))
           }
         }
 
         override protected def onTimer(timerKey: Any): Unit = {
-          val time = System.nanoTime
-          if ((nextDeadline - time < 0) && isAvailable(out)) {
-            push(out, inject())
-            nextDeadline = time + timeout.toNanos
-          }
+          val now = System.nanoTime()
+          // Timer is reliably cancelled if a regular element arrives first. Scheduler rather schedules too late
+          // than too early so the deadline must have passed at this time.
+          assert(
+            now - nextDeadline >= 0,
+            s"Timer should have triggered only after deadline but now is $now and deadline was $nextDeadline diff ${now - nextDeadline}.")
+          push(out, inject())
+          nextDeadline = now + timeout.toNanos
         }
       }
 

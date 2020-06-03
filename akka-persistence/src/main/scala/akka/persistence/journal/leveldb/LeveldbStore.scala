@@ -6,20 +6,21 @@ package akka.persistence.journal.leveldb
 
 import java.io.File
 
+import scala.collection.immutable
 import scala.collection.mutable
-import akka.actor._
-import akka.persistence._
-import akka.persistence.journal.WriteJournalBase
-import akka.serialization.SerializationExtension
+import scala.concurrent.Future
+import scala.util._
+import scala.util.control.NonFatal
+
+import com.typesafe.config.{ Config, ConfigFactory, ConfigObject }
 import org.iq80.leveldb._
 
-import scala.collection.immutable
-import akka.util.ccompat.JavaConverters._
-import scala.util._
-import scala.concurrent.Future
-import scala.util.control.NonFatal
+import akka.actor._
+import akka.persistence._
 import akka.persistence.journal.Tagged
-import com.typesafe.config.{ Config, ConfigFactory, ConfigObject }
+import akka.persistence.journal.WriteJournalBase
+import akka.serialization.SerializationExtension
+import akka.util.ccompat.JavaConverters._
 
 private[persistence] object LeveldbStore {
   val emptyConfig = ConfigFactory.empty()

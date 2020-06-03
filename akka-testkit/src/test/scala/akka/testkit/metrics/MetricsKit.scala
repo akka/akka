@@ -4,17 +4,19 @@
 
 package akka.testkit.metrics
 
-import com.codahale.metrics._
-
-import java.util.concurrent.TimeUnit
-import scala.concurrent.duration._
-import com.typesafe.config.Config
 import java.util
-import scala.util.matching.Regex
+import java.util.concurrent.TimeUnit
+
 import scala.collection.mutable
-import akka.testkit.metrics.reporter.AkkaConsoleReporter
-import org.scalatest.Notifying
+import scala.concurrent.duration._
 import scala.reflect.ClassTag
+import scala.util.matching.Regex
+
+import com.codahale.metrics._
+import com.typesafe.config.Config
+import org.scalatest.Notifying
+
+import akka.testkit.metrics.reporter.AkkaConsoleReporter
 
 /**
  * Allows to easily measure performance / memory / file descriptor use in tests.
@@ -29,6 +31,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
   this: Notifying =>
 
   import MetricsKit._
+
   import akka.util.ccompat.JavaConverters._
 
   private var reporters: List[ScheduledReporter] = Nil

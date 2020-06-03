@@ -6,17 +6,18 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.{ CompletionStage, TimeUnit }
 
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+
+import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
-import akka.{ Done, NotUsed }
-import akka.stream.Attributes._
 import akka.stream._
+import akka.stream.Attributes._
 import akka.stream.javadsl
 import akka.stream.stage._
 import akka.stream.testkit._
 import akka.testkit.TestKit
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
 
 object AttributesSpec {
 
@@ -125,7 +126,7 @@ class AttributesSpec
 
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   "an attributes instance" must {
 
@@ -459,7 +460,7 @@ class AttributesSpec
     "make the attributes on Flow.fromGraph source behave the same as the stage itself" in {
       val attributes: Attributes =
         javadsl.Source
-          .empty[Any]
+          .empty[Any]()
           .viaMat(
             javadsl.Flow
               .fromGraph(new AttributesFlow(Attributes.name("original-name")))
@@ -481,7 +482,7 @@ class AttributesSpec
     "make the attributes on Sink.fromGraph source behave the same as the stage itself" in {
       val attributes: Attributes =
         javadsl.Source
-          .empty[Any]
+          .empty[Any]()
           .toMat(
             javadsl.Sink
               .fromGraph(new AttributesSink(Attributes.name("original-name")))

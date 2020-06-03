@@ -6,14 +6,15 @@ package akka.japi
 
 import java.util.Collections.{ emptyList, singletonList }
 
-import akka.util.Collections.EmptyImmutableSeq
-import com.github.ghik.silencer.silent
-
 import scala.collection.immutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.runtime.AbstractPartialFunction
 import scala.util.control.NoStackTrace
+
+import com.github.ghik.silencer.silent
+
+import akka.util.Collections.EmptyImmutableSeq
 
 /**
  * A Function interface. Used to create first-class-functions is Java.

@@ -1,0 +1,2 @@
+# #28272 Source.queue
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.QueueSource.this")

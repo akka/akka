@@ -4,9 +4,10 @@
 
 package akka.actor
 
+import com.github.ghik.silencer.silent
+
 import akka.testkit.AkkaSpec
 import akka.util.unused
-import com.github.ghik.silencer.silent
 
 object PropsCreationSpec {
 

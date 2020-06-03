@@ -4,13 +4,11 @@ If the completion of the stream does not happen until the provided timeout, the 
 
 @ref[Time aware operators](../index.md#time-aware-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #completionTimeout }
+@apidoc[Source.completionTimeout](Source) { scala="#completionTimeout(timeout:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[Out]" java="#completionTimeout(java.time.Duration)" }
+@apidoc[Flow.completionTimeout](Flow) { scala="#completionTimeout(timeout:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[Out]" java="#completionTimeout(java.time.Duration)" }
 
-@@@
 
 ## Description
 

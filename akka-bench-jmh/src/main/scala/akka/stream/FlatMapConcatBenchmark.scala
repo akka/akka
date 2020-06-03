@@ -7,6 +7,12 @@ package akka.stream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations._
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.remote.artery.BenchTestSource
@@ -14,11 +20,6 @@ import akka.remote.artery.LatchSink
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.StreamTestKit
-import com.typesafe.config.ConfigFactory
-import org.openjdk.jmh.annotations._
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 object FlatMapConcatBenchmark {
   final val OperationsPerInvocation = 100000

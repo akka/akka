@@ -5,26 +5,27 @@
 package akka.cluster
 
 import scala.collection.immutable
-import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
-import akka.actor._
-import akka.annotation.InternalApi
-import akka.actor.SupervisorStrategy.Stop
-import akka.cluster.MemberStatus._
-import akka.cluster.ClusterEvent._
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+
 import akka.Done
+import akka.actor._
+import akka.actor.SupervisorStrategy.Stop
+import akka.annotation.InternalApi
+import akka.cluster.ClusterEvent._
+import akka.cluster.MemberStatus._
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.event.ActorWithLogClass
+import akka.event.Logging
 import akka.pattern.ask
 import akka.remote.{ QuarantinedEvent => ClassicQuarantinedEvent }
 import akka.remote.artery.QuarantinedEvent
 import akka.util.Timeout
-import akka.event.ActorWithLogClass
-import akka.event.Logging
-import com.github.ghik.silencer.silent
-import com.typesafe.config.Config
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -177,7 +178,7 @@ private[cluster] object InternalClusterAction {
   final case class PublishChanges(state: MembershipState) extends PublishMessage
   final case class PublishEvent(event: ClusterDomainEvent) extends PublishMessage
 
-  final case object ExitingCompleted
+  case object ExitingCompleted
 
 }
 
@@ -268,7 +269,7 @@ private[cluster] final class ClusterCoreSupervisor(joinConfigCompatChecker: Join
 
   def createChildren(): Unit = {
     val publisher =
-      context.actorOf(Props[ClusterDomainEventPublisher].withDispatcher(context.props.dispatcher), name = "publisher")
+      context.actorOf(Props[ClusterDomainEventPublisher]().withDispatcher(context.props.dispatcher), name = "publisher")
     coreDaemon = Some(
       context.watch(context.actorOf(
         Props(classOf[ClusterCoreDaemon], publisher, joinConfigCompatChecker).withDispatcher(context.props.dispatcher),
@@ -311,13 +312,13 @@ private[cluster] object ClusterCoreDaemon {
 private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatChecker: JoinConfigCompatChecker)
     extends Actor
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
-  import InternalClusterAction._
   import ClusterCoreDaemon._
+  import InternalClusterAction._
   import MembershipState._
 
   val cluster = Cluster(context.system)
-  import cluster.ClusterLogger._
   import cluster.{ crossDcFailureDetector, failureDetector, scheduler, selfAddress, selfRoles }
+  import cluster.ClusterLogger._
   import cluster.settings._
 
   val selfDc = cluster.selfDataCenter
@@ -476,7 +477,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       case Welcome(from, gossip) =>
         welcome(from.address, from, gossip)
       case _: Tick =>
-        if (joinSeedNodesDeadline.exists(_.isOverdue))
+        if (joinSeedNodesDeadline.exists(_.isOverdue()))
           joinSeedNodesWasUnsuccessful()
     }: Actor.Receive).orElse(receiveExitingCompleted)
 
@@ -496,9 +497,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         joinSeedNodes(newSeedNodes)
       case msg: SubscriptionMessage => publisher.forward(msg)
       case _: Tick =>
-        if (joinSeedNodesDeadline.exists(_.isOverdue))
+        if (joinSeedNodesDeadline.exists(_.isOverdue()))
           joinSeedNodesWasUnsuccessful()
-        else if (deadline.exists(_.isOverdue)) {
+        else if (deadline.exists(_.isOverdue())) {
           // join attempt failed, retry
           becomeUninitialized()
           if (seedNodes.nonEmpty) joinSeedNodes(seedNodes)
@@ -1082,10 +1083,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
       if (statsEnabled) {
         gossipStats = gossipType match {
-          case Merge   => gossipStats.incrementMergeCount
-          case Same    => gossipStats.incrementSameCount
-          case Newer   => gossipStats.incrementNewerCount
-          case Older   => gossipStats.incrementOlderCount
+          case Merge   => gossipStats.incrementMergeCount()
+          case Same    => gossipStats.incrementSameCount()
+          case Newer   => gossipStats.incrementNewerCount()
+          case Older   => gossipStats.incrementOlderCount()
           case Ignored => gossipStats // included in receivedGossipCount
         }
       }

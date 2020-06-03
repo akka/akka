@@ -1,16 +1,13 @@
-# fromIterator
+# Source.fromIterator
 
 Stream the values from an `Iterator`, requesting the next value when there is demand.
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromIterator }
+@apidoc[Source.fromIterator](Source$) { scala="#fromIterator[T](f:()=&gt;Iterator[T]):akka.stream.scaladsl.Source[T,akka.NotUsed]" java="#fromIterator(akka.japi.function.Creator)" }
 
-@@@
 
 ## Description
 

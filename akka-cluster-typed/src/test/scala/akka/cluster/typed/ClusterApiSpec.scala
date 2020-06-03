@@ -4,17 +4,18 @@
 
 package akka.cluster.typed
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.Address
+import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import com.typesafe.config.ConfigFactory
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object ClusterApiSpec {
   val config =

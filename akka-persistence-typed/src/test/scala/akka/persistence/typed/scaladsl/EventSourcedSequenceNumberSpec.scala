@@ -4,14 +4,15 @@
 
 package akka.persistence.typed.scaladsl
 
-import akka.actor.testkit.typed.scaladsl.LogCapturing
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedSequenceNumberSpec {
 
@@ -48,7 +49,12 @@ class EventSourcedSequenceNumberSpec
                   case "cmd" =>
                     probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} onCommand"
                     Effect
-                      .persist(command)
+                      .persist("evt")
+                      .thenRun(_ => probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} thenRun")
+                  case "cmd3" =>
+                    probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} onCommand"
+                    Effect
+                      .persist("evt1", "evt2", "evt3")
                       .thenRun(_ => probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} thenRun")
                   case "stash" =>
                     probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} stash"
@@ -58,7 +64,7 @@ class EventSourcedSequenceNumberSpec
                 }
             }
         }, { (_, evt) =>
-          probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} eventHandler"
+          probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} eventHandler $evt"
           evt
         }).snapshotWhen((_, event, _) => event == "snapshot").receiveSignal {
           case (_, RecoveryCompleted) =>
@@ -74,11 +80,40 @@ class EventSourcedSequenceNumberSpec
 
       ref ! "cmd"
       probe.expectMessage("0 onCommand")
-      probe.expectMessage("0 eventHandler")
+      probe.expectMessage("1 eventHandler evt")
       probe.expectMessage("1 thenRun")
+
+      ref ! "cmd"
+      probe.expectMessage("1 onCommand")
+      probe.expectMessage("2 eventHandler evt")
+      probe.expectMessage("2 thenRun")
+
+      ref ! "cmd3"
+      probe.expectMessage("2 onCommand")
+      probe.expectMessage("3 eventHandler evt1")
+      probe.expectMessage("4 eventHandler evt2")
+      probe.expectMessage("5 eventHandler evt3")
+      probe.expectMessage("5 thenRun")
+
+      testKit.stop(ref)
+      probe.expectTerminated(ref)
+
+      // and during replay
+      val ref2 = spawn(behavior(PersistenceId.ofUniqueId("ess-1"), probe.ref))
+      probe.expectMessage("1 eventHandler evt")
+      probe.expectMessage("2 eventHandler evt")
+      probe.expectMessage("3 eventHandler evt1")
+      probe.expectMessage("4 eventHandler evt2")
+      probe.expectMessage("5 eventHandler evt3")
+      probe.expectMessage("5 onRecoveryComplete")
+
+      ref2 ! "cmd"
+      probe.expectMessage("5 onCommand")
+      probe.expectMessage("6 eventHandler evt")
+      probe.expectMessage("6 thenRun")
     }
 
-    "be available while replaying stash" in {
+    "be available while unstashing" in {
       val probe = TestProbe[String]()
       val ref = spawn(behavior(PersistenceId.ofUniqueId("ess-2"), probe.ref))
       probe.expectMessage("0 onRecoveryComplete")
@@ -86,18 +121,23 @@ class EventSourcedSequenceNumberSpec
       ref ! "stash"
       ref ! "cmd"
       ref ! "cmd"
-      ref ! "cmd"
+      ref ! "cmd3"
       ref ! "unstash"
       probe.expectMessage("0 stash")
-      probe.expectMessage("0 eventHandler")
+      probe.expectMessage("1 eventHandler stashing")
       probe.expectMessage("1 unstash")
-      probe.expectMessage("1 eventHandler")
+      probe.expectMessage("2 eventHandler normal")
       probe.expectMessage("2 onCommand")
-      probe.expectMessage("2 eventHandler")
+      probe.expectMessage("3 eventHandler evt")
       probe.expectMessage("3 thenRun")
       probe.expectMessage("3 onCommand")
-      probe.expectMessage("3 eventHandler")
+      probe.expectMessage("4 eventHandler evt")
       probe.expectMessage("4 thenRun")
+      probe.expectMessage("4 onCommand") // cmd3
+      probe.expectMessage("5 eventHandler evt1")
+      probe.expectMessage("6 eventHandler evt2")
+      probe.expectMessage("7 eventHandler evt3")
+      probe.expectMessage("7 thenRun")
     }
 
     // reproducer for #27935
@@ -111,11 +151,11 @@ class EventSourcedSequenceNumberSpec
       ref ! "cmd"
 
       probe.expectMessage("0 onCommand") // first command
-      probe.expectMessage("0 eventHandler")
+      probe.expectMessage("1 eventHandler evt")
       probe.expectMessage("1 thenRun")
-      probe.expectMessage("1 eventHandler") // snapshot
+      probe.expectMessage("2 eventHandler snapshot")
       probe.expectMessage("2 onCommand") // second command
-      probe.expectMessage("2 eventHandler")
+      probe.expectMessage("3 eventHandler evt")
       probe.expectMessage("3 thenRun")
     }
   }

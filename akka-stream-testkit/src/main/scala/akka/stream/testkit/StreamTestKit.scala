@@ -4,24 +4,24 @@
 
 package akka.stream.testkit
 
-import akka.actor.{ ActorRef, ActorSystem, DeadLetterSuppression, NoSerializationVerificationNeeded }
-import akka.stream._
-import akka.stream.impl._
-import akka.testkit.{ TestActor, TestProbe }
-import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+import java.io.PrintWriter
+import java.io.StringWriter
+import java.util.concurrent.CountDownLatch
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
-import java.io.StringWriter
-import java.io.PrintWriter
-import java.util.concurrent.CountDownLatch
+import scala.reflect.ClassTag
 
+import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+
+import akka.actor.{ ActorRef, ActorSystem, DeadLetterSuppression, NoSerializationVerificationNeeded }
+import akka.stream._
+import akka.stream.impl._
+import akka.testkit.{ TestActor, TestProbe }
 import akka.testkit.TestActor.AutoPilot
 import akka.util.JavaDurationConverters
 import akka.util.ccompat._
-
-import scala.reflect.ClassTag
 
 /**
  * Provides factory methods for various Publishers.
@@ -35,7 +35,7 @@ object TestPublisher {
   final case class CancelSubscription(subscription: Subscription, cause: Throwable) extends PublisherEvent
   final case class RequestMore(subscription: Subscription, elements: Long) extends PublisherEvent
 
-  final object SubscriptionDone extends NoSerializationVerificationNeeded
+  object SubscriptionDone extends NoSerializationVerificationNeeded
 
   /**
    * Publisher that signals complete to subscribers, after handing a void subscription.

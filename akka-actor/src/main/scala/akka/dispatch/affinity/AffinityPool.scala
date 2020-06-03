@@ -4,26 +4,23 @@
 
 package akka.dispatch.affinity
 
-import java.lang.invoke.MethodHandles
-import java.lang.invoke.MethodType.methodType
+import java.lang.Integer.reverseBytes
 import java.util.Collections
-import java.util.concurrent.TimeUnit.MICROSECONDS
 import java.util.concurrent._
+import java.util.concurrent.TimeUnit.MICROSECONDS
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.LockSupport
-import java.lang.Integer.reverseBytes
-
-import akka.dispatch._
-import akka.util.Helpers.Requiring
-import com.typesafe.config.Config
-
-import akka.annotation.{ ApiMayChange, InternalApi }
-import akka.event.Logging
-import akka.util.{ ImmutableIntMap, OptionVal, ReentrantGuard }
 
 import scala.annotation.{ switch, tailrec }
 import scala.collection.{ immutable, mutable }
-import scala.util.control.NonFatal
+
+import com.typesafe.config.Config
+
+import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.dispatch._
+import akka.event.Logging
+import akka.util.{ ImmutableIntMap, ReentrantGuard }
+import akka.util.Helpers.Requiring
 
 @InternalApi
 @ApiMayChange
@@ -41,13 +38,6 @@ private[affinity] object AffinityPool {
   final val ShutDown = 4
   // PoolState: all threads have been stopped, does not process tasks and does not accept new ones
   final val Terminated = 5
-
-  // Method handle to JDK9+ onSpinWait method
-  private val onSpinWaitMethodHandle =
-    try OptionVal.Some(MethodHandles.lookup.findStatic(classOf[Thread], "onSpinWait", methodType(classOf[Void])))
-    catch {
-      case NonFatal(_) => OptionVal.None
-    }
 
   type IdleState = Int
   // IdleState: Initial state
@@ -85,10 +75,7 @@ private[affinity] object AffinityPool {
           idling = true
           transitionTo(Spinning)
         case Spinning =>
-          onSpinWaitMethodHandle match {
-            case OptionVal.Some(m) => m.invokeExact()
-            case OptionVal.None    =>
-          }
+          OnSpinWait.spinWait()
           turns += 1
           if (turns > maxSpins)
             transitionTo(Yielding)

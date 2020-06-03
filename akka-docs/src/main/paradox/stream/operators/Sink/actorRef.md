@@ -1,14 +1,12 @@
-# actorRef
+# Sink.actorRef
 
 Send the elements from the stream to an `ActorRef`.
 
 @ref[Sink operators](../index.md#sink-operators)
 
-@@@ div { .group-scala }
 ## Signature
 
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #actorRef }
-@@@
+@apidoc[Sink.actorRef](Sink$) { scala="#actorRef[T](ref:akka.actor.ActorRef,onCompleteMessage:Any,onFailureMessage:Throwable=&gt;Any):akka.stream.scaladsl.Sink[T,akka.NotUsed]" java="#actorRef(akka.actor.ActorRef,java.lang.Object)" }
 
 ## Description
 

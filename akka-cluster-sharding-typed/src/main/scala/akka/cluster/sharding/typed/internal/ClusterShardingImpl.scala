@@ -11,25 +11,23 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.compat.java8.FutureConverters._
-
-import akka.util.JavaDurationConverters._
 import scala.concurrent.Future
 
 import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InternalActorRef
-import akka.actor.typed.TypedActorContext
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
+import akka.actor.typed.TypedActorContext
 import akka.actor.typed.internal.InternalRecipientRef
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.internal.PoisonPillInterceptor
 import akka.actor.typed.internal.adapter.ActorRefAdapter
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
@@ -42,8 +40,8 @@ import akka.event.LoggingAdapter
 import akka.japi.function.{ Function => JFunction }
 import akka.pattern.AskTimeoutException
 import akka.pattern.PromiseActorRef
-import akka.util.ByteString
-import akka.util.Timeout
+import akka.util.{ unused, ByteString, Timeout }
+import akka.util.JavaDurationConverters._
 
 /**
  * INTERNAL API
@@ -312,8 +310,7 @@ import akka.util.Timeout
     val replyTo = new EntityPromiseRef[U](shardRegion.asInstanceOf[InternalActorRef], timeout)
     val m = message(replyTo.ref)
     if (replyTo.promiseRef ne null) replyTo.promiseRef.messageClassName = m.getClass.getName
-    shardRegion ! ShardingEnvelope(entityId, m)
-    replyTo.future
+    replyTo.ask(shardRegion, entityId, m, timeout)
   }
 
   def ask[U](message: JFunction[ActorRef[U], M], timeout: Duration): CompletionStage[U] =
@@ -350,6 +347,16 @@ import akka.util.Timeout
     val ref: ActorRef[U] = _ref
     val future: Future[U] = _future
     val promiseRef: PromiseActorRef = _promiseRef
+
+    @InternalStableApi
+    private[akka] def ask[T](
+        shardRegion: akka.actor.ActorRef,
+        entityId: String,
+        message: T,
+        @unused timeout: Timeout): Future[U] = {
+      shardRegion ! ShardingEnvelope(entityId, message)
+      future
+    }
   }
 
   // impl InternalRecipientRef

@@ -6,15 +6,16 @@ package akka.discovery.dns
 
 import java.net.InetAddress
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorSystem
 import akka.discovery.{ Discovery, Lookup }
+import akka.discovery.ServiceDiscovery
 import akka.discovery.ServiceDiscovery.ResolvedTarget
 import akka.io.dns.DockerBindDnsService
 import akka.testkit.{ AkkaSpec, SocketUtil, TestKit }
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
-
-import akka.discovery.ServiceDiscovery
 
 object DnsDiscoverySpec {
 

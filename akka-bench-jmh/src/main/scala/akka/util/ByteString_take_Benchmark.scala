@@ -6,10 +6,11 @@ package akka.util
 
 import java.util.concurrent.TimeUnit
 
-import akka.util.ByteString.{ ByteString1, ByteStrings }
+import scala.util.Random
+
 import org.openjdk.jmh.annotations.{ Benchmark, Measurement, Scope, State }
 
-import scala.util.Random
+import akka.util.ByteString.{ ByteString1, ByteStrings }
 
 @State(Scope.Benchmark)
 @Measurement(timeUnit = TimeUnit.MILLISECONDS)

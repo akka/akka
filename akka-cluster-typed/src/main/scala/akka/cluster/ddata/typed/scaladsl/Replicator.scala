@@ -6,11 +6,11 @@ package akka.cluster.ddata.typed.scaladsl
 
 import scala.concurrent.duration.FiniteDuration
 
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
 import akka.cluster.{ ddata => dd }
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
 import akka.cluster.ddata.typed.internal.ReplicatorBehavior
 
 /**

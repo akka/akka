@@ -4,13 +4,11 @@ Allow for a slower downstream by passing incoming elements and a summary into an
 
 @ref[Backpressure aware operators](../index.md#backpressure-aware-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #conflateWithSeed }
+@apidoc[Source.conflateWithSeed](Source) { scala="#conflateWithSeed[S](seed:Out=&gt;S)(aggregate:(S,Out)=&gt;S):FlowOps.this.Repr[S]" java="#conflateWithSeed(akka.japi.function.Function,akka.japi.function.Function2)" }
+@apidoc[Flow.conflateWithSeed](Flow) { scala="#conflateWithSeed[S](seed:Out=&gt;S)(aggregate:(S,Out)=&gt;S):FlowOps.this.Repr[S]" java="#conflateWithSeed(akka.japi.function.Function,akka.japi.function.Function2)" }
 
-@@@
 
 ## Description
 
@@ -35,6 +33,8 @@ such that the upstream can produce elements at an rate independent of the downst
 You may want to use this operation for example to apply an average operation on the upstream elements,
 while the downstream backpressures. This allows us to keep processing upstream elements, and give an average
 number to the downstream once it is ready to process the next one.
+
+See @ref:[Rate transformation](../../stream-rate.md#rate-transformation) for more information and examples.
 
 ## Reactive Streams semantics 
 

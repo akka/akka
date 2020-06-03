@@ -4,8 +4,9 @@
 
 package akka.persistence.scalatest
 
-import akka.persistence.CapabilityFlag
 import org.scalatest.Informing
+
+import akka.persistence.CapabilityFlag
 
 trait OptionalTests {
   this: Informing =>

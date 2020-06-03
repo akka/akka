@@ -52,7 +52,7 @@ final case class TimeBasedUUID(value: UUID) extends Offset with Ordered[TimeBase
 /**
  * Used when retrieving all events.
  */
-final case object NoOffset extends Offset {
+case object NoOffset extends Offset {
 
   /**
    * Java API:

@@ -6,12 +6,12 @@ package akka.stream.typed.javadsl
 
 import java.util.function.BiFunction
 
+import scala.concurrent.duration._
+
 import akka.NotUsed
 import akka.actor.typed.ActorRef
 import akka.stream.javadsl.Flow
 import akka.util.JavaDurationConverters
-
-import scala.concurrent.duration._
 
 /**
  * Collection of Flows aimed at integrating with typed Actors.

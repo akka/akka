@@ -8,15 +8,16 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.concurrent.duration._
 
+import DurableProducerQueue.MessageSent
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
-import DurableProducerQueue.MessageSent
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class DurableWorkPullingSpec
     extends ScalaTestWithActorTestKit("""

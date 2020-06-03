@@ -4,15 +4,17 @@
 
 package akka.cluster
 
-import akka.actor.{ Address, AddressFromURIString }
 import scala.collection.immutable.SortedSet
 import scala.util.Random
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import akka.actor.{ Address, AddressFromURIString }
+
 class MemberOrderingSpec extends AnyWordSpec with Matchers {
-  import Member.ordering
   import Member.addressOrdering
+  import Member.ordering
   import MemberStatus._
 
   def m(address: Address, status: MemberStatus): Member = TestMember(address, status)

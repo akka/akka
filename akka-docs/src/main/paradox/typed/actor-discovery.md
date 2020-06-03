@@ -1,6 +1,6 @@
 # Actor discovery
 
-For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md#actorselection).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Actors](../actors.md#actorselection).
 
 ## Dependency
 
@@ -8,7 +8,7 @@ To use Akka Actor Typed, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-actor-typed_$scala.binary_version$
+  artifact=akka-actor-typed_$scala.binary.version$
   version=$akka.version$
 }
 
@@ -36,7 +36,7 @@ registered to the same key.
 The registry is dynamic. New actors can be registered during the lifecycle of the system. Entries are removed when 
 registered actors are stopped, manually deregistered or the node they live on is removed from the @ref:[Cluster](cluster.md). 
 To facilitate this dynamic aspect you can also subscribe to changes with the `Receptionist.Subscribe` message. It will send 
-`Listing` messages to the subscriber when entries for a key are changed.
+`Listing` messages to the subscriber, first with the set of entries upon subscription, then whenever the entries for a key are changed.
 
 These imports are used in the following example:
 

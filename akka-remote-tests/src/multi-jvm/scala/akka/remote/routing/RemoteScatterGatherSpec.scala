@@ -5,6 +5,9 @@
 package akka.remote.routing
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Address
@@ -13,11 +16,10 @@ import akka.actor.Props
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.routing.Broadcast
-import akka.routing.ScatterGatherFirstCompletedPool
 import akka.routing.RoutedActorRef
+import akka.routing.ScatterGatherFirstCompletedPool
 import akka.testkit._
 import akka.testkit.TestEvent._
-import com.typesafe.config.ConfigFactory
 
 class RemoteScatterGatherConfig(artery: Boolean) extends MultiNodeConfig {
 
@@ -65,8 +67,8 @@ object RemoteScatterGatherSpec {
 class RemoteScatterGatherSpec(multiNodeConfig: RemoteScatterGatherConfig)
     extends RemotingMultiNodeSpec(multiNodeConfig)
     with DefaultTimeout {
-  import multiNodeConfig._
   import RemoteScatterGatherSpec._
+  import multiNodeConfig._
 
   def initialParticipants = roles.size
 
@@ -82,7 +84,7 @@ class RemoteScatterGatherSpec(multiNodeConfig: RemoteScatterGatherConfig)
       runOn(fourth) {
         enterBarrier("start")
         val actor = system.actorOf(
-          ScatterGatherFirstCompletedPool(nrOfInstances = 1, within = 10.seconds).props(Props[SomeActor]),
+          ScatterGatherFirstCompletedPool(nrOfInstances = 1, within = 10.seconds).props(Props[SomeActor]()),
           "service-hello")
         actor.isInstanceOf[RoutedActorRef] should ===(true)
 

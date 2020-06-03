@@ -4,19 +4,22 @@
 
 package akka.actor
 
-import java.lang.reflect.InvocationTargetException
-import language.implicitConversions
 import java.lang.{ Iterable => JIterable }
+import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.TimeUnit
+
+import scala.collection.immutable
+import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.duration.Duration
+import scala.util.control.NonFatal
+
+import language.implicitConversions
+
+import akka.event.Logging.Error
+import akka.event.Logging.LogEvent
+import akka.event.Logging.Warning
 import akka.japi.Util.immutableSeq
 import akka.util.JavaDurationConverters._
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.immutable
-import scala.concurrent.duration.Duration
-import akka.event.Logging.LogEvent
-import akka.event.Logging.Error
-import akka.event.Logging.Warning
-import scala.util.control.NonFatal
 import akka.util.ccompat._
 
 /**

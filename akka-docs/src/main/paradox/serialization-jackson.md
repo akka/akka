@@ -9,7 +9,7 @@ To use Jackson Serialization, you must add the following dependency in your proj
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-serialization-jackson_$scala.binary_version$"
+  artifact="akka-serialization-jackson_$scala.binary.version$"
   version="$akka.version$"
 }
 
@@ -173,7 +173,17 @@ This can be solved by implementing a custom serialization for the enums. Annotat
 Scala
 :  @@snip [CustomAdtSerializer.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/CustomAdtSerializer.scala) { #adt-trait-object }
 
+### Enumerations
 
+Jackson support for Scala Enumerations defaults to serializing a `Value` as a `JsonObject` that includes a 
+field with the `"value"` and a field with the `"type"` whose value is the FQCN of the enumeration. Jackson
+includes the [`@JsonScalaEnumeration`](https://github.com/FasterXML/jackson-module-scala/wiki/Enumerations) to 
+statically specify the type information to a field. When using the `@JsonScalaEnumeration` annotation the enumeration 
+value is serialized as a JsonString.
+
+Scala
+:  @@snip [JacksonSerializerSpec.scala](/akka-serialization-jackson/src/test/scala/akka/serialization/jackson/JacksonSerializerSpec.scala) { #jackson-scala-enumeration }
+    
 @@@
 
 
@@ -367,7 +377,9 @@ the `jackson-json` binding the default configuration is:
 
 @@snip [reference.conf](/akka-serialization-jackson/src/main/resources/reference.conf) { #compression }
 
-Messages larger than the `compress-larger-than` property are compressed with GZIP.
+Supported compression algorithms are: gzip, lz4. Use 'off' to disable compression.
+Gzip is generally slower than lz4.
+Messages larger than the `compress-larger-than` property are compressed.
 
 Compression can be disabled by setting the `algorithm` property to `off`. It will still be able to decompress
 payloads that were compressed when serialized, e.g. if this configuration is changed.

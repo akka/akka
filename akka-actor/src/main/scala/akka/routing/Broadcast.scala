@@ -5,12 +5,14 @@
 package akka.routing
 
 import scala.collection.immutable
-import akka.dispatch.Dispatchers
-import com.typesafe.config.Config
-import akka.actor.SupervisorStrategy
-import akka.japi.Util.immutableSeq
-import akka.actor.ActorSystem
+
 import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+
+import akka.actor.ActorSystem
+import akka.actor.SupervisorStrategy
+import akka.dispatch.Dispatchers
+import akka.japi.Util.immutableSeq
 
 object BroadcastRoutingLogic {
   def apply(): BroadcastRoutingLogic = new BroadcastRoutingLogic

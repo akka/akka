@@ -5,11 +5,12 @@
 package akka.routing
 
 import scala.collection.immutable
+
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
 import akka.actor.InternalActorRef
-import akka.japi.Util.immutableSeq
 import akka.actor.NoSerializationVerificationNeeded
+import akka.japi.Util.immutableSeq
 
 /**
  * The interface of the routing logic that is used in a [[Router]] to select

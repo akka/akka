@@ -4,23 +4,25 @@
 
 package akka.remote
 
-import com.typesafe.config.Config
-import scala.concurrent.duration._
 import scala.collection.immutable
+import scala.concurrent.duration._
 
-import akka.util.Timeout
-import akka.util.Helpers.{ toRootLowerCase, ConfigOps, Requiring }
-import akka.japi.Util._
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+
+import akka.ConfigurationException
 import akka.actor.Props
+import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.event.Logging.LogLevel
-import akka.ConfigurationException
-import akka.annotation.InternalApi
+import akka.japi.Util._
 import akka.remote.artery.ArterySettings
-import com.github.ghik.silencer.silent
+import akka.util.Helpers.{ toRootLowerCase, ConfigOps, Requiring }
+import akka.util.Timeout
 
 final class RemoteSettings(val config: Config) {
   import config._
+
   import akka.util.ccompat.JavaConverters._
 
   val Artery = ArterySettings(getConfig("akka.remote.artery"))

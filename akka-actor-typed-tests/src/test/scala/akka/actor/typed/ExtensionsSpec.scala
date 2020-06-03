@@ -6,17 +6,18 @@ package akka.actor.typed
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.Future
+
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class DummyExtension1 extends Extension
 object DummyExtension1 extends ExtensionId[DummyExtension1] {

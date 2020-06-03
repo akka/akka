@@ -4,10 +4,11 @@
 
 package akka.persistence
 
+import java.io._
+
 import akka.actor.{ ActorRef, Props }
 import akka.serialization.Serializer
-import akka.testkit.{ ImplicitSender }
-import java.io._
+import akka.testkit.ImplicitSender
 
 object SnapshotSerializationSpec {
   trait SerializationMarker

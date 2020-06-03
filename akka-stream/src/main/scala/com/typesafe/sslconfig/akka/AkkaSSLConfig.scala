@@ -7,14 +7,15 @@ package com.typesafe.sslconfig.akka
 import java.security.KeyStore
 import java.security.cert.CertPathValidatorException
 import java.util.Collections
-
 import javax.net.ssl._
-import akka.actor._
-import akka.annotation.InternalApi
-import akka.event.Logging
+
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
 import com.typesafe.sslconfig.ssl._
 import com.typesafe.sslconfig.util.LoggerFactory
+
+import akka.actor._
+import akka.annotation.InternalApi
+import akka.event.Logging
 
 @deprecated("Use Tcp and TLS with SSLEngine parameters instead. Setup the SSLEngine with needed parameters.", "2.6.0")
 object AkkaSSLConfig extends ExtensionId[AkkaSSLConfig] with ExtensionIdProvider {

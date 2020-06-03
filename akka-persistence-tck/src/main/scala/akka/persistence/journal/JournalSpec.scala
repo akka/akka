@@ -4,15 +4,16 @@
 
 package akka.persistence.journal
 
-import akka.persistence.scalatest.{ MayVerb, OptionalTests }
-
 import scala.concurrent.duration._
+
+import com.typesafe.config._
+
 import akka.actor._
 import akka.persistence._
 import akka.persistence.JournalProtocol._
+import akka.persistence.scalatest.{ MayVerb, OptionalTests }
 import akka.testkit._
 import akka.util.unused
-import com.typesafe.config._
 
 object JournalSpec {
   val config: Config = ConfigFactory.parseString(s"""

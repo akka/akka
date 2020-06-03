@@ -4,6 +4,7 @@
 
 package jdocs.stream.operators;
 
+import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.japi.pf.PFBuilder;
 import akka.stream.javadsl.Flow;
@@ -41,7 +42,6 @@ import akka.stream.Attributes;
 // #log
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
@@ -425,5 +425,19 @@ class SourceOrFlow {
     // 3
     // -1
     // #dropWhile
+  }
+
+  void watchExample() {
+    // #watch
+    final ActorRef ref = someActor();
+    Flow<String, String, NotUsed> flow =
+        Flow.of(String.class)
+            .watch(ref)
+            .recover(akka.stream.WatchedActorTerminatedException.class, () -> ref + " terminated");
+    // #watch
+  }
+
+  private ActorRef someActor() {
+    return null;
   }
 }

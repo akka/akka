@@ -7,6 +7,7 @@ package akka
 import com.lightbend.paradox.sbt.ParadoxPlugin
 import com.lightbend.paradox.sbt.ParadoxPlugin.autoImport._
 import com.lightbend.paradox.apidoc.ApidocPlugin
+import com.lightbend.sbt.publishrsync.PublishRsyncPlugin.autoImport._
 import sbt.Keys._
 import sbt._
 
@@ -32,7 +33,7 @@ object Paradox {
         "javadoc.akka.http.base_url" -> "https://doc.akka.io/japi/akka-http/current",
         "javadoc.akka.http.link_style" -> "frames",
         "scala.version" -> scalaVersion.value,
-        "scala.binary_version" -> scalaBinaryVersion.value,
+        "scala.binary.version" -> scalaBinaryVersion.value,
         "akka.version" -> version.value,
         "scalatest.version" -> Dependencies.scalaTestVersion,
         "sigar_loader.version" -> "1.6.6-rev002",
@@ -76,6 +77,8 @@ object Paradox {
       name in (Compile, paradox) := "Akka",
       resolvers += Resolver.jcenterRepo,
       ApidocPlugin.autoImport.apidocRootPackage := "akka",
-      DeployRsync.autoImport.deployRsyncArtifact := List(
-          (Compile / paradox).value -> s"www/docs/akka/${version.value}"))
+      publishRsyncArtifacts += {
+        val releaseVersion = if (isSnapshot.value) "snapshot" else version.value
+        ((Compile / paradox).value -> s"www/docs/akka/$releaseVersion")
+      })
 }

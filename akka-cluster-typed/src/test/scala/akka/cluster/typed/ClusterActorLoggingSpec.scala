@@ -4,15 +4,16 @@
 
 package akka.cluster.typed
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.ExtendedActorSystem
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.ActorMdc
 import akka.actor.typed.scaladsl.Behaviors
-import com.typesafe.config.ConfigFactory
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object ClusterActorLoggingSpec {
   def config = ConfigFactory.parseString("""

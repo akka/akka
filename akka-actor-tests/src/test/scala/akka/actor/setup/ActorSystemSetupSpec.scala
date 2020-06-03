@@ -4,10 +4,11 @@
 
 package akka.actor.setup
 
-import akka.actor.ActorSystem
-import akka.testkit.TestKit
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.ActorSystem
+import akka.testkit.TestKit
 
 case class DummySetup(name: String) extends Setup
 case class DummySetup2(name: String) extends Setup

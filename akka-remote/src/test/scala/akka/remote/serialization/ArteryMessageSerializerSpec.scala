@@ -8,6 +8,7 @@ import java.io.NotSerializableException
 
 import akka.actor._
 import akka.remote.{ RemoteWatcher, UniqueAddress }
+import akka.remote.artery.{ ActorSystemTerminating, ActorSystemTerminatingAck, Quarantined, SystemMessageDelivery }
 import akka.remote.artery.OutboundHandshake.{ HandshakeReq, HandshakeRsp }
 import akka.remote.artery.compress.CompressionProtocol.{
   ActorRefCompressionAdvertisement,
@@ -16,7 +17,6 @@ import akka.remote.artery.compress.CompressionProtocol.{
   ClassManifestCompressionAdvertisementAck
 }
 import akka.remote.artery.compress.CompressionTable
-import akka.remote.artery.{ ActorSystemTerminating, ActorSystemTerminatingAck, Quarantined, SystemMessageDelivery }
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 

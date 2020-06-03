@@ -4,15 +4,16 @@
 
 package akka.stream.scaladsl
 
-import akka.stream._
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import com.github.ghik.silencer.silent
-
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import com.github.ghik.silencer.silent
+
+import akka.stream._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class FlowPrefixAndTailSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -30,7 +31,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       val fut = Source.empty.prefixAndTail(10).runWith(futureSink)
       val (prefix, tailFlow) = Await.result(fut, 3.seconds)
       prefix should be(Nil)
-      val tailSubscriber = TestSubscriber.manualProbe[Int]
+      val tailSubscriber = TestSubscriber.manualProbe[Int]()
       tailFlow.to(Sink.fromSubscriber(tailSubscriber)).run()
       tailSubscriber.expectSubscriptionAndComplete()
     }
@@ -40,7 +41,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       val fut = Source(List(1, 2, 3)).prefixAndTail(10).runWith(futureSink)
       val (prefix, tailFlow) = Await.result(fut, 3.seconds)
       prefix should be(List(1, 2, 3))
-      val tailSubscriber = TestSubscriber.manualProbe[Int]
+      val tailSubscriber = TestSubscriber.manualProbe[Int]()
       tailFlow.to(Sink.fromSubscriber(tailSubscriber)).run()
       tailSubscriber.expectSubscriptionAndComplete()
     }

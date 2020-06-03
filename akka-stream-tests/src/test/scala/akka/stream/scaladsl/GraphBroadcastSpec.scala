@@ -4,15 +4,15 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
 import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
-
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.Future
 
 class GraphBroadcastSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
