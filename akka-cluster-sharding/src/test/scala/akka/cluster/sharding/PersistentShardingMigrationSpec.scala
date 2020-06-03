@@ -50,8 +50,7 @@ object PersistentShardingMigrationSpec {
       """)
 
   val configForNewMode = ConfigFactory
-    .parseString(
-      """
+    .parseString("""
        akka.cluster.sharding {
         remember-entities = on
         remember-entities-store = "eventsourced"
@@ -60,7 +59,7 @@ object PersistentShardingMigrationSpec {
        
        akka.persistence.journal.leveldb {
         event-adapters {
-          coordinator-migration = "akka.cluster.sharding.internal.EventSourcedRememberShards$FromOldCoordinatorState"
+          coordinator-migration = "akka.cluster.sharding.OldCoordinatorStateMigrationEventAdapter"
         }
 
         event-adapter-bindings {
