@@ -210,6 +210,51 @@ See the API documentation of @scala[`akka.cluster.sharding.ShardAllocationStrate
 
 See @ref:[Cluster Sharding concepts](cluster-sharding-concepts.md).
 
+
+## Passivation
+
+If the state of the entities are persistent you may stop entities that are not used to
+reduce memory consumption. This is done by the application specific implementation of
+the entity actors for example by defining receive timeout (`context.setReceiveTimeout`).
+If a message is already enqueued to the entity when it stops itself the enqueued message
+in the mailbox will be dropped. To support graceful passivation without losing such
+messages the entity actor can send `ClusterSharding.Passivate` to the
+@scala[`ActorRef[ShardCommand]`]@java[`ActorRef<ShardCommand>`] that was passed in to
+the factory method when creating the entity. The optional `stopMessage` message
+will be sent back to the entity, which is then supposed to stop itself, otherwise it will
+be stopped automatically. Incoming messages will be buffered by the `Shard` between reception
+of `Passivate` and termination of the entity. Such buffered messages are thereafter delivered
+to a new incarnation of the entity.
+
+Scala
+:  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #counter-passivate }
+
+Java
+:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #counter-passivate }
+
+and then initialized with:
+
+Scala
+:  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #counter-passivate-init }
+
+Java
+:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #counter-passivate-init }
+
+Note that in the above example the `stopMessage` is specified as `GoodByeCounter`. That message will be sent to
+the entity when it's supposed to stop itself due to rebalance or passivation. If the `stopMessage` is not defined
+it will be stopped automatically without receiving a specific message. It can be useful to define a custom stop
+message if the entity needs to perform some asynchronous cleanup or interactions before stopping.
+
+### Automatic Passivation
+
+The entities are automatically passivated if they haven't received a message within the duration configured in
+`akka.cluster.sharding.passivate-idle-entity-after` 
+or by explicitly setting the `passivateIdleEntityAfter` flag on `ClusterShardingSettings` to a suitable
+time to keep the actor alive. Note that only messages sent through sharding are counted, so direct messages
+to the `ActorRef` or messages that the actor sends to itself are not counted in this activity.
+Passivation can be disabled by setting `akka.cluster.sharding.passivate-idle-entity-after = off`.
+It is disabled automatically if @ref:[Remembering Entities](#remembering-entities) is enabled.
+
 ## Sharding State 
 
 There are two types of state managed:
@@ -269,14 +314,40 @@ used for new projects and existing projects should migrate as soon as possible.
 
 @@@
 
-### Remember entities state store 
+## Remembering Entities
 
-For the remember entities store the options are:
+Remembering entities automatically restarts entities after a rebalance or entity crash. 
+Without remembered entities restarts happen on the arrival of a message.
+
+Enabling remembered entities disables @ref:[Automtic Passivation](#passivation).
+
+The state of the entities themselves is not restored unless they have been made persistent,
+for example with @ref:[Event Sourcing](persistence.md).
+
+To enable remember entities set `rememberEntities` flag to true in
+`ClusterShardingSettings` when starting a shard region (or its proxy) for a given `entity` type or configure
+`akka.cluster.sharding.remember-entities = on`.
+
+Starting and stopping entities has an overhead but this is limited by batching operations to the
+underlying remember entities store.
+
+### Behavior When Enabled 
+
+When `rememberEntities` is enabled, whenever a `Shard` is rebalanced onto another
+node or recovers after a crash, it will recreate all the entities which were previously
+running in that `Shard`. 
+
+To permanently stop entities sent a `ClusterSharding.Passivate` to the
+@scala[`ActorRef[ShardCommand]`]@java[`ActorRef<ShardCommand>`] that was passed in to
+the factory method when creating the entity.
+Otherwise, the entity will be automatically restarted after the entity restart backoff specified in the configuration.
+
+### Remember entities store
+
+There are two options for the remember entities store:
 
 1. `ddata` 
 1. `eventsourced` 
-
-This store is only used when using remember entities.
 
 #### Remember entities distributed data mode
 
@@ -327,77 +398,6 @@ If using remembered entities there are two migration options:
 
 Once you have migrated you cannot go back to the old persistence store.
 
-## Passivation
-
-If the state of the entities are persistent you may stop entities that are not used to
-reduce memory consumption. This is done by the application specific implementation of
-the entity actors for example by defining receive timeout (`context.setReceiveTimeout`).
-If a message is already enqueued to the entity when it stops itself the enqueued message
-in the mailbox will be dropped. To support graceful passivation without losing such
-messages the entity actor can send `ClusterSharding.Passivate` to the
-@scala[`ActorRef[ShardCommand]`]@java[`ActorRef<ShardCommand>`] that was passed in to
-the factory method when creating the entity. The optional `stopMessage` message
-will be sent back to the entity, which is then supposed to stop itself, otherwise it will
-be stopped automatically. Incoming messages will be buffered by the `Shard` between reception
-of `Passivate` and termination of the entity. Such buffered messages are thereafter delivered
-to a new incarnation of the entity.
-
-Scala
-:  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #counter-passivate }
-
-Java
-:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #counter-passivate }
-
-and then initialized with:
-
-Scala
-:  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #counter-passivate-init }
-
-Java
-:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #counter-passivate-init }
-
-Note that in the above example the `stopMessage` is specified as `GoodByeCounter`. That message will be sent to
-the entity when it's supposed to stop itself due to rebalance or passivation. If the `stopMessage` is not defined
-it will be stopped automatically without receiving a specific message. It can be useful to define a custom stop
-message if the entity needs to perform some asynchronous cleanup or interactions before stopping.
-
-### Automatic Passivation
-
-The entities are automatically passivated if they haven't received a message within the duration configured in
-`akka.cluster.sharding.passivate-idle-entity-after` 
-or by explicitly setting the `passivateIdleEntityAfter` flag on `ClusterShardingSettings` to a suitable
-time to keep the actor alive. Note that only messages sent through sharding are counted, so direct messages
-to the `ActorRef` or messages that the actor sends to itself are not counted in this activity.
-Passivation can be disabled by setting `akka.cluster.sharding.passivate-idle-entity-after = off`.
-It is disabled automatically if @ref:[Remembering Entities](#remembering-entities) is enabled.
-
-## Remembering Entities
-
-Remembering entities pertains to restarting entities after a rebalance or recovering from a crash.
-Enabling or disabling (the default) this feature drives the behavior of the restarts:
-
-* enabled: entities are restarted, even though no new messages are sent to them. This will also disable @ref:[Automtic Passivation](#passivation).
-* disabled: entities are restarted, on demand when a new message arrives.
-
-Note that the state of the entities themselves will not be restored unless they have been made persistent,
-for example with @ref:[Event Sourcing](persistence.md).
-
-To make the list of entities in each `Shard` persistent (durable) set the `rememberEntities` flag to true in
-`ClusterShardingSettings` when starting a shard region (or its proxy) for a given `entity` type or configure
-`akka.cluster.sharding.remember-entities = on`.
-
-The performance cost of `rememberEntities` is rather high when starting/stopping entities and when
-shards are rebalanced. This cost increases with number of entities per shard, thus it is not
-recommended with more than 10000 active entities per shard.  
-
-### Behavior When Enabled 
-
-When `rememberEntities` is enabled, whenever a `Shard` is rebalanced onto another
-node or recovers after a crash it will recreate all the entities which were previously
-running in that `Shard`. To permanently stop entities, a `Passivate` message must be
-sent to the parent of the entity actor, otherwise the entity will be automatically
-restarted after the entity restart backoff specified in the configuration.
-
 When @ref:[Distributed Data mode](#distributed-data-mode) is used the identifiers of the entities are
 stored in @ref:[Durable Storage](distributed-data.md#durable-storage) of Distributed Data. You may want to change the
 configuration of the `akka.cluster.sharding.distributed-data.durable.lmdb.dir`, since
@@ -412,14 +412,7 @@ you can disable durable storage and benefit from better performance by using the
 ```
 akka.cluster.sharding.distributed-data.durable.keys = []
 ```
-
-### Behavior When Not Enabled 
-
-When `rememberEntities` is disabled (the default), a `Shard` will not automatically restart any entities
-after a rebalance or recovering from a crash. Instead, entities are started once the first message
-for that entity has been received in the `Shard`.
-
-### Startup after minimum number of members
+## Startup after minimum number of members
 
 It's recommended to use Cluster Sharding with the Cluster setting `akka.cluster.min-nr-of-members` or
 `akka.cluster.role.<role-name>.min-nr-of-members`. `min-nr-of-members` will defer the allocation of the shards
