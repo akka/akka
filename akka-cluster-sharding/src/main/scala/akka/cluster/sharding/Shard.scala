@@ -615,8 +615,6 @@ private[akka] class Shard(
     timers.startSingleTimer(
       RememberEntityTimeoutKey,
       RememberEntityTimeout(update),
-      // FIXME this timeout needs to match the timeout used in the ddata shard write since that tries 3 times
-      // and this could always fail before ddata store completes retrying writes
       settings.tuningParameters.updatingStateTimeout)
 
     context.become(waitingForRememberEntitiesStore(update, startTimeNanos))
