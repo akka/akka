@@ -853,14 +853,15 @@ private[akka] class Shard(
         timers.startSingleTimer(msg, msg, entityRestartBackoff)
 
       case Passivating(_) =>
-        entities.rememberingStop(entityId)
         if (entities.pendingRememberedEntitiesExist()) {
           // will go in next batch update
           if (verboseDebug)
             log.debug(
               "Stop of [{}] after passivating, arrived while updating, adding it to batch of pending stops",
               entityId)
+          entities.rememberingStop(entityId)
         } else {
+          entities.rememberingStop(entityId)
           rememberUpdate(remove = Set(entityId))
         }
       case unexpected =>
