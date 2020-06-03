@@ -283,7 +283,7 @@ Java
 :   @@snip [TwitterStreamQuickstartDocTest.java](/akka-docs/src/test/java/jdocs/stream/TwitterStreamQuickstartDocTest.java) { #authors-foreach-println }
 
 Materializing and running a stream always requires an `ActorSystem` to be @scala[in implicit scope (or passed in explicitly,
-like this: `.run(system)`)]@java[passed in explicitly, like this: `.runWith(sink, system)`].
+like this: `.runWith(sink)(system)`)]@java[passed in explicitly, like this: `.runWith(sink, system)`].
 
 The complete snippet looks like this:
 
