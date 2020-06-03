@@ -66,26 +66,26 @@ final class RotatingKeysSSLEngineProvider(val config: Config, protected val log:
   private val rng: SecureRandom = SecureRandomFactory.createSecureRandom(SSLRandomNumberGenerator, log)
 
   // handle caching
-  @volatile private var contextRef: Option[CachedContext] = None
+  @volatile private var cachedContext: Option[CachedContext] = None
 
   /** INTERNAL API */
   @InternalApi
   private[ssl] def getSSLContext() = getContext().context
   private def getContext(): ConfiguredContext = {
-    contextRef match {
+    cachedContext match {
       case Some(CachedContext(_, expired)) if expired.isOverdue() =>
         // Multiple connection requests arriving when the cache is overdue will
         // create different CachedContext instances and only the last one will
         // be cached. This is fine.
         val context = constructContext()
-        contextRef = Some(CachedContext(context, SSLContextCacheTime.fromNow))
+        cachedContext = Some(CachedContext(context, SSLContextCacheTime.fromNow))
         context
       case Some(CachedContext(cached, _)) => cached
       case None                           =>
         // Multiple connection requests arriving when the cache is empty will
         // create different CachedContext instances. This is fine.
         val context = constructContext()
-        contextRef = Some(CachedContext(context, SSLContextCacheTime.fromNow))
+        cachedContext = Some(CachedContext(context, SSLContextCacheTime.fromNow))
         context
     }
   }
