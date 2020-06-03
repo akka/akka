@@ -44,6 +44,7 @@ object RemoveInternalClusterShardingDataSpec {
     akka.cluster.sharding.snapshot-after = 5
     akka.cluster.sharding.state-store-mode = persistence
     akka.cluster.sharding.keep-nr-of-batches = 0
+    akka.cluster.sharding.verbose-debug-logging = on
     """
 
   val extractEntityId: ShardRegion.ExtractEntityId = {

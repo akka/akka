@@ -36,6 +36,7 @@ object ShardWithLeaseSpec {
           heartbeat-timeout = 120s
           lease-operation-timeout = 3s
       }
+      akka.cluster.sharding.verbose-debug-logging = on
     """
 
   class EntityActor extends Actor with ActorLogging {
