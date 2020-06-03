@@ -34,6 +34,6 @@ Java
 
 **emits** when there is demand and there are messages in the buffer or a message is sent to the `ActorRef`
 
-**completes** when the `ActorRef` is sent `akka.actor.Status.Success`
+**completes** when the passed completion matcher returns a `CompletionStrategy` or fails if the passed failure matcher returns an exception
 
 @@@

@@ -30,12 +30,29 @@ See also:
 * @ref[Source.actorRefWithBackpressure](../Source/actorRefWithBackpressure.md) The operator for the classic actors API with backpressure control
 * @ref[Source.queue](../Source/queue.md) Materialize a `SourceQueue` onto which elements can be pushed for emitting from the source
 
+## Example
+
+With `actorRefWithBackpressure` two actors get into play: one which feeds the stream and is materialized when the stream is run, and one which is provided by us and gets the ack signal when an element is emitted into the stream.
+
+For the ack signal we create an @scala[`Ack` object]@java[empty `Ack` class].
+
+For "feeding" the stream we use `Protocol`.
+
+In this example we create the stream in an actor which itself reacts on the demand of the stream and sends more messages.
+
+
+Scala
+:  @@snip [ActorSourceSinkExample.scala](/akka-stream-typed/src/test/scala/docs/akka/stream/typed/ActorSourceSinkExample.scala) { #actor-source-with-backpressure }
+
+Java
+:  @@snip [snip](/akka-stream-typed/src/test/java/docs/akka/stream/typed/ActorSourceWithBackpressureExample.java) { #sample }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
 
-**emits** when there is demand and there are messages in the buffer or a message is sent to the `ActorRef`
+**emits** when there is demand and a message is sent to the materialized @scala[`ActorRef[T]`]@java[`ActorRef<T>`]
 
-**completes** when the passed completion matcher returns 
+**completes** when the passed completion matcher returns a `CompletionStrategy`
 
 @@@

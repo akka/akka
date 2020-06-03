@@ -108,13 +108,15 @@ public class SourceDocExamples {
     final ActorSystem system = null;
 
     // #actorRefWithBackpressure
-    Source<Object, ActorRef> source =
-        Source.actorRefWithBackpressure(
+    Source<String, ActorRef> source =
+        Source.<String>actorRefWithBackpressure(
             "ack",
+            // complete when we send "complete"
             o -> {
               if (o == "complete") return Optional.of(CompletionStrategy.draining());
               else return Optional.empty();
             },
+            // do not fail on any message
             o -> Optional.empty());
 
     ActorRef actorRef = source.to(Sink.foreach(System.out::println)).run(system);

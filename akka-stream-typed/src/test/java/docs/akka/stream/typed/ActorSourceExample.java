@@ -6,8 +6,8 @@ package docs.akka.stream.typed;
 
 // #actor-source-ref
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.ActorSystem;
 import akka.japi.JavaPartialFunction;
-import akka.stream.ActorMaterializer;
 import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -41,9 +41,8 @@ public class ActorSourceExample {
   }
   // #actor-source-ref
 
-  final ActorMaterializer mat = null;
-
   {
+    final ActorSystem<Void> system = null;
     // #actor-source-ref
 
     final Source<Protocol, ActorRef<Protocol>> source =
@@ -66,7 +65,7 @@ public class ActorSourceExample {
                   }
                 })
             .to(Sink.foreach(System.out::println))
-            .run(mat);
+            .run(system);
 
     ref.tell(new Message("msg1"));
     // ref.tell("msg2"); Does not compile
