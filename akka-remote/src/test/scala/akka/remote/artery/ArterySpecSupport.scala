@@ -33,7 +33,7 @@ object ArterySpecSupport {
   // TLS only used if transport=tls-tcp, which can be set from specific tests or
   // System properties (e.g. jenkins job)
   // TODO: randomly return a Config using ConfigSSLEngineProvider or
-  //  CloudNativeSSLEngineProvider and, eventually, run tests twice
+  //  RotatingKeysSSLEngineProvider and, eventually, run tests twice
   //  (once for each provider).
   lazy val tlsConfig: Config = {
     val trustStore = getClass.getClassLoader.getResource("truststore").getPath
