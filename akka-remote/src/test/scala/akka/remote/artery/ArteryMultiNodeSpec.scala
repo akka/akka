@@ -58,7 +58,7 @@ abstract class ArteryMultiNodeSpec(config: Config)
       setup: Option[ActorSystemSetup] = None): ActorSystem = {
     val config =
       extraConfig.fold(localSystem.settings.config)(str =>
-        ConfigFactory.parseString(str).resolve().withFallback(localSystem.settings.config))
+        ConfigFactory.parseString(str).withFallback(localSystem.settings.config))
     val sysName = name.getOrElse(nextGeneratedSystemName)
 
     val remoteSystem = setup match {

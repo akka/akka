@@ -181,10 +181,9 @@ object RotatingKeysSSLEngineProviderSpec {
   val tempFileConfig: String = baseConfig +
     s"""
       akka.remote.artery.ssl.rotating-keys-engine {
-        secret-mount-point = ${temporaryDirectory.toFile.getAbsolutePath}
-        key-file = $${akka.remote.artery.ssl.rotating-keys-engine.secret-mount-point}/tls.key
-        cert-file = $${akka.remote.artery.ssl.rotating-keys-engine.secret-mount-point}/tls.crt
-        ca-cert-file = $${akka.remote.artery.ssl.rotating-keys-engine.secret-mount-point}/ca.crt
+        key-file = ${temporaryDirectory.toFile.getAbsolutePath}/tls.key
+        cert-file = ${temporaryDirectory.toFile.getAbsolutePath}/tls.crt
+        ca-cert-file = ${temporaryDirectory.toFile.getAbsolutePath}/ca.crt
         ssl-context-cache-ttl = ${cacheTtlInSeconds}s
       }
     """

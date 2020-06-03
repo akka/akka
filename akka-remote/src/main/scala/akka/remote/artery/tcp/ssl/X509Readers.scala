@@ -15,7 +15,7 @@ import akka.util.ccompat.JavaConverters._
  * INTERNAL API
  */
 @InternalApi
-object X509Readers {
+private[akka] object X509Readers {
 
   def getAllSubjectNames(cert: X509Certificate): Set[String] = {
     val maybeCommonName =
