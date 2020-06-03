@@ -74,7 +74,10 @@ object ActorSource {
    * and a new message will only be accepted after the previous messages has been consumed and acknowledged back.
    * The stream will complete with failure if a message is sent before the acknowledgement has been replied back.
    *
-   * The stream can be completed with failure by sending a message that is matched by `failureMatcher`. The extracted
+   * The stream can be completed by sending a message that is matched by `completionMatcher` which decides
+   * if the stream is to drained before completion or should complete immediately.
+   *
+   * A message that is matched by `failureMatcher` fails the stream. The extracted
    * [[Throwable]] will be used to fail the stream. In case the Actor is still draining its internal buffer (after having received
    * a message matched by `completionMatcher`) before signaling completion and it receives a message matched by `failureMatcher`,
    * the failure will be signaled downstream immediately (instead of the completion signal).
