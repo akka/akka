@@ -14,8 +14,11 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.Shard
 import akka.cluster.sharding.ShardRegion
+import akka.cluster.sharding.ShardRegion.EntityId
+import akka.cluster.sharding.ShardRegion.ShardId
 
 import scala.collection.immutable.Set
+import scala.concurrent.ExecutionContext
 
 /**
  * INTERNAL API
@@ -30,7 +33,8 @@ private[akka] object RememberEntityStarter {
       settings: ClusterShardingSettings) =
     Props(new RememberEntityStarter(region, shard, shardId, ids, settings))
 
-  private case object Tick extends NoSerializationVerificationNeeded
+  private final case class StartBatch(batchSize: Int) extends NoSerializationVerificationNeeded
+  private case object ResendUnAcked extends NoSerializationVerificationNeeded
 }
 
 /**
@@ -47,35 +51,75 @@ private[akka] final class RememberEntityStarter(
     with ActorLogging
     with Timers {
 
-  import RememberEntityStarter.Tick
+  implicit val ec: ExecutionContext = context.dispatcher
+  import RememberEntityStarter._
 
-  private var waitingForAck = ids
-  private var entitiesMoved = Set.empty[ShardRegion.ShardId]
+  private var idsLeftToStart = Set.empty[EntityId]
+  private var waitingForAck = Set.empty[EntityId]
+  private var entitiesMoved = Set.empty[EntityId]
 
-  sendStart(ids)
+  log.debug(
+    "Shard starting [{}] remembered entities using strategy [{}]",
+    ids.size,
+    settings.tuningParameters.entityRecoveryStrategy)
 
-  val tickTask = {
-    val resendInterval = settings.tuningParameters.retryInterval
-    timers.startTimerWithFixedDelay(Tick, Tick, resendInterval)
+  settings.tuningParameters.entityRecoveryStrategy match {
+    case "all" =>
+      idsLeftToStart = Set.empty
+      startBatch(ids)
+    case "constant" =>
+      import settings.tuningParameters
+      idsLeftToStart = ids
+      timers.startTimerWithFixedDelay(
+        "constant",
+        StartBatch(tuningParameters.entityRecoveryConstantRateStrategyNumberOfEntities),
+        tuningParameters.entityRecoveryConstantRateStrategyFrequency)
+      startBatch(tuningParameters.entityRecoveryConstantRateStrategyNumberOfEntities)
   }
-
-  def sendStart(ids: Set[ShardRegion.EntityId]): Unit = {
-    // these go through the region rather the directly to the shard
-    // so that shard mapping changes are picked up
-    ids.foreach(id => region ! ShardRegion.StartEntity(id))
-  }
+  timers.startTimerWithFixedDelay("retry", ResendUnAcked, settings.tuningParameters.retryInterval)
 
   override def receive: Receive = {
-    case ShardRegion.StartEntityAck(entityId, ackFromShardId) =>
-      waitingForAck -= entityId
-      if (shardId != ackFromShardId) entitiesMoved += entityId
-      if (waitingForAck.isEmpty) {
-        if (entitiesMoved.nonEmpty) shard ! Shard.EntitiesMovedToOtherShard(ids)
-        context.stop(self)
-      }
-
-    case Tick =>
-      sendStart(waitingForAck)
-
+    case StartBatch(batchSize)                                => startBatch(batchSize)
+    case ShardRegion.StartEntityAck(entityId, ackFromShardId) => onAck(entityId, ackFromShardId)
+    case ResendUnAcked                                        => retryUnacked()
   }
+
+  private def onAck(entityId: EntityId, ackFromShardId: ShardId): Unit = {
+    idsLeftToStart -= entityId
+    waitingForAck -= entityId
+    if (shardId != ackFromShardId) entitiesMoved += entityId
+    if (waitingForAck.isEmpty && idsLeftToStart.isEmpty) {
+      if (entitiesMoved.nonEmpty) {
+        log.info("Found [{}] entities moved to new shard(s)", entitiesMoved.size)
+        shard ! Shard.EntitiesMovedToOtherShard(entitiesMoved)
+      }
+      context.stop(self)
+    }
+  }
+
+  private def startBatch(batchSize: Int): Unit = {
+    log.debug("Starting batch of [{}] remembered entities", batchSize)
+    val (batch, newIdsLeftToStart) = idsLeftToStart.splitAt(batchSize)
+    idsLeftToStart = newIdsLeftToStart
+    startBatch(batch)
+  }
+
+  private def startBatch(entityIds: Set[EntityId]): Unit = {
+    // these go through the region rather the directly to the shard
+    // so that shard id extractor changes make them start on the right shard
+    waitingForAck = waitingForAck.union(entityIds)
+    entityIds.foreach(entityId => region ! ShardRegion.StartEntity(entityId))
+  }
+
+  private def retryUnacked(): Unit = {
+    if (waitingForAck.nonEmpty) {
+      log.debug("Found [{}] remembered entities waiting for StartEntityAck, retrying", waitingForAck.size)
+      waitingForAck.foreach { id =>
+        // for now we just retry all (as that was the existing behavior spread out over starter and shard)
+        // but in the future it could perhaps make sense to batch also the retries to avoid thundering herd
+        region ! ShardRegion.StartEntity(id)
+      }
+    }
+  }
+
 }
