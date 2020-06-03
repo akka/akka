@@ -72,7 +72,7 @@ object OSGi {
       configImport(),
       "*"),
     OsgiKeys.exportPackage := Seq("akka.protobufv3.internal.*"),
-    OsgiKeys.privatePackage := Seq("com.google.protobuf")
+    OsgiKeys.privatePackage := Seq("google.protobuf.*")
   )
 
   val jackson = exports(Seq("akka.serialization.jackson.*"))
