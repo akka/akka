@@ -12,8 +12,8 @@ import akka.cluster.sharding.Shard
 import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.ShardId
-import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore
-import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore.EntitiesStarted
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesShardStore
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesShardStore.EntitiesStarted
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 
@@ -71,12 +71,12 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
     }
 
     "be able to serialize PersistentShard snapshot state" in {
-      checkSerialization(EventSourcedRememberEntitiesStore.State(Set("e1", "e2", "e3")))
+      checkSerialization(EventSourcedRememberEntitiesShardStore.State(Set("e1", "e2", "e3")))
     }
 
     "be able to serialize PersistentShard domain events" in {
-      checkSerialization(EventSourcedRememberEntitiesStore.EntitiesStarted(Set("e1", "e2")))
-      checkSerialization(EventSourcedRememberEntitiesStore.EntitiesStopped(Set("e1", "e2")))
+      checkSerialization(EventSourcedRememberEntitiesShardStore.EntitiesStarted(Set("e1", "e2")))
+      checkSerialization(EventSourcedRememberEntitiesShardStore.EntitiesStopped(Set("e1", "e2")))
     }
 
     "be able to deserialize old entity started event into entities started" in {

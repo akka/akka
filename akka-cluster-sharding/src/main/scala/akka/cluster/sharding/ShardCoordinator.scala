@@ -20,9 +20,9 @@ import akka.cluster.ddata.LWWRegisterKey
 import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.sharding.ShardRegion.ShardId
-import akka.cluster.sharding.internal.EventSourcedRememberShards.MigrationMarker
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesCoordinatorStore.MigrationMarker
 import akka.cluster.sharding.internal.{
-  EventSourcedRememberShards,
+  EventSourcedRememberEntitiesCoordinatorStore,
   RememberEntitiesCoordinatorStore,
   RememberEntitiesProvider
 }
@@ -1012,7 +1012,7 @@ class PersistentShardCoordinator(
   override def snapshotPluginId: String = settings.snapshotPluginId
 
   override def receiveRecover: Receive = {
-    case MigrationMarker | SnapshotOffer(_, _: EventSourcedRememberShards.State) =>
+    case MigrationMarker | SnapshotOffer(_, _: EventSourcedRememberEntitiesCoordinatorStore.State) =>
       throw new IllegalStateException(
         "state-store is set to persistence but a migration has taken place to remember-entities-store=eventsourced. You can not downgrade.")
     case evt: DomainEvent =>

@@ -4,14 +4,19 @@
 
 package akka.cluster.sharding.internal
 
+import akka.actor.Props
 import akka.cluster.ddata.{ Replicator, ReplicatorSettings }
 import akka.cluster.sharding.ClusterShardingSettings
+import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.{ Cluster, MemberStatus }
 import akka.testkit.{ AkkaSpec, ImplicitSender, WithLogCapturing }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
-object DDataRememberEntitiesShardStoreSpec {
+/**
+ * Covers the interaction between the shard and the remember entities store
+ */
+object RememberEntitiesShardStoreSpec {
   def config = ConfigFactory.parseString("""
       akka.loglevel=DEBUG
       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
@@ -22,15 +27,19 @@ object DDataRememberEntitiesShardStoreSpec {
       akka.cluster.sharding.remember-entities = on
       # no leaks between test runs thank you
       akka.cluster.sharding.distributed-data.durable.keys = []
+      akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """.stripMargin)
 }
 
-// FIXME generalize to general test and cover both ddata and eventsourced
-class DDataRememberEntitiesShardStoreSpec
-    extends AkkaSpec(DDataRememberEntitiesShardStoreSpec.config)
+// shared base class for both persistence and ddata specs
+abstract class RememberEntitiesShardStoreSpec
+    extends AkkaSpec(RememberEntitiesShardStoreSpec.config)
     with AnyWordSpecLike
     with ImplicitSender
     with WithLogCapturing {
+
+  def storeName: String
+  def storeProps(shardId: ShardId, typeName: String, settings: ClusterShardingSettings): Props
 
   override def atStartup(): Unit = {
     // Form a one node cluster
@@ -39,17 +48,13 @@ class DDataRememberEntitiesShardStoreSpec
     awaitAssert(cluster.readView.members.count(_.status == MemberStatus.Up) should ===(1))
   }
 
-  "The DDataRememberEntitiesShardStore" must {
-    val replicatorSettings = ReplicatorSettings(system)
-    val replicator = system.actorOf(Replicator.props(replicatorSettings))
+  s"The $storeName" must {
 
     val shardingSettings = ClusterShardingSettings(system)
 
     "store starts and stops and list remembered entity ids" in {
 
-      val store = system.actorOf(
-        DDataRememberEntitiesShardStore
-          .props("FakeShardId", "FakeTypeName", shardingSettings, replicator, majorityMinCap = 1))
+      val store = system.actorOf(storeProps("FakeShardId", "FakeTypeName", shardingSettings))
 
       store ! RememberEntitiesShardStore.GetEntities
       expectMsgType[RememberEntitiesShardStore.RememberedEntities].entities should be(empty)
@@ -67,9 +72,7 @@ class DDataRememberEntitiesShardStoreSpec
       expectMsg(RememberEntitiesShardStore.UpdateDone(Set("2"), Set.empty))
 
       // the store does not support get after update
-      val storeIncarnation2 = system.actorOf(
-        DDataRememberEntitiesShardStore
-          .props("FakeShardId", "FakeTypeName", shardingSettings, replicator, majorityMinCap = 1))
+      val storeIncarnation2 = system.actorOf(storeProps("FakeShardId", "FakeTypeName", shardingSettings))
 
       storeIncarnation2 ! RememberEntitiesShardStore.GetEntities
       expectMsgType[RememberEntitiesShardStore.RememberedEntities].entities should ===(Set("1", "2", "4", "5"))
@@ -77,9 +80,7 @@ class DDataRememberEntitiesShardStoreSpec
 
     "handle a late request" in {
       // the store does not support get after update
-      val storeIncarnation3 = system.actorOf(
-        DDataRememberEntitiesShardStore
-          .props("FakeShardId", "FakeTypeName", shardingSettings, replicator, majorityMinCap = 1))
+      val storeIncarnation3 = system.actorOf(storeProps("FakeShardId", "FakeTypeName", shardingSettings))
 
       Thread.sleep(500)
       storeIncarnation3 ! RememberEntitiesShardStore.GetEntities
@@ -87,5 +88,23 @@ class DDataRememberEntitiesShardStoreSpec
     }
 
   }
+
+}
+
+class DDataRememberEntitiesShardStoreSpec extends RememberEntitiesShardStoreSpec {
+
+  val replicatorSettings = ReplicatorSettings(system)
+  val replicator = system.actorOf(Replicator.props(replicatorSettings))
+
+  override def storeName: String = "DDataRememberEntitiesShardStore"
+  override def storeProps(shardId: ShardId, typeName: String, settings: ClusterShardingSettings): Props =
+    DDataRememberEntitiesShardStore.props(shardId, typeName, settings, replicator, majorityMinCap = 1)
+}
+
+class EventSourcedRememberEntitiesShardStoreSpec extends RememberEntitiesShardStoreSpec {
+
+  override def storeName: String = "EventSourcedRememberEntitiesShardStore"
+  override def storeProps(shardId: ShardId, typeName: String, settings: ClusterShardingSettings): Props =
+    EventSourcedRememberEntitiesShardStore.props(typeName, shardId, settings)
 
 }
