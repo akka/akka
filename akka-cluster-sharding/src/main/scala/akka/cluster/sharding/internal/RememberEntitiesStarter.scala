@@ -9,8 +9,10 @@ import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.Props
+import akka.actor.Timers
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ClusterShardingSettings
+import akka.cluster.sharding.Shard
 import akka.cluster.sharding.ShardRegion
 
 import scala.collection.immutable.Set
@@ -20,8 +22,13 @@ import scala.collection.immutable.Set
  */
 @InternalApi
 private[akka] object RememberEntityStarter {
-  def props(region: ActorRef, ids: Set[ShardRegion.EntityId], settings: ClusterShardingSettings, requestor: ActorRef) =
-    Props(new RememberEntityStarter(region, ids, settings, requestor))
+  def props(
+      region: ActorRef,
+      shard: ActorRef,
+      shardId: ShardRegion.ShardId,
+      ids: Set[ShardRegion.EntityId],
+      settings: ClusterShardingSettings) =
+    Props(new RememberEntityStarter(region, shard, shardId, ids, settings))
 
   private case object Tick extends NoSerializationVerificationNeeded
 }
@@ -32,22 +39,24 @@ private[akka] object RememberEntityStarter {
 @InternalApi
 private[akka] final class RememberEntityStarter(
     region: ActorRef,
+    shard: ActorRef,
+    shardId: ShardRegion.ShardId,
     ids: Set[ShardRegion.EntityId],
-    settings: ClusterShardingSettings,
-    requestor: ActorRef)
+    settings: ClusterShardingSettings)
     extends Actor
-    with ActorLogging {
+    with ActorLogging
+    with Timers {
 
   import RememberEntityStarter.Tick
-  import context.dispatcher
 
-  var waitingForAck = ids
+  private var waitingForAck = ids
+  private var entitiesMoved = Set.empty[ShardRegion.ShardId]
 
   sendStart(ids)
 
   val tickTask = {
     val resendInterval = settings.tuningParameters.retryInterval
-    context.system.scheduler.scheduleWithFixedDelay(resendInterval, resendInterval, self, Tick)
+    timers.startTimerWithFixedDelay(Tick, Tick, resendInterval)
   }
 
   def sendStart(ids: Set[ShardRegion.EntityId]): Unit = {
@@ -57,18 +66,16 @@ private[akka] final class RememberEntityStarter(
   }
 
   override def receive: Receive = {
-    case ack: ShardRegion.StartEntityAck =>
-      waitingForAck -= ack.entityId
-      // inform whoever requested the start that it happened
-      requestor ! ack
-      if (waitingForAck.isEmpty) context.stop(self)
+    case ShardRegion.StartEntityAck(entityId, ackFromShardId) =>
+      waitingForAck -= entityId
+      if (shardId != ackFromShardId) entitiesMoved += entityId
+      if (waitingForAck.isEmpty) {
+        if (entitiesMoved.nonEmpty) shard ! Shard.EntitiesMovedToOtherShard(ids)
+        context.stop(self)
+      }
 
     case Tick =>
       sendStart(waitingForAck)
 
-  }
-
-  override def postStop(): Unit = {
-    tickTask.cancel()
   }
 }
