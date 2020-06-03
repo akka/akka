@@ -1043,7 +1043,8 @@ private[akka] class Shard(
       // Now there is no deliveryBuffer we can try to redeliver
       // and as the child exists, the message will be directly forwarded
       messages.foreach {
-        case (msg, snd) => deliverMessage(msg, snd)
+        case (ShardRegion.StartEntity(entityId), snd) => startEntity(entityId, Some(snd))
+        case (msg, snd)                               => deliverMessage(msg, snd)
       }
       touchLastMessageTimestamp(entityId)
     }
