@@ -771,15 +771,27 @@ private[akka] class Shard(
         getOrCreateEntity(entityId)
         touchLastMessageTimestamp(entityId)
         ackTo.foreach(_ ! ShardRegion.StartEntityAck(entityId, shardId))
+      case WaitingForRestart =>
+        // fine, we just start it right away
+        log.debug("Request to start (already remembered) entity [{}]", entityId)
+        getOrCreateEntity(entityId)
+        touchLastMessageTimestamp(entityId)
+        ackTo.foreach(_ ! ShardRegion.StartEntityAck(entityId, shardId))
+      case Passivating(_) =>
+        // since StartEntity is handled in deliverMsg we can buffer a StartEntity to handle when
+        // passivation completes (triggering an immediate restart)
+        messageBuffers.append(entityId, ShardRegion.StartEntity(entityId), ackTo.getOrElse(ActorRef.noSender))
+
+      case RememberingStop =>
+        // Optimally: if stop is already write in progress, we want to stash, if it is batched for later write we'd want to cancel
+        // but for now
+        stash()
       case NoState =>
         // started manually from the outside, or the shard id extractor was changed since the entity was remembered
         // we need to store that it was started
         log.debug("Request to start entity [{}] and ack to [{}]", entityId, ackTo)
         entities.rememberingStart(entityId, ackTo)
         rememberUpdate(add = Set(entityId))
-      case other =>
-        // FIXME what do we do here?
-        throw new IllegalStateException(s"Unhandled state when wanting to start $entityId: $other")
     }
   }
 
@@ -880,8 +892,7 @@ private[akka] class Shard(
         if (entities.isPassivating(id)) {
           log.debug("Passivation already in progress for [{}]. Not sending stopMessage back to entity", id)
         } else if (messageBuffers.getOrEmpty(id).nonEmpty) {
-          log.debug("Passivation when there are buffered messages for [{}], ignoring", id)
-          // FIXME should we buffer the stop message then?
+          log.debug("Passivation when there are buffered messages for [{}], ignoring passivation", id)
         } else {
           if (verboseDebug)
             log.debug("Passivation started for [{}]", id)
@@ -946,7 +957,7 @@ private[akka] class Shard(
           } else {
             if (verboseDebug)
               log.debug("StartEntity({}) from [{}], starting", start.entityId, snd)
-            startEntity(start.entityId, Some(sender()))
+            startEntity(start.entityId, Some(snd))
           }
         case _ =>
           entities.entityState(entityId) match {
