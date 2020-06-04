@@ -23,9 +23,12 @@ import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.ShardRegion._
 import akka.cluster.sharding.protobuf.msg.{ ClusterShardingMessages => sm }
 import akka.cluster.sharding.protobuf.msg.ClusterShardingMessages
-import akka.cluster.sharding.internal.EventSourcedRememberShards.{ MigrationMarker, State => RememberShardsState }
-import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore.{ State => EntityState }
-import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore.{ EntitiesStarted, EntitiesStopped }
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesCoordinatorStore.{
+  MigrationMarker,
+  State => RememberShardsState
+}
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesShardStore.{ State => EntityState }
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesShardStore.{ EntitiesStarted, EntitiesStopped }
 import akka.protobufv3.internal.MessageLite
 import akka.serialization.BaseSerializer
 import akka.serialization.Serialization

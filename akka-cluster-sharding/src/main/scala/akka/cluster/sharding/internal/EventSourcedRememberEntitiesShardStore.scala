@@ -11,7 +11,6 @@ import akka.cluster.sharding.ClusterShardingSerializable
 import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.EntityId
-import akka.cluster.sharding.ShardRegion.ShardId
 import akka.persistence.DeleteMessagesFailure
 import akka.persistence.DeleteMessagesSuccess
 import akka.persistence.DeleteSnapshotsFailure
@@ -27,25 +26,7 @@ import akka.persistence.SnapshotSelectionCriteria
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class EventSourcedRememberEntitiesProvider(typeName: String, settings: ClusterShardingSettings)
-    extends RememberEntitiesProvider {
-
-  // this is backed by an actor using the same events, at the serialization level, as the now removed PersistentShard when state-store-mode=persistence
-  // new events can be added but the old events should continue to be handled
-  override def shardStoreProps(shardId: ShardId): Props =
-    EventSourcedRememberEntitiesStore.props(typeName, shardId, settings)
-
-  // Note that this one is never used for the deprecated persistent state store mode, only when state store is ddata
-  // combined with eventsourced remember entities storage
-  override def coordinatorStoreProps(): Props =
-    EventSourcedRememberShards.props(typeName, settings)
-}
-
-/**
- * INTERNAL API
- *
- */
-private[akka] object EventSourcedRememberEntitiesStore {
+private[akka] object EventSourcedRememberEntitiesShardStore {
 
   /**
    * A case class which represents a state change for the Shard
@@ -70,7 +51,7 @@ private[akka] object EventSourcedRememberEntitiesStore {
   final case class EntitiesStopped(entities: Set[EntityId]) extends StateChange
 
   def props(typeName: String, shardId: ShardRegion.ShardId, settings: ClusterShardingSettings): Props =
-    Props(new EventSourcedRememberEntitiesStore(typeName, shardId, settings))
+    Props(new EventSourcedRememberEntitiesShardStore(typeName, shardId, settings))
 }
 
 /**
@@ -80,14 +61,15 @@ private[akka] object EventSourcedRememberEntitiesStore {
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
-private[akka] final class EventSourcedRememberEntitiesStore(
+@InternalApi
+private[akka] final class EventSourcedRememberEntitiesShardStore(
     typeName: String,
     shardId: ShardRegion.ShardId,
     settings: ClusterShardingSettings)
     extends PersistentActor
     with ActorLogging {
 
-  import EventSourcedRememberEntitiesStore._
+  import EventSourcedRememberEntitiesShardStore._
   import settings.tuningParameters._
 
   log.debug("Starting up EventSourcedRememberEntitiesStore")

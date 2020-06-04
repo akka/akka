@@ -4,14 +4,14 @@
 
 package akka.cluster.sharding.internal
 
-import akka.actor.{ ActorLogging, Props }
+import akka.actor.ActorLogging
+import akka.actor.Props
 import akka.annotation.InternalApi
-import akka.cluster.sharding.{ ClusterShardingSerializable, ClusterShardingSettings }
 import akka.cluster.sharding.ShardCoordinator.Internal
-import akka.cluster.sharding.ShardCoordinator.Internal.ShardHomeAllocated
 import akka.cluster.sharding.ShardRegion.ShardId
+import akka.cluster.sharding.ClusterShardingSerializable
+import akka.cluster.sharding.ClusterShardingSettings
 import akka.persistence._
-import akka.persistence.journal.{ EventAdapter, EventSeq }
 
 import scala.collection.mutable
 
@@ -19,26 +19,9 @@ import scala.collection.mutable
  * INTERNAL API
  */
 @InternalApi
-private[akka] object EventSourcedRememberShards {
+private[akka] object EventSourcedRememberEntitiesCoordinatorStore {
   def props(typeName: String, settings: ClusterShardingSettings): Props =
-    Props(new EventSourcedRememberShards(typeName, settings))
-
-  class FromOldCoordinatorState() extends EventAdapter {
-    override def manifest(event: Any): String =
-      ""
-
-    override def toJournal(event: Any): Any =
-      event
-
-    override def fromJournal(event: Any, manifest: String): EventSeq = {
-      event match {
-        case ShardHomeAllocated(shardId, _) =>
-          EventSeq.single(shardId)
-        case _ => EventSeq.empty
-      }
-
-    }
-  }
+    Props(new EventSourcedRememberEntitiesCoordinatorStore(typeName, settings))
 
   case class State(shards: Set[ShardId], writtenMigrationMarker: Boolean = false) extends ClusterShardingSerializable
 
@@ -49,11 +32,13 @@ private[akka] object EventSourcedRememberShards {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class EventSourcedRememberShards(typeName: String, settings: ClusterShardingSettings)
+private[akka] final class EventSourcedRememberEntitiesCoordinatorStore(
+    typeName: String,
+    settings: ClusterShardingSettings)
     extends PersistentActor
     with ActorLogging {
 
-  import EventSourcedRememberShards._
+  import EventSourcedRememberEntitiesCoordinatorStore._
 
   // Uses the same persistence id as the old persistent coordinator so that the old data can be migrated
   // without any user action

@@ -394,9 +394,24 @@ If using remembered entities there are two migration options:
 
 * `ddata` for the state store and `ddata` for remembering entities. All remembered entities will be lost after a full cluster restart.
 * `ddata` for the state store and `eventsourced` for remembering entities. The new `eventsourced` remembering entities store 
-   reads the data written by the old `persistence` mode. Your remembered entities will be remembered.
+   reads the data written by the old `persistence` mode. Your remembered entities will be remembered after a full cluster restart. 
 
-Once you have migrated you cannot go back to the old persistence store.
+For migrating existing remembered entities an event adapter needs to be configured in the config for the journal you use in your `application.conf`.
+In this example `leveldb` is the used journal:
+
+```
+akka.persistence.journal.leveldb {
+  event-adapters {
+    coordinator-migration = "akka.cluster.sharding.OldCoordinatorStateMigrationEventAdapter"
+  }
+
+  event-adapter-bindings {
+    "akka.cluster.sharding.ShardCoordinator$Internal$DomainEvent" = coordinator-migration
+  }
+}
+```
+
+Once you have migrated you cannot go back to the old persistence store, a rolling upgrade is therefore not possible.
 
 When @ref:[Distributed Data mode](#distributed-data-mode) is used the identifiers of the entities are
 stored in @ref:[Durable Storage](distributed-data.md#durable-storage) of Distributed Data. You may want to change the
