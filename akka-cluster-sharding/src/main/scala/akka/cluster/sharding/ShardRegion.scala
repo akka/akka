@@ -979,10 +979,11 @@ private[akka] class ShardRegion(
 
     if (retryCount >= 5 && retryCount % 5 == 0 && log.isWarningEnabled) {
       log.warning(
-        "{}: Retry request for shards [{}] homes from coordinator. [{}] total buffered messages.",
+        "{}: Retry request for shards [{}] homes from coordinator. [{}] total buffered messages. Coordinator [{}]",
         typeName,
         shards.sorted.mkString(","),
-        totalBuffered)
+        totalBuffered,
+        coordinator)
     }
   }
 
