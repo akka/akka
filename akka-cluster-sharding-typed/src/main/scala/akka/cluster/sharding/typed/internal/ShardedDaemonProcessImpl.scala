@@ -93,9 +93,12 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
   import ShardedDaemonProcessImpl._
 
   def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(
-      implicit classTag: ClassTag[T]): Unit = {
+      implicit classTag: ClassTag[T]): Unit =
     init(name, numberOfInstances, behaviorFactory, ShardedDaemonProcessSettings(system), None)(classTag)
-  }
+
+  override def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T], stopMessage: T)(
+      implicit classTag: ClassTag[T]): Unit =
+    init(name, numberOfInstances, behaviorFactory, ShardedDaemonProcessSettings(system), Some(stopMessage))(classTag)
 
   def init[T](
       name: String,
@@ -153,12 +156,22 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     }
   }
 
+  // Java API
   def init[T](
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
       behaviorFactory: function.Function[Integer, Behavior[T]]): Unit =
     init(name, numberOfInstances, n => behaviorFactory(n))(ClassTag(messageClass))
+
+  override def init[T](
+      messageClass: Class[T],
+      name: String,
+      numberOfInstances: Int,
+      behaviorFactory: function.Function[Int, Behavior[T]],
+      stopMessage: T): Unit =
+    init(name, numberOfInstances, n => behaviorFactory(n), ShardedDaemonProcessSettings(system), Some(stopMessage))(
+      ClassTag(messageClass))
 
   def init[T](
       messageClass: Class[T],
