@@ -765,15 +765,10 @@ private[akka] class Shard(
         ackTo.foreach(_ ! ShardRegion.StartEntityAck(entityId, shardId))
       case _: RememberingStart =>
         entities.rememberingStart(entityId, ackTo)
-      case RememberedButNotCreated =>
-        // already remembered, just start it - this will be the normal path for initially remembered entities
-        log.debug("Request to start (already remembered) entity [{}]", entityId)
-        getOrCreateEntity(entityId)
-        touchLastMessageTimestamp(entityId)
-        ackTo.foreach(_ ! ShardRegion.StartEntityAck(entityId, shardId))
-      case WaitingForRestart =>
-        // fine, we just start it right away
-        log.debug("Request to start (already remembered) entity [{}]", entityId)
+      case state @ (RememberedButNotCreated | WaitingForRestart) =>
+        // already remembered or waiting for backoff to restart, just start it -
+        // this is the normal path for initially remembered entities getting started
+        log.debug("Request to start entity [{}] (in state [{}])", entityId, state)
         getOrCreateEntity(entityId)
         touchLastMessageTimestamp(entityId)
         ackTo.foreach(_ ! ShardRegion.StartEntityAck(entityId, shardId))
