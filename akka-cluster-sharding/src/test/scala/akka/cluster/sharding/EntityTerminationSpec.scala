@@ -33,7 +33,7 @@ object EntityTerminationSpec {
       # no leaks between test runs thank you
       akka.cluster.sharding.distributed-data.durable.keys = []
       akka.cluster.sharding.verbose-debug-logging = on
-      akka.cluster.sharding.entity-restart-backoff = 500ms
+      akka.cluster.sharding.entity-restart-backoff = 250ms
     """.stripMargin)
 
   object StoppingActor {
@@ -86,7 +86,7 @@ class EntityTerminationSpec extends AkkaSpec(EntityTerminationSpec.config) with 
       sharding ! EntityEnvelope("1", "stop")
       expectTerminated(entity)
 
-      Thread.sleep(700) // restart backoff is 500ms
+      Thread.sleep(400) // restart backoff is 250 ms
       sharding ! ShardRegion.GetShardRegionState
       val regionState = expectMsgType[ShardRegion.CurrentShardRegionState]
       regionState.shards should have size (1)
@@ -109,7 +109,7 @@ class EntityTerminationSpec extends AkkaSpec(EntityTerminationSpec.config) with 
       sharding ! EntityEnvelope("1", "stop")
       expectTerminated(entity)
 
-      Thread.sleep(700) // restart backoff is 500ms
+      Thread.sleep(400) // restart backoff is 250 ms
       awaitAssert({
         sharding ! ShardRegion.GetShardRegionState
         val regionState = expectMsgType[ShardRegion.CurrentShardRegionState]
@@ -133,7 +133,7 @@ class EntityTerminationSpec extends AkkaSpec(EntityTerminationSpec.config) with 
 
       sharding ! EntityEnvelope("1", "passivate")
       expectTerminated(entity)
-      Thread.sleep(700) // restart backoff is 500ms
+      Thread.sleep(400) // restart backoff is 250 ms
 
       sharding ! ShardRegion.GetShardRegionState
       val regionState = expectMsgType[ShardRegion.CurrentShardRegionState]
