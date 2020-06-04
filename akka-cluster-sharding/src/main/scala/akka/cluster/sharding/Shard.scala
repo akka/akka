@@ -847,10 +847,15 @@ private[akka] class Shard(
         if (verboseDebug)
           log.debug("Stop of [{}] arrived, already is among the pending stops", entityId)
       case Active(_) =>
-        log.debug("Entity [{}] stopped without passivating, will restart after backoff", entityId)
-        entities.waitingForRestart(entityId)
-        val msg = RestartTerminatedEntity(entityId)
-        timers.startSingleTimer(msg, msg, entityRestartBackoff)
+        if (rememberEntitiesStore.isDefined) {
+          log.debug("Entity [{}] stopped without passivating, will restart after backoff", entityId)
+          entities.waitingForRestart(entityId)
+          val msg = RestartTerminatedEntity(entityId)
+          timers.startSingleTimer(msg, msg, entityRestartBackoff)
+        } else {
+          log.debug("Entity [{}] terminated", entityId)
+          entities.removeEntity(entityId)
+        }
 
       case Passivating(_) =>
         if (entities.pendingRememberedEntitiesExist()) {
