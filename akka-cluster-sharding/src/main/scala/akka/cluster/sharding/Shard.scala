@@ -20,14 +20,12 @@ import akka.actor.Terminated
 import akka.actor.Timers
 import akka.annotation.InternalStableApi
 import akka.cluster.Cluster
-import akka.cluster.sharding.internal.EntityRecoveryStrategy
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore.GetEntities
 import akka.cluster.sharding.internal.RememberEntitiesProvider
 import akka.cluster.sharding.internal.RememberEntityStarter
 import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
-import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.pattern.pipe
 import akka.util.MessageBufferMap
@@ -56,12 +54,6 @@ private[akka] object Shard {
    * restart it after a back off using this message.
    */
   final case class RestartTerminatedEntity(entity: EntityId) extends RememberEntityCommand
-
-  /**
-   * When initialising a shard with remember entities enabled the following message is used
-   * to restart batches of entity actors at a time.
-   */
-  final case class RestartRememberedEntities(entity: Set[EntityId]) extends RememberEntityCommand
 
   /**
    * If the shard id extractor is changed, remembered entities will start in a different shard
@@ -544,32 +536,14 @@ private[akka] class Shard(
     log.debug("Shard initialized")
     if (ids.nonEmpty) {
       entities.alreadyRemembered(ids)
-      restartRememberedEntities(ids)
+      log.debug("Restarting set of [{}] entities", ids.size)
+      context.actorOf(
+        RememberEntityStarter.props(context.parent, self, shardId, ids, settings),
+        "RememberEntitiesStarter")
     }
     context.parent ! ShardInitialized(shardId)
     context.become(idle)
     unstashAll()
-  }
-
-  def restartRememberedEntities(ids: Set[EntityId]): Unit = {
-    log.debug(
-      "Shard starting [{}] remembered entities using strategy [{}]",
-      ids.size,
-      rememberedEntitiesRecoveryStrategy)
-    // FIXME Separation of concerns: shouldn't this future juggling be part of the RememberEntityStarter actor instead?
-    rememberedEntitiesRecoveryStrategy.recoverEntities(ids).foreach { scheduledRecovery =>
-      scheduledRecovery
-        .filter(_.nonEmpty)(ExecutionContexts.parasitic)
-        .map(RestartRememberedEntities)(ExecutionContexts.parasitic)
-        .pipeTo(self)
-    }
-  }
-
-  def restartEntities(ids: Set[EntityId]): Unit = {
-    log.debug("Restarting set of [{}] entities", ids.size)
-    context.actorOf(
-      RememberEntityStarter.props(context.parent, self, shardId, ids, settings),
-      "RememberEntitiesStarter")
   }
 
   // ===== shard up and running =====
@@ -739,7 +713,6 @@ private[akka] class Shard(
             s"Unexpected state for [$entityId] when getting RestartTerminatedEntity: [$other]")
       }
 
-    case RestartRememberedEntities(ids) => restartEntities(ids)
     case EntitiesMovedToOtherShard(movedEntityIds) =>
       log.info(
         "Clearing [{}] remembered entities started elsewhere because of changed shard id extractor",
@@ -1059,15 +1032,4 @@ private[akka] class Shard(
     log.debug("Shard [{}] shutting down", shardId)
   }
 
-  private def rememberedEntitiesRecoveryStrategy: EntityRecoveryStrategy = {
-    import settings.tuningParameters._
-    entityRecoveryStrategy match {
-      case "all" => EntityRecoveryStrategy.allStrategy()
-      case "constant" =>
-        EntityRecoveryStrategy.constantStrategy(
-          context.system,
-          entityRecoveryConstantRateStrategyFrequency,
-          entityRecoveryConstantRateStrategyNumberOfEntities)
-    }
-  }
 }
