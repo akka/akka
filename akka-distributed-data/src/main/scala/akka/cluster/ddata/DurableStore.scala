@@ -116,16 +116,16 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
   import LmdbDurableStore.Lmdb
   import LmdbDurableStore.WriteBehind
 
-  val serialization = SerializationExtension(context.system)
-  val serializer = serialization.serializerFor(classOf[DurableDataEnvelope]).asInstanceOf[SerializerWithStringManifest]
-  val manifest = serializer.manifest(new DurableDataEnvelope(Replicator.Internal.DeletedData))
+  private val serialization = SerializationExtension(context.system)
+  private val serializer = serialization.serializerFor(classOf[DurableDataEnvelope]).asInstanceOf[SerializerWithStringManifest]
+  private val manifest = serializer.manifest(new DurableDataEnvelope(Replicator.Internal.DeletedData))
 
-  val writeBehindInterval = config.getString("lmdb.write-behind-interval").toLowerCase match {
+  private val writeBehindInterval = config.getString("lmdb.write-behind-interval").toLowerCase match {
     case "off" => Duration.Zero
     case _     => config.getDuration("lmdb.write-behind-interval", MILLISECONDS).millis
   }
 
-  val dir = config.getString("lmdb.dir") match {
+  private val dir = config.getString("lmdb.dir") match {
     case path if path.endsWith("ddata") =>
       new File(s"$path-${context.system.name}-${self.path.parent.name}-${Cluster(context.system).selfAddress.port.get}")
     case path =>
