@@ -182,4 +182,23 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       probe.expectTerminated(ref, probe.remainingOrDefault)
     }
   }
+
+  case class Request(replyTo: ActorRef[StatusResponse[String]])
+
+  "Failable ask pattern" must {
+    "fail future for a fail response" in {
+      val probe = createTestProbe[Request]
+      val result: Future[String] = probe.ref.failableAsk(Request(_))
+      probe.expectMessageType[Request].replyTo ! StatusResponse.Fail("boom")
+      val exception = result.failed.futureValue
+      exception should be(a[RuntimeException])
+      exception.getMessage should ===("boom")
+    }
+    "unwrap nested response a successful response" in {
+      val probe = createTestProbe[Request]
+      val result: Future[String] = probe.ref.failableAsk(Request(_))
+      probe.expectMessageType[Request].replyTo ! StatusResponse.Ok("goodie")
+      result.futureValue should ===("goodie")
+    }
+  }
 }

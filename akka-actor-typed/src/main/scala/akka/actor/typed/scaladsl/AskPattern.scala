@@ -8,15 +8,22 @@ import java.util.concurrent.TimeoutException
 
 import scala.concurrent.Future
 import com.github.ghik.silencer.silent
+import akka.actor.{ Address, RootActorPath }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.RecipientRef
 import akka.actor.typed.Scheduler
+import akka.actor.typed.StatusResponse
 import akka.actor.typed.internal.{ adapter => adapt }
 import akka.actor.typed.internal.InternalRecipientRef
+import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.dispatch.ExecutionContexts
 import akka.annotation.InternalStableApi
 import akka.pattern.PromiseActorRef
 import akka.util.{ unused, Timeout }
+
+import scala.util.Failure
+import scala.util.Success
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.
@@ -114,6 +121,19 @@ object AskPattern {
             "native system is implemented: " + a.getClass)
       }
     }
+
+    /**
+     * The same as [[ask]] but only for requests that result in a response of type [[akka.actor.typed.StatusResponse]].
+     * If the status response is a [[StatusResponse.Fail]] the returned future will be failed, if it is a [[StatusResponse.Ok]]
+     * the returned future is completed successfully with the wrapped response.
+     */
+    def failableAsk[Res](
+        replyTo: ActorRef[StatusResponse[Res]] => Req)(implicit timeout: Timeout, scheduler: Scheduler): Future[Res] =
+      ask(replyTo).transform {
+        case Success(StatusResponse.Ok(value))  => Success(value)
+        case Success(StatusResponse.Fail(desc)) => Failure(new RuntimeException(desc))
+        case f: Failure[_]                      => f.asInstanceOf[Failure[Res]]
+      }(ExecutionContexts.parasitic)
   }
 
   private val onTimeout: String => Throwable = msg => new TimeoutException(msg)
