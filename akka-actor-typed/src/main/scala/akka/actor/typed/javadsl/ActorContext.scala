@@ -9,9 +9,7 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 
 import scala.concurrent.ExecutionContextExecutor
-
 import org.slf4j.Logger
-
 import akka.actor.ClassicActorContextProvider
 import akka.actor.typed._
 import akka.annotation.DoNotInherit
@@ -297,6 +295,18 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
       target: RecipientRef[Req],
       responseTimeout: Duration,
       createRequest: akka.japi.function.Function[ActorRef[Res], Req],
+      applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit
+
+  /**
+   * The same as [[ask]] but only for requests that result in a response of type [[akka.actor.typed.StatusResponse]].
+   * If the status response is a [[StatusResponse.Fail]] the adapter will be passed a `RuntimeException(description)`,
+   * if it is a [[StatusResponse.Ok]] the wrapped response is unwrapped and passed to response apply function.
+   */
+  def failableAsk[Req, Res](
+      resClass: Class[Res],
+      target: RecipientRef[Req],
+      responseTimeout: Duration,
+      createRequest: akka.japi.function.Function[ActorRef[StatusResponse[Res]], Req],
       applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit
 
   /**

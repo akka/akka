@@ -299,6 +299,14 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
       mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
 
   /**
+   * The same as [[ask]] but only for requests that result in a response of type [[akka.actor.typed.StatusResponse]].
+   * If the status response is a [[StatusResponse.Fail]] the adapter will be passed a `Failure(RuntimeException(description))`,
+   * if it is a [[StatusResponse.Ok]] the wrapped response is unwrapped and passed to the map response function.
+   */
+  def failableAsk[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[StatusResponse[Res]] => Req)(
+      mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
+
+  /**
    * Sends the result of the given `Future` to this Actor (“`self`”), after adapted it with
    * the given function.
    *

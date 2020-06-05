@@ -13,11 +13,9 @@ import java.util.concurrent.CompletionStage
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
 import scala.util.Try
-
 import com.github.ghik.silencer.silent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import akka.actor.Address
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.annotation.InternalApi
@@ -26,6 +24,9 @@ import akka.util.{ BoxedType, Timeout }
 import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
 import akka.util.Timeout
+
+import scala.util.Failure
+import scala.util.Success
 
 /**
  * INTERNAL API
@@ -206,6 +207,14 @@ import akka.util.Timeout
     pipeToSelf((target.ask(createRequest))(responseTimeout, system.scheduler))(mapResponse)
   }
 
+  override def failableAsk[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[StatusResponse[Res]] => Req)(
+      mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit =
+    ask(target, createRequest) {
+      case Success(StatusResponse.Ok(t))     => mapResponse(Success(t))
+      case Success(StatusResponse.Fail(why)) => mapResponse(Failure(new RuntimeException(why)))
+      case fail: Failure[_]                  => mapResponse(fail.asInstanceOf[Failure[Res]])
+    }
+
   // Java API impl
   @silent("never used") // resClass is just a pretend param
   override def ask[Req, Res](
@@ -217,6 +226,24 @@ import akka.util.Timeout
     import akka.actor.typed.javadsl.AskPattern
     pipeToSelf(AskPattern.ask(target, (ref) => createRequest(ref), responseTimeout, system.scheduler), applyToResponse)
   }
+
+  override def failableAsk[Req, Res](
+      resClass: Class[Res],
+      target: RecipientRef[Req],
+      responseTimeout: Duration,
+      createRequest: akka.japi.function.Function[ActorRef[StatusResponse[Res]], Req],
+      applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit =
+    ask[Req, StatusResponse[Res]](
+      classOf[StatusResponse[Res]],
+      target,
+      responseTimeout,
+      createRequest,
+      (ok: StatusResponse[Res], failure: Throwable) =>
+        ok match {
+          case StatusResponse.Ok(value) => applyToResponse(value.asInstanceOf[Res], null)
+          case StatusResponse.Fail(why) => applyToResponse(null.asInstanceOf[Res], new RuntimeException(why))
+          case null                     => applyToResponse(null.asInstanceOf[Res], failure)
+        })
 
   // Scala API impl
   def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] => T): Unit = {
