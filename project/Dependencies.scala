@@ -83,7 +83,7 @@ object Dependencies {
     // Added explicitly for when artery tcp is used
     val agrona = "org.agrona" % "agrona" % agronaVersion // ApacheV2
 
-    val asnOne = "com.hierynomus" % "asn-one" % "0.4.0" // ApacheV2
+    val asnOne = ("com.hierynomus" % "asn-one" % "0.4.0").exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     val jacksonCore = "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion // ApacheV2
     val jacksonAnnotations = "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion // ApacheV2
@@ -202,7 +202,7 @@ object Dependencies {
       Seq(
         asnOne,
         // pull up slf4j version from the one provided transitively in asnOne to fix unidoc
-        Compile.slf4jApi % "provided",
+        Compile.slf4jApi,
         Test.scalatest)
 
   val remoteDependencies = Seq(netty, aeronDriver, aeronClient)
