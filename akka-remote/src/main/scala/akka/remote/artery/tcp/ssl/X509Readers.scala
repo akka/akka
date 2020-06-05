@@ -33,7 +33,7 @@ private[akka] object X509Readers {
         list.get(1) match {
           case dnsName: String => dnsName
           case other =>
-            throw new IllegalArgumentException(s"Expected a string, but got a ${other.getClass}")
+            throw new IllegalArgumentException(s"Error reading Subject Alternative Name, expected dns name to be a String, but instead got a ${other.getClass}")
         }
     }
 
