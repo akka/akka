@@ -24,15 +24,6 @@ This operator is included in:
 
 Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`] with backpressure, to be able to signal demand when the actor is ready to receive more elements.
 
-This operator needs to be set up with the protocol to the receiving actor:
-
-1. `ref`: the receiving actor as @java[`ActorRef<T>`]@scala[`ActorRef[T]`] (where `T` must include the control messages below)
-1. `messageAdapter`: a function that wraps the stream elements to be sent to the actor together with an @java[`ActorRef<ACK>`]@scala[`ActorRef[ACK]`] which accepts the ack message
-1. `onInitMessage`: a function that wraps an @java[`ActorRef<ACK>`]@scala[`ActorRef[ACK]`] into a messages to couple the receiving actor to this sink
-1. `ackMessage`: a fixed message that is expected after every element sent to the receiving actor
-1. `onCompleteMessage`: the fixed message to be sent to the actor when the stream completes
-1. `onFailureMessage`: a function that creates a message from a `Throwable` to be sent to the actor in case the stream fails
-
 See also:
 
 * @ref[`ActorSink.actorRef`](../ActorSink/actorRefWithBackpressure.md) Send elements to an actor of the new actors API, without considering backpressure
