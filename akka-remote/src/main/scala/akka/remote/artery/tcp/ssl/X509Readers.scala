@@ -29,7 +29,7 @@ private[akka] object X509Readers {
       // See the javadocs of cert.getSubjectAlternativeNames for what this list contains,
       // first element should be an integer, if that integer is 2, then the second element
       // is a String containing the DNS name.
-      case list if list.get(0) == 2 =>
+      case list if list.size() == 2 && list.get(0) == 2 =>
         list.get(1) match {
           case dnsName: String => dnsName
           case other =>
