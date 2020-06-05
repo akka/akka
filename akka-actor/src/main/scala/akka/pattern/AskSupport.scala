@@ -10,15 +10,16 @@ import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import scala.language.implicitConversions
 import scala.util.{ Failure, Success }
-
 import com.github.ghik.silencer.silent
-
 import akka.actor._
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.ExecutionContexts
 import akka.dispatch.sysmsg._
+import akka.pattern.internal.FaultyResponseMarker
 import akka.util.{ Timeout, Unsafe }
 import akka.util.unused
+
+import scala.util.control.NoStackTrace
 
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,
@@ -578,7 +579,20 @@ private[akka] final class PromiseActorRef private (
       val promiseResult = message match {
         case Status.Success(r) => Success(r)
         case Status.Failure(f) => Failure(f)
-        case other             => Success(other)
+        case f: FaultyResponseMarker =>
+          f match {
+            case a: AlwaysFailingResponse => Failure(new RuntimeException(a.failureDescription))
+            case s: scaladsl.MaybeFailingResponse =>
+              s.failureDescription match {
+                case None                     => Success(s)
+                case Some(failureDescription) => Failure(new RuntimeException(failureDescription))
+              }
+            case j: javadsl.MaybeFailingResponse =>
+              val failureDescription = j.failureDescription
+              if (failureDescription.isEmpty) Success(j)
+              else Failure(new RuntimeException(failureDescription.get()))
+          }
+        case other => Success(other)
       }
       val alreadyCompleted = !result.tryComplete(promiseResult)
       if (alreadyCompleted)
