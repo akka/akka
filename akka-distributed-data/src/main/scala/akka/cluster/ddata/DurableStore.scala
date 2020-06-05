@@ -192,7 +192,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
     }
   }
 
-  def receive = init
+  def receive: Receive = init
 
   def init: Receive = {
     case LoadAll =>
