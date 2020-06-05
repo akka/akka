@@ -47,7 +47,7 @@ Java
 
 An additional factory method is provided for further configurability and providing a graceful stop message for the actor.
 
-## Adressing the actors
+## Addressing the actors
 
 In use cases where you need to send messages to the daemon process actors it is recommended to use the @ref:[system receptionist](actor-discovery.md)
 either with a single `ServiceKey` which all daemon process actors register themeselves to for broadcasts or individual keys if more fine grained messaging is needed.
