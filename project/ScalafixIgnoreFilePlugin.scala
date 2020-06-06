@@ -6,11 +6,12 @@ package akka
 
 import sbt.plugins.JvmPlugin
 import sbt.{AutoPlugin, PluginTrigger, Plugins, ScalafixSupport}
+import scalafix.sbt.ScalafixPlugin
 
 object ScalafixIgnoreFilePlugin extends AutoPlugin with ScalafixSupport {
   override def trigger: PluginTrigger = allRequirements
 
-  override def requires: Plugins = JvmPlugin
+  override def requires: Plugins = JvmPlugin && ScalafixPlugin
   import sbt._
   lazy val scalafixIgnoredSetting: Seq[Setting[_]] = Seq(
     ignore(Test)

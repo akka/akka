@@ -9,7 +9,7 @@ import scalafix.sbt.ScalafixPlugin
 object ScalaFixForJdk9Plugin extends AutoPlugin with ScalafixSupport {
   override def trigger: PluginTrigger = allRequirements
   import Jdk9._
-  override def requires: Plugins = Jdk9
+  override def requires: Plugins = Jdk9 && ScalafixPlugin
 
   import ScalafixPlugin.autoImport.scalafixConfigSettings
   import sbt._

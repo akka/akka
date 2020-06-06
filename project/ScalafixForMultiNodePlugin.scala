@@ -6,12 +6,13 @@ package akka
 
 import com.typesafe.sbt.MultiJvmPlugin
 import sbt.{AutoPlugin, Def, PluginTrigger, Plugins, ScalafixSupport, Setting, inConfig}
+import scalafix.sbt.ScalafixPlugin
 import scalafix.sbt.ScalafixPlugin.autoImport.scalafixConfigSettings
 
 object ScalafixForMultiNodePlugin extends AutoPlugin with ScalafixSupport {
   override def trigger: PluginTrigger = allRequirements
 
-  override def requires: Plugins = MultiNode
+  override def requires: Plugins = MultiNode && ScalafixPlugin
 
   import MultiJvmPlugin.autoImport._
 
