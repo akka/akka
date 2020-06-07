@@ -26,17 +26,17 @@ once the element could be emitted allowing for backpressure from the source. Sen
 See also:
 
 * @ref[ActorSource.actorRef](actorRef.md) This operator, but without backpressure control
-* @ref[Source.actorRef](../Source/actorRef.md) The corresponding operator for the classic actors API
-* @ref[Source.actorRefWithBackpressure](../Source/actorRefWithBackpressure.md) The operator for the classic actors API with backpressure control
+* @ref[Source.actorRef](../Source/actorRef.md) This operator, but without backpressure control for the classic actors API
+* @ref[Source.actorRefWithBackpressure](../Source/actorRefWithBackpressure.md) This operator for the classic actors API
 * @ref[Source.queue](../Source/queue.md) Materialize a `SourceQueue` onto which elements can be pushed for emitting from the source
 
 ## Example
 
-With `actorRefWithBackpressure` two actors get into play: one which feeds the stream and is materialized when the stream is run, and one which is provided by us and gets the ack signal when an element is emitted into the stream.
+With `actorRefWithBackpressure` two actors get into play: one which feeds the stream and is materialized when the stream runs, and one which is provided by us and gets the ack signal when an element is emitted into the stream.
 
-For the ack signal we create an @scala[`Ack` object]@java[empty `Ack` class].
+For the ack signal we create an @scala[`Emitted` object]@java[empty `Emitted` class].
 
-For "feeding" the stream we use `Protocol`.
+For "feeding" the stream we use the `Event` @scala[trait]@java[interface].
 
 In this example we create the stream in an actor which itself reacts on the demand of the stream and sends more messages.
 

@@ -6,6 +6,7 @@ package docs.akka.stream.typed;
 
 // #sample
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
@@ -18,93 +19,99 @@ import akka.stream.typed.javadsl.ActorSource;
 
 import java.util.Optional;
 
-// #sample
+class StreamFeeder extends AbstractBehavior<StreamFeeder.Emitted> {
+  /** Signals that the latest element is emitted into the stream */
+  static final class Emitted {}
 
-public class ActorSourceWithBackpressureExample {
+  public interface Event {}
 
-  // #sample
-  /** Signals demand from the stream */
-  final class Ack {}
+  final class Element implements Event {
+    private final String content;
 
-  /** The Protocol to feed the stream */
-  interface Protocol {}
-
-  class Message implements Protocol {
-    private final String msg;
-
-    public Message(String msg) {
-      this.msg = msg;
+    public Element(String content) {
+      this.content = content;
     }
 
     @Override
     public String toString() {
-      return "Message(" + msg + ")";
+      return "Element(" + content + ")";
     }
   }
 
-  class Complete implements Protocol {}
+  final class ReachedEnd implements Event {}
 
-  class Fail implements Protocol {
+  final class FailureOccured implements Event {
     private final Exception ex;
 
-    public Fail(Exception ex) {
+    public FailureOccured(Exception ex) {
       this.ex = ex;
     }
   }
 
-  class Sender extends AbstractBehavior<Ack> {
-
-    private int counter = 0;
-    private ActorRef<Protocol> streamSource;
-
-    private Sender(ActorContext<Ack> context) {
-      super(context);
-    }
-
-    @Override
-    public Receive<Ack> createReceive() {
-      Source<Protocol, ActorRef<Protocol>> source =
-          ActorSource.actorRefWithBackpressure(
-              // get demand signalled to this actor receiving Ack
-              getContext().getSelf(),
-              new Ack(),
-              // complete when we send Complete
-              (msg) -> {
-                if (msg instanceof Complete) return Optional.of(CompletionStrategy.draining());
-                else return Optional.empty();
-              },
-              (msg) -> {
-                if (msg instanceof Fail) return Optional.of(((Fail) msg).ex);
-                else return Optional.empty();
-              });
-
-      streamSource =
-          source.to(Sink.foreach(msg -> System.out.println(msg))).run(getContext().getSystem());
-
-      streamSource.tell(new Message("first"));
-
-      return newReceiveBuilder().onMessage(Ack.class, this::onAck).build();
-    }
-
-    private Behavior<Ack> onAck(Ack message) {
-      if (counter < 5) {
-        streamSource.tell(new Message(String.valueOf(counter)));
-        counter++;
-        return this;
-      } else {
-        streamSource.tell(new Complete());
-        return Behaviors.stopped();
-      }
-    }
+  public static Behavior<Emitted> create() {
+    return Behaviors.setup(StreamFeeder::new);
   }
 
-  // will print:
-  // Message(first)
-  // Message(0)
-  // Message(1)
-  // Message(2)
-  // Message(3)
-  // Message(4)
-  // #sample
+  private int counter = 0;
+  private final ActorRef<Event> streamSource;
 
+  private StreamFeeder(ActorContext<Emitted> context) {
+    super(context);
+    streamSource = runStream(context.getSelf(), context.getSystem());
+    streamSource.tell(new Element("first"));
+  }
+
+  @Override
+  public Receive<Emitted> createReceive() {
+    return newReceiveBuilder().onMessage(Emitted.class, this::onEmitted).build();
+  }
+
+  private ActorRef<Event> runStream(ActorRef<Emitted> ackReceiver, ActorSystem<?> system) {
+    Source<Event, ActorRef<Event>> source =
+        ActorSource.actorRefWithBackpressure(
+            // get demand signalled to this actor receiving Ack
+            getContext().getSelf(),
+            new Emitted(),
+            // complete when we send Complete
+            (msg) -> {
+              if (msg instanceof ReachedEnd) return Optional.of(CompletionStrategy.draining());
+              else return Optional.empty();
+            },
+            (msg) -> {
+              if (msg instanceof FailureOccured) return Optional.of(((FailureOccured) msg).ex);
+              else return Optional.empty();
+            });
+
+    return source.to(Sink.foreach(System.out::println)).run(system);
+  }
+
+  private Behavior<Emitted> onEmitted(Emitted message) {
+    if (counter < 5) {
+      streamSource.tell(new Element(String.valueOf(counter)));
+      counter++;
+      return this;
+    } else {
+      streamSource.tell(new ReachedEnd());
+      return Behaviors.stopped();
+    }
+  }
+}
+// #sample
+
+public class ActorSourceWithBackpressureExample {
+
+  public static void main(String[] args) {
+    // #sample
+    ActorSystem<StreamFeeder.Emitted> system =
+        ActorSystem.create(StreamFeeder.create(), "stream-feeder");
+
+    // will print:
+    // Element(first)
+    // Element(0)
+    // Element(1)
+    // Element(2)
+    // Element(3)
+    // Element(4)
+    // #sample
+  }
 }
