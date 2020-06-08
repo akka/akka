@@ -24,6 +24,6 @@ private[testkit] object InMemStorageExtension extends ExtensionId[EventStorage] 
       new SimpleEventStorageImpl
     }
 
-  override def lookup() = InMemStorageExtension
+  override def lookup = InMemStorageExtension
 
 }

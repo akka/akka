@@ -93,7 +93,7 @@ class ActorWithBoundedStashSpec
     with ImplicitSender {
   import ActorWithBoundedStashSpec._
 
-  override def atStartup: Unit = {
+  override def atStartup(): Unit = {
     system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*hello.*")))
   }
 

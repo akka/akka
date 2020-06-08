@@ -137,7 +137,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
     Dns(system).cache.resolve(name, system, sender)
   }
 
-  override def lookup() = Dns
+  override def lookup = Dns
 
   override def createExtension(system: ExtendedActorSystem): DnsExt = new DnsExt(system)
 

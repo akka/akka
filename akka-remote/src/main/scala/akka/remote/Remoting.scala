@@ -55,7 +55,7 @@ private[akka] final case class RARP(provider: RemoteActorRefProvider) extends Ex
  */
 private[akka] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
 
-  override def lookup() = RARP
+  override def lookup = RARP
 
   override def createExtension(system: ExtendedActorSystem) = RARP(system.provider.asInstanceOf[RemoteActorRefProvider])
 }

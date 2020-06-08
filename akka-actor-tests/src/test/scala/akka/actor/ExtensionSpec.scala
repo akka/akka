@@ -39,7 +39,7 @@ object InstanceCountingExtension extends ExtensionId[InstanceCountingExtension] 
   override def createExtension(system: ExtendedActorSystem): InstanceCountingExtension = {
     new InstanceCountingExtension
   }
-  override def lookup(): ExtensionId[_ <: Extension] = this
+  override def lookup: ExtensionId[_ <: Extension] = this
 }
 
 class InstanceCountingExtension extends Extension {

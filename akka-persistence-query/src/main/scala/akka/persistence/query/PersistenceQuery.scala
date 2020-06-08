@@ -24,7 +24,7 @@ object PersistenceQuery extends ExtensionId[PersistenceQuery] with ExtensionIdPr
 
   def createExtension(system: ExtendedActorSystem): PersistenceQuery = new PersistenceQuery(system)
 
-  def lookup(): PersistenceQuery.type = PersistenceQuery
+  def lookup: PersistenceQuery.type = PersistenceQuery
 
   @InternalApi
   private[akka] val pluginProvider: PluginProvider[ReadJournalProvider, ReadJournal, javadsl.ReadJournal] =

@@ -41,7 +41,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
 
   import akka.routing.ResizerSpec._
 
-  override def atStartup: Unit = {
+  override def atStartup(): Unit = {
     // when shutting down some Resize messages might hang around
     system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*Resize")))
   }

@@ -45,7 +45,7 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
   override def get(system: ActorSystem): ManifestInfo = super.get(system)
   override def get(system: ClassicActorSystemProvider): ManifestInfo = super.get(system)
 
-  override def lookup(): ManifestInfo.type = ManifestInfo
+  override def lookup: ManifestInfo.type = ManifestInfo
 
   override def createExtension(system: ExtendedActorSystem): ManifestInfo = new ManifestInfo(system)
 

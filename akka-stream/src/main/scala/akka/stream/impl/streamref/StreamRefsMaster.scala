@@ -16,7 +16,7 @@ private[stream] object StreamRefsMaster extends ExtensionId[StreamRefsMaster] wi
   override def createExtension(system: ExtendedActorSystem): StreamRefsMaster =
     new StreamRefsMaster
 
-  override def lookup(): StreamRefsMaster.type = this
+  override def lookup: StreamRefsMaster.type = this
 
   override def get(system: ActorSystem): StreamRefsMaster = super.get(system)
   override def get(system: ClassicActorSystemProvider): StreamRefsMaster = super.get(system)

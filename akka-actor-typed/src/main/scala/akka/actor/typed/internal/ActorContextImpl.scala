@@ -22,7 +22,7 @@ import akka.actor.Address
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
-import akka.util.{ BoxedType, Timeout }
+import akka.util.BoxedType
 import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
 import akka.util.Timeout

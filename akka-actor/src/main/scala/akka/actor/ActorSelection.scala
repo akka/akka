@@ -14,7 +14,6 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.language.implicitConversions
-import scala.language.implicitConversions
 import scala.util.Success
 
 import com.github.ghik.silencer.silent
