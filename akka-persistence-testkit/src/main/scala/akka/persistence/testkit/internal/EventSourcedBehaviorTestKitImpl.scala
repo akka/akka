@@ -5,7 +5,6 @@
 package akka.persistence.testkit.internal
 
 import scala.collection.immutable
-import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
@@ -143,7 +142,7 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
     val result = runCommand(command)
 
     val reply = try {
-      replyProbe.receiveMessage(Duration.Zero)
+      replyProbe.receiveMessage()
     } catch {
       case NonFatal(_) =>
         throw new AssertionError(s"Missing expected reply for command [$command].")
