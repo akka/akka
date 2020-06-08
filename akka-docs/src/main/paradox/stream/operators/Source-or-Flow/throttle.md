@@ -14,6 +14,9 @@ Limit the throughput to a specific number of elements per time unit, or a specif
 Limit the throughput to a specific number of elements per time unit, or a specific total cost per time unit, where
 a function has to be provided to calculate the individual cost of each element.
 
+The throttle operator combines will with the @ref[`queue`](./../Source/queue.md) operator to adapt the speeds on both ends of the `queue`-`throttle` pair.
+
+
 See also @ref:[Buffers and working with rate](../../stream-rate.md) for related operators.
 
 ## Example

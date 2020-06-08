@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package jdocs.stream.operators.sourceorflow;
 
 import akka.NotUsed;
@@ -11,39 +15,26 @@ import java.time.Duration;
 import java.util.stream.Stream;
 import docs.stream.operators.sourceorflow.ThrottleCommon.Frame;
 
-/**
- *
- */
+/** */
 public class Throttle {
 
-    public static void main(String[] args) {
-        ActorSystem actorSystem = ActorSystem.create("25fps-throttled-stream");
-        Materializer mat = Materializer.matFromSystem(actorSystem);
+  public static void main(String[] args) {
+    ActorSystem actorSystem = ActorSystem.create("25fps-throttled-stream");
+    Materializer mat = Materializer.matFromSystem(actorSystem);
 
-        Source<Frame, NotUsed> frameSource =
-                Source
-                        .fromIterator(() -> Stream.iterate(0 , i -> i+1).iterator())
-                        .map(i -> new Frame(i.intValue())) ;
+    Source<Frame, NotUsed> frameSource =
+        Source.fromIterator(() -> Stream.iterate(0, i -> i + 1).iterator())
+            .map(i -> new Frame(i.intValue()));
 
-        // #throttle
-        int framesPerSecond = 24;
+    // #throttle
+    int framesPerSecond = 24;
 
-        Source<Frame, NotUsed> videoThrottling = frameSource
-                .throttle(
-                        framesPerSecond,
-                        Duration.ofSeconds(1),
-                        framesPerSecond * 30,
-                        ThrottleMode.shaping()
-                );
-        // serialize `Frame` and send over the network.
-        // #throttle
+    Source<Frame, NotUsed> videoThrottling =
+        frameSource.throttle(
+            framesPerSecond, Duration.ofSeconds(1), framesPerSecond * 30, ThrottleMode.shaping());
+    // serialize `Frame` and send over the network.
+    // #throttle
 
-        videoThrottling
-                .map(f -> f.i())
-                .to(Sink.foreach(System.out::println))
-                .run(mat);
-
-    }
-
-
+    videoThrottling.map(f -> f.i()).to(Sink.foreach(System.out::println)).run(mat);
+  }
 }

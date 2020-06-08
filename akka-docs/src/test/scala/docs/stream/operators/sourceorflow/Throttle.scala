@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.stream.operators.sourceorflow
 
 import akka.NotUsed
@@ -9,7 +13,7 @@ import akka.stream.scaladsl.Source
 import scala.concurrent.duration._
 
 /**
- * 
+ *
  */
 object Throttle extends App {
 
@@ -22,22 +26,18 @@ object Throttle extends App {
   val framesPerSecond = 24
 
   // val frameSource: Source[Frame,_]
-  val videoThrottling = frameSource
-    .throttle(
-      framesPerSecond,
-      1.second,
-      framesPerSecond * 30, // maximumBurst
-      ThrottleMode.shaping
-    )
+  val videoThrottling = frameSource.throttle(
+    framesPerSecond,
+    1.second,
+    framesPerSecond * 30, // maximumBurst
+    ThrottleMode.shaping)
   // serialize `Frame` and send over the network.
   // #throttle
 
-  videoThrottling
-    .to(Sink.foreach(println))
-    .run()
+  videoThrottling.to(Sink.foreach(println)).run()
 }
 
-object ThrottleCommon{
+object ThrottleCommon {
 
   // used in ThrottleJava
   case class Frame(i: Int)
