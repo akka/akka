@@ -17,6 +17,7 @@ import akka.japi.function
 import akka.stream._
 import akka.util.ConstantFun
 import akka.util.ccompat.JavaConverters._
+import akka.util.JavaDurationConverters._
 
 object SourceWithContext {
 
@@ -265,6 +266,50 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    */
   def logWithMarker(name: String, marker: function.Function2[Out, Ctx, LogMarker]): SourceWithContext[Out, Ctx, Mat] =
     this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], null)
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Source.throttle]]
+   */
+  def throttle(elements: Int, per: java.time.Duration): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.throttle(elements, per.asScala))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Source.throttle]]
+   */
+  def throttle(
+      elements: Int,
+      per: java.time.Duration,
+      maximumBurst: Int,
+      mode: ThrottleMode): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.throttle(elements, per.asScala, maximumBurst, mode))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Source.throttle]]
+   */
+  def throttle(
+      cost: Int,
+      per: java.time.Duration,
+      costCalculation: function.Function[Out, Integer]): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.throttle(cost, per.asScala, costCalculation.apply))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Source.throttle]]
+   */
+  def throttle(
+      cost: Int,
+      per: java.time.Duration,
+      maximumBurst: Int,
+      costCalculation: function.Function[Out, Integer],
+      mode: ThrottleMode): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.throttle(cost, per.asScala, maximumBurst, costCalculation.apply, mode))
 
   /**
    * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]],

@@ -14,6 +14,7 @@ import akka.japi.{ function, Pair, Util }
 import akka.stream._
 import akka.util.ConstantFun
 import akka.util.ccompat.JavaConverters._
+import akka.util.JavaDurationConverters._
 
 object FlowWithContext {
 
@@ -285,6 +286,50 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
       name: String,
       marker: function.Function2[Out, CtxOut, LogMarker]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], null)
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Flow.throttle]]
+   */
+  def throttle(elements: Int, per: java.time.Duration): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    viaScala(_.throttle(elements, per.asScala))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Flow.throttle]]
+   */
+  def throttle(
+      elements: Int,
+      per: java.time.Duration,
+      maximumBurst: Int,
+      mode: ThrottleMode): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    viaScala(_.throttle(elements, per.asScala, maximumBurst, mode))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Flow.throttle]]
+   */
+  def throttle(
+      cost: Int,
+      per: java.time.Duration,
+      costCalculation: function.Function[Out, Integer]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    viaScala(_.throttle(cost, per.asScala, costCalculation.apply))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Flow.throttle]]
+   */
+  def throttle(
+      cost: Int,
+      per: java.time.Duration,
+      maximumBurst: Int,
+      costCalculation: function.Function[Out, Integer],
+      mode: ThrottleMode): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    viaScala(_.throttle(cost, per.asScala, maximumBurst, costCalculation.apply, mode))
 
   def asScala: scaladsl.FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     scaladsl.FlowWithContext.fromTuples(

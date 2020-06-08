@@ -7,11 +7,13 @@ package akka.stream.scaladsl
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
 
 import akka.NotUsed
 import akka.dispatch.ExecutionContexts
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream._
+import akka.stream.impl.Throttle
 import akka.util.ConstantFun
 
 /**
@@ -206,6 +208,43 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
     val extractWithContext: ((Out, Ctx)) => Any = { case (e, _) => extract(e) }
     via(flow.logWithMarker(name, marker.tupled, extractWithContext)(log))
   }
+
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.throttle]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.throttle]]
+   */
+  def throttle(elements: Int, per: FiniteDuration): Repr[Out, Ctx] =
+    throttle(elements, per, Throttle.AutomaticMaximumBurst, ConstantFun.oneInt, ThrottleMode.Shaping)
+
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.throttle]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.throttle]]
+   */
+  def throttle(elements: Int, per: FiniteDuration, maximumBurst: Int, mode: ThrottleMode): Repr[Out, Ctx] =
+    throttle(elements, per, maximumBurst, ConstantFun.oneInt, mode)
+
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.throttle]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.throttle]]
+   */
+  def throttle(cost: Int, per: FiniteDuration, costCalculation: (Out) => Int): Repr[Out, Ctx] =
+    throttle(cost, per, Throttle.AutomaticMaximumBurst, costCalculation, ThrottleMode.Shaping)
+
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.throttle]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.throttle]]
+   */
+  def throttle(
+      cost: Int,
+      per: FiniteDuration,
+      maximumBurst: Int,
+      costCalculation: (Out) => Int,
+      mode: ThrottleMode): Repr[Out, Ctx] =
+    via(flow.throttle(cost, per, maximumBurst, a => costCalculation(a._1), mode))
 
   private[akka] def flow[T, C]: Flow[(T, C), (T, C), NotUsed] = Flow[(T, C)]
 }
