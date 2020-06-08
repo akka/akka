@@ -89,6 +89,7 @@ It is possible to release a revised documentation to the already existing releas
 * Log into sonatype, 'close' the staging repo.
 * Test the artifacts by adding `resolvers += "Staging Repo" at "https://oss.sonatype.org/content/repositories/comtypesafe-xxxx"` to a test project
 * If all is well, 'release' the staging repo.
+* Push the release tag to github
 
 ## Announcing
 
@@ -122,6 +123,9 @@ Now wait until all artifacts have been properly propagated. Then:
 Update the versions used in:
 
 * https://github.com/akka/akka-samples
+* https://github.com/lightbend/lightbend-platform-docs/blob/master/docs/modules/getting-help/examples/build.sbt (this populates https://developer.lightbend.com/docs/lightbend-platform/introduction/getting-help/build-dependencies.html#_akka)
+
+These are autoupdated by latest stable on maven central:
 * https://github.com/akka/akka-quickstart-java.g8
 * https://github.com/akka/akka-quickstart-scala.g8
 * https://github.com/akka/akka-http-quickstart-java.g8
@@ -129,4 +133,3 @@ Update the versions used in:
 * https://github.com/akka/akka-distributed-workers-scala.g8
 * https://github.com/akka/akka-grpc-quickstart-java.g8
 * https://github.com/akka/akka-grpc-quickstart-scala.g8
-* https://github.com/lightbend/lightbend-platform-docs/blob/master/docs/modules/getting-help/examples/build.sbt (this populates https://developer.lightbend.com/docs/lightbend-platform/introduction/getting-help/build-dependencies.html#_akka)
