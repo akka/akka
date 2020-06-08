@@ -13,7 +13,7 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 object MiMa extends AutoPlugin {
 
   private val latestPatchOf25 = 31
-  private val latestPatchOf26 = 5
+  private val latestPatchOf26 = 6
 
   override def requires = MimaPlugin
   override def trigger = allRequirements
