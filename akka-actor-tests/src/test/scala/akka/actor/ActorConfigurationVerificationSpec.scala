@@ -41,7 +41,7 @@ class ActorConfigurationVerificationSpec
     with BeforeAndAfterEach {
   import ActorConfigurationVerificationSpec._
 
-  override def atStartup: Unit = {
+  override def atStartup(): Unit = {
     system.eventStream.publish(Mute(EventFilter[ConfigurationException]("")))
   }
 

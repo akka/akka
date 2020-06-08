@@ -63,7 +63,7 @@ import akka.util.ByteString
           context.become(ready(connection, data))
         else {
           answerRecipient ! parseResponse(data.drop(prefixSize))
-          context.become(ready(connection))
+          context.become(ready(connection, ByteString.empty))
           if (data.length > prefixSize + expectedPayloadLength) {
             self ! Tcp.Received(data.drop(prefixSize + expectedPayloadLength))
           }

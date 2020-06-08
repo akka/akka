@@ -1185,7 +1185,7 @@ private[akka] class ActorSystemImpl(
             dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil).recoverWith { case _ => Failure(firstProblem) }
         } match {
           case Success(p: ExtensionIdProvider) =>
-            registerExtension(p.lookup())
+            registerExtension(p.lookup)
           case Success(p: ExtensionId[_]) =>
             registerExtension(p)
           case Success(_) =>
