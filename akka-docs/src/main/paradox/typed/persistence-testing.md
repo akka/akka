@@ -134,7 +134,7 @@ Event storage has the following operations:
  * @apidoc[ReadEvents] Read the events from the storage.
  * @apidoc[WriteEvents] Write the events to the storage.
  * @apidoc[DeleteEvents] Delete the events from the storage.
- * @apidoc[ReadSeqNum] Read the highest sequence number for particular persistence id.
+ * @apidoc[ReadSeqNum$] Read the highest sequence number for particular persistence id.
 
 Snapshot storage has the following operations:
 

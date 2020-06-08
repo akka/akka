@@ -14,7 +14,8 @@ Stream the values from a Java 8 `Stream`, requesting the next value when there i
 Stream the values from a Java 8 `Stream`, requesting the next value when there is demand. The iterator will be created anew
 for each materialization, which is the reason the @scala[`method`] @java[`factory`] takes a @scala[`function`] @java[`Creator`] rather than an `Stream` directly.
 
- You can use [[Source.async]] to create asynchronous boundaries between synchronous java stream and the rest of flow.
+You can use `Source.async` to create asynchronous boundaries between synchronous java stream and the rest of flow.
+
 ## Example
  
 Scala
