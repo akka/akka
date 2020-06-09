@@ -86,52 +86,41 @@ class FusingSpec extends StreamSpec {
 
     "propagate downstream errors through async boundary" in {
       val slowInitSrc = Source
-        //todo: can this be replaced with some promise+future composition?
-        .unfoldResource( () => {Thread.sleep(800)},
-          (_ : Unit) => Some(1),
-          (_ : Unit) => ()
-        )
+      //todo: can this be replaced with some promise+future composition?
+        .unfoldResource(() => { Thread.sleep(800) }, (_: Unit) => Some(1), (_: Unit) => ())
         .watchTermination()(Keep.right)
-        .async  //commenting this out, makes the test pass
+        .async //commenting this out, makes the test pass
       val downstream = Flow[Int]
-        .prepend(Source single 1)
-        .flatMapPrefix(0){
-          case Nil => sys error "I hate mondays"
+        .prepend(Source.single(1))
+        .flatMapPrefix(0) {
+          case Nil => sys.error("I hate mondays")
         }
         .watchTermination()(Keep.right)
         .to(Sink.ignore)
 
-      val g = slowInitSrc
-        .toMat(downstream)(Keep.both)
+      val g = slowInitSrc.toMat(downstream)(Keep.both)
 
       val (f1, f2) = g.run()
-      f2.failed.futureValue should have message("I hate mondays")
+      (f2.failed.futureValue should have).message("I hate mondays")
       Thread.sleep(1000)
-      f1.failed.futureValue should have message("I hate mondays")
+      (f1.failed.futureValue should have).message("I hate mondays")
     }
 
     "propagate 'parallel' errors through async boundary via a common downstream" in {
       val slowInitSrc = Source
-        //todo: can this be replaced with some promise+future composition?
-        .unfoldResource( () => {Thread.sleep(800)},
-          (_ : Unit) => Some(1),
-          (_ : Unit) => ()
-        )
+      //todo: can this be replaced with some promise+future composition?
+        .unfoldResource(() => { Thread.sleep(800) }, (_: Unit) => Some(1), (_: Unit) => ())
         .watchTermination()(Keep.right)
-        .async  //commenting this out, makes the test pass
+        .async //commenting this out, makes the test pass
 
-      val failingSrc = Source
-        .failed(new RuntimeException("I hate mondays"))
-        .watchTermination()(Keep.right)
+      val failingSrc = Source.failed(new RuntimeException("I hate mondays")).watchTermination()(Keep.right)
 
-      val g = slowInitSrc
-        .zipMat(failingSrc)(Keep.both)
-        .to(Sink.ignore)
+      val g = slowInitSrc.zipMat(failingSrc)(Keep.both).to(Sink.ignore)
 
       val (f1, f2) = g.run()
-      f2.failed.futureValue should have message("I hate mondays")
+      (f2.failed.futureValue should have).message("I hate mondays")
       Thread.sleep(1000)
-      f1.failed.futureValue should have message("I hate mondays")
+      (f1.failed.futureValue should have).message("I hate mondays")
     }
 
   }
