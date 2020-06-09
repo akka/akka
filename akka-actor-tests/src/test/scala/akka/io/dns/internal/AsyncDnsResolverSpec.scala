@@ -123,9 +123,11 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
       r ! Resolve(name)
       dnsClient1.expectNoMessage(50.millis)
       val answer = senderProbe.expectMsgType[Resolved]
-      val Seq(AAAARecord("1:2:3:0:0:0:0:0", Ttl.effectivelyForever, _)) = answer.records.collect {
+      val Seq(aaaaRecord) = answer.records.collect {
         case r: AAAARecord => r
       }
+      aaaaRecord.ip should be("1:2:3:0:0:0:0:0")
+      aaaaRecord.ttl should be(Ttl.effectivelyForever)
     }
 
     "return additional records for SRV requests" in new Setup {

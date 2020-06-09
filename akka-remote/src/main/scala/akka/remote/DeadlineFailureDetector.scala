@@ -4,7 +4,6 @@
 
 package akka.remote
 
-import scala.concurrent.duration._
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 
