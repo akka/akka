@@ -276,8 +276,6 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * @see [[Tcp.outgoingConnection]]
    * @param negotiateNewSession Details about what to require when negotiating the connection with the server
    * @param sslContext Context containing details such as the trust and keystore
-   *
-   * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
   @deprecated(
     "Use outgoingConnectionWithTls that takes a SSLEngine factory instead. " +
@@ -354,8 +352,6 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * @param negotiateNewSession Details about what to require when negotiating the connection with the server
    * @param sslContext Context containing details such as the trust and keystore
    * @see [[Tcp.bind]]
-   *
-   * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
   @deprecated(
     "Use bindWithTls that takes a SSLEngine factory instead. " +
@@ -383,7 +379,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * where all incoming and outgoing bytes are passed through TLS.
    *
    * You specify a factory to create an SSLEngine that must already be configured for
-   * client mode and with all the parameters for the first session.
+   * server mode and with all the parameters for the first session.
    *
    * @see [[Tcp.bind]]
    */
@@ -406,7 +402,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * where all incoming and outgoing bytes are passed through TLS.
    *
    * You specify a factory to create an SSLEngine that must already be configured for
-   * client mode and with all the parameters for the first session.
+   * server mode and with all the parameters for the first session.
    *
    * @see [[Tcp.bind]]
    */
@@ -433,7 +429,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * provided Flow.
    *
    * You specify a factory to create an SSLEngine that must already be configured for
-   * client server and with all the parameters for the first session.
+   * server mode and with all the parameters for the first session.
    *
    * @see [[Tcp.bindAndHandle]]
    */
@@ -459,7 +455,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * provided Flow.
    *
    * You specify a factory to create an SSLEngine that must already be configured for
-   * client server and with all the parameters for the first session.
+   * server mode and with all the parameters for the first session.
    *
    * @see [[Tcp.bindAndHandle]]
    */
