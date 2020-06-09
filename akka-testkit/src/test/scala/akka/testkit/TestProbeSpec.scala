@@ -173,7 +173,7 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
       probe.ref ! "done"
 
       val msg: String = probe.fishForSpecificMessage() {
-        case msg @ "fishForMe" => msg
+        case msg @ "fishForMe" => msg.asInstanceOf[String] // need casting because lampepfl/dotty#9123
       }
 
       msg should be("fishForMe")
