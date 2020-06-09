@@ -130,6 +130,5 @@ These are autoupdated by latest stable on maven central:
 * https://github.com/akka/akka-quickstart-scala.g8
 * https://github.com/akka/akka-http-quickstart-java.g8
 * https://github.com/akka/akka-http-quickstart-scala.g8
-* https://github.com/akka/akka-distributed-workers-scala.g8
 * https://github.com/akka/akka-grpc-quickstart-java.g8
 * https://github.com/akka/akka-grpc-quickstart-scala.g8
