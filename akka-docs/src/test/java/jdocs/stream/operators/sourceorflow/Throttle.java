@@ -30,8 +30,7 @@ public class Throttle {
     int framesPerSecond = 24;
 
     Source<Frame, NotUsed> videoThrottling =
-        frameSource.throttle(
-            framesPerSecond, Duration.ofSeconds(1));
+        frameSource.throttle(framesPerSecond, Duration.ofSeconds(1));
     // serialize `Frame` and send over the network.
     // #throttle
 

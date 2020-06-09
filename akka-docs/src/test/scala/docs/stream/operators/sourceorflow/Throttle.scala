@@ -26,9 +26,7 @@ object Throttle extends App {
   val framesPerSecond = 24
 
   // val frameSource: Source[Frame,_]
-  val videoThrottling = frameSource.throttle(
-    framesPerSecond,
-    1.second)
+  val videoThrottling = frameSource.throttle(framesPerSecond, 1.second)
   // serialize `Frame` and send over the network.
   // #throttle
 
