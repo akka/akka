@@ -50,11 +50,9 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
     }
 
     "publish to all subscriber actors across several instances of the same topic" in {
-      val fruitTopic1 =
-        testKit.spawn(Topic[String]("fruit"))
-
-      val fruitTopic2 =
-        testKit.spawn(Topic[String]("fruit"))
+      val (fruitTopic1, fruitTopic2) = LoggingTestKit.debug("Topic list updated").withOccurrences(2).expect {
+        (testKit.spawn(Topic[String]("fruit")), testKit.spawn(Topic[String]("fruit")))
+      }
 
       try {
         val probe1 = testKit.createTestProbe[String]()
