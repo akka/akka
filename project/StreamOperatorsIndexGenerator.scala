@@ -97,8 +97,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       "fromGraph",
       "actorSubscriber",
       "foldAsync",
-      "newOnCompleteStage"),
-    "Compression" -> Seq("inflate", "gunzip"))
+      "newOnCompleteStage"))
 
   val ignore =
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++

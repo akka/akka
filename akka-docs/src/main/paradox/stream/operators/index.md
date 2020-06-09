@@ -333,7 +333,9 @@ Flow operators to (de)compress.
 | |Operator|Description|
 |--|--|--|
 |Compression|<a name="deflate"></a>@ref[deflate](Compression/deflate.md)|Creates a flow that deflate-compresses a stream of ByteStrings. |
+|Compression|<a name="gunzip"></a>@ref[gunzip](Compression/gunzip.md)|Creates a flow that gzip-decompresses a stream of ByteStrings.  |
 |Compression|<a name="gzip"></a>@ref[gzip](Compression/gzip.md)|Creates a flow that gzip-compresses a stream of ByteStrings.  |
+|Compression|<a name="inflate"></a>@ref[inflate](Compression/inflate.md)|Creates a flow that deflate-decompresses a stream of ByteStrings. |
 
 ## Error handling
 
@@ -439,11 +441,13 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [grouped](Source-or-Flow/grouped.md)
 * [groupedWeightedWithin](Source-or-Flow/groupedWeightedWithin.md)
 * [groupedWithin](Source-or-Flow/groupedWithin.md)
+* [gunzip](Compression/gunzip.md)
 * [gzip](Compression/gzip.md)
 * [head](Sink/head.md)
 * [headOption](Sink/headOption.md)
 * [idleTimeout](Source-or-Flow/idleTimeout.md)
 * [ignore](Sink/ignore.md)
+* [inflate](Compression/inflate.md)
 * [initialDelay](Source-or-Flow/initialDelay.md)
 * [initialTimeout](Source-or-Flow/initialTimeout.md)
 * [interleave](Source-or-Flow/interleave.md)
