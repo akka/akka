@@ -6,6 +6,10 @@ and machine crashes (including JVM and hardware failures). This is crucial for c
 you use @ref:[Cluster Singleton](typed/cluster-singleton.md) or @ref:[Cluster Sharding](typed/cluster-sharding.md),
 especially together with Akka Persistence.
 
+The [Split Brain Resolver video](https://akka.io/blog/news/2020/06/08/akka-split-brain-resolver-video)
+is a good starting point for learning why it is important to use a correct downing provider and
+how the Split Brain Resolver works.
+
 ## Module info
 
 To use Akka Split Brain Resolver is part of `akka-cluster` and you probably already have that
