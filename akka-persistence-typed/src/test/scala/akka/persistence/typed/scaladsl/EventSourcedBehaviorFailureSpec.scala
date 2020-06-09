@@ -28,7 +28,6 @@ import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.typed.EventRejectedException
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
-import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.RecoveryFailed
 import akka.persistence.typed.internal.JournalFailureException
 
