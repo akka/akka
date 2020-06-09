@@ -86,7 +86,8 @@ class FusingSpec extends StreamSpec {
 
     "propagate downstream errors through async boundary" in {
       val slowInitSrc = Source
-        .unfoldResource( () => {Thread.sleep(5000)},
+        //todo: can this be replaced with some promise+future composition?
+        .unfoldResource( () => {Thread.sleep(800)},
           (_ : Unit) => Some(1),
           (_ : Unit) => ()
         )
@@ -105,13 +106,14 @@ class FusingSpec extends StreamSpec {
 
       val (f1, f2) = g.run()
       f2.failed.futureValue should have message("I hate mondays")
-      Thread.sleep(5000)
+      Thread.sleep(1000)
       f1.failed.futureValue should have message("I hate mondays")
     }
 
     "propagate 'parallel' errors through async boundary via a common downstream" in {
       val slowInitSrc = Source
-        .unfoldResource( () => {Thread.sleep(5000)},
+        //todo: can this be replaced with some promise+future composition?
+        .unfoldResource( () => {Thread.sleep(800)},
           (_ : Unit) => Some(1),
           (_ : Unit) => ()
         )
@@ -128,7 +130,7 @@ class FusingSpec extends StreamSpec {
 
       val (f1, f2) = g.run()
       f2.failed.futureValue should have message("I hate mondays")
-      Thread.sleep(5000)
+      Thread.sleep(1000)
       f1.failed.futureValue should have message("I hate mondays")
     }
 
