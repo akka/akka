@@ -28,13 +28,22 @@ object Throttle extends App {
   // val frameSource: Source[Frame,_]
   val videoThrottling = frameSource.throttle(
     framesPerSecond,
-    1.second,
-    framesPerSecond * 30, // maximumBurst
-    ThrottleMode.shaping)
+    1.second)
   // serialize `Frame` and send over the network.
   // #throttle
 
-  videoThrottling.to(Sink.foreach(println)).run()
+  // #throttle-with-burst
+  // val frameSource: Source[Frame,_]
+  val videoThrottlingWithBurst = frameSource.throttle(
+    framesPerSecond,
+    1.second,
+    framesPerSecond * 30, // maximumBurst
+    ThrottleMode.Shaping)
+  // serialize `Frame` and send over the network.
+  // #throttle-with-burst
+
+  videoThrottling.take(1000).to(Sink.foreach(println)).run()
+  videoThrottlingWithBurst.take(1000).to(Sink.foreach(println)).run()
 }
 
 object ThrottleCommon {

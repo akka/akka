@@ -31,10 +31,18 @@ public class Throttle {
 
     Source<Frame, NotUsed> videoThrottling =
         frameSource.throttle(
-            framesPerSecond, Duration.ofSeconds(1), framesPerSecond * 30, ThrottleMode.shaping());
+            framesPerSecond, Duration.ofSeconds(1));
     // serialize `Frame` and send over the network.
     // #throttle
 
+    // #throttle-with-burst
+    Source<Frame, NotUsed> throttlingWithBurst =
+        frameSource.throttle(
+            framesPerSecond, Duration.ofSeconds(1), framesPerSecond * 30, ThrottleMode.shaping());
+    // serialize `Frame` and send over the network.
+    // #throttle-with-burst
+
     videoThrottling.map(f -> f.i()).to(Sink.foreach(System.out::println)).run(mat);
+    throttlingWithBurst.take(1000L).map(f -> f.i()).to(Sink.foreach(System.out::println)).run(mat);
   }
 }
