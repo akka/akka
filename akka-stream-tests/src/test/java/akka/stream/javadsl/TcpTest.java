@@ -216,7 +216,7 @@ public class TcpTest extends StreamTest {
     SSLEngine engine = sslContext.createSSLEngine();
 
     engine.setUseClientMode(role.equals(akka.stream.TLSRole.client()));
-    engine.setEnabledCipherSuites(new String[] {"TLS_RSA_WITH_AES_128_CBC_SHA"});
+    engine.setEnabledCipherSuites(new String[] {"TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"});
     engine.setEnabledProtocols(new String[] {"TLSv1.2"});
 
     return engine;
