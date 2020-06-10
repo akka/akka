@@ -155,6 +155,8 @@ object RotatingKeysSSLEngineProviderSpec {
   private val arteryNode001Id = "ssl/artery-nodes/artery-node001.example.com"
 
   private val baseConfig = """
+      akka.loglevel = debug
+
       akka.remote.artery {
         ## the large-messages channel in artery is not used for this tests
         ## but we're enabling it to test it also creates its own SSLEngine
@@ -262,14 +264,17 @@ abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
     (remoteSysB, pathEchoB)
   }
 
-  override def afterTermination(): Unit = {
+  override def beforeTermination(): Unit = {
     systemsToTerminate.foreach { systemToTerminate =>
       system.log.info(s"Terminating $systemToTerminate...")
-      Await.result(systemToTerminate.terminate(), 15.seconds.dilated)
+      val now = System.nanoTime()
+      Await.result(systemToTerminate.terminate(), 8.seconds.dilated)
+      val lasted = System.nanoTime() - now
+      system.log.info(s"Terminated $systemToTerminate after ${lasted / 1000000} ms")
     }
     // Don't cleanup folder until all systems have terminated
     cleanupTemporaryDirectory()
-    super.afterTermination()
+    super.beforeTermination()
   }
 }
 
