@@ -62,27 +62,32 @@ object JoinConfigCompatChecker {
    * @param actualConfig - the Config instance containing the expected values
    */
   def fullMatch(requiredKeys: im.Seq[String], toCheck: Config, actualConfig: Config): ConfigValidation = {
+    exists(requiredKeys, toCheck) ++ checkEquality(requiredKeys, toCheck, actualConfig)
+  }
 
-    def checkEquality = {
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def checkEquality(
+      keys: im.Seq[String],
+      toCheck: Config,
+      actualConfig: Config): ConfigValidation = {
 
-      def checkCompat(entry: util.Map.Entry[String, ConfigValue]) = {
-        val key = entry.getKey
-        actualConfig.hasPath(key) && actualConfig.getValue(key) == entry.getValue
-      }
-
-      // retrieve all incompatible keys
-      // NOTE: we only check the key if effectively required
-      // because config may contain more keys than required for this checker
-      val incompatibleKeys =
-        toCheck.entrySet().asScala.collect {
-          case entry if requiredKeys.contains(entry.getKey) && !checkCompat(entry) => s"${entry.getKey} is incompatible"
-        }
-
-      if (incompatibleKeys.isEmpty) Valid
-      else Invalid(incompatibleKeys.to(im.Seq))
+    def checkCompat(entry: util.Map.Entry[String, ConfigValue]) = {
+      val key = entry.getKey
+      actualConfig.hasPath(key) && actualConfig.getValue(key) == entry.getValue
     }
 
-    exists(requiredKeys, toCheck) ++ checkEquality
+    // retrieve all incompatible keys
+    // NOTE: we only check the key if effectively required
+    // because config may contain more keys than required for this checker
+    val incompatibleKeys =
+      toCheck.entrySet().asScala.collect {
+        case entry if keys.contains(entry.getKey) && !checkCompat(entry) => s"${entry.getKey} is incompatible"
+      }
+
+    if (incompatibleKeys.isEmpty) Valid
+    else Invalid(incompatibleKeys.to(im.Seq))
   }
 
   /**
