@@ -25,6 +25,7 @@ import akka.remote.artery.tcp.SSLEngineProviderSetup
 import akka.remote.artery.tcp.TlsTcpSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
+import akka.testkit.TestDuration
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import javax.net.ssl.SSLContext
@@ -155,8 +156,8 @@ object RotatingKeysSSLEngineProviderSpec {
 
   private val baseConfig = """
       akka.remote.artery {
-        ## the large-messages channel in artery is not used for this tests 
-        ## but we're enabling it to test it also creates its own SSLEngine 
+        ## the large-messages channel in artery is not used for this tests
+        ## but we're enabling it to test it also creates its own SSLEngine
         large-message-destinations = [ "/user/large" ]
       }
       akka.remote.artery.ssl {
@@ -264,7 +265,7 @@ abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
   override def afterTermination(): Unit = {
     systemsToTerminate.foreach { systemToTerminate =>
       system.log.info(s"Terminating $systemToTerminate...")
-      Await.result(systemToTerminate.terminate(), 10.seconds)
+      Await.result(systemToTerminate.terminate(), 15.seconds.dilated)
     }
     // Don't cleanup folder until all systems have terminated
     cleanupTemporaryDirectory()
