@@ -204,7 +204,7 @@ class PhiAccrualFailureDetector(
       -math.log10(1.0 - 1.0 / (1.0 + e))
   }
 
-  private val minStdDeviationMillis = minStdDeviation.toMillis
+  private val minStdDeviationMillis = minStdDeviation.toMillis.toDouble
 
   private def ensureValidStdDeviation(stdDeviation: Double): Double = math.max(stdDeviation, minStdDeviationMillis)
 
