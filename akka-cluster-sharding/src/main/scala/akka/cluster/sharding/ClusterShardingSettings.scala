@@ -23,6 +23,7 @@ object ClusterShardingSettings {
   val StateStoreModeDData = "ddata"
 
   /**
+   * Only for testing
    * INTERNAL API
    */
   @InternalApi

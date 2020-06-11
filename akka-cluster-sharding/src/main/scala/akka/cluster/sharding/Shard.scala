@@ -247,6 +247,7 @@ private[akka] object Shard {
     private val entities: java.util.Map[EntityId, EntityState] = new util.HashMap[EntityId, EntityState]()
     // needed to look up entity by reg when a Passivating is received
     private val byRef = new util.HashMap[ActorRef, EntityId]()
+    // optimization to not have to go through all entities to find batched writes
     private val remembering = new util.HashSet[EntityId]()
 
     def alreadyRemembered(set: Set[EntityId]): Unit = {
