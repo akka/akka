@@ -284,7 +284,7 @@ akka.cluster.sharding.state-store-mode = ddata
 ```
 
 The state of the `ShardCoordinator` is replicated across the cluster but is not stored to disk.
-@ref:[Distributed Data](distributed-data.md) handles the `ShardCoordinator`'s state with `WriteMajority`/`ReadMajority` consistency.
+@ref:[Distributed Data](distributed-data.md) handles the `ShardCoordinator`'s state with `WriteMajorityPlus`/`ReadMajorityPlus` consistency.
 When all nodes in the cluster have been stopped, the state is no longer needed and dropped.
 
 Cluster Sharding uses its own Distributed Data `Replicator` per node. 
