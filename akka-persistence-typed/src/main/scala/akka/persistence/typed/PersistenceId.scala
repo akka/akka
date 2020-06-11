@@ -125,6 +125,10 @@ object PersistenceId {
   def ofUniqueId(id: String): PersistenceId =
     new PersistenceId(id)
 
+  // FIXME, support a way of migrating to replicated event sourcing
+  // by treating old events as one of the replicas
+  def replicated(id: String, replicaId: String): PersistenceId =
+    new PersistenceId(id + DefaultSeparator + replicaId)
 }
 
 /**
