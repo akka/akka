@@ -74,13 +74,11 @@
 #
 # Now you should be all set to run the script
 #
-# Run the script in two stages.
-#  First a dry run:
-#    shell> project/scripts/release
-#  And if all goes well a real run:
-#    shell> project/scripts/release --real-run
+# Run the script:
 #
-# The artifacts published to oss.sonatype.org needs to be released by following the
+#    shell> project/scripts/release
+#
+# The artifacts published to oss.sonatype.org need to be released by following the
 # instructions under release here
 # https://docs.sonatype.org/display/Repository/Sonatype+OSS+Maven+Repository+Usage+Guide
 
@@ -91,12 +89,6 @@ declare -r default_path="www"
 # settings
 declare release_server=${default_server}
 declare release_path=${default_path}
-
-# flags
-unset run_tests dry_run no_mima no_revert
-
-# dry-run is the default
-dry_run=true
 
 # get the source location for this script; handles symlinks
 function get_script_path {
@@ -118,12 +110,8 @@ function usage {
 Dry run is be default.
 Usage: ${script_name} [options]
   -h | --help            Print this usage message
-  -t | --run-tests       Run all tests before releasing
   -s | --server SERVER   Set the release server (default ${default_server})
   -p | --path PATH       Set the path on the release server (default ${default_path})
-  -e | --real-run        Build everything and push the release
-  -m | --no-mima         Skip binary compatibility check in dry-run
-  -r | --no-revert       On dry-run don't revert git commits and tags
 EOM
 }
 
@@ -137,11 +125,6 @@ function echoerr {
   echo "[${script_name}] $@" 1>&2
 }
 
-# echo a dry run log message
-function echodry {
-  echolog "(dry run) $@"
-}
-
 # fail the script with an error message
 function fail {
   echoerr "$@"
@@ -152,12 +135,8 @@ function fail {
 while true; do
   case "$1" in
     -h | --help ) usage; exit 1 ;;
-    -t | --run-tests ) run_tests=true; shift ;;
     -s | --server ) release_server=$2; shift 2 ;;
     -p | --path ) release_path=$2; shift 2 ;;
-    -e | --real-run) unset dry_run; shift ;;
-    -m | --no-mima) no_mima=true; shift ;;
-    -r | --no-revert) no_revert=true; shift ;;
     * ) break ;;
   esac
 done
@@ -240,13 +219,7 @@ fi
 
 echolog "Creating release ${version}..."
 
-if [ $dry_run ]; then
-  echodry "Building everything but not pushing release"
-else
-  echolog "Publishing to ${publish_path}"
-fi
-
-[[ $run_tests ]] && echolog "All tests will be run"
+echolog "Publishing to ${publish_path}"
 
 # try ssh'ing to the release server
 echolog "Checking ssh connection to ${release_server}"
@@ -255,27 +228,13 @@ try ssh -t ${release_server} echo "Successfully contacted release server."
 # start clean
 try sbt clean
 
-# run the tests if specified
-if [ $run_tests ]; then
-  echolog "Running all tests..."
-  try sbt test
-  echolog "All tests are green"
-fi
-
-# check binary compatibility for dry run
-if [ ! $no_mima ] && [ $dry_run ]; then
-  echodry "Running migration manager report..."
-  try sbt $RELEASE_OPT +mimaReportBinaryIssues
-  echodry "Finished migration manager report"
-fi
+echolog "Running migration manager report..."
+try sbt $RELEASE_OPT +mimaReportBinaryIssues
+echolog "Finished migration manager report"
 
 # build the release
 echolog "Building the release..."
-if [ ! $dry_run ]; then
-  RELEASE_OPT="-Dakka.genjavadoc.enabled=true -Dpublish.maven.central=true"
-else
-  RELEASE_OPT="-Dakka.genjavadoc.enabled=true"
-fi
+RELEASE_OPT="-Dakka.genjavadoc.enabled=true -Dpublish.maven.central=true"
 
 # Release artifacts
 try sbt $RELEASE_OPT +publishSigned
@@ -312,35 +271,16 @@ trap arrgh_interrupt SIGHUP SIGINT SIGTERM
 
 # push the commits and tags to git origin
 echolog "Pushing to git origin..."
-if [ $dry_run ]; then
-  echodry "Not actually pushing to git origin. Commands:"
-  echodry "  git push origin --tags"
-else
-  important git push origin --tags
-fi
+important git push origin --tags
 
 echolog "Building docs and pushing to the server..."
-if [ $dry_run ]; then
-  echodry "Not actually pushing to server. Commands:"
-  echodry "  sbt $RELEASE_OPT publishRsync"
-else
-  important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'before publishing version $version'; true"
-  # using Scala 2.13 here to avoid the infamous problem with missing AskSupport in classpath
-  important sbt -Dakka.build.scalaVersion=2.13.0 $RELEASE_OPT publishRsync
-  important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'publish version $version'"
-fi
+important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'before publishing version $version'; true"
+# using Scala 2.13 here to avoid the infamous problem with missing AskSupport in classpath
+important sbt -Dakka.build.scalaVersion=2.13.0 $RELEASE_OPT publishRsync
+important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'publish version $version'"
 
 echolog "*****"
-echolog "Do not forget to update versions.json on akka.github.com!"
+echolog "Do not forget to update https://github.com/akka/akka.io/blob/master/versions.json !"
 echolog "*****"
 
-if [ $dry_run ]; then
-  if [ $no_revert ]; then
-    echodry "No revert: git tag v${version} remains"
-  else
-    git_cleanup
-  fi
-  echodry "Successfully created release ${version}"
-else
-  echolog "Successfully created release ${version}"
-fi
+echolog "Successfully created release ${version}"
