@@ -587,11 +587,13 @@ private[akka] class Shard(
         storingStarts.mkString(", "),
         storingStops.mkString(", "))
 
-    storingStarts.foreach { entityId =>
-      flightRecorder.rememberEntityAdd(entityId)
-    }
-    storingStops.foreach { id =>
-      flightRecorder.rememberEntityRemove(id)
+    if (flightRecorder != NoOpShardingFlightRecorder) {
+      storingStarts.foreach { entityId =>
+        flightRecorder.rememberEntityAdd(entityId)
+      }
+      storingStops.foreach { id =>
+        flightRecorder.rememberEntityRemove(id)
+      }
     }
     val startTimeNanos = System.nanoTime()
     val update = RememberEntitiesShardStore.Update(started = storingStarts, stopped = storingStops)
