@@ -404,7 +404,7 @@ private[akka] class Shard(
 
   import akka.cluster.sharding.ShardCoordinator.Internal.CoordinatorMessage
 
-  final val verboseDebug = context.system.settings.config.getBoolean("akka.cluster.sharding.verbose-debug-logging")
+  private val verboseDebug = context.system.settings.config.getBoolean("akka.cluster.sharding.verbose-debug-logging")
 
   private val rememberEntitiesStore: Option[ActorRef] =
     rememberEntitiesProvider.map { provider =>
