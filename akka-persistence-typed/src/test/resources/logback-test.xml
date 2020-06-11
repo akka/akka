@@ -25,7 +25,8 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <root level="DEBUG">
+<!--    FIXME switch back to DEBUG -->
+    <root level="INFO">
         <appender-ref ref="CapturingAppender"/>
     </root>
 

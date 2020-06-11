@@ -36,6 +36,7 @@ import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotSelectionCriteria
+import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
 import akka.persistence.typed.scaladsl._
 import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
 import akka.persistence.typed.scaladsl.RetentionCriteria
@@ -87,7 +88,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     recovery: Recovery = Recovery(),
     retention: RetentionCriteria = RetentionCriteria.disabled,
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
-    override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty)
+    override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty,
+    activeActive: Option[ActiveActive] = None)
     extends EventSourcedBehavior[Command, Event, State] {
 
   import EventSourcedBehaviorImpl.WriterIdentity
@@ -236,6 +238,12 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override def withRecovery(recovery: TypedRecovery): EventSourcedBehavior[Command, Event, State] = {
     copy(recovery = recovery.toClassic)
+  }
+
+  override private[akka] def withActiveActive(
+      id: String,
+      allIds: Set[String]): EventSourcedBehavior[Command, Event, State] = {
+    copy(activeActive = Some(ActiveActive(id, allIds)))
   }
 }
 

@@ -22,6 +22,8 @@ import akka.persistence.typed.internal._
 
 object EventSourcedBehavior {
 
+  private[akka] case class ActiveActive(id: String, allIds: Set[String])
+
   /**
    * Type alias for the command handler function that defines how to act on commands.
    *
@@ -144,6 +146,10 @@ object EventSourcedBehavior {
    * Change the journal plugin id that this actor should use.
    */
   def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State]
+
+  private[akka] def withActiveActive(
+      replicaId: String,
+      allReplicaIds: Set[String]): EventSourcedBehavior[Command, Event, State]
 
   /**
    * Change the snapshot store plugin id that this actor should use.
