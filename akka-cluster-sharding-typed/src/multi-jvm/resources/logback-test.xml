@@ -8,10 +8,8 @@
             <pattern>%date{ISO8601} %-5level %logger %marker - %msg MDC: {%mdc}%n</pattern>
         </encoder>
     </appender>
-
-    <logger name="akka.cluster.sharding" level="INFO"/>
-
-    <root level="WARN">
+    
+    <root level="INFO">
         <appender-ref ref="STDOUT"/>
     </root>
 </configuration>
