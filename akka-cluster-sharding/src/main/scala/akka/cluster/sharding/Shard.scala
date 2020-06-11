@@ -198,7 +198,7 @@ private[akka] object Shard {
           else newState
         } else {
           if (r.ackTo.isEmpty) this
-          else RememberingStart(ackTo ++ r.ackTo)
+          else RememberingStart(ackTo.union(r.ackTo))
         }
       case _ => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
     }

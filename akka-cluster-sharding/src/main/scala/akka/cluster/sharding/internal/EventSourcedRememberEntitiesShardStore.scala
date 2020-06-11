@@ -80,7 +80,7 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
 
   override def receiveRecover: Receive = {
     case EntitiesStarted(ids)              => state = state.copy(state.entities.union(ids))
-    case EntitiesStopped(ids)              => state = state.copy(state.entities -- ids)
+    case EntitiesStopped(ids)              => state = state.copy(state.entities.diff(ids))
     case SnapshotOffer(_, snapshot: State) => state = snapshot
     case RecoveryCompleted =>
       log.debug("Recovery completed for shard [{}] with [{}] entities", shardId, state.entities.size)
@@ -97,7 +97,7 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
         left -= 1
         if (left == 0) {
           sender() ! RememberEntitiesShardStore.UpdateDone(started, stopped)
-          state.copy(state.entities.union(started) -- stopped)
+          state.copy(state.entities.union(started).diff(stopped))
           saveSnapshotWhenNeeded()
         }
       }
