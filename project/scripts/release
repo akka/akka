@@ -90,9 +90,6 @@ declare -r default_path="www"
 declare release_server=${default_server}
 declare release_path=${default_path}
 
-# flags
-unset run_tests
-
 # get the source location for this script; handles symlinks
 function get_script_path {
   local source="${BASH_SOURCE[0]}"
@@ -113,7 +110,6 @@ function usage {
 Dry run is be default.
 Usage: ${script_name} [options]
   -h | --help            Print this usage message
-  -t | --run-tests       Run all tests before releasing
   -s | --server SERVER   Set the release server (default ${default_server})
   -p | --path PATH       Set the path on the release server (default ${default_path})
 EOM
@@ -139,7 +135,6 @@ function fail {
 while true; do
   case "$1" in
     -h | --help ) usage; exit 1 ;;
-    -t | --run-tests ) run_tests=true; shift ;;
     -s | --server ) release_server=$2; shift 2 ;;
     -p | --path ) release_path=$2; shift 2 ;;
     * ) break ;;
@@ -226,21 +221,12 @@ echolog "Creating release ${version}..."
 
 echolog "Publishing to ${publish_path}"
 
-[[ $run_tests ]] && echolog "All tests will be run"
-
 # try ssh'ing to the release server
 echolog "Checking ssh connection to ${release_server}"
 try ssh -t ${release_server} echo "Successfully contacted release server."
 
 # start clean
 try sbt clean
-
-# run the tests if specified
-if [ $run_tests ]; then
-  echolog "Running all tests..."
-  try sbt test
-  echolog "All tests are green"
-fi
 
 echolog "Running migration manager report..."
 try sbt $RELEASE_OPT +mimaReportBinaryIssues
