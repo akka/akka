@@ -54,6 +54,8 @@ private[akka] final class RememberEntityStarter(
   implicit val ec: ExecutionContext = context.dispatcher
   import RememberEntityStarter._
 
+  require(ids.nonEmpty)
+
   private var idsLeftToStart = Set.empty[EntityId]
   private var waitingForAck = Set.empty[EntityId]
   private var entitiesMoved = Set.empty[EntityId]
