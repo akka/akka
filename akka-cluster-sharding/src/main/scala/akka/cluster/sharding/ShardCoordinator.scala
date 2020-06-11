@@ -1422,7 +1422,7 @@ private[akka] class DDataShardCoordinator(
       if (shardIds.nonEmpty) {
         val newUnallocatedShards = state.unallocatedShards.union(shardIds.diff(state.shards.keySet))
         state = state.copy(unallocatedShards = newUnallocatedShards)
-        newUnallocatedShards.foreach { self ! GetShardHome(_) }
+        allocateShardHomesForRememberEntities()
       }
       timers.cancel(RememberEntitiesTimeoutKey)
 
