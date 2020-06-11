@@ -177,9 +177,11 @@ private[akka] object Shard {
   }
 
   object RememberingStart {
+    val empty = new RememberingStart(Set.empty)
+
     def apply(ackTo: Option[ActorRef]): RememberingStart =
       ackTo match {
-        case None        => RememberingStartNoAck
+        case None        => empty
         case Some(ackTo) => RememberingStart(Set(ackTo))
       }
   }
@@ -194,7 +196,7 @@ private[akka] object Shard {
       case active: Active => active
       case r: RememberingStart =>
         if (ackTo.isEmpty) {
-          if (r.ackTo.isEmpty) RememberingStartNoAck
+          if (r.ackTo.isEmpty) RememberingStart.empty
           else newState
         } else {
           if (r.ackTo.isEmpty) this
@@ -203,7 +205,6 @@ private[akka] object Shard {
       case _ => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
     }
   }
-  private val RememberingStartNoAck = new RememberingStart(Set.empty)
 
   /**
    * When remember entities is enabled an entity is in this state while
