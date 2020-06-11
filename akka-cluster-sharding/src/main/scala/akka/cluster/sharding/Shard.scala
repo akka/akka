@@ -489,7 +489,9 @@ private[akka] class Shard(
       tryGetLease(lease.get)
     case ll: LeaseLost =>
       receiveLeaseLost(ll)
-    case _ =>
+    case msg =>
+      if (verboseDebug)
+        log.debug("Got msg of type [{}] from [{}] while waiting for lease, stashing", msg.getClass, sender())
       stash()
   }
 
@@ -524,7 +526,10 @@ private[akka] class Shard(
       loadingEntityIdsFailed()
     case msg =>
       if (verboseDebug)
-        log.debug("Got msg of type [{}] from [{}] while waiting for remember entitites", msg.getClass, sender())
+        log.debug(
+          "Got msg of type [{}] from [{}] while waiting for remember entities, stashing",
+          msg.getClass,
+          sender())
       stash()
   }
 
