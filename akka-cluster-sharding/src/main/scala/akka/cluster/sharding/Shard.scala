@@ -246,7 +246,7 @@ private[akka] object Shard {
 
   final class Entities(log: LoggingAdapter, rememberingEntities: Boolean, verboseDebug: Boolean) {
     private val entities: java.util.Map[EntityId, EntityState] = new util.HashMap[EntityId, EntityState]()
-    // needed to look up entity by reg when a Passivating is received
+    // needed to look up entity by ref when a Passivating is received
     private val byRef = new util.HashMap[ActorRef, EntityId]()
     // optimization to not have to go through all entities to find batched writes
     private val remembering = new util.HashSet[EntityId]()
@@ -302,9 +302,11 @@ private[akka] object Shard {
       case _           => OptionVal.None
 
     }
-    def entityState(id: EntityId): EntityState = {
-      OptionVal(entities.get(id)).getOrElse(NoState)
-    }
+    def entityState(id: EntityId): EntityState =
+      entities.get(id) match {
+        case null  => NoState
+        case state => state
+      }
 
     def entityId(ref: ActorRef): OptionVal[EntityId] = OptionVal(byRef.get(ref))
 
