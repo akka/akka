@@ -623,7 +623,7 @@ private[akka] class Shard(
       onUpdateDone(storedStarts, storedStops)
 
     case RememberEntityTimeout(`update`) =>
-      log.error("Remember entity store did not respond, crashing shard")
+      log.error("Remember entity store did not respond, restarting shard")
       throw new RuntimeException(
         s"Async write timed out after ${settings.tuningParameters.updatingStateTimeout.pretty}")
     case ShardRegion.StartEntity(entityId) => startEntity(entityId, Some(sender()))
