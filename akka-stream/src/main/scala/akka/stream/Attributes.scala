@@ -12,6 +12,8 @@ import scala.annotation.tailrec
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.{ classTag, ClassTag }
+import akka.japi.function
+import java.time.Duration
 
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
@@ -19,8 +21,13 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.japi.function
 import akka.stream.impl.TraversalBuilder
-import akka.util.{ ByteString, OptionVal }
 import akka.util.JavaDurationConverters._
+import akka.util.JavaDurationConverters._
+
+import scala.compat.java8.OptionConverters._
+import akka.util.{ ByteString, OptionVal }
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
@@ -175,13 +182,21 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   /**
    * INTERNAL API
    */
-  @InternalApi def nameOrDefault(default: String = "unnamed"): String = {
-    @tailrec def find(attrs: List[Attribute]): String = attrs match {
-      case Attributes.Name(name) :: _ => name
+  @InternalApi private def getName(): Option[String] = {
+    @tailrec def find(attrs: List[Attribute]): Option[String] = attrs match {
+      case Attributes.Name(name) :: _ => Some(name)
       case _ :: tail                  => find(tail)
-      case Nil                        => default
+      case Nil                        => None
     }
     find(attributeList)
+  }
+
+  @InternalApi def nameOrDefault(default: String = "unnamed"): String = {
+    getName().getOrElse(default)
+  }
+
+  @InternalApi private[akka] def nameForActorRef(default: String = "unnamed"): String = {
+    getName().map(name => URLEncoder.encode(name, ByteString.UTF_8)).getOrElse(default)
   }
 
   /**
@@ -557,14 +572,10 @@ object Attributes {
   /**
    * Specifies the name of the operation.
    * If the name is null or empty the name is ignored, i.e. [[#none]] is returned.
-   *
-   * When using this method the name is encoded with URLEncoder with UTF-8 because
-   * the name is sometimes used as part of actor name. If that is not desired
-   * the name can be added in it's raw format using `.addAttributes(Attributes(Name(name)))`.
    */
   def name(name: String): Attributes =
     if (name == null || name.isEmpty) none
-    else Attributes(Name(URLEncoder.encode(name, ByteString.UTF_8)))
+    else Attributes(Name(name))
 
   /**
    * Each asynchronous piece of a materialized stream topology is executed by one Actor

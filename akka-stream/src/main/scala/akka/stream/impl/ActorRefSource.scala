@@ -49,8 +49,7 @@ private object ActorRefSource {
         }
       private var isCompleting: Boolean = false
 
-      override protected def stageActorName: String =
-        inheritedAttributes.get[Attributes.Name].map(_.n).getOrElse(super.stageActorName)
+      override protected def stageActorName: String = inheritedAttributes.nameForActorRef(super.stageActorName)
 
       private val name = inheritedAttributes.nameOrDefault(getClass.toString)
       override val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillCompatibility = true) {
