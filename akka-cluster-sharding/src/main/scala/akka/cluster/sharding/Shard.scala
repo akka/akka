@@ -103,6 +103,8 @@ private[akka] object Shard {
 
   case object PassivateIdleTick extends NoSerializationVerificationNeeded
 
+  private final case class EntityTerminated(entityId: String)
+
   private final case class RememberedEntityIds(ids: Set[EntityId])
   private final case class RememberEntityStoreCrashed(store: ActorRef)
 
@@ -551,6 +553,7 @@ private[akka] class Shard(
   // when not remembering entities, we stay in this state all the time
   def idle: Receive = {
     case Terminated(ref)                         => receiveTerminated(ref)
+    case EntityTerminated(entityId)              => entityTerminated(entityId)
     case msg: CoordinatorMessage                 => receiveCoordinatorMessage(msg)
     case msg: RememberEntityCommand              => receiveRememberEntityCommand(msg)
     case msg: ShardRegion.StartEntity            => startEntity(msg.entityId, Some(sender()))
@@ -561,7 +564,6 @@ private[akka] class Shard(
     case msg: RememberEntityStoreCrashed         => rememberEntityStoreCrashed(msg)
     case msg if extractEntityId.isDefinedAt(msg) => deliverMessage(msg, sender())
   }
-
   def rememberUpdate(add: Set[EntityId] = Set.empty, remove: Set[EntityId] = Set.empty): Unit = {
     rememberEntitiesStore match {
       case None =>
@@ -617,6 +619,7 @@ private[akka] class Shard(
         s"Async write timed out after ${settings.tuningParameters.updatingStateTimeout.pretty}")
     case ShardRegion.StartEntity(entityId) => startEntity(entityId, Some(sender()))
     case Terminated(ref)                   => receiveTerminated(ref)
+    case EntityTerminated(id)              => entityTerminated(id)
     case _: CoordinatorMessage             => stash()
     case cmd: RememberEntityCommand        => receiveRememberEntityCommand(cmd)
     case l: LeaseLost                      => receiveLeaseLost(l)
@@ -787,7 +790,7 @@ private[akka] class Shard(
       if (activeEntities.nonEmpty) {
         val entityHandOffTimeout = (settings.tuningParameters.handOffTimeout - 5.seconds).max(1.seconds)
         log.debug("Starting HandOffStopper for shard [{}] to terminate [{}] entities.", shardId, activeEntities.size)
-        activeEntities.foreach(context.unwatch(_))
+        activeEntities.foreach(context.unwatch)
         handOffStopper = Some(
           context.watch(
             context.actorOf(
@@ -807,13 +810,6 @@ private[akka] class Shard(
   private def receiveTerminated(ref: ActorRef): Unit = {
     if (handOffStopper.contains(ref))
       context.stop(self)
-    else {
-      // workaround for watchWith not working with stash #29101
-      entities.entityId(ref) match {
-        case OptionVal.Some(id) => entityTerminated(id)
-        case _                  =>
-      }
-    }
   }
 
   @InternalStableApi
@@ -983,7 +979,7 @@ private[akka] class Shard(
       case OptionVal.None =>
         val name = URLEncoder.encode(id, "utf-8")
         val a = context.actorOf(entityProps(id), name)
-        context.watch(a)
+        context.watchWith(a, EntityTerminated(id))
         log.debug("Started entity [{}] with entity id [{}] in shard [{}]", a, id, shardId)
         entities.addEntity(id, a)
         touchLastMessageTimestamp(id)
