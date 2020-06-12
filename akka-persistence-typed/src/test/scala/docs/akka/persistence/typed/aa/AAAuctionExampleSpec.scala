@@ -3,13 +3,12 @@
  */
 
 package docs.akka.persistence.typed.aa
+
 import java.time.Instant
 
-import akka.actor.typed.scaladsl._
-
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, _ }
 import akka.actor.typed.{ ActorRef, Behavior }
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.persistence.typed.scaladsl.{ ActiveActiveContext, ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }

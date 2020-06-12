@@ -152,7 +152,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             retention,
             holdingRecoveryPermit = false,
             settings = settings,
-            stashState = stashState)
+            stashState = stashState,
+            activeActive = activeActive)
 
           // needs to accept Any since we also can get messages from the journal
           // not part of the user facing Command protocol
@@ -241,9 +242,10 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   }
 
   override private[akka] def withActiveActive(
+      context: ActiveActiveContext,
       id: String,
       allIds: Set[String]): EventSourcedBehavior[Command, Event, State] = {
-    copy(activeActive = Some(ActiveActive(id, allIds)))
+    copy(activeActive = Some(ActiveActive(id, allIds, context)))
   }
 }
 
@@ -255,4 +257,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   final case class SnapshotterResponse(msg: akka.persistence.SnapshotProtocol.Response) extends InternalProtocol
   final case class RecoveryTickEvent(snapshot: Boolean) extends InternalProtocol
   final case class IncomingCommand[C](c: C) extends InternalProtocol
+  final case class ReplicatedEvent[E](e: E, originReplica: String, ack: ActorRef[ReplicatedEventAck.type])
+      extends InternalProtocol
 }
+
+case object ReplicatedEventAck

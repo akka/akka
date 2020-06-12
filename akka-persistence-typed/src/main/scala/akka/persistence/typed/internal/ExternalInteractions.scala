@@ -38,6 +38,7 @@ private[akka] trait JournalInteractions[C, E, S] {
 
     val newState = state.nextSequenceNr()
 
+    // FIXME, store that this was a replicated event
     val repr = PersistentRepr(
       event,
       persistenceId = setup.persistenceId.id,
@@ -46,6 +47,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       writerUuid = setup.writerIdentity.writerUuid,
       sender = ActorRef.noSender)
 
+    // FIXME check cinnamon is okay with this being null
     onWriteInitiated(ctx, cmd, repr)
 
     val write = AtomicWrite(repr) :: Nil

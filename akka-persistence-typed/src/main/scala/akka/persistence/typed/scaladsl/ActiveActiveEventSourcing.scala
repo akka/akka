@@ -3,6 +3,7 @@
  */
 
 package akka.persistence.typed.scaladsl
+
 import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
 

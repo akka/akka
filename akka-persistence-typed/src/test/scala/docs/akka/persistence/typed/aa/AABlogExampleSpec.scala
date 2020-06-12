@@ -20,8 +20,12 @@ object AABlogExampleSpec {
        akka.loglevel = debug
        akka.persistence {
         journal {
-          plugin = "akka.persistence.journal.inmem"
-        }
+        plugin = "akka.persistence.journal.leveldb"
+           leveldb {
+             native = off
+             dir = "target/journal-AABlogExampleSpec"
+           }
+         }
        }
       """)
 
@@ -130,7 +134,7 @@ class AABlogExampleSpec
         defDcA.ask[PostContent](replyTo => GetPost("cat", replyTo)).futureValue shouldEqual content
       }
 
-      // won't pass until we implement it
+      // won't pass until we implement replication
       eventually {
         defDcB.ask[PostContent](replyTo => GetPost("cat", replyTo)).futureValue shouldEqual content
       }

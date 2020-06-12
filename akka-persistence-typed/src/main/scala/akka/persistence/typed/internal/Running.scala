@@ -6,10 +6,8 @@ package akka.persistence.typed.internal
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-
 import akka.actor.UnhandledMessage
-import akka.actor.typed.Behavior
-import akka.actor.typed.Signal
+import akka.actor.typed.{ ActorRef, Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 import akka.annotation.{ InternalApi, InternalStableApi }
@@ -26,20 +24,29 @@ import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SaveSnapshotSuccess
 import akka.persistence.SnapshotProtocol
 import akka.persistence.journal.Tagged
-import akka.persistence.typed.DeleteEventsCompleted
-import akka.persistence.typed.DeleteEventsFailed
-import akka.persistence.typed.DeleteSnapshotsCompleted
-import akka.persistence.typed.DeleteSnapshotsFailed
-import akka.persistence.typed.DeletionTarget
-import akka.persistence.typed.EventRejectedException
-import akka.persistence.typed.SnapshotCompleted
-import akka.persistence.typed.SnapshotFailed
-import akka.persistence.typed.SnapshotMetadata
-import akka.persistence.typed.SnapshotSelectionCriteria
+import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
+import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
+import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
+import akka.persistence.typed.{
+  DeleteEventsCompleted,
+  DeleteEventsFailed,
+  DeleteSnapshotsCompleted,
+  DeleteSnapshotsFailed,
+  DeletionTarget,
+  EventRejectedException,
+  PersistenceId,
+  SnapshotCompleted,
+  SnapshotFailed,
+  SnapshotMetadata,
+  SnapshotSelectionCriteria
+}
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
-import akka.util.unused
+import akka.stream.{ Attributes, SystemMaterializer }
+import akka.stream.Attributes.LogLevels
+import akka.stream.scaladsl.{ RestartSource, Sink }
+import akka.util.{ unused, Timeout }
 
 /**
  * INTERNAL API
@@ -81,7 +88,9 @@ private[akka] object Running {
   }
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] = {
+
     val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
+
     new running.HandlingCommands(state)
   }
 }
@@ -97,6 +106,50 @@ private[akka] object Running {
   import InternalProtocol._
   import Running.RunningState
 
+  import scala.concurrent.duration._
+  import akka.actor.typed.scaladsl.AskPattern._
+
+  // FIXME pull out into a separate class
+
+  setup.activeActive.map { aa =>
+    println("Starting replication streams")
+    val query = PersistenceQuery(setup.context.system)
+
+    aa.allReplicas.zipWithIndex.foreach {
+      case (replica, index) =>
+        if (replica != aa.replicaId) {
+          val seqNr = 0L // FIXME workout where this will come from
+          val pid = PersistenceId.replicated(aa.aaContext.id, replica)
+          // FIXME, hard coded identifier
+          println("FIXME use index to get pluginin id to allow diff databases per replica: " + index)
+          val replication = query.readJournalFor[EventsByPersistenceIdQuery](LeveldbReadJournal.Identifier)
+
+          // for the control.foreach in mapMaterializedValue
+          // we have to obtain the context's dispatcher here, rather in mapMaterializedValue, since by that time,
+          // the actor may be already stopped, and the context could be `null`!
+//          implicit val ec = setup.context.executionContext
+          implicit val timoeut = Timeout(30.seconds)
+          implicit val scheduler = setup.context.system.scheduler
+
+          val source = RestartSource.withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
+            replication
+              .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
+              .mapAsync(1) { eventEnvelope: EventEnvelope =>
+                setup.context.self.ask[ReplicatedEventAck.type](replyTo =>
+                  ReplicatedEvent(eventEnvelope.event, replica, replyTo))
+              }
+              // useful with info about which stream is failing, which isn't included in error logging in RestartSource
+              .log(s"${aa.aaContext.id}-replicationStream-${aa.aaContext.replicaId}")
+              .withAttributes(Attributes.logLevels(onElement = LogLevels.Off))
+          }
+
+          // FIXME, kill switch for stopping
+          source.runWith(Sink.ignore)(SystemMaterializer(setup.context.system).materializer)
+        }
+    }
+
+  }
+
   // Needed for WithSeqNrAccessible, when unstashing
   private var _currentSequenceNumber = 0L
 
@@ -107,11 +160,12 @@ private[akka] object Running {
     _currentSequenceNumber = state.seqNr
 
     def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
-      case IncomingCommand(c: C @unchecked) => onCommand(state, c)
-      case JournalResponse(r)               => onDeleteEventsJournalResponse(r, state.state)
-      case SnapshotterResponse(r)           => onDeleteSnapshotResponse(r, state.state)
-      case get: GetState[S @unchecked]      => onGetState(get)
-      case _                                => Behaviors.unhandled
+      case IncomingCommand(c: C @unchecked)                  => onCommand(state, c)
+      case ReplicatedEvent(event: E @unchecked, origin, ack) => onReplicatedEvent(state, event, origin, ack)
+      case JournalResponse(r)                                => onDeleteEventsJournalResponse(r, state.state)
+      case SnapshotterResponse(r)                            => onDeleteSnapshotResponse(r, state.state)
+      case get: GetState[S @unchecked]                       => onGetState(get)
+      case _                                                 => Behaviors.unhandled
     }
 
     override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
@@ -128,10 +182,37 @@ private[akka] object Running {
       applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
     }
 
+    def onReplicatedEvent(
+        value: Running.RunningState[S],
+        event: E,
+        origin: String,
+        ack: ActorRef[ReplicatedEventAck.type]): Behavior[InternalProtocol] = {
+      println("FIXME set the details on the context")
+      ack ! ReplicatedEventAck
+      handleEventPersist(event, None, Nil)
+    }
+
     // Used by EventSourcedBehaviorTestKit to retrieve the state.
     def onGetState(get: GetState[S]): Behavior[InternalProtocol] = {
       get.replyTo ! state.state
       this
+    }
+
+    private def handleEventPersist(event: E, cmd: Any, sideEffects: immutable.Seq[SideEffect[S]]) = {
+      // apply the event before persist so that validation exception is handled before persisting
+      // the invalid event, in case such validation is implemented in the event handler.
+      // also, ensure that there is an event handler for each single event
+      _currentSequenceNumber = state.seqNr + 1
+      val newState = state.applyEvent(setup, event)
+
+      val eventToPersist = adaptEvent(event)
+      val eventAdapterManifest = setup.eventAdapter.manifest(event)
+
+      val newState2 = internalPersist(setup.context, cmd, newState, eventToPersist, eventAdapterManifest)
+
+      val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
+
+      persistingEvents(newState2, state, numberOfEvents = 1, shouldSnapshotAfterPersist, sideEffects)
     }
 
     @tailrec def applyEffects(
@@ -152,21 +233,7 @@ private[akka] object Running {
           applyEffects(msg, state, eff, currentSideEffects ++ sideEffects)
 
         case Persist(event) =>
-          // apply the event before persist so that validation exception is handled before persisting
-          // the invalid event, in case such validation is implemented in the event handler.
-          // also, ensure that there is an event handler for each single event
-          _currentSequenceNumber = state.seqNr + 1
-          val newState = state.applyEvent(setup, event)
-
-          val eventToPersist = adaptEvent(event)
-          val eventAdapterManifest = setup.eventAdapter.manifest(event)
-
-          val newState2 = internalPersist(setup.context, msg, newState, eventToPersist, eventAdapterManifest)
-
-          val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
-
-          persistingEvents(newState2, state, numberOfEvents = 1, shouldSnapshotAfterPersist, sideEffects)
-
+          handleEventPersist(event, Some(msg), sideEffects)
         case PersistAll(events) =>
           if (events.nonEmpty) {
             // apply the event before persist so that validation exception is handled before persisting
@@ -252,6 +319,7 @@ private[akka] object Running {
       msg match {
         case JournalResponse(r)                => onJournalResponse(r)
         case in: IncomingCommand[C @unchecked] => onCommand(in)
+        case re: ReplicatedEvent[C @unchecked] => onReplicatedEvent(re)
         case get: GetState[S @unchecked]       => stashInternal(get)
         case SnapshotterResponse(r)            => onDeleteSnapshotResponse(r, visibleState.state)
         case RecoveryTickEvent(_)              => Behaviors.unhandled
@@ -266,6 +334,14 @@ private[akka] object Running {
         Behaviors.unhandled
       } else {
         stashInternal(cmd)
+      }
+    }
+
+    def onReplicatedEvent(event: InternalProtocol.ReplicatedEvent[C]): Behavior[InternalProtocol] = {
+      if (state.receivedPoisonPill) {
+        Behaviors.unhandled
+      } else {
+        stashInternal(event)
       }
     }
 

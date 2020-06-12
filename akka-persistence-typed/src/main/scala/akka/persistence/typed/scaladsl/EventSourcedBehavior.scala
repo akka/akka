@@ -22,7 +22,7 @@ import akka.persistence.typed.internal._
 
 object EventSourcedBehavior {
 
-  private[akka] case class ActiveActive(id: String, allIds: Set[String])
+  private[akka] case class ActiveActive(replicaId: String, allReplicas: Set[String], aaContext: ActiveActiveContext)
 
   /**
    * Type alias for the command handler function that defines how to act on commands.
