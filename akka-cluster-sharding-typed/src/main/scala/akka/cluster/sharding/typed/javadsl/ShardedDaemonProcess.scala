@@ -56,7 +56,7 @@ abstract class ShardedDaemonProcess {
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
-      behaviorFactory: function.Function[Int, Behavior[T]],
+      behaviorFactory: function.Function[Integer, Behavior[T]],
       stopMessage: T): Unit
 
   /**

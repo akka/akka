@@ -168,7 +168,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
-      behaviorFactory: function.Function[Int, Behavior[T]],
+      behaviorFactory: function.Function[Integer, Behavior[T]],
       stopMessage: T): Unit =
     init(name, numberOfInstances, n => behaviorFactory(n), ShardedDaemonProcessSettings(system), Some(stopMessage))(
       ClassTag(messageClass))
