@@ -58,8 +58,10 @@ private[akka] final class DDataRememberEntitiesCoordinatorStore(
   override def receive: Receive = {
     case RememberEntitiesCoordinatorStore.GetShards =>
       allShards match {
-        case Some(shardIds) => sender() ! RememberEntitiesCoordinatorStore.RememberedShards(shardIds)
-        case None           =>
+        case Some(shardIds) =>
+          coordinatorWaitingForShards = Some(sender())
+          onGotAllShards(shardIds);
+        case None =>
           // reply when we get them, since there is only ever one coordinator communicating with us
           // and it may retry we can just keep the latest sender
           coordinatorWaitingForShards = Some(sender())
@@ -104,10 +106,15 @@ private[akka] final class DDataRememberEntitiesCoordinatorStore(
   }
 
   def onGotAllShards(shardIds: Set[ShardId]): Unit = {
-    allShards = Some(shardIds)
-    coordinatorWaitingForShards.foreach { coordinator =>
-      coordinator ! RememberEntitiesCoordinatorStore.RememberedShards(shardIds)
-      coordinatorWaitingForShards = None
+    coordinatorWaitingForShards match {
+      case Some(coordinator) =>
+        coordinator ! RememberEntitiesCoordinatorStore.RememberedShards(shardIds)
+        coordinatorWaitingForShards = None
+        // clear the shards out now that we have sent them to coordinator, to save some memory
+        allShards = None
+      case None =>
+        // wait for coordinator to ask
+        allShards = Some(shardIds)
     }
   }
 
