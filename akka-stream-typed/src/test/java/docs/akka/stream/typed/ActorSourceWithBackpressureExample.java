@@ -21,12 +21,14 @@ import java.util.Optional;
 
 class StreamFeeder extends AbstractBehavior<StreamFeeder.Emitted> {
   /** Signals that the latest element is emitted into the stream */
-  static final class Emitted {}
+  public enum Emitted {
+    INSTANCE;
+  }
 
   public interface Event {}
 
-  final class Element implements Event {
-    private final String content;
+  public static class Element implements Event {
+    public final String content;
 
     public Element(String content) {
       this.content = content;
@@ -38,10 +40,12 @@ class StreamFeeder extends AbstractBehavior<StreamFeeder.Emitted> {
     }
   }
 
-  final class ReachedEnd implements Event {}
+  public enum ReachedEnd implements Event {
+    INSTANCE;
+  }
 
-  final class FailureOccured implements Event {
-    private final Exception ex;
+  public static class FailureOccured implements Event {
+    public final Exception ex;
 
     public FailureOccured(Exception ex) {
       this.ex = ex;
@@ -66,15 +70,14 @@ class StreamFeeder extends AbstractBehavior<StreamFeeder.Emitted> {
     return newReceiveBuilder().onMessage(Emitted.class, this::onEmitted).build();
   }
 
-  private ActorRef<Event> runStream(ActorRef<Emitted> ackReceiver, ActorSystem<?> system) {
+  private static ActorRef<Event> runStream(ActorRef<Emitted> ackReceiver, ActorSystem<?> system) {
     Source<Event, ActorRef<Event>> source =
         ActorSource.actorRefWithBackpressure(
-            // get demand signalled to this actor receiving Ack
-            getContext().getSelf(),
-            new Emitted(),
-            // complete when we send Complete
+            ackReceiver,
+            Emitted.INSTANCE,
+            // complete when we send ReachedEnd
             (msg) -> {
-              if (msg instanceof ReachedEnd) return Optional.of(CompletionStrategy.draining());
+              if (msg == ReachedEnd.INSTANCE) return Optional.of(CompletionStrategy.draining());
               else return Optional.empty();
             },
             (msg) -> {
@@ -91,7 +94,7 @@ class StreamFeeder extends AbstractBehavior<StreamFeeder.Emitted> {
       counter++;
       return this;
     } else {
-      streamSource.tell(new ReachedEnd());
+      streamSource.tell(ReachedEnd.INSTANCE);
       return Behaviors.stopped();
     }
   }

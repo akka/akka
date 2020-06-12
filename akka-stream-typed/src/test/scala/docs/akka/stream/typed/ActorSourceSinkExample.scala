@@ -67,13 +67,13 @@ object ActorSourceSinkExample {
           sender(streamActor, 0)
         }
 
-      private def runStream(ackReceiver: ActorRef[Emitted.type])(implicit mat: ActorSystem[_]): ActorRef[Event] = {
+      private def runStream(ackReceiver: ActorRef[Emitted.type])(implicit system: ActorSystem[_]): ActorRef[Event] = {
         val source =
           ActorSource.actorRefWithBackpressure[Event, Emitted.type](
             // get demand signalled to this actor receiving Ack
             ackTo = ackReceiver,
             ackMessage = Emitted,
-            // complete when we send Complete
+            // complete when we send ReachedEnd
             completionMatcher = {
               case ReachedEnd => CompletionStrategy.draining
             },
@@ -91,7 +91,7 @@ object ActorSourceSinkExample {
         streamActor
       }
 
-      private def sender(streamSource: ActorRef[Event], counter: Int): Behaviors.Receive[Emitted.type] =
+      private def sender(streamSource: ActorRef[Event], counter: Int): Behavior[Emitted.type] =
         Behaviors.receiveMessage {
           case Emitted if counter < 5 =>
             streamSource ! Element(counter.toString)
