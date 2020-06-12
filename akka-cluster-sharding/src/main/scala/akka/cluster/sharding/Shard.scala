@@ -177,9 +177,11 @@ private[akka] object Shard {
   }
 
   object RememberingStart {
+    val empty = new RememberingStart(Set.empty)
+
     def apply(ackTo: Option[ActorRef]): RememberingStart =
       ackTo match {
-        case None        => RememberingStartNoAck
+        case None        => empty
         case Some(ackTo) => RememberingStart(Set(ackTo))
       }
   }
@@ -194,16 +196,15 @@ private[akka] object Shard {
       case active: Active => active
       case r: RememberingStart =>
         if (ackTo.isEmpty) {
-          if (r.ackTo.isEmpty) RememberingStartNoAck
+          if (r.ackTo.isEmpty) RememberingStart.empty
           else newState
         } else {
           if (r.ackTo.isEmpty) this
-          else RememberingStart(ackTo ++ r.ackTo)
+          else RememberingStart(ackTo.union(r.ackTo))
         }
       case _ => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
     }
   }
-  private val RememberingStartNoAck = new RememberingStart(Set.empty)
 
   /**
    * When remember entities is enabled an entity is in this state while
@@ -245,8 +246,9 @@ private[akka] object Shard {
 
   final class Entities(log: LoggingAdapter, rememberingEntities: Boolean, verboseDebug: Boolean) {
     private val entities: java.util.Map[EntityId, EntityState] = new util.HashMap[EntityId, EntityState]()
-    // needed to look up entity by reg when a Passivating is received
+    // needed to look up entity by ref when a Passivating is received
     private val byRef = new util.HashMap[ActorRef, EntityId]()
+    // optimization to not have to go through all entities to find batched writes
     private val remembering = new util.HashSet[EntityId]()
 
     def alreadyRemembered(set: Set[EntityId]): Unit = {
@@ -300,9 +302,11 @@ private[akka] object Shard {
       case _           => OptionVal.None
 
     }
-    def entityState(id: EntityId): EntityState = {
-      OptionVal(entities.get(id)).getOrElse(NoState)
-    }
+    def entityState(id: EntityId): EntityState =
+      entities.get(id) match {
+        case null  => NoState
+        case state => state
+      }
 
     def entityId(ref: ActorRef): OptionVal[EntityId] = OptionVal(byRef.get(ref))
 
@@ -400,7 +404,7 @@ private[akka] class Shard(
 
   import akka.cluster.sharding.ShardCoordinator.Internal.CoordinatorMessage
 
-  final val verboseDebug = context.system.settings.config.getBoolean("akka.cluster.sharding.verbose-debug-logging")
+  private val verboseDebug = context.system.settings.config.getBoolean("akka.cluster.sharding.verbose-debug-logging")
 
   private val rememberEntitiesStore: Option[ActorRef] =
     rememberEntitiesProvider.map { provider =>
@@ -485,7 +489,9 @@ private[akka] class Shard(
       tryGetLease(lease.get)
     case ll: LeaseLost =>
       receiveLeaseLost(ll)
-    case _ =>
+    case msg =>
+      if (verboseDebug)
+        log.debug("Got msg of type [{}] from [{}] while waiting for lease, stashing", msg.getClass, sender())
       stash()
   }
 
@@ -520,7 +526,10 @@ private[akka] class Shard(
       loadingEntityIdsFailed()
     case msg =>
       if (verboseDebug)
-        log.debug("Got msg of type [{}] from [{}] while waiting for remember entitites", msg.getClass, sender())
+        log.debug(
+          "Got msg of type [{}] from [{}] while waiting for remember entities, stashing",
+          msg.getClass,
+          sender())
       stash()
   }
 
@@ -578,11 +587,13 @@ private[akka] class Shard(
         storingStarts.mkString(", "),
         storingStops.mkString(", "))
 
-    storingStarts.foreach { entityId =>
-      flightRecorder.rememberEntityAdd(entityId)
-    }
-    storingStops.foreach { id =>
-      flightRecorder.rememberEntityRemove(id)
+    if (flightRecorder != NoOpShardingFlightRecorder) {
+      storingStarts.foreach { entityId =>
+        flightRecorder.rememberEntityAdd(entityId)
+      }
+      storingStops.foreach { id =>
+        flightRecorder.rememberEntityRemove(id)
+      }
     }
     val startTimeNanos = System.nanoTime()
     val update = RememberEntitiesShardStore.Update(started = storingStarts, stopped = storingStops)
@@ -612,7 +623,7 @@ private[akka] class Shard(
       onUpdateDone(storedStarts, storedStops)
 
     case RememberEntityTimeout(`update`) =>
-      log.error("Remember entity store did not respond, crashing shard")
+      log.error("Remember entity store did not respond, restarting shard")
       throw new RuntimeException(
         s"Async write timed out after ${settings.tuningParameters.updatingStateTimeout.pretty}")
     case ShardRegion.StartEntity(entityId) => startEntity(entityId, Some(sender()))

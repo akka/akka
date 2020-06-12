@@ -284,7 +284,7 @@ akka.cluster.sharding.state-store-mode = ddata
 ```
 
 The state of the `ShardCoordinator` is replicated across the cluster but is not stored to disk.
-@ref:[Distributed Data](distributed-data.md) handles the `ShardCoordinator`'s state with `WriteMajority`/`ReadMajority` consistency.
+@ref:[Distributed Data](distributed-data.md) handles the `ShardCoordinator`'s state with `WriteMajorityPlus`/`ReadMajorityPlus` consistency.
 When all nodes in the cluster have been stopped, the state is no longer needed and dropped.
 
 Cluster Sharding uses its own Distributed Data `Replicator` per node. 
@@ -337,7 +337,7 @@ When `rememberEntities` is enabled, whenever a `Shard` is rebalanced onto anothe
 node or recovers after a crash, it will recreate all the entities which were previously
 running in that `Shard`. 
 
-To permanently stop entities sent a `ClusterSharding.Passivate` to the
+To permanently stop entities send a `ClusterSharding.Passivate` to the
 @scala[`ActorRef[ShardCommand]`]@java[`ActorRef<ShardCommand>`] that was passed in to
 the factory method when creating the entity.
 Otherwise, the entity will be automatically restarted after the entity restart backoff specified in the configuration.
@@ -397,10 +397,10 @@ If using remembered entities there are two migration options:
    reads the data written by the old `persistence` mode. Your remembered entities will be remembered after a full cluster restart. 
 
 For migrating existing remembered entities an event adapter needs to be configured in the config for the journal you use in your `application.conf`.
-In this example `leveldb` is the used journal:
+In this example `cassandra` is the used journal:
 
 ```
-akka.persistence.journal.leveldb {
+akka.persistence.cassandra.journal {
   event-adapters {
     coordinator-migration = "akka.cluster.sharding.OldCoordinatorStateMigrationEventAdapter"
   }

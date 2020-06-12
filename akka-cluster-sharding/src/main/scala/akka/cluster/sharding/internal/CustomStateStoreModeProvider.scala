@@ -6,6 +6,7 @@ package akka.cluster.sharding.internal
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.Props
+import akka.annotation.InternalApi
 import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.event.Logging
@@ -15,6 +16,7 @@ import akka.event.Logging
  *
  * Only intended for testing, not an extension point.
  */
+@InternalApi
 private[akka] final class CustomStateStoreModeProvider(
     typeName: String,
     system: ActorSystem,

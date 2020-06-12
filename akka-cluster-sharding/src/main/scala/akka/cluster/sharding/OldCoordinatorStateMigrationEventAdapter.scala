@@ -16,7 +16,7 @@ import akka.persistence.journal.EventSeq
  * INTERNAL API
  */
 @InternalApi
-final class OldCoordinatorStateMigrationEventAdapter extends EventAdapter {
+private[akka] final class OldCoordinatorStateMigrationEventAdapter extends EventAdapter {
   override def manifest(event: Any): String =
     ""
 

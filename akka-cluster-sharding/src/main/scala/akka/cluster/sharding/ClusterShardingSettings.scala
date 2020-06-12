@@ -23,6 +23,7 @@ object ClusterShardingSettings {
   val StateStoreModeDData = "ddata"
 
   /**
+   * Only for testing
    * INTERNAL API
    */
   @InternalApi
@@ -308,9 +309,8 @@ final class ClusterShardingSettings(
     extends NoSerializationVerificationNeeded {
 
   @deprecated(
-    "Use the ClusterShardingSettings factory methods or the constructor including rememberedEntitiesStoreinstead",
-    "2.6.6" // TODO update once merged
-  )
+    "Use the ClusterShardingSettings factory methods or the constructor including rememberedEntitiesStore instead",
+    "2.6.7")
   def this(
       role: Option[String],
       rememberEntities: Boolean,
