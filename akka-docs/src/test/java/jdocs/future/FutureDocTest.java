@@ -32,49 +32,51 @@ import akka.pattern.Patterns;
 // #imports
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-
 public class FutureDocTest extends AbstractJavaTest {
 
-    @ClassRule
-    public static AkkaJUnitActorSystemResource actorSystemResource =
-            new AkkaJUnitActorSystemResource("FutureDocTest", AkkaSpec.testConf());
+  @ClassRule
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("FutureDocTest", AkkaSpec.testConf());
 
-    private final ActorSystem<Void> system = toTyped(actorSystemResource.getSystem());
+  private final ActorSystem<Void> system = toTyped(actorSystemResource.getSystem());
 
-    @Test(expected = IllegalStateException.class)
-    @SuppressWarnings("unchecked")
-    public void useAfter() throws Exception {
-        final ExecutionContext ec = system.executionContext();
-        // #after
-        CompletionStage<String> failExc = CompletableFuture.supplyAsync(() -> {
-            throw new IllegalStateException("OHNOES1");
-        });
-        CompletionStage<String> delayed = Patterns.after(Duration.ofMillis(200), system, () -> failExc);
-        // #after
-        Future<String> future =
-                future(
-                        new Callable<String>() {
-                            public String call() throws InterruptedException {
-                                Thread.sleep(1000);
-                                return "foo";
-                            }
-                        },
-                        ec);
-        Future<String> result =
-                Futures.firstCompletedOf(Arrays.<Future<String>>asList(future, FutureConverters.toScala(delayed)), ec);
-        Timeout timeout = Timeout.create(Duration.ofSeconds(2));
-        Await.result(result, timeout.duration());
-    }
+  @Test(expected = IllegalStateException.class)
+  @SuppressWarnings("unchecked")
+  public void useAfter() throws Exception {
+    final ExecutionContext ec = system.executionContext();
+    // #after
+    CompletionStage<String> failExc =
+        CompletableFuture.supplyAsync(
+            () -> {
+              throw new IllegalStateException("OHNOES1");
+            });
+    CompletionStage<String> delayed = Patterns.after(Duration.ofMillis(200), system, () -> failExc);
+    // #after
+    Future<String> future =
+        future(
+            new Callable<String>() {
+              public String call() throws InterruptedException {
+                Thread.sleep(1000);
+                return "foo";
+              }
+            },
+            ec);
+    Future<String> result =
+        Futures.firstCompletedOf(
+            Arrays.<Future<String>>asList(future, FutureConverters.toScala(delayed)), ec);
+    Timeout timeout = Timeout.create(Duration.ofSeconds(2));
+    Await.result(result, timeout.duration());
+  }
 
-    @Test
-    public void useRetry() throws Exception {
-        // #retry
-        Callable<CompletionStage<String>> attempt = () -> CompletableFuture.completedFuture("test");
+  @Test
+  public void useRetry() throws Exception {
+    // #retry
+    Callable<CompletionStage<String>> attempt = () -> CompletableFuture.completedFuture("test");
 
-        CompletionStage<String> retriedFuture =
-                Patterns.retry(attempt, 3, java.time.Duration.ofMillis(200), system);
-        // #retry
+    CompletionStage<String> retriedFuture =
+        Patterns.retry(attempt, 3, java.time.Duration.ofMillis(200), system);
+    // #retry
 
-        retriedFuture.toCompletableFuture().get(2, SECONDS);
-    }
+    retriedFuture.toCompletableFuture().get(2, SECONDS);
+  }
 }

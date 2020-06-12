@@ -483,12 +483,10 @@ class FutureDocSpec extends AkkaSpec {
 
   "demonstrate usage of pattern.after" in {
     import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
-    val system: ActorSystem[Nothing] = this.system.toTyped
+    implicit val system: ActorSystem[Nothing] = this.system.toTyped
     //#after
-    import akka.pattern.after
-
     val delayed =
-      akka.pattern.after(200 millis)(Future.failed(new IllegalStateException("OHNOES")))
+      akka.pattern.after(200.millis)(Future.failed(new IllegalStateException("OHNOES")))
 
     val future = Future { Thread.sleep(1000); "foo" }
     val result = Future.firstCompletedOf(Seq(future, delayed))
