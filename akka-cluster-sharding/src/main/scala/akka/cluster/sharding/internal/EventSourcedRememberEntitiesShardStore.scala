@@ -72,6 +72,9 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
   import EventSourcedRememberEntitiesShardStore._
   import settings.tuningParameters._
 
+  private val maxUpdatesPerWrite = context.system.settings.config
+    .getInt("akka.cluster.sharding.event-sourced-remember-entities-store.max-updates-per-write")
+
   log.debug("Starting up EventSourcedRememberEntitiesStore")
   private var state = State()
   override def persistenceId = s"/sharding/${typeName}Shard/$shardId"
@@ -93,14 +96,17 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
         (if (started.nonEmpty) EntitiesStarted(started) :: Nil else Nil) :::
         (if (stopped.nonEmpty) EntitiesStopped(stopped) :: Nil else Nil)
       var left = events.size
-      persistAll(events) { _ =>
-        left -= 1
-        if (left == 0) {
-          sender() ! RememberEntitiesShardStore.UpdateDone(started, stopped)
-          state.copy(state.entities.union(started).diff(stopped))
-          saveSnapshotWhenNeeded()
-        }
-      }
+      events
+        .grouped(maxUpdatesPerWrite)
+        .foreach(group =>
+          persistAll(group) { _ =>
+            left -= 1
+            if (left == 0) {
+              sender() ! RememberEntitiesShardStore.UpdateDone(started, stopped)
+              state.copy(state.entities.union(started).diff(stopped))
+              saveSnapshotWhenNeeded()
+            }
+          })
 
     case RememberEntitiesShardStore.GetEntities =>
       sender() ! RememberEntitiesShardStore.RememberedEntities(state.entities)
