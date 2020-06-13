@@ -123,6 +123,13 @@ class FusingSpec extends StreamSpec {
       val (f1, f2) = g.run()
       f2.failed.futureValue shouldEqual TE("I hate mondays")
       f1.value should be (empty)
+      //by now downstream managed to fail, hence it already processed the message from Flow.single,
+      //hence we know for sure that all graph stage locics in the downstream interpreter were initialized(=preStart)
+      //hence upstream subscription was initiated.
+      //since we're still blocking upstream's preStart we know for sure it didn't respond to the subscription request
+      //since a blocked actor can process additional messages from its inbox.
+      //so long story short: downstream was able to initialize, subscribe and fail before upstream responded to the subscription request.
+      //prior to akka#29194, this scenario resulted with cancellation signal rather than the expected error signal.
       promise.success(Done)
       f1.failed.futureValue shouldEqual TE("I hate mondays")
     }
@@ -144,6 +151,13 @@ class FusingSpec extends StreamSpec {
       val (f1, f2) = g.run()
       f2.failed.futureValue shouldEqual TE("I hate mondays")
       f1.value should be (empty)
+      //by now downstream managed to fail, hence it already processed the message from Flow.single,
+      //hence we know for sure that all graph stage locics in the downstream interpreter were initialized(=preStart)
+      //hence upstream subscription was initiated.
+      //since we're still blocking upstream's preStart we know for sure it didn't respond to the subscription request
+      //since a blocked actor can process additional messages from its inbox.
+      //so long story short: downstream was able to initialize, subscribe and fail before upstream responded to the subscription request.
+      //prior to akka#29194, this scenario resulted with cancellation signal rather than the expected error signal.
       promise.success(Done)
       f1.failed.futureValue shouldEqual TE("I hate mondays")
     }
