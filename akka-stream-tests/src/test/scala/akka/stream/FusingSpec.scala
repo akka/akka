@@ -12,7 +12,7 @@ import akka.stream.stage.GraphStage
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
 
-import scala.concurrent.{Await, Promise, duration}
+import scala.concurrent.{ duration, Await, Promise }
 
 class FusingSpec extends StreamSpec {
 
@@ -91,28 +91,24 @@ class FusingSpec extends StreamSpec {
     }
 
     //an UnfoldResourceSource equivalent without an async boundary
-    case class UnfoldResourceNoAsyncBoundry[T, S](create: () => S,
-        readData: (S) => Option[T],
-        close: (S) => Unit) extends  GraphStage[SourceShape[T]] {
+    case class UnfoldResourceNoAsyncBoundry[T, S](create: () => S, readData: (S) => Option[T], close: (S) => Unit)
+        extends GraphStage[SourceShape[T]] {
       val stage_ = new UnfoldResourceSource(create, readData, close)
       override def initialAttributes: Attributes = Attributes.none
       override val shape = stage_.shape
       def createLogic(inheritedAttributes: Attributes) = stage_.createLogic(inheritedAttributes)
-      def asSource = Source fromGraph this
+      def asSource = Source.fromGraph(this)
     }
 
     "propagate downstream errors through async boundary" in {
       val promise = Promise[Done]
-      val slowInitSrc = UnfoldResourceNoAsyncBoundry( () => {Await.result(promise.future, duration.Duration.Inf); ()},
-          (_ : Unit) => Some(1),
-          (_ : Unit) => ()
-        )
-        .asSource
-        .watchTermination()(Keep.right)
-        .async  //commenting this out, makes the test pass
+      val slowInitSrc = UnfoldResourceNoAsyncBoundry(
+        () => { Await.result(promise.future, duration.Duration.Inf); () },
+        (_: Unit) => Some(1),
+        (_: Unit) => ()).asSource.watchTermination()(Keep.right).async //commenting this out, makes the test pass
       val downstream = Flow[Int]
         .prepend(Source.single(1))
-        .flatMapPrefix(0){
+        .flatMapPrefix(0) {
           case Nil => throw TE("I hate mondays")
         }
         .watchTermination()(Keep.right)
@@ -122,7 +118,7 @@ class FusingSpec extends StreamSpec {
 
       val (f1, f2) = g.run()
       f2.failed.futureValue shouldEqual TE("I hate mondays")
-      f1.value should be (empty)
+      f1.value should be(empty)
       //by now downstream managed to fail, hence it already processed the message from Flow.single,
       //hence we know for sure that all graph stage locics in the downstream interpreter were initialized(=preStart)
       //hence upstream subscription was initiated.
@@ -136,13 +132,10 @@ class FusingSpec extends StreamSpec {
 
     "propagate 'parallel' errors through async boundary via a common downstream" in {
       val promise = Promise[Done]
-      val slowInitSrc = UnfoldResourceNoAsyncBoundry( () => {Await.result(promise.future, duration.Duration.Inf); ()},
-          (_ : Unit) => Some(1),
-          (_ : Unit) => ()
-        )
-        .asSource
-        .watchTermination()(Keep.right)
-        .async  //commenting this out, makes the test pass
+      val slowInitSrc = UnfoldResourceNoAsyncBoundry(
+        () => { Await.result(promise.future, duration.Duration.Inf); () },
+        (_: Unit) => Some(1),
+        (_: Unit) => ()).asSource.watchTermination()(Keep.right).async //commenting this out, makes the test pass
 
       val failingSrc = Source.failed(TE("I hate mondays")).watchTermination()(Keep.right)
 
@@ -150,7 +143,7 @@ class FusingSpec extends StreamSpec {
 
       val (f1, f2) = g.run()
       f2.failed.futureValue shouldEqual TE("I hate mondays")
-      f1.value should be (empty)
+      f1.value should be(empty)
       //by now downstream managed to fail, hence it already processed the message from Flow.single,
       //hence we know for sure that all graph stage locics in the downstream interpreter were initialized(=preStart)
       //hence upstream subscription was initiated.
