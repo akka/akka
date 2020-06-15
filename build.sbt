@@ -303,6 +303,7 @@ lazy val protobuf = akkaModule("akka-protobuf")
   .disablePlugins(MimaPlugin)
 
 lazy val protobufV3 = akkaModule("akka-protobuf-v3")
+  .settings(OSGi.protobufV3)
   .settings(AutomaticModuleName.settings("akka.protobuf.v3"))
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
@@ -317,6 +318,7 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
     exportJars := true, // in dependent projects, use assembled and shaded jar
     makePomConfiguration := makePomConfiguration.value
         .withConfigurations(Vector(Compile)), // prevent original dependency to be added to pom as runtime dep
+    packagedArtifact in (Compile, packageBin) := Scoped.mkTuple2((artifact in (Compile, packageBin)).value, OsgiKeys.bundle.value),
     packageBin in Compile := ReproducibleBuildsPlugin
         .postProcessJar((assembly in Compile).value), // package by running assembly
     // Prevent cyclic task dependencies, see https://github.com/sbt/sbt-assembly/issues/365
