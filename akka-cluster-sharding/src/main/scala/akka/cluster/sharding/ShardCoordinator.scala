@@ -11,7 +11,7 @@ import scala.util.Success
 import com.github.ghik.silencer.silent
 import akka.actor._
 import akka.actor.DeadLetterSuppression
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent
 import akka.cluster.ClusterEvent._
@@ -56,6 +56,7 @@ object ShardCoordinator {
    * INTERNAL API
    * Factory method for the [[akka.actor.Props]] of the [[ShardCoordinator]] actor with state based on ddata.
    */
+  @InternalStableApi
   private[akka] def props(
       typeName: String,
       settings: ClusterShardingSettings,

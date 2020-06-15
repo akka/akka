@@ -13,10 +13,9 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.runtime.AbstractFunction1
 import scala.util.{ Failure, Success }
-
 import akka.Done
 import akka.actor._
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterSettings
@@ -516,6 +515,7 @@ object ShardRegion {
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
+@InternalStableApi
 private[akka] class ShardRegion(
     typeName: String,
     entityProps: Option[String => Props],

@@ -376,7 +376,6 @@ private[akka] object Shard {
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
-// FIXME I broke bin comp here
 @InternalStableApi
 private[akka] class Shard(
     typeName: String,
@@ -963,13 +962,17 @@ private[akka] class Shard(
                     entities.pendingRememberEntities())
                 appendToMessageBuffer(entityId, msg, snd)
                 entities.rememberingStart(entityId, ackTo = None)
-              } else {
+              } else if (rememberEntitiesStore.isDefined) {
                 // No actor running and no write in progress, start actor and deliver message when started
                 if (verboseDebug)
                   log.debug("Buffering message [{}] to [{}] and starting actor", payload.getClass, entityId)
                 appendToMessageBuffer(entityId, msg, snd)
                 entities.rememberingStart(entityId, ackTo = None)
                 rememberUpdate(add = Set(entityId))
+              } else {
+                // don't buffer if remember entities not enabled
+                getOrCreateEntity(entityId).tell(payload, snd)
+                touchLastMessageTimestamp(entityId)
               }
 
           }
@@ -988,9 +991,17 @@ private[akka] class Shard(
         log.debug("Started entity [{}] with entity id [{}] in shard [{}]", a, id, shardId)
         entities.addEntity(id, a)
         touchLastMessageTimestamp(id)
+        entityCreated(id)
         a
     }
   }
+
+  /**
+   * Called when an entity has been created. Returning the number
+   * of active entities.
+   */
+  @InternalStableApi
+  def entityCreated(@unused id: EntityId): Int = entities.activeEntities().size
 
   // ===== buffering while busy saving a start or stop when remembering entities =====
   def appendToMessageBuffer(id: EntityId, msg: Any, snd: ActorRef): Unit = {
