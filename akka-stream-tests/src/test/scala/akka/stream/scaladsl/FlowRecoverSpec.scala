@@ -56,12 +56,7 @@ class FlowRecoverSpec extends StreamSpec("""
     }
 
     "finish stream if it's empty" in assertAllStagesStopped {
-      Source.empty
-        .map(identity)
-        .recover { case _: Throwable => 0 }
-        .runWith(TestSink.probe[Int])
-        .request(1)
-        .expectComplete()
+      Source.empty.recover { case _: Throwable => 0 }.runWith(TestSink.probe[Int]).request(1).expectComplete()
     }
 
     "not log error when exception is thrown from recover block" in assertAllStagesStopped {

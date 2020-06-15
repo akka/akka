@@ -45,15 +45,14 @@ object CipherSuiteSupportCheck {
     import sslFactoryConfig._
     val gotAllSupported = SSLEnabledAlgorithms.diff(engine.getSupportedCipherSuites.toSet)
     val gotAllEnabled = SSLEnabledAlgorithms.diff(engine.getEnabledCipherSuites.toSet)
-    gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
-    gotAllEnabled.isEmpty || (throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled))
+    if (gotAllSupported.nonEmpty) throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported)
+    if (gotAllEnabled.nonEmpty) throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled)
   }
 
   private def isProtocolSupported(sslFactoryConfig: SSLEngineConfig, engine: SSLEngine) = {
     import sslFactoryConfig._
-    engine.getSupportedProtocols.contains(SSLProtocol) ||
-    (throw new IllegalArgumentException("Protocol not supported: " + SSLProtocol))
-
+    if (!engine.getSupportedProtocols.contains(SSLProtocol))
+      throw new IllegalArgumentException("Protocol not supported: " + SSLProtocol)
   }
 
   private def buildSslEngine(system: ActorSystem): SSLEngine = {

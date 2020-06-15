@@ -64,7 +64,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
     "propagate early failure from main stream" in assertAllStagesStopped {
       val ex = new Exception("buh")
       intercept[TestFailedException] {
-        Source.failed(ex).flatMapMerge(1, identity).runWith(Sink.head).futureValue
+        Source.failed(ex).flatMapMerge(1, (i: Int) => Source.single(i)).runWith(Sink.head).futureValue
       }.cause.get should ===(ex)
     }
 
@@ -95,7 +95,9 @@ class FlowFlattenMergeSpec extends StreamSpec {
         val out = Outlet[String]("out")
         val shape = SourceShape(out)
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-          throw matFail
+          if ("confuse IntellIJ dead code checker".length > 2) {
+            throw matFail
+          }
         }
       }
 

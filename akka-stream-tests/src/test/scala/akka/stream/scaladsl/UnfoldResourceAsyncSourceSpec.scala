@@ -158,7 +158,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .unfoldResourceAsync[Unit, Unit](
           () => Future.successful(()),
           _ => Future.successful[Option[Unit]](None),
-          _ => Future.failed(throw TE("")))
+          _ => Future.failed(TE("")))
         .runWith(Sink.fromSubscriber(probe))
       probe.ensureSubscription()
       probe.request(1L)
