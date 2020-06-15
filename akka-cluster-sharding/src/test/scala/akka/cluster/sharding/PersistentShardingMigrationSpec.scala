@@ -6,7 +6,7 @@ package akka.cluster.sharding
 import java.util.UUID
 
 import akka.actor.{ ActorRef, ActorSystem, Props }
-import akka.cluster.Cluster
+import akka.cluster.{ Cluster, MemberStatus }
 import akka.persistence.PersistentActor
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -36,6 +36,9 @@ object PersistentShardingMigrationSpec {
         snapshot-after = 5
         
         verbose-debug-logging = on
+        
+        # Lots of sharding setup, make it quicker
+        retry-interval = 500ms 
        }
        
        akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
@@ -142,17 +145,19 @@ class PersistentShardingMigrationSpec extends AkkaSpec(PersistentShardingMigrati
         }
       }
 
-      withSystem(config, typeName, "OldMode") { (system, region, _) =>
+      withSystem(config, typeName, "OldModeShouldNotWork") { (system, region, _) =>
         val probe = TestProbe()(system)
         region.tell(Message(1), probe.ref)
-        probe.expectNoMessage(2.seconds)
+        probe.expectNoMessage(1.seconds)
       }
     }
 
     def withSystem(config: Config, typeName: String, systemName: String)(
         f: (ActorSystem, ActorRef, TestProbe) => Unit) = {
       val system = ActorSystem(systemName, config)
-      Cluster(system).join(Cluster(system).selfAddress)
+      val cluster = Cluster(system)
+      cluster.join(cluster.selfAddress)
+      awaitAssert(cluster.selfMember.status shouldEqual MemberStatus.Up)
       try {
         val rememberedEntitiesProbe = TestProbe()(system)
         val region = ClusterSharding(system).start(
