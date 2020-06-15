@@ -410,6 +410,8 @@ private[akka] class Shard(
       store
     }
 
+  private val rememberEntities: Boolean = rememberEntitiesProvider.isDefined
+
   private val flightRecorder = ShardingFlightRecorder(context.system)
 
   private val entities = new Entities(log, settings.rememberEntities, verboseDebug)
@@ -952,29 +954,30 @@ private[akka] class Shard(
               touchLastMessageTimestamp(entityId)
               actor.tell(payload, snd)
             case NoState =>
-              if (entities.pendingRememberedEntitiesExist()) {
-                // No actor running and write in progress for some other entity id (can only happen with remember entities enabled)
-                if (verboseDebug)
-                  log.debug(
-                    "Buffer message [{}] to [{}] (which is not started) because of write in progress for [{}]",
-                    payload.getClass,
-                    entityId,
-                    entities.pendingRememberEntities())
-                appendToMessageBuffer(entityId, msg, snd)
-                entities.rememberingStart(entityId, ackTo = None)
-              } else if (rememberEntitiesStore.isDefined) {
-                // No actor running and no write in progress, start actor and deliver message when started
-                if (verboseDebug)
-                  log.debug("Buffering message [{}] to [{}] and starting actor", payload.getClass, entityId)
-                appendToMessageBuffer(entityId, msg, snd)
-                entities.rememberingStart(entityId, ackTo = None)
-                rememberUpdate(add = Set(entityId))
-              } else {
+              if (!rememberEntities) {
                 // don't buffer if remember entities not enabled
                 getOrCreateEntity(entityId).tell(payload, snd)
                 touchLastMessageTimestamp(entityId)
+              } else {
+                if (entities.pendingRememberedEntitiesExist()) {
+                  // No actor running and write in progress for some other entity id (can only happen with remember entities enabled)
+                  if (verboseDebug)
+                    log.debug(
+                      "Buffer message [{}] to [{}] (which is not started) because of write in progress for [{}]",
+                      payload.getClass,
+                      entityId,
+                      entities.pendingRememberEntities())
+                  appendToMessageBuffer(entityId, msg, snd)
+                  entities.rememberingStart(entityId, ackTo = None)
+                } else {
+                  // No actor running and no write in progress, start actor and deliver message when started
+                  if (verboseDebug)
+                    log.debug("Buffering message [{}] to [{}] and starting actor", payload.getClass, entityId)
+                  appendToMessageBuffer(entityId, msg, snd)
+                  entities.rememberingStart(entityId, ackTo = None)
+                  rememberUpdate(add = Set(entityId))
+                }
               }
-
           }
       }
     }
