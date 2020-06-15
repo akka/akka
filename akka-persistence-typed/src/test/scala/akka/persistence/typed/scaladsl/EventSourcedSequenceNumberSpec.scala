@@ -50,9 +50,9 @@ class EventSourcedSequenceNumberSpec
                     probe ! s"${EventSourcedBehavior.lastEventSequenceNumber(ctx)} onCommand"
                     Effect
                       .persist("evt")
-                      .thenRun(_ => probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} thenRun")
+                      .thenRun(_ => probe ! s"${EventSourcedBehavior.lastEventSequenceNumber(ctx)} thenRun")
                   case "cmd3" =>
-                    probe ! s"${EventSourcedBehavior.lastSequenceNumber(ctx)} onCommand"
+                    probe ! s"${EventSourcedBehavior.lastEventSequenceNumber(ctx)} onCommand"
                     Effect
                       .persist("evt1", "evt2", "evt3")
                       .thenRun(_ => probe ! s"${EventSourcedBehavior.lastEventSequenceNumber(ctx)} thenRun")

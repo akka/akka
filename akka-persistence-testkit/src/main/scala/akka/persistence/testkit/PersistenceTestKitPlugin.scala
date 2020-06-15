@@ -49,6 +49,22 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
       if (found < fromSequenceNr) fromSequenceNr else found
     })
 
+  override def asyncReadHighestIdempotencyKeySequenceNr(persistenceId: String): Future[Long] = Future.successful(0)
+
+  override def asyncReadIdempotencyKeys(persistenceId: String, toSequenceNr: Long, max: Long)(
+      readCallback: (String, Long) => Unit): Future[Unit] = ???
+
+  override def asyncCheckIdempotencyKeyExists(
+      persistenceId: String,
+      key: String,
+      highestIdempotencyKeySequenceNr: Long,
+      highestEventSequenceNr: Long): Future[Boolean] = ???
+
+  override def asyncWriteIdempotencyKey(
+      persistenceId: String,
+      key: String,
+      sequenceNr: Long,
+      highestEventSequenceNr: Long): Future[Unit] = ???
 }
 
 object PersistenceTestKitPlugin {

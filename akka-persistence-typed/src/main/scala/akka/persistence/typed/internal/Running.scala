@@ -195,7 +195,7 @@ private[akka] object Running {
       with WithSeqNrAccessible
       with WithIdempotencyKeyCacheAccessible {
 
-    _currentSequenceNumber = state.seqNr
+    _currentSequenceNumber = state.eventSeqNr
 
     def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
       case IncomingCommand(c: C @unchecked) => onCommand(state, c)
@@ -258,7 +258,7 @@ private[akka] object Running {
           // apply the event before persist so that validation exception is handled before persisting
           // the invalid event, in case such validation is implemented in the event handler.
           // also, ensure that there is an event handler for each single event
-          _currentSequenceNumber = state.seqNr + 1
+          _currentSequenceNumber = state.eventSeqNr + 1
           val newState = state.applyEvent(setup, event)
 
           val eventToPersist = adaptEvent(event)
