@@ -123,10 +123,10 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   def serializeReplyWithStatusSuccess(r: ReplyWithStatus[Any]): Array[Byte] =
     // no specific message, serialized id and manifest together with payload is enough (no wrapping overhead)
-    payloadSupport.payloadBuilder(r.getValue()).build().toByteArray
+    payloadSupport.payloadBuilder(r.getValue).build().toByteArray
 
   def serializeReplyWithStatusError(r: ReplyWithStatus[_]): Array[Byte] = {
-    r.getError() match {
+    r.getError match {
       case em: ReplyWithStatus.ErrorMessage =>
         // somewhat optimized for the recommended usage, avoiding the additional payload metadata
         ContainerFormats.ReplyWithStatusErrorMessage.newBuilder().setErrorMessage(em.getMessage).build().toByteArray
