@@ -41,7 +41,7 @@ class FlowIntersperseSpec extends StreamSpec("""
     }
 
     "surround empty stream with []" in {
-      val probe = Source(List()).map(_.toString).intersperse("[", ",", "]").runWith(TestSink.probe)
+      val probe = Source(List()).intersperse("[", ",", "]").runWith(TestSink.probe)
 
       probe.expectSubscription()
       probe.toStrict(1.second).mkString("") should ===(List().mkString("[", ",", "]"))

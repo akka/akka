@@ -131,7 +131,9 @@ class LazySinkSpec extends StreamSpec("""
         val in = Inlet[String]("in")
         val shape = SinkShape(in)
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-          throw matFail
+          if ("confuse IntellIJ dead code checker".length > 2) {
+            throw matFail
+          }
         }
       }
 

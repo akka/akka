@@ -448,7 +448,6 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           .fromPublisher(publisher)
           .flatMapPrefixMat(2) { prefix =>
             fail(s"unexpected prefix (length = ${prefix.size})")
-            Flow[Int]
           }(Keep.right)
           .toMat(Sink.ignore)(Keep.both)
           .withAttributes(attributes)
@@ -526,7 +525,6 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           .flatMapPrefixMat(0) { prefix =>
             prefix should be(empty)
             throw TE("not this time my friend!")
-            Flow[Int].mapMaterializedValue(_ => prefix)
           }(Keep.right)
           .toMat(Sink.seq)(Keep.both)
           .withAttributes(attributes)

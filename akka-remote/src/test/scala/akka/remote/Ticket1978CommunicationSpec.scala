@@ -97,10 +97,10 @@ object Configuration {
       val engine = sslEngineProvider.createClientSSLEngine()
       val gotAllSupported = enabled.toSet.diff(engine.getSupportedCipherSuites.toSet)
       val gotAllEnabled = enabled.toSet.diff(engine.getEnabledCipherSuites.toSet)
-      gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
-      gotAllEnabled.isEmpty || (throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled))
-      engine.getSupportedProtocols.contains(settings.SSLProtocol) ||
-      (throw new IllegalArgumentException("Protocol not supported: " + settings.SSLProtocol))
+      if (gotAllSupported.nonEmpty) throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported)
+      if (gotAllEnabled.nonEmpty) throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled)
+      if (!engine.getSupportedProtocols.contains(settings.SSLProtocol))
+        throw new IllegalArgumentException("Protocol not supported: " + settings.SSLProtocol)
 
       CipherConfig(true, config, cipher, localPort, remotePort, Some(sslEngineProvider))
     } catch {

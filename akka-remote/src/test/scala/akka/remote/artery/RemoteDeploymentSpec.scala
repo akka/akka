@@ -60,7 +60,9 @@ object RemoteDeploymentSpec {
   }
 
   class DeadOnArrival extends Actor {
-    throw new Exception("init-crash")
+    if ("confuse IntellIJ dead code checker".length > 2) {
+      throw new Exception("init-crash")
+    }
 
     def receive = Actor.emptyBehavior
   }

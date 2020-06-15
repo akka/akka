@@ -216,7 +216,9 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         val out = Outlet[String]("out")
         val shape = SourceShape(out)
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-          throw matFail
+          if ("confuse IntellIJ dead code checker".length > 2) {
+            throw matFail
+          }
         }
       }
 
@@ -373,7 +375,9 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
         val out = Outlet[String]("out")
         val shape = SourceShape(out)
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
-          throw matFail
+          if ("confuse IntellIJ dead code checker".length > 2) {
+            throw matFail
+          }
         }
       }
 

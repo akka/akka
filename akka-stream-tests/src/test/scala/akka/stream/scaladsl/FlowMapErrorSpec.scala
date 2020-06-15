@@ -67,12 +67,7 @@ class FlowMapErrorSpec extends StreamSpec("""
     }
 
     "finish stream if it's empty" in assertAllStagesStopped {
-      Source.empty
-        .map(identity)
-        .mapError { case _: Throwable => boom }
-        .runWith(TestSink.probe[Int])
-        .request(1)
-        .expectComplete()
+      Source.empty.mapError { case _: Throwable => boom }.runWith(TestSink.probe[Int]).request(1).expectComplete()
     }
   }
 }
