@@ -10583,6 +10583,624 @@ public final class ContainerFormats {
 
   }
 
+  public interface ReplyWithStatusErrorMessageOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:ReplyWithStatusErrorMessage)
+      akka.protobufv3.internal.MessageOrBuilder {
+
+    /**
+     * <code>required string errorMessage = 1;</code>
+     * @return Whether the errorMessage field is set.
+     */
+    boolean hasErrorMessage();
+    /**
+     * <code>required string errorMessage = 1;</code>
+     * @return The errorMessage.
+     */
+    java.lang.String getErrorMessage();
+    /**
+     * <code>required string errorMessage = 1;</code>
+     * @return The bytes for errorMessage.
+     */
+    akka.protobufv3.internal.ByteString
+        getErrorMessageBytes();
+  }
+  /**
+   * <pre>
+   * ReplyWith pattern message(s)
+   * </pre>
+   *
+   * Protobuf type {@code ReplyWithStatusErrorMessage}
+   */
+  public  static final class ReplyWithStatusErrorMessage extends
+      akka.protobufv3.internal.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:ReplyWithStatusErrorMessage)
+      ReplyWithStatusErrorMessageOrBuilder {
+  private static final long serialVersionUID = 0L;
+    // Use ReplyWithStatusErrorMessage.newBuilder() to construct.
+    private ReplyWithStatusErrorMessage(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
+      super(builder);
+    }
+    private ReplyWithStatusErrorMessage() {
+      errorMessage_ = "";
+    }
+
+    @java.lang.Override
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new ReplyWithStatusErrorMessage();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet
+    getUnknownFields() {
+      return this.unknownFields;
+    }
+    private ReplyWithStatusErrorMessage(
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
+      int mutable_bitField0_ = 0;
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            case 10: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000001;
+              errorMessage_ = bs;
+              break;
+            }
+            default: {
+              if (!parseUnknownField(
+                  input, unknownFields, extensionRegistry, tag)) {
+                done = true;
+              }
+              break;
+            }
+          }
+        }
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(
+            e).setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+    public static final akka.protobufv3.internal.Descriptors.Descriptor
+        getDescriptor() {
+      return akka.remote.ContainerFormats.internal_static_ReplyWithStatusErrorMessage_descriptor;
+    }
+
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.remote.ContainerFormats.internal_static_ReplyWithStatusErrorMessage_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.remote.ContainerFormats.ReplyWithStatusErrorMessage.class, akka.remote.ContainerFormats.ReplyWithStatusErrorMessage.Builder.class);
+    }
+
+    private int bitField0_;
+    public static final int ERRORMESSAGE_FIELD_NUMBER = 1;
+    private volatile java.lang.Object errorMessage_;
+    /**
+     * <code>required string errorMessage = 1;</code>
+     * @return Whether the errorMessage field is set.
+     */
+    public boolean hasErrorMessage() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>required string errorMessage = 1;</code>
+     * @return The errorMessage.
+     */
+    public java.lang.String getErrorMessage() {
+      java.lang.Object ref = errorMessage_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          errorMessage_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>required string errorMessage = 1;</code>
+     * @return The bytes for errorMessage.
+     */
+    public akka.protobufv3.internal.ByteString
+        getErrorMessageBytes() {
+      java.lang.Object ref = errorMessage_;
+      if (ref instanceof java.lang.String) {
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        errorMessage_ = b;
+        return b;
+      } else {
+        return (akka.protobufv3.internal.ByteString) ref;
+      }
+    }
+
+    private byte memoizedIsInitialized = -1;
+    @java.lang.Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      if (!hasErrorMessage()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (((bitField0_ & 0x00000001) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, errorMessage_);
+      }
+      unknownFields.writeTo(output);
+    }
+
+    @java.lang.Override
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, errorMessage_);
+      }
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
+      return size;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof akka.remote.ContainerFormats.ReplyWithStatusErrorMessage)) {
+        return super.equals(obj);
+      }
+      akka.remote.ContainerFormats.ReplyWithStatusErrorMessage other = (akka.remote.ContainerFormats.ReplyWithStatusErrorMessage) obj;
+
+      if (hasErrorMessage() != other.hasErrorMessage()) return false;
+      if (hasErrorMessage()) {
+        if (!getErrorMessage()
+            .equals(other.getErrorMessage())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasErrorMessage()) {
+        hash = (37 * hash) + ERRORMESSAGE_FIELD_NUMBER;
+        hash = (53 * hash) + getErrorMessage().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
+    }
+
+    public static akka.remote.ContainerFormats.ReplyWithStatusErrorMessage parseFrom(
+        java.nio.ByteBuffer data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ContainerFormats.ReplyWithStatusErrorMessage parseFrom(
+        java.nio.ByteBuffer data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ContainerFormats.ReplyWithStatusErrorMessage parseFrom(
+        akka.protobufv3.internal.ByteString data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ContainerFormats.ReplyWithStatusErrorMessage parseFrom(
+        akka.protobufv3.internal.ByteString data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ContainerFormats.ReplyWithStatusErrorMessage parseFrom(byte[] data)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static akka.remote.ContainerFormats.ReplyWithStatusErrorMessage parseFrom(
+        byte[] data,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static akka.remote.ContainerFormats.ReplyWithStatusErrorMessage parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static akka.remote.ContainerFormats.ReplyWithStatusErrorMessage parseFrom(
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static akka.remote.ContainerFormats.ReplyWithStatusErrorMessage parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+    public static akka.remote.ContainerFormats.ReplyWithStatusErrorMessage parseDelimitedFrom(
+        java.io.InputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static akka.remote.ContainerFormats.ReplyWithStatusErrorMessage parseFrom(
+        akka.protobufv3.internal.CodedInputStream input)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static akka.remote.ContainerFormats.ReplyWithStatusErrorMessage parseFrom(
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+
+    @java.lang.Override
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(akka.remote.ContainerFormats.ReplyWithStatusErrorMessage prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * <pre>
+     * ReplyWith pattern message(s)
+     * </pre>
+     *
+     * Protobuf type {@code ReplyWithStatusErrorMessage}
+     */
+    public static final class Builder extends
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:ReplyWithStatusErrorMessage)
+        akka.remote.ContainerFormats.ReplyWithStatusErrorMessageOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptor() {
+        return akka.remote.ContainerFormats.internal_static_ReplyWithStatusErrorMessage_descriptor;
+      }
+
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.remote.ContainerFormats.internal_static_ReplyWithStatusErrorMessage_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.remote.ContainerFormats.ReplyWithStatusErrorMessage.class, akka.remote.ContainerFormats.ReplyWithStatusErrorMessage.Builder.class);
+      }
+
+      // Construct using akka.remote.ContainerFormats.ReplyWithStatusErrorMessage.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(
+          akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobufv3.internal.GeneratedMessageV3
+                .alwaysUseFieldBuilders) {
+        }
+      }
+      @java.lang.Override
+      public Builder clear() {
+        super.clear();
+        errorMessage_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        return this;
+      }
+
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor
+          getDescriptorForType() {
+        return akka.remote.ContainerFormats.internal_static_ReplyWithStatusErrorMessage_descriptor;
+      }
+
+      @java.lang.Override
+      public akka.remote.ContainerFormats.ReplyWithStatusErrorMessage getDefaultInstanceForType() {
+        return akka.remote.ContainerFormats.ReplyWithStatusErrorMessage.getDefaultInstance();
+      }
+
+      @java.lang.Override
+      public akka.remote.ContainerFormats.ReplyWithStatusErrorMessage build() {
+        akka.remote.ContainerFormats.ReplyWithStatusErrorMessage result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @java.lang.Override
+      public akka.remote.ContainerFormats.ReplyWithStatusErrorMessage buildPartial() {
+        akka.remote.ContainerFormats.ReplyWithStatusErrorMessage result = new akka.remote.ContainerFormats.ReplyWithStatusErrorMessage(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.errorMessage_ = errorMessage_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
+        if (other instanceof akka.remote.ContainerFormats.ReplyWithStatusErrorMessage) {
+          return mergeFrom((akka.remote.ContainerFormats.ReplyWithStatusErrorMessage)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(akka.remote.ContainerFormats.ReplyWithStatusErrorMessage other) {
+        if (other == akka.remote.ContainerFormats.ReplyWithStatusErrorMessage.getDefaultInstance()) return this;
+        if (other.hasErrorMessage()) {
+          bitField0_ |= 0x00000001;
+          errorMessage_ = other.errorMessage_;
+          onChanged();
+        }
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
+        return this;
+      }
+
+      @java.lang.Override
+      public final boolean isInitialized() {
+        if (!hasErrorMessage()) {
+          return false;
+        }
+        return true;
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.remote.ContainerFormats.ReplyWithStatusErrorMessage parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+          parsedMessage = (akka.remote.ContainerFormats.ReplyWithStatusErrorMessage) e.getUnfinishedMessage();
+          throw e.unwrapIOException();
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+      private int bitField0_;
+
+      private java.lang.Object errorMessage_ = "";
+      /**
+       * <code>required string errorMessage = 1;</code>
+       * @return Whether the errorMessage field is set.
+       */
+      public boolean hasErrorMessage() {
+        return ((bitField0_ & 0x00000001) != 0);
+      }
+      /**
+       * <code>required string errorMessage = 1;</code>
+       * @return The errorMessage.
+       */
+      public java.lang.String getErrorMessage() {
+        java.lang.Object ref = errorMessage_;
+        if (!(ref instanceof java.lang.String)) {
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            errorMessage_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>required string errorMessage = 1;</code>
+       * @return The bytes for errorMessage.
+       */
+      public akka.protobufv3.internal.ByteString
+          getErrorMessageBytes() {
+        java.lang.Object ref = errorMessage_;
+        if (ref instanceof String) {
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          errorMessage_ = b;
+          return b;
+        } else {
+          return (akka.protobufv3.internal.ByteString) ref;
+        }
+      }
+      /**
+       * <code>required string errorMessage = 1;</code>
+       * @param value The errorMessage to set.
+       * @return This builder for chaining.
+       */
+      public Builder setErrorMessage(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        errorMessage_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string errorMessage = 1;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearErrorMessage() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        errorMessage_ = getDefaultInstance().getErrorMessage();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>required string errorMessage = 1;</code>
+       * @param value The bytes for errorMessage to set.
+       * @return This builder for chaining.
+       */
+      public Builder setErrorMessageBytes(
+          akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        errorMessage_ = value;
+        onChanged();
+        return this;
+      }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:ReplyWithStatusErrorMessage)
+    }
+
+    // @@protoc_insertion_point(class_scope:ReplyWithStatusErrorMessage)
+    private static final akka.remote.ContainerFormats.ReplyWithStatusErrorMessage DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new akka.remote.ContainerFormats.ReplyWithStatusErrorMessage();
+    }
+
+    public static akka.remote.ContainerFormats.ReplyWithStatusErrorMessage getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated public static final akka.protobufv3.internal.Parser<ReplyWithStatusErrorMessage>
+        PARSER = new akka.protobufv3.internal.AbstractParser<ReplyWithStatusErrorMessage>() {
+      @java.lang.Override
+      public ReplyWithStatusErrorMessage parsePartialFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobufv3.internal.InvalidProtocolBufferException {
+        return new ReplyWithStatusErrorMessage(input, extensionRegistry);
+      }
+    };
+
+    public static akka.protobufv3.internal.Parser<ReplyWithStatusErrorMessage> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<ReplyWithStatusErrorMessage> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.remote.ContainerFormats.ReplyWithStatusErrorMessage getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
   private static final akka.protobufv3.internal.Descriptors.Descriptor
     internal_static_SelectionEnvelope_descriptor;
   private static final 
@@ -10643,6 +11261,11 @@ public final class ContainerFormats {
   private static final 
     akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_StackTraceElement_fieldAccessorTable;
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
+    internal_static_ReplyWithStatusErrorMessage_descriptor;
+  private static final 
+    akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_ReplyWithStatusErrorMessage_fieldAccessorTable;
 
   public static akka.protobufv3.internal.Descriptors.FileDescriptor
       getDescriptor() {
@@ -10675,9 +11298,10 @@ public final class ContainerFormats {
       "\n\007message\030\002 \002(\t\022\027\n\005cause\030\003 \002(\0132\010.Payload" +
       "\"`\n\021StackTraceElement\022\021\n\tclassName\030\001 \002(\t" +
       "\022\022\n\nmethodName\030\002 \002(\t\022\020\n\010fileName\030\003 \002(\t\022\022" +
-      "\n\nlineNumber\030\004 \002(\005*<\n\013PatternType\022\n\n\006PAR" +
-      "ENT\020\000\022\016\n\nCHILD_NAME\020\001\022\021\n\rCHILD_PATTERN\020\002" +
-      "B\017\n\013akka.remoteH\001"
+      "\n\nlineNumber\030\004 \002(\005\"3\n\033ReplyWithStatusErr" +
+      "orMessage\022\024\n\014errorMessage\030\001 \002(\t*<\n\013Patte" +
+      "rnType\022\n\n\006PARENT\020\000\022\016\n\nCHILD_NAME\020\001\022\021\n\rCH" +
+      "ILD_PATTERN\020\002B\017\n\013akka.remoteH\001"
     };
     descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -10755,6 +11379,12 @@ public final class ContainerFormats {
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_StackTraceElement_descriptor,
         new java.lang.String[] { "ClassName", "MethodName", "FileName", "LineNumber", });
+    internal_static_ReplyWithStatusErrorMessage_descriptor =
+      getDescriptor().getMessageTypes().get(12);
+    internal_static_ReplyWithStatusErrorMessage_fieldAccessorTable = new
+      akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_ReplyWithStatusErrorMessage_descriptor,
+        new java.lang.String[] { "ErrorMessage", });
   }
 
   // @@protoc_insertion_point(outer_class_scope)

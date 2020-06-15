@@ -20,11 +20,3 @@ message ReceptionistEntry {
 message PubSubMessagePublished {
   required Payload message = 1;
 }
-
-message StatusResponseOk {
-  required Payload message = 1;
-}
-
-message StatusResponseFail {
-  required string description = 1;
-}

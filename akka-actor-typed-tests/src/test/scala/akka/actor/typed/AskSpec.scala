@@ -9,9 +9,7 @@ import scala.concurrent.Future
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 import scala.util.Success
-
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -20,6 +18,8 @@ import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
+import akka.pattern.ReplyWithStatus
+import akka.testkit.TestException
 import akka.util.Timeout
 
 object AskSpec {
@@ -183,22 +183,31 @@ class AskSpec extends ScalaTestWithActorTestKit("""
     }
   }
 
-  case class Request(replyTo: ActorRef[StatusResponse[String]])
+  case class Request(replyTo: ActorRef[ReplyWithStatus[String]])
 
-  "Failable ask pattern" must {
-    "fail future for a fail response" in {
-      val probe = createTestProbe[Request]
-      val result: Future[String] = probe.ref.failableAsk(Request(_))
-      probe.expectMessageType[Request].replyTo ! StatusResponse.Fail("boom")
-      val exception = result.failed.futureValue
-      exception should be(a[RuntimeException])
-      exception.getMessage should ===("boom")
-    }
+  "askWithStatus pattern" must {
     "unwrap nested response a successful response" in {
       val probe = createTestProbe[Request]
-      val result: Future[String] = probe.ref.failableAsk(Request(_))
-      probe.expectMessageType[Request].replyTo ! StatusResponse.Ok("goodie")
+      val result: Future[String] = probe.ref.askWithStatus(Request(_))
+      probe.expectMessageType[Request].replyTo ! ReplyWithStatus.success("goodie")
       result.futureValue should ===("goodie")
     }
+    "fail future for a fail response with text" in {
+      val probe = createTestProbe[Request]
+      val result: Future[String] = probe.ref.askWithStatus(Request(_))
+      probe.expectMessageType[Request].replyTo ! ReplyWithStatus.error("boom")
+      val exception = result.failed.futureValue
+      exception should be(a[ReplyWithStatus.ErrorMessage])
+      exception.getMessage should ===("boom")
+    }
+    "fail future for a fail response with custom exception" in {
+      val probe = createTestProbe[Request]
+      val result: Future[String] = probe.ref.askWithStatus(Request(_))
+      probe.expectMessageType[Request].replyTo ! ReplyWithStatus.error(TestException("boom"))
+      val exception = result.failed.futureValue
+      exception should be(a[TestException])
+      exception.getMessage should ===("boom")
+    }
+
   }
 }

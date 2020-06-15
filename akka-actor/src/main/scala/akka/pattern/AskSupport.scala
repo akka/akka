@@ -20,6 +20,8 @@ import akka.util.ByteString
 import akka.util.{ Timeout, Unsafe }
 import akka.util.unused
 
+import scala.util.Try
+
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,
  * when it times out. A typical reason for `AskTimeoutException` is that the recipient
@@ -85,6 +87,16 @@ trait AskSupport {
     actorRef.internalAsk(message, timeout, ActorRef.noSender)
   def ask(actorRef: ActorRef, message: Any, sender: ActorRef)(implicit timeout: Timeout): Future[Any] =
     actorRef.internalAsk(message, timeout, sender)
+
+  /**
+   * Use for messages whose response is known to be a [[akka.pattern.ReplyWithStatus]]. When a [[ReplyWithStatus.success]] response
+   * arrives the future is completed with the wrapped vaule, if a [[ReplyWithStatus.error]] arrives the future is instead
+   * failed.
+   */
+  def askWithStatus(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] =
+    actorRef.internalAskWithStatus(message)(timeout, Actor.noSender)
+  def askWithStatus(actorRef: ActorRef, message: Any, sender: ActorRef)(implicit timeout: Timeout): Future[Any] =
+    actorRef.internalAskWithStatus(message)(timeout, sender)
 
   /**
    * Import this implicit conversion to gain `?` and `ask` methods on
@@ -319,6 +331,21 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
 
   def ask(message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender)
+
+  def askWithStatus(message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
+    internalAskWithStatus(message)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[pattern] def internalAskWithStatus(
+      message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
+    internalAsk(message, timeout, sender).transform {
+      case Success(ReplyWithStatus.Success(v)) => Success(v)
+      case Success(ReplyWithStatus.Error(ex))  => Failure(ex)
+      case other: Try[_]                       => other
+    }(ExecutionContexts.parasitic)
 
   /**
    * INTERNAL API: for binary compatibility

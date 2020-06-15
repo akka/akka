@@ -8,15 +8,11 @@ import java.io.NotSerializableException
 
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.ActorRefResolver
-import akka.actor.typed.StatusResponse
 import akka.actor.typed.internal.pubsub.TopicImpl
 import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
 import akka.cluster.typed.internal.protobuf.ClusterMessages
-import akka.cluster.typed.internal.protobuf.ClusterMessages.StatusResponseOk
 import akka.cluster.typed.internal.receptionist.ClusterReceptionist.Entry
-import akka.remote.ContainerFormats
-import akka.remote.ContainerFormats.Payload
 import akka.remote.serialization.WrappedPayloadSupport
 import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 
@@ -34,13 +30,9 @@ private[akka] final class AkkaClusterTypedSerializer(override val system: Extend
 
   private val ReceptionistEntryManifest = "a"
   private val PubSubPublishManifest = "b"
-  private val StatusResponseOkManifest = "c"
-  private val StatusResponseFailManifest = "d"
 
   override def manifest(o: AnyRef): String = o match {
     case _: Entry                         => ReceptionistEntryManifest
-    case _: StatusResponse.Ok[_]          => StatusResponseOkManifest
-    case _: StatusResponse.Fail           => StatusResponseFailManifest
     case _: TopicImpl.MessagePublished[_] => PubSubPublishManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
@@ -49,17 +41,13 @@ private[akka] final class AkkaClusterTypedSerializer(override val system: Extend
   override def toBinary(o: AnyRef): Array[Byte] = o match {
     case e: Entry                         => receptionistEntryToBinary(e)
     case m: TopicImpl.MessagePublished[_] => pubSubPublishToBinary(m)
-    case ok: StatusResponse.Ok[_]         => statusResponseOkToBinary(ok)
-    case nok: StatusResponse.Fail         => statusResponseFailToBinary(nok)
     case _ =>
       throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-    case ReceptionistEntryManifest  => receptionistEntryFromBinary(bytes)
-    case PubSubPublishManifest      => pubSubMessageFromBinary(bytes)
-    case StatusResponseOkManifest   => statusResponseOkFromBinary(bytes)
-    case StatusResponseFailManifest => statusResponseFailFromBinary(bytes)
+    case ReceptionistEntryManifest => receptionistEntryFromBinary(bytes)
+    case PubSubPublishManifest     => pubSubMessageFromBinary(bytes)
     case _ =>
       throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
@@ -69,18 +57,6 @@ private[akka] final class AkkaClusterTypedSerializer(override val system: Extend
     ClusterMessages.PubSubMessagePublished
       .newBuilder()
       .setMessage(payloadSupport.payloadBuilder(m.message))
-      .build()
-      .toByteArray
-  }
-
-  def statusResponseFailToBinary(nok: StatusResponse.Fail): Array[Byte] = {
-    ClusterMessages.StatusResponseFail.newBuilder().setDescription(nok.errorMessage).build().toByteArray
-  }
-
-  def statusResponseOkToBinary(ok: StatusResponse.Ok[_]): Array[Byte] = {
-    ClusterMessages.StatusResponseOk
-      .newBuilder()
-      .setMessage(payloadSupport.payloadBuilder(ok.value))
       .build()
       .toByteArray
   }
@@ -109,13 +85,4 @@ private[akka] final class AkkaClusterTypedSerializer(override val system: Extend
     Entry(resolver.resolveActorRef(re.getActorRef), re.getSystemUid)(createdTimestamp)
   }
 
-  private def statusResponseOkFromBinary(bytes: Array[Byte]): StatusResponse.Ok[_] = {
-    val parsed = ClusterMessages.StatusResponseOk.parseFrom(bytes)
-    StatusResponse.Ok(payloadSupport.deserializePayload(parsed.getMessage))
-  }
-
-  private def statusResponseFailFromBinary(bytes: Array[Byte]): StatusResponse.Fail = {
-    val parsed = ClusterMessages.StatusResponseFail.parseFrom(bytes)
-    StatusResponse.Fail(parsed.getDescription)
-  }
 }

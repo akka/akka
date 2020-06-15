@@ -24,6 +24,7 @@ object Patterns {
   import akka.pattern.{
     after => scalaAfter,
     ask => scalaAsk,
+    askWithStatus => scalaAskWithStatus,
     gracefulStop => scalaGracefulStop,
     pipe => scalaPipe,
     retry => scalaRetry
@@ -93,6 +94,14 @@ object Patterns {
    */
   def ask(actor: ActorRef, message: Any, timeout: java.time.Duration): CompletionStage[AnyRef] =
     scalaAsk(actor, message)(timeout.asScala).toJava.asInstanceOf[CompletionStage[AnyRef]]
+
+  /**
+   * Use for messages whose response is known to be a [[akka.pattern.ReplyWithStatus]]. When a [[ReplyWithStatus.success]] response
+   * arrives the completion stage is completed with the wrapped value, if a [[ReplyWithStatus.error]] arrives the completion stage
+   * is instead failed.
+   */
+  def askWithStatus(actor: ActorRef, message: Any, timeout: java.time.Duration): CompletionStage[AnyRef] =
+    scalaAskWithStatus(actor, message)(timeout.asScala).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
    * A variation of ask which allows to implement "replyTo" pattern by including

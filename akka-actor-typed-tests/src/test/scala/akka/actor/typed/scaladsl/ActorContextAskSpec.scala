@@ -8,15 +8,14 @@ import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
-
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.{ ActorRef, PostStop, Props }
+import akka.pattern.ReplyWithStatus
 
 object ActorContextAskSpec {
   val config = ConfigFactory.parseString("""
@@ -186,6 +185,54 @@ class ActorContextAskSpec
       spawn(snitch)
 
       probe.receiveMessages(N).map(_.n) should ===(1 to N)
+    }
+
+    "unwrap successful ReplyWithStatus messages using askWithStatus" in {
+      case class Ping(ref: ActorRef[ReplyWithStatus[Pong.type]])
+      case object Pong
+
+      val probe = createTestProbe[Any]()
+      case class Message(any: Any)
+      spawn(Behaviors.setup[Pong.type] { ctx =>
+        ctx.askWithStatus(probe.ref, Ping) {
+          case Success(Pong) => Pong
+          case Failure(ex)   => throw ex
+        }
+
+        Behaviors.receiveMessage {
+          case Pong =>
+            probe.ref ! "got pong"
+            Behaviors.same
+        }
+      })
+
+      val replyTo = probe.expectMessageType[Ping].ref
+      replyTo ! ReplyWithStatus.Success(Pong)
+      probe.expectMessage("got pong")
+    }
+
+    "unwrap error ReplyWithStatus messages using askWithStatus" in {
+      case class Ping(ref: ActorRef[ReplyWithStatus[Pong.type]])
+      case object Pong
+
+      val probe = createTestProbe[Any]()
+      case class Message(any: Any)
+      spawn(Behaviors.setup[Throwable] { ctx =>
+        ctx.askWithStatus(probe.ref, Ping) {
+          case Failure(ex) => ex
+          case wat         => throw new IllegalArgumentException(s"Unexpected response $wat")
+        }
+
+        Behaviors.receiveMessage {
+          case ex: Throwable =>
+            probe.ref ! s"got error: ${ex.getMessage}"
+            Behaviors.same
+        }
+      })
+
+      val replyTo = probe.expectMessageType[Ping].ref
+      replyTo ! ReplyWithStatus.Error("boho")
+      probe.expectMessage("got error: boho")
     }
 
   }

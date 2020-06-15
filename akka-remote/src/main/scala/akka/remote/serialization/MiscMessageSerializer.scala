@@ -10,12 +10,11 @@ import java.util.Optional
 import java.util.concurrent.TimeUnit
 
 import scala.concurrent.duration.{ FiniteDuration, TimeUnit }
-
 import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
-
 import akka.{ Done, NotUsed }
 import akka.actor._
 import akka.dispatch.Dispatchers
+import akka.pattern.ReplyWithStatus
 import akka.remote._
 import akka.remote.WireFormats.AddressData
 import akka.remote.routing.RemoteRouterConfig
@@ -42,6 +41,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     case r: ActorRef                           => serializeActorRef(r)
     case s: Status.Success                     => serializeStatusSuccess(s)
     case f: Status.Failure                     => serializeStatusFailure(f)
+    case r @ ReplyWithStatus.Success(_)        => serializeReplyWithStatusSuccess(r)
+    case r @ ReplyWithStatus.Error(_)          => serializeReplyWithStatusError(r)
     case ex: ActorInitializationException      => serializeActorInitializationException(ex)
     case ex: ThrowableNotSerializableException => serializeThrowableNotSerializableException(ex)
     case t: Throwable                          => throwableSupport.serializeThrowable(t)
@@ -119,6 +120,22 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   private def serializeStatusFailure(failure: Status.Failure): Array[Byte] =
     payloadSupport.payloadBuilder(failure.cause).build().toByteArray
+
+  def serializeReplyWithStatusSuccess(r: ReplyWithStatus[Any]): Array[Byte] =
+    // no specific message, serialized id and manifest together with payload is enough (no wrapping overhead)
+    payloadSupport.payloadBuilder(r.getValue()).build().toByteArray
+
+  def serializeReplyWithStatusError(r: ReplyWithStatus[_]): Array[Byte] = {
+    r.getError() match {
+      case em: ReplyWithStatus.ErrorMessage =>
+        // somewhat optimized for the recommended usage, avoiding the additional payload metadata
+        ContainerFormats.ReplyWithStatusErrorMessage.newBuilder().setErrorMessage(em.getMessage).build().toByteArray
+      case ex: Exception =>
+        // depends on user providing exception serializer
+        // no specific message, serialized id and manifest together with payload is enough (less wrapping overhead)
+        payloadSupport.payloadBuilder(ex).build().toByteArray
+    }
+  }
 
   private def serializeActorInitializationException(ex: ActorInitializationException): Array[Byte] = {
     val builder = ContainerFormats.ActorInitializationException.newBuilder()
@@ -312,12 +329,18 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val ScatterGatherPoolManifest = "ROSGP"
   private val TailChoppingPoolManifest = "ROTCP"
   private val RemoteRouterConfigManifest = "RORRC"
+  private val ReplyWithStatusSuccessManifest = "S"
+  private val ReplyWithStatusErrorMessageManifest = "SM"
+  private val ReplyWithStatusErrorExceptionManifest = "SE"
 
   private val fromBinaryMap = Map[String, Array[Byte] => AnyRef](
     IdentifyManifest -> deserializeIdentify,
     ActorIdentityManifest -> deserializeActorIdentity,
     StatusSuccessManifest -> deserializeStatusSuccess,
     StatusFailureManifest -> deserializeStatusFailure,
+    ReplyWithStatusSuccessManifest -> deserializeReplyWithStatusSuccess,
+    ReplyWithStatusErrorMessageManifest -> deserializeReplyWithStatusErrorMessage,
+    ReplyWithStatusErrorExceptionManifest -> deserializeReplyWithStatusErrorException,
     ThrowableManifest -> throwableSupport.deserializeThrowable,
     ActorRefManifest -> deserializeActorRefBytes,
     OptionManifest -> deserializeOption,
@@ -347,36 +370,40 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   override def manifest(o: AnyRef): String =
     o match {
-      case _: Identify                          => IdentifyManifest
-      case _: ActorIdentity                     => ActorIdentityManifest
-      case _: Option[Any]                       => OptionManifest
-      case _: Optional[_]                       => OptionalManifest
-      case _: ActorRef                          => ActorRefManifest
-      case _: Status.Success                    => StatusSuccessManifest
-      case _: Status.Failure                    => StatusFailureManifest
-      case _: ActorInitializationException      => ActorInitializationExceptionManifest
-      case _: ThrowableNotSerializableException => ThrowableNotSerializableExceptionManifest
-      case _: Throwable                         => ThrowableManifest
-      case PoisonPill                           => PoisonPillManifest
-      case Kill                                 => KillManifest
-      case RemoteWatcher.Heartbeat              => RemoteWatcherHBManifest
-      case Done                                 => DoneManifest
-      case NotUsed                              => NotUsedManifest
-      case _: Address                           => AddressManifest
-      case _: UniqueAddress                     => UniqueAddressManifest
-      case _: RemoteWatcher.HeartbeatRsp        => RemoteWatcherHBRespManifest
-      case LocalScope                           => LocalScopeManifest
-      case _: RemoteScope                       => RemoteScopeManifest
-      case _: Config                            => ConfigManifest
-      case _: FromConfig                        => FromConfigManifest
-      case _: DefaultResizer                    => DefaultResizerManifest
-      case _: BalancingPool                     => BalancingPoolManifest
-      case _: BroadcastPool                     => BroadcastPoolManifest
-      case _: RandomPool                        => RandomPoolManifest
-      case _: RoundRobinPool                    => RoundRobinPoolManifest
-      case _: ScatterGatherFirstCompletedPool   => ScatterGatherPoolManifest
-      case _: TailChoppingPool                  => TailChoppingPoolManifest
-      case _: RemoteRouterConfig                => RemoteRouterConfigManifest
+      case _: Identify                                            => IdentifyManifest
+      case _: ActorIdentity                                       => ActorIdentityManifest
+      case _: Option[Any]                                         => OptionManifest
+      case _: Optional[_]                                         => OptionalManifest
+      case _: ActorRef                                            => ActorRefManifest
+      case _: Status.Success                                      => StatusSuccessManifest
+      case _: Status.Failure                                      => StatusFailureManifest
+      case ReplyWithStatus.Success(_)                             => ReplyWithStatusSuccessManifest
+      case ReplyWithStatus.Error(_: ReplyWithStatus.ErrorMessage) => ReplyWithStatusErrorMessageManifest
+      case ReplyWithStatus.Error(_)                               => ReplyWithStatusErrorExceptionManifest
+      case _: ActorInitializationException                        => ActorInitializationExceptionManifest
+      case _: ThrowableNotSerializableException                   => ThrowableNotSerializableExceptionManifest
+      case _: Throwable                                           => ThrowableManifest
+      case PoisonPill                                             => PoisonPillManifest
+      case Kill                                                   => KillManifest
+      case RemoteWatcher.Heartbeat                                => RemoteWatcherHBManifest
+      case Done                                                   => DoneManifest
+      case NotUsed                                                => NotUsedManifest
+      case _: Address                                             => AddressManifest
+      case _: UniqueAddress                                       => UniqueAddressManifest
+      case _: RemoteWatcher.HeartbeatRsp                          => RemoteWatcherHBRespManifest
+      case LocalScope                                             => LocalScopeManifest
+      case _: RemoteScope                                         => RemoteScopeManifest
+      case _: Config                                              => ConfigManifest
+      case _: FromConfig                                          => FromConfigManifest
+      case _: DefaultResizer                                      => DefaultResizerManifest
+      case _: BalancingPool                                       => BalancingPoolManifest
+      case _: BroadcastPool                                       => BroadcastPoolManifest
+      case _: RandomPool                                          => RandomPoolManifest
+      case _: RoundRobinPool                                      => RoundRobinPoolManifest
+      case _: ScatterGatherFirstCompletedPool                     => ScatterGatherPoolManifest
+      case _: TailChoppingPool                                    => TailChoppingPoolManifest
+      case _: RemoteRouterConfig                                  => RemoteRouterConfigManifest
+
       case _ =>
         throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
     }
@@ -435,6 +462,16 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   private def deserializeStatusFailure(bytes: Array[Byte]): Status.Failure =
     Status.Failure(payloadSupport.deserializePayload(ContainerFormats.Payload.parseFrom(bytes)).asInstanceOf[Throwable])
+
+  private def deserializeReplyWithStatusSuccess(bytes: Array[Byte]): ReplyWithStatus[_] =
+    ReplyWithStatus.success(payloadSupport.deserializePayload(ContainerFormats.Payload.parseFrom(bytes)))
+
+  private def deserializeReplyWithStatusErrorMessage(bytes: Array[Byte]): ReplyWithStatus[_] =
+    ReplyWithStatus.error(ContainerFormats.ReplyWithStatusErrorMessage.parseFrom(bytes).getErrorMessage)
+
+  private def deserializeReplyWithStatusErrorException(bytes: Array[Byte]): ReplyWithStatus[_] =
+    ReplyWithStatus.error(
+      payloadSupport.deserializePayload(ContainerFormats.Payload.parseFrom(bytes)).asInstanceOf[Throwable])
 
   private def deserializeAddressData(bytes: Array[Byte]): Address =
     addressFromDataProto(WireFormats.AddressData.parseFrom(bytes))

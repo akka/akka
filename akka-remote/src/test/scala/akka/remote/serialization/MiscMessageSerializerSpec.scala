@@ -10,12 +10,11 @@ import java.util.concurrent.TimeoutException
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import com.typesafe.config.ConfigFactory
-
 import akka.{ Done, NotUsed }
 import akka.actor._
 import akka.pattern.AskTimeoutException
+import akka.pattern.ReplyWithStatus
 import akka.remote.{ RemoteScope, RemoteWatcher }
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing._
@@ -130,7 +129,10 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       "TailChoppingPool" -> TailChoppingPool(25, within = 3.seconds, interval = 1.second),
       "RemoteRouterConfig" -> RemoteRouterConfig(
         local = RandomPool(25),
-        nodes = List(Address("akka", "system", "localhost", 2525)))).foreach {
+        nodes = List(Address("akka", "system", "localhost", 2525))),
+      "ReplyWithStatus.success" -> ReplyWithStatus.success("woho!"),
+      "ReplyWithStatus.error(errorMessage)" -> ReplyWithStatus.error("boho!"),
+      "ReplyWithStatus.error(exception)" -> ReplyWithStatus.error(new TestException("boho!"))).foreach {
       case (scenario, item) =>
         s"resolve serializer for $scenario" in {
           val serializer = SerializationExtension(system)
