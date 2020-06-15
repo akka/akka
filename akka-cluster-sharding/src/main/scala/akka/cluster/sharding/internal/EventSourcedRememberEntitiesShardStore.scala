@@ -96,17 +96,30 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
         (if (started.nonEmpty) EntitiesStarted(started) :: Nil else Nil) :::
         (if (stopped.nonEmpty) EntitiesStopped(stopped) :: Nil else Nil)
       var left = events.size
-      events
-        .grouped(maxUpdatesPerWrite)
-        .foreach(group =>
-          persistAll(group) { _ =>
-            left -= 1
-            if (left == 0) {
-              sender() ! RememberEntitiesShardStore.UpdateDone(started, stopped)
-              state.copy(state.entities.union(started).diff(stopped))
-              saveSnapshotWhenNeeded()
-            }
-          })
+      if (left <= maxUpdatesPerWrite) {
+        // optimized when batches are small
+        persistAll(events) { _ =>
+          left -= 1
+          if (left == 0) {
+            sender() ! RememberEntitiesShardStore.UpdateDone(started, stopped)
+            state.copy(state.entities.union(started).diff(stopped))
+            saveSnapshotWhenNeeded()
+          }
+        }
+      } else {
+        // split up in several writes so we don't hit journal limit
+        events
+          .grouped(maxUpdatesPerWrite)
+          .foreach(group =>
+            persistAll(group) { _ =>
+              left -= 1
+              if (left == 0) {
+                sender() ! RememberEntitiesShardStore.UpdateDone(started, stopped)
+                state.copy(state.entities.union(started).diff(stopped))
+                saveSnapshotWhenNeeded()
+              }
+            })
+      }
 
     case RememberEntitiesShardStore.GetEntities =>
       sender() ! RememberEntitiesShardStore.RememberedEntities(state.entities)
