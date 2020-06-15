@@ -266,6 +266,8 @@ abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
       system.log.info(s"Terminating $systemToTerminate...")
       Await.result(systemToTerminate.terminate(), 10.seconds)
     }
+    // Removed terminated items from the list to avoid: https://github.com/akka/akka/issues/29221
+    systemsToTerminate = Nil
     // Don't cleanup folder until all systems have terminated
     cleanupTemporaryDirectory()
     super.afterTermination()
