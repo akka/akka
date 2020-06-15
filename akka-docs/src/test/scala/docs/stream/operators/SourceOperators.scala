@@ -67,9 +67,14 @@ object SourceOperators {
 
     val probe = TestProbe()
 
-    val source: Source[Any, ActorRef] = Source.actorRefWithBackpressure[Any]("ack", {
-      case _: Success => CompletionStrategy.immediately
-    }, PartialFunction.empty)
+    val source: Source[String, ActorRef] = Source.actorRefWithBackpressure[String](
+      ackMessage = "ack",
+      // complete when we send akka.actor.status.Success
+      completionMatcher = {
+        case _: Success => CompletionStrategy.immediately
+      },
+      // do not fail on any message
+      failureMatcher = PartialFunction.empty)
     val actorRef: ActorRef = source.to(Sink.foreach(println)).run()
 
     probe.send(actorRef, "hello")

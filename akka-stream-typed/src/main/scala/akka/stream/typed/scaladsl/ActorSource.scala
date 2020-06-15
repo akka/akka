@@ -66,13 +66,23 @@ object ActorSource {
    * and a new message will only be accepted after the previous messages has been consumed and acknowledged back.
    * The stream will complete with failure if a message is sent before the acknowledgement has been replied back.
    *
-   * The stream can be completed with failure by sending a message that is matched by `failureMatcher`. The extracted
+   * The stream can be completed by sending a message that is matched by `completionMatcher` which decides
+   * if the stream is to drained before completion or should complete immediately.
+   *
+   * A message that is matched by `failureMatcher` fails the stream. The extracted
    * [[Throwable]] will be used to fail the stream. In case the Actor is still draining its internal buffer (after having received
    * a message matched by `completionMatcher`) before signaling completion and it receives a message matched by `failureMatcher`,
    * the failure will be signaled downstream immediately (instead of the completion signal).
    *
    * The actor will be stopped when the stream is completed, failed or canceled from downstream,
    * i.e. you can watch it to get notified when that happens.
+   *
+   * @param ackTo actor to be signalled when an element has been emitted to the stream
+   * @param ackMessage a fixed message to be sent to `ackTo` to signal demand
+   * @param completionMatcher a partial function applied to the messages received materialized actor,
+   *                          a matching message will complete the stream with the return [[CompletionStrategy]]
+   * @param failureMatcher a partial function applied to the messages received materialized actor,
+   *                       a matching message will fail the stream with the returned [[Throwable]]
    */
   def actorRefWithBackpressure[T, Ack](
       ackTo: ActorRef[Ack],

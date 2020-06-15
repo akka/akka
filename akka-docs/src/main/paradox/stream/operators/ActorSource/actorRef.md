@@ -1,6 +1,6 @@
 # ActorSource.actorRef
 
-Materialize an @java[`ActorRef<T>`]@scala[`ActorRef[T]`]; sending messages to it will emit them on the stream only if they are of the same type as the stream.
+Materialize an @java[`ActorRef<T>`]@scala[`ActorRef[T]`] of the new actors API; sending messages to it will emit them on the stream only if they are of the same type as the stream.
 
 @ref[Actor interop operators](../index.md#actor-interop-operators)
 
@@ -21,6 +21,13 @@ This operator is included in:
 ## Description
 
 Materialize an @java[`ActorRef<T>`]@scala[`ActorRef[T]`] which only accepts messages that are of the same type as the stream.
+
+See also:
+
+* @ref[ActorSource.actorRefWithBackpressure](actorRefWithBackpressure.md) This operator, but with backpressure control
+* @ref[Source.actorRef](../Source/actorRef.md) The corresponding operator for the classic actors API
+* @ref[Source.actorRefWithBackpressure](../Source/actorRefWithBackpressure.md) The operator for the classic actors API with backpressure control
+* @ref[Source.queue](../Source/queue.md) Materialize a `SourceQueue` onto which elements can be pushed for emitting from the source
 
 ## Examples
 
