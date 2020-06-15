@@ -13,6 +13,7 @@ import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
 
 import scala.concurrent.{ duration, Await, Promise }
+import duration._
 
 class FusingSpec extends StreamSpec {
 
@@ -103,7 +104,7 @@ class FusingSpec extends StreamSpec {
     "propagate downstream errors through async boundary" in {
       val promise = Promise[Done]
       val slowInitSrc = UnfoldResourceNoAsyncBoundry(
-        () => { Await.result(promise.future, duration.Duration.Inf); () },
+        () => { Await.result(promise.future, 1.minute); () },
         (_: Unit) => Some(1),
         (_: Unit) => ()).asSource.watchTermination()(Keep.right).async //commenting this out, makes the test pass
       val downstream = Flow[Int]
@@ -123,7 +124,7 @@ class FusingSpec extends StreamSpec {
       //hence we know for sure that all graph stage locics in the downstream interpreter were initialized(=preStart)
       //hence upstream subscription was initiated.
       //since we're still blocking upstream's preStart we know for sure it didn't respond to the subscription request
-      //since a blocked actor can process additional messages from its inbox.
+      //since a blocked actor can not process additional messages from its inbox.
       //so long story short: downstream was able to initialize, subscribe and fail before upstream responded to the subscription request.
       //prior to akka#29194, this scenario resulted with cancellation signal rather than the expected error signal.
       promise.success(Done)
@@ -133,7 +134,7 @@ class FusingSpec extends StreamSpec {
     "propagate 'parallel' errors through async boundary via a common downstream" in {
       val promise = Promise[Done]
       val slowInitSrc = UnfoldResourceNoAsyncBoundry(
-        () => { Await.result(promise.future, duration.Duration.Inf); () },
+        () => { Await.result(promise.future, 1.minute); () },
         (_: Unit) => Some(1),
         (_: Unit) => ()).asSource.watchTermination()(Keep.right).async //commenting this out, makes the test pass
 
@@ -148,7 +149,7 @@ class FusingSpec extends StreamSpec {
       //hence we know for sure that all graph stage locics in the downstream interpreter were initialized(=preStart)
       //hence upstream subscription was initiated.
       //since we're still blocking upstream's preStart we know for sure it didn't respond to the subscription request
-      //since a blocked actor can process additional messages from its inbox.
+      //since a blocked actor can not process additional messages from its inbox.
       //so long story short: downstream was able to initialize, subscribe and fail before upstream responded to the subscription request.
       //prior to akka#29194, this scenario resulted with cancellation signal rather than the expected error signal.
       promise.success(Done)
