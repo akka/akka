@@ -87,6 +87,25 @@ abstract class RememberEntitiesShardStoreSpec
       expectMsgType[RememberEntitiesShardStore.RememberedEntities].entities should ===(Set("1", "2", "4", "5")) // from previous test
     }
 
+    "handle a large batch" in {
+      var store = system.actorOf(storeProps("FakeShardIdLarge", "FakeTypeNameLarge", shardingSettings))
+      store ! RememberEntitiesShardStore.GetEntities
+      expectMsgType[RememberEntitiesShardStore.RememberedEntities].entities should be(empty)
+
+      store ! RememberEntitiesShardStore.Update((1 to 1000).map(_.toString).toSet, (1001 to 2000).map(_.toString).toSet)
+      val response = expectMsgType[RememberEntitiesShardStore.UpdateDone]
+      response.started should have size (1000)
+      response.stopped should have size (1000)
+
+      watch(store)
+      system.stop(store)
+      expectTerminated(store)
+
+      store = system.actorOf(storeProps("FakeShardIdLarge", "FakeTypeNameLarge", shardingSettings))
+      store ! RememberEntitiesShardStore.GetEntities
+      expectMsgType[RememberEntitiesShardStore.RememberedEntities].entities should have size (1000)
+    }
+
   }
 
 }
