@@ -476,7 +476,8 @@ final class ExplicitlyAskableActorSelection(val actorSel: ActorSelection) extend
 private[akka] final class PromiseActorRef private (
     val provider: ActorRefProvider,
     val result: Promise[Any],
-    _mcn: String)
+    _mcn: String,
+    targetName: Any)
     extends MinimalActorRef {
   import AbstractPromiseActorRef.{ stateOffset, watchedByOffset }
   import PromiseActorRef._
@@ -553,7 +554,11 @@ private[akka] final class PromiseActorRef private (
       if (updateState(null, Registering)) {
         var p: ActorPath = null
         try {
-          p = provider.tempPath()
+          val prefix = targetName match {
+            case ref: ActorRef => ref.path.name
+            case other         => other.toString.replaceAll("[./*]", "_")
+          }
+          p = provider.tempPath(prefix)
           provider.registerTempActor(this, p)
           p
         } finally {
@@ -674,7 +679,7 @@ private[akka] object PromiseActorRef {
       onTimeout: String => Throwable = defaultOnTimeout): PromiseActorRef = {
     val result = Promise[Any]()
     val scheduler = provider.guardian.underlying.system.scheduler
-    val a = new PromiseActorRef(provider, result, messageClassName)
+    val a = new PromiseActorRef(provider, result, messageClassName, targetName)
     implicit val ec = ExecutionContexts.parasitic
     val f = scheduler.scheduleOnce(timeout.duration) {
       val timedOut = result.tryComplete {

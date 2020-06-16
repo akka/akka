@@ -10,14 +10,13 @@ import scala.concurrent.Future
 
 import com.github.ghik.silencer.silent
 
-import akka.actor.{ Address, RootActorPath }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.RecipientRef
 import akka.actor.typed.Scheduler
 import akka.actor.typed.internal.{ adapter => adapt }
 import akka.actor.typed.internal.InternalRecipientRef
-import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.annotation.InternalStableApi
 import akka.pattern.PromiseActorRef
 import akka.util.{ unused, Timeout }
 
@@ -161,9 +160,4 @@ object AskPattern {
     p.ask(target, m, timeout)
   }
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[typed] val AskPath = RootActorPath(Address("akka.actor.typed.internal", "ask"))
 }
