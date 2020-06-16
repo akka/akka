@@ -4,6 +4,8 @@
 
 package akka.remote.artery
 
+import java.util.concurrent.atomic.AtomicLong
+
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
@@ -19,9 +21,13 @@ import akka.annotation.InternalApi
  */
 @InternalApi
 private[remote] object FlushBeforeDeathWatchNotification {
+  private val nameCounter = new AtomicLong(0L)
+
   def props(done: Promise[Done], timeout: FiniteDuration, association: Association): Props = {
     Props(new FlushBeforeDeathWatchNotification(done, timeout, association))
   }
+
+  def nextName(): String = s"flush-${nameCounter.incrementAndGet()}"
 
   private case object Timeout
 }

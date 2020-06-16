@@ -399,11 +399,10 @@ private[remote] class Association(
               FlushBeforeDeathWatchNotification
                 .props(flushingPromise, settings.Advanced.ShutdownFlushTimeout, this)
                 .withDispatcher(Dispatchers.InternalDispatcherId),
-              s"flush-${UUID.randomUUID()}")
-            implicit val ec = materializer.executionContext
+              FlushBeforeDeathWatchNotification.nextName())
             flushingPromise.future.onComplete { _ =>
               sendSystemMessage(outboundEnvelope)
-            }
+            }(materializer.executionContext)
           case _: SystemMessage =>
             sendSystemMessage(outboundEnvelope)
           case ActorSelectionMessage(_: PriorityMessage, _, _) | _: ControlMessage | _: ClearSystemMessageDelivery =>
