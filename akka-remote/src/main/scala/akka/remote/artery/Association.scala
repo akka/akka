@@ -368,7 +368,6 @@ private[remote] class Association(
             d.actor,
             outboundEnvelope.recipient.getOrElse("unknown"))
         case _ =>
-          log.info("### sendSystemMessage {} to {}", outboundEnvelope.message, outboundEnvelope.recipient) // FIXME
           if (!controlQueue.offer(outboundEnvelope)) {
             quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
             dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
