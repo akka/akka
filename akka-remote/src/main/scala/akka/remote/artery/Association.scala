@@ -356,10 +356,23 @@ private[remote] class Association(
       deadletters ! env
     }
 
+    def shouldSendDeathWatchNotification(d: DeathWatchNotification): Boolean =
+      d.addressTerminated || !transport.provider.settings.HasCluster || !transport.system.isTerminating()
+
     def sendSystemMessage(outboundEnvelope: OutboundEnvelope): Unit = {
-      if (!controlQueue.offer(outboundEnvelope)) {
-        quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
-        dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
+      outboundEnvelope.message match {
+        case d: DeathWatchNotification if !shouldSendDeathWatchNotification(d) =>
+          log.debug(
+            "Not sending DeathWatchNotification of {} to {} because it will be notified when this member " +
+            "has been removed from Cluster.",
+            d.actor,
+            outboundEnvelope.recipient.getOrElse("unknown"))
+        case _ =>
+          log.info("### sendSystemMessage {} to {}", outboundEnvelope.message, outboundEnvelope.recipient) // FIXME
+          if (!controlQueue.offer(outboundEnvelope)) {
+            quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
+            dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
+          }
       }
     }
 
@@ -379,7 +392,7 @@ private[remote] class Association(
       try {
         val outboundEnvelope = createOutboundEnvelope()
         message match {
-          case d: DeathWatchNotification if !d.addressTerminated =>
+          case d: DeathWatchNotification if shouldSendDeathWatchNotification(d) =>
             val flushingPromise = Promise[Done]()
             // FIXME config for the timeout
             transport.system.systemActorOf(

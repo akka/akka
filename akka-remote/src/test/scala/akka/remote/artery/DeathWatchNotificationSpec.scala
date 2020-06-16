@@ -14,7 +14,7 @@ object DeathWatchNotificationSpec {
 
   val config = ConfigFactory.parseString(s"""
     akka {
-        loglevel = DEBUG
+        loglevel = INFO
         actor {
             provider = remote
         }
