@@ -10,8 +10,9 @@ import org.scalatest.wordspec.AnyWordSpec
 class ByteStringInitializationSpec extends AnyWordSpec with Matchers {
   "ByteString intialization" should {
     "not get confused by initializing CompactByteString before ByteString" in {
-      CompactByteString.empty should not be(null)
-      ByteString.empty should not be(null)
+      ByteString.empty should not be (null)
+      CompactByteString.empty should not be (null)
+      ByteString.empty should not be (null)
     }
   }
 }
