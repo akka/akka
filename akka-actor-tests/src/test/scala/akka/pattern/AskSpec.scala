@@ -246,10 +246,14 @@ class AskSpec extends AkkaSpec("""
         }
       }), "myName")
 
-      val f = (act ? "ask").mapTo[String]
+      (act ? "ask").mapTo[String]
       val (promiseActorRef, "ask") = p.expectMsgType[(ActorRef, String)]
 
       promiseActorRef.path.name should startWith("myName")
+
+      (system.actorSelection("/user/myName") ? "ask").mapTo[String]
+      val (promiseActorRefForSelection, "ask") = p.expectMsgType[(ActorRef, String)]
+      promiseActorRefForSelection.path.name should startWith("_user_myName")
     }
   }
 

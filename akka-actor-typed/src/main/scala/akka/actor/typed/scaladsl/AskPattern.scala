@@ -7,9 +7,7 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.TimeoutException
 
 import scala.concurrent.Future
-
 import com.github.ghik.silencer.silent
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.RecipientRef
@@ -137,7 +135,7 @@ object AskPattern {
           null)
       else {
         // messageClassName "unknown' is set later, after applying the message factory
-        val a = PromiseActorRef(target.provider, timeout, target, "unknown", onTimeout = onTimeout)
+        val a = PromiseActorRef(target.provider, timeout, target, "unknown", target.refPrefix, onTimeout = onTimeout)
         val b = adapt.ActorRefAdapter[U](a)
         (b, a.result.future.asInstanceOf[Future[U]], a)
       }
