@@ -300,8 +300,8 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
 
   /**
    * The same as [[ask]] but only for requests that result in a response of type [[ReplyWithStatus]].
-   * If the reply is a [[ReplyWithStatus#success]] the wrapped response value and passed to response applyToResponse function.
-   * If the status response is a [[ReplyWithStatus#error]] the wrapped exception will be passed the applyToResponse function,
+   * If the reply is a [[ReplyWithStatus#success]] the wrapped response value and passed to response `applyToResponse` function.
+   * If the status response is a [[ReplyWithStatus#error]] the wrapped exception will instead be passed the `applyToResponse` function.
    */
   def askWithStatus[Req, Res](
       resClass: Class[Res],

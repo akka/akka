@@ -4,6 +4,8 @@
 
 package akka.actor.typed.scaladsl
 
+import akka.actor.testkit.typed.TestException
+
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
@@ -211,7 +213,7 @@ class ActorContextAskSpec
       probe.expectMessage("got pong")
     }
 
-    "unwrap error ReplyWithStatus messages using askWithStatus" in {
+    "unwrap error message ReplyWithStatus messages using askWithStatus" in {
       case class Ping(ref: ActorRef[ReplyWithStatus[Pong.type]])
       case object Pong
 
@@ -225,14 +227,38 @@ class ActorContextAskSpec
 
         Behaviors.receiveMessage {
           case ex: Throwable =>
-            probe.ref ! s"got error: ${ex.getMessage}"
+            probe.ref ! s"got error: ${ex.getClass.getName}, ${ex.getMessage}"
             Behaviors.same
         }
       })
 
       val replyTo = probe.expectMessageType[Ping].ref
       replyTo ! ReplyWithStatus.Error("boho")
-      probe.expectMessage("got error: boho")
+      probe.expectMessage("got error: akka.pattern.ReplyWithStatus$ErrorMessage, boho")
+    }
+
+    "unwrap error with custom exception ReplyWithStatus messages using askWithStatus" in {
+      case class Ping(ref: ActorRef[ReplyWithStatus[Pong.type]])
+      case object Pong
+
+      val probe = createTestProbe[Any]()
+      case class Message(any: Any)
+      spawn(Behaviors.setup[Throwable] { ctx =>
+        ctx.askWithStatus(probe.ref, Ping) {
+          case Failure(ex) => ex
+          case wat         => throw new IllegalArgumentException(s"Unexpected response $wat")
+        }
+
+        Behaviors.receiveMessage {
+          case ex: Throwable =>
+            probe.ref ! s"got error: ${ex.getClass.getName}, ${ex.getMessage}"
+            Behaviors.same
+        }
+      })
+
+      val replyTo = probe.expectMessageType[Ping].ref
+      replyTo ! ReplyWithStatus.Error(TestException("boho"))
+      probe.expectMessage("got error: akka.actor.testkit.typed.TestException, boho")
     }
 
   }

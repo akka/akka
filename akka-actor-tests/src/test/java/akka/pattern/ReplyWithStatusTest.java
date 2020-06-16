@@ -33,7 +33,7 @@ public class ReplyWithStatusTest extends JUnitSuite {
   public void testSuccessApi() {
     ReplyWithStatus<String> reply = ReplyWithStatus.success("woho");
     assertTrue(reply.isSuccess());
-    assertFalse(reply.isFailure());
+    assertFalse(reply.isError());
     assertEquals("woho", reply.getValue());
     try {
       reply.getError();
@@ -46,7 +46,7 @@ public class ReplyWithStatusTest extends JUnitSuite {
   @Test
   public void testErrorMessageApi() {
     ReplyWithStatus<String> reply = ReplyWithStatus.error("boho");
-    assertTrue(reply.isFailure());
+    assertTrue(reply.isError());
     assertFalse(reply.isSuccess());
     assertEquals("boho", reply.getError().getMessage());
     try {
@@ -62,7 +62,7 @@ public class ReplyWithStatusTest extends JUnitSuite {
   @Test
   public void testErrorExceptionApi() {
     ReplyWithStatus<String> reply = ReplyWithStatus.error(new TestException("boho"));
-    assertTrue(reply.isFailure());
+    assertTrue(reply.isError());
     assertFalse(reply.isSuccess());
     assertEquals("boho", reply.getError().getMessage());
     try {

@@ -19,7 +19,7 @@ import scala.util.{ Success => ScalaSuccess }
  *
  * @tparam T the type of value a successful reply would have
  */
-final case class ReplyWithStatus[+T] private (private val status: Try[T]) {
+final class ReplyWithStatus[+T] private (private val status: Try[T]) {
 
   /**
    * Java API: in the case of a successful reply returns the value, if the reply was not successful the exception
@@ -35,8 +35,15 @@ final case class ReplyWithStatus[+T] private (private val status: Try[T]) {
     case _                => throw new IllegalArgumentException("Expected reply to be a failure, but was a success")
   }
 
-  def isFailure: Boolean = status.isFailure
+  def isError: Boolean = status.isFailure
   def isSuccess: Boolean = status.isSuccess
+
+  override def equals(other: Any): Boolean = other match {
+    case that: ReplyWithStatus[_] => status == that.status
+    case _                        => false
+  }
+
+  override def hashCode(): Int = status.hashCode
 
   override def toString: String = status match {
     case ScalaSuccess(t)  => s"ReplyWithStatus.Success($t)"
@@ -63,7 +70,7 @@ object ReplyWithStatus {
    * Prefer the string based error response over this one when possible to avoid tightly coupled logic across
    * actors and passing internal failure details on to callers that can not do much to handle them.
    *
-   * For cases where types are needed to identify failures and behave differently enumerating them with a specific
+   * For cases where types are needed to identify errors and behave differently enumerating them with a specific
    * set of response messages may be a better alternative to encoding them as generic exceptions.
    *
    * Also note that Akka does not contain pre-build serializers for arbitrary exceptions.
@@ -121,14 +128,14 @@ object ReplyWithStatus {
      * Prefer the string based error response over this one when possible to avoid tightly coupled logic across
      * actors and passing internal failure details on to callers that can not do much to handle them.
      *
-     * For cases where types are needed to identify failures and behave differently enumerating them with a specific
+     * For cases where types are needed to identify errors and behave differently enumerating them with a specific
      * set of response messages may be a better alternative to encoding them as generic exceptions.
      *
      * Also note that Akka does not contain pre-build serializers for arbitrary exceptions.
      */
     def apply[T](exception: Throwable): ReplyWithStatus[T] = new ReplyWithStatus(ScalaFailure(exception))
     def unapply(status: ReplyWithStatus[_]): Option[Throwable] =
-      if (status.isFailure) Some(status.getError)
+      if (status.isError) Some(status.getError)
       else None
   }
 

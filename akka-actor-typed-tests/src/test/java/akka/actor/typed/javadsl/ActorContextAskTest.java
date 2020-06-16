@@ -4,6 +4,7 @@
 
 package akka.actor.typed.javadsl;
 
+import akka.actor.testkit.typed.TestException;
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
@@ -81,7 +82,7 @@ public class ActorContextAskTest extends JUnitSuite {
   }
 
   @Test
-  public void provideAskWithStatus() {
+  public void askWithStatusUnwrapsSuccess() {
     final TestProbe<Object> probe = testKit.createTestProbe();
 
     testKit.spawn(
@@ -111,5 +112,55 @@ public class ActorContextAskTest extends JUnitSuite {
 
     replyTo.tell(ReplyWithStatus.success(new Pong()));
     probe.expectMessage("got pong");
+  }
+
+  private static Behavior<Throwable> exceptionCapturingBehavior(ActorRef<Object> probe) {
+    return Behaviors.setup(
+        context -> {
+          context.askWithStatus(
+              Pong.class,
+              probe.narrow(),
+              Duration.ofSeconds(3),
+              PingWithStatus::new,
+              (pong, failure) -> {
+                if (pong != null) throw new IllegalArgumentException("did not expect pong");
+                else return failure;
+              });
+
+          return Behaviors.receive(Throwable.class)
+              .onAnyMessage(
+                  throwable -> {
+                    probe.tell(
+                        "got error: "
+                            + throwable.getClass().getName()
+                            + ", "
+                            + throwable.getMessage());
+                    return Behaviors.same();
+                  })
+              .build();
+        });
+  }
+
+  @Test
+  public void askWithStatusUnwrapsErrorMessages() {
+    final TestProbe<Object> probe = testKit.createTestProbe();
+    testKit.spawn(exceptionCapturingBehavior(probe.getRef()));
+    ActorRef<ReplyWithStatus<Pong>> replyTo =
+        probe.expectMessageClass(PingWithStatus.class).replyTo;
+
+    replyTo.tell(ReplyWithStatus.error("boho"));
+    probe.expectMessage("got error: akka.pattern.ReplyWithStatus$ErrorMessage, boho");
+  }
+
+  @Test
+  public void askWithStatusUnwrapsErrorCustomExceptions() {
+    final TestProbe<Object> probe = testKit.createTestProbe();
+    testKit.spawn(exceptionCapturingBehavior(probe.getRef()));
+    ActorRef<ReplyWithStatus<Pong>> replyTo =
+        probe.expectMessageClass(PingWithStatus.class).replyTo;
+
+    // with custom exception
+    replyTo.tell(ReplyWithStatus.error(new TestException("boho")));
+    probe.expectMessage("got error: akka.actor.testkit.typed.TestException, boho");
   }
 }

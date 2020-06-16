@@ -299,8 +299,8 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
 
   /**
    * The same as [[ask]] but only for requests that result in a response of type [[ReplyWithStatus]].
-   * If the status response is a [[ReplyWithStatus.Fail]] the adapter will be passed a `Failure(RuntimeException(description))`,
-   * if it is a [[ReplyWithStatus.Ok]] the wrapped response is unwrapped and passed to the map response function.
+   * If the reply is a [[ReplyWithStatus#Success]] the wrapped response value is passed to the `mapResponse` function.
+   * If the reply is a [[ReplyWithStatus#Error]] the wrapped exception will be passed the `mapResponse` as a `Failure` function.
    */
   def askWithStatus[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[ReplyWithStatus[Res]] => Req)(
       mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit

@@ -130,7 +130,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       case em: ReplyWithStatus.ErrorMessage =>
         // somewhat optimized for the recommended usage, avoiding the additional payload metadata
         ContainerFormats.ReplyWithStatusErrorMessage.newBuilder().setErrorMessage(em.getMessage).build().toByteArray
-      case ex: Exception =>
+      case ex: Throwable =>
         // depends on user providing exception serializer
         // no specific message, serialized id and manifest together with payload is enough (less wrapping overhead)
         payloadSupport.payloadBuilder(ex).build().toByteArray

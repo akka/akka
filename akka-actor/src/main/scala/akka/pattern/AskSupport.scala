@@ -89,8 +89,8 @@ trait AskSupport {
     actorRef.internalAsk(message, timeout, sender)
 
   /**
-   * Use for messages whose response is known to be a [[akka.pattern.ReplyWithStatus]]. When a [[ReplyWithStatus.success]] response
-   * arrives the future is completed with the wrapped vaule, if a [[ReplyWithStatus.error]] arrives the future is instead
+   * Use for messages whose response is known to be a [[akka.pattern.ReplyWithStatus]]. When a [[ReplyWithStatus#success]] response
+   * arrives the future is completed with the wrapped value, if a [[ReplyWithStatus#error]] arrives the future is instead
    * failed.
    */
   def askWithStatus(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] =

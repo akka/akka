@@ -212,7 +212,7 @@ import scala.util.Success
       mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit =
     ask(target, createRequest) {
       case Success(ReplyWithStatus.Success(t: Res)) => mapResponse(Success(t))
-      case Success(ReplyWithStatus.Error(why))      => mapResponse(Failure(new RuntimeException(why)))
+      case Success(ReplyWithStatus.Error(why))      => mapResponse(Failure(why))
       case fail: Failure[_]                         => mapResponse(fail.asInstanceOf[Failure[Res]])
     }
 
@@ -243,7 +243,7 @@ import scala.util.Success
       (ok: ReplyWithStatus[Res], failure: Throwable) =>
         ok match {
           case ReplyWithStatus.Success(value: Res) => applyToResponse(value, null)
-          case ReplyWithStatus.Error(why)          => applyToResponse(null.asInstanceOf[Res], new RuntimeException(why))
+          case ReplyWithStatus.Error(why)          => applyToResponse(null.asInstanceOf[Res], why)
           case null                                => applyToResponse(null.asInstanceOf[Res], failure)
         })
   }
