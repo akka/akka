@@ -1,0 +1,3 @@
+# ShardedDaemonProcess: Use Interger in javadsl function #29235
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.cluster.sharding.typed.javadsl.ShardedDaemonProcess.init")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.cluster.sharding.typed.internal.ShardedDaemonProcessImpl.init")
