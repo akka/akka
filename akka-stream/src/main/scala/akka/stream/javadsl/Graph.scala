@@ -523,6 +523,70 @@ object Concat {
 
 }
 
+/**
+ * Takes multiple streams whose elements in aggregate have a defined linear
+ * sequence with difference 1, starting at 0, and outputs a single stream
+ * containing these elements, in order. That is, given a set of input streams
+ * with combined elements *e<sub>k</sub>*:
+ *
+ * *e<sub>0</sub>*, *e<sub>1</sub>*, *e<sub>2</sub>*, ..., *e<sub>n</sub>*
+ *
+ * This will output a stream ordered by *k*.
+ *
+ * The elements in the input streams must already be sorted according to the
+ * sequence. The input streams do not need to be linear, but the aggregate
+ * stream must be linear, no element *k* may be skipped or duplicated, either
+ * of these conditions will cause the stream to fail.
+ *
+ * The typical use case for this is to merge a partitioned stream back
+ * together while maintaining order. This can be achieved by first using
+ * `zipWithIndex` on the input stream, then partitioning using a
+ * [[Partition]] fanout, and then maintaining the index through the processing
+ * of each partition before bringing together with this stage.
+ *
+ * '''Emits when''' one of the upstreams has the next expected element in the
+ * sequence available.
+ *
+ * '''Backpressures when''' downstream backpressures
+ *
+ * '''Completes when''' all upstreams complete
+ *
+ * '''Cancels when''' downstream cancels
+ */
+object MergeSequence {
+
+  /**
+   * Create a new anonymous `MergeSequence` operator with two input ports.
+   *
+   * @param extractSequence The function to extract the sequence from an element.
+   */
+  def create[T](extractSequence: function.Function[T, Long]): Graph[UniformFanInShape[T, T], NotUsed] =
+    scaladsl.MergeSequence[T]()(extractSequence.apply)
+
+  /**
+   * Create a new anonymous `MergeSequence` operator.
+   *
+   * @param inputCount The number of input streams.
+   * @param extractSequence The function to extract the sequence from an element.
+   */
+  def create[T](inputCount: Int, extractSequence: function.Function[T, Long]): Graph[UniformFanInShape[T, T], NotUsed] =
+    scaladsl.MergeSequence[T](inputCount)(extractSequence.apply)
+
+  /**
+   * Create a new anonymous `Concat` operator with the specified input types.
+   *
+   * @param clazz a type hint for this method
+   * @param inputCount The number of input streams.
+   * @param extractSequence The function to extract the sequence from an element.
+   */
+  def create[T](
+      @unused clazz: Class[T],
+      inputCount: Int,
+      extractSequence: function.Function[T, Long]): Graph[UniformFanInShape[T, T], NotUsed] =
+    create(inputCount, extractSequence)
+
+}
+
 object GraphDSL extends GraphCreate {
 
   /**

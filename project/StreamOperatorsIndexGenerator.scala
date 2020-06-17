@@ -171,6 +171,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
           .map(method => (element, method))
       } ++ List(
         (noElement, "Partition"),
+        (noElement, "MergeSequence"),
         (noElement, "Broadcast"),
         (noElement, "Balance"),
         (noElement, "Unzip"),
