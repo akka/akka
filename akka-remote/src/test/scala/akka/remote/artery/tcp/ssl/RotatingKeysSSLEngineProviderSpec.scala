@@ -46,10 +46,11 @@ class RotatingProviderWithStaticKeysSpec
       if (!arteryTcpTlsEnabled())
         pending
 
+      val (remoteSysA, _) = buildRemoteWithEchoActor("A-rebuild")
       // an initial connection between sysA (from the testkit) and sysB
       // to get sysB up and running
       val (remoteSysB, pathEchoB) = buildRemoteWithEchoActor("B-rebuild")
-      contact(system, pathEchoB)
+      contact(remoteSysA.actorSystem, pathEchoB)
       assertEnginesCreated(remoteSysB)
       val before = remoteSysB.sslContextRef.get()
 
@@ -71,14 +72,15 @@ class RotatingProviderWithStaticKeysSpec
       if (!arteryTcpTlsEnabled())
         pending
 
+      val (remoteSysA, _) = buildRemoteWithEchoActor("B-reuse-alive")
       // an initial connection between sysA (from the testkit) and sysB
       // to get sysB up and running
       val (remoteSysB, pathEchoB) = buildRemoteWithEchoActor("B-reuse-alive")
-      contact(system, pathEchoB)
+      contact(remoteSysA.actorSystem, pathEchoB)
       assertThreeChannelsAreCreated(remoteSysB)
       // once the three channels are created, no new engines are required... (cont'd)
-      contact(system, pathEchoB)
-      contact(system, pathEchoB)
+      contact(remoteSysA.actorSystem, pathEchoB)
+      contact(remoteSysA.actorSystem, pathEchoB)
       assertNoEnginesCreated(remoteSysB)
 
       awaitCacheExpiration()
@@ -86,7 +88,7 @@ class RotatingProviderWithStaticKeysSpec
       // ... (cont) even when the cache has expired.
       // Send message to system B from system A should not require a new SSLEngine
       // be created.
-      contact(system, pathEchoB)
+      contact(remoteSysA.actorSystem, pathEchoB)
       assertNoEnginesCreated(remoteSysB)
     }
 
@@ -272,9 +274,13 @@ abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
       val lasted = System.nanoTime() - now
       system.log.info(s"Terminated $systemToTerminate after ${lasted / 1000000} ms")
     }
+    super.beforeTermination()
+  }
+
+  override def afterTermination() {
     // Don't cleanup folder until all systems have terminated
     cleanupTemporaryDirectory()
-    super.beforeTermination()
+    super.afterTermination()
   }
 }
 
