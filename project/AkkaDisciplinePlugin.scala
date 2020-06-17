@@ -30,6 +30,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-cluster",
     "akka-cluster-metrics",
     "akka-cluster-sharding",
+    "akka-cluster-sharding-typed",
     "akka-distributed-data",
     "akka-persistence",
     "akka-persistence-tck",

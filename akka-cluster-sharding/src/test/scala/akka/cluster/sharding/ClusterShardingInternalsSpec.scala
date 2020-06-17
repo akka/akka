@@ -11,6 +11,7 @@ import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.ShardCoordinator.Internal.ShardStopped
 import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.{ ExtractEntityId, ExtractShardId, HandOffStopper, Msg }
+import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, TestProbe }
 
 object ClusterShardingInternalsSpec {
@@ -30,7 +31,10 @@ class ClusterShardingInternalsSpec extends AkkaSpec("""
     |akka.actor.provider = cluster
     |akka.remote.classic.netty.tcp.port = 0
     |akka.remote.artery.canonical.port = 0
-    |""".stripMargin) {
+    |akka.loglevel = DEBUG
+    |akka.cluster.sharding.verbose-debug-logging = on
+    |akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+    |""".stripMargin) with WithLogCapturing {
   import ClusterShardingInternalsSpec._
 
   case class StartingProxy(

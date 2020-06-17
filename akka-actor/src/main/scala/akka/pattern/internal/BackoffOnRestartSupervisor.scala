@@ -4,8 +4,10 @@
 
 package akka.pattern.internal
 
-import akka.actor.SupervisorStrategy._
+import scala.concurrent.duration._
+
 import akka.actor.{ OneForOneStrategy, _ }
+import akka.actor.SupervisorStrategy._
 import akka.annotation.InternalApi
 import akka.pattern.{
   BackoffReset,
@@ -16,8 +18,6 @@ import akka.pattern.{
   HandlingWhileStopped,
   ReplyWith
 }
-
-import scala.concurrent.duration._
 
 /**
  * INTERNAL API

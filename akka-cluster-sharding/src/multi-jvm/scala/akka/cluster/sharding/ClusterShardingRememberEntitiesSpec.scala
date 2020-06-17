@@ -20,18 +20,21 @@ object ClusterShardingRememberEntitiesSpec {
     case id: Int => (id.toString, id)
   }
 
-  val extractShardId: ShardRegion.ExtractShardId = msg =>
-    msg match {
-      case id: Int                     => id.toString
-      case ShardRegion.StartEntity(id) => id
-    }
+  val extractShardId: ShardRegion.ExtractShardId = {
+    case id: Int                     => id.toString
+    case ShardRegion.StartEntity(id) => id
+  }
 
 }
 
-abstract class ClusterShardingRememberEntitiesSpecConfig(mode: String, rememberEntities: Boolean)
+abstract class ClusterShardingRememberEntitiesSpecConfig(
+    mode: String,
+    rememberEntities: Boolean,
+    rememberEntitiesStore: String = ClusterShardingSettings.RememberEntitiesStoreDData)
     extends MultiNodeClusterShardingConfig(
       mode,
       rememberEntities,
+      rememberEntitiesStore = rememberEntitiesStore,
       additionalConfig = s"""
       akka.testconductor.barrier-timeout = 60 s
       akka.test.single-expect-default = 60 s
@@ -58,11 +61,22 @@ class PersistentClusterShardingRememberEntitiesSpecConfig(rememberEntities: Bool
 class DDataClusterShardingRememberEntitiesSpecConfig(rememberEntities: Boolean)
     extends ClusterShardingRememberEntitiesSpecConfig(ClusterShardingSettings.StateStoreModeDData, rememberEntities)
 
+class DDataClusterShardingEventSourcedRememberEntitiesSpecConfig(rememberEntities: Boolean)
+    extends ClusterShardingRememberEntitiesSpecConfig(
+      ClusterShardingSettings.StateStoreModeDData,
+      rememberEntities,
+      ClusterShardingSettings.RememberEntitiesStoreEventsourced)
+
 abstract class PersistentClusterShardingRememberEntitiesSpec(rememberEntities: Boolean)
     extends ClusterShardingRememberEntitiesSpec(
       new PersistentClusterShardingRememberEntitiesSpecConfig(rememberEntities))
+
 abstract class DDataClusterShardingRememberEntitiesSpec(rememberEntities: Boolean)
     extends ClusterShardingRememberEntitiesSpec(new DDataClusterShardingRememberEntitiesSpecConfig(rememberEntities))
+
+abstract class DDataClusterShardingEventSourcedRememberEntitiesSpec(rememberEntities: Boolean)
+    extends ClusterShardingRememberEntitiesSpec(
+      new DDataClusterShardingEventSourcedRememberEntitiesSpecConfig(rememberEntities))
 
 class PersistentClusterShardingRememberEntitiesEnabledMultiJvmNode1
     extends PersistentClusterShardingRememberEntitiesSpec(true)
@@ -85,6 +99,13 @@ class DDataClusterShardingRememberEntitiesEnabledMultiJvmNode3 extends DDataClus
 class DDataClusterShardingRememberEntitiesDefaultMultiJvmNode1 extends DDataClusterShardingRememberEntitiesSpec(false)
 class DDataClusterShardingRememberEntitiesDefaultMultiJvmNode2 extends DDataClusterShardingRememberEntitiesSpec(false)
 class DDataClusterShardingRememberEntitiesDefaultMultiJvmNode3 extends DDataClusterShardingRememberEntitiesSpec(false)
+
+class DDataClusterShardingEventSourcedRememberEntitiesEnabledMultiJvmNode1
+    extends DDataClusterShardingEventSourcedRememberEntitiesSpec(true)
+class DDataClusterShardingEventSourcedRememberEntitiesEnabledMultiJvmNode2
+    extends DDataClusterShardingEventSourcedRememberEntitiesSpec(true)
+class DDataClusterShardingEventSourcedRememberEntitiesEnabledMultiJvmNode3
+    extends DDataClusterShardingEventSourcedRememberEntitiesSpec(true)
 
 abstract class ClusterShardingRememberEntitiesSpec(multiNodeConfig: ClusterShardingRememberEntitiesSpecConfig)
     extends MultiNodeClusterShardingSpec(multiNodeConfig)
@@ -123,7 +144,7 @@ abstract class ClusterShardingRememberEntitiesSpec(multiNodeConfig: ClusterShard
   s"Cluster sharding with remember entities ($mode)" must {
 
     "start remembered entities when coordinator fail over" in within(30.seconds) {
-      startPersistenceIfNotDdataMode(startOn = first, setStoreOn = Seq(first, second, third))
+      startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second, third))
 
       val entityProbe = TestProbe()
       val probe = TestProbe()
@@ -182,7 +203,7 @@ abstract class ClusterShardingRememberEntitiesSpec(multiNodeConfig: ClusterShard
         val entityProbe2 = TestProbe()(sys2)
         val probe2 = TestProbe()(sys2)
 
-        if (!isDdataMode) setStore(sys2, storeOn = first)
+        if (persistenceIsNeeded) setStore(sys2, storeOn = first)
 
         Cluster(sys2).join(Cluster(sys2).selfAddress)
 

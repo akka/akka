@@ -31,6 +31,10 @@ import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.ddata.Replicator
 import akka.cluster.ddata.ReplicatorSettings
+import akka.cluster.sharding.internal.CustomStateStoreModeProvider
+import akka.cluster.sharding.internal.DDataRememberEntitiesProvider
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesProvider
+import akka.cluster.sharding.internal.RememberEntitiesProvider
 import akka.cluster.singleton.ClusterSingletonManager
 import akka.event.Logging
 import akka.pattern.BackoffOpts
@@ -717,7 +721,8 @@ private[akka] class ClusterShardingGuardian extends Actor {
   }
 
   private def replicator(settings: ClusterShardingSettings): ActorRef = {
-    if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData) {
+    if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData ||
+        settings.stateStoreMode == ClusterShardingSettings.RememberEntitiesStoreCustom) {
       // one Replicator per role
       replicatorByRole.get(settings.role) match {
         case Some(ref) => ref
@@ -748,16 +753,39 @@ private[akka] class ClusterShardingGuardian extends Actor {
         import settings.tuningParameters.coordinatorFailureBackoff
 
         val rep = replicator(settings)
+        val rememberEntitiesStoreProvider: Option[RememberEntitiesProvider] =
+          if (!settings.rememberEntities) None
+          else {
+            // with the deprecated persistence state store mode we always use the event sourced provider for shard regions
+            // and no store for coordinator (the coordinator is a PersistentActor in that case)
+            val rememberEntitiesProvider =
+              if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence) {
+                ClusterShardingSettings.RememberEntitiesStoreEventsourced
+              } else {
+                settings.rememberEntitiesStore
+              }
+            Some(rememberEntitiesProvider match {
+              case ClusterShardingSettings.RememberEntitiesStoreDData =>
+                new DDataRememberEntitiesProvider(typeName, settings, majorityMinCap, rep)
+              case ClusterShardingSettings.RememberEntitiesStoreEventsourced =>
+                new EventSourcedRememberEntitiesProvider(typeName, settings)
+              case ClusterShardingSettings.RememberEntitiesStoreCustom =>
+                new CustomStateStoreModeProvider(typeName, context.system, settings)
+            })
+          }
+
         val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
         val cName = coordinatorSingletonManagerName(encName)
         val cPath = coordinatorPath(encName)
         val shardRegion = context.child(encName).getOrElse {
           if (context.child(cName).isEmpty) {
             val coordinatorProps =
-              if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
+              if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence) {
                 ShardCoordinator.props(typeName, settings, allocationStrategy)
-              else
-                ShardCoordinator.props(typeName, settings, allocationStrategy, rep, majorityMinCap)
+              } else {
+                ShardCoordinator
+                  .props(typeName, settings, allocationStrategy, rep, majorityMinCap, rememberEntitiesStoreProvider)
+              }
             val singletonProps =
               BackoffOpts
                 .onStop(
@@ -787,8 +815,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
                 extractEntityId = extractEntityId,
                 extractShardId = extractShardId,
                 handOffStopMessage = handOffStopMessage,
-                replicator = rep,
-                majorityMinCap)
+                rememberEntitiesStoreProvider)
               .withDispatcher(context.props.dispatcher),
             name = encName)
         }
@@ -819,9 +846,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
                 settings = settings,
                 coordinatorPath = cPath,
                 extractEntityId = extractEntityId,
-                extractShardId = extractShardId,
-                replicator = context.system.deadLetters,
-                majorityMinCap)
+                extractShardId = extractShardId)
               .withDispatcher(context.props.dispatcher),
             name = actorName)
         }

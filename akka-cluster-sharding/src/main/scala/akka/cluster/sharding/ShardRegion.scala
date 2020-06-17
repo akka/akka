@@ -13,17 +13,23 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.runtime.AbstractFunction1
 import scala.util.{ Failure, Success }
-
 import akka.Done
 import akka.actor._
-import akka.annotation.InternalApi
-import akka.cluster.{ Cluster, ClusterSettings, Member, MemberStatus }
+import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
+import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.Member
+import akka.cluster.MemberStatus
 import akka.cluster.sharding.Shard.ShardStats
+import akka.cluster.sharding.internal.RememberEntitiesProvider
 import akka.event.Logging
-import akka.pattern.{ ask, pipe }
-import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
+import akka.pattern.ask
+import akka.pattern.pipe
+import akka.util.MessageBufferMap
+import akka.util.PrettyDuration
+import akka.util.Timeout
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -42,8 +48,7 @@ object ShardRegion {
       extractEntityId: ShardRegion.ExtractEntityId,
       extractShardId: ShardRegion.ExtractShardId,
       handOffStopMessage: Any,
-      replicator: ActorRef,
-      majorityMinCap: Int): Props =
+      rememberEntitiesProvider: Option[RememberEntitiesProvider]): Props =
     Props(
       new ShardRegion(
         typeName,
@@ -54,8 +59,7 @@ object ShardRegion {
         extractEntityId,
         extractShardId,
         handOffStopMessage,
-        replicator,
-        majorityMinCap)).withDeploy(Deploy.local)
+        rememberEntitiesProvider)).withDeploy(Deploy.local)
 
   /**
    * INTERNAL API
@@ -68,9 +72,7 @@ object ShardRegion {
       settings: ClusterShardingSettings,
       coordinatorPath: String,
       extractEntityId: ShardRegion.ExtractEntityId,
-      extractShardId: ShardRegion.ExtractShardId,
-      replicator: ActorRef,
-      majorityMinCap: Int): Props =
+      extractShardId: ShardRegion.ExtractShardId): Props =
     Props(
       new ShardRegion(
         typeName,
@@ -81,8 +83,7 @@ object ShardRegion {
         extractEntityId,
         extractShardId,
         PoisonPill,
-        replicator,
-        majorityMinCap)).withDeploy(Deploy.local)
+        None)).withDeploy(Deploy.local)
 
   /**
    * Marker type of entity identifier (`String`).
@@ -501,6 +502,7 @@ object ShardRegion {
       stopMessage: Any,
       handoffTimeout: FiniteDuration): Props =
     Props(new HandOffStopper(shard, replyTo, entities, stopMessage, handoffTimeout)).withDeploy(Deploy.local)
+
 }
 
 /**
@@ -513,6 +515,7 @@ object ShardRegion {
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
+@InternalStableApi
 private[akka] class ShardRegion(
     typeName: String,
     entityProps: Option[String => Props],
@@ -522,8 +525,7 @@ private[akka] class ShardRegion(
     extractEntityId: ShardRegion.ExtractEntityId,
     extractShardId: ShardRegion.ExtractShardId,
     handOffStopMessage: Any,
-    replicator: ActorRef,
-    majorityMinCap: Int)
+    rememberEntitiesProvider: Option[RememberEntitiesProvider])
     extends Actor
     with Timers {
 
@@ -753,7 +755,13 @@ private[akka] class ShardRegion(
       // because they might be forwarded from other regions and there
       // is a risk or message re-ordering otherwise
       if (shardBuffers.contains(shard)) {
-        shardBuffers.remove(shard)
+        val dropped = shardBuffers
+          .drop(shard, "Avoiding reordering of buffered messages at shard handoff", context.system.deadLetters)
+        if (dropped > 0)
+          log.warning(
+            "Dropping [{}] buffered messages to shard [{}] during hand off to avoid re-ordering",
+            dropped,
+            shard)
         loggedFullBufferWarning = false
       }
 
@@ -971,15 +979,16 @@ private[akka] class ShardRegion(
 
     if (retryCount >= 5 && retryCount % 5 == 0 && log.isWarningEnabled) {
       log.warning(
-        "{}: Retry request for shards [{}] homes from coordinator. [{}] total buffered messages.",
+        "{}: Retry request for shards [{}] homes from coordinator. [{}] total buffered messages. Coordinator [{}]",
         typeName,
         shards.sorted.mkString(","),
-        totalBuffered)
+        totalBuffered,
+        coordinator)
     }
   }
 
   def initializeShard(id: ShardId, shard: ActorRef): Unit = {
-    log.debug("{}: Shard was initialized {}", typeName, id)
+    log.debug("{}: Shard was initialized [{}]", typeName, id)
     startingShards -= id
     deliverBufferedMessages(id, shard)
   }
@@ -1103,6 +1112,7 @@ private[akka] class ShardRegion(
             log.debug(ShardingLogMarker.shardStarted(typeName, id), "{}: Starting shard [{}] in region", typeName, id)
 
             val name = URLEncoder.encode(id, "utf-8")
+
             val shard = context.watch(
               context.actorOf(
                 Shard
@@ -1114,8 +1124,7 @@ private[akka] class ShardRegion(
                     extractEntityId,
                     extractShardId,
                     handOffStopMessage,
-                    replicator,
-                    majorityMinCap)
+                    rememberEntitiesProvider)
                   .withDispatcher(context.props.dispatcher),
                 name))
             shardsByRef = shardsByRef.updated(shard, id)

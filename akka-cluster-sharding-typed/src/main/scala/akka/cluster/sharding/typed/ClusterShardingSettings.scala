@@ -11,6 +11,7 @@ import com.typesafe.config.Config
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.sharding.typed.ClusterShardingSettings.RememberEntitiesStoreModeDData
 import akka.cluster.sharding.{ ClusterShardingSettings => ClassicShardingSettings }
 import akka.cluster.singleton.{ ClusterSingletonManagerSettings => ClassicClusterSingletonManagerSettings }
 import akka.cluster.typed.Cluster
@@ -47,6 +48,7 @@ object ClusterShardingSettings {
       passivateIdleEntityAfter = classicSettings.passivateIdleEntityAfter,
       shardRegionQueryTimeout = classicSettings.shardRegionQueryTimeout,
       stateStoreMode = StateStoreMode.byName(classicSettings.stateStoreMode),
+      rememberEntitiesStoreMode = RememberEntitiesStoreMode.byName(classicSettings.rememberEntitiesStore),
       new TuningParameters(classicSettings.tuningParameters),
       new ClusterSingletonManagerSettings(
         classicSettings.coordinatorSingletonSettings.singletonName,
@@ -63,6 +65,7 @@ object ClusterShardingSettings {
       journalPluginId = settings.journalPluginId,
       snapshotPluginId = settings.snapshotPluginId,
       stateStoreMode = settings.stateStoreMode.name,
+      rememberEntitiesStore = settings.rememberEntitiesStoreMode.name,
       passivateIdleEntityAfter = settings.passivateIdleEntityAfter,
       shardRegionQueryTimeout = settings.shardRegionQueryTimeout,
       new ClassicShardingSettings.TuningParameters(
@@ -101,15 +104,56 @@ object ClusterShardingSettings {
     if (role == "" || role == null) None else Option(role)
 
   sealed trait StateStoreMode { def name: String }
+
+  /**
+   * Java API
+   */
+  def stateStoreModePersistence(): StateStoreMode = StateStoreModePersistence
+
+  /**
+   * Java API
+   */
+  def stateStoreModeDdata(): StateStoreMode = StateStoreModePersistence
+
   object StateStoreMode {
+
     def byName(name: String): StateStoreMode =
       if (name == StateStoreModePersistence.name) StateStoreModePersistence
       else if (name == StateStoreModeDData.name) StateStoreModeDData
       else
-        throw new IllegalArgumentException("Not recognized StateStoreMode, only 'ddata' is supported.")
+        throw new IllegalArgumentException(
+          s"Not recognized StateStoreMode, only '${StateStoreModePersistence.name}' and '${StateStoreModeDData.name}' are supported.")
   }
+
   case object StateStoreModePersistence extends StateStoreMode { override def name = "persistence" }
+
   case object StateStoreModeDData extends StateStoreMode { override def name = "ddata" }
+
+  /**
+   * Java API
+   */
+  def rememberEntitiesStoreModeEventSourced(): RememberEntitiesStoreMode = RememberEntitiesStoreModeEventSourced
+
+  /**
+   * Java API
+   */
+  def rememberEntitiesStoreModeDdata(): RememberEntitiesStoreMode = RememberEntitiesStoreModeDData
+
+  sealed trait RememberEntitiesStoreMode { def name: String }
+
+  object RememberEntitiesStoreMode {
+
+    def byName(name: String): RememberEntitiesStoreMode =
+      if (name == RememberEntitiesStoreModeEventSourced.name) RememberEntitiesStoreModeEventSourced
+      else if (name == RememberEntitiesStoreModeDData.name) RememberEntitiesStoreModeDData
+      else
+        throw new IllegalArgumentException(
+          s"Not recognized RememberEntitiesStore, only '${RememberEntitiesStoreModeDData.name}' and '${RememberEntitiesStoreModeEventSourced.name}' are supported.")
+  }
+  final case object RememberEntitiesStoreModeEventSourced extends RememberEntitiesStoreMode {
+    override def name = "eventsourced"
+  }
+  final case object RememberEntitiesStoreModeDData extends RememberEntitiesStoreMode { override def name = "ddata" }
 
   // generated using kaze-class
   final class TuningParameters private (
@@ -279,15 +323,36 @@ final class ClusterShardingSettings(
     val passivateIdleEntityAfter: FiniteDuration,
     val shardRegionQueryTimeout: FiniteDuration,
     val stateStoreMode: ClusterShardingSettings.StateStoreMode,
+    val rememberEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings) {
 
-  import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModeDData
-  import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModePersistence
-  require(
-    stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData,
-    s"Unknown 'state-store-mode' [$stateStoreMode], " +
-    s"valid values are '${StateStoreModeDData.name}' or '${StateStoreModePersistence.name}'")
+  @deprecated("Use constructor with rememberEntitiesStoreMode", "2.6.6") // FIXME update version once merged
+  def this(
+      numberOfShards: Int,
+      role: Option[String],
+      dataCenter: Option[DataCenter],
+      rememberEntities: Boolean,
+      journalPluginId: String,
+      snapshotPluginId: String,
+      passivateIdleEntityAfter: FiniteDuration,
+      shardRegionQueryTimeout: FiniteDuration,
+      stateStoreMode: ClusterShardingSettings.StateStoreMode,
+      tuningParameters: ClusterShardingSettings.TuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
+    this(
+      numberOfShards,
+      role,
+      dataCenter,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      passivateIdleEntityAfter,
+      shardRegionQueryTimeout,
+      stateStoreMode,
+      RememberEntitiesStoreModeDData,
+      tuningParameters,
+      coordinatorSingletonSettings)
 
   /**
    * INTERNAL API
@@ -322,6 +387,10 @@ final class ClusterShardingSettings(
   def withStateStoreMode(stateStoreMode: ClusterShardingSettings.StateStoreMode): ClusterShardingSettings =
     copy(stateStoreMode = stateStoreMode)
 
+  def withRememberEntitiesStoreMode(
+      rememberEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode): ClusterShardingSettings =
+    copy(rememberEntitiesStoreMode = rememberEntitiesStoreMode)
+
   def withPassivateIdleEntityAfter(duration: FiniteDuration): ClusterShardingSettings =
     copy(passivateIdleEntityAfter = duration)
 
@@ -349,6 +418,7 @@ final class ClusterShardingSettings(
       journalPluginId: String = journalPluginId,
       snapshotPluginId: String = snapshotPluginId,
       stateStoreMode: ClusterShardingSettings.StateStoreMode = stateStoreMode,
+      rememberEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode = rememberEntitiesStoreMode,
       tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
       coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
       passivateIdleEntityAfter: FiniteDuration = passivateIdleEntityAfter,
@@ -363,6 +433,7 @@ final class ClusterShardingSettings(
       passivateIdleEntityAfter,
       shardRegionQueryTimeout,
       stateStoreMode,
+      rememberEntitiesStoreMode,
       tuningParameters,
       coordinatorSingletonSettings)
 }

@@ -137,7 +137,7 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(
   s"Cluster with min-nr-of-members using sharding ($mode)" must {
 
     "start up first cluster and sharding" in within(15.seconds) {
-      startPersistenceIfNotDdataMode(startOn = first, setStoreOn = Seq(second, third))
+      startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(second, third))
 
       join(first, first)
       join(second, first)
@@ -200,7 +200,7 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(
         val sys2 = ActorSystem(system.name, system.settings.config)
         val probe2 = TestProbe()(sys2)
 
-        if (!isDdataMode) {
+        if (persistenceIsNeeded) {
           sys2.actorSelection(node(first) / "user" / "store").tell(Identify(None), probe2.ref)
           val sharedStore = probe2.expectMsgType[ActorIdentity](10.seconds).ref.get
           SharedLeveldbJournal.setStore(sharedStore, sys2)

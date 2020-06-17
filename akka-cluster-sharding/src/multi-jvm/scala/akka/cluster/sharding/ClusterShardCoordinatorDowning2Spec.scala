@@ -99,7 +99,7 @@ abstract class ClusterShardCoordinatorDowning2Spec(multiNodeConfig: ClusterShard
   s"Cluster sharding ($mode) with down member, scenario 2" must {
 
     "join cluster" in within(20.seconds) {
-      startPersistenceIfNotDdataMode(startOn = first, setStoreOn = Seq(first, second))
+      startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second))
 
       join(first, first, onJoinedRunOnFrom = startSharding())
       join(second, first, onJoinedRunOnFrom = startSharding(), assertNodeUp = false)
