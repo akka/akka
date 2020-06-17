@@ -69,7 +69,7 @@ such as:
 * `java.io.Serializable`
 * `java.util.Comparable`.
 
-The blacklist of possible serialization gadget classes defined by Jackson databind are checked
+The deny list of possible serialization gadget classes defined by Jackson databind are checked
 and disallowed for deserialization.
 
 @@@ warning

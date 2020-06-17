@@ -28,13 +28,13 @@ Java
 :   @@snip [StatefulMapConcat.java](/akka-docs/src/test/java/jdocs/stream/operators/flow/StatefulMapConcat.java) { #zip-with-index }
 
 In this sample we let the value of the elements have an effect on the following elements, if an element starts
-with `blacklist:word` we add it to a black list and filter out any subsequent entries of `word`:
+with `deny:word` we add it to a deny list and filter out any subsequent entries of `word`:
 
 Scala
-:  @@snip [StatefulMapConcat.scala](/akka-docs/src/test/scala/docs/stream/operators/flow/StatefulMapConcat.scala) { #blacklist }
+:  @@snip [StatefulMapConcat.scala](/akka-docs/src/test/scala/docs/stream/operators/flow/StatefulMapConcat.scala) { #denylist }
 
 Java
-:   @@snip [StatefulMapConcat.java](/akka-docs/src/test/java/jdocs/stream/operators/flow/StatefulMapConcat.java) { #blacklist }
+:   @@snip [StatefulMapConcat.java](/akka-docs/src/test/java/jdocs/stream/operators/flow/StatefulMapConcat.java) { #denylist }
 
 For cases where there is a need to emit elements based on the state when the stream ends, it is possible to add an extra
 element signalling the end of the stream before the `statefulMapConcat` operator.

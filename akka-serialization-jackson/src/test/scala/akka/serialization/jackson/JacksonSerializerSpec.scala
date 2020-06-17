@@ -471,7 +471,7 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       }
     }
 
-    "allow deserialization of classes in configured whitelist-class-prefix" in {
+    "allow deserialization of classes in configured allowed-class-prefix" in {
       val json = """{"name":"abc"}"""
 
       val old = SimpleCommand("abc")
@@ -638,7 +638,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
         "akka.serialization.jackson.JavaTestMessages$$TestMessage" = $serializerName
       }
     }
-    akka.serialization.jackson.whitelist-class-prefix = ["akka.serialization.jackson.ScalaTestMessages$$OldCommand"]
+    akka.serialization.jackson.allowed-class-prefix = ["akka.serialization.jackson.ScalaTestMessages$$OldCommand"]
     """)))
     with AnyWordSpecLike
     with Matchers
@@ -900,17 +900,17 @@ abstract class JacksonSerializerSpec(serializerName: String)
       event2.field2 should ===(17)
     }
 
-    "not allow serialization of blacklisted class" in {
+    "not allow serialization of deny listed class" in {
       val serializer = serializerFor(SimpleCommand("ok"))
       val fileHandler = new FileHandler(s"target/tmp-${this.getClass.getName}")
       try {
         intercept[IllegalArgumentException] {
           serializer.manifest(fileHandler)
-        }.getMessage.toLowerCase should include("blacklist")
+        }.getMessage.toLowerCase should include("deny list")
       } finally fileHandler.close()
     }
 
-    "not allow deserialization of blacklisted class" in {
+    "not allow deserialization of deny list class" in {
       withTransportInformation() { () =>
         val msg = SimpleCommand("ok")
         val serializer = serializerFor(msg)
@@ -918,18 +918,18 @@ abstract class JacksonSerializerSpec(serializerName: String)
         intercept[IllegalArgumentException] {
           // maliciously changing manifest
           serializer.fromBinary(blob, classOf[FileHandler].getName)
-        }.getMessage.toLowerCase should include("blacklist")
+        }.getMessage.toLowerCase should include("deny list")
       }
     }
 
-    "not allow serialization of class that is not in serialization-bindings (whitelist)" in {
+    "not allow serialization of class that is not in serialization-bindings (allowed-class-prefix)" in {
       val serializer = serializerFor(SimpleCommand("ok"))
       intercept[IllegalArgumentException] {
         serializer.manifest(Status.Success("bad"))
-      }.getMessage.toLowerCase should include("whitelist")
+      }.getMessage.toLowerCase should include("allowed-class-prefix")
     }
 
-    "not allow deserialization of class that is not in serialization-bindings (whitelist)" in {
+    "not allow deserialization of class that is not in serialization-bindings (allowed-class-prefix)" in {
       withTransportInformation() { () =>
         val msg = SimpleCommand("ok")
         val serializer = serializerFor(msg)
@@ -937,7 +937,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
         intercept[IllegalArgumentException] {
           // maliciously changing manifest
           serializer.fromBinary(blob, classOf[Status.Success].getName)
-        }.getMessage.toLowerCase should include("whitelist")
+        }.getMessage.toLowerCase should include("allowed-class-prefix")
       }
     }
 

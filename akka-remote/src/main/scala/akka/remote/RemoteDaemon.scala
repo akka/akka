@@ -73,10 +73,11 @@ private[akka] class RemoteSystemDaemon(
 
   private val parent2children = new ConcurrentHashMap[ActorRef, Set[ActorRef]]
 
-  private val whitelistEnabled = system.settings.config.getBoolean("akka.remote.deployment.enable-whitelist")
-  private val remoteDeploymentWhitelist: immutable.Set[String] = {
+  private val allowListEnabled = system.settings.config.getBoolean("akka.remote.deployment.enable-allow-list")
+  private val remoteDeploymentAllowList: immutable.Set[String] = {
     import akka.util.ccompat.JavaConverters._
-    if (whitelistEnabled) system.settings.config.getStringList("akka.remote.deployment.whitelist").asScala.toSet
+    if (allowListEnabled)
+      system.settings.config.getStringList("akka.remote.deployment.allowed-actor-classes").asScala.toSet
     else Set.empty
   }
 
@@ -164,13 +165,13 @@ private[akka] class RemoteSystemDaemon(
           case DaemonMsgCreate(_, _, path, _) if untrustedMode =>
             log.debug("does not accept deployments (untrusted) for [{}]", path) // TODO add security marker?
 
-          case DaemonMsgCreate(props, deploy, path, supervisor) if whitelistEnabled =>
+          case DaemonMsgCreate(props, deploy, path, supervisor) if allowListEnabled =>
             val name = props.clazz.getCanonicalName
-            if (remoteDeploymentWhitelist.contains(name))
+            if (remoteDeploymentAllowList.contains(name))
               doCreateActor(message, props, deploy, path, supervisor)
             else {
               val ex =
-                new NotWhitelistedClassRemoteDeploymentAttemptException(props.actorClass(), remoteDeploymentWhitelist)
+                new NotWhitelistedClassRemoteDeploymentAttemptException(props.actorClass(), remoteDeploymentAllowList)
               log.error(
                 LogMarker.Security,
                 ex,
@@ -273,8 +274,10 @@ private[akka] class RemoteSystemDaemon(
 }
 
 /** INTERNAL API */
-final class NotWhitelistedClassRemoteDeploymentAttemptException(illegal: Class[_], whitelist: immutable.Set[String])
+final class NotWhitelistedClassRemoteDeploymentAttemptException(
+    illegal: Class[_],
+    allowedClassNames: immutable.Set[String])
     extends RuntimeException(
-      s"Attempted to deploy not whitelisted Actor class: " +
+      s"Attempted to deploy Actor class: " +
       s"[$illegal], " +
-      s"whitelisted classes: [${whitelist.mkString(", ")}]")
+      s"which is not allowed, allowed classes: [${allowedClassNames.mkString(", ")}]")
