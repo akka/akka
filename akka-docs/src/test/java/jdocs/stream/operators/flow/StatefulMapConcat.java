@@ -47,8 +47,7 @@ public class StatefulMapConcat {
     // #denylist
     Source<String, NotUsed> fruitsAndDenyCommands =
         Source.from(
-            Arrays.asList(
-                "banana", "pear", "orange", "deny:banana", "banana", "pear", "banana"));
+            Arrays.asList("banana", "pear", "orange", "deny:banana", "banana", "pear", "banana"));
 
     Flow<String, String, NotUsed> denyFilterFlow =
         Flow.of(String.class)
