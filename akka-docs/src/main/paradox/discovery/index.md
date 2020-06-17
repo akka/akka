@@ -206,8 +206,7 @@ Each service can have multiple endpoints.
 
 ## Discovery Method: Aggregate multiple discovery methods
 
-Aggregate discovery allows multiple discovery methods to be aggregated e.g. try and resolve
-via DNS and fall back to configuration.
+Aggregate discovery allows multiple discovery methods to be aggregated.
 
 To use aggregate discovery add its dependency as well as all of the discovery that you
 want to aggregate.
@@ -219,7 +218,7 @@ akka {
   discovery {
     method = aggregate
     aggregate {
-      discovery-methods = ["akka-dns", "config"]
+      discovery-methods = ["config", "akka-dns"]
     }
     config {
       services {
@@ -242,9 +241,7 @@ akka {
 
 ```
 
-The above configuration will result in `akka-dns` first being checked and if it fails or returns no
-targets for the given service name then `config` is queried which i configured with one service called
-`service1` which two hosts `host1` and `host2`.
+The above configuration will result in `config` first being checked, which is configured with one service called `service1` with two hosts `host1` and `host2`. If it fails or returns no targets for the given service name then `akka-dns` is queried.
 
 ## Migrating from Akka Management Discovery (before 1.0.0)
 
@@ -257,6 +254,3 @@ Migration steps:
 * Any custom discovery method should now implement `akka.discovery.ServiceDiscovery`
 * `discovery-method` now has to be a configuration location under `akka.discovery` with at minimum a property `class` specifying the fully qualified name of the implementation of `akka.discovery.ServiceDiscovery`.
   Previous versions allowed this to be a class name or a fully qualified config location e.g. `akka.discovery.kubernetes-api` rather than just `kubernetes-api`
-
-
-
