@@ -4,7 +4,7 @@
 
 package akka.cluster.sharding.typed.internal
 
-import java.util.function.IntFunction 
+import java.util.function.IntFunction
 import java.util.Optional
 
 import scala.compat.java8.OptionConverters._

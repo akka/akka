@@ -4,7 +4,7 @@
 
 package akka.cluster.sharding.typed.javadsl
 
-import java.util.function.IntFunction 
+import java.util.function.IntFunction
 import java.util.Optional
 
 import akka.actor.typed.ActorSystem
