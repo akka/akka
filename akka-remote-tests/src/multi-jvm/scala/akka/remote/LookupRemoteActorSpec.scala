@@ -21,8 +21,8 @@ class LookupRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
       akka.remote.artery.enabled = $artery
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
-  val master = role("master")
-  val slave = role("slave")
+  val leader = role("leader")
+  val follower = role("follower")
 
 }
 
@@ -49,19 +49,19 @@ abstract class LookupRemoteActorSpec(multiNodeConfig: LookupRemoteActorMultiJvmS
 
   def initialParticipants = 2
 
-  runOn(master) {
+  runOn(leader) {
     system.actorOf(Props[SomeActor](), "service-hello")
   }
 
   "Remoting" must {
     "lookup remote actor" taggedAs LongRunningTest in {
-      runOn(slave) {
+      runOn(follower) {
         val hello = {
-          system.actorSelection(node(master) / "user" / "service-hello") ! Identify("id1")
+          system.actorSelection(node(leader) / "user" / "service-hello") ! Identify("id1")
           expectMsgType[ActorIdentity].ref.get
         }
         hello.isInstanceOf[RemoteActorRef] should ===(true)
-        val masterAddress = testConductor.getAddressFor(master).await
+        val masterAddress = testConductor.getAddressFor(leader).await
         (hello ? "identify").await.asInstanceOf[ActorRef].path.address should ===(masterAddress)
       }
       enterBarrier("done")
