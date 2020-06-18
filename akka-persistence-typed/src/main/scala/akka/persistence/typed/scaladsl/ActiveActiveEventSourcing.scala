@@ -85,14 +85,30 @@ private[akka] class ActiveActiveContextImpl(val id: String, val replicaId: Strin
 object ActiveActiveEventSourcing {
 
   /**
+   * Intialize a repliated event sourced behavior.
+   *
+   * Events from each replica for the same entityId will be replicated to every copy.
+   * Care must be taken to handle events in any order as events can happen concurrently at different replicas.
+   *
+   * Using an replicated event sourced behavior means there is no longer the single writer guarantee.
+   *
+   * A different journal plugin id can be configured using withJournalPluginId after creation. Different databases
+   * can be used for each replica.
+   * The events from other replicas are read using PersistentQuery.
+   * TODO support a different query plugin id per replicas: https://github.com/akka/akka/issues/29257
+   *
+   * @param replicaId The unique identity for this entity. The underlying persistence id will include the replica.
+   * @param allReplicaIds All replica ids. These need to be known to receive events from all replicas.
+   * @param queryPluginId Used to read the evnets from other replicas. Must be the query side of your configured journal plugin.
+   * @return
    */
   def apply[Command, Event, State](
-      persistenceId: String,
+      entityId: String,
       replicaId: String,
       allReplicaIds: Set[String],
       queryPluginId: String)(activeActiveContext: ActiveActiveContext => EventSourcedBehavior[Command, Event, State])
       : EventSourcedBehavior[Command, Event, State] = {
-    val context = new ActiveActiveContextImpl(persistenceId, replicaId, allReplicaIds)
+    val context = new ActiveActiveContextImpl(entityId, replicaId, allReplicaIds)
     activeActiveContext(context).withActiveActive(context, replicaId, allReplicaIds, queryPluginId)
   }
 
