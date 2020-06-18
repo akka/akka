@@ -277,7 +277,7 @@ abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
     super.beforeTermination()
   }
 
-  override def afterTermination() {
+  override def afterTermination(): Unit = {
     // Don't cleanup folder until all systems have terminated
     cleanupTemporaryDirectory()
     super.afterTermination()
