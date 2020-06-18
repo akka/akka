@@ -31,7 +31,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
   "A RestartStrategy" must {
 
-    "ensure that slave stays dead after max restarts within time range" in {
+    "ensure that employee stays dead after max restarts within time range" in {
       val boss = system.actorOf(
         Props(
           new Supervisor(OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 1 second)(List(classOf[Throwable])))))
@@ -41,7 +41,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       val countDownLatch = new TestLatch(3)
       val stopLatch = new TestLatch
 
-      val slaveProps = Props(new Actor {
+      val employeeProps = Props(new Actor {
 
         def receive = {
           case Ping  => countDownLatch.countDown()
@@ -59,32 +59,32 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
           stopLatch.open()
         }
       })
-      val slave = Await.result((boss ? slaveProps).mapTo[ActorRef], timeout.duration)
+      val employee = Await.result((boss ? employeeProps).mapTo[ActorRef], timeout.duration)
 
-      slave ! Ping
-      slave ! Crash
-      slave ! Ping
+      employee ! Ping
+      employee ! Crash
+      employee ! Ping
 
       // test restart and post restart ping
       Await.ready(restartLatch, 10 seconds)
 
       // now crash again... should not restart
-      slave ! Crash
-      slave ! Ping
+      employee ! Crash
+      employee ! Ping
 
       Await.ready(secondRestartLatch, 10 seconds)
       Await.ready(countDownLatch, 10 seconds)
 
-      slave ! Crash
+      employee ! Crash
       Await.ready(stopLatch, 10 seconds)
     }
 
-    "ensure that slave is immortal without max restarts and time range" in {
+    "ensure that employee is immortal without max restarts and time range" in {
       val boss = system.actorOf(Props(new Supervisor(OneForOneStrategy()(List(classOf[Throwable])))))
 
       val countDownLatch = new TestLatch(100)
 
-      val slaveProps = Props(new Actor {
+      val employeeProps = Props(new Actor {
 
         def receive = {
           case Crash => throw new Exception("Crashing...")
@@ -94,16 +94,16 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
           countDownLatch.countDown()
         }
       })
-      val slave = Await.result((boss ? slaveProps).mapTo[ActorRef], timeout.duration)
+      val employee = Await.result((boss ? employeeProps).mapTo[ActorRef], timeout.duration)
 
       (1 to 100).foreach { _ =>
-        slave ! Crash
+        employee ! Crash
       }
       Await.ready(countDownLatch, 2 minutes)
-      assert(!slave.isTerminated)
+      assert(!employee.isTerminated)
     }
 
-    "ensure that slave restarts after number of crashes not within time range" in {
+    "ensure that employee restarts after number of crashes not within time range" in {
       val boss = system.actorOf(Props(
         new Supervisor(OneForOneStrategy(maxNrOfRetries = 2, withinTimeRange = 500 millis)(List(classOf[Throwable])))))
 
@@ -113,7 +113,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       val pingLatch = new TestLatch
       val secondPingLatch = new TestLatch
 
-      val slaveProps = Props(new Actor {
+      val employeeProps = Props(new Actor {
 
         def receive = {
           case Ping =>
@@ -135,16 +135,16 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
           }
         }
       })
-      val slave = Await.result((boss ? slaveProps).mapTo[ActorRef], timeout.duration)
+      val employee = Await.result((boss ? employeeProps).mapTo[ActorRef], timeout.duration)
 
-      slave ! Ping
-      slave ! Crash
+      employee ! Ping
+      employee ! Crash
 
       Await.ready(restartLatch, 10 seconds)
       Await.ready(pingLatch, 10 seconds)
 
-      slave ! Ping
-      slave ! Crash
+      employee ! Ping
+      employee ! Crash
 
       Await.ready(secondRestartLatch, 10 seconds)
       Await.ready(secondPingLatch, 10 seconds)
@@ -153,15 +153,15 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       sleep(700L)
 
       // now crash again... should and post restart ping
-      slave ! Crash
-      slave ! Ping
+      employee ! Crash
+      employee ! Ping
 
       Await.ready(thirdRestartLatch, 1 second)
 
-      assert(!slave.isTerminated)
+      assert(!employee.isTerminated)
     }
 
-    "ensure that slave is not restarted after max retries" in {
+    "ensure that employee is not restarted after max retries" in {
       val boss = system.actorOf(Props(new Supervisor(OneForOneStrategy(maxNrOfRetries = 2)(List(classOf[Throwable])))))
 
       val restartLatch = new TestLatch
@@ -169,7 +169,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       val countDownLatch = new TestLatch(3)
       val stopLatch = new TestLatch
 
-      val slaveProps = Props(new Actor {
+      val employeeProps = Props(new Actor {
 
         def receive = {
           case Ping  => countDownLatch.countDown()
@@ -186,33 +186,33 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
           stopLatch.open()
         }
       })
-      val slave = Await.result((boss ? slaveProps).mapTo[ActorRef], timeout.duration)
+      val employee = Await.result((boss ? employeeProps).mapTo[ActorRef], timeout.duration)
 
-      slave ! Ping
-      slave ! Crash
-      slave ! Ping
+      employee ! Ping
+      employee ! Crash
+      employee ! Ping
 
       // test restart and post restart ping
       Await.ready(restartLatch, 10 seconds)
 
-      assert(!slave.isTerminated)
+      assert(!employee.isTerminated)
 
       // now crash again... should not restart
-      slave ! Crash
-      slave ! Ping
+      employee ! Crash
+      employee ! Ping
 
       Await.ready(secondRestartLatch, 10 seconds)
       Await.ready(countDownLatch, 10 seconds)
 
       sleep(700L)
 
-      slave ! Crash
+      employee ! Crash
       Await.ready(stopLatch, 10 seconds)
       sleep(500L)
-      assert(slave.isTerminated)
+      assert(employee.isTerminated)
     }
 
-    "ensure that slave is not restarted within time range" in {
+    "ensure that employee is not restarted within time range" in {
       val restartLatch, stopLatch, maxNoOfRestartsLatch = new TestLatch
       val countDownLatch = new TestLatch(2)
 
@@ -224,7 +224,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
         }
       }))
 
-      val slaveProps = Props(new Actor {
+      val employeeProps = Props(new Actor {
 
         def receive = {
           case Ping  => countDownLatch.countDown()
@@ -239,32 +239,32 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
           stopLatch.open()
         }
       })
-      val slave = Await.result((boss ? slaveProps).mapTo[ActorRef], timeout.duration)
+      val employee = Await.result((boss ? employeeProps).mapTo[ActorRef], timeout.duration)
 
-      slave ! Ping
-      slave ! Crash
-      slave ! Ping
+      employee ! Ping
+      employee ! Crash
+      employee ! Ping
 
       // test restart and post restart ping
       Await.ready(restartLatch, 10 seconds)
 
-      assert(!slave.isTerminated)
+      assert(!employee.isTerminated)
 
       // now crash again... should not restart
-      slave ! Crash
+      employee ! Crash
 
       // may not be running
-      slave ! Ping
+      employee ! Ping
       Await.ready(countDownLatch, 10 seconds)
 
       // may not be running
-      slave ! Crash
+      employee ! Crash
 
       Await.ready(stopLatch, 10 seconds)
 
       Await.ready(maxNoOfRestartsLatch, 10 seconds)
       sleep(500L)
-      assert(slave.isTerminated)
+      assert(employee.isTerminated)
     }
   }
 }
