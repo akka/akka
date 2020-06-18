@@ -271,22 +271,22 @@ Scala
 Java
 :   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
 
-### Remote deployment whitelist
+### Remote deployment allow list
 
-As remote deployment can potentially be abused by both users and even attackers a whitelist feature
+As remote deployment can potentially be abused by both users and even attackers an allow list feature
 is available to guard the ActorSystem from deploying unexpected actors. Please note that remote deployment
 is *not* remote code loading, the Actors class to be deployed onto a remote system needs to be present on that
 remote system. This still however may pose a security risk, and one may want to restrict remote deployment to
-only a specific set of known actors by enabling the whitelist feature.
+only a specific set of known actors by enabling the allow list feature.
 
-To enable remote deployment whitelisting set the `akka.remote.deployment.enable-whitelist` value to `on`.
+To enable remote deployment allow list set the `akka.remote.deployment.enable-allow-list` value to `on`.
 The list of allowed classes has to be configured on the "remote" system, in other words on the system onto which
 others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or
 should not allow others to remote deploy onto it. The full settings section may for example look like this:
 
-@@snip [RemoteDeploymentWhitelistSpec.scala](/akka-remote/src/test/scala/akka/remote/classic/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
+@@snip [RemoteDeploymentAllowListSpec.scala](/akka-remote/src/test/scala/akka/remote/classic/RemoteDeploymentAllowListSpec.scala) { #allow-list-config }
 
-Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
+Actor classes not included in the allow list will not be allowed to be remote deployed onto this system.
 
 ## Lifecycle and Failure Recovery Model
 

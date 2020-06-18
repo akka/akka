@@ -408,10 +408,10 @@ import akka.util.OptionVal
   private def checkAllowedClass(clazz: Class[_]): Unit = {
     if (!denyList.isAllowedClass(clazz)) {
       val warnMsg = s"Can't serialize/deserialize object of type [${clazz.getName}] in [${getClass.getName}]. " +
-        s"Blacklisted for security reasons."
+        s"Not allowed for security reasons."
       log.warning(LogMarker.Security, warnMsg)
       throw new IllegalArgumentException(warnMsg)
-    } else if (!isInWhitelist(clazz)) {
+    } else if (!isInAllowList(clazz)) {
       val warnMsg = s"Can't serialize/deserialize object of type [${clazz.getName}] in [${getClass.getName}]. " +
         "Only classes that are listed as allowed are allowed for security reasons. " +
         "Configure allowed classes with akka.actor.serialization-bindings or " +
@@ -436,8 +436,8 @@ import akka.util.OptionVal
    * That is also possible when changing a binding from a JacksonSerializer to another serializer (e.g. protobuf)
    * and still bind with the same class (interface).
    */
-  private def isInWhitelist(clazz: Class[_]): Boolean = {
-    isBoundToJacksonSerializer(clazz) || isInWhitelistClassPrefix(clazz.getName)
+  private def isInAllowList(clazz: Class[_]): Boolean = {
+    isBoundToJacksonSerializer(clazz) || hasAllowedClassPrefix(clazz.getName)
   }
 
   private def isBoundToJacksonSerializer(clazz: Class[_]): Boolean = {
@@ -452,7 +452,7 @@ import akka.util.OptionVal
     }
   }
 
-  private def isInWhitelistClassPrefix(className: String): Boolean =
+  private def hasAllowedClassPrefix(className: String): Boolean =
     allowedClassPrefix.exists(className.startsWith)
 
   /**

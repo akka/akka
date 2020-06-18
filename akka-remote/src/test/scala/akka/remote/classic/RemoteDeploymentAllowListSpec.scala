@@ -17,7 +17,7 @@ import akka.testkit._
 // relies on test transport
 object RemoteDeploymentAllowListSpec {
 
-  class EchoWhitelisted extends Actor {
+  class EchoAllowed extends Actor {
     var target: ActorRef = context.system.deadLetters
 
     def receive = {
@@ -35,7 +35,7 @@ object RemoteDeploymentAllowListSpec {
     }
   }
 
-  class EchoNotWhitelisted extends Actor {
+  class EchoNotAllowed extends Actor {
     var target: ActorRef = context.system.deadLetters
 
     def receive = {
@@ -79,7 +79,7 @@ object RemoteDeploymentAllowListSpec {
           transport-class = "akka.remote.transport.TestTransport"
           applied-adapters = []
           registry-key = aX33k0jWKg
-          local-address = "test://RemoteDeploymentWhitelistSpec@localhost:12345"
+          local-address = "test://RemoteDeploymentAllowListSpec@localhost:12345"
           maximum-payload-bytes = 32000 bytes
           scheme-identifier = test
         }
@@ -126,7 +126,7 @@ class RemoteDeploymentAllowListSpec
         
         allow-list = [
           "NOT_ON_CLASSPATH", # verify we don't throw if a class not on classpath is listed here
-          "akka.remote.classic.RemoteDeploymentWhitelistSpec.EchoWhitelisted"
+          "akka.remote.classic.RemoteDeploymentAllowListSpec.EchoAllowed"
         ]
       }
       //#allow-list-config
@@ -147,10 +147,10 @@ class RemoteDeploymentAllowListSpec
     AssociationRegistry.clear()
   }
 
-  "RemoteDeployment Whitelist" must {
+  "RemoteDeployment Allow List" must {
 
     "allow deploying Echo actor (included in allow list)" in {
-      val r = system.actorOf(Props[EchoWhitelisted](), "blub")
+      val r = system.actorOf(Props[EchoAllowed](), "blub")
       r.path.toString should ===(
         s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/blub")
       r ! 42
@@ -166,7 +166,7 @@ class RemoteDeploymentAllowListSpec
     }
 
     "not deploy actor not listed in allow list" in {
-      val r = system.actorOf(Props[EchoNotWhitelisted](), "danger-mouse")
+      val r = system.actorOf(Props[EchoNotAllowed](), "danger-mouse")
       r.path.toString should ===(
         s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/danger-mouse")
       r ! 42

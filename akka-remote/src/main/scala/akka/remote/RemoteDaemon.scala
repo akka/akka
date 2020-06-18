@@ -171,7 +171,7 @@ private[akka] class RemoteSystemDaemon(
               doCreateActor(message, props, deploy, path, supervisor)
             else {
               val ex =
-                new NotWhitelistedClassRemoteDeploymentAttemptException(props.actorClass(), remoteDeploymentAllowList)
+                new NotAllowedClassRemoteDeploymentAttemptException(props.actorClass(), remoteDeploymentAllowList)
               log.error(
                 LogMarker.Security,
                 ex,
@@ -274,9 +274,7 @@ private[akka] class RemoteSystemDaemon(
 }
 
 /** INTERNAL API */
-final class NotWhitelistedClassRemoteDeploymentAttemptException(
-    illegal: Class[_],
-    allowedClassNames: immutable.Set[String])
+final class NotAllowedClassRemoteDeploymentAttemptException(illegal: Class[_], allowedClassNames: immutable.Set[String])
     extends RuntimeException(
       s"Attempted to deploy Actor class: " +
       s"[$illegal], " +
