@@ -150,11 +150,11 @@ object SerializationDocSpec {
     #//#date-time
     """
 
-  val configWhitelist = """
-    #//#whitelist-class-prefix
-    akka.serialization.jackson.whitelist-class-prefix =
+  val configAllowList = """
+    #//#allowed-class-prefix
+    akka.serialization.jackson.allowed-class-prefix =
       ["com.myservice.event.OrderAdded", "com.myservice.command"]
-    #//#whitelist-class-prefix
+    #//#allowed-class-prefix
   """
 
 }

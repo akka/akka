@@ -34,33 +34,33 @@ class StatefulMapConcat {
     // #zip-with-index
   }
 
-  def blacklist(): Unit = {
-    // #blacklist
-    val fruitsAndBlacklistCommands = Source(
-      "banana" :: "pear" :: "orange" :: "blacklist:banana" :: "banana" :: "pear" :: "banana" :: Nil)
+  def denylist(): Unit = {
+    // #denylist
+    val fruitsAndDeniedCommands = Source(
+      "banana" :: "pear" :: "orange" :: "deny:banana" :: "banana" :: "pear" :: "banana" :: Nil)
 
-    val blacklistingFlow = Flow[String].statefulMapConcat { () =>
-      var blacklist = Set.empty[String]
+    val denyFilterFlow = Flow[String].statefulMapConcat { () =>
+      var denyList = Set.empty[String]
 
       { element =>
-        if (element.startsWith("blacklist:")) {
-          blacklist += element.drop(10)
-          Nil // no element downstream when adding a blacklisted keyword
-        } else if (blacklist(element)) {
-          Nil // no element downstream if element is blacklisted
+        if (element.startsWith("deny:")) {
+          denyList += element.drop(10)
+          Nil // no element downstream when adding a deny listed keyword
+        } else if (denyList(element)) {
+          Nil // no element downstream if element is deny listed
         } else {
           element :: Nil
         }
       }
     }
 
-    fruitsAndBlacklistCommands.via(blacklistingFlow).runForeach(println)
+    fruitsAndDeniedCommands.via(denyFilterFlow).runForeach(println)
     // prints
     // banana
     // pear
     // orange
     // pear
-    // #blacklist
+    // #denylist
   }
 
   def reactOnEnd(): Unit = {

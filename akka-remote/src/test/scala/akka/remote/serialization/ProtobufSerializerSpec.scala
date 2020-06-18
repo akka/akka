@@ -45,7 +45,7 @@ object MaliciousMessage {
 }
 
 class ProtobufSerializerSpec extends AkkaSpec(s"""
-  akka.serialization.protobuf.whitelist-class = [
+  akka.serialization.protobuf.allowed-classes = [
       "com.google.protobuf.GeneratedMessage",
       "com.google.protobuf.GeneratedMessageV3",
       "scalapb.GeneratedMessageCompanion",
@@ -87,7 +87,7 @@ class ProtobufSerializerSpec extends AkkaSpec(s"""
       protobufV3Message should ===(deserialized)
     }
 
-    "disallow deserialization of classes that are not in bindings and not in configured whitelist-class" in {
+    "disallow deserialization of classes that are not in bindings and not in configured allowed classes" in {
       val originalSerializer = ser.serializerFor(classOf[MyMessage])
 
       intercept[IllegalArgumentException] {
@@ -95,7 +95,7 @@ class ProtobufSerializerSpec extends AkkaSpec(s"""
       }
     }
 
-    "allow deserialization of classes in configured whitelist-class" in {
+    "allow deserialization of classes in configured allowed classes" in {
       val originalSerializer = ser.serializerFor(classOf[MyMessage])
 
       val deserialized =
@@ -103,7 +103,7 @@ class ProtobufSerializerSpec extends AkkaSpec(s"""
       deserialized.getClass should ===(classOf[AnotherMessage])
     }
 
-    "allow deserialization of interfaces in configured whitelist-class" in {
+    "allow deserialization of interfaces in configured allowed classes" in {
       val originalSerializer = ser.serializerFor(classOf[MyMessage])
 
       val deserialized =
@@ -111,7 +111,7 @@ class ProtobufSerializerSpec extends AkkaSpec(s"""
       deserialized.getClass should ===(classOf[AnotherMessage2])
     }
 
-    "allow deserialization of super classes in configured whitelist-class" in {
+    "allow deserialization of super classes in configured allowed classes" in {
       val originalSerializer = ser.serializerFor(classOf[MyMessage])
 
       val deserialized =

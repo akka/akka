@@ -43,40 +43,39 @@ public class StatefulMapConcat {
     // #zip-with-index
   }
 
-  static void blacklist() {
-    // #blacklist
-    Source<String, NotUsed> fruitsAndBlacklistCommands =
+  static void denylist() {
+    // #denylist
+    Source<String, NotUsed> fruitsAndDenyCommands =
         Source.from(
-            Arrays.asList(
-                "banana", "pear", "orange", "blacklist:banana", "banana", "pear", "banana"));
+            Arrays.asList("banana", "pear", "orange", "deny:banana", "banana", "pear", "banana"));
 
-    Flow<String, String, NotUsed> blacklistingFlow =
+    Flow<String, String, NotUsed> denyFilterFlow =
         Flow.of(String.class)
             .statefulMapConcat(
                 () -> {
-                  Set<String> blacklist = new HashSet<>();
+                  Set<String> denyList = new HashSet<>();
 
                   return (element) -> {
-                    if (element.startsWith("blacklist:")) {
-                      blacklist.add(element.substring(10));
+                    if (element.startsWith("deny:")) {
+                      denyList.add(element.substring(10));
                       return Collections
-                          .emptyList(); // no element downstream when adding a blacklisted keyword
-                    } else if (blacklist.contains(element)) {
+                          .emptyList(); // no element downstream when adding a deny listed keyword
+                    } else if (denyList.contains(element)) {
                       return Collections
-                          .emptyList(); // no element downstream if element is blacklisted
+                          .emptyList(); // no element downstream if element is deny listed
                     } else {
                       return Collections.singletonList(element);
                     }
                   };
                 });
 
-    fruitsAndBlacklistCommands.via(blacklistingFlow).runForeach(System.out::println, system);
+    fruitsAndDenyCommands.via(denyFilterFlow).runForeach(System.out::println, system);
     // prints
     // banana
     // pear
     // orange
     // pear
-    // #blacklist
+    // #denylist
   }
 
   static void reactOnEnd() {

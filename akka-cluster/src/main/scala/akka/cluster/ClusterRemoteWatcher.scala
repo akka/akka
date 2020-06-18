@@ -71,7 +71,7 @@ private[cluster] class ClusterRemoteWatcher(
   override val log = Logging(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterCore))
 
   // allowed to watch even though address not in cluster membership, i.e. remote watch
-  private val watchPathWhitelist = Set("/system/sharding/")
+  private val watchPathAllowList = Set("/system/sharding/")
 
   private var pendingDelayedQuarantine: Set[UniqueAddress] = Set.empty
 
@@ -177,7 +177,7 @@ private[cluster] class ClusterRemoteWatcher(
   private def isWatchOutsideClusterAllowed(watchee: InternalActorRef): Boolean = {
     context.system.name == watchee.path.address.system && {
       val pathPrefix = watchee.path.elements.take(2).mkString("/", "/", "/")
-      watchPathWhitelist.contains(pathPrefix)
+      watchPathAllowList.contains(pathPrefix)
     }
   }
 

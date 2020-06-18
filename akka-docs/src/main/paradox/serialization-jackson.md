@@ -69,7 +69,7 @@ such as:
 * `java.io.Serializable`
 * `java.util.Comparable`.
 
-The blacklist of possible serialization gadget classes defined by Jackson databind are checked
+The deny list of possible serialization gadget classes defined by Jackson databind are checked
 and disallowed for deserialization.
 
 @@@ warning
@@ -350,12 +350,12 @@ That type of migration must be configured with the old class name as key. The ac
 ### Remove from serialization-bindings
 
 When a class is not used for serialization any more it can be removed from `serialization-bindings` but to still
-allow deserialization it must then be listed in the `whitelist-class-prefix` configuration. This is useful for example
+allow deserialization it must then be listed in the `allowed-class-prefix` configuration. This is useful for example
 during rolling update with serialization changes, or when reading old stored data. It can also be used
 when changing from Jackson serializer to another serializer (e.g. Protobuf) and thereby changing the serialization
 binding, but it should still be possible to deserialize old data with Jackson.
 
-@@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #whitelist-class-prefix }
+@@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #allowed-class-prefix }
 
 It's a list of class names or prefixes of class names.
 

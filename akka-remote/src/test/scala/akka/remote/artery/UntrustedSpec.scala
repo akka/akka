@@ -94,7 +94,7 @@ class UntrustedSpec extends ArteryMultiNodeSpec(UntrustedSpec.config) with Impli
 
   "UntrustedMode" must {
 
-    "allow actor selection to configured white list" in {
+    "allow actor selection to configured allow list" in {
       val sel = client.actorSelection(RootActorPath(address) / receptionist.path.elements)
       sel ! "hello"
       expectMsg("hello")
@@ -152,7 +152,7 @@ class UntrustedSpec extends ArteryMultiNodeSpec(UntrustedSpec.config) with Impli
       expectNoMessage(1.second)
     }
 
-    "discard actor selection to child of matching white list" in {
+    "discard actor selection to child of matching allow list" in {
       val sel = client.actorSelection(RootActorPath(address) / receptionist.path.elements / "child1")
       sel ! "hello"
       expectNoMessage(1.second)

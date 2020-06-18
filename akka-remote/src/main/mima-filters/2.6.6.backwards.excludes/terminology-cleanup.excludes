@@ -1,0 +1,2 @@
+# Internal class rename
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.NotWhitelistedClassRemoteDeploymentAttemptException")

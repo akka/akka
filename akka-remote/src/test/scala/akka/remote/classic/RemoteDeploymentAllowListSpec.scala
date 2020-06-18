@@ -5,19 +5,18 @@
 package akka.remote.classic
 
 import scala.concurrent.duration._
-
 import com.github.ghik.silencer.silent
 import com.typesafe.config._
-
 import akka.actor._
 import akka.remote.EndpointException
+import akka.remote.NotAllowedClassRemoteDeploymentAttemptException
 import akka.remote.transport._
 import akka.testkit._
 
 // relies on test transport
-object RemoteDeploymentWhitelistSpec {
+object RemoteDeploymentAllowListSpec {
 
-  class EchoWhitelisted extends Actor {
+  class EchoAllowed extends Actor {
     var target: ActorRef = context.system.deadLetters
 
     def receive = {
@@ -35,7 +34,7 @@ object RemoteDeploymentWhitelistSpec {
     }
   }
 
-  class EchoNotWhitelisted extends Actor {
+  class EchoNotAllowed extends Actor {
     var target: ActorRef = context.system.deadLetters
 
     def receive = {
@@ -56,6 +55,7 @@ object RemoteDeploymentWhitelistSpec {
   val cfg: Config = ConfigFactory.parseString(s"""
     akka {
       actor.provider = remote
+      
       
       remote {
         use-unsafe-remote-features-outside-cluster = on
@@ -79,7 +79,7 @@ object RemoteDeploymentWhitelistSpec {
           transport-class = "akka.remote.transport.TestTransport"
           applied-adapters = []
           registry-key = aX33k0jWKg
-          local-address = "test://RemoteDeploymentWhitelistSpec@localhost:12345"
+          local-address = "test://RemoteDeploymentAllowListSpec@localhost:12345"
           maximum-payload-bytes = 32000 bytes
           scheme-identifier = test
         }
@@ -105,31 +105,30 @@ object RemoteDeploymentWhitelistSpec {
 }
 
 @silent("deprecated")
-class RemoteDeploymentWhitelistSpec
-    extends AkkaSpec(RemoteDeploymentWhitelistSpec.cfg)
+class RemoteDeploymentAllowListSpec
+    extends AkkaSpec(RemoteDeploymentAllowListSpec.cfg)
     with ImplicitSender
     with DefaultTimeout {
 
-  import RemoteDeploymentWhitelistSpec._
+  import RemoteDeploymentAllowListSpec._
 
   val conf =
     ConfigFactory.parseString("""
-      akka.loglevel = DEBUG
       akka.remote.test {
         local-address = "test://remote-sys@localhost:12346"
         maximum-payload-bytes = 48000 bytes
       }
 
-      //#whitelist-config
+      //#allow-list-config
       akka.remote.deployment {
-        enable-whitelist = on
+        enable-allow-list = on
         
-        whitelist = [
+        allowed-actor-classes = [
           "NOT_ON_CLASSPATH", # verify we don't throw if a class not on classpath is listed here
-          "akka.remote.classic.RemoteDeploymentWhitelistSpec.EchoWhitelisted"
+          "akka.remote.classic.RemoteDeploymentAllowListSpec.EchoAllowed"
         ]
       }
-      //#whitelist-config
+      //#allow-list-config
     """).withFallback(system.settings.config).resolve()
   val remoteSystem = ActorSystem("remote-sys", conf)
 
@@ -147,10 +146,10 @@ class RemoteDeploymentWhitelistSpec
     AssociationRegistry.clear()
   }
 
-  "RemoteDeployment Whitelist" must {
+  "RemoteDeployment Allow List" must {
 
-    "allow deploying Echo actor (included in whitelist)" in {
-      val r = system.actorOf(Props[EchoWhitelisted](), "blub")
+    "allow deploying Echo actor (included in allow list)" in {
+      val r = system.actorOf(Props[EchoAllowed](), "blub")
       r.path.toString should ===(
         s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/blub")
       r ! 42
@@ -165,13 +164,19 @@ class RemoteDeploymentWhitelistSpec
       expectMsg("postStop")
     }
 
-    "not deploy actor not listed in whitelist" in {
-      val r = system.actorOf(Props[EchoNotWhitelisted](), "danger-mouse")
-      r.path.toString should ===(
-        s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/danger-mouse")
-      r ! 42
-      expectNoMessage(1.second)
-      system.stop(r)
+    "not deploy actor not listed in allow list" in {
+      EventFilter
+        .warning(start = "received dead letter", occurrences = 1)
+        .intercept {
+          EventFilter[NotAllowedClassRemoteDeploymentAttemptException](occurrences = 1).intercept {
+            val r = system.actorOf(Props[EchoNotAllowed](), "danger-mouse")
+            r.path.toString should ===(
+              s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/danger-mouse")
+            r ! 42
+            expectNoMessage(1.second)
+            system.stop(r)
+          }(remoteSystem)
+        }(remoteSystem)
     }
   }
 }
