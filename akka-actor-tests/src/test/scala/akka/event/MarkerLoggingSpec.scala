@@ -25,6 +25,29 @@ class MarkerLoggingSpec extends AkkaSpec with ImplicitSender {
       info.marker.name should be("SECURITY")
     }
 
+    "add markers to logging using Array as value" in {
+      system.eventStream.subscribe(self, classOf[Info])
+      system.eventStream.publish(TestEvent.Mute(EventFilter.info()))
+      markerLogging.info(LogMarker.Security, "This is a security problem because of {} and {}",
+        Array("this", "that")
+      )
+
+      val info = expectMsgType[Info3]
+      info.message should be("This is a security problem because of this and that")
+      info.marker.name should be("SECURITY")
+    }
+
+    "add markers to logging using 2 arguments as values" in {
+      system.eventStream.subscribe(self, classOf[Info])
+      system.eventStream.publish(TestEvent.Mute(EventFilter.info()))
+      markerLogging.info(LogMarker.Security, "This is a security problem because of {} and {}", "this",
+        "that")
+
+      val info = expectMsgType[Info3]
+      info.message should be("This is a security problem because of this and that")
+      info.marker.name should be("SECURITY")
+    }
+
     "allow cause exceptions in error messages" in {
       class MyException(message: String) extends Exception(message)
       system.eventStream.subscribe(self, classOf[Error])

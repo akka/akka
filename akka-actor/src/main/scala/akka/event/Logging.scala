@@ -1472,7 +1472,7 @@ trait LoggingAdapter {
     formatImpl(t, arg)
   }
 
-  private def formatImpl(t: String, arg: Seq[Any]): String = {
+  def formatImpl(t: String, arg: Seq[Any]): String = {
     val sb = new java.lang.StringBuilder(64)
     var p = 0
     var startIndex = 0
@@ -1943,8 +1943,8 @@ class MarkerLoggingAdapter(
 
   // Copy of LoggingAdapter.format1 due to binary compatibility restrictions
   private def format1(t: String, arg: Any): String = arg match {
-    case a: Array[_] if !a.getClass.getComponentType.isPrimitive => format(t, a.toIndexedSeq)
-    case a: Array[_]                                             => format(t, a.map(_.asInstanceOf[AnyRef]).toIndexedSeq)
+    case a: Array[_] if !a.getClass.getComponentType.isPrimitive => formatImpl(t, a.toSeq)
+    case a: Array[_]                                             => formatImpl(t, a.map(_.asInstanceOf[AnyRef]).toSeq)
     case x                                                       => format(t, x)
   }
 }
