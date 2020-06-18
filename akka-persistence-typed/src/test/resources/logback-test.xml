@@ -5,7 +5,7 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%date{ISO8601} %-5level %logger %marker - %msg MDC: {%mdc}%n</pattern>
+            <pattern>%date{ISO8601} %-5level %logger %marker %X{akkaSource} - %msg %n</pattern>
         </encoder>
     </appender>
 
@@ -25,8 +25,7 @@
         <appender-ref ref="STDOUT"/>
     </logger>
 
-<!--    FIXME switch back to DEBUG -->
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="CapturingAppender"/>
     </root>
 

@@ -148,6 +148,7 @@ object EventSourcedBehavior {
   def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State]
 
   private[akka] def withActiveActive(
+      context: ActiveActiveContext,
       replicaId: String,
       allReplicaIds: Set[String]): EventSourcedBehavior[Command, Event, State]
 

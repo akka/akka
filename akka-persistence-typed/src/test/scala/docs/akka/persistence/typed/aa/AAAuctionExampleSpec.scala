@@ -47,8 +47,6 @@ object AAAuctionExampleSpec {
   final case class Closing(finishedAtDc: Set[String]) extends AuctionPhase
   case object Closed extends AuctionPhase
 
-  private val FinishTimer = "FinishTimer"
-
   case class AuctionState(
       phase: AuctionPhase,
       highestBid: Bid,
@@ -233,8 +231,8 @@ class AAAuctionExampleSpec
   "Auction example" should {
     "work" in {
       // test fails if both datacenters are included as we haven't implemented replicating events yet
-      val Replicas = Set("DC-A")
-//      val Replicas = Set("DC-A", "DC-B")
+//      val Replicas = Set("DC-A")
+      val Replicas = Set("DC-A", "DC-B")
       val setupA =
         AuctionSetup(
           "old-skis",
@@ -246,7 +244,7 @@ class AAAuctionExampleSpec
       val setupB = setupA.copy(responsibleForClosing = false)
 
       val dcAReplica: ActorRef[AuctionCommand] = spawn(behavior("DC-A", setupA))
-//      val dcBReplica: ActorRef[AuctionCommand] = spawn(behavior("DC-B", setupB))
+      val dcBReplica: ActorRef[AuctionCommand] = spawn(behavior("DC-B", setupB))
 
       dcAReplica ! OfferBid("me", 100)
       dcAReplica ! OfferBid("me", 99)
@@ -263,6 +261,11 @@ class AAAuctionExampleSpec
       eventually {
         val finishProbe = createTestProbe[Boolean]()
         dcAReplica ! IsClosed(finishProbe.ref)
+        finishProbe.expectMessage(true)
+      }
+      eventually {
+        val finishProbe = createTestProbe[Boolean]()
+        dcBReplica ! IsClosed(finishProbe.ref)
         finishProbe.expectMessage(true)
       }
     }

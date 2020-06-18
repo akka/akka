@@ -89,9 +89,8 @@ object ActiveActiveEventSourcing {
    */
   def apply[Command, Event, State](id: String, replicaId: String, allReplicaIds: Set[String])(
       activeActiveContext: ActiveActiveContext => EventSourcedBehavior[Command, Event, State]): Behavior[Command] = {
-
     val context = new ActiveActiveContextImpl(id, replicaId, allReplicaIds)
-    activeActiveContext(context).withActiveActive(replicaId, allReplicaIds)
+    activeActiveContext(context).withActiveActive(context, replicaId, allReplicaIds)
   }
 
 }

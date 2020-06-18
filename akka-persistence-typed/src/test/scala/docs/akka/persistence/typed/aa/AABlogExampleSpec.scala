@@ -4,10 +4,14 @@
 
 package docs.akka.persistence.typed.aa
 
+import java.util.UUID
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.ActorRef
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.persistence.typed.scaladsl._
+import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
@@ -15,7 +19,11 @@ import org.scalatest.time.{ Millis, Span }
 import org.scalatest.wordspec.AnyWordSpecLike
 
 object AABlogExampleSpec {
-  val config = ConfigFactory.parseString("""
+  val config =
+    ConfigFactory.parseString(s"""
+                                            
+       akka.actor.allow-java-serialization = true 
+       // FIXME serializers for replicated event or akka persistence support for metadata: https://github.com/akka/akka/issues/29260
        akka.actor.provider = cluster
        akka.loglevel = debug
        akka.persistence {
@@ -23,7 +31,7 @@ object AABlogExampleSpec {
         plugin = "akka.persistence.journal.leveldb"
            leveldb {
              native = off
-             dir = "target/journal-AABlogExampleSpec"
+             dir = "target/journal-AABlogExampleSpec-${UUID.randomUUID()}"
            }
          }
        }
@@ -47,7 +55,7 @@ object AABlogExampleSpec {
   final case class ChangeBody(postId: String, newContent: PostContent, replyTo: ActorRef[Done]) extends BlogCommand
   final case class Publish(postId: String, replyTo: ActorRef[Done]) extends BlogCommand
 
-  sealed trait BlogEvent
+  sealed trait BlogEvent extends CborSerializable
   final case class PostAdded(postId: String, content: PostContent, timestamp: LwwTime) extends BlogEvent
   final case class BodyChanged(postId: String, newContent: PostContent, timestamp: LwwTime) extends BlogEvent
 }
@@ -63,24 +71,21 @@ class AABlogExampleSpec
 
   implicit val config: PatienceConfig = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
-  def behavior(ctx: ActiveActiveContext) =
+  def behavior(aa: ActiveActiveContext, ctx: ActorContext[BlogCommand]) =
     EventSourcedBehavior[BlogCommand, BlogEvent, BlogState](
-      ctx.persistenceId,
+      aa.persistenceId,
       emptyState,
       (state, cmd) =>
         cmd match {
           case AddPost(_, content, replyTo) =>
             val evt =
-              PostAdded(ctx.persistenceId.id, content, state.contentTimestamp.increase(ctx.timestamp, ctx.replicaId))
+              PostAdded(aa.persistenceId.id, content, state.contentTimestamp.increase(aa.timestamp, aa.replicaId))
             Effect.persist(evt).thenRun { _ =>
-              replyTo ! AddPostDone(ctx.id)
+              replyTo ! AddPostDone(aa.id)
             }
           case ChangeBody(_, newContent, replyTo) =>
             val evt =
-              BodyChanged(
-                ctx.persistenceId.id,
-                newContent,
-                state.contentTimestamp.increase(ctx.timestamp, ctx.replicaId))
+              BodyChanged(aa.persistenceId.id, newContent, state.contentTimestamp.increase(aa.timestamp, aa.replicaId))
             Effect.persist(evt).thenRun { _ =>
               replyTo ! Done
             }
@@ -89,34 +94,46 @@ class AABlogExampleSpec
               p.replyTo ! Done
             }
           case gp: GetPost =>
+            ctx.log.info("GetPost {}", state.content)
             state.content.foreach(content => gp.replyTo ! content)
             Effect.none
         },
-      (state, event) =>
+      (state, event) => {
+        ctx.log.info(s"${aa.id}:${aa.replicaId} Received event $event")
         event match {
           case PostAdded(_, content, timestamp) =>
-            if (timestamp.isAfter(state.contentTimestamp))
-              state.withContent(content, timestamp)
-            else state
+            if (timestamp.isAfter(state.contentTimestamp)) {
+              val s = state.withContent(content, timestamp)
+              ctx.log.info("Updating content. New content is {}", s)
+              s
+            } else {
+              ctx.log.info("Ignoring event as timestamp is older")
+              state
+            }
           case BodyChanged(_, newContent, timestamp) =>
             if (timestamp.isAfter(state.contentTimestamp))
               state.withContent(newContent, timestamp)
             else state
           case Published(_) =>
             state.copy(published = true)
-        })
+        }
+      })
 
   "Blog Example" should {
     "work" in {
-      val defDcA: ActorRef[BlogCommand] =
-        spawn(ActiveActiveEventSourcing("cat", "DC-A", Set("DC-A", "DC-B")) { (ctx: ActiveActiveContext) =>
-          behavior(ctx)
-        })
+      val refDcA: ActorRef[BlogCommand] =
+        spawn(Behaviors.setup[BlogCommand] { ctx =>
+          ActiveActiveEventSourcing("cat", "DC-A", Set("DC-A", "DC-B")) { (aa: ActiveActiveContext) =>
+            behavior(aa, ctx)
+          }
+        }, "dc-a")
 
-      val defDcB: ActorRef[BlogCommand] =
-        spawn(ActiveActiveEventSourcing("cat", "DC-B", Set("DC-A", "DC-B")) { (ctx: ActiveActiveContext) =>
-          behavior(ctx)
-        })
+      val refDcB: ActorRef[BlogCommand] =
+        spawn(Behaviors.setup[BlogCommand] { ctx =>
+          ActiveActiveEventSourcing("cat", "DC-B", Set("DC-A", "DC-B")) { (aa: ActiveActiveContext) =>
+            behavior(aa, ctx)
+          }
+        }, "dc-b")
 
       import akka.actor.typed.scaladsl.AskPattern._
       import akka.util.Timeout
@@ -126,19 +143,17 @@ class AABlogExampleSpec
 
       val content = PostContent("cats are the bets", "yep")
       val response =
-        defDcA.ask[AddPostDone](replyTo => AddPost("cat", content, replyTo)).futureValue
+        refDcA.ask[AddPostDone](replyTo => AddPost("cat", content, replyTo)).futureValue
 
       response shouldEqual AddPostDone("cat")
 
       eventually {
-        defDcA.ask[PostContent](replyTo => GetPost("cat", replyTo)).futureValue shouldEqual content
+        refDcA.ask[PostContent](replyTo => GetPost("cat", replyTo)).futureValue shouldEqual content
       }
 
-      // won't pass until we implement replication
       eventually {
-        defDcB.ask[PostContent](replyTo => GetPost("cat", replyTo)).futureValue shouldEqual content
+        refDcB.ask[PostContent](replyTo => GetPost("cat", replyTo)).futureValue shouldEqual content
       }
-
     }
   }
 }
