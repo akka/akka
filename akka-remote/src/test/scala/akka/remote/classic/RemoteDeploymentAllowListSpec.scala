@@ -5,12 +5,11 @@
 package akka.remote.classic
 
 import scala.concurrent.duration._
-
 import com.github.ghik.silencer.silent
 import com.typesafe.config._
-
 import akka.actor._
 import akka.remote.EndpointException
+import akka.remote.NotAllowedClassRemoteDeploymentAttemptException
 import akka.remote.transport._
 import akka.testkit._
 
@@ -56,6 +55,7 @@ object RemoteDeploymentAllowListSpec {
   val cfg: Config = ConfigFactory.parseString(s"""
     akka {
       actor.provider = remote
+      
       
       remote {
         use-unsafe-remote-features-outside-cluster = on
@@ -114,7 +114,6 @@ class RemoteDeploymentAllowListSpec
 
   val conf =
     ConfigFactory.parseString("""
-      akka.loglevel = DEBUG
       akka.remote.test {
         local-address = "test://remote-sys@localhost:12346"
         maximum-payload-bytes = 48000 bytes
@@ -124,7 +123,7 @@ class RemoteDeploymentAllowListSpec
       akka.remote.deployment {
         enable-allow-list = on
         
-        allow-list = [
+        allowed-actor-classes = [
           "NOT_ON_CLASSPATH", # verify we don't throw if a class not on classpath is listed here
           "akka.remote.classic.RemoteDeploymentAllowListSpec.EchoAllowed"
         ]
@@ -166,12 +165,18 @@ class RemoteDeploymentAllowListSpec
     }
 
     "not deploy actor not listed in allow list" in {
-      val r = system.actorOf(Props[EchoNotAllowed](), "danger-mouse")
-      r.path.toString should ===(
-        s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/danger-mouse")
-      r ! 42
-      expectNoMessage(1.second)
-      system.stop(r)
+      EventFilter
+        .warning(start = "received dead letter", occurrences = 1)
+        .intercept {
+          EventFilter[NotAllowedClassRemoteDeploymentAttemptException](occurrences = 1).intercept {
+            val r = system.actorOf(Props[EchoNotAllowed](), "danger-mouse")
+            r.path.toString should ===(
+              s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/danger-mouse")
+            r ! 42
+            expectNoMessage(1.second)
+            system.stop(r)
+          }(remoteSystem)
+        }(remoteSystem)
     }
   }
 }
