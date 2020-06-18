@@ -9,6 +9,7 @@ import java.time.Instant
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, _ }
 import akka.actor.typed.{ ActorRef, Behavior }
+import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.typed.scaladsl.{ ActiveActiveContext, ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
@@ -74,14 +75,12 @@ object AAAuctionExampleSpec {
       }
 
     def withNewHighestBid(bid: Bid): AuctionState = {
-      println("new higher bid: " + bid)
       require(phase != Closed)
       require(isHigherBid(bid, highestBid))
       copy(highestBid = bid, highestCounterOffer = highestBid.offer // keep last highest bid around
       )
     }
     def withTooLowBid(bid: Bid): AuctionState = {
-      println("new bid is still lower: " + bid)
       require(phase != Closed)
       require(isHigherBid(highestBid, bid))
       copy(highestCounterOffer = highestCounterOffer.max(bid.offer)) // update highest counter offer
@@ -209,7 +208,7 @@ object AAAuctionExampleSpec {
 
   def behavior(replica: String, setup: AuctionSetup): Behavior[AuctionCommand] = Behaviors.setup[AuctionCommand] {
     ctx =>
-      ActiveActiveEventSourcing(setup.name, replica, setup.allDcs) { aaCtx =>
+      ActiveActiveEventSourcing(setup.name, replica, setup.allDcs, LeveldbReadJournal.Identifier) { aaCtx =>
         EventSourcedBehavior(
           aaCtx.persistenceId,
           initialState(setup),

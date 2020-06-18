@@ -4,7 +4,6 @@
 
 package akka.persistence.typed.scaladsl
 
-import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
 
 /**
@@ -87,10 +86,14 @@ object ActiveActiveEventSourcing {
 
   /**
    */
-  def apply[Command, Event, State](id: String, replicaId: String, allReplicaIds: Set[String])(
-      activeActiveContext: ActiveActiveContext => EventSourcedBehavior[Command, Event, State]): Behavior[Command] = {
-    val context = new ActiveActiveContextImpl(id, replicaId, allReplicaIds)
-    activeActiveContext(context).withActiveActive(context, replicaId, allReplicaIds)
+  def apply[Command, Event, State](
+      persistenceId: String,
+      replicaId: String,
+      allReplicaIds: Set[String],
+      queryPluginId: String)(activeActiveContext: ActiveActiveContext => EventSourcedBehavior[Command, Event, State])
+      : EventSourcedBehavior[Command, Event, State] = {
+    val context = new ActiveActiveContextImpl(persistenceId, replicaId, allReplicaIds)
+    activeActiveContext(context).withActiveActive(context, replicaId, allReplicaIds, queryPluginId)
   }
 
 }

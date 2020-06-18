@@ -244,8 +244,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   override private[akka] def withActiveActive(
       context: ActiveActiveContext,
       id: String,
-      allIds: Set[String]): EventSourcedBehavior[Command, Event, State] = {
-    copy(activeActive = Some(ActiveActive(id, allIds, context)))
+      allIds: Set[String],
+      queryPluginId: String): EventSourcedBehavior[Command, Event, State] = {
+    copy(activeActive = Some(ActiveActive(id, allIds, context, queryPluginId)))
   }
 }
 

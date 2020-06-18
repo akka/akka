@@ -10,6 +10,7 @@ import akka.Done
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
+import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.typed.scaladsl._
 import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.ConfigFactory
@@ -123,15 +124,17 @@ class AABlogExampleSpec
     "work" in {
       val refDcA: ActorRef[BlogCommand] =
         spawn(Behaviors.setup[BlogCommand] { ctx =>
-          ActiveActiveEventSourcing("cat", "DC-A", Set("DC-A", "DC-B")) { (aa: ActiveActiveContext) =>
-            behavior(aa, ctx)
+          ActiveActiveEventSourcing("cat", "DC-A", Set("DC-A", "DC-B"), LeveldbReadJournal.Identifier) {
+            (aa: ActiveActiveContext) =>
+              behavior(aa, ctx)
           }
         }, "dc-a")
 
       val refDcB: ActorRef[BlogCommand] =
         spawn(Behaviors.setup[BlogCommand] { ctx =>
-          ActiveActiveEventSourcing("cat", "DC-B", Set("DC-A", "DC-B")) { (aa: ActiveActiveContext) =>
-            behavior(aa, ctx)
+          ActiveActiveEventSourcing("cat", "DC-B", Set("DC-A", "DC-B"), LeveldbReadJournal.Identifier) {
+            (aa: ActiveActiveContext) =>
+              behavior(aa, ctx)
           }
         }, "dc-b")
 

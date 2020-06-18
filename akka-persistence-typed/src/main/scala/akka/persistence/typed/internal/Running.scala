@@ -26,7 +26,6 @@ import akka.persistence.SnapshotProtocol
 import akka.persistence.journal.Tagged
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
-import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.typed.{
   DeleteEventsCompleted,
   DeleteEventsFailed,
@@ -125,7 +124,7 @@ private[akka] object Running {
             // FIXME use index to get plugin id to allow diff databases per replica
             // and config section to define the read journal config
             // https://github.com/akka/akka/issues/29257
-            val replication = query.readJournalFor[EventsByPersistenceIdQuery](LeveldbReadJournal.Identifier)
+            val replication = query.readJournalFor[EventsByPersistenceIdQuery](aa.queryPluginId)
 
             implicit val timeut = Timeout(30.seconds)
             implicit val scheduler = setup.context.system.scheduler
