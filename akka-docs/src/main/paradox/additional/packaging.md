@@ -107,3 +107,13 @@ shadowJar {
     with jar
 }
 ```
+
+Or when you use the Kotlin DSL:
+
+```
+tasks.withType<ShadowJar> {
+    val newTransformer = AppendingTransformer()
+    newTransformer.resource = "reference.conf"
+    transformers.add(newTransformer)
+}
+```
