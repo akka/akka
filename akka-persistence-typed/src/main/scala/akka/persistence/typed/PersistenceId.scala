@@ -3,6 +3,7 @@
  */
 
 package akka.persistence.typed
+import akka.annotation.InternalApi
 
 object PersistenceId {
 
@@ -125,11 +126,9 @@ object PersistenceId {
   def ofUniqueId(id: String): PersistenceId =
     new PersistenceId(id)
 
-  // FIXME, support a way of migrating to replicated event sourcing
-  // by treating old events as one of the replicas
-  // https://github.com/akka/akka/issues/29261
-  def replicated(id: String, replicaId: String): PersistenceId =
-    new PersistenceId(id + DefaultSeparator + replicaId)
+  @InternalApi
+  private[akka] def replicated(entityId: String, replicaId: String): PersistenceId =
+    new PersistenceId(entityId + DefaultSeparator + replicaId)
 }
 
 /**
