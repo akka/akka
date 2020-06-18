@@ -229,8 +229,6 @@ class AAAuctionExampleSpec
 
   "Auction example" should {
     "work" in {
-      // test fails if both datacenters are included as we haven't implemented replicating events yet
-//      val Replicas = Set("DC-A")
       val Replicas = Set("DC-A", "DC-B")
       val setupA =
         AuctionSetup(

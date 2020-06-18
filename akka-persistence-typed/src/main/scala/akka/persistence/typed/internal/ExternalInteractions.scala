@@ -27,7 +27,7 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   def setup: BehaviorSetup[C, E, S]
 
-  type EventOrTaggedOrReplicated = Any // `Any` since can be `E` or `Tagged`
+  type EventOrTaggedOrReplicated = Any // `Any` since can be `E` or `Tagged` or a `ReplicatedEvent`
 
   protected def internalPersist(
       ctx: ActorContext[_],

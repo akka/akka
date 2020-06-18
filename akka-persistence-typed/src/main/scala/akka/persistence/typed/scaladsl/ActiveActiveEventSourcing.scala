@@ -42,14 +42,14 @@ trait ActiveActiveContext {
   def allReplicas: Set[String]
   def persistenceId: PersistenceId
   def recoveryRunning: Boolean
-  def id: String
+  def entityId: String
   def currentTimeMillis(): Long
 }
 
 // FIXME, parts of this can be set during initialisation
 // Other fields will be set before executing the event handler as they change per event
 // https://github.com/akka/akka/issues/29258
-private[akka] class ActiveActiveContextImpl(val id: String, val replicaId: String, val allReplicas: Set[String])
+private[akka] class ActiveActiveContextImpl(val entityId: String, val replicaId: String, val allReplicas: Set[String])
     extends ActiveActiveContext {
   var _timestamp: Long = -1
   var _origin: String = null
@@ -74,7 +74,7 @@ private[akka] class ActiveActiveContextImpl(val id: String, val replicaId: Strin
    * Undefined result if called from any where other than an event handler.
    */
   override def concurrent: Boolean = _concurrent
-  override def persistenceId: PersistenceId = PersistenceId.replicated(id, replicaId)
+  override def persistenceId: PersistenceId = PersistenceId.replicated(entityId, replicaId)
   override def currentTimeMillis(): Long = {
     // FIXME always increasing
     System.currentTimeMillis()

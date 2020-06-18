@@ -42,7 +42,8 @@ import akka.persistence.typed.{
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
-import akka.stream.{ Attributes, SystemMaterializer }
+import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
+import akka.stream.{ Attributes, SharedKillSwitch, SystemMaterializer }
 import akka.stream.Attributes.LogLevels
 import akka.stream.scaladsl.{ RestartSource, Sink }
 import akka.util.{ unused, Timeout }
@@ -76,7 +77,8 @@ private[akka] object Running {
       seqNr: Long,
       state: State,
       receivedPoisonPill: Boolean,
-      seenPerReplica: Map[String, Long]) {
+      seenPerReplica: Map[String, Long],
+      replicationKillSwitch: Option[SharedKillSwitch] = None) {
 
     def nextSequenceNr(): RunningState[State] =
       copy(seqNr = seqNr + 1)
@@ -92,7 +94,7 @@ private[akka] object Running {
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] = {
     val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
-    running.startReplicationStream(state)
+    setup.activeActive.foreach(aa => running.startReplicationStream(state, aa))
     new running.HandlingCommands(state)
   }
 }
@@ -113,40 +115,37 @@ private[akka] object Running {
 
   private val log = setup.log
 
-  def startReplicationStream(state: RunningState[S]): Unit = {
-    setup.activeActive.map { aa =>
-      val query = PersistenceQuery(setup.context.system)
-      aa.allReplicas.zipWithIndex.foreach {
-        case (replica, _) =>
-          if (replica != aa.replicaId) {
-            val seqNr = state.seenPerReplica(replica)
-            val pid = PersistenceId.replicated(aa.aaContext.id, replica)
-            // FIXME use index to get plugin id to allow diff databases per replica
-            // and config section to define the read journal config
-            // https://github.com/akka/akka/issues/29257
-            val replication = query.readJournalFor[EventsByPersistenceIdQuery](aa.queryPluginId)
+  def startReplicationStream(state: RunningState[S], aa: ActiveActive): Unit = {
+    val query = PersistenceQuery(setup.context.system)
+    aa.allReplicas.zipWithIndex.foreach {
+      case (replica, _) =>
+        if (replica != aa.replicaId) {
+          val seqNr = state.seenPerReplica(replica)
+          val pid = PersistenceId.replicated(aa.aaContext.entityId, replica)
+          // FIXME use index to get plugin id to allow diff databases per replica
+          // and config section to define the read journal config
+          // https://github.com/akka/akka/issues/29257
+          val replication = query.readJournalFor[EventsByPersistenceIdQuery](aa.queryPluginId)
 
-            implicit val timeut = Timeout(30.seconds)
-            implicit val scheduler = setup.context.system.scheduler
+          implicit val timeut = Timeout(30.seconds)
+          implicit val scheduler = setup.context.system.scheduler
 
-            val source = RestartSource.withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
-              replication
-                .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
-                .mapAsync(1) { eventEnvelope: EventEnvelope =>
-                  setup.context.self.ask[ReplicatedEventAck.type] { replyTo =>
-                    log.debug(s"{} received replicated event from {}: {}", aa.replicaId, replica, eventEnvelope)
-                    ReplicatedEventEnvelope(eventEnvelope.event.asInstanceOf[ReplicatedEvent[E]], replyTo)
-                  }
+          val source = RestartSource.withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
+            replication
+              .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
+              .mapAsync(1) { eventEnvelope: EventEnvelope =>
+                setup.context.self.ask[ReplicatedEventAck.type] { replyTo =>
+                  log.debug(s"{} received replicated event from {}: {}", aa.replicaId, replica, eventEnvelope)
+                  ReplicatedEventEnvelope(eventEnvelope.event.asInstanceOf[ReplicatedEvent[E]], replyTo)
                 }
-                // useful with info about which stream is failing, which isn't included in error logging in RestartSource
-                .log(s"${aa.aaContext.id}-replicationStream-${aa.aaContext.replicaId}")
-                .withAttributes(Attributes.logLevels(onElement = LogLevels.Off))
-            }
-
-            // FIXME, kill switch for stopping
-            source.runWith(Sink.ignore)(SystemMaterializer(setup.context.system).materializer)
+              }
+              // useful with info about which stream is failing, which isn't included in error logging in RestartSource
+              .log(s"${aa.aaContext.entityId}-replicationStream-${aa.aaContext.replicaId}")
+              .withAttributes(Attributes.logLevels(onElement = LogLevels.Off))
           }
-      }
+
+          source.watch(setup.selfClassic).runWith(Sink.ignore)(SystemMaterializer(setup.context.system).materializer)
+        }
     }
   }
 

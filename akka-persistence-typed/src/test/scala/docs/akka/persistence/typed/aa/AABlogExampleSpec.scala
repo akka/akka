@@ -82,7 +82,7 @@ class AABlogExampleSpec
             val evt =
               PostAdded(aa.persistenceId.id, content, state.contentTimestamp.increase(aa.timestamp, aa.replicaId))
             Effect.persist(evt).thenRun { _ =>
-              replyTo ! AddPostDone(aa.id)
+              replyTo ! AddPostDone(aa.entityId)
             }
           case ChangeBody(_, newContent, replyTo) =>
             val evt =
@@ -100,7 +100,7 @@ class AABlogExampleSpec
             Effect.none
         },
       (state, event) => {
-        ctx.log.info(s"${aa.id}:${aa.replicaId} Received event $event")
+        ctx.log.info(s"${aa.entityId}:${aa.replicaId} Received event $event")
         event match {
           case PostAdded(_, content, timestamp) =>
             if (timestamp.isAfter(state.contentTimestamp)) {
