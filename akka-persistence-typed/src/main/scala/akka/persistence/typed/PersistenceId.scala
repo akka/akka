@@ -127,6 +127,7 @@ object PersistenceId {
 
   // FIXME, support a way of migrating to replicated event sourcing
   // by treating old events as one of the replicas
+  // https://github.com/akka/akka/issues/29261
   def replicated(id: String, replicaId: String): PersistenceId =
     new PersistenceId(id + DefaultSeparator + replicaId)
 }

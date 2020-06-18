@@ -39,7 +39,6 @@ trait ActiveActiveContext {
   def timestamp: Long
   def origin: String
   def concurrent: Boolean
-  // FIXME to generic name
   def replicaId: String
   def allReplicas: Set[String]
   def persistenceId: PersistenceId
@@ -50,13 +49,14 @@ trait ActiveActiveContext {
 
 // FIXME, parts of this can be set during initialisation
 // Other fields will be set before executing the event handler as they change per event
+// https://github.com/akka/akka/issues/29258
 private[akka] class ActiveActiveContextImpl(val id: String, val replicaId: String, val allReplicas: Set[String])
     extends ActiveActiveContext {
   var _timestamp: Long = -1
   var _origin: String = null
   var _concurrent: Boolean = false
 
-  // FIXME check illegal access
+  // FIXME check illegal access https://github.com/akka/akka/issues/29264
 
   /**
    * The timestamp of the event. Always increases per data center

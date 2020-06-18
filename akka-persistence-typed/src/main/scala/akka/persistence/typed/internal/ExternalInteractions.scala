@@ -47,6 +47,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       sender = ActorRef.noSender)
 
     // FIXME check cinnamon is okay with this being null
+    // https://github.com/akka/akka/issues/29262
     onWriteInitiated(ctx, cmd, repr)
 
     val write = AtomicWrite(repr) :: Nil
