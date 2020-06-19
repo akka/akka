@@ -4,6 +4,7 @@
 
 package akka.cluster.sharding.typed.internal
 
+import java.util.function.IntFunction
 import java.util.Optional
 
 import scala.compat.java8.OptionConverters._
@@ -28,7 +29,6 @@ import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.sharding.typed.scaladsl.StartEntity
 import akka.cluster.typed.Cluster
-import akka.japi.function
 import akka.util.PrettyDuration
 
 /**
@@ -161,14 +161,14 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
-      behaviorFactory: function.Function[Integer, Behavior[T]]): Unit =
+      behaviorFactory: IntFunction[Behavior[T]]): Unit =
     init(name, numberOfInstances, n => behaviorFactory(n))(ClassTag(messageClass))
 
   override def init[T](
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
-      behaviorFactory: function.Function[Int, Behavior[T]],
+      behaviorFactory: IntFunction[Behavior[T]],
       stopMessage: T): Unit =
     init(name, numberOfInstances, n => behaviorFactory(n), ShardedDaemonProcessSettings(system), Some(stopMessage))(
       ClassTag(messageClass))
@@ -177,7 +177,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
-      behaviorFactory: function.Function[Integer, Behavior[T]],
+      behaviorFactory: IntFunction[Behavior[T]],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Optional[T]): Unit =
     init(name, numberOfInstances, n => behaviorFactory(n), settings, stopMessage.asScala)(ClassTag(messageClass))
