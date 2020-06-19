@@ -72,7 +72,7 @@ class RotatingProviderWithStaticKeysSpec
       if (!arteryTcpTlsEnabled())
         pending
 
-      val (remoteSysA, _) = buildRemoteWithEchoActor("B-reuse-alive")
+      val (remoteSysA, _) = buildRemoteWithEchoActor("A-reuse-alive")
       // an initial connection between sysA (from the testkit) and sysB
       // to get sysB up and running
       val (remoteSysB, pathEchoB) = buildRemoteWithEchoActor("B-reuse-alive")
@@ -111,10 +111,12 @@ class RotatingProviderWithChangingKeysSpec
       if (!arteryTcpTlsEnabled())
         pending
 
-      // an initial connection between sysA (from the testkit) and sysB
+      val (remoteSysA, _) = buildRemoteWithEchoActor("A-reread")
+
+      // an initial connection between sysA and sysB
       // to get sysB up and running
       val (remoteSysB, pathEchoB) = buildRemoteWithEchoActor("B-reread")
-      contact(system, pathEchoB)
+      contact(remoteSysA.actorSystem, pathEchoB)
       assertEnginesCreated(remoteSysB)
       val before = remoteSysB.sslContextRef.get()
 
@@ -258,12 +260,12 @@ abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
   }
 
   def buildRemoteWithEchoActor(id: String): (RemoteSystem, ActorPath) = {
-    val remoteSysB = new RemoteSystem(s"system$id", extraConfig, newRemoteSystem, address)
-    systemsToTerminate :+= remoteSysB.actorSystem
+    val remoteSys = new RemoteSystem(s"system$id", extraConfig, newRemoteSystem, address)
+    systemsToTerminate :+= remoteSys.actorSystem
     val actorName = s"echo$id"
-    remoteSysB.actorSystem.actorOf(TestActors.echoActorProps, actorName)
-    val pathEchoB = remoteSysB.rootActorPath / "user" / actorName
-    (remoteSysB, pathEchoB)
+    remoteSys.actorSystem.actorOf(TestActors.echoActorProps, actorName)
+    val pathEcho = remoteSys.rootActorPath / "user" / actorName
+    (remoteSys, pathEcho)
   }
 
   override def beforeTermination(): Unit = {
