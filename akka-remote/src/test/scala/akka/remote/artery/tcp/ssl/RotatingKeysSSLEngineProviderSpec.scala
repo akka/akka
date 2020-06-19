@@ -25,6 +25,7 @@ import akka.remote.artery.tcp.SSLEngineProviderSetup
 import akka.remote.artery.tcp.TlsTcpSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
+import akka.testkit.TestDuration
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import javax.net.ssl.SSLContext
@@ -45,10 +46,11 @@ class RotatingProviderWithStaticKeysSpec
       if (!arteryTcpTlsEnabled())
         pending
 
+      val (remoteSysA, _) = buildRemoteWithEchoActor("A-rebuild")
       // an initial connection between sysA (from the testkit) and sysB
       // to get sysB up and running
       val (remoteSysB, pathEchoB) = buildRemoteWithEchoActor("B-rebuild")
-      contact(system, pathEchoB)
+      contact(remoteSysA.actorSystem, pathEchoB)
       assertEnginesCreated(remoteSysB)
       val before = remoteSysB.sslContextRef.get()
 
@@ -70,14 +72,15 @@ class RotatingProviderWithStaticKeysSpec
       if (!arteryTcpTlsEnabled())
         pending
 
+      val (remoteSysA, _) = buildRemoteWithEchoActor("A-reuse-alive")
       // an initial connection between sysA (from the testkit) and sysB
       // to get sysB up and running
       val (remoteSysB, pathEchoB) = buildRemoteWithEchoActor("B-reuse-alive")
-      contact(system, pathEchoB)
+      contact(remoteSysA.actorSystem, pathEchoB)
       assertThreeChannelsAreCreated(remoteSysB)
       // once the three channels are created, no new engines are required... (cont'd)
-      contact(system, pathEchoB)
-      contact(system, pathEchoB)
+      contact(remoteSysA.actorSystem, pathEchoB)
+      contact(remoteSysA.actorSystem, pathEchoB)
       assertNoEnginesCreated(remoteSysB)
 
       awaitCacheExpiration()
@@ -85,7 +88,7 @@ class RotatingProviderWithStaticKeysSpec
       // ... (cont) even when the cache has expired.
       // Send message to system B from system A should not require a new SSLEngine
       // be created.
-      contact(system, pathEchoB)
+      contact(remoteSysA.actorSystem, pathEchoB)
       assertNoEnginesCreated(remoteSysB)
     }
 
@@ -108,10 +111,12 @@ class RotatingProviderWithChangingKeysSpec
       if (!arteryTcpTlsEnabled())
         pending
 
-      // an initial connection between sysA (from the testkit) and sysB
+      val (remoteSysA, _) = buildRemoteWithEchoActor("A-reread")
+
+      // an initial connection between sysA and sysB
       // to get sysB up and running
       val (remoteSysB, pathEchoB) = buildRemoteWithEchoActor("B-reread")
-      contact(system, pathEchoB)
+      contact(remoteSysA.actorSystem, pathEchoB)
       assertEnginesCreated(remoteSysB)
       val before = remoteSysB.sslContextRef.get()
 
@@ -154,9 +159,11 @@ object RotatingKeysSSLEngineProviderSpec {
   private val arteryNode001Id = "ssl/artery-nodes/artery-node001.example.com"
 
   private val baseConfig = """
+      akka.loglevel = debug
+
       akka.remote.artery {
-        ## the large-messages channel in artery is not used for this tests 
-        ## but we're enabling it to test it also creates its own SSLEngine 
+        ## the large-messages channel in artery is not used for this tests
+        ## but we're enabling it to test it also creates its own SSLEngine
         large-message-destinations = [ "/user/large" ]
       }
       akka.remote.artery.ssl {
@@ -253,19 +260,26 @@ abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
   }
 
   def buildRemoteWithEchoActor(id: String): (RemoteSystem, ActorPath) = {
-    val remoteSysB = new RemoteSystem(s"system$id", extraConfig, newRemoteSystem, address)
-    systemsToTerminate :+= remoteSysB.actorSystem
+    val remoteSys = new RemoteSystem(s"system$id", extraConfig, newRemoteSystem, address)
+    systemsToTerminate :+= remoteSys.actorSystem
     val actorName = s"echo$id"
-    remoteSysB.actorSystem.actorOf(TestActors.echoActorProps, actorName)
-    val pathEchoB = remoteSysB.rootActorPath / "user" / actorName
-    (remoteSysB, pathEchoB)
+    remoteSys.actorSystem.actorOf(TestActors.echoActorProps, actorName)
+    val pathEcho = remoteSys.rootActorPath / "user" / actorName
+    (remoteSys, pathEcho)
+  }
+
+  override def beforeTermination(): Unit = {
+    systemsToTerminate.foreach { systemToTerminate =>
+      system.log.info(s"Terminating $systemToTerminate...")
+      val now = System.nanoTime()
+      Await.result(systemToTerminate.terminate(), 8.seconds.dilated)
+      val lasted = System.nanoTime() - now
+      system.log.info(s"Terminated $systemToTerminate after ${lasted / 1000000} ms")
+    }
+    super.beforeTermination()
   }
 
   override def afterTermination(): Unit = {
-    systemsToTerminate.foreach { systemToTerminate =>
-      system.log.info(s"Terminating $systemToTerminate...")
-      Await.result(systemToTerminate.terminate(), 10.seconds)
-    }
     // Don't cleanup folder until all systems have terminated
     cleanupTemporaryDirectory()
     super.afterTermination()
