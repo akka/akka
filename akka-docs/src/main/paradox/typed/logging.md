@@ -51,7 +51,7 @@ can be a `String` or a `Class`, where the latter is convenience for the class na
 
 When logging via the `ActorContext` the path of the actor will automatically be added as `akkaSource`
 Mapped Diagnostic Context (MDC) value. MDC is typically implemented with a `ThreadLocal` by the SLF4J backend.
-To reduce performance impact this MDC value is set when you access the @scala[`log`]@java[`getLog`] method so
+To reduce performance impact, this MDC value is set when you access the @scala[`log`]@java[`getLog`] method so
 you shouldn't cache the returned `Logger` in your own field. That is handled by `ActorContext` and retrieving
 the `Logger` repeatedly with the @scala[`log`]@java[`getLog`] method has low overhead.
 The MDC is cleared automatically after processing of current message has finished.
@@ -127,7 +127,7 @@ Java
 ## MDC
 
 [MDC](http://logback.qos.ch/manual/mdc.html) allows for adding additional context dependent attributes to log entries.
-Out of the box Akka will place the path of the actor in the the MDC attribute `akkaSource`.
+Out of the box, Akka will place the path of the actor in the the MDC attribute `akkaSource`.
 
 One or more tags can also be added to the MDC using the `ActorTags` props. The tags will be rendered as a comma separated
 list and be put in the MDC attribute `akkaTags`. This can be used to categorize log entries from a set of different actors
@@ -151,8 +151,8 @@ Scala
 Java
 :  @@snip [LoggingDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/LoggingDocExamples.java) { #withMdc }
 
-If you use the MDC API directly, be aware of that MDC is typically implemented with a `ThreadLocal` by the SLF4J backend.
-Akka clears the MDC if logging is performed via the @scala[`log`]@java[`getLog`] of the `ActorContext` the MDC is cleared
+If you use the MDC API directly, be aware that MDC is typically implemented with a `ThreadLocal` by the SLF4J backend.
+Akka clears the MDC if logging is performed via the @scala[`log`]@java[`getLog`] of the `ActorContext` and it is cleared
 automatically after processing of current message has finished, but only if you accessed @scala[`log`]@java[`getLog`].
 The entire MDC is cleared, including attributes that you add yourself to the MDC.
 MDC is not cleared automatically if you use a `Logger` via `LoggerFactory` or not touch @scala[`log`]@java[`getLog`]
@@ -220,8 +220,8 @@ logging configuration in `src/test/resources/logback-test.xml`.
 
 #### MDC values
 
-When logging via the  @scala[`log`]@java[`getLog`] of the `ActorContext` as described in
-@ref:[How to log](#how-to-log) Akka includes a few MDC properties:
+When logging via the  @scala[`log`]@java[`getLog`] of the `ActorContext`, as described in
+@ref:[How to log](#how-to-log), Akka includes a few MDC properties:
 
 * `akkaSource`: the actor's path
 * `akkaAddress`: the full address of the ActorSystem, including hostname and port if Cluster is enabled
@@ -397,7 +397,7 @@ akka.remote.artery {
 
 ### MDC values from Akka internal logging
 
-Since the logging is done asynchronously the thread in which the logging was performed is captured in
+Since the logging is done asynchronously, the thread in which the logging was performed is captured in
 MDC with attribute name `sourceThread`.
 
 The path of the actor in which the logging was performed is available in the MDC with attribute name `akkaSource`.
@@ -412,23 +412,6 @@ Akka's _internal_ logging as well as the classic actor logging is asynchronous w
 when the underlying logger implementation is called, which can be surprising at first.
 If you want to more accurately output the timestamp for such loggers, use the MDC attribute `akkaTimestamp`. Note that 
 the MDC key will not have any value for a typed actor.
-
-These MDC properties can be included in the Logback output with for example `%X{akkaSource}` specifier within the
-[pattern layout configuration](http://logback.qos.ch/manual/layouts.html#mdc):
-
-```
-  <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
-  </encoder>
-```
-
-All MDC properties as key-value entries can be included with `%mdc`:
-
-```
-  <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} - %msg MDC: {%mdc}%n</pattern>
-  </encoder>
-```
 
 ### Markers
 
