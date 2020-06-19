@@ -126,8 +126,11 @@ object PersistenceId {
   def ofUniqueId(id: String): PersistenceId =
     new PersistenceId(id)
 
+  /**
+   * Constructs a persistence id from a unique entity id that includes the replica id.
+   */
   @InternalApi
-  private[akka] def replicated(entityId: String, replicaId: String): PersistenceId =
+  private[akka] def replicatedUniqueId(entityId: String, replicaId: String): PersistenceId =
     new PersistenceId(entityId + DefaultSeparator + replicaId)
 }
 

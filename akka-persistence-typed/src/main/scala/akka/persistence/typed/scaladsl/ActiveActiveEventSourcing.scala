@@ -74,7 +74,7 @@ private[akka] class ActiveActiveContextImpl(val entityId: String, val replicaId:
    * Undefined result if called from any where other than an event handler.
    */
   override def concurrent: Boolean = _concurrent
-  override def persistenceId: PersistenceId = PersistenceId.replicated(entityId, replicaId)
+  override def persistenceId: PersistenceId = PersistenceId.replicatedUniqueId(entityId, replicaId)
   override def currentTimeMillis(): Long = {
     // FIXME always increasing
     System.currentTimeMillis()

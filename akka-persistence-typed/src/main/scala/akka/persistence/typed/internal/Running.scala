@@ -7,7 +7,7 @@ package akka.persistence.typed.internal
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.actor.UnhandledMessage
-import akka.actor.typed.{ Behavior, Signal }
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 import akka.annotation.{ InternalApi, InternalStableApi }
@@ -40,12 +40,13 @@ import akka.persistence.typed.{
   SnapshotSelectionCriteria
 }
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
+import akka.persistence.typed.internal.InternalProtocol.ReplicatedEventEnvelope
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
-import akka.stream.{ Attributes, SharedKillSwitch, SystemMaterializer }
-import akka.stream.Attributes.LogLevels
+import akka.stream.{ SharedKillSwitch, SystemMaterializer }
 import akka.stream.scaladsl.{ RestartSource, Sink }
+import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.{ unused, Timeout }
 
 /**
@@ -94,8 +95,43 @@ private[akka] object Running {
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] = {
     val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
-    setup.activeActive.foreach(aa => running.startReplicationStream(state, aa))
+    setup.activeActive.foreach(aa => startReplicationStream(setup.context.system, setup.context.self, state, aa))
     new running.HandlingCommands(state)
+  }
+
+  def startReplicationStream[E, S](
+      system: ActorSystem[_],
+      ref: ActorRef[InternalProtocol],
+      state: RunningState[S],
+      aa: ActiveActive): Unit = {
+    import scala.concurrent.duration._
+    import akka.actor.typed.scaladsl.adapter._
+
+    val query = PersistenceQuery(system)
+    aa.allReplicas.zipWithIndex.foreach {
+      case (replica, _) =>
+        if (replica != aa.replicaId) {
+          val seqNr = state.seenPerReplica(replica)
+          val pid = PersistenceId.replicatedUniqueId(aa.aaContext.entityId, replica)
+          // FIXME use index to get plugin id to allow diff databases per replica
+          // and config section to define the read journal config
+          // https://github.com/akka/akka/issues/29257
+          val replication = query.readJournalFor[EventsByPersistenceIdQuery](aa.queryPluginId)
+
+          implicit val timeout = Timeout(30.seconds)
+
+          val source = RestartSource.withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
+            replication
+              .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
+              .via(ActorFlow.ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) {
+                (eventEnvelope, replyTo) =>
+                  ReplicatedEventEnvelope(eventEnvelope.event.asInstanceOf[ReplicatedEvent[E]], replyTo)
+              })
+          }
+
+          source.watch(ref.toClassic).runWith(Sink.ignore)(SystemMaterializer(system).materializer)
+        }
+    }
   }
 }
 
@@ -109,45 +145,6 @@ private[akka] object Running {
   import BehaviorSetup._
   import InternalProtocol._
   import Running.RunningState
-
-  import scala.concurrent.duration._
-  import akka.actor.typed.scaladsl.AskPattern._
-
-  private val log = setup.log
-
-  def startReplicationStream(state: RunningState[S], aa: ActiveActive): Unit = {
-    val query = PersistenceQuery(setup.context.system)
-    aa.allReplicas.zipWithIndex.foreach {
-      case (replica, _) =>
-        if (replica != aa.replicaId) {
-          val seqNr = state.seenPerReplica(replica)
-          val pid = PersistenceId.replicated(aa.aaContext.entityId, replica)
-          // FIXME use index to get plugin id to allow diff databases per replica
-          // and config section to define the read journal config
-          // https://github.com/akka/akka/issues/29257
-          val replication = query.readJournalFor[EventsByPersistenceIdQuery](aa.queryPluginId)
-
-          implicit val timeut = Timeout(30.seconds)
-          implicit val scheduler = setup.context.system.scheduler
-
-          val source = RestartSource.withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
-            replication
-              .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
-              .mapAsync(1) { eventEnvelope: EventEnvelope =>
-                setup.context.self.ask[ReplicatedEventAck.type] { replyTo =>
-                  log.debug(s"{} received replicated event from {}: {}", aa.replicaId, replica, eventEnvelope)
-                  ReplicatedEventEnvelope(eventEnvelope.event.asInstanceOf[ReplicatedEvent[E]], replyTo)
-                }
-              }
-              // useful with info about which stream is failing, which isn't included in error logging in RestartSource
-              .log(s"${aa.aaContext.entityId}-replicationStream-${aa.aaContext.replicaId}")
-              .withAttributes(Attributes.logLevels(onElement = LogLevels.Off))
-          }
-
-          source.watch(setup.selfClassic).runWith(Sink.ignore)(SystemMaterializer(setup.context.system).materializer)
-        }
-    }
-  }
 
   // Needed for WithSeqNrAccessible, when unstashing
   private var _currentSequenceNumber = 0L
