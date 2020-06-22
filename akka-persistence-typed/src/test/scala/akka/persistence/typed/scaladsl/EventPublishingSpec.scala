@@ -13,7 +13,7 @@ import akka.actor.typed.internal.pubsub.TopicImpl
 import akka.actor.typed.internal.pubsub.TopicRegistry
 import akka.actor.typed.pubsub.Topic
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.PublishedEvent
+import akka.persistence.typed.internal.PublishedEvent
 import akka.persistence.typed.scaladsl.EventPublishingSpec.WowSuchEventSourcingBehavior
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory

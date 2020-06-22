@@ -93,6 +93,7 @@ private[akka] final class ReplayingEvents[C, E, S](
       case SnapshotterResponse(r)          => onSnapshotterResponse(r)
       case RecoveryTickEvent(snap)         => onRecoveryTick(snap)
       case evt: ReplicatedEventEnvelope[E] => onInternalCommand(evt)
+      case _: PublishedEvent               => this // FIXME Fine to just drop?
       case cmd: IncomingCommand[C]         => onInternalCommand(cmd)
       case get: GetState[S @unchecked]     => stashInternal(get)
       case RecoveryPermitGranted           => Behaviors.unhandled // should not happen, we already have the permit

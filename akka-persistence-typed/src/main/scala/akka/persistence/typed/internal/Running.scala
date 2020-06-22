@@ -27,7 +27,6 @@ import akka.persistence.SnapshotProtocol
 import akka.persistence.journal.Tagged
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
-import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.{
   DeleteEventsCompleted,
   DeleteEventsFailed,
@@ -165,6 +164,7 @@ private[akka] object Running {
     def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
       case IncomingCommand(c: C @unchecked)          => onCommand(state, c)
       case re: ReplicatedEventEnvelope[E @unchecked] => onReplicatedEvent(state, re, setup.activeActive.get)
+      case pe: PublishedEvent                        => onPublishedEvent(state, pe)
       case JournalResponse(r)                        => onDeleteEventsJournalResponse(r, state.state)
       case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, state.state)
       case get: GetState[S @unchecked]               => onGetState(get)
@@ -203,6 +203,19 @@ private[akka] object Running {
         setup.log.debug("Filtering event as already seen")
         this
       }
+    }
+
+    def onPublishedEvent(state: Running.RunningState[S], event: PublishedEvent): Behavior[InternalProtocol] = {
+      setup.log.debugN(
+        "Replica [{}] received published event seqnr [{}]. FIXME fast forward in whatever way is possible. Replica seqs nrs: {}",
+        setup.activeActive,
+        event.sequenceNumber,
+        state.seenPerReplica)
+      // FIXME make this cause a fast forward
+      // 1. journal knows how to fast forward we can emit event as a replicated one?
+      // 2. journal does not know how to fast forward, we can emit and filter up to it?
+      // 3. eager-poll and have the journal query notice the event?
+      this
     }
 
     // Used by EventSourcedBehaviorTestKit to retrieve the state.
@@ -368,6 +381,7 @@ private[akka] object Running {
         case JournalResponse(r)                        => onJournalResponse(r)
         case in: IncomingCommand[C @unchecked]         => onCommand(in)
         case re: ReplicatedEventEnvelope[E @unchecked] => onReplicatedEvent(re)
+        case _: PublishedEvent                         => this // FIXME Fine to just drop?
         case get: GetState[S @unchecked]               => stashInternal(get)
         case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, visibleState.state)
         case RecoveryTickEvent(_)                      => Behaviors.unhandled
@@ -409,7 +423,8 @@ private[akka] object Running {
 
         setup.eventTopic match {
           case Some(topic) =>
-            topic ! Topic.Publish(PublishedEvent(setup.persistenceId, p.sequenceNr, p.payload, p.timestamp))
+            topic ! Topic.Publish(
+              PublishedEvent(setup.replicaId, setup.persistenceId, p.sequenceNr, p.payload, p.timestamp))
           case _ =>
         }
 

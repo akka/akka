@@ -10,7 +10,7 @@ import akka.actor.typed.internal.pubsub.TopicRegistry
 import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.ApiMayChange
-import akka.persistence.typed.PublishedEvent
+import akka.persistence.typed.internal.PublishedEvent
 
 /**
  * Used when sharding Active Active entities in multiple instances of sharding, for example one per DC in a Multi DC
@@ -20,7 +20,7 @@ import akka.persistence.typed.PublishedEvent
  * which can then fast forward their cross-replica event streams to improve latency but still allowing slower poll
  * frequency for the cross replica queries.
  *
- * The shard id and persistence extractor used with sharding needs to handle [[akka.persistence.typed.PublishedEvent]]
+ * The shard id and persistence extractor used with sharding needs to handle [[akka.persistence.typed.internal.PublishedEvent]]
  * and direct such messages to the right Active Active entity.
  */
 // FIXME a better name that sounds less like a fishy car salesman?

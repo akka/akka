@@ -61,6 +61,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
           case JournalResponse(r)              => onJournalResponse(r)
           case RecoveryTickEvent(snapshot)     => onRecoveryTick(snapshot)
           case evt: ReplicatedEventEnvelope[E] => onReplicatedEvent(evt)
+          case _: PublishedEvent               => Behaviors.same // FIXME Fine to just drop?
           case cmd: IncomingCommand[C] =>
             if (receivedPoisonPill) {
               if (setup.settings.logOnStashing)

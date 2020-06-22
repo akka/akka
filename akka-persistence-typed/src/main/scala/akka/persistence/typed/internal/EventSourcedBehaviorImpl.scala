@@ -26,6 +26,7 @@ import akka.persistence.JournalProtocol
 import akka.persistence.Recovery
 import akka.persistence.RecoveryPermitter
 import akka.persistence.SnapshotProtocol
+import akka.persistence.journal.Tagged
 import akka.persistence.typed.DeleteEventsCompleted
 import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeleteSnapshotsCompleted
@@ -34,7 +35,6 @@ import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.NoOpEventAdapter
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
@@ -277,6 +277,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   final case class ReplicatedEventEnvelope[E](event: ReplicatedEvent[E], ack: ActorRef[ReplicatedEventAck.type])
       extends InternalProtocol
+
 }
 
 // FIXME serializer
@@ -286,3 +287,28 @@ private[akka] final case class ReplicatedEventMetaData(originReplica: String, or
 private[akka] final case class ReplicatedEvent[E](event: E, originReplica: String, originSequenceNr: Long)
 @InternalApi
 private[akka] case object ReplicatedEventAck
+
+/**
+ * INTERNAL API
+ */
+// FIXME internal for now but perhaps useful as public as well?
+@InternalApi
+private[akka] final case class PublishedEvent(
+    replicaId: Option[String],
+    persistenceId: PersistenceId,
+    sequenceNumber: Long,
+    payload: Any,
+    timestamp: Long)
+    extends InternalProtocol {
+
+  def tags: Set[String] = payload match {
+    case t: Tagged => t.tags
+    case _         => Set.empty
+  }
+
+  def event: Any = payload match {
+    case Tagged(event, _) => event
+    case _                => payload
+  }
+
+}
