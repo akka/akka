@@ -107,29 +107,26 @@ private[akka] object Running {
     import scala.concurrent.duration._
 
     val query = PersistenceQuery(system)
-    aa.allReplicas.zipWithIndex.foreach {
-      case (replica, _) =>
-        if (replica != aa.replicaId) {
-          val seqNr = state.seenPerReplica(replica)
-          val pid = PersistenceId.replicatedUniqueId(aa.aaContext.entityId, replica)
-          // FIXME use index to get plugin id to allow diff databases per replica
-          // and config section to define the read journal config
-          // https://github.com/akka/akka/issues/29257
-          val replication = query.readJournalFor[EventsByPersistenceIdQuery](aa.queryPluginId)
+    aa.allReplicas.foreach { replica =>
+      if (replica != aa.replicaId) {
+        val seqNr = state.seenPerReplica(replica)
+        val pid = PersistenceId.replicatedUniqueId(aa.aaContext.entityId, replica)
+        // FIXME support different configuration per replica https://github.com/akka/akka/issues/29257
+        val replication = query.readJournalFor[EventsByPersistenceIdQuery](aa.queryPluginId)
 
-          implicit val timeout = Timeout(30.seconds)
+        implicit val timeout = Timeout(30.seconds)
 
-          val source = RestartSource.withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
-            replication
-              .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
-              .via(ActorFlow.ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) {
-                (eventEnvelope, replyTo) =>
-                  ReplicatedEventEnvelope(eventEnvelope.event.asInstanceOf[ReplicatedEvent[E]], replyTo)
-              })
-          }
-
-          source.runWith(Sink.ignore)(SystemMaterializer(system).materializer)
+        val source = RestartSource.withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
+          replication
+            .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
+            .via(ActorFlow.ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) {
+              (eventEnvelope, replyTo) =>
+                ReplicatedEventEnvelope(eventEnvelope.event.asInstanceOf[ReplicatedEvent[E]], replyTo)
+            })
         }
+
+        source.runWith(Sink.ignore)(SystemMaterializer(system).materializer)
+      }
     }
   }
 }
