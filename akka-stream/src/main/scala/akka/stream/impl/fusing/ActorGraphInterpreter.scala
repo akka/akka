@@ -220,12 +220,12 @@ import akka.util.OptionVal
 
     def onSubscribe(subscription: Subscription): Unit = {
       ReactiveStreamsCompliance.requireNonNullSubscription(subscription)
-      if (upstreamCompleted) {
-        // onComplete or onError has been called before OnSubscribe
-        tryCancel(subscription, SubscriptionWithCancelException.NoMoreElementsNeeded)
-      } else if (downstreamCanceled.isDefined) {
+      if (downstreamCanceled.isDefined) {
         upstreamCompleted = true
         tryCancel(subscription, downstreamCanceled.get)
+      } else if (upstreamCompleted) {
+        // onComplete or onError has been called before OnSubscribe
+        tryCancel(subscription, SubscriptionWithCancelException.NoMoreElementsNeeded)
       } else if (upstream != null) { // reactive streams spec 2.5
         tryCancel(subscription, new IllegalStateException("Publisher can only be subscribed once."))
       } else {
