@@ -36,6 +36,7 @@ import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotSelectionCriteria
+import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
 import akka.persistence.typed.scaladsl._
 import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
 import akka.persistence.typed.scaladsl.RetentionCriteria
@@ -87,7 +88,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     recovery: Recovery = Recovery(),
     retention: RetentionCriteria = RetentionCriteria.disabled,
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
-    override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty)
+    override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty,
+    activeActive: Option[ActiveActive] = None)
     extends EventSourcedBehavior[Command, Event, State] {
 
   import EventSourcedBehaviorImpl.WriterIdentity
@@ -150,7 +152,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             retention,
             holdingRecoveryPermit = false,
             settings = settings,
-            stashState = stashState)
+            stashState = stashState,
+            activeActive = activeActive)
 
           // needs to accept Any since we also can get messages from the journal
           // not part of the user facing Command protocol
@@ -237,6 +240,14 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   override def withRecovery(recovery: TypedRecovery): EventSourcedBehavior[Command, Event, State] = {
     copy(recovery = recovery.toClassic)
   }
+
+  override private[akka] def withActiveActive(
+      context: ActiveActiveContext,
+      id: String,
+      allIds: Set[String],
+      queryPluginId: String): EventSourcedBehavior[Command, Event, State] = {
+    copy(activeActive = Some(ActiveActive(id, allIds, context, queryPluginId)))
+  }
 }
 
 /** Protocol used internally by the eventsourced behaviors. */
@@ -247,4 +258,10 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   final case class SnapshotterResponse(msg: akka.persistence.SnapshotProtocol.Response) extends InternalProtocol
   final case class RecoveryTickEvent(snapshot: Boolean) extends InternalProtocol
   final case class IncomingCommand[C](c: C) extends InternalProtocol
+
+  final case class ReplicatedEventEnvelope[E](event: ReplicatedEvent[E], ack: ActorRef[ReplicatedEventAck.type])
+      extends InternalProtocol
 }
+
+final case class ReplicatedEvent[E](event: E, originReplica: String, originSequenceNr: Long)
+case object ReplicatedEventAck
