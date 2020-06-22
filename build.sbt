@@ -329,6 +329,7 @@ lazy val protobuf = akkaModule("akka-protobuf")
   .settings(AutomaticModuleName.settings("akka.protobuf"))
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
+  .settings(autoScalaLibrary := false) // Pure java project
 
 lazy val protobufV3 = akkaModule("akka-protobuf-v3")
   .settings(OSGi.protobufV3)
