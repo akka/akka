@@ -46,10 +46,10 @@ object AkkaDisciplinePlugin extends AutoPlugin {
 
   lazy val silencerSettings = {
     val silencerVersion = "1.7.0"
-    Seq(
-      libraryDependencies ++= Seq(
-          compilerPlugin(("com.github.ghik" %% "silencer-plugin" % silencerVersion).cross(CrossVersion.patch)),
-          ("com.github.ghik" %% "silencer-lib" % silencerVersion % Provided).cross(CrossVersion.patch)))
+    val libs = Seq(
+      compilerPlugin(("com.github.ghik" %% "silencer-plugin" % silencerVersion).cross(CrossVersion.patch)),
+      ("com.github.ghik" %% "silencer-lib" % silencerVersion % Provided).cross(CrossVersion.patch))
+    Seq(libraryDependencies ++= (if (autoScalaLibrary.value) libs else Nil))
   }
 
   lazy val disciplineSettings =
