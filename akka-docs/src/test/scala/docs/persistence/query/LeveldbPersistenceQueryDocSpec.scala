@@ -32,9 +32,8 @@ object LeveldbPersistenceQueryDocSpec {
   //#tagger
 }
 
-class LeveldbPersistenceQueryDocSpec(config: String) extends AkkaSpec(config) {
-
-  def this() = this("")
+class LeveldbPersistenceQueryDocSpec
+    extends AkkaSpec("akka.persistence.journal.plugin = akka.persistence.journal.leveldb") {
 
   "LeveldbPersistentQuery" must {
     "demonstrate how get ReadJournal" in {
