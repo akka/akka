@@ -4,13 +4,11 @@
 
 package docs.akka.persistence.typed.aa
 
-import java.util.UUID
-
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
+import akka.persistence.query.journal.inmem.scaladsl.InmemReadJournal
 import akka.persistence.typed.scaladsl._
 import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.ConfigFactory
@@ -22,19 +20,10 @@ import org.scalatest.wordspec.AnyWordSpecLike
 object AABlogExampleSpec {
   val config =
     ConfigFactory.parseString(s"""
-                                            
-       akka.actor.allow-java-serialization = true 
-       // FIXME serializers for replicated event or akka persistence support for metadata: https://github.com/akka/akka/issues/29260
-       akka.actor.provider = cluster
-       akka.loglevel = debug
        akka.persistence {
         journal {
-        plugin = "akka.persistence.journal.leveldb"
-           leveldb {
-             native = off
-             dir = "target/journal-AABlogExampleSpec-${UUID.randomUUID()}"
-           }
-         }
+          plugin = "akka.persistence.journal.inmem"
+        }
        }
       """)
 
@@ -124,7 +113,7 @@ class AABlogExampleSpec
     "work" in {
       val refDcA: ActorRef[BlogCommand] =
         spawn(Behaviors.setup[BlogCommand] { ctx =>
-          ActiveActiveEventSourcing("cat", "DC-A", Set("DC-A", "DC-B"), LeveldbReadJournal.Identifier) {
+          ActiveActiveEventSourcing("cat", "DC-A", Set("DC-A", "DC-B"), InmemReadJournal.Identifier) {
             (aa: ActiveActiveContext) =>
               behavior(aa, ctx)
           }
@@ -132,7 +121,7 @@ class AABlogExampleSpec
 
       val refDcB: ActorRef[BlogCommand] =
         spawn(Behaviors.setup[BlogCommand] { ctx =>
-          ActiveActiveEventSourcing("cat", "DC-B", Set("DC-A", "DC-B"), LeveldbReadJournal.Identifier) {
+          ActiveActiveEventSourcing("cat", "DC-B", Set("DC-A", "DC-B"), InmemReadJournal.Identifier) {
             (aa: ActiveActiveContext) =>
               behavior(aa, ctx)
           }

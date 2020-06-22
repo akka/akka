@@ -5,7 +5,6 @@
 package akka.persistence.query.journal.leveldb
 
 import scala.concurrent.duration.FiniteDuration
-
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.annotation.InternalApi

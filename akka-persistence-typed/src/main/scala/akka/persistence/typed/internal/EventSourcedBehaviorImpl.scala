@@ -263,5 +263,10 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       extends InternalProtocol
 }
 
-final case class ReplicatedEvent[E](event: E, originReplica: String, originSequenceNr: Long)
-case object ReplicatedEventAck
+// FIXME serializer
+@InternalApi
+private[akka] final case class ReplicatedEventMetaData(originDc: String)
+@InternalApi
+private[akka] final case class ReplicatedEvent[E](event: E, originReplica: String, originSequenceNr: Long)
+@InternalApi
+private[akka] case object ReplicatedEventAck

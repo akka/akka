@@ -9,7 +9,7 @@ import java.time.Instant
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, _ }
 import akka.actor.typed.{ ActorRef, Behavior }
-import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
+import akka.persistence.query.journal.inmem.scaladsl.InmemReadJournal
 import akka.persistence.typed.scaladsl.{ ActiveActiveContext, ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
@@ -17,13 +17,12 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 object AAAuctionExampleSpec {
-  val config = ConfigFactory.parseString("""
-       akka.actor.provider = cluster
+  val config = ConfigFactory.parseString(s"""
        akka.loglevel = info 
        akka.persistence {
-        journal {
-          plugin = "akka.persistence.journal.inmem"
-        }
+         journal {
+           plugin = "akka.persistence.journal.inmem"
+         }
        }
       """)
   type MoneyAmount = Int
@@ -208,7 +207,7 @@ object AAAuctionExampleSpec {
 
   def behavior(replica: String, setup: AuctionSetup): Behavior[AuctionCommand] = Behaviors.setup[AuctionCommand] {
     ctx =>
-      ActiveActiveEventSourcing(setup.name, replica, setup.allDcs, LeveldbReadJournal.Identifier) { aaCtx =>
+      ActiveActiveEventSourcing(setup.name, replica, setup.allDcs, InmemReadJournal.Identifier) { aaCtx =>
         EventSourcedBehavior(
           aaCtx.persistenceId,
           initialState(setup),
@@ -228,6 +227,7 @@ class AAAuctionExampleSpec
   import AAAuctionExampleSpec._
 
   "Auction example" should {
+
     "work" in {
       val Replicas = Set("DC-A", "DC-B")
       val setupA =
