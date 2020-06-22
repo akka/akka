@@ -99,7 +99,7 @@ object ActiveActiveEventSourcing {
    *
    * @param replicaId The unique identity for this entity. The underlying persistence id will include the replica.
    * @param allReplicaIds All replica ids. These need to be known to receive events from all replicas.
-   * @param queryPluginId Used to read the evnets from other replicas. Must be the query side of your configured journal plugin.
+   * @param queryPluginId Used to read the events from other replicas. Must be the query side of your configured journal plugin.
    * @return
    */
   def apply[Command, Event, State](
