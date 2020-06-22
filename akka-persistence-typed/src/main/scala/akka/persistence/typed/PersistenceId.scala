@@ -130,8 +130,17 @@ object PersistenceId {
    * Constructs a persistence id from a unique entity id that includes the replica id.
    */
   @InternalApi
-  private[akka] def replicatedUniqueId(entityId: String, replicaId: String): PersistenceId =
+  private[akka] def replicatedUniqueId(entityId: String, replicaId: String): PersistenceId = {
+    if (entityId.contains(DefaultSeparator))
+      throw new IllegalArgumentException(
+        s"entityId [$entityId] contains [$DefaultSeparator] which is a reserved character")
+
+    if (replicaId.contains(DefaultSeparator))
+      throw new IllegalArgumentException(
+        s"replicaId [$replicaId] contains [$DefaultSeparator] which is a reserved character")
+
     new PersistenceId(entityId + DefaultSeparator + replicaId)
+  }
 }
 
 /**
