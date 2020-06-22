@@ -6,10 +6,8 @@ package akka.persistence.typed.internal
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-
 import akka.actor.UnhandledMessage
-import akka.actor.typed.Behavior
-import akka.actor.typed.Signal
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 import akka.annotation.{ InternalApi, InternalStableApi }
@@ -26,20 +24,30 @@ import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SaveSnapshotSuccess
 import akka.persistence.SnapshotProtocol
 import akka.persistence.journal.Tagged
-import akka.persistence.typed.DeleteEventsCompleted
-import akka.persistence.typed.DeleteEventsFailed
-import akka.persistence.typed.DeleteSnapshotsCompleted
-import akka.persistence.typed.DeleteSnapshotsFailed
-import akka.persistence.typed.DeletionTarget
-import akka.persistence.typed.EventRejectedException
-import akka.persistence.typed.SnapshotCompleted
-import akka.persistence.typed.SnapshotFailed
-import akka.persistence.typed.SnapshotMetadata
-import akka.persistence.typed.SnapshotSelectionCriteria
+import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
+import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
+import akka.persistence.typed.{
+  DeleteEventsCompleted,
+  DeleteEventsFailed,
+  DeleteSnapshotsCompleted,
+  DeleteSnapshotsFailed,
+  DeletionTarget,
+  EventRejectedException,
+  PersistenceId,
+  SnapshotCompleted,
+  SnapshotFailed,
+  SnapshotMetadata,
+  SnapshotSelectionCriteria
+}
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
+import akka.persistence.typed.internal.InternalProtocol.ReplicatedEventEnvelope
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
-import akka.util.unused
+import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
+import akka.stream.{ SharedKillSwitch, SystemMaterializer }
+import akka.stream.scaladsl.{ RestartSource, Sink }
+import akka.stream.typed.scaladsl.ActorFlow
+import akka.util.{ unused, Timeout }
 
 /**
  * INTERNAL API
@@ -66,7 +74,12 @@ private[akka] object Running {
     def currentSequenceNumber: Long
   }
 
-  final case class RunningState[State](seqNr: Long, state: State, receivedPoisonPill: Boolean) {
+  final case class RunningState[State](
+      seqNr: Long,
+      state: State,
+      receivedPoisonPill: Boolean,
+      seenPerReplica: Map[String, Long],
+      replicationKillSwitch: Option[SharedKillSwitch] = None) {
 
     def nextSequenceNr(): RunningState[State] =
       copy(seqNr = seqNr + 1)
@@ -82,7 +95,39 @@ private[akka] object Running {
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] = {
     val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
+    setup.activeActive.foreach(aa => startReplicationStream(setup.context.system, setup.context.self, state, aa))
     new running.HandlingCommands(state)
+  }
+
+  def startReplicationStream[E, S](
+      system: ActorSystem[_],
+      ref: ActorRef[InternalProtocol],
+      state: RunningState[S],
+      aa: ActiveActive): Unit = {
+    import scala.concurrent.duration._
+
+    val query = PersistenceQuery(system)
+    aa.allReplicas.foreach { replica =>
+      if (replica != aa.replicaId) {
+        val seqNr = state.seenPerReplica(replica)
+        val pid = PersistenceId.replicatedUniqueId(aa.aaContext.entityId, replica)
+        // FIXME support different configuration per replica https://github.com/akka/akka/issues/29257
+        val replication = query.readJournalFor[EventsByPersistenceIdQuery](aa.queryPluginId)
+
+        implicit val timeout = Timeout(30.seconds)
+
+        val source = RestartSource.withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
+          replication
+            .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
+            .via(ActorFlow.ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) {
+              (eventEnvelope, replyTo) =>
+                ReplicatedEventEnvelope(eventEnvelope.event.asInstanceOf[ReplicatedEvent[E]], replyTo)
+            })
+        }
+
+        source.runWith(Sink.ignore)(SystemMaterializer(system).materializer)
+      }
+    }
   }
 }
 
@@ -106,12 +151,17 @@ private[akka] object Running {
 
     _currentSequenceNumber = state.seqNr
 
+    private def alreadySeen(e: ReplicatedEvent[_]): Boolean = {
+      e.originSequenceNr <= state.seenPerReplica.getOrElse(e.originReplica, 0L)
+    }
+
     def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
-      case IncomingCommand(c: C @unchecked) => onCommand(state, c)
-      case JournalResponse(r)               => onDeleteEventsJournalResponse(r, state.state)
-      case SnapshotterResponse(r)           => onDeleteSnapshotResponse(r, state.state)
-      case get: GetState[S @unchecked]      => onGetState(get)
-      case _                                => Behaviors.unhandled
+      case IncomingCommand(c: C @unchecked)          => onCommand(state, c)
+      case re: ReplicatedEventEnvelope[E @unchecked] => onReplicatedEvent(state, re)
+      case JournalResponse(r)                        => onDeleteEventsJournalResponse(r, state.state)
+      case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, state.state)
+      case get: GetState[S @unchecked]               => onGetState(get)
+      case _                                         => Behaviors.unhandled
     }
 
     override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
@@ -128,10 +178,65 @@ private[akka] object Running {
       applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
     }
 
+    def onReplicatedEvent(
+        state: Running.RunningState[S],
+        envelope: ReplicatedEventEnvelope[E]): Behavior[InternalProtocol] = {
+      // FIXME set the details on the context https://github.com/akka/akka/issues/29258
+      setup.log.infoN(
+        "Replica {} received replicated event. Replica seqs nrs: {}",
+        setup.activeActive,
+        state.seenPerReplica)
+      envelope.ack ! ReplicatedEventAck
+      if (envelope.event.originReplica != setup.activeActive.get.replicaId && !alreadySeen(envelope.event)) {
+        setup.log.info("Saving event as first time")
+        handleReplicatedEventPersist(envelope.event)
+      } else {
+        setup.log.info("Filtering event as already seen")
+        this
+      }
+    }
+
     // Used by EventSourcedBehaviorTestKit to retrieve the state.
     def onGetState(get: GetState[S]): Behavior[InternalProtocol] = {
       get.replyTo ! state.state
       this
+    }
+
+    private def handleReplicatedEventPersist(event: ReplicatedEvent[E]): Behavior[InternalProtocol] = {
+      _currentSequenceNumber = state.seqNr + 1
+      val newState: RunningState[S] = state.applyEvent(setup, event.event)
+      val newState2: RunningState[S] = internalPersist(setup.context, null, newState, event, "")
+      val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event.event, newState2.seqNr)
+      // FIXME validate this is the correct sequence nr from that replica https://github.com/akka/akka/issues/29259
+      val updatedSeen = newState2.seenPerReplica.updated(event.originReplica, event.originSequenceNr)
+      persistingEvents(
+        newState2.copy(seenPerReplica = updatedSeen),
+        state,
+        numberOfEvents = 1,
+        shouldSnapshotAfterPersist,
+        Nil)
+    }
+
+    private def handleEventPersist(event: E, cmd: Any, sideEffects: immutable.Seq[SideEffect[S]]) = {
+      // apply the event before persist so that validation exception is handled before persisting
+      // the invalid event, in case such validation is implemented in the event handler.
+      // also, ensure that there is an event handler for each single event
+      _currentSequenceNumber = state.seqNr + 1
+      val newState: RunningState[S] = state.applyEvent(setup, event)
+
+      val eventToPersist = adaptEvent(event)
+      val eventAdapterManifest = setup.eventAdapter.manifest(event)
+
+      val newState2 = setup.activeActive match {
+        case Some(aa) =>
+          val replicatedEvent = ReplicatedEvent(eventToPersist, aa.replicaId, _currentSequenceNumber)
+          internalPersist(setup.context, cmd, newState, replicatedEvent, eventAdapterManifest)
+        case None =>
+          internalPersist(setup.context, cmd, newState, eventToPersist, eventAdapterManifest)
+      }
+
+      val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
+      persistingEvents(newState2, state, numberOfEvents = 1, shouldSnapshotAfterPersist, sideEffects)
     }
 
     @tailrec def applyEffects(
@@ -152,21 +257,7 @@ private[akka] object Running {
           applyEffects(msg, state, eff, currentSideEffects ++ sideEffects)
 
         case Persist(event) =>
-          // apply the event before persist so that validation exception is handled before persisting
-          // the invalid event, in case such validation is implemented in the event handler.
-          // also, ensure that there is an event handler for each single event
-          _currentSequenceNumber = state.seqNr + 1
-          val newState = state.applyEvent(setup, event)
-
-          val eventToPersist = adaptEvent(event)
-          val eventAdapterManifest = setup.eventAdapter.manifest(event)
-
-          val newState2 = internalPersist(setup.context, msg, newState, eventToPersist, eventAdapterManifest)
-
-          val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
-
-          persistingEvents(newState2, state, numberOfEvents = 1, shouldSnapshotAfterPersist, sideEffects)
-
+          handleEventPersist(event, Some(msg), sideEffects)
         case PersistAll(events) =>
           if (events.nonEmpty) {
             // apply the event before persist so that validation exception is handled before persisting
@@ -250,12 +341,13 @@ private[akka] object Running {
 
     override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
       msg match {
-        case JournalResponse(r)                => onJournalResponse(r)
-        case in: IncomingCommand[C @unchecked] => onCommand(in)
-        case get: GetState[S @unchecked]       => stashInternal(get)
-        case SnapshotterResponse(r)            => onDeleteSnapshotResponse(r, visibleState.state)
-        case RecoveryTickEvent(_)              => Behaviors.unhandled
-        case RecoveryPermitGranted             => Behaviors.unhandled
+        case JournalResponse(r)                        => onJournalResponse(r)
+        case in: IncomingCommand[C @unchecked]         => onCommand(in)
+        case re: ReplicatedEventEnvelope[E @unchecked] => onReplicatedEvent(re)
+        case get: GetState[S @unchecked]               => stashInternal(get)
+        case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, visibleState.state)
+        case RecoveryTickEvent(_)                      => Behaviors.unhandled
+        case RecoveryPermitGranted                     => Behaviors.unhandled
       }
     }
 
@@ -266,6 +358,14 @@ private[akka] object Running {
         Behaviors.unhandled
       } else {
         stashInternal(cmd)
+      }
+    }
+
+    def onReplicatedEvent(event: InternalProtocol.ReplicatedEventEnvelope[E]): Behavior[InternalProtocol] = {
+      if (state.receivedPoisonPill) {
+        Behaviors.unhandled
+      } else {
+        stashInternal(event)
       }
     }
 

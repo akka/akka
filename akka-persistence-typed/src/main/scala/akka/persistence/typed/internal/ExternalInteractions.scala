@@ -27,32 +27,34 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   def setup: BehaviorSetup[C, E, S]
 
-  type EventOrTagged = Any // `Any` since can be `E` or `Tagged`
+  type EventOrTaggedOrReplicated = Any // `Any` since can be `E` or `Tagged` or a `ReplicatedEvent`
 
   protected def internalPersist(
       ctx: ActorContext[_],
       cmd: Any,
       state: Running.RunningState[S],
-      event: EventOrTagged,
+      event: EventOrTaggedOrReplicated,
       eventAdapterManifest: String): Running.RunningState[S] = {
 
-    val newState = state.nextSequenceNr()
+    val newRunningState = state.nextSequenceNr()
 
     val repr = PersistentRepr(
       event,
       persistenceId = setup.persistenceId.id,
-      sequenceNr = newState.seqNr,
+      sequenceNr = newRunningState.seqNr,
       manifest = eventAdapterManifest,
       writerUuid = setup.writerIdentity.writerUuid,
       sender = ActorRef.noSender)
 
+    // FIXME check cinnamon is okay with this being null
+    // https://github.com/akka/akka/issues/29262
     onWriteInitiated(ctx, cmd, repr)
 
     val write = AtomicWrite(repr) :: Nil
     setup.journal
       .tell(JournalProtocol.WriteMessages(write, setup.selfClassic, setup.writerIdentity.instanceId), setup.selfClassic)
 
-    newState
+    newRunningState
   }
 
   @InternalStableApi
@@ -65,7 +67,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       ctx: ActorContext[_],
       cmd: Any,
       state: Running.RunningState[S],
-      events: immutable.Seq[(EventOrTagged, String)]): Running.RunningState[S] = {
+      events: immutable.Seq[(EventOrTaggedOrReplicated, String)]): Running.RunningState[S] = {
     if (events.nonEmpty) {
       var newState = state
 
