@@ -187,9 +187,8 @@ private[akka] object Running {
         envelope: ReplicatedEventEnvelope[E]): Behavior[InternalProtocol] = {
       // FIXME set the details on the context https://github.com/akka/akka/issues/29258
       setup.log.info(
-        "Replica {} received replicated event {}. Replicas seq nrs: {}",
+        "Replica {} received replicated event. Replica seqs nrs: {}",
         setup.activeActive,
-        envelope,
         state.seenPerReplica)
       envelope.ack ! ReplicatedEventAck
       if (envelope.event.originReplica != setup.activeActive.get.replicaId && !alreadySeen(envelope.event)) {
@@ -211,7 +210,6 @@ private[akka] object Running {
       _currentSequenceNumber = state.seqNr + 1
       val newState: RunningState[S] = state.applyEvent(setup, event.event)
       val newState2: RunningState[S] = internalPersist(setup.context, null, newState, event, "")
-      setup.log.info("State after apply {} state after internal persist {}", newState.state, newState2.state)
       val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event.event, newState2.seqNr)
       // FIXME validate this is the correct sequence nr from that replica https://github.com/akka/akka/issues/29259
       val updatedSeen = newState2.seenPerReplica.updated(event.originReplica, event.originSequenceNr)
