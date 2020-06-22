@@ -9,6 +9,7 @@ import scala.collection.immutable
 import akka.actor.UnhandledMessage
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
+import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.persistence.DeleteMessagesFailure
@@ -26,6 +27,7 @@ import akka.persistence.SnapshotProtocol
 import akka.persistence.journal.Tagged
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
+import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.{
   DeleteEventsCompleted,
   DeleteEventsFailed,
@@ -404,6 +406,12 @@ private[akka] object Running {
         eventCounter += 1
 
         onWriteSuccess(setup.context, p)
+
+        setup.eventTopic match {
+          case Some(topic) =>
+            topic ! Topic.Publish(PublishedEvent(setup.persistenceId, p.sequenceNr, p.payload, p.timestamp))
+          case _ =>
+        }
 
         // only once all things are applied we can revert back
         if (eventCounter < numberOfEvents) {

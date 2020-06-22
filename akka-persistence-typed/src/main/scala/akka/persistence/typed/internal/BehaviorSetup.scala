@@ -7,11 +7,14 @@ package akka.persistence.typed.internal
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 import org.slf4j.{ Logger, MDC }
-import akka.actor.{ ActorRef, Cancellable }
+import akka.actor.{ Cancellable, ActorRef => ClassicActorRef }
 import akka.actor.typed.Signal
+import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.ActorRef
 import akka.annotation.InternalApi
 import akka.persistence._
+import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
 import akka.persistence.typed.{ EventAdapter, PersistenceId, SnapshotAdapter }
 import akka.persistence.typed.scaladsl.{ EventSourcedBehavior, RetentionCriteria }
@@ -48,7 +51,8 @@ private[akka] final class BehaviorSetup[C, E, S](
     var holdingRecoveryPermit: Boolean,
     val settings: EventSourcedSettings,
     val stashState: StashState,
-    val activeActive: Option[ActiveActive]) {
+    val activeActive: Option[ActiveActive],
+    val eventTopic: Option[ActorRef[Topic.Command[PublishedEvent]]]) {
 
   import BehaviorSetup._
   import InternalProtocol.RecoveryTickEvent
@@ -57,10 +61,10 @@ private[akka] final class BehaviorSetup[C, E, S](
 
   val persistence: Persistence = Persistence(context.system.toClassic)
 
-  val journal: ActorRef = persistence.journalFor(settings.journalPluginId)
-  val snapshotStore: ActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
+  val journal: ClassicActorRef = persistence.journalFor(settings.journalPluginId)
+  val snapshotStore: ClassicActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
 
-  def selfClassic: ActorRef = context.self.toClassic
+  def selfClassic: ClassicActorRef = context.self.toClassic
 
   private var mdcPhase = PersistenceMdc.Initializing
   def log: Logger = {

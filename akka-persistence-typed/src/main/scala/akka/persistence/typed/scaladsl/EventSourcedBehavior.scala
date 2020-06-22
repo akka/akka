@@ -12,6 +12,7 @@ import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.InterceptorImpl
 import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.scaladsl.ActorContext
+import akka.annotation.ApiMayChange
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
@@ -237,4 +238,10 @@ object EventSourcedBehavior {
    * By default, snapshots and events are recovered.
    */
   def withRecovery(recovery: Recovery): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Publish events to a topic after they have been persisted
+   */
+  @ApiMayChange
+  def withEvenPublishing(topicName: String): EventSourcedBehavior[Command, Event, State]
 }

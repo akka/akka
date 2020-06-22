@@ -16,6 +16,8 @@ import akka.actor.typed.PostStop
 import akka.actor.typed.Signal
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.internal.ActorContextImpl
+import akka.actor.typed.internal.pubsub.TopicRegistry
+import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
@@ -32,6 +34,7 @@ import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.NoOpEventAdapter
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
@@ -89,7 +92,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     retention: RetentionCriteria = RetentionCriteria.disabled,
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
     override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty,
-    activeActive: Option[ActiveActive] = None)
+    activeActive: Option[ActiveActive] = None,
+    publishEventsTo: Option[String] = None)
     extends EventSourcedBehavior[Command, Event, State] {
 
   import EventSourcedBehaviorImpl.WriterIdentity
@@ -136,6 +140,13 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     Behaviors
       .supervise {
         Behaviors.setup[Command] { _ =>
+          val eventTopic: Option[ActorRef[Topic.Command[PublishedEvent]]] = publishEventsTo match {
+            case None            => None
+            case Some(topicName) =>
+              // we don't actually have a class tag for Event
+              Some(TopicRegistry(ctx.system).topicFor[PublishedEvent](topicName))
+          }
+
           val eventSourcedSetup = new BehaviorSetup(
             ctx.asInstanceOf[ActorContext[InternalProtocol]],
             persistenceId,
@@ -153,7 +164,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             holdingRecoveryPermit = false,
             settings = settings,
             stashState = stashState,
-            activeActive = activeActive)
+            activeActive = activeActive,
+            eventTopic = eventTopic)
 
           // needs to accept Any since we also can get messages from the journal
           // not part of the user facing Command protocol
@@ -239,6 +251,10 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override def withRecovery(recovery: TypedRecovery): EventSourcedBehavior[Command, Event, State] = {
     copy(recovery = recovery.toClassic)
+  }
+
+  override def withEvenPublishing(topicName: String): EventSourcedBehavior[Command, Event, State] = {
+    copy(publishEventsTo = Some(topicName))
   }
 
   override private[akka] def withActiveActive(
