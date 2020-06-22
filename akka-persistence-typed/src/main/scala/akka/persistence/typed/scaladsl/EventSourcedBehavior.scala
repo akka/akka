@@ -5,7 +5,6 @@
 package akka.persistence.typed.scaladsl
 
 import scala.annotation.tailrec
-
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
@@ -13,7 +12,7 @@ import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.InterceptorImpl
 import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.scaladsl.ActorContext
-import akka.annotation.DoNotInherit
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotAdapter
@@ -21,6 +20,13 @@ import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
 
 object EventSourcedBehavior {
+
+  @InternalApi
+  private[akka] case class ActiveActive(
+      replicaId: String,
+      allReplicas: Set[String],
+      aaContext: ActiveActiveContext,
+      queryPluginId: String)
 
   /**
    * Type alias for the command handler function that defines how to act on commands.
@@ -144,6 +150,12 @@ object EventSourcedBehavior {
    * Change the journal plugin id that this actor should use.
    */
   def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State]
+
+  private[akka] def withActiveActive(
+      context: ActiveActiveContext,
+      replicaId: String,
+      allReplicaIds: Set[String],
+      queryPluginId: String): EventSourcedBehavior[Command, Event, State]
 
   /**
    * Change the snapshot store plugin id that this actor should use.

@@ -6,14 +6,13 @@ package akka.persistence.typed.internal
 
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
-
 import org.slf4j.{ Logger, MDC }
-
 import akka.actor.{ ActorRef, Cancellable }
 import akka.actor.typed.Signal
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
 import akka.persistence._
+import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
 import akka.persistence.typed.{ EventAdapter, PersistenceId, SnapshotAdapter }
 import akka.persistence.typed.scaladsl.{ EventSourcedBehavior, RetentionCriteria }
 import akka.util.OptionVal
@@ -48,7 +47,8 @@ private[akka] final class BehaviorSetup[C, E, S](
     val retention: RetentionCriteria,
     var holdingRecoveryPermit: Boolean,
     val settings: EventSourcedSettings,
-    val stashState: StashState) {
+    val stashState: StashState,
+    val activeActive: Option[ActiveActive]) {
 
   import BehaviorSetup._
   import InternalProtocol.RecoveryTickEvent
