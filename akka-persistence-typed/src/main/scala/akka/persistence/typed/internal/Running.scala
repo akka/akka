@@ -129,7 +129,7 @@ private[akka] object Running {
               })
           }
 
-          source.watch(ref.toClassic).runWith(Sink.ignore)(SystemMaterializer(system).materializer)
+          source.runWith(Sink.ignore)(SystemMaterializer(system).materializer)
         }
     }
   }
