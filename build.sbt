@@ -453,8 +453,9 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
 lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .dependsOn(
     actorTyped,
+    streamTyped,
     persistence % "compile->compile;test->test",
-    persistenceQuery % "test",
+    persistenceQuery,
     actorTestkitTyped % "test->test",
     clusterTyped % "test->test",
     actorTestkitTyped % "test->test",

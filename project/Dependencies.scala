@@ -255,7 +255,7 @@ object Dependencies {
 
   val persistenceTestKit = l ++= Seq(Test.scalatest, Test.logback)
 
-  val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
+  val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative, Test.logback)
 
   val jackson = l ++= Seq(
         jacksonCore,

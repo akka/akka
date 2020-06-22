@@ -87,13 +87,16 @@ private[akka] final class ReplayingEvents[C, E, S](
     ()
 
   override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
+    // FIXME deal with a replicated event and ack
+    // https://github.com/akka/akka/issues/29256
     msg match {
-      case JournalResponse(r)          => onJournalResponse(r)
-      case SnapshotterResponse(r)      => onSnapshotterResponse(r)
-      case RecoveryTickEvent(snap)     => onRecoveryTick(snap)
-      case cmd: IncomingCommand[C]     => onCommand(cmd)
-      case get: GetState[S @unchecked] => stashInternal(get)
-      case RecoveryPermitGranted       => Behaviors.unhandled // should not happen, we already have the permit
+      case JournalResponse(r)              => onJournalResponse(r)
+      case SnapshotterResponse(r)          => onSnapshotterResponse(r)
+      case RecoveryTickEvent(snap)         => onRecoveryTick(snap)
+      case evt: ReplicatedEventEnvelope[E] => onInternalCommand(evt)
+      case cmd: IncomingCommand[C]         => onInternalCommand(cmd)
+      case get: GetState[S @unchecked]     => stashInternal(get)
+      case RecoveryPermitGranted           => Behaviors.unhandled // should not happen, we already have the permit
     }
   }
 
@@ -154,7 +157,7 @@ private[akka] final class ReplayingEvents[C, E, S](
     }
   }
 
-  private def onCommand(cmd: InternalProtocol): Behavior[InternalProtocol] = {
+  private def onInternalCommand(cmd: InternalProtocol): Behavior[InternalProtocol] = {
     // during recovery, stash all incoming commands
     if (state.receivedPoisonPill) {
       if (setup.settings.logOnStashing)
@@ -236,8 +239,12 @@ private[akka] final class ReplayingEvents[C, E, S](
       if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)
         Behaviors.stopped
       else {
+        val seenPerReplica: Map[String, Long] =
+          setup.activeActive.map(aa => aa.allReplicas.map(replica => replica -> 0L).toMap).getOrElse(Map.empty)
         val running =
-          Running[C, E, S](setup, Running.RunningState[S](state.seqNr, state.state, state.receivedPoisonPill))
+          Running[C, E, S](
+            setup,
+            Running.RunningState[S](state.seqNr, state.state, state.receivedPoisonPill, seenPerReplica))
 
         tryUnstashOne(running)
       }
