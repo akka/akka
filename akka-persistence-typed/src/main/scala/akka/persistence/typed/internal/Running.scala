@@ -105,7 +105,6 @@ private[akka] object Running {
       state: RunningState[S],
       aa: ActiveActive): Unit = {
     import scala.concurrent.duration._
-    import akka.actor.typed.scaladsl.adapter._
 
     val query = PersistenceQuery(system)
     aa.allReplicas.zipWithIndex.foreach {
@@ -186,7 +185,7 @@ private[akka] object Running {
         state: Running.RunningState[S],
         envelope: ReplicatedEventEnvelope[E]): Behavior[InternalProtocol] = {
       // FIXME set the details on the context https://github.com/akka/akka/issues/29258
-      setup.log.info(
+      setup.log.infoN(
         "Replica {} received replicated event. Replica seqs nrs: {}",
         setup.activeActive,
         state.seenPerReplica)
