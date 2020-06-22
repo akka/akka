@@ -85,7 +85,7 @@ private[akka] class ActiveActiveContextImpl(val entityId: String, val replicaId:
 object ActiveActiveEventSourcing {
 
   /**
-   * Intialize a repliated event sourced behavior.
+   * Initialize a replicated event sourced behavior.
    *
    * Events from each replica for the same entityId will be replicated to every copy.
    * Care must be taken to handle events in any order as events can happen concurrently at different replicas.
