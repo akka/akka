@@ -12,6 +12,7 @@ import scala.language.implicitConversions
 import dotty.tools.sbtplugin.DottyPlugin.autoImport._
 import DottySupport._
 import DottySupportInternal._
+import xerial.sbt.Sonatype.autoImport.sonatypePublishToBundle
 
 object DottySupport {
   implicit class ProjectOps(val p: Project) extends AnyVal {
@@ -37,6 +38,11 @@ object DottySupport {
       .settings(Test / scalacOptions ifDotty T.add("-language:postfixOps"))
       .settings((Compile +: Test +: extraConfigs).map(_ / scalacOptions ifDotty scalacOptionsT))
       .settings(DottyBugWorkaround(p.id))
+      .settings(
+        organization ifDotty "com.sandinh",
+        publishTo := sonatypePublishToBundle.value,
+        Compile / doc / sources := Nil,
+      )
   }
 
   object ModuleIDOps {
