@@ -2,13 +2,14 @@
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package docs.akka.persistence.typed.aa
+package docs.akka.persistence.typed
 
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.persistence.query.journal.inmem.scaladsl.InmemReadJournal
+import akka.persistence.testkit.PersistenceTestKitPlugin
+import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.scaladsl._
 import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.ConfigFactory
@@ -18,14 +19,6 @@ import org.scalatest.time.{ Millis, Span }
 import org.scalatest.wordspec.AnyWordSpecLike
 
 object AABlogExampleSpec {
-  val config =
-    ConfigFactory.parseString(s"""
-       akka.persistence {
-        journal {
-          plugin = "akka.persistence.journal.inmem"
-        }
-       }
-      """)
 
   final case class BlogState(content: Option[PostContent], contentTimestamp: LwwTime, published: Boolean) {
     def withContent(newContent: PostContent, timestamp: LwwTime): BlogState =
@@ -51,7 +44,12 @@ object AABlogExampleSpec {
 }
 
 class AABlogExampleSpec
-    extends ScalaTestWithActorTestKit(AABlogExampleSpec.config)
+    extends ScalaTestWithActorTestKit(
+      PersistenceTestKitPlugin.config.withFallback(
+        ConfigFactory.parseString("""
+    // FIXME, this causes the PersistentRepr to be serialized which will never work     
+    akka.persistence.testkit.events.serialize = off
+        """)))
     with AnyWordSpecLike
     with Matchers
     with LogCapturing
@@ -113,7 +111,7 @@ class AABlogExampleSpec
     "work" in {
       val refDcA: ActorRef[BlogCommand] =
         spawn(Behaviors.setup[BlogCommand] { ctx =>
-          ActiveActiveEventSourcing("cat", "DC-A", Set("DC-A", "DC-B"), InmemReadJournal.Identifier) {
+          ActiveActiveEventSourcing("cat", "DC-A", Set("DC-A", "DC-B"), PersistenceTestKitReadJournal.Identifier) {
             (aa: ActiveActiveContext) =>
               behavior(aa, ctx)
           }
@@ -121,7 +119,7 @@ class AABlogExampleSpec
 
       val refDcB: ActorRef[BlogCommand] =
         spawn(Behaviors.setup[BlogCommand] { ctx =>
-          ActiveActiveEventSourcing("cat", "DC-B", Set("DC-A", "DC-B"), InmemReadJournal.Identifier) {
+          ActiveActiveEventSourcing("cat", "DC-B", Set("DC-A", "DC-B"), PersistenceTestKitReadJournal.Identifier) {
             (aa: ActiveActiveContext) =>
               behavior(aa, ctx)
           }
