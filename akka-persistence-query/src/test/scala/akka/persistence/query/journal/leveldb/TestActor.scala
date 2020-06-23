@@ -15,7 +15,7 @@ object TestActor {
 
   case class DeleteCmd(toSeqNr: Long = Long.MaxValue)
 
-  case class WithMeta(payload: Any, meta: Any)
+  case class WithMeta(payload: String, meta: Any)
 }
 
 class TestActor(override val persistenceId: String) extends PersistentActor {
@@ -32,12 +32,12 @@ class TestActor(override val persistenceId: String) extends PersistentActor {
       sender() ! s"$toSeqNr-deleted"
     case WithMeta(payload, meta) =>
       persist(EventWithMetaData(payload, meta)) { _ =>
-        sender() ! payload + "-done"
+        sender() ! s"$payload-done"
       }
 
     case cmd: String =>
       persist(cmd) { evt =>
-        sender() ! evt + "-done"
+        sender() ! s"$evt-done"
       }
   }
 
