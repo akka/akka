@@ -116,15 +116,15 @@ private[akka] object Running {
 
         implicit val timeout = Timeout(30.seconds)
 
+        // FIXME config
         val source = RestartSource.withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
           replication
             .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
             .via(ActorFlow.ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) {
               (eventEnvelope, replyTo) =>
-                val re = ReplicatedEvent[E](
-                  eventEnvelope.event.asInstanceOf[E],
-                  eventEnvelope.eventMetadata.get.asInstanceOf[ReplicatedEventMetaData].originDc,
-                  eventEnvelope.sequenceNr) // FIXME, this is the wrong sequence nr, we need origin sequence nr, follow up with tests that show this
+                // Need to handle this not being available migration from non-active-active is supported
+                val meta = eventEnvelope.eventMetadata.get.asInstanceOf[ReplicatedEventMetaData]
+                val re = ReplicatedEvent[E](eventEnvelope.event.asInstanceOf[E], meta.originDc, meta.originSequenceNr)
                 ReplicatedEventEnvelope(re, replyTo)
             })
         }
@@ -187,9 +187,10 @@ private[akka] object Running {
         envelope: ReplicatedEventEnvelope[E]): Behavior[InternalProtocol] = {
       // FIXME set the details on the context https://github.com/akka/akka/issues/29258
       setup.log.infoN(
-        "Replica {} received replicated event. Replica seqs nrs: {}",
+        "Replica {} received replicated event. Replica seqs nrs: {}. Envelope {}",
         setup.activeActive,
-        state.seenPerReplica)
+        state.seenPerReplica,
+        envelope)
       envelope.ack ! ReplicatedEventAck
       if (envelope.event.originReplica != setup.activeActive.get.replicaId && !alreadySeen(envelope.event)) {
         setup.log.info("Saving event as first time")
@@ -208,7 +209,8 @@ private[akka] object Running {
 
     private def handleReplicatedEventPersist(event: ReplicatedEvent[E]): Behavior[InternalProtocol] = {
       _currentSequenceNumber = state.seqNr + 1
-      val replicatedEvent = new EventWithMetaData(event.event, ReplicatedEventMetaData(event.originReplica))
+      val replicatedEvent =
+        new EventWithMetaData(event.event, ReplicatedEventMetaData(event.originReplica, event.originSequenceNr))
       val newState: RunningState[S] = state.applyEvent(setup, event.event)
       val newState2: RunningState[S] = internalPersist(setup.context, null, newState, replicatedEvent, "")
       val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event.event, newState2.seqNr)
@@ -234,7 +236,8 @@ private[akka] object Running {
 
       val newState2 = setup.activeActive match {
         case Some(aa) =>
-          val replicatedEvent = new EventWithMetaData(eventToPersist, ReplicatedEventMetaData(aa.replicaId))
+          val replicatedEvent =
+            new EventWithMetaData(eventToPersist, ReplicatedEventMetaData(aa.replicaId, _currentSequenceNumber))
           internalPersist(setup.context, cmd, newState, replicatedEvent, eventAdapterManifest)
         case None =>
           internalPersist(setup.context, cmd, newState, eventToPersist, eventAdapterManifest)

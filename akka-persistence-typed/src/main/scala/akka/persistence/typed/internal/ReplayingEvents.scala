@@ -240,7 +240,9 @@ private[akka] final class ReplayingEvents[C, E, S](
         Behaviors.stopped
       else {
         val seenPerReplica: Map[String, Long] =
-          setup.activeActive.map(aa => aa.allReplicas.map(replica => replica -> 0L).toMap).getOrElse(Map.empty)
+          setup.activeActive
+            .map(aa => aa.allReplicas.filterNot(_ == aa.replicaId).map(replica => replica -> 0L).toMap)
+            .getOrElse(Map.empty)
         val running =
           Running[C, E, S](
             setup,
