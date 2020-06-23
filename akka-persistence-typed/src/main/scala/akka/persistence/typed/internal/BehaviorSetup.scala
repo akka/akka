@@ -9,9 +9,7 @@ import scala.util.control.NonFatal
 import org.slf4j.{ Logger, MDC }
 import akka.actor.{ Cancellable, ActorRef => ClassicActorRef }
 import akka.actor.typed.Signal
-import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.ActorRef
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
@@ -51,7 +49,7 @@ private[akka] final class BehaviorSetup[C, E, S](
     val settings: EventSourcedSettings,
     val stashState: StashState,
     val activeActive: Option[ActiveActive],
-    val eventTopic: Option[ActorRef[Topic.Command[PublishedEvent]]]) {
+    val publishEvents: Boolean) {
 
   import BehaviorSetup._
   import InternalProtocol.RecoveryTickEvent

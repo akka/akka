@@ -6,8 +6,7 @@ package akka.cluster.sharding.typed
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.internal.pubsub.TopicRegistry
-import akka.actor.typed.pubsub.Topic
+import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.ApiMayChange
 import akka.persistence.typed.internal.PublishedEvent
@@ -30,27 +29,20 @@ object SpeculativeReplicator {
   /**
    * @param selfReplica The replica id of the replica that runs on this node
    * @param replicaShardingProxies A (replica id -> sharding proxy) pair for each replica in the system.
-   * @param eventTopicName A per-node unique topic name used as topic name with the Active Active event sourced behavior
-   *                       (using the same topic name would publish to all subscribers across the cluster)
    */
-  def apply(
-      selfReplica: String,
-      replicaShardingProxies: Map[String, ActorRef[Any]],
-      eventTopicName: String): Behavior[Nothing] =
+  def apply(selfReplica: String, replicaShardingProxies: Map[String, ActorRef[Any]]): Behavior[Nothing] =
     Behaviors
       .setup[Any] { context =>
         context.log.debug(
-          "Subscribing to event topic [{}] to forward events to [{}] sharded replicas",
-          eventTopicName,
+          "Subscribing to event stream to forward events to [{}] sharded replicas",
           replicaShardingProxies.size - 1)
-        val topic = TopicRegistry(context.system).topicFor[PublishedEvent](eventTopicName)
-        topic ! Topic.Subscribe(context.self)
+        context.system.eventStream ! EventStream.Subscribe[PublishedEvent](context.self)
 
         Behaviors.receiveMessagePartial {
           case event: PublishedEvent =>
             if (context.log.isTraceEnabled)
               context.log.trace(
-                "Forwarding event for persistence id [{}] sequence nr [{}] replicas",
+                "Forwarding event for persistence id [{}] sequence nr [{}] to replicas",
                 event.persistenceId,
                 event.sequenceNumber)
             replicaShardingProxies.foreach {

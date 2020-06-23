@@ -9,9 +9,7 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.typed.internal.pubsub.TopicImpl
-import akka.actor.typed.internal.pubsub.TopicRegistry
-import akka.actor.typed.pubsub.Topic
+import akka.actor.typed.eventstream.EventStream
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.internal.PublishedEvent
 import akka.persistence.typed.scaladsl.EventPublishingSpec.WowSuchEventSourcingBehavior
@@ -42,7 +40,7 @@ object EventPublishingSpec {
           },
         (state, event) => state + event)
         .withTagger(evt => if (evt.tagIt) Set("tag") else Set.empty)
-        .withEvenPublishing("WowSuchTopic")
+        .withEvenPublishing()
   }
 }
 
@@ -55,17 +53,12 @@ class EventPublishingSpec
 
     "publish events after written for any actor" in {
       val topicProbe = createTestProbe[Any]()
-      val topic = TopicRegistry(system).topicFor[PublishedEvent]("WowSuchTopic")
-      topic ! Topic.Subscribe(topicProbe.ref)
+      system.eventStream ! EventStream.Subscribe[PublishedEvent](topicProbe.ref.narrow)
+      // We don't verify subscription completed (no ack available), but expect the next steps to take enough time
+      // for subscription to complete
 
       val myId = PersistenceId.ofUniqueId("myId")
       val wowSuchActor = spawn(WowSuchEventSourcingBehavior(myId))
-
-      // the subscriber registration should have completed
-      topicProbe.awaitAssert {
-        topic ! TopicImpl.GetTopicStats(topicProbe.ref)
-        topicProbe.expectMessageType[TopicImpl.TopicStats].localSubscriberCount should ===(1)
-      }
 
       val persistProbe = createTestProbe[Any]()
       wowSuchActor ! WowSuchEventSourcingBehavior.StoreThis("great stuff", tagIt = false, replyTo = persistProbe.ref)

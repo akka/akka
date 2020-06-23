@@ -7,9 +7,9 @@ package akka.persistence.typed.internal
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.actor.UnhandledMessage
+import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
-import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.persistence.DeleteMessagesFailure
@@ -429,11 +429,15 @@ private[akka] object Running {
 
         onWriteSuccess(setup.context, p)
 
-        setup.eventTopic match {
-          case Some(topic) =>
-            topic ! Topic.Publish(
-              PublishedEvent(setup.replicaId, setup.persistenceId, p.sequenceNr, p.payload, p.timestamp))
-          case _ =>
+        if (setup.publishEvents) {
+          context.system.eventStream ! EventStream.Publish(
+            PublishedEvent(
+              setup.settings.journalPluginId,
+              setup.replicaId,
+              setup.persistenceId,
+              p.sequenceNr,
+              p.payload,
+              p.timestamp))
         }
 
         // only once all things are applied we can revert back

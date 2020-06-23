@@ -240,8 +240,8 @@ object EventSourcedBehavior {
   def withRecovery(recovery: Recovery): EventSourcedBehavior[Command, Event, State]
 
   /**
-   * Publish events to a topic after they have been persisted
+   * Publish events to the system event stream after they have been persisted
    */
   @ApiMayChange
-  def withEvenPublishing(topicName: String): EventSourcedBehavior[Command, Event, State]
+  def withEvenPublishing(): EventSourcedBehavior[Command, Event, State]
 }

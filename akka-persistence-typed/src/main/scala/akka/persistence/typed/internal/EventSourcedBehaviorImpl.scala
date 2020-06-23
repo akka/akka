@@ -16,8 +16,6 @@ import akka.actor.typed.PostStop
 import akka.actor.typed.Signal
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.internal.ActorContextImpl
-import akka.actor.typed.internal.pubsub.TopicRegistry
-import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
@@ -93,7 +91,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
     override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty,
     activeActive: Option[ActiveActive] = None,
-    publishEventsTo: Option[String] = None)
+    publishEvents: Boolean = false)
     extends EventSourcedBehavior[Command, Event, State] {
 
   import EventSourcedBehaviorImpl.WriterIdentity
@@ -140,13 +138,6 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     Behaviors
       .supervise {
         Behaviors.setup[Command] { _ =>
-          val eventTopic: Option[ActorRef[Topic.Command[PublishedEvent]]] = publishEventsTo match {
-            case None            => None
-            case Some(topicName) =>
-              // we don't actually have a class tag for Event
-              Some(TopicRegistry(ctx.system).topicFor[PublishedEvent](topicName))
-          }
-
           val eventSourcedSetup = new BehaviorSetup(
             ctx.asInstanceOf[ActorContext[InternalProtocol]],
             persistenceId,
@@ -165,7 +156,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             settings = settings,
             stashState = stashState,
             activeActive = activeActive,
-            eventTopic = eventTopic)
+            publishEvents = publishEvents)
 
           // needs to accept Any since we also can get messages from the journal
           // not part of the user facing Command protocol
@@ -253,8 +244,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     copy(recovery = recovery.toClassic)
   }
 
-  override def withEvenPublishing(topicName: String): EventSourcedBehavior[Command, Event, State] = {
-    copy(publishEventsTo = Some(topicName))
+  override def withEvenPublishing(): EventSourcedBehavior[Command, Event, State] = {
+    copy(publishEvents = true)
   }
 
   override private[akka] def withActiveActive(
@@ -294,6 +285,7 @@ private[akka] case object ReplicatedEventAck
 // FIXME internal for now but perhaps useful as public as well?
 @InternalApi
 private[akka] final case class PublishedEvent(
+    journalId: String,
     replicaId: Option[String],
     persistenceId: PersistenceId,
     sequenceNumber: Long,
