@@ -125,9 +125,9 @@ class ScalaTestEventMigration extends JacksonMigration {
 
   override def transform(fromVersion: Int, json: JsonNode): JsonNode = {
     val root = json.asInstanceOf[ObjectNode]
-    root.set("field1V2", root.get("field1"))
+    root.set[JsonNode]("field1V2", root.get("field1"))
     root.remove("field1")
-    root.set("field2", IntNode.valueOf(17))
+    root.set[JsonNode]("field2", IntNode.valueOf(17))
     root
   }
 }
