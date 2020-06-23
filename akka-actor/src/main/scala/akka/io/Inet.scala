@@ -35,8 +35,7 @@ object Inet {
     def beforeConnect(@unused s: Socket): Unit = ()
 
     /**
-     * Action to be taken for this option after connect returned (i.e. on
-     * the slave socket for servers).
+     * Action to be taken for this option after connect returned.
      */
     def afterConnect(@unused s: Socket): Unit = ()
   }
@@ -50,20 +49,17 @@ object Inet {
   trait SocketOptionV2 extends SocketOption {
 
     /**
-     * Action to be taken for this option after connect returned (i.e. on
-     * the slave socket for servers).
+     * Action to be taken for this option after connect returned.
      */
     def afterBind(@unused s: DatagramSocket): Unit = ()
 
     /**
-     * Action to be taken for this option after connect returned (i.e. on
-     * the slave socket for servers).
+     * Action to be taken for this option after connect returned.
      */
     def afterBind(@unused s: ServerSocket): Unit = ()
 
     /**
-     * Action to be taken for this option after connect returned (i.e. on
-     * the slave socket for servers).
+     * Action to be taken for this option after connect returned.
      */
     def afterConnect(@unused s: DatagramSocket): Unit = ()
 

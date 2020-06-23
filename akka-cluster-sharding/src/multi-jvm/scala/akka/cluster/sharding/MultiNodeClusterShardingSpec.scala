@@ -95,6 +95,8 @@ abstract class MultiNodeClusterShardingSpec(val config: MultiNodeClusterSharding
   protected lazy val storageLocations = List(
     new File(system.settings.config.getString("akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
+  override def expectedTestDuration = 120.seconds
+
   override protected def atStartup(): Unit = {
     storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
     enterBarrier("startup")
@@ -169,10 +171,14 @@ abstract class MultiNodeClusterShardingSpec(val config: MultiNodeClusterSharding
     ClusterSharding(sys).startProxy(typeName, role, extractEntityId, extractShardId)
   }
 
-  protected def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
+  protected def isDdataMode = mode == ClusterShardingSettings.StateStoreModeDData
+  protected def persistenceIsNeeded: Boolean =
+    mode == ClusterShardingSettings.StateStoreModePersistence ||
+    system.settings.config
+      .getString("akka.cluster.sharding.remember-entities-store") == ClusterShardingSettings.RememberEntitiesStoreEventsourced
 
-  protected def setStoreIfNotDdataMode(sys: ActorSystem, storeOn: RoleName): Unit =
-    if (!isDdataMode) setStore(sys, storeOn)
+  protected def setStoreIfNeeded(sys: ActorSystem, storeOn: RoleName): Unit =
+    if (persistenceIsNeeded) setStore(sys, storeOn)
 
   protected def setStore(sys: ActorSystem, storeOn: RoleName): Unit = {
     val probe = TestProbe()(sys)
@@ -189,8 +195,8 @@ abstract class MultiNodeClusterShardingSpec(val config: MultiNodeClusterSharding
    * @param startOn the node to start the `SharedLeveldbStore` store on
    * @param setStoreOn the nodes to `SharedLeveldbJournal.setStore` on
    */
-  protected def startPersistenceIfNotDdataMode(startOn: RoleName, setStoreOn: Seq[RoleName]): Unit =
-    if (!isDdataMode) startPersistence(startOn, setStoreOn)
+  protected def startPersistenceIfNeeded(startOn: RoleName, setStoreOn: Seq[RoleName]): Unit =
+    if (persistenceIsNeeded) startPersistence(startOn, setStoreOn)
 
   /**
    * {{{

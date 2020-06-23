@@ -68,7 +68,7 @@ abstract class ClusterShardingGracefulShutdownSpec(multiNodeConfig: ClusterShard
   s"Cluster sharding ($mode)" must {
 
     "start some shards in both regions" in within(30.seconds) {
-      startPersistenceIfNotDdataMode(startOn = first, setStoreOn = Seq(first, second))
+      startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second))
 
       join(first, first, typeName)
       join(second, first, typeName)

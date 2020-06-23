@@ -16,6 +16,7 @@ import akka.util.Timeout
 class ExternalShardAllocationStrategySpec extends AkkaSpec("""
     akka.actor.provider = cluster 
     akka.loglevel = INFO 
+    akka.remote.artery.canonical.port = 0
     """) {
 
   val requester = TestProbe()

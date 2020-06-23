@@ -149,7 +149,7 @@ class ActorWithStashSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfte
       val restartLatch = new TestLatch
       val hasMsgLatch = new TestLatch
 
-      val slaveProps = Props(new Actor with Stash {
+      val employeeProps = Props(new Actor with Stash {
         def receive = {
           case "crash" =>
             throw new Exception("Crashing...")
@@ -169,10 +169,10 @@ class ActorWithStashSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfte
           super.preRestart(reason, message)
         }
       })
-      val slave = Await.result((boss ? slaveProps).mapTo[ActorRef], timeout.duration)
+      val employee = Await.result((boss ? employeeProps).mapTo[ActorRef], timeout.duration)
 
-      slave ! "hello"
-      slave ! "crash"
+      employee ! "hello"
+      employee ! "crash"
 
       Await.ready(restartLatch, 10 seconds)
       Await.ready(hasMsgLatch, 10 seconds)

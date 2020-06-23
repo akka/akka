@@ -25,10 +25,12 @@ import akka.persistence.SnapshotSelectionCriteria
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors.EchoActor
+import akka.testkit.WithLogCapturing
 
 object RemoveInternalClusterShardingDataSpec {
   val config = """
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.actor.provider = "cluster"
     akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
@@ -42,6 +44,7 @@ object RemoveInternalClusterShardingDataSpec {
     akka.cluster.sharding.snapshot-after = 5
     akka.cluster.sharding.state-store-mode = persistence
     akka.cluster.sharding.keep-nr-of-batches = 0
+    akka.cluster.sharding.verbose-debug-logging = on
     """
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
@@ -94,7 +97,8 @@ object RemoveInternalClusterShardingDataSpec {
 
 class RemoveInternalClusterShardingDataSpec
     extends AkkaSpec(RemoveInternalClusterShardingDataSpec.config)
-    with ImplicitSender {
+    with ImplicitSender
+    with WithLogCapturing {
   import RemoveInternalClusterShardingDataSpec._
 
   val storageLocations =

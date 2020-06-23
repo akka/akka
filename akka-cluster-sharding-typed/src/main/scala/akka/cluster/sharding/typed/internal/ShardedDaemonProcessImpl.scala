@@ -9,7 +9,6 @@ import java.util.Optional
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -18,7 +17,7 @@ import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.typed.ClusterShardingSettings
-import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModeDData
+import akka.cluster.sharding.typed.ClusterShardingSettings.{ RememberEntitiesStoreModeDData, StateStoreModeDData }
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.ShardingMessageExtractor
@@ -133,6 +132,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
         Duration.Zero, // passivation disabled
         shardingBaseSettings.shardRegionQueryTimeout,
         StateStoreModeDData,
+        RememberEntitiesStoreModeDData, // not used as remembered entities is off
         shardingBaseSettings.tuningParameters,
         shardingBaseSettings.coordinatorSingletonSettings)
     }

@@ -23,6 +23,25 @@ object ClusterShardingSettings {
   val StateStoreModeDData = "ddata"
 
   /**
+   * Only for testing
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] val RememberEntitiesStoreCustom = "custom"
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] val RememberEntitiesStoreDData = "ddata"
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] val RememberEntitiesStoreEventsourced = "eventsourced"
+
+  /**
    * Create settings from the default configuration
    * `akka.cluster.sharding`.
    */
@@ -84,6 +103,7 @@ object ClusterShardingSettings {
       journalPluginId = config.getString("journal-plugin-id"),
       snapshotPluginId = config.getString("snapshot-plugin-id"),
       stateStoreMode = config.getString("state-store-mode"),
+      rememberEntitiesStore = config.getString("remember-entities-store"),
       passivateIdleEntityAfter = passivateIdleAfter,
       shardRegionQueryTimeout = config.getDuration("shard-region-query-timeout", MILLISECONDS).millis,
       tuningParameters,
@@ -280,12 +300,40 @@ final class ClusterShardingSettings(
     val journalPluginId: String,
     val snapshotPluginId: String,
     val stateStoreMode: String,
+    val rememberEntitiesStore: String,
     val passivateIdleEntityAfter: FiniteDuration,
     val shardRegionQueryTimeout: FiniteDuration,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
     val leaseSettings: Option[LeaseUsageSettings])
     extends NoSerializationVerificationNeeded {
+
+  @deprecated(
+    "Use the ClusterShardingSettings factory methods or the constructor including rememberedEntitiesStore instead",
+    "2.6.7")
+  def this(
+      role: Option[String],
+      rememberEntities: Boolean,
+      journalPluginId: String,
+      snapshotPluginId: String,
+      stateStoreMode: String,
+      passivateIdleEntityAfter: FiniteDuration,
+      shardRegionQueryTimeout: FiniteDuration,
+      tuningParameters: ClusterShardingSettings.TuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings,
+      leaseSettings: Option[LeaseUsageSettings]) =
+    this(
+      role,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      stateStoreMode,
+      "ddata",
+      passivateIdleEntityAfter,
+      shardRegionQueryTimeout,
+      tuningParameters,
+      coordinatorSingletonSettings,
+      leaseSettings)
 
   // bin compat for 2.5.23
   @deprecated(
@@ -311,7 +359,7 @@ final class ClusterShardingSettings(
       3.seconds,
       tuningParameters,
       coordinatorSingletonSettings,
-      None)
+      leaseSettings)
 
   // bin compat for 2.5.21
   @deprecated(
@@ -360,10 +408,9 @@ final class ClusterShardingSettings(
       tuningParameters,
       coordinatorSingletonSettings)
 
-  import ClusterShardingSettings.StateStoreModeDData
-  import ClusterShardingSettings.StateStoreModePersistence
+  import ClusterShardingSettings.{ RememberEntitiesStoreCustom, StateStoreModeDData, StateStoreModePersistence }
   require(
-    stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData,
+    stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData || stateStoreMode == RememberEntitiesStoreCustom,
     s"Unknown 'state-store-mode' [$stateStoreMode], valid values are '$StateStoreModeDData' or '$StateStoreModePersistence'")
 
   /** If true, this node should run the shard region, otherwise just a shard proxy should started on this node. */
@@ -435,6 +482,7 @@ final class ClusterShardingSettings(
       journalPluginId,
       snapshotPluginId,
       stateStoreMode,
+      rememberEntitiesStore,
       passivateIdleAfter,
       shardRegionQueryTimeout,
       tuningParameters,
