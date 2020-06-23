@@ -381,7 +381,7 @@ private[akka] object Running {
         case JournalResponse(r)                        => onJournalResponse(r)
         case in: IncomingCommand[C @unchecked]         => onCommand(in)
         case re: ReplicatedEventEnvelope[E @unchecked] => onReplicatedEvent(re)
-        case _: PublishedEvent                         => this // FIXME Fine to just drop?
+        case pe: PublishedEvent                        => onPublishedEvent(pe)
         case get: GetState[S @unchecked]               => stashInternal(get)
         case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, visibleState.state)
         case RecoveryTickEvent(_)                      => Behaviors.unhandled
@@ -400,6 +400,14 @@ private[akka] object Running {
     }
 
     def onReplicatedEvent(event: InternalProtocol.ReplicatedEventEnvelope[E]): Behavior[InternalProtocol] = {
+      if (state.receivedPoisonPill) {
+        Behaviors.unhandled
+      } else {
+        stashInternal(event)
+      }
+    }
+
+    def onPublishedEvent(event: PublishedEvent): Behavior[InternalProtocol] = {
       if (state.receivedPoisonPill) {
         Behaviors.unhandled
       } else {
