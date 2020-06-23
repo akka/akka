@@ -9,6 +9,7 @@ import java.util.concurrent.ThreadLocalRandom
 import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
 import akka.actor.typed.{ ActorRef, Behavior, Signal }
+import akka.actor.typed.receptionist.Receptionist
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 
 object BehaviorTestKit {
@@ -142,4 +143,9 @@ abstract class BehaviorTestKit[T] {
    * Clear the log entries
    */
   def clearLog(): Unit
+
+  /**
+   * The receptionist inbox contains messages sent to `system.receptionist`
+   */
+  def receptionistfInbox(): TestInbox[Receptionist.Command]
 }
