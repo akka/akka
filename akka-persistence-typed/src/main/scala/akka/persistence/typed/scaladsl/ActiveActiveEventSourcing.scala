@@ -35,6 +35,7 @@ final case class LwwTime(timestamp: Long, originDc: String) {
 }
 
 trait ActiveActiveContext {
+
   def timestamp: Long
   def origin: String
   def concurrent: Boolean
@@ -44,6 +45,7 @@ trait ActiveActiveContext {
   def recoveryRunning: Boolean
   def entityId: String
   def currentTimeMillis(): Long
+
 }
 
 // FIXME, parts of this can be set during initialisation

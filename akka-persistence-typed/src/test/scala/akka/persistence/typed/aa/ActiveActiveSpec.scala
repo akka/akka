@@ -26,10 +26,16 @@ object ActiveActiveSpec {
   sealed trait Command
   case class GetState(replyTo: ActorRef[State]) extends Command
   case class StoreMe(description: String, replyTo: ActorRef[Done]) extends Command
+  case class GetReplica(replyTo: ActorRef[(String, Set[String])]) extends Command
 
   case class State(all: List[String])
+  def testBehavior(entityId: String, replicaId: String, probe: ActorRef[EventAndContext]): Behavior[Command] =
+    testBehavior(entityId, replicaId, Some(probe))
 
-  def testBehavior(entityId: String, replicaId: String): Behavior[Command] =
+  def testBehavior(
+      entityId: String,
+      replicaId: String,
+      probe: Option[ActorRef[EventAndContext]] = None): Behavior[Command] =
     ActiveActiveEventSourcing(entityId, replicaId, AllReplicas, InmemReadJournal.Identifier)(
       aaContext =>
         EventSourcedBehavior[Command, String, State](
@@ -40,12 +46,20 @@ object ActiveActiveSpec {
               case GetState(replyTo) =>
                 replyTo ! state
                 Effect.none
+              case GetReplica(replyTo) =>
+                replyTo.tell((aaContext.replicaId, aaContext.allReplicas))
+                Effect.none
               case StoreMe(evt, ack) =>
                 Effect.persist(evt).thenRun(_ => ack ! Done)
             },
-          (state, event) => state.copy(all = event :: state.all)))
+          (state, event) => {
+            probe.foreach(_ ! EventAndContext(event, aaContext.origin))
+            state.copy(all = event :: state.all)
+          }))
 
 }
+
+case class EventAndContext(event: Any, origin: String)
 
 class ActiveActiveSpec
     extends ScalaTestWithActorTestKit(ActiveActiveSpec.config)
@@ -89,6 +103,33 @@ class ActiveActiveSpec
         r3 ! GetState(probe.ref)
         probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "from r2", "from r1 again")
       }
+    }
+
+    "have access to replica information" in {
+      val entityId = nextEntityId
+      val probe = createTestProbe[(String, Set[String])]()
+      val r1 = spawn(testBehavior(entityId, "R1"))
+      r1 ! GetReplica(probe.ref)
+      probe.expectMessage(("R1", Set("R1", "R2", "R3")))
+    }
+
+    "have access to event origin" in {
+      val entityId = nextEntityId
+      val replyProbe = createTestProbe[Done]()
+      val eventProbeR1 = createTestProbe[EventAndContext]()
+      val eventProbeR2 = createTestProbe[EventAndContext]()
+
+      val r1 = spawn(testBehavior(entityId, "R1", eventProbeR1.ref))
+      val r2 = spawn(testBehavior(entityId, "R2", eventProbeR2.ref))
+
+      r1 ! StoreMe("from r1", replyProbe.ref)
+      eventProbeR2.expectMessage(EventAndContext("from r1", "R1"))
+      eventProbeR1.expectMessage(EventAndContext("from r1", "R1"))
+
+      r2 ! StoreMe("from r2", replyProbe.ref)
+      eventProbeR1.expectMessage(EventAndContext("from r2", "R2"))
+      eventProbeR2.expectMessage(EventAndContext("from r2", "R2"))
+
     }
   }
 }
