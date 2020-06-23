@@ -22,8 +22,9 @@ import akka.persistence.typed.internal._
 
 object EventSourcedBehavior {
 
+  // FIXME move to internal
   @InternalApi
-  private[akka] case class ActiveActive(
+  private[akka] final case class ActiveActive(
       replicaId: String,
       allReplicas: Set[String],
       aaContext: ActiveActiveContextImpl,

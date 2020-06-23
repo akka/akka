@@ -285,7 +285,6 @@ private[akka] case object ReplicatedEventAck
 // FIXME internal for now but perhaps useful as public as well?
 @InternalApi
 private[akka] final case class PublishedEvent(
-    journalId: String,
     replicaId: Option[String],
     persistenceId: PersistenceId,
     sequenceNumber: Long,

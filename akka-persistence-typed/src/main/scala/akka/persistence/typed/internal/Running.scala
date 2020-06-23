@@ -12,6 +12,7 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.event.Logging
 import akka.persistence.DeleteMessagesFailure
 import akka.persistence.DeleteMessagesSuccess
 import akka.persistence.DeleteSnapshotFailure
@@ -48,7 +49,8 @@ import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
 import akka.stream.{ SharedKillSwitch, SystemMaterializer }
 import akka.stream.scaladsl.{ RestartSource, Sink }
 import akka.stream.typed.scaladsl.ActorFlow
-import akka.util.{ unused, OptionVal, Timeout }
+import akka.util.Helpers
+import akka.util.{ unused, OptionVal Timeout }
 
 /**
  * INTERNAL API
@@ -206,16 +208,86 @@ private[akka] object Running {
     }
 
     def onPublishedEvent(state: Running.RunningState[S], event: PublishedEvent): Behavior[InternalProtocol] = {
-      setup.log.debugN(
-        "Replica [{}] received published event seqnr [{}]. FIXME fast forward in whatever way is possible. Replica seqs nrs: {}",
-        setup.activeActive,
-        event.sequenceNumber,
-        state.seenPerReplica)
-      // FIXME make this cause a fast forward
-      // 1. journal knows how to fast forward we can emit event as a replicated one?
-      // 2. journal does not know how to fast forward, we can emit and filter up to it?
-      // 3. eager-poll and have the journal query notice the event?
-      this
+      setup.activeActive match {
+        case None =>
+          setup.log
+            .warn("Received published event for [{}] but not an active active actor, dropping", event.persistenceId)
+          this
+
+        case Some(activeActive) =>
+          event.replicaId match {
+            case None =>
+              setup.log.warn("Received published event for [{}] but with no replica id, dropping")
+              this
+            case Some(replicaId) =>
+              onPublishedEvent(state, activeActive, replicaId, event)
+          }
+      }
+    }
+
+    private def onPublishedEvent(
+        state: Running.RunningState[S],
+        activeActive: ActiveActive,
+        originReplicaId: String,
+        event: PublishedEvent): Behavior[InternalProtocol] = {
+      val log = setup.log
+      val separatorIndex = event.persistenceId.id.indexOf(PersistenceId.DefaultSeparator)
+      val idPrefix = event.persistenceId.id.substring(0, separatorIndex)
+      if (!setup.persistenceId.id.startsWith(idPrefix)) {
+        log.warn("Ignoring published replicated event for the wrong actor [{}]", event.persistenceId)
+        this
+      } else if (originReplicaId == activeActive.replicaId) {
+        // FIXME MultiDC handled this differently not sure why we'd need our own published events?
+        if (log.isDebugEnabled)
+          log.debug(
+            "Ignoring published replicated event with seqNr [{}] from our own replica id [{}]",
+            event.sequenceNumber,
+            originReplicaId)
+        this
+      } else if (!activeActive.allReplicas.contains(originReplicaId)) {
+        log.warnN(
+          "Received published replicated event from replica [{}], which is unknown. Active active must be set up with a list of all replicas (known are [{}]).",
+          originReplicaId,
+          activeActive.allReplicas.mkString(", "))
+        this
+      } else {
+        val expectedSequenceNumber = state.seenPerReplica(originReplicaId) + 1
+        if (expectedSequenceNumber > event.sequenceNumber) {
+          // already seen
+          if (log.isDebugEnabled)
+            log.debugN(
+              "Ignoring published replicated event with seqNr [{}] from replica [{}] because it was already seen ([{}])",
+              event.sequenceNumber,
+              originReplicaId,
+              expectedSequenceNumber)
+          this
+        } else if (expectedSequenceNumber != event.sequenceNumber) {
+          //
+          if (log.isDebugEnabled) {
+            log.debugN(
+              "Ignoring published replicated event with replication seqNr [{}] from replica [{}] " +
+              "because expected replication seqNr was [{}] ",
+              event.sequenceNumber,
+              event.replicaId,
+              expectedSequenceNumber)
+          }
+          this
+        } else {
+          if (log.isTraceEnabled)
+            log.traceN(
+              "Received published replicated event [{}] with timestamp [{}] from replica [{}] seqNr [{}]",
+              Logging.simpleName(event.event.getClass),
+              Helpers.timestamp(event.timestamp),
+              originReplicaId,
+              event.sequenceNumber)
+
+          // FIXME fast forward stream for source replica
+
+          handleReplicatedEventPersist(
+            ReplicatedEvent(event.event.asInstanceOf[E], originReplicaId, event.sequenceNumber))
+        }
+
+      }
     }
 
     // Used by EventSourcedBehaviorTestKit to retrieve the state.
@@ -431,13 +503,7 @@ private[akka] object Running {
 
         if (setup.publishEvents) {
           context.system.eventStream ! EventStream.Publish(
-            PublishedEvent(
-              setup.settings.journalPluginId,
-              setup.replicaId,
-              setup.persistenceId,
-              p.sequenceNr,
-              p.payload,
-              p.timestamp))
+            PublishedEvent(setup.replicaId, setup.persistenceId, p.sequenceNr, p.payload, p.timestamp))
         }
 
         // only once all things are applied we can revert back
