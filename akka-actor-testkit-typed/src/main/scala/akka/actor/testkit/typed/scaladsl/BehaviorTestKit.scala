@@ -149,5 +149,5 @@ trait BehaviorTestKit[T] {
   /**
    * The receptionist inbox contains messages sent to `system.receptionist`
    */
-  def receptionistfInbox(): TestInbox[Receptionist.Command]
+  def receptionistInbox(): TestInbox[Receptionist.Command]
 }

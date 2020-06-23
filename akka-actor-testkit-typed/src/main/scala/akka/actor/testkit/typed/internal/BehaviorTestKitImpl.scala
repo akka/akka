@@ -158,5 +158,5 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
 
   override def clearLog(): Unit = context.clearLog()
 
-  override def receptionistfInbox(): TestInboxImpl[Receptionist.Command] = context.system.receptionistInbox
+  override def receptionistInbox(): TestInboxImpl[Receptionist.Command] = context.system.receptionistInbox
 }
