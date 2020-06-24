@@ -2,24 +2,21 @@
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.persistence.typed.aa
+package akka.persistence.typed
+
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.{ ActorRef, Behavior }
-import akka.persistence.query.journal.inmem.scaladsl.InmemReadJournal
+import akka.persistence.testkit.PersistenceTestKitPlugin
+import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.scaladsl.{ ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 
 object ActiveActiveSpec {
-
-  val config = ConfigFactory.parseString("""
-       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-      """)
 
   val AllReplicas = Set("R1", "R2", "R3")
 
@@ -36,7 +33,7 @@ object ActiveActiveSpec {
       entityId: String,
       replicaId: String,
       probe: Option[ActorRef[EventAndContext]] = None): Behavior[Command] =
-    ActiveActiveEventSourcing(entityId, replicaId, AllReplicas, InmemReadJournal.Identifier)(
+    ActiveActiveEventSourcing(entityId, replicaId, AllReplicas, PersistenceTestKitReadJournal.Identifier)(
       aaContext =>
         EventSourcedBehavior[Command, String, State](
           aaContext.persistenceId,
@@ -62,7 +59,11 @@ object ActiveActiveSpec {
 case class EventAndContext(event: Any, origin: String)
 
 class ActiveActiveSpec
-    extends ScalaTestWithActorTestKit(ActiveActiveSpec.config)
+    extends ScalaTestWithActorTestKit(
+      PersistenceTestKitPlugin.config.withFallback(
+        ConfigFactory.parseString("""
+    akka.persistence.testkit.events.serialize = off
+        """)))
     with AnyWordSpecLike
     with LogCapturing
     with Eventually {
@@ -130,6 +131,10 @@ class ActiveActiveSpec
       eventProbeR1.expectMessage(EventAndContext("from r2", "R2"))
       eventProbeR2.expectMessage(EventAndContext("from r2", "R2"))
 
+    }
+
+    "persist all" in {
+      pending
     }
   }
 }

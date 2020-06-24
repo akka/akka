@@ -48,6 +48,7 @@ import akka.stream.{ SharedKillSwitch, SystemMaterializer }
 import akka.stream.scaladsl.{ RestartSource, Sink }
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.{ unused, Timeout }
+import org.slf4j.LoggerFactory
 
 /**
  * INTERNAL API
@@ -69,6 +70,8 @@ import akka.util.{ unused, Timeout }
  */
 @InternalApi
 private[akka] object Running {
+
+  private val log = LoggerFactory.getLogger(Running.getClass)
 
   trait WithSeqNrAccessible {
     def currentSequenceNumber: Long
@@ -109,6 +112,7 @@ private[akka] object Running {
     val query = PersistenceQuery(system)
     aa.allReplicas.foreach { replica =>
       if (replica != aa.replicaId) {
+        log.debug("Starting replication stream for {}", replica)
         val seqNr = state.seenPerReplica(replica)
         val pid = PersistenceId.replicatedUniqueId(aa.aaContext.entityId, replica)
         // FIXME support different configuration per replica https://github.com/akka/akka/issues/29257
@@ -123,6 +127,7 @@ private[akka] object Running {
             .via(ActorFlow.ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) {
               (eventEnvelope, replyTo) =>
                 // Need to handle this not being available migration from non-active-active is supported
+                log.info("Replicated event {}", eventEnvelope)
                 val meta = eventEnvelope.eventMetadata.get.asInstanceOf[ReplicatedEventMetaData]
                 val re = ReplicatedEvent[E](eventEnvelope.event.asInstanceOf[E], meta.originDc, meta.originSequenceNr)
                 ReplicatedEventEnvelope(re, replyTo)
@@ -194,9 +199,7 @@ private[akka] object Running {
       envelope.ack ! ReplicatedEventAck
       if (envelope.event.originReplica != activeActive.replicaId && !alreadySeen(envelope.event)) {
         // FIXME set the details on the context https://github.com/akka/akka/issues/29258
-
         activeActive.aaContext.asInstanceOf[ActiveActiveContextImpl]._origin = envelope.event.originReplica
-
         setup.log.info("Saving event as first time")
         handleExternalReplicatedEventPersist(envelope.event)
       } else {
@@ -228,12 +231,19 @@ private[akka] object Running {
         Nil)
     }
 
+    private def setAAContext(): Unit = {
+      setup.activeActive.foreach { aa =>
+        aa.aaContext.asInstanceOf[ActiveActiveContextImpl]._origin = aa.replicaId
+      }
+    }
+
     private def handleEventPersist(event: E, cmd: Any, sideEffects: immutable.Seq[SideEffect[S]]) = {
       // apply the event before persist so that validation exception is handled before persisting
       // the invalid event, in case such validation is implemented in the event handler.
       // also, ensure that there is an event handler for each single event
       _currentSequenceNumber = state.seqNr + 1
 
+      setAAContext()
       val newState: RunningState[S] = state.applyEvent(setup, event)
 
       val eventToPersist = adaptEvent(event)
@@ -243,7 +253,6 @@ private[akka] object Running {
         case Some(aa) =>
           val replicatedEvent =
             new EventWithMetaData(eventToPersist, ReplicatedEventMetaData(aa.replicaId, _currentSequenceNumber))
-
           internalPersist(setup.context, cmd, newState, replicatedEvent, eventAdapterManifest)
         case None =>
           internalPersist(setup.context, cmd, newState, eventToPersist, eventAdapterManifest)

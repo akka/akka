@@ -9,6 +9,7 @@ import scala.concurrent.Future
 import scala.util.Try
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.annotation.InternalApi
+import akka.event.Logging
 import akka.persistence._
 import akka.persistence.journal.{ AsyncWriteJournal, EventWithMetaData, Tagged }
 import akka.persistence.snapshot.SnapshotStore
@@ -25,8 +26,11 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
 
   private final val storage = InMemStorageExtension(context.system)
   private val eventStream = context.system.eventStream
+  private val log = Logging(context.system, self)
 
-  override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
+  override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
+    println("asyncWriteMessages: " + messages)
+
     Future.fromTry(Try(messages.map(aw => {
       val data = aw.payload.map(pl =>
         pl.payload match {
@@ -37,13 +41,17 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
           case _ => (pl.withTimestamp(System.currentTimeMillis()), NoMetadata)
         })
 
+      log.debug("Written {}", messages)
       val result: Try[Unit] = storage.tryAdd(data)
       result.foreach { _ =>
-        messages.foreach(aw =>
-          eventStream.publish(PersistenceTestKitPlugin.Write(aw.persistenceId, aw.highestSequenceNr)))
+        messages.foreach { aw =>
+          println("Publishing write notification for " + aw.persistenceId + " " + aw.highestSequenceNr)
+          eventStream.publish(PersistenceTestKitPlugin.Write(aw.persistenceId, aw.highestSequenceNr))
+        }
       }
       result
     })))
+  }
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
     Future.fromTry(Try(storage.tryDelete(persistenceId, toSequenceNr)))

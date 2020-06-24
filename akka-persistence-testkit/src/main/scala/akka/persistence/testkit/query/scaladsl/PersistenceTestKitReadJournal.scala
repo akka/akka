@@ -22,7 +22,7 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem)
     with EventsByPersistenceIdQuery
     with CurrentEventsByPersistenceIdQuery {
 
-  private final val storage: EventStorage = InMemStorageExtension(system)
+  private val storage: EventStorage = InMemStorageExtension(system)
 
   override def eventsByPersistenceId(
       persistenceId: String,
