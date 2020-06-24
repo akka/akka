@@ -4,26 +4,32 @@
 
 package akka.cluster.sharding.typed
 
+import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 import akka.persistence.typed.PublishedEvent
+
 import scala.collection.JavaConverters._
 
 /**
  * Used when sharding Active Active entities in multiple instances of sharding, for example one per DC in a Multi DC
  * Akka Cluster.
  *
+ * This actor should be started once on each node where Active Active entities will run (the same nodes that you start
+ * sharding on).
+ *
  * Subscribes to locally written events through the event stream and sends the seen events to all the sharded replicas
  * which can then fast forward their cross-replica event streams to improve latency but still allowing slower poll
  * frequency for the cross replica queries. Note that since message delivery is at-most-once this can not be the only
  * channel for replica events - the entities must still tail events from the journals of other replicas.
  *
- * The shard id and persistence extractor used with sharding needs to handle [[akka.persistence.typed.PublishedEvent]]
- * and direct such messages to the right Active Active entity.
+ * The events are forwarded as [[akka.cluster.sharding.typed.ShardingEnvelope]] this will work out of the box if the the
+ * default shard id and entity id extractors are used, if custom extractors are used they must also handle `ShardingEnvelope`.
  */
 @ApiMayChange
 object ActiveActiveShardingReplication {
@@ -35,7 +41,13 @@ object ActiveActiveShardingReplication {
   sealed trait Command
 
   /**
-   * Scala API:
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] case class VerifyStarted(replyTo: ActorRef[Done]) extends Command
+
+  /**
+   * Java API:
    * @param selfReplica The replica id of the replica that runs on this node
    * @param replicaShardingProxies A replica id to sharding proxy mapping for each replica in the system
    */
@@ -64,9 +76,13 @@ object ActiveActiveShardingReplication {
                 event.sequenceNumber)
             replicaShardingProxies.foreach {
               case (replica, proxy) =>
+                val envelopedEvent = ShardingEnvelope(event.persistenceId.id, event)
                 if (replica != selfReplica)
-                  proxy.asInstanceOf[ActorRef[PublishedEvent]] ! event
+                  proxy.asInstanceOf[ActorRef[ShardingEnvelope[PublishedEvent]]] ! envelopedEvent
             }
+            Behaviors.same
+          case VerifyStarted(replyTo) =>
+            replyTo ! Done
             Behaviors.same
         }
       }
