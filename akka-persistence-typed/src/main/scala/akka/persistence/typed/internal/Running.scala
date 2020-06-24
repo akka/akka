@@ -127,7 +127,6 @@ private[akka] object Running {
             .via(ActorFlow.ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) {
               (eventEnvelope, replyTo) =>
                 // Need to handle this not being available migration from non-active-active is supported
-                log.info("Replicated event {}", eventEnvelope)
                 val meta = eventEnvelope.eventMetadata.get.asInstanceOf[ReplicatedEventMetaData]
                 val re =
                   ReplicatedEvent[E](eventEnvelope.event.asInstanceOf[E], meta.originReplica, meta.originSequenceNr)
