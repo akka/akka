@@ -234,7 +234,7 @@ class EventSourcedBehaviorTestKitSpec
       val eventSourcedTestKit = createTestKit()
 
       val exc = intercept[IllegalArgumentException] {
-        eventSourcedTestKit.runCommand(TestCounter.IncrementWithNotSerializableReply(_))
+        eventSourcedTestKit.runCommand(TestCounter.IncrementWithNotSerializableReply)
       }
       (exc.getMessage should include).regex("Reply.*isn't serializable")
       exc.getCause.getClass should ===(classOf[NotSerializableException])

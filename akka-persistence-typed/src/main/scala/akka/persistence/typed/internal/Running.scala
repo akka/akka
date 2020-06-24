@@ -23,7 +23,7 @@ import akka.persistence.PersistentRepr
 import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SaveSnapshotSuccess
 import akka.persistence.SnapshotProtocol
-import akka.persistence.journal.Tagged
+import akka.persistence.journal.{ EventWithMetaData, Tagged }
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
 import akka.persistence.typed.{
@@ -121,7 +121,11 @@ private[akka] object Running {
             .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
             .via(ActorFlow.ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) {
               (eventEnvelope, replyTo) =>
-                ReplicatedEventEnvelope(eventEnvelope.event.asInstanceOf[ReplicatedEvent[E]], replyTo)
+                val re = ReplicatedEvent[E](
+                  eventEnvelope.event.asInstanceOf[E],
+                  eventEnvelope.eventMetadata.get.asInstanceOf[ReplicatedEventMetaData].originDc,
+                  eventEnvelope.sequenceNr) // FIXME, this is the wrong sequence nr, we need origin sequence nr, follow up with tests that show this
+                ReplicatedEventEnvelope(re, replyTo)
             })
         }
 
@@ -206,8 +210,9 @@ private[akka] object Running {
 
     private def handleReplicatedEventPersist(event: ReplicatedEvent[E]): Behavior[InternalProtocol] = {
       _currentSequenceNumber = state.seqNr + 1
+      val replicatedEvent = new EventWithMetaData(event.event, ReplicatedEventMetaData(event.originReplica))
       val newState: RunningState[S] = state.applyEvent(setup, event.event)
-      val newState2: RunningState[S] = internalPersist(setup.context, null, newState, event, "")
+      val newState2: RunningState[S] = internalPersist(setup.context, null, newState, replicatedEvent, "")
       val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event.event, newState2.seqNr)
       // FIXME validate this is the correct sequence nr from that replica https://github.com/akka/akka/issues/29259
       val updatedSeen = newState2.seenPerReplica.updated(event.originReplica, event.originSequenceNr)
@@ -241,10 +246,11 @@ private[akka] object Running {
           // the invalid event, in case such validation is implemented in the event handler.
           // also, ensure that there is an event handler for each single event
           _currentSequenceNumber = state.seqNr + 1
-          val newState = state.applyEvent(setup, event)
+          val newState: RunningState[S] = state.applyEvent(setup, event)
 
           val eventToPersist = adaptEvent(event)
           val eventAdapterManifest = setup.eventAdapter.manifest(event)
+
           val newState2 = setup.activeActive match {
             case Some(aa) =>
               val replicatedEvent = ReplicatedEvent(eventToPersist, aa.replicaId, _currentSequenceNumber)
