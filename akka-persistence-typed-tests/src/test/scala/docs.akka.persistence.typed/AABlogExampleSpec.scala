@@ -2,41 +2,22 @@
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package docs.akka.persistence.typed.aa
-
-import java.util.UUID
+package docs.akka.persistence.typed
 
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
+import akka.persistence.testkit.PersistenceTestKitPlugin
+import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.scaladsl._
 import akka.serialization.jackson.CborSerializable
-import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Millis, Span }
 import org.scalatest.wordspec.AnyWordSpecLike
 
 object AABlogExampleSpec {
-  val config =
-    ConfigFactory.parseString(s"""
-                                            
-       akka.actor.allow-java-serialization = true 
-       // FIXME serializers for replicated event or akka persistence support for metadata: https://github.com/akka/akka/issues/29260
-       akka.actor.provider = cluster
-       akka.loglevel = debug
-       akka.persistence {
-        journal {
-        plugin = "akka.persistence.journal.leveldb"
-           leveldb {
-             native = off
-             dir = "target/journal-AABlogExampleSpec-${UUID.randomUUID()}"
-           }
-         }
-       }
-      """)
 
   final case class BlogState(content: Option[PostContent], contentTimestamp: LwwTime, published: Boolean) {
     def withContent(newContent: PostContent, timestamp: LwwTime): BlogState =
@@ -62,7 +43,7 @@ object AABlogExampleSpec {
 }
 
 class AABlogExampleSpec
-    extends ScalaTestWithActorTestKit(AABlogExampleSpec.config)
+    extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
     with Matchers
     with LogCapturing
@@ -124,7 +105,7 @@ class AABlogExampleSpec
     "work" in {
       val refDcA: ActorRef[BlogCommand] =
         spawn(Behaviors.setup[BlogCommand] { ctx =>
-          ActiveActiveEventSourcing("cat", "DC-A", Set("DC-A", "DC-B"), LeveldbReadJournal.Identifier) {
+          ActiveActiveEventSourcing("cat", "DC-A", Set("DC-A", "DC-B"), PersistenceTestKitReadJournal.Identifier) {
             (aa: ActiveActiveContext) =>
               behavior(aa, ctx)
           }
@@ -132,7 +113,7 @@ class AABlogExampleSpec
 
       val refDcB: ActorRef[BlogCommand] =
         spawn(Behaviors.setup[BlogCommand] { ctx =>
-          ActiveActiveEventSourcing("cat", "DC-B", Set("DC-A", "DC-B"), LeveldbReadJournal.Identifier) {
+          ActiveActiveEventSourcing("cat", "DC-B", Set("DC-A", "DC-B"), PersistenceTestKitReadJournal.Identifier) {
             (aa: ActiveActiveContext) =>
               behavior(aa, ctx)
           }

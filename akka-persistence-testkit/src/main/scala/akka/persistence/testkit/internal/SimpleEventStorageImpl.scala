@@ -7,6 +7,7 @@ package akka.persistence.testkit.internal
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.testkit.EventStorage
+import akka.persistence.testkit.EventStorage.Metadata
 
 /**
  * INTERNAL API
@@ -14,10 +15,10 @@ import akka.persistence.testkit.EventStorage
 @InternalApi
 private[testkit] class SimpleEventStorageImpl extends EventStorage {
 
-  override type InternalRepr = PersistentRepr
+  override type InternalRepr = (PersistentRepr, Metadata)
 
-  override def toInternal(repr: PersistentRepr): PersistentRepr = repr
+  override def toInternal(repr: (PersistentRepr, Metadata)): (PersistentRepr, Metadata) = repr
 
-  override def toRepr(internal: PersistentRepr): PersistentRepr = internal
+  override def toRepr(internal: (PersistentRepr, Metadata)): (PersistentRepr, Metadata) = internal
 
 }

@@ -39,10 +39,10 @@ object EventSourcedActorFailureSpec {
       val readFromStore = read(persistenceId, fromSequenceNr, toSequenceNr, max)
       if (readFromStore.isEmpty)
         Future.successful(())
-      else if (isCorrupt(readFromStore))
+      else if (isCorrupt(readFromStore.map(_._1)))
         Future.failed(new SimulatedException(s"blahonga $fromSequenceNr $toSequenceNr"))
       else {
-        readFromStore.foreach(recoveryCallback)
+        readFromStore.map(_._1).foreach(recoveryCallback)
         Future.successful(())
       }
     }
