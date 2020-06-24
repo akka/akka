@@ -17,7 +17,7 @@ import akka.actor.testkit.typed.Effect._
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Parent }
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.Parent._
 import akka.actor.typed.{ ActorRef, Behavior, Props }
-import akka.actor.typed.receptionist.{ ServiceKey, Receptionist }
+import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.Behaviors
 
 object BehaviorTestKitSpec {
@@ -340,11 +340,11 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
     }
     "capture Register message in receptionist's inbox" in {
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
-      testkit.receptionistInbox().hasMessages should equal (false)
+      testkit.receptionistInbox().hasMessages should equal(false)
       testkit.run(RegisterWithReceptionist("aladin"))
-      testkit.receptionistInbox().hasMessages should equal (true)
-      testkit.receptionistInbox().expectMessage(Receptionist.Register(ServiceKey[Command]("aladin"),testkit.ref))
-      testkit.receptionistInbox().hasMessages should equal (false)
+      testkit.receptionistInbox().hasMessages should equal(true)
+      testkit.receptionistInbox().expectMessage(Receptionist.Register(ServiceKey[Command]("aladin"), testkit.ref))
+      testkit.receptionistInbox().hasMessages should equal(false)
     }
   }
 }
