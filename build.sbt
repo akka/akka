@@ -314,6 +314,13 @@ lazy val persistenceTestkit = akkaModule("akka-persistence-testkit")
   .settings(AutomaticModuleName.settings("akka.persistence.testkit"))
   .disablePlugins(MimaPlugin)
 
+lazy val persistenceTypedTests = akkaModule("akka-persistence-typed-tests")
+  .dependsOn(persistenceTyped, persistenceTestkit % "test", actorTestkitTyped % "test", jackson % "test->test")
+  .settings(AkkaBuild.mayChangeSettings)
+  .settings(Dependencies.persistenceTypedTests)
+  .disablePlugins(MimaPlugin)
+  .enablePlugins(NoPublish)
+
 lazy val protobuf = akkaModule("akka-protobuf")
   .settings(OSGi.protobuf)
   .settings(AutomaticModuleName.settings("akka.protobuf"))
