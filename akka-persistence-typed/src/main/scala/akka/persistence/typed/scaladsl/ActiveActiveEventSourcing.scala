@@ -54,6 +54,7 @@ trait ActiveActiveContext {
 private[akka] class ActiveActiveContextImpl(val entityId: String, val replicaId: String, val allReplicas: Set[String])
     extends ActiveActiveContext {
   var _origin: String = null
+  var _recoveryRunning = false
 
   // FIXME check illegal access https://github.com/akka/akka/issues/29264
 
@@ -74,7 +75,7 @@ private[akka] class ActiveActiveContextImpl(val entityId: String, val replicaId:
   override def currentTimeMillis(): Long = {
     WallClock.AlwaysIncreasingClock.currentTimeMillis()
   }
-  override def recoveryRunning: Boolean = false
+  override def recoveryRunning: Boolean = _recoveryRunning
 }
 
 object ActiveActiveEventSourcing {

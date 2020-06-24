@@ -12,7 +12,6 @@ import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.scaladsl.{ ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
-import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -50,20 +49,16 @@ object ActiveActiveSpec {
                 Effect.persist(evt).thenRun(_ => ack ! Done)
             },
           (state, event) => {
-            probe.foreach(_ ! EventAndContext(event, aaContext.origin))
+            probe.foreach(_ ! EventAndContext(event, aaContext.origin, aaContext.recoveryRunning))
             state.copy(all = event :: state.all)
           }))
 
 }
 
-case class EventAndContext(event: Any, origin: String)
+case class EventAndContext(event: Any, origin: String, recoveryRunning: Boolean = false)
 
 class ActiveActiveSpec
-    extends ScalaTestWithActorTestKit(
-      PersistenceTestKitPlugin.config.withFallback(
-        ConfigFactory.parseString("""
-    akka.persistence.testkit.events.serialize = off
-        """)))
+    extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
     with LogCapturing
     with Eventually {
@@ -130,7 +125,20 @@ class ActiveActiveSpec
       r2 ! StoreMe("from r2", replyProbe.ref)
       eventProbeR1.expectMessage(EventAndContext("from r2", "R2"))
       eventProbeR2.expectMessage(EventAndContext("from r2", "R2"))
+    }
 
+    "set recovery running" in {
+      val entityId = nextEntityId
+      val eventProbeR1 = createTestProbe[EventAndContext]()
+      val replyProbe = createTestProbe[Done]()
+      val r1 = spawn(testBehavior(entityId, "R1", eventProbeR1.ref))
+      r1 ! StoreMe("Event", replyProbe.ref)
+      eventProbeR1.expectMessage(EventAndContext("Event", "R1", recoveryRunning = false))
+      replyProbe.expectMessage(Done)
+
+      val recoveryProbe = createTestProbe[EventAndContext]()
+      spawn(testBehavior(entityId, "R1", recoveryProbe.ref))
+      recoveryProbe.expectMessage(EventAndContext("Event", "R1", recoveryRunning = true))
     }
 
     "persist all" in {

@@ -23,7 +23,7 @@ import akka.persistence.PersistentRepr
 import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SaveSnapshotSuccess
 import akka.persistence.SnapshotProtocol
-import akka.persistence.journal.{ EventWithMetaData, Tagged }
+import akka.persistence.journal.Tagged
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
 import akka.persistence.typed.{
@@ -129,7 +129,8 @@ private[akka] object Running {
                 // Need to handle this not being available migration from non-active-active is supported
                 log.info("Replicated event {}", eventEnvelope)
                 val meta = eventEnvelope.eventMetadata.get.asInstanceOf[ReplicatedEventMetaData]
-                val re = ReplicatedEvent[E](eventEnvelope.event.asInstanceOf[E], meta.originDc, meta.originSequenceNr)
+                val re =
+                  ReplicatedEvent[E](eventEnvelope.event.asInstanceOf[E], meta.originReplica, meta.originSequenceNr)
                 ReplicatedEventEnvelope(re, replyTo)
             })
         }
@@ -216,10 +217,14 @@ private[akka] object Running {
 
     private def handleExternalReplicatedEventPersist(event: ReplicatedEvent[E]): Behavior[InternalProtocol] = {
       _currentSequenceNumber = state.seqNr + 1
-      val replicatedEvent =
-        new EventWithMetaData(event.event, ReplicatedEventMetaData(event.originReplica, event.originSequenceNr))
       val newState: RunningState[S] = state.applyEvent(setup, event.event)
-      val newState2: RunningState[S] = internalPersist(setup.context, null, newState, replicatedEvent, "")
+      val newState2: RunningState[S] = internalPersist(
+        setup.context,
+        null,
+        newState,
+        event.event,
+        "",
+        Some(ReplicatedEventMetaData(event.originReplica, event.originSequenceNr)))
       val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event.event, newState2.seqNr)
       // FIXME validate this is the correct sequence nr from that replica https://github.com/akka/akka/issues/29259
       val updatedSeen = newState2.seenPerReplica.updated(event.originReplica, event.originSequenceNr)
@@ -251,11 +256,15 @@ private[akka] object Running {
 
       val newState2 = setup.activeActive match {
         case Some(aa) =>
-          val replicatedEvent =
-            new EventWithMetaData(eventToPersist, ReplicatedEventMetaData(aa.replicaId, _currentSequenceNumber))
-          internalPersist(setup.context, cmd, newState, replicatedEvent, eventAdapterManifest)
+          internalPersist(
+            setup.context,
+            cmd,
+            newState,
+            eventToPersist,
+            eventAdapterManifest,
+            Some(ReplicatedEventMetaData(aa.replicaId, _currentSequenceNumber)))
         case None =>
-          internalPersist(setup.context, cmd, newState, eventToPersist, eventAdapterManifest)
+          internalPersist(setup.context, cmd, newState, eventToPersist, eventAdapterManifest, None)
       }
 
       val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)

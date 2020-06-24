@@ -25,8 +25,18 @@ object EventSourcedBehavior {
   private[akka] case class ActiveActive(
       replicaId: String,
       allReplicas: Set[String],
-      aaContext: ActiveActiveContext,
-      queryPluginId: String)
+      aaContext: ActiveActiveContextImpl,
+      queryPluginId: String) {
+
+    /**
+     * Should be called on the same thread that will execute the user code
+     */
+    def setContext(recoveryRunning: Boolean, originReplica: String): Unit = {
+      aaContext._recoveryRunning = recoveryRunning
+      aaContext._origin = originReplica
+    }
+
+  }
 
   /**
    * Type alias for the command handler function that defines how to act on commands.
@@ -152,7 +162,7 @@ object EventSourcedBehavior {
   def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State]
 
   private[akka] def withActiveActive(
-      context: ActiveActiveContext,
+      context: ActiveActiveContextImpl,
       replicaId: String,
       allReplicaIds: Set[String],
       queryPluginId: String): EventSourcedBehavior[Command, Event, State]

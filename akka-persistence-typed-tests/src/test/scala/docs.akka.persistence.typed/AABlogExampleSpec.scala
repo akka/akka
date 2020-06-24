@@ -43,12 +43,7 @@ object AABlogExampleSpec {
 }
 
 class AABlogExampleSpec
-    extends ScalaTestWithActorTestKit(
-      PersistenceTestKitPlugin.config.withFallback(
-        ConfigFactory.parseString("""
-    // FIXME, this causes the PersistentRepr to be serialized which will never work     
-    akka.persistence.testkit.events.serialize = off
-        """)))
+    extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
     with Matchers
     with LogCapturing

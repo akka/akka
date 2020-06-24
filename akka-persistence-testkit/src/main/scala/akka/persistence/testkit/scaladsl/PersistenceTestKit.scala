@@ -18,7 +18,6 @@ import akka.annotation.ApiMayChange
 import akka.persistence.Persistence
 import akka.persistence.PersistentRepr
 import akka.persistence.SnapshotMetadata
-import akka.persistence.testkit.EventStorage.Metadata
 import akka.persistence.testkit._
 import akka.persistence.testkit.internal.InMemStorageExtension
 import akka.persistence.testkit.internal.SnapshotStorageEmulatorExtension
@@ -423,9 +422,9 @@ object SnapshotTestKit {
  */
 @ApiMayChange
 class PersistenceTestKit(system: ActorSystem)
-    extends PersistenceTestKitOps[(PersistentRepr, Metadata), JournalOperation]
-    with ExpectOps[(PersistentRepr, Metadata)]
-    with HasStorage[JournalOperation, (PersistentRepr, Metadata)] {
+    extends PersistenceTestKitOps[PersistentRepr, JournalOperation]
+    with ExpectOps[PersistentRepr]
+    with HasStorage[JournalOperation, PersistentRepr] {
   require(
     Try(Persistence(system).journalFor(PersistenceTestKitPlugin.PluginId)).isSuccess,
     "The test persistence plugin is not configured.")
@@ -494,7 +493,7 @@ class PersistenceTestKit(system: ActorSystem)
   def persistedInStorage(persistenceId: String): immutable.Seq[Any] =
     storage.read(persistenceId).getOrElse(List.empty).map(reprToAny)
 
-  override private[testkit] def reprToAny(repr: (PersistentRepr, Metadata)): Any = repr._1.payload
+  override private[testkit] def reprToAny(repr: PersistentRepr): Any = repr.payload
 }
 
 @ApiMayChange

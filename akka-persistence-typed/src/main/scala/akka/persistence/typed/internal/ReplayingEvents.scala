@@ -6,7 +6,6 @@ package akka.persistence.typed.internal
 
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-
 import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.internal.UnstashException
@@ -23,6 +22,7 @@ import akka.persistence.typed.SingleEventSeq
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.unused
@@ -120,7 +120,21 @@ private[akka] final class ReplayingEvents[C, E, S](
             def handleEvent(event: E): Unit = {
               eventForErrorReporting = OptionVal.Some(event)
               state = state.copy(seqNr = repr.sequenceNr)
-              state = state.copy(state = setup.eventHandler(state.state, event), eventSeenInInterval = true)
+
+              setup.activeActive.foreach((aa: EventSourcedBehavior.ActiveActive) => {
+                val meta = repr.metadata match {
+                  case Some(m) => m.asInstanceOf[ReplicatedEventMetaData]
+                  case None =>
+                    throw new IllegalStateException(
+                      s"Active active enabled but existing event has no metadata. Migration isn't supported yet.")
+
+                }
+                aa.setContext(recoveryRunning = true, meta.originReplica)
+              })
+
+              val newState = setup.eventHandler(state.state, event)
+
+              state = state.copy(state = newState, eventSeenInInterval = true)
             }
 
             eventSeq match {

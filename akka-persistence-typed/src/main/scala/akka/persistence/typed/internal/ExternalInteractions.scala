@@ -5,7 +5,6 @@
 package akka.persistence.typed.internal
 
 import scala.collection.immutable
-
 import akka.actor.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
@@ -34,7 +33,8 @@ private[akka] trait JournalInteractions[C, E, S] {
       cmd: Any,
       state: Running.RunningState[S],
       event: EventOrTaggedOrReplicated,
-      eventAdapterManifest: String): Running.RunningState[S] = {
+      eventAdapterManifest: String,
+      metadata: Option[Any]): Running.RunningState[S] = {
 
     val newRunningState = state.nextSequenceNr()
 
@@ -50,7 +50,7 @@ private[akka] trait JournalInteractions[C, E, S] {
     // https://github.com/akka/akka/issues/29262
     onWriteInitiated(ctx, cmd, repr)
 
-    val write = AtomicWrite(repr) :: Nil
+    val write = AtomicWrite(metadata.fold(repr)(metadata => repr.withMetadata(metadata))) :: Nil
     setup.journal
       .tell(JournalProtocol.WriteMessages(write, setup.selfClassic, setup.writerIdentity.instanceId), setup.selfClassic)
 
