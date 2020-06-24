@@ -4,11 +4,13 @@
 
 package akka.persistence.typed.internal
 
+import java.util.concurrent.atomic.AtomicReference
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.actor.UnhandledMessage
 import akka.actor.typed.eventstream.EventStream
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Signal }
+import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 import akka.annotation.{ InternalApi, InternalStableApi }
@@ -46,11 +48,14 @@ import akka.persistence.typed.internal.InternalProtocol.ReplicatedEventEnvelope
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
+import akka.stream.scaladsl.Keep
 import akka.stream.{ SharedKillSwitch, SystemMaterializer }
 import akka.stream.scaladsl.{ RestartSource, Sink }
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.Helpers
-import akka.util.{ unused, OptionVal Timeout }
+import akka.util.OptionVal
+import akka.util.unused
+import akka.util.Timeout
 
 /**
  * INTERNAL API
@@ -82,6 +87,7 @@ private[akka] object Running {
       state: State,
       receivedPoisonPill: Boolean,
       seenPerReplica: Map[String, Long],
+      replicationControl: Map[String, ReplicationStreamControl],
       replicationKillSwitch: Option[SharedKillSwitch] = None) {
 
     def nextSequenceNr(): RunningState[State] =
@@ -98,31 +104,38 @@ private[akka] object Running {
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] = {
     val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
-    setup.activeActive.foreach(aa => startReplicationStream(setup.context.system, setup.context.self, state, aa))
-    new running.HandlingCommands(state)
+    val initialState = setup.activeActive match {
+      case Some(aa) => startReplicationStream(setup, state, aa)
+      case None     => state
+    }
+    new running.HandlingCommands(initialState)
   }
 
-  def startReplicationStream[E, S](
-      system: ActorSystem[_],
-      ref: ActorRef[InternalProtocol],
+  def startReplicationStream[C, E, S](
+      setup: BehaviorSetup[C, E, S],
       state: RunningState[S],
-      aa: ActiveActive): Unit = {
+      aa: ActiveActive): RunningState[S] = {
     import scala.concurrent.duration._
+    val system = setup.context.system
+    val ref = setup.context.self
 
     val query = PersistenceQuery(system)
-    aa.allReplicas.foreach { replica =>
-      if (replica != aa.replicaId) {
-        val seqNr = state.seenPerReplica(replica)
-        val pid = PersistenceId.replicatedUniqueId(aa.aaContext.entityId, replica)
+    aa.allReplicas.foldLeft(state) { (state, replicaId) =>
+      if (replicaId != aa.replicaId) {
+        val seqNr = state.seenPerReplica(replicaId)
+        val pid = PersistenceId.replicatedUniqueId(aa.aaContext.entityId, replicaId)
         // FIXME support different configuration per replica https://github.com/akka/akka/issues/29257
         val replication = query.readJournalFor[EventsByPersistenceIdQuery](aa.queryPluginId)
 
         implicit val timeout = Timeout(30.seconds)
 
-        // FIXME config
+        val controlRef = new AtomicReference[ReplicationStreamControl]()
+
         val source = RestartSource.withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
           replication
             .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
+            .viaMat(new FastForwardingFilter)(Keep.right)
+            .mapMaterializedValue(streamControl => controlRef.set(streamControl))
             .via(ActorFlow.ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) {
               (eventEnvelope, replyTo) =>
                 // Need to handle this not being available migration from non-active-active is supported
@@ -134,6 +147,31 @@ private[akka] object Running {
         }
 
         source.runWith(Sink.ignore)(SystemMaterializer(system).materializer)
+
+        // FIXME support from journal to fast forward
+        // (how can we support/detect both this and journal ffwd in a backwards compatible way and fallback)
+        state.copy(
+          replicationControl =
+            state.replicationControl.updated(replicaId, new ReplicationStreamControl {
+              override def fastForward(sequenceNumber: Long): Unit = {
+                // (logging is safe here since invoked on message receive
+                OptionVal(controlRef.get) match {
+                  case OptionVal.Some(control) =>
+                    if (setup.log.isDebugEnabled)
+                      setup.log.debug("Fast forward replica [{}] to [{}]", replicaId, sequenceNumber)
+                    control.fastForward(sequenceNumber)
+                  case OptionVal.None =>
+                    // stream not started yet, ok, fast forward is an optimization
+                    if (setup.log.isDebugEnabled)
+                      setup.log.debug(
+                        "Ignoring fast forward replica [{}] to [{}], stream not started yet",
+                        replicaId,
+                        sequenceNumber)
+                }
+              }
+            }))
+      } else {
+        state
       }
     }
   }
@@ -281,9 +319,10 @@ private[akka] object Running {
               originReplicaId,
               event.sequenceNumber)
 
-          // FIXME fast forward stream for source replica
+          // fast forward stream for source replica
+          state.replicationControl.get(originReplicaId).foreach(_.fastForward(event.sequenceNumber))
 
-          handleReplicatedEventPersist(
+          handleExternalReplicatedEventPersist(
             ReplicatedEvent(event.event.asInstanceOf[E], originReplicaId, event.sequenceNumber))
         }
 

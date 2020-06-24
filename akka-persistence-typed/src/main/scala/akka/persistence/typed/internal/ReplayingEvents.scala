@@ -260,7 +260,12 @@ private[akka] final class ReplayingEvents[C, E, S](
         val running =
           Running[C, E, S](
             setup,
-            Running.RunningState[S](state.seqNr, state.state, state.receivedPoisonPill, seenPerReplica))
+            Running.RunningState[S](
+              seqNr = state.seqNr,
+              state = state.state,
+              receivedPoisonPill = state.receivedPoisonPill,
+              seenPerReplica = seenPerReplica,
+              replicationControl = Map.empty))
 
         tryUnstashOne(running)
       }
