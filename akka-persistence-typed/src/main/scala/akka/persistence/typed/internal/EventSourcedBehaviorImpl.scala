@@ -246,7 +246,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     copy(recovery = recovery.toClassic)
   }
 
-  override def withEvenPublishing(): EventSourcedBehavior[Command, Event, State] = {
+  override def withEventPublishing(): EventSourcedBehavior[Command, Event, State] = {
     copy(publishEvents = true)
   }
 
