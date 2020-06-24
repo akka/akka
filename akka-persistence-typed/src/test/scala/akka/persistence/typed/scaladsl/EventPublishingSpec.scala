@@ -11,7 +11,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.eventstream.EventStream
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.internal.PublishedEvent
+import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.scaladsl.EventPublishingSpec.WowSuchEventSourcingBehavior
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory

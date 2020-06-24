@@ -166,7 +166,7 @@ private[akka] object Running {
     def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
       case IncomingCommand(c: C @unchecked)          => onCommand(state, c)
       case re: ReplicatedEventEnvelope[E @unchecked] => onReplicatedEvent(state, re, setup.activeActive.get)
-      case pe: PublishedEvent                        => onPublishedEvent(state, pe)
+      case pe: PublishedEventImpl                    => onPublishedEvent(state, pe)
       case JournalResponse(r)                        => onDeleteEventsJournalResponse(r, state.state)
       case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, state.state)
       case get: GetState[S @unchecked]               => onGetState(get)
@@ -207,7 +207,7 @@ private[akka] object Running {
       }
     }
 
-    def onPublishedEvent(state: Running.RunningState[S], event: PublishedEvent): Behavior[InternalProtocol] = {
+    def onPublishedEvent(state: Running.RunningState[S], event: PublishedEventImpl): Behavior[InternalProtocol] = {
       setup.activeActive match {
         case None =>
           setup.log
@@ -229,7 +229,7 @@ private[akka] object Running {
         state: Running.RunningState[S],
         activeActive: ActiveActive,
         originReplicaId: String,
-        event: PublishedEvent): Behavior[InternalProtocol] = {
+        event: PublishedEventImpl): Behavior[InternalProtocol] = {
       val log = setup.log
       val separatorIndex = event.persistenceId.id.indexOf(PersistenceId.DefaultSeparator)
       val idPrefix = event.persistenceId.id.substring(0, separatorIndex)
@@ -453,7 +453,7 @@ private[akka] object Running {
         case JournalResponse(r)                        => onJournalResponse(r)
         case in: IncomingCommand[C @unchecked]         => onCommand(in)
         case re: ReplicatedEventEnvelope[E @unchecked] => onReplicatedEvent(re)
-        case pe: PublishedEvent                        => onPublishedEvent(pe)
+        case pe: PublishedEventImpl                    => onPublishedEvent(pe)
         case get: GetState[S @unchecked]               => stashInternal(get)
         case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, visibleState.state)
         case RecoveryTickEvent(_)                      => Behaviors.unhandled
@@ -479,7 +479,7 @@ private[akka] object Running {
       }
     }
 
-    def onPublishedEvent(event: PublishedEvent): Behavior[InternalProtocol] = {
+    def onPublishedEvent(event: PublishedEventImpl): Behavior[InternalProtocol] = {
       if (state.receivedPoisonPill) {
         Behaviors.unhandled
       } else {
@@ -503,7 +503,7 @@ private[akka] object Running {
 
         if (setup.publishEvents) {
           context.system.eventStream ! EventStream.Publish(
-            PublishedEvent(setup.replicaId, setup.persistenceId, p.sequenceNr, p.payload, p.timestamp))
+            PublishedEventImpl(setup.replicaId, setup.persistenceId, p.sequenceNr, p.payload, p.timestamp))
         }
 
         // only once all things are applied we can revert back

@@ -4,6 +4,7 @@
 
 package akka.persistence.typed.internal
 
+import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -33,6 +34,7 @@ import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.NoOpEventAdapter
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
@@ -282,21 +284,25 @@ private[akka] case object ReplicatedEventAck
 /**
  * INTERNAL API
  */
-// FIXME internal for now but perhaps useful as public as well?
 @InternalApi
-private[akka] final case class PublishedEvent(
+private[akka] final case class PublishedEventImpl(
     replicaId: Option[String],
     persistenceId: PersistenceId,
     sequenceNumber: Long,
     payload: Any,
     timestamp: Long)
-    extends InternalProtocol {
+    extends PublishedEvent
+    with InternalProtocol {
+  import scala.compat.java8.OptionConverters._
+
+  override def getReplicaId: Optional[String] = replicaId.asJava
 
   def tags: Set[String] = payload match {
     case t: Tagged => t.tags
     case _         => Set.empty
   }
 
+  // FIXME we need to deal with EventWithMetadata here as well when that is merged
   def event: Any = payload match {
     case Tagged(event, _) => event
     case _                => payload

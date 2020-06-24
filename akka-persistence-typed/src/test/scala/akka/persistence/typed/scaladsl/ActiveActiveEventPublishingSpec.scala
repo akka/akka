@@ -63,7 +63,7 @@ class ActiveActiveEventPublishingSpec
       probe.expectMessage(Done)
 
       // simulate a published event from another replica
-      actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEvent(
+      actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
         Some("DC-B"),
         PersistenceId.replicatedUniqueId("myId1", "DC-B"),
         1L,
@@ -83,7 +83,7 @@ class ActiveActiveEventPublishingSpec
       probe.expectMessage(Done)
 
       // simulate a published event from another replica
-      actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEvent(
+      actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
         Some("DC-B"),
         PersistenceId.replicatedUniqueId("myId2", "DC-B"),
         2L, // missing 1L
@@ -103,7 +103,7 @@ class ActiveActiveEventPublishingSpec
       probe.expectMessage(Done)
 
       // simulate a published event from another replica
-      actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEvent(
+      actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
         Some("DC-C"),
         PersistenceId.replicatedUniqueId("myId3", "DC-C"),
         1L,
@@ -116,21 +116,22 @@ class ActiveActiveEventPublishingSpec
       probe.expectMessage(Set("one", "three"))
     }
 
-    "ignore an already seen event from a replica" in {
+    // FIXME waiting for inmem query side
+    "ignore an already seen event from a replica" in pendingUntilFixed {
       val actor = spawn(MyActiveActive("myId4", "DC-A", Set("DC-A", "DC-B")))
       val probe = createTestProbe[Any]()
       actor ! MyActiveActive.Add("one", probe.ref)
       probe.expectMessage(Done)
 
       // simulate a published event from another replica
-      actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEvent(
+      actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
         Some("DC-B"),
         PersistenceId.replicatedUniqueId("myId4", "DC-B"),
         1L,
         "two",
         System.currentTimeMillis())
       // simulate another published event from another replica
-      actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEvent(
+      actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
         Some("DC-B"),
         PersistenceId.replicatedUniqueId("myId4", "DC-B"),
         1L,

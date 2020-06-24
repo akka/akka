@@ -9,22 +9,22 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.ApiMayChange
-import akka.persistence.typed.internal.PublishedEvent
+import akka.persistence.typed.PublishedEvent
 
 /**
  * Used when sharding Active Active entities in multiple instances of sharding, for example one per DC in a Multi DC
  * Akka Cluster.
  *
- * Subscribes to locally written events through a pub sub topic and sends the seen events to all the sharded replicas
+ * Subscribes to locally written events through the event stream and sends the seen events to all the sharded replicas
  * which can then fast forward their cross-replica event streams to improve latency but still allowing slower poll
- * frequency for the cross replica queries.
+ * frequency for the cross replica queries. Note that since message delivery is at-most-once this can not be the only
+ * channel for replica events - the entities must still tail events from the journals of other replicas.
  *
- * The shard id and persistence extractor used with sharding needs to handle [[akka.persistence.typed.internal.PublishedEvent]]
+ * The shard id and persistence extractor used with sharding needs to handle [[akka.persistence.typed.PublishedEvent]]
  * and direct such messages to the right Active Active entity.
  */
-// FIXME a better name that sounds less like a fishy car salesman?
 @ApiMayChange
-object SpeculativeReplicator {
+object ActiveActiveShardingReplication {
 
   /**
    * @param selfReplica The replica id of the replica that runs on this node

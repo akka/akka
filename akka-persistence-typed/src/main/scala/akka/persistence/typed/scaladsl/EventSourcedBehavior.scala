@@ -241,7 +241,7 @@ object EventSourcedBehavior {
   def withRecovery(recovery: Recovery): EventSourcedBehavior[Command, Event, State]
 
   /**
-   * Publish events to the system event stream after they have been persisted
+   * Publish events to the system event stream as [[akka.persistence.typed.PublishedEvent]] after they have been persisted
    */
   @ApiMayChange
   def withEvenPublishing(): EventSourcedBehavior[Command, Event, State]
