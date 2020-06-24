@@ -17,6 +17,7 @@ import akka.actor.testkit.typed.Effect._
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Parent }
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.Parent._
 import akka.actor.typed.{ ActorRef, Behavior, Props }
+import akka.actor.typed.receptionist.{ ServiceKey, Receptionist }
 import akka.actor.typed.scaladsl.Behaviors
 
 object BehaviorTestKitSpec {
@@ -40,6 +41,7 @@ object BehaviorTestKitSpec {
     case class SpawnSession(replyTo: ActorRef[ActorRef[String]], sessionHandler: ActorRef[String]) extends Command
     case class KillSession(session: ActorRef[String], replyTo: ActorRef[Done]) extends Command
     case class Log(what: String) extends Command
+    case class RegisterWithReceptionist(name: String) extends Command
 
     val init: Behavior[Command] = Behaviors.receive[Command] { (context, message) =>
       message match {
@@ -104,6 +106,9 @@ object BehaviorTestKitSpec {
           Behaviors.same
         case Log(what) =>
           context.log.info(what)
+          Behaviors.same
+        case RegisterWithReceptionist(name: String) =>
+          context.system.receptionist ! Receptionist.Register(ServiceKey[Command](name), context.self)
           Behaviors.same
       }
     }
@@ -326,6 +331,20 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       testkit.run(SpawnChild)
       val newChild = testkit.expectEffectType[Spawned[_]]
       child.childName shouldBe newChild.childName
+    }
+  }
+  "BehaviorTestKit's receptionist support" must {
+    "register with receptionist without crash" in {
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
+      testkit.run(RegisterWithReceptionist("aladin"))
+    }
+    "capture Register message in receptionist's inbox" in {
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
+      testkit.receptionistInbox().hasMessages should equal (false)
+      testkit.run(RegisterWithReceptionist("aladin"))
+      testkit.receptionistInbox().hasMessages should equal (true)
+      testkit.receptionistInbox().expectMessage(Receptionist.Register(ServiceKey[Command]("aladin"),testkit.ref))
+      testkit.receptionistInbox().hasMessages should equal (false)
     }
   }
 }
