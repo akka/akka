@@ -4,14 +4,16 @@
 
 package akka.persistence.testkit.query
 
-import akka.Done
+import akka.{ Done, NotUsed }
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.ActorRef
+import akka.persistence.journal.EventWithMetaData
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
-import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.{ EventAdapter, EventSeq, PersistenceId }
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
+import akka.stream.scaladsl.Source
 import akka.stream.testkit.scaladsl.TestSink
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -38,7 +40,20 @@ object EventsByPersistenceIdSpec {
           command.ack ! Done
         },
       (state, _) => state)
-  }
+  }.eventAdapter(new EventAdapter[String, Any] {
+    override def toJournal(e: String): Any = {
+      if (e.startsWith("m")) {
+        EventWithMetaData(e, s"$e-meta")
+      } else {
+        e
+      }
+    }
+    override def manifest(event: String): String = ""
+    override def fromJournal(p: Any, manifest: String): EventSeq[String] = p match {
+      case e: EventWithMetaData => EventSeq.single(e.event.toString)
+      case _                    => EventSeq.single(p.toString)
+    }
+  })
 
 }
 
@@ -132,6 +147,23 @@ class EventsByPersistenceIdSpec
       ackProbe.expectMessage(Done)
 
       probe.cancel()
+    }
+
+    "return metadata in queries" in {
+      val ackProbe = createTestProbe[Done]()
+      val ref = setupEmpty("with-meta")
+      ref ! Command("m-1", ackProbe.ref)
+      ref ! Command("m-2", ackProbe.ref)
+      val src: Source[EventEnvelope, NotUsed] = queries.eventsByPersistenceId("with-meta", 0L, Long.MaxValue)
+      val probe =
+        src.runWith(TestSink.probe[Any]).request(3)
+      probe.expectNextPF {
+        case e @ EventEnvelope(_, "with-meta", 1L, "m-1") if e.eventMetadata.contains("m-1-meta") =>
+      }
+
+      probe.expectNextPF {
+        case e @ EventEnvelope(_, "with-meta", 2L, "m-2") if e.eventMetadata.contains("m-2-meta") =>
+      }
     }
   }
 }

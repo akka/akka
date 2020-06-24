@@ -7,6 +7,7 @@ import akka.actor.ActorRef
 import akka.annotation.InternalApi
 import akka.persistence.query.{ EventEnvelope, Sequence }
 import akka.persistence.testkit.{ EventStorage, PersistenceTestKitPlugin }
+import akka.persistence.testkit.EventStorage.{ NoMetadata, WithMetadata }
 import akka.stream.{ Attributes, Outlet, SourceShape }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, GraphStageLogicWithLogging, OutHandler }
 
@@ -36,6 +37,7 @@ final private[akka] class EventsByPersistenceIdStage(
         val (_, msg) = in
         msg match {
           case PersistenceTestKitPlugin.Write(pid, toSequenceNr) if pid == persistenceId =>
+            log.debug("Write notification {} {}", pid, toSequenceNr)
             if (toSequenceNr >= currentSequenceNr) {
               tryPush()
             }
@@ -48,7 +50,7 @@ final private[akka] class EventsByPersistenceIdStage(
           val event = storage.tryRead(persistenceId, currentSequenceNr, currentSequenceNr, 1)
           log.debug("tryPush available. Query for {} {} result {}", currentSequenceNr, currentSequenceNr, event)
           event.headOption match {
-            case Some(pr) =>
+            case Some((pr, meta)) =>
               push(
                 out,
                 EventEnvelope(
@@ -57,7 +59,10 @@ final private[akka] class EventsByPersistenceIdStage(
                   pr.sequenceNr,
                   pr.payload,
                   pr.timestamp,
-                  pr.metadata))
+                  meta match {
+                    case NoMetadata      => None
+                    case WithMetadata(m) => Some(m)
+                  }))
               if (currentSequenceNr == toSequenceNr) {
                 completeStage()
               } else {

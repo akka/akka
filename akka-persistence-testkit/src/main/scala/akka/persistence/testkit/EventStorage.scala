@@ -10,6 +10,7 @@ import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
 import akka.annotation.InternalApi
 import akka.persistence.PersistentRepr
+import akka.persistence.testkit.EventStorage.{ JournalPolicies, Metadata }
 import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies
 import akka.persistence.testkit.internal.TestKitStorage
 import akka.util.ccompat.JavaConverters._
@@ -18,7 +19,7 @@ import akka.util.ccompat.JavaConverters._
  * INTERNAL API
  */
 @InternalApi
-private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, PersistentRepr] {
+private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, (PersistentRepr, Metadata)] {
 
   import EventStorage._
 
@@ -42,11 +43,11 @@ private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, Per
   /**
    * @throws Exception from StorageFailure in the current writing policy
    */
-  def tryAdd(elems: immutable.Seq[PersistentRepr]): Try[Unit] = {
-    val grouped = elems.groupBy(_.persistenceId)
+  def tryAdd(elems: immutable.Seq[(PersistentRepr, Metadata)]): Try[Unit] = {
+    val grouped = elems.groupBy(_._1.persistenceId)
 
     val processed = grouped.map {
-      case (pid, els) => currentPolicy.tryProcess(pid, WriteEvents(els.map(_.payload)))
+      case (pid, els) => currentPolicy.tryProcess(pid, WriteEvents(els.map(_._1.payload)))
     }
 
     val reduced: ProcessingResult =
@@ -72,8 +73,8 @@ private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, Per
       persistenceId: String,
       fromSequenceNr: Long,
       toSequenceNr: Long,
-      max: Long): immutable.Seq[PersistentRepr] = {
-    val batch = read(persistenceId, fromSequenceNr, toSequenceNr, max)
+      max: Long): immutable.Seq[(PersistentRepr, Metadata)] = {
+    val batch: immutable.Seq[(PersistentRepr, Metadata)] = read(persistenceId, fromSequenceNr, toSequenceNr, max)
     currentPolicy.tryProcess(persistenceId, ReadEvents(batch)) match {
       case ProcessingSuccess  => batch
       case Reject(ex)         => throw ex
@@ -97,9 +98,9 @@ private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, Per
     }
   }
 
-  private def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[PersistentRepr] = {
+  private def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[(PersistentRepr, Metadata)] = {
     val sn = getHighestSeqNumber(key) + 1
-    elems.zipWithIndex.map(p => PersistentRepr(p._1, p._2 + sn, key))
+    elems.zipWithIndex.map(p => (PersistentRepr(p._1, p._2 + sn, key), NoMetadata))
   }
 
 }

@@ -32,7 +32,7 @@ import akka.persistence.PersistentRepr
 import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SaveSnapshotSuccess
 import akka.persistence.SnapshotProtocol
-import akka.persistence.journal.Tagged
+import akka.persistence.journal.{ EventWithMetaData, Tagged }
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
 import akka.persistence.typed.{
@@ -349,6 +349,7 @@ private[akka] object Running {
 
     private def handleExternalReplicatedEventPersist(event: ReplicatedEvent[E]): Behavior[InternalProtocol] = {
       _currentSequenceNumber = state.seqNr + 1
+      val replicatedEvent = new EventWithMetaData(event.event, ReplicatedEventMetaData(event.originReplica))
       val newState: RunningState[S] = state.applyEvent(setup, event.event)
       val newState2: RunningState[S] = internalPersist(
         setup.context,
