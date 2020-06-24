@@ -12,7 +12,6 @@ import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.scaladsl._
 import akka.serialization.jackson.CborSerializable
-import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Millis, Span }
@@ -44,12 +43,7 @@ object AABlogExampleSpec {
 }
 
 class AABlogExampleSpec
-    extends ScalaTestWithActorTestKit(
-      PersistenceTestKitPlugin.config.withFallback(
-        ConfigFactory.parseString("""
-    // FIXME, this causes the PersistentRepr to be serialized which will never work     
-    akka.persistence.testkit.events.serialize = off
-        """)))
+    extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
     with Matchers
     with LogCapturing

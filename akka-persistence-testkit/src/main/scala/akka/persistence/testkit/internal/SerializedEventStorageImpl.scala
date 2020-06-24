@@ -4,13 +4,25 @@
 
 package akka.persistence.testkit.internal
 
-import scala.util.Try
 import akka.actor.{ ActorSystem, ExtendedActorSystem }
 import akka.annotation.InternalApi
 import akka.persistence.PersistentRepr
 import akka.persistence.testkit.EventStorage
 import akka.persistence.testkit.EventStorage.Metadata
-import akka.serialization.{ Serialization, SerializationExtension }
+import akka.persistence.testkit.internal.SerializedEventStorageImpl.Serialized
+import akka.serialization.{ Serialization, SerializationExtension, Serializers }
+
+@InternalApi
+private[testkit] object SerializedEventStorageImpl {
+  case class Serialized(
+      persistenceId: String,
+      sequenceNr: Long,
+      payloadSerId: Int,
+      payloadSerManifest: String,
+      writerUuid: String,
+      payload: Array[Byte],
+      metadata: Metadata)
+}
 
 /**
  * INTERNAL API
@@ -18,30 +30,30 @@ import akka.serialization.{ Serialization, SerializationExtension }
  */
 @InternalApi
 private[testkit] class SerializedEventStorageImpl(system: ActorSystem) extends EventStorage {
-  override type InternalRepr = (Int, Array[Byte], Metadata)
+  override type InternalRepr = Serialized
 
   private lazy val serialization = SerializationExtension(system)
 
   /**
    * @return (serializer id, serialized bytes)
    */
-  override def toInternal(repr: (PersistentRepr, Metadata)): (Int, Array[Byte], Metadata) =
+  override def toInternal(repr: (PersistentRepr, Metadata)): Serialized =
     Serialization.withTransportInformation(system.asInstanceOf[ExtendedActorSystem]) { () =>
-      val s = serialization.findSerializerFor(repr)
-      (s.identifier, s.toBinary(repr._1), repr._2)
+      val (pr, meta) = repr
+      val payload = pr.payload.asInstanceOf[AnyRef]
+      val s = serialization.findSerializerFor(payload)
+      val manifest = Serializers.manifestFor(s, payload)
+      Serialized(pr.persistenceId, pr.sequenceNr, s.identifier, manifest, pr.writerUuid, s.toBinary(payload), meta)
     }
 
   /**
-   * FIXME, this serialized the persistent repr, it should serialize the payload instead
    * @param internal (serializer id, serialized bytes)
-   *
    */
-  override def toRepr(internal: (Int, Array[Byte], Metadata)): (PersistentRepr, Metadata) =
+  override def toRepr(internal: Serialized): (PersistentRepr, Metadata) = {
+    val event = serialization.deserialize(internal.payload, internal.payloadSerId, internal.payloadSerManifest).get
     (
-      serialization
-        .deserialize(internal._2, internal._1, PersistentRepr.Undefined)
-        .flatMap(r => Try(r.asInstanceOf[PersistentRepr]))
-        .get,
-      internal._3)
+      PersistentRepr(event, internal.sequenceNr, internal.persistenceId, writerUuid = internal.writerUuid),
+      internal.metadata)
+  }
 
 }

@@ -12,7 +12,7 @@ import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.scaladsl.{ ActiveActiveContext, ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
-import com.typesafe.config.ConfigFactory
+import akka.serialization.jackson.CborSerializable
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -31,7 +31,7 @@ object AAAuctionExampleSpec {
   final case class IsClosed(replyTo: ActorRef[Boolean]) extends AuctionCommand
   private final case object Close extends AuctionCommand // Internal, should not be sent from the outside
 
-  sealed trait AuctionEvent
+  sealed trait AuctionEvent extends CborSerializable
   final case class BidRegistered(bid: Bid) extends AuctionEvent
   final case class AuctionFinished(atDc: String) extends AuctionEvent
   final case class WinnerDecided(atDc: String, winningBid: Bid, highestCounterOffer: MoneyAmount) extends AuctionEvent
@@ -212,12 +212,7 @@ object AAAuctionExampleSpec {
 }
 
 class AAAuctionExampleSpec
-    extends ScalaTestWithActorTestKit(
-      PersistenceTestKitPlugin.config.withFallback(
-        ConfigFactory.parseString("""
-    // FIXME, this causes the PersistentRepr to be serialized which will never work     
-    akka.persistence.testkit.events.serialize = off
-        """)))
+    extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
     with Matchers
     with LogCapturing

@@ -28,7 +28,7 @@ final private[akka] class EventsByPersistenceIdStage(
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogicWithLogging(shape) with OutHandler {
-      private var currentSequenceNr = fromSequenceNr + 1
+      private var currentSequenceNr = math.max(fromSequenceNr, 1)
       private var stageActorRef: ActorRef = null
       override def preStart(): Unit = {
         stageActorRef = getStageActor(receiveNotifications).ref

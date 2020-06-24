@@ -3,6 +3,7 @@
  */
 
 package akka.persistence.testkit.query
+
 import akka.{ Done, NotUsed }
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.ActorRef
