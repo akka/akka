@@ -11,6 +11,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.PublishedEvent
+import scala.collection.JavaConverters._
 
 /**
  * Used when sharding Active Active entities in multiple instances of sharding, for example one per DC in a Multi DC
@@ -27,12 +28,24 @@ import akka.persistence.typed.PublishedEvent
 @ApiMayChange
 object ActiveActiveShardingReplication {
 
+  /**
+   * Not for user extension
+   */
   @DoNotInherit
   sealed trait Command
 
   /**
+   * Scala API:
    * @param selfReplica The replica id of the replica that runs on this node
-   * @param replicaShardingProxies A (replica id -> sharding proxy) pair for each replica in the system.
+   * @param replicaShardingProxies A replica id to sharding proxy mapping for each replica in the system
+   */
+  def create[T](selfReplica: String, replicaShardingProxies: java.util.Map[String, ActorRef[T]]): Behavior[Command] =
+    apply(selfReplica, replicaShardingProxies.asScala.toMap)
+
+  /**
+   * Scala API:
+   * @param selfReplica The replica id of the replica that runs on this node
+   * @param replicaShardingProxies A replica id to sharding proxy mapping for each replica in the system
    */
   def apply[T](selfReplica: String, replicaShardingProxies: Map[String, ActorRef[T]]): Behavior[Command] =
     Behaviors
