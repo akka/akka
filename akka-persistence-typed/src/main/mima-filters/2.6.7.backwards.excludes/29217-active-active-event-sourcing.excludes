@@ -1,0 +1,6 @@
+# Changes to internal/private
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.typed.scaladsl.EventSourcedBehavior.withActiveActive")
+ProblemFilters.exclude[Problem]("akka.persistence.typed.internal.Running*")
+ProblemFilters.exclude[Problem]("akka.persistence.typed.internal.EventSourcedBehaviorImpl.*")
+ProblemFilters.exclude[Problem]("akka.persistence.typed.internal.BehaviorSetup*")
+

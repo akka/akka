@@ -2,30 +2,23 @@
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package docs.akka.persistence.typed.aa
+package docs.akka.persistence.typed
 
 import java.time.Instant
 
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, _ }
 import akka.actor.typed.{ ActorRef, Behavior }
-import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
+import akka.persistence.testkit.PersistenceTestKitPlugin
+import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.scaladsl.{ ActiveActiveContext, ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
-import com.typesafe.config.ConfigFactory
+import akka.serialization.jackson.CborSerializable
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 object AAAuctionExampleSpec {
-  val config = ConfigFactory.parseString("""
-       akka.actor.provider = cluster
-       akka.loglevel = info 
-       akka.persistence {
-        journal {
-          plugin = "akka.persistence.journal.inmem"
-        }
-       }
-      """)
+
   type MoneyAmount = Int
 
   case class Bid(bidder: String, offer: MoneyAmount, timestamp: Instant, originDc: String)
@@ -38,7 +31,7 @@ object AAAuctionExampleSpec {
   final case class IsClosed(replyTo: ActorRef[Boolean]) extends AuctionCommand
   private final case object Close extends AuctionCommand // Internal, should not be sent from the outside
 
-  sealed trait AuctionEvent
+  sealed trait AuctionEvent extends CborSerializable
   final case class BidRegistered(bid: Bid) extends AuctionEvent
   final case class AuctionFinished(atDc: String) extends AuctionEvent
   final case class WinnerDecided(atDc: String, winningBid: Bid, highestCounterOffer: MoneyAmount) extends AuctionEvent
@@ -208,7 +201,7 @@ object AAAuctionExampleSpec {
 
   def behavior(replica: String, setup: AuctionSetup): Behavior[AuctionCommand] = Behaviors.setup[AuctionCommand] {
     ctx =>
-      ActiveActiveEventSourcing(setup.name, replica, setup.allDcs, LeveldbReadJournal.Identifier) { aaCtx =>
+      ActiveActiveEventSourcing(setup.name, replica, setup.allDcs, PersistenceTestKitReadJournal.Identifier) { aaCtx =>
         EventSourcedBehavior(
           aaCtx.persistenceId,
           initialState(setup),
@@ -219,7 +212,7 @@ object AAAuctionExampleSpec {
 }
 
 class AAAuctionExampleSpec
-    extends ScalaTestWithActorTestKit(AAAuctionExampleSpec.config)
+    extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
     with Matchers
     with LogCapturing
@@ -228,6 +221,7 @@ class AAAuctionExampleSpec
   import AAAuctionExampleSpec._
 
   "Auction example" should {
+
     "work" in {
       val Replicas = Set("DC-A", "DC-B")
       val setupA =
