@@ -9,6 +9,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.ApiMayChange
+import akka.annotation.DoNotInherit
 import akka.persistence.typed.PublishedEvent
 
 /**
@@ -26,11 +27,14 @@ import akka.persistence.typed.PublishedEvent
 @ApiMayChange
 object ActiveActiveShardingReplication {
 
+  @DoNotInherit
+  sealed trait Command
+
   /**
    * @param selfReplica The replica id of the replica that runs on this node
    * @param replicaShardingProxies A (replica id -> sharding proxy) pair for each replica in the system.
    */
-  def apply(selfReplica: String, replicaShardingProxies: Map[String, ActorRef[Any]]): Behavior[Nothing] =
+  def apply[T](selfReplica: String, replicaShardingProxies: Map[String, ActorRef[T]]): Behavior[Command] =
     Behaviors
       .setup[Any] { context =>
         context.log.debug(
@@ -48,11 +52,11 @@ object ActiveActiveShardingReplication {
             replicaShardingProxies.foreach {
               case (replica, proxy) =>
                 if (replica != selfReplica)
-                  proxy ! event
+                  proxy.asInstanceOf[ActorRef[PublishedEvent]] ! event
             }
             Behaviors.same
         }
       }
-      .narrow[Nothing]
+      .narrow[Command]
 
 }
