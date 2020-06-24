@@ -2,18 +2,18 @@
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.persistence.typed.scaladsl
+package akka.persistence.typed
 
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
-import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.internal
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+import akka.persistence.testkit.PersistenceTestKitPlugin
+import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
+import akka.persistence.typed.scaladsl.ActiveActiveEventSourcing
+import akka.persistence.typed.scaladsl.Effect
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import org.scalatest.wordspec.AnyWordSpecLike
 
 object ActiveActiveEventPublishingSpec {
@@ -24,8 +24,7 @@ object ActiveActiveEventPublishingSpec {
     case class Get(replyTo: ActorRef[Set[String]]) extends Command
 
     def apply(entityId: String, replicaId: String, allReplicas: Set[String]): Behavior[Command] =
-      // FIXME waiting for inmem query impl PR
-      ActiveActiveEventSourcing(entityId, replicaId, allReplicas, LeveldbReadJournal.Identifier)(
+      ActiveActiveEventSourcing(entityId, replicaId, allReplicas, PersistenceTestKitReadJournal.Identifier)(
         aactx =>
           EventSourcedBehavior[Command, String, Set[String]](
             aactx.persistenceId,
@@ -40,15 +39,10 @@ object ActiveActiveEventPublishingSpec {
               },
             (state, string) => state + string))
   }
-
-  def conf: Config = ConfigFactory.parseString(s"""
-    akka.loglevel = DEBUG
-    akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    """)
 }
 
 class ActiveActiveEventPublishingSpec
-    extends ScalaTestWithActorTestKit(ActiveActiveEventPublishingSpec.conf)
+    extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
     with LogCapturing {
 
@@ -116,8 +110,7 @@ class ActiveActiveEventPublishingSpec
       probe.expectMessage(Set("one", "three"))
     }
 
-    // FIXME waiting for inmem query side
-    "ignore an already seen event from a replica" in pendingUntilFixed {
+    "ignore an already seen event from a replica" in {
       val actor = spawn(MyActiveActive("myId4", "DC-A", Set("DC-A", "DC-B")))
       val probe = createTestProbe[Any]()
       actor ! MyActiveActive.Add("one", probe.ref)
