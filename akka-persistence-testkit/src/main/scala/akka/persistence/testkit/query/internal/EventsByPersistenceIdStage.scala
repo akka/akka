@@ -10,13 +10,11 @@ import akka.persistence.testkit.{ EventStorage, PersistenceTestKitPlugin }
 import akka.persistence.testkit.EventStorage.{ NoMetadata, WithMetadata }
 import akka.stream.{ Attributes, Outlet, SourceShape }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, GraphStageLogicWithLogging, OutHandler }
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
  */
 @InternalApi
-@silent
 final private[akka] class EventsByPersistenceIdStage(
     persistenceId: String,
     fromSequenceNr: Long,
