@@ -52,6 +52,12 @@ trait JournalCapabilityFlags extends CapabilityFlags {
    */
   protected def supportsSerialization: CapabilityFlag
 
+  /**
+   * When `true` enables tests which check if the Journal stores and returns
+   * metadata for an event
+   */
+  protected def supportsMetadata: CapabilityFlag
+
 }
 //#journal-flags
 
