@@ -7,9 +7,11 @@
 To use Classic Actors, add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
   artifact="akka-actor_$scala.binary.version$"
-  version="$akka.version$"
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-actor" }

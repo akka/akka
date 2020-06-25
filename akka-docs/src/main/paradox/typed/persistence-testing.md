@@ -5,12 +5,14 @@
 To use Akka Persistence TestKit, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group1=com.typesafe.akka
   artifact1=akka-persistence-typed_$scala.binary.version$
-  version1=$akka.version$
+  version1=AkkaVersion
   group2=com.typesafe.akka
   artifact2=akka-persistence-testkit_$scala.binary.version$
-  version2=$akka.version$
+  version2=AkkaVersion
   scope2=test
 }
 
@@ -60,9 +62,11 @@ Persistence testkit allows to check events saved in a storage, emulate storage o
 To use the testkit you need to add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
   artifact="akka-persistence-testkit_$scala.binary.version$"
-  version="$akka.version$"
+  version=AkkaVersion
 }
 
 There are two testkit classes which have similar api:
@@ -194,9 +198,11 @@ the plugins at the same time. To coordinate initialization you can use the `Pers
 `PersistenceInit` is part of `akka-persistence-testkit` and you need to add the dependency to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
   artifact="akka-persistence-testkit_$scala.binary.version$"
-  version="$akka.version$"
+  version=AkkaVersion
 }
 
 Scala

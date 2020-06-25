@@ -16,9 +16,11 @@ To use Akka Split Brain Resolver is part of `akka-cluster` and you probably alre
 dependency included. Otherwise, add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
   artifact=akka-cluster_$scala.binary.version$
-  version=$akka.version$
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-cluster" }

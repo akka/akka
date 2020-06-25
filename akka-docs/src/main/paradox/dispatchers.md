@@ -8,9 +8,11 @@ For the full documentation of this feature and for new projects see @ref:[Dispat
 Dispatchers are part of core Akka, which means that they are part of the akka-actor dependency:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
   artifact="akka-actor_$scala.binary.version$"
-  version="$akka.version$"
+  version=AkkaVersion
 }
 
 <a id="dispatcher-lookup"></a>

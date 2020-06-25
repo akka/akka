@@ -18,9 +18,11 @@ warning or deprecation period. It is also not recommended to use this module in 
 To use reliable delivery, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
   artifact=akka-actor-typed_$scala.binary.version$
-  version=$akka.version$
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -248,9 +250,11 @@ In that case some of these may already have been processed by the previous worke
 To use reliable delivery with Cluster Sharding, add the following module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
   artifact=akka-cluster-sharding-typed_$scala.binary.version$
-  version=$akka.version$
+  version=AkkaVersion
 }
 
 Reliable delivery between a producer actor sending messages to @ref:[sharded](cluster-sharding.md) consumer
@@ -354,9 +358,11 @@ Be aware of that a `DurableProducerQueue` will add a substantial performance ove
 When using the `EventSourcedProducerQueue` the following dependency is needed:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
   artifact=akka-persistence-typed_$scala.binary.version$
-  version=$akka.version$
+  version=AkkaVersion
 } 
 
 You also have to select journal plugin and snapshot store plugin, see 

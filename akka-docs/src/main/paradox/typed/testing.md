@@ -7,9 +7,11 @@ You are viewing the documentation for the new actor APIs, to view the Akka Class
 To use Actor TestKit add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
   artifact=akka-actor-testkit-typed_$scala.binary.version$
-  version=$akka.version$
+  version=AkkaVersion
   scope=test
 }
 

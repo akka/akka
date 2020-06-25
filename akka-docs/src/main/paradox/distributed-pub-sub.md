@@ -8,9 +8,11 @@ For the new API see @ref[Distributed Publish Subscribe in Cluster](./typed/distr
 To use Distributed Publish Subscribe you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
   artifact="akka-cluster-tools_$scala.binary.version$"
-  version="$akka.version$"
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-cluster-tools" }
