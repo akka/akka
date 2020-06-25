@@ -56,7 +56,7 @@ trait WithLogCapturing extends SuiteMixin { this: TestSuite =>
         override def write(b: Int): Unit = oldOut.write(b)
       }) {
         override def println(x: Any): Unit =
-          oldOut.println(prefix + String.valueOf(x).replaceAllLiterally("\n", s"\n$prefix"))
+          oldOut.println(prefix + String.valueOf(x).replace("\n", s"\n$prefix"))
       }
 
     Console.withOut(prefixingOut) {

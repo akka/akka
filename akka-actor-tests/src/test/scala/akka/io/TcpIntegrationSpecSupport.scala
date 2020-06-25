@@ -16,7 +16,7 @@ import akka.io.Inet.SocketOption
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.testkit.SocketUtil.temporaryServerAddress
 
-trait TcpIntegrationSpecSupport { _: AkkaSpec =>
+trait TcpIntegrationSpecSupport { this: AkkaSpec =>
 
   class TestSetup(shouldBindServer: Boolean = true, runClientInExtraSystem: Boolean = true) {
     val clientSystem =

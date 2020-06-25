@@ -8,6 +8,7 @@ import java.util
 import java.util.concurrent.{ ConcurrentHashMap, TimeUnit }
 
 import scala.util.{ Failure, Success, Try }
+import java.lang.Enum
 
 import com.typesafe.config._
 

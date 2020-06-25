@@ -84,7 +84,7 @@ class ActorRefIgnoreSpec extends ScalaTestWithActorTestKit() with AnyWordSpecLik
 
       val failedAsk =
         askMeRef
-          .ask { _: ActorRef[Request] =>
+          .ask { (_: ActorRef[Request]) =>
             Request(testKit.system.ignoreRef) // <- pass the ignoreRef instead, so Future never completes
           }
           .failed

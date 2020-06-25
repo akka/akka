@@ -70,12 +70,12 @@ object BehaviorTestKitSpec {
           context.stop(child)
           Behaviors.same
         case SpawnAdapter =>
-          context.spawnMessageAdapter { r: Reproduce =>
+          context.spawnMessageAdapter { (r: Reproduce) =>
             SpawnAnonymous(r.times)
           }
           Behaviors.same
         case SpawnAdapterWithName(name) =>
-          context.spawnMessageAdapter({ r: Reproduce =>
+          context.spawnMessageAdapter({ (r: Reproduce) =>
             SpawnAnonymous(r.times)
           }, name)
           Behaviors.same

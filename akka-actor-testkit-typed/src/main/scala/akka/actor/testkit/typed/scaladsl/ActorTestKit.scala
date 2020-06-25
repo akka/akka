@@ -253,7 +253,7 @@ final class ActorTestKit private[akka] (
    */
   def stop[T](ref: ActorRef[T], max: FiniteDuration = timeout.duration): Unit =
     try {
-      Await.result(internalTestKitGuardian.ask { x: ActorRef[ActorTestKitGuardian.Ack.type] =>
+      Await.result(internalTestKitGuardian.ask { (x: ActorRef[ActorTestKitGuardian.Ack.type]) =>
         ActorTestKitGuardian.StopActor(ref, x)
       }, max)
     } catch {

@@ -20,7 +20,7 @@ import akka.util.ccompat.JavaConverters._
  * Actor system extensions registry
  */
 @InternalApi
-private[akka] trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
+private[akka] trait ExtensionsImpl extends Extensions { self: ActorSystem[_] with InternalRecipientRef[_] =>
 
   private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]
 
@@ -55,9 +55,8 @@ private[akka] trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
 
     def idFromJavaSingletonAccessor(extensionIdFQCN: String): Try[ExtensionId[Extension]] =
       dynamicAccess.getClassFor[ExtensionId[Extension]](extensionIdFQCN).flatMap[ExtensionId[Extension]] {
-        clazz: Class[_] =>
+        (clazz: Class[_]) =>
           Try {
-
             val singletonAccessor = clazz.getDeclaredMethod("getInstance")
             singletonAccessor.invoke(null).asInstanceOf[ExtensionId[Extension]]
           }

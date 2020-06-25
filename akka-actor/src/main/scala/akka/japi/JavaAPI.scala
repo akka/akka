@@ -258,7 +258,7 @@ object Util {
         if (i.hasNext) {
           val builder = new immutable.VectorBuilder[T]
 
-          do { builder += i.next() } while (i.hasNext)
+          while ({ builder += i.next(); i.hasNext }) ()
 
           builder.result()
         } else EmptyImmutableSeq
