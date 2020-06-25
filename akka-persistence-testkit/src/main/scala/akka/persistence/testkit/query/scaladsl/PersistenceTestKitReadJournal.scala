@@ -8,7 +8,6 @@ import akka.actor.ExtendedActorSystem
 import akka.persistence.query.{ EventEnvelope, Sequence }
 import akka.persistence.query.scaladsl.{ CurrentEventsByPersistenceIdQuery, EventsByPersistenceIdQuery, ReadJournal }
 import akka.persistence.testkit.EventStorage
-import akka.persistence.testkit.EventStorage.{ NoMetadata, WithMetadata }
 import akka.persistence.testkit.internal.InMemStorageExtension
 import akka.persistence.testkit.query.internal.EventsByPersistenceIdStage
 import akka.stream.scaladsl.Source
@@ -22,7 +21,7 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem)
     with EventsByPersistenceIdQuery
     with CurrentEventsByPersistenceIdQuery {
 
-  private final val storage: EventStorage = InMemStorageExtension(system)
+  private val storage: EventStorage = InMemStorageExtension(system)
 
   override def eventsByPersistenceId(
       persistenceId: String,
@@ -35,12 +34,8 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem)
       persistenceId: String,
       fromSequenceNr: Long,
       toSequenceNr: Long): Source[EventEnvelope, NotUsed] = {
-    Source(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue)).map {
-      case (pr, meta) =>
-        EventEnvelope(Sequence(pr.sequenceNr), persistenceId, pr.sequenceNr, pr.payload, pr.timestamp, meta match {
-          case NoMetadata            => None
-          case WithMetadata(payload) => Some(payload)
-        })
+    Source(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue)).map { pr =>
+      EventEnvelope(Sequence(pr.sequenceNr), persistenceId, pr.sequenceNr, pr.payload, pr.timestamp, pr.metadata)
     }
   }
 }
