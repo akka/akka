@@ -2,7 +2,7 @@
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.persistence.typed.scaladsl
+package akka.persistence.typed
 
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -10,24 +10,19 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.eventstream.EventStream
-import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.PublishedEvent
-import akka.persistence.typed.scaladsl.EventPublishingSpec.WowSuchEventSourcingBehavior
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+import akka.persistence.testkit.PersistenceTestKitPlugin
+import akka.persistence.typed.scaladsl.Effect
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
+import akka.serialization.jackson.CborSerializable
 import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventPublishingSpec {
-  def conf: Config = ConfigFactory.parseString(s"""
-    akka.loglevel = INFO
-    akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    """)
 
   object WowSuchEventSourcingBehavior {
     sealed trait Command
     case class StoreThis(data: String, tagIt: Boolean, replyTo: ActorRef[Done]) extends Command
 
-    final case class Event(data: String, tagIt: Boolean)
+    final case class Event(data: String, tagIt: Boolean) extends CborSerializable
 
     def apply(id: PersistenceId): Behavior[Command] =
       EventSourcedBehavior[Command, Event, Set[Event]](
@@ -45,9 +40,11 @@ object EventPublishingSpec {
 }
 
 class EventPublishingSpec
-    extends ScalaTestWithActorTestKit(EventPublishingSpec.conf)
+    extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
     with LogCapturing {
+
+  import EventPublishingSpec._
 
   "EventPublishing support" must {
 
