@@ -24,7 +24,7 @@ distributions of any type of application, including Akka applications.
 Define sbt version in `project/build.properties` file:
 
 ```none
-sbt.version=0.13.13
+sbt.version=1.3.12
 ```
 
 Add [sbt-native-packager](https://github.com/sbt/sbt-native-packager) in `project/plugins.sbt` file:
@@ -43,7 +43,7 @@ to merge all the reference.confs on the build classpath into one.
 
 The plugin configuration might look like this:
 
-```
+```xml
 <plugin>
  <groupId>org.apache.maven.plugins</groupId>
  <artifactId>maven-shade-plugin</artifactId>
@@ -92,7 +92,7 @@ To make sure the `reference.conf` resources are correctly merged, you might
 use the [Shadow plugin](https://imperceptiblethoughts.com/shadow/), which might
 look something like this:
 
-```
+```groovy
 import com.github.jengelman.gradle.plugins.shadow.transformers.AppendingTransformer
 
 plugins {
@@ -105,5 +105,15 @@ shadowJar {
         resource = 'reference.conf'
     }
     with jar
+}
+```
+
+Or when you use the Kotlin DSL:
+
+```kotlin
+tasks.withType<ShadowJar> {
+    val newTransformer = AppendingTransformer()
+    newTransformer.resource = "reference.conf"
+    transformers.add(newTransformer)
 }
 ```
