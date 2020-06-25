@@ -47,8 +47,7 @@ import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
 import akka.stream.{ SharedKillSwitch, SystemMaterializer }
 import akka.stream.scaladsl.{ RestartSource, Sink }
 import akka.stream.typed.scaladsl.ActorFlow
-import akka.util.{ unused, Timeout }
-import org.slf4j.LoggerFactory
+import akka.util.{ unused, OptionVal, Timeout }
 
 /**
  * INTERNAL API
@@ -70,8 +69,6 @@ import org.slf4j.LoggerFactory
  */
 @InternalApi
 private[akka] object Running {
-
-  private val log = LoggerFactory.getLogger(Running.getClass)
 
   trait WithSeqNrAccessible {
     def currentSequenceNumber: Long
@@ -112,7 +109,6 @@ private[akka] object Running {
     val query = PersistenceQuery(system)
     aa.allReplicas.foreach { replica =>
       if (replica != aa.replicaId) {
-        log.debug("Starting replication stream for {}", replica)
         val seqNr = state.seenPerReplica(replica)
         val pid = PersistenceId.replicatedUniqueId(aa.aaContext.entityId, replica)
         // FIXME support different configuration per replica https://github.com/akka/akka/issues/29257
@@ -222,7 +218,7 @@ private[akka] object Running {
         newState,
         event.event,
         "",
-        Some(ReplicatedEventMetaData(event.originReplica, event.originSequenceNr)))
+        OptionVal.Some(ReplicatedEventMetaData(event.originReplica, event.originSequenceNr)))
       val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event.event, newState2.seqNr)
       // FIXME validate this is the correct sequence nr from that replica https://github.com/akka/akka/issues/29259
       val updatedSeen = newState2.seenPerReplica.updated(event.originReplica, event.originSequenceNr)
@@ -256,9 +252,9 @@ private[akka] object Running {
             newState,
             eventToPersist,
             eventAdapterManifest,
-            Some(ReplicatedEventMetaData(aa.replicaId, _currentSequenceNumber)))
+            OptionVal.Some(ReplicatedEventMetaData(aa.replicaId, _currentSequenceNumber)))
         case None =>
-          internalPersist(setup.context, cmd, newState, eventToPersist, eventAdapterManifest, None)
+          internalPersist(setup.context, cmd, newState, eventToPersist, eventAdapterManifest, OptionVal.None)
       }
 
       val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)

@@ -29,7 +29,7 @@ object EventSourcedBehavior {
       queryPluginId: String) {
 
     /**
-     * Should be called on the same thread that will execute the user code
+     * Must only be called on the same thread that will execute the user code
      */
     def setContext(recoveryRunning: Boolean, originReplica: String): Unit = {
       aaContext._recoveryRunning = recoveryRunning

@@ -54,6 +54,8 @@ abstract class JournalSpec(config: Config)
 
   override protected def supportsSerialization: CapabilityFlag = true
 
+  override protected def supportsMetadata: CapabilityFlag = false
+
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     senderProbe = TestProbe()
@@ -112,7 +114,7 @@ abstract class JournalSpec(config: Config)
     probe.expectMsg(WriteMessagesSuccessful)
     (fromSnr to toSnr).foreach { i =>
       probe.expectMsgPF() {
-        case WriteMessageSuccess(PersistentImpl(payload, `i`, `pid`, _, _, `sender`, `writerUuid`, _, None), _) =>
+        case WriteMessageSuccess(PersistentImpl(payload, `i`, `pid`, _, _, `sender`, `writerUuid`, _, _), _) =>
           payload should be(s"a-${i}")
       }
     }
@@ -307,6 +309,35 @@ abstract class JournalSpec(config: Config)
         }
         receiverProbe.expectMsgPF() {
           case RecoverySuccess(highestSequenceNr) => highestSequenceNr should be >= 6L
+        }
+      }
+    }
+
+    optional(flag = supportsMetadata) {
+
+      "return metadata" in {
+        val probe = TestProbe()
+        val event = TestPayload(probe.ref)
+        val meta = "meta-data"
+        val aw =
+          AtomicWrite(
+            PersistentRepr(
+              payload = event,
+              sequenceNr = 1L,
+              persistenceId = pid,
+              sender = Actor.noSender,
+              writerUuid = writerUuid).withMetadata(meta))
+
+        journal ! WriteMessages(List(aw), probe.ref, actorInstanceId)
+        probe.expectMsg(WriteMessagesSuccessful)
+
+        val Pid = pid
+        val WriterUuid = writerUuid
+        probe.expectMsgPF() {
+          case WriteMessageSuccess(
+              PersistentImpl(payload, 1L, Pid, _, _, Actor.noSender, WriterUuid, _, Some(`meta`)),
+              _) =>
+            payload should be(event)
         }
       }
     }

@@ -22,7 +22,6 @@ import akka.persistence.typed.SingleEventSeq
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
-import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.unused
@@ -121,19 +120,19 @@ private[akka] final class ReplayingEvents[C, E, S](
               eventForErrorReporting = OptionVal.Some(event)
               state = state.copy(seqNr = repr.sequenceNr)
 
-              setup.activeActive.foreach((aa: EventSourcedBehavior.ActiveActive) => {
-                val meta = repr.metadata match {
-                  case Some(m) => m.asInstanceOf[ReplicatedEventMetaData]
-                  case None =>
-                    throw new IllegalStateException(
-                      s"Active active enabled but existing event has no metadata. Migration isn't supported yet.")
+              setup.activeActive match {
+                case Some(aa) =>
+                  val meta = repr.metadata match {
+                    case Some(m) => m.asInstanceOf[ReplicatedEventMetaData]
+                    case None =>
+                      throw new IllegalStateException(
+                        s"Active active enabled but existing event has no metadata. Migration isn't supported yet.")
 
-                }
-                aa.setContext(recoveryRunning = true, meta.originReplica)
-              })
-
+                  }
+                  aa.setContext(recoveryRunning = true, meta.originReplica)
+                case None =>
+              }
               val newState = setup.eventHandler(state.state, event)
-
               state = state.copy(state = newState, eventSeenInInterval = true)
             }
 
