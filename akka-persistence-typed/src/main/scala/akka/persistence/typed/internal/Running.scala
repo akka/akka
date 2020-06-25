@@ -298,7 +298,8 @@ private[akka] object Running {
               expectedSequenceNumber)
           this
         } else if (expectedSequenceNumber != event.sequenceNumber) {
-          //
+          // gap in sequence numbers (message lost or query and direct replication out of sync, should heal up by itself
+          // once the query catches up)
           if (log.isDebugEnabled) {
             log.debugN(
               "Ignoring published replicated event with replication seqNr [{}] from replica [{}] " +

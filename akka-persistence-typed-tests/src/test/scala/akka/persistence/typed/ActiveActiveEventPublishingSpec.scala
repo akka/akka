@@ -9,12 +9,14 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.scaladsl.ActiveActiveEventSourcing
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import org.scalatest.wordspec.AnyWordSpecLike
+import scala.concurrent.duration._
 
 object ActiveActiveEventPublishingSpec {
 
@@ -24,20 +26,26 @@ object ActiveActiveEventPublishingSpec {
     case class Get(replyTo: ActorRef[Set[String]]) extends Command
 
     def apply(entityId: String, replicaId: String, allReplicas: Set[String]): Behavior[Command] =
-      ActiveActiveEventSourcing(entityId, replicaId, allReplicas, PersistenceTestKitReadJournal.Identifier)(
-        aactx =>
-          EventSourcedBehavior[Command, String, Set[String]](
-            aactx.persistenceId,
-            Set.empty,
-            (state, command) =>
-              command match {
-                case Add(string, replyTo) =>
-                  Effect.persist(string).thenRun(_ => replyTo ! Done)
-                case Get(replyTo) =>
-                  replyTo ! state
-                  Effect.none
-              },
-            (state, string) => state + string))
+      Behaviors.setup { ctx =>
+        ActiveActiveEventSourcing(entityId, replicaId, allReplicas, PersistenceTestKitReadJournal.Identifier)(
+          aactx =>
+            EventSourcedBehavior[Command, String, Set[String]](
+              aactx.persistenceId,
+              Set.empty,
+              (state, command) =>
+                command match {
+                  case Add(string, replyTo) =>
+                    ctx.log.debug("Persisting [{}]", string)
+                    Effect.persist(string).thenRun { _ =>
+                      ctx.log.debug("Ack:ing [{}]", string)
+                      replyTo ! Done
+                    }
+                  case Get(replyTo) =>
+                    replyTo ! state
+                    Effect.none
+                },
+              (state, string) => state + string))
+      }
   }
 }
 
