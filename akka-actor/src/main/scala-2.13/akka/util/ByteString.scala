@@ -142,10 +142,10 @@ object ByteString {
    */
   def fromByteBuffer(buffer: ByteBuffer): ByteString = apply(buffer)
 
-  val empty: ByteString = CompactByteString(Array.empty[Byte])
+  def empty: ByteString = ByteString1C.empty
 
   /** Java API */
-  val emptyByteString: ByteString = empty
+  def emptyByteString: ByteString = empty
 
   def newBuilder: ByteStringBuilder = new ByteStringBuilder
 
@@ -158,6 +158,8 @@ object ByteString {
   //   }
 
   private[akka] object ByteString1C extends Companion {
+    val empty = new ByteString1C(Array.emptyByteArray)
+
     def fromString(s: String): ByteString1C = new ByteString1C(s.getBytes)
     def apply(bytes: Array[Byte]): ByteString1C = new ByteString1C(bytes)
     val SerializationIdentity = 1.toByte
@@ -273,7 +275,7 @@ object ByteString {
 
   /** INTERNAL API: ByteString backed by exactly one array, with start / end markers */
   private[akka] object ByteString1 extends Companion {
-    val empty: ByteString1 = new ByteString1(Array.empty[Byte])
+    val empty: ByteString1 = new ByteString1(Array.emptyByteArray, 0, 0)
     def fromString(s: String): ByteString1 = apply(s.getBytes)
     def apply(bytes: Array[Byte]): ByteString1 = apply(bytes, 0, bytes.length)
     def apply(bytes: Array[Byte], startIndex: Int, length: Int): ByteString1 =
@@ -292,8 +294,6 @@ object ByteString {
   final class ByteString1 private (private val bytes: Array[Byte], private val startIndex: Int, val length: Int)
       extends ByteString
       with Serializable {
-
-    private def this(bytes: Array[Byte]) = this(bytes, 0, bytes.length)
 
     def apply(idx: Int): Byte = bytes(checkRangeConvert(idx))
 
@@ -1024,7 +1024,7 @@ object CompactByteString {
     }
   }
 
-  val empty: CompactByteString = ByteString.ByteString1C(Array.empty[Byte])
+  def empty: CompactByteString = ByteString.ByteString1C.empty
 }
 
 /**
