@@ -61,13 +61,19 @@ class AABlogExampleSpec
         cmd match {
           case AddPost(_, content, replyTo) =>
             val evt =
-              PostAdded(aa.persistenceId.id, content, state.contentTimestamp.increase(aa.timestamp, aa.replicaId))
+              PostAdded(
+                aa.persistenceId.id,
+                content,
+                state.contentTimestamp.increase(aa.currentTimeMillis(), aa.replicaId))
             Effect.persist(evt).thenRun { _ =>
               replyTo ! AddPostDone(aa.entityId)
             }
           case ChangeBody(_, newContent, replyTo) =>
             val evt =
-              BodyChanged(aa.persistenceId.id, newContent, state.contentTimestamp.increase(aa.timestamp, aa.replicaId))
+              BodyChanged(
+                aa.persistenceId.id,
+                newContent,
+                state.contentTimestamp.increase(aa.currentTimeMillis(), aa.replicaId))
             Effect.persist(evt).thenRun { _ =>
               replyTo ! Done
             }

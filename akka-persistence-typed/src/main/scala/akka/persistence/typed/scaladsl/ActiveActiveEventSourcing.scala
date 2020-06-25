@@ -5,6 +5,7 @@
 package akka.persistence.typed.scaladsl
 
 import akka.persistence.typed.PersistenceId
+import akka.util.WallClock
 
 /**
  * Utility class for comparing timestamp and data center
@@ -34,8 +35,9 @@ final case class LwwTime(timestamp: Long, originDc: String) {
   }
 }
 
+// FIXME docs
 trait ActiveActiveContext {
-  def timestamp: Long
+
   def origin: String
   def concurrent: Boolean
   def replicaId: String
@@ -44,6 +46,7 @@ trait ActiveActiveContext {
   def recoveryRunning: Boolean
   def entityId: String
   def currentTimeMillis(): Long
+
 }
 
 // FIXME, parts of this can be set during initialisation
@@ -51,17 +54,10 @@ trait ActiveActiveContext {
 // https://github.com/akka/akka/issues/29258
 private[akka] class ActiveActiveContextImpl(val entityId: String, val replicaId: String, val allReplicas: Set[String])
     extends ActiveActiveContext {
-  var _timestamp: Long = -1
   var _origin: String = null
-  var _concurrent: Boolean = false
+  var _recoveryRunning: Boolean = false
 
   // FIXME check illegal access https://github.com/akka/akka/issues/29264
-
-  /**
-   * The timestamp of the event. Always increases per data center
-   * Undefined result if called from any where other than an event handler.
-   */
-  override def timestamp: Long = _timestamp
 
   /**
    * The origin of the current event.
@@ -73,13 +69,14 @@ private[akka] class ActiveActiveContextImpl(val entityId: String, val replicaId:
    * Whether the happened concurrently with an event from another replica.
    * Undefined result if called from any where other than an event handler.
    */
-  override def concurrent: Boolean = _concurrent
+  override def concurrent: Boolean = throw new UnsupportedOperationException("TODO")
+
   override def persistenceId: PersistenceId = PersistenceId.replicatedUniqueId(entityId, replicaId)
+
   override def currentTimeMillis(): Long = {
-    // FIXME always increasing
-    System.currentTimeMillis()
+    WallClock.AlwaysIncreasingClock.currentTimeMillis()
   }
-  override def recoveryRunning: Boolean = false
+  override def recoveryRunning: Boolean = _recoveryRunning
 }
 
 object ActiveActiveEventSourcing {
