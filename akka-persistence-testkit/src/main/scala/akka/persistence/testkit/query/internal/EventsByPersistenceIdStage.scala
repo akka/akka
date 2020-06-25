@@ -23,8 +23,6 @@ final private[akka] class EventsByPersistenceIdStage(
   val out: Outlet[EventEnvelope] = Outlet("EventsByPersistenceIdSource")
   override def shape: SourceShape[EventEnvelope] = SourceShape(out)
 
-  println(s"PersistenceId: $persistenceId $fromSequenceNr $toSequenceNr")
-
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
     new GraphStageLogicWithLogging(shape) with OutHandler {
       private var currentSequenceNr = math.max(fromSequenceNr, 1)
@@ -38,7 +36,6 @@ final private[akka] class EventsByPersistenceIdStage(
         val (_, msg) = in
         msg match {
           case PersistenceTestKitPlugin.Write(pid, toSequenceNr) if pid == persistenceId =>
-            println(s"Write notification $pid $toSequenceNr")
             if (toSequenceNr >= currentSequenceNr) {
               tryPush()
             }
@@ -74,7 +71,6 @@ final private[akka] class EventsByPersistenceIdStage(
       }
 
       override def onPull(): Unit = {
-        log.debug("onPull")
         tryPush()
       }
 

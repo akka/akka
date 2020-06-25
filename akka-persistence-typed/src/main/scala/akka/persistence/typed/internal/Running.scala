@@ -42,7 +42,7 @@ import akka.persistence.typed.{
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
 import akka.persistence.typed.internal.InternalProtocol.ReplicatedEventEnvelope
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
-import akka.persistence.typed.scaladsl.{ ActiveActiveContextImpl, Effect }
+import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
 import akka.stream.{ SharedKillSwitch, SystemMaterializer }
 import akka.stream.scaladsl.{ RestartSource, Sink }
@@ -198,12 +198,11 @@ private[akka] object Running {
         envelope)
       envelope.ack ! ReplicatedEventAck
       if (envelope.event.originReplica != activeActive.replicaId && !alreadySeen(envelope.event)) {
-        // FIXME set the details on the context https://github.com/akka/akka/issues/29258
-        activeActive.aaContext.asInstanceOf[ActiveActiveContextImpl]._origin = envelope.event.originReplica
-        setup.log.info("Saving event as first time")
+        activeActive.setContext(false, envelope.event.originReplica)
+        setup.log.debug("Saving event as first time")
         handleExternalReplicatedEventPersist(envelope.event)
       } else {
-        setup.log.info("Filtering event as already seen")
+        setup.log.debug("Filtering event as already seen")
         this
       }
     }
@@ -235,19 +234,15 @@ private[akka] object Running {
         Nil)
     }
 
-    private def setAAContext(): Unit = {
-      setup.activeActive.foreach { aa =>
-        aa.aaContext.asInstanceOf[ActiveActiveContextImpl]._origin = aa.replicaId
-      }
-    }
-
     private def handleEventPersist(event: E, cmd: Any, sideEffects: immutable.Seq[SideEffect[S]]) = {
       // apply the event before persist so that validation exception is handled before persisting
       // the invalid event, in case such validation is implemented in the event handler.
       // also, ensure that there is an event handler for each single event
       _currentSequenceNumber = state.seqNr + 1
 
-      setAAContext()
+      setup.activeActive.foreach { aa =>
+        aa.setContext(recoveryRunning = false, aa.replicaId)
+      }
       val newState: RunningState[S] = state.applyEvent(setup, event)
 
       val eventToPersist = adaptEvent(event)

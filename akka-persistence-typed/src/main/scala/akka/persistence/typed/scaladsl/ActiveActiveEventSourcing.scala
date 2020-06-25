@@ -54,7 +54,7 @@ trait ActiveActiveContext {
 private[akka] class ActiveActiveContextImpl(val entityId: String, val replicaId: String, val allReplicas: Set[String])
     extends ActiveActiveContext {
   var _origin: String = null
-  var _recoveryRunning = false
+  var _recoveryRunning: Boolean = false
 
   // FIXME check illegal access https://github.com/akka/akka/issues/29264
 
