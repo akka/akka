@@ -79,7 +79,7 @@ final class EventEnvelope(
   override def equals(obj: Any): Boolean = obj match {
     case other: EventEnvelope =>
       offset == other.offset && persistenceId == other.persistenceId && sequenceNr == other.sequenceNr &&
-      event == other.event // timestamp not included in equals for backwards compatibility
+      event == other.event // timestamp && metadata not included in equals for backwards compatibility
     case _ => false
   }
 
