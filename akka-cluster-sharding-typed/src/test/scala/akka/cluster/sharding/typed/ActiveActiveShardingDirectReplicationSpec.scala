@@ -12,7 +12,10 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.internal.PublishedEventImpl
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class ActiveActiveShardingReplicationSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
+class ActiveActiveShardingDirectReplicationSpec
+    extends ScalaTestWithActorTestKit
+    with AnyWordSpecLike
+    with LogCapturing {
 
   "Active active sharding replication" must {
 
@@ -22,13 +25,13 @@ class ActiveActiveShardingReplicationSpec extends ScalaTestWithActorTestKit with
       val replicaCProbe = createTestProbe[Any]()
 
       val replicationActor = spawn(
-        ActiveActiveShardingReplication(
+        ActiveActiveShardingDirectReplication(
           "ReplicaA",
           replicaShardingProxies =
             Map("ReplicaA" -> replicaAProbe.ref, "ReplicaB" -> replicaBProbe.ref, "ReplicaC" -> replicaCProbe.ref)))
 
       val upProbe = createTestProbe[Done]()
-      replicationActor ! ActiveActiveShardingReplication.VerifyStarted(upProbe.ref)
+      replicationActor ! ActiveActiveShardingDirectReplication.VerifyStarted(upProbe.ref)
       upProbe.receiveMessage() // not bullet proof wrt to subscription being complete but good enough
 
       val event = PublishedEventImpl(

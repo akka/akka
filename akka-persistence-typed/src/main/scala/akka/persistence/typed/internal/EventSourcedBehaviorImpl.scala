@@ -302,7 +302,6 @@ private[akka] final case class PublishedEventImpl(
     case _         => Set.empty
   }
 
-  // FIXME we need to deal with EventWithMetadata here as well when that is merged
   def event: Any = payload match {
     case Tagged(event, _) => event
     case _                => payload

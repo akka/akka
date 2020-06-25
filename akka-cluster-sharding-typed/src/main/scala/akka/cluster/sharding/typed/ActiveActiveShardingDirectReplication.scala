@@ -24,15 +24,15 @@ import scala.collection.JavaConverters._
  * sharding on).
  *
  * Subscribes to locally written events through the event stream and sends the seen events to all the sharded replicas
- * which can then fast forward their cross-replica event streams to improve latency but still allowing slower poll
- * frequency for the cross replica queries. Note that since message delivery is at-most-once this can not be the only
+ * which can then fast forward their cross-replica event streams to improve latency while allowing less frequent poll
+ * for the cross replica queries. Note that since message delivery is at-most-once this can not be the only
  * channel for replica events - the entities must still tail events from the journals of other replicas.
  *
- * The events are forwarded as [[akka.cluster.sharding.typed.ShardingEnvelope]] this will work out of the box if the the
- * default shard id and entity id extractors are used, if custom extractors are used they must also handle `ShardingEnvelope`.
+ * The events are forwarded as [[akka.cluster.sharding.typed.ShardingEnvelope]] this will work out of the box both
+ * by default and with a custom extractor since the envelopes are handled internally.
  */
 @ApiMayChange
-object ActiveActiveShardingReplication {
+object ActiveActiveShardingDirectReplication {
 
   /**
    * Not for user extension
@@ -69,11 +69,10 @@ object ActiveActiveShardingReplication {
 
         Behaviors.receiveMessagePartial {
           case event: PublishedEvent =>
-            if (context.log.isTraceEnabled)
-              context.log.trace(
-                "Forwarding event for persistence id [{}] sequence nr [{}] to replicas",
-                event.persistenceId,
-                event.sequenceNumber)
+            context.log.trace(
+              "Forwarding event for persistence id [{}] sequence nr [{}] to replicas",
+              event.persistenceId,
+              event.sequenceNumber)
             replicaShardingProxies.foreach {
               case (replica, proxy) =>
                 val envelopedEvent = ShardingEnvelope(event.persistenceId.id, event)

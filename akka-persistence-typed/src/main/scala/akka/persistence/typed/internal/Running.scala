@@ -148,8 +148,7 @@ private[akka] object Running {
 
         source.runWith(Sink.ignore)(SystemMaterializer(system).materializer)
 
-        // FIXME support from journal to fast forward
-        // (how can we support/detect both this and journal ffwd in a backwards compatible way and fallback)
+        // FIXME support from journal to fast forward https://github.com/akka/akka/issues/29311
         state.copy(
           replicationControl =
             state.replicationControl.updated(replicaId, new ReplicationStreamControl {
@@ -275,7 +274,6 @@ private[akka] object Running {
         log.warn("Ignoring published replicated event for the wrong actor [{}]", event.persistenceId)
         this
       } else if (originReplicaId == activeActive.replicaId) {
-        // FIXME MultiDC handled this differently not sure why we'd need our own published events?
         if (log.isDebugEnabled)
           log.debug(
             "Ignoring published replicated event with seqNr [{}] from our own replica id [{}]",
