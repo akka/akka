@@ -2,12 +2,12 @@
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.persistence.typed.internal
+package akka.util
+
 import java.util.concurrent.atomic.AtomicLong
 import java.util.function.LongUnaryOperator
 
 import akka.annotation.InternalApi
-import akka.persistence.typed.WallClock
 
 /**
  * Always increasing wall clock time.

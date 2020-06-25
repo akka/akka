@@ -4,7 +4,8 @@
 
 package akka.persistence.typed.scaladsl
 
-import akka.persistence.typed.{ PersistenceId, WallClock }
+import akka.persistence.typed.PersistenceId
+import akka.util.WallClock
 
 /**
  * Utility class for comparing timestamp and data center
