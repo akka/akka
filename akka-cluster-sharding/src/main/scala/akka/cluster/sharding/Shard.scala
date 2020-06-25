@@ -366,6 +366,8 @@ private[akka] object Shard {
     def pendingRememberedEntitiesExist(): Boolean = !remembering.isEmpty
 
     def entityIdExists(id: EntityId): Boolean = entities.get(id) != null
+
+    @InternalStableApi
     def size: Int = entities.size
 
     override def toString: EntityId = entities.toString
@@ -418,6 +420,7 @@ private[akka] class Shard(
 
   private val flightRecorder = ShardingFlightRecorder(context.system)
 
+  @InternalStableApi
   private val entities = new Entities(log, settings.rememberEntities, verboseDebug)
 
   private var lastMessageTimestamp = Map.empty[EntityId, Long]
