@@ -313,7 +313,9 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
     assemblyShadeRules in assembly := Seq(
         ShadeRule
           .rename("com.google.protobuf.**" -> "akka.protobufv3.internal.@1")
-          .inLibrary(Dependencies.Compile.Provided.protobufRuntime)),
+          // https://github.com/sbt/sbt-assembly/issues/400
+          .inLibrary(Dependencies.Compile.Provided.protobufRuntime)
+          .inProject),
     assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, includeBin = false),
     autoScalaLibrary := false, // do not include scala dependency in pom
     exportJars := true, // in dependent projects, use assembled and shaded jar
