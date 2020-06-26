@@ -245,7 +245,7 @@ private[akka] object Running {
     }
 
     def onPublishedEvent(state: Running.RunningState[S], event: PublishedEventImpl): Behavior[InternalProtocol] = {
-      setup.activeActive match {
+      val newBehavior: Behavior[InternalProtocol] = setup.activeActive match {
         case None =>
           setup.log
             .warn("Received published event for [{}] but not an active active actor, dropping", event.persistenceId)
@@ -260,6 +260,7 @@ private[akka] object Running {
               onPublishedEvent(state, activeActive, replicaId, event)
           }
       }
+      tryUnstashOne(newBehavior)
     }
 
     private def onPublishedEvent(

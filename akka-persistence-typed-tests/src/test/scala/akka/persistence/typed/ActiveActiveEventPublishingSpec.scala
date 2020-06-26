@@ -16,7 +16,6 @@ import akka.persistence.typed.scaladsl.ActiveActiveEventSourcing
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import org.scalatest.wordspec.AnyWordSpecLike
-import scala.concurrent.duration._
 
 object ActiveActiveEventPublishingSpec {
 
@@ -131,7 +130,7 @@ class ActiveActiveEventPublishingSpec
         1L,
         "two",
         System.currentTimeMillis())
-      // simulate another published event from another replica
+      // simulate another published event from that replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
         Some("DC-B"),
         PersistenceId.replicatedUniqueId("myId4", "DC-B"),
