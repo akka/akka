@@ -522,7 +522,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
     (handOverRetries, takeOverRetries)
   }
 
-  // started when when self member is Up
+  // started when self member is Up
   var oldestChangedBuffer: ActorRef = _
   // Previous GetNext request delivered event and new GetNext is to be sent
   var oldestChangedReceived = true
