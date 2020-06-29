@@ -482,7 +482,7 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     clusterSharding % "compile->compile;compile->CompileJdk9;multi-jvm->multi-jvm",
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
-    persistenceTyped % "test->test",
+    persistenceTyped % "optional->compile;test->test",
     persistenceTestkit % "test->test",
     remote % "compile->CompileJdk9;test->test",
     remoteTests % "test->test",
