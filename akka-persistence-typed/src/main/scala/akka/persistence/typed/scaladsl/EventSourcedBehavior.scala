@@ -12,6 +12,7 @@ import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.InterceptorImpl
 import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.scaladsl.ActorContext
+import akka.annotation.ApiMayChange
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
@@ -21,8 +22,9 @@ import akka.persistence.typed.internal._
 
 object EventSourcedBehavior {
 
+  // FIXME move to internal
   @InternalApi
-  private[akka] case class ActiveActive(
+  private[akka] final case class ActiveActive(
       replicaId: String,
       allReplicas: Set[String],
       aaContext: ActiveActiveContextImpl,
@@ -237,4 +239,10 @@ object EventSourcedBehavior {
    * By default, snapshots and events are recovered.
    */
   def withRecovery(recovery: Recovery): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Publish events to the system event stream as [[akka.persistence.typed.PublishedEvent]] after they have been persisted
+   */
+  @ApiMayChange
+  def withEventPublishing(): EventSourcedBehavior[Command, Event, State]
 }
