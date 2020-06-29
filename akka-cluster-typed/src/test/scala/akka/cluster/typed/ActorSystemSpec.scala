@@ -78,10 +78,10 @@ class ActorSystemSpec
 
       akka.actor {
         serializers {
-          test = "akka.cluster.typed.ActorSystemSpec$$TestSerializer"
+          test = "akka.cluster.typed.ActorSystemSpec$TestSerializer"
         }
         serialization-bindings {
-          "akka.cluster.typed.ActorSystemSpec$$TestMessage" = test
+          "akka.cluster.typed.ActorSystemSpec$TestMessage" = test
         }
       }
     """)
