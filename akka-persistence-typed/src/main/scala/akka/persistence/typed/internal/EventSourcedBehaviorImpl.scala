@@ -274,10 +274,30 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 }
 
 // FIXME serializer
+/**
+ * @param originReplica Where the event originally was created
+ * @param originSequenceNr The original sequenceNr in the origin DC
+ * @param version The version with which the event was persisted at the different DC. The same event will have different version vectors
+ *                at each location as they are received at different times
+ */
 @InternalApi
-private[akka] final case class ReplicatedEventMetaData(originReplica: String, originSequenceNr: Long)
+private[akka] final case class ReplicatedEventMetaData(
+    originReplica: String,
+    originSequenceNr: Long,
+    version: VersionVector)
+
+/**
+ * An event replicated from a different replica.
+ *
+ * The version is for when it was persisted at the other replica. At the current replica it will be
+ * merged with the current local version.
+ */
 @InternalApi
-private[akka] final case class ReplicatedEvent[E](event: E, originReplica: String, originSequenceNr: Long)
+private[akka] final case class ReplicatedEvent[E](
+    event: E,
+    originReplica: String,
+    originSequenceNr: Long,
+    originVersion: VersionVector)
 @InternalApi
 private[akka] case object ReplicatedEventAck
 

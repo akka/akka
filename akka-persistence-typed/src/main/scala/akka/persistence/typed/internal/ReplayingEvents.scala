@@ -50,7 +50,9 @@ private[akka] object ReplayingEvents {
       eventSeenInInterval: Boolean,
       toSeqNr: Long,
       receivedPoisonPill: Boolean,
-      recoveryStartTime: Long)
+      recoveryStartTime: Long,
+      version: VersionVector,
+      seenPerReplica: Map[String, Long])
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: ReplayingState[S]): Behavior[InternalProtocol] =
     Behaviors.setup { _ =>
@@ -121,17 +123,22 @@ private[akka] final class ReplayingEvents[C, E, S](
               eventForErrorReporting = OptionVal.Some(event)
               state = state.copy(seqNr = repr.sequenceNr)
 
-              setup.activeActive match {
+              state = setup.activeActive match {
                 case Some(aa) =>
                   val meta = repr.metadata match {
                     case Some(m) => m.asInstanceOf[ReplicatedEventMetaData]
+
                     case None =>
                       throw new IllegalStateException(
                         s"Active active enabled but existing event has no metadata. Migration isn't supported yet.")
 
                   }
                   aa.setContext(recoveryRunning = true, meta.originReplica)
+                  state.copy(
+                    version = meta.version,
+                    seenPerReplica = state.seenPerReplica.updated(meta.originReplica, meta.originSequenceNr))
                 case None =>
+                  state
               }
               val newState = setup.eventHandler(state.state, event)
               state = state.copy(state = newState, eventSeenInInterval = true)
@@ -253,6 +260,7 @@ private[akka] final class ReplayingEvents[C, E, S](
       if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)
         Behaviors.stopped
       else {
+        // FIXME, this isn't right, it should be updated per event replayed
         val seenPerReplica: Map[String, Long] =
           setup.activeActive
             .map(aa => aa.allReplicas.filterNot(_ == aa.replicaId).map(replica => replica -> 0L).toMap)
@@ -264,8 +272,9 @@ private[akka] final class ReplayingEvents[C, E, S](
               seqNr = state.seqNr,
               state = state.state,
               receivedPoisonPill = state.receivedPoisonPill,
+              state.version,
               seenPerReplica = seenPerReplica,
-              replicationControl = Map.empty))
+              replicationControl = Map.empty)) // FIXME set the right seen per replica, write a test that checks events are filtered after a replay first
 
         tryUnstashOne(running)
       }

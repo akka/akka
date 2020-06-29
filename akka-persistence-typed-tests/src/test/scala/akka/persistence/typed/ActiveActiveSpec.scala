@@ -144,5 +144,48 @@ class ActiveActiveSpec
     "persist all" in {
       pending
     }
+
+    "replicate alternate events" in {
+      val entityId = nextEntityId
+      val probe = createTestProbe[Done]()
+      val r1 = spawn(testBehavior(entityId, "R1"))
+      val r2 = spawn(testBehavior(entityId, "R2"))
+      r1 ! StoreMe("from r1", probe.ref) // R1 0 R2 0
+      r2 ! StoreMe("from r2", probe.ref) // R2 0 R1 0 (probably, R1 could be 1)
+      eventually {
+        val probe = createTestProbe[State]()
+        r1 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "from r2")
+      }
+      eventually {
+        val probe = createTestProbe[State]()
+        r2 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "from r2")
+      }
+
+      r1 ! StoreMe("from r1 2", probe.ref) // R1 1 R2 1
+      r1 ! StoreMe("from r1 3", probe.ref) // R2 2 R2 1
+      eventually {
+        val probe = createTestProbe[State]()
+        r2 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "from r2", "from r1 2", "from r1 3")
+      }
+
+      r2 ! StoreMe("from r2 2", probe.ref)
+      r2 ! StoreMe("from r2 3", probe.ref)
+      eventually {
+        val probe = createTestProbe[State]()
+        r1 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set(
+          "from r1",
+          "from r2",
+          "from r1 2",
+          "from r1 3",
+          "from r2 2",
+          "from r2 3")
+      }
+
+      1 shouldEqual 2
+    }
   }
 }

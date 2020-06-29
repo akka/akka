@@ -178,7 +178,9 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
         eventSeenInInterval = false,
         toSnr,
         receivedPoisonPill,
-        System.nanoTime()))
+        System.nanoTime(),
+        VersionVector.empty,
+        Map.empty)) // FIXME https://github.com/akka/akka/issues/29286
   }
 
 }
