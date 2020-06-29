@@ -31,6 +31,7 @@ import akka.actor.Dropped
 import akka.dispatch.Dispatchers
 import akka.dispatch.sysmsg.DeathWatchNotification
 import akka.dispatch.sysmsg.SystemMessage
+import akka.dispatch.sysmsg.Unwatch
 import akka.event.Logging
 import akka.remote.DaemonMsgCreate
 import akka.remote.PriorityMessage
@@ -355,11 +356,20 @@ private[remote] class Association(
       deadletters ! env
     }
 
+    def shouldSendUnwatch(): Boolean =
+      !transport.provider.settings.HasCluster || !transport.system.isTerminating()
+
     def shouldSendDeathWatchNotification(d: DeathWatchNotification): Boolean =
       d.addressTerminated || !transport.provider.settings.HasCluster || !transport.system.isTerminating()
 
     def sendSystemMessage(outboundEnvelope: OutboundEnvelope): Unit = {
       outboundEnvelope.message match {
+        case u: Unwatch if shouldSendUnwatch() =>
+          log.debug(
+            "Not sending Unwatch of {} to {} because it will be notified when this member " +
+            "has been removed from Cluster.",
+            u.watcher,
+            u.watchee)
         case d: DeathWatchNotification if !shouldSendDeathWatchNotification(d) =>
           log.debug(
             "Not sending DeathWatchNotification of {} to {} because it will be notified when this member " +
