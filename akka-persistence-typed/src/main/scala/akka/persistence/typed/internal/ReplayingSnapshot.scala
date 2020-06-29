@@ -61,6 +61,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
           case JournalResponse(r)              => onJournalResponse(r)
           case RecoveryTickEvent(snapshot)     => onRecoveryTick(snapshot)
           case evt: ReplicatedEventEnvelope[E] => onReplicatedEvent(evt)
+          case pe: PublishedEventImpl          => onPublishedEvent(pe)
           case cmd: IncomingCommand[C] =>
             if (receivedPoisonPill) {
               if (setup.settings.logOnStashing)
@@ -125,6 +126,10 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
 
   def onReplicatedEvent(evt: InternalProtocol.ReplicatedEventEnvelope[E]): Behavior[InternalProtocol] = {
     stashInternal(evt)
+  }
+
+  def onPublishedEvent(event: PublishedEventImpl): Behavior[InternalProtocol] = {
+    stashInternal(event)
   }
 
   def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {

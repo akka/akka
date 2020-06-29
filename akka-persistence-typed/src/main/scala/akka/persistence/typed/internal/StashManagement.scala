@@ -62,7 +62,7 @@ private[akka] trait StashManagement[C, E, S] {
   }
 
   /**
-   * `tryUnstashOne` is called at the end of processing each command or when persist is completed
+   * `tryUnstashOne` is called at the end of processing each command, published event, or when persist is completed
    */
   protected def tryUnstashOne(behavior: Behavior[InternalProtocol]): Behavior[InternalProtocol] = {
     val buffer =

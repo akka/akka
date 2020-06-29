@@ -93,6 +93,7 @@ private[akka] final class ReplayingEvents[C, E, S](
       case SnapshotterResponse(r)          => onSnapshotterResponse(r)
       case RecoveryTickEvent(snap)         => onRecoveryTick(snap)
       case evt: ReplicatedEventEnvelope[E] => onInternalCommand(evt)
+      case pe: PublishedEventImpl          => onInternalCommand(pe)
       case cmd: IncomingCommand[C]         => onInternalCommand(cmd)
       case get: GetState[S @unchecked]     => stashInternal(get)
       case RecoveryPermitGranted           => Behaviors.unhandled // should not happen, we already have the permit
@@ -259,7 +260,12 @@ private[akka] final class ReplayingEvents[C, E, S](
         val running =
           Running[C, E, S](
             setup,
-            Running.RunningState[S](state.seqNr, state.state, state.receivedPoisonPill, seenPerReplica))
+            Running.RunningState[S](
+              seqNr = state.seqNr,
+              state = state.state,
+              receivedPoisonPill = state.receivedPoisonPill,
+              seenPerReplica = seenPerReplica,
+              replicationControl = Map.empty))
 
         tryUnstashOne(running)
       }
