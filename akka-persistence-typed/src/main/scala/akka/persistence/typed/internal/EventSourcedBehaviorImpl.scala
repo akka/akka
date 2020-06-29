@@ -4,6 +4,7 @@
 
 package akka.persistence.typed.internal
 
+import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -24,6 +25,7 @@ import akka.persistence.JournalProtocol
 import akka.persistence.Recovery
 import akka.persistence.RecoveryPermitter
 import akka.persistence.SnapshotProtocol
+import akka.persistence.journal.Tagged
 import akka.persistence.typed.DeleteEventsCompleted
 import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeleteSnapshotsCompleted
@@ -32,6 +34,7 @@ import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.NoOpEventAdapter
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
@@ -89,7 +92,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     retention: RetentionCriteria = RetentionCriteria.disabled,
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
     override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty,
-    activeActive: Option[ActiveActive] = None)
+    activeActive: Option[ActiveActive] = None,
+    publishEvents: Boolean = false)
     extends EventSourcedBehavior[Command, Event, State] {
 
   import EventSourcedBehaviorImpl.WriterIdentity
@@ -153,7 +157,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             holdingRecoveryPermit = false,
             settings = settings,
             stashState = stashState,
-            activeActive = activeActive)
+            activeActive = activeActive,
+            publishEvents = publishEvents)
 
           // needs to accept Any since we also can get messages from the journal
           // not part of the user facing Command protocol
@@ -241,6 +246,10 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     copy(recovery = recovery.toClassic)
   }
 
+  override def withEventPublishing(): EventSourcedBehavior[Command, Event, State] = {
+    copy(publishEvents = true)
+  }
+
   override private[akka] def withActiveActive(
       context: ActiveActiveContextImpl,
       id: String,
@@ -261,6 +270,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   final case class ReplicatedEventEnvelope[E](event: ReplicatedEvent[E], ack: ActorRef[ReplicatedEventAck.type])
       extends InternalProtocol
+
 }
 
 // FIXME serializer
@@ -270,3 +280,31 @@ private[akka] final case class ReplicatedEventMetaData(originReplica: String, or
 private[akka] final case class ReplicatedEvent[E](event: E, originReplica: String, originSequenceNr: Long)
 @InternalApi
 private[akka] case object ReplicatedEventAck
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] final case class PublishedEventImpl(
+    replicaId: Option[String],
+    persistenceId: PersistenceId,
+    sequenceNumber: Long,
+    payload: Any,
+    timestamp: Long)
+    extends PublishedEvent
+    with InternalProtocol {
+  import scala.compat.java8.OptionConverters._
+
+  override def getReplicaId: Optional[String] = replicaId.asJava
+
+  def tags: Set[String] = payload match {
+    case t: Tagged => t.tags
+    case _         => Set.empty
+  }
+
+  def event: Any = payload match {
+    case Tagged(event, _) => event
+    case _                => payload
+  }
+
+}

@@ -4,13 +4,17 @@
 
 package akka.persistence.typed.internal
 
+import java.util.concurrent.atomic.AtomicReference
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.actor.UnhandledMessage
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Signal }
+import akka.actor.typed.eventstream.EventStream
+import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.event.Logging
 import akka.persistence.DeleteMessagesFailure
 import akka.persistence.DeleteMessagesSuccess
 import akka.persistence.DeleteSnapshotFailure
@@ -44,10 +48,14 @@ import akka.persistence.typed.internal.InternalProtocol.ReplicatedEventEnvelope
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
+import akka.stream.scaladsl.Keep
 import akka.stream.{ SharedKillSwitch, SystemMaterializer }
 import akka.stream.scaladsl.{ RestartSource, Sink }
 import akka.stream.typed.scaladsl.ActorFlow
-import akka.util.{ unused, OptionVal, Timeout }
+import akka.util.Helpers
+import akka.util.OptionVal
+import akka.util.unused
+import akka.util.Timeout
 
 /**
  * INTERNAL API
@@ -79,6 +87,7 @@ private[akka] object Running {
       state: State,
       receivedPoisonPill: Boolean,
       seenPerReplica: Map[String, Long],
+      replicationControl: Map[String, ReplicationStreamControl],
       replicationKillSwitch: Option[SharedKillSwitch] = None) {
 
     def nextSequenceNr(): RunningState[State] =
@@ -95,31 +104,38 @@ private[akka] object Running {
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] = {
     val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
-    setup.activeActive.foreach(aa => startReplicationStream(setup.context.system, setup.context.self, state, aa))
-    new running.HandlingCommands(state)
+    val initialState = setup.activeActive match {
+      case Some(aa) => startReplicationStream(setup, state, aa)
+      case None     => state
+    }
+    new running.HandlingCommands(initialState)
   }
 
-  def startReplicationStream[E, S](
-      system: ActorSystem[_],
-      ref: ActorRef[InternalProtocol],
+  def startReplicationStream[C, E, S](
+      setup: BehaviorSetup[C, E, S],
       state: RunningState[S],
-      aa: ActiveActive): Unit = {
+      aa: ActiveActive): RunningState[S] = {
     import scala.concurrent.duration._
+    val system = setup.context.system
+    val ref = setup.context.self
 
     val query = PersistenceQuery(system)
-    aa.allReplicas.foreach { replica =>
-      if (replica != aa.replicaId) {
-        val seqNr = state.seenPerReplica(replica)
-        val pid = PersistenceId.replicatedUniqueId(aa.aaContext.entityId, replica)
+    aa.allReplicas.foldLeft(state) { (state, replicaId) =>
+      if (replicaId != aa.replicaId) {
+        val seqNr = state.seenPerReplica(replicaId)
+        val pid = PersistenceId.replicatedUniqueId(aa.aaContext.entityId, replicaId)
         // FIXME support different configuration per replica https://github.com/akka/akka/issues/29257
         val replication = query.readJournalFor[EventsByPersistenceIdQuery](aa.queryPluginId)
 
         implicit val timeout = Timeout(30.seconds)
 
-        // FIXME config
+        val controlRef = new AtomicReference[ReplicationStreamControl]()
+
         val source = RestartSource.withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
           replication
             .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
+            .viaMat(new FastForwardingFilter)(Keep.right)
+            .mapMaterializedValue(streamControl => controlRef.set(streamControl))
             .via(ActorFlow.ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) {
               (eventEnvelope, replyTo) =>
                 // Need to handle this not being available migration from non-active-active is supported
@@ -131,6 +147,30 @@ private[akka] object Running {
         }
 
         source.runWith(Sink.ignore)(SystemMaterializer(system).materializer)
+
+        // FIXME support from journal to fast forward https://github.com/akka/akka/issues/29311
+        state.copy(
+          replicationControl =
+            state.replicationControl.updated(replicaId, new ReplicationStreamControl {
+              override def fastForward(sequenceNumber: Long): Unit = {
+                // (logging is safe here since invoked on message receive
+                OptionVal(controlRef.get) match {
+                  case OptionVal.Some(control) =>
+                    if (setup.log.isDebugEnabled)
+                      setup.log.debug("Fast forward replica [{}] to [{}]", replicaId, sequenceNumber)
+                    control.fastForward(sequenceNumber)
+                  case OptionVal.None =>
+                    // stream not started yet, ok, fast forward is an optimization
+                    if (setup.log.isDebugEnabled)
+                      setup.log.debug(
+                        "Ignoring fast forward replica [{}] to [{}], stream not started yet",
+                        replicaId,
+                        sequenceNumber)
+                }
+              }
+            }))
+      } else {
+        state
       }
     }
   }
@@ -163,6 +203,7 @@ private[akka] object Running {
     def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
       case IncomingCommand(c: C @unchecked)          => onCommand(state, c)
       case re: ReplicatedEventEnvelope[E @unchecked] => onReplicatedEvent(state, re, setup.activeActive.get)
+      case pe: PublishedEventImpl                    => onPublishedEvent(state, pe)
       case JournalResponse(r)                        => onDeleteEventsJournalResponse(r, state.state)
       case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, state.state)
       case get: GetState[S @unchecked]               => onGetState(get)
@@ -200,6 +241,91 @@ private[akka] object Running {
       } else {
         setup.log.debug("Filtering event as already seen")
         this
+      }
+    }
+
+    def onPublishedEvent(state: Running.RunningState[S], event: PublishedEventImpl): Behavior[InternalProtocol] = {
+      val newBehavior: Behavior[InternalProtocol] = setup.activeActive match {
+        case None =>
+          setup.log
+            .warn("Received published event for [{}] but not an active active actor, dropping", event.persistenceId)
+          this
+
+        case Some(activeActive) =>
+          event.replicaId match {
+            case None =>
+              setup.log.warn("Received published event for [{}] but with no replica id, dropping")
+              this
+            case Some(replicaId) =>
+              onPublishedEvent(state, activeActive, replicaId, event)
+          }
+      }
+      tryUnstashOne(newBehavior)
+    }
+
+    private def onPublishedEvent(
+        state: Running.RunningState[S],
+        activeActive: ActiveActive,
+        originReplicaId: String,
+        event: PublishedEventImpl): Behavior[InternalProtocol] = {
+      val log = setup.log
+      val separatorIndex = event.persistenceId.id.indexOf(PersistenceId.DefaultSeparator)
+      val idPrefix = event.persistenceId.id.substring(0, separatorIndex)
+      if (!setup.persistenceId.id.startsWith(idPrefix)) {
+        log.warn("Ignoring published replicated event for the wrong actor [{}]", event.persistenceId)
+        this
+      } else if (originReplicaId == activeActive.replicaId) {
+        if (log.isDebugEnabled)
+          log.debug(
+            "Ignoring published replicated event with seqNr [{}] from our own replica id [{}]",
+            event.sequenceNumber,
+            originReplicaId)
+        this
+      } else if (!activeActive.allReplicas.contains(originReplicaId)) {
+        log.warnN(
+          "Received published replicated event from replica [{}], which is unknown. Active active must be set up with a list of all replicas (known are [{}]).",
+          originReplicaId,
+          activeActive.allReplicas.mkString(", "))
+        this
+      } else {
+        val expectedSequenceNumber = state.seenPerReplica(originReplicaId) + 1
+        if (expectedSequenceNumber > event.sequenceNumber) {
+          // already seen
+          if (log.isDebugEnabled)
+            log.debugN(
+              "Ignoring published replicated event with seqNr [{}] from replica [{}] because it was already seen ([{}])",
+              event.sequenceNumber,
+              originReplicaId,
+              expectedSequenceNumber)
+          this
+        } else if (expectedSequenceNumber != event.sequenceNumber) {
+          // gap in sequence numbers (message lost or query and direct replication out of sync, should heal up by itself
+          // once the query catches up)
+          if (log.isDebugEnabled) {
+            log.debugN(
+              "Ignoring published replicated event with replication seqNr [{}] from replica [{}] " +
+              "because expected replication seqNr was [{}] ",
+              event.sequenceNumber,
+              event.replicaId,
+              expectedSequenceNumber)
+          }
+          this
+        } else {
+          if (log.isTraceEnabled)
+            log.traceN(
+              "Received published replicated event [{}] with timestamp [{}] from replica [{}] seqNr [{}]",
+              Logging.simpleName(event.event.getClass),
+              Helpers.timestamp(event.timestamp),
+              originReplicaId,
+              event.sequenceNumber)
+
+          // fast forward stream for source replica
+          state.replicationControl.get(originReplicaId).foreach(_.fastForward(event.sequenceNumber))
+
+          handleExternalReplicatedEventPersist(
+            ReplicatedEvent(event.event.asInstanceOf[E], originReplicaId, event.sequenceNumber))
+        }
+
       }
     }
 
@@ -366,6 +492,7 @@ private[akka] object Running {
         case JournalResponse(r)                        => onJournalResponse(r)
         case in: IncomingCommand[C @unchecked]         => onCommand(in)
         case re: ReplicatedEventEnvelope[E @unchecked] => onReplicatedEvent(re)
+        case pe: PublishedEventImpl                    => onPublishedEvent(pe)
         case get: GetState[S @unchecked]               => stashInternal(get)
         case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, visibleState.state)
         case RecoveryTickEvent(_)                      => Behaviors.unhandled
@@ -391,6 +518,14 @@ private[akka] object Running {
       }
     }
 
+    def onPublishedEvent(event: PublishedEventImpl): Behavior[InternalProtocol] = {
+      if (state.receivedPoisonPill) {
+        Behaviors.unhandled
+      } else {
+        stashInternal(event)
+      }
+    }
+
     final def onJournalResponse(response: Response): Behavior[InternalProtocol] = {
       if (setup.log.isDebugEnabled) {
         setup.log.debug2(
@@ -404,6 +539,11 @@ private[akka] object Running {
         eventCounter += 1
 
         onWriteSuccess(setup.context, p)
+
+        if (setup.publishEvents) {
+          context.system.eventStream ! EventStream.Publish(
+            PublishedEventImpl(setup.replicaId, setup.persistenceId, p.sequenceNr, p.payload, p.timestamp))
+        }
 
         // only once all things are applied we can revert back
         if (eventCounter < numberOfEvents) {
