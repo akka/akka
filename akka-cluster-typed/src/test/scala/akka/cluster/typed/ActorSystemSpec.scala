@@ -76,12 +76,14 @@ class ActorSystemSpec
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
 
-      serializers {
+      akka.actor {
+        serializers {
           test = "akka.cluster.typed.ActorSystemSpec$$TestSerializer"
         }
         serialization-bindings {
           "akka.cluster.typed.ActorSystemSpec$$TestMessage" = test
         }
+      }
     """)
   def system[T](behavior: Behavior[T], name: String) = ActorSystem(behavior, name, config)
   def suite = "adapter"
