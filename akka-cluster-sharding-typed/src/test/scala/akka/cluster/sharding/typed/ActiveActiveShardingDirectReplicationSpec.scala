@@ -4,13 +4,15 @@
 
 package akka.cluster.sharding.typed
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.eventstream.EventStream
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.internal.PublishedEventImpl
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class ActiveActiveShardingDirectReplicationSpec
     extends ScalaTestWithActorTestKit
@@ -20,9 +22,9 @@ class ActiveActiveShardingDirectReplicationSpec
   "Active active sharding replication" must {
 
     "replicate published events to all sharding proxies" in {
-      val replicaAProbe = createTestProbe[Any]()
-      val replicaBProbe = createTestProbe[Any]()
-      val replicaCProbe = createTestProbe[Any]()
+      val replicaAProbe = createTestProbe[ShardingEnvelope[PublishedEvent]]()
+      val replicaBProbe = createTestProbe[ShardingEnvelope[PublishedEvent]]()
+      val replicaCProbe = createTestProbe[ShardingEnvelope[PublishedEvent]]()
 
       val replicationActor = spawn(
         ActiveActiveShardingDirectReplication(
@@ -42,8 +44,8 @@ class ActiveActiveShardingDirectReplicationSpec
         System.currentTimeMillis())
       system.eventStream ! EventStream.Publish(event)
 
-      replicaBProbe.expectMessageType[ShardingEnvelope[_]].message should equal(event)
-      replicaCProbe.expectMessageType[ShardingEnvelope[_]].message should equal(event)
+      replicaBProbe.receiveMessage().message should equal(event)
+      replicaCProbe.receiveMessage().message should equal(event)
       replicaAProbe.expectNoMessage() // no publishing to the replica emitting it
     }
 
