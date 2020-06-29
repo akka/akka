@@ -96,9 +96,9 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g3))
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g4))
 
-      checkSerialization(GossipStatus(a1.uniqueAddress, g1.version))
-      checkSerialization(GossipStatus(a1.uniqueAddress, g2.version))
-      checkSerialization(GossipStatus(a1.uniqueAddress, g3.version))
+      checkSerialization(GossipStatus(a1.uniqueAddress, g1.version, g1.seenDigest))
+      checkSerialization(GossipStatus(a1.uniqueAddress, g2.version, g2.seenDigest))
+      checkSerialization(GossipStatus(a1.uniqueAddress, g3.version, g3.seenDigest))
 
       checkSerialization(InternalClusterAction.Welcome(uniqueAddress, g2))
     }
@@ -141,7 +141,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
         ClusterMessageSerializer.OldGossipEnvelopeManifest)
 
       checkDeserializationWithManifest(
-        GossipStatus(a1.uniqueAddress, g1.version),
+        GossipStatus(a1.uniqueAddress, g1.version, g1.seenDigest),
         ClusterMessageSerializer.OldGossipStatusManifest)
 
       checkDeserializationWithManifest(

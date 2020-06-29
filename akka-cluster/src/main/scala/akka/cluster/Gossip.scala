@@ -4,12 +4,14 @@
 
 package akka.cluster
 
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+
 import scala.collection.immutable
 import scala.concurrent.duration.Deadline
 
 import ClusterSettings.DataCenter
 import MemberStatus._
-
 import akka.annotation.InternalApi
 
 /**
@@ -267,6 +269,9 @@ private[cluster] final case class Gossip(
     else copy(tombstones = newTombstones)
   }
 
+  def seenDigest: Array[Byte] =
+    overview.seenDigest
+
   override def toString =
     s"Gossip(members = [${members.mkString(", ")}], overview = $overview, version = $version, tombstones = $tombstones)"
 }
@@ -279,6 +284,11 @@ private[cluster] final case class Gossip(
 private[cluster] final case class GossipOverview(
     seen: Set[UniqueAddress] = Set.empty,
     reachability: Reachability = Reachability.empty) {
+
+  lazy val seenDigest: Array[Byte] = {
+    val bytes = seen.toVector.sorted.map(node => node.address).mkString(",").getBytes(StandardCharsets.UTF_8)
+    MessageDigest.getInstance("SHA-1").digest(bytes)
+  }
 
   override def toString =
     s"GossipOverview(reachability = [$reachability], seen = [${seen.mkString(", ")}])"
@@ -340,4 +350,16 @@ private[cluster] class GossipEnvelope private (
  * it replies with its `GossipStatus`. Same versions ends the chat immediately.
  */
 @SerialVersionUID(1L)
-private[cluster] final case class GossipStatus(from: UniqueAddress, version: VectorClock) extends ClusterMessage
+private[cluster] final case class GossipStatus(from: UniqueAddress, version: VectorClock, seenDigest: Array[Byte])
+    extends ClusterMessage {
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case other: GossipStatus =>
+        from == other.from && version == other.version && java.util.Arrays.equals(seenDigest, other.seenDigest)
+      case _ => false
+    }
+  }
+
+  override def toString: DataCenter =
+    f"GossipStatus($from,$version,${seenDigest.map(byte => f"$byte%02x").mkString("")})"
+}

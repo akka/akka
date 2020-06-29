@@ -510,6 +510,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
       .setFrom(uniqueAddressToProto(status.from))
       .addAllAllHashes(allHashes.asJava)
       .setVersion(vectorClockToProto(status.version, hashMapping))
+      .setSeenDigest(ByteString.copyFrom(status.seenDigest))
       .build()
   }
 
@@ -594,10 +595,15 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
       () => gossipFromProto(cm.Gossip.parseFrom(decompress(serializedGossip.toByteArray))))
   }
 
-  private def gossipStatusFromProto(status: cm.GossipStatus): GossipStatus =
+  private def gossipStatusFromProto(status: cm.GossipStatus): GossipStatus = {
+    val seenDigest =
+      if (status.hasSeenDigest) status.getSeenDigest.toByteArray
+      else Array.emptyByteArray
     GossipStatus(
       uniqueAddressFromProto(status.getFrom),
-      vectorClockFromProto(status.getVersion, status.getAllHashesList.asScala.toVector))
+      vectorClockFromProto(status.getVersion, status.getAllHashesList.asScala.toVector),
+      seenDigest)
+  }
 
   def deserializeClusterRouterPool(bytes: Array[Byte]): ClusterRouterPool = {
     val crp = cm.ClusterRouterPool.parseFrom(bytes)

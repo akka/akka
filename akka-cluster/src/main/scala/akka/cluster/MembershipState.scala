@@ -55,12 +55,16 @@ import akka.util.ccompat._
    */
   def convergence(exitingConfirmed: Set[UniqueAddress]): Boolean = {
 
+    // full convergence needed for first member in a secondary DC
+    val firstMemberInDc =
+      !members.exists(member => member.dataCenter == selfDc && convergenceMemberStatus(member.status))
+
     // If another member in the data center that is UP or LEAVING and has not seen this gossip or is exiting
     // convergence cannot be reached
     def memberHinderingConvergenceExists =
       members.exists(
         member =>
-          member.dataCenter == selfDc &&
+          (firstMemberInDc || member.dataCenter == selfDc) &&
           convergenceMemberStatus(member.status) &&
           !(latestGossip.seenByNode(member.uniqueAddress) || exitingConfirmed(member.uniqueAddress)))
 
