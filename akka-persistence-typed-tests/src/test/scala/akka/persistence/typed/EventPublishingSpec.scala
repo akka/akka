@@ -49,8 +49,8 @@ class EventPublishingSpec
   "EventPublishing support" must {
 
     "publish events after written for any actor" in {
-      val topicProbe = createTestProbe[Any]()
-      system.eventStream ! EventStream.Subscribe[PublishedEvent](topicProbe.ref.narrow)
+      val topicProbe = createTestProbe[PublishedEvent]()
+      system.eventStream ! EventStream.Subscribe(topicProbe.ref)
       // We don't verify subscription completed (no ack available), but expect the next steps to take enough time
       // for subscription to complete
 
@@ -61,7 +61,7 @@ class EventPublishingSpec
       wowSuchActor ! WowSuchEventSourcingBehavior.StoreThis("great stuff", tagIt = false, replyTo = persistProbe.ref)
       persistProbe.expectMessage(Done)
 
-      val published1 = topicProbe.expectMessageType[PublishedEvent]
+      val published1 = topicProbe.receiveMessage()
       published1.persistenceId should ===(myId)
       published1.event should ===(WowSuchEventSourcingBehavior.Event("great stuff", false))
       published1.sequenceNumber should ===(1L)
@@ -72,7 +72,7 @@ class EventPublishingSpec
       anotherActor ! WowSuchEventSourcingBehavior.StoreThis("another event", tagIt = true, replyTo = persistProbe.ref)
       persistProbe.expectMessage(Done)
 
-      val published2 = topicProbe.expectMessageType[PublishedEvent]
+      val published2 = topicProbe.receiveMessage()
       published2.persistenceId should ===(anotherId)
       published2.event should ===(WowSuchEventSourcingBehavior.Event("another event", true))
       published2.sequenceNumber should ===(1L)
