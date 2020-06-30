@@ -226,7 +226,7 @@ lazy val docs = akkaModule("akka-docs")
     StreamOperatorsIndexGenerator,
     Jdk9)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
-  .disablePlugins(ScalafixPlugin)
+  .disablePlugins((if (ScalafixSupport.noIgnore) Nil else Seq(ScalafixPlugin)): _*)
 
 lazy val jackson = akkaModule("akka-serialization-jackson")
   .dependsOn(
