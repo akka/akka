@@ -54,3 +54,7 @@ trait ScalafixSupport {
     }
   }
 }
+
+object ScalafixSupport {
+  def noIgnore: Boolean = System.getProperty("akka.scalafixNoIgnore", "false").toBoolean
+}

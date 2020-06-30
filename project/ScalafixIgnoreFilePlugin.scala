@@ -13,9 +13,7 @@ object ScalafixIgnoreFilePlugin extends AutoPlugin with ScalafixSupport {
 
   override def requires: Plugins = JvmPlugin && ScalafixPlugin
   import sbt._
-  lazy val scalafixIgnoredSetting: Seq[Setting[_]] = Seq(
-    ignore(Test)
-  )
+  lazy val scalafixIgnoredSetting: Seq[Setting[_]] = if (ScalafixSupport.noIgnore) Nil else Seq(ignore(Test))
 
   override def projectSettings: Seq[Def.Setting[_]] = scalafixIgnoredSetting ++ Seq(
     addProjectCommandsIfAbsent(
