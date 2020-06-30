@@ -1,2 +1,3 @@
--J-Xmx3072M
--J-Xms1024M
+-J-Xss8m
+-J-Xms1G
+-J-Xmx8G
