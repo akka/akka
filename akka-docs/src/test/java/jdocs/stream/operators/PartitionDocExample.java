@@ -36,7 +36,7 @@ public class PartitionDocExample {
             .to(Sink.ignore());
     Sink<Integer, NotUsed> odd =
         Flow.of(Integer.class)
-            .log("even")
+            .log("odd")
             .withAttributes(Attributes.createLogLevels(Attributes.logLevelInfo()))
             .to(Sink.ignore());
 
