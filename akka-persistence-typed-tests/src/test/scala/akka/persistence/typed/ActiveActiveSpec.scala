@@ -22,6 +22,7 @@ object ActiveActiveSpec {
   sealed trait Command
   case class GetState(replyTo: ActorRef[State]) extends Command
   case class StoreMe(description: String, replyTo: ActorRef[Done]) extends Command
+  case class StoreUs(descriptions: List[String], replyTo: ActorRef[Done]) extends Command
   case class GetReplica(replyTo: ActorRef[(String, Set[String])]) extends Command
 
   case class State(all: List[String])
@@ -47,6 +48,8 @@ object ActiveActiveSpec {
                 Effect.none
               case StoreMe(evt, ack) =>
                 Effect.persist(evt).thenRun(_ => ack ! Done)
+              case StoreUs(evts, replyTo) =>
+                Effect.persist(evts).thenRun(_ => replyTo ! Done)
             },
           (state, event) => {
             probe.foreach(_ ! EventAndContext(event, aaContext.origin, aaContext.recoveryRunning))
@@ -142,7 +145,26 @@ class ActiveActiveSpec
     }
 
     "persist all" in {
-      pending
+      val entityId = nextEntityId
+      val probe = createTestProbe[Done]()
+      val r1 = spawn(testBehavior(entityId, "R1"))
+      val r2 = spawn(testBehavior(entityId, "R2"))
+      r1 ! StoreUs("1 from r1" :: "2 from r1" :: Nil, probe.ref)
+      r2 ! StoreUs("1 from r2" :: "2 from r2" :: Nil, probe.ref)
+      probe.receiveMessage()
+      probe.receiveMessage()
+
+      eventually {
+        val probe = createTestProbe[State]()
+        r1 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("1 from r1", "2 from r1", "1 from r2", "2 from r2")
+      }
+      eventually {
+        val probe = createTestProbe[State]()
+        r2 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("1 from r1", "2 from r1", "1 from r2", "2 from r2")
+      }
+
     }
   }
 }
