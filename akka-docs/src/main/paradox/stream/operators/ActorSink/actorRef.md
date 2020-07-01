@@ -1,6 +1,6 @@
 # ActorSink.actorRef
 
-Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`], without considering backpressure.
+Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`] of the new actors API, without considering backpressure.
 
 @ref[Actor interop operators](../index.md#actor-interop-operators)
 
@@ -37,6 +37,18 @@ of the actor will grow. For potentially slow consumer actors it is recommended
 to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
 limiting operator in front of this `Sink`.
 
-## Examples
+See also:
 
-TODO (in progress)
+* @ref[`ActorSink.actorRefWithBackpressure`](../ActorSink/actorRefWithBackpressure.md) Send elements to an actor of the new actors API supporting backpressure
+* @ref[`Sink.actorRef`](../Sink/actorRef.md) The corresponding operator for the classic actors API
+* @ref[`Sink.actorRefWithBackpressue`](../Sink/actorRefWithBackpressure.md) Send elements to an actor of the classic actors API supporting backpressure
+
+## Reactive Streams semantics
+
+@@@div { .callout }
+
+**cancels** when the actor terminates
+
+**backpressures** never
+
+@@@

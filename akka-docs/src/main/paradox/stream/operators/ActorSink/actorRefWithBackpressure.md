@@ -1,6 +1,6 @@
 # ActorSink.actorRefWithBackpressure
 
-Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`] with backpressure, to be able to signal demand when the actor is ready to receive more elements.
+Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`] of the new actors API with backpressure, to be able to signal demand when the actor is ready to receive more elements.
 
 @ref[Actor interop operators](../index.md#actor-interop-operators)
 
@@ -24,6 +24,12 @@ This operator is included in:
 
 Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`] with backpressure, to be able to signal demand when the actor is ready to receive more elements.
 
+See also:
+
+* @ref[`ActorSink.actorRef`](../ActorSink/actorRefWithBackpressure.md) Send elements to an actor of the new actors API, without considering backpressure
+* @ref[`Sink.actorRef`](../Sink/actorRef.md) Send elements to an actor of the classic actors API, without considering backpressure
+* @ref[`Sink.actorRefWithBackpressue`](../Sink/actorRefWithBackpressure.md) The corresponding operator for the classic actors API
+
 ## Examples
 
 Scala
@@ -31,3 +37,14 @@ Scala
 
 Java
 :  @@snip [ActorSinkWithAckExample.java](/akka-stream-typed/src/test/java/docs/akka/stream/typed/ActorSinkWithAckExample.java) { #actor-sink-ref-with-backpressure }
+
+## Reactive Streams semantics
+
+@@@div { .callout }
+
+**cancels** when the actor terminates
+
+**backpressures** when the actor acknowledgement has not arrived
+
+@@@
+
