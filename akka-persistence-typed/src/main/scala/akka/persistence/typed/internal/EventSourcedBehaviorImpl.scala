@@ -283,7 +283,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 @InternalApi
 private[akka] final case class ReplicatedEventMetaData(
     originReplica: String,
-    originSequenceNr: Long,
+    originSequenceNr: Long, // FIXME, we should store if this event was handled concurrently or the origin version vector
     version: VersionVector)
 
 /**
@@ -310,7 +310,8 @@ private[akka] final case class PublishedEventImpl(
     persistenceId: PersistenceId,
     sequenceNumber: Long,
     payload: Any,
-    timestamp: Long)
+    timestamp: Long,
+    version: Option[VersionVector])
     extends PublishedEvent
     with InternalProtocol {
   import scala.compat.java8.OptionConverters._

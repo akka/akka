@@ -10,9 +10,8 @@ import scala.util.Try
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.annotation.InternalApi
 import akka.persistence._
-import akka.persistence.journal.{ AsyncWriteJournal, EventWithMetaData, Tagged }
+import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
 import akka.persistence.snapshot.SnapshotStore
-import akka.persistence.testkit.EventStorage.{ NoMetadata, WithMetadata }
 import akka.persistence.testkit.internal.{ InMemStorageExtension, SnapshotStorageEmulatorExtension }
 
 /**
@@ -49,8 +48,7 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
 
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
       recoveryCallback: PersistentRepr => Unit): Future[Unit] =
-    Future.fromTry(
-      Try(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, max).map(_._1).foreach(recoveryCallback)))
+    Future.fromTry(Try(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, max).foreach(recoveryCallback)))
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
     Future.fromTry(Try {

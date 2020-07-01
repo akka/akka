@@ -19,7 +19,7 @@ import akka.persistence.AtomicWrite
 import akka.persistence.JournalProtocol.RecoverySuccess
 import akka.persistence.PersistentRepr
 import akka.persistence.journal.inmem.InmemJournal.{ MessageWithMeta, ReplayWithMeta }
-import akka.persistence.journal.{ AsyncWriteJournal, EventWithMetaData, Tagged }
+import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
 import akka.serialization.SerializationExtension
 import akka.serialization.Serializers
 import akka.util.OptionVal
@@ -143,7 +143,6 @@ object InmemJournal {
   // persistenceId -> highest used sequence number
   private var highestSequenceNumbers = Map.empty[String, Long]
 
-  // FIXME, which way around should Tagged/EventWithMeta go? https://github.com/akka/akka/issues/29284
   def add(p: PersistentRepr): Unit = {
     val pr = p.payload match {
       case Tagged(payload, _) => (p.withPayload(payload).withTimestamp(System.currentTimeMillis()), OptionVal.None)
