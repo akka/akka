@@ -8,9 +8,11 @@ project.description: Query side to Akka Persistence allowing for building CQRS a
 To use Persistence Query, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
   artifact=akka-persistence-query_$scala.binary.version$
-  version=$akka.version$
+  version=AkkaVersion
 }
 
 This will also add dependency on the @ref[Akka Persistence](persistence.md) module.

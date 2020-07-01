@@ -8,9 +8,11 @@ The distributed publish subscribe topic API is available and usable with the cor
 when used in a clustered application:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
   artifact="akka-cluster-typed_$scala.binary.version$"
-  version="$akka.version$"
+  version=AkkaVersion
 }
 
 ## The Topic Actor

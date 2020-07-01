@@ -8,9 +8,11 @@ Akka Coordination is a set of tools for distributed coordination.
 ## Module info
 
 @@dependency[sbt,Gradle,Maven] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
   artifact="akka-coordination_$scala.binary.version$"
-  version="$akka.version$"
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-coordination" }

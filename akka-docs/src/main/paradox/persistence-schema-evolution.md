@@ -5,9 +5,11 @@
 This documentation page touches upon @ref[Akka Persistence](persistence.md), so to follow those examples you will want to depend on:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
   artifact="akka-persistence_$scala.binary.version$"
-  version="$akka.version$"
+  version=AkkaVersion
 }
 
 ## Introduction

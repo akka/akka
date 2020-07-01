@@ -9,9 +9,11 @@ Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorR
 This operator is included in:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
   artifact="akka-stream-typed_$scala.binary.version$"
-  version="$akka.version$"
+  version=AkkaVersion
 }
 
 ## Signature

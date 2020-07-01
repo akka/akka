@@ -14,9 +14,11 @@ It is not advised to build new applications with Cluster Client, and existing us
 To use Cluster Client, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
   artifact=akka-cluster-tools_$scala.binary.version$
-  version=$akka.version$
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-cluster-tools" }

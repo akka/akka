@@ -11,9 +11,11 @@ For the full documentation of this feature and for new projects see @ref:[Event 
 To use Akka Persistence, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
   artifact="akka-persistence_$scala.binary.version$"
-  version="$akka.version$"
+  version=AkkaVersion
 }
 
 You also have to select journal plugin and optionally snapshot store plugin, see 

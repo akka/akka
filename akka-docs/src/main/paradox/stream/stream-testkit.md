@@ -5,9 +5,11 @@
 To use Akka Stream TestKit, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
   artifact="akka-stream-testkit_$scala.binary.version$"
-  version="$akka.version$"
+  version=AkkaVersion
   scope="test"
 }
 

@@ -26,9 +26,11 @@ recommendation if you don't have other preferences or constraints.
 To use Akka Cluster add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
   artifact=akka-cluster-typed_$scala.binary.version$
-  version=$akka.version$
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-cluster-typed" }

@@ -102,9 +102,11 @@ In order to help developers build correct and high quality storage plugins, we p
 The TCK is usable from Java as well as Scala projects. To test your implementation (independently of language) you need to include the akka-persistence-tck dependency:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
   artifact="akka-persistence-tck_$scala.binary.version$"
-  version="$akka.version$"
+  version=AkkaVersion
 }
 
 To include the Journal TCK tests in your test suite simply extend the provided @scala[`JournalSpec`]@java[`JavaJournalSpec`]:
