@@ -5,14 +5,13 @@
 package akka.cluster.sharding.typed
 
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.eventstream.EventStream
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.PublishedEvent
-import akka.persistence.typed.internal.PublishedEventImpl
+import akka.persistence.typed.internal.{ PublishedEventImpl, VersionVector }
 
 class ActiveActiveShardingDirectReplicationSpec
     extends ScalaTestWithActorTestKit
@@ -41,7 +40,8 @@ class ActiveActiveShardingDirectReplicationSpec
         PersistenceId.replicatedUniqueId("pid", "ReplicaA"),
         1L,
         "event",
-        System.currentTimeMillis())
+        System.currentTimeMillis(),
+        Some(VersionVector.empty))
       system.eventStream ! EventStream.Publish(event)
 
       replicaBProbe.receiveMessage().message should equal(event)
