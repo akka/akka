@@ -33,11 +33,6 @@ object VersionVector {
     else if (versions.tail.isEmpty) apply(versions.head._1, versions.head._2)
     else apply(emptyVersions ++ versions)
 
-  /**
-   * Java API
-   */
-  def create(): VersionVector = empty
-
   sealed trait Ordering
   case object After extends Ordering
   case object Before extends Ordering
@@ -48,26 +43,6 @@ object VersionVector {
    * Marker to ensure that we do a full order comparison instead of bailing out early.
    */
   private case object FullOrder extends Ordering
-
-  /**
-   * Java API: The `VersionVector.After` instance
-   */
-  def AfterInstance = After
-
-  /**
-   * Java API: The `VersionVector.Before` instance
-   */
-  def BeforeInstance = Before
-
-  /**
-   * Java API: The `VersionVector.Same` instance
-   */
-  def SameInstance = Same
-
-  /**
-   * Java API: The `VersionVector.Concurrent` instance
-   */
-  def ConcurrentInstance = Concurrent
 
   /** INTERNAL API */
   @InternalApi private[akka] object Timestamp {

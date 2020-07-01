@@ -258,7 +258,6 @@ private[akka] final class ReplayingEvents[C, E, S](
       if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)
         Behaviors.stopped
       else {
-        // FIXME, this isn't right, it should be updated per event replayed
         val seenPerReplica: Map[String, Long] =
           setup.activeActive
             .map(aa => aa.allReplicas.filterNot(_ == aa.replicaId).map(replica => replica -> 0L).toMap)
