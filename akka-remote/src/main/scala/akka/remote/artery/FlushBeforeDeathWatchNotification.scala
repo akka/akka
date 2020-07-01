@@ -52,8 +52,6 @@ private[remote] class FlushBeforeDeathWatchNotification(
   override def preStart(): Unit = {
     try {
       remaining = association.sendFlush(self)
-      // FIXME the logging in this actor may be too verbose (in case many terminate at the same time)
-      log.debug("Flushing [{}] queues before DeathWatchNotification", remaining)
       if (remaining == 0) {
         done.trySuccess(Done)
         context.stop(self)

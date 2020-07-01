@@ -151,6 +151,7 @@ private[remote] class Association(
 
   override def settings = transport.settings
   private def advancedSettings = transport.settings.Advanced
+  private val deathWatchNotificationFlushEnabled = advancedSettings.DeathWatchNotificationFlushTimeout > Duration.Zero
 
   private val restartCounter =
     new RestartCounter(advancedSettings.OutboundMaxRestarts, advancedSettings.OutboundRestartTimeout)
@@ -400,12 +401,11 @@ private[remote] class Association(
       try {
         val outboundEnvelope = createOutboundEnvelope()
         message match {
-          case d: DeathWatchNotification if shouldSendDeathWatchNotification(d) =>
+          case d: DeathWatchNotification if deathWatchNotificationFlushEnabled && shouldSendDeathWatchNotification(d) =>
             val flushingPromise = Promise[Done]()
-            // FIXME config for the timeout
             transport.system.systemActorOf(
               FlushBeforeDeathWatchNotification
-                .props(flushingPromise, settings.Advanced.ShutdownFlushTimeout, this)
+                .props(flushingPromise, settings.Advanced.DeathWatchNotificationFlushTimeout, this)
                 .withDispatcher(Dispatchers.InternalDispatcherId),
               FlushBeforeDeathWatchNotification.nextName())
             flushingPromise.future.onComplete { _ =>
