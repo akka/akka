@@ -8,8 +8,11 @@ import scala.collection.immutable.TreeMap
 import akka.annotation.InternalApi
 
 /**
+ * INTERNAL API
+ *
  * VersionVector module with helper classes and methods.
  */
+@InternalApi
 object VersionVector {
 
   private val emptyVersions: TreeMap[String, Long] = TreeMap.empty
@@ -80,6 +83,8 @@ object VersionVector {
 }
 
 /**
+ * INTERNAL API
+ *
  * Representation of a Vector-based clock (counting clock), inspired by Lamport logical clocks.
  * {{{
  * Reference:
@@ -92,6 +97,7 @@ object VersionVector {
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
 @SerialVersionUID(1L)
+@InternalApi
 sealed abstract class VersionVector extends Serializable {
 
   type T = VersionVector

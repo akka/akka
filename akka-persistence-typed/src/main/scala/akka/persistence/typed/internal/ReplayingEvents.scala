@@ -88,8 +88,6 @@ private[akka] final class ReplayingEvents[C, E, S](
     ()
 
   override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
-    // FIXME deal with a replicated event and ack
-    // https://github.com/akka/akka/issues/29256
     msg match {
       case JournalResponse(r)              => onJournalResponse(r)
       case SnapshotterResponse(r)          => onSnapshotterResponse(r)
