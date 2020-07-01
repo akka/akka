@@ -6,7 +6,6 @@ package akka.remote.artery
 
 import java.net.ConnectException
 import java.util.Queue
-import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
