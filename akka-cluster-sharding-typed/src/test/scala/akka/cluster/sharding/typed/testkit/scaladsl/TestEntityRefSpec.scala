@@ -2,7 +2,7 @@
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.cluster.sharding.typed.scaladsl
+package akka.cluster.sharding.typed.testkit.scaladsl
 
 import scala.concurrent.Future
 
@@ -18,6 +18,10 @@ import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
 import akka.cluster.sharding.typed.ClusterShardingQuery
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.javadsl
+import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import akka.cluster.sharding.typed.scaladsl.Entity
+import akka.cluster.sharding.typed.scaladsl.EntityRef
+import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 
 object TestEntityRefSpec {
 

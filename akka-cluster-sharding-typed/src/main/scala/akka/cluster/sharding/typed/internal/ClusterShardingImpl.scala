@@ -20,7 +20,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
-import akka.actor.typed.Scheduler
 import akka.actor.typed.TypedActorContext
 import akka.actor.typed.internal.InternalRecipientRef
 import akka.actor.typed.internal.PoisonPill
@@ -374,40 +373,6 @@ import akka.util.JavaDurationConverters._
 
   override def toString: String = s"EntityRef($typeKey, $entityId)"
 
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi private[akka] final class TestEntityRefImpl[M](entityId: String, probe: ActorRef[M])
-    extends javadsl.EntityRef[M]
-    with scaladsl.EntityRef[M]
-    with InternalRecipientRef[M] {
-  import akka.actor.typed.scaladsl.adapter._
-
-  override def tell(msg: M): Unit =
-    probe ! msg
-
-  override def ask[U](message: ActorRef[U] => M)(implicit timeout: Timeout): Future[U] = {
-    import akka.actor.typed.scaladsl.AskPattern._
-    implicit val scheduler: Scheduler = provider.guardian.underlying.system.scheduler.toTyped
-    probe.ask(message)
-  }
-
-  def ask[U](message: JFunction[ActorRef[U], M], timeout: Duration): CompletionStage[U] =
-    ask[U](replyTo => message.apply(replyTo))(timeout.asScala).toJava
-
-  // impl InternalRecipientRef
-  override def provider: ActorRefProvider = {
-    probe.asInstanceOf[InternalRecipientRef[_]].provider
-  }
-
-  // impl InternalRecipientRef
-  def isTerminated: Boolean = {
-    probe.asInstanceOf[InternalRecipientRef[_]].isTerminated
-  }
-
-  override def toString: String = s"TestEntityRef($entityId)"
 }
 
 /**
