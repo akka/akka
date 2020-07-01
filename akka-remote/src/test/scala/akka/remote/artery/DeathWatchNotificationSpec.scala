@@ -19,6 +19,7 @@ object DeathWatchNotificationSpec {
             provider = remote
         }
         remote.use-unsafe-remote-features-outside-cluster = on
+        remote.watch-failure-detector.acceptable-heartbeat-pause = 3s
     }
     """).withFallback(ArterySpecSupport.defaultConfig)
 
@@ -101,11 +102,11 @@ class DeathWatchNotificationSpec extends ArteryMultiNodeSpec(DeathWatchNotificat
 
     otherSystem.terminate()
     receiverProbe1.receiveN(messages.size, 5.seconds).toVector shouldBe messages
-    receiverProbe1.expectTerminated(sender1)
+    receiverProbe1.expectTerminated(sender1, 5.seconds)
     receiverProbe2.receiveN(messages.size).toVector shouldBe messages
-    receiverProbe2.expectTerminated(sender2)
+    receiverProbe2.expectTerminated(sender2, 5.seconds)
     receiverProbe3.receiveN(messages.size).toVector shouldBe messages
-    receiverProbe3.expectTerminated(sender3)
+    receiverProbe3.expectTerminated(sender3, 5.seconds)
   }
 
 }
