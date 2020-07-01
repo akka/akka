@@ -130,6 +130,11 @@ abstract class ClusterShardingSpecConfig(
    * mode, then leverage the common config and fallbacks after these specific test configs:
    */
   commonConfig(ConfigFactory.parseString(s"""
+    akka.loglevel = "DEBUG"
+    
+    akka.cluster.sharding.verbose-debug-logging = on
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+    
     akka.cluster.roles = ["backend"]
     akka.cluster.distributed-data.gossip-interval = 1s
     akka.persistence.journal.leveldb-shared.timeout = 10s #the original default, base test uses 5s
@@ -268,7 +273,8 @@ class DDataClusterShardingWithEntityRecoveryMultiJvmNode7 extends DDataClusterSh
 
 abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
     extends MultiNodeClusterShardingSpec(multiNodeConfig)
-    with ImplicitSender {
+    with ImplicitSender
+    with WithLogCapturing {
   import ClusterShardingSpec._
   import multiNodeConfig._
 
