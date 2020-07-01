@@ -236,7 +236,23 @@ class ActiveActiveSpec
     }
 
     "set concurrent on replay of events" in {
-      pending
+      val entityId = nextEntityId
+      val probe = createTestProbe[Done]()
+      val eventProbeR1 = createTestProbe[EventAndContext]()
+      val r1 = spawn(testBehavior(entityId, "R1", eventProbeR1.ref))
+      val r2 = spawn(testBehavior(entityId, "R2"))
+      r1 ! StoreMe("from r1", probe.ref) // R1 0 R2 0 -> R1 1 R2 0
+      r2 ! StoreMe("from r2", probe.ref) // R2 0 R1 0 -> R2 1 R1 0
+      // local event isn't concurrent, remote event is
+      eventProbeR1.expectMessage(EventAndContext("from r1", "R1", recoveryRunning = false, concurrent = false))
+      eventProbeR1.expectMessage(EventAndContext("from r2", "R2", recoveryRunning = false, concurrent = true))
+
+      // take 2
+      val eventProbeR1Take2 = createTestProbe[EventAndContext]()
+      spawn(testBehavior(entityId, "R1", eventProbeR1Take2.ref))
+      eventProbeR1Take2.expectMessage(EventAndContext("from r1", "R1", recoveryRunning = true, concurrent = false))
+      eventProbeR1Take2.expectMessage(EventAndContext("from r2", "R2", recoveryRunning = true, concurrent = true))
     }
+
   }
 }

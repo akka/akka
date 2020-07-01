@@ -283,8 +283,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 @InternalApi
 private[akka] final case class ReplicatedEventMetaData(
     originReplica: String,
-    originSequenceNr: Long, // FIXME, we should store if this event was handled concurrently or the origin version vector
-    version: VersionVector)
+    originSequenceNr: Long,
+    version: VersionVector,
+    concurrent: Boolean) // whether when the event handler was executed the event was concurrent
 
 /**
  * An event replicated from a different replica.

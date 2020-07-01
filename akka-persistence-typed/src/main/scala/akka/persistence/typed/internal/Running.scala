@@ -377,15 +377,14 @@ private[akka] object Running {
         isConcurrent)
 
       val newState: RunningState[S] = state.applyEvent(setup, event.event)
-      // FIXME Do the persist, with what version? The one it came in with merged with the current one
-      // the merged one represents what the event was processed with at this replica
       val newState2: RunningState[S] = internalPersist(
         setup.context,
         null,
         newState,
         event.event,
         "",
-        OptionVal.Some(ReplicatedEventMetaData(event.originReplica, event.originSequenceNr, updatedVersion)))
+        OptionVal.Some(
+          ReplicatedEventMetaData(event.originReplica, event.originSequenceNr, updatedVersion, isConcurrent)))
       val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event.event, newState2.seqNr)
       // FIXME validate this is the correct sequence nr from that replica https://github.com/akka/akka/issues/29259
       val updatedSeen = newState2.seenPerReplica.updated(event.originReplica, event.originSequenceNr)
@@ -422,7 +421,8 @@ private[akka] object Running {
             newState,
             eventToPersist,
             eventAdapterManifest,
-            OptionVal.Some(ReplicatedEventMetaData(aa.replicaId, _currentSequenceNumber, updatedVersion)))
+            OptionVal.Some(
+              ReplicatedEventMetaData(aa.replicaId, _currentSequenceNumber, updatedVersion, concurrent = false)))
             .copy(version = updatedVersion)
 
           setup.log.debug("Event persisted [{}]. Version vector after: [{}]", eventToPersist, r.version)

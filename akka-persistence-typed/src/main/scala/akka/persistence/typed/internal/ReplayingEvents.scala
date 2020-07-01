@@ -133,7 +133,7 @@ private[akka] final class ReplayingEvents[C, E, S](
                         s"Active active enabled but existing event has no metadata. Migration isn't supported yet.")
 
                   }
-                  aa.setContext(recoveryRunning = true, meta.originReplica, false) // FIXME, set proper concurrent here
+                  aa.setContext(recoveryRunning = true, meta.originReplica, meta.concurrent)
                   state.copy(
                     version = meta.version,
                     seenPerReplica = state.seenPerReplica.updated(meta.originReplica, meta.originSequenceNr))
