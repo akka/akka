@@ -161,7 +161,7 @@ private[akka] final class ArterySettings private (config: Config) {
             .getMillisDuration("death-watch-notification-flush-timeout")
             .requiring(
               interval => interval > Duration.Zero,
-              "death-watch-notification-flush-timeout must be more than zero")
+              "death-watch-notification-flush-timeout must be more than zero, or off")
       }
     }
     val InboundRestartTimeout: FiniteDuration =

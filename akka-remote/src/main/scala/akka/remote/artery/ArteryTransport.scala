@@ -859,7 +859,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
             case OptionVal.Some(snd) =>
               snd.tell(FlushAck, ActorRef.noSender)
             case OptionVal.None =>
-              log.error("Expected sender for Flush message")
+              log.error("Expected sender for Flush message from [{}]", envelope.association)
           }
           false
         case _ => true
