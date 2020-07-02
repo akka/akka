@@ -49,6 +49,22 @@ trait LogCapturing extends BeforeAndAfterAll { self: TestSuite =>
     }
   }
 
+  /**
+   * If true, the logs will be cleared after each test.
+   *
+   * This is not enabled by default for Scala tests, since state may be shared between
+   * sequential tests, and logs from earlier tests may be important.
+   */
+  protected val clearLogsAfterEachTest: Boolean = false
+
+  /**
+   * May be called to explicitly clear the captured logs.
+   *
+   * Useful for when logs are not cleared after each test. If clearing after every test
+   * is desirable, overriding [[clearLogsAfterEachTest]] is preferable.
+   */
+  def clearCapturedLogs(): Unit = capturingAppender.clear()
+
   abstract override def withFixture(test: NoArgTest): Outcome = {
     myLogger.info(s"Logging started for test [${self.getClass.getName}: ${test.name}]")
     val res = test()
@@ -60,6 +76,10 @@ trait LogCapturing extends BeforeAndAfterAll { self: TestSuite =>
       capturingAppender.flush()
       println(
         s"<-- [${Console.BLUE}${self.getClass.getName}: ${test.name}${Console.RESET}] End of log messages of test that [$res]")
+    }
+
+    if (clearLogsAfterEachTest) {
+      capturingAppender.clear()
     }
 
     res
