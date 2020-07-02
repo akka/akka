@@ -5,12 +5,15 @@
 package docs.future
 
 import language.postfixOps
-
 import akka.testkit._
 import akka.actor.{ Actor, ActorRef, Props, Status }
 import akka.util.Timeout
+
 import scala.concurrent.duration._
 import java.lang.IllegalStateException
+
+import akka.actor.typed.ActorSystem
+
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.util.{ Failure, Success }
 
@@ -479,12 +482,12 @@ class FutureDocSpec extends AkkaSpec {
   }
 
   "demonstrate usage of pattern.after" in {
+    import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
+    implicit val system: ActorSystem[Nothing] = this.system.toTyped
     //#after
-    // TODO after is unfortunately shadowed by ScalaTest, fix as part of #3759
-    // import akka.pattern.after
-
     val delayed =
-      akka.pattern.after(200 millis, using = system.scheduler)(Future.failed(new IllegalStateException("OHNOES")))
+      akka.pattern.after(200.millis)(Future.failed(new IllegalStateException("OHNOES")))
+
     val future = Future { Thread.sleep(1000); "foo" }
     val result = Future.firstCompletedOf(Seq(future, delayed))
     //#after
@@ -492,18 +495,24 @@ class FutureDocSpec extends AkkaSpec {
   }
 
   "demonstrate pattern.retry" in {
+    import akka.actor.typed.scaladsl.adapter.ClassicActorSystemOps
+    val system: ActorSystem[Nothing] = this.system.toTyped
     //#retry
-    implicit val scheduler = system.scheduler
+    import akka.actor.typed.scaladsl.adapter._
+    implicit val scheduler: akka.actor.Scheduler = system.scheduler.toClassic
+    implicit val ec: ExecutionContext = system.executionContext
+
     //Given some future that will succeed eventually
     @volatile var failCount = 0
-    def attempt() = {
+    def futureToAttempt() = {
       if (failCount < 5) {
         failCount += 1
         Future.failed(new IllegalStateException(failCount.toString))
       } else Future.successful(5)
     }
+
     //Return a new future that will retry up to 10 times
-    val retried = akka.pattern.retry(() => attempt(), 10, 100 milliseconds)
+    val retried: Future[Int] = akka.pattern.retry(() => futureToAttempt(), attempts = 10, 100 milliseconds)
     //#retry
 
     Await.result(retried, 1 second) should ===(5)
