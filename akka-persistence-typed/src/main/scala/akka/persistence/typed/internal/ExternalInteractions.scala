@@ -18,15 +18,29 @@ import akka.annotation.InternalStableApi
 import akka.persistence._
 import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
+import akka.persistence.typed.internal.JournalInteractions.EventOrTaggedOrReplicated
 import akka.util.{ unused, OptionVal }
+
+/** INTERNAL API */
+@InternalApi
+private[akka] object JournalInteractions {
+
+  type EventOrTaggedOrReplicated = Any // `Any` since can be `E` or `Tagged` or a `ReplicatedEvent`
+
+  final case class EventToPersist(
+      adaptedEvent: EventOrTaggedOrReplicated,
+      manifest: String,
+      metadata: Option[ReplicatedEventMetaData])
+
+}
 
 /** INTERNAL API */
 @InternalApi
 private[akka] trait JournalInteractions[C, E, S] {
 
-  def setup: BehaviorSetup[C, E, S]
+  import JournalInteractions._
 
-  type EventOrTaggedOrReplicated = Any // `Any` since can be `E` or `Tagged` or a `ReplicatedEvent`
+  def setup: BehaviorSetup[C, E, S]
 
   protected def internalPersist(
       ctx: ActorContext[_],
@@ -71,20 +85,24 @@ private[akka] trait JournalInteractions[C, E, S] {
       ctx: ActorContext[_],
       cmd: Any,
       state: Running.RunningState[S],
-      events: immutable.Seq[(EventOrTaggedOrReplicated, String)]): Running.RunningState[S] = {
+      events: immutable.Seq[EventToPersist]): Running.RunningState[S] = {
     if (events.nonEmpty) {
       var newState = state
 
       val writes = events.map {
-        case (event, eventAdapterManifest) =>
+        case EventToPersist(event, eventAdapterManifest, metadata) =>
           newState = newState.nextSequenceNr()
-          PersistentRepr(
+          val repr = PersistentRepr(
             event,
             persistenceId = setup.persistenceId.id,
             sequenceNr = newState.seqNr,
             manifest = eventAdapterManifest,
             writerUuid = setup.writerIdentity.writerUuid,
             sender = ActorRef.noSender)
+          metadata match {
+            case Some(metadata) => repr.withMetadata(metadata)
+            case None           => repr
+          }
       }
 
       onWritesInitiated(ctx, cmd, writes)

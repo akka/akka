@@ -49,6 +49,7 @@ import akka.persistence.typed.{
 }
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
 import akka.persistence.typed.internal.InternalProtocol.ReplicatedEventEnvelope
+import akka.persistence.typed.internal.JournalInteractions.EventToPersist
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
@@ -253,10 +254,16 @@ private[akka] object Running {
         envelope)
       envelope.ack ! ReplicatedEventAck
       if (envelope.event.originReplica != activeActive.replicaId && !alreadySeen(envelope.event)) {
-        setup.log.debug("Saving event as first time")
+        setup.log.debug(
+          "Saving event [{}] from [{}] as first time",
+          envelope.event.originSequenceNr,
+          envelope.event.originReplica)
         handleExternalReplicatedEventPersist(activeActive, envelope.event)
       } else {
-        setup.log.debug("Filtering event as already seen")
+        setup.log.debug(
+          "Filtering event [{}] from [{}] as it was already seen",
+          envelope.event.originSequenceNr,
+          envelope.event.originReplica)
         tryUnstashOne(this)
       }
     }
@@ -394,7 +401,10 @@ private[akka] object Running {
         Nil)
     }
 
-    private def handleEventPersist(event: E, cmd: Any, sideEffects: immutable.Seq[SideEffect[S]]) = {
+    private def handleEventPersist(
+        event: E,
+        cmd: Any,
+        sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
       // apply the event before persist so that validation exception is handled before persisting
       // the invalid event, in case such validation is implemented in the event handler.
       // also, ensure that there is an event handler for each single event
@@ -434,6 +444,49 @@ private[akka] object Running {
       persistingEvents(newState2, state, numberOfEvents = 1, shouldSnapshotAfterPersist, sideEffects)
     }
 
+    private def handleEventPersistAll(
+        events: immutable.Seq[E],
+        cmd: Any,
+        sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
+      if (events.nonEmpty) {
+        // apply the event before persist so that validation exception is handled before persisting
+        // the invalid event, in case such validation is implemented in the event handler.
+        // also, ensure that there is an event handler for each single event
+        _currentSequenceNumber = state.seqNr
+
+        val metadataTemplate: Option[ReplicatedEventMetaData] = setup.activeActive match {
+          case Some(aa) =>
+            aa.setContext(recoveryRunning = false, aa.replicaId)
+            Some(ReplicatedEventMetaData(aa.replicaId, 0L)) // we replace it with actual seqnr later
+          case None => None
+        }
+
+        var currentState = state
+        var shouldSnapshotAfterPersist: SnapshotAfterPersist = NoSnapshot
+        var eventsToPersist: List[EventToPersist] = Nil
+        events.foreach { event =>
+          _currentSequenceNumber += 1
+          if (shouldSnapshotAfterPersist == NoSnapshot)
+            shouldSnapshotAfterPersist = setup.shouldSnapshot(currentState.state, event, _currentSequenceNumber)
+          val evtManifest = setup.eventAdapter.manifest(event)
+          val adaptedEvent = adaptEvent(event)
+          val eventMetadata = metadataTemplate match {
+            case Some(template) => Some(template.copy(originSequenceNr = _currentSequenceNumber))
+            case None           => None
+          }
+          currentState = currentState.applyEvent(setup, event)
+          eventsToPersist = EventToPersist(adaptedEvent, evtManifest, eventMetadata) :: eventsToPersist
+        }
+
+        val newState2 = internalPersistAll(setup.context, cmd, currentState, eventsToPersist.reverse)
+
+        persistingEvents(newState2, state, events.size, shouldSnapshotAfterPersist, sideEffects)
+      } else {
+        // run side-effects even when no events are emitted
+        tryUnstashOne(applySideEffects(sideEffects, state))
+      }
+    }
+
     @tailrec def applyEffects(
         msg: Any,
         state: RunningState[S],
@@ -454,30 +507,7 @@ private[akka] object Running {
         case Persist(event) =>
           handleEventPersist(event, Some(msg), sideEffects)
         case PersistAll(events) =>
-          if (events.nonEmpty) {
-            // apply the event before persist so that validation exception is handled before persisting
-            // the invalid event, in case such validation is implemented in the event handler.
-            // also, ensure that there is an event handler for each single event
-            _currentSequenceNumber = state.seqNr
-            val (newState, shouldSnapshotAfterPersist) = events.foldLeft((state, NoSnapshot: SnapshotAfterPersist)) {
-              case ((currentState, snapshot), event) =>
-                _currentSequenceNumber += 1
-                val shouldSnapshot =
-                  if (snapshot == NoSnapshot) setup.shouldSnapshot(currentState.state, event, _currentSequenceNumber)
-                  else snapshot
-                (currentState.applyEvent(setup, event), shouldSnapshot)
-            }
-
-            val eventsToPersist = events.map(evt => (adaptEvent(evt), setup.eventAdapter.manifest(evt)))
-
-            val newState2 = internalPersistAll(setup.context, msg, newState, eventsToPersist)
-
-            persistingEvents(newState2, state, events.size, shouldSnapshotAfterPersist, sideEffects)
-
-          } else {
-            // run side-effects even when no events are emitted
-            tryUnstashOne(applySideEffects(sideEffects, state))
-          }
+          handleEventPersistAll(events, Some(msg), sideEffects)
 
         case _: PersistNothing.type =>
           tryUnstashOne(applySideEffects(sideEffects, state))
