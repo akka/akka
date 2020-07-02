@@ -189,6 +189,42 @@ class ActiveActiveEventPublishingSpec
       probe.expectMessage(Set("one", "two", "three"))
     }
 
+    "handle published events before and after replay" in {
+      val id = nextEntityId()
+      val probe = createTestProbe[Any]()
+      val activeActiveBehaviorA = MyActiveActive(id, "DC-A", Set("DC-A", "DC-B"))
+      val incarnationA1 = spawn(activeActiveBehaviorA)
+      incarnationA1 ! MyActiveActive.Add("one", probe.ref)
+      probe.expectMessage(Done)
+
+      // simulate a published event from another replica
+      incarnationA1.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
+        Some("DC-B"),
+        PersistenceId.replicatedUniqueId(id, "DC-B"),
+        1L,
+        "two",
+        System.currentTimeMillis())
+
+      incarnationA1 ! MyActiveActive.Stop
+      probe.expectTerminated(incarnationA1)
+
+      val incarnationA2 = spawn(activeActiveBehaviorA)
+
+      // simulate a published event from another replica
+      incarnationA2.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
+        Some("DC-B"),
+        PersistenceId.replicatedUniqueId(id, "DC-B"),
+        2L,
+        "three",
+        System.currentTimeMillis())
+
+      incarnationA2 ! MyActiveActive.Add("four", probe.ref)
+      probe.expectMessage(Done)
+
+      incarnationA2 ! MyActiveActive.Get(probe.ref)
+      probe.expectMessage(Set("one", "two", "three", "four"))
+    }
+
   }
 
 }

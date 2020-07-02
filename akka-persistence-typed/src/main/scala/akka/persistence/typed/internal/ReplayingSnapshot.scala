@@ -178,7 +178,10 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
         eventSeenInInterval = false,
         toSnr,
         receivedPoisonPill,
-        System.nanoTime()))
+        System.nanoTime(),
+        // FIXME seqNrs for other replicas needs to come from snapshot
+        seenSeqNrPerReplica =
+          setup.activeActive.map(_.allReplicas.map(replica => replica -> 0L).toMap).getOrElse(Map.empty)))
   }
 
 }
