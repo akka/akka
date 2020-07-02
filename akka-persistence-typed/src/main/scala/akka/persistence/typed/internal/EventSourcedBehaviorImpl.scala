@@ -302,22 +302,21 @@ private[akka] final case class ReplicatedEvent[E](
 @InternalApi
 private[akka] case object ReplicatedEventAck
 
+final class ReplicatedPublishedEventMetaData(val replicaId: String, private[akka] val version: VersionVector)
+
 /**
  * INTERNAL API
  */
 @InternalApi
 private[akka] final case class PublishedEventImpl(
-    replicaId: Option[String],
     persistenceId: PersistenceId,
     sequenceNumber: Long,
     payload: Any,
     timestamp: Long,
-    version: Option[VersionVector])
+    replicatedMetaData: Option[ReplicatedPublishedEventMetaData])
     extends PublishedEvent
     with InternalProtocol {
   import scala.compat.java8.OptionConverters._
-
-  override def getReplicaId: Optional[String] = replicaId.asJava
 
   def tags: Set[String] = payload match {
     case t: Tagged => t.tags
@@ -329,4 +328,5 @@ private[akka] final case class PublishedEventImpl(
     case _                => payload
   }
 
+  override def getReplicatedMetaData: Optional[ReplicatedPublishedEventMetaData] = replicatedMetaData.asJava
 }

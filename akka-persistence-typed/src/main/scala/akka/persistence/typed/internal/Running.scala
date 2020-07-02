@@ -269,12 +269,12 @@ private[akka] object Running {
           this
 
         case Some(activeActive) =>
-          event.replicaId match {
+          event.replicatedMetaData match {
             case None =>
-              setup.log.warn("Received published event for [{}] but with no replica id, dropping")
+              setup.log.warn("Received published event for [{}] but with no replicated metadata, dropping")
               this
-            case Some(replicaId) =>
-              onPublishedEvent(state, activeActive, replicaId, event)
+            case Some(replicatedEventMetaData) =>
+              onPublishedEvent(state, activeActive, replicatedEventMetaData, event)
           }
       }
       tryUnstashOne(newBehavior)
@@ -283,11 +283,12 @@ private[akka] object Running {
     private def onPublishedEvent(
         state: Running.RunningState[S],
         activeActive: ActiveActive,
-        originReplicaId: String,
+        replicatedMetadata: ReplicatedPublishedEventMetaData,
         event: PublishedEventImpl): Behavior[InternalProtocol] = {
       val log = setup.log
       val separatorIndex = event.persistenceId.id.indexOf(PersistenceId.DefaultSeparator)
       val idPrefix = event.persistenceId.id.substring(0, separatorIndex)
+      val originReplicaId = replicatedMetadata.replicaId
       if (!setup.persistenceId.id.startsWith(idPrefix)) {
         log.warn("Ignoring published replicated event for the wrong actor [{}]", event.persistenceId)
         this
@@ -323,7 +324,7 @@ private[akka] object Running {
               "Ignoring published replicated event with replication seqNr [{}] from replica [{}] " +
               "because expected replication seqNr was [{}] ",
               event.sequenceNumber,
-              event.replicaId,
+              originReplicaId,
               expectedSequenceNumber)
           }
           this
@@ -339,16 +340,13 @@ private[akka] object Running {
           // fast forward stream for source replica
           state.replicationControl.get(originReplicaId).foreach(_.fastForward(event.sequenceNumber))
 
-          val version = event.version match {
-            case Some(v) => v
-            case None =>
-              throw new IllegalStateException(
-                "Published event without a version vector when active active enabled: " + event)
-          }
-
           handleExternalReplicatedEventPersist(
             activeActive,
-            ReplicatedEvent(event.event.asInstanceOf[E], originReplicaId, event.sequenceNumber, version))
+            ReplicatedEvent(
+              event.event.asInstanceOf[E],
+              originReplicaId,
+              event.sequenceNumber,
+              replicatedMetadata.version))
         }
 
       }
@@ -590,14 +588,9 @@ private[akka] object Running {
         onWriteSuccess(setup.context, p)
 
         if (setup.publishEvents) {
+          val meta = setup.activeActive.map(aa => new ReplicatedPublishedEventMetaData(aa.replicaId, state.version))
           context.system.eventStream ! EventStream.Publish(
-            PublishedEventImpl(
-              setup.replicaId,
-              setup.persistenceId,
-              p.sequenceNr,
-              p.payload,
-              p.timestamp,
-              Some(state.version)))
+            PublishedEventImpl(setup.persistenceId, p.sequenceNr, p.payload, p.timestamp, meta))
         }
 
         // only once all things are applied we can revert back
