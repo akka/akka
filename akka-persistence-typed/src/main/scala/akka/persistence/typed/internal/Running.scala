@@ -456,14 +456,15 @@ private[akka] object Running {
 
         val metadataTemplate: Option[ReplicatedEventMetaData] = setup.activeActive match {
           case Some(aa) =>
-            aa.setContext(recoveryRunning = false, aa.replicaId)
-            Some(ReplicatedEventMetaData(aa.replicaId, 0L)) // we replace it with actual seqnr later
+            aa.setContext(recoveryRunning = false, aa.replicaId, concurrent = false) // local events are never concurrent
+            Some(ReplicatedEventMetaData(aa.replicaId, 0L, state.version, concurrent = false)) // we replace it with actual seqnr later
           case None => None
         }
 
         var currentState = state
         var shouldSnapshotAfterPersist: SnapshotAfterPersist = NoSnapshot
         var eventsToPersist: List[EventToPersist] = Nil
+
         events.foreach { event =>
           _currentSequenceNumber += 1
           if (shouldSnapshotAfterPersist == NoSnapshot)
@@ -471,14 +472,19 @@ private[akka] object Running {
           val evtManifest = setup.eventAdapter.manifest(event)
           val adaptedEvent = adaptEvent(event)
           val eventMetadata = metadataTemplate match {
-            case Some(template) => Some(template.copy(originSequenceNr = _currentSequenceNumber))
-            case None           => None
+            case Some(template) =>
+              val updatedVersion = currentState.version.updated(template.originReplica, _currentSequenceNumber)
+              setup.log.trace("Processing event [{}] with version vector [{}]", event, updatedVersion)
+              currentState = currentState.copy(version = updatedVersion)
+              Some(template.copy(originSequenceNr = _currentSequenceNumber, version = updatedVersion))
+            case None => None
           }
           currentState = currentState.applyEvent(setup, event)
           eventsToPersist = EventToPersist(adaptedEvent, evtManifest, eventMetadata) :: eventsToPersist
         }
 
-        val newState2 = internalPersistAll(setup.context, cmd, currentState, eventsToPersist.reverse)
+        val newState2 =
+          internalPersistAll(setup.context, cmd, currentState, eventsToPersist.reverse)
 
         persistingEvents(newState2, state, events.size, shouldSnapshotAfterPersist, sideEffects)
       } else {

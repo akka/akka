@@ -147,12 +147,21 @@ class ActiveActiveSpec
     "persist all" in {
       val entityId = nextEntityId
       val probe = createTestProbe[Done]()
-      val r1 = spawn(testBehavior(entityId, "R1"))
+      val eventProbeR1 = createTestProbe[EventAndContext]()
+
+      val r1 = spawn(testBehavior(entityId, "R1", eventProbeR1.ref))
       val r2 = spawn(testBehavior(entityId, "R2"))
       r1 ! StoreUs("1 from r1" :: "2 from r1" :: Nil, probe.ref)
       r2 ! StoreUs("1 from r2" :: "2 from r2" :: Nil, probe.ref)
       probe.receiveMessage()
       probe.receiveMessage()
+
+      // events at r2 happened concurrently with events at r1
+
+      eventProbeR1.expectMessage(EventAndContext("1 from r1", "R1", false, concurrent = false))
+      eventProbeR1.expectMessage(EventAndContext("2 from r1", "R1", false, concurrent = false))
+      eventProbeR1.expectMessage(EventAndContext("1 from r2", "R2", false, concurrent = true))
+      eventProbeR1.expectMessage(EventAndContext("2 from r2", "R2", false, concurrent = true))
 
       eventually {
         val probe = createTestProbe[State]()
@@ -164,7 +173,6 @@ class ActiveActiveSpec
         r2 ! GetState(probe.ref)
         probe.expectMessageType[State].all.toSet shouldEqual Set("1 from r1", "2 from r1", "1 from r2", "2 from r2")
       }
-
     }
 
     "replicate alternate events" in {
