@@ -40,25 +40,24 @@ public class FutureDocTest extends AbstractJavaTest {
 
   private final ActorSystem<Void> system = toTyped(actorSystemResource.getSystem());
 
-  @Test(expected = IllegalStateException.class)
+  @Test(expected = java.util.concurrent.CompletionException.class)
   @SuppressWarnings("unchecked")
   public void useAfter() throws Exception {
     final ExecutionContext ec = system.executionContext();
     // #after
-    CompletionStage<String> failExc =
+    CompletionStage<String> failWithException =
         CompletableFuture.supplyAsync(
             () -> {
               throw new IllegalStateException("OHNOES1");
             });
-    CompletionStage<String> delayed = Patterns.after(Duration.ofMillis(200), system, () -> failExc);
+    CompletionStage<String> delayed =
+        Patterns.after(Duration.ofMillis(200), system, () -> failWithException);
     // #after
     Future<String> future =
         future(
-            new Callable<String>() {
-              public String call() throws InterruptedException {
-                Thread.sleep(1000);
-                return "foo";
-              }
+            () -> {
+              Thread.sleep(1000);
+              return "foo";
             },
             ec);
     Future<String> result =
