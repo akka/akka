@@ -51,7 +51,7 @@ private[remote] class FlushBeforeDeathWatchNotification(
 
   override def preStart(): Unit = {
     try {
-      remaining = association.sendFlush(self)
+      remaining = association.sendFlush(self, excludeControlQueue = true)
       if (remaining == 0) {
         done.trySuccess(Done)
         context.stop(self)

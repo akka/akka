@@ -488,15 +488,16 @@ private[remote] class Association(
   }
 
   def sendTerminationHint(replyTo: ActorRef): Int =
-    sendToAllQueues(ActorSystemTerminating(localAddress), replyTo)
+    sendToAllQueues(ActorSystemTerminating(localAddress), replyTo, excludeControlQueue = false)
 
-  def sendFlush(replyTo: ActorRef): Int =
-    sendToAllQueues(Flush, replyTo)
+  def sendFlush(replyTo: ActorRef, excludeControlQueue: Boolean): Int =
+    sendToAllQueues(Flush, replyTo, excludeControlQueue)
 
-  def sendToAllQueues(msg: ControlMessage, replyTo: ActorRef): Int = {
+  def sendToAllQueues(msg: ControlMessage, replyTo: ActorRef, excludeControlQueue: Boolean): Int = {
     if (!associationState.isQuarantined()) {
       var sent = 0
-      queues.iterator.filter(q => q.isEnabled && !q.isInstanceOf[LazyQueueWrapper]).foreach { queue =>
+      val queuesIter = if (excludeControlQueue) queues.iterator.drop(1) else queues.iterator
+      queuesIter.filter(q => q.isEnabled && !q.isInstanceOf[LazyQueueWrapper]).foreach { queue =>
         try {
           val envelope = outboundEnvelopePool.acquire().init(OptionVal.None, msg, OptionVal.Some(replyTo))
 
