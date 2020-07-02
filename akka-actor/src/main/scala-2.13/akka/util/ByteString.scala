@@ -142,7 +142,7 @@ object ByteString {
    */
   def fromByteBuffer(buffer: ByteBuffer): ByteString = apply(buffer)
 
-  def empty: ByteString = ByteString1C.empty
+  val empty: ByteString = ByteString1C.empty
 
   /** Java API */
   def emptyByteString: ByteString = empty
@@ -1024,7 +1024,7 @@ object CompactByteString {
     }
   }
 
-  def empty: CompactByteString = ByteString.ByteString1C.empty
+  val empty: CompactByteString = ByteString.ByteString1C.empty
 }
 
 /**
