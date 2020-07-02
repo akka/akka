@@ -93,17 +93,15 @@ If you accidentally mix Akka versions, for example through transitive
 dependencies, you might get a warning at run time such as:
 
 ```
-Detected possible incompatible versions on the classpath. Please note that a given Akka version MUST be the same
-across all modules of Akka that you are using, e.g. if you use [2.5.20] all other modules that are released together
-MUST be of the same version. Make sure you're using a compatible set of libraries. Possibly conflicting versions
-[2.5.19, 2.5.20] in libraries [akka-persistence:2.5.19, akka-cluster-sharding:2.5.19, akka-protobuf:2.5.19,
-akka-persistence-query:2.5.19, akka-actor:2.5.20, akka-slf4j:2.5.19, akka-remote:2.5.19, akka-cluster:2.5.19,
-akka-distributed-data:2.5.19, akka-stream:2.5.19, akka-cluster-tools:2.5.19]
+You are using version 2.6.6 of Akka, but it appears you (perhaps indirectly) also depend on older versions
+of related artifacts. You can solve this by adding an explicit dependency on version 2.6.6 of the
+[akka-persistence-query] artifacts to your project. 
+See also: https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html#mixed-versioning-is-not-allowed
 ```
 
 The fix is typically to pick the highest Akka version, and add explicit
 dependencies to your project as needed. For example, in the example above
-you might want to add dependencies for 2.5.20.
+you might want to add `akka-persistence-query` dependency for 2.6.6.
 
 @@@ note
 
