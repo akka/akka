@@ -4,17 +4,17 @@
 
 package akka.stream.scaladsl
 
+import akka.stream.impl.JsonObjectParser
+import akka.stream.scaladsl.Framing.FramingException
+import akka.stream.scaladsl.JsonFraming.PartialObjectException
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.testkit.AkkaSpec
+import akka.util.ByteString
+
 import scala.collection.immutable.Seq
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
-import akka.stream.impl.JsonObjectParser
-import akka.stream.scaladsl.Framing.FramingException
-import akka.stream.testkit.TestPublisher
-import akka.stream.testkit.TestSubscriber
-import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.AkkaSpec
-import akka.util.ByteString
 
 class JsonFramingSpec extends AkkaSpec {
 
@@ -515,13 +515,29 @@ class JsonFramingSpec extends AkkaSpec {
 
       probe.ensureSubscription()
       probe
-        .request(1)
-        .expectNext(ByteString("""{ "name": "john" }"""))
-        .request(1)
-        .expectNext(ByteString("""{ "name": "jack" }"""))
+        .requestNext(ByteString("""{ "name": "john" }"""))
+        .requestNext(ByteString("""{ "name": "jack" }"""))
         .request(1)
         .expectError()
         .getMessage should include("exceeded")
+    }
+
+    "fail when completing inside an object" in {
+      val input = ByteString("{")
+      val probe = Source.single(input).via(JsonFraming.objectScanner(48)).runWith(TestSink.probe)
+
+      probe.ensureSubscription()
+      probe.request(1).expectError() shouldBe a[PartialObjectException]
+    }
+
+    "fail when pushing and inside an object" in {
+      val input = """  { "name": "john" }, {  """
+      Source
+        .single(ByteString(input))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runWith(Sink.last)
+        .failed
+        .futureValue shouldBe a[PartialObjectException]
     }
   }
 }

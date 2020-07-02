@@ -70,6 +70,9 @@ import akka.util.ByteString
 
   def isEmpty: Boolean = buffer.isEmpty
 
+  /** `true` if the buffer is in a valid state to end framing. */
+  def canComplete: Boolean = !insideObject
+
   /**
    * Attempt to locate next complete JSON object in buffered ByteString and returns `Some(it)` if found.
    * May throw a [[akka.stream.scaladsl.Framing.FramingException]] if the contained JSON is invalid or max object size is exceeded.
