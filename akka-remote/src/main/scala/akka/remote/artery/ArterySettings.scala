@@ -152,7 +152,18 @@ private[akka] final class ArterySettings private (config: Config) {
     val ShutdownFlushTimeout: FiniteDuration =
       config
         .getMillisDuration("shutdown-flush-timeout")
-        .requiring(interval => interval > Duration.Zero, "shutdown-flush-timeout must be more than zero")
+        .requiring(timeout => timeout > Duration.Zero, "shutdown-flush-timeout must be more than zero")
+    val DeathWatchNotificationFlushTimeout: FiniteDuration = {
+      toRootLowerCase(config.getString("death-watch-notification-flush-timeout")) match {
+        case "off" => Duration.Zero
+        case _ =>
+          config
+            .getMillisDuration("death-watch-notification-flush-timeout")
+            .requiring(
+              interval => interval > Duration.Zero,
+              "death-watch-notification-flush-timeout must be more than zero, or off")
+      }
+    }
     val InboundRestartTimeout: FiniteDuration =
       config
         .getMillisDuration("inbound-restart-timeout")
