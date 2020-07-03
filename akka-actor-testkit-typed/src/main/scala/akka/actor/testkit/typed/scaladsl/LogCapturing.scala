@@ -55,7 +55,7 @@ trait LogCapturing extends BeforeAndAfterAll { self: TestSuite =>
    * This is not enabled by default for Scala tests, since state may be shared between
    * sequential tests, and logs from earlier tests may be important.
    */
-  protected val clearLogsAfterEachTest: Boolean = false
+  protected def clearLogsAfterEachTest: Boolean = false
 
   /**
    * May be called to explicitly clear the captured logs.
