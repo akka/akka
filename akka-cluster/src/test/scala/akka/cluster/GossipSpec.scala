@@ -261,7 +261,7 @@ class GossipSpec extends AnyWordSpec with Matchers {
       val g = Gossip(members = SortedSet(dc1a1, dc1b1, dc2e1)).seen(dc1a1.uniqueAddress).seen(dc2e1.uniqueAddress)
       // dc1b1 has not seen the gossip
 
-      // dc1 hasn't reached convergence
+      // dc1 hasn't reached convergence because dc1b1 hasn't marked it as seen
       state(g, dc1a1).convergence(Set.empty) should ===(false)
 
       // and not dc2 because dc2e1 is only Joining
