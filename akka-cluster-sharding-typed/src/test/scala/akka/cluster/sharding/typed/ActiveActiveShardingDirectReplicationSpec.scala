@@ -9,9 +9,11 @@ import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.eventstream.EventStream
+import akka.persistence.typed
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.internal.{ PublishedEventImpl, ReplicatedPublishedEventMetaData, VersionVector }
+import akka.persistence.typed.ReplicaId
 
 class ActiveActiveShardingDirectReplicationSpec
     extends ScalaTestWithActorTestKit
@@ -27,20 +29,22 @@ class ActiveActiveShardingDirectReplicationSpec
 
       val replicationActor = spawn(
         ActiveActiveShardingDirectReplication(
-          "ReplicaA",
-          replicaShardingProxies =
-            Map("ReplicaA" -> replicaAProbe.ref, "ReplicaB" -> replicaBProbe.ref, "ReplicaC" -> replicaCProbe.ref)))
+          typed.ReplicaId("ReplicaA"),
+          replicaShardingProxies = Map(
+            ReplicaId("ReplicaA") -> replicaAProbe.ref,
+            ReplicaId("ReplicaB") -> replicaBProbe.ref,
+            ReplicaId("ReplicaC") -> replicaCProbe.ref)))
 
       val upProbe = createTestProbe[Done]()
       replicationActor ! ActiveActiveShardingDirectReplication.VerifyStarted(upProbe.ref)
       upProbe.receiveMessage() // not bullet proof wrt to subscription being complete but good enough
 
       val event = PublishedEventImpl(
-        PersistenceId.replicatedUniqueId("pid", "ReplicaA"),
+        PersistenceId.replicatedUniqueId("pid", ReplicaId("ReplicaA")),
         1L,
         "event",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData("ReplicaA", VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(ReplicaId("ReplicaA"), VersionVector.empty)))
       system.eventStream ! EventStream.Publish(event)
 
       replicaBProbe.receiveMessage().message should equal(event)
