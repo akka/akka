@@ -431,7 +431,7 @@ class PersistenceTestKit(system: ActorSystem)
 
   import PersistenceTestKit._
 
-  override protected val storage = InMemStorageExtension(system)
+  override protected val storage = InMemStorageExtension(system).storageFor(PersistenceTestKitPlugin.PluginId)
 
   private final lazy val settings = Settings(system)
 

@@ -4,6 +4,8 @@
 
 package akka.persistence.testkit
 
+import akka.actor.ActorLogging
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Try
@@ -13,6 +15,7 @@ import akka.persistence._
 import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.testkit.internal.{ InMemStorageExtension, SnapshotStorageEmulatorExtension }
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -20,9 +23,13 @@ import akka.persistence.testkit.internal.{ InMemStorageExtension, SnapshotStorag
  * Persistence testkit plugin for events.
  */
 @InternalApi
-class PersistenceTestKitPlugin extends AsyncWriteJournal {
+@silent("value cfg") // is never used
+class PersistenceTestKitPlugin(cfg: Config, cfgPath: String) extends AsyncWriteJournal with ActorLogging {
 
-  private final val storage = InMemStorageExtension(context.system)
+  private final val storage = {
+    log.debug("Using in memory storage [{}] for test kit journal", cfgPath)
+    InMemStorageExtension(context.system).storageFor(cfgPath)
+  }
   private val eventStream = context.system.eventStream
 
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
@@ -60,7 +67,7 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
 
 object PersistenceTestKitPlugin {
 
-  val PluginId = "akka.persistence.testkit.journal.pluginid"
+  val PluginId = "akka.persistence.testkit.journal"
 
   import akka.util.ccompat.JavaConverters._
 
