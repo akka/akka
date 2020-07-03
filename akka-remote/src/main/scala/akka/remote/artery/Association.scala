@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
@@ -27,7 +28,10 @@ import akka.actor.ActorSelectionMessage
 import akka.actor.Address
 import akka.actor.Cancellable
 import akka.actor.Dropped
+import akka.dispatch.Dispatchers
+import akka.dispatch.sysmsg.DeathWatchNotification
 import akka.dispatch.sysmsg.SystemMessage
+import akka.dispatch.sysmsg.Unwatch
 import akka.event.Logging
 import akka.remote.DaemonMsgCreate
 import akka.remote.PriorityMessage
@@ -147,6 +151,7 @@ private[remote] class Association(
 
   override def settings = transport.settings
   private def advancedSettings = transport.settings.Advanced
+  private val deathWatchNotificationFlushEnabled = advancedSettings.DeathWatchNotificationFlushTimeout > Duration.Zero
 
   private val restartCounter =
     new RestartCounter(advancedSettings.OutboundMaxRestarts, advancedSettings.OutboundRestartTimeout)
@@ -352,6 +357,34 @@ private[remote] class Association(
       deadletters ! env
     }
 
+    def shouldSendUnwatch(): Boolean =
+      !transport.provider.settings.HasCluster || !transport.system.isTerminating()
+
+    def shouldSendDeathWatchNotification(d: DeathWatchNotification): Boolean =
+      d.addressTerminated || !transport.provider.settings.HasCluster || !transport.system.isTerminating()
+
+    def sendSystemMessage(outboundEnvelope: OutboundEnvelope): Unit = {
+      outboundEnvelope.message match {
+        case u: Unwatch if shouldSendUnwatch() =>
+          log.debug(
+            "Not sending Unwatch of {} to {} because it will be notified when this member " +
+            "has been removed from Cluster.",
+            u.watcher,
+            u.watchee)
+        case d: DeathWatchNotification if !shouldSendDeathWatchNotification(d) =>
+          log.debug(
+            "Not sending DeathWatchNotification of {} to {} because it will be notified when this member " +
+            "has been removed from Cluster.",
+            d.actor,
+            outboundEnvelope.recipient.getOrElse("unknown"))
+        case _ =>
+          if (!controlQueue.offer(outboundEnvelope)) {
+            quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
+            dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
+          }
+      }
+    }
+
     val state = associationState
     val quarantined = state.isQuarantined()
     val messageIsClearSystemMessageDelivery = message.isInstanceOf[ClearSystemMessageDelivery]
@@ -368,11 +401,18 @@ private[remote] class Association(
       try {
         val outboundEnvelope = createOutboundEnvelope()
         message match {
+          case d: DeathWatchNotification if deathWatchNotificationFlushEnabled && shouldSendDeathWatchNotification(d) =>
+            val flushingPromise = Promise[Done]()
+            transport.system.systemActorOf(
+              FlushBeforeDeathWatchNotification
+                .props(flushingPromise, settings.Advanced.DeathWatchNotificationFlushTimeout, this)
+                .withDispatcher(Dispatchers.InternalDispatcherId),
+              FlushBeforeDeathWatchNotification.nextName())
+            flushingPromise.future.onComplete { _ =>
+              sendSystemMessage(outboundEnvelope)
+            }(materializer.executionContext)
           case _: SystemMessage =>
-            if (!controlQueue.offer(outboundEnvelope)) {
-              quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
-              dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
-            }
+            sendSystemMessage(outboundEnvelope)
           case ActorSelectionMessage(_: PriorityMessage, _, _) | _: ControlMessage | _: ClearSystemMessageDelivery =>
             // ActorSelectionMessage with PriorityMessage is used by cluster and remote failure detector heartbeating
             if (!controlQueue.offer(outboundEnvelope)) {
@@ -447,11 +487,17 @@ private[remote] class Association(
     }
   }
 
-  def sendTerminationHint(replyTo: ActorRef): Int = {
+  def sendTerminationHint(replyTo: ActorRef): Int =
+    sendToAllQueues(ActorSystemTerminating(localAddress), replyTo, excludeControlQueue = false)
+
+  def sendFlush(replyTo: ActorRef, excludeControlQueue: Boolean): Int =
+    sendToAllQueues(Flush, replyTo, excludeControlQueue)
+
+  def sendToAllQueues(msg: ControlMessage, replyTo: ActorRef, excludeControlQueue: Boolean): Int = {
     if (!associationState.isQuarantined()) {
-      val msg = ActorSystemTerminating(localAddress)
       var sent = 0
-      queues.iterator.filter(q => q.isEnabled && !q.isInstanceOf[LazyQueueWrapper]).foreach { queue =>
+      val queuesIter = if (excludeControlQueue) queues.iterator.drop(1) else queues.iterator
+      queuesIter.filter(q => q.isEnabled && !q.isInstanceOf[LazyQueueWrapper]).foreach { queue =>
         try {
           val envelope = outboundEnvelopePool.acquire().init(OptionVal.None, msg, OptionVal.Some(replyTo))
 
