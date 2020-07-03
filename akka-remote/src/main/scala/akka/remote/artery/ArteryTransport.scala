@@ -601,6 +601,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         if (allAssociations.isEmpty) Future.successful(Done)
         else {
           val flushingPromise = Promise[Done]()
+          if (log.isDebugEnabled)
+            log.debug(s"Flushing associations [{}]", allAssociations.map(_.remoteAddress).mkString(", "))
           system.systemActorOf(
             FlushOnShutdown
               .props(flushingPromise, settings.Advanced.ShutdownFlushTimeout, allAssociations)
