@@ -30,7 +30,7 @@ applicable.
 When an actor needs to be discovered by another actor but you are unable to put a reference to it in an incoming message,
 you can use the `Receptionist`. You register the specific actors that should be discoverable 
 from other nodes in the local `Receptionist` instance. The API of the receptionist is also based on actor messages. 
-This registry of actor references is then automatically distributed to all other nodes in the cluster. 
+It can be used in an application with a single node configured with a `local` actor provider or in a clustered one configured as `cluster`. This registry of actor references is then automatically distributed to all other nodes in the cluster. 
 You can lookup such actors with the key that was used when they were registered. The reply to such a `Find` request is 
 a `Listing`, which contains a `Set` of actor references that are registered for the key. Note that several actors can be 
 registered to the same key.
