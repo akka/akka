@@ -194,7 +194,6 @@ class ActorContextAskSpec
       case object Pong
 
       val probe = createTestProbe[Any]()
-      case class Message(any: Any)
       spawn(Behaviors.setup[Pong.type] { ctx =>
         ctx.askWithStatus(probe.ref, Ping) {
           case Success(Pong) => Pong
@@ -218,7 +217,6 @@ class ActorContextAskSpec
       case object Pong
 
       val probe = createTestProbe[Any]()
-      case class Message(any: Any)
       spawn(Behaviors.setup[Throwable] { ctx =>
         ctx.askWithStatus(probe.ref, Ping) {
           case Failure(ex) => ex
