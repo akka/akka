@@ -34,13 +34,19 @@ import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.{ StartEntity => ClassicStartEntity }
 import akka.cluster.sharding.typed.scaladsl.EntityContext
 import akka.cluster.typed.Cluster
+import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.japi.function.{ Function => JFunction }
 import akka.pattern.AskTimeoutException
 import akka.pattern.PromiseActorRef
+import akka.pattern.ReplyWithStatus
 import akka.util.{ unused, ByteString, Timeout }
 import akka.util.JavaDurationConverters._
+
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -314,8 +320,18 @@ import akka.util.JavaDurationConverters._
     replyTo.ask(shardRegion, entityId, m, timeout)
   }
 
-  def ask[U](message: JFunction[ActorRef[U], M], timeout: Duration): CompletionStage[U] =
+  override def ask[U](message: JFunction[ActorRef[U], M], timeout: Duration): CompletionStage[U] =
     ask[U](replyTo => message.apply(replyTo))(timeout.asScala).toJava
+
+  override def askWithStatus[Res](f: ActorRef[ReplyWithStatus[Res]] => M)(implicit timeout: Timeout): Future[Res] =
+    ask[ReplyWithStatus[Res]](f).transform {
+      case Success(ReplyWithStatus.Success(m))   => Success(m.asInstanceOf[Res])
+      case Success(ReplyWithStatus.Error(error)) => Failure[Res](error)
+      case f @ Failure(_)                        => f.asInstanceOf[Try[Res]]
+    }(ExecutionContexts.parasitic)
+
+  override def askWithStatus[Res](f: ActorRef[ReplyWithStatus[Res]] => M, timeout: Duration): CompletionStage[Res] =
+    askWithStatus(f.apply)(timeout.asScala).toJava
 
   /** Similar to [[akka.actor.typed.scaladsl.AskPattern.PromiseRef]] but for an `EntityRef` target. */
   @InternalApi

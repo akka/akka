@@ -10,7 +10,6 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 
 import com.github.ghik.silencer.silent
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -22,6 +21,7 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.japi.function.{ Function => JFunction }
+import akka.pattern.ReplyWithStatus
 
 @FunctionalInterface
 trait EntityFactory[M] {
@@ -438,6 +438,14 @@ object EntityTypeKey {
    * @tparam Res The response protocol, what the other actor sends back
    */
   def ask[Res](message: JFunction[ActorRef[Res], M], timeout: Duration): CompletionStage[Res]
+
+  /**
+   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.ReplyWithStatus]].
+   * If the response is a [[akka.pattern.ReplyWithStatus#success]] the returned completion stage is completed successfully with the wrapped response.
+   * If the status response is a [[akka.pattern.ReplyWithStatus#error]] the returned completion stage will be failed with the
+   * exception in the error (normally a [[akka.pattern.ReplyWithStatus.ErrorMessage]]).
+   */
+  def askWithStatus[Res](f: ActorRef[ReplyWithStatus[Res]] => M, timeout: Duration): CompletionStage[Res]
 
   /**
    * INTERNAL API
