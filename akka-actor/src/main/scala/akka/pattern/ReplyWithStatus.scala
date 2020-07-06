@@ -4,6 +4,8 @@
 
 package akka.pattern
 
+import akka.Done
+
 import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure => ScalaFailure }
@@ -53,6 +55,16 @@ final class ReplyWithStatus[+T] private (private val status: Try[T]) {
 }
 
 object ReplyWithStatus {
+
+  /**
+   * Scala API: A general purpose message for using as an Ack
+   */
+  val Ack: ReplyWithStatus[Done] = success(Done)
+
+  /**
+   * Java API: A general purpose message for using as an Ack
+   */
+  def ack(): ReplyWithStatus[Done] = Ack
 
   /**
    * Java API: Create a successful reply containing `value`

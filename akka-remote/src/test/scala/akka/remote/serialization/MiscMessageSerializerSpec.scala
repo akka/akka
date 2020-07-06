@@ -131,6 +131,7 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
         local = RandomPool(25),
         nodes = List(Address("akka", "system", "localhost", 2525))),
       "ReplyWithStatus.success" -> ReplyWithStatus.success("woho!"),
+      "ReplyWithStatus.Ack" -> ReplyWithStatus.Ack,
       "ReplyWithStatus.error(errorMessage)" -> ReplyWithStatus.error("boho!"),
       "ReplyWithStatus.error(exception)" -> ReplyWithStatus.error(new TestException("boho!"))).foreach {
       case (scenario, item) =>

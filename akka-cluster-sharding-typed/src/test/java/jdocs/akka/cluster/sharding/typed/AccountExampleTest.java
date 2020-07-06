@@ -4,6 +4,7 @@
 
 package jdocs.akka.cluster.sharding.typed;
 
+import akka.Done;
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
@@ -13,6 +14,7 @@ import akka.cluster.sharding.typed.javadsl.Entity;
 import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.cluster.typed.Cluster;
 import akka.cluster.typed.Join;
+import akka.pattern.ReplyWithStatus;
 import akka.persistence.typed.PersistenceId;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -29,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import static jdocs.akka.cluster.sharding.typed.AccountExampleWithEventHandlersInState.AccountEntity;
 import static jdocs.akka.cluster.sharding.typed.AccountExampleWithEventHandlersInState.AccountEntity.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class AccountExampleTest extends JUnitSuite {
 
@@ -70,47 +73,47 @@ public class AccountExampleTest extends JUnitSuite {
   @Test
   public void handleDeposit() {
     EntityRef<Command> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "1");
-    TestProbe<OperationResult> probe = testKit.createTestProbe(OperationResult.class);
+    TestProbe<ReplyWithStatus<Done>> probe = testKit.createTestProbe();
     ref.tell(new CreateAccount(probe.getRef()));
-    probe.expectMessage(Confirmed.INSTANCE);
+    probe.expectMessage(ReplyWithStatus.ack());
     ref.tell(new Deposit(BigDecimal.valueOf(100), probe.getRef()));
-    probe.expectMessage(Confirmed.INSTANCE);
+    probe.expectMessage(ReplyWithStatus.ack());
     ref.tell(new Deposit(BigDecimal.valueOf(10), probe.getRef()));
-    probe.expectMessage(Confirmed.INSTANCE);
+    probe.expectMessage(ReplyWithStatus.ack());
   }
 
   @Test
   public void handleWithdraw() {
     EntityRef<Command> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "2");
-    TestProbe<OperationResult> probe = testKit.createTestProbe(OperationResult.class);
+    TestProbe<ReplyWithStatus<Done>> probe = testKit.createTestProbe();
     ref.tell(new CreateAccount(probe.getRef()));
-    probe.expectMessage(Confirmed.INSTANCE);
+    probe.expectMessage(ReplyWithStatus.ack());
     ref.tell(new Deposit(BigDecimal.valueOf(100), probe.getRef()));
-    probe.expectMessage(Confirmed.INSTANCE);
+    probe.expectMessage(ReplyWithStatus.ack());
     ref.tell(new Withdraw(BigDecimal.valueOf(10), probe.getRef()));
-    probe.expectMessage(Confirmed.INSTANCE);
+    probe.expectMessage(ReplyWithStatus.ack());
   }
 
   @Test
   public void rejectWithdrawOverdraft() {
     EntityRef<Command> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "3");
-    TestProbe<OperationResult> probe = testKit.createTestProbe(OperationResult.class);
+    TestProbe<ReplyWithStatus<Done>> probe = testKit.createTestProbe();
     ref.tell(new CreateAccount(probe.getRef()));
-    probe.expectMessage(Confirmed.INSTANCE);
+    probe.expectMessage(ReplyWithStatus.ack());
     ref.tell(new Deposit(BigDecimal.valueOf(100), probe.getRef()));
-    probe.expectMessage(Confirmed.INSTANCE);
+    probe.expectMessage(ReplyWithStatus.ack());
     ref.tell(new Withdraw(BigDecimal.valueOf(110), probe.getRef()));
-    probe.expectMessageClass(Rejected.class);
+    assertTrue(probe.receiveMessage().isError());
   }
 
   @Test
   public void handleGetBalance() {
     EntityRef<Command> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "4");
-    TestProbe<OperationResult> opProbe = testKit.createTestProbe(OperationResult.class);
+    TestProbe<ReplyWithStatus<Done>> opProbe = testKit.createTestProbe();
     ref.tell(new CreateAccount(opProbe.getRef()));
-    opProbe.expectMessage(Confirmed.INSTANCE);
+    opProbe.expectMessage(ReplyWithStatus.ack());
     ref.tell(new Deposit(BigDecimal.valueOf(100), opProbe.getRef()));
-    opProbe.expectMessage(Confirmed.INSTANCE);
+    opProbe.expectMessage(ReplyWithStatus.ack());
 
     TestProbe<CurrentBalance> getProbe = testKit.createTestProbe(CurrentBalance.class);
     ref.tell(new GetBalance(getProbe.getRef()));
@@ -122,27 +125,22 @@ public class AccountExampleTest extends JUnitSuite {
   public void beUsableWithAsk() throws Exception {
     Duration timeout = Duration.ofSeconds(3);
     EntityRef<Command> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "5");
-    CompletionStage<OperationResult> createResult = ref.ask(CreateAccount::new, timeout);
-    assertEquals(Confirmed.INSTANCE, createResult.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    CompletionStage<ReplyWithStatus<Done>> createResult = ref.ask(CreateAccount::new, timeout);
+    assertEquals(
+        ReplyWithStatus.ack(), createResult.toCompletableFuture().get(3, TimeUnit.SECONDS));
 
     // above works because then the response type is inferred by the lhs type
-    // below requires (ActorRef<OperationResult> replyTo)
+    // below requires explicit typing
 
     assertEquals(
-        Confirmed.INSTANCE,
-        ref.ask(
-                (ActorRef<OperationResult> replyTo) ->
-                    new Deposit(BigDecimal.valueOf(100), replyTo),
-                timeout)
+        ReplyWithStatus.ack(),
+        ref.<Done>askWithStatus(replyTo -> new Deposit(BigDecimal.valueOf(100), replyTo), timeout)
             .toCompletableFuture()
             .get(3, TimeUnit.SECONDS));
 
     assertEquals(
-        Confirmed.INSTANCE,
-        ref.ask(
-                (ActorRef<OperationResult> replyTo) ->
-                    new Withdraw(BigDecimal.valueOf(10), replyTo),
-                timeout)
+        ReplyWithStatus.ack(),
+        ref.<Done>askWithStatus(replyTo -> new Withdraw(BigDecimal.valueOf(10), replyTo), timeout)
             .toCompletableFuture()
             .get(3, TimeUnit.SECONDS));
 
@@ -156,7 +154,7 @@ public class AccountExampleTest extends JUnitSuite {
 
   @Test
   public void verifySerialization() {
-    TestProbe<OperationResult> opProbe = testKit.createTestProbe();
+    TestProbe<ReplyWithStatus<Done>> opProbe = testKit.createTestProbe();
     testKit.serializationTestKit().verifySerialization(new CreateAccount(opProbe.getRef()), false);
     Deposit deposit2 =
         testKit
@@ -168,9 +166,6 @@ public class AccountExampleTest extends JUnitSuite {
         .serializationTestKit()
         .verifySerialization(new Withdraw(BigDecimal.valueOf(90), opProbe.getRef()), false);
     testKit.serializationTestKit().verifySerialization(new CloseAccount(opProbe.getRef()), false);
-
-    testKit.serializationTestKit().verifySerialization(Confirmed.INSTANCE, false);
-    testKit.serializationTestKit().verifySerialization(new Rejected("overdraft"), false);
 
     TestProbe<CurrentBalance> getProbe = testKit.createTestProbe();
     testKit.serializationTestKit().verifySerialization(new GetBalance(getProbe.getRef()), false);

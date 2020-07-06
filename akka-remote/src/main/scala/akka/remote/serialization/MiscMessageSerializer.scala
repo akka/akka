@@ -41,6 +41,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     case r: ActorRef                           => serializeActorRef(r)
     case s: Status.Success                     => serializeStatusSuccess(s)
     case f: Status.Failure                     => serializeStatusFailure(f)
+    case ReplyWithStatus.Ack                   => Array.emptyByteArray
     case r @ ReplyWithStatus.Success(_)        => serializeReplyWithStatusSuccess(r)
     case r @ ReplyWithStatus.Error(_)          => serializeReplyWithStatusError(r)
     case ex: ActorInitializationException      => serializeActorInitializationException(ex)
@@ -332,12 +333,14 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   private val ReplyWithStatusSuccessManifest = "S"
   private val ReplyWithStatusErrorMessageManifest = "SM"
   private val ReplyWithStatusErrorExceptionManifest = "SE"
+  private val ReplyWithStatusAckManifest = "SA"
 
   private val fromBinaryMap = Map[String, Array[Byte] => AnyRef](
     IdentifyManifest -> deserializeIdentify,
     ActorIdentityManifest -> deserializeActorIdentity,
     StatusSuccessManifest -> deserializeStatusSuccess,
     StatusFailureManifest -> deserializeStatusFailure,
+    ReplyWithStatusAckManifest -> ((_) => ReplyWithStatus.Ack),
     ReplyWithStatusSuccessManifest -> deserializeReplyWithStatusSuccess,
     ReplyWithStatusErrorMessageManifest -> deserializeReplyWithStatusErrorMessage,
     ReplyWithStatusErrorExceptionManifest -> deserializeReplyWithStatusErrorException,
@@ -377,6 +380,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       case _: ActorRef                                            => ActorRefManifest
       case _: Status.Success                                      => StatusSuccessManifest
       case _: Status.Failure                                      => StatusFailureManifest
+      case ReplyWithStatus.Ack                                    => ReplyWithStatusAckManifest
       case ReplyWithStatus.Success(_)                             => ReplyWithStatusSuccessManifest
       case ReplyWithStatus.Error(_: ReplyWithStatus.ErrorMessage) => ReplyWithStatusErrorMessageManifest
       case ReplyWithStatus.Error(_)                               => ReplyWithStatusErrorExceptionManifest

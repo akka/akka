@@ -9,10 +9,10 @@ import java.time.Duration
 import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters._
-
 import akka.actor.typed.Scheduler
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.japi.function.{ Function => JFunction }
+import akka.pattern.ReplyWithStatus
 import akka.util.JavaDurationConverters._
 
 /**
@@ -41,4 +41,18 @@ object AskPattern {
       timeout: Duration,
       scheduler: Scheduler): CompletionStage[Res] =
     (actor.ask(messageFactory.apply)(timeout.asScala, scheduler)).toJava
+
+  /**
+   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.ReplyWithStatus]].
+   * If the response is a [[akka.pattern.ReplyWithStatus#success]] the returned future is completed successfully with the wrapped response.
+   * If the status response is a [[akka.pattern.ReplyWithStatus#error]] the returned future will be failed with the
+   * exception in the error (normally a [[akka.pattern.ReplyWithStatus.ErrorMessage]]).
+   */
+  def askWithStatus[Req, Res](
+      actor: RecipientRef[Req],
+      messageFactory: JFunction[ActorRef[ReplyWithStatus[Res]], Req],
+      timeout: Duration,
+      scheduler: Scheduler): CompletionStage[Res] =
+    (actor.askWithStatus(messageFactory.apply)(timeout.asScala, scheduler).toJava)
+
 }
