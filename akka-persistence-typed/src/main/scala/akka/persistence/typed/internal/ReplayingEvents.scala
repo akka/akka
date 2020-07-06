@@ -50,7 +50,8 @@ private[akka] object ReplayingEvents {
       eventSeenInInterval: Boolean,
       toSeqNr: Long,
       receivedPoisonPill: Boolean,
-      recoveryStartTime: Long)
+      recoveryStartTime: Long,
+      seenSeqNrPerReplica: Map[String, Long])
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: ReplayingState[S]): Behavior[InternalProtocol] =
     Behaviors.setup { _ =>
@@ -121,20 +122,32 @@ private[akka] final class ReplayingEvents[C, E, S](
               eventForErrorReporting = OptionVal.Some(event)
               state = state.copy(seqNr = repr.sequenceNr)
 
-              setup.activeActive match {
-                case Some(aa) =>
-                  val meta = repr.metadata match {
-                    case Some(m) => m.asInstanceOf[ReplicatedEventMetaData]
-                    case None =>
-                      throw new IllegalStateException(
-                        s"Active active enabled but existing event has no metadata. Migration isn't supported yet.")
+              val aaMetaAndSelfReplica: Option[(ReplicatedEventMetaData, String)] =
+                setup.activeActive match {
+                  case Some(aa) =>
+                    val meta = repr.metadata match {
+                      case Some(m) => m.asInstanceOf[ReplicatedEventMetaData]
+                      case None =>
+                        throw new IllegalStateException(
+                          s"Active active enabled but existing event has no metadata. Migration isn't supported yet.")
 
-                  }
-                  aa.setContext(recoveryRunning = true, meta.originReplica)
-                case None =>
-              }
+                    }
+                    aa.setContext(recoveryRunning = true, meta.originReplica)
+                    Some(meta -> aa.replicaId)
+                  case None => None
+                }
               val newState = setup.eventHandler(state.state, event)
-              state = state.copy(state = newState, eventSeenInInterval = true)
+
+              aaMetaAndSelfReplica match {
+                case Some((meta, selfReplica)) if meta.originReplica != selfReplica =>
+                  // keep track of highest origin seqnr per other replica
+                  state = state.copy(
+                    state = newState,
+                    eventSeenInInterval = true,
+                    seenSeqNrPerReplica = state.seenSeqNrPerReplica + (meta.originReplica -> meta.originSequenceNr))
+                case _ =>
+                  state = state.copy(state = newState, eventSeenInInterval = true)
+              }
             }
 
             eventSeq match {
@@ -253,10 +266,6 @@ private[akka] final class ReplayingEvents[C, E, S](
       if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)
         Behaviors.stopped
       else {
-        val seenPerReplica: Map[String, Long] =
-          setup.activeActive
-            .map(aa => aa.allReplicas.filterNot(_ == aa.replicaId).map(replica => replica -> 0L).toMap)
-            .getOrElse(Map.empty)
         val running =
           Running[C, E, S](
             setup,
@@ -264,7 +273,7 @@ private[akka] final class ReplayingEvents[C, E, S](
               seqNr = state.seqNr,
               state = state.state,
               receivedPoisonPill = state.receivedPoisonPill,
-              seenPerReplica = seenPerReplica,
+              seenPerReplica = state.seenSeqNrPerReplica,
               replicationControl = Map.empty))
 
         tryUnstashOne(running)
