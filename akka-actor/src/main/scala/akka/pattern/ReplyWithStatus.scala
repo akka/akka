@@ -28,7 +28,7 @@ final class ReplyWithStatus[+T] private (private val status: Try[T]) {
   def getValue: T = status.get
 
   /**
-   * Java API: returns the exception if the reply is a failure, or throws an exeption if not.
+   * Java API: returns the exception if the reply is a failure, or throws an exception if not.
    */
   def getError: Throwable = status match {
     case ScalaFailure(ex) => ex

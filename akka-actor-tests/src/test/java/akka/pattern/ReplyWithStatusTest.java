@@ -51,7 +51,7 @@ public class ReplyWithStatusTest extends JUnitSuite {
     assertEquals("boho", reply.getError().getMessage());
     try {
       reply.getValue();
-      Assert.fail("Calling get error on success did not throw");
+      Assert.fail("Calling get value on error did not throw");
     } catch (ReplyWithStatus.ErrorMessage ex) {
       // this is what we expect
     } catch (Throwable th) {
@@ -67,7 +67,7 @@ public class ReplyWithStatusTest extends JUnitSuite {
     assertEquals("boho", reply.getError().getMessage());
     try {
       reply.getValue();
-      Assert.fail("Calling get error on success did not throw");
+      Assert.fail("Calling get value on error did not throw");
     } catch (TestException ex) {
       // this is what we expect
     } catch (Throwable th) {
