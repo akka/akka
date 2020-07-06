@@ -24,6 +24,7 @@ object ActiveActiveSpec {
   case class StoreMe(description: String, replyTo: ActorRef[Done]) extends Command
   case class StoreUs(descriptions: List[String], replyTo: ActorRef[Done]) extends Command
   case class GetReplica(replyTo: ActorRef[(String, Set[String])]) extends Command
+  case object Stop extends Command
 
   case class State(all: List[String])
   def testBehavior(entityId: String, replicaId: String, probe: ActorRef[EventAndContext]): Behavior[Command] =
@@ -50,6 +51,8 @@ object ActiveActiveSpec {
                 Effect.persist(evt).thenRun(_ => ack ! Done)
               case StoreUs(evts, replyTo) =>
                 Effect.persist(evts).thenRun(_ => replyTo ! Done)
+              case Stop =>
+                Effect.stop()
             },
           (state, event) => {
             probe.foreach(_ ! EventAndContext(event, aaContext.origin, aaContext.recoveryRunning))
@@ -101,6 +104,42 @@ class ActiveActiveSpec
         val probe = createTestProbe[State]()
         r3 ! GetState(probe.ref)
         probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "from r2", "from r1 again")
+      }
+    }
+
+    "continue after recovery" in {
+      val entityId = nextEntityId
+      val r1Behavior = testBehavior(entityId, "R1")
+      val r2Behavior = testBehavior(entityId, "R2")
+      val probe = createTestProbe[Done]()
+
+      {
+        // first incarnation
+        val r1 = spawn(r1Behavior)
+        val r2 = spawn(r2Behavior)
+        r1 ! StoreMe("1 from r1", probe.ref)
+        r2 ! StoreMe("1 from r2", probe.ref)
+        r1 ! Stop
+        r2 ! Stop
+        probe.expectTerminated(r1)
+        probe.expectTerminated(r2)
+      }
+
+      {
+        // second incarnation
+        val r1 = spawn(r1Behavior)
+        val r2 = spawn(r2Behavior)
+
+        r1 ! StoreMe("2 from r1", probe.ref)
+        r2 ! StoreMe("2 from r2", probe.ref)
+
+        eventually {
+          val probe = createTestProbe[State]()
+          r1 ! GetState(probe.ref)
+          probe.expectMessageType[State].all.toSet shouldEqual Set("1 from r1", "1 from r2", "2 from r1", "2 from r2")
+          r2 ! GetState(probe.ref)
+          probe.expectMessageType[State].all.toSet shouldEqual Set("1 from r1", "1 from r2", "2 from r1", "2 from r2")
+        }
       }
     }
 
