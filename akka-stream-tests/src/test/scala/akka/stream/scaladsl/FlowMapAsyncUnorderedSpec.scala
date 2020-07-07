@@ -252,7 +252,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       }
       val result = Source(List(1, 2, 3)).via(flow).runWith(Sink.seq)
 
-      result.futureValue should contain only ("1", "3")
+      result.futureValue should contain.only("1", "3")
     }
 
     "continue emitting after a sequence of nulls" in {
@@ -263,7 +263,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
 
       val result = Source(0 to 102).via(flow).runWith(Sink.seq)
 
-      result.futureValue should contain only ("0", "100", "101", "102")
+      result.futureValue should contain.only("0", "100", "101", "102")
     }
 
     "complete without emitting any element after a sequence of nulls only" in {
@@ -293,7 +293,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
 
       val result = Source(List(1, 2, 3)).via(flow).runWith(Sink.seq)
 
-      result.futureValue should contain only ("1", "3")
+      result.futureValue should contain.only("1", "3")
     }
 
     "handle cancel properly" in assertAllStagesStopped {

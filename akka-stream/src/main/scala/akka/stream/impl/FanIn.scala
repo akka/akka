@@ -250,7 +250,7 @@ import akka.util.unused
           }
           registerCompleted(id)
           inputs(id).subreceive(ActorSubscriberMessage.OnComplete)
-          if (!receivedInput && isAllCompleted) onCompleteWhenNoInput()
+          if (!receivedInput && isAllCompleted()) onCompleteWhenNoInput()
         case OnError(id, e) =>
           onError(id, e)
       })

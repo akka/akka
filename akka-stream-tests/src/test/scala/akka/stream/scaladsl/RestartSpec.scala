@@ -587,7 +587,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       source.sendNext("cancel")
       // This will complete the flow in probe and cancel the flow out probe
       flowInProbe.request(2)
-      Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain only ("in complete", "out complete")
+      Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain.only("in complete", "out complete")
 
       // and it should restart
       source.sendNext("c")
@@ -611,7 +611,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
 
       // This will complete the flow in probe and cancel the flow out probe
       flowInProbe.request(2)
-      Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain only ("in complete", "out complete")
+      Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain.only("in complete", "out complete")
 
       // and it should restart
       source.sendNext("c")
@@ -661,7 +661,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       source.sendNext("cancel")
       // This will complete the flow in probe and cancel the flow out probe
       flowInProbe.request(2)
-      Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain only ("in complete", "out complete")
+      Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain.only("in complete", "out complete")
 
       source.sendNext("c")
       flowInProbe.request(1)
@@ -726,7 +726,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
 
       // This will complete the flow in probe and cancel the flow out probe
       flowInProbe.request(2)
-      Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain only ("in complete", "out complete")
+      Seq(flowInProbe.expectNext(), flowInProbe.expectNext()) should contain.only("in complete", "out complete")
 
       // and it should restart
       sink.request(1)

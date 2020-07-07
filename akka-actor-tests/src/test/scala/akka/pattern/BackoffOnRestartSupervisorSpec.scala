@@ -141,10 +141,10 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec("""
     class SlowlyFailingActor(latch: CountDownLatch) extends Actor {
       def receive: Receive = {
         case "THROW" =>
-          sender ! "THROWN"
+          sender() ! "THROWN"
           throw new NormalException
         case "PING" =>
-          sender ! "PONG"
+          sender() ! "PONG"
       }
 
       override def postStop(): Unit = {
