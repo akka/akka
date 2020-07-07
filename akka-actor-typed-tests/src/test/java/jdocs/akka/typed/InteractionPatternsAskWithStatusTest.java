@@ -4,6 +4,8 @@
 
 package jdocs.akka.typed;
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
+import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
@@ -13,6 +15,9 @@ import akka.actor.typed.javadsl.*;
 import akka.pattern.ReplyWithStatus;
 
 // #actor-ask-with-status
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 
 import java.time.Duration;
@@ -20,13 +25,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public class InteractionPatternsAskWithStatusTest extends JUnitSuite {
+
+  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
+
   // separate from InteractionPatternsTest to avoid name clashes while keeping the ask samples
   // almost identical
   interface Samples {
     // #actor-ask-with-status
     public class Hal extends AbstractBehavior<Hal.Command> {
 
-      public Behavior<Hal.Command> create() {
+      public static Behavior<Hal.Command> create() {
         return Behaviors.setup(Hal::new);
       }
 
@@ -168,7 +178,7 @@ public class InteractionPatternsAskWithStatusTest extends JUnitSuite {
     }
     // #standalone-ask-with-status
 
-    class NotShown {
+    static class NotShown {
 
       // #standalone-ask-with-status
 
@@ -211,5 +221,21 @@ public class InteractionPatternsAskWithStatusTest extends JUnitSuite {
         // #standalone-ask-with-status-fail-future
       }
     }
+  }
+
+  @Test
+  public void askWithStatusExample() {
+    // no assert but should at least throw if completely broken
+    ActorRef<StandaloneAskSample.CookieFabric.Command> cookieFabric =
+        testKit.spawn(StandaloneAskSample.CookieFabric.create());
+    StandaloneAskSample.NotShown notShown = new StandaloneAskSample.NotShown();
+    notShown.askAndPrint(testKit.system(), cookieFabric);
+  }
+
+  @Test
+  public void askInActorWithStatusExample() {
+    // no assert but should at least throw if completely broken
+    ActorRef<Samples.Hal.Command> hal = testKit.spawn(Samples.Hal.create());
+    ActorRef<Samples.Dave.Command> dave = testKit.spawn(Samples.Dave.create(hal));
   }
 }

@@ -28,6 +28,7 @@ import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
+import static akka.Done.done;
 import static jdocs.akka.cluster.sharding.typed.AccountExampleWithEventHandlersInState.AccountEntity;
 import static jdocs.akka.cluster.sharding.typed.AccountExampleWithEventHandlersInState.AccountEntity.*;
 import static org.junit.Assert.assertEquals;
@@ -125,21 +126,20 @@ public class AccountExampleTest extends JUnitSuite {
   public void beUsableWithAsk() throws Exception {
     Duration timeout = Duration.ofSeconds(3);
     EntityRef<Command> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "5");
-    CompletionStage<ReplyWithStatus<Done>> createResult = ref.ask(CreateAccount::new, timeout);
-    assertEquals(
-        ReplyWithStatus.ack(), createResult.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    CompletionStage<Done> createResult = ref.askWithStatus(CreateAccount::new, timeout);
+    assertEquals(done(), createResult.toCompletableFuture().get(3, TimeUnit.SECONDS));
 
     // above works because then the response type is inferred by the lhs type
     // below requires explicit typing
 
     assertEquals(
-        ReplyWithStatus.ack(),
+        done(),
         ref.<Done>askWithStatus(replyTo -> new Deposit(BigDecimal.valueOf(100), replyTo), timeout)
             .toCompletableFuture()
             .get(3, TimeUnit.SECONDS));
 
     assertEquals(
-        ReplyWithStatus.ack(),
+        done(),
         ref.<Done>askWithStatus(replyTo -> new Withdraw(BigDecimal.valueOf(10), replyTo), timeout)
             .toCompletableFuture()
             .get(3, TimeUnit.SECONDS));

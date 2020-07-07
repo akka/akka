@@ -517,7 +517,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
     cookies.futureValue shouldEqual CookieFabric.Cookies(3)
   }
 
-  "contain a sample for ask from outside the actor system" in {
+  "contain a sample for ask with status from outside the actor system" in {
     // #standalone-ask-with-status
     object CookieFabric {
       sealed trait Command {}
