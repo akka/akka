@@ -747,7 +747,7 @@ sealed abstract class ByteString
 
   override protected def fromSpecific(coll: IterableOnce[Byte]): ByteString = ByteString(coll)
   override protected def newSpecificBuilder: mutable.Builder[Byte, ByteString] = ByteString.newBuilder
-  override val empty: ByteString = ByteString.empty
+  override def empty: ByteString = ByteString.empty
 
   def apply(idx: Int): Byte
   private[akka] def byteStringCompanion: ByteString.Companion
