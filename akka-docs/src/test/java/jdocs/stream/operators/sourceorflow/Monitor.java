@@ -56,24 +56,25 @@ public class Monitor {
 
     // if we peek on the stream too early it probably won't have processed any element.
     printMonitorState(monitor.state());
-    // #monitor
-    // exclude from rendered snippet
-    Thread.sleep(500);
+
+    // At this point, the application will continue to run and future
+    // invocations to `printMonitorState(flowMonitor)` will continue to show
+    // the progress in the stream
     // #monitor
 
-    // ...
+    // Don't use `Thread#sleep` in your code. It's a blocking call
+    // that can starve the thread-pool.
+    Thread.sleep(500);
+
     // sometime later, our code has progressed. We can peek in the stream
     // again to see what's the latest element processed
     printMonitorState(monitor.state());
 
-    // #monitor
-    // exclude from rendered snippet
+    // Don't use `CompletableFuture#get` in your code. It's a blocking call
+    // that can starve the thread-pool.
     run.second().toCompletableFuture().get(1, TimeUnit.SECONDS);
-    // #monitor
-    // #monitor
     // Eventually, the stream completes and if we check the state it reports the streasm finished.
     printMonitorState(monitor.state());
-    // #monitor
 
     run.second().toCompletableFuture().whenComplete((x, t) -> actorSystem.terminate());
   }
