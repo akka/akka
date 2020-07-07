@@ -348,7 +348,7 @@ class EventSourcedBehaviorSpec
 
     "adhere default and disabled Recovery strategies" in {
       val pid = nextPid()
-      val probe = TestProbe[State]
+      val probe = TestProbe[State]()
 
       def counterWithRecoveryStrategy(recoveryStrategy: Recovery) =
         Behaviors.setup[Command](counter(_, pid).withRecovery(recoveryStrategy))
@@ -374,9 +374,9 @@ class EventSourcedBehaviorSpec
 
     "adhere Recovery strategy with SnapshotSelectionCriteria" in {
       val pid = nextPid()
-      val eventProbe = TestProbe[(State, Event)]
-      val commandProbe = TestProbe[State]
-      val snapshotProbe = TestProbe[Try[SnapshotMetadata]]
+      val eventProbe = TestProbe[(State, Event)]()
+      val commandProbe = TestProbe[State]()
+      val snapshotProbe = TestProbe[Try[SnapshotMetadata]]()
 
       def counterWithSnapshotSelectionCriteria(recoveryStrategy: Recovery) =
         Behaviors.setup[Command](

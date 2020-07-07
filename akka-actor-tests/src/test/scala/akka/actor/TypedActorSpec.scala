@@ -133,7 +133,7 @@ object TypedActorSpec {
 
     def futurePigdog(delay: FiniteDuration, numbered: Int): Future[String] = {
       Thread.sleep(delay.toMillis)
-      Future.successful(pigdog + numbered)
+      Future.successful(pigdog() + numbered)
     }
 
     @silent

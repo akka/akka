@@ -216,14 +216,14 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(SpawnChildren(2))
       val effects = testkit.retrieveAllEffects()
-      effects should contain only (Spawned(Child.initial, "child0"), Spawned(Child.initial, "child1", Props.empty))
+      effects should contain.only(Spawned(Child.initial, "child0"), Spawned(Child.initial, "child1", Props.empty))
     }
 
     "create children when props specified and record effects" in {
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(SpawnChildrenWithProps(2, props))
       val effects = testkit.retrieveAllEffects()
-      effects should contain only (Spawned(Child.initial, "child0", props), Spawned(Child.initial, "child1", props))
+      effects should contain.only(Spawned(Child.initial, "child0", props), Spawned(Child.initial, "child1", props))
     }
   }
 
@@ -316,7 +316,7 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       val d = TestInbox[Done]()
       testkit.run(KillSession(sessionRef, d.ref))
 
-      d.receiveAll shouldBe Seq(Done)
+      d.receiveAll() shouldBe Seq(Done)
       testkit.expectEffectType[Stopped]
     }
 

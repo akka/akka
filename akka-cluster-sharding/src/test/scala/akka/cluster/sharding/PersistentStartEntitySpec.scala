@@ -71,7 +71,7 @@ class PersistentStartEntitySpec
     "remember entities started with StartEntity" in {
       val sharding = ClusterSharding(system).start(
         s"startEntity",
-        Props[EntityActor],
+        Props[EntityActor](),
         ClusterShardingSettings(system)
           .withRememberEntities(true)
           .withStateStoreMode(ClusterShardingSettings.StateStoreModePersistence),
