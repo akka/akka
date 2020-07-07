@@ -48,13 +48,25 @@ class Monitor {
       .run()
 
   val flowMonitor = monitoredStream._1
+
   // if we peek on the stream early enough it probably won't have processed any element.
   printMonitorState(flowMonitor)
-  // wait a few millis and peek in the stream again to see what's the latest element processed
+  // #monitor
+  // exclude from rendered snippet
   Thread.sleep(500)
+  // #monitor
+
+  // ...
+  // sometime later, our code has progressed. We can peek in the stream
+  // again to see what's the latest element processed
   printMonitorState(flowMonitor)
-  // wait until the stream completed
+
+  // #monitor
+  // exclude from rendered snippet
   Await.result(monitoredStream._2, 3.seconds)
+  // #monitor
+  // #monitor
+  // Eventually, the stream completes and if we check the state it reports the streasm finished.
   printMonitorState(flowMonitor)
   // #monitor
 
