@@ -12,10 +12,10 @@ import scala.util.{ Failure => ScalaFailure }
 import scala.util.{ Success => ScalaSuccess }
 
 /**
- * Generic top level message type for signalling responses that may fail or succeed. Convenient to use together with the
+ * Generic top-level message type for replies that signal failure or success. Convenient to use together with the
  * `askWithStatus` ask variants.
  *
- * Create using the factory methods [[ReplyWithStatus#succes]] and [[ReplyWithStatus#error]].
+ * Create using the factory methods [[ReplyWithStatus#success]] and [[ReplyWithStatus#error]].
  *
  * Akka contains predefined serializers for the wrapper type and the textual error messages.
  *
