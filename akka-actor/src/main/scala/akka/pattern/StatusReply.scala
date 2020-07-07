@@ -15,13 +15,13 @@ import scala.util.{ Success => ScalaSuccess }
  * Generic top-level message type for replies that signal failure or success. Convenient to use together with the
  * `askWithStatus` ask variants.
  *
- * Create using the factory methods [[ReplyWithStatus#success]] and [[ReplyWithStatus#error]].
+ * Create using the factory methods [[StatusReply#success]] and [[StatusReply#error]].
  *
  * Akka contains predefined serializers for the wrapper type and the textual error messages.
  *
  * @tparam T the type of value a successful reply would have
  */
-final class ReplyWithStatus[+T] private (private val status: Try[T]) {
+final class StatusReply[+T] private (private val status: Try[T]) {
 
   /**
    * Java API: in the case of a successful reply returns the value, if the reply was not successful the exception
@@ -41,40 +41,40 @@ final class ReplyWithStatus[+T] private (private val status: Try[T]) {
   def isSuccess: Boolean = status.isSuccess
 
   override def equals(other: Any): Boolean = other match {
-    case that: ReplyWithStatus[_] => status == that.status
-    case _                        => false
+    case that: StatusReply[_] => status == that.status
+    case _                    => false
   }
 
   override def hashCode(): Int = status.hashCode
 
   override def toString: String = status match {
-    case ScalaSuccess(t)  => s"ReplyWithStatus.Success($t)"
-    case ScalaFailure(ex) => s"ReplyWithStatus.Error(${ex.getMessage})"
+    case ScalaSuccess(t)  => s"Success($t)"
+    case ScalaFailure(ex) => s"Error(${ex.getMessage})"
   }
 
 }
 
-object ReplyWithStatus {
+object StatusReply {
 
   /**
    * Scala API: A general purpose message for using as an Ack
    */
-  val Ack: ReplyWithStatus[Done] = success(Done)
+  val Ack: StatusReply[Done] = success(Done)
 
   /**
    * Java API: A general purpose message for using as an Ack
    */
-  def ack(): ReplyWithStatus[Done] = Ack
+  def ack(): StatusReply[Done] = Ack
 
   /**
    * Java API: Create a successful reply containing `value`
    */
-  def success[T](value: T): ReplyWithStatus[T] = new ReplyWithStatus(ScalaSuccess(value))
+  def success[T](value: T): StatusReply[T] = new StatusReply(ScalaSuccess(value))
 
   /**
    * Java API: Create an status response with a error message describing why the request was failed or denied.
    */
-  def error[T](errorMessage: String): ReplyWithStatus[T] = Error(errorMessage)
+  def error[T](errorMessage: String): StatusReply[T] = Error(errorMessage)
 
   /**
    * Java API: Create an error response with a user defined [[Throwable]].
@@ -87,12 +87,12 @@ object ReplyWithStatus {
    *
    * Also note that Akka does not contain pre-build serializers for arbitrary exceptions.
    */
-  def error[T](exception: Throwable): ReplyWithStatus[T] = Error(exception)
+  def error[T](exception: Throwable): StatusReply[T] = Error(exception)
 
   /**
    * Carrier exception used for textual error descriptions.
    *
-   * Not meant for usage outside of [[ReplyWithStatus]].
+   * Not meant for usage outside of [[StatusReply]].
    */
   final case class ErrorMessage(private val errorMessage: String)
       extends RuntimeException(errorMessage)
@@ -105,7 +105,7 @@ object ReplyWithStatus {
    *
    * For example:
    * ```
-   *   case ReplyWithStatus.Success(value: String) => ...
+   *   case StatusReply.Success(value: String) => ...
    * ```
    */
   object Success {
@@ -113,8 +113,8 @@ object ReplyWithStatus {
     /**
      * Scala API: Create a successful reply containing `value`
      */
-    def apply[T](value: T): ReplyWithStatus[T] = new ReplyWithStatus(ScalaSuccess(value))
-    def unapply(status: ReplyWithStatus[Any]): Option[Any] =
+    def apply[T](value: T): StatusReply[T] = new StatusReply(ScalaSuccess(value))
+    def unapply(status: StatusReply[Any]): Option[Any] =
       if (status.isSuccess) Some(status.getValue)
       else None
   }
@@ -124,7 +124,7 @@ object ReplyWithStatus {
    *
    * For example:
    * ```
-   *   case ReplyWithStatus.Error(exception) => ...
+   *   case StatusReply.Error(exception) => ...
    * ```
    */
   object Error {
@@ -132,7 +132,7 @@ object ReplyWithStatus {
     /**
      * Scala API: Create an status response with a error message describing why the request was failed or denied.
      */
-    def apply[T](errorMessage: String): ReplyWithStatus[T] = error(new ErrorMessage(errorMessage))
+    def apply[T](errorMessage: String): StatusReply[T] = error(new ErrorMessage(errorMessage))
 
     /**
      * Scala API: Create an error response with a user defined [[Throwable]].
@@ -145,8 +145,8 @@ object ReplyWithStatus {
      *
      * Also note that Akka does not contain pre-build serializers for arbitrary exceptions.
      */
-    def apply[T](exception: Throwable): ReplyWithStatus[T] = new ReplyWithStatus(ScalaFailure(exception))
-    def unapply(status: ReplyWithStatus[_]): Option[Throwable] =
+    def apply[T](exception: Throwable): StatusReply[T] = new StatusReply(ScalaFailure(exception))
+    def unapply(status: StatusReply[_]): Option[Throwable] =
       if (status.isError) Some(status.getError)
       else None
   }

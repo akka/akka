@@ -21,7 +21,7 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.japi.function.{ Function => JFunction }
-import akka.pattern.ReplyWithStatus
+import akka.pattern.StatusReply
 
 @FunctionalInterface
 trait EntityFactory[M] {
@@ -440,12 +440,12 @@ object EntityTypeKey {
   def ask[Res](message: JFunction[ActorRef[Res], M], timeout: Duration): CompletionStage[Res]
 
   /**
-   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.ReplyWithStatus]].
-   * If the response is a [[akka.pattern.ReplyWithStatus#success]] the returned completion stage is completed successfully with the wrapped response.
-   * If the status response is a [[akka.pattern.ReplyWithStatus#error]] the returned completion stage will be failed with the
-   * exception in the error (normally a [[akka.pattern.ReplyWithStatus.ErrorMessage]]).
+   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+   * If the response is a [[akka.pattern.StatusReply#success]] the returned future is completed successfully with the wrapped response.
+   * If the status response is a [[akka.pattern.StatusReply#error]] the returned future will be failed with the
+   * exception in the error (normally a [[akka.pattern.StatusReply.ErrorMessage]]).
    */
-  def askWithStatus[Res](f: ActorRef[ReplyWithStatus[Res]] => M, timeout: Duration): CompletionStage[Res]
+  def askWithStatus[Res](f: ActorRef[StatusReply[Res]] => M, timeout: Duration): CompletionStage[Res]
 
   /**
    * INTERNAL API

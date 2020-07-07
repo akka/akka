@@ -8,13 +8,12 @@ import akka.Done;
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
-import akka.actor.typed.ActorRef;
 import akka.cluster.sharding.typed.javadsl.ClusterSharding;
 import akka.cluster.sharding.typed.javadsl.Entity;
 import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.cluster.typed.Cluster;
 import akka.cluster.typed.Join;
-import akka.pattern.ReplyWithStatus;
+import akka.pattern.StatusReply;
 import akka.persistence.typed.PersistenceId;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
@@ -74,35 +73,35 @@ public class AccountExampleTest extends JUnitSuite {
   @Test
   public void handleDeposit() {
     EntityRef<Command> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "1");
-    TestProbe<ReplyWithStatus<Done>> probe = testKit.createTestProbe();
+    TestProbe<StatusReply<Done>> probe = testKit.createTestProbe();
     ref.tell(new CreateAccount(probe.getRef()));
-    probe.expectMessage(ReplyWithStatus.ack());
+    probe.expectMessage(StatusReply.ack());
     ref.tell(new Deposit(BigDecimal.valueOf(100), probe.getRef()));
-    probe.expectMessage(ReplyWithStatus.ack());
+    probe.expectMessage(StatusReply.ack());
     ref.tell(new Deposit(BigDecimal.valueOf(10), probe.getRef()));
-    probe.expectMessage(ReplyWithStatus.ack());
+    probe.expectMessage(StatusReply.ack());
   }
 
   @Test
   public void handleWithdraw() {
     EntityRef<Command> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "2");
-    TestProbe<ReplyWithStatus<Done>> probe = testKit.createTestProbe();
+    TestProbe<StatusReply<Done>> probe = testKit.createTestProbe();
     ref.tell(new CreateAccount(probe.getRef()));
-    probe.expectMessage(ReplyWithStatus.ack());
+    probe.expectMessage(StatusReply.ack());
     ref.tell(new Deposit(BigDecimal.valueOf(100), probe.getRef()));
-    probe.expectMessage(ReplyWithStatus.ack());
+    probe.expectMessage(StatusReply.ack());
     ref.tell(new Withdraw(BigDecimal.valueOf(10), probe.getRef()));
-    probe.expectMessage(ReplyWithStatus.ack());
+    probe.expectMessage(StatusReply.ack());
   }
 
   @Test
   public void rejectWithdrawOverdraft() {
     EntityRef<Command> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "3");
-    TestProbe<ReplyWithStatus<Done>> probe = testKit.createTestProbe();
+    TestProbe<StatusReply<Done>> probe = testKit.createTestProbe();
     ref.tell(new CreateAccount(probe.getRef()));
-    probe.expectMessage(ReplyWithStatus.ack());
+    probe.expectMessage(StatusReply.ack());
     ref.tell(new Deposit(BigDecimal.valueOf(100), probe.getRef()));
-    probe.expectMessage(ReplyWithStatus.ack());
+    probe.expectMessage(StatusReply.ack());
     ref.tell(new Withdraw(BigDecimal.valueOf(110), probe.getRef()));
     assertTrue(probe.receiveMessage().isError());
   }
@@ -110,11 +109,11 @@ public class AccountExampleTest extends JUnitSuite {
   @Test
   public void handleGetBalance() {
     EntityRef<Command> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "4");
-    TestProbe<ReplyWithStatus<Done>> opProbe = testKit.createTestProbe();
+    TestProbe<StatusReply<Done>> opProbe = testKit.createTestProbe();
     ref.tell(new CreateAccount(opProbe.getRef()));
-    opProbe.expectMessage(ReplyWithStatus.ack());
+    opProbe.expectMessage(StatusReply.ack());
     ref.tell(new Deposit(BigDecimal.valueOf(100), opProbe.getRef()));
-    opProbe.expectMessage(ReplyWithStatus.ack());
+    opProbe.expectMessage(StatusReply.ack());
 
     TestProbe<CurrentBalance> getProbe = testKit.createTestProbe(CurrentBalance.class);
     ref.tell(new GetBalance(getProbe.getRef()));
@@ -154,7 +153,7 @@ public class AccountExampleTest extends JUnitSuite {
 
   @Test
   public void verifySerialization() {
-    TestProbe<ReplyWithStatus<Done>> opProbe = testKit.createTestProbe();
+    TestProbe<StatusReply<Done>> opProbe = testKit.createTestProbe();
     testKit.serializationTestKit().verifySerialization(new CreateAccount(opProbe.getRef()), false);
     Deposit deposit2 =
         testKit

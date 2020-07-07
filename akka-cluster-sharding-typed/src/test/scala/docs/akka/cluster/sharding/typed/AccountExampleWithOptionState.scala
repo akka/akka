@@ -8,7 +8,7 @@ import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import akka.pattern.ReplyWithStatus
+import akka.pattern.StatusReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
@@ -27,11 +27,11 @@ object AccountExampleWithOptionState {
   object AccountEntity {
     // Command
     sealed trait Command extends CborSerializable
-    final case class CreateAccount(replyTo: ActorRef[ReplyWithStatus[Done]]) extends Command
-    final case class Deposit(amount: BigDecimal, replyTo: ActorRef[ReplyWithStatus[Done]]) extends Command
-    final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[ReplyWithStatus[Done]]) extends Command
+    final case class CreateAccount(replyTo: ActorRef[StatusReply[Done]]) extends Command
+    final case class Deposit(amount: BigDecimal, replyTo: ActorRef[StatusReply[Done]]) extends Command
+    final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[StatusReply[Done]]) extends Command
     final case class GetBalance(replyTo: ActorRef[CurrentBalance]) extends Command
-    final case class CloseAccount(replyTo: ActorRef[ReplyWithStatus[Done]]) extends Command
+    final case class CloseAccount(replyTo: ActorRef[StatusReply[Done]]) extends Command
 
     // Reply
     final case class CurrentBalance(balance: BigDecimal) extends CborSerializable
@@ -59,26 +59,25 @@ object AccountExampleWithOptionState {
       override def applyCommand(cmd: Command): ReplyEffect =
         cmd match {
           case Deposit(amount, replyTo) =>
-            Effect.persist(Deposited(amount)).thenReply(replyTo)(_ => ReplyWithStatus.Ack)
+            Effect.persist(Deposited(amount)).thenReply(replyTo)(_ => StatusReply.Ack)
 
           case Withdraw(amount, replyTo) =>
             if (canWithdraw(amount))
-              Effect.persist(Withdrawn(amount)).thenReply(replyTo)(_ => ReplyWithStatus.Ack)
+              Effect.persist(Withdrawn(amount)).thenReply(replyTo)(_ => StatusReply.Ack)
             else
-              Effect.reply(replyTo)(
-                ReplyWithStatus.Error(s"Insufficient balance $balance to be able to withdraw $amount"))
+              Effect.reply(replyTo)(StatusReply.Error(s"Insufficient balance $balance to be able to withdraw $amount"))
 
           case GetBalance(replyTo) =>
             Effect.reply(replyTo)(CurrentBalance(balance))
 
           case CloseAccount(replyTo) =>
             if (balance == Zero)
-              Effect.persist(AccountClosed).thenReply(replyTo)(_ => ReplyWithStatus.Ack)
+              Effect.persist(AccountClosed).thenReply(replyTo)(_ => StatusReply.Ack)
             else
-              Effect.reply(replyTo)(ReplyWithStatus.Error("Can't close account with non-zero balance"))
+              Effect.reply(replyTo)(StatusReply.Error("Can't close account with non-zero balance"))
 
           case CreateAccount(replyTo) =>
-            Effect.reply(replyTo)(ReplyWithStatus.Error("Account is already created"))
+            Effect.reply(replyTo)(StatusReply.Error("Account is already created"))
 
         }
 
@@ -110,8 +109,8 @@ object AccountExampleWithOptionState {
             replyClosed(replyTo)
         }
 
-      private def replyClosed(replyTo: ActorRef[ReplyWithStatus[Done]]): ReplyEffect =
-        Effect.reply(replyTo)(ReplyWithStatus.Error(s"Account is closed"))
+      private def replyClosed(replyTo: ActorRef[StatusReply[Done]]): ReplyEffect =
+        Effect.reply(replyTo)(StatusReply.Error(s"Account is closed"))
 
       override def applyEvent(event: Event): Account =
         throw new IllegalStateException(s"unexpected event [$event] in state [ClosedAccount]")
@@ -140,7 +139,7 @@ object AccountExampleWithOptionState {
     def onFirstCommand(cmd: Command): ReplyEffect = {
       cmd match {
         case CreateAccount(replyTo) =>
-          Effect.persist(AccountCreated).thenReply(replyTo)(_ => ReplyWithStatus.Ack)
+          Effect.persist(AccountCreated).thenReply(replyTo)(_ => StatusReply.Ack)
         case _ =>
           // CreateAccount before handling any other commands
           Effect.unhandled.thenNoReply()

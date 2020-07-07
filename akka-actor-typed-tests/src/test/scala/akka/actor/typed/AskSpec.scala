@@ -18,7 +18,7 @@ import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
-import akka.pattern.ReplyWithStatus
+import akka.pattern.StatusReply
 import akka.testkit.TestException
 import akka.util.Timeout
 
@@ -183,27 +183,27 @@ class AskSpec extends ScalaTestWithActorTestKit("""
     }
   }
 
-  case class Request(replyTo: ActorRef[ReplyWithStatus[String]])
+  case class Request(replyTo: ActorRef[StatusReply[String]])
 
   "askWithStatus pattern" must {
     "unwrap nested response a successful response" in {
       val probe = createTestProbe[Request]
       val result: Future[String] = probe.ref.askWithStatus(Request(_))
-      probe.expectMessageType[Request].replyTo ! ReplyWithStatus.success("goodie")
+      probe.expectMessageType[Request].replyTo ! StatusReply.success("goodie")
       result.futureValue should ===("goodie")
     }
     "fail future for a fail response with text" in {
       val probe = createTestProbe[Request]
       val result: Future[String] = probe.ref.askWithStatus(Request(_))
-      probe.expectMessageType[Request].replyTo ! ReplyWithStatus.error("boom")
+      probe.expectMessageType[Request].replyTo ! StatusReply.error("boom")
       val exception = result.failed.futureValue
-      exception should be(a[ReplyWithStatus.ErrorMessage])
+      exception should be(a[StatusReply.ErrorMessage])
       exception.getMessage should ===("boom")
     }
     "fail future for a fail response with custom exception" in {
       val probe = createTestProbe[Request]
       val result: Future[String] = probe.ref.askWithStatus(Request(_))
-      probe.expectMessageType[Request].replyTo ! ReplyWithStatus.error(TestException("boom"))
+      probe.expectMessageType[Request].replyTo ! StatusReply.error(TestException("boom"))
       val exception = result.failed.futureValue
       exception should be(a[TestException])
       exception.getMessage should ===("boom")

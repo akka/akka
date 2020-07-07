@@ -85,6 +85,6 @@ message StackTraceElement {
 
 
 // ReplyWith pattern message(s)
-message ReplyWithStatusErrorMessage {
+message StatusReplyErrorMessage {
   required string errorMessage = 1;
 }

@@ -13,7 +13,7 @@ import org.slf4j.Logger
 import akka.actor.ClassicActorContextProvider
 import akka.actor.typed._
 import akka.annotation.DoNotInherit
-import akka.pattern.ReplyWithStatus
+import akka.pattern.StatusReply
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in
@@ -299,15 +299,16 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
       applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit
 
   /**
-   * The same as [[ask]] but only for requests that result in a response of type [[ReplyWithStatus]].
-   * If the reply is a [[ReplyWithStatus#success]] the wrapped response value and passed to response `applyToResponse` function.
-   * If the status response is a [[ReplyWithStatus#error]] the wrapped exception will instead be passed the `applyToResponse` function.
+   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+   * If the response is a [[akka.pattern.StatusReply#success]] the returned future is completed successfully with the wrapped response.
+   * If the status response is a [[akka.pattern.StatusReply#error]] the returned future will be failed with the
+   * exception in the error (normally a [[akka.pattern.StatusReply.ErrorMessage]]).
    */
   def askWithStatus[Req, Res](
       resClass: Class[Res],
       target: RecipientRef[Req],
       responseTimeout: Duration,
-      createRequest: akka.japi.function.Function[ActorRef[ReplyWithStatus[Res]], Req],
+      createRequest: akka.japi.function.Function[ActorRef[StatusReply[Res]], Req],
       applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit
 
   /**

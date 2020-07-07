@@ -8,7 +8,7 @@ import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.pattern.ReplyWithStatus
+import akka.pattern.StatusReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
@@ -47,7 +47,7 @@ object BlogPostEntity {
   //#commands
   sealed trait Command
   //#reply-command
-  final case class AddPost(content: PostContent, replyTo: ActorRef[ReplyWithStatus[AddPostDone]]) extends Command
+  final case class AddPost(content: PostContent, replyTo: ActorRef[StatusReply[AddPostDone]]) extends Command
   final case class AddPostDone(postId: String)
   //#reply-command
   final case class GetPost(replyTo: ActorRef[PostContent]) extends Command
@@ -81,14 +81,14 @@ object BlogPostEntity {
           case Publish(replyTo) => publish(draftState, replyTo)
           case GetPost(replyTo) => getPost(draftState, replyTo)
           case AddPost(_, replyTo) =>
-            Effect.unhandled.thenRun(_ => replyTo ! ReplyWithStatus.Error("Cannot add post while in draft state"))
+            Effect.unhandled.thenRun(_ => replyTo ! StatusReply.Error("Cannot add post while in draft state"))
         }
 
       case publishedState: PublishedState =>
         command match {
           case GetPost(replyTo) => getPost(publishedState, replyTo)
           case AddPost(_, replyTo) =>
-            Effect.unhandled.thenRun(_ => replyTo ! ReplyWithStatus.Error("Cannot add post, already published"))
+            Effect.unhandled.thenRun(_ => replyTo ! StatusReply.Error("Cannot add post, already published"))
           case _ => Effect.unhandled
         }
     }
@@ -99,7 +99,7 @@ object BlogPostEntity {
     val evt = PostAdded(cmd.content.postId, cmd.content)
     Effect.persist(evt).thenRun { _ =>
       // After persist is done additional side effects can be performed
-      cmd.replyTo ! ReplyWithStatus.Success(AddPostDone(cmd.content.postId))
+      cmd.replyTo ! StatusReply.Success(AddPostDone(cmd.content.postId))
     }
     //#reply
   }

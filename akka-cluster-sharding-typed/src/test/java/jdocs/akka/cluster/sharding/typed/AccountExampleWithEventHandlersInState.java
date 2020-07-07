@@ -7,7 +7,7 @@ package jdocs.akka.cluster.sharding.typed;
 import akka.Done;
 import akka.actor.typed.ActorRef;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
-import akka.pattern.ReplyWithStatus;
+import akka.pattern.StatusReply;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandlerWithReply;
 import akka.persistence.typed.javadsl.CommandHandlerWithReplyBuilder;
@@ -44,19 +44,19 @@ public interface AccountExampleWithEventHandlersInState {
     // #reply-command
 
     public static class CreateAccount implements Command {
-      public final ActorRef<ReplyWithStatus<Done>> replyTo;
+      public final ActorRef<StatusReply<Done>> replyTo;
 
       @JsonCreator
-      public CreateAccount(ActorRef<ReplyWithStatus<Done>> replyTo) {
+      public CreateAccount(ActorRef<StatusReply<Done>> replyTo) {
         this.replyTo = replyTo;
       }
     }
 
     public static class Deposit implements Command {
       public final BigDecimal amount;
-      public final ActorRef<ReplyWithStatus<Done>> replyTo;
+      public final ActorRef<StatusReply<Done>> replyTo;
 
-      public Deposit(BigDecimal amount, ActorRef<ReplyWithStatus<Done>> replyTo) {
+      public Deposit(BigDecimal amount, ActorRef<StatusReply<Done>> replyTo) {
         this.replyTo = replyTo;
         this.amount = amount;
       }
@@ -64,9 +64,9 @@ public interface AccountExampleWithEventHandlersInState {
 
     public static class Withdraw implements Command {
       public final BigDecimal amount;
-      public final ActorRef<ReplyWithStatus<Done>> replyTo;
+      public final ActorRef<StatusReply<Done>> replyTo;
 
-      public Withdraw(BigDecimal amount, ActorRef<ReplyWithStatus<Done>> replyTo) {
+      public Withdraw(BigDecimal amount, ActorRef<StatusReply<Done>> replyTo) {
         this.amount = amount;
         this.replyTo = replyTo;
       }
@@ -82,10 +82,10 @@ public interface AccountExampleWithEventHandlersInState {
     }
 
     public static class CloseAccount implements Command {
-      public final ActorRef<ReplyWithStatus<Done>> replyTo;
+      public final ActorRef<StatusReply<Done>> replyTo;
 
       @JsonCreator
-      public CloseAccount(ActorRef<ReplyWithStatus<Done>> replyTo) {
+      public CloseAccount(ActorRef<StatusReply<Done>> replyTo) {
         this.replyTo = replyTo;
       }
     }
@@ -205,13 +205,13 @@ public interface AccountExampleWithEventHandlersInState {
     private ReplyEffect<Event, Account> createAccount(EmptyAccount account, CreateAccount command) {
       return Effect()
           .persist(AccountCreated.INSTANCE)
-          .thenReply(command.replyTo, account2 -> ReplyWithStatus.ack());
+          .thenReply(command.replyTo, account2 -> StatusReply.ack());
     }
 
     private ReplyEffect<Event, Account> deposit(OpenedAccount account, Deposit command) {
       return Effect()
           .persist(new Deposited(command.amount))
-          .thenReply(command.replyTo, account2 -> ReplyWithStatus.ack());
+          .thenReply(command.replyTo, account2 -> StatusReply.ack());
     }
 
     // #reply
@@ -220,11 +220,11 @@ public interface AccountExampleWithEventHandlersInState {
         return Effect()
             .reply(
                 command.replyTo,
-                ReplyWithStatus.error("not enough funds to withdraw " + command.amount));
+                StatusReply.error("not enough funds to withdraw " + command.amount));
       } else {
         return Effect()
             .persist(new Withdrawn(command.amount))
-            .thenReply(command.replyTo, account2 -> ReplyWithStatus.ack());
+            .thenReply(command.replyTo, account2 -> StatusReply.ack());
       }
     }
     // #reply
@@ -237,11 +237,10 @@ public interface AccountExampleWithEventHandlersInState {
       if (account.balance.equals(BigDecimal.ZERO)) {
         return Effect()
             .persist(new AccountClosed())
-            .thenReply(command.replyTo, account2 -> ReplyWithStatus.ack());
+            .thenReply(command.replyTo, account2 -> StatusReply.ack());
       } else {
         return Effect()
-            .reply(
-                command.replyTo, ReplyWithStatus.error("balance must be zero for closing account"));
+            .reply(command.replyTo, StatusReply.error("balance must be zero for closing account"));
       }
     }
 

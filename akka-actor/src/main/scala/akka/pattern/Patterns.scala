@@ -96,9 +96,9 @@ object Patterns {
     scalaAsk(actor, message)(timeout.asScala).toJava.asInstanceOf[CompletionStage[AnyRef]]
 
   /**
-   * Use for messages whose response is known to be a [[akka.pattern.ReplyWithStatus]]. When a [[ReplyWithStatus#success]] response
-   * arrives the completion stage is completed with the wrapped value, if a [[ReplyWithStatus#error]] arrives the completion stage
-   * is instead failed.
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply#success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply#error]] arrives the future is instead
+   * failed.
    */
   def askWithStatus(actor: ActorRef, message: Any, timeout: java.time.Duration): CompletionStage[AnyRef] =
     scalaAskWithStatus(actor, message)(timeout.asScala).toJava.asInstanceOf[CompletionStage[AnyRef]]

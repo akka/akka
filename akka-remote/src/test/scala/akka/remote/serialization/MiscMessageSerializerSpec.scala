@@ -14,7 +14,7 @@ import com.typesafe.config.ConfigFactory
 import akka.{ Done, NotUsed }
 import akka.actor._
 import akka.pattern.AskTimeoutException
-import akka.pattern.ReplyWithStatus
+import akka.pattern.StatusReply
 import akka.remote.{ RemoteScope, RemoteWatcher }
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing._
@@ -130,10 +130,10 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       "RemoteRouterConfig" -> RemoteRouterConfig(
         local = RandomPool(25),
         nodes = List(Address("akka", "system", "localhost", 2525))),
-      "ReplyWithStatus.success" -> ReplyWithStatus.success("woho!"),
-      "ReplyWithStatus.Ack" -> ReplyWithStatus.Ack,
-      "ReplyWithStatus.error(errorMessage)" -> ReplyWithStatus.error("boho!"),
-      "ReplyWithStatus.error(exception)" -> ReplyWithStatus.error(new TestException("boho!"))).foreach {
+      "StatusReply.success" -> StatusReply.success("woho!"),
+      "StatusReply.Ack" -> StatusReply.Ack,
+      "StatusReply.error(errorMessage)" -> StatusReply.error("boho!"),
+      "StatusReply.error(exception)" -> StatusReply.error(new TestException("boho!"))).foreach {
       case (scenario, item) =>
         s"resolve serializer for $scenario" in {
           val serializer = SerializationExtension(system)

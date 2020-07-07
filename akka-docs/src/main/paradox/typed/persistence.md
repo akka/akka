@@ -387,9 +387,9 @@ persistent actors, because you typically want to know if the command was rejecte
 when accepted you want a confirmation when the events have been successfully stored.
 
 Therefore you typically include a @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`]. If the 
-command can either have a successful response or a validation error returned, the generic response type @scala[`ReplyWithStatus[ReplyType]]`]
-@java[`ReplyWithStatus<ReplyType>`] can be used. If the successful reply does not contain a value but is more of an acknowledgement
-a pre defined @scala[`ReplyWithStatus.Ack`]@java[`ReplyWithStatus.ack()`] of type @scala[`ReplyWithStatus[Done]`]@java[`ReplyWithStatus<Done>`]
+command can either have a successful response or a validation error returned, the generic response type @scala[`StatusReply[ReplyType]]`]
+@java[`StatusReply<ReplyType>`] can be used. If the successful reply does not contain a value but is more of an acknowledgement
+a pre defined @scala[`StatusReply.Ack`]@java[`StatusReply.ack()`] of type @scala[`StatusReply[Done]`]@java[`StatusReply<Done>`]
 can be used.
 
 After validation errors or after persisting events, using a `thenRun` side effect, the reply message can

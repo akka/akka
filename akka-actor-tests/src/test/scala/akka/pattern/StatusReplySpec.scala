@@ -12,29 +12,29 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
 
-class ReplyWithStatusSpec extends AkkaSpec with ScalaFutures {
+class StatusReplySpec extends AkkaSpec with ScalaFutures {
 
-  "ReplyWithStatus" should {
+  "StatusReply" should {
     "pattern match success" in {
       // like in a classic actor receive Any => ...
-      (ReplyWithStatus.Success("woho!"): Any) match {
-        case ReplyWithStatus.Success(_: Int)                          => fail()
-        case ReplyWithStatus.Success(text: String) if text == "woho!" =>
-        case _                                                        => fail()
+      (StatusReply.Success("woho!"): Any) match {
+        case StatusReply.Success(_: Int)                          => fail()
+        case StatusReply.Success(text: String) if text == "woho!" =>
+        case _                                                    => fail()
       }
     }
 
     "pattern match error with text" in {
-      ReplyWithStatus.Error("boho!") match {
-        case ReplyWithStatus.Error(_) =>
-        case _                        => fail()
+      StatusReply.Error("boho!") match {
+        case StatusReply.Error(_) =>
+        case _                    => fail()
       }
     }
 
     "pattern match error with exception" in {
-      ReplyWithStatus.Error(TestException("boho!")) match {
-        case ReplyWithStatus.Error(_) =>
-        case _                        => fail()
+      StatusReply.Error(TestException("boho!")) match {
+        case StatusReply.Error(_) =>
+        case _                    => fail()
       }
     }
   }
@@ -46,7 +46,7 @@ class ReplyWithStatusSpec extends AkkaSpec with ScalaFutures {
       val probe = TestProbe()
       val result = probe.ref.askWithStatus("request")
       probe.expectMsg("request")
-      probe.lastSender ! ReplyWithStatus.Success("woho")
+      probe.lastSender ! StatusReply.Success("woho")
       result.futureValue should ===("woho")
     }
 
@@ -54,15 +54,15 @@ class ReplyWithStatusSpec extends AkkaSpec with ScalaFutures {
       val probe = TestProbe()
       val result = probe.ref.askWithStatus("request")
       probe.expectMsg("request")
-      probe.lastSender ! ReplyWithStatus.Error("boho")
-      result.failed.futureValue should ===(ReplyWithStatus.ErrorMessage("boho"))
+      probe.lastSender ! StatusReply.Error("boho")
+      result.failed.futureValue should ===(StatusReply.ErrorMessage("boho"))
     }
 
     "unwrap Error with exception" in {
       val probe = TestProbe()
       val result = probe.ref.askWithStatus("request")
       probe.expectMsg("request")
-      probe.lastSender ! ReplyWithStatus.Error(TestException("boho"))
+      probe.lastSender ! StatusReply.Error(TestException("boho"))
       result.failed.futureValue should ===(TestException("boho"))
     }
 

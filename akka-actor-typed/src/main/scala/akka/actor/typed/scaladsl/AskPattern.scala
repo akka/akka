@@ -19,7 +19,7 @@ import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.ExecutionContexts
 import akka.annotation.InternalStableApi
 import akka.pattern.PromiseActorRef
-import akka.pattern.ReplyWithStatus
+import akka.pattern.StatusReply
 import akka.util.{ unused, Timeout }
 
 import scala.util.Failure
@@ -123,17 +123,17 @@ object AskPattern {
     }
 
     /**
-     * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.ReplyWithStatus]].
-     * If the response is a [[akka.pattern.ReplyWithStatus#success]] the returned future is completed successfully with the wrapped response.
-     * If the status response is a [[akka.pattern.ReplyWithStatus#error]] the returned future will be failed with the
-     * exception in the error (normally a [[akka.pattern.ReplyWithStatus.ErrorMessage]]).
+     * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+     * If the response is a [[akka.pattern.StatusReply.Success]] the returned future is completed successfully with the wrapped response.
+     * If the status response is a [[akka.pattern.StatusReply.Error]] the returned future will be failed with the
+     * exception in the error (normally a [[akka.pattern.StatusReply.ErrorMessage]]).
      */
     def askWithStatus[Res](
-        replyTo: ActorRef[ReplyWithStatus[Res]] => Req)(implicit timeout: Timeout, scheduler: Scheduler): Future[Res] =
+        replyTo: ActorRef[StatusReply[Res]] => Req)(implicit timeout: Timeout, scheduler: Scheduler): Future[Res] =
       ask(replyTo).transform {
-        case Success(ReplyWithStatus.Success(value)) => Success(value.asInstanceOf[Res])
-        case Success(ReplyWithStatus.Error(ex))      => Failure(ex)
-        case f: Failure[_]                           => f.asInstanceOf[Failure[Res]]
+        case Success(StatusReply.Success(value)) => Success(value.asInstanceOf[Res])
+        case Success(StatusReply.Error(ex))      => Failure(ex)
+        case f: Failure[_]                       => f.asInstanceOf[Failure[Res]]
       }(ExecutionContexts.parasitic)
 
   }

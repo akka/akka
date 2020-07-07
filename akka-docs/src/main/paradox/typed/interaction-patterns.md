@@ -238,13 +238,13 @@ In many cases the response can either be a successful result or an error (a vali
 Having to define two response classes and a shared supertype for every request type can be repetitive, especially in a cluster context 
 where you also have to make sure the messages can be serialized to be sent over the network.
 
-To help with this a generic status-response type is included in Akka: @apidoc[ReplyWithStatus], everywhere where `ask` can be used
-there is also a second method `askWithStatus` which, given that the response is a `ReplyWithStatus` will unwrap successful responses
+To help with this a generic status-response type is included in Akka: @apidoc[StatusReply], everywhere where `ask` can be used
+there is also a second method `askWithStatus` which, given that the response is a `StatusReply` will unwrap successful responses
 and help with handling validation errors. Akka includes pre-built serializers for the type, so in the normal use case a clustered 
 application only needs to provide a serializer for the successful result.
 
 For the case where the successful reply does not contain an actual value but is more of an acknowledgment there is a pre defined
-@scala[`ReplyWithStatus.Ack`]@java[`ReplyWithStatus.ack()`] of type @scala[`ReplyWithStatus[Done]`]@java[`ReplyWithStatus<Done>`].
+@scala[`StatusReply.Ack`]@java[`StatusReply.ack()`] of type @scala[`StatusReply[Done]`]@java[`StatusReply<Done>`].
 
 Errors are preferably sent as a text describing what is wrong, but using exceptions to attach a type is also possible.
 
@@ -267,7 +267,7 @@ Scala
 Java
 :  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsAskWithStatusTest.java) { #standalone-ask-with-status }
 
-Note that validation errors are also explicit in the message protocol, but encoded as the wrapper type, constructed using @scala[`ReplyWithStatus.Error(text)`]@java[`ReplyWithStatus.error(text)`]:
+Note that validation errors are also explicit in the message protocol, but encoded as the wrapper type, constructed using @scala[`StatusReply.Error(text)`]@java[`StatusReply.error(text)`]:
 
 Scala
 :  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #standalone-ask-with-status-fail-future }

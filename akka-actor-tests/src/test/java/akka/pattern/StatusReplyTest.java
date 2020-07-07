@@ -23,7 +23,7 @@ import static akka.pattern.Patterns.askWithStatus;
 
 import static org.junit.Assert.*;
 
-public class ReplyWithStatusTest extends JUnitSuite {
+public class StatusReplyTest extends JUnitSuite {
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource =
@@ -31,7 +31,7 @@ public class ReplyWithStatusTest extends JUnitSuite {
 
   @Test
   public void testSuccessApi() {
-    ReplyWithStatus<String> reply = ReplyWithStatus.success("woho");
+    StatusReply<String> reply = StatusReply.success("woho");
     assertTrue(reply.isSuccess());
     assertFalse(reply.isError());
     assertEquals("woho", reply.getValue());
@@ -45,14 +45,14 @@ public class ReplyWithStatusTest extends JUnitSuite {
 
   @Test
   public void testErrorMessageApi() {
-    ReplyWithStatus<String> reply = ReplyWithStatus.error("boho");
+    StatusReply<String> reply = StatusReply.error("boho");
     assertTrue(reply.isError());
     assertFalse(reply.isSuccess());
     assertEquals("boho", reply.getError().getMessage());
     try {
       reply.getValue();
       Assert.fail("Calling get value on error did not throw");
-    } catch (ReplyWithStatus.ErrorMessage ex) {
+    } catch (StatusReply.ErrorMessage ex) {
       // this is what we expect
     } catch (Throwable th) {
       Assert.fail("Unexpected exception type: " + th);
@@ -61,7 +61,7 @@ public class ReplyWithStatusTest extends JUnitSuite {
 
   @Test
   public void testErrorExceptionApi() {
-    ReplyWithStatus<String> reply = ReplyWithStatus.error(new TestException("boho"));
+    StatusReply<String> reply = StatusReply.error(new TestException("boho"));
     assertTrue(reply.isError());
     assertFalse(reply.isSuccess());
     assertEquals("boho", reply.getError().getMessage());
@@ -81,7 +81,7 @@ public class ReplyWithStatusTest extends JUnitSuite {
 
     CompletionStage<Object> response = askWithStatus(probe.ref(), "request", Duration.ofSeconds(3));
     probe.expectMsg("request");
-    probe.lastSender().tell(ReplyWithStatus.success("woho"), Actor.noSender());
+    probe.lastSender().tell(StatusReply.success("woho"), Actor.noSender());
 
     Object result = response.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals("woho", result);
@@ -93,13 +93,13 @@ public class ReplyWithStatusTest extends JUnitSuite {
 
     CompletionStage<Object> response = askWithStatus(probe.ref(), "request", Duration.ofSeconds(3));
     probe.expectMsg("request");
-    probe.lastSender().tell(ReplyWithStatus.error("boho"), Actor.noSender());
+    probe.lastSender().tell(StatusReply.error("boho"), Actor.noSender());
 
     try {
       Object result = response.toCompletableFuture().get(3, TimeUnit.SECONDS);
     } catch (ExecutionException ex) {
       // what we expected
-      assertEquals(ReplyWithStatus.ErrorMessage.class, ex.getCause().getClass());
+      assertEquals(StatusReply.ErrorMessage.class, ex.getCause().getClass());
       assertEquals("boho", ex.getCause().getMessage());
     }
   }
@@ -110,7 +110,7 @@ public class ReplyWithStatusTest extends JUnitSuite {
 
     CompletionStage<Object> response = askWithStatus(probe.ref(), "request", Duration.ofSeconds(3));
     probe.expectMsg("request");
-    probe.lastSender().tell(ReplyWithStatus.error(new TestException("boho")), Actor.noSender());
+    probe.lastSender().tell(StatusReply.error(new TestException("boho")), Actor.noSender());
 
     try {
       Object result = response.toCompletableFuture().get(3, TimeUnit.SECONDS);

@@ -89,12 +89,18 @@ trait AskSupport {
     actorRef.internalAsk(message, timeout, sender)
 
   /**
-   * Use for messages whose response is known to be a [[akka.pattern.ReplyWithStatus]]. When a [[ReplyWithStatus#success]] response
-   * arrives the future is completed with the wrapped value, if a [[ReplyWithStatus#error]] arrives the future is instead
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply.Success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply.Error]] arrives the future is instead
    * failed.
    */
   def askWithStatus(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] =
     actorRef.internalAskWithStatus(message)(timeout, Actor.noSender)
+
+  /**
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply.Success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply.Error]] arrives the future is instead
+   * failed.
+   */
   def askWithStatus(actorRef: ActorRef, message: Any, sender: ActorRef)(implicit timeout: Timeout): Future[Any] =
     actorRef.internalAskWithStatus(message)(timeout, sender)
 
@@ -342,9 +348,9 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
   private[pattern] def internalAskWithStatus(
       message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender).transform {
-      case Success(ReplyWithStatus.Success(v)) => Success(v)
-      case Success(ReplyWithStatus.Error(ex))  => Failure(ex)
-      case other: Try[_]                       => other
+      case Success(StatusReply.Success(v)) => Success(v)
+      case Success(StatusReply.Error(ex))  => Failure(ex)
+      case other: Try[_]                   => other
     }(ExecutionContexts.parasitic)
 
   /**

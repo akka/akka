@@ -20,7 +20,7 @@ import akka.actor.Address
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
-import akka.pattern.ReplyWithStatus
+import akka.pattern.StatusReply
 import akka.util.{ BoxedType, Timeout }
 import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
@@ -208,12 +208,12 @@ import scala.util.Success
     pipeToSelf((target.ask(createRequest))(responseTimeout, system.scheduler))(mapResponse)
   }
 
-  override def askWithStatus[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[ReplyWithStatus[Res]] => Req)(
+  override def askWithStatus[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[StatusReply[Res]] => Req)(
       mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit =
     ask(target, createRequest) {
-      case Success(ReplyWithStatus.Success(t: Res)) => mapResponse(Success(t))
-      case Success(ReplyWithStatus.Error(why))      => mapResponse(Failure(why))
-      case fail: Failure[_]                         => mapResponse(fail.asInstanceOf[Failure[Res]])
+      case Success(StatusReply.Success(t: Res)) => mapResponse(Success(t))
+      case Success(StatusReply.Error(why))      => mapResponse(Failure(why))
+      case fail: Failure[_]                     => mapResponse(fail.asInstanceOf[Failure[Res]])
     }
 
   // Java API impl
@@ -232,19 +232,19 @@ import scala.util.Success
       resClass: Class[Res],
       target: RecipientRef[Req],
       responseTimeout: Duration,
-      createRequest: akka.japi.function.Function[ActorRef[ReplyWithStatus[Res]], Req],
+      createRequest: akka.japi.function.Function[ActorRef[StatusReply[Res]], Req],
       applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit = {
     implicit val classTag: ClassTag[Res] = ClassTag(resClass)
-    ask[Req, ReplyWithStatus[Res]](
-      classOf[ReplyWithStatus[Res]],
+    ask[Req, StatusReply[Res]](
+      classOf[StatusReply[Res]],
       target,
       responseTimeout,
       createRequest,
-      (ok: ReplyWithStatus[Res], failure: Throwable) =>
+      (ok: StatusReply[Res], failure: Throwable) =>
         ok match {
-          case ReplyWithStatus.Success(value: Res) => applyToResponse(value, null)
-          case ReplyWithStatus.Error(why)          => applyToResponse(null.asInstanceOf[Res], why)
-          case null                                => applyToResponse(null.asInstanceOf[Res], failure)
+          case StatusReply.Success(value: Res) => applyToResponse(value, null)
+          case StatusReply.Error(why)          => applyToResponse(null.asInstanceOf[Res], why)
+          case null                            => applyToResponse(null.asInstanceOf[Res], failure)
         })
   }
 

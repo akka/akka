@@ -14,7 +14,7 @@ import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
-import akka.pattern.ReplyWithStatus
+import akka.pattern.StatusReply
 import akka.persistence.typed.PersistenceId
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -54,25 +54,25 @@ class AccountExampleSpec
   "Account example" must {
 
     "handle Deposit" in {
-      val probe = createTestProbe[ReplyWithStatus[Done]]()
+      val probe = createTestProbe[StatusReply[Done]]()
       val ref = ClusterSharding(system).entityRefFor(AccountEntity.TypeKey, "1")
       ref ! CreateAccount(probe.ref)
-      probe.expectMessage(ReplyWithStatus.Ack)
+      probe.expectMessage(StatusReply.Ack)
       ref ! Deposit(100, probe.ref)
-      probe.expectMessage(ReplyWithStatus.Ack)
+      probe.expectMessage(StatusReply.Ack)
       ref ! Deposit(10, probe.ref)
-      probe.expectMessage(ReplyWithStatus.Ack)
+      probe.expectMessage(StatusReply.Ack)
     }
 
     "handle Withdraw" in {
-      val doneProbe = createTestProbe[ReplyWithStatus[Done]]()
+      val doneProbe = createTestProbe[StatusReply[Done]]()
       val ref = ClusterSharding(system).entityRefFor(AccountEntity.TypeKey, "2")
       ref ! CreateAccount(doneProbe.ref)
-      doneProbe.expectMessage(ReplyWithStatus.Ack)
+      doneProbe.expectMessage(StatusReply.Ack)
       ref ! Deposit(100, doneProbe.ref)
-      doneProbe.expectMessage(ReplyWithStatus.Ack)
+      doneProbe.expectMessage(StatusReply.Ack)
       ref ! Withdraw(10, doneProbe.ref)
-      doneProbe.expectMessage(ReplyWithStatus.Ack)
+      doneProbe.expectMessage(StatusReply.Ack)
 
       val balanceProbe = createTestProbe[CurrentBalance]()
       ref ! GetBalance(balanceProbe.ref)
@@ -80,14 +80,14 @@ class AccountExampleSpec
     }
 
     "reject Withdraw overdraft" in {
-      val probe = createTestProbe[ReplyWithStatus[Done]]()
+      val probe = createTestProbe[StatusReply[Done]]()
       val ref = ClusterSharding(system).entityRefFor[Command](AccountEntity.TypeKey, "3")
       ref ! CreateAccount(probe.ref)
-      probe.expectMessage(ReplyWithStatus.Ack)
+      probe.expectMessage(StatusReply.Ack)
       ref ! Deposit(100, probe.ref)
-      probe.expectMessage(ReplyWithStatus.Ack)
+      probe.expectMessage(StatusReply.Ack)
       ref ! Withdraw(110, probe.ref)
-      probe.expectMessageType[ReplyWithStatus[Done]].isError should ===(true)
+      probe.expectMessageType[StatusReply[Done]].isError should ===(true)
 
       // Account.Command is the command type, but it should also be possible to narrow it
       // ... thus restricting the entity ref from being sent other commands, e.g.:
@@ -98,12 +98,12 @@ class AccountExampleSpec
     }
 
     "handle GetBalance" in {
-      val opProbe = createTestProbe[ReplyWithStatus[Done]]()
+      val opProbe = createTestProbe[StatusReply[Done]]()
       val ref = ClusterSharding(system).entityRefFor(AccountEntity.TypeKey, "4")
       ref ! CreateAccount(opProbe.ref)
-      opProbe.expectMessage(ReplyWithStatus.Ack)
+      opProbe.expectMessage(StatusReply.Ack)
       ref ! Deposit(100, opProbe.ref)
-      opProbe.expectMessage(ReplyWithStatus.Ack)
+      opProbe.expectMessage(StatusReply.Ack)
 
       val getProbe = createTestProbe[CurrentBalance]()
       ref ! GetBalance(getProbe.ref)
@@ -124,7 +124,7 @@ class AccountExampleSpec
     }
 
     "verifySerialization" in {
-      val opProbe = createTestProbe[ReplyWithStatus[Done]]()
+      val opProbe = createTestProbe[StatusReply[Done]]()
       serializationTestKit.verifySerialization(CreateAccount(opProbe.ref))
       serializationTestKit.verifySerialization(Deposit(100, opProbe.ref))
       serializationTestKit.verifySerialization(Withdraw(90, opProbe.ref))

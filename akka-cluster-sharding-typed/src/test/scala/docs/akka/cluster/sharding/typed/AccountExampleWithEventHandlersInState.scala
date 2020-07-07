@@ -8,7 +8,7 @@ import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import akka.pattern.ReplyWithStatus
+import akka.pattern.StatusReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
@@ -31,13 +31,13 @@ object AccountExampleWithEventHandlersInState {
     //#reply-command
     sealed trait Command extends CborSerializable
     //#reply-command
-    final case class CreateAccount(replyTo: ActorRef[ReplyWithStatus[Done]]) extends Command
-    final case class Deposit(amount: BigDecimal, replyTo: ActorRef[ReplyWithStatus[Done]]) extends Command
+    final case class CreateAccount(replyTo: ActorRef[StatusReply[Done]]) extends Command
+    final case class Deposit(amount: BigDecimal, replyTo: ActorRef[StatusReply[Done]]) extends Command
     //#reply-command
-    final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[ReplyWithStatus[Done]]) extends Command
+    final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[StatusReply[Done]]) extends Command
     //#reply-command
     final case class GetBalance(replyTo: ActorRef[CurrentBalance]) extends Command
-    final case class CloseAccount(replyTo: ActorRef[ReplyWithStatus[Done]]) extends Command
+    final case class CloseAccount(replyTo: ActorRef[StatusReply[Done]]) extends Command
 
     // Reply
     final case class CurrentBalance(balance: BigDecimal) extends CborSerializable
@@ -112,7 +112,7 @@ object AccountExampleWithEventHandlersInState {
               case c: GetBalance   => getBalance(acc, c)
               case c: CloseAccount => closeAccount(acc, c)
               case c: CreateAccount =>
-                Effect.reply(c.replyTo)(ReplyWithStatus.Error(s"Account $accountNumber is already created"))
+                Effect.reply(c.replyTo)(StatusReply.Error(s"Account $accountNumber is already created"))
             }
 
           case ClosedAccount =>
@@ -133,8 +133,8 @@ object AccountExampleWithEventHandlersInState {
 
     private def replyClosed(
         accountNumber: String,
-        replyTo: ActorRef[ReplyWithStatus[Done]]): ReplyEffect[Event, Account] = {
-      Effect.reply(replyTo)(ReplyWithStatus.Error(s"Account $accountNumber is closed"))
+        replyTo: ActorRef[StatusReply[Done]]): ReplyEffect[Event, Account] = {
+      Effect.reply(replyTo)(StatusReply.Error(s"Account $accountNumber is closed"))
     }
 
     private val eventHandler: (Account, Event) => Account = { (state, event) =>
@@ -142,20 +142,20 @@ object AccountExampleWithEventHandlersInState {
     }
 
     private def createAccount(cmd: CreateAccount): ReplyEffect[Event, Account] = {
-      Effect.persist(AccountCreated).thenReply(cmd.replyTo)(_ => ReplyWithStatus.Ack)
+      Effect.persist(AccountCreated).thenReply(cmd.replyTo)(_ => StatusReply.Ack)
     }
 
     private def deposit(cmd: Deposit): ReplyEffect[Event, Account] = {
-      Effect.persist(Deposited(cmd.amount)).thenReply(cmd.replyTo)(_ => ReplyWithStatus.Ack)
+      Effect.persist(Deposited(cmd.amount)).thenReply(cmd.replyTo)(_ => StatusReply.Ack)
     }
 
     //#reply
     private def withdraw(acc: OpenedAccount, cmd: Withdraw): ReplyEffect[Event, Account] = {
       if (acc.canWithdraw(cmd.amount))
-        Effect.persist(Withdrawn(cmd.amount)).thenReply(cmd.replyTo)(_ => ReplyWithStatus.Ack)
+        Effect.persist(Withdrawn(cmd.amount)).thenReply(cmd.replyTo)(_ => StatusReply.Ack)
       else
         Effect.reply(cmd.replyTo)(
-          ReplyWithStatus.Error(s"Insufficient balance ${acc.balance} to be able to withdraw ${cmd.amount}"))
+          StatusReply.Error(s"Insufficient balance ${acc.balance} to be able to withdraw ${cmd.amount}"))
     }
     //#reply
 
@@ -165,9 +165,9 @@ object AccountExampleWithEventHandlersInState {
 
     private def closeAccount(acc: OpenedAccount, cmd: CloseAccount): ReplyEffect[Event, Account] = {
       if (acc.balance == Zero)
-        Effect.persist(AccountClosed).thenReply(cmd.replyTo)(_ => ReplyWithStatus.Ack)
+        Effect.persist(AccountClosed).thenReply(cmd.replyTo)(_ => StatusReply.Ack)
       else
-        Effect.reply(cmd.replyTo)(ReplyWithStatus.Error("Can't close account with non-zero balance"))
+        Effect.reply(cmd.replyTo)(StatusReply.Error("Can't close account with non-zero balance"))
     }
 
   }

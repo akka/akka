@@ -17,7 +17,7 @@ import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.{ ActorRef, PostStop, Props }
-import akka.pattern.ReplyWithStatus
+import akka.pattern.StatusReply
 
 object ActorContextAskSpec {
   val config = ConfigFactory.parseString("""
@@ -189,8 +189,8 @@ class ActorContextAskSpec
       probe.receiveMessages(N).map(_.n) should ===(1 to N)
     }
 
-    "unwrap successful ReplyWithStatus messages using askWithStatus" in {
-      case class Ping(ref: ActorRef[ReplyWithStatus[Pong.type]])
+    "unwrap successful StatusReply messages using askWithStatus" in {
+      case class Ping(ref: ActorRef[StatusReply[Pong.type]])
       case object Pong
 
       val probe = createTestProbe[Any]()
@@ -208,12 +208,12 @@ class ActorContextAskSpec
       })
 
       val replyTo = probe.expectMessageType[Ping].ref
-      replyTo ! ReplyWithStatus.Success(Pong)
+      replyTo ! StatusReply.Success(Pong)
       probe.expectMessage("got pong")
     }
 
-    "unwrap error message ReplyWithStatus messages using askWithStatus" in {
-      case class Ping(ref: ActorRef[ReplyWithStatus[Pong.type]])
+    "unwrap error message StatusReply messages using askWithStatus" in {
+      case class Ping(ref: ActorRef[StatusReply[Pong.type]])
       case object Pong
 
       val probe = createTestProbe[Any]()
@@ -231,12 +231,12 @@ class ActorContextAskSpec
       })
 
       val replyTo = probe.expectMessageType[Ping].ref
-      replyTo ! ReplyWithStatus.Error("boho")
-      probe.expectMessage("got error: akka.pattern.ReplyWithStatus$ErrorMessage, boho")
+      replyTo ! StatusReply.Error("boho")
+      probe.expectMessage("got error: akka.pattern.StatusReply$ErrorMessage, boho")
     }
 
-    "unwrap error with custom exception ReplyWithStatus messages using askWithStatus" in {
-      case class Ping(ref: ActorRef[ReplyWithStatus[Pong.type]])
+    "unwrap error with custom exception StatusReply messages using askWithStatus" in {
+      case class Ping(ref: ActorRef[StatusReply[Pong.type]])
       case object Pong
 
       val probe = createTestProbe[Any]()
@@ -255,7 +255,7 @@ class ActorContextAskSpec
       })
 
       val replyTo = probe.expectMessageType[Ping].ref
-      replyTo ! ReplyWithStatus.Error(TestException("boho"))
+      replyTo ! StatusReply.Error(TestException("boho"))
       probe.expectMessage("got error: akka.actor.testkit.typed.TestException, boho")
     }
 

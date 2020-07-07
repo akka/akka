@@ -20,7 +20,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.TimerScheduler
-import akka.pattern.ReplyWithStatus
+import akka.pattern.StatusReply
 import org.scalatest.wordspec.AnyWordSpecLike
 
 class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
@@ -299,13 +299,13 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
     // #actor-ask-with-status
     object Hal {
       sealed trait Command
-      case class OpenThePodBayDoorsPlease(replyTo: ActorRef[ReplyWithStatus[String]]) extends Command
+      case class OpenThePodBayDoorsPlease(replyTo: ActorRef[StatusReply[String]]) extends Command
 
       def apply(): Behaviors.Receive[Hal.Command] =
         Behaviors.receiveMessage[Command] {
           case OpenThePodBayDoorsPlease(replyTo) =>
             // reply with a validation error description
-            replyTo ! ReplyWithStatus.Error("I'm sorry, Dave. I'm afraid I can't do that.")
+            replyTo ! StatusReply.Error("I'm sorry, Dave. I'm afraid I can't do that.")
             Behaviors.same
         }
     }
@@ -322,12 +322,12 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
           // the ask is failed with a TimeoutException
           implicit val timeout: Timeout = 3.seconds
 
-          // A ReplyWithStatus.Success(m) ends up as a Success(m) here, while a
-          // ReplyWithStatus.Error(text) becomes a Failure(ErrorMessage(text))
+          // A StatusReply.Success(m) ends up as a Success(m) here, while a
+          // StatusReply.Error(text) becomes a Failure(ErrorMessage(text))
           context.askWithStatus(hal, Hal.OpenThePodBayDoorsPlease) {
-            case Success(message)                            => AdaptedResponse(message)
-            case Failure(ReplyWithStatus.ErrorMessage(text)) => AdaptedResponse(s"Request denied: $text")
-            case Failure(_)                                  => AdaptedResponse("Request failed")
+            case Success(message)                        => AdaptedResponse(message)
+            case Failure(StatusReply.ErrorMessage(text)) => AdaptedResponse(s"Request denied: $text")
+            case Failure(_)                              => AdaptedResponse("Request failed")
           }
 
           Behaviors.receiveMessage {
@@ -521,15 +521,15 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
     // #standalone-ask-with-status
     object CookieFabric {
       sealed trait Command {}
-      case class GiveMeCookies(count: Int, replyTo: ActorRef[ReplyWithStatus[Cookies]]) extends Command
+      case class GiveMeCookies(count: Int, replyTo: ActorRef[StatusReply[Cookies]]) extends Command
       case class Cookies(count: Int)
 
       def apply(): Behaviors.Receive[CookieFabric.GiveMeCookies] =
         Behaviors.receiveMessage { message =>
           if (message.count >= 5)
-            message.replyTo ! ReplyWithStatus.Error("Too many cookies.")
+            message.replyTo ! StatusReply.Error("Too many cookies.")
           else
-            message.replyTo ! ReplyWithStatus.Success(Cookies(message.count))
+            message.replyTo ! StatusReply.Success(Cookies(message.count))
           Behaviors.same
         }
     }
@@ -557,9 +557,9 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
     implicit val ec = system.executionContext
 
     result.onComplete {
-      case Success(CookieFabric.Cookies(count))          => println(s"Yay, $count cookies!")
-      case Failure(ReplyWithStatus.ErrorMessage(reason)) => println(s"No cookies for me. $reason")
-      case Failure(ex)                                   => println(s"Boo! didn't get cookies: ${ex.getMessage}")
+      case Success(CookieFabric.Cookies(count))      => println(s"Yay, $count cookies!")
+      case Failure(StatusReply.ErrorMessage(reason)) => println(s"No cookies for me. $reason")
+      case Failure(ex)                               => println(s"Boo! didn't get cookies: ${ex.getMessage}")
     }
     // #standalone-ask-with-status
 

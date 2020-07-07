@@ -23,7 +23,7 @@ import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.{ StartEntity => ClassicStartEntity }
 import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
-import akka.pattern.ReplyWithStatus
+import akka.pattern.StatusReply
 import akka.util.Timeout
 
 object ClusterSharding extends ExtensionId[ClusterSharding] {
@@ -449,12 +449,12 @@ object EntityTypeKey {
   def ask[Res](f: ActorRef[Res] => M)(implicit timeout: Timeout): Future[Res]
 
   /**
-   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.ReplyWithStatus]].
-   * If the response is a [[akka.pattern.ReplyWithStatus#success]] the returned future is completed successfully with the wrapped response.
-   * If the status response is a [[akka.pattern.ReplyWithStatus#error]] the returned future will be failed with the
-   * exception in the error (normally a [[akka.pattern.ReplyWithStatus.ErrorMessage]]).
+   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+   * If the response is a [[akka.pattern.StatusReply.Success]] the returned future is completed successfully with the wrapped response.
+   * If the status response is a [[akka.pattern.StatusReply.Error]] the returned future will be failed with the
+   * exception in the error (normally a [[akka.pattern.StatusReply.ErrorMessage]]).
    */
-  def askWithStatus[Res](f: ActorRef[ReplyWithStatus[Res]] => M)(implicit timeout: Timeout): Future[Res]
+  def askWithStatus[Res](f: ActorRef[StatusReply[Res]] => M)(implicit timeout: Timeout): Future[Res]
 
   /**
    * Allows to "ask" the [[EntityRef]] for a reply.

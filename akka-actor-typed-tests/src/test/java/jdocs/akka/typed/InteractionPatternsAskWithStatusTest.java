@@ -12,7 +12,7 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.*;
 
 // #actor-ask-with-status
-import akka.pattern.ReplyWithStatus;
+import akka.pattern.StatusReply;
 
 // #actor-ask-with-status
 import org.junit.ClassRule;
@@ -21,7 +21,6 @@ import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public class InteractionPatternsAskWithStatusTest extends JUnitSuite {
@@ -47,9 +46,9 @@ public class InteractionPatternsAskWithStatusTest extends JUnitSuite {
       public interface Command {}
 
       public static final class OpenThePodBayDoorsPlease implements Hal.Command {
-        public final ActorRef<ReplyWithStatus<String>> respondTo;
+        public final ActorRef<StatusReply<String>> respondTo;
 
-        public OpenThePodBayDoorsPlease(ActorRef<ReplyWithStatus<String>> respondTo) {
+        public OpenThePodBayDoorsPlease(ActorRef<StatusReply<String>> respondTo) {
           this.respondTo = respondTo;
         }
       }
@@ -63,8 +62,7 @@ public class InteractionPatternsAskWithStatusTest extends JUnitSuite {
 
       private Behavior<Hal.Command> onOpenThePodBayDoorsPlease(
           Hal.OpenThePodBayDoorsPlease message) {
-        message.respondTo.tell(
-            ReplyWithStatus.error("I'm sorry, Dave. I'm afraid I can't do that."));
+        message.respondTo.tell(StatusReply.error("I'm sorry, Dave. I'm afraid I can't do that."));
         return this;
       }
     }
@@ -98,14 +96,14 @@ public class InteractionPatternsAskWithStatusTest extends JUnitSuite {
             hal,
             timeout,
             // construct the outgoing message
-            (ActorRef<ReplyWithStatus<String>> ref) -> new Hal.OpenThePodBayDoorsPlease(ref),
+            (ActorRef<StatusReply<String>> ref) -> new Hal.OpenThePodBayDoorsPlease(ref),
             // adapt the response (or failure to respond)
             (response, throwable) -> {
               if (response != null) {
                 // a ReponseWithStatus.success(m) is unwrapped and passed as response
                 return new Dave.AdaptedResponse(response);
               } else {
-                // a ResponseWithStatus.error will end up as a ReplyWithStatus.ErrorMessage()
+                // a ResponseWithStatus.error will end up as a StatusReply.ErrorMessage()
                 // exception here
                 return new Dave.AdaptedResponse("Request failed: " + throwable.getMessage());
               }
@@ -138,9 +136,9 @@ public class InteractionPatternsAskWithStatusTest extends JUnitSuite {
 
       public static class GiveMeCookies implements CookieFabric.Command {
         public final int count;
-        public final ActorRef<ReplyWithStatus<CookieFabric.Cookies>> replyTo;
+        public final ActorRef<StatusReply<CookieFabric.Cookies>> replyTo;
 
-        public GiveMeCookies(int count, ActorRef<ReplyWithStatus<CookieFabric.Cookies>> replyTo) {
+        public GiveMeCookies(int count, ActorRef<StatusReply<CookieFabric.Cookies>> replyTo) {
           this.count = count;
           this.replyTo = replyTo;
         }
@@ -170,8 +168,8 @@ public class InteractionPatternsAskWithStatusTest extends JUnitSuite {
       }
 
       private Behavior<CookieFabric.Command> onGiveMeCookies(CookieFabric.GiveMeCookies request) {
-        if (request.count >= 5) request.replyTo.tell(ReplyWithStatus.error("Too many cookies."));
-        else request.replyTo.tell(ReplyWithStatus.success(new CookieFabric.Cookies(request.count)));
+        if (request.count >= 5) request.replyTo.tell(StatusReply.error("Too many cookies."));
+        else request.replyTo.tell(StatusReply.success(new CookieFabric.Cookies(request.count)));
 
         return this;
       }
@@ -196,7 +194,7 @@ public class InteractionPatternsAskWithStatusTest extends JUnitSuite {
         result.whenComplete(
             (reply, failure) -> {
               if (reply != null) System.out.println("Yay, " + reply.count + " cookies!");
-              else if (failure instanceof ReplyWithStatus.ErrorMessage)
+              else if (failure instanceof StatusReply.ErrorMessage)
                 System.out.println("No cookies for me. " + failure.getMessage());
               else System.out.println("Boo! didn't get cookies in time. " + failure);
             });
