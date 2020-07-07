@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package jdocs.stream.operators.sourceorflow;
 
 import akka.Done;
@@ -16,66 +20,61 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-/**
- *
- */
+/** */
 public class Monitor {
 
-    // #monitor
-    private static <T> void printMonitorState(FlowMonitorState.StreamState<T> state) {
-        if (FlowMonitorState.Finished$.class.isInstance(state)) {
-            System.out.println("Stream is initialized but hasn't processed any element");
-        } else if (FlowMonitorState.Received.class.isInstance(state)) {
-            FlowMonitorState.Received msg = (FlowMonitorState.Received) state;
-            System.out.println("Last message received: " + msg.msg());
-        } else if (FlowMonitorState.Failed.class.isInstance(state)) {
-            Throwable cause = ((FlowMonitorState.Failed) state).cause();
-            System.out.println("Stream failed with cause: " + cause.getMessage());
-        } else {
-            System.out.println("Stream completed already");
-        }
+  // #monitor
+  private static <T> void printMonitorState(FlowMonitorState.StreamState<T> state) {
+    if (FlowMonitorState.Finished$.class.isInstance(state)) {
+      System.out.println("Stream is initialized but hasn't processed any element");
+    } else if (FlowMonitorState.Received.class.isInstance(state)) {
+      FlowMonitorState.Received msg = (FlowMonitorState.Received) state;
+      System.out.println("Last message received: " + msg.msg());
+    } else if (FlowMonitorState.Failed.class.isInstance(state)) {
+      Throwable cause = ((FlowMonitorState.Failed) state).cause();
+      System.out.println("Stream failed with cause: " + cause.getMessage());
+    } else {
+      System.out.println("Stream completed already");
     }
+  }
+  // #monitor
+
+  public static void main(String[] args)
+      throws InterruptedException, TimeoutException, ExecutionException {
+    ActorSystem actorSystem = ActorSystem.create("25fps-stream");
+
+    // #monitor
+    Source<Integer, FlowMonitor<Integer>> monitoredSource =
+        Source.fromIterator(() -> Arrays.asList(0, 1, 2, 3, 4, 5).iterator())
+            .throttle(5, Duration.ofSeconds(1))
+            .monitorMat(Keep.right());
+
+    Pair<FlowMonitor<Integer>, CompletionStage<Done>> run =
+        monitoredSource.toMat(Sink.foreach(System.out::println), Keep.both()).run(actorSystem);
+
+    FlowMonitor<Integer> monitor = run.first();
+
+    // if we peek on the stream too early it probably won't have processed any element.
+    printMonitorState(monitor.state());
+    // #monitor
+    // exclude from rendered snippet
+    Thread.sleep(500);
     // #monitor
 
+    // ...
+    // sometime later, our code has progressed. We can peek in the stream
+    // again to see what's the latest element processed
+    printMonitorState(monitor.state());
 
-    public static void main(String[] args) throws InterruptedException, TimeoutException, ExecutionException {
-        ActorSystem actorSystem = ActorSystem.create("25fps-stream");
+    // #monitor
+    // exclude from rendered snippet
+    run.second().toCompletableFuture().get(1, TimeUnit.SECONDS);
+    // #monitor
+    // #monitor
+    // Eventually, the stream completes and if we check the state it reports the streasm finished.
+    printMonitorState(monitor.state());
+    // #monitor
 
-        // #monitor
-        Source<Integer, FlowMonitor<Integer>> monitoredSource =
-                Source
-                        .fromIterator(() -> Arrays.asList(0, 1, 2, 3, 4, 5).iterator())
-                        .throttle(5, Duration.ofSeconds(1))
-                        .monitorMat(Keep.right());
-
-
-        Pair<FlowMonitor<Integer>, CompletionStage<Done>> run = monitoredSource
-                .toMat(Sink.foreach(System.out::println), Keep.both()).run(actorSystem);
-
-        FlowMonitor<Integer> monitor = run.first();
-
-        // if we peek on the stream too early it probably won't have processed any element.
-        printMonitorState(monitor.state());
-        // #monitor
-        // exclude from rendered snippet
-        Thread.sleep(500);
-        // #monitor
-
-        // ...
-        // sometime later, our code has progressed. We can peek in the stream
-        // again to see what's the latest element processed
-        printMonitorState(monitor.state());
-
-        // #monitor
-        // exclude from rendered snippet
-        run.second().toCompletableFuture().get(1, TimeUnit.SECONDS);
-        // #monitor
-        // #monitor
-        // Eventually, the stream completes and if we check the state it reports the streasm finished.
-        printMonitorState(monitor.state());
-        // #monitor
-
-        run.second().toCompletableFuture().whenComplete((x, t) -> actorSystem.terminate());
-
-    }
+    run.second().toCompletableFuture().whenComplete((x, t) -> actorSystem.terminate());
+  }
 }

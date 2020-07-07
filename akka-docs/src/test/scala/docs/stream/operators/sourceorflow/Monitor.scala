@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.stream.operators.sourceorflow
 
 import akka.Done
@@ -15,7 +19,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 /**
- * 
+ *
  */
 class Monitor {
 
@@ -38,14 +42,9 @@ class Monitor {
     }
   }
 
-  val monitoredSource: Source[Int, FlowMonitor[Int]] = source
-    .take(6)
-    .throttle(5, 1.second)
-    .monitorMat(Keep.right)
+  val monitoredSource: Source[Int, FlowMonitor[Int]] = source.take(6).throttle(5, 1.second).monitorMat(Keep.right)
   val monitoredStream: (FlowMonitor[Int], Future[Done]) =
-    monitoredSource
-      .toMat(Sink.foreach(println))(Keep.both)
-      .run()
+    monitoredSource.toMat(Sink.foreach(println))(Keep.both).run()
 
   val flowMonitor = monitoredStream._1
 
