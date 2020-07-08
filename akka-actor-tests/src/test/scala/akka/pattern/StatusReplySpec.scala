@@ -23,7 +23,13 @@ class StatusReplySpec extends AkkaSpec with ScalaFutures {
         case _                                                    => fail()
       }
     }
-
+    "pattern match success (Ack)" in {
+      // like in a classic actor receive Any => ...
+      (StatusReply.Ack: Any) match {
+        case StatusReply.Ack  =>
+        case _                => fail()
+      }
+    }
     "pattern match error with text" in {
       StatusReply.Error("boho!") match {
         case StatusReply.Error(_) =>

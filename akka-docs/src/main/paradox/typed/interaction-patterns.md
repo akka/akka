@@ -162,7 +162,7 @@ In an interaction where there is a 1:1 mapping between a request and a response 
 
 The interaction has two steps, first we need to construct the outgoing message, to do that we need an @scala[`ActorRef[Response]`]@java[`ActorRef<Response>`] to put as recipient in the outgoing message. 
 The second step is to transform the successful `Response` or failure into a message that is part of the protocol of the sending actor.
-See also the [Generic response wrapper](#generic-response-wrapper) for replies that are either a success of an error.
+See also the [Generic response wrapper](#generic-response-wrapper) for replies that are either a success or an error.
 
 **Example:**
 
@@ -214,7 +214,7 @@ Java
 Note that validation errors are also explicit in the message protocol. The `GiveMeCookies` request can reply
 with `Cookies` or `InvalidRequest`. The requestor has to decide how to handle an `InvalidRequest` reply. Sometimes
 it should be treated as a failed @scala[`Future`]@java[`Future`] and for that the reply can be mapped on the
-requestor side. See also the [Generic response wrapper](#generic-response-wrapper) for replies that are either a success of an error.
+requestor side. See also the [Generic response wrapper](#generic-response-wrapper) for replies that are either a success or an error.
 
 Scala
 :  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #standalone-ask-fail-future }
