@@ -51,6 +51,7 @@ private[akka] object ReplayingEvents {
       toSeqNr: Long,
       receivedPoisonPill: Boolean,
       recoveryStartTime: Long,
+      version: VersionVector,
       seenSeqNrPerReplica: Map[String, Long])
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: ReplayingState[S]): Behavior[InternalProtocol] =
@@ -87,8 +88,6 @@ private[akka] final class ReplayingEvents[C, E, S](
     ()
 
   override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
-    // FIXME deal with a replicated event and ack
-    // https://github.com/akka/akka/issues/29256
     msg match {
       case JournalResponse(r)              => onJournalResponse(r)
       case SnapshotterResponse(r)          => onSnapshotterResponse(r)
@@ -132,7 +131,7 @@ private[akka] final class ReplayingEvents[C, E, S](
                           s"Active active enabled but existing event has no metadata. Migration isn't supported yet.")
 
                     }
-                    aa.setContext(recoveryRunning = true, meta.originReplica)
+                    aa.setContext(recoveryRunning = true, meta.originReplica, meta.concurrent)
                     Some(meta -> aa.replicaId)
                   case None => None
                 }
@@ -144,6 +143,7 @@ private[akka] final class ReplayingEvents[C, E, S](
                   state = state.copy(
                     state = newState,
                     eventSeenInInterval = true,
+                    version = meta.version,
                     seenSeqNrPerReplica = state.seenSeqNrPerReplica + (meta.originReplica -> meta.originSequenceNr))
                 case _ =>
                   state = state.copy(state = newState, eventSeenInInterval = true)
@@ -273,6 +273,7 @@ private[akka] final class ReplayingEvents[C, E, S](
               seqNr = state.seqNr,
               state = state.state,
               receivedPoisonPill = state.receivedPoisonPill,
+              state.version,
               seenPerReplica = state.seenSeqNrPerReplica,
               replicationControl = Map.empty))
 

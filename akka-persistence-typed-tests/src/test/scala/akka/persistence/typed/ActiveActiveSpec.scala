@@ -55,13 +55,13 @@ object ActiveActiveSpec {
                 Effect.stop()
             },
           (state, event) => {
-            probe.foreach(_ ! EventAndContext(event, aaContext.origin, aaContext.recoveryRunning))
+            probe.foreach(_ ! EventAndContext(event, aaContext.origin, aaContext.recoveryRunning, aaContext.concurrent))
             state.copy(all = event :: state.all)
           }))
 
 }
 
-case class EventAndContext(event: Any, origin: String, recoveryRunning: Boolean = false)
+case class EventAndContext(event: Any, origin: String, recoveryRunning: Boolean, concurrent: Boolean)
 
 class ActiveActiveSpec
     extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
@@ -161,12 +161,12 @@ class ActiveActiveSpec
       val r2 = spawn(testBehavior(entityId, "R2", eventProbeR2.ref))
 
       r1 ! StoreMe("from r1", replyProbe.ref)
-      eventProbeR2.expectMessage(EventAndContext("from r1", "R1"))
-      eventProbeR1.expectMessage(EventAndContext("from r1", "R1"))
+      eventProbeR2.expectMessage(EventAndContext("from r1", "R1", false, false))
+      eventProbeR1.expectMessage(EventAndContext("from r1", "R1", false, false))
 
       r2 ! StoreMe("from r2", replyProbe.ref)
-      eventProbeR1.expectMessage(EventAndContext("from r2", "R2"))
-      eventProbeR2.expectMessage(EventAndContext("from r2", "R2"))
+      eventProbeR1.expectMessage(EventAndContext("from r2", "R2", false, false))
+      eventProbeR2.expectMessage(EventAndContext("from r2", "R2", false, false))
     }
 
     "set recovery running" in {
@@ -175,23 +175,32 @@ class ActiveActiveSpec
       val replyProbe = createTestProbe[Done]()
       val r1 = spawn(testBehavior(entityId, "R1", eventProbeR1.ref))
       r1 ! StoreMe("Event", replyProbe.ref)
-      eventProbeR1.expectMessage(EventAndContext("Event", "R1", recoveryRunning = false))
+      eventProbeR1.expectMessage(EventAndContext("Event", "R1", recoveryRunning = false, false))
       replyProbe.expectMessage(Done)
 
       val recoveryProbe = createTestProbe[EventAndContext]()
       spawn(testBehavior(entityId, "R1", recoveryProbe.ref))
-      recoveryProbe.expectMessage(EventAndContext("Event", "R1", recoveryRunning = true))
+      recoveryProbe.expectMessage(EventAndContext("Event", "R1", recoveryRunning = true, false))
     }
 
     "persist all" in {
       val entityId = nextEntityId
       val probe = createTestProbe[Done]()
-      val r1 = spawn(testBehavior(entityId, "R1"))
+      val eventProbeR1 = createTestProbe[EventAndContext]()
+
+      val r1 = spawn(testBehavior(entityId, "R1", eventProbeR1.ref))
       val r2 = spawn(testBehavior(entityId, "R2"))
       r1 ! StoreUs("1 from r1" :: "2 from r1" :: Nil, probe.ref)
       r2 ! StoreUs("1 from r2" :: "2 from r2" :: Nil, probe.ref)
       probe.receiveMessage()
       probe.receiveMessage()
+
+      // events at r2 happened concurrently with events at r1
+
+      eventProbeR1.expectMessage(EventAndContext("1 from r1", "R1", false, concurrent = false))
+      eventProbeR1.expectMessage(EventAndContext("2 from r1", "R1", false, concurrent = false))
+      eventProbeR1.expectMessage(EventAndContext("1 from r2", "R2", false, concurrent = true))
+      eventProbeR1.expectMessage(EventAndContext("2 from r2", "R2", false, concurrent = true))
 
       eventually {
         val probe = createTestProbe[State]()
@@ -203,7 +212,116 @@ class ActiveActiveSpec
         r2 ! GetState(probe.ref)
         probe.expectMessageType[State].all.toSet shouldEqual Set("1 from r1", "2 from r1", "1 from r2", "2 from r2")
       }
-
     }
+
+    "replicate alternate events" in {
+      val entityId = nextEntityId
+      val probe = createTestProbe[Done]()
+      val eventProbeR1 = createTestProbe[EventAndContext]()
+      val eventProbeR2 = createTestProbe[EventAndContext]()
+      val r1 = spawn(testBehavior(entityId, "R1", eventProbeR1.ref))
+      val r2 = spawn(testBehavior(entityId, "R2", eventProbeR2.ref))
+      r1 ! StoreMe("from r1", probe.ref) // R1 0 R2 0 -> R1 1 R2 0
+      r2 ! StoreMe("from r2", probe.ref) // R2 0 R1 0 -> R2 1 R1 0
+
+      // each gets its local event
+      eventProbeR1.expectMessage(EventAndContext("from r1", "R1", recoveryRunning = false, concurrent = false))
+      eventProbeR2.expectMessage(EventAndContext("from r2", "R2", recoveryRunning = false, concurrent = false))
+
+      // then the replicated remote events, which will be concurrent
+      eventProbeR1.expectMessage(EventAndContext("from r2", "R2", recoveryRunning = false, concurrent = true))
+      eventProbeR2.expectMessage(EventAndContext("from r1", "R1", recoveryRunning = false, concurrent = true))
+
+      // state is updated
+      eventually {
+        val probe = createTestProbe[State]()
+        r1 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "from r2")
+      }
+      eventually {
+        val probe = createTestProbe[State]()
+        r2 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "from r2")
+      }
+
+      // Neither of these should be concurrent, nothing happening at r2
+      r1 ! StoreMe("from r1 2", probe.ref) // R1 1 R2 1
+      eventProbeR1.expectMessage(EventAndContext("from r1 2", "R1", false, concurrent = false))
+      eventProbeR2.expectMessage(EventAndContext("from r1 2", "R1", false, concurrent = false))
+      r1 ! StoreMe("from r1 3", probe.ref) // R2 2 R2 1
+      eventProbeR1.expectMessage(EventAndContext("from r1 3", "R1", false, concurrent = false))
+      eventProbeR2.expectMessage(EventAndContext("from r1 3", "R1", false, concurrent = false))
+      eventually {
+        val probe = createTestProbe[State]()
+        r2 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set("from r1", "from r2", "from r1 2", "from r1 3")
+      }
+
+      // not concurrent as the above asserts mean that all events are fully replicated
+      r2 ! StoreMe("from r2 2", probe.ref)
+      eventProbeR1.expectMessage(EventAndContext("from r2 2", "R2", false, concurrent = false))
+      eventProbeR2.expectMessage(EventAndContext("from r2 2", "R2", false, concurrent = false))
+      eventually {
+        val probe = createTestProbe[State]()
+        r1 ! GetState(probe.ref)
+        probe.expectMessageType[State].all.toSet shouldEqual Set(
+          "from r1",
+          "from r2",
+          "from r1 2",
+          "from r1 3",
+          "from r2 2")
+      }
+    }
+
+    "receive each event only once" in {
+      val entityId = nextEntityId
+      val probe = createTestProbe[Done]()
+      val eventProbeR1 = createTestProbe[EventAndContext]()
+      val eventProbeR2 = createTestProbe[EventAndContext]()
+      val r1 = spawn(testBehavior(entityId, "R1", eventProbeR1.ref))
+      val r2 = spawn(testBehavior(entityId, "R2", eventProbeR2.ref))
+      r1 ! StoreMe("from r1 1", probe.ref)
+      probe.expectMessage(Done)
+      r1 ! StoreMe("from r1 2", probe.ref)
+      probe.expectMessage(Done)
+
+      // r2
+      eventProbeR2.expectMessage(EventAndContext("from r1 1", "R1", false, false))
+      eventProbeR2.expectMessage(EventAndContext("from r1 2", "R1", false, false))
+
+      r2 ! StoreMe("from r2 1", probe.ref)
+      probe.expectMessage(Done)
+      r2 ! StoreMe("from r2 2", probe.ref)
+      probe.expectMessage(Done)
+
+      // r3 should only get the events 1, not R2s stored version of them
+      val eventProbeR3 = createTestProbe[EventAndContext]()
+      spawn(testBehavior(entityId, "R3", eventProbeR3.ref))
+      eventProbeR3.expectMessage(EventAndContext("from r1 1", "R1", false, false))
+      eventProbeR3.expectMessage(EventAndContext("from r1 2", "R1", false, false))
+      eventProbeR3.expectMessage(EventAndContext("from r2 1", "R2", false, false))
+      eventProbeR3.expectMessage(EventAndContext("from r2 2", "R2", false, false))
+      eventProbeR3.expectNoMessage()
+    }
+
+    "set concurrent on replay of events" in {
+      val entityId = nextEntityId
+      val probe = createTestProbe[Done]()
+      val eventProbeR1 = createTestProbe[EventAndContext]()
+      val r1 = spawn(testBehavior(entityId, "R1", eventProbeR1.ref))
+      val r2 = spawn(testBehavior(entityId, "R2"))
+      r1 ! StoreMe("from r1", probe.ref) // R1 0 R2 0 -> R1 1 R2 0
+      r2 ! StoreMe("from r2", probe.ref) // R2 0 R1 0 -> R2 1 R1 0
+      // local event isn't concurrent, remote event is
+      eventProbeR1.expectMessage(EventAndContext("from r1", "R1", recoveryRunning = false, concurrent = false))
+      eventProbeR1.expectMessage(EventAndContext("from r2", "R2", recoveryRunning = false, concurrent = true))
+
+      // take 2
+      val eventProbeR1Take2 = createTestProbe[EventAndContext]()
+      spawn(testBehavior(entityId, "R1", eventProbeR1Take2.ref))
+      eventProbeR1Take2.expectMessage(EventAndContext("from r1", "R1", recoveryRunning = true, concurrent = false))
+      eventProbeR1Take2.expectMessage(EventAndContext("from r2", "R2", recoveryRunning = true, concurrent = true))
+    }
+
   }
 }

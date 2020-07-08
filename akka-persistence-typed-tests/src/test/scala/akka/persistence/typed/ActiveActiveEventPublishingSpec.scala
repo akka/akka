@@ -12,6 +12,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
+import akka.persistence.typed.internal.{ ReplicatedPublishedEventMetaData, VersionVector }
 import akka.persistence.typed.scaladsl.ActiveActiveEventSourcing
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
@@ -74,11 +75,11 @@ class ActiveActiveEventPublishingSpec
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        Some("DC-B"),
         PersistenceId.replicatedUniqueId(id, "DC-B"),
         1L,
         "two",
-        System.currentTimeMillis())
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData("DC-B", VersionVector.empty)))
       actor ! MyActiveActive.Add("three", probe.ref)
       probe.expectMessage(Done)
 
@@ -95,11 +96,11 @@ class ActiveActiveEventPublishingSpec
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        Some("DC-B"),
         PersistenceId.replicatedUniqueId(id, "DC-B"),
         2L, // missing 1L
         "two",
-        System.currentTimeMillis())
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData("DC-B", VersionVector.empty)))
       actor ! MyActiveActive.Add("three", probe.ref)
       probe.expectMessage(Done)
 
@@ -116,11 +117,11 @@ class ActiveActiveEventPublishingSpec
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        Some("DC-C"),
         PersistenceId.replicatedUniqueId(id, "DC-C"),
         1L,
         "two",
-        System.currentTimeMillis())
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData("DC-C", VersionVector.empty)))
       actor ! MyActiveActive.Add("three", probe.ref)
       probe.expectMessage(Done)
 
@@ -137,18 +138,18 @@ class ActiveActiveEventPublishingSpec
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        Some("DC-B"),
         PersistenceId.replicatedUniqueId("myId4", "DC-B"),
         1L,
         "two",
-        System.currentTimeMillis())
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData("DC-B", VersionVector.empty)))
       // simulate another published event from that replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        Some("DC-B"),
         PersistenceId.replicatedUniqueId(id, "DC-B"),
         1L,
         "two-again", // ofc this would be the same in the real world, different just so we can detect
-        System.currentTimeMillis())
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData("DC-B", VersionVector.empty)))
 
       actor ! MyActiveActive.Add("three", probe.ref)
       probe.expectMessage(Done)
@@ -176,11 +177,11 @@ class ActiveActiveEventPublishingSpec
 
       // simulate a published event from another replica
       incarnation2.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        Some("DC-B"),
         PersistenceId.replicatedUniqueId(id, "DC-B"),
         1L,
         "two",
-        System.currentTimeMillis())
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData("DC-B", VersionVector.empty)))
 
       incarnation2 ! MyActiveActive.Add("three", probe.ref)
       probe.expectMessage(Done)
@@ -199,11 +200,11 @@ class ActiveActiveEventPublishingSpec
 
       // simulate a published event from another replica
       incarnationA1.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        Some("DC-B"),
         PersistenceId.replicatedUniqueId(id, "DC-B"),
         1L,
         "two",
-        System.currentTimeMillis())
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData("DC-B", VersionVector.empty)))
 
       incarnationA1 ! MyActiveActive.Stop
       probe.expectTerminated(incarnationA1)
@@ -212,11 +213,11 @@ class ActiveActiveEventPublishingSpec
 
       // simulate a published event from another replica
       incarnationA2.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        Some("DC-B"),
         PersistenceId.replicatedUniqueId(id, "DC-B"),
         2L,
         "three",
-        System.currentTimeMillis())
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData("DC-B", VersionVector.empty)))
 
       incarnationA2 ! MyActiveActive.Add("four", probe.ref)
       probe.expectMessage(Done)
