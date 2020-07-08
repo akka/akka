@@ -10,6 +10,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
+import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.scaladsl._
 import akka.serialization.jackson.CborSerializable
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
@@ -24,7 +25,7 @@ object AABlogExampleSpec {
       copy(content = Some(newContent), contentTimestamp = timestamp)
     def isEmpty: Boolean = content.isEmpty
   }
-  val emptyState: BlogState = BlogState(None, LwwTime(Long.MinValue, ""), published = false)
+  val emptyState: BlogState = BlogState(None, LwwTime(Long.MinValue, ReplicaId("")), published = false)
 
   final case class PostContent(title: String, body: String)
   final case class PostSummary(postId: String, title: String)
@@ -110,20 +111,30 @@ class AABlogExampleSpec
   "Blog Example" should {
     "work" in {
       val refDcA: ActorRef[BlogCommand] =
-        spawn(Behaviors.setup[BlogCommand] { ctx =>
-          ActiveActiveEventSourcing("cat", "DC-A", Set("DC-A", "DC-B"), PersistenceTestKitReadJournal.Identifier) {
-            (aa: ActiveActiveContext) =>
+        spawn(
+          Behaviors.setup[BlogCommand] { ctx =>
+            ActiveActiveEventSourcing.withSharedJournal(
+              "cat",
+              ReplicaId("DC-A"),
+              Set(ReplicaId("DC-A"), ReplicaId("DC-B")),
+              PersistenceTestKitReadJournal.Identifier) { (aa: ActiveActiveContext) =>
               behavior(aa, ctx)
-          }
-        }, "dc-a")
+            }
+          },
+          "dc-a")
 
       val refDcB: ActorRef[BlogCommand] =
-        spawn(Behaviors.setup[BlogCommand] { ctx =>
-          ActiveActiveEventSourcing("cat", "DC-B", Set("DC-A", "DC-B"), PersistenceTestKitReadJournal.Identifier) {
-            (aa: ActiveActiveContext) =>
+        spawn(
+          Behaviors.setup[BlogCommand] { ctx =>
+            ActiveActiveEventSourcing.withSharedJournal(
+              "cat",
+              ReplicaId("DC-B"),
+              Set(ReplicaId("DC-A"), ReplicaId("DC-B")),
+              PersistenceTestKitReadJournal.Identifier) { (aa: ActiveActiveContext) =>
               behavior(aa, ctx)
-          }
-        }, "dc-b")
+            }
+          },
+          "dc-b")
 
       import akka.actor.typed.scaladsl.AskPattern._
       import akka.util.Timeout

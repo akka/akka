@@ -16,6 +16,7 @@ import akka.annotation.ApiMayChange
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
@@ -25,15 +26,16 @@ object EventSourcedBehavior {
   // FIXME move to internal
   @InternalApi
   private[akka] final case class ActiveActive(
-      replicaId: String,
-      allReplicas: Set[String],
-      aaContext: ActiveActiveContextImpl,
-      queryPluginId: String) {
+      replicaId: ReplicaId,
+      allReplicasAndQueryPlugins: Map[ReplicaId, String],
+      aaContext: ActiveActiveContextImpl) {
+
+    val allReplicas: Set[ReplicaId] = allReplicasAndQueryPlugins.keySet
 
     /**
      * Must only be called on the same thread that will execute the user code
      */
-    def setContext(recoveryRunning: Boolean, originReplica: String, concurrent: Boolean): Unit = {
+    def setContext(recoveryRunning: Boolean, originReplica: ReplicaId, concurrent: Boolean): Unit = {
       aaContext._recoveryRunning = recoveryRunning
       aaContext._concurrent = concurrent
       aaContext._origin = originReplica
@@ -166,9 +168,8 @@ object EventSourcedBehavior {
 
   private[akka] def withActiveActive(
       context: ActiveActiveContextImpl,
-      replicaId: String,
-      allReplicaIds: Set[String],
-      queryPluginId: String): EventSourcedBehavior[Command, Event, State]
+      replicaId: ReplicaId,
+      allReplicasAndQueryPlugins: Map[ReplicaId, String]): EventSourcedBehavior[Command, Event, State]
 
   /**
    * Change the snapshot store plugin id that this actor should use.
