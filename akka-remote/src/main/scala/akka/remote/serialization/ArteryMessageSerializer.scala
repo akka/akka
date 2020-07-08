@@ -15,8 +15,6 @@ import akka.remote.artery.OutboundHandshake.{ HandshakeReq, HandshakeRsp }
 import akka.remote.artery.compress.{ CompressionProtocol, CompressionTable }
 import akka.remote.artery.compress.CompressionProtocol._
 import akka.serialization.{ BaseSerializer, Serialization, SerializationExtension, SerializerWithStringManifest }
-import akka.remote.artery.Flush
-import akka.remote.artery.FlushAck
 
 /** INTERNAL API */
 private[akka] object ArteryMessageSerializer {
@@ -35,9 +33,6 @@ private[akka] object ArteryMessageSerializer {
 
   private val ArteryHeartbeatManifest = "m"
   private val ArteryHeartbeatRspManifest = "n"
-
-  private val FlushManifest = "o"
-  private val FlushAckManifest = "p"
 
   private final val DeadLettersRepresentation = ""
 }
@@ -59,8 +54,6 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
     case _: RemoteWatcher.ArteryHeartbeatRsp                          => ArteryHeartbeatRspManifest
     case _: SystemMessageDelivery.Nack                                => SystemMessageDeliveryNackManifest
     case _: Quarantined                                               => QuarantinedManifest
-    case Flush                                                        => FlushManifest
-    case FlushAck                                                     => FlushAckManifest
     case _: ActorSystemTerminating                                    => ActorSystemTerminatingManifest
     case _: ActorSystemTerminatingAck                                 => ActorSystemTerminatingAckManifest
     case _: CompressionProtocol.ActorRefCompressionAdvertisement      => ActorRefCompressionAdvertisementManifest
@@ -81,8 +74,6 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
     case RemoteWatcher.ArteryHeartbeatRsp(from)           => serializeArteryHeartbeatRsp(from).toByteArray
     case SystemMessageDelivery.Nack(seqNo, from)          => serializeSystemMessageDeliveryAck(seqNo, from).toByteArray
     case q: Quarantined                                   => serializeQuarantined(q).toByteArray
-    case Flush                                            => Array.emptyByteArray
-    case FlushAck                                         => Array.emptyByteArray
     case ActorSystemTerminating(from)                     => serializeWithAddress(from).toByteArray
     case ActorSystemTerminatingAck(from)                  => serializeWithAddress(from).toByteArray
     case adv: ActorRefCompressionAdvertisement            => serializeActorRefCompressionAdvertisement(adv).toByteArray
@@ -101,8 +92,6 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
       case HandshakeRspManifest                     => deserializeWithFromAddress(bytes, HandshakeRsp)
       case SystemMessageDeliveryNackManifest        => deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Nack)
       case QuarantinedManifest                      => deserializeQuarantined(ArteryControlFormats.Quarantined.parseFrom(bytes))
-      case FlushManifest                            => Flush
-      case FlushAckManifest                         => FlushAck
       case ActorSystemTerminatingManifest           => deserializeWithFromAddress(bytes, ActorSystemTerminating)
       case ActorSystemTerminatingAckManifest        => deserializeWithFromAddress(bytes, ActorSystemTerminatingAck)
       case ActorRefCompressionAdvertisementManifest => deserializeActorRefCompressionAdvertisement(bytes)

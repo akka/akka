@@ -1,6 +1,0 @@
-# #28695 flush before sending DeathWatchNotification
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.FlushOnShutdown.props")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.FlushOnShutdown.timeoutTask")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.FlushOnShutdown.this")
-ProblemFilters.exclude[FinalClassProblem]("akka.remote.artery.ActorSystemTerminating")
-ProblemFilters.exclude[FinalClassProblem]("akka.remote.artery.ActorSystemTerminatingAck")

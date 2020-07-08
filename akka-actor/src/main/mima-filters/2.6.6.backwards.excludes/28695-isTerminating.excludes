@@ -1,2 +1,0 @@
-# #28695 added isTerminated to ExtendedActorSystem
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ExtendedActorSystem.isTerminating")
