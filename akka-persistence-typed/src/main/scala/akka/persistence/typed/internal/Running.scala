@@ -34,6 +34,7 @@ import akka.persistence.SnapshotProtocol
 import akka.persistence.journal.Tagged
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
+import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.{
   DeleteEventsCompleted,
   DeleteEventsFailed,
@@ -91,8 +92,8 @@ private[akka] object Running {
       state: State,
       receivedPoisonPill: Boolean,
       version: VersionVector,
-      seenPerReplica: Map[String, Long],
-      replicationControl: Map[String, ReplicationStreamControl]) {
+      seenPerReplica: Map[ReplicaId, Long],
+      replicationControl: Map[ReplicaId, ReplicationStreamControl]) {
 
     def nextSequenceNr(): RunningState[State] =
       copy(seqNr = seqNr + 1)
@@ -128,8 +129,8 @@ private[akka] object Running {
       if (replicaId != aa.replicaId) {
         val seqNr = state.seenPerReplica(replicaId)
         val pid = PersistenceId.replicatedUniqueId(aa.aaContext.entityId, replicaId)
-        // FIXME support different configuration per replica https://github.com/akka/akka/issues/29257
-        val replication = query.readJournalFor[EventsByPersistenceIdQuery](aa.queryPluginId)
+        val queryPluginId = aa.allReplicasAndQueryPlugins(replicaId)
+        val replication = query.readJournalFor[EventsByPersistenceIdQuery](queryPluginId)
 
         implicit val timeout = Timeout(30.seconds)
 
@@ -422,7 +423,7 @@ private[akka] object Running {
 
       val newState2 = setup.activeActive match {
         case Some(aa) =>
-          val updatedVersion = newState.version.updated(aa.replicaId, _currentSequenceNumber)
+          val updatedVersion = newState.version.updated(aa.replicaId.id, _currentSequenceNumber)
           val r = internalPersist(
             setup.context,
             cmd,
@@ -473,7 +474,7 @@ private[akka] object Running {
           val adaptedEvent = adaptEvent(event)
           val eventMetadata = metadataTemplate match {
             case Some(template) =>
-              val updatedVersion = currentState.version.updated(template.originReplica, _currentSequenceNumber)
+              val updatedVersion = currentState.version.updated(template.originReplica.id, _currentSequenceNumber)
               setup.log.trace("Processing event [{}] with version vector [{}]", event, updatedVersion)
               currentState = currentState.copy(version = updatedVersion)
               Some(template.copy(originSequenceNr = _currentSequenceNumber, version = updatedVersion))

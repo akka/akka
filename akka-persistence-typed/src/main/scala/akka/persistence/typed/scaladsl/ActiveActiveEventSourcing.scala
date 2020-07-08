@@ -5,20 +5,21 @@
 package akka.persistence.typed.scaladsl
 
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.ReplicaId
 import akka.util.WallClock
 
 /**
  * Utility class for comparing timestamp and data center
  * identifier when implementing last-writer wins.
  */
-final case class LwwTime(timestamp: Long, originDc: String) {
+final case class LwwTime(timestamp: Long, originDc: ReplicaId) {
 
   /**
    * Create a new `LwwTime` that has a `timestamp` that is
    * `max` of the given timestamp and previous timestamp + 1,
    * i.e. monotonically increasing.
    */
-  def increase(t: Long, replicaId: String): LwwTime =
+  def increase(t: Long, replicaId: ReplicaId): LwwTime =
     LwwTime(math.max(timestamp + 1, t), replicaId)
 
   /**
@@ -30,7 +31,7 @@ final case class LwwTime(timestamp: Long, originDc: String) {
   def isAfter(other: LwwTime): Boolean = {
     if (timestamp > other.timestamp) true
     else if (timestamp < other.timestamp) false
-    else if (other.originDc.compareTo(originDc) > 0) true
+    else if (other.originDc.id.compareTo(originDc.id) > 0) true
     else false
   }
 }
@@ -38,10 +39,10 @@ final case class LwwTime(timestamp: Long, originDc: String) {
 // FIXME docs
 trait ActiveActiveContext {
 
-  def origin: String
+  def origin: ReplicaId
   def concurrent: Boolean
-  def replicaId: String
-  def allReplicas: Set[String]
+  def replicaId: ReplicaId
+  def allReplicas: Set[ReplicaId]
   def persistenceId: PersistenceId
   def recoveryRunning: Boolean
   def entityId: String
@@ -52,9 +53,13 @@ trait ActiveActiveContext {
 // FIXME, parts of this can be set during initialisation
 // Other fields will be set before executing the event handler as they change per event
 // https://github.com/akka/akka/issues/29258
-private[akka] class ActiveActiveContextImpl(val entityId: String, val replicaId: String, val allReplicas: Set[String])
+private[akka] class ActiveActiveContextImpl(
+    val entityId: String,
+    val replicaId: ReplicaId,
+    val replicasAndQueryPlugins: Map[ReplicaId, String])
     extends ActiveActiveContext {
-  var _origin: String = null
+  val allReplicas: Set[ReplicaId] = replicasAndQueryPlugins.keySet
+  var _origin: ReplicaId = null
   var _recoveryRunning: Boolean = false
   var _concurrent: Boolean = false
 
@@ -64,7 +69,7 @@ private[akka] class ActiveActiveContextImpl(val entityId: String, val replicaId:
    * The origin of the current event.
    * Undefined result if called from anywhere other than an event handler.
    */
-  override def origin: String = _origin
+  override def origin: ReplicaId = _origin
 
   /**
    * Whether the happened concurrently with an event from another replica.
@@ -83,7 +88,7 @@ private[akka] class ActiveActiveContextImpl(val entityId: String, val replicaId:
 object ActiveActiveEventSourcing {
 
   /**
-   * Initialize a replicated event sourced behavior.
+   * Initialize a replicated event sourced behavior where all entity replicas are stored in the same journal.
    *
    * Events from each replica for the same entityId will be replicated to every copy.
    * Care must be taken to handle events in any order as events can happen concurrently at different replicas.
@@ -93,21 +98,43 @@ object ActiveActiveEventSourcing {
    * A different journal plugin id can be configured using withJournalPluginId after creation. Different databases
    * can be used for each replica.
    * The events from other replicas are read using PersistentQuery.
-   * TODO support a different query plugin id per replicas: https://github.com/akka/akka/issues/29257
    *
    * @param replicaId The unique identity for this entity. The underlying persistence id will include the replica.
    * @param allReplicaIds All replica ids. These need to be known to receive events from all replicas.
-   * @param queryPluginId Used to read the events from other replicas. Must be the query side of your configured journal plugin.
-   * @return
+   * @param queryPluginId A single query plugin used to read the events from other replicas. Must be the query side of your configured journal plugin.
+   */
+  def withSharedJournal[Command, Event, State](
+      entityId: String,
+      replicaId: ReplicaId,
+      allReplicaIds: Set[ReplicaId],
+      queryPluginId: String)(activeActiveContext: ActiveActiveContext => EventSourcedBehavior[Command, Event, State])
+      : EventSourcedBehavior[Command, Event, State] =
+    apply(entityId, replicaId, allReplicaIds.map(id => id -> queryPluginId).toMap)(activeActiveContext)
+
+  /**
+   * Initialize a replicated event sourced behavior.
+   *
+   * Events from each replica for the same entityId will be replicated to every copy.
+   * Care must be taken to handle events in any order as events can happen concurrently at different replicas.
+   *
+   * Using an replicated event sourced behavior means there is no longer the single writer guarantee.
+   *
+   * The journal plugin id for the entity itself can be configured using withJournalPluginId after creation.
+   * A query side identifier is passed per replica allowing for separate database/journal configuration per
+   * replica. The events from other replicas are read using PersistentQuery.
+   *
+   * @param replicaId The unique identity for this entity. The underlying persistence id will include the replica.
+   * @param allReplicasAndQueryPlugins All replica ids and a query plugin per replica id. These need to be known to receive events from all replicas
+   *                                   and configured with the query plugin for the journal that each replica uses.
    */
   def apply[Command, Event, State](
       entityId: String,
-      replicaId: String,
-      allReplicaIds: Set[String],
-      queryPluginId: String)(activeActiveContext: ActiveActiveContext => EventSourcedBehavior[Command, Event, State])
+      replicaId: ReplicaId,
+      allReplicasAndQueryPlugins: Map[ReplicaId, String])(
+      activeActiveContext: ActiveActiveContext => EventSourcedBehavior[Command, Event, State])
       : EventSourcedBehavior[Command, Event, State] = {
-    val context = new ActiveActiveContextImpl(entityId, replicaId, allReplicaIds)
-    activeActiveContext(context).withActiveActive(context, replicaId, allReplicaIds, queryPluginId)
+    val context = new ActiveActiveContextImpl(entityId, replicaId, allReplicasAndQueryPlugins)
+    activeActiveContext(context).withActiveActive(context, replicaId, allReplicasAndQueryPlugins)
   }
 
 }

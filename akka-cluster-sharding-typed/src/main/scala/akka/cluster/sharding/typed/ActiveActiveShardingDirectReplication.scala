@@ -13,6 +13,7 @@ import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.persistence.typed.PublishedEvent
+import akka.persistence.typed.ReplicaId
 
 import scala.collection.JavaConverters._
 
@@ -53,7 +54,9 @@ object ActiveActiveShardingDirectReplication {
    * @param selfReplica The replica id of the replica that runs on this node
    * @param replicaShardingProxies A replica id to sharding proxy mapping for each replica in the system
    */
-  def create[T](selfReplica: String, replicaShardingProxies: java.util.Map[String, ActorRef[T]]): Behavior[Command] =
+  def create[T](
+      selfReplica: ReplicaId,
+      replicaShardingProxies: java.util.Map[ReplicaId, ActorRef[T]]): Behavior[Command] =
     apply(selfReplica, replicaShardingProxies.asScala.toMap)
 
   /**
@@ -61,7 +64,7 @@ object ActiveActiveShardingDirectReplication {
    * @param selfReplica The replica id of the replica that runs on this node
    * @param replicaShardingProxies A replica id to sharding proxy mapping for each replica in the system
    */
-  def apply[T](selfReplica: String, replicaShardingProxies: Map[String, ActorRef[T]]): Behavior[Command] =
+  def apply[T](selfReplica: ReplicaId, replicaShardingProxies: Map[ReplicaId, ActorRef[T]]): Behavior[Command] =
     Behaviors.setup[Command] { context =>
       context.log.debug(
         "Subscribing to event stream to forward events to [{}] sharded replicas",
