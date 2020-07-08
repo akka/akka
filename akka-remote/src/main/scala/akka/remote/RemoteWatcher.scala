@@ -193,10 +193,8 @@ private[akka] class RemoteWatcher(
       }
     }
 
-  def publishAddressTerminated(address: Address): Unit = {
-    log.debug("Publish AddressTerminated [{}]", address)
+  def publishAddressTerminated(address: Address): Unit =
     AddressTerminatedTopic(context.system).publish(AddressTerminated(address))
-  }
 
   def quarantine(address: Address, uid: Option[Long], reason: String, harmless: Boolean): Unit = {
     remoteProvider.transport match {

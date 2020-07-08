@@ -780,11 +780,6 @@ abstract class ExtendedActorSystem extends ActorSystem {
    */
   @InternalApi private[akka] def finalTerminate(): Unit
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi private[akka] def isTerminating(): Boolean
-
 }
 
 /**
@@ -1066,10 +1061,6 @@ private[akka] class ActorSystemImpl(
     // these actions are idempotent
     if (!settings.LogDeadLettersDuringShutdown) logDeadLetterListener.foreach(stop)
     guardian.stop()
-  }
-
-  override private[akka] def isTerminating(): Boolean = {
-    terminating || aborting || CoordinatedShutdown(this).shutdownReason().isDefined
   }
 
   @volatile var aborting = false
