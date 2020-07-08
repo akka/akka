@@ -35,6 +35,7 @@ import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.NoOpEventAdapter
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.PublishedEvent
+import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
@@ -252,10 +253,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override private[akka] def withActiveActive(
       context: ActiveActiveContextImpl,
-      id: String,
-      allIds: Set[String],
-      queryPluginId: String): EventSourcedBehavior[Command, Event, State] = {
-    copy(activeActive = Some(ActiveActive(id, allIds, context, queryPluginId)))
+      replicaId: ReplicaId,
+      allReplicaIdsAndQueryPlugins: Map[ReplicaId, String]): EventSourcedBehavior[Command, Event, State] = {
+    copy(activeActive = Some(ActiveActive(replicaId, allReplicaIdsAndQueryPlugins, context)))
   }
 }
 
@@ -282,7 +282,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
  */
 @InternalApi
 private[akka] final case class ReplicatedEventMetaData(
-    originReplica: String,
+    originReplica: ReplicaId,
     originSequenceNr: Long,
     version: VersionVector,
     concurrent: Boolean) // whether when the event handler was executed the event was concurrent
@@ -296,13 +296,13 @@ private[akka] final case class ReplicatedEventMetaData(
 @InternalApi
 private[akka] final case class ReplicatedEvent[E](
     event: E,
-    originReplica: String,
+    originReplica: ReplicaId,
     originSequenceNr: Long,
     originVersion: VersionVector)
 @InternalApi
 private[akka] case object ReplicatedEventAck
 
-final class ReplicatedPublishedEventMetaData(val replicaId: String, private[akka] val version: VersionVector)
+final class ReplicatedPublishedEventMetaData(val replicaId: ReplicaId, private[akka] val version: VersionVector)
 
 /**
  * INTERNAL API

@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.immutable
 
-import akka.actor.Extension
 import akka.annotation.InternalApi
 import akka.persistence.testkit.ProcessingPolicy
 
@@ -151,4 +150,4 @@ sealed trait PolicyOps[U] {
  * INTERNAL API
  */
 @InternalApi
-private[testkit] trait TestKitStorage[P, R] extends InMemStorage[String, R] with PolicyOps[P] with Extension
+private[testkit] trait TestKitStorage[P, R] extends InMemStorage[String, R] with PolicyOps[P]

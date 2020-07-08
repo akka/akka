@@ -12,6 +12,7 @@ import akka.actor.typed.Signal
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
 import akka.persistence._
+import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
 import akka.persistence.typed.{ EventAdapter, PersistenceId, SnapshotAdapter }
 import akka.persistence.typed.scaladsl.{ EventSourcedBehavior, RetentionCriteria }
@@ -61,7 +62,7 @@ private[akka] final class BehaviorSetup[C, E, S](
   val journal: ClassicActorRef = persistence.journalFor(settings.journalPluginId)
   val snapshotStore: ClassicActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
 
-  val replicaId: Option[String] = activeActive.map(_.replicaId)
+  val replicaId: Option[ReplicaId] = activeActive.map(_.replicaId)
 
   def selfClassic: ClassicActorRef = context.self.toClassic
 

@@ -18,6 +18,7 @@ import akka.persistence.typed.EmptyEventSeq
 import akka.persistence.typed.EventsSeq
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.RecoveryFailed
+import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.SingleEventSeq
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
@@ -52,7 +53,7 @@ private[akka] object ReplayingEvents {
       receivedPoisonPill: Boolean,
       recoveryStartTime: Long,
       version: VersionVector,
-      seenSeqNrPerReplica: Map[String, Long])
+      seenSeqNrPerReplica: Map[ReplicaId, Long])
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: ReplayingState[S]): Behavior[InternalProtocol] =
     Behaviors.setup { _ =>
@@ -121,7 +122,7 @@ private[akka] final class ReplayingEvents[C, E, S](
               eventForErrorReporting = OptionVal.Some(event)
               state = state.copy(seqNr = repr.sequenceNr)
 
-              val aaMetaAndSelfReplica: Option[(ReplicatedEventMetaData, String)] =
+              val aaMetaAndSelfReplica: Option[(ReplicatedEventMetaData, ReplicaId)] =
                 setup.activeActive match {
                   case Some(aa) =>
                     val meta = repr.metadata match {

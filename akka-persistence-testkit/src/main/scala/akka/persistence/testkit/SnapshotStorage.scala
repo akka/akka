@@ -4,8 +4,9 @@
 
 package akka.persistence.testkit
 
-import scala.util.Success
+import akka.actor.Extension
 
+import scala.util.Success
 import akka.annotation.InternalApi
 import akka.persistence.{ SelectedSnapshot, SnapshotMetadata, SnapshotSelectionCriteria }
 import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies
@@ -15,7 +16,9 @@ import akka.persistence.testkit.internal.TestKitStorage
  * INTERNAL API
  */
 @InternalApi
-private[testkit] trait SnapshotStorage extends TestKitStorage[SnapshotOperation, (SnapshotMetadata, Any)] {
+private[testkit] trait SnapshotStorage
+    extends TestKitStorage[SnapshotOperation, (SnapshotMetadata, Any)]
+    with Extension {
 
   import SnapshotStorage._
 
