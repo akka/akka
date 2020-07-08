@@ -13,7 +13,7 @@ object UniformFanInShape {
 
   /** Java API */
   def create[I, O](outlet: Outlet[O], inlets: java.util.List[Inlet[I]]): UniformFanInShape[I, O] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     new UniformFanInShape(inlets.size, FanInShape.Ports(outlet, inlets.asScala.toList))
   }
 }
