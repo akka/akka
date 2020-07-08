@@ -11,7 +11,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.eventstream.EventStream
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.PublishedEvent
-import akka.persistence.typed.internal.{ PublishedEventImpl, VersionVector }
+import akka.persistence.typed.internal.{ PublishedEventImpl, ReplicatedPublishedEventMetaData, VersionVector }
 
 class ActiveActiveShardingDirectReplicationSpec
     extends ScalaTestWithActorTestKit
@@ -36,12 +36,11 @@ class ActiveActiveShardingDirectReplicationSpec
       upProbe.receiveMessage() // not bullet proof wrt to subscription being complete but good enough
 
       val event = PublishedEventImpl(
-        Some("ReplicaA"),
         PersistenceId.replicatedUniqueId("pid", "ReplicaA"),
         1L,
         "event",
         System.currentTimeMillis(),
-        Some(VersionVector.empty))
+        Some(new ReplicatedPublishedEventMetaData("ReplicaA", VersionVector.empty)))
       system.eventStream ! EventStream.Publish(event)
 
       replicaBProbe.receiveMessage().message should equal(event)
