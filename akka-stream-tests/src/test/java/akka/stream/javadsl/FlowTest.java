@@ -986,6 +986,7 @@ public class FlowTest extends StreamTest {
         TestPublisher.manualProbe(true, system);
     final TestKit probe = new TestKit(system);
     final Iterable<Integer> recover = Arrays.asList(55, 0);
+    final int maxRetries = 10;
 
     final Source<Integer, NotUsed> source = Source.fromPublisher(publisherProbe);
     final Flow<Integer, Integer, NotUsed> flow =
@@ -995,7 +996,7 @@ public class FlowTest extends StreamTest {
                   if (elem == 2) throw new RuntimeException("ex");
                   else return elem;
                 })
-            .recoverWith(RuntimeException.class, () -> Source.from(recover));
+            .recoverWithRetries(maxRetries, RuntimeException.class, () -> Source.from(recover));
 
     final CompletionStage<Done> future =
         source
