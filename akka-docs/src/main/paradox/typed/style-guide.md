@@ -271,6 +271,9 @@ Scala
 Java
 :  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #message-protocol }
 
+Note that the response message hierarchy in this case could be completely avoided by using the @apiDoc[StatusReply] API 
+instead (see @ref[Generic Response Wrapper](interaction-patterns.md#generic-response-wrapper)).
+
 ## Public versus private messages
 
 Often an actor has some messages that are only for its internal implementation and not part of the public

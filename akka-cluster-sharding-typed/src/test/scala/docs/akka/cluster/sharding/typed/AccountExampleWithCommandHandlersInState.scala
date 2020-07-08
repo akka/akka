@@ -34,7 +34,6 @@ object AccountExampleWithCommandHandlersInState {
     final case class CloseAccount(replyTo: ActorRef[StatusReply[Done]]) extends Command
 
     // Reply
-    case object Confirmed extends CborSerializable
     final case class CurrentBalance(balance: BigDecimal)
 
     // Event
