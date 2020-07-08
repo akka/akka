@@ -23,4 +23,6 @@ import akka.annotation.InternalApi
    */
   def isTerminated: Boolean
 
+  def refPrefix: String = toString
+
 }

@@ -121,6 +121,8 @@ import akka.annotation.InternalApi
     ActorRefAdapter(ref)
   }
 
+  override def refPrefix: String = "user"
+
   override def address: Address = system.provider.getDefaultAddress
 
 }

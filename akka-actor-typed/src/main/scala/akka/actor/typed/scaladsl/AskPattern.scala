@@ -7,17 +7,14 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.TimeoutException
 
 import scala.concurrent.Future
-
 import com.github.ghik.silencer.silent
-
-import akka.actor.{ Address, RootActorPath }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.RecipientRef
 import akka.actor.typed.Scheduler
 import akka.actor.typed.internal.{ adapter => adapt }
 import akka.actor.typed.internal.InternalRecipientRef
-import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.annotation.InternalStableApi
 import akka.pattern.PromiseActorRef
 import akka.util.{ unused, Timeout }
 
@@ -138,7 +135,7 @@ object AskPattern {
           null)
       else {
         // messageClassName "unknown' is set later, after applying the message factory
-        val a = PromiseActorRef(target.provider, timeout, target, "unknown", onTimeout = onTimeout)
+        val a = PromiseActorRef(target.provider, timeout, target, "unknown", target.refPrefix, onTimeout = onTimeout)
         val b = adapt.ActorRefAdapter[U](a)
         (b, a.result.future.asInstanceOf[Future[U]], a)
       }
@@ -161,9 +158,4 @@ object AskPattern {
     p.ask(target, m, timeout)
   }
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[typed] val AskPath = RootActorPath(Address("akka.actor.typed.internal", "ask"))
 }

@@ -12,7 +12,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
-
 import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InternalActorRef
@@ -303,11 +302,13 @@ import akka.util.JavaDurationConverters._
     with scaladsl.EntityRef[M]
     with InternalRecipientRef[M] {
 
+  override val refPrefix = URLEncoder.encode(s"${typeKey.name}-$entityId", ByteString.UTF_8)
+
   override def tell(msg: M): Unit =
     shardRegion ! ShardingEnvelope(entityId, msg)
 
   override def ask[U](message: ActorRef[U] => M)(implicit timeout: Timeout): Future[U] = {
-    val replyTo = new EntityPromiseRef[U](shardRegion.asInstanceOf[InternalActorRef], timeout)
+    val replyTo = new EntityPromiseRef[U](shardRegion.asInstanceOf[InternalActorRef], timeout, refPrefix)
     val m = message(replyTo.ref)
     if (replyTo.promiseRef ne null) replyTo.promiseRef.messageClassName = m.getClass.getName
     replyTo.ask(shardRegion, entityId, m, timeout)
@@ -318,7 +319,7 @@ import akka.util.JavaDurationConverters._
 
   /** Similar to [[akka.actor.typed.scaladsl.AskPattern.PromiseRef]] but for an `EntityRef` target. */
   @InternalApi
-  private final class EntityPromiseRef[U](classic: InternalActorRef, timeout: Timeout) {
+  private final class EntityPromiseRef[U](classic: InternalActorRef, timeout: Timeout, refPathPrefix: String) {
     import akka.actor.typed.internal.{ adapter => adapt }
 
     // Note: _promiseRef mustn't have a type pattern, since it can be null
@@ -339,7 +340,12 @@ import akka.util.JavaDurationConverters._
       else {
         // note that the real messageClassName will be set afterwards, replyTo pattern
         val a =
-          PromiseActorRef(classic.provider, timeout, targetName = EntityRefImpl.this, messageClassName = "unknown")
+          PromiseActorRef(
+            classic.provider,
+            timeout,
+            targetName = EntityRefImpl.this,
+            messageClassName = "unknown",
+            refPathPrefix)
         val b = adapt.ActorRefAdapter[U](a)
         (b, a.result.future.asInstanceOf[Future[U]], a)
       }
@@ -372,7 +378,6 @@ import akka.util.JavaDurationConverters._
   }
 
   override def toString: String = s"EntityRef($typeKey, $entityId)"
-
 }
 
 /**
