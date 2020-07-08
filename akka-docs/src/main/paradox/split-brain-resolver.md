@@ -366,7 +366,7 @@ akka {
     split-brain-resolver {
       active-strategy = "lease-majority"
       lease-majority {
-        lease-implementation = "akka.lease.kubernetes"
+        lease-implementation = "akka.coordination.lease.kubernetes"
       }
     }
   }
