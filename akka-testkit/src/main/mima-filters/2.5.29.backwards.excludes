@@ -1,0 +1,4 @@
+# #28604 changes in the akka.testkit.ExplicitlyTriggeredScheduler internal implementation
+ProblemFilters.exclude[MissingClassProblem]("akka.testkit.ExplicitlyTriggeredScheduler$Item$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.testkit.ExplicitlyTriggeredScheduler$Item")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.testkit.ExplicitlyTriggeredScheduler#Item.*")

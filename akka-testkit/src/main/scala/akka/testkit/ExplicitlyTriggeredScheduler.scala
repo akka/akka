@@ -10,10 +10,10 @@ import java.util.concurrent.atomic.AtomicLong
 
 import scala.annotation.tailrec
 import akka.util.ccompat.JavaConverters._
+
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.Try
-
 import akka.actor.Cancellable
 import akka.actor.Scheduler
 import akka.event.LoggingAdapter
@@ -33,10 +33,10 @@ import com.typesafe.config.Config
 class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, @unused tf: ThreadFactory)
     extends Scheduler {
 
-  private case class Item(time: Long, interval: Option[FiniteDuration], runnable: Runnable)
+  private class Item(val interval: Option[FiniteDuration], val runnable: Runnable)
 
   private val currentTime = new AtomicLong()
-  private val scheduled = new ConcurrentHashMap[Item, Unit]()
+  private val scheduled = new ConcurrentHashMap[Item, Long]()
 
   override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
       implicit executor: ExecutionContext): Cancellable =
@@ -69,19 +69,25 @@ class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, 
     currentTime.set(newTime)
   }
 
-  private def scheduledTasks(runTo: Long): Seq[Item] =
-    scheduled.keySet().asScala.filter(_.time <= runTo).toList.sortBy(_.time)
+  private def scheduledTasks(runTo: Long): Seq[(Item, Long)] =
+    scheduled
+      .entrySet()
+      .asScala
+      .map(s => (s.getKey, s.getValue))
+      .toSeq
+      .filter { case (_, v) => v <= runTo }
+      .sortBy(_._2)
 
   @tailrec
   private[testkit] final def executeTasks(runTo: Long): Unit = {
     scheduledTasks(runTo).headOption match {
-      case Some(task) =>
-        currentTime.set(task.time)
+      case Some((task, time)) =>
+        currentTime.set(time)
         val runResult = Try(task.runnable.run())
         scheduled.remove(task)
 
         if (runResult.isSuccess)
-          task.interval.foreach(i => scheduled.put(task.copy(time = task.time + i.toMillis), ()))
+          task.interval.foreach(i => scheduled.put(task, time + i.toMillis))
 
         // running the runnable might have scheduled new events
         executeTasks(runTo)
@@ -94,9 +100,9 @@ class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, 
       interval: Option[FiniteDuration],
       runnable: Runnable): Cancellable = {
     val firstTime = currentTime.get + initialDelay.toMillis
-    val item = Item(firstTime, interval, runnable)
+    val item = new Item(interval, runnable)
     log.debug("Scheduled item for {}: {}", firstTime, item)
-    scheduled.put(item, ())
+    scheduled.put(item, firstTime)
 
     if (initialDelay <= Duration.Zero)
       executeTasks(currentTime.get)
