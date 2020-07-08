@@ -54,7 +54,7 @@ import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
 import akka.stream.scaladsl.Keep
-import akka.stream.{ SharedKillSwitch, SystemMaterializer }
+import akka.stream.SystemMaterializer
 import akka.stream.scaladsl.{ RestartSource, Sink }
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.OptionVal
@@ -90,9 +90,9 @@ private[akka] object Running {
       seqNr: Long,
       state: State,
       receivedPoisonPill: Boolean,
+      version: VersionVector,
       seenPerReplica: Map[String, Long],
-      replicationControl: Map[String, ReplicationStreamControl],
-      replicationKillSwitch: Option[SharedKillSwitch] = None) {
+      replicationControl: Map[String, ReplicationStreamControl]) {
 
     def nextSequenceNr(): RunningState[State] =
       copy(seqNr = seqNr + 1)
@@ -138,6 +138,9 @@ private[akka] object Running {
         val source = RestartSource.withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
           replication
             .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
+            // from each replica, only get the events that originated there, this prevents most of the event filtering
+            // the downside is that events can't be received via other replicas in the event of an uneven network partition
+            .filter(_.eventMetadata.get.asInstanceOf[ReplicatedEventMetaData].originReplica == replicaId)
             .viaMat(new FastForwardingFilter)(Keep.right)
             .mapMaterializedValue(streamControl => controlRef.set(streamControl))
             .via(ActorFlow.ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) {
@@ -145,7 +148,11 @@ private[akka] object Running {
                 // Need to handle this not being available migration from non-active-active is supported
                 val meta = eventEnvelope.eventMetadata.get.asInstanceOf[ReplicatedEventMetaData]
                 val re =
-                  ReplicatedEvent[E](eventEnvelope.event.asInstanceOf[E], meta.originReplica, meta.originSequenceNr)
+                  ReplicatedEvent[E](
+                    eventEnvelope.event.asInstanceOf[E],
+                    meta.originReplica,
+                    meta.originSequenceNr,
+                    meta.version)
                 ReplicatedEventEnvelope(re, replyTo)
             })
         }
@@ -247,18 +254,17 @@ private[akka] object Running {
         envelope)
       envelope.ack ! ReplicatedEventAck
       if (envelope.event.originReplica != activeActive.replicaId && !alreadySeen(envelope.event)) {
-        activeActive.setContext(false, envelope.event.originReplica)
         setup.log.debug(
           "Saving event [{}] from [{}] as first time",
           envelope.event.originSequenceNr,
           envelope.event.originReplica)
-        handleExternalReplicatedEventPersist(envelope.event)
+        handleExternalReplicatedEventPersist(activeActive, envelope.event)
       } else {
         setup.log.debug(
           "Filtering event [{}] from [{}] as it was already seen",
           envelope.event.originSequenceNr,
           envelope.event.originReplica)
-        this
+        tryUnstashOne(this)
       }
     }
 
@@ -270,12 +276,12 @@ private[akka] object Running {
           this
 
         case Some(activeActive) =>
-          event.replicaId match {
+          event.replicatedMetaData match {
             case None =>
-              setup.log.warn("Received published event for [{}] but with no replica id, dropping")
+              setup.log.warn("Received published event for [{}] but with no replicated metadata, dropping")
               this
-            case Some(replicaId) =>
-              onPublishedEvent(state, activeActive, replicaId, event)
+            case Some(replicatedEventMetaData) =>
+              onPublishedEvent(state, activeActive, replicatedEventMetaData, event)
           }
       }
       tryUnstashOne(newBehavior)
@@ -284,11 +290,12 @@ private[akka] object Running {
     private def onPublishedEvent(
         state: Running.RunningState[S],
         activeActive: ActiveActive,
-        originReplicaId: String,
+        replicatedMetadata: ReplicatedPublishedEventMetaData,
         event: PublishedEventImpl): Behavior[InternalProtocol] = {
       val log = setup.log
       val separatorIndex = event.persistenceId.id.indexOf(PersistenceId.DefaultSeparator)
       val idPrefix = event.persistenceId.id.substring(0, separatorIndex)
+      val originReplicaId = replicatedMetadata.replicaId
       if (!setup.persistenceId.id.startsWith(idPrefix)) {
         log.warn("Ignoring published replicated event for the wrong actor [{}]", event.persistenceId)
         this
@@ -324,7 +331,7 @@ private[akka] object Running {
               "Ignoring published replicated event with replication seqNr [{}] from replica [{}] " +
               "because expected replication seqNr was [{}] ",
               event.sequenceNumber,
-              event.replicaId,
+              originReplicaId,
               expectedSequenceNumber)
           }
           this
@@ -341,7 +348,12 @@ private[akka] object Running {
           state.replicationControl.get(originReplicaId).foreach(_.fastForward(event.sequenceNumber))
 
           handleExternalReplicatedEventPersist(
-            ReplicatedEvent(event.event.asInstanceOf[E], originReplicaId, event.sequenceNumber))
+            activeActive,
+            ReplicatedEvent(
+              event.event.asInstanceOf[E],
+              originReplicaId,
+              event.sequenceNumber,
+              replicatedMetadata.version))
         }
 
       }
@@ -353,8 +365,22 @@ private[akka] object Running {
       this
     }
 
-    private def handleExternalReplicatedEventPersist(event: ReplicatedEvent[E]): Behavior[InternalProtocol] = {
+    private def handleExternalReplicatedEventPersist(
+        activeActive: ActiveActive,
+        event: ReplicatedEvent[E]): Behavior[InternalProtocol] = {
       _currentSequenceNumber = state.seqNr + 1
+      val isConcurrent: Boolean = event.originVersion <> state.version
+      val updatedVersion = event.originVersion.merge(state.version)
+      activeActive.setContext(false, event.originReplica, isConcurrent)
+
+      setup.log.debugN(
+        "Processing event [{}] with version [{}]. Local version: {}. Updated version {}. Concurrent? {}",
+        event.event,
+        event.originVersion,
+        state.version,
+        updatedVersion,
+        isConcurrent)
+
       val newState: RunningState[S] = state.applyEvent(setup, event.event)
       val newState2: RunningState[S] = internalPersist(
         setup.context,
@@ -362,12 +388,13 @@ private[akka] object Running {
         newState,
         event.event,
         "",
-        OptionVal.Some(ReplicatedEventMetaData(event.originReplica, event.originSequenceNr)))
+        OptionVal.Some(
+          ReplicatedEventMetaData(event.originReplica, event.originSequenceNr, updatedVersion, isConcurrent)))
       val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event.event, newState2.seqNr)
       // FIXME validate this is the correct sequence nr from that replica https://github.com/akka/akka/issues/29259
       val updatedSeen = newState2.seenPerReplica.updated(event.originReplica, event.originSequenceNr)
       persistingEvents(
-        newState2.copy(seenPerReplica = updatedSeen),
+        newState2.copy(seenPerReplica = updatedSeen, version = updatedVersion),
         state,
         numberOfEvents = 1,
         shouldSnapshotAfterPersist,
@@ -384,8 +411,10 @@ private[akka] object Running {
       _currentSequenceNumber = state.seqNr + 1
 
       setup.activeActive.foreach { aa =>
-        aa.setContext(recoveryRunning = false, aa.replicaId)
+        // set concurrent to false, local events are never concurrent
+        aa.setContext(recoveryRunning = false, aa.replicaId, concurrent = false)
       }
+
       val newState: RunningState[S] = state.applyEvent(setup, event)
 
       val eventToPersist = adaptEvent(event)
@@ -393,13 +422,20 @@ private[akka] object Running {
 
       val newState2 = setup.activeActive match {
         case Some(aa) =>
-          internalPersist(
+          val updatedVersion = newState.version.updated(aa.replicaId, _currentSequenceNumber)
+          val r = internalPersist(
             setup.context,
             cmd,
             newState,
             eventToPersist,
             eventAdapterManifest,
-            OptionVal.Some(ReplicatedEventMetaData(aa.replicaId, _currentSequenceNumber)))
+            OptionVal.Some(
+              ReplicatedEventMetaData(aa.replicaId, _currentSequenceNumber, updatedVersion, concurrent = false)))
+            .copy(version = updatedVersion)
+
+          setup.log.debug("Event persisted [{}]. Version vector after: [{}]", eventToPersist, r.version)
+
+          r
         case None =>
           internalPersist(setup.context, cmd, newState, eventToPersist, eventAdapterManifest, OptionVal.None)
       }
@@ -420,14 +456,15 @@ private[akka] object Running {
 
         val metadataTemplate: Option[ReplicatedEventMetaData] = setup.activeActive match {
           case Some(aa) =>
-            aa.setContext(recoveryRunning = false, aa.replicaId)
-            Some(ReplicatedEventMetaData(aa.replicaId, 0L)) // we replace it with actual seqnr later
+            aa.setContext(recoveryRunning = false, aa.replicaId, concurrent = false) // local events are never concurrent
+            Some(ReplicatedEventMetaData(aa.replicaId, 0L, state.version, concurrent = false)) // we replace it with actual seqnr later
           case None => None
         }
 
         var currentState = state
         var shouldSnapshotAfterPersist: SnapshotAfterPersist = NoSnapshot
         var eventsToPersist: List[EventToPersist] = Nil
+
         events.foreach { event =>
           _currentSequenceNumber += 1
           if (shouldSnapshotAfterPersist == NoSnapshot)
@@ -435,14 +472,19 @@ private[akka] object Running {
           val evtManifest = setup.eventAdapter.manifest(event)
           val adaptedEvent = adaptEvent(event)
           val eventMetadata = metadataTemplate match {
-            case Some(template) => Some(template.copy(originSequenceNr = _currentSequenceNumber))
-            case None           => None
+            case Some(template) =>
+              val updatedVersion = currentState.version.updated(template.originReplica, _currentSequenceNumber)
+              setup.log.trace("Processing event [{}] with version vector [{}]", event, updatedVersion)
+              currentState = currentState.copy(version = updatedVersion)
+              Some(template.copy(originSequenceNr = _currentSequenceNumber, version = updatedVersion))
+            case None => None
           }
           currentState = currentState.applyEvent(setup, event)
           eventsToPersist = EventToPersist(adaptedEvent, evtManifest, eventMetadata) :: eventsToPersist
         }
 
-        val newState2 = internalPersistAll(setup.context, cmd, currentState, eventsToPersist.reverse)
+        val newState2 =
+          internalPersistAll(setup.context, cmd, currentState, eventsToPersist.reverse)
 
         persistingEvents(newState2, state, events.size, shouldSnapshotAfterPersist, sideEffects)
       } else {
@@ -582,8 +624,9 @@ private[akka] object Running {
         onWriteSuccess(setup.context, p)
 
         if (setup.publishEvents) {
+          val meta = setup.activeActive.map(aa => new ReplicatedPublishedEventMetaData(aa.replicaId, state.version))
           context.system.eventStream ! EventStream.Publish(
-            PublishedEventImpl(setup.replicaId, setup.persistenceId, p.sequenceNr, p.payload, p.timestamp))
+            PublishedEventImpl(setup.persistenceId, p.sequenceNr, p.payload, p.timestamp, meta))
         }
 
         // only once all things are applied we can revert back

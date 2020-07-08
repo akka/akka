@@ -274,28 +274,49 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 }
 
 // FIXME serializer
+/**
+ * @param originReplica Where the event originally was created
+ * @param originSequenceNr The original sequenceNr in the origin DC
+ * @param version The version with which the event was persisted at the different DC. The same event will have different version vectors
+ *                at each location as they are received at different times
+ */
 @InternalApi
-private[akka] final case class ReplicatedEventMetaData(originReplica: String, originSequenceNr: Long)
+private[akka] final case class ReplicatedEventMetaData(
+    originReplica: String,
+    originSequenceNr: Long,
+    version: VersionVector,
+    concurrent: Boolean) // whether when the event handler was executed the event was concurrent
+
+/**
+ * An event replicated from a different replica.
+ *
+ * The version is for when it was persisted at the other replica. At the current replica it will be
+ * merged with the current local version.
+ */
 @InternalApi
-private[akka] final case class ReplicatedEvent[E](event: E, originReplica: String, originSequenceNr: Long)
+private[akka] final case class ReplicatedEvent[E](
+    event: E,
+    originReplica: String,
+    originSequenceNr: Long,
+    originVersion: VersionVector)
 @InternalApi
 private[akka] case object ReplicatedEventAck
+
+final class ReplicatedPublishedEventMetaData(val replicaId: String, private[akka] val version: VersionVector)
 
 /**
  * INTERNAL API
  */
 @InternalApi
 private[akka] final case class PublishedEventImpl(
-    replicaId: Option[String],
     persistenceId: PersistenceId,
     sequenceNumber: Long,
     payload: Any,
-    timestamp: Long)
+    timestamp: Long,
+    replicatedMetaData: Option[ReplicatedPublishedEventMetaData])
     extends PublishedEvent
     with InternalProtocol {
   import scala.compat.java8.OptionConverters._
-
-  override def getReplicaId: Optional[String] = replicaId.asJava
 
   def tags: Set[String] = payload match {
     case t: Tagged => t.tags
@@ -307,4 +328,5 @@ private[akka] final case class PublishedEventImpl(
     case _                => payload
   }
 
+  override def getReplicatedMetaData: Optional[ReplicatedPublishedEventMetaData] = replicatedMetaData.asJava
 }

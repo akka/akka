@@ -7,6 +7,7 @@ package akka.persistence.typed
 import java.util.Optional
 
 import akka.annotation.DoNotInherit
+import akka.persistence.typed.internal.ReplicatedPublishedEventMetaData
 
 /**
  * When using event publishing the events published to the system event stream will be in this form.
@@ -17,10 +18,11 @@ import akka.annotation.DoNotInherit
 trait PublishedEvent {
 
   /** Scala API: When emitted from an Active Active actor this will contain the replica id */
-  def replicaId: Option[String]
+  def replicatedMetaData: Option[ReplicatedPublishedEventMetaData]
 
   /** Java API: When emitted from an Active Active actor this will contain the replica id */
-  def getReplicaId: Optional[String]
+  def getReplicatedMetaData: Optional[ReplicatedPublishedEventMetaData]
+
   def persistenceId: PersistenceId
   def sequenceNumber: Long
 
