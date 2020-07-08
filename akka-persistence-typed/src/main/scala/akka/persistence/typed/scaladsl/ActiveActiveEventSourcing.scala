@@ -56,6 +56,7 @@ private[akka] class ActiveActiveContextImpl(val entityId: String, val replicaId:
     extends ActiveActiveContext {
   var _origin: String = null
   var _recoveryRunning: Boolean = false
+  var _concurrent: Boolean = false
 
   // FIXME check illegal access https://github.com/akka/akka/issues/29264
 
@@ -69,7 +70,7 @@ private[akka] class ActiveActiveContextImpl(val entityId: String, val replicaId:
    * Whether the happened concurrently with an event from another replica.
    * Undefined result if called from any where other than an event handler.
    */
-  override def concurrent: Boolean = throw new UnsupportedOperationException("TODO")
+  override def concurrent: Boolean = _concurrent
 
   override def persistenceId: PersistenceId = PersistenceId.replicatedUniqueId(entityId, replicaId)
 

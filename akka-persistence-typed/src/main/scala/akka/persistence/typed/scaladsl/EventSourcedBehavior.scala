@@ -33,8 +33,9 @@ object EventSourcedBehavior {
     /**
      * Must only be called on the same thread that will execute the user code
      */
-    def setContext(recoveryRunning: Boolean, originReplica: String): Unit = {
+    def setContext(recoveryRunning: Boolean, originReplica: String, concurrent: Boolean): Unit = {
       aaContext._recoveryRunning = recoveryRunning
+      aaContext._concurrent = concurrent
       aaContext._origin = originReplica
     }
 
