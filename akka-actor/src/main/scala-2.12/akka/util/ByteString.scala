@@ -714,6 +714,8 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
 
   override protected[this] def newBuilder: ByteStringBuilder = ByteString.newBuilder
 
+  override def isEmpty: Boolean = length == 0
+
   // *must* be overridden by derived classes. This construction is necessary
   // to specialize the return type, as the method is already implemented in
   // a parent trait.

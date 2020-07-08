@@ -755,6 +755,8 @@ sealed abstract class ByteString
   // of ByteString which changed for Scala 2.12, see https://github.com/akka/akka/issues/21774
   override final def className: String = "ByteString"
 
+  override def isEmpty: Boolean = length == 0
+
   // override protected[this] def newBuilder: ByteStringBuilder = ByteString.newBuilder
 
   // *must* be overridden by derived classes. This construction is necessary
