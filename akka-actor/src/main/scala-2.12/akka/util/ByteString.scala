@@ -1047,37 +1047,44 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     _length += 1
     this
   }
-
+  def ++=(bytes: ByteString): this.type = {
+    if (bytes.nonEmpty) {
+      clearTemp()
+      bytes match {
+        case b: ByteString1C =>
+          _builder += b.toByteString1
+          _length += b.length
+        case b: ByteString1 =>
+          _builder += b
+          _length += b.length
+        case bs: ByteStrings =>
+          _builder ++= bs.bytestrings
+          _length += bs.length
+      }
+    }
+    this
+  }
   override def ++=(xs: TraversableOnce[Byte]): this.type = {
     xs match {
-      case b: ByteString if b.isEmpty =>
-      // do nothing
-      case b: ByteString1C =>
-        clearTemp()
-        _builder += b.toByteString1
-        _length += b.length
-      case b: ByteString1 =>
-        clearTemp()
-        _builder += b
-        _length += b.length
-      case bs: ByteStrings =>
-        clearTemp()
-        _builder ++= bs.bytestrings
-        _length += bs.length
+      case bs: ByteString => ++=(bs)
       case xs: WrappedArray.ofByte =>
-        putByteArrayUnsafe(xs.array.clone)
+        if (xs.nonEmpty) putByteArrayUnsafe(xs.array.clone)
       case seq: collection.IndexedSeq[Byte] if shouldResizeTempFor(seq.length) =>
-        val copied = new Array[Byte](seq.length)
-        seq.copyToArray(copied)
+        if (seq.nonEmpty) {
+          val copied = new Array[Byte](seq.length)
+          seq.copyToArray(copied)
 
-        clearTemp()
-        _builder += ByteString.ByteString1(copied)
-        _length += seq.length
+          clearTemp()
+          _builder += ByteString.ByteString1(copied)
+          _length += seq.length
+        }
       case seq: collection.IndexedSeq[_] =>
-        ensureTempSize(_tempLength + xs.size)
-        xs.copyToArray(_temp, _tempLength)
-        _tempLength += seq.length
-        _length += seq.length
+        if (seq.nonEmpty) {
+          ensureTempSize(_tempLength + xs.size)
+          xs.copyToArray(_temp, _tempLength)
+          _tempLength += seq.length
+          _length += seq.length
+        }
       case _ =>
         super.++=(xs)
     }
