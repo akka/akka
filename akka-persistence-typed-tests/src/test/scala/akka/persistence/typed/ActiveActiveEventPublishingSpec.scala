@@ -26,9 +26,13 @@ object ActiveActiveEventPublishingSpec {
     case class Get(replyTo: ActorRef[Set[String]]) extends Command
     case object Stop extends Command
 
-    def apply(entityId: String, replicaId: String, allReplicas: Set[String]): Behavior[Command] =
+    def apply(entityId: String, replicaId: ReplicaId, allReplicas: Set[ReplicaId]): Behavior[Command] =
       Behaviors.setup { ctx =>
-        ActiveActiveEventSourcing(entityId, replicaId, allReplicas, PersistenceTestKitReadJournal.Identifier)(
+        ActiveActiveEventSourcing.withSharedJournal(
+          entityId,
+          replicaId,
+          allReplicas,
+          PersistenceTestKitReadJournal.Identifier)(
           aactx =>
             EventSourcedBehavior[Command, String, Set[String]](
               aactx.persistenceId,
@@ -57,6 +61,10 @@ class ActiveActiveEventPublishingSpec
     with AnyWordSpecLike
     with LogCapturing {
 
+  val DCA = ReplicaId("DC-A")
+  val DCB = ReplicaId("DC-B")
+  val DCC = ReplicaId("DC-C")
+
   private var idCounter = 0
   def nextEntityId(): String = {
     idCounter += 1
@@ -68,18 +76,18 @@ class ActiveActiveEventPublishingSpec
   "An active active actor" must {
     "move forward when a published event from a replica is received" in {
       val id = nextEntityId()
-      val actor = spawn(MyActiveActive(id, "DC-A", Set("DC-A", "DC-B")))
+      val actor = spawn(MyActiveActive(id, DCA, Set(DCA, DCB)))
       val probe = createTestProbe[Any]()
       actor ! MyActiveActive.Add("one", probe.ref)
       probe.expectMessage(Done)
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId(id, "DC-B"),
+        PersistenceId.replicatedUniqueId(id, DCB),
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData("DC-B", VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
       actor ! MyActiveActive.Add("three", probe.ref)
       probe.expectMessage(Done)
 
@@ -89,18 +97,18 @@ class ActiveActiveEventPublishingSpec
 
     "ignore a published event from a replica is received but the sequence number is unexpected" in {
       val id = nextEntityId()
-      val actor = spawn(MyActiveActive(id, "DC-A", Set("DC-A", "DC-B")))
+      val actor = spawn(MyActiveActive(id, DCA, Set(DCA, DCB)))
       val probe = createTestProbe[Any]()
       actor ! MyActiveActive.Add("one", probe.ref)
       probe.expectMessage(Done)
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId(id, "DC-B"),
+        PersistenceId.replicatedUniqueId(id, DCB),
         2L, // missing 1L
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData("DC-B", VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
       actor ! MyActiveActive.Add("three", probe.ref)
       probe.expectMessage(Done)
 
@@ -110,18 +118,18 @@ class ActiveActiveEventPublishingSpec
 
     "ignore a published event from an unknown replica" in {
       val id = nextEntityId()
-      val actor = spawn(MyActiveActive(id, "DC-A", Set("DC-A", "DC-B")))
+      val actor = spawn(MyActiveActive(id, DCA, Set(DCA, DCB)))
       val probe = createTestProbe[Any]()
       actor ! MyActiveActive.Add("one", probe.ref)
       probe.expectMessage(Done)
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId(id, "DC-C"),
+        PersistenceId.replicatedUniqueId(id, DCC),
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData("DC-C", VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCC, VersionVector.empty)))
       actor ! MyActiveActive.Add("three", probe.ref)
       probe.expectMessage(Done)
 
@@ -131,25 +139,25 @@ class ActiveActiveEventPublishingSpec
 
     "ignore an already seen event from a replica" in {
       val id = nextEntityId()
-      val actor = spawn(MyActiveActive(id, "DC-A", Set("DC-A", "DC-B")))
+      val actor = spawn(MyActiveActive(id, DCA, Set(DCA, DCB)))
       val probe = createTestProbe[Any]()
       actor ! MyActiveActive.Add("one", probe.ref)
       probe.expectMessage(Done)
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId("myId4", "DC-B"),
+        PersistenceId.replicatedUniqueId("myId4", DCB),
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData("DC-B", VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
       // simulate another published event from that replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId(id, "DC-B"),
+        PersistenceId.replicatedUniqueId(id, DCB),
         1L,
         "two-again", // ofc this would be the same in the real world, different just so we can detect
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData("DC-B", VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
 
       actor ! MyActiveActive.Add("three", probe.ref)
       probe.expectMessage(Done)
@@ -161,7 +169,7 @@ class ActiveActiveEventPublishingSpec
     "handle published events after replay" in {
       val id = nextEntityId()
       val probe = createTestProbe[Any]()
-      val activeActiveBehavior = MyActiveActive(id, "DC-A", Set("DC-A", "DC-B"))
+      val activeActiveBehavior = MyActiveActive(id, DCA, Set(DCA, DCB))
       val incarnation1 = spawn(activeActiveBehavior)
       incarnation1 ! MyActiveActive.Add("one", probe.ref)
       probe.expectMessage(Done)
@@ -177,11 +185,11 @@ class ActiveActiveEventPublishingSpec
 
       // simulate a published event from another replica
       incarnation2.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId(id, "DC-B"),
+        PersistenceId.replicatedUniqueId(id, DCB),
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData("DC-B", VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
 
       incarnation2 ! MyActiveActive.Add("three", probe.ref)
       probe.expectMessage(Done)
@@ -193,18 +201,18 @@ class ActiveActiveEventPublishingSpec
     "handle published events before and after replay" in {
       val id = nextEntityId()
       val probe = createTestProbe[Any]()
-      val activeActiveBehaviorA = MyActiveActive(id, "DC-A", Set("DC-A", "DC-B"))
+      val activeActiveBehaviorA = MyActiveActive(id, DCA, Set(DCA, DCB))
       val incarnationA1 = spawn(activeActiveBehaviorA)
       incarnationA1 ! MyActiveActive.Add("one", probe.ref)
       probe.expectMessage(Done)
 
       // simulate a published event from another replica
       incarnationA1.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId(id, "DC-B"),
+        PersistenceId.replicatedUniqueId(id, DCB),
         1L,
         "two",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData("DC-B", VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
 
       incarnationA1 ! MyActiveActive.Stop
       probe.expectTerminated(incarnationA1)
@@ -213,11 +221,11 @@ class ActiveActiveEventPublishingSpec
 
       // simulate a published event from another replica
       incarnationA2.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId(id, "DC-B"),
+        PersistenceId.replicatedUniqueId(id, DCB),
         2L,
         "three",
         System.currentTimeMillis(),
-        Some(new ReplicatedPublishedEventMetaData("DC-B", VersionVector.empty)))
+        Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
 
       incarnationA2 ! MyActiveActive.Add("four", probe.ref)
       probe.expectMessage(Done)

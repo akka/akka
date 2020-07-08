@@ -11,17 +11,27 @@ import akka.persistence.testkit.EventStorage
 import akka.persistence.testkit.internal.InMemStorageExtension
 import akka.persistence.testkit.query.internal.EventsByPersistenceIdStage
 import akka.stream.scaladsl.Source
+import akka.util.unused
+import com.typesafe.config.Config
+import org.slf4j.LoggerFactory
 
 object PersistenceTestKitReadJournal {
   val Identifier = "akka.persistence.testkit.query"
 }
 
-final class PersistenceTestKitReadJournal(system: ExtendedActorSystem)
+final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused config: Config, configPath: String)
     extends ReadJournal
     with EventsByPersistenceIdQuery
     with CurrentEventsByPersistenceIdQuery {
 
-  private val storage: EventStorage = InMemStorageExtension(system)
+  private val log = LoggerFactory.getLogger(getClass)
+
+  private val storage: EventStorage = {
+    // use shared path up to before `query` to identify which inmem journal we are addressing
+    val storagePluginId = configPath.replaceAll("""query$""", "journal")
+    log.debug("Using in memory storage [{}] for test kit read journal", storagePluginId)
+    InMemStorageExtension(system).storageFor(storagePluginId)
+  }
 
   override def eventsByPersistenceId(
       persistenceId: String,

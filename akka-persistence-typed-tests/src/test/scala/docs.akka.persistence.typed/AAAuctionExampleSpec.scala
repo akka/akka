@@ -11,6 +11,7 @@ import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, _ }
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
+import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.scaladsl.{ ActiveActiveContext, ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
 import akka.serialization.jackson.CborSerializable
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
@@ -21,7 +22,7 @@ object AAAuctionExampleSpec {
 
   type MoneyAmount = Int
 
-  case class Bid(bidder: String, offer: MoneyAmount, timestamp: Instant, originDc: String)
+  case class Bid(bidder: String, offer: MoneyAmount, timestamp: Instant, originDc: ReplicaId)
 
   // commands
   sealed trait AuctionCommand
@@ -33,12 +34,13 @@ object AAAuctionExampleSpec {
 
   sealed trait AuctionEvent extends CborSerializable
   final case class BidRegistered(bid: Bid) extends AuctionEvent
-  final case class AuctionFinished(atDc: String) extends AuctionEvent
-  final case class WinnerDecided(atDc: String, winningBid: Bid, highestCounterOffer: MoneyAmount) extends AuctionEvent
+  final case class AuctionFinished(atDc: ReplicaId) extends AuctionEvent
+  final case class WinnerDecided(atDc: ReplicaId, winningBid: Bid, highestCounterOffer: MoneyAmount)
+      extends AuctionEvent
 
   sealed trait AuctionPhase
   case object Running extends AuctionPhase
-  final case class Closing(finishedAtDc: Set[String]) extends AuctionPhase
+  final case class Closing(finishedAtDc: Set[ReplicaId]) extends AuctionPhase
   case object Closed extends AuctionPhase
 
   case class AuctionState(
@@ -85,8 +87,8 @@ object AAAuctionExampleSpec {
       // If timestamps are equal, choose by dc where the offer was submitted
       // In real auctions, this last comparison should be deterministic but unpredictable, so that submitting to a
       // particular DC would not be an advantage.
-      (first.offer == second.offer && first.timestamp.equals(second.timestamp) && first.originDc.compareTo(
-        second.originDc) < 0)
+      (first.offer == second.offer && first.timestamp.equals(second.timestamp) && first.originDc.id
+        .compareTo(second.originDc.id) < 0)
   }
 
   case class AuctionSetup(
@@ -94,7 +96,7 @@ object AAAuctionExampleSpec {
       initialBid: Bid, // the initial bid is basically the minimum price bidden at start time by the owner
       closingAt: Instant,
       responsibleForClosing: Boolean,
-      allDcs: Set[String])
+      allDcs: Set[ReplicaId])
 
   def commandHandler(setup: AuctionSetup, ctx: ActorContext[AuctionCommand], aaContext: ActiveActiveContext)(
       state: AuctionState,
@@ -199,15 +201,16 @@ object AAAuctionExampleSpec {
   def initialState(setup: AuctionSetup) =
     AuctionState(phase = Running, highestBid = setup.initialBid, highestCounterOffer = setup.initialBid.offer)
 
-  def behavior(replica: String, setup: AuctionSetup): Behavior[AuctionCommand] = Behaviors.setup[AuctionCommand] {
+  def behavior(replica: ReplicaId, setup: AuctionSetup): Behavior[AuctionCommand] = Behaviors.setup[AuctionCommand] {
     ctx =>
-      ActiveActiveEventSourcing(setup.name, replica, setup.allDcs, PersistenceTestKitReadJournal.Identifier) { aaCtx =>
-        EventSourcedBehavior(
-          aaCtx.persistenceId,
-          initialState(setup),
-          commandHandler(setup, ctx, aaCtx),
-          eventHandler(ctx, aaCtx, setup))
-      }
+      ActiveActiveEventSourcing
+        .withSharedJournal(setup.name, replica, setup.allDcs, PersistenceTestKitReadJournal.Identifier) { aaCtx =>
+          EventSourcedBehavior(
+            aaCtx.persistenceId,
+            initialState(setup),
+            commandHandler(setup, ctx, aaCtx),
+            eventHandler(ctx, aaCtx, setup))
+        }
   }
 }
 
@@ -223,19 +226,19 @@ class AAAuctionExampleSpec
   "Auction example" should {
 
     "work" in {
-      val Replicas = Set("DC-A", "DC-B")
+      val Replicas = Set(ReplicaId("DC-A"), ReplicaId("DC-B"))
       val setupA =
         AuctionSetup(
           "old-skis",
-          Bid("chbatey", 12, Instant.now(), "DC-A"),
+          Bid("chbatey", 12, Instant.now(), ReplicaId("DC-A")),
           Instant.now().plusSeconds(10),
           responsibleForClosing = true,
           Replicas)
 
       val setupB = setupA.copy(responsibleForClosing = false)
 
-      val dcAReplica: ActorRef[AuctionCommand] = spawn(behavior("DC-A", setupA))
-      val dcBReplica: ActorRef[AuctionCommand] = spawn(behavior("DC-B", setupB))
+      val dcAReplica: ActorRef[AuctionCommand] = spawn(behavior(ReplicaId("DC-A"), setupA))
+      val dcBReplica: ActorRef[AuctionCommand] = spawn(behavior(ReplicaId("DC-B"), setupB))
 
       dcAReplica ! OfferBid("me", 100)
       dcAReplica ! OfferBid("me", 99)

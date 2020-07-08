@@ -7,23 +7,27 @@ package akka.persistence.typed
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
-import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
-import akka.actor.typed.{ ActorRef, Behavior }
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
-import akka.persistence.typed.scaladsl.{ ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
+import akka.persistence.typed.scaladsl.ActiveActiveEventSourcing
+import akka.persistence.typed.scaladsl.Effect
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 
 object ActiveActiveSpec {
 
-  val AllReplicas = Set("R1", "R2", "R3")
+  val AllReplicas = Set(ReplicaId("R1"), ReplicaId("R2"), ReplicaId("R3"))
 
   sealed trait Command
   case class GetState(replyTo: ActorRef[State]) extends Command
   case class StoreMe(description: String, replyTo: ActorRef[Done]) extends Command
   case class StoreUs(descriptions: List[String], replyTo: ActorRef[Done]) extends Command
-  case class GetReplica(replyTo: ActorRef[(String, Set[String])]) extends Command
+  case class GetReplica(replyTo: ActorRef[(ReplicaId, Set[ReplicaId])]) extends Command
   case object Stop extends Command
 
   case class State(all: List[String])
@@ -34,7 +38,11 @@ object ActiveActiveSpec {
       entityId: String,
       replicaId: String,
       probe: Option[ActorRef[EventAndContext]] = None): Behavior[Command] =
-    ActiveActiveEventSourcing(entityId, replicaId, AllReplicas, PersistenceTestKitReadJournal.Identifier)(
+    ActiveActiveEventSourcing.withSharedJournal(
+      entityId,
+      ReplicaId(replicaId),
+      AllReplicas,
+      PersistenceTestKitReadJournal.Identifier)(
       aaContext =>
         EventSourcedBehavior[Command, String, State](
           aaContext.persistenceId,
@@ -61,7 +69,7 @@ object ActiveActiveSpec {
 
 }
 
-case class EventAndContext(event: Any, origin: String, recoveryRunning: Boolean, concurrent: Boolean)
+case class EventAndContext(event: Any, origin: ReplicaId, recoveryRunning: Boolean, concurrent: Boolean)
 
 class ActiveActiveSpec
     extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
@@ -145,10 +153,10 @@ class ActiveActiveSpec
 
     "have access to replica information" in {
       val entityId = nextEntityId
-      val probe = createTestProbe[(String, Set[String])]()
+      val probe = createTestProbe[(ReplicaId, Set[ReplicaId])]()
       val r1 = spawn(testBehavior(entityId, "R1"))
       r1 ! GetReplica(probe.ref)
-      probe.expectMessage(("R1", Set("R1", "R2", "R3")))
+      probe.expectMessage((ReplicaId("R1"), Set(ReplicaId("R1"), ReplicaId("R2"), ReplicaId("R3"))))
     }
 
     "have access to event origin" in {
@@ -161,12 +169,12 @@ class ActiveActiveSpec
       val r2 = spawn(testBehavior(entityId, "R2", eventProbeR2.ref))
 
       r1 ! StoreMe("from r1", replyProbe.ref)
-      eventProbeR2.expectMessage(EventAndContext("from r1", "R1", false, false))
-      eventProbeR1.expectMessage(EventAndContext("from r1", "R1", false, false))
+      eventProbeR2.expectMessage(EventAndContext("from r1", ReplicaId("R1"), false, false))
+      eventProbeR1.expectMessage(EventAndContext("from r1", ReplicaId("R1"), false, false))
 
       r2 ! StoreMe("from r2", replyProbe.ref)
-      eventProbeR1.expectMessage(EventAndContext("from r2", "R2", false, false))
-      eventProbeR2.expectMessage(EventAndContext("from r2", "R2", false, false))
+      eventProbeR1.expectMessage(EventAndContext("from r2", ReplicaId("R2"), false, false))
+      eventProbeR2.expectMessage(EventAndContext("from r2", ReplicaId("R2"), false, false))
     }
 
     "set recovery running" in {
@@ -175,12 +183,12 @@ class ActiveActiveSpec
       val replyProbe = createTestProbe[Done]()
       val r1 = spawn(testBehavior(entityId, "R1", eventProbeR1.ref))
       r1 ! StoreMe("Event", replyProbe.ref)
-      eventProbeR1.expectMessage(EventAndContext("Event", "R1", recoveryRunning = false, false))
+      eventProbeR1.expectMessage(EventAndContext("Event", ReplicaId("R1"), recoveryRunning = false, false))
       replyProbe.expectMessage(Done)
 
       val recoveryProbe = createTestProbe[EventAndContext]()
       spawn(testBehavior(entityId, "R1", recoveryProbe.ref))
-      recoveryProbe.expectMessage(EventAndContext("Event", "R1", recoveryRunning = true, false))
+      recoveryProbe.expectMessage(EventAndContext("Event", ReplicaId("R1"), recoveryRunning = true, false))
     }
 
     "persist all" in {
@@ -197,10 +205,10 @@ class ActiveActiveSpec
 
       // events at r2 happened concurrently with events at r1
 
-      eventProbeR1.expectMessage(EventAndContext("1 from r1", "R1", false, concurrent = false))
-      eventProbeR1.expectMessage(EventAndContext("2 from r1", "R1", false, concurrent = false))
-      eventProbeR1.expectMessage(EventAndContext("1 from r2", "R2", false, concurrent = true))
-      eventProbeR1.expectMessage(EventAndContext("2 from r2", "R2", false, concurrent = true))
+      eventProbeR1.expectMessage(EventAndContext("1 from r1", ReplicaId("R1"), false, concurrent = false))
+      eventProbeR1.expectMessage(EventAndContext("2 from r1", ReplicaId("R1"), false, concurrent = false))
+      eventProbeR1.expectMessage(EventAndContext("1 from r2", ReplicaId("R2"), false, concurrent = true))
+      eventProbeR1.expectMessage(EventAndContext("2 from r2", ReplicaId("R2"), false, concurrent = true))
 
       eventually {
         val probe = createTestProbe[State]()
@@ -225,12 +233,16 @@ class ActiveActiveSpec
       r2 ! StoreMe("from r2", probe.ref) // R2 0 R1 0 -> R2 1 R1 0
 
       // each gets its local event
-      eventProbeR1.expectMessage(EventAndContext("from r1", "R1", recoveryRunning = false, concurrent = false))
-      eventProbeR2.expectMessage(EventAndContext("from r2", "R2", recoveryRunning = false, concurrent = false))
+      eventProbeR1.expectMessage(
+        EventAndContext("from r1", ReplicaId("R1"), recoveryRunning = false, concurrent = false))
+      eventProbeR2.expectMessage(
+        EventAndContext("from r2", ReplicaId("R2"), recoveryRunning = false, concurrent = false))
 
       // then the replicated remote events, which will be concurrent
-      eventProbeR1.expectMessage(EventAndContext("from r2", "R2", recoveryRunning = false, concurrent = true))
-      eventProbeR2.expectMessage(EventAndContext("from r1", "R1", recoveryRunning = false, concurrent = true))
+      eventProbeR1.expectMessage(
+        EventAndContext("from r2", ReplicaId("R2"), recoveryRunning = false, concurrent = true))
+      eventProbeR2.expectMessage(
+        EventAndContext("from r1", ReplicaId("R1"), recoveryRunning = false, concurrent = true))
 
       // state is updated
       eventually {
@@ -246,11 +258,11 @@ class ActiveActiveSpec
 
       // Neither of these should be concurrent, nothing happening at r2
       r1 ! StoreMe("from r1 2", probe.ref) // R1 1 R2 1
-      eventProbeR1.expectMessage(EventAndContext("from r1 2", "R1", false, concurrent = false))
-      eventProbeR2.expectMessage(EventAndContext("from r1 2", "R1", false, concurrent = false))
+      eventProbeR1.expectMessage(EventAndContext("from r1 2", ReplicaId("R1"), false, concurrent = false))
+      eventProbeR2.expectMessage(EventAndContext("from r1 2", ReplicaId("R1"), false, concurrent = false))
       r1 ! StoreMe("from r1 3", probe.ref) // R2 2 R2 1
-      eventProbeR1.expectMessage(EventAndContext("from r1 3", "R1", false, concurrent = false))
-      eventProbeR2.expectMessage(EventAndContext("from r1 3", "R1", false, concurrent = false))
+      eventProbeR1.expectMessage(EventAndContext("from r1 3", ReplicaId("R1"), false, concurrent = false))
+      eventProbeR2.expectMessage(EventAndContext("from r1 3", ReplicaId("R1"), false, concurrent = false))
       eventually {
         val probe = createTestProbe[State]()
         r2 ! GetState(probe.ref)
@@ -259,8 +271,8 @@ class ActiveActiveSpec
 
       // not concurrent as the above asserts mean that all events are fully replicated
       r2 ! StoreMe("from r2 2", probe.ref)
-      eventProbeR1.expectMessage(EventAndContext("from r2 2", "R2", false, concurrent = false))
-      eventProbeR2.expectMessage(EventAndContext("from r2 2", "R2", false, concurrent = false))
+      eventProbeR1.expectMessage(EventAndContext("from r2 2", ReplicaId("R2"), false, concurrent = false))
+      eventProbeR2.expectMessage(EventAndContext("from r2 2", ReplicaId("R2"), false, concurrent = false))
       eventually {
         val probe = createTestProbe[State]()
         r1 ! GetState(probe.ref)
@@ -286,8 +298,8 @@ class ActiveActiveSpec
       probe.expectMessage(Done)
 
       // r2
-      eventProbeR2.expectMessage(EventAndContext("from r1 1", "R1", false, false))
-      eventProbeR2.expectMessage(EventAndContext("from r1 2", "R1", false, false))
+      eventProbeR2.expectMessage(EventAndContext("from r1 1", ReplicaId("R1"), false, false))
+      eventProbeR2.expectMessage(EventAndContext("from r1 2", ReplicaId("R1"), false, false))
 
       r2 ! StoreMe("from r2 1", probe.ref)
       probe.expectMessage(Done)
@@ -297,10 +309,10 @@ class ActiveActiveSpec
       // r3 should only get the events 1, not R2s stored version of them
       val eventProbeR3 = createTestProbe[EventAndContext]()
       spawn(testBehavior(entityId, "R3", eventProbeR3.ref))
-      eventProbeR3.expectMessage(EventAndContext("from r1 1", "R1", false, false))
-      eventProbeR3.expectMessage(EventAndContext("from r1 2", "R1", false, false))
-      eventProbeR3.expectMessage(EventAndContext("from r2 1", "R2", false, false))
-      eventProbeR3.expectMessage(EventAndContext("from r2 2", "R2", false, false))
+      eventProbeR3.expectMessage(EventAndContext("from r1 1", ReplicaId("R1"), false, false))
+      eventProbeR3.expectMessage(EventAndContext("from r1 2", ReplicaId("R1"), false, false))
+      eventProbeR3.expectMessage(EventAndContext("from r2 1", ReplicaId("R2"), false, false))
+      eventProbeR3.expectMessage(EventAndContext("from r2 2", ReplicaId("R2"), false, false))
       eventProbeR3.expectNoMessage()
     }
 
@@ -313,14 +325,18 @@ class ActiveActiveSpec
       r1 ! StoreMe("from r1", probe.ref) // R1 0 R2 0 -> R1 1 R2 0
       r2 ! StoreMe("from r2", probe.ref) // R2 0 R1 0 -> R2 1 R1 0
       // local event isn't concurrent, remote event is
-      eventProbeR1.expectMessage(EventAndContext("from r1", "R1", recoveryRunning = false, concurrent = false))
-      eventProbeR1.expectMessage(EventAndContext("from r2", "R2", recoveryRunning = false, concurrent = true))
+      eventProbeR1.expectMessage(
+        EventAndContext("from r1", ReplicaId("R1"), recoveryRunning = false, concurrent = false))
+      eventProbeR1.expectMessage(
+        EventAndContext("from r2", ReplicaId("R2"), recoveryRunning = false, concurrent = true))
 
       // take 2
       val eventProbeR1Take2 = createTestProbe[EventAndContext]()
       spawn(testBehavior(entityId, "R1", eventProbeR1Take2.ref))
-      eventProbeR1Take2.expectMessage(EventAndContext("from r1", "R1", recoveryRunning = true, concurrent = false))
-      eventProbeR1Take2.expectMessage(EventAndContext("from r2", "R2", recoveryRunning = true, concurrent = true))
+      eventProbeR1Take2.expectMessage(
+        EventAndContext("from r1", ReplicaId("R1"), recoveryRunning = true, concurrent = false))
+      eventProbeR1Take2.expectMessage(
+        EventAndContext("from r2", ReplicaId("R2"), recoveryRunning = true, concurrent = true))
     }
 
   }
