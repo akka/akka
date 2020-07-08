@@ -148,7 +148,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
     ref.tell(1, ActorRef.noSender());
     ref.tell(2, ActorRef.noSender());
     ref.tell(3, ActorRef.noSender());
-    ref.tell(new akka.actor.Status.Success("done"), ActorRef.noSender());
+    ref.tell(Done.getInstance(), ActorRef.noSender());
 
     final String result = future.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(result, "123");

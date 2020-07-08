@@ -524,7 +524,8 @@ public class ActorDocTest extends AbstractJavaTest {
     // #creating-props-deprecated
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  // Commented out because this 'Props.create' overload is now deprecated
+  // @Test(expected = IllegalArgumentException.class)
   public void creatingPropsIllegal() {
     /*
     // #creating-props-illegal

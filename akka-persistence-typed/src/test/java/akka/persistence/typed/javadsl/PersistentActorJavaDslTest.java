@@ -543,7 +543,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     EventEnvelope eventEnvelope = events.get(0);
     assertEquals(new Sequence(1), eventEnvelope.offset());
     assertEquals("tagging", eventEnvelope.persistenceId());
-    assertEquals(1, eventEnvelope.event());
+    assertEquals(new Incremented(1), eventEnvelope.event());
   }
 
   @Test
