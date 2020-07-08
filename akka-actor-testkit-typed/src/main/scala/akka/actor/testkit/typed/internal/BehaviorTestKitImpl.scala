@@ -16,6 +16,7 @@ import akka.actor.ActorPath
 import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.testkit.typed.Effect._
 import akka.actor.typed.{ ActorRef, Behavior, PostStop, Signal }
+import akka.actor.typed.receptionist.Receptionist
 import akka.annotation.InternalApi
 import akka.util.ccompat.JavaConverters._
 
@@ -156,4 +157,6 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
   override def logEntries(): immutable.Seq[CapturedLogEvent] = context.logEntries
 
   override def clearLog(): Unit = context.clearLog()
+
+  override def receptionistInbox(): TestInboxImpl[Receptionist.Command] = context.system.receptionistInbox
 }

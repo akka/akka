@@ -29,6 +29,7 @@ import akka.actor.typed.Scheduler
 import akka.actor.typed.Settings
 import akka.actor.typed.internal.ActorRefImpl
 import akka.actor.typed.internal.InternalRecipientRef
+import akka.actor.typed.receptionist.Receptionist
 import akka.annotation.InternalApi
 
 /**
@@ -77,6 +78,10 @@ import akka.annotation.InternalApi
   override def deadLetters[U]: ActorRef[U] = deadLettersInbox
 
   override def ignoreRef[U]: ActorRef[U] = deadLettersInbox
+
+  val receptionistInbox = new TestInboxImpl[Receptionist.Command](path.parent / "receptionist")
+
+  override def receptionist: ActorRef[Receptionist.Command] = receptionistInbox.ref
 
   val controlledExecutor = new ControlledExecutor
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = controlledExecutor
