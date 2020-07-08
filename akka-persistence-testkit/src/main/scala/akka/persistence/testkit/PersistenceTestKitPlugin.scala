@@ -15,7 +15,7 @@ import akka.persistence._
 import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.testkit.internal.{ InMemStorageExtension, SnapshotStorageEmulatorExtension }
-import com.github.ghik.silencer.silent
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -23,8 +23,7 @@ import com.github.ghik.silencer.silent
  * Persistence testkit plugin for events.
  */
 @InternalApi
-@silent("value cfg") // is never used
-class PersistenceTestKitPlugin(cfg: Config, cfgPath: String) extends AsyncWriteJournal with ActorLogging {
+class PersistenceTestKitPlugin(@unused cfg: Config, cfgPath: String) extends AsyncWriteJournal with ActorLogging {
 
   private final val storage = {
     log.debug("Using in memory storage [{}] for test kit journal", cfgPath)

@@ -11,7 +11,7 @@ import akka.persistence.testkit.EventStorage
 import akka.persistence.testkit.internal.InMemStorageExtension
 import akka.persistence.testkit.query.internal.EventsByPersistenceIdStage
 import akka.stream.scaladsl.Source
-import com.github.ghik.silencer.silent
+import akka.util.unused
 import com.typesafe.config.Config
 import org.slf4j.LoggerFactory
 
@@ -19,8 +19,7 @@ object PersistenceTestKitReadJournal {
   val Identifier = "akka.persistence.testkit.query"
 }
 
-@silent("value config") // is never used
-final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, config: Config, configPath: String)
+final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused config: Config, configPath: String)
     extends ReadJournal
     with EventsByPersistenceIdQuery
     with CurrentEventsByPersistenceIdQuery {
