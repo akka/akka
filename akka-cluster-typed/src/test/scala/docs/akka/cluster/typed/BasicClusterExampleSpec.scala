@@ -109,7 +109,7 @@ akka {
 class BasicClusterConfigSpec extends AnyWordSpec with ScalaFutures with Eventually with Matchers with LogCapturing {
   import BasicClusterExampleSpec._
 
-  implicit override val patienceConfig =
+  implicit override val patienceConfig: PatienceConfig =
     PatienceConfig(timeout = scaled(Span(10, Seconds)), interval = scaled(Span(100, Millis)))
 
   "Cluster API" must {
@@ -166,7 +166,7 @@ class BasicClusterManualSpec extends AnyWordSpec with ScalaFutures with Eventual
 
   import BasicClusterManualSpec._
 
-  implicit override val patienceConfig =
+  implicit override val patienceConfig: PatienceConfig =
     PatienceConfig(timeout = scaled(Span(10, Seconds)), interval = scaled(Span(100, Millis)))
 
   "Cluster API" must {

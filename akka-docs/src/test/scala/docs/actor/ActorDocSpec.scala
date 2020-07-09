@@ -453,7 +453,7 @@ class ActorDocSpec extends AkkaSpec("""
       class DependencyInjector(applicationContext: AnyRef, beanName: String) extends IndirectActorProducer {
 
         override def actorClass = classOf[Actor]
-        override def produce =
+        override def produce() =
           //#obtain-fresh-Actor-instance-from-DI-framework
           new Echo(beanName)
 
@@ -585,7 +585,7 @@ class ActorDocSpec extends AkkaSpec("""
       //#watch
 
       val victim = system.actorOf(Props(classOf[WatchActor], this))
-      implicit val sender = testActor
+      implicit val sender: ActorRef = testActor
       victim ! "kill"
       expectMsg("finished")
     }

@@ -342,7 +342,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     import akka.testkit.TestKitBase
 
     class MyTest extends TestKitBase {
-      implicit lazy val system = ActorSystem()
+      implicit lazy val system: ActorSystem = ActorSystem()
 
       //#put-your-test-code-here
       val probe = TestProbe()

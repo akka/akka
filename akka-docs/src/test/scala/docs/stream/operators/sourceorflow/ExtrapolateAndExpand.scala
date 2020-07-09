@@ -25,7 +25,7 @@ import scala.util.Random
  *
  */
 object ExtrapolateAndExpandMain extends App {
-  implicit val sys = ActorSystem("25fps-stream")
+  implicit val sys: ActorSystem = ActorSystem("25fps-stream")
   videoAt25Fps.map(_.pixels.utf8String).map(frame => s"$nowInSeconds - $frame").to(Sink.foreach(println)).run()
 
 }

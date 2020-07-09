@@ -58,7 +58,7 @@ object Source {
    * with an empty Optional.
    */
   def maybe[T]: Source[T, CompletableFuture[Optional[T]]] = {
-    new Source(scaladsl.Source.maybe[T].mapMaterializedValue { scalaOptionPromise: Promise[Option[T]] =>
+    new Source(scaladsl.Source.maybe[T].mapMaterializedValue { (scalaOptionPromise: Promise[Option[T]]) =>
       val javaOptionPromise = new CompletableFuture[Optional[T]]()
       scalaOptionPromise.completeWith(
         javaOptionPromise.toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.parasitic))
