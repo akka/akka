@@ -6,12 +6,13 @@ package akka
 
 import com.typesafe.sbt.MultiJvmPlugin
 import sbt.{AutoPlugin, Def, PluginTrigger, Plugins, ScalafixSupport, Setting, inConfig}
+import scalafix.sbt.ScalafixPlugin
 import scalafix.sbt.ScalafixPlugin.autoImport.scalafixConfigSettings
 
 object ScalafixForMultiNodePlugin extends AutoPlugin with ScalafixSupport {
   override def trigger: PluginTrigger = allRequirements
 
-  override def requires: Plugins = MultiNode
+  override def requires: Plugins = MultiNode && ScalafixPlugin
 
   import MultiJvmPlugin.autoImport._
 
@@ -24,9 +25,9 @@ object ScalafixForMultiNodePlugin extends AutoPlugin with ScalafixSupport {
       scalafixIgnoredSetting ++ Seq(
       updateProjectCommands(
         alias = "fixall",
-        value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;scalafmtAll"),
+        value = ";scalafixEnable;scalafixAll;scalafmtAll"),
       updateProjectCommands(
         alias = "sortImports",
-        value = ";scalafixEnable;compile:scalafix SortImports;test:scalafix SortImports;multi-jvm:scalafix SortImports;scalafmtAll")
+        value = ";scalafixEnable;scalafixAll SortImports;scalafmtAll")
     )
 }
