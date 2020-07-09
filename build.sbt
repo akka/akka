@@ -1,5 +1,7 @@
 import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
 
+ThisBuild / scalafixScalaBinaryVersion := scalaBinaryVersion.value
+
 enablePlugins(
   UnidocRoot,
   UnidocWithPrValidation,
