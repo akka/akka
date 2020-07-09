@@ -12,11 +12,11 @@ disablePlugins(MimaPlugin)
 addCommandAlias(
   name = "fixall",
   value =
-    ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;scalafmtAll;test:compile;multi-jvm:compile;reload")
+    ";scalafixEnable;scalafixAll;scalafmtAll;test:compile;multi-jvm:compile;reload")
 
 addCommandAlias(
   name = "sortImports",
-  value = ";scalafixEnable;compile:scalafix SortImports;test:scalafix SortImports;scalafmtAll")
+  value = ";scalafixEnable;scalafixAll SortImports;scalafmtAll")
 
 import akka.AkkaBuild._
 import akka.{ AkkaBuild, Dependencies, OSGi, Protobuf, SigarLoader, VersionGenerator }

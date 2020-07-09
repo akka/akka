@@ -23,9 +23,9 @@ object ScalaFixForJdk9Plugin extends AutoPlugin with ScalafixSupport {
       scalafixIgnoredSetting ++ Seq(
       updateProjectCommands(
         alias = "fixall",
-        value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;scalafmtAll;test:compile;multi-jvm:compile;reload"),
+        value = ";scalafixEnable;scalafixAll;scalafmtAll;test:compile;multi-jvm:compile;reload"),
       updateProjectCommands(
         alias = "sortImports",
-        value = ";scalafixEnable;compile:scalafix SortImports;test:scalafix SortImports;CompileJdk9:scalafix SortImports;TestJdk9:scalafix SortImports;scalafmtAll")
+        value = ";scalafixEnable;scalafixAll SortImports;scalafmtAll")
     )
 }
