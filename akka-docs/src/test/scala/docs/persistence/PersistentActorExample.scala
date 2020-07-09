@@ -51,7 +51,7 @@ class ExamplePersistentActor extends PersistentActor {
 object PersistentActorExample extends App {
 
   val system = ActorSystem("example")
-  val persistentActor = system.actorOf(Props[ExamplePersistentActor], "persistentActor-4-scala")
+  val persistentActor = system.actorOf(Props[ExamplePersistentActor](), "persistentActor-4-scala")
 
   persistentActor ! Cmd("foo")
   persistentActor ! Cmd("baz")

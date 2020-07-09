@@ -39,7 +39,7 @@ class StreamConvertersToJava extends AkkaSpec with Futures {
     val source: Source[Int, NotUsed] = StreamConverters.fromJavaStream(factory).map(_.intValue())
     val sink: Sink[Int, Future[immutable.Seq[Int]]] = Sink.seq[Int]
 
-    val futureInts: Future[immutable.Seq[Int]] = source.toMat(sink)(Keep.right).run
+    val futureInts: Future[immutable.Seq[Int]] = source.toMat(sink)(Keep.right).run()
 
     //#fromJavaStream
     whenReady(futureInts) { ints =>

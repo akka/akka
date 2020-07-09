@@ -33,7 +33,7 @@ object SystemMaterializer extends ExtensionId[SystemMaterializer] with Extension
   override def get(system: ActorSystem): SystemMaterializer = super.get(system)
   override def get(system: ClassicActorSystemProvider): SystemMaterializer = super.get(system)
 
-  override def lookup = SystemMaterializer
+  override def lookup() = SystemMaterializer
 
   override def createExtension(system: ExtendedActorSystem): SystemMaterializer =
     new SystemMaterializer(system)

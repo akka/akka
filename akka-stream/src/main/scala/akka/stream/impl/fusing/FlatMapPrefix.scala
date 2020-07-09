@@ -31,7 +31,7 @@ import akka.util.OptionVal
       inheritedAttributes
         .mandatoryAttribute[Attributes.NestedMaterializationCancellationPolicy]
         .propagateToNestedMaterialization
-    val matPromise = Promise[M]
+    val matPromise = Promise[M]()
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
       val accumulated = collection.mutable.Buffer.empty[In]
 

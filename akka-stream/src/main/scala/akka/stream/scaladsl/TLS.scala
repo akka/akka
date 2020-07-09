@@ -84,7 +84,7 @@ object TLS {
     def theSslConfig(system: ActorSystem): AkkaSSLConfig =
       sslConfig.getOrElse(AkkaSSLConfig(system))
 
-    val createSSLEngine = { system: ActorSystem =>
+    val createSSLEngine = { (system: ActorSystem) =>
       val config = theSslConfig(system)
 
       val engine = hostInfo match {

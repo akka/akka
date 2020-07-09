@@ -26,7 +26,7 @@ private[akka] object ActorRefResolveThreadLocalCache
   override def get(system: ActorSystem): ActorRefResolveThreadLocalCache = super.get(system)
   override def get(system: ClassicActorSystemProvider): ActorRefResolveThreadLocalCache = super.get(system)
 
-  override def lookup = ActorRefResolveThreadLocalCache
+  override def lookup() = ActorRefResolveThreadLocalCache
 
   override def createExtension(system: ExtendedActorSystem): ActorRefResolveThreadLocalCache =
     new ActorRefResolveThreadLocalCache(system)

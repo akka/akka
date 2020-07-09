@@ -42,7 +42,7 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
     //#offer-source
 
     //#offer-source-use
-    val sourceActor = system.actorOf(Props[DataSource], "dataSource")
+    val sourceActor = system.actorOf(Props[DataSource](), "dataSource")
 
     sourceActor ! RequestLogs(1337)
     val offer = expectMsgType[LogsOffer]
@@ -87,7 +87,7 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
     def localMetrics(): Source[String, NotUsed] = Source.single("")
 
     //#offer-sink-use
-    val receiver = system.actorOf(Props[DataReceiver], "receiver")
+    val receiver = system.actorOf(Props[DataReceiver](), "receiver")
 
     receiver ! PrepareUpload("system-42-tmp")
     val ready = expectMsgType[MeasurementsSinkReady]

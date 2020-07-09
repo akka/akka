@@ -19,7 +19,7 @@ class FlowZipWithIndexSpec extends StreamSpec {
 //#zip-with-index
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   "A ZipWithIndex for Flow " must {
 

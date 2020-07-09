@@ -120,7 +120,7 @@ class FaultHandlingDocSpec(_system: ActorSystem)
       }
       """)))
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
   }
 
@@ -129,9 +129,9 @@ class FaultHandlingDocSpec(_system: ActorSystem)
       //#testkit
 
       //#create
-      val supervisor = system.actorOf(Props[Supervisor], "supervisor")
+      val supervisor = system.actorOf(Props[Supervisor](), "supervisor")
 
-      supervisor ! Props[Child]
+      supervisor ! Props[Child]()
       val child = expectMsgType[ActorRef] // retrieve answer from TestKit’s testActor
       //#create
       EventFilter.warning(occurrences = 1).intercept {
@@ -161,7 +161,7 @@ class FaultHandlingDocSpec(_system: ActorSystem)
       }
       EventFilter[Exception]("CRASH", occurrences = 2).intercept {
         //#escalate-kill
-        supervisor ! Props[Child] // create new child
+        supervisor ! Props[Child]() // create new child
         val child2 = expectMsgType[ActorRef]
         watch(child2)
         child2 ! "get" // verify it is alive
@@ -173,9 +173,9 @@ class FaultHandlingDocSpec(_system: ActorSystem)
         }
         //#escalate-kill
         //#escalate-restart
-        val supervisor2 = system.actorOf(Props[Supervisor2], "supervisor2")
+        val supervisor2 = system.actorOf(Props[Supervisor2](), "supervisor2")
 
-        supervisor2 ! Props[Child]
+        supervisor2 ! Props[Child]()
         val child3 = expectMsgType[ActorRef]
 
         child3 ! 23

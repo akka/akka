@@ -204,11 +204,11 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     import akka.actor.Props
     import scala.concurrent.duration._
 
-    val worker = system.actorOf(Props[Worker])
+    val worker = system.actorOf(Props[Worker]())
     within(200 millis) {
       worker ! "some work"
       expectMsg("some result")
-      expectNoMessage // will block for the rest of the 200ms
+      expectNoMessage() // will block for the rest of the 200ms
       Thread.sleep(300) // will NOT make this block fail
     }
     //#test-within
@@ -226,7 +226,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     //#test-probe
     val probe1 = TestProbe()
     val probe2 = TestProbe()
-    val actor = system.actorOf(Props[MyDoubleEcho])
+    val actor = system.actorOf(Props[MyDoubleEcho]())
     actor ! ((probe1.ref, probe2.ref))
     actor ! "hello"
     probe1.expectMsg(500 millis, "hello")
@@ -287,7 +287,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     //#test-probe-forward
     val probe = TestProbe()
     val source = system.actorOf(Props(classOf[Source], probe.ref))
-    val dest = system.actorOf(Props[Destination])
+    val dest = system.actorOf(Props[Destination]())
     source ! "start"
     probe.expectMsg("work")
     probe.forward(dest)
@@ -313,7 +313,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
   "demonstrate calling thread dispatcher" in {
     //#calling-thread-dispatcher
     import akka.testkit.CallingThreadDispatcher
-    val ref = system.actorOf(Props[MyActor].withDispatcher(CallingThreadDispatcher.Id))
+    val ref = system.actorOf(Props[MyActor]().withDispatcher(CallingThreadDispatcher.Id))
     //#calling-thread-dispatcher
   }
 
@@ -343,7 +343,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     import akka.testkit.TestKitBase
 
     class MyTest extends TestKitBase {
-      implicit lazy val system = ActorSystem()
+      implicit lazy val system: ActorSystem = ActorSystem()
 
       //#put-your-test-code-here
       val probe = TestProbe()

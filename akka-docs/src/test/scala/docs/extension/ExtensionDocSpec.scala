@@ -34,7 +34,7 @@ object CountExtension extends ExtensionId[CountExtensionImpl] with ExtensionIdPr
   // so we return ourselves here, this allows us
   // to configure our extension to be loaded when
   // the ActorSystem starts up
-  override def lookup = CountExtension
+  override def lookup() = CountExtension
 
   //This method will be called by Akka
   // to instantiate our Extension
@@ -85,7 +85,7 @@ class ExtensionDocSpec extends AkkaSpec(ExtensionDocSpec.config) {
 
   "demonstrate how to create an extension in Scala" in {
     //#extension-usage
-    CountExtension(system).increment
+    CountExtension(system).increment()
     //#extension-usage
   }
 

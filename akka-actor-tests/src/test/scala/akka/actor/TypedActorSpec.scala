@@ -48,7 +48,7 @@ object TypedActorSpec {
 
     def hasNext = items != Nil
 
-    def next: T = {
+    def next(): T = {
       @tailrec
       def findNext: T = {
         val currentItems = current.get
@@ -122,7 +122,7 @@ object TypedActorSpec {
 
     import akka.actor.TypedActor.dispatcher
 
-    def pigdog = "Pigdog"
+    def pigdog() = "Pigdog"
 
     def futurePigdog(): Future[String] = Future.successful(pigdog())
 
@@ -133,7 +133,7 @@ object TypedActorSpec {
 
     def futurePigdog(delay: FiniteDuration, numbered: Int): Future[String] = {
       Thread.sleep(delay.toMillis)
-      Future.successful(pigdog + numbered)
+      Future.successful(pigdog() + numbered)
     }
 
     @silent

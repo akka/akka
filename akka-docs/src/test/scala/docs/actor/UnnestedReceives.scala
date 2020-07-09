@@ -26,7 +26,7 @@ class UnnestedReceives extends Actor {
   //This method retrieves all prior messages/events
   def allOldMessages() = List()
 
-  override def preStart: Unit = {
+  override def preStart(): Unit = {
     //We override preStart to be sure that the first message the actor gets is
     //'Replay, that message will start to be processed _after_ the actor is started
     self ! 'Replay
@@ -40,7 +40,7 @@ class UnnestedReceives extends Actor {
       become { //Switch behavior to look for the GoAhead signal
         case 'GoAhead => //When we get the GoAhead signal we process all our buffered messages/events
           queue.foreach(process)
-          queue.clear
+          queue.clear()
           become { //Then we change behavior to process incoming messages/events as they arrive
             case msg => process(msg)
           }

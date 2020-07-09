@@ -134,7 +134,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
   import TwitterStreamQuickstartDocSpec._
   import IntegrationDocSpec._
 
-  val ref: ActorRef = system.actorOf(Props[Translator])
+  val ref: ActorRef = system.actorOf(Props[Translator]())
 
   "ask" in {
     //#ask

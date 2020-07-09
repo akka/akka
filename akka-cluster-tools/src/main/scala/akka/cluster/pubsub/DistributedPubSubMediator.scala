@@ -674,7 +674,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
       forwardMessages(key, sender())
 
     case GetTopics =>
-      sender ! CurrentTopics(getCurrentTopics())
+      sender() ! CurrentTopics(getCurrentTopics())
 
     case Subscribed(ack, ref) =>
       ref ! ack
@@ -922,7 +922,7 @@ object DistributedPubSub extends ExtensionId[DistributedPubSub] with ExtensionId
 
   override def get(system: ClassicActorSystemProvider): DistributedPubSub = super.get(system)
 
-  override def lookup = DistributedPubSub
+  override def lookup() = DistributedPubSub
 
   override def createExtension(system: ExtendedActorSystem): DistributedPubSub =
     new DistributedPubSub(system)

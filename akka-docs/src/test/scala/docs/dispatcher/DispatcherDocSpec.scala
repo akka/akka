@@ -293,7 +293,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     val context = system
     //#defining-dispatcher-in-config
     import akka.actor.Props
-    val myActor = context.actorOf(Props[MyActor], "myactor")
+    val myActor = context.actorOf(Props[MyActor](), "myactor")
     //#defining-dispatcher-in-config
   }
 
@@ -302,7 +302,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     //#defining-dispatcher-in-code
     import akka.actor.Props
     val myActor =
-      context.actorOf(Props[MyActor].withDispatcher("my-dispatcher"), "myactor1")
+      context.actorOf(Props[MyActor]().withDispatcher("my-dispatcher"), "myactor1")
     //#defining-dispatcher-in-code
   }
 
@@ -314,7 +314,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     val context = system
     //#defining-fixed-pool-size-dispatcher
     val myActor =
-      context.actorOf(Props[MyActor].withDispatcher("blocking-io-dispatcher"), "myactor2")
+      context.actorOf(Props[MyActor]().withDispatcher("blocking-io-dispatcher"), "myactor2")
     //#defining-fixed-pool-size-dispatcher
   }
 
@@ -322,7 +322,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     val context = system
     //#defining-pinned-dispatcher
     val myActor =
-      context.actorOf(Props[MyActor].withDispatcher("my-pinned-dispatcher"), "myactor3")
+      context.actorOf(Props[MyActor]().withDispatcher("my-pinned-dispatcher"), "myactor3")
     //#defining-pinned-dispatcher
   }
 
@@ -330,7 +330,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     val context = system
     //#defining-affinity-pool-dispatcher
     val myActor =
-      context.actorOf(Props[MyActor].withDispatcher("affinity-pool-dispatcher"), "myactor4")
+      context.actorOf(Props[MyActor]().withDispatcher("affinity-pool-dispatcher"), "myactor4")
     //#defining-affinity-pool-dispatcher
   }
 
@@ -345,7 +345,7 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     val context = system
     //#defining-mailbox-in-config
     import akka.actor.Props
-    val myActor = context.actorOf(Props[MyActor], "priomailboxactor")
+    val myActor = context.actorOf(Props[MyActor](), "priomailboxactor")
     //#defining-mailbox-in-config
   }
 
@@ -353,13 +353,13 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
     val context = system
     //#defining-mailbox-in-code
     import akka.actor.Props
-    val myActor = context.actorOf(Props[MyActor].withMailbox("prio-mailbox"))
+    val myActor = context.actorOf(Props[MyActor]().withMailbox("prio-mailbox"))
     //#defining-mailbox-in-code
   }
 
   "using a required mailbox" in {
     val context = system
-    val myActor = context.actorOf(Props[MyBoundedActor])
+    val myActor = context.actorOf(Props[MyBoundedActor]())
   }
 
   "defining priority dispatcher" in {
@@ -435,11 +435,11 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
   }
 
   "require custom mailbox on dispatcher" in {
-    val myActor = system.actorOf(Props[MyActor].withDispatcher("custom-dispatcher"))
+    val myActor = system.actorOf(Props[MyActor]().withDispatcher("custom-dispatcher"))
   }
 
   "require custom mailbox on actor" in {
-    val myActor = system.actorOf(Props[MySpecialActor])
+    val myActor = system.actorOf(Props[MySpecialActor]())
   }
 
 }

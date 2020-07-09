@@ -48,7 +48,7 @@ object Zip {
     // #zipWithN-simple
   }
 
-  def zipAll() {
+  def zipAll(): Unit = {
     // #zipAll-simple
     val numbers = Source(1 :: 2 :: 3 :: 4 :: Nil)
     val letters = Source("a" :: "b" :: "c" :: Nil)

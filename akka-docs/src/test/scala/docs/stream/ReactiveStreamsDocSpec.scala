@@ -41,9 +41,9 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
     override def tweets: Publisher[Tweet] =
       TwitterStreamQuickstartDocSpec.tweets.runWith(Sink.asPublisher(fanout = false))
 
-    override def storage = TestSubscriber.manualProbe[Author]
+    override def storage = TestSubscriber.manualProbe[Author]()
 
-    override def alert = TestSubscriber.manualProbe[Author]
+    override def alert = TestSubscriber.manualProbe[Author]()
   }
 
   def assertResult(storage: TestSubscriber.ManualProbe[Author]): Unit = {

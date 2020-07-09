@@ -25,7 +25,7 @@ object TailChoppingSpec {
         case _ =>
           times += 1
           Thread.sleep(sleepTime.toMillis)
-          sender ! "ack"
+          sender() ! "ack"
       }
     }), "Actor:" + id)
 }

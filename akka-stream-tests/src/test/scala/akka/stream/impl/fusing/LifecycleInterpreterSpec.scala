@@ -101,7 +101,7 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should ===(Set())
 
       upstream.onComplete()
-      lastEvents should ===(Set(OnComplete))
+      lastEvents() should ===(Set(OnComplete))
     }
 
     "postStop when pushAndFinish called if upstream completes with pushAndFinish" in new OneBoundedSetup[String](

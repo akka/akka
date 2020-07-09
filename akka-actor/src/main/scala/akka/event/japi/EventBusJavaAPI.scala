@@ -50,7 +50,7 @@ abstract class LookupEventBus[E, S, C] extends EventBus[E, S, C] {
     type Subscriber = S
     type Classifier = C
 
-    override protected def mapSize: Int = LookupEventBus.this.mapSize()
+    override protected def mapSize(): Int = LookupEventBus.this.mapSize()
 
     override protected def compareSubscribers(a: S, b: S): Int =
       LookupEventBus.this.compareSubscribers(a, b)
