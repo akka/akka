@@ -287,6 +287,10 @@ private[akka] final case class ReplicatedEventMetaData(
     version: VersionVector,
     concurrent: Boolean) // whether when the event handler was executed the event was concurrent
 
+// FIXME serializer
+@InternalApi
+private[akka] final case class ReplicatedSnapshotMetaData(version: VersionVector, seenPerReplica: Map[ReplicaId, Long])
+
 /**
  * An event replicated from a different replica.
  *
