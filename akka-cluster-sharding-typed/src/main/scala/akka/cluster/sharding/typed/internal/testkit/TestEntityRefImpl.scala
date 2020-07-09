@@ -9,7 +9,6 @@ import java.util.concurrent.CompletionStage
 
 import scala.concurrent.Future
 import scala.compat.java8.FutureConverters._
-
 import akka.actor.ActorRefProvider
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Scheduler
@@ -18,6 +17,7 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.typed.javadsl
 import akka.cluster.sharding.typed.scaladsl
 import akka.japi.function.{ Function => JFunction }
+import akka.pattern.StatusReply
 import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 
@@ -41,6 +41,12 @@ import akka.util.Timeout
 
   def ask[U](message: JFunction[ActorRef[U], M], timeout: Duration): CompletionStage[U] =
     ask[U](replyTo => message.apply(replyTo))(timeout.asScala).toJava
+
+  override def askWithStatus[Res](f: ActorRef[StatusReply[Res]] => M, timeout: Duration): CompletionStage[Res] =
+    askWithStatus(f)(timeout.asScala).toJava
+
+  override def askWithStatus[Res](f: ActorRef[StatusReply[Res]] => M)(implicit timeout: Timeout): Future[Res] =
+    StatusReply.flattenStatusFuture(ask(f))
 
   // impl InternalRecipientRef
   override def provider: ActorRefProvider = {

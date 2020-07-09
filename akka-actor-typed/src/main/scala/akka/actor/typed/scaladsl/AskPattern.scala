@@ -16,6 +16,7 @@ import akka.actor.typed.internal.{ adapter => adapt }
 import akka.actor.typed.internal.InternalRecipientRef
 import akka.annotation.InternalStableApi
 import akka.pattern.PromiseActorRef
+import akka.pattern.StatusReply
 import akka.util.{ unused, Timeout }
 
 /**
@@ -114,6 +115,17 @@ object AskPattern {
             "native system is implemented: " + a.getClass)
       }
     }
+
+    /**
+     * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+     * If the response is a [[akka.pattern.StatusReply.Success]] the returned future is completed successfully with the wrapped response.
+     * If the status response is a [[akka.pattern.StatusReply.Error]] the returned future will be failed with the
+     * exception in the error (normally a [[akka.pattern.StatusReply.ErrorMessage]]).
+     */
+    def askWithStatus[Res](
+        replyTo: ActorRef[StatusReply[Res]] => Req)(implicit timeout: Timeout, scheduler: Scheduler): Future[Res] =
+      StatusReply.flattenStatusFuture(ask(replyTo))
+
   }
 
   private val onTimeout: String => Throwable = msg => new TimeoutException(msg)

@@ -5,10 +5,12 @@
 package docs.akka.cluster.sharding.typed
 
 //#test
+import akka.Done
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit
 import akka.persistence.typed.PersistenceId
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.pattern.StatusReply
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -38,38 +40,38 @@ class AccountExampleDocSpec
   "Account" must {
 
     "be created with zero balance" in {
-      val result = eventSourcedTestKit.runCommand[AccountEntity.OperationResult](AccountEntity.CreateAccount(_))
-      result.reply shouldBe AccountEntity.Confirmed
+      val result = eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.CreateAccount(_))
+      result.reply shouldBe StatusReply.Ack
       result.event shouldBe AccountEntity.AccountCreated
       result.stateOfType[AccountEntity.OpenedAccount].balance shouldBe 0
     }
 
     "handle Withdraw" in {
-      eventSourcedTestKit.runCommand[AccountEntity.OperationResult](AccountEntity.CreateAccount(_))
+      eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.CreateAccount(_))
 
-      val result1 = eventSourcedTestKit.runCommand[AccountEntity.OperationResult](AccountEntity.Deposit(100, _))
-      result1.reply shouldBe AccountEntity.Confirmed
+      val result1 = eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.Deposit(100, _))
+      result1.reply shouldBe StatusReply.Ack
       result1.event shouldBe AccountEntity.Deposited(100)
       result1.stateOfType[AccountEntity.OpenedAccount].balance shouldBe 100
 
-      val result2 = eventSourcedTestKit.runCommand[AccountEntity.OperationResult](AccountEntity.Withdraw(10, _))
-      result2.reply shouldBe AccountEntity.Confirmed
+      val result2 = eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.Withdraw(10, _))
+      result2.reply shouldBe StatusReply.Ack
       result2.event shouldBe AccountEntity.Withdrawn(10)
       result2.stateOfType[AccountEntity.OpenedAccount].balance shouldBe 90
     }
 
     "reject Withdraw overdraft" in {
-      eventSourcedTestKit.runCommand[AccountEntity.OperationResult](AccountEntity.CreateAccount(_))
-      eventSourcedTestKit.runCommand[AccountEntity.OperationResult](AccountEntity.Deposit(100, _))
+      eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.CreateAccount(_))
+      eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.Deposit(100, _))
 
-      val result = eventSourcedTestKit.runCommand[AccountEntity.OperationResult](AccountEntity.Withdraw(110, _))
-      result.replyOfType[AccountEntity.Rejected]
+      val result = eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.Withdraw(110, _))
+      result.reply.isError shouldBe true
       result.hasNoEvents shouldBe true
     }
 
     "handle GetBalance" in {
-      eventSourcedTestKit.runCommand[AccountEntity.OperationResult](AccountEntity.CreateAccount(_))
-      eventSourcedTestKit.runCommand[AccountEntity.OperationResult](AccountEntity.Deposit(100, _))
+      eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.CreateAccount(_))
+      eventSourcedTestKit.runCommand[StatusReply[Done]](AccountEntity.Deposit(100, _))
 
       val result = eventSourcedTestKit.runCommand[AccountEntity.CurrentBalance](AccountEntity.GetBalance(_))
       result.reply.balance shouldBe 100

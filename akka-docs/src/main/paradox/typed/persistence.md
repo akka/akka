@@ -386,8 +386,13 @@ The @ref:[Request-Response interaction pattern](interaction-patterns.md#request-
 persistent actors, because you typically want to know if the command was rejected due to validation errors and
 when accepted you want a confirmation when the events have been successfully stored.
 
-Therefore you typically include a @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`] in the
-commands. After validation errors or after persisting events, using a `thenRun` side effect, the reply message can
+Therefore you typically include a @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`]. If the 
+command can either have a successful response or a validation error returned, the generic response type @scala[`StatusReply[ReplyType]]`]
+@java[`StatusReply<ReplyType>`] can be used. If the successful reply does not contain a value but is more of an acknowledgement
+a pre defined @scala[`StatusReply.Ack`]@java[`StatusReply.ack()`] of type @scala[`StatusReply[Done]`]@java[`StatusReply<Done>`]
+can be used.
+
+After validation errors or after persisting events, using a `thenRun` side effect, the reply message can
 be sent to the `ActorRef`.
 
 Scala

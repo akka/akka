@@ -39,6 +39,7 @@ import akka.event.LoggingAdapter
 import akka.japi.function.{ Function => JFunction }
 import akka.pattern.AskTimeoutException
 import akka.pattern.PromiseActorRef
+import akka.pattern.StatusReply
 import akka.util.{ unused, ByteString, Timeout }
 import akka.util.JavaDurationConverters._
 
@@ -314,8 +315,14 @@ import akka.util.JavaDurationConverters._
     replyTo.ask(shardRegion, entityId, m, timeout)
   }
 
-  def ask[U](message: JFunction[ActorRef[U], M], timeout: Duration): CompletionStage[U] =
+  override def ask[U](message: JFunction[ActorRef[U], M], timeout: Duration): CompletionStage[U] =
     ask[U](replyTo => message.apply(replyTo))(timeout.asScala).toJava
+
+  override def askWithStatus[Res](f: ActorRef[StatusReply[Res]] => M)(implicit timeout: Timeout): Future[Res] =
+    StatusReply.flattenStatusFuture(ask[StatusReply[Res]](f))
+
+  override def askWithStatus[Res](f: ActorRef[StatusReply[Res]] => M, timeout: Duration): CompletionStage[Res] =
+    askWithStatus(f.apply)(timeout.asScala).toJava
 
   /** Similar to [[akka.actor.typed.scaladsl.AskPattern.PromiseRef]] but for an `EntityRef` target. */
   @InternalApi

@@ -87,6 +87,22 @@ trait AskSupport {
     actorRef.internalAsk(message, timeout, sender)
 
   /**
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply.Success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply.Error]] arrives the future is instead
+   * failed.
+   */
+  def askWithStatus(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] =
+    actorRef.internalAskWithStatus(message)(timeout, Actor.noSender)
+
+  /**
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply.Success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply.Error]] arrives the future is instead
+   * failed.
+   */
+  def askWithStatus(actorRef: ActorRef, message: Any, sender: ActorRef)(implicit timeout: Timeout): Future[Any] =
+    actorRef.internalAskWithStatus(message)(timeout, sender)
+
+  /**
    * Import this implicit conversion to gain `?` and `ask` methods on
    * [[akka.actor.ActorSelection]], which will defer to the
    * `ask(actorSelection, message)(timeout)` method defined here.
@@ -319,6 +335,17 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
 
   def ask(message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender)
+
+  def askWithStatus(message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
+    internalAskWithStatus(message)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[pattern] def internalAskWithStatus(
+      message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
+    StatusReply.flattenStatusFuture[Any](internalAsk(message, timeout, sender).mapTo[StatusReply[Any]])
 
   /**
    * INTERNAL API: for binary compatibility
