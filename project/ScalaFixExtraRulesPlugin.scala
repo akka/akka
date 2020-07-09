@@ -4,10 +4,10 @@
 
 package akka
 
-import sbt.{AutoPlugin, PluginTrigger, Plugins, ScalafixSupport}
+import sbt.{ AutoPlugin, PluginTrigger, Plugins, ScalafixSupport }
 import scalafix.sbt.ScalafixPlugin
 
-object ScalaFixExtraRulesPlugin extends AutoPlugin with ScalafixSupport{
+object ScalaFixExtraRulesPlugin extends AutoPlugin with ScalafixSupport {
   override def trigger: PluginTrigger = allRequirements
 
   override def requires: Plugins = ScalafixPlugin
@@ -17,7 +17,6 @@ object ScalaFixExtraRulesPlugin extends AutoPlugin with ScalafixSupport{
   override def projectSettings: Seq[Def.Setting[_]] = super.projectSettings ++ {
     scalafixDependencies in ThisBuild ++= Seq(
       "com.nequissimus" %% "sort-imports" % "0.5.5",
-      "com.sandinh" %% "scala-rewrites" % "0.1.7-sd"
-    )
+      "com.sandinh" %% "scala-rewrites" % "0.1.7-sd")
   }
 }
