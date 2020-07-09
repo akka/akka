@@ -13,9 +13,8 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
-import akka.persistence.typed.scaladsl.ActiveActiveEventSourcing
-import akka.persistence.typed.scaladsl.Effect
-import akka.persistence.typed.scaladsl.EventSourcedBehavior
+import akka.persistence.typed.scaladsl.{ ActiveActiveContext, ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
+import akka.serialization.jackson.CborSerializable
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -30,9 +29,37 @@ object ActiveActiveSpec {
   case class GetReplica(replyTo: ActorRef[(ReplicaId, Set[ReplicaId])]) extends Command
   case object Stop extends Command
 
-  case class State(all: List[String])
+  case class State(all: List[String]) extends CborSerializable
+
   def testBehavior(entityId: String, replicaId: String, probe: ActorRef[EventAndContext]): Behavior[Command] =
     testBehavior(entityId, replicaId, Some(probe))
+
+  def eventSourcedBehavior(
+      aaContext: ActiveActiveContext,
+      probe: Option[ActorRef[EventAndContext]]): EventSourcedBehavior[Command, String, State] = {
+    EventSourcedBehavior[Command, String, State](
+      aaContext.persistenceId,
+      State(Nil),
+      (state, command) =>
+        command match {
+          case GetState(replyTo) =>
+            replyTo ! state
+            Effect.none
+          case GetReplica(replyTo) =>
+            replyTo.tell((aaContext.replicaId, aaContext.allReplicas))
+            Effect.none
+          case StoreMe(evt, ack) =>
+            Effect.persist(evt).thenRun(_ => ack ! Done)
+          case StoreUs(evts, replyTo) =>
+            Effect.persist(evts).thenRun(_ => replyTo ! Done)
+          case Stop =>
+            Effect.stop()
+        },
+      (state, event) => {
+        probe.foreach(_ ! EventAndContext(event, aaContext.origin, aaContext.recoveryRunning, aaContext.concurrent))
+        state.copy(all = event :: state.all)
+      })
+  }
 
   def testBehavior(
       entityId: String,
@@ -42,30 +69,7 @@ object ActiveActiveSpec {
       entityId,
       ReplicaId(replicaId),
       AllReplicas,
-      PersistenceTestKitReadJournal.Identifier)(
-      aaContext =>
-        EventSourcedBehavior[Command, String, State](
-          aaContext.persistenceId,
-          State(Nil),
-          (state, command) =>
-            command match {
-              case GetState(replyTo) =>
-                replyTo ! state
-                Effect.none
-              case GetReplica(replyTo) =>
-                replyTo.tell((aaContext.replicaId, aaContext.allReplicas))
-                Effect.none
-              case StoreMe(evt, ack) =>
-                Effect.persist(evt).thenRun(_ => ack ! Done)
-              case StoreUs(evts, replyTo) =>
-                Effect.persist(evts).thenRun(_ => replyTo ! Done)
-              case Stop =>
-                Effect.stop()
-            },
-          (state, event) => {
-            probe.foreach(_ ! EventAndContext(event, aaContext.origin, aaContext.recoveryRunning, aaContext.concurrent))
-            state.copy(all = event :: state.all)
-          }))
+      PersistenceTestKitReadJournal.Identifier)(aaContext => eventSourcedBehavior(aaContext, probe))
 
 }
 
@@ -338,6 +342,5 @@ class ActiveActiveSpec
       eventProbeR1Take2.expectMessage(
         EventAndContext("from r2", ReplicaId("R2"), recoveryRunning = true, concurrent = true))
     }
-
   }
 }
