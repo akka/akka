@@ -126,8 +126,10 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
       val Seq(aaaaRecord) = answer.records.collect {
         case r: AAAARecord => r
       }
-      aaaaRecord.ip should be("1:2:3:0:0:0:0:0")
+      aaaaRecord.name should be("1:2:3:0:0:0:0:0")
       aaaaRecord.ttl should be(Ttl.effectivelyForever)
+      // The leading '/' indicates no reverse lookup was performed
+      aaaaRecord.ip.toString should be("/1:2:3:0:0:0:0:0")
     }
 
     "return additional records for SRV requests" in new Setup {
