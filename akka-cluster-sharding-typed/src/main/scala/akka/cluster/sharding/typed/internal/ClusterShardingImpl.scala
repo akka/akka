@@ -34,7 +34,6 @@ import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.{ StartEntity => ClassicStartEntity }
 import akka.cluster.sharding.typed.scaladsl.EntityContext
 import akka.cluster.typed.Cluster
-import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.japi.function.{ Function => JFunction }
@@ -43,10 +42,6 @@ import akka.pattern.PromiseActorRef
 import akka.pattern.StatusReply
 import akka.util.{ unused, ByteString, Timeout }
 import akka.util.JavaDurationConverters._
-
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
 
 /**
  * INTERNAL API
@@ -324,11 +319,7 @@ import scala.util.Try
     ask[U](replyTo => message.apply(replyTo))(timeout.asScala).toJava
 
   override def askWithStatus[Res](f: ActorRef[StatusReply[Res]] => M)(implicit timeout: Timeout): Future[Res] =
-    ask[StatusReply[Res]](f).transform {
-      case Success(StatusReply.Success(m))   => Success(m.asInstanceOf[Res])
-      case Success(StatusReply.Error(error)) => Failure[Res](error)
-      case f @ Failure(_)                    => f.asInstanceOf[Try[Res]]
-    }(ExecutionContexts.parasitic)
+    StatusReply.flattenStatusFuture(ask[StatusReply[Res]](f))
 
   override def askWithStatus[Res](f: ActorRef[StatusReply[Res]] => M, timeout: Duration): CompletionStage[Res] =
     askWithStatus(f.apply)(timeout.asScala).toJava

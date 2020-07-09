@@ -4,12 +4,14 @@
 
 package akka.pattern
 
+import akka.Done
 import akka.testkit.AkkaSpec
 import akka.testkit.TestException
 import akka.testkit.TestProbe
 import akka.util.Timeout
 import org.scalatest.concurrent.ScalaFutures
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
 class StatusReplySpec extends AkkaSpec with ScalaFutures {
@@ -42,6 +44,17 @@ class StatusReplySpec extends AkkaSpec with ScalaFutures {
         case StatusReply.Error(_) =>
         case _                    => fail()
       }
+    }
+
+    "flatten a Future[StatusReply]" in {
+      import system.dispatcher
+      StatusReply.flattenStatusFuture(Future(StatusReply.Success("woho"))).futureValue should ===("woho")
+      StatusReply.flattenStatusFuture(Future(StatusReply.Ack)).futureValue should ===(Done)
+      StatusReply.flattenStatusFuture(Future(StatusReply.Error("boo"))).failed.futureValue should ===(
+        StatusReply.ErrorMessage("boo"))
+      StatusReply.flattenStatusFuture(Future(StatusReply.Error(TestException("boo")))).failed.futureValue should ===(
+        TestException("boo"))
+
     }
   }
 

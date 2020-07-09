@@ -5,7 +5,10 @@
 package akka.pattern
 
 import akka.Done
+import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
 
+import scala.concurrent.Future
 import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure => ScalaFailure }
@@ -151,4 +154,14 @@ object StatusReply {
       else None
   }
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def flattenStatusFuture[T](f: Future[StatusReply[T]]): Future[T] =
+    f.transform {
+      case ScalaSuccess(StatusReply.Success(v)) => ScalaSuccess(v.asInstanceOf[T])
+      case ScalaSuccess(StatusReply.Error(ex))  => ScalaFailure[T](ex)
+      case fail @ ScalaFailure(_)               => fail.asInstanceOf[Try[T]]
+    }(ExecutionContexts.parasitic)
 }

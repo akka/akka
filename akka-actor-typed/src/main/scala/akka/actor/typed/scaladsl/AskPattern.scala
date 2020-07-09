@@ -14,14 +14,10 @@ import akka.actor.typed.RecipientRef
 import akka.actor.typed.Scheduler
 import akka.actor.typed.internal.{ adapter => adapt }
 import akka.actor.typed.internal.InternalRecipientRef
-import akka.dispatch.ExecutionContexts
 import akka.annotation.InternalStableApi
 import akka.pattern.PromiseActorRef
 import akka.pattern.StatusReply
 import akka.util.{ unused, Timeout }
-
-import scala.util.Failure
-import scala.util.Success
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.
@@ -128,11 +124,7 @@ object AskPattern {
      */
     def askWithStatus[Res](
         replyTo: ActorRef[StatusReply[Res]] => Req)(implicit timeout: Timeout, scheduler: Scheduler): Future[Res] =
-      ask(replyTo).transform {
-        case Success(StatusReply.Success(value)) => Success(value.asInstanceOf[Res])
-        case Success(StatusReply.Error(ex))      => Failure(ex)
-        case f: Failure[_]                       => f.asInstanceOf[Failure[Res]]
-      }(ExecutionContexts.parasitic)
+      StatusReply.flattenStatusFuture(ask(replyTo))
 
   }
 

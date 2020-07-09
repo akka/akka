@@ -20,8 +20,6 @@ import akka.util.ByteString
 import akka.util.{ Timeout, Unsafe }
 import akka.util.unused
 
-import scala.util.Try
-
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,
  * when it times out. A typical reason for `AskTimeoutException` is that the recipient
@@ -347,11 +345,7 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
   @InternalApi
   private[pattern] def internalAskWithStatus(
       message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
-    internalAsk(message, timeout, sender).transform {
-      case Success(StatusReply.Success(v)) => Success(v)
-      case Success(StatusReply.Error(ex))  => Failure(ex)
-      case other: Try[_]                   => other
-    }(ExecutionContexts.parasitic)
+    StatusReply.flattenStatusFuture[Any](internalAsk(message, timeout, sender).mapTo[StatusReply[Any]])
 
   /**
    * INTERNAL API: for binary compatibility
