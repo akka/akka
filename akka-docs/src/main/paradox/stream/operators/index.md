@@ -263,6 +263,7 @@ the inputs in different ways.
 
 | |Operator|Description|
 |--|--|--|
+| |<a name="mergesequence"></a>@ref[MergeSequence](MergeSequence.md)|Merge a linear sequence partitioned across multiple sources.|
 |Source/Flow|<a name="concat"></a>@ref[concat](Source-or-Flow/concat.md)|After completion of the original upstream the elements of the given source will be emitted.|
 |Source/Flow|<a name="interleave"></a>@ref[interleave](Source-or-Flow/interleave.md)|Emits a specifiable number of elements from the original source, then from the provided source and repeats.|
 |Source/Flow|<a name="merge"></a>@ref[merge](Source-or-Flow/merge.md)|Merge multiple sources.|
@@ -487,6 +488,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [mergeLatest](Source-or-Flow/mergeLatest.md)
 * [mergePreferred](Source-or-Flow/mergePreferred.md)
 * [mergePrioritized](Source-or-Flow/mergePrioritized.md)
+* [MergeSequence](MergeSequence.md)
 * [mergeSorted](Source-or-Flow/mergeSorted.md)
 * [monitor](Source-or-Flow/monitor.md)
 * [never](Source/never.md)
