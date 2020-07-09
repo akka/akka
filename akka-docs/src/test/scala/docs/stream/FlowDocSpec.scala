@@ -16,10 +16,11 @@ import docs.CompileOnlySpec
 
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success }
+import scala.concurrent.ExecutionContext
 
 class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
 
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   "source is immutable" in {
     //#source-immutable
@@ -251,7 +252,7 @@ object FlowDocSpec {
 
   //#materializer-from-actor-context
   final class RunWithMyself extends Actor {
-    implicit val mat = Materializer(context)
+    implicit val mat: Materializer = Materializer(context)
 
     Source.maybe.runWith(Sink.onComplete {
       case Success(done) => println(s"Completed: $done")

@@ -34,7 +34,7 @@ object CountExtension extends ExtensionId[CountExtensionImpl] with ExtensionIdPr
   // so we return ourselves here, this allows us
   // to configure our extension to be loaded when
   // the ActorSystem starts up
-  override def lookup = CountExtension
+  override def lookup() = CountExtension
 
   //This method will be called by Akka
   // to instantiate our Extension

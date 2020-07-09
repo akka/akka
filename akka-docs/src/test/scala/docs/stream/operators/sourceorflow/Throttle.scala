@@ -17,7 +17,7 @@ import scala.concurrent.duration._
  */
 object Throttle extends App {
 
-  implicit val sys = ActorSystem("25fps-stream")
+  implicit val sys: ActorSystem = ActorSystem("25fps-stream")
 
   val frameSource: Source[Int, NotUsed] =
     Source.fromIterator(() => Iterator.from(0))

@@ -71,7 +71,7 @@ class SbrTestLeaseActor extends Actor with ActorLogging {
 
 object SbrTestLeaseActorClientExt extends ExtensionId[SbrTestLeaseActorClientExt] with ExtensionIdProvider {
   override def get(system: ActorSystem): SbrTestLeaseActorClientExt = super.get(system)
-  override def lookup = SbrTestLeaseActorClientExt
+  override def lookup() = SbrTestLeaseActorClientExt
   override def createExtension(system: ExtendedActorSystem): SbrTestLeaseActorClientExt =
     new SbrTestLeaseActorClientExt(system)
 }
@@ -97,7 +97,7 @@ class SbrTestLeaseActorClient(settings: LeaseSettings, system: ExtendedActorSyst
 
   SbrTestLeaseActorClientExt(system).setActorLeaseClient(this)
 
-  private implicit val timeout = Timeout(3.seconds)
+  private implicit val timeout: Timeout = Timeout(3.seconds)
 
   private val _leaseRef = new AtomicReference[ActorRef]
 

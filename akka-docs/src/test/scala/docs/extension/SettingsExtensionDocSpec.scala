@@ -33,7 +33,7 @@ class SettingsImpl(config: Config) extends Extension {
 //#extensionid
 object Settings extends ExtensionId[SettingsImpl] with ExtensionIdProvider {
 
-  override def lookup = Settings
+  override def lookup() = Settings
 
   override def createExtension(system: ExtendedActorSystem) =
     new SettingsImpl(system.settings.config)

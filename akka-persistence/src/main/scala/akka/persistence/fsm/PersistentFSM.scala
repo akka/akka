@@ -28,7 +28,7 @@ private[akka] object SnapshotAfter extends ExtensionId[SnapshotAfter] with Exten
 
   override def get(system: ClassicActorSystemProvider): SnapshotAfter = super.get(system)
 
-  override def lookup = SnapshotAfter
+  override def lookup() = SnapshotAfter
 
   override def createExtension(system: ExtendedActorSystem): SnapshotAfter = new SnapshotAfter(system.settings.config)
 }
@@ -49,8 +49,8 @@ private[akka] class SnapshotAfter(config: Config) extends Extension {
    * sequence number should trigger auto snapshot or not
    */
   val isSnapshotAfterSeqNo: Long => Boolean = snapshotAfterValue match {
-    case Some(snapShotAfterValue) => seqNo: Long => seqNo % snapShotAfterValue == 0
-    case None                     => _: Long => false //always false, if snapshotAfter is not specified in config
+    case Some(snapShotAfterValue) => (seqNo: Long) => seqNo % snapShotAfterValue == 0
+    case None                     => (_: Long) => false //always false, if snapshotAfter is not specified in config
   }
 }
 
@@ -380,7 +380,7 @@ object PersistentFSM {
       stopReason: Option[Reason] = None,
       replies: List[Any] = Nil,
       domainEvents: Seq[E] = Nil,
-      afterTransitionDo: D => Unit = { _: D =>
+      afterTransitionDo: D => Unit = { (_: D) =>
       })(private[akka] val notifies: Boolean = true) {
 
     /**

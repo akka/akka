@@ -129,7 +129,7 @@ class ActorSystemSpec
         Behaviors.receiveMessage[Done] { _ =>
           Behaviors.stopped
         }
-      withSystem("shutdown", stoppable, doTerminate = false) { sys: ActorSystem[Done] =>
+      withSystem("shutdown", stoppable, doTerminate = false) { (sys: ActorSystem[Done]) =>
         sys ! Done
         sys.whenTerminated.futureValue
       }

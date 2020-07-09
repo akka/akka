@@ -14,7 +14,7 @@ object LeaseProvider extends ExtensionId[LeaseProvider] with ExtensionIdProvider
   override def get(system: ActorSystem): LeaseProvider = super.get(system)
   override def get(system: ClassicActorSystemProvider): LeaseProvider = super.get(system)
 
-  override def lookup = LeaseProvider
+  override def lookup() = LeaseProvider
 
   override def createExtension(system: ExtendedActorSystem): LeaseProvider = new LeaseProvider(system)
 

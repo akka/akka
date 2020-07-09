@@ -117,7 +117,7 @@ class ReplicatorDocSpec
 
   import ReplicatorDocSpec._
 
-  implicit val selfNodeAddress = DistributedData(system).selfUniqueAddress
+  implicit val selfNodeAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
 
   "Replicator" must {
 

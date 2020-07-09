@@ -22,7 +22,7 @@ import akka.testkit.TestLatch
 @silent
 class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
-  override def atStartup: Unit = {
+  override def atStartup(): Unit = {
     system.eventStream.publish(Mute(EventFilter[Exception]("Crashing...")))
   }
 

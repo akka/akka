@@ -29,7 +29,7 @@ private[akka] object AddressTerminatedTopic extends ExtensionId[AddressTerminate
   override def get(system: ActorSystem): AddressTerminatedTopic = super.get(system)
   override def get(system: ClassicActorSystemProvider): AddressTerminatedTopic = super.get(system)
 
-  override def lookup = AddressTerminatedTopic
+  override def lookup() = AddressTerminatedTopic
 
   override def createExtension(system: ExtendedActorSystem): AddressTerminatedTopic =
     new AddressTerminatedTopic

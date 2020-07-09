@@ -26,7 +26,7 @@ import akka.util.ccompat.JavaConverters._
 object TestLeaseExt extends ExtensionId[TestLeaseExt] with ExtensionIdProvider {
   override def get(system: ActorSystem): TestLeaseExt = super.get(system)
   override def get(system: ClassicActorSystemProvider): TestLeaseExt = super.get(system)
-  override def lookup = TestLeaseExt
+  override def lookup() = TestLeaseExt
   override def createExtension(system: ExtendedActorSystem): TestLeaseExt = new TestLeaseExt(system)
 }
 
