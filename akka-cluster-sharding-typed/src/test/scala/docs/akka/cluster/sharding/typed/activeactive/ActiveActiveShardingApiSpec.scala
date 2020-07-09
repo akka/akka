@@ -54,9 +54,7 @@ class ActiveActiveShardingApiSpec extends ScalaTestWithActorTestKit {
           MyActiveActiveStringSet.Command,
           ShardingEnvelope[MyActiveActiveStringSet.Command]](
           // all replicas
-          Set(ReplicaId("DC-A"), ReplicaId("DC-B"), ReplicaId("DC-B")),
-          // how to route messages over them
-          ActiveActiveShardingSettings.Random) { (entityTypeKey, replicaId, allReplicaIds) =>
+          Set(ReplicaId("DC-A"), ReplicaId("DC-B"), ReplicaId("DC-B"))) { (entityTypeKey, replicaId, allReplicaIds) =>
           // factory for replica settings
           ActiveActiveShardingReplicaSettings(
             replicaId,
