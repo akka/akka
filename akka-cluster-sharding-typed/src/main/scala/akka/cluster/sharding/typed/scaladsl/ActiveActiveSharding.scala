@@ -7,6 +7,8 @@ import akka.actor.typed.ExtensionId
 import akka.cluster.sharding.typed.scaladsl
 import akka.persistence.typed.ReplicaId
 
+import scala.collection.immutable
+
 // FIXME needs to be better structure for bin.comp. in the end
 object ActiveActiveShardingSettings {
   sealed trait MessagingStrategy
@@ -14,12 +16,12 @@ object ActiveActiveShardingSettings {
   case object TailChop extends MessagingStrategy // not sure we can implement this? we'd need to require and to wrap Ask because we can't tail chop without knowing about the reply
 
   def apply[M, E](replicaId: Set[ReplicaId], messagingStrategy: MessagingStrategy)(
-      entityFactory: (String, ReplicaId, Set[ReplicaId]) => ActiveActiveShardingReplicaSettings[M, E])
+      entityFactory: (EntityTypeKey[M], ReplicaId, Set[ReplicaId]) => ActiveActiveShardingReplicaSettings[M, E])
       : ActiveActiveShardingSettings[M, E] = ???
 }
 
 case class ActiveActiveShardingSettings[M, E](
-    replicas: Set[ActiveActiveShardingReplicaSettings[M, E]],
+    replicas: immutable.Seq[ActiveActiveShardingReplicaSettings[M, E]],
     messagingStrategy: ActiveActiveShardingSettings.MessagingStrategy)
 case class ActiveActiveShardingReplicaSettings[M, E](replicaId: ReplicaId, entity: Entity[M, E])
 
@@ -36,9 +38,14 @@ trait ActiveActiveSharding extends Extension {
 // FIXME naming is hard
 trait ActiveActiveShardingInstance[M, E] {
 
-  // our EntityId consists of both entity id and replica id, we want to address only through id sans replica
-  // so we probably can't actually quite use EntityRef but rather have something like it
-  def entityRefFor(entityId: String): EntityRef[M]
+  def entityRefsFor(entityId: String): Set[EntityRef[M]]
+
+  /**
+   * Chose a replica randomly for each message being sent to the EntityRef.
+   */
+  def randomRefFor(entityId: String): EntityRef[M]
+
+  // FIXME ideally we'd want some different clever strategies here but that is cut out of scope for now
 }
 
 // FIXME move to internals once done sketching out

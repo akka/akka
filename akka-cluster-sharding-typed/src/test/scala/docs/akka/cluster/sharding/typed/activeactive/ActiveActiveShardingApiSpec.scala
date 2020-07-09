@@ -4,6 +4,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
+import akka.cluster.ClusterSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.scaladsl.ActiveActiveSharding
 import akka.cluster.sharding.typed.scaladsl.ActiveActiveShardingReplicaSettings
@@ -55,26 +56,28 @@ class ActiveActiveShardingApiSpec extends ScalaTestWithActorTestKit {
           // all replicas
           Set(ReplicaId("DC-A"), ReplicaId("DC-B"), ReplicaId("DC-B")),
           // how to route messages over them
-          ActiveActiveShardingSettings.Random) { (entityId, replicaId, allReplicaIds) =>
+          ActiveActiveShardingSettings.Random) { (entityTypeKey, replicaId, allReplicaIds) =>
           // factory for replica settings
           ActiveActiveShardingReplicaSettings(
             replicaId,
             // use the replica id as typekey for sharding to get one sharding instance per replica
-            Entity(EntityTypeKey(replicaId.id))(entityContext =>
+            Entity(entityTypeKey)(entityContext =>
               MyActiveActiveStringSet(entityContext.entityId, replicaId, allReplicaIds))
-            // (potentially use replica id as role/dc in Akka multi dc)
-              .withRole(replicaId.id))
+            // potentially use replica id as role or dc in Akka multi dc for the sharding instance
+            // to control where replicas will live
+              .withRole(replicaId.id)
+              .withDataCenter(replicaId.id))
         }
 
       val aaSharding = ActiveActiveSharding(context.system).init(aaShardingSettings)
 
-      val aaEntityRef = aaSharding.entityRefFor("someId")
-
+      val aaEntityRef = aaSharding.randomRefFor("someId")
       aaEntityRef ! MyActiveActiveStringSet.Add("text 1")
-      // or would it be better if this special ref did not pretend to be an actor?
-      // aaEntityRef.tailchopTell(MyActiveActiveStringSet.Add("text 1"))
-      // aaEntityRef.randomTell(MyActiveActiveStringSet.Add("text 1"))
-      // aaEntityRef.publishToAll(MyActiveActiveStringSet.Add("text 1"))
+
+      // or leave it up to user
+      val refs = aaSharding.entityRefsFor("someId")
+      // pass to some custom tailchop or some other clever thing
+      // cleverThing(refs)
 
       Behaviors.empty
     }
