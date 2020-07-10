@@ -294,7 +294,7 @@ import akka.util.ByteString
     } else if (inboundState.isReady) {
       transportInChoppingBlock.chopInto(transportInBuffer)
       try {
-        doUnwrap()
+        doUnwrap(ignoreOutput = false)
         true
       } catch {
         case ex: SSLException =>
@@ -383,7 +383,7 @@ import akka.util.ByteString
   }
 
   @tailrec
-  private def doUnwrap(ignoreOutput: Boolean = false): Unit = {
+  private def doUnwrap(ignoreOutput: Boolean): Unit = {
     val result = engine.unwrap(transportInBuffer, userOutBuffer)
     if (ignoreOutput) userOutBuffer.clear()
     lastHandshakeStatus = result.getHandshakeStatus
@@ -403,7 +403,7 @@ import akka.util.ByteString
             handshakeFinished()
             transportInChoppingBlock.putBack(transportInBuffer)
           case _ =>
-            if (transportInBuffer.hasRemaining) doUnwrap()
+            if (transportInBuffer.hasRemaining) doUnwrap(ignoreOutput = false)
             else flushToUser()
         }
       case CLOSED =>
