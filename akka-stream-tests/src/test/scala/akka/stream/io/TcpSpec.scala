@@ -16,7 +16,6 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 
 import com.github.ghik.silencer.silent
-import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.PatienceConfiguration

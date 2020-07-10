@@ -6,7 +6,6 @@ package akka.persistence
 
 import scala.concurrent.duration._
 import scala.runtime.BoxedUnit
-import scala.runtime.BoxedUnit
 
 import com.typesafe.config.ConfigFactory
 

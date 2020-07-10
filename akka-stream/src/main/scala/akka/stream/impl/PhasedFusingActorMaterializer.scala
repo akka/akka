@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.collection.immutable.Map
 import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 
 import com.github.ghik.silencer.silent
@@ -44,7 +43,6 @@ import akka.stream.impl.io.TlsModule
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
-import akka.util.OptionVal
 import akka.util.OptionVal
 
 /**

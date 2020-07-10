@@ -5,7 +5,6 @@
 package akka.stream.testkit
 
 import java.util.concurrent.ThreadLocalRandom
-import java.util.concurrent.ThreadLocalRandom
 
 import scala.annotation.tailrec
 import scala.concurrent.duration._
@@ -18,7 +17,6 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializerSettings
 import akka.stream.Materializer
-import akka.stream.SystemMaterializer
 import akka.stream.SystemMaterializer
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink

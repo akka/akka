@@ -8,7 +8,6 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.testkit.TestKit
-import docs.akka.typed.coexistence.TypedWatchingClassicSpec.Typed
 //#adapter-import
 // adds support for typed actors to a classic actor system and context
 import akka.actor.typed.scaladsl.adapter._
