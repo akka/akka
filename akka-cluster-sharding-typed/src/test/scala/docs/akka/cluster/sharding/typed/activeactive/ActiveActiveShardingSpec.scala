@@ -19,6 +19,8 @@ import akka.persistence.typed.scaladsl.ActiveActiveEventSourcing
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 
+import scala.collection.immutable
+
 class ActiveActiveShardingSpec extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config) {
 
   object MyActiveActiveStringSet {
@@ -26,7 +28,7 @@ class ActiveActiveShardingSpec extends ScalaTestWithActorTestKit(PersistenceTest
     case class Add(text: String) extends Command
     case class GetTexts(replyTo: ActorRef[Set[String]]) extends Command
 
-    def apply(entityId: String, replicaId: ReplicaId, allReplicas: List[ReplicaId]): Behavior[Command] =
+    def apply(entityId: String, replicaId: ReplicaId, allReplicas: immutable.Seq[ReplicaId]): Behavior[Command] =
       ActiveActiveEventSourcing.withSharedJournal(
         entityId,
         replicaId,
@@ -51,8 +53,8 @@ class ActiveActiveShardingSpec extends ScalaTestWithActorTestKit(PersistenceTest
 
   object BootStrap {
     sealed trait Command
-    case class ForwardToRandom(aaCmd: MyActiveActiveStringSet.Command) extends Command
-    case class ForwardToAll(aaCmd: MyActiveActiveStringSet.Command) extends Command
+    case class ForwardToRandom(msg: ShardingEnvelope[MyActiveActiveStringSet.Command]) extends Command
+    case class ForwardToAll(msg: ShardingEnvelope[MyActiveActiveStringSet.Command]) extends Command
 
     def apply(): Behavior[Command] = Behaviors.setup { context =>
       val aaShardingSettings =
@@ -75,15 +77,14 @@ class ActiveActiveShardingSpec extends ScalaTestWithActorTestKit(PersistenceTest
 
       val aaSharding = ActiveActiveShardingExtension(context.system).init(aaShardingSettings)
 
-      val aaEntityRef = aaSharding.randomRefFor("someId")
-      aaEntityRef ! MyActiveActiveStringSet.Add("text 1")
-
-      // or leave it up to user
-      val refs = aaSharding.entityRefsFor("someId")
-      // pass to some custom tailchop or some other clever thing
-      // cleverThing(refs)
-
       Behaviors.receiveMessage {
+        case ForwardToAll(cmd) =>
+          // FIXME id conversion here, id without replica vs id with replica inside sharding
+          aaSharding.entityRefsFor(cmd.entityId)
+          Behaviors.same
+
+        case ForwardToAll(cmd) =>
+          ???
 
       }
     }
