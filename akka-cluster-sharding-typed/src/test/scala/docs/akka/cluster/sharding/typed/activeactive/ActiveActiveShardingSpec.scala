@@ -5,30 +5,32 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.ClusterSettings
+import akka.cluster.sharding.typed.ActiveActiveShardingExtension
+import akka.cluster.sharding.typed.ActiveActiveShardingReplicaSettings
+import akka.cluster.sharding.typed.ActiveActiveShardingSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
-import akka.cluster.sharding.typed.scaladsl.ActiveActiveSharding
-import akka.cluster.sharding.typed.scaladsl.ActiveActiveShardingReplicaSettings
-import akka.cluster.sharding.typed.scaladsl.ActiveActiveShardingSettings
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
+import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.scaladsl.ActiveActiveEventSourcing
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 
-class ActiveActiveShardingApiSpec extends ScalaTestWithActorTestKit {
+class ActiveActiveShardingSpec extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config) {
 
   object MyActiveActiveStringSet {
     trait Command
     case class Add(text: String) extends Command
     case class GetTexts(replyTo: ActorRef[Set[String]]) extends Command
 
-    def apply(entityId: String, replicaId: ReplicaId, allReplicas: Set[ReplicaId]): Behavior[Command] =
+    def apply(entityId: String, replicaId: ReplicaId, allReplicas: List[ReplicaId]): Behavior[Command] =
       ActiveActiveEventSourcing.withSharedJournal(
         entityId,
         replicaId,
-        allReplicas,
+        allReplicas.toSet, // FIXME list in sharding settings vs set in aa (was thinking ordering is important for sharding)
         PersistenceTestKitReadJournal.Identifier) { aaContext =>
         EventSourcedBehavior[Command, String, Set[String]](
           aaContext.persistenceId,
@@ -41,20 +43,24 @@ class ActiveActiveShardingApiSpec extends ScalaTestWithActorTestKit {
                 replyTo ! state
                 Effect.none
             },
-          (state, event) => state + event)
+          (state, event) => state + event).withJournalPluginId(PersistenceTestKitPlugin.PluginId)
       }
   }
 
   // Compile only API exploration for now
 
-  object Guardian {
-    def apply(): Behavior[Nothing] = Behaviors.setup { context =>
+  object BootStrap {
+    sealed trait Command
+    case class ForwardToRandom(aaCmd: MyActiveActiveStringSet.Command) extends Command
+    case class ForwardToAll(aaCmd: MyActiveActiveStringSet.Command) extends Command
+
+    def apply(): Behavior[Command] = Behaviors.setup { context =>
       val aaShardingSettings =
         ActiveActiveShardingSettings[
           MyActiveActiveStringSet.Command,
           ShardingEnvelope[MyActiveActiveStringSet.Command]](
           // all replicas
-          Set(ReplicaId("DC-A"), ReplicaId("DC-B"), ReplicaId("DC-B"))) { (entityTypeKey, replicaId, allReplicaIds) =>
+          List(ReplicaId("DC-A"), ReplicaId("DC-B"), ReplicaId("DC-B"))) { (entityTypeKey, replicaId, allReplicaIds) =>
           // factory for replica settings
           ActiveActiveShardingReplicaSettings(
             replicaId,
@@ -67,7 +73,7 @@ class ActiveActiveShardingApiSpec extends ScalaTestWithActorTestKit {
               .withDataCenter(replicaId.id))
         }
 
-      val aaSharding = ActiveActiveSharding(context.system).init(aaShardingSettings)
+      val aaSharding = ActiveActiveShardingExtension(context.system).init(aaShardingSettings)
 
       val aaEntityRef = aaSharding.randomRefFor("someId")
       aaEntityRef ! MyActiveActiveStringSet.Add("text 1")
@@ -77,7 +83,9 @@ class ActiveActiveShardingApiSpec extends ScalaTestWithActorTestKit {
       // pass to some custom tailchop or some other clever thing
       // cleverThing(refs)
 
-      Behaviors.empty
+      Behaviors.receiveMessage {
+
+      }
     }
   }
 
