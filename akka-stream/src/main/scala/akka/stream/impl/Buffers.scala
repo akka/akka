@@ -208,7 +208,7 @@ private[akka] object Buffer {
     override def capacity = BoundedBuffer.this.capacity
     override def used = size
     override def isFull = size == capacity
-    override def nonEmpty = !isEmpty()
+    override def nonEmpty = !this.isEmpty()
 
     override def enqueue(elem: T): Unit = add(elem)
     override def dequeue(): T = remove()

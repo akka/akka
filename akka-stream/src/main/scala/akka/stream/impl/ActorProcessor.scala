@@ -214,7 +214,7 @@ import akka.util.unused
 
   protected def createSubscription(): Subscription = new ActorSubscription(actor, subscriber)
 
-  private def subscribePending(subscribers: Seq[Subscriber[Any]]): Unit =
+  private def subscribePending(subscribers: Seq[Subscriber[_ >: Any]]): Unit =
     subscribers.foreach { sub =>
       if (subscriber eq null) {
         subscriber = sub
