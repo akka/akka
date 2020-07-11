@@ -254,6 +254,11 @@ final class Source[+Out, +Mat](
 }
 
 object Source {
+  implicit class SourceToCompletionStage[Out, T](val src: Source[Out, Future[T]]) extends AnyVal {
+    import scala.compat.java8.FutureConverters
+    def toCompletionStage(): Source[Out, CompletionStage[T]] =
+      src.mapMaterializedValue(FutureConverters.toJava)
+  }
 
   /** INTERNAL API */
   def shape[T](name: String): SourceShape[T] = SourceShape(Outlet(name + ".out"))

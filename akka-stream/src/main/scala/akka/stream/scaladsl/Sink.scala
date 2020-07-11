@@ -128,6 +128,13 @@ final class Sink[-In, +Mat](override val traversalBuilder: LinearTraversalBuilde
 }
 
 object Sink {
+  implicit class SinkToCompletionStage[In, T](val sink: Sink[In, Future[T]]) extends AnyVal {
+    import java.util.concurrent.CompletionStage
+    import scala.compat.java8.FutureConverters
+
+    def toCompletionStage(): Sink[In, CompletionStage[T]] =
+      sink.mapMaterializedValue(FutureConverters.toJava)
+  }
 
   /** INTERNAL API */
   def shape[T](name: String): SinkShape[T] = SinkShape(Inlet(name + ".in"))
