@@ -342,7 +342,11 @@ import akka.util.ccompat._
       }
 
       private val callback = getAsyncCallback[Output[T]] {
-        case QueueSink.Pull(pullPromise) =>
+        // We need check `pullPromise: Requested[T]` here because dotty complain: Type Mismatch Error
+        // Found:    (pullPromise : concurrent.Promise[Option[T$1]])
+        // Required: akka.stream.impl.QueueSink.Requested[T]
+        // where:    T$1 is a type in an anonymous function in method createLogicAndMaterializedValue with bounds <: T
+        case QueueSink.Pull(pullPromise: Requested[T]) =>
           if (currentRequests.isFull)
             pullPromise.failure(
               new IllegalStateException(s"Too many concurrent pulls. Specified maximum is $maxConcurrentPulls. " +
@@ -352,6 +356,9 @@ import akka.util.ccompat._
             if (buffer.used == maxBuffer) tryPull(in)
             sendDownstream(pullPromise)
           }
+        case QueueSink.Pull(pullPromise) =>
+          // should not match this case
+          pullPromise.failure(new IllegalStateException(s"Invalid Requested $pullPromise"))
         case QueueSink.Cancel => completeStage()
       }
 
