@@ -463,7 +463,10 @@ object Flow {
   def fromSinkAndSourceMat[I, O, M1, M2, M](sink: Graph[SinkShape[I], M1], source: Graph[SourceShape[O], M2])(
       combine: (M1, M2) => M): Flow[I, O, M] =
     fromGraph(GraphDSL.create(sink, source)(combine) { _ => (in, out) =>
-      FlowShape(in.in, out.out)
+      // need `asInstanceOf` because dotty complain:
+      // [error] value in is not a member of akka.stream.Shape @uncheckedVariance
+      // https://gitter.im/lampepfl/dotty?at=5f097f667a4e99049e033b67
+      FlowShape(in.asInstanceOf[SinkShape[I]].in, out.asInstanceOf[SourceShape[O]].out)
     })
 
   /**
@@ -561,7 +564,10 @@ object Flow {
     Flow.fromGraph(GraphDSL.create(sink, source)(combine) { implicit b => (i, o) =>
       import GraphDSL.Implicits._
       val bidi = b.add(new CoupledTerminationBidi[I, O])
-      /* bidi.in1 ~> */ bidi.out1 ~> i; o ~> bidi.in2 /* ~> bidi.out2 */
+      // need `asInstanceOf` because:
+      // https://gitter.im/lampepfl/dotty?at=5f097f667a4e99049e033b67
+      /* bidi.in1 ~> */ bidi.out1 ~> i.asInstanceOf[SinkShape[I]]
+      o.asInstanceOf[SourceShape[O]] ~> bidi.in2 /* ~> bidi.out2 */
       FlowShape(bidi.in1, bidi.out2)
     })
   // format: ON
