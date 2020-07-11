@@ -662,15 +662,15 @@ object GraphDSL extends GraphCreate {
     def to[I, O](j: UniformFanInShape[I, O]): ReverseOps[I] = new ReverseOps(findIn(delegate, j, 0))
     def to[I, O](j: UniformFanOutShape[I, O]): ReverseOps[I] = new ReverseOps(j.in)
 
-    final class ForwardOps[T](out: Outlet[T]) {
-      def toInlet(in: Inlet[_ >: T]): Builder[Mat] = { out ~> in; self }
-      def to(dst: SinkShape[_ >: T]): Builder[Mat] = { out ~> dst; self }
-      def toFanIn[U](j: UniformFanInShape[_ >: T, U]): Builder[Mat] = { out ~> j; self }
-      def toFanOut[U](j: UniformFanOutShape[_ >: T, U]): Builder[Mat] = { out ~> j; self }
-      def via[U](f: FlowShape[_ >: T, U]): ForwardOps[U] = from((out ~> f).outlet)
-      def viaFanIn[U](j: UniformFanInShape[_ >: T, U]): ForwardOps[U] = from((out ~> j).outlet)
-      def viaFanOut[U](j: UniformFanOutShape[_ >: T, U]): ForwardOps[U] = from((out ~> j).outlet)
-      def out(): Outlet[T] = out
+    final class ForwardOps[T](_out: Outlet[T]) {
+      def toInlet(in: Inlet[_ >: T]): Builder[Mat] = { _out ~> in; self }
+      def to(dst: SinkShape[_ >: T]): Builder[Mat] = { _out ~> dst; self }
+      def toFanIn[U](j: UniformFanInShape[_ >: T, U]): Builder[Mat] = { _out ~> j; self }
+      def toFanOut[U](j: UniformFanOutShape[_ >: T, U]): Builder[Mat] = { _out ~> j; self }
+      def via[U](f: FlowShape[_ >: T, U]): ForwardOps[U] = from((_out ~> f).outlet)
+      def viaFanIn[U](j: UniformFanInShape[_ >: T, U]): ForwardOps[U] = from((_out ~> j).outlet)
+      def viaFanOut[U](j: UniformFanOutShape[_ >: T, U]): ForwardOps[U] = from((_out ~> j).outlet)
+      def out(): Outlet[T] = _out
     }
 
     final class ReverseOps[T](out: Inlet[T]) {
