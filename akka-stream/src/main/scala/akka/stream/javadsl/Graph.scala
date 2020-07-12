@@ -601,7 +601,7 @@ object GraphDSL extends GraphCreate {
    * Creates a new [[Graph]] by importing the given graph list `graphs` and passing their [[Shape]]s
    * along with the [[GraphDSL.Builder]] to the given create function.
    */
-  def create[IS <: Shape, S <: Shape, M, G <: Graph[IS, M]](
+  def create[IS <: Shape, S <: Shape, M <: AnyRef, G <: Graph[IS, M]](
       graphs: java.util.List[G],
       buildBlock: function.Function2[GraphDSL.Builder[java.util.List[M]], java.util.List[IS], S])
       : Graph[S, java.util.List[M]] = {
