@@ -866,17 +866,13 @@ private[akka] class Shard(
             } else {
               if (messageBuffers.getOrEmpty(entityId).nonEmpty) {
                 if (verboseDebug)
-                  log.debug(
-                    "[{}] terminated after passivating, buffered messages found, restarting",
-                    entityId)
+                  log.debug("[{}] terminated after passivating, buffered messages found, restarting", entityId)
                 entities.removeEntity(entityId)
                 getOrCreateEntity(entityId)
                 sendMsgBuffer(entityId)
               } else {
                 if (verboseDebug)
-                  log.debug(
-                    "[{}] terminated after passivating",
-                    entityId)
+                  log.debug("[{}] terminated after passivating", entityId)
                 entities.removeEntity(entityId)
               }
             }
