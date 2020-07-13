@@ -643,8 +643,9 @@ class CoordinatedShutdownSpec
     }
 
     def withCoordinatedShutdown(block: (ActorSystem, CoordinatedShutdown) => Unit): Unit = {
-      val system = ActorSystem(s"CoordinatedShutdownSpec-terminated-${System.currentTimeMillis()}", ConfigFactory.parseString(
-        """
+      val system = ActorSystem(
+        s"CoordinatedShutdownSpec-terminated-${System.currentTimeMillis()}",
+        ConfigFactory.parseString("""
           akka.coordinated-shutdown.phases {
             before-actor-system-terminate {
 

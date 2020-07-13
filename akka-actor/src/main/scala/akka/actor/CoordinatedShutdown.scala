@@ -13,7 +13,7 @@ import java.util.function.Supplier
 import scala.annotation.tailrec
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
@@ -907,7 +907,10 @@ private[akka] class CoordinatedShutdownTerminationWatcher extends Actor with Tim
               Set(completionPromise)
           }
         waitingForActor = waitingForActor.updated(actor, newWaiting)
-        timers.startSingleTimer(completionPromise, WatchedTimedOut(actor, completionPromise, deadline.time), deadline.timeLeft)
+        timers.startSingleTimer(
+          completionPromise,
+          WatchedTimedOut(actor, completionPromise, deadline.time),
+          deadline.timeLeft)
       }
 
     case Terminated(actor) =>
@@ -924,7 +927,8 @@ private[akka] class CoordinatedShutdownTerminationWatcher extends Actor with Tim
 
     case WatchedTimedOut(actor, completionPromise, timeout) =>
       if (!completionPromise.isCompleted)
-        completionPromise.tryFailure(new TimeoutException(s"Actor [$actor] termination timed out after [$timeout] during coordinated shutdown"))
+        completionPromise.tryFailure(
+          new TimeoutException(s"Actor [$actor] termination timed out after [$timeout] during coordinated shutdown"))
 
   }
 
