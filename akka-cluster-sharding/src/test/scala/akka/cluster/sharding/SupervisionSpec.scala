@@ -59,6 +59,7 @@ object SupervisionSpec {
       case "hello" =>
         sender() ! Response(self)
       case StopMessage =>
+        // note that we never see this because we stop early
         log.info("Received stop from region")
         context.parent ! PoisonPill
     }
@@ -71,7 +72,7 @@ class DeprecatedSupervisionSpec extends AkkaSpec(SupervisionSpec.config) with Im
 
   "Supervision for a sharded actor (deprecated)" must {
 
-    "allow passivation" in {
+    "allow passivation and early stop" in {
 
       val supervisedProps =
         BackoffOpts
@@ -112,7 +113,7 @@ class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSend
 
   "Supervision for a sharded actor" must {
 
-    "allow passivation" in {
+    "allow passivation and early stop" in {
 
       val supervisedProps = BackoffSupervisor.props(
         BackoffOpts

@@ -851,16 +851,34 @@ private[akka] class Shard(
             }
 
           case Passivating(_) =>
-            if (entities.pendingRememberedEntitiesExist()) {
-              // will go in next batch update
-              if (verboseDebug)
-                log.debug(
-                  "Stop of [{}] after passivating, arrived while updating, adding it to batch of pending stops",
-                  entityId)
-              entities.rememberingStop(entityId)
+            if (rememberEntitiesStore.isDefined) {
+              if (entities.pendingRememberedEntitiesExist()) {
+                // will go in next batch update
+                if (verboseDebug)
+                  log.debug(
+                    "[{}] terminated after passivating, arrived while updating, adding it to batch of pending stops",
+                    entityId)
+                entities.rememberingStop(entityId)
+              } else {
+                entities.rememberingStop(entityId)
+                rememberUpdate(remove = Set(entityId))
+              }
             } else {
-              entities.rememberingStop(entityId)
-              rememberUpdate(remove = Set(entityId))
+              if (messageBuffers.getOrEmpty(entityId).nonEmpty) {
+                if (verboseDebug)
+                  log.debug(
+                    "[{}] terminated after passivating, buffered messages found, restarting",
+                    entityId)
+                entities.removeEntity(entityId)
+                getOrCreateEntity(entityId)
+                sendMsgBuffer(entityId)
+              } else {
+                if (verboseDebug)
+                  log.debug(
+                    "[{}] terminated after passivating",
+                    entityId)
+                entities.removeEntity(entityId)
+              }
             }
           case unexpected =>
             val ref = entities.entity(entityId)
