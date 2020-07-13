@@ -20,12 +20,14 @@ import akka.util.ByteString
 import akka.util.{ Timeout, Unsafe }
 import akka.util.unused
 
+import scala.util.control.NoStackTrace
+
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,
  * when it times out. A typical reason for `AskTimeoutException` is that the recipient
  * actor didn't send a reply.
  */
-class AskTimeoutException(message: String, cause: Throwable) extends TimeoutException(message) {
+class AskTimeoutException(message: String, cause: Throwable) extends TimeoutException(message) with NoStackTrace {
   def this(message: String) = this(message, null: Throwable)
   override def getCause(): Throwable = cause
 }
