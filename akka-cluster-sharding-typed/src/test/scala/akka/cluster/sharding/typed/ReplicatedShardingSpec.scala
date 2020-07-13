@@ -7,7 +7,6 @@ package akka.cluster.sharding.typed
 import java.util.concurrent.ThreadLocalRandom
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -36,10 +35,12 @@ import akka.cluster.sharding.typed.ReplicatedShardingSpec.MyReplicatedStringSet
 import akka.persistence.typed.ReplicationId
 import com.typesafe.config.Config
 import akka.util.ccompat._
+import org.scalatest.time.Span
+
 @ccompatUsedUntil213
 object ReplicatedShardingSpec {
   def commonConfig = ConfigFactory.parseString("""
-      akka.loglevel = INFO
+      akka.loglevel = DEBUG
       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
       akka.actor.provider = "cluster"
       akka.remote.classic.netty.tcp.port = 0
@@ -176,18 +177,16 @@ object ProxyActor {
   case class ForwardToAllInt(entityId: String, msg: MyReplicatedIntSet.Command) extends Command
 
   def apply(replicationType: ReplicationType): Behavior[Command] = Behaviors.setup { context =>
-    val replicatedShardingStringSet =
+    val replicatedShardingStringSet: ReplicatedSharding[MyReplicatedStringSet.Command] =
       ReplicatedShardingExtension(context.system).init(MyReplicatedStringSet.provider(replicationType))
-    val replicatedShardingIntSet =
+    val replicatedShardingIntSet: ReplicatedSharding[MyReplicatedIntSet.Command] =
       ReplicatedShardingExtension(context.system).init(MyReplicatedIntSet.provider(replicationType))
 
     Behaviors.setup { ctx =>
       Behaviors.receiveMessage {
         case ForwardToAllString(entityId, cmd) =>
           val entityRefs = replicatedShardingStringSet.entityRefsFor(entityId)
-
           ctx.log.infoN("Entity refs {}", entityRefs)
-
           entityRefs.foreach {
             case (replica, ref) =>
               ctx.log.infoN("Forwarding to replica {} ref {}", replica, ref)
@@ -226,8 +225,11 @@ class DataCenterReplicatedShardingSpec
 
 abstract class ReplicatedShardingSpec(replicationType: ReplicationType, configA: Config, configB: Config)
     extends ScalaTestWithActorTestKit(configA)
-    with AnyWordSpecLike
-    with LogCapturing {
+    with AnyWordSpecLike {
+
+  // don't retry quite so quickly
+  override implicit val patience: PatienceConfig =
+    PatienceConfig(testKit.testKitSettings.DefaultTimeout.duration, Span(500, org.scalatest.time.Millis))
 
   val system2 = ActorSystem(Behaviors.ignore[Any], name = system.name, config = configB)
 
@@ -265,7 +267,7 @@ abstract class ReplicatedShardingSpec(replicationType: ReplicationType, configA:
     }
 
     "forward to replicas" in {
-      val proxy = spawn(ProxyActor(replicationType))
+      val proxy: ActorRef[ProxyActor.Command] = spawn(ProxyActor(replicationType))
 
       proxy ! ProxyActor.ForwardToAllString("id1", MyReplicatedStringSet.Add("to-all"))
       proxy ! ProxyActor.ForwardToRandomString("id1", MyReplicatedStringSet.Add("to-random"))

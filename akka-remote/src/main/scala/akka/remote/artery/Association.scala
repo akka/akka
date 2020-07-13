@@ -151,7 +151,7 @@ private[remote] class Association(
 
   override def settings = transport.settings
   private def advancedSettings = transport.settings.Advanced
-  private val deathWatchNotificationFlushEnabled = advancedSettings.DeathWatchNotificationFlushTimeout > Duration.Zero
+  private val deathWatchNotificationFlushEnabled = advancedSettings.DeathWatchNotificationFlushTimeout > Duration.Zero && transport.provider.settings.HasCluster
 
   private val restartCounter =
     new RestartCounter(advancedSettings.OutboundMaxRestarts, advancedSettings.OutboundRestartTimeout)
@@ -403,12 +403,14 @@ private[remote] class Association(
         message match {
           case d: DeathWatchNotification if deathWatchNotificationFlushEnabled && shouldSendDeathWatchNotification(d) =>
             val flushingPromise = Promise[Done]()
+            log.debug("Delaying death watch notification until flush has been sent. {}", d)
             transport.system.systemActorOf(
               FlushBeforeDeathWatchNotification
                 .props(flushingPromise, settings.Advanced.DeathWatchNotificationFlushTimeout, this)
                 .withDispatcher(Dispatchers.InternalDispatcherId),
               FlushBeforeDeathWatchNotification.nextName())
             flushingPromise.future.onComplete { _ =>
+              log.debug("Sending death watch notification as flush is complete. {}", d)
               sendSystemMessage(outboundEnvelope)
             }(materializer.executionContext)
           case _: SystemMessage =>
@@ -487,8 +489,10 @@ private[remote] class Association(
     }
   }
 
-  def sendTerminationHint(replyTo: ActorRef): Int =
+  def sendTerminationHint(replyTo: ActorRef): Int = {
+    log.debug("Sending ActorSystemTerminating to all queues")
     sendToAllQueues(ActorSystemTerminating(localAddress), replyTo, excludeControlQueue = false)
+  }
 
   def sendFlush(replyTo: ActorRef, excludeControlQueue: Boolean): Int =
     sendToAllQueues(Flush, replyTo, excludeControlQueue)

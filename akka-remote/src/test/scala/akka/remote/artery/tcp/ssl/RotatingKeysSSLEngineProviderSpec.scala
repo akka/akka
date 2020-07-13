@@ -37,7 +37,8 @@ import scala.util.control.NonFatal
 // This is a simplification Spec. It doesn't rely on changing files.
 class RotatingProviderWithStaticKeysSpec
     extends RotatingKeysSSLEngineProviderSpec(RotatingKeysSSLEngineProviderSpec.resourcesConfig) {
-  "Artery with TLS/TCP with RotatingKeysSSLEngine" must {
+  // FIXME this is a flaky test and don't want the noise on the repeat branch
+  "Artery with TLS/TCP with RotatingKeysSSLEngine" ignore {
 
     "rebuild the SSLContext" in {
       if (!arteryTcpTlsEnabled())
