@@ -60,8 +60,8 @@ public class Monitor {
 
     // Periodically check the monitor
     Source.tick(Duration.ofMillis(200), Duration.ofMillis(400), "")
-            .runForeach(__ -> printMonitorState(monitor.state()), actorSystem);
-  // #monitor
+        .runForeach(__ -> printMonitorState(monitor.state()), actorSystem);
+    // #monitor
 
     run.second().toCompletableFuture().whenComplete((x, t) -> actorSystem.terminate());
   }
