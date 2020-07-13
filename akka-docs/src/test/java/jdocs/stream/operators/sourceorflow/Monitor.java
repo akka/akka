@@ -26,12 +26,12 @@ public class Monitor {
 
   // #monitor
   private static <T> void printMonitorState(FlowMonitorState.StreamState<T> state) {
-    if (FlowMonitorState.Finished$.class.isInstance(state)) {
+    if (state == FlowMonitorState.finished()) {
       System.out.println("Stream is initialized but hasn't processed any element");
-    } else if (FlowMonitorState.Received.class.isInstance(state)) {
+    } else if (state instanceof FlowMonitorState.Received) {
       FlowMonitorState.Received msg = (FlowMonitorState.Received) state;
       System.out.println("Last message received: " + msg.msg());
-    } else if (FlowMonitorState.Failed.class.isInstance(state)) {
+    } else if (state instanceof FlowMonitorState.Failed) {
       Throwable cause = ((FlowMonitorState.Failed) state).cause();
       System.out.println("Stream failed with cause: " + cause.getMessage());
     } else {
@@ -60,14 +60,8 @@ public class Monitor {
 
     // Periodically check the monitor
     Source.tick(Duration.ofMillis(200), Duration.ofMillis(400), "")
-        .map(
-            __ -> {
-              printMonitorState(monitor.state());
-              return NotUsed.getInstance();
-            })
-        .to(Sink.ignore())
-        .run(actorSystem);
-    // #monitor
+            .runForeach(__ -> printMonitorState(monitor.state()), actorSystem);
+  // #monitor
 
     run.second().toCompletableFuture().whenComplete((x, t) -> actorSystem.terminate());
   }

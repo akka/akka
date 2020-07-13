@@ -6,14 +6,14 @@ Materializes to a `FlowMonitor` that monitors messages flowing through or comple
 
 ## Signature
 
-@apidoc[Source.monitor](Source) { scala="#monitor[Mat2]()(combine:(Mat,akka.stream.FlowMonitor[Out])=&gt;Mat2):FlowOpsMat.this.ReprMat[Out,Mat2]" java="#monitor(akka.japi.function.Function2)" java="#monitor()" }
-@apidoc[Flow.monitor](Flow) { scala="#monitor[Mat2]()(combine:(Mat,akka.stream.FlowMonitor[Out])=&gt;Mat2):FlowOpsMat.this.ReprMat[Out,Mat2]" java="#monitor(akka.japi.function.Function2)" java="#monitor()" }
+@apidoc[Source.monitor](Source) { scala="#monitor[Mat2]()(combine:(Mat,akka.stream.FlowMonitor[Out])=&gt;Mat2):FlowOpsMat.this.ReprMat[Out,Mat2]" java="#monitor()" }
+@apidoc[Flow.monitor](Flow) { scala="#monitor[Mat2]()(combine:(Mat,akka.stream.FlowMonitor[Out])=&gt;Mat2):FlowOpsMat.this.ReprMat[Out,Mat2]" java="#monitor()" }
 
 
 ## Description
 
-Materializes to a `FlowMonitor` that monitors messages flowing through or completion of the operators. The operators otherwise
-passes through elements unchanged. Note that the `FlowMonitor` inserts a memory barrier every time it processes an
+Materializes to a `FlowMonitor` that monitors messages flowing through or completion of the stream. Elements 
+pass through unchanged. Note that the `FlowMonitor` inserts a memory barrier every time it processes an
 event, and may therefore affect performance. The provided `FlowMonitor` contains a `state` field you can use to peek
 and get information about the stream. 
 
