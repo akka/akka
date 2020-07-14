@@ -1140,7 +1140,9 @@ private[akka] class ShardRegion(
   }
 
   def sendGracefulShutdownToCoordinator(): Unit = {
-    if (gracefulShutdownInProgress)
+    if (gracefulShutdownInProgress) {
+      log.debug("Sending graceful shutdown to {}", coordinatorSelection)
       coordinatorSelection.foreach(_ ! GracefulShutdownReq(self))
+    }
   }
 }
