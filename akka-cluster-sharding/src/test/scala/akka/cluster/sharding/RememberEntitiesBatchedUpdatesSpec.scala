@@ -50,6 +50,7 @@ object RememberEntitiesBatchedUpdatesSpec {
       # no leaks between test runs thank you
       akka.cluster.sharding.distributed-data.durable.keys = []
       akka.cluster.sharding.verbose-debug-logging = on
+      akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
     """.stripMargin)
 }
 class RememberEntitiesBatchedUpdatesSpec
