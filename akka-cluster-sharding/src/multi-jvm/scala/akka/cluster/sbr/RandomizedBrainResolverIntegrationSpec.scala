@@ -394,11 +394,8 @@ class RandomizedSplitBrainResolverIntegrationSpec
     def usingLease: Boolean = activeStrategy.contains("lease")
   }
 
-  List(Scenario(leaseMajorityConfig, 3), Scenario(leaseMajorityConfig, 5), Scenario(leaseMajorityConfig, 9))
-  // Scenario(lease-majority, 3) with random seed [1591321960290] in round [1]: cleanSplit [false], healCleanSplit [false] ()flaky [node2 -> (node1, node3); node1 -> (node2); node3 -> (node1, node2)] delays [3, 12, 2, 5, 7, 11, 2, 2, 14, 10]
   val scenarios =
-    List(
-      Scenario(ConfigFactory.parseString("""test.random-seed = 1591321960290""").withFallback(leaseMajorityConfig), 3))
+    List(Scenario(leaseMajorityConfig, 3), Scenario(leaseMajorityConfig, 5), Scenario(leaseMajorityConfig, 9))
 
   "SplitBrainResolver with lease" must {
 
