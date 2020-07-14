@@ -79,7 +79,7 @@ class EntitiesSpec extends AnyWordSpec with Matchers {
       entities.rememberingStart("a", None) // need to go through remembering start to become active
       entities.addEntity("a", ActorRef.noSender) // need to go through active to passivate
       entities.entityPassivating("a") // needs to go through passivating to be removed
-      entities.rememberingStop("a") // need to go through remembering start to become active
+      entities.rememberingStop("a") // need to go through remembering stop to become active
       entities.removeEntity("a")
       entities.entityState("a") shouldEqual NoState
       entities.activeEntities() should be(empty)
