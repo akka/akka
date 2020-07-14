@@ -148,7 +148,10 @@ private[akka] object Shard {
    * }}}
    **/
   sealed trait EntityState {
-    def transition(newState: EntityState): EntityState
+    def transition(newState: EntityState, rememberingEntities: Boolean): EntityState
+    final def invalidTransition(to: EntityState, rememberingEntities: Boolean): EntityState =
+      throw new IllegalArgumentException(
+        s"Transition from $this to $to not allowed, remember entities: $rememberingEntities")
   }
 
   /**
@@ -157,11 +160,11 @@ private[akka] object Shard {
    * and as return value instead of null
    */
   case object NoState extends EntityState {
-    override def transition(newState: EntityState): EntityState = newState match {
-      case RememberedButNotCreated       => RememberedButNotCreated
-      case remembering: RememberingStart => remembering
-      case active: Active                => active
-      case _                             => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+    override def transition(newState: EntityState, rememberingEntities: Boolean): EntityState = newState match {
+      case RememberedButNotCreated if rememberingEntities       => RememberedButNotCreated
+      case remembering: RememberingStart if rememberingEntities => remembering
+      case active: Active if !rememberingEntities               => active
+      case _                                                    => invalidTransition(newState, rememberingEntities)
     }
   }
 
@@ -171,10 +174,10 @@ private[akka] object Shard {
    * remembered entity ids.
    */
   case object RememberedButNotCreated extends EntityState {
-    override def transition(newState: EntityState): EntityState = newState match {
+    override def transition(newState: EntityState, rememberingEntities: Boolean): EntityState = newState match {
       case active: Active  => active // started on this shard
       case RememberingStop => RememberingStop // started on other shard
-      case _               => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+      case _               => invalidTransition(newState, rememberingEntities)
     }
   }
 
@@ -194,7 +197,7 @@ private[akka] object Shard {
    * to be stored in the next batch.
    */
   final case class RememberingStart(ackTo: Set[ActorRef]) extends EntityState {
-    override def transition(newState: EntityState): EntityState = newState match {
+    override def transition(newState: EntityState, rememberingEntities: Boolean): EntityState = newState match {
       case active: Active => active
       case r: RememberingStart =>
         if (ackTo.isEmpty) {
@@ -204,7 +207,7 @@ private[akka] object Shard {
           if (r.ackTo.isEmpty) this
           else RememberingStart(ackTo.union(r.ackTo))
         }
-      case _ => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+      case _ => invalidTransition(newState, rememberingEntities)
     }
   }
 
@@ -214,9 +217,9 @@ private[akka] object Shard {
    * to be stored in the next batch.
    */
   final case object RememberingStop extends EntityState {
-    override def transition(newState: EntityState): EntityState = newState match {
+    override def transition(newState: EntityState, rememberingEntities: Boolean): EntityState = newState match {
       case NoState => NoState
-      case _       => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+      case _       => invalidTransition(newState, rememberingEntities)
     }
   }
 
@@ -224,25 +227,26 @@ private[akka] object Shard {
     def ref: ActorRef
   }
   final case class Active(ref: ActorRef) extends WithRef {
-    override def transition(newState: EntityState): EntityState = newState match {
-      case passivating: Passivating => passivating
-      case WaitingForRestart        => WaitingForRestart
-      case _                        => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+    override def transition(newState: EntityState, rememberingEntities: Boolean): EntityState = newState match {
+      case passivating: Passivating        => passivating
+      case WaitingForRestart               => WaitingForRestart
+      case NoState if !rememberingEntities => NoState
+      case _                               => invalidTransition(newState, rememberingEntities)
     }
   }
   final case class Passivating(ref: ActorRef) extends WithRef {
-    override def transition(newState: EntityState): EntityState = newState match {
-      case RememberingStop => RememberingStop
-      case NoState         => NoState
-      case _               => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+    override def transition(newState: EntityState, rememberingEntities: Boolean): EntityState = newState match {
+      case RememberingStop                 => RememberingStop
+      case NoState if !rememberingEntities => NoState
+      case _                               => invalidTransition(newState, rememberingEntities)
     }
   }
 
   case object WaitingForRestart extends EntityState {
-    override def transition(newState: EntityState): EntityState = newState match {
+    override def transition(newState: EntityState, rememberingEntities: Boolean): EntityState = newState match {
       case remembering: RememberingStart => remembering
       case active: Active                => active
-      case _                             => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+      case _                             => invalidTransition(newState, rememberingEntities)
     }
   }
 
@@ -255,13 +259,13 @@ private[akka] object Shard {
 
     def alreadyRemembered(set: Set[EntityId]): Unit = {
       set.foreach { entityId =>
-        val state = entityState(entityId).transition(RememberedButNotCreated)
+        val state = entityState(entityId).transition(RememberedButNotCreated, rememberingEntities)
         entities.put(entityId, state)
       }
     }
     def rememberingStart(entityId: EntityId, ackTo: Option[ActorRef]): Unit = {
       val newState = RememberingStart(ackTo)
-      val state = entityState(entityId).transition(newState)
+      val state = entityState(entityId).transition(newState, rememberingEntities)
       entities.put(entityId, state)
       if (rememberingEntities)
         remembering.add(entityId)
@@ -269,7 +273,7 @@ private[akka] object Shard {
     def rememberingStop(entityId: EntityId): Unit = {
       val state = entityState(entityId)
       removeRefIfThereIsOne(state)
-      entities.put(entityId, state.transition(RememberingStop))
+      entities.put(entityId, state.transition(RememberingStop, rememberingEntities))
       if (rememberingEntities)
         remembering.add(entityId)
     }
@@ -281,19 +285,19 @@ private[akka] object Shard {
         case null  => NoState
         case other => other
       }
-      entities.put(id, state.transition(WaitingForRestart))
+      entities.put(id, state.transition(WaitingForRestart, rememberingEntities))
     }
     def removeEntity(entityId: EntityId): Unit = {
       val state = entityState(entityId)
       // just verify transition
-      state.transition(NoState)
+      state.transition(NoState, rememberingEntities)
       removeRefIfThereIsOne(state)
       entities.remove(entityId)
       if (rememberingEntities)
         remembering.remove(entityId)
     }
     def addEntity(entityId: EntityId, ref: ActorRef): Unit = {
-      val state = entityState(entityId).transition(Active(ref))
+      val state = entityState(entityId).transition(Active(ref), rememberingEntities)
       entities.put(entityId, state)
       byRef.put(ref, entityId)
       if (rememberingEntities)
@@ -322,7 +326,7 @@ private[akka] object Shard {
       if (verboseDebug) log.debug("[{}] passivating", entityId)
       entities.get(entityId) match {
         case wf: WithRef =>
-          val state = entityState(entityId).transition(Passivating(wf.ref))
+          val state = entityState(entityId).transition(Passivating(wf.ref), rememberingEntities)
           entities.put(entityId, state)
         case other =>
           throw new IllegalStateException(
