@@ -33,6 +33,7 @@ class ClusterShardingInternalsSpec extends AkkaSpec("""
     |akka.remote.artery.canonical.port = 0
     |akka.loglevel = DEBUG
     |akka.cluster.sharding.verbose-debug-logging = on
+    |akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
     |akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     |""".stripMargin) with WithLogCapturing {
   import ClusterShardingInternalsSpec._

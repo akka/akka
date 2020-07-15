@@ -34,7 +34,7 @@ object RememberEntitiesShardIdExtractorChangeSpec {
         remember-entities-store = "eventsourced"
         state-store-mode = "ddata"
        }
-       
+       akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
        akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
        akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
        akka.persistence.snapshot-store.local.dir = "target/RememberEntitiesShardIdExtractorChangeSpec-${UUID

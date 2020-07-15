@@ -37,6 +37,7 @@ object ShardWithLeaseSpec {
           lease-operation-timeout = 3s
       }
       akka.cluster.sharding.verbose-debug-logging = on
+      akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
     """
 
   class EntityActor extends Actor with ActorLogging {

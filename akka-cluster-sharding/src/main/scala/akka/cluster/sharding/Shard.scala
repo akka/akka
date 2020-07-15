@@ -148,7 +148,19 @@ private[akka] object Shard {
    * }}}
    **/
   sealed trait EntityState {
-    def transition(newState: EntityState): EntityState
+    def transition(newState: EntityState, entities: Entities): EntityState
+    final def invalidTransition(to: EntityState, entities: Entities): EntityState = {
+      val exception = new IllegalArgumentException(
+        s"Transition from $this to $to not allowed, remember entities: ${entities.rememberingEntities}")
+      if (entities.failOnIllegalTransition) {
+        // crash shard
+        throw exception
+      } else {
+        // log and ignore
+        entities.log.error(exception, "Ignoring illegal state transition in shard")
+        to
+      }
+    }
   }
 
   /**
@@ -157,11 +169,11 @@ private[akka] object Shard {
    * and as return value instead of null
    */
   case object NoState extends EntityState {
-    override def transition(newState: EntityState): EntityState = newState match {
-      case RememberedButNotCreated       => RememberedButNotCreated
-      case remembering: RememberingStart => remembering
-      case active: Active                => active
-      case _                             => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+    override def transition(newState: EntityState, entities: Entities): EntityState = newState match {
+      case RememberedButNotCreated if entities.rememberingEntities       => RememberedButNotCreated
+      case remembering: RememberingStart if entities.rememberingEntities => remembering
+      case active: Active if !entities.rememberingEntities               => active
+      case _                                                             => invalidTransition(newState, entities)
     }
   }
 
@@ -171,10 +183,10 @@ private[akka] object Shard {
    * remembered entity ids.
    */
   case object RememberedButNotCreated extends EntityState {
-    override def transition(newState: EntityState): EntityState = newState match {
+    override def transition(newState: EntityState, entities: Entities): EntityState = newState match {
       case active: Active  => active // started on this shard
       case RememberingStop => RememberingStop // started on other shard
-      case _               => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+      case _               => invalidTransition(newState, entities)
     }
   }
 
@@ -194,7 +206,7 @@ private[akka] object Shard {
    * to be stored in the next batch.
    */
   final case class RememberingStart(ackTo: Set[ActorRef]) extends EntityState {
-    override def transition(newState: EntityState): EntityState = newState match {
+    override def transition(newState: EntityState, entities: Entities): EntityState = newState match {
       case active: Active => active
       case r: RememberingStart =>
         if (ackTo.isEmpty) {
@@ -204,7 +216,7 @@ private[akka] object Shard {
           if (r.ackTo.isEmpty) this
           else RememberingStart(ackTo.union(r.ackTo))
         }
-      case _ => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+      case _ => invalidTransition(newState, entities)
     }
   }
 
@@ -214,9 +226,9 @@ private[akka] object Shard {
    * to be stored in the next batch.
    */
   final case object RememberingStop extends EntityState {
-    override def transition(newState: EntityState): EntityState = newState match {
+    override def transition(newState: EntityState, entities: Entities): EntityState = newState match {
       case NoState => NoState
-      case _       => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+      case _       => invalidTransition(newState, entities)
     }
   }
 
@@ -224,29 +236,34 @@ private[akka] object Shard {
     def ref: ActorRef
   }
   final case class Active(ref: ActorRef) extends WithRef {
-    override def transition(newState: EntityState): EntityState = newState match {
-      case passivating: Passivating => passivating
-      case WaitingForRestart        => WaitingForRestart
-      case _                        => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+    override def transition(newState: EntityState, entities: Entities): EntityState = newState match {
+      case passivating: Passivating                 => passivating
+      case WaitingForRestart                        => WaitingForRestart
+      case NoState if !entities.rememberingEntities => NoState
+      case _                                        => invalidTransition(newState, entities)
     }
   }
   final case class Passivating(ref: ActorRef) extends WithRef {
-    override def transition(newState: EntityState): EntityState = newState match {
-      case RememberingStop => RememberingStop
-      case NoState         => NoState
-      case _               => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+    override def transition(newState: EntityState, entities: Entities): EntityState = newState match {
+      case RememberingStop                          => RememberingStop
+      case NoState if !entities.rememberingEntities => NoState
+      case _                                        => invalidTransition(newState, entities)
     }
   }
 
   case object WaitingForRestart extends EntityState {
-    override def transition(newState: EntityState): EntityState = newState match {
+    override def transition(newState: EntityState, entities: Entities): EntityState = newState match {
       case remembering: RememberingStart => remembering
       case active: Active                => active
-      case _                             => throw new IllegalArgumentException(s"Transition from $this to $newState not allowed")
+      case _                             => invalidTransition(newState, entities)
     }
   }
 
-  final class Entities(log: LoggingAdapter, rememberingEntities: Boolean, verboseDebug: Boolean) {
+  final class Entities(
+      val log: LoggingAdapter,
+      val rememberingEntities: Boolean,
+      verboseDebug: Boolean,
+      val failOnIllegalTransition: Boolean) {
     private val entities: java.util.Map[EntityId, EntityState] = new util.HashMap[EntityId, EntityState]()
     // needed to look up entity by ref when a Passivating is received
     private val byRef = new util.HashMap[ActorRef, EntityId]()
@@ -255,13 +272,13 @@ private[akka] object Shard {
 
     def alreadyRemembered(set: Set[EntityId]): Unit = {
       set.foreach { entityId =>
-        val state = entityState(entityId).transition(RememberedButNotCreated)
+        val state = entityState(entityId).transition(RememberedButNotCreated, this)
         entities.put(entityId, state)
       }
     }
     def rememberingStart(entityId: EntityId, ackTo: Option[ActorRef]): Unit = {
       val newState = RememberingStart(ackTo)
-      val state = entityState(entityId).transition(newState)
+      val state = entityState(entityId).transition(newState, this)
       entities.put(entityId, state)
       if (rememberingEntities)
         remembering.add(entityId)
@@ -269,7 +286,7 @@ private[akka] object Shard {
     def rememberingStop(entityId: EntityId): Unit = {
       val state = entityState(entityId)
       removeRefIfThereIsOne(state)
-      entities.put(entityId, state.transition(RememberingStop))
+      entities.put(entityId, state.transition(RememberingStop, this))
       if (rememberingEntities)
         remembering.add(entityId)
     }
@@ -281,19 +298,19 @@ private[akka] object Shard {
         case null  => NoState
         case other => other
       }
-      entities.put(id, state.transition(WaitingForRestart))
+      entities.put(id, state.transition(WaitingForRestart, this))
     }
     def removeEntity(entityId: EntityId): Unit = {
       val state = entityState(entityId)
       // just verify transition
-      state.transition(NoState)
+      state.transition(NoState, this)
       removeRefIfThereIsOne(state)
       entities.remove(entityId)
       if (rememberingEntities)
         remembering.remove(entityId)
     }
     def addEntity(entityId: EntityId, ref: ActorRef): Unit = {
-      val state = entityState(entityId).transition(Active(ref))
+      val state = entityState(entityId).transition(Active(ref), this)
       entities.put(entityId, state)
       byRef.put(ref, entityId)
       if (rememberingEntities)
@@ -322,7 +339,7 @@ private[akka] object Shard {
       if (verboseDebug) log.debug("[{}] passivating", entityId)
       entities.get(entityId) match {
         case wf: WithRef =>
-          val state = entityState(entityId).transition(Passivating(wf.ref))
+          val state = entityState(entityId).transition(Passivating(wf.ref), this)
           entities.put(entityId, state)
         case other =>
           throw new IllegalStateException(
@@ -421,7 +438,11 @@ private[akka] class Shard(
   private val flightRecorder = ShardingFlightRecorder(context.system)
 
   @InternalStableApi
-  private val entities = new Entities(log, settings.rememberEntities, verboseDebug)
+  private val entities = {
+    val failOnInvalidStateTransition =
+      context.system.settings.config.getBoolean("akka.cluster.sharding.fail-on-invalid-entity-state-transition")
+    new Entities(log, settings.rememberEntities, verboseDebug, failOnInvalidStateTransition)
+  }
 
   private var lastMessageTimestamp = Map.empty[EntityId, Long]
 
@@ -851,16 +872,30 @@ private[akka] class Shard(
             }
 
           case Passivating(_) =>
-            if (entities.pendingRememberedEntitiesExist()) {
-              // will go in next batch update
-              if (verboseDebug)
-                log.debug(
-                  "Stop of [{}] after passivating, arrived while updating, adding it to batch of pending stops",
-                  entityId)
-              entities.rememberingStop(entityId)
+            if (rememberEntitiesStore.isDefined) {
+              if (entities.pendingRememberedEntitiesExist()) {
+                // will go in next batch update
+                if (verboseDebug)
+                  log.debug(
+                    "[{}] terminated after passivating, arrived while updating, adding it to batch of pending stops",
+                    entityId)
+                entities.rememberingStop(entityId)
+              } else {
+                entities.rememberingStop(entityId)
+                rememberUpdate(remove = Set(entityId))
+              }
             } else {
-              entities.rememberingStop(entityId)
-              rememberUpdate(remove = Set(entityId))
+              if (messageBuffers.getOrEmpty(entityId).nonEmpty) {
+                if (verboseDebug)
+                  log.debug("[{}] terminated after passivating, buffered messages found, restarting", entityId)
+                entities.removeEntity(entityId)
+                getOrCreateEntity(entityId)
+                sendMsgBuffer(entityId)
+              } else {
+                if (verboseDebug)
+                  log.debug("[{}] terminated after passivating", entityId)
+                entities.removeEntity(entityId)
+              }
             }
           case unexpected =>
             val ref = entities.entity(entityId)
@@ -919,9 +954,14 @@ private[akka] class Shard(
     if (hasBufferedMessages) {
       log.debug("Entity stopped after passivation [{}], but will be started again due to buffered messages", entityId)
       flightRecorder.entityPassivateRestart(entityId)
-      // trigger start or batch in case we're already writing to the remember store
-      entities.rememberingStart(entityId, None)
-      if (!entities.pendingRememberedEntitiesExist()) rememberUpdate(Set(entityId))
+      if (rememberEntities) {
+        // trigger start or batch in case we're already writing to the remember store
+        entities.rememberingStart(entityId, None)
+        if (!entities.pendingRememberedEntitiesExist()) rememberUpdate(Set(entityId))
+      } else {
+        getOrCreateEntity(entityId)
+        sendMsgBuffer(entityId)
+      }
     } else {
       log.debug("Entity stopped after passivation [{}]", entityId)
     }

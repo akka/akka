@@ -37,6 +37,7 @@ object PersistentShardingMigrationSpec {
         snapshot-after = 5
         
         verbose-debug-logging = on
+        fail-on-invalid-entity-state-transition = on
         
         # Lots of sharding setup, make it quicker
         retry-interval = 500ms 
