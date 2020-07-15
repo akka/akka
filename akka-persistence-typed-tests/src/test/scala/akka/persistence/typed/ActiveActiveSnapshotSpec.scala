@@ -87,7 +87,7 @@ class ActiveActiveSnapshotSpec
           System.currentTimeMillis(),
           Some(new ReplicatedPublishedEventMetaData(R1, VersionVector.empty)))
 
-        // r2 should now filter rout that event if it receives it again
+        // r2 should now filter out that event if it receives it again
         r2EventProbe.expectNoMessage()
       }
 
