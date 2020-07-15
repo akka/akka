@@ -1,8 +1,13 @@
+/*
+ * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package akka.cluster.sharding.typed
 
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.cluster.sharding.typed.internal.ActiveActiveShardingExtensionImpl
 import akka.cluster.sharding.typed.scaladsl.EntityRef
@@ -12,9 +17,11 @@ import akka.persistence.typed.ReplicaId
  * Extension for running active active in sharding by starting one separate instance of sharding per replica.
  * The sharding instances can be confined to datacenters or cluster roles or run on the same set of cluster nodes.
  */
+@ApiMayChange
 object ActiveActiveShardingExtension extends ExtensionId[ActiveActiveShardingExtension] {
 
-  override def createExtension(system: ActorSystem[_]): ActiveActiveShardingExtension = new ActiveActiveShardingExtensionImpl(system)
+  override def createExtension(system: ActorSystem[_]): ActiveActiveShardingExtension =
+    new ActiveActiveShardingExtensionImpl(system)
 
 }
 
@@ -22,7 +29,9 @@ object ActiveActiveShardingExtension extends ExtensionId[ActiveActiveShardingExt
  * Not for user extension.
  */
 @DoNotInherit
+@ApiMayChange
 trait ActiveActiveShardingExtension extends Extension {
+
   /**
    * Init one instance sharding per replica in the given settings and return a [[ActiveActiveSharding]] representing those.
    *
@@ -40,6 +49,7 @@ trait ActiveActiveShardingExtension extends Extension {
  * Not for user extension.
  */
 @DoNotInherit
+@ApiMayChange
 trait ActiveActiveSharding[M, E] {
 
   /**
