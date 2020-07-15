@@ -39,13 +39,14 @@ final case class LwwTime(timestamp: Long, originDc: ReplicaId) {
 // FIXME docs
 trait ActiveActiveContext {
 
-  def origin: ReplicaId
-  def concurrent: Boolean
+  def persistenceId: PersistenceId
   def replicaId: ReplicaId
   def allReplicas: Set[ReplicaId]
-  def persistenceId: PersistenceId
-  def recoveryRunning: Boolean
   def entityId: String
+
+  def origin: ReplicaId
+  def concurrent: Boolean
+  def recoveryRunning: Boolean
   def currentTimeMillis(): Long
 
 }
