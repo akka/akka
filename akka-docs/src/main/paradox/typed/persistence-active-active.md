@@ -2,13 +2,13 @@
 
 @@@ warning
 
-This module is currently marked as @ref:[may change](../common/may-change.md) because it is a new feature that
+This module is marked as @ref:[may change](../common/may-change.md) because it is a new feature that
 needs feedback from real usage before finalizing the API. This means that API or semantics can change without
 warning or deprecation period. It is also not recommended to use this module in production just yet.
 
 @@@
 
-Event sourcing with `EventSourcedBehavior`s is based on the single writer principle, which means that there can only be one active instance of a `EventSourcedBehavior` with a given `persistenceId`. Otherwise, multiple instances would store interleaving events based on different states, and when these events would later be replayed it would not be possible to reconstruct the correct state.
+@ref[Event sourcing](./persistence.md) with `EventSourcedBehavior`s is based on the single writer principle, which means that there can only be one active instance of a `EventSourcedBehavior` with a given `persistenceId`. Otherwise, multiple instances would store interleaving events based on different states, and when these events would later be replayed it would not be possible to reconstruct the correct state.
 
 This restriction means that in the event of network partitions, and for a short time during rolling re-deploys, `EventSourcedBehaviors`s are unavailable.
 
@@ -28,9 +28,12 @@ The motivations are:
 * Balance the load over many servers
 
 However, the event handler must be able to **handle concurrent events** as when active-active is enabled
-there is no longer the single writer principal as there is with a normal `EventSourcedBehavior`.
+there is no longer the single writer principle as there is with a normal `EventSourcedBehavior`.
 
-## Relaxing the single writer principal for availability
+The state of an active-active `EventSourcedBehavior` is **eventually consistent**. Event replication may be delayed
+due to network partitions and outages and the event handler and those reading the state must be designed to handle this.
+
+## Relaxing the single writer p`rinciple for availability
 
 Taking the example of using active-active to run a replica per data center.
 
@@ -61,21 +64,19 @@ Scala
 Then to enable replication create the event sourced behavior with the factory method:
 
 Scala
-:  @@snip [ActiveActiveCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ActiveActiveCompileOnlySpec.scala) { #factory-shared}
+:  @@snip [ActiveActiveCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ActiveActiveCompileOnlySpec.scala) { #factory }
 
 The factory takes in:
 
 * EntityID: this will be used as part of the underlying persistenceId
 * Replica: Which replica this instance is
-* All Replicas: All the other replicas to read events from
-* Query plugin id: For reading the events from other replicas
+* All Replicas and the query plugin used to read their events 
 
-Each replica can have a separate database, e.g. different SQL databases in each DC, in that case provide a different query plugin id per replica:
+In this scenario each replica reads from each other's database effectively providing cross region replication for any database that has an Akka Persistence plugin. Alternatively if all the replicas use the same journal, e.g. for testing or if it is a distributed database such as Cassandra, the `withSharedJournal` factory can be used. 
 
 Scala
-:  @@snip [ActiveActiveCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ActiveActiveCompileOnlySpec.scala) { #factory }
+:  @@snip [ActiveActiveCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ActiveActiveCompileOnlySpec.scala) { #factory-shared}
 
-In this scenario each replica reads from each other's database effectively providing cross region replication for any database that has an Akka Persistence plugin. 
 
 The function passed to both factory methods return an `EventSourcedBehavior` and provide access to the @api[ActiveActiveContext] that has the following methods:
 
@@ -101,7 +102,7 @@ TODO example once CRDTs are in
 
 ### Last writer wins
 
-Sometimes it is enough to use timestamps to decide which update should win. Such approach relies on synchronized clocks, and clocks of different machines will always be slightly out of sync. Timestamps should therefore only be used used when the choice of value is not important for concurrent updates occurring within the clock skew.
+Sometimes it is enough to use timestamps to decide which update should win. Such approach relies on synchronized clocks, and clocks of different machines will always be slightly out of sync. Timestamps should therefore only be used when the choice of value is not important for concurrent updates occurring within the clock skew.
  
  In general, last writer wins means that the event is used if the timestamp of the event is later (higher) than the timestamp of previous local update, otherwise the event is discarded. There is no built-in support for last writer wins, because it must often be combined with more application specific aspects.
  
@@ -109,18 +110,18 @@ Sometimes it is enough to use timestamps to decide which update should win. Such
 
 There is a small utility class @api[LwwTime] that can be useful for implementing last writer wins semantics.
 It contains a timestamp representing current time when the event was persisted and an identifier of the
-data center that persisted it. When comparing two @api[LwwTime] the greatest timestamp wins. The replica
+replica that persisted it. When comparing two @api[LwwTime] the greatest timestamp wins. The replica
 identifier is used if the two timestamps are equal, and then the one from the data center sorted first in
 alphanumeric order wins.
 
 The nature of last writer wins means that if you only have one timestamp for the state the events must represent an
-update of the full state, otherwise there is a risk that the state in different data centers will be different and
-not eventually converge to the same state.
+update of the full state. Otherwise, there is a risk that the state in different data centers will be different and
+not eventually converge.
 
 An example of that would be an entity representing a blog post and the fields `author` and `title` could be updated
 separately with events @scala[`AuthorChanged(newAuthor: String)`]@java[`new AuthorChanged(newAuthor)`] and @scala[`TitleChanged(newTitle: String)`]@java[`new TitleChanged(newTitle)`].
 
-Let's say the blog post is created and the initial state of `title=Akka, author=unknown` is in sync in both data centers `DC-A` and `DC-B`.
+Let's say the blog post is created and the initial state of `title=Akka, author=unknown` is in sync in both replicas `DC-A` and `DC-B.
 
 In `DC-A` author is changed to "Bob" at time `100`. Before that event has been replicated over to `DC-B` the
 title is updated to "Akka News" at time `101` in `DC-B`. When the events have been replicated the result will be:
@@ -181,9 +182,9 @@ Active-active automatically tracks causality between events from different repli
 
 ![images/causality.png](images/causality.png)
 
-Each data center "owns" a slot in the version vector and increases its counter when an event is persisted. The version vector is stored with the event, and when a replicated event is consumed the version vector of the event is merged with the local version vector.
+Each replica "owns" a slot in the version vector and increases its counter when an event is persisted. The version vector is stored with the event, and when a replicated event is consumed the version vector of the event is merged with the local version vector.
 
-When comparing two version vectors `v1` and `v2` get one of the following results:
+When comparing two version vectors `v1` and `v2`: 
 
 * `v1` is SAME as `v2` iff for all i v1(i) == v2(i)
 * `v1`is BEFORE `v2` iff for all i v1(i) <= v2(i) and there exist a j such that v1(j) < v2(j)
