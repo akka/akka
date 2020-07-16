@@ -11,9 +11,10 @@ import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.persistence._
 import akka.persistence.SnapshotProtocol.LoadSnapshotFailed
 import akka.persistence.SnapshotProtocol.LoadSnapshotResult
-import akka.persistence.typed.RecoveryFailed
+import akka.persistence.typed.{ RecoveryFailed, ReplicaId }
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
 import akka.util.unused
+import akka.actor.typed.scaladsl.LoggerOps
 
 /**
  * INTERNAL API
@@ -146,14 +147,32 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
       case LoadSnapshotResult(sso, toSnr) =>
         var state: S = setup.emptyState
 
-        val seqNr: Long = sso match {
+        val (seqNr: Long, seenPerReplica: Map[ReplicaId, Long], version: VersionVector) = sso match {
           case Some(SelectedSnapshot(metadata, snapshot)) =>
             state = setup.snapshotAdapter.fromJournal(snapshot)
-            metadata.sequenceNr
-          case None => 0 // from the beginning please
+            setup.context.log.debug("Loaded snapshot with metadata {}", metadata)
+            metadata.meta match {
+              case Some(rm: ReplicatedSnapshotMetaData) => (metadata.sequenceNr, rm.seenPerReplica, rm.version)
+              case _                                    => (metadata.sequenceNr, Map.empty.withDefaultValue(0L), VersionVector.empty)
+            }
+          case None => (0L, Map.empty.withDefaultValue(0L), VersionVector.empty)
         }
 
-        becomeReplayingEvents(state, seqNr, toSnr, receivedPoisonPill)
+        setup.context.log.debugN("Snapshot recovered from {} {} {}", seqNr, seenPerReplica, version)
+
+        setup.cancelRecoveryTimer()
+
+        ReplayingEvents[C, E, S](
+          setup,
+          ReplayingEvents.ReplayingState(
+            seqNr,
+            state,
+            eventSeenInInterval = false,
+            toSnr,
+            receivedPoisonPill,
+            System.nanoTime(),
+            version,
+            seenPerReplica))
 
       case LoadSnapshotFailed(cause) =>
         onRecoveryFailure(cause)
@@ -161,28 +180,6 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
       case _ =>
         Behaviors.unhandled
     }
-  }
-
-  private def becomeReplayingEvents(
-      state: S,
-      lastSequenceNr: Long,
-      toSnr: Long,
-      receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
-    setup.cancelRecoveryTimer()
-
-    ReplayingEvents[C, E, S](
-      setup,
-      ReplayingEvents.ReplayingState(
-        lastSequenceNr,
-        state,
-        eventSeenInInterval = false,
-        toSnr,
-        receivedPoisonPill,
-        System.nanoTime(),
-        VersionVector.empty,
-        // FIXME seqNrs for other replicas needs to come from snapshot.
-        seenSeqNrPerReplica =
-          setup.activeActive.map(_.allReplicas.map(replica => replica -> 0L).toMap).getOrElse(Map.empty)))
   }
 
 }

@@ -18,7 +18,6 @@ import akka.annotation.InternalStableApi
 import akka.persistence._
 import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
-import akka.persistence.typed.internal.JournalInteractions.EventOrTaggedOrReplicated
 import akka.util.{ unused, OptionVal }
 
 /** INTERNAL API */
@@ -191,12 +190,19 @@ private[akka] trait SnapshotInteractions[C, E, S] {
     setup.log.debug("Saving snapshot sequenceNr [{}]", state.seqNr)
     if (state.state == null)
       throw new IllegalStateException("A snapshot must not be a null state.")
-    else
+    else {
+      val meta = setup.activeActive match {
+        case Some(_) =>
+          val m = ReplicatedSnapshotMetaData(state.version, state.seenPerReplica)
+          Some(m)
+        case None => None
+      }
       setup.snapshotStore.tell(
         SnapshotProtocol.SaveSnapshot(
-          SnapshotMetadata(setup.persistenceId.id, state.seqNr),
+          new SnapshotMetadata(setup.persistenceId.id, state.seqNr, meta),
           setup.snapshotAdapter.toJournal(state.state)),
         setup.selfClassic)
+    }
   }
 
   /** Deletes the snapshots up to and including the `sequenceNr`. */

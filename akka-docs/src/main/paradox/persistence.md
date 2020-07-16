@@ -566,9 +566,11 @@ Scala
 Java
 :  @@snip [LambdaPersistenceDocTest.java](/akka-docs/src/test/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #save-snapshot }
 
-where `metadata` is of type `SnapshotMetadata`:
+where `metadata` is of type `SnapshotMetadata` and contains:
 
-@@snip [SnapshotProtocol.scala](/akka-persistence/src/main/scala/akka/persistence/SnapshotProtocol.scala) { #snapshot-metadata }
+* persistenceId 
+* sequenceNr
+* timestamp
 
 During recovery, the persistent actor is offered the latest saved snapshot via a `SnapshotOffer` message from
 which it can initialize internal state.
