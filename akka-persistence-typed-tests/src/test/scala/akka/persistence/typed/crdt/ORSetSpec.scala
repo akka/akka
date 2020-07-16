@@ -25,7 +25,7 @@ object ORSetSpec {
     final case class AddAll(elems: Set[String]) extends Command
     final case class Remove(elem: String) extends Command
 
-    def behavior(entityId: String, replica: ReplicaId): Behavior[ORSetEntity.Command] = {
+    def apply(entityId: String, replica: ReplicaId): Behavior[ORSetEntity.Command] = {
 
       ActiveActiveEventSourcing.withSharedJournal(
         entityId,
@@ -58,8 +58,8 @@ class ORSetSpec extends ActiveActiveBaseSpec {
 
   class Setup {
     val entityId = nextEntityId
-    val r1 = spawn(ORSetEntity.behavior(entityId, R1))
-    val r2 = spawn(ORSetEntity.behavior(entityId, R2))
+    val r1 = spawn(ORSetEntity.apply(entityId, R1))
+    val r2 = spawn(ORSetEntity.apply(entityId, R2))
     val r1GetProbe = createTestProbe[Set[String]]()
     val r2GetProbe = createTestProbe[Set[String]]()
 

@@ -22,7 +22,7 @@ object CounterSpec {
 
   import ActiveActiveBaseSpec._
 
-  def behavior(
+  def apply(
       entityId: String,
       replicaId: ReplicaId,
       snapshotEvery: Long = 100,
@@ -66,8 +66,8 @@ class CounterSpec extends ActiveActiveBaseSpec {
   "Active active entity using CRDT counter" should {
     "replicate" in {
       val id = nextEntityId
-      val r1 = spawn(behavior(id, R1))
-      val r2 = spawn(behavior(id, R2))
+      val r1 = spawn(apply(id, R1))
+      val r2 = spawn(apply(id, R2))
       val r1Probe = createTestProbe[Long]()
       val r2Probe = createTestProbe[Long]()
 
@@ -102,8 +102,8 @@ class CounterSpec extends ActiveActiveBaseSpec {
     val id = nextEntityId
 
     {
-      val r1 = spawn(behavior(id, R1, 2))
-      val r2 = spawn(behavior(id, R2, 2))
+      val r1 = spawn(apply(id, R1, 2))
+      val r2 = spawn(apply(id, R2, 2))
       val r1Probe = createTestProbe[Long]()
       val r2Probe = createTestProbe[Long]()
 
@@ -119,7 +119,7 @@ class CounterSpec extends ActiveActiveBaseSpec {
     }
     {
       val r2EventProbe = createTestProbe[Counter.Updated]()
-      val r2 = spawn(behavior(id, R2, 2, Some(r2EventProbe.ref)))
+      val r2 = spawn(apply(id, R2, 2, Some(r2EventProbe.ref)))
       val r2Probe = createTestProbe[Long]()
       eventually {
         r2 ! Get(r2Probe.ref)

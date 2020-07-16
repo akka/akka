@@ -25,7 +25,7 @@ object LwwSpec {
 
   object LwwRegistry {
 
-    def behavior(entityId: String, replica: ReplicaId): Behavior[Command] = {
+    def apply(entityId: String, replica: ReplicaId): Behavior[Command] = {
       ActiveActiveEventSourcing.withSharedJournal(
         entityId,
         replica,
@@ -65,8 +65,8 @@ class LwwSpec extends ActiveActiveBaseSpec {
 
   class Setup {
     val entityId = nextEntityId
-    val r1 = spawn(LwwRegistry.behavior(entityId, R1))
-    val r2 = spawn(LwwRegistry.behavior(entityId, R2))
+    val r1 = spawn(LwwRegistry.apply(entityId, R1))
+    val r2 = spawn(LwwRegistry.apply(entityId, R2))
     val r1Probe = createTestProbe[String]()
     val r2Probe = createTestProbe[String]()
     val r1GetProbe = createTestProbe[Registry]()
