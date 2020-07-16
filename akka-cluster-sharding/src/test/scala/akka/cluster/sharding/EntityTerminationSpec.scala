@@ -33,6 +33,7 @@ object EntityTerminationSpec {
       # no leaks between test runs thank you
       akka.cluster.sharding.distributed-data.durable.keys = []
       akka.cluster.sharding.verbose-debug-logging = on
+      akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
       akka.cluster.sharding.entity-restart-backoff = 250ms
     """.stripMargin)
 
@@ -40,9 +41,12 @@ object EntityTerminationSpec {
     def props(): Props = Props(new StoppingActor)
   }
   class StoppingActor extends Actor {
+    private var counter = 0
     def receive = {
-      case "stop"      => context.stop(self)
-      case "ping"      => sender() ! "pong"
+      case "stop" => context.stop(self)
+      case "ping" =>
+        counter += 1
+        sender() ! s"pong-$counter"
       case "passivate" => context.parent ! ShardRegion.Passivate("stop")
     }
   }
@@ -79,10 +83,13 @@ class EntityTerminationSpec extends AkkaSpec(EntityTerminationSpec.config) with 
         extractShardId)
 
       sharding ! EntityEnvelope("1", "ping")
-      expectMsg("pong")
+      expectMsg("pong-1")
       val entity = lastSender
-      watch(entity)
 
+      sharding ! EntityEnvelope("2", "ping")
+      expectMsg("pong-1")
+
+      watch(entity)
       sharding ! EntityEnvelope("1", "stop")
       expectTerminated(entity)
 
@@ -90,7 +97,11 @@ class EntityTerminationSpec extends AkkaSpec(EntityTerminationSpec.config) with 
       sharding ! ShardRegion.GetShardRegionState
       val regionState = expectMsgType[ShardRegion.CurrentShardRegionState]
       regionState.shards should have size (1)
-      regionState.shards.head.entityIds should be(empty)
+      regionState.shards.head.entityIds should be(Set("2"))
+
+      // make sure the shard didn't crash (coverage for regression bug #29383)
+      sharding ! EntityEnvelope("2", "ping")
+      expectMsg("pong-2") // if it lost state we know it restarted
     }
 
     "automatically restart a terminating entity (not passivating) if remembering entities" in {
@@ -102,7 +113,7 @@ class EntityTerminationSpec extends AkkaSpec(EntityTerminationSpec.config) with 
         extractShardId)
 
       sharding ! EntityEnvelope("1", "ping")
-      expectMsg("pong")
+      expectMsg("pong-1")
       val entity = lastSender
       watch(entity)
 
@@ -127,7 +138,7 @@ class EntityTerminationSpec extends AkkaSpec(EntityTerminationSpec.config) with 
         extractShardId)
 
       sharding ! EntityEnvelope("1", "ping")
-      expectMsg("pong")
+      expectMsg("pong-1")
       val entity = lastSender
       watch(entity)
 

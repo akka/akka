@@ -41,6 +41,7 @@ object RememberEntitiesFailureSpec {
       akka.cluster.sharding.coordinator-failure-backoff = 1s
       akka.cluster.sharding.updating-state-timeout = 1s
       akka.cluster.sharding.verbose-debug-logging = on
+      akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
     """)
 
   class EntityActor extends Actor with ActorLogging {

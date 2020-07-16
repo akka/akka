@@ -114,6 +114,7 @@ abstract class MultiNodeClusterShardingConfig(
           dir = $targetDir/sharding-ddata
           map-size = 10 MiB
         }
+        akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
         akka.loglevel = $loglevel
         akka.remote.log-remote-lifecycle-events = off
         """)

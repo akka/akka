@@ -38,6 +38,7 @@ object ShardRegionSpec {
         akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
         akka.cluster.jmx.enabled = off
         akka.cluster.sharding.verbose-debug-logging = on
+        akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
         """))
 
   val shardTypeName = "Caat"

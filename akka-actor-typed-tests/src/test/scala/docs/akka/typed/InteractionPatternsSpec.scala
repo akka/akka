@@ -453,7 +453,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
   "contain a sample for ask from outside the actor system" in {
     // #standalone-ask
     object CookieFabric {
-      sealed trait Command {}
+      sealed trait Command
       case class GiveMeCookies(count: Int, replyTo: ActorRef[Reply]) extends Command
 
       sealed trait Reply
@@ -520,7 +520,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
   "contain a sample for ask with status from outside the actor system" in {
     // #standalone-ask-with-status
     object CookieFabric {
-      sealed trait Command {}
+      sealed trait Command
       case class GiveMeCookies(count: Int, replyTo: ActorRef[StatusReply[Cookies]]) extends Command
       case class Cookies(count: Int)
 
