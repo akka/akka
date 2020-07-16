@@ -241,3 +241,23 @@ When comparing two version vectors `v1` and `v2`:
 * `v1`is BEFORE `v2` iff for all i v1(i) <= v2(i) and there exist a j such that v1(j) < v2(j)
 * `v1`is AFTER `v2` iff for all i v1(i) >= v2(i) and there exist a j such that v1(j) > v2(j)
 * `v1`is CONCURRENT with `v2` otherwise
+
+
+## Sharded Active Active entities
+
+It is possible to distribute the Active Active Eventsourced actors in many ways, depending on use case. To simplify
+what is probably the most common use cases there is a minimal API for running multiple instances of [Akka Cluster Sharding](cluster-sharding.md), 
+each instance holding entities for a single replica.
+
+How the replicas are running can then be controlled either through cluster roles or using the [multi datacenter](cluster-dc.md) support in Akka Cluster.
+
+The API consists of bootstrapping logic for starting the sharding instances through @apidoc[ActiveActiveShardingExtension] available from the
+`akka-cluster-sharding-typed` module.
+
+Scala
+:  @@snip [ActiveActiveCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/activeactive/ActiveActiveShardingSpec) { #bootstrap }
+
+FIXME Java sample
+
+`init` returns an @apidoc[ActiveActiveSharding] instance which gives access to @apidoc[EntityRef]s for each of the replicas and a minimal send-to-random logic.
+More advanced routing among the replicas is currently left as an exercise for the reader.

@@ -78,6 +78,7 @@ class ActiveActiveShardingSpec
     case class ForwardToAll(entityId: String, msg: MyActiveActiveStringSet.Command) extends Command
 
     def apply(): Behavior[Command] = Behaviors.setup { context =>
+      // #bootstrap
       val aaShardingSettings =
         ActiveActiveShardingSettings[
           MyActiveActiveStringSet.Command,
@@ -99,6 +100,7 @@ class ActiveActiveShardingSpec
         }
 
       val aaSharding = ActiveActiveShardingExtension(context.system).init(aaShardingSettings)
+      // #bootstrap
 
       Behaviors.receiveMessage {
         case ForwardToAll(entityId, cmd) =>
