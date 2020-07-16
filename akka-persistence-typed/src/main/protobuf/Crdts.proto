@@ -1,0 +1,50 @@
+/*
+ * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+syntax = "proto2";
+
+option java_package = "akka.persistence.typed.serialization";
+option optimize_for = SPEED;
+import "ContainerFormats.proto";
+
+message Counter {
+    required bytes value = 1;
+}
+
+message CounterUpdate {
+    required bytes delta = 1;
+}
+
+message ORSet {
+  required string originDc = 1;
+  required VersionVector vvector = 2;
+  repeated VersionVector dots = 3; 
+  repeated string stringElements = 4;
+  repeated sint32 intElements = 5 [packed=true];
+  repeated sint64 longElements = 6 [packed=true];
+  repeated Payload otherElements = 7;
+}
+
+message ORSetDeltaGroup {
+  message Entry {
+    required ORSetDeltaOp operation = 1;
+    required ORSet underlying = 2;
+  }
+  
+  repeated Entry entries = 1;
+}
+
+enum ORSetDeltaOp {
+  Add = 0;
+  Remove = 1;
+  Full = 2;
+}
+
+message VersionVector {
+  message Entry {
+    required string key = 1;
+    required int64 version = 2;
+  }
+  repeated Entry entries = 1;
+}

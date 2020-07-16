@@ -11,6 +11,7 @@ import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.crdt.LwwTime
 import akka.persistence.typed.scaladsl._
 import akka.serialization.jackson.CborSerializable
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
