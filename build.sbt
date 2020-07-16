@@ -444,6 +444,7 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .dependsOn(
     actorTyped,
     streamTyped,
+    remote,
     persistence % "compile->compile;test->test",
     persistenceQuery,
     actorTestkitTyped % "test->test",
@@ -453,6 +454,9 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .settings(javacOptions += "-parameters") // for Jackson
   .settings(Dependencies.persistenceShared)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
+  .settings(Protobuf.settings)
+  // To be able to import ContainerFormats.proto
+  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
   .settings(OSGi.persistenceTyped)
 
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
