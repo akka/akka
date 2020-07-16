@@ -87,7 +87,7 @@ class ActiveActiveSnapshotSpec
           System.currentTimeMillis(),
           Some(new ReplicatedPublishedEventMetaData(R1, VersionVector.empty)))
 
-        // r2 should now filter rout that event if it receives it again
+        // r2 should now filter out that event if it receives it again
         r2EventProbe.expectNoMessage()
       }
 
@@ -101,6 +101,10 @@ class ActiveActiveSnapshotSpec
           System.currentTimeMillis(),
           Some(new ReplicatedPublishedEventMetaData(R1, VersionVector.empty)))
         r2EventProbe.expectNoMessage()
+
+        val stateProbe = createTestProbe[State]()
+        r2 ! GetState(stateProbe.ref)
+        stateProbe.expectMessage(State(List("r1 2", "r1 1")))
       }
 
     }
