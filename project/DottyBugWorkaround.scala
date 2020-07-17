@@ -151,6 +151,13 @@ object DottyBugWorkaround {
         "import akka.actor.Actor;", "import akka.actor.Actor$;"
       ).replace("Actor.noSender()", "Actor$.MODULE$.noSender()"))
     )
+    case "akka-coordination" => Seq(
+      Test / sourceReplacers ++= SourceReplacer(
+        "java/akka/coordination/lease/javadsl/LeaseProviderTest.java"
+      )(_.replace(
+        "LeaseProvider.get(system)", "LeaseProvider$.MODULE$.get(system)"
+      ))
+    )
   }
 
   /** Given a pair (sourceFile, newFile),

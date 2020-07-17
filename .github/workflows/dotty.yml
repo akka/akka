@@ -64,4 +64,5 @@ jobs:
             ;akka-pki/test
             ;akka-discovery/test
             ;akka-osgi/test
+            ;akka-coordination/test
           "
