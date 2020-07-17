@@ -63,4 +63,5 @@ jobs:
             ;akka-actor-typed-tests/test
             ;akka-pki/test
             ;akka-discovery/test
+            ;akka-osgi/test
           "

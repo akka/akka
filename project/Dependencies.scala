@@ -152,6 +152,8 @@ object Dependencies {
     }
 
     object Provided {
+      val osgiAnnotationVersioning = "org.osgi" % "org.osgi.annotation.versioning" % "1.1.0" % "provided"// ApacheV2
+
       // TODO remove from "test" config
       val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided;test" // ApacheV2
 
@@ -270,6 +272,7 @@ object Dependencies {
         Test.commonsIo,
         Test.pojosr,
         Test.tinybundles,
+        Provided.osgiAnnotationVersioning,
   ) ++ Test.junitAndScalatest
 
   val docs = l ++= Test.junitAndScalatest ++ Seq(Docs.sprayJson, Docs.gson, Provided.levelDB)
