@@ -5,6 +5,6 @@
 package akka.persistence.typed
 
 /**
- * Identifies a replica in Active Active eventsourcing, could be a datacenter name or a logical identifier.
+ * Identifies a replica in Active Active event sourcing, could be a data center name or a logical identifier.
  */
-final case class ReplicaId(id: String)
+final case class ReplicaId(id: String) extends AnyVal
