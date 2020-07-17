@@ -472,19 +472,19 @@ object ShardCoordinator {
     }
     var remaining = regions
 
-    log.debug("Rebalance [{}] from region {}", shard, regions)
+    log.debug("Rebalance [{}] from region [{}]", shard, regions)
 
     timers.startSingleTimer("hand-off-timeout", ReceiveTimeout, handOffTimeout)
 
     def receive = {
       case BeginHandOffAck(`shard`) =>
-        log.debug("BeginHandOffAck for shard [{}] received from {}.", shard, sender())
+        log.debug("BeginHandOffAck for shard [{}] received from [{}].", shard, sender())
         acked(sender())
       case Terminated(shardRegion) =>
-        log.debug("ShardRegion {} terminated while waiting for BeginHandOffAck for shard [{}].", shardRegion, shard)
+        log.debug("ShardRegion [{}] terminated while waiting for BeginHandOffAck for shard [{}].", shardRegion, shard)
         acked(shardRegion)
       case ReceiveTimeout =>
-        log.debug("Rebalance of {}  from {} timed out", shard, from)
+        log.debug("Rebalance of [{}]  from [{}] timed out", shard, from)
         done(ok = false)
     }
 
@@ -717,7 +717,7 @@ abstract class ShardCoordinator(
               gracefulShutdownInProgress += region
               continueRebalance(shards.toSet)
             case None =>
-              log.debug("Unknown region requested graceful shutdown {}", region)
+              log.debug("Unknown region requested graceful shutdown [{}]", region)
           }
 
       case ShardRegion.GetClusterShardingStats(waitMax) =>
