@@ -113,7 +113,7 @@ object Discovery extends ExtensionId[Discovery] with ExtensionIdProvider {
   @InternalApi
   private[akka] def checkClassPathForOldDiscovery(system: ExtendedActorSystem): Unit = {
     try {
-      system.dynamicAccess.getClassFor("akka.discovery.SimpleServiceDiscovery").get
+      system.dynamicAccess.getClassFor[Any]("akka.discovery.SimpleServiceDiscovery").get
       throw new RuntimeException(
         "Old version of Akka Discovery from Akka Management found on the classpath. Remove `com.lightbend.akka.discovery:akka-discovery` from the classpath..")
     } catch {
