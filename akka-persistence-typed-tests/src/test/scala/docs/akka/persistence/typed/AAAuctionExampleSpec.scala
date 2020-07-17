@@ -24,30 +24,32 @@ object AAAuctionExampleSpec {
 
   case class Bid(bidder: String, offer: MoneyAmount, timestamp: Instant, originDc: ReplicaId)
 
-  // commands
+  //#commands
   sealed trait AuctionCommand
   case object Finish extends AuctionCommand // A timer needs to schedule this event at each replica
   final case class OfferBid(bidder: String, offer: MoneyAmount) extends AuctionCommand
   final case class GetHighestBid(replyTo: ActorRef[Bid]) extends AuctionCommand
   final case class IsClosed(replyTo: ActorRef[Boolean]) extends AuctionCommand
   private final case object Close extends AuctionCommand // Internal, should not be sent from the outside
+  //#commands
 
+  //#events
   sealed trait AuctionEvent extends CborSerializable
   final case class BidRegistered(bid: Bid) extends AuctionEvent
-  final case class AuctionFinished(atDc: ReplicaId) extends AuctionEvent
-  final case class WinnerDecided(atDc: ReplicaId, winningBid: Bid, highestCounterOffer: MoneyAmount)
+  final case class AuctionFinished(atReplica: ReplicaId) extends AuctionEvent
+  final case class WinnerDecided(atReplica: ReplicaId, winningBid: Bid, highestCounterOffer: MoneyAmount)
       extends AuctionEvent
+  //#events
 
+  //#phase
   sealed trait AuctionPhase
   case object Running extends AuctionPhase
-  final case class Closing(finishedAtDc: Set[ReplicaId]) extends AuctionPhase
+  final case class Closing(finishedAtReplica: Set[ReplicaId]) extends AuctionPhase
   case object Closed extends AuctionPhase
+  //#phase
 
-  case class AuctionState(
-      phase: AuctionPhase,
-      highestBid: Bid,
-      highestCounterOffer: MoneyAmount // in ebay style auctions, we need to keep track of current highest counter offer
-  ) {
+  //#state
+  case class AuctionState(phase: AuctionPhase, highestBid: Bid, highestCounterOffer: MoneyAmount) {
 
     def applyEvent(event: AuctionEvent): AuctionState =
       event match {
@@ -90,14 +92,18 @@ object AAAuctionExampleSpec {
       (first.offer == second.offer && first.timestamp.equals(second.timestamp) && first.originDc.id
         .compareTo(second.originDc.id) < 0)
   }
+  //#state
 
+  //#setup
   case class AuctionSetup(
       name: String,
       initialBid: Bid, // the initial bid is basically the minimum price bidden at start time by the owner
       closingAt: Instant,
       responsibleForClosing: Boolean,
-      allDcs: Set[ReplicaId])
+      allReplicas: Set[ReplicaId])
+  //#setup
 
+  //#command-handler
   def commandHandler(setup: AuctionSetup, ctx: ActorContext[AuctionCommand], aaContext: ActiveActiveContext)(
       state: AuctionState,
       command: AuctionCommand): Effect[AuctionEvent, AuctionState] = {
@@ -105,7 +111,7 @@ object AAAuctionExampleSpec {
       case Closing(_) | Closed =>
         command match {
           case GetHighestBid(replyTo) =>
-            replyTo ! state.highestBid
+            replyTo ! state.highestBid.copy(offer = state.highestCounterOffer) // TODO this is not as described
             Effect.none
           case IsClosed(replyTo) =>
             replyTo ! (state.phase == Closed)
@@ -143,14 +149,15 @@ object AAAuctionExampleSpec {
         }
     }
   }
+  //#command-handler
 
   private def shouldClose(auctionSetup: AuctionSetup, state: AuctionState): Boolean = {
     auctionSetup.responsibleForClosing && (state.phase match {
       case Closing(alreadyFinishedAtDc) =>
-        val allDone = auctionSetup.allDcs.diff(alreadyFinishedAtDc).isEmpty
+        val allDone = auctionSetup.allReplicas.diff(alreadyFinishedAtDc).isEmpty
         if (!allDone) {
           println(
-            s"Not closing auction as not all DCs have reported finished. All DCs: ${auctionSetup.allDcs}. Reported finished ${alreadyFinishedAtDc}")
+            s"Not closing auction as not all DCs have reported finished. All DCs: ${auctionSetup.allReplicas}. Reported finished ${alreadyFinishedAtDc}")
         }
         allDone
       case _ =>
@@ -158,6 +165,7 @@ object AAAuctionExampleSpec {
     })
   }
 
+  //#event-handler
   def eventHandler(ctx: ActorContext[AuctionCommand], aaCtx: ActiveActiveContext, setup: AuctionSetup)(
       state: AuctionState,
       event: AuctionEvent): AuctionState = {
@@ -170,7 +178,9 @@ object AAAuctionExampleSpec {
     newState
 
   }
+  //#event-handler
 
+  //#event-triggers
   private def eventTriggers(
       setup: AuctionSetup,
       ctx: ActorContext[AuctionCommand],
@@ -183,7 +193,7 @@ object AAAuctionExampleSpec {
           case Closing(alreadyFinishedAtDc) =>
             ctx.log.infoN(
               "AuctionFinished at {}, already finished at [{}]",
-              finished.atDc,
+              finished.atReplica,
               alreadyFinishedAtDc.mkString(", "))
             if (alreadyFinishedAtDc(aaCtx.replicaId)) {
               if (shouldClose(setup, newState)) ctx.self ! Close
@@ -197,6 +207,7 @@ object AAAuctionExampleSpec {
       case _ => // no trigger for this event
     }
   }
+  //#event-triggers
 
   def initialState(setup: AuctionSetup) =
     AuctionState(phase = Running, highestBid = setup.initialBid, highestCounterOffer = setup.initialBid.offer)
@@ -204,7 +215,7 @@ object AAAuctionExampleSpec {
   def behavior(replica: ReplicaId, setup: AuctionSetup): Behavior[AuctionCommand] = Behaviors.setup[AuctionCommand] {
     ctx =>
       ActiveActiveEventSourcing
-        .withSharedJournal(setup.name, replica, setup.allDcs, PersistenceTestKitReadJournal.Identifier) { aaCtx =>
+        .withSharedJournal(setup.name, replica, setup.allReplicas, PersistenceTestKitReadJournal.Identifier) { aaCtx =>
           EventSourcedBehavior(
             aaCtx.persistenceId,
             initialState(setup),
