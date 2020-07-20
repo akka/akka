@@ -80,7 +80,7 @@ class ActiveActiveShardingSpec
           // all replicas
           Set(ReplicaId("DC-A"), ReplicaId("DC-B"), ReplicaId("DC-C"))) { (entityTypeKey, replicaId, allReplicaIds) =>
           // factory for replica settings for a given replica
-          ActiveActiveShardingReplicaSettings(
+          ReplicaSettings(
             replicaId,
             // use the provided entity type key for sharding to get one sharding instance per replica
             Entity(entityTypeKey) { entityContext =>

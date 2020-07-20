@@ -4,6 +4,7 @@
 
 package akka.cluster.sharding.typed.internal
 
+import java.util.concurrent.atomic.AtomicLong
 import java.util.{ Map => JMap }
 
 import akka.actor.typed.ActorSystem
@@ -18,6 +19,7 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
 import org.slf4j.LoggerFactory
 import akka.actor.typed.scaladsl.LoggerOps
+import akka.cluster.sharding.typed.ActiveActiveShardingDirectReplication
 
 import scala.collection.JavaConverters._
 import scala.util.Random
@@ -29,21 +31,34 @@ import scala.util.Random
 private[akka] final class ActiveActiveShardingExtensionImpl(system: ActorSystem[_])
     extends ActiveActiveShardingExtension {
 
+  private val counter = new AtomicLong(0)
+
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def init[M, E](settings: ActiveActiveShardingSettings[M, E]): ActiveActiveSharding[M, E] = {
     val sharding = ClusterSharding(system)
-    val replicaTypeKeys = settings.replicas.map { replicaSettings =>
+    val initializedReplicas = settings.replicas.map { replicaSettings =>
       // start up a sharding instance per replica id
       logger.infoN(
         "Starting Active Active sharding for replica [{}] (ShardType: [{}])",
         replicaSettings.replicaId.id,
         replicaSettings.entity.typeKey.name)
-      sharding.init(replicaSettings.entity)
-      (replicaSettings.replicaId, replicaSettings.entity.typeKey)
-    }.toMap
+      val regionOrProxy = sharding.init(replicaSettings.entity)
+      (replicaSettings.replicaId, replicaSettings.entity.typeKey, regionOrProxy)
+    }
 
-    new ActiveActiveShardingImpl(sharding, replicaTypeKeys)
+    if (settings.directReplication) {
+      logger.infoN("Starting Active Active Direct Replication")
+      val replicaToRegionOrProxy = initializedReplicas.map {
+        case (id, _, regionOrProxy) => id -> regionOrProxy
+      }.toMap
+      system.systemActorOf(
+        ActiveActiveShardingDirectReplication(replicaToRegionOrProxy),
+        s"activeActiveDirectReplication-${counter.incrementAndGet()}")
+    }
+
+    val replicaToTypeKey = initializedReplicas.map { case (id, typeKey, _) => id -> typeKey }.toMap
+    new ActiveActiveShardingImpl(sharding, replicaToTypeKey)
   }
 }
 

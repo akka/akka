@@ -14,7 +14,6 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import akka.cluster.MemberStatus;
-import akka.cluster.sharding.typed.*;
 import akka.cluster.sharding.typed.javadsl.Entity;
 import akka.cluster.sharding.typed.scaladsl.EntityRef;
 import akka.cluster.typed.Cluster;
@@ -160,7 +159,7 @@ public class ActiveActiveShardingTest extends JUnitSuite {
                   ALL_REPLICAS,
                   // factory for replica settings for a given replica
                   (entityTypeKey, replicaId, allReplicas) ->
-                      ActiveActiveShardingReplicaSettings.create(
+                      ReplicaSettings.create(
                           replicaId,
                           // use the replica id as typekey for sharding to get one sharding instance
                           // per replica
