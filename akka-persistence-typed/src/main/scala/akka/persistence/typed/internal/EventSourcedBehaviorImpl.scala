@@ -252,10 +252,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   }
 
   override private[akka] def withActiveActive(
-      context: ActiveActiveContextImpl,
-      replicaId: ReplicaId,
-      allReplicaIdsAndQueryPlugins: Map[ReplicaId, String]): EventSourcedBehavior[Command, Event, State] = {
-    copy(activeActive = Some(ActiveActive(replicaId, allReplicaIdsAndQueryPlugins, context)))
+      context: ActiveActiveContextImpl): EventSourcedBehavior[Command, Event, State] = {
+    copy(activeActive = Some(ActiveActive(context.replicaId, context.replicasAndQueryPlugins, context)))
   }
 }
 
