@@ -6,13 +6,13 @@ package akka.cluster.sharding.typed
 
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import akka.cluster.sharding.typed.javadsl.{Entity => JEntity, EntityTypeKey => JEntityTypeKey}
+import akka.cluster.sharding.typed.javadsl.{ Entity => JEntity, EntityTypeKey => JEntityTypeKey }
 import akka.persistence.typed.ReplicaId
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
 import scala.collection.JavaConverters._
-import java.util.{Set => JSet}
+import java.util.{ Set => JSet }
 
 import akka.annotation.ApiMayChange
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
@@ -48,8 +48,7 @@ object ActiveActiveShardingSettings {
       settingsPerReplicaFactory: (
           EntityTypeKey[M],
           ReplicaId,
-          Set[ReplicaId]) => ActiveActiveShardingReplicaSettings[M, E])
-      : ActiveActiveShardingSettings[M, E] = {
+          Set[ReplicaId]) => ActiveActiveShardingReplicaSettings[M, E]): ActiveActiveShardingSettings[M, E] = {
     new ActiveActiveShardingSettings(allReplicaIds.map { replicaId =>
       val typeKey = EntityTypeKey[M](replicaId.id)
       settingsPerReplicaFactory(typeKey, replicaId, allReplicaIds)

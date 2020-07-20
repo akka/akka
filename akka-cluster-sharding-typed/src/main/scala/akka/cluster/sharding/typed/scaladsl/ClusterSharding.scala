@@ -355,7 +355,10 @@ final class EntityContext[M](
    */
   @InternalApi
   private[akka] def toJava: akka.cluster.sharding.typed.javadsl.EntityContext[M] =
-    new akka.cluster.sharding.typed.javadsl.EntityContext[M](entityTypeKey.asInstanceOf[EntityTypeKeyImpl[M]], entityId, shard)
+    new akka.cluster.sharding.typed.javadsl.EntityContext[M](
+      entityTypeKey.asInstanceOf[EntityTypeKeyImpl[M]],
+      entityId,
+      shard)
 }
 
 /** Allows starting a specific Sharded Entity by its entity identifier */

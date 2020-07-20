@@ -23,8 +23,6 @@ import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.japi.function.{ Function => JFunction }
 import akka.pattern.StatusReply
 import scala.compat.java8.OptionConverters._
-
-
 @FunctionalInterface
 trait EntityFactory[M] {
   def apply(shardRegion: ActorRef[ClusterSharding.ShardCommand], entityId: String): Behavior[M]
@@ -353,8 +351,7 @@ final class Entity[M, E] private (
       messageExtractor.asScala,
       allocationStrategy.asScala,
       role.asScala,
-      dataCenter.asScala
-    )
+      dataCenter.asScala)
 
 }
 

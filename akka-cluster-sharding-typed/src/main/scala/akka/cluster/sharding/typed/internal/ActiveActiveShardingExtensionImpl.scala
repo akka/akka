@@ -4,7 +4,7 @@
 
 package akka.cluster.sharding.typed.internal
 
-import java.util.{Map => JMap}
+import java.util.{ Map => JMap }
 
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi

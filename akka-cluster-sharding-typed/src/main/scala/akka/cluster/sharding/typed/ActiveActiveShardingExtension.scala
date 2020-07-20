@@ -12,7 +12,7 @@ import akka.annotation.DoNotInherit
 import akka.cluster.sharding.typed.internal.ActiveActiveShardingExtensionImpl
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.persistence.typed.ReplicaId
-import java.util.{Map => JMap}
+import java.util.{ Map => JMap }
 
 /**
  * Extension for running active active in sharding by starting one separate instance of sharding per replica.
