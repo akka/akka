@@ -2,7 +2,7 @@
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package docs.akka.cluster.sharding.typed.activeactive
+package akka.cluster.sharding.typed
 
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -10,10 +10,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.MemberStatus
-import akka.cluster.sharding.typed.ActiveActiveShardingExtension
-import akka.cluster.sharding.typed.ActiveActiveShardingReplicaSettings
-import akka.cluster.sharding.typed.ActiveActiveShardingSettings
-import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
@@ -26,8 +22,6 @@ import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.collection.immutable
 
 object ActiveActiveShardingSpec {
   def config = ConfigFactory.parseString("""
@@ -51,11 +45,11 @@ class ActiveActiveShardingSpec
     case class GetTexts(replyTo: ActorRef[Texts]) extends Command
     case class Texts(texts: Set[String]) extends CborSerializable
 
-    def apply(entityId: String, replicaId: ReplicaId, allReplicas: immutable.Seq[ReplicaId]): Behavior[Command] =
+    def apply(entityId: String, replicaId: ReplicaId, allReplicas: Set[ReplicaId]): Behavior[Command] =
       ActiveActiveEventSourcing.withSharedJournal(
         entityId,
         replicaId,
-        allReplicas.toSet, // FIXME list in sharding settings vs set in aa (was thinking ordering is important for sharding)
+        allReplicas,
         PersistenceTestKitReadJournal.Identifier) { aaContext =>
         EventSourcedBehavior[Command, String, Set[String]](
           aaContext.persistenceId,
@@ -84,11 +78,11 @@ class ActiveActiveShardingSpec
           MyActiveActiveStringSet.Command,
           ShardingEnvelope[MyActiveActiveStringSet.Command]](
           // all replicas
-          List(ReplicaId("DC-A"), ReplicaId("DC-B"), ReplicaId("DC-C"))) { (entityTypeKey, replicaId, allReplicaIds) =>
+          Set(ReplicaId("DC-A"), ReplicaId("DC-B"), ReplicaId("DC-C"))) { (entityTypeKey, replicaId, allReplicaIds) =>
           // factory for replica settings for a given replica
           ActiveActiveShardingReplicaSettings(
             replicaId,
-            // use the replica id as typekey for sharding to get one sharding instance per replica
+            // use the provided entity type key for sharding to get one sharding instance per replica
             Entity(entityTypeKey) { entityContext =>
               // factory for the entity for a given entity in that replica
               MyActiveActiveStringSet(entityContext.entityId, replicaId, allReplicaIds)
@@ -104,12 +98,16 @@ class ActiveActiveShardingSpec
 
       Behaviors.receiveMessage {
         case ForwardToAll(entityId, cmd) =>
+          // #all-entity-refs
           aaSharding.entityRefsFor(entityId).foreach {
             case (_, ref) => ref ! cmd
           }
+          // #all-entity-refs
           Behaviors.same
         case ForwardToRandom(entityId, cmd) =>
+          // #random-entity-ref
           aaSharding.randomRefFor(entityId) ! cmd
+          // #random-entity-ref
           Behaviors.same
       }
     }

@@ -245,19 +245,34 @@ When comparing two version vectors `v1` and `v2`:
 
 ## Sharded Active Active entities
 
-It is possible to distribute the Active Active Eventsourced actors in many ways, depending on use case. To simplify
-what is probably the most common use cases there is a minimal API for running multiple instances of [Akka Cluster Sharding](cluster-sharding.md), 
-each instance holding entities for a single replica.
+To simplify what probably are the most common use cases for how you will want to distribute the active active actors there is a minimal API for running multiple instances of @ref[Akka Cluster Sharding](cluster-sharding.md), 
+each instance holding the entities for a single replica.
 
-How the replicas are running can then be controlled either through cluster roles or using the [multi datacenter](cluster-dc.md) support in Akka Cluster.
+The distribution of the replicas can be controlled either through cluster roles or using the @ref[multi datacenter](cluster-dc.md) support in Akka Cluster. 
 
 The API consists of bootstrapping logic for starting the sharding instances through @apidoc[ActiveActiveShardingExtension] available from the
 `akka-cluster-sharding-typed` module.
 
 Scala
-:  @@snip [ActiveActiveCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/activeactive/ActiveActiveShardingSpec) { #bootstrap }
+:  @@snip [ActiveActiveShardingSpec.scala](/akka-cluster-sharding-typed/src/test/scala/akka/cluster/sharding/typed/ActiveActiveShardingSpec.scala) { #bootstrap }
 
-FIXME Java sample
+Java
+:  @@snip [ActiveActiveShardingTest.java](/akka-cluster-sharding-typed/src/test/java/akka/cluster/sharding/typed/ActiveActiveShardingTest.java) { #bootstrap }
 
-`init` returns an @apidoc[ActiveActiveSharding] instance which gives access to @apidoc[EntityRef]s for each of the replicas and a minimal send-to-random logic.
+`init` returns an @apidoc[ActiveActiveSharding] instance which gives access to @apidoc[EntityRef]s for each of the replicas:
+
+Scala
+:  @@snip [ActiveActiveShardingSpec.scala](/akka-cluster-sharding-typed/src/test/scala/akka/cluster/sharding/typed/ActiveActiveShardingSpec.scala) { #all-entity-refs }
+
+Java
+:  @@snip [ActiveActiveShardingTest.java](/akka-cluster-sharding-typed/src/test/java/akka/cluster/sharding/typed/ActiveActiveShardingTest.java) { #all-entity-refs }
+
+and a send-to-random replica:
+ 
+ Scala
+ :  @@snip [ActiveActiveShardingSpec.scala](/akka-cluster-sharding-typed/src/test/scala/akka/cluster/sharding/typed/ActiveActiveShardingSpec.scala) { #random-entity-ref }
+ 
+ Java
+ :  @@snip [ActiveActiveShardingTest.java](/akka-cluster-sharding-typed/src/test/java/akka/cluster/sharding/typed/ActiveActiveShardingTest.java) { #random-entity-ref }
+
 More advanced routing among the replicas is currently left as an exercise for the reader.

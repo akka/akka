@@ -12,6 +12,7 @@ import akka.annotation.DoNotInherit
 import akka.cluster.sharding.typed.internal.ActiveActiveShardingExtensionImpl
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.persistence.typed.ReplicaId
+import java.util.{Map => JMap}
 
 /**
  * Extension for running active active in sharding by starting one separate instance of sharding per replica.
@@ -22,6 +23,8 @@ object ActiveActiveShardingExtension extends ExtensionId[ActiveActiveShardingExt
 
   override def createExtension(system: ActorSystem[_]): ActiveActiveShardingExtension =
     new ActiveActiveShardingExtensionImpl(system)
+
+  def get(system: ActorSystem[_]): ActiveActiveShardingExtension = apply(system)
 
 }
 
@@ -56,6 +59,11 @@ trait ActiveActiveSharding[M, E] {
    * Scala API: Returns the entity ref for each replica for user defined routing/replica selection
    */
   def entityRefsFor(entityId: String): Map[ReplicaId, EntityRef[M]]
+
+  /**
+   * Java API: Returns the entity ref for each replica for user defined routing/replica selection
+   */
+  def getEntityRefsFor(entityId: String): JMap[ReplicaId, EntityRef[M]]
 
   /**
    * Chose a replica randomly for each message being sent to the EntityRef.

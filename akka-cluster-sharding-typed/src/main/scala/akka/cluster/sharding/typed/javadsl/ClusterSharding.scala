@@ -22,6 +22,8 @@ import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.japi.function.{ Function => JFunction }
 import akka.pattern.StatusReply
+import scala.compat.java8.OptionConverters._
+
 
 @FunctionalInterface
 trait EntityFactory[M] {
@@ -336,6 +338,23 @@ final class Entity[M, E] private (
       role,
       dataCenter)
   }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def toScala: akka.cluster.sharding.typed.scaladsl.Entity[M, E] =
+    new akka.cluster.sharding.typed.scaladsl.Entity(
+      eCtx => createBehavior(eCtx.toJava),
+      typeKey.asScala,
+      stopMessage.asScala,
+      entityProps,
+      settings.asScala,
+      messageExtractor.asScala,
+      allocationStrategy.asScala,
+      role.asScala,
+      dataCenter.asScala
+    )
 
 }
 

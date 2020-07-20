@@ -4,6 +4,8 @@
 
 package akka.cluster.sharding.typed.internal
 
+import java.util.{Map => JMap}
+
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.sharding.typed.ActiveActiveShardingExtension
@@ -17,6 +19,7 @@ import akka.persistence.typed.ReplicaId
 import org.slf4j.LoggerFactory
 import akka.actor.typed.scaladsl.LoggerOps
 
+import scala.collection.JavaConverters._
 import scala.util.Random
 
 /**
@@ -58,6 +61,9 @@ private[akka] final class ActiveActiveShardingImpl[M, E](
       case (replicaId, typeKey) =>
         replicaId -> sharding.entityRefFor(typeKey, PersistenceId.ofUniqueId(entityId).id)
     }
+
+  override def getEntityRefsFor(entityId: String): JMap[ReplicaId, EntityRef[M]] =
+    entityRefsFor(entityId).asJava
 
   override def randomRefFor(entityId: String): EntityRef[M] =
     Random.shuffle(entityRefsFor(entityId).values).head

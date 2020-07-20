@@ -348,7 +348,15 @@ final class Entity[M, E] private[akka] (
 final class EntityContext[M](
     val entityTypeKey: EntityTypeKey[M],
     val entityId: String,
-    val shard: ActorRef[ClusterSharding.ShardCommand])
+    val shard: ActorRef[ClusterSharding.ShardCommand]) {
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def toJava: akka.cluster.sharding.typed.javadsl.EntityContext[M] =
+    new akka.cluster.sharding.typed.javadsl.EntityContext[M](entityTypeKey.asInstanceOf[EntityTypeKeyImpl[M]], entityId, shard)
+}
 
 /** Allows starting a specific Sharded Entity by its entity identifier */
 object StartEntity {
