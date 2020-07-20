@@ -166,10 +166,7 @@ object EventSourcedBehavior {
    */
   def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State]
 
-  private[akka] def withActiveActive(
-      context: ActiveActiveContextImpl,
-      replicaId: ReplicaId,
-      allReplicasAndQueryPlugins: Map[ReplicaId, String]): EventSourcedBehavior[Command, Event, State]
+  private[akka] def withActiveActive(context: ActiveActiveContextImpl): EventSourcedBehavior[Command, Event, State]
 
   /**
    * Change the snapshot store plugin id that this actor should use.

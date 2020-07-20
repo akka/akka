@@ -53,32 +53,47 @@ To assist in implementing the event handler active-active detects these conflict
 
 ## API
 
-The same API as regular `EventSourcedBehavior`s is used to define the logic. To enable an entity for active-active
-replication use the factory methods on @api[ActiveActiveEventSourcing]. 
+@scala[The same API as regular `EventSourcedBehavior`s]@java[A very similar API to the regular `EventSourcedBehavior`] is used to define the logic. 
+
+To enable an entity for active-active
+replication @java[let it extend `ActiveActiveEventSourcedBehavior` instead of `EventSourcedBehavior` and] use the factory methods on @apidoc[ActiveActiveEventSourcing]. 
 
 All replicas need to be known up front:
 
 Scala
 :  @@snip [ActiveActiveCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ActiveActiveCompileOnlySpec.scala) { #replicas }
 
+Java
+:  @@snip [ActiveActiveCompileOnlyTest.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ActiveActiveCompileOnlyTest.java) { #replicas }
+
+
 Then to enable replication create the event sourced behavior with the factory method:
 
 Scala
 :  @@snip [ActiveActiveCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ActiveActiveCompileOnlySpec.scala) { #factory }
 
+Java
+:  @@snip [ActiveActiveCompileOnlyTest.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ActiveActiveCompileOnlyTest.java) { #factory }
+
 The factory takes in:
 
 * EntityID: this will be used as part of the underlying persistenceId
 * Replica: Which replica this instance is
-* All Replicas and the query plugin used to read their events 
+* All Replicas and the query plugin used to read their events
+* A factory function to create an instance of the @scala[`EventSourcedBehavior`]@java[`ActiveActiveEventSourcedBehavior`] 
 
 In this scenario each replica reads from each other's database effectively providing cross region replication for any database that has an Akka Persistence plugin. Alternatively if all the replicas use the same journal, e.g. for testing or if it is a distributed database such as Cassandra, the `withSharedJournal` factory can be used. 
 
 Scala
 :  @@snip [ActiveActiveCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ActiveActiveCompileOnlySpec.scala) { #factory-shared}
 
+Java
+:  @@snip [ActiveActiveCompileOnlyTest.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ActiveActiveCompileOnlyTest.java) { #factory-shared }
 
-The function passed to both factory methods return an `EventSourcedBehavior` and provide access to the @api[ActiveActiveContext] that has the following methods:
+
+@@@ div { .group-scala }
+
+The function passed to both factory methods return an `EventSourcedBehavior` and provide access to the @apidoc[ActiveActiveContext] that has the following methods:
 
 * entityId 
 * replicaId
@@ -86,6 +101,24 @@ The function passed to both factory methods return an `EventSourcedBehavior` and
 * persistenceId - to provide to the `EventSourcedBehavior` factory. This **must be used**.
 
 As well as methods that **can only be** used in the event handler. The values these methods return relate to the event that is being processed.
+
+@@@
+
+@@@ div { .group-java }
+
+The function passed to both factory methods is invoked with a special @apidoc[ActiveActiveContext] that needs to be passed to the
+concrete `ActiveActiveEventSourcedBehavior` and on to the super constructor.
+
+The context gives access to: 
+
+* entityId 
+* replicaId
+* allReplicas
+* persistenceId
+
+As well as methods that **can only be** used in the event handler, accessed through `getActiveActiveContext`. The values these methods return relate to the event that is being processed.
+
+@@@
 
 * origin: The ReplicaId that originally created the event
 * concurrent: Whether the event was concurrent with another event as in the second diagram above
@@ -108,9 +141,9 @@ Sometimes it is enough to use timestamps to decide which update should win. Such
  
 ![images/lww.png](images/lww.png)
 
-There is a small utility class @api[LwwTime] that can be useful for implementing last writer wins semantics.
+There is a small utility class @apidoc[akka.persistence.typed.LwwTime] that can be useful for implementing last writer wins semantics.
 It contains a timestamp representing current time when the event was persisted and an identifier of the
-replica that persisted it. When comparing two @api[LwwTime] the greatest timestamp wins. The replica
+replica that persisted it. When comparing two @apidoc[akka.persistence.typed.LwwTime] the greatest timestamp wins. The replica
 identifier is used if the two timestamps are equal, and then the one from the data center sorted first in
 alphanumeric order wins.
 
