@@ -2,64 +2,42 @@
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.persistence.typed.scaladsl
+package akka.persistence.typed.javadsl
 
+import java.util.function.{ Function => JFunction }
+import java.util.{ Set => JSet }
+import java.util.{ Map => JMap }
+
+import akka.annotation.DoNotInherit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
-import akka.util.WallClock
+import akka.persistence.typed.scaladsl.ActiveActiveContextImpl
+
 import scala.collection.JavaConverters._
 
-// FIXME docs
+/**
+ * Provides access to Active Active specific state
+ *
+ * Not for user extension
+ */
+@DoNotInherit
 trait ActiveActiveContext {
-
-  def persistenceId: PersistenceId
-  def replicaId: ReplicaId
-  def allReplicas: Set[ReplicaId]
-  def entityId: String
-
   def origin: ReplicaId
   def concurrent: Boolean
+  def replicaId: ReplicaId
+  def getAllReplicas: JSet[ReplicaId]
+  def persistenceId: PersistenceId
   def recoveryRunning: Boolean
+  def entityId: String
   def currentTimeMillis(): Long
-
 }
 
-// FIXME, parts of this can be set during initialisation
-// Other fields will be set before executing the event handler as they change per event
-// https://github.com/akka/akka/issues/29258
-private[akka] class ActiveActiveContextImpl(
-    val entityId: String,
-    val replicaId: ReplicaId,
-    val replicasAndQueryPlugins: Map[ReplicaId, String])
-    extends ActiveActiveContext
-    with akka.persistence.typed.javadsl.ActiveActiveContext {
-  val allReplicas: Set[ReplicaId] = replicasAndQueryPlugins.keySet
-  var _origin: ReplicaId = null
-  var _recoveryRunning: Boolean = false
-  var _concurrent: Boolean = false
-
-  // FIXME check illegal access https://github.com/akka/akka/issues/29264
-
-  /**
-   * The origin of the current event.
-   * Undefined result if called from anywhere other than an event handler.
-   */
-  override def origin: ReplicaId = _origin
-
-  /**
-   * Whether the happened concurrently with an event from another replica.
-   * Undefined result if called from any where other than an event handler.
-   */
-  override def concurrent: Boolean = _concurrent
-
-  override def persistenceId: PersistenceId = PersistenceId.replicatedUniqueId(entityId, replicaId)
-
-  override def currentTimeMillis(): Long = {
-    WallClock.AlwaysIncreasingClock.currentTimeMillis()
-  }
-  override def recoveryRunning: Boolean = _recoveryRunning
-
-  override def getAllReplicas: java.util.Set[ReplicaId] = allReplicas.asJava
+/**
+ * Factory to create an instance of an ActiveActiveEventSourcedBehavior
+ */
+@FunctionalInterface
+trait ActiveActiveBehaviorFactory[Command, Event, State] {
+  def apply(aaContext: ActiveActiveContext): ActiveActiveEventSourcedBehavior[Command, Event, State]
 }
 
 object ActiveActiveEventSourcing {
@@ -83,11 +61,11 @@ object ActiveActiveEventSourcing {
   def withSharedJournal[Command, Event, State](
       entityId: String,
       replicaId: ReplicaId,
-      allReplicaIds: Set[ReplicaId],
-      queryPluginId: String)(
-      eventSourcedBehaviorFactory: ActiveActiveContext => EventSourcedBehavior[Command, Event, State])
+      allReplicaIds: JSet[ReplicaId],
+      queryPluginId: String,
+      behaviorFactory: JFunction[ActiveActiveContext, EventSourcedBehavior[Command, Event, State]])
       : EventSourcedBehavior[Command, Event, State] =
-    apply(entityId, replicaId, allReplicaIds.map(id => id -> queryPluginId).toMap)(eventSourcedBehaviorFactory)
+    create(entityId, replicaId, allReplicaIds.asScala.map(id => id -> queryPluginId).toMap.asJava, behaviorFactory)
 
   /**
    * Initialize a replicated event sourced behavior.
@@ -105,14 +83,14 @@ object ActiveActiveEventSourcing {
    * @param allReplicasAndQueryPlugins All replica ids and a query plugin per replica id. These need to be known to receive events from all replicas
    *                                   and configured with the query plugin for the journal that each replica uses.
    */
-  def apply[Command, Event, State](
+  def create[Command, Event, State](
       entityId: String,
       replicaId: ReplicaId,
-      allReplicasAndQueryPlugins: Map[ReplicaId, String])(
-      eventSourcedBehaviorFactory: ActiveActiveContext => EventSourcedBehavior[Command, Event, State])
+      allReplicasAndQueryPlugins: JMap[ReplicaId, String],
+      eventSourcedBehaviorFactory: JFunction[ActiveActiveContext, EventSourcedBehavior[Command, Event, State]])
       : EventSourcedBehavior[Command, Event, State] = {
-    val context = new ActiveActiveContextImpl(entityId, replicaId, allReplicasAndQueryPlugins)
-    eventSourcedBehaviorFactory(context).withActiveActive(context)
+    val context = new ActiveActiveContextImpl(entityId, replicaId, allReplicasAndQueryPlugins.asScala.toMap)
+    eventSourcedBehaviorFactory(context)
   }
 
 }
