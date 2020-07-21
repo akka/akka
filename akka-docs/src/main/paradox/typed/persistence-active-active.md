@@ -241,3 +241,46 @@ When comparing two version vectors `v1` and `v2`:
 * `v1`is BEFORE `v2` iff for all i v1(i) <= v2(i) and there exist a j such that v1(j) < v2(j)
 * `v1`is AFTER `v2` iff for all i v1(i) >= v2(i) and there exist a j such that v1(j) > v2(j)
 * `v1`is CONCURRENT with `v2` otherwise
+
+
+## Sharded Active Active entities
+
+To simplify what probably are the most common use cases for how you will want to distribute the active active actors there is a minimal API for running multiple instances of @ref[Akka Cluster Sharding](cluster-sharding.md), 
+each instance holding the entities for a single replica.
+
+The distribution of the replicas can be controlled either through cluster roles or using the @ref[multi datacenter](cluster-dc.md) support in Akka Cluster. 
+
+The API consists of bootstrapping logic for starting the sharding instances through @apidoc[ActiveActiveShardingExtension] available from the
+`akka-cluster-sharding-typed` module.
+
+Scala
+:  @@snip [ActiveActiveShardingSpec.scala](/akka-cluster-sharding-typed/src/test/scala/akka/cluster/sharding/typed/ActiveActiveShardingSpec.scala) { #bootstrap }
+
+Java
+:  @@snip [ActiveActiveShardingTest.java](/akka-cluster-sharding-typed/src/test/java/akka/cluster/sharding/typed/ActiveActiveShardingTest.java) { #bootstrap }
+
+`init` returns an @apidoc[ActiveActiveSharding] instance which gives access to @apidoc[EntityRef]s for each of the replicas for arbitrary routing logic:
+
+Scala
+:  @@snip [ActiveActiveShardingSpec.scala](/akka-cluster-sharding-typed/src/test/scala/akka/cluster/sharding/typed/ActiveActiveShardingSpec.scala) { #all-entity-refs }
+
+Java
+:  @@snip [ActiveActiveShardingTest.java](/akka-cluster-sharding-typed/src/test/java/akka/cluster/sharding/typed/ActiveActiveShardingTest.java) { #all-entity-refs }
+
+More advanced routing among the replicas is currently left as an exercise for the reader (or may be covered in a future release [#29281](https://github.com/akka/akka/issues/29281), [#29319](https://github.com/akka/akka/issues/29319)).
+
+
+## Direct Replication of Events
+
+Normally an event has to be written in the journal and then picked up by the trailing read journal in the other replicas. 
+As an optimization the active active events can be published across the Akka cluster to the replicas. The read side
+query is still needed as delivery is not guaranteed, but can be configured to poll the database less often since most
+events will arrive at the replicas through the cluster.
+
+To enable this feature you first need to enable event publishing on the `EventSourcedBehavior` with `withEventPublishing` 
+(FIXME missing Java API) and then enable direct replication through `withDirectReplication()` on @apidoc[ActiveActiveShardingSettings] (if not using
+ active active sharding the replication can be run standalone by starting the @apidoc[ActiveActiveShardingDirectReplication] actor).
+
+The "event publishing" feature publishes each event to the local system event bus as a side effect after it has been written, 
+the `ActiveActiveShardingDirectReplication` actor subscribes to these events and forwards them to the replicas allowing them
+to fast forward the stream of events for the origin replica. (With additional potential future support in journals for fast forwarding [#29311](https://github.com/akka/akka/issues/29311)). 
