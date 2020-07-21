@@ -23,7 +23,7 @@ The events:
 Scala
 :   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/AAAuctionExampleSpec.scala) { #events }
 
-The winner does not have to pay the highest bud but only enough to beat the second highest so the `highestCounterOffer` is in the `AuctionFinished` event. 
+The winner does not have to pay the highest bid but only enough to beat the second highest so the `highestCounterOffer` is in the `AuctionFinished` event. 
 
 Let's have a look at the auction entity that will handle incoming commands:
 
@@ -49,7 +49,7 @@ The auction moves through the following phases:
 Scala
 :   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/AAAuctionExampleSpec.scala) { #phase }
 
-The closing and closed states are to model waiting for all replicas to see the result of the auaction before
+The closing and closed states are to model waiting for all replicas to see the result of the auction before
 actually closing the action.
 
 Let's have a look at our state class, `AuctionState` which also represents the CRDT in our example.
@@ -79,7 +79,7 @@ outside of our state class so that all replicas come to the same result. We defi
    (local) timestamp the bid was registered.
  * We need to make sure that no timestamp is used twice in the same replica (missing in this example).
  * If there's a tie between the timestamp, we define an arbitrary but deterministic ordering on the replicas, in our case
-   we just compare the name strings of the replicass. That's why we need to keep the identifier of the replica where a bid was registered
+   we just compare the name strings of the replicas. That's why we need to keep the identifier of the replica where a bid was registered
    for every `Bid`.
 
 If the new bid was higher, we keep this one as the new highest and keep the amount of the former highest as the `highestCounterOffer`.
@@ -98,10 +98,9 @@ Scala
 :   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/AAAuctionExampleSpec.scala) { #event-triggers }
 
 The event trigger uses the `ActiveActiveContext` to decide when to trigger the Finish of the action.
-When a replica saves the `AuctionFinished` event it checks whether it should close the auaction.
+When a replica saves the `AuctionFinished` event it checks whether it should close the auction.
 For the close to happen the replica must be the one designated to close and all replicas must have
 reported that they have finished. 
-
 
 
 
