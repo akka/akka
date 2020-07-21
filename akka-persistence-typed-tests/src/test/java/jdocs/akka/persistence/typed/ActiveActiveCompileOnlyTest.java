@@ -13,15 +13,14 @@ public class ActiveActiveCompileOnlyTest {
 
   // dummy for docs example
   interface Command {}
+
   interface Event {}
+
   interface State {}
 
   static // #factory
   final class MyActiceActiveEventSourcedBehavior
-      extends ActiveActiveEventSourcedBehavior<
-          Command,
-          Event,
-          State> {
+      extends ActiveActiveEventSourcedBehavior<Command, Event, State> {
 
     public MyActiceActiveEventSourcedBehavior(ActiveActiveContext activeActiveContext) {
       super(activeActiveContext);
@@ -74,7 +73,8 @@ public class ActiveActiveCompileOnlyTest {
     allReplicasAndQueryPlugins.put(DCA, "journalForDCA");
     allReplicasAndQueryPlugins.put(DCB, "journalForDCB");
 
-    EventSourcedBehavior<Command, Event, State> behavior = ActiveActiveEventSourcing.create(
+    EventSourcedBehavior<Command, Event, State> behavior =
+        ActiveActiveEventSourcing.create(
             "entityId",
             DCA,
             allReplicasAndQueryPlugins,

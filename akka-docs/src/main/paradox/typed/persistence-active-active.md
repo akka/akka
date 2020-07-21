@@ -141,9 +141,9 @@ Sometimes it is enough to use timestamps to decide which update should win. Such
  
 ![images/lww.png](images/lww.png)
 
-There is a small utility class @apidoc[akka.persistence.typed.LwwTime] that can be useful for implementing last writer wins semantics.
+There is a small utility class @apidoc[LwwTime] that can be useful for implementing last writer wins semantics.
 It contains a timestamp representing current time when the event was persisted and an identifier of the
-replica that persisted it. When comparing two @apidoc[akka.persistence.typed.LwwTime] the greatest timestamp wins. The replica
+replica that persisted it. When comparing two @apidoc[LwwTime] the greatest timestamp wins. The replica
 identifier is used if the two timestamps are equal, and then the one from the data center sorted first in
 alphanumeric order wins.
 
