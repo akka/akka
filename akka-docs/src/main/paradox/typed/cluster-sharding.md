@@ -321,7 +321,7 @@ used for new projects and existing projects should migrate as soon as possible.
 Remembering entities automatically restarts entities after a rebalance or entity crash. 
 Without remembered entities restarts happen on the arrival of a message.
 
-Enabling remembered entities disables @ref:[Automtic Passivation](#passivation).
+Enabling remembered entities disables @ref:[Automatic Passivation](#passivation).
 
 The state of the entities themselves is not restored unless they have been made persistent,
 for example with @ref:[Event Sourcing](persistence.md).
