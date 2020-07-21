@@ -301,7 +301,7 @@ class ActiveActiveSpec
       r1 ! StoreMe("from r1 2", probe.ref)
       probe.expectMessage(Done)
 
-      // r2
+      // r2, in order because we wrote them both in r1
       eventProbeR2.expectMessage(EventAndContext("from r1 1", ReplicaId("R1"), false, false))
       eventProbeR2.expectMessage(EventAndContext("from r1 2", ReplicaId("R1"), false, false))
 
@@ -310,13 +310,17 @@ class ActiveActiveSpec
       r2 ! StoreMe("from r2 2", probe.ref)
       probe.expectMessage(Done)
 
-      // r3 should only get the events 1, not R2s stored version of them
+      // r3 should only get the events 1, not R2s stored version of them, but we don't know the
+      // order they will arrive
       val eventProbeR3 = createTestProbe[EventAndContext]()
       spawn(testBehavior(entityId, "R3", eventProbeR3.ref))
-      eventProbeR3.expectMessage(EventAndContext("from r1 1", ReplicaId("R1"), false, false))
-      eventProbeR3.expectMessage(EventAndContext("from r1 2", ReplicaId("R1"), false, false))
-      eventProbeR3.expectMessage(EventAndContext("from r2 1", ReplicaId("R2"), false, false))
-      eventProbeR3.expectMessage(EventAndContext("from r2 2", ReplicaId("R2"), false, false))
+      val eventAndContexts = eventProbeR3.receiveMessages(4).toSet
+      eventAndContexts should ===(
+        Set(
+          EventAndContext("from r1 1", ReplicaId("R1"), false, false),
+          EventAndContext("from r1 2", ReplicaId("R1"), false, false),
+          EventAndContext("from r2 1", ReplicaId("R2"), false, false),
+          EventAndContext("from r2 2", ReplicaId("R2"), false, false)))
       eventProbeR3.expectNoMessage()
     }
 
