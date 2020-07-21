@@ -22,7 +22,10 @@ import scala.collection.JavaConverters._
  * Akka Cluster.
  *
  * This actor should be started once on each node where Active Active entities will run (the same nodes that you start
- * sharding on).
+ * sharding on). The entities should be set up with [[akka.persistence.typed.scaladsl.EventSourcedBehavior#withEventPublishing()]]
+ * (FIXME not supported in Java yet)
+ * If using [[ActiveActiveSharding]] the replication can be enabled through [[ActiveActiveShardingSettings#withDirectReplication()]]
+ * instead of starting this actor manually.
  *
  * Subscribes to locally written events through the event stream and sends the seen events to all the sharded replicas
  * which can then fast forward their cross-replica event streams to improve latency while allowing less frequent poll
@@ -51,13 +54,28 @@ object ActiveActiveShardingDirectReplication {
 
   /**
    * Java API:
+   * Factory for when the self replica id is unknown (or multiple)
+   * @param replicaShardingProxies A replica id to sharding proxy mapping for each replica in the system
+   */
+  def create[T](replicaShardingProxies: java.util.Map[ReplicaId, ActorRef[T]]): Behavior[Command] =
+    apply(None, replicaShardingProxies.asScala.toMap)
+
+  /**
+   * Java API:
    * @param selfReplica The replica id of the replica that runs on this node
    * @param replicaShardingProxies A replica id to sharding proxy mapping for each replica in the system
    */
   def create[T](
       selfReplica: ReplicaId,
       replicaShardingProxies: java.util.Map[ReplicaId, ActorRef[T]]): Behavior[Command] =
-    apply(selfReplica, replicaShardingProxies.asScala.toMap)
+    apply(Some(selfReplica), replicaShardingProxies.asScala.toMap)
+
+  /**
+   * Scala API:
+   * @param replicaShardingProxies A replica id to sharding proxy mapping for each replica in the system
+   */
+  def apply[T](replicaShardingProxies: Map[ReplicaId, ActorRef[T]]): Behavior[Command] =
+    apply(None, replicaShardingProxies)
 
   /**
    * Scala API:
@@ -65,6 +83,11 @@ object ActiveActiveShardingDirectReplication {
    * @param replicaShardingProxies A replica id to sharding proxy mapping for each replica in the system
    */
   def apply[T](selfReplica: ReplicaId, replicaShardingProxies: Map[ReplicaId, ActorRef[T]]): Behavior[Command] =
+    apply(Some(selfReplica), replicaShardingProxies)
+
+  private def apply[T](
+      selfReplica: Option[ReplicaId],
+      replicaShardingProxies: Map[ReplicaId, ActorRef[T]]): Behavior[Command] =
     Behaviors.setup[Command] { context =>
       context.log.debug(
         "Subscribing to event stream to forward events to [{}] sharded replicas",
@@ -81,7 +104,7 @@ object ActiveActiveShardingDirectReplication {
           replicaShardingProxies.foreach {
             case (replica, proxy) =>
               val envelopedEvent = ShardingEnvelope(event.persistenceId.id, event)
-              if (replica != selfReplica)
+              if (!selfReplica.contains(replica))
                 proxy.asInstanceOf[ActorRef[ShardingEnvelope[PublishedEvent]]] ! envelopedEvent
           }
           Behaviors.same
