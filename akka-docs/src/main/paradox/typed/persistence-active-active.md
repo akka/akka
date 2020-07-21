@@ -277,8 +277,8 @@ As an optimization the active active events can be published across the Akka clu
 query is still needed as delivery is not guaranteed, but can be configured to poll the database less often since most
 events will arrive at the replicas through the cluster.
 
-To enable this feature you first need to enable event publishing on the `EventSourcedBehavior` with `withEventPublishing` 
-(FIXME missing Java API) and then enable direct replication through `withDirectReplication()` on @apidoc[ActiveActiveShardingSettings] (if not using
+To enable this feature you first need to enable event publishing on the @scala[`EventSourcedBehavior`]@java[`ActiveActiveEventSourcedBehavior`] with `withEventPublishing` 
+and then enable direct replication through `withDirectReplication()` on @apidoc[ActiveActiveShardingSettings] (if not using
  active active sharding the replication can be run standalone by starting the @apidoc[ActiveActiveShardingDirectReplication] actor).
 
 The "event publishing" feature publishes each event to the local system event bus as a side effect after it has been written, 

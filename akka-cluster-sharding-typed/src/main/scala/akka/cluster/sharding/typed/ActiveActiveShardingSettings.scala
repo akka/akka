@@ -67,9 +67,9 @@ final class ActiveActiveShardingSettings[M, E] private (
   /**
    * Start direct replication over sharding when active active sharding starts up, requires the entities
    * to also have it enabled through [[akka.persistence.typed.scaladsl.EventSourcedBehavior#withEventPublishing()]]
+   * or [[akka.persistence.typed.javadsl.ActiveActiveEventSourcedBehavior#withEventPublishing()]]
    * to work.
-   *
-   * FIXME no support for enabling that in Java because bin/source comp.
+
    */
   def withDirectReplication(): ActiveActiveShardingSettings[M, E] =
     new ActiveActiveShardingSettings(replicas, directReplication = true)
