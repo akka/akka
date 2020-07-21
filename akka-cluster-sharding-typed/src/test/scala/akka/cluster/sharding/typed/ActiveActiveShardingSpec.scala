@@ -23,6 +23,8 @@ import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import scala.util.Random
+
 object ActiveActiveShardingSpec {
   def config = ConfigFactory.parseString("""
       akka.loglevel = DEBUG
@@ -105,9 +107,9 @@ class ActiveActiveShardingSpec
           // #all-entity-refs
           Behaviors.same
         case ForwardToRandom(entityId, cmd) =>
-          // #random-entity-ref
-          aaSharding.randomRefFor(entityId) ! cmd
-          // #random-entity-ref
+          val refs = aaSharding.entityRefsFor(entityId)
+          val chosenIdx = (new Random()).nextInt(refs.size)
+          refs.values.toIndexedSeq(chosenIdx) ! cmd;
           Behaviors.same
       }
     }

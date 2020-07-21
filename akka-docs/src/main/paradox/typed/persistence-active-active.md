@@ -259,7 +259,7 @@ Scala
 Java
 :  @@snip [ActiveActiveShardingTest.java](/akka-cluster-sharding-typed/src/test/java/akka/cluster/sharding/typed/ActiveActiveShardingTest.java) { #bootstrap }
 
-`init` returns an @apidoc[ActiveActiveSharding] instance which gives access to @apidoc[EntityRef]s for each of the replicas:
+`init` returns an @apidoc[ActiveActiveSharding] instance which gives access to @apidoc[EntityRef]s for each of the replicas for arbitrary routing logic:
 
 Scala
 :  @@snip [ActiveActiveShardingSpec.scala](/akka-cluster-sharding-typed/src/test/scala/akka/cluster/sharding/typed/ActiveActiveShardingSpec.scala) { #all-entity-refs }
@@ -267,12 +267,20 @@ Scala
 Java
 :  @@snip [ActiveActiveShardingTest.java](/akka-cluster-sharding-typed/src/test/java/akka/cluster/sharding/typed/ActiveActiveShardingTest.java) { #all-entity-refs }
 
-and a send-to-random replica:
- 
- Scala
- :  @@snip [ActiveActiveShardingSpec.scala](/akka-cluster-sharding-typed/src/test/scala/akka/cluster/sharding/typed/ActiveActiveShardingSpec.scala) { #random-entity-ref }
- 
- Java
- :  @@snip [ActiveActiveShardingTest.java](/akka-cluster-sharding-typed/src/test/java/akka/cluster/sharding/typed/ActiveActiveShardingTest.java) { #random-entity-ref }
+More advanced routing among the replicas is currently left as an exercise for the reader (or may be covered in a future release [#29281](https://github.com/akka/akka/issues/29281), [#29319](https://github.com/akka/akka/issues/29319)).
 
-More advanced routing among the replicas is currently left as an exercise for the reader.
+
+## Direct Replication of Events
+
+Normally an event has to be written in the journal and then picked up by the trailing read journal in the other replicas. 
+As an optimization the active active events can be published across the Akka cluster to the replicas. The read side
+query is still needed as delivery is not guaranteed, but can be configured to poll the database less often since most
+events will arrive at the replicas through the cluster.
+
+To enable this feature you first need to enable event publishing on the `EventSourcedBehavior` with `withEventPublishing` 
+(FIXME missing Java API) and then enable direct replication through `withDirectReplication()` on @apidoc[ActiveActiveShardingSettings] (if not using
+ active active sharding the replication can be run standalone by starting the @apidoc[ActiveActiveShardingDirectReplication] actor).
+
+The "event publishing" feature publishes each event to the local system event bus as a side effect after it has been written, 
+the `ActiveActiveShardingDirectReplication` actor subscribes to these events and forwards them to the replicas allowing them
+to fast forward the stream of events for the origin replica. (With additional potential future support in journals for fast forwarding [#29311](https://github.com/akka/akka/issues/29311)). 

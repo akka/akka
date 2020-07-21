@@ -27,6 +27,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
+import scala.util.Random;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -143,9 +144,7 @@ public class ActiveActiveShardingTest extends JUnitSuite {
                 Arrays.asList(
                     new ReplicaId("DC-A"), new ReplicaId("DC-B"), new ReplicaId("DC-C"))));
 
-    private final ActiveActiveSharding<
-            MyActiveActiveStringSet.Command, ShardingEnvelope<MyActiveActiveStringSet.Command>>
-        aaSharding;
+    private final ActiveActiveSharding<MyActiveActiveStringSet.Command> aaSharding;
 
     private ProxyActor(ActorContext<Command> context) {
       super(context);
@@ -190,9 +189,10 @@ public class ActiveActiveShardingTest extends JUnitSuite {
     }
 
     private Behavior<Command> onForwardToRandom(ForwardToRandom forwardToRandom) {
-      // #random-entity-ref
-      aaSharding.randomRefFor(forwardToRandom.entityId).tell(forwardToRandom.message);
-      // #random-entity-ref
+      Map<ReplicaId, EntityRef<MyActiveActiveStringSet.Command>> refs =
+          aaSharding.getEntityRefsFor(forwardToRandom.entityId);
+      int chosenIdx = new java.util.Random().nextInt(refs.size());
+      new ArrayList<>(refs.values()).get(chosenIdx).tell(forwardToRandom.message);
       return this;
     }
 

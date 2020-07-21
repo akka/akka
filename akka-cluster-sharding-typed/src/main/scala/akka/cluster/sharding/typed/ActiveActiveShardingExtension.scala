@@ -43,7 +43,7 @@ trait ActiveActiveShardingExtension extends Extension {
    *
    * Note, multiple calls on the same node will not start new sharding instances but will return a new instance of [[ActiveActiveSharding]]
    */
-  def init[M, E](settings: ActiveActiveShardingSettings[M, E]): ActiveActiveSharding[M, E]
+  def init[M, E](settings: ActiveActiveShardingSettings[M, E]): ActiveActiveSharding[M]
 }
 
 /**
@@ -53,7 +53,7 @@ trait ActiveActiveShardingExtension extends Extension {
  */
 @DoNotInherit
 @ApiMayChange
-trait ActiveActiveSharding[M, E] {
+trait ActiveActiveSharding[M] {
 
   /**
    * Scala API: Returns the entity ref for each replica for user defined routing/replica selection
@@ -65,10 +65,4 @@ trait ActiveActiveSharding[M, E] {
    */
   def getEntityRefsFor(entityId: String): JMap[ReplicaId, EntityRef[M]]
 
-  /**
-   * Chose a replica randomly for each message being sent to the EntityRef.
-   */
-  def randomRefFor(entityId: String): EntityRef[M]
-
-  // FIXME ideally we'd want some different clever strategies here but that is cut out of scope for now
 }

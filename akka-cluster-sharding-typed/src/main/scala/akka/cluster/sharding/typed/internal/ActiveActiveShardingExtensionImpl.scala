@@ -22,7 +22,6 @@ import akka.actor.typed.scaladsl.LoggerOps
 import akka.cluster.sharding.typed.ActiveActiveShardingDirectReplication
 
 import scala.collection.JavaConverters._
-import scala.util.Random
 
 /**
  * INTERNAL API
@@ -35,7 +34,7 @@ private[akka] final class ActiveActiveShardingExtensionImpl(system: ActorSystem[
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def init[M, E](settings: ActiveActiveShardingSettings[M, E]): ActiveActiveSharding[M, E] = {
+  override def init[M, E](settings: ActiveActiveShardingSettings[M, E]): ActiveActiveSharding[M] = {
     val sharding = ClusterSharding(system)
     val initializedReplicas = settings.replicas.map { replicaSettings =>
       // start up a sharding instance per replica id
@@ -66,10 +65,10 @@ private[akka] final class ActiveActiveShardingExtensionImpl(system: ActorSystem[
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class ActiveActiveShardingImpl[M, E](
+private[akka] final class ActiveActiveShardingImpl[M](
     sharding: ClusterSharding,
     replicaTypeKeys: Map[ReplicaId, EntityTypeKey[M]])
-    extends ActiveActiveSharding[M, E] {
+    extends ActiveActiveSharding[M] {
 
   override def entityRefsFor(entityId: String): Map[ReplicaId, EntityRef[M]] =
     replicaTypeKeys.map {
@@ -79,8 +78,5 @@ private[akka] final class ActiveActiveShardingImpl[M, E](
 
   override def getEntityRefsFor(entityId: String): JMap[ReplicaId, EntityRef[M]] =
     entityRefsFor(entityId).asJava
-
-  override def randomRefFor(entityId: String): EntityRef[M] =
-    Random.shuffle(entityRefsFor(entityId).values).head
 
 }
