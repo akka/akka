@@ -173,7 +173,25 @@ Including the full state in each event is often not desired. An event typically 
 
 ## Side effects
 
-TODO https://github.com/akka/akka/issues/29318
+In most cases it is recommended to do side effects as @ref[described for `EventSourcedBehavior`s](./persistence.md#effects-and-side-effects).
+
+Side effects from the event handler are generally discouraged because the event handlers are also used during replay and when consuming replicated events and that would 
+result in undesired re-execution of the side effects.
+
+Uses cases for doing side effects in the event handler:
+* Doing a side effect only in a single replica
+* Doing a side effect once all replicas have seen an event
+* A side effect for a replicated event
+* A side effect when a conflict has occured
+
+There is no built in support for knowing an event has been replicated to all replicas but it can be modelled in your state. 
+For some use cases you may need to trigger side effects after consuming replicated events. For example when an auction has been closed in 
+all data centers and all bids have been replicated. 
+
+The @api[ActiveActiveContext] contains the current replica, the origin replica for the event processes, and if a recovery is running. These can be used to 
+implement side effects that take place once events are fully replicated. If the side effect should happen only once then a particular replica can be
+designated to do it. The @ref[Auction example](./persistence-active-active-examples.md#auction) uses these techniques.
+
 
 ## How it works
 
