@@ -200,6 +200,9 @@ abstract class ClusterSharding {
    * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
    * provided `entityId`.
    *
+   * This can only be used if the default [[ShardingEnvelope]] is used, when using custom envelopes or in message
+   * entity ids you will need to use the `ActorRef[E]` returned by sharding init for messaging with the sharded actors.
+   *
    * For in-depth documentation of its semantics, see [[EntityRef]].
    */
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String, dataCenter: String): EntityRef[M]
