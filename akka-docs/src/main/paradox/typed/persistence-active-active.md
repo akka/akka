@@ -33,7 +33,9 @@ there is no longer the single writer principle as there is with a normal `EventS
 The state of an active-active `EventSourcedBehavior` is **eventually consistent**. Event replication may be delayed
 due to network partitions and outages and the event handler and those reading the state must be designed to handle this.
 
-## Relaxing the single writer p`rinciple for availability
+To be able to use active active the journal and snapshot store used is required to have specific support for the metadata that active active needs (see @ref[Journal Support](#journal-support))
+
+## Relaxing the single writer principle for availability
 
 Taking the example of using active-active to run a replica per data center.
 
@@ -284,3 +286,11 @@ and then enable direct replication through `withDirectReplication()` on @apidoc[
 The "event publishing" feature publishes each event to the local system event bus as a side effect after it has been written, 
 the `ActiveActiveShardingDirectReplication` actor subscribes to these events and forwards them to the replicas allowing them
 to fast forward the stream of events for the origin replica. (With additional potential future support in journals for fast forwarding [#29311](https://github.com/akka/akka/issues/29311)). 
+
+## Journal Support
+
+For a journal plugin to support active active it needs to store and read metadata for each event if it is defined in the @apiref[PersistentRepr]
+ `metadata` field. To attach the metadata after writing it, `PersistentRepr.withMetadata` is used.
+ 
+For a snapshot plugin to support active active it needs to store and read metadata for the snapshot if it is defined in the @apiref[akka.persistence.SnapshotMetadata] `metadata` field. 
+To attach the metadata when reading the snapshot the `akka.persistence.SnapshotMetadata.apply` factory overload taking a `metadata` parameter is used.

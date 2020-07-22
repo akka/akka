@@ -11,14 +11,14 @@ import scala.runtime.AbstractFunction3
  * @param persistenceId id of persistent actor from which the snapshot was taken.
  * @param sequenceNr sequence number at which the snapshot was taken.
  * @param timestamp time at which the snapshot was saved, defaults to 0 when unknown.
- * @param meta a journal can optionally support persisting metadata separate to the domain state
+ * @param metadata a journal can optionally support persisting metadata separate to the domain state, used for active active support
  */
 @SerialVersionUID(1L)
 final class SnapshotMetadata(
     val persistenceId: String,
     val sequenceNr: Long,
     val timestamp: Long,
-    val meta: Option[Any])
+    val metadata: Option[Any])
     extends Product3[String, Long, Long]
     with Serializable {
 
@@ -34,9 +34,10 @@ final class SnapshotMetadata(
   def copy(
       persistenceId: String = this.persistenceId,
       sequenceNr: Long = this.sequenceNr,
-      timestamp: Long = this.timestamp): SnapshotMetadata = SnapshotMetadata(persistenceId, sequenceNr, timestamp, meta)
+      timestamp: Long = this.timestamp): SnapshotMetadata =
+    SnapshotMetadata(persistenceId, sequenceNr, timestamp, metadata)
 
-  override def toString = s"SnapshotMetadata($persistenceId, $sequenceNr, $timestamp, $meta)"
+  override def toString = s"SnapshotMetadata($persistenceId, $sequenceNr, $timestamp, $metadata)"
 
   // Product 3
   override def productPrefix = "SnapshotMetadata"
