@@ -9,14 +9,31 @@ enablePlugins(
   ScalafixIgnoreFilePlugin,
   JavaFormatterPlugin)
 disablePlugins(MimaPlugin)
+
+// check format and headers
+TaskKey[Unit]("verifyCodeFmt") := {
+  javafmtCheckAll.all(ScopeFilter(inAnyProject)).result.value.toEither.left.foreach { _ =>
+    throw new MessageOnlyException(
+      "Unformatted Java code found. Please run 'javafmtAll' (or use the 'applyCodeStyle' alias) and commit the reformatted code")
+  }
+
+  scalafmtCheckAll.all(ScopeFilter(inAnyProject)).result.value.toEither.left.foreach { _ =>
+    throw new MessageOnlyException(
+      "Unformatted Scala code found. Please run 'scalafmtAll' (or use the 'applyCodeStyle' alias) and commit the reformatted code")
+  }
+}
+
+addCommandAlias("verifyCodeStyle", "headerCheckAll; verifyCodeFmt")
+addCommandAlias("applyCodeStyle", "headerCreateAll; javafmtAll; scalafmtAll")
+
 addCommandAlias(
   name = "fixall",
   value =
-    ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;scalafmtAll;test:compile;multi-jvm:compile;reload")
+    ";scalafixEnable; compile:scalafix; test:scalafix; multi-jvm:scalafix; scalafmtAll; test:compile; multi-jvm:compile; reload")
 
 addCommandAlias(
   name = "sortImports",
-  value = ";scalafixEnable;compile:scalafix SortImports;test:scalafix SortImports;scalafmtAll")
+  value = ";scalafixEnable; compile:scalafix SortImports; test:scalafix SortImports; scalafmtAll")
 
 import akka.AkkaBuild._
 import akka.{ AkkaBuild, Dependencies, OSGi, Protobuf, SigarLoader, VersionGenerator }
@@ -321,7 +338,8 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
     exportJars := true, // in dependent projects, use assembled and shaded jar
     makePomConfiguration := makePomConfiguration.value
         .withConfigurations(Vector(Compile)), // prevent original dependency to be added to pom as runtime dep
-    packagedArtifact in (Compile, packageBin) := Scoped.mkTuple2((artifact in (Compile, packageBin)).value, OsgiKeys.bundle.value),
+    packagedArtifact in (Compile, packageBin) := Scoped
+        .mkTuple2((artifact in (Compile, packageBin)).value, OsgiKeys.bundle.value),
     packageBin in Compile := ReproducibleBuildsPlugin
         .postProcessJar((assembly in Compile).value), // package by running assembly
     // Prevent cyclic task dependencies, see https://github.com/sbt/sbt-assembly/issues/365
