@@ -56,6 +56,8 @@ import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
 import akka.stream.scaladsl.Keep
 import akka.stream.SystemMaterializer
+import akka.stream.WatchedActorTerminatedException
+import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.{ RestartSource, Sink }
 import akka.stream.typed.scaladsl.ActorFlow
 import akka.util.OptionVal
@@ -136,27 +138,34 @@ private[akka] object Running {
 
         val controlRef = new AtomicReference[ReplicationStreamControl]()
 
-        val source = RestartSource.withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
-          replication
-            .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
-            // from each replica, only get the events that originated there, this prevents most of the event filtering
-            // the downside is that events can't be received via other replicas in the event of an uneven network partition
-            .filter(_.eventMetadata.get.asInstanceOf[ReplicatedEventMetaData].originReplica == replicaId)
-            .viaMat(new FastForwardingFilter)(Keep.right)
-            .mapMaterializedValue(streamControl => controlRef.set(streamControl))
-            .via(ActorFlow.ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) {
-              (eventEnvelope, replyTo) =>
-                // Need to handle this not being available migration from non-active-active is supported
-                val meta = eventEnvelope.eventMetadata.get.asInstanceOf[ReplicatedEventMetaData]
-                val re =
-                  ReplicatedEvent[E](
-                    eventEnvelope.event.asInstanceOf[E],
-                    meta.originReplica,
-                    meta.originSequenceNr,
-                    meta.version)
-                ReplicatedEventEnvelope(re, replyTo)
-            })
-        }
+        val source = RestartSource
+          .withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
+            replication
+              .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
+              // from each replica, only get the events that originated there, this prevents most of the event filtering
+              // the downside is that events can't be received via other replicas in the event of an uneven network partition
+              .filter(_.eventMetadata.get.asInstanceOf[ReplicatedEventMetaData].originReplica == replicaId)
+              .viaMat(new FastForwardingFilter)(Keep.right)
+              .mapMaterializedValue(streamControl => controlRef.set(streamControl))
+          }
+          // needs to be outside of the restart source so that it actually cancels when terminating the replica
+          .via(ActorFlow
+            .ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) { (eventEnvelope, replyTo) =>
+              // Need to handle this not being available migration from non-active-active is supported
+              val meta = eventEnvelope.eventMetadata.get.asInstanceOf[ReplicatedEventMetaData]
+              val re =
+                ReplicatedEvent[E](
+                  eventEnvelope.event.asInstanceOf[E],
+                  meta.originReplica,
+                  meta.originSequenceNr,
+                  meta.version)
+              ReplicatedEventEnvelope(re, replyTo)
+            }
+            .recoverWithRetries(1, {
+              // not a failure, the replica is stopping, complete the stream
+              case _: WatchedActorTerminatedException =>
+                Source.empty
+            }))
 
         source.runWith(Sink.ignore)(SystemMaterializer(system).materializer)
 

@@ -5,19 +5,18 @@
 package docs.akka.persistence.typed
 
 import akka.Done
-import akka.actor.testkit.typed.scaladsl.{LogCapturing, ScalaTestWithActorTestKit}
+import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.ActorRef
-import akka.actor.typed.scaladsl.{ActorContext, Behaviors}
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
-import akka.persistence.typed.LwwTime
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.crdt.LwwTime
 import akka.persistence.typed.scaladsl._
 import akka.serialization.jackson.CborSerializable
-import org.scalatest.concurrent.{Eventually, ScalaFutures}
+import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.time.{Millis, Span}
+import org.scalatest.time.{ Millis, Span }
 import org.scalatest.wordspec.AnyWordSpecLike
 
 object AABlogExampleSpec {
