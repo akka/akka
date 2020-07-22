@@ -23,7 +23,7 @@ import scala.collection.JavaConverters._
  *
  * This actor should be started once on each node where Active Active entities will run (the same nodes that you start
  * sharding on). The entities should be set up with [[akka.persistence.typed.scaladsl.EventSourcedBehavior#withEventPublishing()]]
- * (FIXME not supported in Java yet)
+ * or [[akka.persistence.typed.javadsl.ActiveActiveEventSourcedBehavior#withEventPublishing()]]
  * If using [[ActiveActiveSharding]] the replication can be enabled through [[ActiveActiveShardingSettings#withDirectReplication()]]
  * instead of starting this actor manually.
  *
