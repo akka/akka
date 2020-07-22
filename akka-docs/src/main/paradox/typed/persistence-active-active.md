@@ -292,5 +292,5 @@ to fast forward the stream of events for the origin replica. (With additional po
 For a journal plugin to support active active it needs to store and read metadata for each event if it is defined in the @apiref[PersistentRepr]
  `metadata` field. To attach the metadata after writing it, `PersistentRepr.withMetadata` is used.
  
-For a snapshot plugin to support active active it needs to store and read metadata for the snapshot if it is defined in the @apiref[akka.persistence.SnapshotMetadata] `meta` field. 
-To attach the metadata when reading the snapshot the `akka.persistence.SnapshotMetadata.apply` factory overload taking a `meta` parameter is used.
+For a snapshot plugin to support active active it needs to store and read metadata for the snapshot if it is defined in the @apiref[akka.persistence.SnapshotMetadata] `metadata` field. 
+To attach the metadata when reading the snapshot the `akka.persistence.SnapshotMetadata.apply` factory overload taking a `metadata` parameter is used.
