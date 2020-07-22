@@ -27,7 +27,7 @@ There are two kinds of routers included in Akka Typed - the pool router and the 
 ## Pool Router
 
 The pool router is created with a routee `Behavior` and spawns a number of children with that behavior which it will 
-then forward messages to. 
+then forward messages to.
 
 If a child is stopped the pool router removes it from its set of routees. When the last child stops the router itself stops.
 To make a resilient router that deals with failures the routee `Behavior` must be supervised.
