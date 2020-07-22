@@ -7,6 +7,7 @@ package akka.cluster.sharding.typed.internal
 import java.util.concurrent.atomic.AtomicLong
 import java.util.{ Map => JMap }
 
+import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.sharding.typed.ActiveActiveShardingExtension
@@ -34,7 +35,7 @@ private[akka] final class ActiveActiveShardingExtensionImpl(system: ActorSystem[
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def init[M, E](settings: ActiveActiveShardingSettings[M, E]): ActiveActiveSharding[M] = {
+  override def init[M, E](settings: ActiveActiveShardingSettings[M, E]): ActiveActiveSharding[M, E] = {
     val sharding = ClusterSharding(system)
     val initializedReplicas = settings.replicas.map { replicaSettings =>
       // start up a sharding instance per replica id
@@ -45,19 +46,18 @@ private[akka] final class ActiveActiveShardingExtensionImpl(system: ActorSystem[
       val regionOrProxy = sharding.init(replicaSettings.entity)
       (replicaSettings.replicaId, replicaSettings.entity.typeKey, regionOrProxy)
     }
-
+    val replicaToRegionOrProxy = initializedReplicas.map {
+      case (id, _, regionOrProxy) => id -> regionOrProxy
+    }.toMap
     if (settings.directReplication) {
       logger.infoN("Starting Active Active Direct Replication")
-      val replicaToRegionOrProxy = initializedReplicas.map {
-        case (id, _, regionOrProxy) => id -> regionOrProxy
-      }.toMap
       system.systemActorOf(
         ActiveActiveShardingDirectReplication(replicaToRegionOrProxy),
         s"activeActiveDirectReplication-${counter.incrementAndGet()}")
     }
 
     val replicaToTypeKey = initializedReplicas.map { case (id, typeKey, _) => id -> typeKey }.toMap
-    new ActiveActiveShardingImpl(sharding, replicaToTypeKey)
+    new ActiveActiveShardingImpl(sharding, replicaToRegionOrProxy, replicaToTypeKey)
   }
 }
 
@@ -65,10 +65,14 @@ private[akka] final class ActiveActiveShardingExtensionImpl(system: ActorSystem[
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class ActiveActiveShardingImpl[M](
+private[akka] final class ActiveActiveShardingImpl[M, E](
     sharding: ClusterSharding,
+    shardingPerReplica: Map[ReplicaId, ActorRef[E]],
     replicaTypeKeys: Map[ReplicaId, EntityTypeKey[M]])
-    extends ActiveActiveSharding[M] {
+    extends ActiveActiveSharding[M, E] {
+
+  override def shardingRefs: Map[ReplicaId, ActorRef[E]] = shardingPerReplica
+  override def getShardingRefs: JMap[ReplicaId, ActorRef[E]] = shardingRefs.asJava
 
   override def entityRefsFor(entityId: String): Map[ReplicaId, EntityRef[M]] =
     replicaTypeKeys.map {
