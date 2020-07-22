@@ -383,13 +383,14 @@ private[akka] object Running {
       val updatedVersion = event.originVersion.merge(state.version)
       activeActive.setContext(false, event.originReplica, isConcurrent)
 
-      setup.log.debugN(
-        "Processing event [{}] with version [{}]. Local version: {}. Updated version {}. Concurrent? {}",
-        event.event,
-        event.originVersion,
-        state.version,
-        updatedVersion,
-        isConcurrent)
+      if (setup.log.isDebugEnabled())
+        setup.log.debugN(
+          "Processing event [{}] with version [{}]. Local version: {}. Updated version {}. Concurrent? {}",
+          Logging.simpleName(event.event.getClass),
+          event.originVersion,
+          state.version,
+          updatedVersion,
+          isConcurrent)
 
       val newState: RunningState[S] = state.applyEvent(setup, event.event)
       val newState2: RunningState[S] = internalPersist(
@@ -443,7 +444,11 @@ private[akka] object Running {
               ReplicatedEventMetaData(aa.replicaId, _currentSequenceNumber, updatedVersion, concurrent = false)))
             .copy(version = updatedVersion)
 
-          setup.log.debug("Event persisted [{}]. Version vector after: [{}]", eventToPersist, r.version)
+          if (setup.log.isTraceEnabled())
+            setup.log.traceN(
+              "Event persisted [{}]. Version vector after: [{}]",
+              Logging.simpleName(event.getClass),
+              r.version)
 
           r
         case None =>
@@ -484,7 +489,11 @@ private[akka] object Running {
           val eventMetadata = metadataTemplate match {
             case Some(template) =>
               val updatedVersion = currentState.version.updated(template.originReplica.id, _currentSequenceNumber)
-              setup.log.trace("Processing event [{}] with version vector [{}]", event, updatedVersion)
+              if (setup.log.isDebugEnabled)
+                setup.log.traceN(
+                  "Processing event [{}] with version vector [{}]",
+                  Logging.simpleName(event.getClass),
+                  updatedVersion)
               currentState = currentState.copy(version = updatedVersion)
               Some(template.copy(originSequenceNr = _currentSequenceNumber, version = updatedVersion))
             case None => None
