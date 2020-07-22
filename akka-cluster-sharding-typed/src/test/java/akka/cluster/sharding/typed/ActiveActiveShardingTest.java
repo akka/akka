@@ -144,7 +144,9 @@ public class ActiveActiveShardingTest extends JUnitSuite {
                 Arrays.asList(
                     new ReplicaId("DC-A"), new ReplicaId("DC-B"), new ReplicaId("DC-C"))));
 
-    private final ActiveActiveSharding<MyActiveActiveStringSet.Command> aaSharding;
+    private final ActiveActiveSharding<
+            MyActiveActiveStringSet.Command, ShardingEnvelope<MyActiveActiveStringSet.Command>>
+        aaSharding;
 
     private ProxyActor(ActorContext<Command> context) {
       super(context);
