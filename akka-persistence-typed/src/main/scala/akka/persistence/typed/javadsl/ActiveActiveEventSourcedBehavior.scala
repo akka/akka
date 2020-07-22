@@ -9,17 +9,24 @@ import java.util.Optional
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.TypedActorContext
+import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.persistence.typed.internal
 import akka.persistence.typed.internal.EffectImpl
 import akka.persistence.typed.scaladsl.ActiveActiveContextImpl
 
+@ApiMayChange
 abstract class ActiveActiveEventSourcedBehavior[Command, Event, State](
     activeActiveContext: ActiveActiveContext,
     onPersistFailure: Optional[BackoffSupervisorStrategy])
     extends EventSourcedBehavior[Command, Event, State](activeActiveContext.persistenceId, onPersistFailure) {
 
   def this(activeActiveContext: ActiveActiveContext) = this(activeActiveContext, Optional.empty())
+
+  /**
+   * Override and return true to publish events to the system event stream as [[akka.persistence.typed.PublishedEvent]] after they have been persisted
+   */
+  def withEventPublishing: Boolean = false
 
   protected def getActiveActiveContext(): ActiveActiveContext = activeActiveContext
 
@@ -59,9 +66,13 @@ abstract class ActiveActiveEventSourcedBehavior[Command, Event, State](
       if (handler.isEmpty) behavior
       else behavior.receiveSignal(handler.handler)
 
-    if (onPersistFailure.isPresent)
-      behaviorWithSignalHandler.onPersistFailure(onPersistFailure.get)
-    else
-      behaviorWithSignalHandler
+    val behaviorWithOnPersistFailure =
+      if (onPersistFailure.isPresent)
+        behaviorWithSignalHandler.onPersistFailure(onPersistFailure.get)
+      else
+        behaviorWithSignalHandler
+
+    if (withEventPublishing) behaviorWithOnPersistFailure.withEventPublishing()
+    else behaviorWithOnPersistFailure
   }
 }
