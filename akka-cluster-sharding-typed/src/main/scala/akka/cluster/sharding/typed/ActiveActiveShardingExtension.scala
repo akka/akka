@@ -14,6 +14,8 @@ import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.persistence.typed.ReplicaId
 import java.util.{ Map => JMap }
 
+import akka.actor.typed.ActorRef
+
 /**
  * Extension for running active active in sharding by starting one separate instance of sharding per replica.
  * The sharding instances can be confined to datacenters or cluster roles or run on the same set of cluster nodes.
@@ -43,7 +45,7 @@ trait ActiveActiveShardingExtension extends Extension {
    *
    * Note, multiple calls on the same node will not start new sharding instances but will return a new instance of [[ActiveActiveSharding]]
    */
-  def init[M, E](settings: ActiveActiveShardingSettings[M, E]): ActiveActiveSharding[M]
+  def init[M, E](settings: ActiveActiveShardingSettings[M, E]): ActiveActiveSharding[M, E]
 }
 
 /**
@@ -53,15 +55,33 @@ trait ActiveActiveShardingExtension extends Extension {
  */
 @DoNotInherit
 @ApiMayChange
-trait ActiveActiveSharding[M] {
+trait ActiveActiveSharding[M, E] {
+
+  /**
+   * Scala API: Returns the actor refs for the shard region or proxies of sharding for each replica for user defined
+   * routing/replica selection.
+   */
+  def shardingRefs: Map[ReplicaId, ActorRef[E]]
+
+  /**
+   * Java API: Returns the actor refs for the shard region or proxies of sharding for each replica for user defined
+   * routing/replica selection.
+   */
+  def getShardingRefs: JMap[ReplicaId, ActorRef[E]]
 
   /**
    * Scala API: Returns the entity ref for each replica for user defined routing/replica selection
+   *
+   * This can only be used if the default [[ShardingEnvelope]] is used, when using custom envelopes or in message
+   * entity ids you will need to use [[#shardingRefs]]
    */
   def entityRefsFor(entityId: String): Map[ReplicaId, EntityRef[M]]
 
   /**
    * Java API: Returns the entity ref for each replica for user defined routing/replica selection
+   *
+   * This can only be used if the default [[ShardingEnvelope]] is used, when using custom envelopes or in message
+   * entity ids you will need to use [[#getShardingRefs]]
    */
   def getEntityRefsFor(entityId: String): JMap[ReplicaId, EntityRef[M]]
 
