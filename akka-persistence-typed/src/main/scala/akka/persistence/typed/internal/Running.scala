@@ -144,7 +144,16 @@ private[akka] object Running {
               .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
               // from each replica, only get the events that originated there, this prevents most of the event filtering
               // the downside is that events can't be received via other replicas in the event of an uneven network partition
-              .filter(_.eventMetadata.get.asInstanceOf[ReplicatedEventMetadata].originReplica == replicaId)
+              .filter(event =>
+                event.eventMetadata match {
+                  case Some(replicatedMeta: ReplicatedEventMetadata) => replicatedMeta.originReplica == replicaId
+                  case None =>
+                    throw new IllegalArgumentException(
+                      s"Replication stream from replica ${replicaId} for ${setup.persistenceId} contains event " +
+                      s"(sequence nr ${event.sequenceNr}) without replication metadata. " +
+                      s"Is the persistence id used by a regular event sourced actor there or the journal for that replica (${queryPluginId}) " +
+                      "used that does not support active active?")
+                })
               .viaMat(new FastForwardingFilter)(Keep.right)
               .mapMaterializedValue(streamControl => controlRef.set(streamControl))
           }
