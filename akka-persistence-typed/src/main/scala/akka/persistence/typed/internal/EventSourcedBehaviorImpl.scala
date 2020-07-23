@@ -271,7 +271,16 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
 }
 
-// FIXME serializer
+object ReplicatedEventMetadata {
+
+  /**
+   * For a journal supporting active active needing to add test coverage, use this instance as metadata and defer
+   * to the built in serializer for serialization format
+   */
+  @ApiMayChange
+  def instanceForJournalTest: Any = ReplicatedEventMetadata(ReplicaId("DC-A"), 1L, VersionVector.empty + "DC-A", true)
+}
+
 /**
  * @param originReplica Where the event originally was created
  * @param originSequenceNr The original sequenceNr in the origin DC
@@ -285,8 +294,20 @@ private[akka] final case class ReplicatedEventMetadata(
     version: VersionVector,
     concurrent: Boolean) // whether when the event handler was executed the event was concurrent
 
-// FIXME can't be internal because then journals cannot test?
-// FIXME if it is in typed journals must add a dependency to typed
+object ReplicatedSnapshotMetadata {
+
+  /**
+   * For a snapshot store supporting active active needing to add test coverage, use this instance as metadata and defer
+   * to the built in serializer for serialization format
+   */
+  @ApiMayChange
+  def instanceForSnapshotStoreTest: Any =
+    ReplicatedSnapshotMetadata(
+      VersionVector.empty + "DC-B" + "DC-A",
+      Map(ReplicaId("DC-A") -> 1L, ReplicaId("DC-B") -> 1L))
+
+}
+
 @InternalApi
 private[akka] final case class ReplicatedSnapshotMetadata(version: VersionVector, seenPerReplica: Map[ReplicaId, Long])
 
