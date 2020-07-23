@@ -279,15 +279,16 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
  *                at each location as they are received at different times
  */
 @InternalApi
-private[akka] final case class ReplicatedEventMetaData(
+private[akka] final case class ReplicatedEventMetadata(
     originReplica: ReplicaId,
     originSequenceNr: Long,
     version: VersionVector,
     concurrent: Boolean) // whether when the event handler was executed the event was concurrent
 
-// FIXME serializer
+// FIXME can't be internal because then journals cannot test?
+// FIXME if it is in typed journals must add a dependency to typed
 @InternalApi
-private[akka] final case class ReplicatedSnapshotMetaData(version: VersionVector, seenPerReplica: Map[ReplicaId, Long])
+private[akka] final case class ReplicatedSnapshotMetadata(version: VersionVector, seenPerReplica: Map[ReplicaId, Long])
 
 /**
  * An event replicated from a different replica.

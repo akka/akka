@@ -29,7 +29,7 @@ private[akka] object JournalInteractions {
   final case class EventToPersist(
       adaptedEvent: EventOrTaggedOrReplicated,
       manifest: String,
-      metadata: Option[ReplicatedEventMetaData])
+      metadata: Option[ReplicatedEventMetadata])
 
 }
 
@@ -193,7 +193,7 @@ private[akka] trait SnapshotInteractions[C, E, S] {
     else {
       val meta = setup.activeActive match {
         case Some(_) =>
-          val m = ReplicatedSnapshotMetaData(state.version, state.seenPerReplica)
+          val m = ReplicatedSnapshotMetadata(state.version, state.seenPerReplica)
           Some(m)
         case None => None
       }
