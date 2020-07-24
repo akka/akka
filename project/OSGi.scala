@@ -17,7 +17,7 @@ object OSGi {
   // a pain. Create bundles but publish them to the normal .../jars directory.
   def osgiSettings =
     defaultOsgiSettings ++ Seq(
-      Compile / packageBin := {
+      /* Compile / packageBin := {
         val bundle = OsgiKeys.bundle.value
         // This normally happens automatically when loading the
         // sbt-reproducible-builds plugin, but because we replace
@@ -25,7 +25,7 @@ object OSGi {
         // manually. See also
         // https://github.com/raboof/sbt-reproducible-builds#sbt-osgi
         ReproducibleBuildsPlugin.postProcessJar(bundle)
-      },
+      } ,*/
       // This will fail the build instead of accidentally removing classes from the resulting artifact.
       // Each package contained in a project MUST be known to be private or exported, if it's undecided we MUST resolve this
       OsgiKeys.failOnUndecidedPackage := true,
@@ -65,15 +65,14 @@ object OSGi {
   val protobuf = exports(Seq("akka.protobuf.*"))
 
   val protobufV3 = osgiSettings ++ Seq(
-    OsgiKeys.importPackage := Seq(
-      "!sun.misc",
-      scalaJava8CompatImport(),
-      scalaVersion(scalaImport).value,
-      configImport(),
-      "*"),
-    OsgiKeys.exportPackage := Seq("akka.protobufv3.internal.*"),
-    OsgiKeys.privatePackage := Seq("google.protobuf.*")
-  )
+      OsgiKeys.importPackage := Seq(
+          "!sun.misc",
+          scalaJava8CompatImport(),
+          scalaVersion(scalaImport).value,
+          configImport(),
+          "*"),
+      OsgiKeys.exportPackage := Seq("akka.protobufv3.internal.*"),
+      OsgiKeys.privatePackage := Seq("google.protobuf.*"))
 
   val jackson = exports(Seq("akka.serialization.jackson.*"))
 
