@@ -7,21 +7,16 @@ package akka.stream.scaladsl
 import java.nio.ByteOrder
 import java.util.concurrent.ThreadLocalRandom
 
-import scala.collection.immutable
+import akka.stream._
+import akka.stream.scaladsl.Framing.FramingException
+import akka.stream.stage.{ GraphStage, _ }
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
+import akka.util.{ unused, ByteString, ByteStringBuilder }
+
+import scala.collection.{ immutable, mutable }
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
-
-import akka.stream._
-import akka.stream.scaladsl.Framing.FramingException
-import akka.stream.stage._
-import akka.stream.stage.GraphStage
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.TestPublisher
-import akka.stream.testkit.TestSubscriber
-import akka.util.ByteString
-import akka.util.ByteStringBuilder
-import akka.util.unused
 
 class FramingSpec extends StreamSpec {
 
@@ -111,6 +106,26 @@ class FramingSpec extends StreamSpec {
 
     }
 
+    "work with multiple delimiters" in {
+      val delimiters = List("\n", "\r\n", "FOO_a", "FOO_b").map(ByteString(_))
+      val testSequence = mutable.Buffer.empty[ByteString]
+      val testSequenceWithDelimiters = mutable.Buffer.empty[ByteString]
+      (1 to 5 * delimiters.length).foreach { i =>
+        val delimiter = delimiters(i % delimiters.length)
+        val seq = completeTestSequences(delimiter)
+        testSequence.appendAll(seq)
+        testSequenceWithDelimiters.appendAll(seq.map(_ ++ delimiter))
+      }
+      val f = Source(testSequenceWithDelimiters.toList)
+        .via(rechunk)
+        .via(Framing.delimiters(delimiters, 256))
+        .runWith(Sink.seq)
+
+      withClue(s"delimiters: $delimiters") {
+        f.futureValue should ===(testSequence.toVector)
+      }
+    }
+
     "Respect maximum line settings" in {
       // The buffer will contain more than 1 bytes, but the individual frames are less
       Source
@@ -160,6 +175,12 @@ class FramingSpec extends StreamSpec {
         .grouped(1000)
         .runWith(Sink.head)
         .futureValue should ===(List("I have no end"))
+    }
+
+    "fail during creation if provided delimiters are invalid" in {
+      assertThrows[AssertionError] { Framing.delimiters(List.empty, 256) }
+      assertThrows[AssertionError] { Framing.delimiters(List("\n", "").map(ByteString(_)), 256) }
+      assertThrows[AssertionError] { Framing.delimiters(List("prefix", "prefix\n").map(ByteString(_)), 256) }
     }
 
   }

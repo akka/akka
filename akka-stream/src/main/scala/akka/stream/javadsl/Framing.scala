@@ -5,10 +5,13 @@
 package akka.stream.javadsl
 
 import java.nio.ByteOrder
+import java.util
 
 import akka.NotUsed
 import akka.stream.scaladsl
 import akka.util.ByteString
+
+import scala.collection.JavaConverters._
 
 object Framing {
 
@@ -41,6 +44,26 @@ object Framing {
    * If there are buffered bytes (an incomplete frame) when the input stream finishes and ''allowTruncation'' is set to
    * false then this Flow will fail the stream reporting a truncated frame.
    *
+   * Default truncation behavior is: when the last frame being decoded contains no valid delimiter this Flow
+   * fails the stream instead of returning a truncated frame.
+   *
+   * @param delimiters The byte sequences to be treated as the end of the frame.
+   * @param maximumFrameLength The maximum length of allowed frames while decoding. If the maximum length is
+   *                           exceeded this Flow will fail the stream.
+   */
+  def delimiters(delimiters: util.List[ByteString], maximumFrameLength: Int): Flow[ByteString, ByteString, NotUsed] = {
+    scaladsl.Framing.delimiters(delimiters.asScala.toList, maximumFrameLength).asJava
+  }
+
+  /**
+   * Creates a Flow that handles decoding a stream of unstructured byte chunks into a stream of frames where the
+   * incoming chunk stream uses a specific byte-sequence to mark frame boundaries.
+   *
+   * The decoded frames will not include the separator sequence.
+   *
+   * If there are buffered bytes (an incomplete frame) when the input stream finishes and ''allowTruncation'' is set to
+   * false then this Flow will fail the stream reporting a truncated frame.
+   *
    * @param delimiter The byte sequence to be treated as the end of the frame.
    * @param allowTruncation If set to `DISALLOW`, then when the last frame being decoded contains no valid delimiter this Flow
    *                        fails the stream instead of returning a truncated frame.
@@ -53,6 +76,29 @@ object Framing {
       allowTruncation: FramingTruncation): Flow[ByteString, ByteString, NotUsed] = {
     val truncationAllowed = allowTruncation == FramingTruncation.ALLOW
     scaladsl.Framing.delimiter(delimiter, maximumFrameLength, truncationAllowed).asJava
+  }
+
+  /**
+   * Creates a Flow that handles decoding a stream of unstructured byte chunks into a stream of frames where the
+   * incoming chunk stream uses a specific byte-sequence to mark frame boundaries.
+   *
+   * The decoded frames will not include the separator sequence.
+   *
+   * If there are buffered bytes (an incomplete frame) when the input stream finishes and ''allowTruncation'' is set to
+   * false then this Flow will fail the stream reporting a truncated frame.
+   *
+   * @param delimiters The byte sequences to be treated as the end of the frame.
+   * @param allowTruncation If set to `DISALLOW`, then when the last frame being decoded contains no valid delimiter this Flow
+   *                        fails the stream instead of returning a truncated frame.
+   * @param maximumFrameLength The maximum length of allowed frames while decoding. If the maximum length is
+   *                           exceeded this Flow will fail the stream.
+   */
+  def delimiters(
+      delimiters: util.List[ByteString],
+      maximumFrameLength: Int,
+      allowTruncation: FramingTruncation): Flow[ByteString, ByteString, NotUsed] = {
+    val truncationAllowed = allowTruncation == FramingTruncation.ALLOW
+    scaladsl.Framing.delimiters(delimiters.asScala.toList, maximumFrameLength, truncationAllowed).asJava
   }
 
   /**

@@ -27,6 +27,29 @@ object Framing {
    * If there are buffered bytes (an incomplete frame) when the input stream finishes and ''allowTruncation'' is set to
    * false then this Flow will fail the stream reporting a truncated frame.
    *
+   * @param delimiters         The byte sequences to be treated as the end of the frame.
+   * @param allowTruncation    If `false`, then when the last frame being decoded contains no valid delimiter this Flow
+   *                           fails the stream instead of returning a truncated frame.
+   * @param maximumFrameLength The maximum length of allowed frames while decoding. If the maximum length is
+   *                           exceeded this Flow will fail the stream.
+   */
+  def delimiters(
+      delimiters: Seq[ByteString],
+      maximumFrameLength: Int,
+      allowTruncation: Boolean = false): Flow[ByteString, ByteString, NotUsed] =
+    Flow[ByteString]
+      .via(new DelimiterFramingStage(delimiters, maximumFrameLength, allowTruncation))
+      .named("delimiterFraming")
+
+  /**
+   * Creates a Flow that handles decoding a stream of unstructured byte chunks into a stream of frames where the
+   * incoming chunk stream uses a specific byte-sequence to mark frame boundaries.
+   *
+   * The decoded frames will not include the separator sequence.
+   *
+   * If there are buffered bytes (an incomplete frame) when the input stream finishes and ''allowTruncation'' is set to
+   * false then this Flow will fail the stream reporting a truncated frame.
+   *
    * @param delimiter          The byte sequence to be treated as the end of the frame.
    * @param allowTruncation    If `false`, then when the last frame being decoded contains no valid delimiter this Flow
    *                           fails the stream instead of returning a truncated frame.
@@ -37,9 +60,7 @@ object Framing {
       delimiter: ByteString,
       maximumFrameLength: Int,
       allowTruncation: Boolean = false): Flow[ByteString, ByteString, NotUsed] =
-    Flow[ByteString]
-      .via(new DelimiterFramingStage(delimiter, maximumFrameLength, allowTruncation))
-      .named("delimiterFraming")
+    delimiters(List(delimiter), maximumFrameLength, allowTruncation)
 
   /**
    * Creates a Flow that decodes an incoming stream of unstructured byte chunks into a stream of frames, assuming that
@@ -197,10 +218,16 @@ object Framing {
   }
 
   private class DelimiterFramingStage(
-      val separatorBytes: ByteString,
+      val delimiters: Seq[ByteString],
       val maximumLineBytes: Int,
       val allowTruncation: Boolean)
       extends GraphStage[FlowShape[ByteString, ByteString]] {
+
+    assert(delimiters.nonEmpty, "Provided delimiters list can't be empty!")
+    assert(delimiters.forall(_.nonEmpty), "Delimiter can't be empty!")
+    assert(
+      delimiters.forall(d => delimiters.filterNot(_ == d).forall(!_.startsWith(d))),
+      "Delimiter can't be a prefix of another delimiter!")
 
     val in = Inlet[ByteString]("DelimiterFramingStage.in")
     val out = Outlet[ByteString]("DelimiterFramingStage.out")
@@ -211,7 +238,7 @@ object Framing {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) with InHandler with OutHandler {
-        private val firstSeparatorByte = separatorBytes.head
+        private val delimitersByFirstByte = delimiters.groupBy(_.head)
         private var buffer = ByteString.empty
         private var nextPossibleMatch = 0
 
@@ -220,7 +247,7 @@ object Framing {
         // The capacity is fixed at 256 to preserve fairness and prevent uneccessary allocation during parsing phase.
         // This array provide a way to check remaining capacity and must be use to prevent out of bounds exception.
         // In this use case, we compute all possibles indices up to 256 and then parse everything.
-        private val indices = new LightArray[(Int, Int)](256)
+        private val indices = new LightArray[(Int, Int, ByteString)](256)
 
         override def onPush(): Unit = {
           buffer ++= grab(in)
@@ -250,12 +277,12 @@ object Framing {
         @tailrec
         private def searchIndices(): Unit = {
           // Next possible position for the delimiter
-          val possibleMatchPos = buffer.indexOf(firstSeparatorByte, from = nextPossibleMatch)
+          val possibleMatchPos = buffer.indexWhere(delimitersByFirstByte.contains, from = nextPossibleMatch)
 
           // Retrive previous position
           val previous = indices.lastOption match {
-            case OptionVal.Some((_, i)) => i + separatorBytes.size
-            case OptionVal.None         => 0
+            case OptionVal.Some((_, i, delimiter)) => i + delimiter.size
+            case OptionVal.None                    => 0
           }
 
           if (possibleMatchPos - previous > maximumLineBytes) {
@@ -274,25 +301,29 @@ object Framing {
               nextPossibleMatch = buffer.size
               doParse()
             }
-          } else if (possibleMatchPos + separatorBytes.size > buffer.size) {
-            // We have found a possible match (we found the first character of the terminator
-            // sequence) but we don't have yet enough bytes. We remember the position to
-            // retry from next time.
-            nextPossibleMatch = possibleMatchPos
-            doParse()
-          } else if (buffer.slice(possibleMatchPos, possibleMatchPos + separatorBytes.size) == separatorBytes) {
-            // Found a match, mark start and end position and iterate if possible
-            indices += (previous -> possibleMatchPos)
-            nextPossibleMatch = possibleMatchPos + separatorBytes.size
-            if (nextPossibleMatch == buffer.size || indices.isFull) {
-              doParse()
-            } else {
-              searchIndices()
-            }
           } else {
-            // possibleMatchPos was not actually a match
-            nextPossibleMatch += 1
-            searchIndices()
+            val delimiters = delimitersByFirstByte(buffer(possibleMatchPos))
+            delimiters.find(delimiter => buffer.startsWith(delimiter, offset = possibleMatchPos)) match {
+              case Some(delimiter) =>
+                // Found a match, mark start and end position and iterate if possible
+                indices += ((previous, possibleMatchPos, delimiter))
+                nextPossibleMatch = possibleMatchPos + delimiter.size
+                if (nextPossibleMatch == buffer.size || indices.isFull) doParse()
+                else searchIndices()
+              case None =>
+                delimiters.find(delimiter => possibleMatchPos + delimiter.size > buffer.size) match {
+                  case Some(_) =>
+                    // We have found a possible match (we found the first character of one of the terminator
+                    // sequences) but we may not have yet enough bytes. We remember the position to
+                    // retry from next time.
+                    nextPossibleMatch = possibleMatchPos
+                    doParse()
+                  case None =>
+                    // possibleMatchPos was not actually a match
+                    nextPossibleMatch += 1
+                    searchIndices()
+                }
+            }
           }
         }
 
@@ -314,8 +345,8 @@ object Framing {
 
         private def reset(): Unit = {
           val previous = indices.lastOption match {
-            case OptionVal.Some((_, i)) => i + separatorBytes.size
-            case OptionVal.None         => 0
+            case OptionVal.Some((_, i, delimiter)) => i + delimiter.size
+            case OptionVal.None                    => 0
           }
 
           buffer = buffer.drop(previous).compact
