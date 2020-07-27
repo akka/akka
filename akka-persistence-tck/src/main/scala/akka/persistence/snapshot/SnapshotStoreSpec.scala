@@ -52,6 +52,7 @@ abstract class SnapshotStoreSpec(config: Config)
   private var metadata: Seq[SnapshotMetadata] = Nil
 
   override protected def supportsSerialization: CapabilityFlag = true
+  override protected def supportsMetadata: CapabilityFlag = false
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -196,6 +197,28 @@ abstract class SnapshotStoreSpec(config: Config)
         senderProbe.expectMsgPF() {
           case LoadSnapshotResult(Some(SelectedSnapshot(SnapshotMetadata(Pid, 100, _), payload)), Long.MaxValue) =>
             payload should be(snap)
+        }
+      }
+    }
+    optional(flag = supportsMetadata) {
+      "store metadata" in {
+        // we do not have the actual ReplicatedSnapshot metadata on classpath, but since
+        // the plugin should defer to serialization defined by Akka, so in general the type
+        // should not really be important to the plugin
+        val fictionalMeta = "fictional metadata"
+        val metadata = SnapshotMetadata(pid, 100).withMetadata(fictionalMeta)
+        val snap = "snap"
+        snapshotStore.tell(SaveSnapshot(metadata, snap), senderProbe.ref)
+        senderProbe.expectMsgPF() { case SaveSnapshotSuccess(md) => md }
+
+        val Pid = pid
+        snapshotStore.tell(LoadSnapshot(pid, SnapshotSelectionCriteria.Latest, Long.MaxValue), senderProbe.ref)
+        senderProbe.expectMsgPF() {
+          case LoadSnapshotResult(
+              Some(SelectedSnapshot(meta @ SnapshotMetadata(Pid, 100, _), payload)),
+              Long.MaxValue) =>
+            payload should be(snap)
+            meta.metadata should ===(Some(fictionalMeta))
         }
       }
     }
