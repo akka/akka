@@ -8,6 +8,7 @@ import java.nio.ByteOrder
 
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
+import scala.collection.immutable
 
 import akka.NotUsed
 import akka.stream.{ Attributes, FlowShape, Inlet, Outlet }
@@ -34,7 +35,7 @@ object Framing {
    *                           exceeded this Flow will fail the stream.
    */
   def delimiters(
-      delimiters: Seq[ByteString],
+      delimiters: immutable.Seq[ByteString],
       maximumFrameLength: Int,
       allowTruncation: Boolean = false): Flow[ByteString, ByteString, NotUsed] =
     Flow[ByteString]
@@ -218,7 +219,7 @@ object Framing {
   }
 
   private class DelimiterFramingStage(
-      val delimiters: Seq[ByteString],
+      val delimiters: immutable.Seq[ByteString],
       val maximumLineBytes: Int,
       val allowTruncation: Boolean)
       extends GraphStage[FlowShape[ByteString, ByteString]] {
