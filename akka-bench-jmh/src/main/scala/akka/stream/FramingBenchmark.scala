@@ -70,7 +70,7 @@ class FramingBenchmark {
     val frame = List.range(0, messageSize, 1).map(_ => Random.nextPrintableChar()).mkString + "\n"
     val messageChunk = ByteString(List.range(0, framePerSeq, 1).map(_ => frame).mkString)
 
-    Source
+    flow = Source
       .fromGraph(new BenchTestSourceSameElement(100000, messageChunk))
       .via(Framing.delimiter(ByteString("\n"), Int.MaxValue))
   }
