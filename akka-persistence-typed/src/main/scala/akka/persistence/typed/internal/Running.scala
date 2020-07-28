@@ -377,13 +377,19 @@ private[akka] object Running {
       this
     }
 
+    def withContext[A](aa: ActiveActive, withActiveActive: ActiveActive => Unit, f: () => A): A = {
+      withActiveActive(aa)
+      val result = f()
+      aa.clearContext()
+      result
+    }
+
     private def handleExternalReplicatedEventPersist(
         activeActive: ActiveActive,
         event: ReplicatedEvent[E]): Behavior[InternalProtocol] = {
       _currentSequenceNumber = state.seqNr + 1
       val isConcurrent: Boolean = event.originVersion <> state.version
       val updatedVersion = event.originVersion.merge(state.version)
-      activeActive.setContext(false, event.originReplica, isConcurrent)
 
       if (setup.log.isDebugEnabled())
         setup.log.debugN(
@@ -394,7 +400,11 @@ private[akka] object Running {
           updatedVersion,
           isConcurrent)
 
-      val newState: RunningState[S] = state.applyEvent(setup, event.event)
+      val newState: RunningState[S] = withContext(
+        activeActive,
+        aa => aa.setContext(recoveryRunning = false, event.originReplica, concurrent = isConcurrent),
+        () => state.applyEvent(setup, event.event))
+
       val newState2: RunningState[S] = internalPersist(
         setup.context,
         null,
@@ -423,12 +433,16 @@ private[akka] object Running {
       // also, ensure that there is an event handler for each single event
       _currentSequenceNumber = state.seqNr + 1
 
-      setup.activeActive.foreach { aa =>
-        // set concurrent to false, local events are never concurrent
-        aa.setContext(recoveryRunning = false, aa.replicaId, concurrent = false)
+      val newState: RunningState[S] = setup.activeActive match {
+        case Some(aa) =>
+          // set concurrent to false, local events are never concurrent
+          withContext(
+            aa,
+            aa => aa.setContext(recoveryRunning = false, aa.replicaId, concurrent = false),
+            () => state.applyEvent(setup, event))
+        case None =>
+          state.applyEvent(setup, event)
       }
-
-      val newState: RunningState[S] = state.applyEvent(setup, event)
 
       val eventToPersist = adaptEvent(event)
       val eventAdapterManifest = setup.eventAdapter.manifest(event)
@@ -500,7 +514,17 @@ private[akka] object Running {
               Some(template.copy(originSequenceNr = _currentSequenceNumber, version = updatedVersion))
             case None => None
           }
-          currentState = currentState.applyEvent(setup, event)
+
+          currentState = setup.activeActive match {
+            case Some(aa) =>
+              withContext(
+                aa,
+                aa => aa.setContext(recoveryRunning = false, aa.replicaId, concurrent = false),
+                () => currentState.applyEvent(setup, event))
+            case None =>
+              currentState.applyEvent(setup, event)
+          }
+
           eventsToPersist = EventToPersist(adaptedEvent, evtManifest, eventMetadata) :: eventsToPersist
         }
 
