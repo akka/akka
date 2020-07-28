@@ -20,6 +20,7 @@ import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
+import akka.util.OptionVal
 
 object EventSourcedBehavior {
 
@@ -36,9 +37,17 @@ object EventSourcedBehavior {
      * Must only be called on the same thread that will execute the user code
      */
     def setContext(recoveryRunning: Boolean, originReplica: ReplicaId, concurrent: Boolean): Unit = {
+      aaContext._currentThread = OptionVal.Some(Thread.currentThread())
       aaContext._recoveryRunning = recoveryRunning
       aaContext._concurrent = concurrent
       aaContext._origin = originReplica
+    }
+
+    def clearContext(): Unit = {
+      aaContext._currentThread = OptionVal.None
+      aaContext._recoveryRunning = false
+      aaContext._concurrent = false
+      aaContext._origin = null
     }
 
   }
