@@ -6,7 +6,8 @@ package akka.persistence.typed.scaladsl
 
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
-import akka.util.WallClock
+import akka.util.{ OptionVal, WallClock }
+
 import scala.collection.JavaConverters._
 
 // FIXME docs
@@ -34,30 +35,54 @@ private[akka] class ActiveActiveContextImpl(
     extends ActiveActiveContext
     with akka.persistence.typed.javadsl.ActiveActiveContext {
   val allReplicas: Set[ReplicaId] = replicasAndQueryPlugins.keySet
+
+  // these are not volatile as they are set on the same thread as they should be accessed
   var _origin: ReplicaId = null
   var _recoveryRunning: Boolean = false
   var _concurrent: Boolean = false
+  var _currentThread: OptionVal[Thread] = OptionVal.None
 
-  // FIXME check illegal access https://github.com/akka/akka/issues/29264
+  private def checkAccess(functionName: String): Unit = {
+    val callerThread = Thread.currentThread()
+    def error() =
+      throw new UnsupportedOperationException(
+        s"Unsupported access to ActiveActiveContext operation from the outside of event handler. " +
+        s"$functionName can only be called from the event handler")
+    _currentThread match {
+      case OptionVal.Some(t) =>
+        if (callerThread ne t) error()
+      case OptionVal.None =>
+        error()
+    }
+  }
 
   /**
    * The origin of the current event.
    * Undefined result if called from anywhere other than an event handler.
    */
-  override def origin: ReplicaId = _origin
+  override def origin: ReplicaId = {
+    checkAccess("origin")
+    _origin
+  }
 
   /**
    * Whether the happened concurrently with an event from another replica.
    * Undefined result if called from any where other than an event handler.
    */
-  override def concurrent: Boolean = _concurrent
+  override def concurrent: Boolean = {
+    checkAccess("concurrent")
+    _concurrent
+  }
 
   override def persistenceId: PersistenceId = PersistenceId.replicatedUniqueId(entityId, replicaId)
 
   override def currentTimeMillis(): Long = {
     WallClock.AlwaysIncreasingClock.currentTimeMillis()
   }
-  override def recoveryRunning: Boolean = _recoveryRunning
+  override def recoveryRunning: Boolean = {
+    checkAccess("recoveryRunning")
+    _recoveryRunning
+  }
 
   override def getAllReplicas: java.util.Set[ReplicaId] = allReplicas.asJava
 }
