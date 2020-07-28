@@ -8,8 +8,8 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.crdt.CounterSpec.PlainCounter.{ Decrement, Get, Increment }
-import akka.persistence.typed.scaladsl.{ ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
-import akka.persistence.typed.{ ActiveActiveBaseSpec, ReplicaId }
+import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing }
+import akka.persistence.typed.{ ReplicaId, ReplicationBaseSpec }
 
 object CounterSpec {
 
@@ -20,7 +20,7 @@ object CounterSpec {
     case object Decrement extends Command
   }
 
-  import ActiveActiveBaseSpec._
+  import ReplicationBaseSpec._
 
   def apply(
       entityId: String,
@@ -28,7 +28,7 @@ object CounterSpec {
       snapshotEvery: Long = 100,
       eventProbe: Option[ActorRef[Counter.Updated]] = None) =
     Behaviors.setup[PlainCounter.Command] { context =>
-      ActiveActiveEventSourcing.withSharedJournal(
+      ReplicatedEventSourcing.withSharedJournal(
         entityId,
         replicaId,
         AllReplicas,
@@ -58,10 +58,10 @@ object CounterSpec {
     }
 }
 
-class CounterSpec extends ActiveActiveBaseSpec {
+class CounterSpec extends ReplicationBaseSpec {
 
   import CounterSpec._
-  import ActiveActiveBaseSpec._
+  import ReplicationBaseSpec._
 
   "Active active entity using CRDT counter" should {
     "replicate" in {

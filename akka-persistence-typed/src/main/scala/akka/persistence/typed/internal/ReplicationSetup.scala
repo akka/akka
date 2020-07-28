@@ -18,12 +18,12 @@ import akka.util.ccompat.JavaConverters._
 // Other fields will be set before executing the event handler as they change per event
 // https://github.com/akka/akka/issues/29258
 @InternalApi
-private[akka] final class ActiveActiveContextImpl(
+private[akka] final class ReplicationContextImpl(
     val entityId: String,
     val replicaId: ReplicaId,
     val replicasAndQueryPlugins: Map[ReplicaId, String])
-    extends akka.persistence.typed.scaladsl.ActiveActiveContext
-    with akka.persistence.typed.javadsl.ActiveActiveContext {
+    extends akka.persistence.typed.scaladsl.ReplicationContext
+    with akka.persistence.typed.javadsl.ReplicationContext {
   val allReplicas: Set[ReplicaId] = replicasAndQueryPlugins.keySet
 
   // these are not volatile as they are set on the same thread as they should be accessed
@@ -86,10 +86,10 @@ private[akka] final class ActiveActiveContextImpl(
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class ActiveActive(
+private[akka] final case class ReplicationSetup(
     replicaId: ReplicaId,
     allReplicasAndQueryPlugins: Map[ReplicaId, String],
-    aaContext: ActiveActiveContextImpl) {
+    aaContext: ReplicationContextImpl) {
 
   val allReplicas: Set[ReplicaId] = allReplicasAndQueryPlugins.keySet
 

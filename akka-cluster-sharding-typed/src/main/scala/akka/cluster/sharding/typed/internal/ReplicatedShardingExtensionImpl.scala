@@ -10,9 +10,9 @@ import java.util.{ Map => JMap }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
-import akka.cluster.sharding.typed.ActiveActiveShardingExtension
-import akka.cluster.sharding.typed.ActiveActiveSharding
-import akka.cluster.sharding.typed.ActiveActiveShardingSettings
+import akka.cluster.sharding.typed.ReplicatedShardingExtension
+import akka.cluster.sharding.typed.ReplicatedSharding
+import akka.cluster.sharding.typed.ReplicatedShardingSettings
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
@@ -20,7 +20,7 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
 import org.slf4j.LoggerFactory
 import akka.actor.typed.scaladsl.LoggerOps
-import akka.cluster.sharding.typed.ActiveActiveShardingDirectReplication
+import akka.cluster.sharding.typed.ShardingDirectReplication
 
 import akka.util.ccompat.JavaConverters._
 
@@ -28,14 +28,13 @@ import akka.util.ccompat.JavaConverters._
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class ActiveActiveShardingExtensionImpl(system: ActorSystem[_])
-    extends ActiveActiveShardingExtension {
+private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]) extends ReplicatedShardingExtension {
 
   private val counter = new AtomicLong(0)
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def init[M, E](settings: ActiveActiveShardingSettings[M, E]): ActiveActiveSharding[M, E] = {
+  override def init[M, E](settings: ReplicatedShardingSettings[M, E]): ReplicatedSharding[M, E] = {
     val sharding = ClusterSharding(system)
     val initializedReplicas = settings.replicas.map { replicaSettings =>
       // start up a sharding instance per replica id
@@ -52,12 +51,12 @@ private[akka] final class ActiveActiveShardingExtensionImpl(system: ActorSystem[
     if (settings.directReplication) {
       logger.infoN("Starting Active Active Direct Replication")
       system.systemActorOf(
-        ActiveActiveShardingDirectReplication(replicaToRegionOrProxy),
+        ShardingDirectReplication(replicaToRegionOrProxy),
         s"activeActiveDirectReplication-${counter.incrementAndGet()}")
     }
 
     val replicaToTypeKey = initializedReplicas.map { case (id, typeKey, _) => id -> typeKey }.toMap
-    new ActiveActiveShardingImpl(sharding, replicaToRegionOrProxy, replicaToTypeKey)
+    new ReplicatedShardingImpl(sharding, replicaToRegionOrProxy, replicaToTypeKey)
   }
 }
 
@@ -65,11 +64,11 @@ private[akka] final class ActiveActiveShardingExtensionImpl(system: ActorSystem[
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class ActiveActiveShardingImpl[M, E](
+private[akka] final class ReplicatedShardingImpl[M, E](
     sharding: ClusterSharding,
     shardingPerReplica: Map[ReplicaId, ActorRef[E]],
     replicaTypeKeys: Map[ReplicaId, EntityTypeKey[M]])
-    extends ActiveActiveSharding[M, E] {
+    extends ReplicatedSharding[M, E] {
 
   override def shardingRefs: Map[ReplicaId, ActorRef[E]] = shardingPerReplica
   override def getShardingRefs: JMap[ReplicaId, ActorRef[E]] = shardingRefs.asJava

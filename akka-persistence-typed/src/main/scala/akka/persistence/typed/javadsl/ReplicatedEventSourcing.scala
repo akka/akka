@@ -11,36 +11,63 @@ import java.util.{ Map => JMap }
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
-import akka.persistence.typed.internal.ActiveActiveContextImpl
+import akka.persistence.typed.internal.ReplicationContextImpl
 
 import akka.util.ccompat.JavaConverters._
 
 /**
- * Provides access to Active Active specific state
+ * Provides access to replication specific state
  *
  * Not for user extension
  */
 @DoNotInherit
-trait ActiveActiveContext {
-  def origin: ReplicaId
-  def concurrent: Boolean
+trait ReplicationContext {
+
+  /**
+   * @return The replica id of this replicated event sourced actor
+   */
   def replicaId: ReplicaId
+
+  /**
+   * @return The ids of all replicas of this replicated event sourced actor
+   */
   def getAllReplicas: JSet[ReplicaId]
+
+  /**
+   * @return The unique id of this replica, including the replica id
+   */
   def persistenceId: PersistenceId
-  def recoveryRunning: Boolean
+
+  /**
+   * @return The unique id of this replica, not including the replica id
+   */
   def entityId: String
+
+  /**
+   * Must only be called from the event handler
+   * @return true when the event handler is invoked during recovery.
+   */
+  def recoveryRunning: Boolean
+
+  /**
+   * Must only be called from the event handler
+   * @return the replica id where the current event was persisted
+   */
+  def origin: ReplicaId
+
+  /**
+   * Must only be called from the event handler
+   * @return true if this event was concurrent with another event
+   */
+  def concurrent: Boolean
+
+  /**
+   * @return a timestamp that will always be increasing (is monotonic)
+   */
   def currentTimeMillis(): Long
 }
 
-/**
- * Factory to create an instance of an ActiveActiveEventSourcedBehavior
- */
-@FunctionalInterface
-trait ActiveActiveBehaviorFactory[Command, Event, State] {
-  def apply(aaContext: ActiveActiveContext): ActiveActiveEventSourcedBehavior[Command, Event, State]
-}
-
-object ActiveActiveEventSourcing {
+object ReplicatedEventSourcing {
 
   /**
    * Initialize a replicated event sourced behavior where all entity replicas are stored in the same journal.
@@ -63,7 +90,7 @@ object ActiveActiveEventSourcing {
       replicaId: ReplicaId,
       allReplicaIds: JSet[ReplicaId],
       queryPluginId: String,
-      behaviorFactory: JFunction[ActiveActiveContext, EventSourcedBehavior[Command, Event, State]])
+      behaviorFactory: JFunction[ReplicationContext, EventSourcedBehavior[Command, Event, State]])
       : EventSourcedBehavior[Command, Event, State] =
     create(entityId, replicaId, allReplicaIds.asScala.map(id => id -> queryPluginId).toMap.asJava, behaviorFactory)
 
@@ -87,9 +114,9 @@ object ActiveActiveEventSourcing {
       entityId: String,
       replicaId: ReplicaId,
       allReplicasAndQueryPlugins: JMap[ReplicaId, String],
-      eventSourcedBehaviorFactory: JFunction[ActiveActiveContext, EventSourcedBehavior[Command, Event, State]])
+      eventSourcedBehaviorFactory: JFunction[ReplicationContext, EventSourcedBehavior[Command, Event, State]])
       : EventSourcedBehavior[Command, Event, State] = {
-    val context = new ActiveActiveContextImpl(entityId, replicaId, allReplicasAndQueryPlugins.asScala.toMap)
+    val context = new ReplicationContextImpl(entityId, replicaId, allReplicasAndQueryPlugins.asScala.toMap)
     eventSourcedBehaviorFactory(context)
   }
 

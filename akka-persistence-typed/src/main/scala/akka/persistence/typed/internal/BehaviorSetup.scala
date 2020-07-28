@@ -48,7 +48,7 @@ private[akka] final class BehaviorSetup[C, E, S](
     var holdingRecoveryPermit: Boolean,
     val settings: EventSourcedSettings,
     val stashState: StashState,
-    val activeActive: Option[ActiveActive],
+    val replication: Option[ReplicationSetup],
     val publishEvents: Boolean) {
 
   import BehaviorSetup._
@@ -61,7 +61,7 @@ private[akka] final class BehaviorSetup[C, E, S](
   val journal: ClassicActorRef = persistence.journalFor(settings.journalPluginId)
   val snapshotStore: ClassicActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
 
-  val replicaId: Option[ReplicaId] = activeActive.map(_.replicaId)
+  val replicaId: Option[ReplicaId] = replication.map(_.replicaId)
 
   def selfClassic: ClassicActorRef = context.self.toClassic
 

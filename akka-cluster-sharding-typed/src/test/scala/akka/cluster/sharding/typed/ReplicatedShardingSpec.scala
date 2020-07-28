@@ -16,7 +16,7 @@ import akka.cluster.typed.Join
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.ReplicaId
-import akka.persistence.typed.scaladsl.ActiveActiveEventSourcing
+import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.serialization.jackson.CborSerializable
@@ -25,7 +25,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.util.Random
 
-object ActiveActiveShardingSpec {
+object ReplicatedShardingSpec {
   def config = ConfigFactory.parseString("""
       akka.loglevel = DEBUG
       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
@@ -36,8 +36,8 @@ object ActiveActiveShardingSpec {
       akka.remote.artery.canonical.port = 0""").withFallback(PersistenceTestKitPlugin.config)
 }
 
-class ActiveActiveShardingSpec
-    extends ScalaTestWithActorTestKit(ActiveActiveShardingSpec.config)
+class ReplicatedShardingSpec
+    extends ScalaTestWithActorTestKit(ReplicatedShardingSpec.config)
     with AnyWordSpecLike
     with LogCapturing {
 
@@ -48,7 +48,7 @@ class ActiveActiveShardingSpec
     case class Texts(texts: Set[String]) extends CborSerializable
 
     def apply(entityId: String, replicaId: ReplicaId, allReplicas: Set[ReplicaId]): Behavior[Command] =
-      ActiveActiveEventSourcing.withSharedJournal(
+      ReplicatedEventSourcing.withSharedJournal(
         entityId,
         replicaId,
         allReplicas,
@@ -76,9 +76,7 @@ class ActiveActiveShardingSpec
     def apply(): Behavior[Command] = Behaviors.setup { context =>
       // #bootstrap
       val aaShardingSettings =
-        ActiveActiveShardingSettings[
-          MyActiveActiveStringSet.Command,
-          ShardingEnvelope[MyActiveActiveStringSet.Command]](
+        ReplicatedShardingSettings[MyActiveActiveStringSet.Command, ShardingEnvelope[MyActiveActiveStringSet.Command]](
           // all replicas
           Set(ReplicaId("DC-A"), ReplicaId("DC-B"), ReplicaId("DC-C"))) { (entityTypeKey, replicaId, allReplicaIds) =>
           // factory for replica settings for a given replica
@@ -95,7 +93,7 @@ class ActiveActiveShardingSpec
               .withRole(replicaId.id))
         }
 
-      val aaSharding = ActiveActiveShardingExtension(context.system).init(aaShardingSettings)
+      val aaSharding = ReplicatedShardingExtension(context.system).init(aaShardingSettings)
       // #bootstrap
 
       Behaviors.receiveMessage {

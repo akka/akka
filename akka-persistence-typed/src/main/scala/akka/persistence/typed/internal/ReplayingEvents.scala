@@ -122,8 +122,8 @@ private[akka] final class ReplayingEvents[C, E, S](
               eventForErrorReporting = OptionVal.Some(event)
               state = state.copy(seqNr = repr.sequenceNr)
 
-              val aaMetaAndSelfReplica: Option[(ReplicatedEventMetadata, ReplicaId, ActiveActive)] =
-                setup.activeActive match {
+              val aaMetaAndSelfReplica: Option[(ReplicatedEventMetadata, ReplicaId, ReplicationSetup)] =
+                setup.replication match {
                   case Some(aa) =>
                     val meta = repr.metadata match {
                       case Some(m) => m.asInstanceOf[ReplicatedEventMetadata]
@@ -139,7 +139,7 @@ private[akka] final class ReplayingEvents[C, E, S](
 
               val newState = setup.eventHandler(state.state, event)
 
-              setup.activeActive match {
+              setup.replication match {
                 case Some(aa) =>
                   aa.clearContext()
                 case None =>

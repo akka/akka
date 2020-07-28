@@ -12,23 +12,26 @@ import akka.actor.typed.TypedActorContext
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.persistence.typed.internal
-import akka.persistence.typed.internal.ActiveActiveContextImpl
+import akka.persistence.typed.internal.ReplicationContextImpl
 import akka.persistence.typed.internal.EffectImpl
 
+/**
+ * Base class for replicated event sourced behaviors.
+ */
 @ApiMayChange
-abstract class ActiveActiveEventSourcedBehavior[Command, Event, State](
-    activeActiveContext: ActiveActiveContext,
+abstract class ReplicatedEventSourcedBehavior[Command, Event, State](
+    replicationContext: ReplicationContext,
     onPersistFailure: Optional[BackoffSupervisorStrategy])
-    extends EventSourcedBehavior[Command, Event, State](activeActiveContext.persistenceId, onPersistFailure) {
+    extends EventSourcedBehavior[Command, Event, State](replicationContext.persistenceId, onPersistFailure) {
 
-  def this(activeActiveContext: ActiveActiveContext) = this(activeActiveContext, Optional.empty())
+  def this(replicationContext: ReplicationContext) = this(replicationContext, Optional.empty())
 
   /**
    * Override and return true to publish events to the system event stream as [[akka.persistence.typed.PublishedEvent]] after they have been persisted
    */
   def withEventPublishing: Boolean = false
 
-  protected def getActiveActiveContext(): ActiveActiveContext = activeActiveContext
+  protected def getReplicationContext(): ReplicationContext = replicationContext
 
   /**
    * INTERNAL API: DeferredBehavior init, not for user extension
@@ -59,7 +62,7 @@ abstract class ActiveActiveEventSourcedBehavior[Command, Event, State](
       .withSnapshotPluginId(snapshotPluginId)
       .withRecovery(recovery.asScala)
       // context not user extendable so there should never be any other impls
-      .withActiveActive(activeActiveContext.asInstanceOf[ActiveActiveContextImpl])
+      .withReplication(replicationContext.asInstanceOf[ReplicationContextImpl])
 
     val handler = signalHandler()
     val behaviorWithSignalHandler =

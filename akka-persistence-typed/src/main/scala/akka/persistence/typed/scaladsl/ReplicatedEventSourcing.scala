@@ -7,16 +7,18 @@ package akka.persistence.typed.scaladsl
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
-import akka.persistence.typed.internal.ActiveActiveContextImpl
+import akka.persistence.typed.internal.ReplicationContextImpl
 
 /**
+ * Provides access to replication specific state
+ *
  * Not for user extension
  */
 @DoNotInherit
-trait ActiveActiveContext {
+trait ReplicationContext {
 
   /**
-   * @return The unique id of this replica, not including the replica id
+   * @return The unique id of this replica, including the replica id
    */
   def persistenceId: PersistenceId
 
@@ -60,7 +62,7 @@ trait ActiveActiveContext {
 
 }
 
-object ActiveActiveEventSourcing {
+object ReplicatedEventSourcing {
 
   /**
    * Initialize a replicated event sourced behavior where all entity replicas are stored in the same journal.
@@ -83,7 +85,7 @@ object ActiveActiveEventSourcing {
       replicaId: ReplicaId,
       allReplicaIds: Set[ReplicaId],
       queryPluginId: String)(
-      eventSourcedBehaviorFactory: ActiveActiveContext => EventSourcedBehavior[Command, Event, State])
+      eventSourcedBehaviorFactory: ReplicationContext => EventSourcedBehavior[Command, Event, State])
       : EventSourcedBehavior[Command, Event, State] =
     apply(entityId, replicaId, allReplicaIds.map(id => id -> queryPluginId).toMap)(eventSourcedBehaviorFactory)
 
@@ -107,10 +109,10 @@ object ActiveActiveEventSourcing {
       entityId: String,
       replicaId: ReplicaId,
       allReplicasAndQueryPlugins: Map[ReplicaId, String])(
-      eventSourcedBehaviorFactory: ActiveActiveContext => EventSourcedBehavior[Command, Event, State])
+      eventSourcedBehaviorFactory: ReplicationContext => EventSourcedBehavior[Command, Event, State])
       : EventSourcedBehavior[Command, Event, State] = {
-    val context = new ActiveActiveContextImpl(entityId, replicaId, allReplicasAndQueryPlugins)
-    eventSourcedBehaviorFactory(context).withActiveActive(context)
+    val context = new ReplicationContextImpl(entityId, replicaId, allReplicasAndQueryPlugins)
+    eventSourcedBehaviorFactory(context).withReplication(context)
   }
 
 }

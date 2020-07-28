@@ -6,13 +6,13 @@ package akka.persistence.typed.crdt
 
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
-import akka.persistence.typed.scaladsl.{ ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
-import akka.persistence.typed.{ ActiveActiveBaseSpec, ReplicaId }
+import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing }
+import akka.persistence.typed.{ ReplicaId, ReplicationBaseSpec }
 import akka.serialization.jackson.CborSerializable
 
 object LwwSpec {
 
-  import ActiveActiveBaseSpec._
+  import ReplicationBaseSpec._
 
   sealed trait Command
   final case class Update(item: String, timestamp: Long, error: ActorRef[String]) extends Command
@@ -26,7 +26,7 @@ object LwwSpec {
   object LwwRegistry {
 
     def apply(entityId: String, replica: ReplicaId): Behavior[Command] = {
-      ActiveActiveEventSourcing.withSharedJournal(
+      ReplicatedEventSourcing.withSharedJournal(
         entityId,
         replica,
         AllReplicas,
@@ -59,9 +59,9 @@ object LwwSpec {
   }
 }
 
-class LwwSpec extends ActiveActiveBaseSpec {
+class LwwSpec extends ReplicationBaseSpec {
   import LwwSpec._
-  import ActiveActiveBaseSpec._
+  import ReplicationBaseSpec._
 
   class Setup {
     val entityId = nextEntityId

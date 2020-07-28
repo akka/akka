@@ -13,6 +13,7 @@ import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotAdapter
@@ -146,8 +147,6 @@ object EventSourcedBehavior {
    */
   def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State]
 
-  private[akka] def withActiveActive(context: ActiveActiveContextImpl): EventSourcedBehavior[Command, Event, State]
-
   /**
    * Change the snapshot store plugin id that this actor should use.
    */
@@ -224,4 +223,10 @@ object EventSourcedBehavior {
    */
   @ApiMayChange
   def withEventPublishing(): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def withReplication(context: ReplicationContextImpl): EventSourcedBehavior[Command, Event, State]
 }

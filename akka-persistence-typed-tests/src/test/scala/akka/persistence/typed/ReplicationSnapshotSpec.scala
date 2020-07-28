@@ -12,13 +12,13 @@ import akka.persistence.testkit.{ PersistenceTestKitPlugin, PersistenceTestKitSn
 import akka.persistence.testkit.scaladsl.{ PersistenceTestKit, SnapshotTestKit }
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.internal.{ ReplicatedPublishedEventMetaData, VersionVector }
-import akka.persistence.typed.scaladsl.ActiveActiveEventSourcing
+import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 
-object ActiveActiveSnapshotSpec {
+object ReplicationSnapshotSpec {
 
-  import ActiveActiveSpec._
+  import ReplicatedEventSourcingSpec._
 
   def behaviorWithSnapshotting(entityId: String, replicaId: ReplicaId): Behavior[Command] =
     behaviorWithSnapshotting(entityId, replicaId, None)
@@ -33,7 +33,7 @@ object ActiveActiveSnapshotSpec {
       entityId: String,
       replicaId: ReplicaId,
       probe: Option[ActorRef[EventAndContext]]): Behavior[Command] = {
-    ActiveActiveEventSourcing.withSharedJournal(
+    ReplicatedEventSourcing.withSharedJournal(
       entityId,
       replicaId,
       AllReplicas,
@@ -43,14 +43,14 @@ object ActiveActiveSnapshotSpec {
   }
 }
 
-class ActiveActiveSnapshotSpec
+class ReplicationSnapshotSpec
     extends ScalaTestWithActorTestKit(
       PersistenceTestKitPlugin.config.withFallback(PersistenceTestKitSnapshotPlugin.config))
     with AnyWordSpecLike
     with LogCapturing
     with Eventually {
-  import ActiveActiveSpec._
-  import ActiveActiveSnapshotSpec._
+  import ReplicatedEventSourcingSpec._
+  import ReplicationSnapshotSpec._
 
   val ids = new AtomicInteger(0)
   def nextEntityId = s"e-${ids.getAndIncrement()}"
@@ -61,7 +61,7 @@ class ActiveActiveSnapshotSpec
   val R1 = ReplicaId("R1")
   val R2 = ReplicaId("R2")
 
-  "ActiveActive" should {
+  "ReplicatedEventSourcing" should {
     "recover state from snapshots" in {
       val entityId = nextEntityId
       val persistenceIdR1 = s"$entityId|R1"

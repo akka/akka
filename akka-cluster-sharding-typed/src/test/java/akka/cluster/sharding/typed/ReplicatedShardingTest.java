@@ -27,17 +27,16 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
-import scala.util.Random;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
-public class ActiveActiveShardingTest extends JUnitSuite {
+public class ReplicatedShardingTest extends JUnitSuite {
 
   static class MyActiveActiveStringSet
-      extends ActiveActiveEventSourcedBehavior<
+      extends ReplicatedEventSourcedBehavior<
           MyActiveActiveStringSet.Command, String, Set<String>> {
     interface Command {}
 
@@ -67,7 +66,7 @@ public class ActiveActiveShardingTest extends JUnitSuite {
 
     static Behavior<Command> create(
         String entityId, ReplicaId replicaId, Set<ReplicaId> allReplicas) {
-      return ActiveActiveEventSourcing.withSharedJournal(
+      return ReplicatedEventSourcing.withSharedJournal(
           entityId,
           replicaId,
           allReplicas,
@@ -75,8 +74,8 @@ public class ActiveActiveShardingTest extends JUnitSuite {
           MyActiveActiveStringSet::new);
     }
 
-    private MyActiveActiveStringSet(ActiveActiveContext activeActiveContext) {
-      super(activeActiveContext);
+    private MyActiveActiveStringSet(ReplicationContext replicationContext) {
+      super(replicationContext);
     }
 
     @Override
@@ -144,7 +143,7 @@ public class ActiveActiveShardingTest extends JUnitSuite {
                 Arrays.asList(
                     new ReplicaId("DC-A"), new ReplicaId("DC-B"), new ReplicaId("DC-C"))));
 
-    private final ActiveActiveSharding<
+    private final ReplicatedSharding<
             MyActiveActiveStringSet.Command, ShardingEnvelope<MyActiveActiveStringSet.Command>>
         aaSharding;
 
@@ -152,10 +151,10 @@ public class ActiveActiveShardingTest extends JUnitSuite {
       super(context);
 
       // #bootstrap
-      ActiveActiveShardingSettings<
+      ReplicatedShardingSettings<
               MyActiveActiveStringSet.Command, ShardingEnvelope<MyActiveActiveStringSet.Command>>
           aaShardingSettings =
-              ActiveActiveShardingSettings.create(
+              ReplicatedShardingSettings.create(
                   MyActiveActiveStringSet.Command.class,
                   ALL_REPLICAS,
                   // factory for replica settings for a given replica
@@ -176,8 +175,8 @@ public class ActiveActiveShardingTest extends JUnitSuite {
                               // .withDataCenter(replicaId.id()))
                               .withRole(replicaId.id())));
 
-      ActiveActiveShardingExtension extension =
-          ActiveActiveShardingExtension.get(getContext().getSystem());
+      ReplicatedShardingExtension extension =
+          ReplicatedShardingExtension.get(getContext().getSystem());
       aaSharding = extension.init(aaShardingSettings);
       // #bootstrap
     }

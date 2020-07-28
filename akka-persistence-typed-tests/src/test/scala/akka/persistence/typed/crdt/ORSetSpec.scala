@@ -6,17 +6,17 @@ package akka.persistence.typed.crdt
 
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
-import akka.persistence.typed.scaladsl.{ ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
-import akka.persistence.typed.{ ActiveActiveBaseSpec, ReplicaId }
+import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing }
+import akka.persistence.typed.{ ReplicaId, ReplicationBaseSpec }
 import ORSetSpec.ORSetEntity._
-import akka.persistence.typed.ActiveActiveBaseSpec.{ R1, R2 }
+import akka.persistence.typed.ReplicationBaseSpec.{ R1, R2 }
 import akka.persistence.typed.crdt.ORSetSpec.ORSetEntity
 
 import scala.util.Random
 
 object ORSetSpec {
 
-  import ActiveActiveBaseSpec._
+  import ReplicationBaseSpec._
 
   object ORSetEntity {
     sealed trait Command
@@ -27,7 +27,7 @@ object ORSetSpec {
 
     def apply(entityId: String, replica: ReplicaId): Behavior[ORSetEntity.Command] = {
 
-      ActiveActiveEventSourcing.withSharedJournal(
+      ReplicatedEventSourcing.withSharedJournal(
         entityId,
         replica,
         AllReplicas,
@@ -54,7 +54,7 @@ object ORSetSpec {
 
 }
 
-class ORSetSpec extends ActiveActiveBaseSpec {
+class ORSetSpec extends ReplicationBaseSpec {
 
   class Setup {
     val entityId = nextEntityId

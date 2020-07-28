@@ -24,6 +24,7 @@ import scala.annotation.tailrec
 import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable.TreeMap
 
+// FIXME waiting with renaming this one for a PR
 object ActiveActiveSerializer {
   object Comparator extends Comparator[Payload] {
     override def compare(a: Payload, b: Payload): Int = {

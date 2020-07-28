@@ -9,7 +9,7 @@ import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
-import akka.cluster.sharding.typed.internal.ActiveActiveShardingExtensionImpl
+import akka.cluster.sharding.typed.internal.ReplicatedShardingExtensionImpl
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.persistence.typed.ReplicaId
 import java.util.{ Map => JMap }
@@ -21,12 +21,12 @@ import akka.actor.typed.ActorRef
  * The sharding instances can be confined to datacenters or cluster roles or run on the same set of cluster nodes.
  */
 @ApiMayChange
-object ActiveActiveShardingExtension extends ExtensionId[ActiveActiveShardingExtension] {
+object ReplicatedShardingExtension extends ExtensionId[ReplicatedShardingExtension] {
 
-  override def createExtension(system: ActorSystem[_]): ActiveActiveShardingExtension =
-    new ActiveActiveShardingExtensionImpl(system)
+  override def createExtension(system: ActorSystem[_]): ReplicatedShardingExtension =
+    new ReplicatedShardingExtensionImpl(system)
 
-  def get(system: ActorSystem[_]): ActiveActiveShardingExtension = apply(system)
+  def get(system: ActorSystem[_]): ReplicatedShardingExtension = apply(system)
 
 }
 
@@ -35,17 +35,17 @@ object ActiveActiveShardingExtension extends ExtensionId[ActiveActiveShardingExt
  */
 @DoNotInherit
 @ApiMayChange
-trait ActiveActiveShardingExtension extends Extension {
+trait ReplicatedShardingExtension extends Extension {
 
   /**
-   * Init one instance sharding per replica in the given settings and return a [[ActiveActiveSharding]] representing those.
+   * Init one instance sharding per replica in the given settings and return a [[ReplicatedSharding]] representing those.
    *
    * @tparam M The type of messages the active active event sourced actor accepts
    * @tparam E The type of envelope used for routing messages to actors, the same for all replicas
    *
-   * Note, multiple calls on the same node will not start new sharding instances but will return a new instance of [[ActiveActiveSharding]]
+   * Note, multiple calls on the same node will not start new sharding instances but will return a new instance of [[ReplicatedSharding]]
    */
-  def init[M, E](settings: ActiveActiveShardingSettings[M, E]): ActiveActiveSharding[M, E]
+  def init[M, E](settings: ReplicatedShardingSettings[M, E]): ReplicatedSharding[M, E]
 }
 
 /**
@@ -55,7 +55,7 @@ trait ActiveActiveShardingExtension extends Extension {
  */
 @DoNotInherit
 @ApiMayChange
-trait ActiveActiveSharding[M, E] {
+trait ReplicatedSharding[M, E] {
 
   /**
    * Scala API: Returns the actor refs for the shard region or proxies of sharding for each replica for user defined
