@@ -123,11 +123,11 @@ private[akka] final class ReplayingEvents[C, E, S](
               eventForErrorReporting = OptionVal.Some(event)
               state = state.copy(seqNr = repr.sequenceNr)
 
-              val aaMetaAndSelfReplica: Option[(ReplicatedEventMetaData, ReplicaId, ActiveActive)] =
+              val aaMetaAndSelfReplica: Option[(ReplicatedEventMetadata, ReplicaId, ActiveActive)] =
                 setup.activeActive match {
                   case Some(aa) =>
                     val meta = repr.metadata match {
-                      case Some(m) => m.asInstanceOf[ReplicatedEventMetaData]
+                      case Some(m) => m.asInstanceOf[ReplicatedEventMetadata]
                       case None =>
                         throw new IllegalStateException(
                           s"Active active enabled but existing event has no metadata. Migration isn't supported yet.")

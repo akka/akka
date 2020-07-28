@@ -30,6 +30,9 @@ final class SnapshotMetadata(
     this(persistenceId, sequenceNr, 0L, meta)
   }
 
+  def withMetadata(metadata: Any): SnapshotMetadata =
+    new SnapshotMetadata(persistenceId, sequenceNr, timestamp, Some(metadata))
+
   // for bincompat, used to be a case class
   def copy(
       persistenceId: String = this.persistenceId,

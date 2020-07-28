@@ -144,7 +144,16 @@ private[akka] object Running {
               .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
               // from each replica, only get the events that originated there, this prevents most of the event filtering
               // the downside is that events can't be received via other replicas in the event of an uneven network partition
-              .filter(_.eventMetadata.get.asInstanceOf[ReplicatedEventMetaData].originReplica == replicaId)
+              .filter(event =>
+                event.eventMetadata match {
+                  case Some(replicatedMeta: ReplicatedEventMetadata) => replicatedMeta.originReplica == replicaId
+                  case _ =>
+                    throw new IllegalArgumentException(
+                      s"Replication stream from replica ${replicaId} for ${setup.persistenceId} contains event " +
+                      s"(sequence nr ${event.sequenceNr}) without replication metadata. " +
+                      s"Is the persistence id used by a regular event sourced actor there or the journal for that replica (${queryPluginId}) " +
+                      "used that does not support active active?")
+                })
               .viaMat(new FastForwardingFilter)(Keep.right)
               .mapMaterializedValue(streamControl => controlRef.set(streamControl))
           }
@@ -152,7 +161,7 @@ private[akka] object Running {
           .via(ActorFlow
             .ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) { (eventEnvelope, replyTo) =>
               // Need to handle this not being available migration from non-active-active is supported
-              val meta = eventEnvelope.eventMetadata.get.asInstanceOf[ReplicatedEventMetaData]
+              val meta = eventEnvelope.eventMetadata.get.asInstanceOf[ReplicatedEventMetadata]
               val re =
                 ReplicatedEvent[E](
                   eventEnvelope.event.asInstanceOf[E],
@@ -412,7 +421,7 @@ private[akka] object Running {
         event.event,
         "",
         OptionVal.Some(
-          ReplicatedEventMetaData(event.originReplica, event.originSequenceNr, updatedVersion, isConcurrent)))
+          ReplicatedEventMetadata(event.originReplica, event.originSequenceNr, updatedVersion, isConcurrent)))
       val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event.event, newState2.seqNr)
       // FIXME validate this is the correct sequence nr from that replica https://github.com/akka/akka/issues/29259
       val updatedSeen = newState2.seenPerReplica.updated(event.originReplica, event.originSequenceNr)
@@ -457,7 +466,7 @@ private[akka] object Running {
             eventToPersist,
             eventAdapterManifest,
             OptionVal.Some(
-              ReplicatedEventMetaData(aa.replicaId, _currentSequenceNumber, updatedVersion, concurrent = false)))
+              ReplicatedEventMetadata(aa.replicaId, _currentSequenceNumber, updatedVersion, concurrent = false)))
             .copy(version = updatedVersion)
 
           if (setup.log.isTraceEnabled())
@@ -485,10 +494,10 @@ private[akka] object Running {
         // also, ensure that there is an event handler for each single event
         _currentSequenceNumber = state.seqNr
 
-        val metadataTemplate: Option[ReplicatedEventMetaData] = setup.activeActive match {
+        val metadataTemplate: Option[ReplicatedEventMetadata] = setup.activeActive match {
           case Some(aa) =>
             aa.setContext(recoveryRunning = false, aa.replicaId, concurrent = false) // local events are never concurrent
-            Some(ReplicatedEventMetaData(aa.replicaId, 0L, state.version, concurrent = false)) // we replace it with actual seqnr later
+            Some(ReplicatedEventMetadata(aa.replicaId, 0L, state.version, concurrent = false)) // we replace it with actual seqnr later
           case None => None
         }
 

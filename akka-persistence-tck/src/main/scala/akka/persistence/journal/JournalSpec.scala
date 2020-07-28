@@ -323,7 +323,7 @@ abstract class JournalSpec(config: Config)
           AtomicWrite(
             PersistentRepr(
               payload = event,
-              sequenceNr = 1L,
+              sequenceNr = 6L,
               persistenceId = pid,
               sender = Actor.noSender,
               writerUuid = writerUuid).withMetadata(meta))
@@ -335,7 +335,7 @@ abstract class JournalSpec(config: Config)
         val WriterUuid = writerUuid
         probe.expectMsgPF() {
           case WriteMessageSuccess(
-              PersistentImpl(payload, 1L, Pid, _, _, Actor.noSender, WriterUuid, _, Some(`meta`)),
+              PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _, Some(`meta`)),
               _) =>
             payload should be(event)
         }
