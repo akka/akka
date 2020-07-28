@@ -295,7 +295,7 @@ final class ORSet[A] private[akka] (
    * Java API
    */
   def getElements(): java.util.Set[A] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     elements.asJava
   }
 
@@ -324,7 +324,7 @@ final class ORSet[A] private[akka] (
    * `elems` must not be empty.
    */
   def addAll(elems: java.util.Set[A]): ORSet.DeltaOp = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     addAll(elems.asScala.toSet)
   }
 
@@ -366,7 +366,7 @@ final class ORSet[A] private[akka] (
    * `elems` must not be empty.
    */
   def removeAll(elems: java.util.Set[A]): ORSet.DeltaOp = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     removeAll(elems.asScala.toSet)
   }
 

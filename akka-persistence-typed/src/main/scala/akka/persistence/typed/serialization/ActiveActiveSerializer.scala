@@ -21,7 +21,7 @@ import akka.remote.serialization.WrappedPayloadSupport
 import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable.TreeMap
 
 object ActiveActiveSerializer {
