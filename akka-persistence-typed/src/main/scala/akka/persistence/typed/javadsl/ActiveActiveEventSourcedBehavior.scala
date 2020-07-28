@@ -12,8 +12,8 @@ import akka.actor.typed.TypedActorContext
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.persistence.typed.internal
+import akka.persistence.typed.internal.ActiveActiveContextImpl
 import akka.persistence.typed.internal.EffectImpl
-import akka.persistence.typed.scaladsl.ActiveActiveContextImpl
 
 @ApiMayChange
 abstract class ActiveActiveEventSourcedBehavior[Command, Event, State](

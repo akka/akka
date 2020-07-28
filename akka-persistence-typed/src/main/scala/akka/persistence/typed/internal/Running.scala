@@ -53,7 +53,6 @@ import akka.persistence.typed.internal.InternalProtocol.ReplicatedEventEnvelope
 import akka.persistence.typed.internal.JournalInteractions.EventToPersist
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
-import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
 import akka.stream.scaladsl.Keep
 import akka.stream.SystemMaterializer
 import akka.stream.WatchedActorTerminatedException

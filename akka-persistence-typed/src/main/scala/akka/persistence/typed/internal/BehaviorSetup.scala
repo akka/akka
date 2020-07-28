@@ -13,7 +13,6 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.ReplicaId
-import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
 import akka.persistence.typed.{ EventAdapter, PersistenceId, SnapshotAdapter }
 import akka.persistence.typed.scaladsl.{ EventSourcedBehavior, RetentionCriteria }
 import akka.util.OptionVal

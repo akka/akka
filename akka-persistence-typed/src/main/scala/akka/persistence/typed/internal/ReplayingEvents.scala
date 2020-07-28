@@ -23,7 +23,6 @@ import akka.persistence.typed.SingleEventSeq
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
-import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.unused

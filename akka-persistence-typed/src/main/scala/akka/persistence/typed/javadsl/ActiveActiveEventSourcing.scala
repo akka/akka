@@ -11,7 +11,7 @@ import java.util.{ Map => JMap }
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
-import akka.persistence.typed.scaladsl.ActiveActiveContextImpl
+import akka.persistence.typed.internal.ActiveActiveContextImpl
 
 import akka.util.ccompat.JavaConverters._
 
