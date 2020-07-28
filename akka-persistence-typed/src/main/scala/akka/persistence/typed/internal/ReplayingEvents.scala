@@ -23,6 +23,7 @@ import akka.persistence.typed.SingleEventSeq
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
+import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.unused
@@ -122,7 +123,7 @@ private[akka] final class ReplayingEvents[C, E, S](
               eventForErrorReporting = OptionVal.Some(event)
               state = state.copy(seqNr = repr.sequenceNr)
 
-              val aaMetaAndSelfReplica: Option[(ReplicatedEventMetadata, ReplicaId)] =
+              val aaMetaAndSelfReplica: Option[(ReplicatedEventMetadata, ReplicaId, ActiveActive)] =
                 setup.activeActive match {
                   case Some(aa) =>
                     val meta = repr.metadata match {
@@ -133,19 +134,30 @@ private[akka] final class ReplayingEvents[C, E, S](
 
                     }
                     aa.setContext(recoveryRunning = true, meta.originReplica, meta.concurrent)
-                    Some(meta -> aa.replicaId)
+                    Some((meta, aa.replicaId, aa))
                   case None => None
                 }
+
               val newState = setup.eventHandler(state.state, event)
 
+              setup.activeActive match {
+                case Some(aa) =>
+                  aa.clearContext()
+                case None =>
+              }
+
               aaMetaAndSelfReplica match {
-                case Some((meta, selfReplica)) if meta.originReplica != selfReplica =>
+                case Some((meta, selfReplica, aa)) if meta.originReplica != selfReplica =>
                   // keep track of highest origin seqnr per other replica
                   state = state.copy(
                     state = newState,
                     eventSeenInInterval = true,
                     version = meta.version,
                     seenSeqNrPerReplica = state.seenSeqNrPerReplica + (meta.originReplica -> meta.originSequenceNr))
+                  aa.clearContext()
+                case Some((_, _, aa)) =>
+                  aa.clearContext()
+                  state = state.copy(state = newState, eventSeenInInterval = true)
                 case _ =>
                   state = state.copy(state = newState, eventSeenInInterval = true)
               }
