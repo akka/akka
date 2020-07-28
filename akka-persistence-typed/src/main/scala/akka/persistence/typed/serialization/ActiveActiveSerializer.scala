@@ -10,7 +10,10 @@ import java.{ lang => jl }
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
+import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.crdt.{ Counter, ORSet }
+import akka.persistence.typed.internal.ReplicatedEventMetadata
+import akka.persistence.typed.internal.ReplicatedSnapshotMetadata
 import akka.persistence.typed.internal.VersionVector
 import akka.protobufv3.internal.ByteString
 import akka.remote.ContainerFormats.Payload
@@ -21,7 +24,7 @@ import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.immutable.TreeMap
 
-object CrdtSerializer {
+object ActiveActiveSerializer {
   object Comparator extends Comparator[Payload] {
     override def compare(a: Payload, b: Payload): Int = {
       val aByteString = a.getEnclosedMessage
@@ -50,7 +53,7 @@ object CrdtSerializer {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class CrdtSerializer(val system: ExtendedActorSystem)
+@InternalApi private[akka] final class ActiveActiveSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest
     with BaseSerializer {
 
@@ -67,6 +70,9 @@ object CrdtSerializer {
 
   private val VersionVectorManifest = "DA"
 
+  private val ReplicatedEventMetadataManifest = "RE"
+  private val ReplicatedSnapshotMetadataManifest = "RS"
+
   def manifest(o: AnyRef) = o match {
     case _: ORSet[_]                  => ORSetManifest
     case _: ORSet.AddDeltaOp[_]       => ORSetAddManifest
@@ -78,11 +84,19 @@ object CrdtSerializer {
     case _: Counter.Updated => CrdtCounterUpdatedManifest
 
     case _: VersionVector => VersionVectorManifest
+
+    case _: ReplicatedEventMetadata    => ReplicatedEventMetadataManifest
+    case _: ReplicatedSnapshotMetadata => ReplicatedSnapshotMetadataManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
 
   def toBinary(o: AnyRef) = o match {
+    case m: ReplicatedEventMetadata    => replicatedEventMetadataToProtoByteArray(m)
+    case m: ReplicatedSnapshotMetadata => replicatedSnapshotMetadataToByteArray(m)
+
+    case m: VersionVector => versionVectorToProto(m).toByteArray
+
     case m: ORSet[_]                  => orsetToProto(m).toByteArray
     case m: ORSet.AddDeltaOp[_]       => orsetToProto(m.underlying).toByteArray
     case m: ORSet.RemoveDeltaOp[_]    => orsetToProto(m.underlying).toByteArray
@@ -91,12 +105,18 @@ object CrdtSerializer {
 
     case m: Counter         => counterToProtoByteArray(m)
     case m: Counter.Updated => counterUpdatedToProtoBufByteArray(m)
-    case m: VersionVector   => versionVectorToProto(m).toByteArray
+
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
   }
 
   def fromBinary(bytes: Array[Byte], manifest: String) = manifest match {
+
+    case ReplicatedEventMetadataManifest    => replicatedEventMetadataFromBinary(bytes)
+    case ReplicatedSnapshotMetadataManifest => replicatedSnapshotMetadataFromBinary(bytes)
+
+    case VersionVectorManifest => versionVectorFromBinary(bytes)
+
     case ORSetManifest           => orsetFromBinary(bytes)
     case ORSetAddManifest        => orsetAddFromBinary(bytes)
     case ORSetRemoveManifest     => orsetRemoveFromBinary(bytes)
@@ -106,29 +126,29 @@ object CrdtSerializer {
     case CrdtCounterManifest        => counterFromBinary(bytes)
     case CrdtCounterUpdatedManifest => counterUpdatedFromBinary(bytes)
 
-    case VersionVectorManifest => versionVectorFromBinary(bytes)
     case _ =>
       throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
   }
 
   def counterFromBinary(bytes: Array[Byte]): Counter =
-    Counter(BigInt(Crdts.Counter.parseFrom(bytes).getValue.toByteArray))
+    Counter(BigInt(ActiveActive.Counter.parseFrom(bytes).getValue.toByteArray))
 
   def counterUpdatedFromBinary(bytes: Array[Byte]): Counter.Updated =
-    Counter.Updated(BigInt(Crdts.CounterUpdate.parseFrom(bytes).getDelta.toByteArray))
+    Counter.Updated(BigInt(ActiveActive.CounterUpdate.parseFrom(bytes).getDelta.toByteArray))
 
   def counterToProtoByteArray(counter: Counter): Array[Byte] =
-    Crdts.Counter.newBuilder().setValue(ByteString.copyFrom(counter.value.toByteArray)).build().toByteArray
+    ActiveActive.Counter.newBuilder().setValue(ByteString.copyFrom(counter.value.toByteArray)).build().toByteArray
 
   def counterUpdatedToProtoBufByteArray(updated: Counter.Updated): Array[Byte] =
-    Crdts.CounterUpdate.newBuilder().setDelta(ByteString.copyFrom(updated.delta.toByteArray)).build().toByteArray
+    ActiveActive.CounterUpdate.newBuilder().setDelta(ByteString.copyFrom(updated.delta.toByteArray)).build().toByteArray
 
-  def orsetToProto(orset: ORSet[_]): Crdts.ORSet =
+  def orsetToProto(orset: ORSet[_]): ActiveActive.ORSet =
     orsetToProtoImpl(orset.asInstanceOf[ORSet[Any]])
 
-  private def orsetToProtoImpl(orset: ORSet[Any]): Crdts.ORSet = {
-    val b = Crdts.ORSet.newBuilder().setOriginDc(orset.originReplica).setVvector(versionVectorToProto(orset.vvector))
+  private def orsetToProtoImpl(orset: ORSet[Any]): ActiveActive.ORSet = {
+    val b =
+      ActiveActive.ORSet.newBuilder().setOriginDc(orset.originReplica).setVvector(versionVectorToProto(orset.vvector))
     // using java collections and sorting for performance (avoid conversions)
     val stringElements = new ArrayList[String]
     val intElements = new ArrayList[Integer]
@@ -174,7 +194,7 @@ object CrdtSerializer {
       addDots(longElements)
     }
     if (!otherElements.isEmpty) {
-      Collections.sort(otherElements, CrdtSerializer.Comparator)
+      Collections.sort(otherElements, ActiveActiveSerializer.Comparator)
       b.addAllOtherElements(otherElements)
       addDots(otherElements)
     }
@@ -182,31 +202,55 @@ object CrdtSerializer {
     b.build()
   }
 
+  def replicatedEventMetadataToProtoByteArray(rem: ReplicatedEventMetadata): Array[Byte] = {
+    ActiveActive.ReplicatedEventMetadata
+      .newBuilder()
+      .setOriginSequenceNr(rem.originSequenceNr)
+      .setConcurrent(rem.concurrent)
+      .setOriginReplica(rem.originReplica.id)
+      .setVersionVector(versionVectorToProto(rem.version))
+      .build()
+      .toByteArray
+  }
+
+  def replicatedSnapshotMetadataToByteArray(rsm: ReplicatedSnapshotMetadata): Array[Byte] = {
+    ActiveActive.ReplicatedSnapshotMetadata
+      .newBuilder()
+      .setVersion(versionVectorToProto(rsm.version))
+      .addAllSeenPerReplica(rsm.seenPerReplica.map(seenToProto).asJava)
+      .build()
+      .toByteArray
+  }
+
+  def seenToProto(t: (ReplicaId, Long)): ActiveActive.ReplicatedSnapshotMetadata.Seen = {
+    ActiveActive.ReplicatedSnapshotMetadata.Seen.newBuilder().setReplicaId(t._1.id).setSequenceNr(t._2).build()
+  }
+
   def orsetFromBinary(bytes: Array[Byte]): ORSet[Any] =
-    orsetFromProto(Crdts.ORSet.parseFrom(bytes))
+    orsetFromProto(ActiveActive.ORSet.parseFrom(bytes))
 
   private def orsetAddFromBinary(bytes: Array[Byte]): ORSet.AddDeltaOp[Any] =
-    new ORSet.AddDeltaOp(orsetFromProto(Crdts.ORSet.parseFrom(bytes)))
+    new ORSet.AddDeltaOp(orsetFromProto(ActiveActive.ORSet.parseFrom(bytes)))
 
   private def orsetRemoveFromBinary(bytes: Array[Byte]): ORSet.RemoveDeltaOp[Any] =
-    new ORSet.RemoveDeltaOp(orsetFromProto(Crdts.ORSet.parseFrom(bytes)))
+    new ORSet.RemoveDeltaOp(orsetFromProto(ActiveActive.ORSet.parseFrom(bytes)))
 
   private def orsetFullFromBinary(bytes: Array[Byte]): ORSet.FullStateDeltaOp[Any] =
-    new ORSet.FullStateDeltaOp(orsetFromProto(Crdts.ORSet.parseFrom(bytes)))
+    new ORSet.FullStateDeltaOp(orsetFromProto(ActiveActive.ORSet.parseFrom(bytes)))
 
-  private def orsetDeltaGroupToProto(deltaGroup: ORSet.DeltaGroup[_]): Crdts.ORSetDeltaGroup = {
-    def createEntry(opType: Crdts.ORSetDeltaOp, u: ORSet[_]) = {
-      Crdts.ORSetDeltaGroup.Entry.newBuilder().setOperation(opType).setUnderlying(orsetToProto(u))
+  private def orsetDeltaGroupToProto(deltaGroup: ORSet.DeltaGroup[_]): ActiveActive.ORSetDeltaGroup = {
+    def createEntry(opType: ActiveActive.ORSetDeltaOp, u: ORSet[_]) = {
+      ActiveActive.ORSetDeltaGroup.Entry.newBuilder().setOperation(opType).setUnderlying(orsetToProto(u))
     }
 
-    val b = Crdts.ORSetDeltaGroup.newBuilder()
+    val b = ActiveActive.ORSetDeltaGroup.newBuilder()
     deltaGroup.ops.foreach {
       case ORSet.AddDeltaOp(u) =>
-        b.addEntries(createEntry(Crdts.ORSetDeltaOp.Add, u))
+        b.addEntries(createEntry(ActiveActive.ORSetDeltaOp.Add, u))
       case ORSet.RemoveDeltaOp(u) =>
-        b.addEntries(createEntry(Crdts.ORSetDeltaOp.Remove, u))
+        b.addEntries(createEntry(ActiveActive.ORSetDeltaOp.Remove, u))
       case ORSet.FullStateDeltaOp(u) =>
-        b.addEntries(createEntry(Crdts.ORSetDeltaOp.Full, u))
+        b.addEntries(createEntry(ActiveActive.ORSetDeltaOp.Full, u))
       case ORSet.DeltaGroup(_) =>
         throw new IllegalArgumentException("ORSet.DeltaGroup should not be nested")
     }
@@ -214,14 +258,14 @@ object CrdtSerializer {
   }
 
   private def orsetDeltaGroupFromBinary(bytes: Array[Byte]): ORSet.DeltaGroup[Any] = {
-    val deltaGroup = Crdts.ORSetDeltaGroup.parseFrom(bytes)
+    val deltaGroup = ActiveActive.ORSetDeltaGroup.parseFrom(bytes)
     val ops: Vector[ORSet.DeltaOp] =
       deltaGroup.getEntriesList.asScala.map { entry =>
-        if (entry.getOperation == Crdts.ORSetDeltaOp.Add)
+        if (entry.getOperation == ActiveActive.ORSetDeltaOp.Add)
           ORSet.AddDeltaOp(orsetFromProto(entry.getUnderlying))
-        else if (entry.getOperation == Crdts.ORSetDeltaOp.Remove)
+        else if (entry.getOperation == ActiveActive.ORSetDeltaOp.Remove)
           ORSet.RemoveDeltaOp(orsetFromProto(entry.getUnderlying))
-        else if (entry.getOperation == Crdts.ORSetDeltaOp.Full)
+        else if (entry.getOperation == ActiveActive.ORSetDeltaOp.Full)
           ORSet.FullStateDeltaOp(orsetFromProto(entry.getUnderlying))
         else
           throw new NotSerializableException(s"Unknow ORSet delta operation ${entry.getOperation}")
@@ -229,7 +273,7 @@ object CrdtSerializer {
     ORSet.DeltaGroup(ops)
   }
 
-  def orsetFromProto(orset: Crdts.ORSet): ORSet[Any] = {
+  def orsetFromProto(orset: ActiveActive.ORSet): ORSet[Any] = {
     val elements: Iterator[Any] =
       (orset.getStringElementsList.iterator.asScala ++
       orset.getIntElementsList.iterator.asScala ++
@@ -242,18 +286,18 @@ object CrdtSerializer {
     new ORSet(orset.getOriginDc, elementsMap, vvector = versionVectorFromProto(orset.getVvector))
   }
 
-  def versionVectorToProto(versionVector: VersionVector): Crdts.VersionVector = {
-    val b = Crdts.VersionVector.newBuilder()
+  def versionVectorToProto(versionVector: VersionVector): ActiveActive.VersionVector = {
+    val b = ActiveActive.VersionVector.newBuilder()
     versionVector.versionsIterator.foreach {
-      case (key, value) => b.addEntries(Crdts.VersionVector.Entry.newBuilder().setKey(key).setVersion(value))
+      case (key, value) => b.addEntries(ActiveActive.VersionVector.Entry.newBuilder().setKey(key).setVersion(value))
     }
     b.build()
   }
 
   def versionVectorFromBinary(bytes: Array[Byte]): VersionVector =
-    versionVectorFromProto(Crdts.VersionVector.parseFrom(bytes))
+    versionVectorFromProto(ActiveActive.VersionVector.parseFrom(bytes))
 
-  def versionVectorFromProto(versionVector: Crdts.VersionVector): VersionVector = {
+  def versionVectorFromProto(versionVector: ActiveActive.VersionVector): VersionVector = {
     val entries = versionVector.getEntriesList
     if (entries.isEmpty)
       VersionVector.empty
@@ -264,6 +308,22 @@ object CrdtSerializer {
           entry.getKey -> entry.getVersion)
       VersionVector(versions)
     }
+  }
+
+  def replicatedEventMetadataFromBinary(bytes: Array[Byte]): ReplicatedEventMetadata = {
+    val parsed = ActiveActive.ReplicatedEventMetadata.parseFrom(bytes)
+    ReplicatedEventMetadata(
+      ReplicaId(parsed.getOriginReplica),
+      parsed.getOriginSequenceNr,
+      versionVectorFromProto(parsed.getVersionVector),
+      parsed.getConcurrent)
+  }
+
+  def replicatedSnapshotMetadataFromBinary(bytes: Array[Byte]): ReplicatedSnapshotMetadata = {
+    val parsed = ActiveActive.ReplicatedSnapshotMetadata.parseFrom(bytes)
+    ReplicatedSnapshotMetadata(
+      versionVectorFromProto(parsed.getVersion),
+      parsed.getSeenPerReplicaList.asScala.map(seen => ReplicaId(seen.getReplicaId) -> seen.getSequenceNr).toMap)
   }
 
 }

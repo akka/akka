@@ -152,7 +152,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
             state = setup.snapshotAdapter.fromJournal(snapshot)
             setup.context.log.debug("Loaded snapshot with metadata {}", metadata)
             metadata.metadata match {
-              case Some(rm: ReplicatedSnapshotMetaData) => (metadata.sequenceNr, rm.seenPerReplica, rm.version)
+              case Some(rm: ReplicatedSnapshotMetadata) => (metadata.sequenceNr, rm.seenPerReplica, rm.version)
               case _                                    => (metadata.sequenceNr, Map.empty.withDefaultValue(0L), VersionVector.empty)
             }
           case None => (0L, Map.empty.withDefaultValue(0L), VersionVector.empty)

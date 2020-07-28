@@ -48,3 +48,19 @@ message VersionVector {
   }
   repeated Entry entries = 1;
 }
+
+message ReplicatedEventMetadata {
+  required string originReplica = 1;
+  required int64 originSequenceNr = 2;
+  required VersionVector versionVector = 3;
+  required bool concurrent = 4;
+}
+
+message ReplicatedSnapshotMetadata {
+  message Seen {
+    required string replicaId = 1;
+    required int64 sequenceNr = 2;
+  }
+  required VersionVector version = 1;
+  repeated Seen seenPerReplica = 2;
+}
