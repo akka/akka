@@ -17,7 +17,7 @@ import akka.persistence.typed.ReplicaId
 
 class ReplicatedShardingDirectReplicationSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
-  "Active active sharding replication" must {
+  "Replicated sharding direct replication" must {
 
     "replicate published events to all sharding proxies" in {
       val replicaAProbe = createTestProbe[ShardingEnvelope[PublishedEvent]]()

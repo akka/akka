@@ -36,7 +36,7 @@ private[akka] final class ReplicationContextImpl(
     val callerThread = Thread.currentThread()
     def error() =
       throw new UnsupportedOperationException(
-        s"Unsupported access to ActiveActiveContext operation from the outside of event handler. " +
+        s"Unsupported access to ReplicationContext operation from the outside of event handler. " +
         s"$functionName can only be called from the event handler")
     _currentThread match {
       case OptionVal.Some(t) =>
@@ -64,7 +64,6 @@ private[akka] final class ReplicationContextImpl(
    */
   override def concurrent: Boolean = {
     checkAccess("concurrent")
-    if (_origin.isEmpty) throw new IllegalStateException("concurrent can only be accessed from the event handler")
     _concurrent
   }
 
@@ -75,7 +74,6 @@ private[akka] final class ReplicationContextImpl(
   }
   override def recoveryRunning: Boolean = {
     checkAccess("recoveryRunning")
-    if (_origin.isEmpty) throw new IllegalStateException("recoveryRunning can only be accessed from the event handler")
     _recoveryRunning
   }
 

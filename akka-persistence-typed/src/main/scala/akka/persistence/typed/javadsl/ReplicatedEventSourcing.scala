@@ -57,7 +57,7 @@ trait ReplicationContext {
 
   /**
    * Must only be called from the event handler
-   * @return true if this event was concurrent with another event
+   * @return true if this event happened concurrent with an event from another replica
    */
   def concurrent: Boolean
 

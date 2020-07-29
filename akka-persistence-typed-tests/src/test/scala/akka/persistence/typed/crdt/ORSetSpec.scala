@@ -78,7 +78,7 @@ class ORSetSpec extends ReplicationBaseSpec {
     Thread.sleep(Random.nextInt(200).toLong)
   }
 
-  "ORSet Active Active Entity" should {
+  "ORSet Replicated Entity" should {
 
     "support concurrent updates" in new Setup {
       r1 ! Add("a1")

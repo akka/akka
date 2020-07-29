@@ -23,7 +23,7 @@ object ReplicatedShardingSettings {
   /**
    * Java API:
    *
-   * @tparam M The type of messages the active active entity accepts
+   * @tparam M The type of messages the replicated entity accepts
    * @tparam E The type for envelopes used for sending `M`s over sharding
    */
   def create[M, E](
@@ -42,7 +42,7 @@ object ReplicatedShardingSettings {
   /**
    * Scala API:
    *
-   * @tparam M The type of messages the active active entity accepts
+   * @tparam M The type of messages the replicated entity accepts
    * @tparam E The type for envelopes used for sending `M`s over sharding
    */
   def apply[M: ClassTag, E](allReplicaIds: Set[ReplicaId])(
@@ -56,7 +56,7 @@ object ReplicatedShardingSettings {
 }
 
 /**
- * @tparam M The type of messages the active active entity accepts
+ * @tparam M The type of messages the replicated entity accepts
  * @tparam E The type for envelopes used for sending `M`s over sharding
  */
 @ApiMayChange
@@ -65,7 +65,7 @@ final class ReplicatedShardingSettings[M, E] private (
     val directReplication: Boolean) {
 
   /**
-   * Start direct replication over sharding when active active sharding starts up, requires the entities
+   * Start direct replication over sharding when replicated sharding starts up, requires the entities
    * to also have it enabled through [[akka.persistence.typed.scaladsl.EventSourcedBehavior#withEventPublishing()]]
    * or [[akka.persistence.typed.javadsl.ReplicatedEventSourcedBehavior#withEventPublishing()]]
    * to work.
@@ -99,7 +99,7 @@ object ReplicaSettings {
 }
 
 /**
- * Settings for a specific replica id in active active sharding
+ * Settings for a specific replica id in replicated sharding
  */
 @ApiMayChange
 final class ReplicaSettings[M, E] private (val replicaId: ReplicaId, val entity: Entity[M, E])

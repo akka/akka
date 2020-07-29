@@ -18,10 +18,10 @@ import akka.persistence.typed.ReplicaId
 import akka.util.ccompat.JavaConverters._
 
 /**
- * Used when sharding Active Active entities in multiple instances of sharding, for example one per DC in a Multi DC
+ * Used when sharding Replicated Event Sourced entities in multiple instances of sharding, for example one per DC in a Multi DC
  * Akka Cluster.
  *
- * This actor should be started once on each node where Active Active entities will run (the same nodes that you start
+ * This actor should be started once on each node where Replicated Event Sourced entities will run (the same nodes that you start
  * sharding on). The entities should be set up with [[akka.persistence.typed.scaladsl.EventSourcedBehavior#withEventPublishing()]]
  * or [[akka.persistence.typed.javadsl.ReplicatedEventSourcedBehavior#withEventPublishing()]]
  * If using [[ReplicatedSharding]] the replication can be enabled through [[ReplicatedShardingSettings#withDirectReplication()]]

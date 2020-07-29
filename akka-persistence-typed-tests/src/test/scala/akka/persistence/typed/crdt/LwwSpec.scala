@@ -73,7 +73,7 @@ class LwwSpec extends ReplicationBaseSpec {
     val r2GetProbe = createTestProbe[Registry]()
   }
 
-  "Lww Active Active Event Sourced Behavior" should {
+  "Lww Replicated Event Sourced Behavior" should {
     "replicate a single event" in new Setup {
       r1 ! Update("a1", 1L, r1Probe.ref)
       eventually {

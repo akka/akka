@@ -22,10 +22,13 @@ import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 
 import scala.annotation.tailrec
 import akka.util.ccompat.JavaConverters._
+
 import scala.collection.immutable.TreeMap
 
-// FIXME waiting with renaming this one for a PR
-object ActiveActiveSerializer {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object ReplicatedEventSourcingSerializer {
   object Comparator extends Comparator[Payload] {
     override def compare(a: Payload, b: Payload): Int = {
       val aByteString = a.getEnclosedMessage
@@ -54,7 +57,7 @@ object ActiveActiveSerializer {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ActiveActiveSerializer(val system: ExtendedActorSystem)
+@InternalApi private[akka] final class ReplicatedEventSourcingSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest
     with BaseSerializer {
 
@@ -133,23 +136,34 @@ object ActiveActiveSerializer {
   }
 
   def counterFromBinary(bytes: Array[Byte]): Counter =
-    Counter(BigInt(ActiveActive.Counter.parseFrom(bytes).getValue.toByteArray))
+    Counter(BigInt(ReplicatedEventSourcing.Counter.parseFrom(bytes).getValue.toByteArray))
 
   def counterUpdatedFromBinary(bytes: Array[Byte]): Counter.Updated =
-    Counter.Updated(BigInt(ActiveActive.CounterUpdate.parseFrom(bytes).getDelta.toByteArray))
+    Counter.Updated(BigInt(ReplicatedEventSourcing.CounterUpdate.parseFrom(bytes).getDelta.toByteArray))
 
   def counterToProtoByteArray(counter: Counter): Array[Byte] =
-    ActiveActive.Counter.newBuilder().setValue(ByteString.copyFrom(counter.value.toByteArray)).build().toByteArray
+    ReplicatedEventSourcing.Counter
+      .newBuilder()
+      .setValue(ByteString.copyFrom(counter.value.toByteArray))
+      .build()
+      .toByteArray
 
   def counterUpdatedToProtoBufByteArray(updated: Counter.Updated): Array[Byte] =
-    ActiveActive.CounterUpdate.newBuilder().setDelta(ByteString.copyFrom(updated.delta.toByteArray)).build().toByteArray
+    ReplicatedEventSourcing.CounterUpdate
+      .newBuilder()
+      .setDelta(ByteString.copyFrom(updated.delta.toByteArray))
+      .build()
+      .toByteArray
 
-  def orsetToProto(orset: ORSet[_]): ActiveActive.ORSet =
+  def orsetToProto(orset: ORSet[_]): ReplicatedEventSourcing.ORSet =
     orsetToProtoImpl(orset.asInstanceOf[ORSet[Any]])
 
-  private def orsetToProtoImpl(orset: ORSet[Any]): ActiveActive.ORSet = {
+  private def orsetToProtoImpl(orset: ORSet[Any]): ReplicatedEventSourcing.ORSet = {
     val b =
-      ActiveActive.ORSet.newBuilder().setOriginDc(orset.originReplica).setVvector(versionVectorToProto(orset.vvector))
+      ReplicatedEventSourcing.ORSet
+        .newBuilder()
+        .setOriginDc(orset.originReplica)
+        .setVvector(versionVectorToProto(orset.vvector))
     // using java collections and sorting for performance (avoid conversions)
     val stringElements = new ArrayList[String]
     val intElements = new ArrayList[Integer]
@@ -195,7 +209,7 @@ object ActiveActiveSerializer {
       addDots(longElements)
     }
     if (!otherElements.isEmpty) {
-      Collections.sort(otherElements, ActiveActiveSerializer.Comparator)
+      Collections.sort(otherElements, ReplicatedEventSourcingSerializer.Comparator)
       b.addAllOtherElements(otherElements)
       addDots(otherElements)
     }
@@ -204,7 +218,7 @@ object ActiveActiveSerializer {
   }
 
   def replicatedEventMetadataToProtoByteArray(rem: ReplicatedEventMetadata): Array[Byte] = {
-    ActiveActive.ReplicatedEventMetadata
+    ReplicatedEventSourcing.ReplicatedEventMetadata
       .newBuilder()
       .setOriginSequenceNr(rem.originSequenceNr)
       .setConcurrent(rem.concurrent)
@@ -215,7 +229,7 @@ object ActiveActiveSerializer {
   }
 
   def replicatedSnapshotMetadataToByteArray(rsm: ReplicatedSnapshotMetadata): Array[Byte] = {
-    ActiveActive.ReplicatedSnapshotMetadata
+    ReplicatedEventSourcing.ReplicatedSnapshotMetadata
       .newBuilder()
       .setVersion(versionVectorToProto(rsm.version))
       .addAllSeenPerReplica(rsm.seenPerReplica.map(seenToProto).asJava)
@@ -223,35 +237,39 @@ object ActiveActiveSerializer {
       .toByteArray
   }
 
-  def seenToProto(t: (ReplicaId, Long)): ActiveActive.ReplicatedSnapshotMetadata.Seen = {
-    ActiveActive.ReplicatedSnapshotMetadata.Seen.newBuilder().setReplicaId(t._1.id).setSequenceNr(t._2).build()
+  def seenToProto(t: (ReplicaId, Long)): ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen = {
+    ReplicatedEventSourcing.ReplicatedSnapshotMetadata.Seen
+      .newBuilder()
+      .setReplicaId(t._1.id)
+      .setSequenceNr(t._2)
+      .build()
   }
 
   def orsetFromBinary(bytes: Array[Byte]): ORSet[Any] =
-    orsetFromProto(ActiveActive.ORSet.parseFrom(bytes))
+    orsetFromProto(ReplicatedEventSourcing.ORSet.parseFrom(bytes))
 
   private def orsetAddFromBinary(bytes: Array[Byte]): ORSet.AddDeltaOp[Any] =
-    new ORSet.AddDeltaOp(orsetFromProto(ActiveActive.ORSet.parseFrom(bytes)))
+    new ORSet.AddDeltaOp(orsetFromProto(ReplicatedEventSourcing.ORSet.parseFrom(bytes)))
 
   private def orsetRemoveFromBinary(bytes: Array[Byte]): ORSet.RemoveDeltaOp[Any] =
-    new ORSet.RemoveDeltaOp(orsetFromProto(ActiveActive.ORSet.parseFrom(bytes)))
+    new ORSet.RemoveDeltaOp(orsetFromProto(ReplicatedEventSourcing.ORSet.parseFrom(bytes)))
 
   private def orsetFullFromBinary(bytes: Array[Byte]): ORSet.FullStateDeltaOp[Any] =
-    new ORSet.FullStateDeltaOp(orsetFromProto(ActiveActive.ORSet.parseFrom(bytes)))
+    new ORSet.FullStateDeltaOp(orsetFromProto(ReplicatedEventSourcing.ORSet.parseFrom(bytes)))
 
-  private def orsetDeltaGroupToProto(deltaGroup: ORSet.DeltaGroup[_]): ActiveActive.ORSetDeltaGroup = {
-    def createEntry(opType: ActiveActive.ORSetDeltaOp, u: ORSet[_]) = {
-      ActiveActive.ORSetDeltaGroup.Entry.newBuilder().setOperation(opType).setUnderlying(orsetToProto(u))
+  private def orsetDeltaGroupToProto(deltaGroup: ORSet.DeltaGroup[_]): ReplicatedEventSourcing.ORSetDeltaGroup = {
+    def createEntry(opType: ReplicatedEventSourcing.ORSetDeltaOp, u: ORSet[_]) = {
+      ReplicatedEventSourcing.ORSetDeltaGroup.Entry.newBuilder().setOperation(opType).setUnderlying(orsetToProto(u))
     }
 
-    val b = ActiveActive.ORSetDeltaGroup.newBuilder()
+    val b = ReplicatedEventSourcing.ORSetDeltaGroup.newBuilder()
     deltaGroup.ops.foreach {
       case ORSet.AddDeltaOp(u) =>
-        b.addEntries(createEntry(ActiveActive.ORSetDeltaOp.Add, u))
+        b.addEntries(createEntry(ReplicatedEventSourcing.ORSetDeltaOp.Add, u))
       case ORSet.RemoveDeltaOp(u) =>
-        b.addEntries(createEntry(ActiveActive.ORSetDeltaOp.Remove, u))
+        b.addEntries(createEntry(ReplicatedEventSourcing.ORSetDeltaOp.Remove, u))
       case ORSet.FullStateDeltaOp(u) =>
-        b.addEntries(createEntry(ActiveActive.ORSetDeltaOp.Full, u))
+        b.addEntries(createEntry(ReplicatedEventSourcing.ORSetDeltaOp.Full, u))
       case ORSet.DeltaGroup(_) =>
         throw new IllegalArgumentException("ORSet.DeltaGroup should not be nested")
     }
@@ -259,14 +277,14 @@ object ActiveActiveSerializer {
   }
 
   private def orsetDeltaGroupFromBinary(bytes: Array[Byte]): ORSet.DeltaGroup[Any] = {
-    val deltaGroup = ActiveActive.ORSetDeltaGroup.parseFrom(bytes)
+    val deltaGroup = ReplicatedEventSourcing.ORSetDeltaGroup.parseFrom(bytes)
     val ops: Vector[ORSet.DeltaOp] =
       deltaGroup.getEntriesList.asScala.map { entry =>
-        if (entry.getOperation == ActiveActive.ORSetDeltaOp.Add)
+        if (entry.getOperation == ReplicatedEventSourcing.ORSetDeltaOp.Add)
           ORSet.AddDeltaOp(orsetFromProto(entry.getUnderlying))
-        else if (entry.getOperation == ActiveActive.ORSetDeltaOp.Remove)
+        else if (entry.getOperation == ReplicatedEventSourcing.ORSetDeltaOp.Remove)
           ORSet.RemoveDeltaOp(orsetFromProto(entry.getUnderlying))
-        else if (entry.getOperation == ActiveActive.ORSetDeltaOp.Full)
+        else if (entry.getOperation == ReplicatedEventSourcing.ORSetDeltaOp.Full)
           ORSet.FullStateDeltaOp(orsetFromProto(entry.getUnderlying))
         else
           throw new NotSerializableException(s"Unknow ORSet delta operation ${entry.getOperation}")
@@ -274,7 +292,7 @@ object ActiveActiveSerializer {
     ORSet.DeltaGroup(ops)
   }
 
-  def orsetFromProto(orset: ActiveActive.ORSet): ORSet[Any] = {
+  def orsetFromProto(orset: ReplicatedEventSourcing.ORSet): ORSet[Any] = {
     val elements: Iterator[Any] =
       (orset.getStringElementsList.iterator.asScala ++
       orset.getIntElementsList.iterator.asScala ++
@@ -287,18 +305,19 @@ object ActiveActiveSerializer {
     new ORSet(orset.getOriginDc, elementsMap, vvector = versionVectorFromProto(orset.getVvector))
   }
 
-  def versionVectorToProto(versionVector: VersionVector): ActiveActive.VersionVector = {
-    val b = ActiveActive.VersionVector.newBuilder()
+  def versionVectorToProto(versionVector: VersionVector): ReplicatedEventSourcing.VersionVector = {
+    val b = ReplicatedEventSourcing.VersionVector.newBuilder()
     versionVector.versionsIterator.foreach {
-      case (key, value) => b.addEntries(ActiveActive.VersionVector.Entry.newBuilder().setKey(key).setVersion(value))
+      case (key, value) =>
+        b.addEntries(ReplicatedEventSourcing.VersionVector.Entry.newBuilder().setKey(key).setVersion(value))
     }
     b.build()
   }
 
   def versionVectorFromBinary(bytes: Array[Byte]): VersionVector =
-    versionVectorFromProto(ActiveActive.VersionVector.parseFrom(bytes))
+    versionVectorFromProto(ReplicatedEventSourcing.VersionVector.parseFrom(bytes))
 
-  def versionVectorFromProto(versionVector: ActiveActive.VersionVector): VersionVector = {
+  def versionVectorFromProto(versionVector: ReplicatedEventSourcing.VersionVector): VersionVector = {
     val entries = versionVector.getEntriesList
     if (entries.isEmpty)
       VersionVector.empty
@@ -312,7 +331,7 @@ object ActiveActiveSerializer {
   }
 
   def replicatedEventMetadataFromBinary(bytes: Array[Byte]): ReplicatedEventMetadata = {
-    val parsed = ActiveActive.ReplicatedEventMetadata.parseFrom(bytes)
+    val parsed = ReplicatedEventSourcing.ReplicatedEventMetadata.parseFrom(bytes)
     ReplicatedEventMetadata(
       ReplicaId(parsed.getOriginReplica),
       parsed.getOriginSequenceNr,
@@ -321,7 +340,7 @@ object ActiveActiveSerializer {
   }
 
   def replicatedSnapshotMetadataFromBinary(bytes: Array[Byte]): ReplicatedSnapshotMetadata = {
-    val parsed = ActiveActive.ReplicatedSnapshotMetadata.parseFrom(bytes)
+    val parsed = ReplicatedEventSourcing.ReplicatedSnapshotMetadata.parseFrom(bytes)
     ReplicatedSnapshotMetadata(
       versionVectorFromProto(parsed.getVersion),
       parsed.getSeenPerReplicaList.asScala.map(seen => ReplicaId(seen.getReplicaId) -> seen.getSequenceNr).toMap)

@@ -129,7 +129,7 @@ private[akka] final class ReplayingEvents[C, E, S](
                       case Some(m) => m.asInstanceOf[ReplicatedEventMetadata]
                       case None =>
                         throw new IllegalStateException(
-                          s"Active active enabled but existing event has no metadata. Migration isn't supported yet.")
+                          s"Replicated Event Sourcing enabled but existing event has no metadata. Migration isn't supported yet.")
 
                     }
                     aa.setContext(recoveryRunning = true, meta.originReplica, meta.concurrent)

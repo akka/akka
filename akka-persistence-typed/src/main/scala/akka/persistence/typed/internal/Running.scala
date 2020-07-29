@@ -151,7 +151,7 @@ private[akka] object Running {
                       s"Replication stream from replica ${replicaId} for ${setup.persistenceId} contains event " +
                       s"(sequence nr ${event.sequenceNr}) without replication metadata. " +
                       s"Is the persistence id used by a regular event sourced actor there or the journal for that replica (${queryPluginId}) " +
-                      "used that does not support active active?")
+                      "used that does not support Replicated Event Sourcing?")
                 })
               .viaMat(new FastForwardingFilter)(Keep.right)
               .mapMaterializedValue(streamControl => controlRef.set(streamControl))
@@ -289,8 +289,9 @@ private[akka] object Running {
     def onPublishedEvent(state: Running.RunningState[S], event: PublishedEventImpl): Behavior[InternalProtocol] = {
       val newBehavior: Behavior[InternalProtocol] = setup.replication match {
         case None =>
-          setup.log
-            .warn("Received published event for [{}] but not an active active actor, dropping", event.persistenceId)
+          setup.log.warn(
+            "Received published event for [{}] but not an Replicated Event Sourcing actor, dropping",
+            event.persistenceId)
           this
 
         case Some(replication) =>
@@ -326,7 +327,7 @@ private[akka] object Running {
         this
       } else if (!replication.allReplicas.contains(originReplicaId)) {
         log.warnN(
-          "Received published replicated event from replica [{}], which is unknown. Active active must be set up with a list of all replicas (known are [{}]).",
+          "Received published replicated event from replica [{}], which is unknown. Replicated Event Sourcing must be set up with a list of all replicas (known are [{}]).",
           originReplicaId,
           replication.allReplicas.mkString(", "))
         this

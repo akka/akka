@@ -39,7 +39,7 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
     val initializedReplicas = settings.replicas.map { replicaSettings =>
       // start up a sharding instance per replica id
       logger.infoN(
-        "Starting Active Active sharding for replica [{}] (ShardType: [{}])",
+        "Starting Replicated Event Sourcing sharding for replica [{}] (ShardType: [{}])",
         replicaSettings.replicaId.id,
         replicaSettings.entity.typeKey.name)
       val regionOrProxy = sharding.init(replicaSettings.entity)
@@ -49,10 +49,10 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
       case (id, _, regionOrProxy) => id -> regionOrProxy
     }.toMap
     if (settings.directReplication) {
-      logger.infoN("Starting Active Active Direct Replication")
+      logger.infoN("Starting Replicated Event Sourcing Direct Replication")
       system.systemActorOf(
         ShardingDirectReplication(replicaToRegionOrProxy),
-        s"activeActiveDirectReplication-${counter.incrementAndGet()}")
+        s"directReplication-${counter.incrementAndGet()}")
     }
 
     val replicaToTypeKey = initializedReplicas.map { case (id, typeKey, _) => id -> typeKey }.toMap

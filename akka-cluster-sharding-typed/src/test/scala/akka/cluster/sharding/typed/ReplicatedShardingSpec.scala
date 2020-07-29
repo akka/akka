@@ -41,7 +41,7 @@ class ReplicatedShardingSpec
     with AnyWordSpecLike
     with LogCapturing {
 
-  object MyActiveActiveStringSet {
+  object MyReplicatedStringSet {
     trait Command extends CborSerializable
     case class Add(text: String) extends Command
     case class GetTexts(replyTo: ActorRef[Texts]) extends Command
@@ -70,13 +70,13 @@ class ReplicatedShardingSpec
 
   object ProxyActor {
     sealed trait Command
-    case class ForwardToRandom(entityId: String, msg: MyActiveActiveStringSet.Command) extends Command
-    case class ForwardToAll(entityId: String, msg: MyActiveActiveStringSet.Command) extends Command
+    case class ForwardToRandom(entityId: String, msg: MyReplicatedStringSet.Command) extends Command
+    case class ForwardToAll(entityId: String, msg: MyReplicatedStringSet.Command) extends Command
 
     def apply(): Behavior[Command] = Behaviors.setup { context =>
       // #bootstrap
       val aaShardingSettings =
-        ReplicatedShardingSettings[MyActiveActiveStringSet.Command, ShardingEnvelope[MyActiveActiveStringSet.Command]](
+        ReplicatedShardingSettings[MyReplicatedStringSet.Command, ShardingEnvelope[MyReplicatedStringSet.Command]](
           // all replicas
           Set(ReplicaId("DC-A"), ReplicaId("DC-B"), ReplicaId("DC-C"))) { (entityTypeKey, replicaId, allReplicaIds) =>
           // factory for replica settings for a given replica
@@ -85,7 +85,7 @@ class ReplicatedShardingSpec
             // use the provided entity type key for sharding to get one sharding instance per replica
             Entity(entityTypeKey) { entityContext =>
               // factory for the entity for a given entity in that replica
-              MyActiveActiveStringSet(entityContext.entityId, replicaId, allReplicaIds)
+              MyReplicatedStringSet(entityContext.entityId, replicaId, allReplicaIds)
             }
             // potentially use replica id as role or dc in Akka multi dc for the sharding instance
             // to control where replicas will live
@@ -113,7 +113,7 @@ class ReplicatedShardingSpec
     }
   }
 
-  "Active active sharding" should {
+  "Replicated sharding" should {
 
     "form a one node cluster" in {
       val node = Cluster(system)
@@ -126,13 +126,13 @@ class ReplicatedShardingSpec
     "forward to replicas" in {
       val proxy = spawn(ProxyActor())
 
-      proxy ! ProxyActor.ForwardToAll("id1", MyActiveActiveStringSet.Add("to-all"))
-      proxy ! ProxyActor.ForwardToRandom("id1", MyActiveActiveStringSet.Add("to-random"))
+      proxy ! ProxyActor.ForwardToAll("id1", MyReplicatedStringSet.Add("to-all"))
+      proxy ! ProxyActor.ForwardToRandom("id1", MyReplicatedStringSet.Add("to-random"))
 
       eventually {
-        val probe = createTestProbe[MyActiveActiveStringSet.Texts]()
-        proxy ! ProxyActor.ForwardToAll("id1", MyActiveActiveStringSet.GetTexts(probe.ref))
-        val responses: Seq[MyActiveActiveStringSet.Texts] = probe.receiveMessages(3)
+        val probe = createTestProbe[MyReplicatedStringSet.Texts]()
+        proxy ! ProxyActor.ForwardToAll("id1", MyReplicatedStringSet.GetTexts(probe.ref))
+        val responses: Seq[MyReplicatedStringSet.Texts] = probe.receiveMessages(3)
         val uniqueTexts = responses.flatMap(res => res.texts).toSet
         uniqueTexts should ===(Set("to-all", "to-random"))
       }

@@ -13,12 +13,12 @@ import akka.persistence.typed.internal.ReplicatedSnapshotMetadata
 import akka.persistence.typed.internal.VersionVector
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class ActiveActiveSerializationSpec
+class ReplicatedEventSourcingSerializationSpec
     extends ScalaTestWithActorTestKit(ClusterSingletonPersistenceSpec.config)
     with AnyWordSpecLike
     with LogCapturing {
 
-  "The ActiveActive components that needs to be serializable" must {
+  "The Replicated Event Sourcing components that needs to be serializable" must {
 
     "be serializable" in {
       serializationTestKit.verifySerialization(

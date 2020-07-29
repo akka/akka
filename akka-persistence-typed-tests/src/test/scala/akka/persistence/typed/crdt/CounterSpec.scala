@@ -63,7 +63,7 @@ class CounterSpec extends ReplicationBaseSpec {
   import CounterSpec._
   import ReplicationBaseSpec._
 
-  "Active active entity using CRDT counter" should {
+  "Replicated entity using CRDT counter" should {
     "replicate" in {
       val id = nextEntityId
       val r1 = spawn(apply(id, R1))

@@ -35,9 +35,9 @@ import static org.junit.Assert.assertEquals;
 
 public class ReplicatedShardingTest extends JUnitSuite {
 
-  static class MyActiveActiveStringSet
+  static class MyReplicatedStringSet
       extends ReplicatedEventSourcedBehavior<
-          MyActiveActiveStringSet.Command, String, Set<String>> {
+          MyReplicatedStringSet.Command, String, Set<String>> {
     interface Command {}
 
     static class Add implements Command {
@@ -71,10 +71,10 @@ public class ReplicatedShardingTest extends JUnitSuite {
           replicaId,
           allReplicas,
           PersistenceTestKitReadJournal.Identifier(),
-          MyActiveActiveStringSet::new);
+          MyReplicatedStringSet::new);
     }
 
-    private MyActiveActiveStringSet(ReplicationContext replicationContext) {
+    private MyReplicatedStringSet(ReplicationContext replicationContext) {
       super(replicationContext);
     }
 
@@ -115,9 +115,9 @@ public class ReplicatedShardingTest extends JUnitSuite {
 
     public static final class ForwardToRandom implements Command {
       public final String entityId;
-      public final MyActiveActiveStringSet.Command message;
+      public final MyReplicatedStringSet.Command message;
 
-      public ForwardToRandom(String entityId, MyActiveActiveStringSet.Command message) {
+      public ForwardToRandom(String entityId, MyReplicatedStringSet.Command message) {
         this.entityId = entityId;
         this.message = message;
       }
@@ -125,9 +125,9 @@ public class ReplicatedShardingTest extends JUnitSuite {
 
     public static final class ForwardToAll implements Command {
       public final String entityId;
-      public final MyActiveActiveStringSet.Command message;
+      public final MyReplicatedStringSet.Command message;
 
-      public ForwardToAll(String entityId, MyActiveActiveStringSet.Command message) {
+      public ForwardToAll(String entityId, MyReplicatedStringSet.Command message) {
         this.entityId = entityId;
         this.message = message;
       }
@@ -144,7 +144,7 @@ public class ReplicatedShardingTest extends JUnitSuite {
                     new ReplicaId("DC-A"), new ReplicaId("DC-B"), new ReplicaId("DC-C"))));
 
     private final ReplicatedSharding<
-            MyActiveActiveStringSet.Command, ShardingEnvelope<MyActiveActiveStringSet.Command>>
+            MyReplicatedStringSet.Command, ShardingEnvelope<MyReplicatedStringSet.Command>>
         aaSharding;
 
     private ProxyActor(ActorContext<Command> context) {
@@ -152,10 +152,10 @@ public class ReplicatedShardingTest extends JUnitSuite {
 
       // #bootstrap
       ReplicatedShardingSettings<
-              MyActiveActiveStringSet.Command, ShardingEnvelope<MyActiveActiveStringSet.Command>>
+              MyReplicatedStringSet.Command, ShardingEnvelope<MyReplicatedStringSet.Command>>
           aaShardingSettings =
               ReplicatedShardingSettings.create(
-                  MyActiveActiveStringSet.Command.class,
+                  MyReplicatedStringSet.Command.class,
                   ALL_REPLICAS,
                   // factory for replica settings for a given replica
                   (entityTypeKey, replicaId, allReplicas) ->
@@ -167,7 +167,7 @@ public class ReplicatedShardingTest extends JUnitSuite {
                                   entityTypeKey,
                                   entityContext ->
                                       // factory for the entity for a given entity in that replica
-                                      MyActiveActiveStringSet.create(
+                                      MyReplicatedStringSet.create(
                                           entityContext.getEntityId(), replicaId, allReplicas))
                               // potentially use replica id as role or dc in Akka multi dc for the
                               // sharding instance
@@ -190,7 +190,7 @@ public class ReplicatedShardingTest extends JUnitSuite {
     }
 
     private Behavior<Command> onForwardToRandom(ForwardToRandom forwardToRandom) {
-      Map<ReplicaId, EntityRef<MyActiveActiveStringSet.Command>> refs =
+      Map<ReplicaId, EntityRef<MyReplicatedStringSet.Command>> refs =
           aaSharding.getEntityRefsFor(forwardToRandom.entityId);
       int chosenIdx = new java.util.Random().nextInt(refs.size());
       new ArrayList<>(refs.values()).get(chosenIdx).tell(forwardToRandom.message);
@@ -199,7 +199,7 @@ public class ReplicatedShardingTest extends JUnitSuite {
 
     private Behavior<Command> onForwardToAll(ForwardToAll forwardToAll) {
       // #all-entity-refs
-      Map<ReplicaId, EntityRef<MyActiveActiveStringSet.Command>> refs =
+      Map<ReplicaId, EntityRef<MyReplicatedStringSet.Command>> refs =
           aaSharding.getEntityRefsFor(forwardToAll.entityId);
       refs.forEach((replicaId, ref) -> ref.tell(forwardToAll.message));
       // #all-entity-refs
@@ -237,16 +237,16 @@ public class ReplicatedShardingTest extends JUnitSuite {
     // forward messages to replicas
     ActorRef<ProxyActor.Command> proxy = testKit.spawn(ProxyActor.create());
 
-    proxy.tell(new ProxyActor.ForwardToAll("id1", new MyActiveActiveStringSet.Add("to-all")));
-    proxy.tell(new ProxyActor.ForwardToRandom("id1", new MyActiveActiveStringSet.Add("to-random")));
+    proxy.tell(new ProxyActor.ForwardToAll("id1", new MyReplicatedStringSet.Add("to-all")));
+    proxy.tell(new ProxyActor.ForwardToRandom("id1", new MyReplicatedStringSet.Add("to-random")));
 
     testProbe.awaitAssert(
         () -> {
-          TestProbe<MyActiveActiveStringSet.Texts> responseProbe = testKit.createTestProbe();
+          TestProbe<MyReplicatedStringSet.Texts> responseProbe = testKit.createTestProbe();
           proxy.tell(
               new ProxyActor.ForwardToAll(
-                  "id1", new MyActiveActiveStringSet.GetTexts(responseProbe.ref())));
-          List<MyActiveActiveStringSet.Texts> responses = responseProbe.receiveSeveralMessages(3);
+                  "id1", new MyReplicatedStringSet.GetTexts(responseProbe.ref())));
+          List<MyReplicatedStringSet.Texts> responses = responseProbe.receiveSeveralMessages(3);
           Set<String> uniqueTexts =
               responses.stream().flatMap(res -> res.texts.stream()).collect(Collectors.toSet());
           assertEquals(new HashSet<>(Arrays.asList("to-all", "to-random")), uniqueTexts);

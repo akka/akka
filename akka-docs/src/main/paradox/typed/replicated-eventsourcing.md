@@ -82,7 +82,7 @@ The factory takes in:
 * EntityID: this will be used as part of the underlying persistenceId
 * Replica: Which replica this instance is
 * All Replicas and the query plugin used to read their events
-* A factory function to create an instance of the @scala[`EventSourcedBehavior`]@java[`ActiveActiveEventSourcedBehavior`] 
+* A factory function to create an instance of the @scala[`EventSourcedBehavior`]@java[`ReplicatedEventSourcedBehavior`] 
 
 In this scenario each replica reads from each other's database effectively providing cross region replication for any database that has an Akka Persistence plugin. Alternatively if all the replicas use the same journal, e.g. for testing or if it is a distributed database such as Cassandra, the `withSharedJournal` factory can be used. 
 

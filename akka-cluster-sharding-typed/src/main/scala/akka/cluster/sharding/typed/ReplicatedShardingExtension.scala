@@ -17,7 +17,7 @@ import java.util.{ Map => JMap }
 import akka.actor.typed.ActorRef
 
 /**
- * Extension for running active active in sharding by starting one separate instance of sharding per replica.
+ * Extension for running Replicated Event Sourcing in sharding by starting one separate instance of sharding per replica.
  * The sharding instances can be confined to datacenters or cluster roles or run on the same set of cluster nodes.
  */
 @ApiMayChange
@@ -40,7 +40,7 @@ trait ReplicatedShardingExtension extends Extension {
   /**
    * Init one instance sharding per replica in the given settings and return a [[ReplicatedSharding]] representing those.
    *
-   * @tparam M The type of messages the active active event sourced actor accepts
+   * @tparam M The type of messages the replicated event sourced actor accepts
    * @tparam E The type of envelope used for routing messages to actors, the same for all replicas
    *
    * Note, multiple calls on the same node will not start new sharding instances but will return a new instance of [[ReplicatedSharding]]
@@ -49,7 +49,7 @@ trait ReplicatedShardingExtension extends Extension {
 }
 
 /**
- * Represents the sharding instances for the replicas of one active active entity type
+ * Represents the sharding instances for the replicas of one replicated event sourcing entity type
  *
  * Not for user extension.
  */

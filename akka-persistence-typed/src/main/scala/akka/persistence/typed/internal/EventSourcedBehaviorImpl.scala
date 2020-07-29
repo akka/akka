@@ -273,7 +273,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 object ReplicatedEventMetadata {
 
   /**
-   * For a journal supporting active active needing to add test coverage, use this instance as metadata and defer
+   * For a journal supporting Replicated Event Sourcing needing to add test coverage, use this instance as metadata and defer
    * to the built in serializer for serialization format
    */
   @ApiMayChange
@@ -296,7 +296,7 @@ private[akka] final case class ReplicatedEventMetadata(
 object ReplicatedSnapshotMetadata {
 
   /**
-   * For a snapshot store supporting active active needing to add test coverage, use this instance as metadata and defer
+   * For a snapshot store supporting Replicated Event Sourcing needing to add test coverage, use this instance as metadata and defer
    * to the built in serializer for serialization format
    */
   @ApiMayChange

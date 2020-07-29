@@ -73,7 +73,7 @@ class ReplicatedEventPublishingSpec
 
   import ReplicatedEventPublishingSpec._
 
-  "An active active actor" must {
+  "An Replicated Event Sourced actor" must {
     "move forward when a published event from a replica is received" in {
       val id = nextEntityId()
       val actor = spawn(MyReplicatedBehavior(id, DCA, Set(DCA, DCB)))
@@ -169,15 +169,15 @@ class ReplicatedEventPublishingSpec
     "handle published events after replay" in {
       val id = nextEntityId()
       val probe = createTestProbe[Any]()
-      val activeActiveBehavior = MyReplicatedBehavior(id, DCA, Set(DCA, DCB))
-      val incarnation1 = spawn(activeActiveBehavior)
+      val replicatedBehavior = MyReplicatedBehavior(id, DCA, Set(DCA, DCB))
+      val incarnation1 = spawn(replicatedBehavior)
       incarnation1 ! MyReplicatedBehavior.Add("one", probe.ref)
       probe.expectMessage(Done)
 
       incarnation1 ! MyReplicatedBehavior.Stop
       probe.expectTerminated(incarnation1)
 
-      val incarnation2 = spawn(activeActiveBehavior)
+      val incarnation2 = spawn(replicatedBehavior)
 
       incarnation2 ! MyReplicatedBehavior.Get(probe.ref)
       probe.expectMessage(Set("one"))
@@ -201,8 +201,8 @@ class ReplicatedEventPublishingSpec
     "handle published events before and after replay" in {
       val id = nextEntityId()
       val probe = createTestProbe[Any]()
-      val activeActiveBehaviorA = MyReplicatedBehavior(id, DCA, Set(DCA, DCB))
-      val incarnationA1 = spawn(activeActiveBehaviorA)
+      val replicatedBehaviorA = MyReplicatedBehavior(id, DCA, Set(DCA, DCB))
+      val incarnationA1 = spawn(replicatedBehaviorA)
       incarnationA1 ! MyReplicatedBehavior.Add("one", probe.ref)
       probe.expectMessage(Done)
 
@@ -217,7 +217,7 @@ class ReplicatedEventPublishingSpec
       incarnationA1 ! MyReplicatedBehavior.Stop
       probe.expectTerminated(incarnationA1)
 
-      val incarnationA2 = spawn(activeActiveBehaviorA)
+      val incarnationA2 = spawn(replicatedBehaviorA)
 
       // simulate a published event from another replica
       incarnationA2.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
