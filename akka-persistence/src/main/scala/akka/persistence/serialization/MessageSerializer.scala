@@ -166,6 +166,12 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     if (persistent.manifest != PersistentRepr.Undefined) builder.setManifest(persistent.manifest)
 
     builder.setPayload(persistentPayloadBuilder(persistent.payload.asInstanceOf[AnyRef]))
+    persistent.metadata match {
+      case Some(meta) =>
+        builder.setMetadata(persistentPayloadBuilder(meta.asInstanceOf[AnyRef]))
+      case _ =>
+    }
+
     builder.setSequenceNr(persistent.sequenceNr)
     // deleted is not used in new records from 2.4
     if (persistent.writerUuid != Undefined) builder.setWriterUuid(persistent.writerUuid)
@@ -199,7 +205,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
   //
 
   private def persistent(persistentMessage: mf.PersistentMessage): PersistentRepr = {
-    val repr = PersistentRepr(
+    var repr = PersistentRepr(
       payload(persistentMessage.getPayload),
       persistentMessage.getSequenceNr,
       if (persistentMessage.hasPersistenceId) persistentMessage.getPersistenceId else Undefined,
@@ -209,7 +215,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       else Actor.noSender,
       if (persistentMessage.hasWriterUuid) persistentMessage.getWriterUuid else Undefined)
 
-    if (persistentMessage.hasTimestamp) repr.withTimestamp(persistentMessage.getTimestamp) else repr
+    repr = if (persistentMessage.hasTimestamp) repr.withTimestamp(persistentMessage.getTimestamp) else repr
+    if (persistentMessage.hasMetadata) repr.withMetadata(payload(persistentMessage.getMetadata)) else repr
   }
 
   private def atomicWrite(atomicWrite: mf.AtomicWrite): AtomicWrite = {

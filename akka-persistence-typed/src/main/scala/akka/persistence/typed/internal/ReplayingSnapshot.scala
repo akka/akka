@@ -147,15 +147,15 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
       case LoadSnapshotResult(sso, toSnr) =>
         var state: S = setup.emptyState
 
-        val (seqNr: Long, seenPerReplica: Map[ReplicaId, Long], version: VersionVector) = sso match {
+        val (seqNr: Long, seenPerReplica, version) = sso match {
           case Some(SelectedSnapshot(metadata, snapshot)) =>
             state = setup.snapshotAdapter.fromJournal(snapshot)
-            setup.context.log.debug("Loaded snapshot with metadata {}", metadata)
+            setup.context.log.debug("Loaded snapshot with metadata [{}]", metadata)
             metadata.metadata match {
               case Some(rm: ReplicatedSnapshotMetadata) => (metadata.sequenceNr, rm.seenPerReplica, rm.version)
-              case _                                    => (metadata.sequenceNr, Map.empty.withDefaultValue(0L), VersionVector.empty)
+              case _                                    => (metadata.sequenceNr, Map.empty[ReplicaId, Long].withDefaultValue(0L), VersionVector.empty)
             }
-          case None => (0L, Map.empty.withDefaultValue(0L), VersionVector.empty)
+          case None => (0L, Map.empty[ReplicaId, Long].withDefaultValue(0L), VersionVector.empty)
         }
 
         setup.context.log.debugN("Snapshot recovered from {} {} {}", seqNr, seenPerReplica, version)

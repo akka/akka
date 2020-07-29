@@ -8,7 +8,7 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
 import akka.util.{ OptionVal, WallClock }
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 // FIXME docs
 trait ActiveActiveContext {

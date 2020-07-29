@@ -15,7 +15,7 @@ import akka.annotation.InternalApi
 import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.ReplicaId
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * Used when sharding Active Active entities in multiple instances of sharding, for example one per DC in a Multi DC

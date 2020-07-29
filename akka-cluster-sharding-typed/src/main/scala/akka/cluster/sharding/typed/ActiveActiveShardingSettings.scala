@@ -11,7 +11,7 @@ import akka.persistence.typed.ReplicaId
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import java.util.{ Set => JSet }
 
 import akka.annotation.ApiMayChange
