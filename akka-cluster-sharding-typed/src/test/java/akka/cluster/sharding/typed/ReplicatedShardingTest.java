@@ -36,8 +36,7 @@ import static org.junit.Assert.assertEquals;
 public class ReplicatedShardingTest extends JUnitSuite {
 
   static class MyReplicatedStringSet
-      extends ReplicatedEventSourcedBehavior<
-          MyReplicatedStringSet.Command, String, Set<String>> {
+      extends ReplicatedEventSourcedBehavior<MyReplicatedStringSet.Command, String, Set<String>> {
     interface Command {}
 
     static class Add implements Command {
