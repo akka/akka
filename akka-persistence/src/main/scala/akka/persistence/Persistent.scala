@@ -243,6 +243,6 @@ private[persistence] final case class PersistentImpl(
   }
 
   override def toString: String = {
-    s"PersistentRepr($persistenceId,$sequenceNr,$writerUuid,$timestamp)"
+    s"PersistentRepr($persistenceId,$sequenceNr,$writerUuid,$timestamp,$metadata)"
   }
 }
