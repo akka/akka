@@ -21,6 +21,7 @@ message PersistentMessage {
   optional string manifest = 12;
   optional string writerUuid = 13;
   optional sint64 timestamp = 14;
+  optional PersistentPayload metadata = 15;
 }
 
 message PersistentPayload {

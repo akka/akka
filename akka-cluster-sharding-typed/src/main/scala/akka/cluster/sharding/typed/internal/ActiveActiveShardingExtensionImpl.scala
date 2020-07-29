@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.cluster.sharding.typed.ActiveActiveShardingDirectReplication
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API

@@ -339,6 +339,14 @@ abstract class JournalSpec(config: Config)
               _) =>
             payload should be(event)
         }
+
+        journal ! ReplayMessages(6, 6, 1, Pid, receiverProbe.ref)
+        receiverProbe.expectMsgPF() {
+          case ReplayedMessage(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _, Some(`meta`))) =>
+            payload should be(event)
+        }
+        receiverProbe.expectMsg(RecoverySuccess(6L))
+
       }
     }
   }
