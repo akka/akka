@@ -192,8 +192,8 @@ other data centers.
 Especially when used together with Akka Persistence that is based on the single-writer principle
 it is important to avoid running the same entity at multiple locations at the same time with a
 shared data store. That would result in corrupt data since the events stored by different instances
-may be interleaved and would be interpreted differently in a later replay. For active active persistent
-entities see Lightbend's [Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
+may be interleaved and would be interpreted differently in a later replay. For replicated persistent
+entities see @ref[Replciated Event Sourcing](replicated-eventsourcing.md).
 
 If you need global entities you have to pick one data center to host that entity type and only start
 `ClusterSharding` on nodes of that data center. If the data center is unreachable from another data center the

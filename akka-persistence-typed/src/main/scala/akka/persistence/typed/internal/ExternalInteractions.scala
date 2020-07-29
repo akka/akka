@@ -191,7 +191,7 @@ private[akka] trait SnapshotInteractions[C, E, S] {
     if (state.state == null)
       throw new IllegalStateException("A snapshot must not be a null state.")
     else {
-      val meta = setup.activeActive match {
+      val meta = setup.replication match {
         case Some(_) =>
           val m = ReplicatedSnapshotMetadata(state.version, state.seenPerReplica)
           Some(m)

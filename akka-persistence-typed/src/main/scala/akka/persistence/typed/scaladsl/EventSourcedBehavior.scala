@@ -4,7 +4,6 @@
 
 package akka.persistence.typed.scaladsl
 
-import scala.annotation.tailrec
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
@@ -13,44 +12,17 @@ import akka.actor.typed.internal.InterceptorImpl
 import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.ApiMayChange
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
-import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
-import akka.util.OptionVal
+
+import scala.annotation.tailrec
 
 object EventSourcedBehavior {
-
-  // FIXME move to internal
-  @InternalApi
-  private[akka] final case class ActiveActive(
-      replicaId: ReplicaId,
-      allReplicasAndQueryPlugins: Map[ReplicaId, String],
-      aaContext: ActiveActiveContextImpl) {
-
-    val allReplicas: Set[ReplicaId] = allReplicasAndQueryPlugins.keySet
-
-    /**
-     * Must only be called on the same thread that will execute the user code
-     */
-    def setContext(recoveryRunning: Boolean, originReplica: ReplicaId, concurrent: Boolean): Unit = {
-      aaContext._currentThread = OptionVal.Some(Thread.currentThread())
-      aaContext._recoveryRunning = recoveryRunning
-      aaContext._concurrent = concurrent
-      aaContext._origin = originReplica
-    }
-
-    def clearContext(): Unit = {
-      aaContext._currentThread = OptionVal.None
-      aaContext._recoveryRunning = false
-      aaContext._concurrent = false
-      aaContext._origin = null
-    }
-
-  }
 
   /**
    * Type alias for the command handler function that defines how to act on commands.
@@ -175,8 +147,6 @@ object EventSourcedBehavior {
    */
   def withJournalPluginId(id: String): EventSourcedBehavior[Command, Event, State]
 
-  private[akka] def withActiveActive(context: ActiveActiveContextImpl): EventSourcedBehavior[Command, Event, State]
-
   /**
    * Change the snapshot store plugin id that this actor should use.
    */
@@ -253,4 +223,10 @@ object EventSourcedBehavior {
    */
   @ApiMayChange
   def withEventPublishing(): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def withReplication(context: ReplicationContextImpl): EventSourcedBehavior[Command, Event, State]
 }
