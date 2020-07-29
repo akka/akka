@@ -40,7 +40,6 @@ import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotSelectionCriteria
-import akka.persistence.typed.scaladsl.EventSourcedBehavior.ActiveActive
 import akka.persistence.typed.scaladsl._
 import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
 import akka.persistence.typed.scaladsl.RetentionCriteria
@@ -93,7 +92,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     retention: RetentionCriteria = RetentionCriteria.disabled,
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
     override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty,
-    activeActive: Option[ActiveActive] = None,
+    replication: Option[ReplicationSetup] = None,
     publishEvents: Boolean = false)
     extends EventSourcedBehavior[Command, Event, State] {
 
@@ -158,7 +157,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             holdingRecoveryPermit = false,
             settings = settings,
             stashState = stashState,
-            activeActive = activeActive,
+            replication = replication,
             publishEvents = publishEvents)
 
           // needs to accept Any since we also can get messages from the journal
@@ -251,9 +250,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     copy(publishEvents = true)
   }
 
-  override private[akka] def withActiveActive(
-      context: ActiveActiveContextImpl): EventSourcedBehavior[Command, Event, State] = {
-    copy(activeActive = Some(ActiveActive(context.replicaId, context.replicasAndQueryPlugins, context)))
+  override private[akka] def withReplication(
+      context: ReplicationContextImpl): EventSourcedBehavior[Command, Event, State] = {
+    copy(replication = Some(ReplicationSetup(context.replicaId, context.replicasAndQueryPlugins, context)))
   }
 }
 
@@ -274,7 +273,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 object ReplicatedEventMetadata {
 
   /**
-   * For a journal supporting active active needing to add test coverage, use this instance as metadata and defer
+   * For a journal supporting Replicated Event Sourcing needing to add test coverage, use this instance as metadata and defer
    * to the built in serializer for serialization format
    */
   @ApiMayChange
@@ -297,7 +296,7 @@ private[akka] final case class ReplicatedEventMetadata(
 object ReplicatedSnapshotMetadata {
 
   /**
-   * For a snapshot store supporting active active needing to add test coverage, use this instance as metadata and defer
+   * For a snapshot store supporting Replicated Event Sourcing needing to add test coverage, use this instance as metadata and defer
    * to the built in serializer for serialization format
    */
   @ApiMayChange

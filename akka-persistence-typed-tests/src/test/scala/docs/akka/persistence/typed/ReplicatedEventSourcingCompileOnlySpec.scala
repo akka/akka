@@ -5,11 +5,11 @@
 package docs.akka.persistence.typed
 
 import akka.persistence.typed.ReplicaId
-import akka.persistence.typed.scaladsl.{ActiveActiveEventSourcing, EventSourcedBehavior}
+import akka.persistence.typed.scaladsl.{ EventSourcedBehavior, ReplicatedEventSourcing }
 import com.github.ghik.silencer.silent
 
 @silent("never used")
-object ActiveActiveCompileOnlySpec {
+object ReplicatedEventSourcingCompileOnlySpec {
 
   //#replicas
   val DCA = ReplicaId("DC-A")
@@ -24,13 +24,13 @@ object ActiveActiveCompileOnlySpec {
   trait Event
 
   //#factory-shared
-  ActiveActiveEventSourcing.withSharedJournal("entityId", DCA, AllReplicas, queryPluginId) { context =>
+  ReplicatedEventSourcing.withSharedJournal("entityId", DCA, AllReplicas, queryPluginId) { context =>
     EventSourcedBehavior[Command, State, Event](???, ???, ???, ???)
   }
   //#factory-shared
 
   //#factory
-  ActiveActiveEventSourcing("entityId", DCA, Map(DCA -> "journalForDCA", DCB -> "journalForDCB")) { context =>
+  ReplicatedEventSourcing("entityId", DCA, Map(DCA -> "journalForDCA", DCB -> "journalForDCB")) { context =>
     EventSourcedBehavior[Command, State, Event](???, ???, ???, ???)
   }
   //#factory

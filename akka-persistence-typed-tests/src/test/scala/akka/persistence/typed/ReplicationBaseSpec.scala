@@ -11,13 +11,13 @@ import akka.persistence.testkit.{ PersistenceTestKitPlugin, PersistenceTestKitSn
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 
-object ActiveActiveBaseSpec {
+object ReplicationBaseSpec {
   val R1 = ReplicaId("R1")
   val R2 = ReplicaId("R2")
   val AllReplicas = Set(R1, R2)
 }
 
-abstract class ActiveActiveBaseSpec
+abstract class ReplicationBaseSpec
     extends ScalaTestWithActorTestKit(
       PersistenceTestKitPlugin.config.withFallback(PersistenceTestKitSnapshotPlugin.config))
     with AnyWordSpecLike

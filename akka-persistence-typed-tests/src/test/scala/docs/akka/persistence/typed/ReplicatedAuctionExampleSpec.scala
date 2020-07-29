@@ -12,13 +12,13 @@ import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.ReplicaId
-import akka.persistence.typed.scaladsl.{ ActiveActiveContext, ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
+import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing, ReplicationContext }
 import akka.serialization.jackson.CborSerializable
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-object AAAuctionExampleSpec {
+object ReplicatedAuctionExampleSpec {
 
   type MoneyAmount = Int
 
@@ -104,7 +104,7 @@ object AAAuctionExampleSpec {
   //#setup
 
   //#command-handler
-  def commandHandler(setup: AuctionSetup, ctx: ActorContext[AuctionCommand], aaContext: ActiveActiveContext)(
+  def commandHandler(setup: AuctionSetup, ctx: ActorContext[AuctionCommand], aaContext: ReplicationContext)(
       state: AuctionState,
       command: AuctionCommand): Effect[AuctionEvent, AuctionState] = {
     state.phase match {
@@ -166,7 +166,7 @@ object AAAuctionExampleSpec {
   }
 
   //#event-handler
-  def eventHandler(ctx: ActorContext[AuctionCommand], aaCtx: ActiveActiveContext, setup: AuctionSetup)(
+  def eventHandler(ctx: ActorContext[AuctionCommand], aaCtx: ReplicationContext, setup: AuctionSetup)(
       state: AuctionState,
       event: AuctionEvent): AuctionState = {
 
@@ -184,7 +184,7 @@ object AAAuctionExampleSpec {
   private def eventTriggers(
       setup: AuctionSetup,
       ctx: ActorContext[AuctionCommand],
-      aaCtx: ActiveActiveContext,
+      aaCtx: ReplicationContext,
       event: AuctionEvent,
       newState: AuctionState) = {
     event match {
@@ -214,7 +214,7 @@ object AAAuctionExampleSpec {
 
   def behavior(replica: ReplicaId, setup: AuctionSetup): Behavior[AuctionCommand] = Behaviors.setup[AuctionCommand] {
     ctx =>
-      ActiveActiveEventSourcing
+      ReplicatedEventSourcing
         .withSharedJournal(setup.name, replica, setup.allReplicas, PersistenceTestKitReadJournal.Identifier) { aaCtx =>
           EventSourcedBehavior(
             aaCtx.persistenceId,
@@ -225,14 +225,14 @@ object AAAuctionExampleSpec {
   }
 }
 
-class AAAuctionExampleSpec
+class ReplicatedAuctionExampleSpec
     extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
     with Matchers
     with LogCapturing
     with ScalaFutures
     with Eventually {
-  import AAAuctionExampleSpec._
+  import ReplicatedAuctionExampleSpec._
 
   "Auction example" should {
 

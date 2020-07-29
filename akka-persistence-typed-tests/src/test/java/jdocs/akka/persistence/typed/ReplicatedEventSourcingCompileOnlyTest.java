@@ -9,7 +9,7 @@ import akka.persistence.typed.javadsl.*;
 
 import java.util.*;
 
-public class ActiveActiveCompileOnlyTest {
+public class ReplicatedEventSourcingCompileOnlyTest {
 
   // dummy for docs example
   interface Command {}
@@ -19,11 +19,11 @@ public class ActiveActiveCompileOnlyTest {
   interface State {}
 
   static // #factory
-  final class MyActiceActiveEventSourcedBehavior
-      extends ActiveActiveEventSourcedBehavior<Command, Event, State> {
+  final class MyReplicatedEventSourcedBehavior
+      extends ReplicatedEventSourcedBehavior<Command, Event, State> {
 
-    public MyActiceActiveEventSourcedBehavior(ActiveActiveContext activeActiveContext) {
-      super(activeActiveContext);
+    public MyReplicatedEventSourcedBehavior(ReplicationContext replicationContext) {
+      super(replicationContext);
     }
     // ... implementation of abstract methods ...
     // #factory
@@ -58,12 +58,12 @@ public class ActiveActiveCompileOnlyTest {
     String queryPluginId = "";
 
     // #factory-shared
-    ActiveActiveEventSourcing.withSharedJournal(
+    ReplicatedEventSourcing.withSharedJournal(
         "entityId",
         DCA,
         allReplicas,
         queryPluginId,
-        context -> new MyActiceActiveEventSourcedBehavior(context));
+        context -> new MyReplicatedEventSourcedBehavior(context));
     // #factory-shared
 
     // #factory
@@ -74,11 +74,11 @@ public class ActiveActiveCompileOnlyTest {
     allReplicasAndQueryPlugins.put(DCB, "journalForDCB");
 
     EventSourcedBehavior<Command, Event, State> behavior =
-        ActiveActiveEventSourcing.create(
+        ReplicatedEventSourcing.create(
             "entityId",
             DCA,
             allReplicasAndQueryPlugins,
-            context -> new MyActiceActiveEventSourcedBehavior(context));
+            context -> new MyReplicatedEventSourcedBehavior(context));
     // #factory
   }
 }

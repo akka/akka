@@ -6,13 +6,13 @@ package akka.persistence.typed.crdt
 
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
-import akka.persistence.typed.scaladsl.{ ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
-import akka.persistence.typed.{ ActiveActiveBaseSpec, ReplicaId }
+import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing }
+import akka.persistence.typed.{ ReplicaId, ReplicationBaseSpec }
 import akka.serialization.jackson.CborSerializable
 
 object LwwSpec {
 
-  import ActiveActiveBaseSpec._
+  import ReplicationBaseSpec._
 
   sealed trait Command
   final case class Update(item: String, timestamp: Long, error: ActorRef[String]) extends Command
@@ -26,7 +26,7 @@ object LwwSpec {
   object LwwRegistry {
 
     def apply(entityId: String, replica: ReplicaId): Behavior[Command] = {
-      ActiveActiveEventSourcing.withSharedJournal(
+      ReplicatedEventSourcing.withSharedJournal(
         entityId,
         replica,
         AllReplicas,
@@ -59,9 +59,9 @@ object LwwSpec {
   }
 }
 
-class LwwSpec extends ActiveActiveBaseSpec {
+class LwwSpec extends ReplicationBaseSpec {
   import LwwSpec._
-  import ActiveActiveBaseSpec._
+  import ReplicationBaseSpec._
 
   class Setup {
     val entityId = nextEntityId
@@ -73,7 +73,7 @@ class LwwSpec extends ActiveActiveBaseSpec {
     val r2GetProbe = createTestProbe[Registry]()
   }
 
-  "Lww Active Active Event Sourced Behavior" should {
+  "Lww Replicated Event Sourced Behavior" should {
     "replicate a single event" in new Setup {
       r1 ! Update("a1", 1L, r1Probe.ref)
       eventually {

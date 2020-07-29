@@ -72,7 +72,7 @@ trait SnapshotStoreCapabilityFlags extends CapabilityFlags {
 
   /**
    * When `true` enables tests which check if the snapshot store properly stores and
-   * loads metadata (needed for Active Active) along with the snapshots
+   * loads metadata (needed for replication) along with the snapshots
    */
   protected def supportsMetadata: CapabilityFlag
 }
