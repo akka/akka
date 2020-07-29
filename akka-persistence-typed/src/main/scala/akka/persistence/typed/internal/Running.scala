@@ -48,7 +48,7 @@ import akka.persistence.typed.{
   SnapshotMetadata,
   SnapshotSelectionCriteria
 }
-import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState }
 import akka.persistence.typed.internal.InternalProtocol.ReplicatedEventEnvelope
 import akka.persistence.typed.internal.JournalInteractions.EventToPersist
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
@@ -129,33 +129,39 @@ private[akka] object Running {
     val query = PersistenceQuery(system)
     aa.allReplicas.foldLeft(state) { (state, replicaId) =>
       if (replicaId != aa.replicaId) {
-        val seqNr = state.seenPerReplica(replicaId)
         val pid = PersistenceId.replicatedUniqueId(aa.aaContext.entityId, replicaId)
         val queryPluginId = aa.allReplicasAndQueryPlugins(replicaId)
         val replication = query.readJournalFor[EventsByPersistenceIdQuery](queryPluginId)
 
         implicit val timeout = Timeout(30.seconds)
+        implicit val scheduler = setup.context.system.scheduler
+        implicit val ec = setup.context.system.executionContext
 
         val controlRef = new AtomicReference[ReplicationStreamControl]()
 
+        import akka.actor.typed.scaladsl.AskPattern._
         val source = RestartSource
           .withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
-            replication
-              .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
-              // from each replica, only get the events that originated there, this prevents most of the event filtering
-              // the downside is that events can't be received via other replicas in the event of an uneven network partition
-              .filter(event =>
-                event.eventMetadata match {
-                  case Some(replicatedMeta: ReplicatedEventMetadata) => replicatedMeta.originReplica == replicaId
-                  case _ =>
-                    throw new IllegalArgumentException(
-                      s"Replication stream from replica ${replicaId} for ${setup.persistenceId} contains event " +
-                      s"(sequence nr ${event.sequenceNr}) without replication metadata. " +
-                      s"Is the persistence id used by a regular event sourced actor there or the journal for that replica (${queryPluginId}) " +
-                      "used that does not support active active?")
-                })
-              .viaMat(new FastForwardingFilter)(Keep.right)
-              .mapMaterializedValue(streamControl => controlRef.set(streamControl))
+            Source.futureSource {
+              setup.context.self.ask[Long](replyTo => GetSeenSequenceNr(replicaId, replyTo)).map { seqNr =>
+                replication
+                  .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
+                  // from each replica, only get the events that originated there, this prevents most of the event filtering
+                  // the downside is that events can't be received via other replicas in the event of an uneven network partition
+                  .filter(event =>
+                    event.eventMetadata match {
+                      case Some(replicatedMeta: ReplicatedEventMetadata) => replicatedMeta.originReplica == replicaId
+                      case _ =>
+                        throw new IllegalArgumentException(
+                          s"Replication stream from replica ${replicaId} for ${setup.persistenceId} contains event " +
+                          s"(sequence nr ${event.sequenceNr}) without replication metadata. " +
+                          s"Is the persistence id used by a regular event sourced actor there or the journal for that replica (${queryPluginId}) " +
+                          "used that does not support active active?")
+                    })
+                  .viaMat(new FastForwardingFilter)(Keep.right)
+                  .mapMaterializedValue(streamControl => controlRef.set(streamControl))
+              }
+            }
           }
           // needs to be outside of the restart source so that it actually cancels when terminating the replica
           .via(ActorFlow
@@ -178,7 +184,7 @@ private[akka] object Running {
 
         source.runWith(Sink.ignore)(SystemMaterializer(system).materializer)
 
-        // FIXME support from journal to fast forward https://github.com/akka/akka/issues/29311
+        // TODO support from journal to fast forward https://github.com/akka/akka/issues/29311
         state.copy(
           replicationControl =
             state.replicationControl.updated(replicaId, new ReplicationStreamControl {
@@ -245,6 +251,7 @@ private[akka] object Running {
       case JournalResponse(r)                        => onDeleteEventsJournalResponse(r, state.state)
       case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, state.state)
       case get: GetState[S @unchecked]               => onGetState(get)
+      case get: GetSeenSequenceNr                    => onGetSeenSequenceNr(get)
       case _                                         => Behaviors.unhandled
     }
 
@@ -381,6 +388,11 @@ private[akka] object Running {
     // Used by EventSourcedBehaviorTestKit to retrieve the state.
     def onGetState(get: GetState[S]): Behavior[InternalProtocol] = {
       get.replyTo ! state.state
+      this
+    }
+
+    def onGetSeenSequenceNr(get: GetSeenSequenceNr): Behavior[InternalProtocol] = {
+      get.replyTo ! state.seenPerReplica(get.replica)
       this
     }
 
@@ -629,6 +641,7 @@ private[akka] object Running {
         case re: ReplicatedEventEnvelope[E @unchecked] => onReplicatedEvent(re)
         case pe: PublishedEventImpl                    => onPublishedEvent(pe)
         case get: GetState[S @unchecked]               => stashInternal(get)
+        case getSeqNr: GetSeenSequenceNr               => onGetSeenSequenceNr(getSeqNr)
         case SnapshotterResponse(r)                    => onDeleteSnapshotResponse(r, visibleState.state)
         case RecoveryTickEvent(_)                      => Behaviors.unhandled
         case RecoveryPermitGranted                     => Behaviors.unhandled
@@ -643,6 +656,11 @@ private[akka] object Running {
       } else {
         stashInternal(cmd)
       }
+    }
+
+    def onGetSeenSequenceNr(get: GetSeenSequenceNr): PersistingEvents = {
+      get.replyTo ! state.seenPerReplica(get.replica)
+      this
     }
 
     def onReplicatedEvent(event: InternalProtocol.ReplicatedEventEnvelope[E]): Behavior[InternalProtocol] = {
@@ -822,6 +840,8 @@ private[akka] object Running {
             onDeleteSnapshotResponse(response, state.state)
         }
       case get: GetState[S @unchecked] =>
+        stashInternal(get)
+      case get: GetSeenSequenceNr =>
         stashInternal(get)
       case _ =>
         Behaviors.unhandled
