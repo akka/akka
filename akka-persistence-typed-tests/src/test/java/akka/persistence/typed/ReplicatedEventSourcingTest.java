@@ -11,7 +11,6 @@ import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.persistence.testkit.PersistenceTestKitPlugin;
-import akka.persistence.testkit.javadsl.PersistenceTestKit;
 import akka.persistence.testkit.query.javadsl.PersistenceTestKitReadJournal;
 import akka.persistence.typed.javadsl.*;
 import com.typesafe.config.ConfigFactory;
@@ -25,10 +24,10 @@ import java.util.*;
 import static akka.Done.done;
 import static org.junit.Assert.assertEquals;
 
-public class ActiveActiveTest extends JUnitSuite {
+public class ReplicatedEventSourcingTest extends JUnitSuite {
 
   static final class TestBehavior
-      extends ActiveActiveEventSourcedBehavior<TestBehavior.Command, String, Set<String>> {
+      extends ReplicatedEventSourcedBehavior<TestBehavior.Command, String, Set<String>> {
     interface Command {}
 
     static final class GetState implements Command {
@@ -81,7 +80,7 @@ public class ActiveActiveTest extends JUnitSuite {
 
     public static Behavior<Command> create(
         String entityId, ReplicaId replicaId, Set<ReplicaId> allReplicas) {
-      return ActiveActiveEventSourcing.withSharedJournal(
+      return ReplicatedEventSourcing.withSharedJournal(
           entityId,
           replicaId,
           allReplicas,
@@ -89,8 +88,8 @@ public class ActiveActiveTest extends JUnitSuite {
           TestBehavior::new);
     }
 
-    private TestBehavior(ActiveActiveContext activeActiveContext) {
-      super(activeActiveContext);
+    private TestBehavior(ReplicationContext replicationContext) {
+      super(replicationContext);
     }
 
     @Override
@@ -124,7 +123,7 @@ public class ActiveActiveTest extends JUnitSuite {
               (GetReplica cmd) ->
                   Effect()
                       .none()
-                      .thenRun(() -> cmd.replyTo.tell(getActiveActiveContext().replicaId())))
+                      .thenRun(() -> cmd.replyTo.tell(getReplicationContext().replicaId())))
           .onCommand(Stop.class, __ -> Effect().stop())
           .build();
     }
@@ -153,9 +152,9 @@ public class ActiveActiveTest extends JUnitSuite {
 
   @Rule public final LogCapturing logCapturing = new LogCapturing();
 
-  // minimal test, full coverage over in ActiveActiveSpec
+  // minimal test, full coverage over in ReplicatedEventSourcingSpec
   @Test
-  public void activeActiveReplicationTest() {
+  public void replicatedEventSourcingReplicationTest() {
     ReplicaId dcA = new ReplicaId("DC-A");
     ReplicaId dcB = new ReplicaId("DC-B");
     ReplicaId dcC = new ReplicaId("DC-C");

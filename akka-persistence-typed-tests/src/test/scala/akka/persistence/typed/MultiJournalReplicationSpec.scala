@@ -14,7 +14,7 @@ import akka.actor.typed.Behavior
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.scaladsl.CurrentEventsByPersistenceIdQuery
 import akka.persistence.testkit.PersistenceTestKitPlugin
-import akka.persistence.typed.scaladsl.ActiveActiveEventSourcing
+import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.stream.scaladsl.Sink
@@ -23,7 +23,7 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 
-object MultiJournalActiveActiveSpec {
+object MultiJournalReplicationSpec {
 
   object Actor {
     sealed trait Command
@@ -32,7 +32,7 @@ object MultiJournalActiveActiveSpec {
 
     private val writeJournalPerReplica = Map("R1" -> "journal1.journal", "R2" -> "journal2.journal")
     def apply(entityId: String, replicaId: String): Behavior[Command] = {
-      ActiveActiveEventSourcing(
+      ReplicatedEventSourcing(
         entityId,
         ReplicaId(replicaId),
         Map(ReplicaId("R1") -> "journal1.query", ReplicaId("R2") -> "journal2.query"))(
@@ -65,15 +65,15 @@ object MultiJournalActiveActiveSpec {
 
 }
 
-class MultiJournalActiveActiveSpec
-    extends ScalaTestWithActorTestKit(MultiJournalActiveActiveSpec.separateJournalsConfig)
+class MultiJournalReplicationSpec
+    extends ScalaTestWithActorTestKit(MultiJournalReplicationSpec.separateJournalsConfig)
     with AnyWordSpecLike
     with LogCapturing
     with Eventually {
-  import MultiJournalActiveActiveSpec._
+  import MultiJournalReplicationSpec._
   val ids = new AtomicInteger(0)
   def nextEntityId = s"e-${ids.getAndIncrement()}"
-  "ActiveActiveEventSourcing" should {
+  "ReplicatedEventSourcing" should {
     "support one journal per replica" in {
 
       val r1 = spawn(Actor("id1", "R1"))

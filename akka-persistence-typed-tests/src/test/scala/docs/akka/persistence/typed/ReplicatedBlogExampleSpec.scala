@@ -19,7 +19,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.{ Millis, Span }
 import org.scalatest.wordspec.AnyWordSpecLike
 
-object AABlogExampleSpec {
+object ReplicatedBlogExampleSpec {
 
   final case class BlogState(content: Option[PostContent], contentTimestamp: LwwTime, published: Boolean) {
     def withContent(newContent: PostContent, timestamp: LwwTime): BlogState =
@@ -44,18 +44,18 @@ object AABlogExampleSpec {
   final case class BodyChanged(postId: String, newContent: PostContent, timestamp: LwwTime) extends BlogEvent
 }
 
-class AABlogExampleSpec
+class ReplicatedBlogExampleSpec
     extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
     with Matchers
     with LogCapturing
     with ScalaFutures
     with Eventually {
-  import AABlogExampleSpec._
+  import ReplicatedBlogExampleSpec._
 
   implicit val config: PatienceConfig = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
-  def behavior(aa: ActiveActiveContext, ctx: ActorContext[BlogCommand]) =
+  def behavior(aa: ReplicationContext, ctx: ActorContext[BlogCommand]) =
     EventSourcedBehavior[BlogCommand, BlogEvent, BlogState](
       aa.persistenceId,
       emptyState,
@@ -114,11 +114,11 @@ class AABlogExampleSpec
       val refDcA: ActorRef[BlogCommand] =
         spawn(
           Behaviors.setup[BlogCommand] { ctx =>
-            ActiveActiveEventSourcing.withSharedJournal(
+            ReplicatedEventSourcing.withSharedJournal(
               "cat",
               ReplicaId("DC-A"),
               Set(ReplicaId("DC-A"), ReplicaId("DC-B")),
-              PersistenceTestKitReadJournal.Identifier) { (aa: ActiveActiveContext) =>
+              PersistenceTestKitReadJournal.Identifier) { (aa: ReplicationContext) =>
               behavior(aa, ctx)
             }
           },
@@ -127,11 +127,11 @@ class AABlogExampleSpec
       val refDcB: ActorRef[BlogCommand] =
         spawn(
           Behaviors.setup[BlogCommand] { ctx =>
-            ActiveActiveEventSourcing.withSharedJournal(
+            ReplicatedEventSourcing.withSharedJournal(
               "cat",
               ReplicaId("DC-B"),
               Set(ReplicaId("DC-A"), ReplicaId("DC-B")),
-              PersistenceTestKitReadJournal.Identifier) { (aa: ActiveActiveContext) =>
+              PersistenceTestKitReadJournal.Identifier) { (aa: ReplicationContext) =>
               behavior(aa, ctx)
             }
           },

@@ -1,4 +1,4 @@
-# Active-Active Event Sourcing
+# Replicated Event Sourcing
 
 @@@ warning
 
@@ -13,7 +13,7 @@ warning or deprecation period. It is also not recommended to use this module in 
 This restriction means that in the event of network partitions, and for a short time during rolling re-deploys, `EventSourcedBehaviors`s are unavailable.
 
 
-Active-active event sourcing enables running multiple replicas of each entity. 
+Replicated Event Sourcing enables running multiple replicas of each entity. 
 There is automatic replication of every event persisted to all replicas.
 
 For instance, a replica can be run per:
@@ -27,27 +27,27 @@ The motivations are:
 * Serve requests from a location near the user to provide better responsiveness
 * Balance the load over many servers
 
-However, the event handler must be able to **handle concurrent events** as when active-active is enabled
+However, the event handler must be able to **handle concurrent events** as when replication is enabled
 there is no longer the single writer principle as there is with a normal `EventSourcedBehavior`.
 
-The state of an active-active `EventSourcedBehavior` is **eventually consistent**. Event replication may be delayed
+The state of a replicated `EventSourcedBehavior` is **eventually consistent**. Event replication may be delayed
 due to network partitions and outages and the event handler and those reading the state must be designed to handle this.
 
-To be able to use active active the journal and snapshot store used is required to have specific support for the metadata that active active needs (see @ref[Journal Support](#journal-support))
+To be able to use Replicated Event Sourcing the journal and snapshot store used is required to have specific support for the metadata that the replication needs (see @ref[Journal Support](#journal-support))
 
 ## Relaxing the single writer principle for availability
 
-Taking the example of using active-active to run a replica per data center.
+Taking the example of using Replicated Event Sourcing to run a replica per data center.
 
-When there is no network partitions and no concurrent writes the events stored by an `EventSourcedBehavior` at one replica can be replicated and consumed by another (corresponding) replica in another data center without any concerns. Such replicated events can simply be applied to the local state.
+When there is no network partitions and no concurrent writes the events stored by a `EventSourcedBehavior` at one replica can be replicated and consumed by another (corresponding) replica in another data center without any concerns. Such replicated events can simply be applied to the local state.
 
 ![images/replicated-events1.png](images/replicated-events1.png)
 
-The interesting part begins when there are concurrent writes by `EventSourcedBehavior`replicas. That is more likely to happen when there is a network partition, but it can also happen when there are no network issues. They simply write at the "same time" before the events from the other side have been replicated and consumed.
+The interesting part begins when there are concurrent writes by `EventSourcedBehavior` replicas. That is more likely to happen when there is a network partition, but it can also happen when there are no network issues. They simply write at the "same time" before the events from the other side have been replicated and consumed.
 
 ![images/replicated-events2.png](images/replicated-events2.png)
 
-The event handler logic for applying events to the state of the entity must be aware of that such concurrent updates can occur and it must be modeled to handle such conflicts. This means that it should typically have the same characteristics as a Conflict Free Replicated Data Type (CRDT). With a CRDT there are by definition no conflicts and the events can just be applied. The library provides some general purpose CRDTs, but the logic of how to apply events can also be defined by an application specific function.
+The event handler logic for applying events to the state of the entity must be aware of that such concurrent updates can occur, and it must be modeled to handle such conflicts. This means that it should typically have the same characteristics as a Conflict Free Replicated Data Type (CRDT). With a CRDT there are by definition no conflicts, the events can always be applied. The library provides some general purpose CRDTs, but the logic of how to apply events can also be defined by an application specific function.
 
 For example, sometimes it's enough to use application specific timestamps to decide which update should win.
 
@@ -58,44 +58,44 @@ To assist in implementing the event handler active-active detects these conflict
 @scala[The same API as regular `EventSourcedBehavior`s]@java[A very similar API to the regular `EventSourcedBehavior`] is used to define the logic. 
 
 To enable an entity for active-active
-replication @java[let it extend `ActiveActiveEventSourcedBehavior` instead of `EventSourcedBehavior` and] use the factory methods on @apidoc[ActiveActiveEventSourcing]. 
+replication @java[let it extend `ReplicatedEventSourcedBehavior` instead of `EventSourcedBehavior` and] use the factory methods on @scala[`akka.persistence.typed.scaladsl.ReplicatedEventSourcing`]@java[`akka.persistence.typed.javadsl.ReplicatedEventSourcing`]. 
 
 All replicas need to be known up front:
 
 Scala
-:  @@snip [ActiveActiveCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ActiveActiveCompileOnlySpec.scala) { #replicas }
+:  @@snip [ReplicatedEventSourcingCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedEventSourcingCompileOnlySpec.scala) { #replicas }
 
 Java
-:  @@snip [ActiveActiveCompileOnlyTest.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ActiveActiveCompileOnlyTest.java) { #replicas }
+:  @@snip [ReplicatedEventSourcingCompileOnlyTest.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ReplicatedEventSourcingCompileOnlyTest.java) { #replicas }
 
 
 Then to enable replication create the event sourced behavior with the factory method:
 
 Scala
-:  @@snip [ActiveActiveCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ActiveActiveCompileOnlySpec.scala) { #factory }
+:  @@snip [ReplicatedEventSourcingCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedEventSourcingCompileOnlySpec.scala) { #factory }
 
 Java
-:  @@snip [ActiveActiveCompileOnlyTest.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ActiveActiveCompileOnlyTest.java) { #factory }
+:  @@snip [ReplicatedEventSourcingCompileOnlyTest.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ReplicatedEventSourcingCompileOnlyTest.java) { #factory }
 
 The factory takes in:
 
 * EntityID: this will be used as part of the underlying persistenceId
 * Replica: Which replica this instance is
 * All Replicas and the query plugin used to read their events
-* A factory function to create an instance of the @scala[`EventSourcedBehavior`]@java[`ActiveActiveEventSourcedBehavior`] 
+* A factory function to create an instance of the @scala[`EventSourcedBehavior`]@java[`ReplicatedEventSourcedBehavior`] 
 
 In this scenario each replica reads from each other's database effectively providing cross region replication for any database that has an Akka Persistence plugin. Alternatively if all the replicas use the same journal, e.g. for testing or if it is a distributed database such as Cassandra, the `withSharedJournal` factory can be used. 
 
 Scala
-:  @@snip [ActiveActiveCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ActiveActiveCompileOnlySpec.scala) { #factory-shared}
+:  @@snip [ReplicatedEventSourcingCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedEventSourcingCompileOnlySpec.scala) { #factory-shared}
 
 Java
-:  @@snip [ActiveActiveCompileOnlyTest.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ActiveActiveCompileOnlyTest.java) { #factory-shared }
+:  @@snip [ReplicatedEventSourcingCompileOnlyTest.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ReplicatedEventSourcingCompileOnlyTest.java) { #factory-shared }
 
 
 @@@ div { .group-scala }
 
-The function passed to both factory methods return an `EventSourcedBehavior` and provide access to the @apidoc[ActiveActiveContext] that has the following methods:
+The function passed to both factory methods return an `EventSourcedBehavior` and provide access to the @apidoc[ReplicationContext] that has the following methods:
 
 * entityId 
 * replicaId
@@ -108,8 +108,8 @@ As well as methods that **can only be** used in the event handler. The values th
 
 @@@ div { .group-java }
 
-The function passed to both factory methods is invoked with a special @apidoc[ActiveActiveContext] that needs to be passed to the
-concrete `ActiveActiveEventSourcedBehavior` and on to the super constructor.
+The function passed to both factory methods is invoked with a special @apidoc[ReplicationContext] that needs to be passed to the
+concrete `ReplicatedEventSourcedBehavior` and on to the super constructor.
 
 The context gives access to: 
 
@@ -118,7 +118,7 @@ The context gives access to:
 * allReplicas
 * persistenceId
 
-As well as methods that **can only be** used in the event handler, accessed through `getActiveActiveContext`. The values these methods return relate to the event that is being processed.
+As well as methods that **can only be** used in the event handler, accessed through `getReplicationContext`. The values these methods return relate to the event that is being processed.
 
 @@@
 
@@ -190,9 +190,9 @@ There is no built in support for knowing an event has been replicated to all rep
 For some use cases you may need to trigger side effects after consuming replicated events. For example when an auction has been closed in 
 all data centers and all bids have been replicated. 
 
-The @api[ActiveActiveContext] contains the current replica, the origin replica for the event processes, and if a recovery is running. These can be used to 
+The @api[ReplicationContext] contains the current replica, the origin replica for the event processes, and if a recovery is running. These can be used to 
 implement side effects that take place once events are fully replicated. If the side effect should happen only once then a particular replica can be
-designated to do it. The @ref[Auction example](./persistence-active-active-examples.md#auction) uses these techniques.
+designated to do it. The @ref[Auction example](./replicated-eventsourcing-examples.md#auction) uses these techniques.
 
 
 ## How it works
@@ -203,7 +203,7 @@ You don’t have to read this section to be able to use the feature, but to use 
 
 Causal delivery order means that events persisted in one data center are read in the same order in other data centers. The order of concurrent events is undefined, which should be no problem
 when using [CRDT's](#conflict-free-replicated-data-types)
-and otherwise will be detected via the `ActiveActiveContext` concurrent method.
+and otherwise will be detected via the `ReplicationContext` concurrent method.
 
 For example:
 
@@ -231,7 +231,7 @@ A third data center may also see the events as either "e1, e3, e2" or as "e1, e2
 
 ### Concurrent updates
 
-Active-active automatically tracks causality between events from different replias using [version vectors](https://en.wikipedia.org/wiki/Version_vector).
+Replicated Event Sourcing automatically tracks causality between events from different replicas using [version vectors](https://en.wikipedia.org/wiki/Version_vector).
 
 ![images/causality.png](images/causality.png)
 
@@ -245,29 +245,29 @@ When comparing two version vectors `v1` and `v2`:
 * `v1`is CONCURRENT with `v2` otherwise
 
 
-## Sharded Active Active entities
+## Sharded Replicated Event Sourced entities
 
-To simplify what probably are the most common use cases for how you will want to distribute the active active actors there is a minimal API for running multiple instances of @ref[Akka Cluster Sharding](cluster-sharding.md), 
+To simplify what probably are the most common use cases for how you will want to distribute the replicated actors there is a minimal API for running multiple instances of @ref[Akka Cluster Sharding](cluster-sharding.md), 
 each instance holding the entities for a single replica.
 
 The distribution of the replicas can be controlled either through cluster roles or using the @ref[multi datacenter](cluster-dc.md) support in Akka Cluster. 
 
-The API consists of bootstrapping logic for starting the sharding instances through @apidoc[ActiveActiveShardingExtension] available from the
+The API consists of bootstrapping logic for starting the sharding instances through @apidoc[ReplicatedShardingExtension] available from the
 `akka-cluster-sharding-typed` module.
 
 Scala
-:  @@snip [ActiveActiveShardingSpec.scala](/akka-cluster-sharding-typed/src/test/scala/akka/cluster/sharding/typed/ActiveActiveShardingSpec.scala) { #bootstrap }
+:  @@snip [ReplicatedShardingSpec.scala](/akka-cluster-sharding-typed/src/test/scala/akka/cluster/sharding/typed/ReplicatedShardingSpec.scala) { #bootstrap }
 
 Java
-:  @@snip [ActiveActiveShardingTest.java](/akka-cluster-sharding-typed/src/test/java/akka/cluster/sharding/typed/ActiveActiveShardingTest.java) { #bootstrap }
+:  @@snip [ReplicatedShardingTest.java](/akka-cluster-sharding-typed/src/test/java/akka/cluster/sharding/typed/ReplicatedShardingTest.java) { #bootstrap }
 
-`init` returns an @apidoc[ActiveActiveSharding] instance which gives access to @apidoc[EntityRef]s for each of the replicas for arbitrary routing logic:
+`init` returns an @apidoc[ReplicatedSharding] instance which gives access to @apidoc[EntityRef]s for each of the replicas for arbitrary routing logic:
 
 Scala
-:  @@snip [ActiveActiveShardingSpec.scala](/akka-cluster-sharding-typed/src/test/scala/akka/cluster/sharding/typed/ActiveActiveShardingSpec.scala) { #all-entity-refs }
+:  @@snip [ReplicatedShardingSpec.scala](/akka-cluster-sharding-typed/src/test/scala/akka/cluster/sharding/typed/ReplicatedShardingSpec.scala) { #all-entity-refs }
 
 Java
-:  @@snip [ActiveActiveShardingTest.java](/akka-cluster-sharding-typed/src/test/java/akka/cluster/sharding/typed/ActiveActiveShardingTest.java) { #all-entity-refs }
+:  @@snip [ReplicatedShardingTest.java](/akka-cluster-sharding-typed/src/test/java/akka/cluster/sharding/typed/ReplicatedShardingTest.java) { #all-entity-refs }
 
 More advanced routing among the replicas is currently left as an exercise for the reader (or may be covered in a future release [#29281](https://github.com/akka/akka/issues/29281), [#29319](https://github.com/akka/akka/issues/29319)).
 
@@ -275,24 +275,24 @@ More advanced routing among the replicas is currently left as an exercise for th
 ## Direct Replication of Events
 
 Normally an event has to be written in the journal and then picked up by the trailing read journal in the other replicas. 
-As an optimization the active active events can be published across the Akka cluster to the replicas. The read side
+As an optimization the replicated events can be published across the Akka cluster to the replicas. The read side
 query is still needed as delivery is not guaranteed, but can be configured to poll the database less often since most
 events will arrive at the replicas through the cluster.
 
-To enable this feature you first need to enable event publishing on the @scala[`EventSourcedBehavior`]@java[`ActiveActiveEventSourcedBehavior`] with `withEventPublishing` 
-and then enable direct replication through `withDirectReplication()` on @apidoc[ActiveActiveShardingSettings] (if not using
- active active sharding the replication can be run standalone by starting the @apidoc[ActiveActiveShardingDirectReplication] actor).
+To enable this feature you first need to enable event publishing on the @scala[`EventSourcedBehavior`]@java[`ReplicatedEventSourcedBehavior`] with `withEventPublishing` 
+and then enable direct replication through `withDirectReplication()` on @apidoc[ReplicatedShardingSettings] (if not using
+ replicated sharding the replication can be run standalone by starting the @apidoc[ShardingDirectReplication] actor).
 
 The "event publishing" feature publishes each event to the local system event bus as a side effect after it has been written, 
-the `ActiveActiveShardingDirectReplication` actor subscribes to these events and forwards them to the replicas allowing them
+the @apidoc[ShardingDirectReplication] actor subscribes to these events and forwards them to the replicas allowing them
 to fast forward the stream of events for the origin replica. (With additional potential future support in journals for fast forwarding [#29311](https://github.com/akka/akka/issues/29311)). 
 
 ## Journal Support
 
-For a journal plugin to support active active it needs to store and read metadata for each event if it is defined in the @apiref[PersistentRepr]
+For a journal plugin to support replication it needs to store and read metadata for each event if it is defined in the @apiref[PersistentRepr]
  `metadata` field. To attach the metadata after writing it, `PersistentRepr.withMetadata` is used. The @apidoc[JournalSpec] in the Persistence TCK provides 
  a capability flag `supportsMetadata` to toggle verification that metadata is handled correctly.
  
-For a snapshot plugin to support active active it needs to store and read metadata for the snapshot if it is defined in the @apiref[akka.persistence.SnapshotMetadata] `metadata` field. 
+For a snapshot plugin to support replication it needs to store and read metadata for the snapshot if it is defined in the @apiref[akka.persistence.SnapshotMetadata] `metadata` field. 
 To attach the metadata when reading the snapshot the `akka.persistence.SnapshotMetadata.apply` factory overload taking a `metadata` parameter is used.
 The @apidoc[SnapshotStoreSpec] in the Persistence TCK provides a capability flag `supportsMetadata` to toggle verification that metadata is handled correctly.
