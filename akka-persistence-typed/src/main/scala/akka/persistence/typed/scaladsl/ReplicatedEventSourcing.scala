@@ -4,90 +4,65 @@
 
 package akka.persistence.typed.scaladsl
 
+import akka.annotation.DoNotInherit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
-import akka.util.{ OptionVal, WallClock }
+import akka.persistence.typed.internal.ReplicationContextImpl
 
-import akka.util.ccompat.JavaConverters._
+/**
+ * Provides access to replication specific state
+ *
+ * Not for user extension
+ */
+@DoNotInherit
+trait ReplicationContext {
 
-// FIXME docs
-trait ActiveActiveContext {
-
+  /**
+   * @return The unique id of this replica, including the replica id
+   */
   def persistenceId: PersistenceId
+
+  /**
+   * @return The replica id of this replicated event sourced actor
+   */
   def replicaId: ReplicaId
+
+  /**
+   * @return The ids of all replicas of this replicated event sourced actor
+   */
   def allReplicas: Set[ReplicaId]
+
+  /**
+   * @return The entity id of this replicated event sourced actor (not including the replica id)
+   */
   def entityId: String
 
+  /**
+   * Must only be called from the event handler
+   * @return the replica id where the current event was persisted
+   */
   def origin: ReplicaId
+
+  /**
+   * Must only be called from the event handler
+   * @return true if this event happened concurrent with an event from another replica
+   */
   def concurrent: Boolean
+
+  /**
+   * Must only be called from the event handler
+   * @return true when the event handler is invoked during recovery.
+   */
   def recoveryRunning: Boolean
+
+  /**
+   * @return a timestamp that will always be increasing (is monotonic)
+   */
   def currentTimeMillis(): Long
 
 }
 
-// FIXME, parts of this can be set during initialisation
-// Other fields will be set before executing the event handler as they change per event
-// https://github.com/akka/akka/issues/29258
-private[akka] class ActiveActiveContextImpl(
-    val entityId: String,
-    val replicaId: ReplicaId,
-    val replicasAndQueryPlugins: Map[ReplicaId, String])
-    extends ActiveActiveContext
-    with akka.persistence.typed.javadsl.ActiveActiveContext {
-  val allReplicas: Set[ReplicaId] = replicasAndQueryPlugins.keySet
-
-  // these are not volatile as they are set on the same thread as they should be accessed
-  var _origin: ReplicaId = null
-  var _recoveryRunning: Boolean = false
-  var _concurrent: Boolean = false
-  var _currentThread: OptionVal[Thread] = OptionVal.None
-
-  private def checkAccess(functionName: String): Unit = {
-    val callerThread = Thread.currentThread()
-    def error() =
-      throw new UnsupportedOperationException(
-        s"Unsupported access to ActiveActiveContext operation from the outside of event handler. " +
-        s"$functionName can only be called from the event handler")
-    _currentThread match {
-      case OptionVal.Some(t) =>
-        if (callerThread ne t) error()
-      case OptionVal.None =>
-        error()
-    }
-  }
-
-  /**
-   * The origin of the current event.
-   * Undefined result if called from anywhere other than an event handler.
-   */
-  override def origin: ReplicaId = {
-    checkAccess("origin")
-    _origin
-  }
-
-  /**
-   * Whether the happened concurrently with an event from another replica.
-   * Undefined result if called from any where other than an event handler.
-   */
-  override def concurrent: Boolean = {
-    checkAccess("concurrent")
-    _concurrent
-  }
-
-  override def persistenceId: PersistenceId = PersistenceId.replicatedUniqueId(entityId, replicaId)
-
-  override def currentTimeMillis(): Long = {
-    WallClock.AlwaysIncreasingClock.currentTimeMillis()
-  }
-  override def recoveryRunning: Boolean = {
-    checkAccess("recoveryRunning")
-    _recoveryRunning
-  }
-
-  override def getAllReplicas: java.util.Set[ReplicaId] = allReplicas.asJava
-}
-
-object ActiveActiveEventSourcing {
+object ReplicatedEventSourcing {
 
   /**
    * Initialize a replicated event sourced behavior where all entity replicas are stored in the same journal.
@@ -110,7 +85,7 @@ object ActiveActiveEventSourcing {
       replicaId: ReplicaId,
       allReplicaIds: Set[ReplicaId],
       queryPluginId: String)(
-      eventSourcedBehaviorFactory: ActiveActiveContext => EventSourcedBehavior[Command, Event, State])
+      eventSourcedBehaviorFactory: ReplicationContext => EventSourcedBehavior[Command, Event, State])
       : EventSourcedBehavior[Command, Event, State] =
     apply(entityId, replicaId, allReplicaIds.map(id => id -> queryPluginId).toMap)(eventSourcedBehaviorFactory)
 
@@ -134,10 +109,10 @@ object ActiveActiveEventSourcing {
       entityId: String,
       replicaId: ReplicaId,
       allReplicasAndQueryPlugins: Map[ReplicaId, String])(
-      eventSourcedBehaviorFactory: ActiveActiveContext => EventSourcedBehavior[Command, Event, State])
+      eventSourcedBehaviorFactory: ReplicationContext => EventSourcedBehavior[Command, Event, State])
       : EventSourcedBehavior[Command, Event, State] = {
-    val context = new ActiveActiveContextImpl(entityId, replicaId, allReplicasAndQueryPlugins)
-    eventSourcedBehaviorFactory(context).withActiveActive(context)
+    val context = new ReplicationContextImpl(entityId, replicaId, allReplicasAndQueryPlugins)
+    eventSourcedBehaviorFactory(context).withReplication(context)
   }
 
 }

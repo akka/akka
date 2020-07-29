@@ -17,10 +17,10 @@ import akka.persistence.typed.internal.ReplicatedPublishedEventMetaData
 @DoNotInherit
 trait PublishedEvent {
 
-  /** Scala API: When emitted from an Active Active actor this will contain the replica id */
+  /** Scala API: When emitted from an Replicated Event Sourcing actor this will contain the replica id */
   def replicatedMetaData: Option[ReplicatedPublishedEventMetaData]
 
-  /** Java API: When emitted from an Active Active actor this will contain the replica id */
+  /** Java API: When emitted from an Replicated Event Sourcing actor this will contain the replica id */
   def getReplicatedMetaData: Optional[ReplicatedPublishedEventMetaData]
 
   def persistenceId: PersistenceId

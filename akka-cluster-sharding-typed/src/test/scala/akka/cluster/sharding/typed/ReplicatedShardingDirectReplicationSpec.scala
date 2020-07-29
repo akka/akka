@@ -15,12 +15,9 @@ import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.internal.{ PublishedEventImpl, ReplicatedPublishedEventMetaData, VersionVector }
 import akka.persistence.typed.ReplicaId
 
-class ActiveActiveShardingDirectReplicationSpec
-    extends ScalaTestWithActorTestKit
-    with AnyWordSpecLike
-    with LogCapturing {
+class ReplicatedShardingDirectReplicationSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
-  "Active active sharding replication" must {
+  "Replicated sharding direct replication" must {
 
     "replicate published events to all sharding proxies" in {
       val replicaAProbe = createTestProbe[ShardingEnvelope[PublishedEvent]]()
@@ -28,7 +25,7 @@ class ActiveActiveShardingDirectReplicationSpec
       val replicaCProbe = createTestProbe[ShardingEnvelope[PublishedEvent]]()
 
       val replicationActor = spawn(
-        ActiveActiveShardingDirectReplication(
+        ShardingDirectReplication(
           typed.ReplicaId("ReplicaA"),
           replicaShardingProxies = Map(
             ReplicaId("ReplicaA") -> replicaAProbe.ref,
@@ -36,7 +33,7 @@ class ActiveActiveShardingDirectReplicationSpec
             ReplicaId("ReplicaC") -> replicaCProbe.ref)))
 
       val upProbe = createTestProbe[Done]()
-      replicationActor ! ActiveActiveShardingDirectReplication.VerifyStarted(upProbe.ref)
+      replicationActor ! ShardingDirectReplication.VerifyStarted(upProbe.ref)
       upProbe.receiveMessage() // not bullet proof wrt to subscription being complete but good enough
 
       val event = PublishedEventImpl(

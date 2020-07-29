@@ -11,7 +11,7 @@ import scala.runtime.AbstractFunction3
  * @param persistenceId id of persistent actor from which the snapshot was taken.
  * @param sequenceNr sequence number at which the snapshot was taken.
  * @param timestamp time at which the snapshot was saved, defaults to 0 when unknown.
- * @param metadata a journal can optionally support persisting metadata separate to the domain state, used for active active support
+ * @param metadata a journal can optionally support persisting metadata separate to the domain state, used for Replicated Event Sourcing support
  */
 @SerialVersionUID(1L)
 final class SnapshotMetadata(

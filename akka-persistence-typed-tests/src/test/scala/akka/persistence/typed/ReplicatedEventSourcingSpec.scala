@@ -14,12 +14,12 @@ import akka.actor.typed.Behavior
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
-import akka.persistence.typed.scaladsl.{ ActiveActiveContext, ActiveActiveEventSourcing, Effect, EventSourcedBehavior }
+import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing, ReplicationContext }
 import akka.serialization.jackson.CborSerializable
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
 
-object ActiveActiveSpec {
+object ReplicatedEventSourcingSpec {
 
   val AllReplicas = Set(ReplicaId("R1"), ReplicaId("R2"), ReplicaId("R3"))
 
@@ -36,7 +36,7 @@ object ActiveActiveSpec {
     testBehavior(entityId, replicaId, Some(probe))
 
   def eventSourcedBehavior(
-      aaContext: ActiveActiveContext,
+      aaContext: ReplicationContext,
       probe: Option[ActorRef[EventAndContext]]): EventSourcedBehavior[Command, String, State] = {
     EventSourcedBehavior[Command, String, State](
       aaContext.persistenceId,
@@ -66,7 +66,7 @@ object ActiveActiveSpec {
       entityId: String,
       replicaId: String,
       probe: Option[ActorRef[EventAndContext]] = None): Behavior[Command] =
-    ActiveActiveEventSourcing.withSharedJournal(
+    ReplicatedEventSourcing.withSharedJournal(
       entityId,
       ReplicaId(replicaId),
       AllReplicas,
@@ -76,15 +76,15 @@ object ActiveActiveSpec {
 
 case class EventAndContext(event: Any, origin: ReplicaId, recoveryRunning: Boolean, concurrent: Boolean)
 
-class ActiveActiveSpec
+class ReplicatedEventSourcingSpec
     extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
     with LogCapturing
     with Eventually {
-  import ActiveActiveSpec._
+  import ReplicatedEventSourcingSpec._
   val ids = new AtomicInteger(0)
   def nextEntityId = s"e-${ids.getAndIncrement()}"
-  "ActiveActiveEventSourcing" should {
+  "ReplicatedEventSourcing" should {
     "replicate events between entities" in {
       val entityId = nextEntityId
       val probe = createTestProbe[Done]()

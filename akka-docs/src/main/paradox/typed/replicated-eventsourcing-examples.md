@@ -1,6 +1,6 @@
-# Active-Active Examples
+# Replicated Event Sourcing Examples
 
-The following are more realistic examples of building systems with active-active event sourcing.
+The following are more realistic examples of building systems with Replicated Event Sourcing.
 
 ## Auction
 
@@ -16,21 +16,21 @@ We are building a small auction service. It has the following operations:
 We model those operations as commands to be sent to the auction actor:
 
 Scala
-:   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/AAAuctionExampleSpec.scala) { #commands }
+:   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedAuctionExampleSpec.scala) { #commands }
 
 The events:
 
 Scala
-:   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/AAAuctionExampleSpec.scala) { #events }
+:   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedAuctionExampleSpec.scala) { #events }
 
 The winner does not have to pay the highest bid but only enough to beat the second highest so the `highestCounterOffer` is in the `AuctionFinished` event. 
 
 Let's have a look at the auction entity that will handle incoming commands:
 
 Scala
-:   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/AAAuctionExampleSpec.scala) { #command-handler }
+:   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedAuctionExampleSpec.scala) { #command-handler }
 
-There is nothing specific to active-active about the command handler. It is the same as a command handler for a standard `EventSourcedBehavior`.
+There is nothing specific to Replicated Event Sourcing about the command handler. It is the same as a command handler for a standard `EventSourcedBehavior`.
 For `OfferBid` and `AuctionFinished` we do nothing more than to emit
 events corresponding to the command. For `GetHighestBid` we respond with details from the state. Note, that we overwrite the actual
 offer of the highest bid here with the amount of the `highestCounterOffer`. This is done to follow the popular auction style where
@@ -41,13 +41,13 @@ The initial state is taken from a `AuctionSetup` instance. The minimum bid is mo
 an `initialBid`.
 
 Scala
-:   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/AAAuctionExampleSpec.scala) { #setup }
+:   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedAuctionExampleSpec.scala) { #setup }
 
 
 The auction moves through the following phases:
 
 Scala
-:   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/AAAuctionExampleSpec.scala) { #phase }
+:   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedAuctionExampleSpec.scala) { #phase }
 
 The closing and closed states are to model waiting for all replicas to see the result of the auction before
 actually closing the action.
@@ -56,7 +56,7 @@ Let's have a look at our state class, `AuctionState` which also represents the C
 
 
 Scala
-:   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/AAAuctionExampleSpec.scala) { #state }
+:   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedAuctionExampleSpec.scala) { #state }
 
 The state consists of a flag that keeps track of whether the auction is still active, the currently highest bid,
 and the highest counter offer so far.
@@ -95,9 +95,9 @@ all replicas have seen all bids.
 In the event handler above, when recovery is not running, it calls `eventTriggers`.
 
 Scala
-:   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/AAAuctionExampleSpec.scala) { #event-triggers }
+:   @@snip [AuctionExample](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedAuctionExampleSpec.scala) { #event-triggers }
 
-The event trigger uses the `ActiveActiveContext` to decide when to trigger the Finish of the action.
+The event trigger uses the `ReplicationContext` to decide when to trigger the Finish of the action.
 When a replica saves the `AuctionFinished` event it checks whether it should close the auction.
 For the close to happen the replica must be the one designated to close and all replicas must have
 reported that they have finished. 
