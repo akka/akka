@@ -125,7 +125,9 @@ private[akka] object Running {
 
     def onCommand(state: RunningState[S], cmd: C): Behavior[InternalProtocol] = {
       val effect = setup.commandHandler(state.state, cmd)
-      applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
+      val (next, doUnstash) = applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
+      if (doUnstash) tryUnstashOne(next)
+      else next
     }
 
     // Used by EventSourcedBehaviorTestKit to retrieve the state.
@@ -138,7 +140,7 @@ private[akka] object Running {
         msg: Any,
         state: RunningState[S],
         effect: Effect[E, S],
-        sideEffects: immutable.Seq[SideEffect[S]] = Nil): Behavior[InternalProtocol] = {
+        sideEffects: immutable.Seq[SideEffect[S]] = Nil): (Behavior[InternalProtocol], Boolean) = {
       if (setup.log.isDebugEnabled && !effect.isInstanceOf[CompositeEffect[_, _]])
         setup.log.debugN(
           s"Handled command [{}], resulting effect: [{}], side effects: [{}]",
@@ -165,7 +167,7 @@ private[akka] object Running {
 
           val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
 
-          persistingEvents(newState2, state, numberOfEvents = 1, shouldSnapshotAfterPersist, sideEffects)
+          (persistingEvents(newState2, state, numberOfEvents = 1, shouldSnapshotAfterPersist, sideEffects), false)
 
         case PersistAll(events) =>
           if (events.nonEmpty) {
@@ -186,25 +188,26 @@ private[akka] object Running {
 
             val newState2 = internalPersistAll(setup.context, msg, newState, eventsToPersist)
 
-            persistingEvents(newState2, state, events.size, shouldSnapshotAfterPersist, sideEffects)
+            (persistingEvents(newState2, state, events.size, shouldSnapshotAfterPersist, sideEffects), false)
 
           } else {
+            // should never really happen because we change it to PersistNothing in effect handler
             // run side-effects even when no events are emitted
-            tryUnstashOne(applySideEffects(sideEffects, state))
+            (applySideEffects(sideEffects, state), true)
           }
 
         case _: PersistNothing.type =>
-          tryUnstashOne(applySideEffects(sideEffects, state))
+          (applySideEffects(sideEffects, state), true)
 
         case _: Unhandled.type =>
           import akka.actor.typed.scaladsl.adapter._
           setup.context.system.toClassic.eventStream
             .publish(UnhandledMessage(msg, setup.context.system.toClassic.deadLetters, setup.context.self.toClassic))
-          tryUnstashOne(applySideEffects(sideEffects, state))
+          (applySideEffects(sideEffects, state), true)
 
         case _: Stash.type =>
           stashUser(IncomingCommand(msg))
-          tryUnstashOne(applySideEffects(sideEffects, state))
+          (applySideEffects(sideEffects, state), true)
       }
     }
 

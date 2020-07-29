@@ -37,7 +37,8 @@ object Effect {
    * Side effects can be chained with `thenRun`
    */
   def persist[Event, State](events: im.Seq[Event]): EffectBuilder[Event, State] =
-    PersistAll(events)
+    if (events.isEmpty) none
+    else PersistAll(events)
 
   /**
    * Do not persist anything
