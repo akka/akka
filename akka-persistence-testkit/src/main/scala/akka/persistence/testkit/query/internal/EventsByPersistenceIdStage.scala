@@ -5,6 +5,7 @@
 package akka.persistence.testkit.query.internal
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
+import akka.persistence.journal.Tagged
 import akka.persistence.query.{ EventEnvelope, Sequence }
 import akka.persistence.testkit.{ EventStorage, PersistenceTestKitPlugin }
 import akka.stream.{ Attributes, Outlet, SourceShape }
@@ -49,15 +50,10 @@ final private[akka] class EventsByPersistenceIdStage(
           log.debug("tryPush available. Query for {} {} result {}", currentSequenceNr, currentSequenceNr, event)
           event.headOption match {
             case Some(pr) =>
-              push(
-                out,
-                EventEnvelope(
-                  Sequence(pr.sequenceNr),
-                  pr.persistenceId,
-                  pr.sequenceNr,
-                  pr.payload,
-                  pr.timestamp,
-                  pr.metadata))
+              push(out, EventEnvelope(Sequence(pr.sequenceNr), pr.persistenceId, pr.sequenceNr, pr.payload match {
+                case Tagged(payload, _) => payload
+                case payload            => payload
+              }, pr.timestamp, pr.metadata))
               if (currentSequenceNr == toSequenceNr) {
                 completeStage()
               } else {

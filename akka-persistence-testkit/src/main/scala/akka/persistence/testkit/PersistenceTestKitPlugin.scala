@@ -12,7 +12,8 @@ import scala.util.Try
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.annotation.InternalApi
 import akka.persistence._
-import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
+import akka.persistence.journal.AsyncWriteJournal
+import akka.persistence.journal.Tagged
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.testkit.internal.{ InMemStorageExtension, SnapshotStorageEmulatorExtension }
 import akka.util.unused
@@ -35,8 +36,7 @@ class PersistenceTestKitPlugin(@unused cfg: Config, cfgPath: String) extends Asy
     Future.fromTry(Try(messages.map(aw => {
       val data = aw.payload.map(pl =>
         pl.payload match {
-          case Tagged(p, _) => pl.withPayload(p).withTimestamp(System.currentTimeMillis())
-          case _            => pl.withTimestamp(System.currentTimeMillis())
+          case _ => pl.withTimestamp(System.currentTimeMillis())
         })
 
       val result: Try[Unit] = storage.tryAdd(data)
@@ -54,7 +54,19 @@ class PersistenceTestKitPlugin(@unused cfg: Config, cfgPath: String) extends Asy
 
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
       recoveryCallback: PersistentRepr => Unit): Future[Unit] =
-    Future.fromTry(Try(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, max).foreach(recoveryCallback)))
+    Future.fromTry(
+      Try(
+        storage
+          .tryRead(persistenceId, fromSequenceNr, toSequenceNr, max)
+          .map { repr =>
+            // we keep the tags in the repr, so remove those here
+            repr.payload match {
+              case Tagged(payload, _) => repr.withPayload(payload)
+              case _                  => repr
+            }
+
+          }
+          .foreach(recoveryCallback)))
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
     Future.fromTry(Try {

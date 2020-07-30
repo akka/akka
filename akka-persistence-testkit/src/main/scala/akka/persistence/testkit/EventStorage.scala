@@ -10,6 +10,7 @@ import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
 import akka.annotation.InternalApi
 import akka.persistence.PersistentRepr
+import akka.persistence.journal.Tagged
 import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies
 import akka.persistence.testkit.internal.TestKitStorage
 import akka.util.ccompat.JavaConverters._
@@ -46,7 +47,11 @@ private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, Per
     val grouped = elems.groupBy(_.persistenceId)
 
     val processed = grouped.map {
-      case (pid, els) => currentPolicy.tryProcess(pid, WriteEvents(els.map(_.payload)))
+      case (pid, els) =>
+        currentPolicy.tryProcess(pid, WriteEvents(els.map(_.payload match {
+          case Tagged(payload, _) => payload
+          case nonTagged          => nonTagged
+        })))
     }
 
     val reduced: ProcessingResult =
@@ -75,6 +80,23 @@ private[testkit] trait EventStorage extends TestKitStorage[JournalOperation, Per
       max: Long): immutable.Seq[PersistentRepr] = {
     val batch = read(persistenceId, fromSequenceNr, toSequenceNr, max)
     currentPolicy.tryProcess(persistenceId, ReadEvents(batch)) match {
+      case ProcessingSuccess  => batch
+      case Reject(ex)         => throw ex
+      case StorageFailure(ex) => throw ex
+    }
+  }
+
+  def tryReadByTag(tag: String): immutable.Seq[PersistentRepr] = {
+    val batch = readAll()
+      .filter(repr =>
+        repr.payload match {
+          case Tagged(_, tags) => tags.contains(tag)
+          case _               => false
+        })
+      .toVector
+      .sortBy(_.timestamp)
+
+    currentPolicy.tryProcess(tag, ReadEvents(batch)) match {
       case ProcessingSuccess  => batch
       case Reject(ex)         => throw ex
       case StorageFailure(ex) => throw ex

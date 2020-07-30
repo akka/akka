@@ -10,11 +10,15 @@ import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
+import akka.persistence.query.NoOffset
+import akka.persistence.query.scaladsl.CurrentEventsByTagQuery
+import akka.persistence.query.PersistenceQuery
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
+import akka.stream.scaladsl.Sink
 import akka.serialization.jackson.CborSerializable
 import org.scalatest.concurrent.Eventually
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -96,7 +100,6 @@ class ReplicatedEventSourcingTaggingSpec
         }
       }
 
-      /* FIXME can't verify tags with testkit ;(
       val query =
         PersistenceQuery(system).readJournalFor[CurrentEventsByTagQuery](PersistenceTestKitReadJournal.Identifier)
 
@@ -105,7 +108,7 @@ class ReplicatedEventSourcingTaggingSpec
 
       val longStrings = query.currentEventsByTag("long-strings", NoOffset).runWith(Sink.seq).futureValue
       longStrings should have size (1)
-     */
+
     }
   }
 }
