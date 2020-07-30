@@ -73,6 +73,11 @@ private[akka] object EventSourcedBehaviorImpl {
    */
   final case class GetState[State](replyTo: ActorRef[State]) extends InternalProtocol
 
+  /**
+   * Used to start the replication stream at the correct sequence number
+   */
+  final case class GetSeenSequenceNr(replica: ReplicaId, replyTo: ActorRef[Long]) extends InternalProtocol
+
 }
 
 @InternalApi
