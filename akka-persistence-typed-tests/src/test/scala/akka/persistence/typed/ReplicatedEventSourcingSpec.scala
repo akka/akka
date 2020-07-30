@@ -85,7 +85,7 @@ class ReplicatedEventSourcingSpec
   val ids = new AtomicInteger(0)
   def nextEntityId = s"e-${ids.getAndIncrement()}"
   "ReplicatedEventSourcing" should {
-    "replicate events between entities" in {
+    "replicate events between two entities" in {
       val entityId = nextEntityId
       val probe = createTestProbe[Done]()
       val r1 = spawn(testBehavior(entityId, "R1"))
@@ -346,6 +346,57 @@ class ReplicatedEventSourcingSpec
         EventAndContext("from r1", ReplicaId("R1"), recoveryRunning = true, concurrent = false))
       eventProbeR1Take2.expectMessage(
         EventAndContext("from r2", ReplicaId("R2"), recoveryRunning = true, concurrent = true))
+    }
+
+    "replicate events between three entities" in {
+      val entityId = nextEntityId
+      val probe = createTestProbe[Done]()
+      var r1 = spawn(testBehavior(entityId, "R1"))
+      var r2 = spawn(testBehavior(entityId, "R2"))
+      var r3 = spawn(testBehavior(entityId, "R3"))
+      r1 ! StoreMe("1 from r1", probe.ref)
+      r2 ! StoreMe("1 from r2", probe.ref)
+      r3 ! StoreMe("1 from r3", probe.ref)
+      probe.receiveMessages(3) // all writes acked
+
+      (r1 :: r2 :: r3 :: Nil).foreach { replica =>
+        eventually {
+          val probe = createTestProbe[State]()
+          replica ! GetState(probe.ref)
+          probe.expectMessageType[State].all.toSet shouldEqual Set("1 from r1", "1 from r2", "1 from r3")
+          replica ! Stop
+          probe.expectTerminated(replica)
+        }
+      }
+
+      // with all replicas stopped, start and write a bit to one of them
+      r1 = spawn(testBehavior(entityId, "R1"))
+      r1 ! StoreMe("2 from r1", probe.ref)
+      r1 ! StoreMe("3 from r1", probe.ref)
+      probe.receiveMessages(2) // both writes acked
+      r1 ! Stop
+      probe.expectTerminated(r1)
+
+      // start the other two
+      r1 = spawn(testBehavior(entityId, "R1"))
+      r2 = spawn(testBehavior(entityId, "R2"))
+      r3 = spawn(testBehavior(entityId, "R3"))
+
+      (r1 :: r2 :: r3 :: Nil).foreach { replica =>
+        eventually {
+          val probe = createTestProbe[State]()
+          replica ! GetState(probe.ref)
+          probe.expectMessageType[State].all.toSet shouldEqual Set(
+            "1 from r1",
+            "2 from r1",
+            "3 from r1",
+            "1 from r2",
+            "1 from r3")
+          replica ! Stop
+          probe.expectTerminated(replica)
+        }
+      }
+
     }
 
     "restart replication stream" in {
