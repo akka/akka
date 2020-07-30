@@ -170,10 +170,10 @@ private[akka] object Shard {
    */
   case object NoState extends EntityState {
     override def transition(newState: EntityState, entities: Entities): EntityState = newState match {
-      case RememberedButNotCreated if entities.rememberingEntities       => RememberedButNotCreated
-      case remembering: RememberingStart if entities.rememberingEntities => remembering
-      case active: Active if !entities.rememberingEntities               => active
-      case _                                                             => invalidTransition(newState, entities)
+      case RememberedButNotCreated if entities.rememberingEntities => RememberedButNotCreated
+      case remembering: RememberingStart                           => remembering // we go via this state even if not really remembering
+      case active: Active if !entities.rememberingEntities         => active
+      case _                                                       => invalidTransition(newState, entities)
     }
   }
 
