@@ -20,7 +20,7 @@ import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.RecoveryFailed
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.SingleEventSeq
-import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState }
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.util.OptionVal
@@ -97,6 +97,7 @@ private[akka] final class ReplayingEvents[C, E, S](
       case pe: PublishedEventImpl          => onInternalCommand(pe)
       case cmd: IncomingCommand[C]         => onInternalCommand(cmd)
       case get: GetState[S @unchecked]     => stashInternal(get)
+      case get: GetSeenSequenceNr          => stashInternal(get)
       case RecoveryPermitGranted           => Behaviors.unhandled // should not happen, we already have the permit
     }
   }
