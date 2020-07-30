@@ -271,6 +271,43 @@ Java
 
 More advanced routing among the replicas is currently left as an exercise for the reader (or may be covered in a future release [#29281](https://github.com/akka/akka/issues/29281), [#29319](https://github.com/akka/akka/issues/29319)).
 
+## Tagging events and running projections
+
+Just like for regular `EventSourcedBehavior`s it is possible to “tag” events along with persisting them. 
+This is useful for later retrival of events for a given tag. The same @ref[API for tagging provided for EventSourcedBehavior](persistence.md#tagging) can 
+be used for replicated event sourced behaviors as well.
+Tagging is useful in practice to build queries that lead to other data representations or aggregations of the these event 
+streams that can more directly serve user queries – known as building the “read side” in CQRS based applications.
+
+The tagging is invoked in each replicas, which requires some special care in using tags, or else the same event will be
+tagged one time for each replica and show up in the event by tag stream one time for each replica. In addition to this
+the tags will be written in the respective journal of the replicas, which means that unless they all share a single journal
+the tag streams will be local to the replica even if the same tag is used on multiple replicas.
+
+One strategy for dealing with this is to include the replica id in the tag name, this means there will be a tagged stream of events
+per replica that contains all replicated events, but since the events can arrive in different order, they can also come in different
+order per replica tag.
+
+Another strategy would be to tag only the events that is local to the replica and not events that are replicated. Either
+using a tag that will be the same for all replicas, leading to a single stream of tagged events where the events from each 
+replica is present only once, or with a tag including the replica id meaning that there will be a stream of tagged events
+with the events accepted locally for each replica.
+
+Determining the replica id of the replicated actor itself and the origin replica id of an event is possible through the
+@apidoc[ReplicationContext] when the tagger callback is invoked.
+
+FIXME start with a simple sample
+
+Scala
+:  @@snip [ReplicatedEventSourcingTaggingSpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedEventSourcingTaggingSpec.scala) { #tagging }
+
+Java
+:  @@snip [ReplicatedStringSet.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ReplicatedStringSet.java) { #tagging }
+
+FIXME then do a more advanced one rather than the other way around 
+While the above example showcases various ways of tagging, the most common and simple way to tag events is to tag them 
+using the entity type name that is persisting these events, and doing so only in the origin datacenter, which is as simple as:
+
 
 ## Direct Replication of Events
 
