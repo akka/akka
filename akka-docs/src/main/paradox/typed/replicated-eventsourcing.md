@@ -195,54 +195,6 @@ implement side effects that take place once events are fully replicated. If the 
 designated to do it. The @ref[Auction example](./replicated-eventsourcing-examples.md#auction) uses these techniques.
 
 
-## How it works
-
-You don’t have to read this section to be able to use the feature, but to use the abstraction efficiently and for the right type of use cases it can be good to understand how it’s implemented. For example, it should give you the right expectations of the overhead that the solution introduces compared to using just `EventSourcedBehavior`s.
-
-### Causal deliver order
-
-Causal delivery order means that events persisted in one data center are read in the same order in other data centers. The order of concurrent events is undefined, which should be no problem
-when using [CRDT's](#conflict-free-replicated-data-types)
-and otherwise will be detected via the `ReplicationContext` concurrent method.
-
-For example:
-
-```
-DC-1: write e1
-DC-2: read e1, write e2
-DC-1: read e2, write e3
-```
-
-In the above example the causality is `e1 -> e2 -> e3`. Also in a third data center DC-3 these events will be read in the same order e1, e2, e3.
-
-Another example with concurrent events:
-
-```
-DC1: write e1
-DC2: read e1, write e2
-DC1: write e3 (e2 and e3 are concurrent)
-DC1: read e2
-DC2: read e3
-```
-
-e2 and e3 are concurrent, i.e. they don't have a causal relation: DC1 sees them in the order "e1, e3, e2", while DC2 sees them as "e1, e2, e3".
-
-A third data center may also see the events as either "e1, e3, e2" or as "e1, e2, e3".
-
-### Concurrent updates
-
-Replicated Event Sourcing automatically tracks causality between events from different replicas using [version vectors](https://en.wikipedia.org/wiki/Version_vector).
-
-![images/causality.png](images/causality.png)
-
-Each replica "owns" a slot in the version vector and increases its counter when an event is persisted. The version vector is stored with the event, and when a replicated event is consumed the version vector of the event is merged with the local version vector.
-
-When comparing two version vectors `v1` and `v2`: 
-
-* `v1` is SAME as `v2` iff for all i v1(i) == v2(i)
-* `v1`is BEFORE `v2` iff for all i v1(i) <= v2(i) and there exist a j such that v1(j) < v2(j)
-* `v1`is AFTER `v2` iff for all i v1(i) >= v2(i) and there exist a j such that v1(j) > v2(j)
-* `v1`is CONCURRENT with `v2` otherwise
 
 
 ## Sharded Replicated Event Sourced entities
@@ -296,3 +248,52 @@ For a journal plugin to support replication it needs to store and read metadata 
 For a snapshot plugin to support replication it needs to store and read metadata for the snapshot if it is defined in the @apiref[akka.persistence.SnapshotMetadata] `metadata` field. 
 To attach the metadata when reading the snapshot the `akka.persistence.SnapshotMetadata.apply` factory overload taking a `metadata` parameter is used.
 The @apidoc[SnapshotStoreSpec] in the Persistence TCK provides a capability flag `supportsMetadata` to toggle verification that metadata is handled correctly.
+
+## How it works
+
+You don’t have to read this section to be able to use the feature, but to use the abstraction efficiently and for the right type of use cases it can be good to understand how it’s implemented. For example, it should give you the right expectations of the overhead that the solution introduces compared to using just `EventSourcedBehavior`s.
+
+### Causal deliver order
+
+Causal delivery order means that events persisted in one data center are read in the same order in other data centers. The order of concurrent events is undefined, which should be no problem
+when using [CRDT's](#conflict-free-replicated-data-types)
+and otherwise will be detected via the `ReplicationContext` concurrent method.
+
+For example:
+
+```
+DC-1: write e1
+DC-2: read e1, write e2
+DC-1: read e2, write e3
+```
+
+In the above example the causality is `e1 -> e2 -> e3`. Also in a third data center DC-3 these events will be read in the same order e1, e2, e3.
+
+Another example with concurrent events:
+
+```
+DC1: write e1
+DC2: read e1, write e2
+DC1: write e3 (e2 and e3 are concurrent)
+DC1: read e2
+DC2: read e3
+```
+
+e2 and e3 are concurrent, i.e. they don't have a causal relation: DC1 sees them in the order "e1, e3, e2", while DC2 sees them as "e1, e2, e3".
+
+A third data center may also see the events as either "e1, e3, e2" or as "e1, e2, e3".
+
+### Concurrent updates
+
+Replicated Event Sourcing automatically tracks causality between events from different replicas using [version vectors](https://en.wikipedia.org/wiki/Version_vector).
+
+![images/causality.png](images/causality.png)
+
+Each replica "owns" a slot in the version vector and increases its counter when an event is persisted. The version vector is stored with the event, and when a replicated event is consumed the version vector of the event is merged with the local version vector.
+
+When comparing two version vectors `v1` and `v2`: 
+
+* `v1` is SAME as `v2` iff for all i v1(i) == v2(i)
+* `v1`is BEFORE `v2` iff for all i v1(i) <= v2(i) and there exist a j such that v1(j) < v2(j)
+* `v1`is AFTER `v2` iff for all i v1(i) >= v2(i) and there exist a j such that v1(j) > v2(j)
+* `v1`is CONCURRENT with `v2` otherwise
