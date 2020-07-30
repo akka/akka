@@ -22,7 +22,7 @@ object ReplicatedAuctionExampleSpec {
 
   type MoneyAmount = Int
 
-  case class Bid(bidder: String, offer: MoneyAmount, timestamp: Instant, originDc: ReplicaId)
+  case class Bid(bidder: String, offer: MoneyAmount, timestamp: Instant, originReplica: ReplicaId)
 
   //#commands
   sealed trait AuctionCommand
@@ -89,8 +89,8 @@ object ReplicatedAuctionExampleSpec {
       // If timestamps are equal, choose by dc where the offer was submitted
       // In real auctions, this last comparison should be deterministic but unpredictable, so that submitting to a
       // particular DC would not be an advantage.
-      (first.offer == second.offer && first.timestamp.equals(second.timestamp) && first.originDc.id
-        .compareTo(second.originDc.id) < 0)
+      (first.offer == second.offer && first.timestamp.equals(second.timestamp) && first.originReplica.id
+        .compareTo(second.originReplica.id) < 0)
   }
   //#state
 
