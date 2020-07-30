@@ -287,6 +287,12 @@ The "event publishing" feature publishes each event to the local system event bu
 the @apidoc[ShardingDirectReplication] actor subscribes to these events and forwards them to the replicas allowing them
 to fast forward the stream of events for the origin replica. (With additional potential future support in journals for fast forwarding [#29311](https://github.com/akka/akka/issues/29311)). 
 
+## Hot Standby
+
+If all writes occur to one replica the other replicas are not started there might be many replicated events to catch up with when they are later started. Therefore it can be good to activate all replicas when there is some activity. 
+
+This can be achieved automatically when `ReplicatedSharding` is used and direct replication of events is enabled as described in @ref[Direct Replication of Events](#direct-replication-of-events). When each written event is forwarded to the other replicas it will trigger them to start if they are not already started.
+
 ## Journal Support
 
 For a journal plugin to support replication it needs to store and read metadata for each event if it is defined in the @apiref[PersistentRepr]
