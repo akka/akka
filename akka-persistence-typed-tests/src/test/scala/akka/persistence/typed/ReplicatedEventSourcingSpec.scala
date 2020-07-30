@@ -13,6 +13,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
+import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing, ReplicationContext }
 import akka.serialization.jackson.CborSerializable
 import org.scalatest.concurrent.Eventually
@@ -396,6 +397,29 @@ class ReplicatedEventSourcingSpec
         }
       }
 
+    }
+
+    "restart replication stream" in {
+      val testkit = PersistenceTestKit(system)
+      val entityId = nextEntityId
+      val stateProbe = createTestProbe[State]()
+      val probe = createTestProbe[Done]()
+      val eventProbeR1 = createTestProbe[EventAndContext]()
+      val r1 = spawn(testBehavior(entityId, "R1", eventProbeR1.ref))
+      val r2 = spawn(testBehavior(entityId, "R2"))
+
+      // ensure recovery is complete
+      r1 ! GetState(stateProbe.ref)
+      stateProbe.expectMessage(State(Nil))
+      r2 ! GetState(stateProbe.ref)
+      stateProbe.expectMessage(State(Nil))
+
+      // make reads fail for the replication
+      testkit.failNextNReads(s"$entityId|R2", 1)
+
+      // should restart the replication stream
+      r2 ! StoreMe("from r2", probe.ref)
+      eventProbeR1.expectMessageType[EventAndContext].event shouldEqual "from r2"
     }
   }
 }
