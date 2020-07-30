@@ -37,7 +37,7 @@ object ReplicatedEventSourcingTaggingSpec {
         entityId: String,
         replica: ReplicaId,
         allReplicas: Set[ReplicaId]): EventSourcedBehavior[Command, String, State] = {
-      // #simple-tag
+      // #tagging
       ReplicatedEventSourcing.withSharedJournal(entityId, replica, allReplicas, queryPluginId)(
         replicationContext =>
           EventSourcedBehavior[Command, String, State](
@@ -61,7 +61,7 @@ object ReplicatedEventSourcingTaggingSpec {
                 if (replicationContext.origin != replicationContext.replicaId) Set.empty
                 else if (event.length > 10) Set("long-strings", "strings")
                 else Set("strings")))
-      // #simple-tag
+      // #tagging
     }
   }
 

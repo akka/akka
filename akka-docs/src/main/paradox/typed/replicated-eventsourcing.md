@@ -66,7 +66,7 @@ Scala
 :  @@snip [ReplicatedEventSourcingCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedEventSourcingCompileOnlySpec.scala) { #replicas }
 
 Java
-:  @@snip [ReplicatedEventSourcingCompileOnlyTest.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ReplicatedEventSourcingCompileOnlyTest.java) { #replicas }
+:  @@snip [MyReplicatedBehavior.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/MyReplicatedBehavior.java) { #replicas }
 
 
 Then to enable replication create the event sourced behavior with the factory method:
@@ -75,7 +75,7 @@ Scala
 :  @@snip [ReplicatedEventSourcingCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedEventSourcingCompileOnlySpec.scala) { #factory }
 
 Java
-:  @@snip [ReplicatedEventSourcingCompileOnlyTest.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ReplicatedEventSourcingCompileOnlyTest.java) { #factory }
+:  @@snip [MyReplicatedBehavior.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/MyReplicatedBehavior.java) { #factory }
 
 The factory takes in:
 
@@ -90,7 +90,7 @@ Scala
 :  @@snip [ReplicatedEventSourcingCompileOnlySpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedEventSourcingCompileOnlySpec.scala) { #factory-shared}
 
 Java
-:  @@snip [ReplicatedEventSourcingCompileOnlyTest.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ReplicatedEventSourcingCompileOnlyTest.java) { #factory-shared }
+:  @@snip [MyReplicatedBehavior.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/MyReplicatedBehavior.java) { #factory-shared }
 
 
 @@@ div { .group-scala }
@@ -279,6 +279,9 @@ be used for replicated event sourced behaviors as well.
 Tagging is useful in practice to build queries that lead to other data representations or aggregations of the these event 
 streams that can more directly serve user queries – known as building the “read side” in CQRS based applications.
 
+Creating read side projections is possible through [Akka Projection](https://doc.akka.io/docs/akka-projection/current/)
+or through direct usage of the @ref[events by tag queries](../persistence-query.md#eventsbytag-and-currenteventsbytag).  
+
 The tagging is invoked in each replicas, which requires some special care in using tags, or else the same event will be
 tagged one time for each replica and show up in the event by tag stream one time for each replica. In addition to this
 the tags will be written in the respective journal of the replicas, which means that unless they all share a single journal
@@ -294,20 +297,16 @@ replica is present only once, or with a tag including the replica id meaning tha
 with the events accepted locally for each replica.
 
 Determining the replica id of the replicated actor itself and the origin replica id of an event is possible through the
-@apidoc[ReplicationContext] when the tagger callback is invoked.
-
-FIXME start with a simple sample
+@apidoc[ReplicationContext] when the tagger callback is invoked like this:
 
 Scala
-:  @@snip [ReplicatedEventSourcingTaggingSpec.scala](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedEventSourcingTaggingSpec.scala) { #tagging }
+:  @@snip [ReplicatedEventSourcingTaggingSpec.scala](/akka-persistence-typed-tests/src/test/scala/akka/persistence/typed/ReplicatedEventSourcingTaggingSpec.scala) { #tagging }
 
 Java
 :  @@snip [ReplicatedStringSet.java](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ReplicatedStringSet.java) { #tagging }
 
-FIXME then do a more advanced one rather than the other way around 
-While the above example showcases various ways of tagging, the most common and simple way to tag events is to tag them 
-using the entity type name that is persisting these events, and doing so only in the origin datacenter, which is as simple as:
-
+In this sample we are using a shared journal, and single tag but only tagging local events to it and therefore ending up
+with a single stream of tagged events from all replicas without duplicates. 
 
 ## Direct Replication of Events
 
