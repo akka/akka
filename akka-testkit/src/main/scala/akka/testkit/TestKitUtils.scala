@@ -56,7 +56,7 @@ private[akka] object TestKitUtils {
     name
       .replaceFirst("""^.*\.""", "") // drop package name
       .replaceAll("""\$\$?\w+""", "") // drop scala anonymous functions/classes
-      .replaceAll("[^a-zA-Z_0-9]", "_")
+      .replaceAll("[^a-zA-Z_0-9-]", "_")
       .replaceAll("""MultiJvmNode\d+""", "") // drop MultiJvm suffix
   }
 }

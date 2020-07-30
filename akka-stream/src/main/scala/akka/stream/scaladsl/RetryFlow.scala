@@ -19,12 +19,17 @@ object RetryFlow {
    * The retry condition is controlled by the `decideRetry` function. It takes the originally emitted
    * element and the response emitted by `flow`, and may return a request to be retried.
    *
-   * The implementation of the `RetryFlow` requires that `flow` follows one-in-one-out semantics,
-   * the [[akka.stream.scaladsl.Flow Flow]] may not filter elements,
-   * nor emit more than one element per incoming element. The `RetryFlow` will fail if two elements are
-   * emitted from the `flow`, it will be stuck "forever" if nothing is emitted. Just one element will
-   * be emitted into the `flow` at any time. The `flow` needs to emit an element before the next
-   * will be emitted to it.
+   * The implementation of the `RetryFlow` requires that `flow` follows strict first-in-first-out and
+   * one-in-one-out semantics, i.e., the [[akka.stream.scaladsl.Flow Flow]] may neither filter elements,
+   * nor emit more than one element per incoming element. The `RetryFlow` will fail if two elements
+   * are emitted for one incoming element. Any sort of batching, grouping, or filtering
+   * will make it hang forever.
+   *
+   * Just one element will be emitted into the `flow` at any time.
+   * Let's say the flow is handling an element, either first-time executing some calculation, or retrying.
+   * The next element won't be emitted into the flow until the current element has been finished processing.
+   * By finished, it means either succeed the very first attempt, succeed after a few attempts, or get dropped after
+   * using up [[maxRetries]] retries.
    *
    * @param minBackoff minimum duration to backoff between issuing retries
    * @param maxBackoff maximum duration to backoff between issuing retries

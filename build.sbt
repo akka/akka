@@ -9,14 +9,31 @@ enablePlugins(
   ScalafixIgnoreFilePlugin,
   JavaFormatterPlugin)
 disablePlugins(MimaPlugin)
+
+// check format and headers
+TaskKey[Unit]("verifyCodeFmt") := {
+  javafmtCheckAll.all(ScopeFilter(inAnyProject)).result.value.toEither.left.foreach { _ =>
+    throw new MessageOnlyException(
+      "Unformatted Java code found. Please run 'javafmtAll' (or use the 'applyCodeStyle' alias) and commit the reformatted code")
+  }
+
+  scalafmtCheckAll.all(ScopeFilter(inAnyProject)).result.value.toEither.left.foreach { _ =>
+    throw new MessageOnlyException(
+      "Unformatted Scala code found. Please run 'scalafmtAll' (or use the 'applyCodeStyle' alias) and commit the reformatted code")
+  }
+}
+
+addCommandAlias("verifyCodeStyle", "headerCheckAll; verifyCodeFmt")
+addCommandAlias("applyCodeStyle", "headerCreateAll; javafmtAll; scalafmtAll")
+
 addCommandAlias(
   name = "fixall",
   value =
-    ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;scalafmtAll;test:compile;multi-jvm:compile;reload")
+    ";scalafixEnable; compile:scalafix; test:scalafix; multi-jvm:scalafix; scalafmtAll; test:compile; multi-jvm:compile; reload")
 
 addCommandAlias(
   name = "sortImports",
-  value = ";scalafixEnable;compile:scalafix SortImports;test:scalafix SortImports;scalafmtAll")
+  value = ";scalafixEnable; compile:scalafix SortImports; test:scalafix SortImports; scalafmtAll")
 
 import akka.AkkaBuild._
 import akka.{ AkkaBuild, Dependencies, OSGi, Protobuf, SigarLoader, VersionGenerator }
