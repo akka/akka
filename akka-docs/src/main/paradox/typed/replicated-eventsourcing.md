@@ -273,11 +273,11 @@ More advanced routing among the replicas is currently left as an exercise for th
 
 ## Tagging events and running projections
 
-Just like for regular `EventSourcedBehavior`s it is possible to “tag” events along with persisting them. 
+Just like for regular `EventSourcedBehavior`s it is possible to tag events along with persisting them. 
 This is useful for later retrival of events for a given tag. The same @ref[API for tagging provided for EventSourcedBehavior](persistence.md#tagging) can 
 be used for replicated event sourced behaviors as well.
 Tagging is useful in practice to build queries that lead to other data representations or aggregations of the these event 
-streams that can more directly serve user queries – known as building the “read side” in CQRS based applications.
+streams that can more directly serve user queries – known as building the “read side” in @ref[CQRS](cqrs.md) based applications.
 
 Creating read side projections is possible through [Akka Projection](https://doc.akka.io/docs/akka-projection/current/)
 or through direct usage of the @ref[events by tag queries](../persistence-query.md#eventsbytag-and-currenteventsbytag).  
@@ -291,7 +291,7 @@ One strategy for dealing with this is to include the replica id in the tag name,
 per replica that contains all replicated events, but since the events can arrive in different order, they can also come in different
 order per replica tag.
 
-Another strategy would be to tag only the events that is local to the replica and not events that are replicated. Either
+Another strategy would be to tag only the events that are local to the replica and not events that are replicated. Either
 using a tag that will be the same for all replicas, leading to a single stream of tagged events where the events from each 
 replica is present only once, or with a tag including the replica id meaning that there will be a stream of tagged events
 with the events accepted locally for each replica.
