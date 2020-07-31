@@ -125,7 +125,7 @@ private[akka] final class ReplayingEvents[C, E, S](
 
               val aaMetaAndSelfReplica: Option[(ReplicatedEventMetadata, ReplicaId, ReplicationSetup)] =
                 setup.replication match {
-                  case Some(aa) =>
+                  case Some(replication) =>
                     val meta = repr.metadata match {
                       case Some(m) => m.asInstanceOf[ReplicatedEventMetadata]
                       case None =>
@@ -133,16 +133,16 @@ private[akka] final class ReplayingEvents[C, E, S](
                           s"Replicated Event Sourcing enabled but existing event has no metadata. Migration isn't supported yet.")
 
                     }
-                    aa.setContext(recoveryRunning = true, meta.originReplica, meta.concurrent)
-                    Some((meta, aa.replicaId, aa))
+                    replication.setContext(recoveryRunning = true, meta.originReplica, meta.concurrent)
+                    Some((meta, replication.replicaId, replication))
                   case None => None
                 }
 
               val newState = setup.eventHandler(state.state, event)
 
               setup.replication match {
-                case Some(aa) =>
-                  aa.clearContext()
+                case Some(replication) =>
+                  replication.clearContext()
                 case None =>
               }
 

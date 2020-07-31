@@ -7,6 +7,7 @@ package akka.persistence.testkit.internal
 import akka.actor.{ ActorSystem, ExtendedActorSystem }
 import akka.annotation.InternalApi
 import akka.persistence.PersistentRepr
+import akka.persistence.journal.Tagged
 import akka.persistence.testkit.EventStorage
 import akka.persistence.testkit.internal.SerializedEventStorageImpl.Serialized
 import akka.serialization.{ Serialization, SerializationExtension, Serializers }
@@ -20,6 +21,7 @@ private[testkit] object SerializedEventStorageImpl {
       payloadSerManifest: String,
       writerUuid: String,
       payload: Array[Byte],
+      tags: Set[String],
       metadata: Option[Any])
 }
 
@@ -38,7 +40,10 @@ private[testkit] class SerializedEventStorageImpl(system: ActorSystem) extends E
    */
   override def toInternal(pr: PersistentRepr): Serialized =
     Serialization.withTransportInformation(system.asInstanceOf[ExtendedActorSystem]) { () =>
-      val payload = pr.payload.asInstanceOf[AnyRef]
+      val (payload, tags) = pr.payload match {
+        case Tagged(event: AnyRef, tags) => (event, tags)
+        case event: AnyRef               => (event, Set.empty[String])
+      }
       val s = serialization.findSerializerFor(payload)
       val manifest = Serializers.manifestFor(s, payload)
       Serialized(
@@ -48,6 +53,7 @@ private[testkit] class SerializedEventStorageImpl(system: ActorSystem) extends E
         manifest,
         pr.writerUuid,
         s.toBinary(payload),
+        tags,
         pr.metadata)
     }
 
@@ -56,7 +62,10 @@ private[testkit] class SerializedEventStorageImpl(system: ActorSystem) extends E
    */
   override def toRepr(internal: Serialized): PersistentRepr = {
     val event = serialization.deserialize(internal.payload, internal.payloadSerId, internal.payloadSerManifest).get
-    val pr = PersistentRepr(event, internal.sequenceNr, internal.persistenceId, writerUuid = internal.writerUuid)
+    val eventForRepr =
+      if (internal.tags.isEmpty) event
+      else Tagged(event, internal.tags)
+    val pr = PersistentRepr(eventForRepr, internal.sequenceNr, internal.persistenceId, writerUuid = internal.writerUuid)
     internal.metadata.fold(pr)(meta => pr.withMetadata(meta))
   }
 
