@@ -5,6 +5,10 @@
 package akka.persistence.testkit.query.scaladsl
 import akka.NotUsed
 import akka.actor.ExtendedActorSystem
+import akka.persistence.journal.Tagged
+import akka.persistence.query.NoOffset
+import akka.persistence.query.Offset
+import akka.persistence.query.scaladsl.CurrentEventsByTagQuery
 import akka.persistence.query.{ EventEnvelope, Sequence }
 import akka.persistence.query.scaladsl.{ CurrentEventsByPersistenceIdQuery, EventsByPersistenceIdQuery, ReadJournal }
 import akka.persistence.testkit.EventStorage
@@ -22,7 +26,8 @@ object PersistenceTestKitReadJournal {
 final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused config: Config, configPath: String)
     extends ReadJournal
     with EventsByPersistenceIdQuery
-    with CurrentEventsByPersistenceIdQuery {
+    with CurrentEventsByPersistenceIdQuery
+    with CurrentEventsByTagQuery {
 
   private val log = LoggerFactory.getLogger(getClass)
 
@@ -31,6 +36,11 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
     val storagePluginId = configPath.replaceAll("""query$""", "journal")
     log.debug("Using in memory storage [{}] for test kit read journal", storagePluginId)
     InMemStorageExtension(system).storageFor(storagePluginId)
+  }
+
+  private def unwrapTaggedPayload(payload: Any): Any = payload match {
+    case Tagged(payload, _) => payload
+    case payload            => payload
   }
 
   override def eventsByPersistenceId(
@@ -45,7 +55,30 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
       fromSequenceNr: Long,
       toSequenceNr: Long): Source[EventEnvelope, NotUsed] = {
     Source(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue)).map { pr =>
-      EventEnvelope(Sequence(pr.sequenceNr), persistenceId, pr.sequenceNr, pr.payload, pr.timestamp, pr.metadata)
+      EventEnvelope(
+        Sequence(pr.sequenceNr),
+        persistenceId,
+        pr.sequenceNr,
+        unwrapTaggedPayload(pr.payload),
+        pr.timestamp,
+        pr.metadata)
+    }
+  }
+
+  override def currentEventsByTag(tag: String, offset: Offset): Source[EventEnvelope, NotUsed] = {
+    offset match {
+      case NoOffset =>
+      case _ =>
+        throw new UnsupportedOperationException("Offsets not supported for persistence test kit currentEventsByTag yet")
+    }
+    Source(storage.tryReadByTag(tag)).map { pr =>
+      EventEnvelope(
+        Sequence(pr.timestamp),
+        pr.persistenceId,
+        pr.sequenceNr,
+        unwrapTaggedPayload(pr.payload),
+        pr.timestamp,
+        pr.metadata)
     }
   }
 }

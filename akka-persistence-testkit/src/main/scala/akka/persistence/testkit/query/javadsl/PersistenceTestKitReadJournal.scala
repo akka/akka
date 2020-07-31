@@ -5,7 +5,13 @@
 package akka.persistence.testkit.query.javadsl
 import akka.NotUsed
 import akka.persistence.query.EventEnvelope
-import akka.persistence.query.javadsl.{ CurrentEventsByPersistenceIdQuery, EventsByPersistenceIdQuery, ReadJournal }
+import akka.persistence.query.Offset
+import akka.persistence.query.javadsl.{
+  CurrentEventsByPersistenceIdQuery,
+  CurrentEventsByTagQuery,
+  EventsByPersistenceIdQuery,
+  ReadJournal
+}
 import akka.stream.javadsl.Source
 import akka.persistence.testkit.query.scaladsl
 
@@ -16,7 +22,8 @@ object PersistenceTestKitReadJournal {
 final class PersistenceTestKitReadJournal(delegate: scaladsl.PersistenceTestKitReadJournal)
     extends ReadJournal
     with EventsByPersistenceIdQuery
-    with CurrentEventsByPersistenceIdQuery {
+    with CurrentEventsByPersistenceIdQuery
+    with CurrentEventsByTagQuery {
 
   override def eventsByPersistenceId(
       persistenceId: String,
@@ -29,4 +36,8 @@ final class PersistenceTestKitReadJournal(delegate: scaladsl.PersistenceTestKitR
       fromSequenceNr: Long,
       toSequenceNr: Long): Source[EventEnvelope, NotUsed] =
     delegate.currentEventsByPersistenceId(persistenceId, fromSequenceNr, toSequenceNr).asJava
+
+  override def currentEventsByTag(tag: String, offset: Offset): Source[EventEnvelope, NotUsed] =
+    delegate.currentEventsByTag(tag, offset).asJava
+
 }

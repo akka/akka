@@ -396,13 +396,6 @@ private[akka] object Running {
       this
     }
 
-    def withContext[A](aa: ReplicationSetup, withReplication: ReplicationSetup => Unit, f: () => A): A = {
-      withReplication(aa)
-      val result = f()
-      aa.clearContext()
-      result
-    }
-
     private def handleExternalReplicatedEventPersist(
         replication: ReplicationSetup,
         event: ReplicatedEvent[E]): Behavior[InternalProtocol] = {
@@ -419,17 +412,20 @@ private[akka] object Running {
           updatedVersion,
           isConcurrent)
 
-      val newState: RunningState[S] = withContext(
-        replication,
-        aa => aa.setContext(recoveryRunning = false, event.originReplica, concurrent = isConcurrent),
-        () => state.applyEvent(setup, event.event))
+      replication.setContext(recoveryRunning = false, event.originReplica, concurrent = isConcurrent)
+
+      val stateAfterApply = state.applyEvent(setup, event.event)
+      val eventToPersist = adaptEvent(event.event)
+      val eventAdapterManifest = setup.eventAdapter.manifest(event.event)
+
+      replication.clearContext()
 
       val newState2: RunningState[S] = internalPersist(
         setup.context,
         null,
-        newState,
-        event.event,
-        "",
+        stateAfterApply,
+        eventToPersist,
+        eventAdapterManifest,
         OptionVal.Some(
           ReplicatedEventMetadata(event.originReplica, event.originSequenceNr, updatedVersion, isConcurrent)))
       val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event.event, newState2.seqNr)
@@ -447,51 +443,47 @@ private[akka] object Running {
         event: E,
         cmd: Any,
         sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
-      // apply the event before persist so that validation exception is handled before persisting
-      // the invalid event, in case such validation is implemented in the event handler.
-      // also, ensure that there is an event handler for each single event
-      _currentSequenceNumber = state.seqNr + 1
+      try {
+        // apply the event before persist so that validation exception is handled before persisting
+        // the invalid event, in case such validation is implemented in the event handler.
+        // also, ensure that there is an event handler for each single event
+        _currentSequenceNumber = state.seqNr + 1
 
-      val newState: RunningState[S] = setup.replication match {
-        case Some(aa) =>
-          // set concurrent to false, local events are never concurrent
-          withContext(
-            aa,
-            aa => aa.setContext(recoveryRunning = false, aa.replicaId, concurrent = false),
-            () => state.applyEvent(setup, event))
-        case None =>
-          state.applyEvent(setup, event)
+        setup.replication.foreach(r => r.setContext(recoveryRunning = false, r.replicaId, concurrent = false))
+
+        val stateAfterApply = state.applyEvent(setup, event)
+        val eventToPersist = adaptEvent(event)
+        val eventAdapterManifest = setup.eventAdapter.manifest(event)
+
+        val newState2 = setup.replication match {
+          case Some(aa) =>
+            val updatedVersion = stateAfterApply.version.updated(aa.replicaId.id, _currentSequenceNumber)
+            val r = internalPersist(
+              setup.context,
+              cmd,
+              stateAfterApply,
+              eventToPersist,
+              eventAdapterManifest,
+              OptionVal.Some(
+                ReplicatedEventMetadata(aa.replicaId, _currentSequenceNumber, updatedVersion, concurrent = false)))
+              .copy(version = updatedVersion)
+
+            if (setup.log.isTraceEnabled())
+              setup.log.traceN(
+                "Event persisted [{}]. Version vector after: [{}]",
+                Logging.simpleName(event.getClass),
+                r.version)
+
+            r
+          case None =>
+            internalPersist(setup.context, cmd, stateAfterApply, eventToPersist, eventAdapterManifest, OptionVal.None)
+        }
+
+        val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
+        persistingEvents(newState2, state, numberOfEvents = 1, shouldSnapshotAfterPersist, sideEffects)
+      } finally {
+        setup.replication.foreach(_.clearContext())
       }
-
-      val eventToPersist = adaptEvent(event)
-      val eventAdapterManifest = setup.eventAdapter.manifest(event)
-
-      val newState2 = setup.replication match {
-        case Some(aa) =>
-          val updatedVersion = newState.version.updated(aa.replicaId.id, _currentSequenceNumber)
-          val r = internalPersist(
-            setup.context,
-            cmd,
-            newState,
-            eventToPersist,
-            eventAdapterManifest,
-            OptionVal.Some(
-              ReplicatedEventMetadata(aa.replicaId, _currentSequenceNumber, updatedVersion, concurrent = false)))
-            .copy(version = updatedVersion)
-
-          if (setup.log.isTraceEnabled())
-            setup.log.traceN(
-              "Event persisted [{}]. Version vector after: [{}]",
-              Logging.simpleName(event.getClass),
-              r.version)
-
-          r
-        case None =>
-          internalPersist(setup.context, cmd, newState, eventToPersist, eventAdapterManifest, OptionVal.None)
-      }
-
-      val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
-      persistingEvents(newState2, state, numberOfEvents = 1, shouldSnapshotAfterPersist, sideEffects)
     }
 
     private def handleEventPersistAll(
@@ -499,64 +491,59 @@ private[akka] object Running {
         cmd: Any,
         sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
       if (events.nonEmpty) {
-        // apply the event before persist so that validation exception is handled before persisting
-        // the invalid event, in case such validation is implemented in the event handler.
-        // also, ensure that there is an event handler for each single event
-        _currentSequenceNumber = state.seqNr
+        try {
+          // apply the event before persist so that validation exception is handled before persisting
+          // the invalid event, in case such validation is implemented in the event handler.
+          // also, ensure that there is an event handler for each single event
+          _currentSequenceNumber = state.seqNr
 
-        val metadataTemplate: Option[ReplicatedEventMetadata] = setup.replication match {
-          case Some(aa) =>
-            aa.setContext(recoveryRunning = false, aa.replicaId, concurrent = false) // local events are never concurrent
-            Some(ReplicatedEventMetadata(aa.replicaId, 0L, state.version, concurrent = false)) // we replace it with actual seqnr later
-          case None => None
-        }
-
-        var currentState = state
-        var shouldSnapshotAfterPersist: SnapshotAfterPersist = NoSnapshot
-        var eventsToPersist: List[EventToPersist] = Nil
-
-        events.foreach { event =>
-          _currentSequenceNumber += 1
-          if (shouldSnapshotAfterPersist == NoSnapshot)
-            shouldSnapshotAfterPersist = setup.shouldSnapshot(currentState.state, event, _currentSequenceNumber)
-          val evtManifest = setup.eventAdapter.manifest(event)
-          val adaptedEvent = adaptEvent(event)
-          val eventMetadata = metadataTemplate match {
-            case Some(template) =>
-              val updatedVersion = currentState.version.updated(template.originReplica.id, _currentSequenceNumber)
-              if (setup.log.isDebugEnabled)
-                setup.log.traceN(
-                  "Processing event [{}] with version vector [{}]",
-                  Logging.simpleName(event.getClass),
-                  updatedVersion)
-              currentState = currentState.copy(version = updatedVersion)
-              Some(template.copy(originSequenceNr = _currentSequenceNumber, version = updatedVersion))
+          val metadataTemplate: Option[ReplicatedEventMetadata] = setup.replication match {
+            case Some(aa) =>
+              aa.setContext(recoveryRunning = false, aa.replicaId, concurrent = false) // local events are never concurrent
+              Some(ReplicatedEventMetadata(aa.replicaId, 0L, state.version, concurrent = false)) // we replace it with actual seqnr later
             case None => None
           }
 
-          currentState = setup.replication match {
-            case Some(aa) =>
-              withContext(
-                aa,
-                aa => aa.setContext(recoveryRunning = false, aa.replicaId, concurrent = false),
-                () => currentState.applyEvent(setup, event))
-            case None =>
-              currentState.applyEvent(setup, event)
+          var currentState = state
+          var shouldSnapshotAfterPersist: SnapshotAfterPersist = NoSnapshot
+          var eventsToPersist: List[EventToPersist] = Nil
+
+          events.foreach { event =>
+            _currentSequenceNumber += 1
+            if (shouldSnapshotAfterPersist == NoSnapshot)
+              shouldSnapshotAfterPersist = setup.shouldSnapshot(currentState.state, event, _currentSequenceNumber)
+            val evtManifest = setup.eventAdapter.manifest(event)
+            val adaptedEvent = adaptEvent(event)
+            val eventMetadata = metadataTemplate match {
+              case Some(template) =>
+                val updatedVersion = currentState.version.updated(template.originReplica.id, _currentSequenceNumber)
+                if (setup.log.isDebugEnabled)
+                  setup.log.traceN(
+                    "Processing event [{}] with version vector [{}]",
+                    Logging.simpleName(event.getClass),
+                    updatedVersion)
+                currentState = currentState.copy(version = updatedVersion)
+                Some(template.copy(originSequenceNr = _currentSequenceNumber, version = updatedVersion))
+              case None => None
+            }
+
+            currentState = currentState.applyEvent(setup, event)
+
+            eventsToPersist = EventToPersist(adaptedEvent, evtManifest, eventMetadata) :: eventsToPersist
           }
 
-          eventsToPersist = EventToPersist(adaptedEvent, evtManifest, eventMetadata) :: eventsToPersist
+          val newState2 =
+            internalPersistAll(setup.context, cmd, currentState, eventsToPersist.reverse)
+
+          persistingEvents(newState2, state, events.size, shouldSnapshotAfterPersist, sideEffects)
+        } finally {
+          setup.replication.foreach(_.clearContext())
         }
-
-        val newState2 =
-          internalPersistAll(setup.context, cmd, currentState, eventsToPersist.reverse)
-
-        persistingEvents(newState2, state, events.size, shouldSnapshotAfterPersist, sideEffects)
       } else {
         // run side-effects even when no events are emitted
         tryUnstashOne(applySideEffects(sideEffects, state))
       }
     }
-
     @tailrec def applyEffects(
         msg: Any,
         state: RunningState[S],
