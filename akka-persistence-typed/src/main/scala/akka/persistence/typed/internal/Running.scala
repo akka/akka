@@ -191,7 +191,6 @@ private[akka] object Running {
             (persistingEvents(newState2, state, events.size, shouldSnapshotAfterPersist, sideEffects), false)
 
           } else {
-            // should never really happen because we change it to PersistNothing in effect handler
             // run side-effects even when no events are emitted
             (applySideEffects(sideEffects, state), true)
           }

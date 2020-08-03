@@ -63,7 +63,7 @@ class EventSourcedStashOverflowSpec
       val es = spawn(EventSourcedStringList(PersistenceId.ofUniqueId("id-1")))
 
       // wait for journal to start
-      val probe = testKit.createTestProbe[Any]()
+      val probe = testKit.createTestProbe[Done]()
       probe.awaitAssert(SteppingInmemJournal.getRef("EventSourcedStashOverflow"), 3.seconds)
       val journal = SteppingInmemJournal.getRef("EventSourcedStashOverflow")
 
@@ -71,7 +71,7 @@ class EventSourcedStashOverflowSpec
       val stashCapacity = testKit.config.getInt("akka.persistence.typed.stash-capacity")
 
       for (_ <- 0 to (stashCapacity * 2)) {
-        es.tell(EventSourcedStringList.DoNothing(probe.ref.narrow))
+        es.tell(EventSourcedStringList.DoNothing(probe.ref))
       }
       // capacity + 1 should mean that we get a dropped last message when all stash is filled
       // while the actor is stuck in replay because journal isn't responding

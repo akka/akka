@@ -35,10 +35,7 @@ import akka.util.ccompat.JavaConverters._
    * all events has been persisted. If `callback` is added through [[EffectBuilder.thenRun]] that will invoked
    * after all the events has been persisted.
    */
-  final def persist(events: java.util.List[Event]): EffectBuilder[Event, State] = {
-    if (events.size() == 0) none()
-    else PersistAll(events.asScala.toVector)
-  }
+  final def persist(events: java.util.List[Event]): EffectBuilder[Event, State] = PersistAll(events.asScala.toVector)
 
   /**
    * Do not persist anything
