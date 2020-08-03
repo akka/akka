@@ -27,7 +27,7 @@ An Akka Persistence journal and snapshot store backed by Apache Cassandra.
 An Akka Persistence journal and snapshot store backed by Couchbase.
 
 
-## [JDBC for Akka Persistence](https://doc.akka.io/docs/akka-persistence-jdbc/current/)
+## [JDBC Plugin for Akka Persistence](https://doc.akka.io/docs/akka-persistence-jdbc/current/)
 
 An Akka Persistence journal and snapshot store for use with JDBC-compatible databases. This implementation relies on [Slick](https://scala-slick.org/).
 
