@@ -31,9 +31,9 @@ object ORSetSpec {
         entityId,
         replica,
         AllReplicas,
-        PersistenceTestKitReadJournal.Identifier) { aaContext =>
+        PersistenceTestKitReadJournal.Identifier) { replicationContext =>
         EventSourcedBehavior[Command, ORSet.DeltaOp, ORSet[String]](
-          aaContext.persistenceId,
+          replicationContext.persistenceId,
           ORSet(replica),
           (state, command) =>
             command match {

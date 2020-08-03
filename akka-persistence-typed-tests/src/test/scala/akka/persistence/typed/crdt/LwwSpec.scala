@@ -30,10 +30,10 @@ object LwwSpec {
         entityId,
         replica,
         AllReplicas,
-        PersistenceTestKitReadJournal.Identifier) { aaContext =>
+        PersistenceTestKitReadJournal.Identifier) { replicationContext =>
         EventSourcedBehavior[Command, Event, Registry](
-          aaContext.persistenceId,
-          Registry("", LwwTime(Long.MinValue, aaContext.replicaId)),
+          replicationContext.persistenceId,
+          Registry("", LwwTime(Long.MinValue, replicationContext.replicaId)),
           (state, command) =>
             command match {
               case Update(s, timestmap, error) =>
@@ -41,7 +41,7 @@ object LwwSpec {
                   error ! "bad value"
                   Effect.none
                 } else {
-                  Effect.persist(Changed(s, state.updatedTimestamp.increase(timestmap, aaContext.replicaId)))
+                  Effect.persist(Changed(s, state.updatedTimestamp.increase(timestmap, replicationContext.replicaId)))
                 }
               case Get(replyTo) =>
                 replyTo ! state
