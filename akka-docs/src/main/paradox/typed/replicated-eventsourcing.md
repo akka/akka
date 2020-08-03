@@ -330,6 +330,10 @@ If all writes occur to one replica and the other replicas are not started there 
 
 This can be achieved automatically when `ReplicatedSharding` is used and direct replication of events is enabled as described in @ref[Direct Replication of Events](#direct-replication-of-events). When each written event is forwarded to the other replicas it will trigger them to start if they are not already started.
 
+## Examples
+
+More examples can be found in @ref[Replicated Event Sourcing Examples](./replicated-eventsourcing-examples.md)
+
 ## Journal Support
 
 For a journal plugin to support replication it needs to store and read metadata for each event if it is defined in the @apiref[PersistentRepr]
