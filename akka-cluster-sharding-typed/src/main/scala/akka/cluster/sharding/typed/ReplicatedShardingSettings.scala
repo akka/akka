@@ -66,13 +66,13 @@ final class ReplicatedShardingSettings[M, E] private (
 
   /**
    * Start direct replication over sharding when replicated sharding starts up, requires the entities
-   * to also have it enabled through [[akka.persistence.typed.scaladsl.EventSourcedBehavior#withEventPublishing()]]
-   * or [[akka.persistence.typed.javadsl.ReplicatedEventSourcedBehavior#withEventPublishing()]]
+   * to also have it enabled through [[akka.persistence.typed.scaladsl.EventSourcedBehavior.withEventPublishing]]
+   * or [[akka.persistence.typed.javadsl.ReplicatedEventSourcedBehavior.withEventPublishing]]
    * to work.
    *
    */
-  def withDirectReplication(): ReplicatedShardingSettings[M, E] =
-    new ReplicatedShardingSettings(replicas, directReplication = true)
+  def withDirectReplication(enabled: Boolean): ReplicatedShardingSettings[M, E] =
+    new ReplicatedShardingSettings(replicas, directReplication = enabled)
 
 }
 
