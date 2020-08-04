@@ -18,7 +18,6 @@ import java.util.logging.FileHandler
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
-
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.core.JsonFactory
@@ -44,7 +43,6 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
@@ -53,10 +51,8 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Status
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.scaladsl.Behaviors
-import akka.serialization.Serialization
-import akka.serialization.SerializationExtension
-import akka.testkit.TestActors
-import akka.testkit.TestKit
+import akka.serialization.{ Serialization, SerializationExtension, SerializerWithStringManifest }
+import akka.testkit.{ TestActors, TestKit }
 
 object ScalaTestMessages {
   trait TestMessage
@@ -114,6 +110,35 @@ object ScalaTestMessages {
   final case class Superhero(name: String, @JsonScalaEnumeration(classOf[PlanetType]) planet: Planet.Planet)
       extends TestMessage
   // #jackson-scala-enumeration
+
+  //delegate to AkkaSerialization
+  class InnerSerialization(val description: String) extends JacksonUseAkkaSerialization {
+
+    override def toString: String = s"InnerSerialization($description)"
+
+    def canEqual(other: Any): Boolean = other.isInstanceOf[InnerSerialization]
+
+    override def equals(other: Any): Boolean = other match {
+      case that: InnerSerialization =>
+        (that.canEqual(this)) &&
+        description == that.description
+      case _ => false
+    }
+
+    override def hashCode(): Int = {
+      val state = Seq(description)
+      state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+    }
+  }
+
+  class InnerSerializationSerializer extends SerializerWithStringManifest {
+    override def identifier: Int = 123451
+    override def manifest(o: AnyRef): String = "M"
+    override def toBinary(o: AnyRef): Array[Byte] = o.asInstanceOf[InnerSerialization].description.getBytes()
+    override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = new InnerSerialization(new String(bytes))
+  }
+
+  final case class WithAkkaSerializer(akkaSerializer: JacksonUseAkkaSerialization) extends TestMessage
 
 }
 
@@ -639,6 +664,14 @@ abstract class JacksonSerializerSpec(serializerName: String)
       }
     }
     akka.serialization.jackson.allowed-class-prefix = ["akka.serialization.jackson.ScalaTestMessages$$OldCommand"]
+    akka.actor {
+      serializers {
+          inner-serializer = "akka.serialization.jackson.ScalaTestMessages$$InnerSerializationSerializer"
+      }
+      serialization-bindings {
+        "akka.serialization.jackson.ScalaTestMessages$$InnerSerialization" = "inner-serializer"
+      }
+    }
     """)))
     with AnyWordSpecLike
     with Matchers
@@ -960,6 +993,10 @@ abstract class JacksonSerializerSpec(serializerName: String)
           }
         }
       }
+    }
+
+    "delegate to akka serialization" in {
+      checkSerialization(WithAkkaSerializer(new InnerSerialization("cat")))
     }
 
   }
