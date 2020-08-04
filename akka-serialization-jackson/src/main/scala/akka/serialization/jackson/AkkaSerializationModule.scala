@@ -69,7 +69,7 @@ import akka.serialization.{ SerializationExtension, Serializer, Serializers }
 
   def deserialize(jp: JsonParser, ctxt: DeserializationContext): JacksonUseAkkaSerialization = {
     val codec: ObjectCodec = jp.getCodec()
-    val jsonNode: JsonNode = codec.readTree(jp)
+    val jsonNode = codec.readTree[JsonNode](jp)
     val id = jsonNode.get("ser_id").textValue().toInt
     val manifest = jsonNode.get("ser_manifest").textValue()
     val payload = jsonNode.get("payload").binaryValue()
