@@ -10,8 +10,8 @@ warning or deprecation period. It is also not recommended to use this module in 
 
 @ref[Event sourcing](./persistence.md) with `EventSourcedBehavior`s is based on the single writer principle, which means that there can only be one active instance of a `EventSourcedBehavior` with a given `persistenceId`. Otherwise, multiple instances would store interleaving events based on different states, and when these events would later be replayed it would not be possible to reconstruct the correct state.
 
-This restriction means that in the event of network partitions, and for a short time during rolling re-deploys, `EventSourcedBehaviors`s are unavailable.
-
+This restriction means that in the event of network partitions, and for a short time during rolling re-deploys, some
+`EventSourcedBehavior` actors are unavailable.
 
 Replicated Event Sourcing enables running multiple replicas of each entity. 
 There is automatic replication of every event persisted to all replicas.
@@ -31,15 +31,16 @@ However, the event handler must be able to **handle concurrent events** as when 
 there is no longer the single writer principle as there is with a normal `EventSourcedBehavior`.
 
 The state of a replicated `EventSourcedBehavior` is **eventually consistent**. Event replication may be delayed
-due to network partitions and outages and the event handler and those reading the state must be designed to handle this.
+due to network partitions and outages, which means that the event handler and those reading the state must be designed
+to handle this.
 
-To be able to use Replicated Event Sourcing the journal and snapshot store used is required to have specific support for the metadata that the replication needs (see @ref[Journal Support](#journal-support))
+To be able to use Replicated Event Sourcing the journal and snapshot store used is required to have specific support for the metadata that the replication needs (see @ref[Journal Support](#journal-support)).
 
 ## Relaxing the single writer principle for availability
 
 Taking the example of using Replicated Event Sourcing to run a replica per data center.
 
-When there is no network partitions and no concurrent writes the events stored by a `EventSourcedBehavior` at one replica can be replicated and consumed by another (corresponding) replica in another data center without any concerns. Such replicated events can simply be applied to the local state.
+When there is no network partitions and no concurrent writes the events stored by an `EventSourcedBehavior` at one replica can be replicated and consumed by another (corresponding) replica in another data center without any concerns. Such replicated events can simply be applied to the local state.
 
 ![images/replicated-events1.png](images/replicated-events1.png)
 
@@ -51,14 +52,14 @@ The event handler logic for applying events to the state of the entity must be a
 
 For example, sometimes it's enough to use application specific timestamps to decide which update should win.
 
-To assist in implementing the event handler active-active detects these conflicts.
+To assist in implementing the event handler the Replicated Event Sourcing detects these conflicts.
 
 ## API
 
 @scala[The same API as regular `EventSourcedBehavior`s]@java[A very similar API to the regular `EventSourcedBehavior`] is used to define the logic. 
 
-To enable an entity for active-active
-replication @java[let it extend `ReplicatedEventSourcedBehavior` instead of `EventSourcedBehavior` and] use the factory methods on @scala[`akka.persistence.typed.scaladsl.ReplicatedEventSourcing`]@java[`akka.persistence.typed.javadsl.ReplicatedEventSourcing`]. 
+To enable an entity for Replicated Event Sourcing
+@java[let it extend `ReplicatedEventSourcedBehavior` instead of `EventSourcedBehavior` and] use the factory methods on @scala[`akka.persistence.typed.scaladsl.ReplicatedEventSourcing`]@java[`akka.persistence.typed.javadsl.ReplicatedEventSourcing`]. 
 
 All replicas need to be known up front:
 
@@ -79,9 +80,9 @@ Java
 
 The factory takes in:
 
-* EntityID: this will be used as part of the underlying persistenceId
-* Replica: Which replica this instance is
-* All Replicas and the query plugin used to read their events
+* `entityId`: this will be used as part of the underlying persistenceId
+* `replicaId`: Which replica this instance is
+* `allReplicasAndQueryPlugins`: All Replicas and the query plugin used to read their events
 * A factory function to create an instance of the @scala[`EventSourcedBehavior`]@java[`ReplicatedEventSourcedBehavior`] 
 
 In this scenario each replica reads from each other's database effectively providing cross region replication for any database that has an Akka Persistence plugin. Alternatively if all the replicas use the same journal, e.g. for testing or if it is a distributed database such as Cassandra, the `withSharedJournal` factory can be used. 
@@ -97,10 +98,10 @@ Java
 
 The function passed to both factory methods return an `EventSourcedBehavior` and provide access to the @apidoc[ReplicationContext] that has the following methods:
 
-* entityId 
-* replicaId
-* allReplicas
-* persistenceId - to provide to the `EventSourcedBehavior` factory. This **must be used**.
+* `entityId`
+* `replicaId`
+* `allReplicas`
+* `persistenceId` - to provide to the `EventSourcedBehavior` factory. This **must be used**.
 
 As well as methods that **can only be** used in the event handler. The values these methods return relate to the event that is being processed.
 
@@ -113,19 +114,19 @@ concrete `ReplicatedEventSourcedBehavior` and on to the super constructor.
 
 The context gives access to: 
 
-* entityId 
-* replicaId
-* allReplicas
-* persistenceId
+* `entityId`
+* `replicaId`
+* `allReplicas`
+* `persistenceId`
 
 As well as methods that **can only be** used in the event handler, accessed through `getReplicationContext`. The values these methods return relate to the event that is being processed.
 
 @@@
 
-* origin: The ReplicaId that originally created the event
-* concurrent: Whether the event was concurrent with another event as in the second diagram above
-* recoveryRunning: Whether a recovery is running. Can be used to send commands back to self for side effects that should only happen once.
-* currentTimeMillis: similar to `System.currentTimeMillis` but guaranteed never to go backwards
+* `origin`: The ReplicaId that originally created the event
+* `concurrent`: Whether the event was concurrent with another event as in the second diagram above
+* `recoveryRunning`: Whether a recovery is running. Can be used to send commands back to self for side effects that should only happen once.
+* `currentTimeMillis`: similar to `System.currentTimeMillis` but guaranteed never to go backwards
 
 The factory returns a `Behavior` that can be spawned like any other behavior.
 
@@ -146,11 +147,11 @@ Sometimes it is enough to use timestamps to decide which update should win. Such
 There is a small utility class @apidoc[LwwTime] that can be useful for implementing last writer wins semantics.
 It contains a timestamp representing current time when the event was persisted and an identifier of the
 replica that persisted it. When comparing two @apidoc[LwwTime] the greatest timestamp wins. The replica
-identifier is used if the two timestamps are equal, and then the one from the data center sorted first in
+identifier is used if the two timestamps are equal, and then the one from the `replicaId` sorted first in
 alphanumeric order wins.
 
 The nature of last writer wins means that if you only have one timestamp for the state the events must represent an
-update of the full state. Otherwise, there is a risk that the state in different data centers will be different and
+update of the full state. Otherwise, there is a risk that the state in different replicas will be different and
 not eventually converge.
 
 An example of that would be an entity representing a blog post and the fields `author` and `title` could be updated
@@ -201,7 +202,7 @@ You don’t have to read this section to be able to use the feature, but to use 
 
 ### Causal deliver order
 
-Causal delivery order means that events persisted in one data center are read in the same order in other data centers. The order of concurrent events is undefined, which should be no problem
+Causal delivery order means that events persisted in one replica are read in the same order in other replicas. The order of concurrent events is undefined, which should be no problem
 when using [CRDT's](#conflict-free-replicated-data-types)
 and otherwise will be detected via the `ReplicationContext` concurrent method.
 
@@ -213,7 +214,7 @@ DC-2: read e1, write e2
 DC-1: read e2, write e3
 ```
 
-In the above example the causality is `e1 -> e2 -> e3`. Also in a third data center DC-3 these events will be read in the same order e1, e2, e3.
+In the above example the causality is `e1 -> e2 -> e3`. Also in a third replica DC-3 these events will be read in the same order e1, e2, e3.
 
 Another example with concurrent events:
 
@@ -227,7 +228,7 @@ DC2: read e3
 
 e2 and e3 are concurrent, i.e. they don't have a causal relation: DC1 sees them in the order "e1, e3, e2", while DC2 sees them as "e1, e2, e3".
 
-A third data center may also see the events as either "e1, e3, e2" or as "e1, e2, e3".
+A third replica may also see the events as either "e1, e3, e2" or as "e1, e2, e3".
 
 ### Concurrent updates
 
@@ -239,9 +240,9 @@ Each replica "owns" a slot in the version vector and increases its counter when 
 
 When comparing two version vectors `v1` and `v2`: 
 
-* `v1` is SAME as `v2` iff for all i v1(i) == v2(i)
-* `v1`is BEFORE `v2` iff for all i v1(i) <= v2(i) and there exist a j such that v1(j) < v2(j)
-* `v1`is AFTER `v2` iff for all i v1(i) >= v2(i) and there exist a j such that v1(j) > v2(j)
+* `v1` is SAME as `v2` iff for all i `v1(i) == v2(i)`
+* `v1`is BEFORE `v2` iff for all i `v1(i) <= v2(i)` and there exist a j such that `v1(j) < v2(j)`
+* `v1`is AFTER `v2` iff for all i `v1(i) >= v2(i)` and there exist a j such that `v1(j) > v2(j)`
 * `v1`is CONCURRENT with `v2` otherwise
 
 
@@ -276,7 +277,7 @@ More advanced routing among the replicas is currently left as an exercise for th
 Just like for regular `EventSourcedBehavior`s it is possible to tag events along with persisting them. 
 This is useful for later retrival of events for a given tag. The same @ref[API for tagging provided for EventSourcedBehavior](persistence.md#tagging) can 
 be used for replicated event sourced behaviors as well.
-Tagging is useful in practice to build queries that lead to other data representations or aggregations of the these event 
+Tagging is useful in practice to build queries that lead to other data representations or aggregations of these event 
 streams that can more directly serve user queries – known as building the “read side” in @ref[CQRS](cqrs.md) based applications.
 
 Creating read side projections is possible through [Akka Projection](https://doc.akka.io/docs/akka-projection/current/)
@@ -325,9 +326,13 @@ to fast forward the stream of events for the origin replica. (With additional po
 
 ## Hot Standby
 
-If all writes occur to one replica the other replicas are not started there might be many replicated events to catch up with when they are later started. Therefore it can be good to activate all replicas when there is some activity. 
+If all writes occur to one replica and the other replicas are not started there might be many replicated events to catch up with when they are later started. Therefore it can be good to activate all replicas when there is some activity. 
 
 This can be achieved automatically when `ReplicatedSharding` is used and direct replication of events is enabled as described in @ref[Direct Replication of Events](#direct-replication-of-events). When each written event is forwarded to the other replicas it will trigger them to start if they are not already started.
+
+## Examples
+
+More examples can be found in @ref[Replicated Event Sourcing Examples](./replicated-eventsourcing-examples.md)
 
 ## Journal Support
 

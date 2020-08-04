@@ -4,6 +4,8 @@
 
 package akka.cluster.sharding.typed
 
+import java.util.concurrent.ThreadLocalRandom
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
@@ -22,8 +24,6 @@ import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.util.Random
 
 object ReplicatedShardingSpec {
   def config = ConfigFactory.parseString("""
@@ -52,9 +52,9 @@ class ReplicatedShardingSpec
         entityId,
         replicaId,
         allReplicas,
-        PersistenceTestKitReadJournal.Identifier) { aaContext =>
+        PersistenceTestKitReadJournal.Identifier) { replicationContext =>
         EventSourcedBehavior[Command, String, Set[String]](
-          aaContext.persistenceId,
+          replicationContext.persistenceId,
           Set.empty[String],
           (state, command) =>
             command match {
@@ -75,7 +75,7 @@ class ReplicatedShardingSpec
 
     def apply(): Behavior[Command] = Behaviors.setup { context =>
       // #bootstrap
-      val aaShardingSettings =
+      val replicatedShardingSettings =
         ReplicatedShardingSettings[MyReplicatedStringSet.Command, ShardingEnvelope[MyReplicatedStringSet.Command]](
           // all replicas
           Set(ReplicaId("DC-A"), ReplicaId("DC-B"), ReplicaId("DC-C"))) { (entityTypeKey, replicaId, allReplicaIds) =>
@@ -93,20 +93,20 @@ class ReplicatedShardingSpec
               .withRole(replicaId.id))
         }
 
-      val aaSharding = ReplicatedShardingExtension(context.system).init(aaShardingSettings)
+      val replicatedSharding = ReplicatedShardingExtension(context.system).init(replicatedShardingSettings)
       // #bootstrap
 
       Behaviors.receiveMessage {
         case ForwardToAll(entityId, cmd) =>
           // #all-entity-refs
-          aaSharding.entityRefsFor(entityId).foreach {
+          replicatedSharding.entityRefsFor(entityId).foreach {
             case (_, ref) => ref ! cmd
           }
           // #all-entity-refs
           Behaviors.same
         case ForwardToRandom(entityId, cmd) =>
-          val refs = aaSharding.entityRefsFor(entityId)
-          val chosenIdx = (new Random()).nextInt(refs.size)
+          val refs = replicatedSharding.entityRefsFor(entityId)
+          val chosenIdx = ThreadLocalRandom.current().nextInt(refs.size)
           refs.values.toIndexedSeq(chosenIdx) ! cmd;
           Behaviors.same
       }

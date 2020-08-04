@@ -123,7 +123,7 @@ private[akka] final class ReplayingEvents[C, E, S](
               eventForErrorReporting = OptionVal.Some(event)
               state = state.copy(seqNr = repr.sequenceNr)
 
-              val aaMetaAndSelfReplica: Option[(ReplicatedEventMetadata, ReplicaId, ReplicationSetup)] =
+              val replicatedMetaAndSelfReplica: Option[(ReplicatedEventMetadata, ReplicaId, ReplicationSetup)] =
                 setup.replication match {
                   case Some(replication) =>
                     val meta = repr.metadata match {
@@ -146,17 +146,17 @@ private[akka] final class ReplayingEvents[C, E, S](
                 case None =>
               }
 
-              aaMetaAndSelfReplica match {
-                case Some((meta, selfReplica, aa)) if meta.originReplica != selfReplica =>
+              replicatedMetaAndSelfReplica match {
+                case Some((meta, selfReplica, replication)) if meta.originReplica != selfReplica =>
                   // keep track of highest origin seqnr per other replica
                   state = state.copy(
                     state = newState,
                     eventSeenInInterval = true,
                     version = meta.version,
                     seenSeqNrPerReplica = state.seenSeqNrPerReplica + (meta.originReplica -> meta.originSequenceNr))
-                  aa.clearContext()
-                case Some((_, _, aa)) =>
-                  aa.clearContext()
+                  replication.clearContext()
+                case Some((_, _, replication)) =>
+                  replication.clearContext()
                   state = state.copy(state = newState, eventSeenInInterval = true)
                 case _ =>
                   state = state.copy(state = newState, eventSeenInInterval = true)

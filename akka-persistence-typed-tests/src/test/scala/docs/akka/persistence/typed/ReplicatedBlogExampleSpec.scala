@@ -55,27 +55,27 @@ class ReplicatedBlogExampleSpec
 
   implicit val config: PatienceConfig = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
-  def behavior(aa: ReplicationContext, ctx: ActorContext[BlogCommand]) =
+  def behavior(replicationContext: ReplicationContext, ctx: ActorContext[BlogCommand]) =
     EventSourcedBehavior[BlogCommand, BlogEvent, BlogState](
-      aa.persistenceId,
+      replicationContext.persistenceId,
       emptyState,
       (state, cmd) =>
         cmd match {
           case AddPost(_, content, replyTo) =>
             val evt =
               PostAdded(
-                aa.persistenceId.id,
+                replicationContext.persistenceId.id,
                 content,
-                state.contentTimestamp.increase(aa.currentTimeMillis(), aa.replicaId))
+                state.contentTimestamp.increase(replicationContext.currentTimeMillis(), replicationContext.replicaId))
             Effect.persist(evt).thenRun { _ =>
-              replyTo ! AddPostDone(aa.entityId)
+              replyTo ! AddPostDone(replicationContext.entityId)
             }
           case ChangeBody(_, newContent, replyTo) =>
             val evt =
               BodyChanged(
-                aa.persistenceId.id,
+                replicationContext.persistenceId.id,
                 newContent,
-                state.contentTimestamp.increase(aa.currentTimeMillis(), aa.replicaId))
+                state.contentTimestamp.increase(replicationContext.currentTimeMillis(), replicationContext.replicaId))
             Effect.persist(evt).thenRun { _ =>
               replyTo ! Done
             }
@@ -89,7 +89,7 @@ class ReplicatedBlogExampleSpec
             Effect.none
         },
       (state, event) => {
-        ctx.log.info(s"${aa.entityId}:${aa.replicaId} Received event $event")
+        ctx.log.info(s"${replicationContext.entityId}:${replicationContext.replicaId} Received event $event")
         event match {
           case PostAdded(_, content, timestamp) =>
             if (timestamp.isAfter(state.contentTimestamp)) {
@@ -118,8 +118,8 @@ class ReplicatedBlogExampleSpec
               "cat",
               ReplicaId("DC-A"),
               Set(ReplicaId("DC-A"), ReplicaId("DC-B")),
-              PersistenceTestKitReadJournal.Identifier) { (aa: ReplicationContext) =>
-              behavior(aa, ctx)
+              PersistenceTestKitReadJournal.Identifier) { replicationContext =>
+              behavior(replicationContext, ctx)
             }
           },
           "dc-a")
@@ -131,8 +131,8 @@ class ReplicatedBlogExampleSpec
               "cat",
               ReplicaId("DC-B"),
               Set(ReplicaId("DC-A"), ReplicaId("DC-B")),
-              PersistenceTestKitReadJournal.Identifier) { (aa: ReplicationContext) =>
-              behavior(aa, ctx)
+              PersistenceTestKitReadJournal.Identifier) { replicationContext =>
+              behavior(replicationContext, ctx)
             }
           },
           "dc-b")

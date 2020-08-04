@@ -29,15 +29,15 @@ object ReplicationIllegalAccessSpec {
 
   def apply(entityId: String, replica: ReplicaId): Behavior[Command] = {
     ReplicatedEventSourcing.withSharedJournal(entityId, replica, AllReplicas, PersistenceTestKitReadJournal.Identifier)(
-      aaContext =>
+      replicationContext =>
         EventSourcedBehavior[Command, String, State](
-          aaContext.persistenceId,
+          replicationContext.persistenceId,
           State(Nil),
           (_, command) =>
             command match {
               case AccessInCommandHandler(replyTo) =>
                 val exception = try {
-                  aaContext.origin
+                  replicationContext.origin
                   None
                 } catch {
                   case t: Throwable =>
@@ -48,7 +48,7 @@ object ReplicationIllegalAccessSpec {
               case AccessInPersistCallback(replyTo) =>
                 Effect.persist("cat").thenRun { _ =>
                   val exception = try {
-                    aaContext.concurrent
+                    replicationContext.concurrent
                     None
                   } catch {
                     case t: Throwable =>
@@ -86,8 +86,8 @@ class ReplicationIllegalAccessSpec
     "detect illegal access in the factory" in {
       val exception = intercept[UnsupportedOperationException] {
         ReplicatedEventSourcing.withSharedJournal("id2", R1, AllReplicas, PersistenceTestKitReadJournal.Identifier) {
-          aaContext =>
-            aaContext.origin
+          replicationContext =>
+            replicationContext.origin
             ???
         }
       }

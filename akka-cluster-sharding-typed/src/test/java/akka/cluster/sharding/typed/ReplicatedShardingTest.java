@@ -29,6 +29,7 @@ import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -144,7 +145,7 @@ public class ReplicatedShardingTest extends JUnitSuite {
 
     private final ReplicatedSharding<
             MyReplicatedStringSet.Command, ShardingEnvelope<MyReplicatedStringSet.Command>>
-        aaSharding;
+        replicatedSharding;
 
     private ProxyActor(ActorContext<Command> context) {
       super(context);
@@ -152,7 +153,7 @@ public class ReplicatedShardingTest extends JUnitSuite {
       // #bootstrap
       ReplicatedShardingSettings<
               MyReplicatedStringSet.Command, ShardingEnvelope<MyReplicatedStringSet.Command>>
-          aaShardingSettings =
+          replicatedShardingSettings =
               ReplicatedShardingSettings.create(
                   MyReplicatedStringSet.Command.class,
                   ALL_REPLICAS,
@@ -176,8 +177,12 @@ public class ReplicatedShardingTest extends JUnitSuite {
 
       ReplicatedShardingExtension extension =
           ReplicatedShardingExtension.get(getContext().getSystem());
-      aaSharding = extension.init(aaShardingSettings);
+      ReplicatedSharding<
+              MyReplicatedStringSet.Command, ShardingEnvelope<MyReplicatedStringSet.Command>>
+          replicatedSharding = extension.init(replicatedShardingSettings);
       // #bootstrap
+
+      this.replicatedSharding = replicatedSharding;
     }
 
     @Override
@@ -190,8 +195,8 @@ public class ReplicatedShardingTest extends JUnitSuite {
 
     private Behavior<Command> onForwardToRandom(ForwardToRandom forwardToRandom) {
       Map<ReplicaId, EntityRef<MyReplicatedStringSet.Command>> refs =
-          aaSharding.getEntityRefsFor(forwardToRandom.entityId);
-      int chosenIdx = new java.util.Random().nextInt(refs.size());
+          replicatedSharding.getEntityRefsFor(forwardToRandom.entityId);
+      int chosenIdx = ThreadLocalRandom.current().nextInt(refs.size());
       new ArrayList<>(refs.values()).get(chosenIdx).tell(forwardToRandom.message);
       return this;
     }
@@ -199,7 +204,7 @@ public class ReplicatedShardingTest extends JUnitSuite {
     private Behavior<Command> onForwardToAll(ForwardToAll forwardToAll) {
       // #all-entity-refs
       Map<ReplicaId, EntityRef<MyReplicatedStringSet.Command>> refs =
-          aaSharding.getEntityRefsFor(forwardToAll.entityId);
+          replicatedSharding.getEntityRefsFor(forwardToAll.entityId);
       refs.forEach((replicaId, ref) -> ref.tell(forwardToAll.message));
       // #all-entity-refs
       return this;

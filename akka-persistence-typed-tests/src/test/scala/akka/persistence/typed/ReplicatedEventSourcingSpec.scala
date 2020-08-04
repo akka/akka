@@ -36,10 +36,10 @@ object ReplicatedEventSourcingSpec {
     testBehavior(entityId, replicaId, Some(probe))
 
   def eventSourcedBehavior(
-      aaContext: ReplicationContext,
+      replicationContext: ReplicationContext,
       probe: Option[ActorRef[EventAndContext]]): EventSourcedBehavior[Command, String, State] = {
     EventSourcedBehavior[Command, String, State](
-      aaContext.persistenceId,
+      replicationContext.persistenceId,
       State(Nil),
       (state, command) =>
         command match {
@@ -47,7 +47,7 @@ object ReplicatedEventSourcingSpec {
             replyTo ! state
             Effect.none
           case GetReplica(replyTo) =>
-            replyTo.tell((aaContext.replicaId, aaContext.allReplicas))
+            replyTo.tell((replicationContext.replicaId, replicationContext.allReplicas))
             Effect.none
           case StoreMe(evt, ack) =>
             Effect.persist(evt).thenRun(_ => ack ! Done)
@@ -57,7 +57,12 @@ object ReplicatedEventSourcingSpec {
             Effect.stop()
         },
       (state, event) => {
-        probe.foreach(_ ! EventAndContext(event, aaContext.origin, aaContext.recoveryRunning, aaContext.concurrent))
+        probe.foreach(
+          _ ! EventAndContext(
+            event,
+            replicationContext.origin,
+            replicationContext.recoveryRunning,
+            replicationContext.concurrent))
         state.copy(all = event :: state.all)
       })
   }
@@ -70,7 +75,7 @@ object ReplicatedEventSourcingSpec {
       entityId,
       ReplicaId(replicaId),
       AllReplicas,
-      PersistenceTestKitReadJournal.Identifier)(aaContext => eventSourcedBehavior(aaContext, probe))
+      PersistenceTestKitReadJournal.Identifier)(replicationContext => eventSourcedBehavior(replicationContext, probe))
 
 }
 

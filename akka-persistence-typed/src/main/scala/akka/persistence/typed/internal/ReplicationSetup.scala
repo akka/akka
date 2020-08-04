@@ -87,7 +87,7 @@ private[akka] final class ReplicationContextImpl(
 private[akka] final case class ReplicationSetup(
     replicaId: ReplicaId,
     allReplicasAndQueryPlugins: Map[ReplicaId, String],
-    aaContext: ReplicationContextImpl) {
+    replicationContext: ReplicationContextImpl) {
 
   val allReplicas: Set[ReplicaId] = allReplicasAndQueryPlugins.keySet
 
@@ -95,17 +95,17 @@ private[akka] final case class ReplicationSetup(
    * Must only be called on the same thread that will execute the user code
    */
   def setContext(recoveryRunning: Boolean, originReplica: ReplicaId, concurrent: Boolean): Unit = {
-    aaContext._currentThread = OptionVal.Some(Thread.currentThread())
-    aaContext._recoveryRunning = recoveryRunning
-    aaContext._concurrent = concurrent
-    aaContext._origin = OptionVal.Some(originReplica)
+    replicationContext._currentThread = OptionVal.Some(Thread.currentThread())
+    replicationContext._recoveryRunning = recoveryRunning
+    replicationContext._concurrent = concurrent
+    replicationContext._origin = OptionVal.Some(originReplica)
   }
 
   def clearContext(): Unit = {
-    aaContext._currentThread = OptionVal.None
-    aaContext._recoveryRunning = false
-    aaContext._concurrent = false
-    aaContext._origin = OptionVal.None
+    replicationContext._currentThread = OptionVal.None
+    replicationContext._recoveryRunning = false
+    replicationContext._concurrent = false
+    replicationContext._origin = OptionVal.None
   }
 
 }
