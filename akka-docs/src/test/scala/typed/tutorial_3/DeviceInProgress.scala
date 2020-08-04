@@ -15,7 +15,7 @@ object DeviceInProgress1 {
   object Device {
     sealed trait Command
     final case class ReadTemperature(replyTo: ActorRef[RespondTemperature]) extends Command
-    final case class RespondTemperature(value: Option[Double])
+    final case class RespondTemperature(value: Option[Double]) extends Command
   }
   //#read-protocol-1
 
@@ -38,7 +38,7 @@ object DeviceInProgress2 {
     //#read-protocol-2
     sealed trait Command
     final case class ReadTemperature(requestId: Long, replyTo: ActorRef[RespondTemperature]) extends Command
-    final case class RespondTemperature(requestId: Long, value: Option[Double])
+    final case class RespondTemperature(requestId: Long, value: Option[Double]) extends Command
     //#read-protocol-2
   }
 
