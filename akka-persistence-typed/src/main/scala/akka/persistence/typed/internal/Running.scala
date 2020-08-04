@@ -111,8 +111,8 @@ private[akka] object Running {
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] = {
     val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
     val initialState = setup.replication match {
-      case Some(aa) => startReplicationStream(setup, state, aa)
-      case None     => state
+      case Some(replication) => startReplicationStream(setup, state, replication)
+      case None              => state
     }
     new running.HandlingCommands(initialState)
   }
@@ -128,7 +128,7 @@ private[akka] object Running {
     val query = PersistenceQuery(system)
     replicationSetup.allReplicas.foldLeft(state) { (state, replicaId) =>
       if (replicaId != replicationSetup.replicaId) {
-        val pid = PersistenceId.replicatedUniqueId(replicationSetup.aaContext.entityId, replicaId)
+        val pid = PersistenceId.replicatedUniqueId(replicationSetup.replicationContext.entityId, replicaId)
         val queryPluginId = replicationSetup.allReplicasAndQueryPlugins(replicaId)
         val replication = query.readJournalFor[EventsByPersistenceIdQuery](queryPluginId)
 
@@ -458,8 +458,8 @@ private[akka] object Running {
         val eventAdapterManifest = setup.eventAdapter.manifest(event)
 
         val newState2 = setup.replication match {
-          case Some(aa) =>
-            val updatedVersion = stateAfterApply.version.updated(aa.replicaId.id, _currentSequenceNumber)
+          case Some(replication) =>
+            val updatedVersion = stateAfterApply.version.updated(replication.replicaId.id, _currentSequenceNumber)
             val r = internalPersist(
               setup.context,
               cmd,
@@ -467,8 +467,11 @@ private[akka] object Running {
               eventToPersist,
               eventAdapterManifest,
               OptionVal.Some(
-                ReplicatedEventMetadata(aa.replicaId, _currentSequenceNumber, updatedVersion, concurrent = false)))
-              .copy(version = updatedVersion)
+                ReplicatedEventMetadata(
+                  replication.replicaId,
+                  _currentSequenceNumber,
+                  updatedVersion,
+                  concurrent = false))).copy(version = updatedVersion)
 
             if (setup.log.isTraceEnabled())
               setup.log.traceN(
@@ -501,9 +504,9 @@ private[akka] object Running {
           _currentSequenceNumber = state.seqNr
 
           val metadataTemplate: Option[ReplicatedEventMetadata] = setup.replication match {
-            case Some(aa) =>
-              aa.setContext(recoveryRunning = false, aa.replicaId, concurrent = false) // local events are never concurrent
-              Some(ReplicatedEventMetadata(aa.replicaId, 0L, state.version, concurrent = false)) // we replace it with actual seqnr later
+            case Some(replication) =>
+              replication.setContext(recoveryRunning = false, replication.replicaId, concurrent = false) // local events are never concurrent
+              Some(ReplicatedEventMetadata(replication.replicaId, 0L, state.version, concurrent = false)) // we replace it with actual seqnr later
             case None => None
           }
 
@@ -685,7 +688,8 @@ private[akka] object Running {
         onWriteSuccess(setup.context, p)
 
         if (setup.publishEvents) {
-          val meta = setup.replication.map(aa => new ReplicatedPublishedEventMetaData(aa.replicaId, state.version))
+          val meta = setup.replication.map(replication =>
+            new ReplicatedPublishedEventMetaData(replication.replicaId, state.version))
           context.system.eventStream ! EventStream.Publish(
             PublishedEventImpl(setup.persistenceId, p.sequenceNr, p.payload, p.timestamp, meta))
         }

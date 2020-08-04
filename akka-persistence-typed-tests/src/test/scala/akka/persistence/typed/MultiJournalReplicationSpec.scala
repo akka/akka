@@ -36,9 +36,9 @@ object MultiJournalReplicationSpec {
         entityId,
         ReplicaId(replicaId),
         Map(ReplicaId("R1") -> "journal1.query", ReplicaId("R2") -> "journal2.query"))(
-        aaContext =>
+        replicationContext =>
           EventSourcedBehavior[Command, String, Set[String]](
-            aaContext.persistenceId,
+            replicationContext.persistenceId,
             Set.empty[String],
             (state, command) =>
               command match {

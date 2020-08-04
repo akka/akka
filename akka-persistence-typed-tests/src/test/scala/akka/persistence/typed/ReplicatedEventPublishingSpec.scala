@@ -33,9 +33,9 @@ object ReplicatedEventPublishingSpec {
           replicaId,
           allReplicas,
           PersistenceTestKitReadJournal.Identifier)(
-          aactx =>
+          replicationctx =>
             EventSourcedBehavior[Command, String, Set[String]](
-              aactx.persistenceId,
+              replicationctx.persistenceId,
               Set.empty,
               (state, command) =>
                 command match {

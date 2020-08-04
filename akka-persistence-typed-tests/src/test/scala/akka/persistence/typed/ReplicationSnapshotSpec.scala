@@ -37,8 +37,8 @@ object ReplicationSnapshotSpec {
       entityId,
       replicaId,
       AllReplicas,
-      PersistenceTestKitReadJournal.Identifier)(aaContext =>
-      eventSourcedBehavior(aaContext, probe).snapshotWhen((_, _, sequenceNr) => sequenceNr % 2 == 0))
+      PersistenceTestKitReadJournal.Identifier)(replicationContext =>
+      eventSourcedBehavior(replicationContext, probe).snapshotWhen((_, _, sequenceNr) => sequenceNr % 2 == 0))
 
   }
 }

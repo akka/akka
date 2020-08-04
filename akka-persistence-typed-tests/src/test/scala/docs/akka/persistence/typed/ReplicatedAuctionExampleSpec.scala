@@ -104,7 +104,7 @@ object ReplicatedAuctionExampleSpec {
   //#setup
 
   //#command-handler
-  def commandHandler(setup: AuctionSetup, ctx: ActorContext[AuctionCommand], aaContext: ReplicationContext)(
+  def commandHandler(setup: AuctionSetup, ctx: ActorContext[AuctionCommand], replicationContext: ReplicationContext)(
       state: AuctionState,
       command: AuctionCommand): Effect[AuctionEvent, AuctionState] = {
     state.phase match {
@@ -118,12 +118,12 @@ object ReplicatedAuctionExampleSpec {
             Effect.none
           case Finish =>
             ctx.log.info("Finish")
-            Effect.persist(AuctionFinished(aaContext.replicaId))
+            Effect.persist(AuctionFinished(replicationContext.replicaId))
           case Close =>
             ctx.log.info("Close")
             require(shouldClose(setup, state))
             // TODO send email (before or after persisting)
-            Effect.persist(WinnerDecided(aaContext.replicaId, state.highestBid, state.highestCounterOffer))
+            Effect.persist(WinnerDecided(replicationContext.replicaId, state.highestBid, state.highestCounterOffer))
           case _: OfferBid =>
             // auction finished, no more bids accepted
             Effect.unhandled
@@ -133,12 +133,16 @@ object ReplicatedAuctionExampleSpec {
           case OfferBid(bidder, offer) =>
             Effect.persist(
               BidRegistered(
-                Bid(bidder, offer, Instant.ofEpochMilli(aaContext.currentTimeMillis()), aaContext.replicaId)))
+                Bid(
+                  bidder,
+                  offer,
+                  Instant.ofEpochMilli(replicationContext.currentTimeMillis()),
+                  replicationContext.replicaId)))
           case GetHighestBid(replyTo) =>
             replyTo ! state.highestBid
             Effect.none
           case Finish =>
-            Effect.persist(AuctionFinished(aaContext.replicaId))
+            Effect.persist(AuctionFinished(replicationContext.replicaId))
           case Close =>
             ctx.log.warn("Premature close")
             // Close should only be triggered when we have already finished
@@ -166,14 +170,14 @@ object ReplicatedAuctionExampleSpec {
   }
 
   //#event-handler
-  def eventHandler(ctx: ActorContext[AuctionCommand], aaCtx: ReplicationContext, setup: AuctionSetup)(
+  def eventHandler(ctx: ActorContext[AuctionCommand], replicationCtx: ReplicationContext, setup: AuctionSetup)(
       state: AuctionState,
       event: AuctionEvent): AuctionState = {
 
     val newState = state.applyEvent(event)
     ctx.log.infoN("Applying event {}. New start {}", event, newState)
-    if (!aaCtx.recoveryRunning) {
-      eventTriggers(setup, ctx, aaCtx, event, newState)
+    if (!replicationCtx.recoveryRunning) {
+      eventTriggers(setup, ctx, replicationCtx, event, newState)
     }
     newState
 
@@ -184,7 +188,7 @@ object ReplicatedAuctionExampleSpec {
   private def eventTriggers(
       setup: AuctionSetup,
       ctx: ActorContext[AuctionCommand],
-      aaCtx: ReplicationContext,
+      replicationCtx: ReplicationContext,
       event: AuctionEvent,
       newState: AuctionState) = {
     event match {
@@ -195,7 +199,7 @@ object ReplicatedAuctionExampleSpec {
               "AuctionFinished at {}, already finished at [{}]",
               finished.atReplica,
               alreadyFinishedAtDc.mkString(", "))
-            if (alreadyFinishedAtDc(aaCtx.replicaId)) {
+            if (alreadyFinishedAtDc(replicationCtx.replicaId)) {
               if (shouldClose(setup, newState)) ctx.self ! Close
             } else {
               ctx.log.info("Sending finish to self")
@@ -215,12 +219,13 @@ object ReplicatedAuctionExampleSpec {
   def behavior(replica: ReplicaId, setup: AuctionSetup): Behavior[AuctionCommand] = Behaviors.setup[AuctionCommand] {
     ctx =>
       ReplicatedEventSourcing
-        .withSharedJournal(setup.name, replica, setup.allReplicas, PersistenceTestKitReadJournal.Identifier) { aaCtx =>
-          EventSourcedBehavior(
-            aaCtx.persistenceId,
-            initialState(setup),
-            commandHandler(setup, ctx, aaCtx),
-            eventHandler(ctx, aaCtx, setup))
+        .withSharedJournal(setup.name, replica, setup.allReplicas, PersistenceTestKitReadJournal.Identifier) {
+          replicationCtx =>
+            EventSourcedBehavior(
+              replicationCtx.persistenceId,
+              initialState(setup),
+              commandHandler(setup, ctx, replicationCtx),
+              eventHandler(ctx, replicationCtx, setup))
         }
   }
 }
