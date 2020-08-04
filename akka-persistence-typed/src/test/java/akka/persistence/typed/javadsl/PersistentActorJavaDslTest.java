@@ -539,9 +539,11 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
             .runWith(Sink.seq(), testKit.system())
             .toCompletableFuture()
             .get();
-    assertEquals(
-        Lists.newArrayList(new EventEnvelope(new Sequence(1), "tagging", 1, new Incremented(1))),
-        events);
+    assertEquals(1, events.size());
+    EventEnvelope eventEnvelope = events.get(0);
+    assertEquals(new Sequence(1), eventEnvelope.offset());
+    assertEquals("tagging", eventEnvelope.persistenceId());
+    assertEquals(new Incremented(1), eventEnvelope.event());
   }
 
   @Test
@@ -570,10 +572,11 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
             .runWith(Sink.seq(), testKit.system())
             .toCompletableFuture()
             .get();
-    assertEquals(
-        Lists.newArrayList(
-            new EventEnvelope(new Sequence(1), "transform", 1, new Wrapper(new Incremented(1)))),
-        events);
+    assertEquals(1, events.size());
+    EventEnvelope eventEnvelope = events.get(0);
+    assertEquals(new Sequence(1), eventEnvelope.offset());
+    assertEquals("transform", eventEnvelope.persistenceId());
+    assertEquals(new Wrapper(new Incremented(1)), eventEnvelope.event());
 
     ActorRef<Command> c2 = testKit.spawn(transformer);
     c2.tell(new GetValue(stateProbe.ref()));

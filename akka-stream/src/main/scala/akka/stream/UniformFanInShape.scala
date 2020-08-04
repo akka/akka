@@ -10,6 +10,12 @@ import scala.collection.immutable
 object UniformFanInShape {
   def apply[I, O](outlet: Outlet[O], inlets: Inlet[I]*): UniformFanInShape[I, O] =
     new UniformFanInShape(inlets.size, FanInShape.Ports(outlet, inlets.toList))
+
+  /** Java API */
+  def create[I, O](outlet: Outlet[O], inlets: java.util.List[Inlet[I]]): UniformFanInShape[I, O] = {
+    import akka.util.ccompat.JavaConverters._
+    new UniformFanInShape(inlets.size, FanInShape.Ports(outlet, inlets.asScala.toList))
+  }
 }
 
 class UniformFanInShape[-T, +O](val n: Int, _init: FanInShape.Init[O]) extends FanInShape[O](_init) {

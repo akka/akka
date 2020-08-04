@@ -10,7 +10,6 @@ import scala.concurrent.duration._
 import com.github.ghik.silencer.silent
 import language.postfixOps
 import org.scalatest.BeforeAndAfterEach
-import org.scalatestplus.junit.JUnitSuiteLike
 
 import akka.pattern.ask
 import akka.testkit._
@@ -97,9 +96,6 @@ object ActorWithStashSpec {
   }
 
 }
-
-@silent
-class JavaActorWithStashSpec extends StashJavaAPI with JUnitSuiteLike
 
 @silent
 class ActorWithStashSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfterEach {

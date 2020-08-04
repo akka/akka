@@ -4,8 +4,6 @@
 
 package akka.persistence.fsm.japi.pf;
 
-import akka.persistence.fsm.PersistentFSM;
-import akka.persistence.fsm.PersistentFSMBase;
 import akka.japi.pf.FI;
 import akka.japi.pf.UnitPFBuilder;
 import scala.PartialFunction;
@@ -14,12 +12,15 @@ import scala.runtime.BoxedUnit;
 /**
  * Builder used to create a partial function for {@link akka.actor.FSM#onTermination}.
  *
+ * @deprecated use EventSourcedBehavior since 2.6.0
  * @param <S> the state type
  * @param <D> the data type
  */
+@Deprecated
 public class FSMStopBuilder<S, D> {
 
-  private UnitPFBuilder<PersistentFSM.StopEvent<S, D>> builder = new UnitPFBuilder<>();
+  private UnitPFBuilder<akka.persistence.fsm.PersistentFSM.StopEvent<S, D>> builder =
+      new UnitPFBuilder<>();
 
   /**
    * Add a case statement that matches on an {@link akka.actor.FSM.Reason}.
@@ -29,17 +30,17 @@ public class FSMStopBuilder<S, D> {
    * @return the builder with the case statement added
    */
   public FSMStopBuilder<S, D> stop(
-      final PersistentFSM.Reason reason, final FI.UnitApply2<S, D> apply) {
+      final akka.persistence.fsm.PersistentFSM.Reason reason, final FI.UnitApply2<S, D> apply) {
     builder.match(
-        PersistentFSM.StopEvent.class,
-        new FI.TypedPredicate<PersistentFSM.StopEvent>() {
+        akka.persistence.fsm.PersistentFSM.StopEvent.class,
+        new FI.TypedPredicate<akka.persistence.fsm.PersistentFSM.StopEvent>() {
           @Override
-          public boolean defined(PersistentFSM.StopEvent e) {
+          public boolean defined(akka.persistence.fsm.PersistentFSM.StopEvent e) {
             return reason.equals(e.reason());
           }
         },
-        new FI.UnitApply<PersistentFSM.StopEvent>() {
-          public void apply(PersistentFSM.StopEvent e) throws Exception {
+        new FI.UnitApply<akka.persistence.fsm.PersistentFSM.StopEvent>() {
+          public void apply(akka.persistence.fsm.PersistentFSM.StopEvent e) throws Exception {
             @SuppressWarnings("unchecked")
             S s = (S) e.currentState();
             @SuppressWarnings("unchecked")
@@ -59,7 +60,7 @@ public class FSMStopBuilder<S, D> {
    * @param <P> the reason type to match on
    * @return the builder with the case statement added
    */
-  public <P extends PersistentFSM.Reason> FSMStopBuilder<S, D> stop(
+  public <P extends akka.persistence.fsm.PersistentFSM.Reason> FSMStopBuilder<S, D> stop(
       final Class<P> reasonType, final FI.UnitApply3<P, S, D> apply) {
     return this.stop(
         reasonType,
@@ -81,15 +82,15 @@ public class FSMStopBuilder<S, D> {
    * @param <P> the reason type to match on
    * @return the builder with the case statement added
    */
-  public <P extends PersistentFSM.Reason> FSMStopBuilder<S, D> stop(
+  public <P extends akka.persistence.fsm.PersistentFSM.Reason> FSMStopBuilder<S, D> stop(
       final Class<P> reasonType,
       final FI.TypedPredicate<P> predicate,
       final FI.UnitApply3<P, S, D> apply) {
     builder.match(
-        PersistentFSM.StopEvent.class,
-        new FI.TypedPredicate<PersistentFSM.StopEvent>() {
+        akka.persistence.fsm.PersistentFSM.StopEvent.class,
+        new FI.TypedPredicate<akka.persistence.fsm.PersistentFSM.StopEvent>() {
           @Override
-          public boolean defined(PersistentFSM.StopEvent e) {
+          public boolean defined(akka.persistence.fsm.PersistentFSM.StopEvent e) {
             if (reasonType.isInstance(e.reason())) {
               @SuppressWarnings("unchecked")
               P p = (P) e.reason();
@@ -99,8 +100,8 @@ public class FSMStopBuilder<S, D> {
             }
           }
         },
-        new FI.UnitApply<PersistentFSM.StopEvent>() {
-          public void apply(PersistentFSM.StopEvent e) throws Exception {
+        new FI.UnitApply<akka.persistence.fsm.PersistentFSM.StopEvent>() {
+          public void apply(akka.persistence.fsm.PersistentFSM.StopEvent e) throws Exception {
             @SuppressWarnings("unchecked")
             P p = (P) e.reason();
             @SuppressWarnings("unchecked")
@@ -120,7 +121,7 @@ public class FSMStopBuilder<S, D> {
    *
    * @return a PartialFunction for this builder.
    */
-  public PartialFunction<PersistentFSM.StopEvent<S, D>, BoxedUnit> build() {
+  public PartialFunction<akka.persistence.fsm.PersistentFSM.StopEvent<S, D>, BoxedUnit> build() {
     return builder.build();
   }
 }

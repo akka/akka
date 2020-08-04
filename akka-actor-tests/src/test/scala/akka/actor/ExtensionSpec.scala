@@ -8,16 +8,11 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.util.control.NoStackTrace
 
-import com.github.ghik.silencer.silent
+import akka.testkit.EventFilter
+import akka.testkit.TestKit._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatestplus.junit.JUnitSuiteLike
-
-import akka.testkit.EventFilter
-import akka.testkit.TestKit._
-@silent
-class JavaExtensionSpec extends JavaExtension with JUnitSuiteLike
 
 object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider {
   def lookup = this

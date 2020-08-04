@@ -78,6 +78,7 @@ public class Aggregator<Reply, Aggregate> extends AbstractBehavior<Aggregator.Co
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public Receive<Command> createReceive() {
     return newReceiveBuilder()
         .onMessage(WrappedReply.class, this::onReply)

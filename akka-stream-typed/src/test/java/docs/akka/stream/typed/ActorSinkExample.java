@@ -7,7 +7,7 @@ package docs.akka.stream.typed;
 // #actor-sink-ref
 import akka.NotUsed;
 import akka.actor.typed.ActorRef;
-import akka.stream.ActorMaterializer;
+import akka.actor.typed.ActorSystem;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.typed.javadsl.ActorSink;
@@ -38,7 +38,7 @@ public class ActorSinkExample {
   }
   // #actor-sink-ref
 
-  final ActorMaterializer mat = null;
+  final ActorSystem<Void> system = null;
 
   {
     // #actor-sink-ref
@@ -47,7 +47,7 @@ public class ActorSinkExample {
 
     final Sink<Protocol, NotUsed> sink = ActorSink.actorRef(actor, new Complete(), Fail::new);
 
-    Source.<Protocol>single(new Message("msg1")).runWith(sink, mat);
+    Source.<Protocol>single(new Message("msg1")).runWith(sink, system);
     // #actor-sink-ref
   }
 }

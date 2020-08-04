@@ -221,7 +221,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
             .via(stringLength)
             .runFold(0, (sum, n) -> sum + n, system);
 
-    assertEquals(new Integer(11), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    assertEquals(Integer.valueOf(11), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   // #many-to-one
@@ -286,7 +286,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
             .via(evenFilter)
             .runFold(0, (elem, sum) -> sum + elem, system);
 
-    assertEquals(new Integer(12), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    assertEquals(Integer.valueOf(12), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   // #one-to-many
@@ -356,7 +356,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
     CompletionStage<Integer> result =
         Source.from(Arrays.asList(1, 2, 3)).via(duplicator).runFold(0, (n, sum) -> n + sum, system);
 
-    assertEquals(new Integer(12), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    assertEquals(Integer.valueOf(12), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   // #simpler-one-to-many
@@ -412,7 +412,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
     CompletionStage<Integer> result =
         Source.from(Arrays.asList(1, 2, 3)).via(duplicator).runFold(0, (n, sum) -> n + sum, system);
 
-    assertEquals(new Integer(12), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    assertEquals(Integer.valueOf(12), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   @Test
@@ -588,7 +588,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
             .takeWithin(java.time.Duration.ofMillis(250))
             .runFold(0, (n, sum) -> n + sum, system);
 
-    assertEquals(new Integer(1), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    assertEquals(Integer.valueOf(1), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   // #materialized
@@ -654,12 +654,12 @@ public class GraphStageDocTest extends AbstractJavaTest {
     // tests:
     RunnableGraph<CompletionStage<Integer>> flow =
         Source.from(Arrays.asList(1, 2, 3))
-            .viaMat(new FirstValue(), Keep.right())
+            .viaMat(new FirstValue<Integer>(), Keep.right())
             .to(Sink.ignore());
 
     CompletionStage<Integer> result = flow.run(system);
 
-    assertEquals(new Integer(1), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    assertEquals(Integer.valueOf(1), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
 
   // #detached
@@ -751,7 +751,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
             .via(new TwoBuffer<>())
             .runFold(0, (acc, n) -> acc + n, system);
 
-    assertEquals(new Integer(6), result1.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    assertEquals(Integer.valueOf(6), result1.toCompletableFuture().get(3, TimeUnit.SECONDS));
 
     TestSubscriber.ManualProbe<Integer> subscriber = TestSubscriber.manualProbe(system);
     TestPublisher.Probe<Integer> publisher = TestPublisher.probe(0, system);

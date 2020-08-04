@@ -19,6 +19,22 @@ object AkkaDisciplinePlugin extends AutoPlugin {
 
   // We allow warnings in docs to get the 'snippets' right
   val nonFatalWarningsFor = Set("akka-docs")
+  val nonFatalJavaWarningsFor = Set(
+    // for sun.misc.Unsafe and AbstractScheduler
+    "akka-actor",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-actor-typed-tests",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-cluster-typed",
+    // use of deprecated akka.protobuf.GeneratedMessage
+    "akka-protobuf",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-remote",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-distributed-data",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-cluster-sharding-typed",
+  )
 
   val looseProjects = Set(
     "akka-actor",
@@ -60,6 +76,10 @@ object AkkaDisciplinePlugin extends AutoPlugin {
             else Seq.empty
           ),
         Test / scalacOptions --= testUndicipline,
+        Compile / javacOptions ++= (
+          if (!nonFatalJavaWarningsFor(name.value)) Seq("-Werror", "-Xlint:deprecation", "-Xlint:unchecked")
+          else Seq.empty
+        ),
         Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
             case Some((2, 13)) =>
               disciplineScalacOptions -- Set(
