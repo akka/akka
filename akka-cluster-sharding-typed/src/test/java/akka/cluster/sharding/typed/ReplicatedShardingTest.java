@@ -151,15 +151,15 @@ public class ReplicatedShardingTest extends JUnitSuite {
       super(context);
 
       // #bootstrap
-      ReplicatedShardingSettings<
+      ReplicatedEntityProvider<
               MyReplicatedStringSet.Command, ShardingEnvelope<MyReplicatedStringSet.Command>>
-          replicatedShardingSettings =
-              ReplicatedShardingSettings.create(
+          replicatedEntityProvider =
+              ReplicatedEntityProvider.create(
                   MyReplicatedStringSet.Command.class,
                   ALL_REPLICAS,
-                  // factory for replica settings for a given replica
+                  // factory for replicated entity for a given replica
                   (entityTypeKey, replicaId, allReplicas) ->
-                      ReplicaSettings.create(
+                      ReplicatedEntity.create(
                           replicaId,
                           // use the replica id as typekey for sharding to get one sharding instance
                           // per replica
@@ -179,7 +179,7 @@ public class ReplicatedShardingTest extends JUnitSuite {
           ReplicatedShardingExtension.get(getContext().getSystem());
       ReplicatedSharding<
               MyReplicatedStringSet.Command, ShardingEnvelope<MyReplicatedStringSet.Command>>
-          replicatedSharding = extension.init(replicatedShardingSettings);
+          replicatedSharding = extension.init(replicatedEntityProvider);
       // #bootstrap
 
       this.replicatedSharding = replicatedSharding;
