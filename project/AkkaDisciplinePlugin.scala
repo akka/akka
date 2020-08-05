@@ -33,8 +33,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     // references to deprecated PARSER fields in generated message formats?
     "akka-distributed-data",
     // references to deprecated PARSER fields in generated message formats?
-    "akka-cluster-sharding-typed",
-  )
+    "akka-cluster-sharding-typed")
 
   val looseProjects = Set(
     "akka-actor",
@@ -77,9 +76,9 @@ object AkkaDisciplinePlugin extends AutoPlugin {
           ),
         Test / scalacOptions --= testUndicipline,
         Compile / javacOptions ++= (
-          if (!nonFatalJavaWarningsFor(name.value)) Seq("-Werror", "-Xlint:deprecation", "-Xlint:unchecked")
-          else Seq.empty
-        ),
+            if (!nonFatalJavaWarningsFor(name.value)) Seq("-Werror", "-Xlint:deprecation", "-Xlint:unchecked")
+            else Seq.empty
+          ),
         Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
             case Some((2, 13)) =>
               disciplineScalacOptions -- Set(
