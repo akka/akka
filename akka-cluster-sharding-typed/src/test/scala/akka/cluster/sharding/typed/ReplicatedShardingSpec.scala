@@ -75,12 +75,12 @@ class ReplicatedShardingSpec
 
     def apply(): Behavior[Command] = Behaviors.setup { context =>
       // #bootstrap
-      val replicatedShardingSettings =
-        ReplicatedShardingSettings[MyReplicatedStringSet.Command, ShardingEnvelope[MyReplicatedStringSet.Command]](
+      val replicatedShardingProvider =
+        ReplicatedEntityProvider[MyReplicatedStringSet.Command, ShardingEnvelope[MyReplicatedStringSet.Command]](
           // all replicas
           Set(ReplicaId("DC-A"), ReplicaId("DC-B"), ReplicaId("DC-C"))) { (entityTypeKey, replicaId, allReplicaIds) =>
-          // factory for replica settings for a given replica
-          ReplicaSettings(
+          // factory for replicated entity for a given replica
+          ReplicatedEntity(
             replicaId,
             // use the provided entity type key for sharding to get one sharding instance per replica
             Entity(entityTypeKey) { entityContext =>
@@ -93,7 +93,7 @@ class ReplicatedShardingSpec
               .withRole(replicaId.id))
         }
 
-      val replicatedSharding = ReplicatedShardingExtension(context.system).init(replicatedShardingSettings)
+      val replicatedSharding = ReplicatedShardingExtension(context.system).init(replicatedShardingProvider)
       // #bootstrap
 
       Behaviors.receiveMessage {

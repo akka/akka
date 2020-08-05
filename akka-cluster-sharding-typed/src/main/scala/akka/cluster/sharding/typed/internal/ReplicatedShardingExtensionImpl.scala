@@ -12,7 +12,7 @@ import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.sharding.typed.ReplicatedShardingExtension
 import akka.cluster.sharding.typed.ReplicatedSharding
-import akka.cluster.sharding.typed.ReplicatedShardingSettings
+import akka.cluster.sharding.typed.ReplicatedEntityProvider
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
@@ -34,7 +34,7 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def init[M, E](settings: ReplicatedShardingSettings[M, E]): ReplicatedSharding[M, E] = {
+  override def init[M, E](settings: ReplicatedEntityProvider[M, E]): ReplicatedSharding[M, E] = {
     val sharding = ClusterSharding(system)
     val initializedReplicas = settings.replicas.map { replicaSettings =>
       // start up a sharding instance per replica id

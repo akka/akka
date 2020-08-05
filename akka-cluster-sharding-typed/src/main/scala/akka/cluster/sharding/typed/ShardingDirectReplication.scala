@@ -24,7 +24,7 @@ import akka.util.ccompat.JavaConverters._
  * This actor should be started once on each node where Replicated Event Sourced entities will run (the same nodes that you start
  * sharding on). The entities should be set up with [[akka.persistence.typed.scaladsl.EventSourcedBehavior.withEventPublishing]]
  * or [[akka.persistence.typed.javadsl.ReplicatedEventSourcedBehavior#withEventPublishing()]]
- * If using [[ReplicatedSharding]] the replication can be enabled through [[ReplicatedShardingSettings.withDirectReplication]]
+ * If using [[ReplicatedSharding]] the replication can be enabled through [[ReplicatedEntityProvider.withDirectReplication]]
  * instead of starting this actor manually.
  *
  * Subscribes to locally written events through the event stream and sends the seen events to all the sharded replicas
