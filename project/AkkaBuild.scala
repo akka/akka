@@ -108,12 +108,14 @@ object AkkaBuild {
     scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
     scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
       opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
-    javacOptions in compile ++= DefaultJavacOptions ++
+    javacOptions in Compile ++= {
+      DefaultJavacOptions ++
+        JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value)
+    },
+    javacOptions in Test ++= DefaultJavacOptions ++
       JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
-    javacOptions in test ++= DefaultJavacOptions ++
-      JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
-    javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
-    javacOptions in doc ++= Seq(),
+    javacOptions in Compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
+    javacOptions in doc := Seq(),
 
     crossVersion := CrossVersion.binary,
 
