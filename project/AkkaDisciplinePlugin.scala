@@ -79,6 +79,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
             if (!nonFatalJavaWarningsFor(name.value)) Seq("-Werror", "-Xlint:deprecation", "-Xlint:unchecked")
             else Seq.empty
           ),
+        Compile / javacOptions in doc := Seq(),
         Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
             case Some((2, 13)) =>
               disciplineScalacOptions -- Set(

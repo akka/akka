@@ -115,7 +115,7 @@ object AkkaBuild {
     javacOptions in Test ++= DefaultJavacOptions ++
       JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
     javacOptions in Compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
-    javacOptions in doc ++= Seq(),
+    javacOptions in doc := Seq(),
 
     crossVersion := CrossVersion.binary,
 
