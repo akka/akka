@@ -49,6 +49,7 @@ class ReplicatedShardingSpec
 
     def apply(entityId: String, replicaId: ReplicaId, allReplicas: Set[ReplicaId]): Behavior[Command] =
       ReplicatedEventSourcing.withSharedJournal(
+        "StringSet",
         entityId,
         replicaId,
         allReplicas,
