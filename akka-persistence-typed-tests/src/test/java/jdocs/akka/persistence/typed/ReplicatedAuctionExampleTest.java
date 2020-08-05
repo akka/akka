@@ -100,7 +100,7 @@ class ReplicatedAuctionExample
   public static Behavior<Command> create(AuctionSetup setup, ReplicaId replica) {
     return Behaviors.setup(
         ctx ->
-            ReplicatedEventSourcing.withSharedJournal(
+            ReplicatedEventSourcing.withSharedJournal("Auction",
                 setup.name,
                 replica,
                 ALL_REPLICAS,

@@ -115,6 +115,7 @@ class ReplicatedBlogExampleSpec
         spawn(
           Behaviors.setup[BlogCommand] { ctx =>
             ReplicatedEventSourcing.withSharedJournal(
+              "blog",
               "cat",
               ReplicaId("DC-A"),
               Set(ReplicaId("DC-A"), ReplicaId("DC-B")),
@@ -128,6 +129,7 @@ class ReplicatedBlogExampleSpec
         spawn(
           Behaviors.setup[BlogCommand] { ctx =>
             ReplicatedEventSourcing.withSharedJournal(
+              "blog",
               "cat",
               ReplicaId("DC-B"),
               Set(ReplicaId("DC-A"), ReplicaId("DC-B")),

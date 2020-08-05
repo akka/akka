@@ -33,7 +33,7 @@ public class MyReplicatedBehavior
   public static Behavior<Command> create(
       String entityId, ReplicaId replicaId, String queryPluginId) {
     return ReplicatedEventSourcing.withSharedJournal(
-        entityId, replicaId, ALL_REPLICAS, queryPluginId, MyReplicatedBehavior::new);
+        "EntityType", entityId, replicaId, ALL_REPLICAS, queryPluginId, MyReplicatedBehavior::new);
   }
   // #factory-shared
 
@@ -44,7 +44,7 @@ public class MyReplicatedBehavior
     allReplicasAndQueryPlugins.put(DCB, "journalForDCB");
 
     return ReplicatedEventSourcing.create(
-        entityId, replicaId, allReplicasAndQueryPlugins, MyReplicatedBehavior::new);
+        "EntityType", entityId, replicaId, allReplicasAndQueryPlugins, MyReplicatedBehavior::new);
   }
 
   private MyReplicatedBehavior(ReplicationContext replicationContext) {

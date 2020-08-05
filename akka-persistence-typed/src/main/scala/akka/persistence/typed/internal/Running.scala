@@ -128,7 +128,10 @@ private[akka] object Running {
     val query = PersistenceQuery(system)
     replicationSetup.allReplicas.foldLeft(state) { (state, replicaId) =>
       if (replicaId != replicationSetup.replicaId) {
-        val pid = PersistenceId.replicatedUniqueId(replicationSetup.replicationContext.entityId, replicaId)
+        val pid = PersistenceId.replicatedId(
+          replicationSetup.replicationContext.entityTypeHint,
+          replicationSetup.replicationContext.entityId,
+          replicaId)
         val queryPluginId = replicationSetup.allReplicasAndQueryPlugins(replicaId)
         val replication = query.readJournalFor[EventsByPersistenceIdQuery](queryPluginId)
 

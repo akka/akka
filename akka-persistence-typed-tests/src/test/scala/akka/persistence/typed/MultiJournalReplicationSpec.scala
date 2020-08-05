@@ -33,6 +33,7 @@ object MultiJournalReplicationSpec {
     private val writeJournalPerReplica = Map("R1" -> "journal1.journal", "R2" -> "journal2.journal")
     def apply(entityId: String, replicaId: String): Behavior[Command] = {
       ReplicatedEventSourcing(
+        "MultiJournalSpec",
         entityId,
         ReplicaId(replicaId),
         Map(ReplicaId("R1") -> "journal1.query", ReplicaId("R2") -> "journal2.query"))(

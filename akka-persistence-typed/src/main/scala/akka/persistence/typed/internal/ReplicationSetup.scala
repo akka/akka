@@ -14,11 +14,9 @@ import akka.util.ccompat.JavaConverters._
 /**
  * INTERNAL API
  */
-// FIXME, parts of this can be set during initialisation
-// Other fields will be set before executing the event handler as they change per event
-// https://github.com/akka/akka/issues/29258
 @InternalApi
 private[akka] final class ReplicationContextImpl(
+    val entityTypeHint: String,
     val entityId: String,
     val replicaId: ReplicaId,
     val replicasAndQueryPlugins: Map[ReplicaId, String])
@@ -67,7 +65,7 @@ private[akka] final class ReplicationContextImpl(
     _concurrent
   }
 
-  override def persistenceId: PersistenceId = PersistenceId.replicatedUniqueId(entityId, replicaId)
+  override def persistenceId: PersistenceId = PersistenceId.replicatedId(entityTypeHint, entityId, replicaId)
 
   override def currentTimeMillis(): Long = {
     WallClock.AlwaysIncreasingClock.currentTimeMillis()
