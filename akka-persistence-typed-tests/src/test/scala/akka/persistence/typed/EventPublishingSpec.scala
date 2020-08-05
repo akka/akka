@@ -35,7 +35,7 @@ object EventPublishingSpec {
           },
         (state, event) => state + event)
         .withTagger(evt => if (evt.tagIt) Set("tag") else Set.empty)
-        .withEventPublishing()
+        .withEventPublishing(enabled = true)
   }
 }
 

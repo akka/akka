@@ -222,7 +222,7 @@ object EventSourcedBehavior {
    * Publish events to the system event stream as [[akka.persistence.typed.PublishedEvent]] after they have been persisted
    */
   @ApiMayChange
-  def withEventPublishing(): EventSourcedBehavior[Command, Event, State]
+  def withEventPublishing(enabled: Boolean): EventSourcedBehavior[Command, Event, State]
 
   /**
    * INTERNAL API
