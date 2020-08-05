@@ -657,9 +657,9 @@ cluster and address them by id.
 Akka Persistence is based on the single-writer principle. For a particular `PersistenceId` only one `EventSourcedBehavior`
 instance should be active at one time. If multiple instances were to persist events at the same time, the events would
 be interleaved and might not be interpreted correctly on replay. Cluster Sharding ensures that there is only one
-active entity (`EventSourcedBehavior`) for each id within a data center. Lightbend's
-[Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
-supports active-active persistent entities across data centers.
+active entity (`EventSourcedBehavior`) for each id within a data center.
+@ref:[Replicated Event Sourcing](replicated-eventsourcing.md) supports active-active persistent entities across
+data centers.
 
 ## Configuration
 
@@ -684,5 +684,5 @@ from the events, or publish the events to other services.
 
 @java[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-java)]
 @scala[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-scala)]
-illustrates how to use Lightbend's [Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
-with active-active persistent entities across data centers.
+illustrates how to use @ref:[Replicated Event Sourcing](replicated-eventsourcing.md) that supports
+active-active persistent entities across data centers.
