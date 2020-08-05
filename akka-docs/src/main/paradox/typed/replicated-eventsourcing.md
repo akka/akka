@@ -134,7 +134,13 @@ The factory returns a `Behavior` that can be spawned like any other behavior.
 
 ### Conflict free replicated data types
 
-TODO example once CRDTs are in
+The following CRDTs are included that can be used to build your own data model:
+
+* @apidoc[LwwTime]
+* @apidoc[Counter]
+* @apidoc[akka.persistence.typed.crdt.ORSet]
+
+Akka serializers are included for all these types and can be used to serialize when @ref[embedded in Jackson](../serialization-jackson.md#using-akka-serialization-for-embedded-types).
 
 ### Last writer wins
 

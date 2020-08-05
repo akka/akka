@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer
 import akka.serialization.{ SerializationExtension, Serializer, Serializers }
 
 final class AkkaSerializationSerializer extends StdScalarSerializer[AnyRef](classOf[AnyRef]) with ActorSystemAccess {
-  private val serialization = SerializationExtension(currentSystem())
+  def serialization = SerializationExtension(currentSystem())
   override def serialize(value: AnyRef, jgen: JsonGenerator, provider: SerializerProvider): Unit = {
     val serializer: Serializer = serialization.findSerializerFor(value)
     val serId = serializer.identifier
@@ -29,7 +29,7 @@ final class AkkaSerializationDeserializer
     extends StdScalarDeserializer[AnyRef](classOf[AnyRef])
     with ActorSystemAccess {
 
-  private val serialization = SerializationExtension(currentSystem())
+  def serialization = SerializationExtension(currentSystem())
 
   def deserialize(jp: JsonParser, ctxt: DeserializationContext): AnyRef = {
     val codec: ObjectCodec = jp.getCodec()

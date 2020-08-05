@@ -681,7 +681,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
           inner-serializer = "akka.serialization.jackson.ScalaTestMessages$$InnerSerializationSerializer"
       }
       serialization-bindings {
-        "akka.serialization.jackson.ScalaTestMessages$$InnerSerialization" = "inner-serializer"
+        "akka.serialization.jackson.ScalaTestMessages$$HasAkkaSerializer" = "inner-serializer"
       }
     }
     """)))
