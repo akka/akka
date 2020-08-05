@@ -11,7 +11,7 @@ import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.crdt.ORSet.DeltaOp
 import akka.persistence.typed.internal.{ ManyVersionVector, OneVersionVector, VersionVector }
-import akka.serialization.jackson.JacksonUseAkkaSerialization
+import akka.serialization.JacksonUseAkkaSerialization
 
 @ApiMayChange
 object ORSet {

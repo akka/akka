@@ -4,7 +4,7 @@
 
 package akka.persistence.typed.crdt
 import akka.annotation.ApiMayChange
-import akka.serialization.jackson.JacksonUseAkkaSerialization
+import akka.serialization.JacksonUseAkkaSerialization
 
 @ApiMayChange
 object Counter {

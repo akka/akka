@@ -51,7 +51,12 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Status
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.scaladsl.Behaviors
-import akka.serialization.{ Serialization, SerializationExtension, SerializerWithStringManifest }
+import akka.serialization.{
+  JacksonUseAkkaSerialization,
+  Serialization,
+  SerializationExtension,
+  SerializerWithStringManifest
+}
 import akka.testkit.{ TestActors, TestKit }
 
 object ScalaTestMessages {

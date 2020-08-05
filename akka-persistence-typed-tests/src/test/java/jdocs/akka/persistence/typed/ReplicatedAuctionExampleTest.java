@@ -115,7 +115,7 @@ class ReplicatedAuctionExample
     this.setup = setup;
   }
 
-  //#setup
+  // #setup
   static class AuctionSetup {
     final String name;
     final Bid initialBid; // the initial bid is the minimum price bidden at start time by the owner
@@ -130,7 +130,7 @@ class ReplicatedAuctionExample
       this.responsibleForClosing = responsibleForClosing;
     }
   }
-  //#setup
+  // #setup
 
   public static final class Bid implements CborSerializable {
     public final String bidder;
@@ -146,11 +146,13 @@ class ReplicatedAuctionExample
     }
   }
 
-  //#commands
+  // #commands
   interface Command extends CborSerializable {}
+
   public enum Finish implements Command {
     INSTANCE
   }
+
   public static final class OfferBid implements Command {
     public final String bidder;
     public final int offer;
@@ -160,6 +162,7 @@ class ReplicatedAuctionExample
       this.offer = offer;
     }
   }
+
   public static final class GetHighestBid implements Command {
     public final ActorRef<Bid> replyTo;
 
@@ -167,18 +170,21 @@ class ReplicatedAuctionExample
       this.replyTo = replyTo;
     }
   }
+
   public static final class IsClosed implements Command {
     public final ActorRef<Boolean> replyTo;
+
     public IsClosed(ActorRef<Boolean> replyTo) {
       this.replyTo = replyTo;
     }
   }
+
   private enum Close implements Command {
     INSTANCE
   }
-  //#commands
+  // #commands
 
-  //#events
+  // #events
   interface Event extends CborSerializable {}
 
   public static final class BidRegistered implements Event {
@@ -210,9 +216,9 @@ class ReplicatedAuctionExample
       this.amount = amount;
     }
   }
-  //#events
+  // #events
 
-  //#state
+  // #state
   static class AuctionState implements CborSerializable {
 
     final boolean stillRunning;
@@ -270,14 +276,14 @@ class ReplicatedAuctionExample
       return !stillRunning && finishedAtDc.isEmpty();
     }
   }
-  //#state
+  // #state
 
   @Override
   public AuctionState emptyState() {
     return new AuctionState(true, setup.initialBid, setup.initialBid.offer, Collections.emptySet());
   }
 
-  //#command-handler
+  // #command-handler
   @Override
   public CommandHandler<Command, Event, AuctionState> commandHandler() {
 
@@ -348,7 +354,7 @@ class ReplicatedAuctionExample
 
     return builder.build();
   }
-  //#command-handler
+  // #command-handler
 
   @Override
   public EventHandler<AuctionState, Event> eventHandler() {
@@ -377,7 +383,7 @@ class ReplicatedAuctionExample
         .build();
   }
 
-  //#event-triggers
+  // #event-triggers
   private void eventTriggers(AuctionFinished event, AuctionState newState) {
     if (newState.finishedAtDc.contains(getReplicationContext().replicaId().id())) {
       if (shouldClose(newState)) {
@@ -387,7 +393,7 @@ class ReplicatedAuctionExample
       context.getSelf().tell(Finish.INSTANCE);
     }
   }
-  //#event-triggers
+  // #event-triggers
 
   private boolean shouldClose(AuctionState state) {
     return setup.responsibleForClosing

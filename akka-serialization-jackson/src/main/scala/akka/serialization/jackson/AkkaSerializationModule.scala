@@ -9,7 +9,7 @@ import com.fasterxml.jackson.databind.{ DeserializationContext, JsonNode, Serial
 import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer
 import akka.annotation.InternalApi
-import akka.serialization.{ SerializationExtension, Serializer, Serializers }
+import akka.serialization.{ JacksonUseAkkaSerialization, SerializationExtension, Serializer, Serializers }
 
 /**
  * INTERNAL API: Adds support for serializing any type using AkkaSerialization
@@ -44,8 +44,8 @@ import akka.serialization.{ SerializationExtension, Serializer, Serializers }
     val manifest = Serializers.manifestFor(serializer, value)
     val serialized = serializer.toBinary(value)
     jgen.writeStartObject()
-    jgen.writeStringField("ser_id", serId.toString)
-    jgen.writeStringField("ser_manifest", manifest)
+    jgen.writeStringField("serId", serId.toString)
+    jgen.writeStringField("serManifest", manifest)
     jgen.writeBinaryField("payload", serialized)
     jgen.writeEndObject()
   }
@@ -70,8 +70,8 @@ import akka.serialization.{ SerializationExtension, Serializer, Serializers }
   def deserialize(jp: JsonParser, ctxt: DeserializationContext): JacksonUseAkkaSerialization = {
     val codec: ObjectCodec = jp.getCodec()
     val jsonNode = codec.readTree[JsonNode](jp)
-    val id = jsonNode.get("ser_id").textValue().toInt
-    val manifest = jsonNode.get("ser_manifest").textValue()
+    val id = jsonNode.get("serId").textValue().toInt
+    val manifest = jsonNode.get("serManifest").textValue()
     val payload = jsonNode.get("payload").binaryValue()
     serialization.deserialize(payload, id, manifest).get.asInstanceOf[JacksonUseAkkaSerialization]
   }

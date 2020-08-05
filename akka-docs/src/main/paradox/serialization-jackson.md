@@ -390,6 +390,17 @@ For the `jackson-cbor` and custom bindings other than `jackson-json` compression
 but can be enabled in the same way as the configuration shown above but replacing `jackson-json` with
 the binding name (for example `jackson-cbor`).
 
+## Using Akka Serialization for embedded types
+
+For types that already have an Akka Serializer defined that are embedded in types serialized with Jackson the @apidoc[JacksonUseAkkaSerialization] @java[interface]@scala[trait]
+can be added to the type to indicate that the type should be serialized using AKka Serialization.
+
+The type will be embedded as an object with the fields:
+
+* serId - the serializer id
+* serManifest - the manifest for the type
+* payload - base64 encoded bytes 
+
 ## Additional configuration
 
 ### Configuration per binding
