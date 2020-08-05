@@ -32,8 +32,8 @@ object JdkOptions extends AutoPlugin {
   def targetJdkScalacOptions(
       targetSystemJdk: Boolean,
       jdk8home: Option[File],
-      fullJavaHomes: Map[String, File]): Seq[String] = {
-    val options = selectOptions(
+      fullJavaHomes: Map[String, File]): Seq[String] =
+    selectOptions(
       targetSystemJdk,
       jdk8home,
       fullJavaHomes,
@@ -45,9 +45,6 @@ object JdkOptions extends AutoPlugin {
       //""java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not
       // "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer". Issue #27079
       (java8home: File) => Seq("-release", "8", "-javabootclasspath", java8home + "/jre/lib/rt.jar"))
-    println("Selecting options: " + options)
-    options
-  }
   def targetJdkJavacOptions(
       targetSystemJdk: Boolean,
       jdk8home: Option[File],
