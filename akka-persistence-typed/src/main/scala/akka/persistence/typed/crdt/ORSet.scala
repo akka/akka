@@ -11,7 +11,6 @@ import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.crdt.ORSet.DeltaOp
 import akka.persistence.typed.internal.{ ManyVersionVector, OneVersionVector, VersionVector }
-import akka.serialization.JacksonUseAkkaSerialization
 
 @ApiMayChange
 object ORSet {
@@ -282,8 +281,7 @@ final class ORSet[A] private[akka] (
     private[akka] val elementsMap: Map[A, ORSet.Dot],
     private[akka] val vvector: VersionVector)
     extends OpCrdt[DeltaOp]
-    with Serializable
-    with JacksonUseAkkaSerialization {
+    with Serializable {
 
   type T = ORSet[A]
   type D = ORSet.DeltaOp

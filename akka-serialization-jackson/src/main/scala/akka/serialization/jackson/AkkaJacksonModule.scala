@@ -23,10 +23,4 @@ class AkkaStreamJacksonModule extends JacksonModule with StreamRefModule {
   override def getModuleName = "AkkaStreamJacksonModule"
 }
 
-object AkkaSerializationJacksonModule extends AkkaJacksonModule
-
-class AkkaSerializationJacksonModule extends JacksonModule with AkkaSerializationModule {
-  override def getModuleName: String = "AkkaSerializationModule"
-}
-
 object AkkaStreamJacksonModule extends AkkaJacksonModule

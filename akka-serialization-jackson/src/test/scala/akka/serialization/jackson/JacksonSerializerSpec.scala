@@ -51,13 +51,13 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Status
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.scaladsl.Behaviors
-import akka.serialization.{
-  JacksonUseAkkaSerialization,
-  Serialization,
-  SerializationExtension,
-  SerializerWithStringManifest
-}
+import akka.serialization.Serialization
+import akka.serialization.SerializationExtension
+import akka.serialization.SerializerWithStringManifest
 import akka.testkit.{ TestActors, TestKit }
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
 
 object ScalaTestMessages {
   trait TestMessage
@@ -117,14 +117,18 @@ object ScalaTestMessages {
   // #jackson-scala-enumeration
 
   //delegate to AkkaSerialization
-  class InnerSerialization(val description: String) extends JacksonUseAkkaSerialization {
+  object HasAkkaSerializer {
+    def apply(description: String): HasAkkaSerializer = new HasAkkaSerializer(description)
+  }
+  // make sure jackson would fail
+  class HasAkkaSerializer private (@JsonIgnore val description: String) {
 
     override def toString: String = s"InnerSerialization($description)"
 
-    def canEqual(other: Any): Boolean = other.isInstanceOf[InnerSerialization]
+    def canEqual(other: Any): Boolean = other.isInstanceOf[HasAkkaSerializer]
 
     override def equals(other: Any): Boolean = other match {
-      case that: InnerSerialization =>
+      case that: HasAkkaSerializer =>
         (that.canEqual(this)) &&
         description == that.description
       case _ => false
@@ -139,12 +143,15 @@ object ScalaTestMessages {
   class InnerSerializationSerializer extends SerializerWithStringManifest {
     override def identifier: Int = 123451
     override def manifest(o: AnyRef): String = "M"
-    override def toBinary(o: AnyRef): Array[Byte] = o.asInstanceOf[InnerSerialization].description.getBytes()
-    override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = new InnerSerialization(new String(bytes))
+    override def toBinary(o: AnyRef): Array[Byte] = o.asInstanceOf[HasAkkaSerializer].description.getBytes()
+    override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = HasAkkaSerializer(new String(bytes))
   }
 
-  final case class WithAkkaSerializer(akkaSerializer: JacksonUseAkkaSerialization) extends TestMessage
-
+  final case class WithAkkaSerializer(
+      @JsonDeserialize(using = classOf[AkkaSerializationDeserializer])
+      @JsonSerialize(using = classOf[AkkaSerializationSerializer])
+      akkaSerializer: HasAkkaSerializer)
+      extends TestMessage
 }
 
 class ScalaTestEventMigration extends JacksonMigration {
@@ -1001,7 +1008,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
     }
 
     "delegate to akka serialization" in {
-      checkSerialization(WithAkkaSerializer(new InnerSerialization("cat")))
+      checkSerialization(WithAkkaSerializer(HasAkkaSerializer("cat")))
     }
 
   }

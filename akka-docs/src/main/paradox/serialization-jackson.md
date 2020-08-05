@@ -392,8 +392,11 @@ the binding name (for example `jackson-cbor`).
 
 ## Using Akka Serialization for embedded types
 
-For types that already have an Akka Serializer defined that are embedded in types serialized with Jackson the @apidoc[JacksonUseAkkaSerialization] @java[interface]@scala[trait]
-can be added to the type to indicate that the type should be serialized using AKka Serialization.
+For types that already have an Akka Serializer defined that are embedded in types serialized with Jackson the @apidoc[AkkaSerializationSerializer] and
+@apidoc[AkkaSerializationDeserializer]. 
+
+The serializer/deserializer are not enabled automatically. The `@JsonSerialize` and `@JsonDeserialize` annotation needs to be added
+to the fields containing the types to be serialized with Akka Serialization.
 
 The type will be embedded as an object with the fields:
 

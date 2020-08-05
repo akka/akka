@@ -4,7 +4,6 @@
 
 package akka.persistence.typed.crdt
 import akka.annotation.ApiMayChange
-import akka.serialization.JacksonUseAkkaSerialization
 
 @ApiMayChange
 object Counter {
@@ -25,7 +24,7 @@ object Counter {
 }
 
 @ApiMayChange
-final case class Counter(value: BigInt) extends OpCrdt[Counter.Updated] with JacksonUseAkkaSerialization {
+final case class Counter(value: BigInt) extends OpCrdt[Counter.Updated] {
 
   override type T = Counter
 
