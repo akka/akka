@@ -323,7 +323,7 @@ query is still needed as delivery is not guaranteed, but can be configured to po
 events will arrive at the replicas through the cluster.
 
 To enable this feature you first need to enable event publishing on the @scala[`EventSourcedBehavior`]@java[`ReplicatedEventSourcedBehavior`] with `withEventPublishing` 
-and then enable direct replication through `withDirectReplication(true)` on @apidoc[ReplicatedShardingSettings] (if not using
+and then enable direct replication through `withDirectReplication(true)` on @apidoc[ReplicatedEntityProvider] (if not using
  replicated sharding the replication can be run standalone by starting the @apidoc[ShardingDirectReplication] actor).
 
 The "event publishing" feature publishes each event to the local system event bus as a side effect after it has been written, 

@@ -18,7 +18,7 @@ import akka.annotation.ApiMayChange
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 
 @ApiMayChange
-object ReplicatedShardingSettings {
+object ReplicatedEntityProvider {
 
   /**
    * Java API:
@@ -33,7 +33,7 @@ object ReplicatedShardingSettings {
         JEntityTypeKey[M],
         ReplicaId,
         JSet[ReplicaId],
-        ReplicaSettings[M, E]]): ReplicatedShardingSettings[M, E] = {
+        ReplicatedEntity[M, E]]): ReplicatedEntityProvider[M, E] = {
     implicit val classTag: ClassTag[M] = ClassTag(messageClass)
     apply[M, E](allReplicaIds.asScala.toSet)((key, replica, _) =>
       settingsPerReplicaFactory(key.asInstanceOf[EntityTypeKeyImpl[M]], replica, allReplicaIds))
@@ -46,9 +46,9 @@ object ReplicatedShardingSettings {
    * @tparam E The type for envelopes used for sending `M`s over sharding
    */
   def apply[M: ClassTag, E](allReplicaIds: Set[ReplicaId])(
-      settingsPerReplicaFactory: (EntityTypeKey[M], ReplicaId, Set[ReplicaId]) => ReplicaSettings[M, E])
-      : ReplicatedShardingSettings[M, E] = {
-    new ReplicatedShardingSettings(allReplicaIds.map { replicaId =>
+      settingsPerReplicaFactory: (EntityTypeKey[M], ReplicaId, Set[ReplicaId]) => ReplicatedEntity[M, E])
+      : ReplicatedEntityProvider[M, E] = {
+    new ReplicatedEntityProvider(allReplicaIds.map { replicaId =>
       val typeKey = EntityTypeKey[M](replicaId.id)
       settingsPerReplicaFactory(typeKey, replicaId, allReplicaIds)
     }.toVector, directReplication = false)
@@ -60,8 +60,8 @@ object ReplicatedShardingSettings {
  * @tparam E The type for envelopes used for sending `M`s over sharding
  */
 @ApiMayChange
-final class ReplicatedShardingSettings[M, E] private (
-    val replicas: immutable.Seq[ReplicaSettings[M, E]],
+final class ReplicatedEntityProvider[M, E] private (
+    val replicas: immutable.Seq[ReplicatedEntity[M, E]],
     val directReplication: Boolean) {
 
   /**
@@ -71,13 +71,13 @@ final class ReplicatedShardingSettings[M, E] private (
    * to work.
    *
    */
-  def withDirectReplication(enabled: Boolean): ReplicatedShardingSettings[M, E] =
-    new ReplicatedShardingSettings(replicas, directReplication = enabled)
+  def withDirectReplication(enabled: Boolean): ReplicatedEntityProvider[M, E] =
+    new ReplicatedEntityProvider(replicas, directReplication = enabled)
 
 }
 
 @ApiMayChange
-object ReplicaSettings {
+object ReplicatedEntity {
 
   /**
    * Java API: Defines the [[akka.cluster.sharding.typed.javadsl.Entity]] to use for a given replica, note that the behavior
@@ -85,7 +85,7 @@ object ReplicaSettings {
    * [[akka.actor.typed.Behavior]] but must never be a regular [[akka.persistence.typed.javadsl.EventSourcedBehavior]]
    * as that requires a single writer and that would cause it to have multiple writers.
    */
-  def create[M, E](replicaId: ReplicaId, entity: JEntity[M, E]): ReplicaSettings[M, E] =
+  def create[M, E](replicaId: ReplicaId, entity: JEntity[M, E]): ReplicatedEntity[M, E] =
     apply(replicaId, entity.toScala)
 
   /**
@@ -94,12 +94,12 @@ object ReplicaSettings {
    * [[akka.actor.typed.Behavior]] but must never be a regular [[akka.persistence.typed.scaladsl.EventSourcedBehavior]]
    * as that requires a single writer and that would cause it to have multiple writers.
    */
-  def apply[M, E](replicaId: ReplicaId, entity: Entity[M, E]): ReplicaSettings[M, E] =
-    new ReplicaSettings(replicaId, entity)
+  def apply[M, E](replicaId: ReplicaId, entity: Entity[M, E]): ReplicatedEntity[M, E] =
+    new ReplicatedEntity(replicaId, entity)
 }
 
 /**
  * Settings for a specific replica id in replicated sharding
  */
 @ApiMayChange
-final class ReplicaSettings[M, E] private (val replicaId: ReplicaId, val entity: Entity[M, E])
+final class ReplicatedEntity[M, E] private (val replicaId: ReplicaId, val entity: Entity[M, E])

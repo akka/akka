@@ -45,7 +45,7 @@ trait ReplicatedShardingExtension extends Extension {
    *
    * Note, multiple calls on the same node will not start new sharding instances but will return a new instance of [[ReplicatedSharding]]
    */
-  def init[M, E](settings: ReplicatedShardingSettings[M, E]): ReplicatedSharding[M, E]
+  def init[M, E](settings: ReplicatedEntityProvider[M, E]): ReplicatedSharding[M, E]
 }
 
 /**
