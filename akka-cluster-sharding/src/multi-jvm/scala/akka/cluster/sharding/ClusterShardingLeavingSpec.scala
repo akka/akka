@@ -48,7 +48,7 @@ abstract class ClusterShardingLeavingSpecConfig(mode: String)
       loglevel = "DEBUG",
       additionalConfig = """
         akka.cluster.sharding.verbose-debug-logging = on
-        akka.cluster.sharding.rebalance-interval = 120 s
+        akka.cluster.sharding.rebalance-interval = 1s # make it more likely to happen 
         akka.cluster.sharding.distributed-data.majority-min-cap = 1
         akka.cluster.sharding.coordinator-state.write-majority-plus = 1
         akka.cluster.sharding.coordinator-state.read-majority-plus = 1
