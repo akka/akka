@@ -492,7 +492,6 @@ object ShardCoordinator {
     }
 
     private def acked(shardRegion: ActorRef) = {
-      context.unwatch(shardRegion)
       remaining -= shardRegion
       if (remaining.isEmpty) {
         log.debug("All shard regions acked, handing off shard [{}].", shard)
@@ -892,9 +891,9 @@ abstract class ShardCoordinator(
     }
   }
 
-  def regionTerminated(ref: ActorRef): Unit =
+  def regionTerminated(ref: ActorRef): Unit = {
+    rebalanceWorkers.foreach(_ ! RebalanceWorker.ShardRegionTerminated(ref))
     if (state.regions.contains(ref)) {
-      rebalanceWorkers.foreach(_ ! RebalanceWorker.ShardRegionTerminated(ref))
       log.debug("ShardRegion terminated: [{}]", ref)
       regionTerminationInProgress += ref
       state.regions(ref).foreach { s =>
@@ -909,6 +908,7 @@ abstract class ShardCoordinator(
         allocateShardHomesForRememberEntities()
       }
     }
+  }
 
   def regionProxyTerminated(ref: ActorRef): Unit =
     if (state.regionProxies.contains(ref)) {
