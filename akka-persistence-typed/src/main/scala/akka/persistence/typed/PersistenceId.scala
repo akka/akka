@@ -4,7 +4,6 @@
 
 package akka.persistence.typed
 import akka.annotation.ApiMayChange
-import akka.annotation.InternalApi
 
 object PersistenceId {
 
