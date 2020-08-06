@@ -32,7 +32,7 @@ object ORSet {
    */
   @InternalApi private[akka] type Dot = VersionVector
 
-  sealed trait DeltaOp extends Serializable {
+  sealed trait DeltaOp {
     def merge(that: DeltaOp): DeltaOp
   }
 
@@ -275,13 +275,11 @@ object ORSet {
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
 @ApiMayChange
-@SerialVersionUID(1L)
 final class ORSet[A] private[akka] (
     val originReplica: String,
     private[akka] val elementsMap: Map[A, ORSet.Dot],
     private[akka] val vvector: VersionVector)
-    extends OpCrdt[DeltaOp]
-    with Serializable {
+    extends OpCrdt[DeltaOp] {
 
   type T = ORSet[A]
   type D = ORSet.DeltaOp

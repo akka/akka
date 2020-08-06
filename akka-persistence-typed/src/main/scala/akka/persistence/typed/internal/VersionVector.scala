@@ -13,7 +13,7 @@ import akka.annotation.InternalApi
  * VersionVector module with helper classes and methods.
  */
 @InternalApi
-object VersionVector {
+private[akka] object VersionVector {
 
   private val emptyVersions: TreeMap[String, Long] = TreeMap.empty
   val empty: VersionVector = ManyVersionVector(emptyVersions)
@@ -71,9 +71,8 @@ object VersionVector {
  *
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
-@SerialVersionUID(1L)
 @InternalApi
-sealed abstract class VersionVector extends Serializable {
+private[akka] sealed abstract class VersionVector {
 
   type T = VersionVector
 

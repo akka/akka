@@ -14,9 +14,6 @@ import akka.util.ccompat.JavaConverters._
 /**
  * INTERNAL API
  */
-// FIXME, parts of this can be set during initialisation
-// Other fields will be set before executing the event handler as they change per event
-// https://github.com/akka/akka/issues/29258
 @InternalApi
 private[akka] final class ReplicationContextImpl(
     val entityId: String,
