@@ -20,6 +20,8 @@ object ReplicationSnapshotSpec {
 
   import ReplicatedEventSourcingSpec._
 
+  val EntityType = "SpapsnotSpec"
+
   def behaviorWithSnapshotting(entityId: String, replicaId: ReplicaId): Behavior[Command] =
     behaviorWithSnapshotting(entityId, replicaId, None)
 
@@ -34,6 +36,7 @@ object ReplicationSnapshotSpec {
       replicaId: ReplicaId,
       probe: Option[ActorRef[EventAndContext]]): Behavior[Command] = {
     ReplicatedEventSourcing.withSharedJournal(
+      EntityType,
       entityId,
       replicaId,
       AllReplicas,
@@ -81,7 +84,7 @@ class ReplicationSnapshotSpec
         snapshotTestKit.expectNextPersisted(persistenceIdR2, State(List("r1 2", "r1 1")))
 
         r2.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-          PersistenceId.replicatedUniqueId(entityId, R1),
+          PersistenceId.replicatedId(EntityType, entityId, R1),
           1L,
           "two-again",
           System.currentTimeMillis(),
@@ -95,7 +98,7 @@ class ReplicationSnapshotSpec
       {
         val r2 = spawn(behaviorWithSnapshotting(entityId, R2, r2EventProbe.ref))
         r2.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-          PersistenceId.replicatedUniqueId(entityId, R1),
+          PersistenceId.replicatedId(EntityType, entityId, R1),
           1L,
           "two-again",
           System.currentTimeMillis(),

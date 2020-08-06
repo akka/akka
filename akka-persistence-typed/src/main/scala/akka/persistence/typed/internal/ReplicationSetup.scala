@@ -16,6 +16,7 @@ import akka.util.ccompat.JavaConverters._
  */
 @InternalApi
 private[akka] final class ReplicationContextImpl(
+    val entityTypeHint: String,
     val entityId: String,
     val replicaId: ReplicaId,
     val replicasAndQueryPlugins: Map[ReplicaId, String])
@@ -64,7 +65,7 @@ private[akka] final class ReplicationContextImpl(
     _concurrent
   }
 
-  override def persistenceId: PersistenceId = PersistenceId.replicatedUniqueId(entityId, replicaId)
+  override def persistenceId: PersistenceId = PersistenceId.replicatedId(entityTypeHint, entityId, replicaId)
 
   override def currentTimeMillis(): Long = {
     WallClock.AlwaysIncreasingClock.currentTimeMillis()

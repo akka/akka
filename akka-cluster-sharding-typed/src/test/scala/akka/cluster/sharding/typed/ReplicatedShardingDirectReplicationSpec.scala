@@ -37,7 +37,7 @@ class ReplicatedShardingDirectReplicationSpec extends ScalaTestWithActorTestKit 
       upProbe.receiveMessage() // not bullet proof wrt to subscription being complete but good enough
 
       val event = PublishedEventImpl(
-        PersistenceId.replicatedUniqueId("pid", ReplicaId("ReplicaA")),
+        PersistenceId.replicatedId("ReplicatedShardingSpec", "pid", ReplicaId("ReplicaA")),
         1L,
         "event",
         System.currentTimeMillis(),

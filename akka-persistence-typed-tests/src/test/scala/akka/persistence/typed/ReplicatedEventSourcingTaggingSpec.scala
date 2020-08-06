@@ -42,7 +42,7 @@ object ReplicatedEventSourcingTaggingSpec {
         replica: ReplicaId,
         allReplicas: Set[ReplicaId]): EventSourcedBehavior[Command, String, State] = {
       // #tagging
-      ReplicatedEventSourcing.withSharedJournal(entityId, replica, allReplicas, queryPluginId)(
+      ReplicatedEventSourcing.withSharedJournal("TaggingSpec", entityId, replica, allReplicas, queryPluginId)(
         replicationContext =>
           EventSourcedBehavior[Command, String, State](
             replicationContext.persistenceId,

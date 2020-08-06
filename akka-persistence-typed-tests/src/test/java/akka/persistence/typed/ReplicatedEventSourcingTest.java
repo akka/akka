@@ -80,7 +80,7 @@ public class ReplicatedEventSourcingTest extends JUnitSuite {
 
     public static Behavior<Command> create(
         String entityId, ReplicaId replicaId, Set<ReplicaId> allReplicas) {
-      return ReplicatedEventSourcing.withSharedJournal(
+      return ReplicatedEventSourcing.withSharedJournal("ReplicatedEventSourcingTest",
           entityId,
           replicaId,
           allReplicas,
