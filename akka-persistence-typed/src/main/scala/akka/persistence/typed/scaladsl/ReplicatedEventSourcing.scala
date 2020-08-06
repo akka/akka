@@ -76,18 +76,22 @@ object ReplicatedEventSourcing {
    * can be used for each replica.
    * The events from other replicas are read using PersistentQuery.
    *
+   * @param entityType The name of the entity type e.g. account, user. Made part of the persistence id so that entity ids don't need to be unique across different replicated entities
+   * @param entityId The unique entity id
    * @param replicaId The unique identity for this entity. The underlying persistence id will include the replica.
    * @param allReplicaIds All replica ids. These need to be known to receive events from all replicas.
    * @param queryPluginId A single query plugin used to read the events from other replicas. Must be the query side of your configured journal plugin.
    */
   def withSharedJournal[Command, Event, State](
+      entityType: String,
       entityId: String,
       replicaId: ReplicaId,
       allReplicaIds: Set[ReplicaId],
       queryPluginId: String)(
       eventSourcedBehaviorFactory: ReplicationContext => EventSourcedBehavior[Command, Event, State])
       : EventSourcedBehavior[Command, Event, State] =
-    apply(entityId, replicaId, allReplicaIds.map(id => id -> queryPluginId).toMap)(eventSourcedBehaviorFactory)
+    apply(entityType, entityId, replicaId, allReplicaIds.map(id => id -> queryPluginId).toMap)(
+      eventSourcedBehaviorFactory)
 
   /**
    * Initialize a replicated event sourced behavior.
@@ -101,17 +105,20 @@ object ReplicatedEventSourcing {
    * A query side identifier is passed per replica allowing for separate database/journal configuration per
    * replica. The events from other replicas are read using PersistentQuery.
    *
+   * @param entityType The name of the entity type e.g. account, user. Made part of the persistence id so that entity ids don't need to be unique across different replicated entities
+   * @param entityId The unique entity id
    * @param replicaId The unique identity for this entity. The underlying persistence id will include the replica.
    * @param allReplicasAndQueryPlugins All replica ids and a query plugin per replica id. These need to be known to receive events from all replicas
    *                                   and configured with the query plugin for the journal that each replica uses.
    */
   def apply[Command, Event, State](
+      entityType: String,
       entityId: String,
       replicaId: ReplicaId,
       allReplicasAndQueryPlugins: Map[ReplicaId, String])(
       eventSourcedBehaviorFactory: ReplicationContext => EventSourcedBehavior[Command, Event, State])
       : EventSourcedBehavior[Command, Event, State] = {
-    val context = new ReplicationContextImpl(entityId, replicaId, allReplicasAndQueryPlugins)
+    val context = new ReplicationContextImpl(entityType, entityId, replicaId, allReplicasAndQueryPlugins)
     eventSourcedBehaviorFactory(context).withReplication(context)
   }
 

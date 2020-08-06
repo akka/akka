@@ -27,6 +27,7 @@ object LwwSpec {
 
     def apply(entityId: String, replica: ReplicaId): Behavior[Command] = {
       ReplicatedEventSourcing.withSharedJournal(
+        "LwwRegistrySpec",
         entityId,
         replica,
         AllReplicas,

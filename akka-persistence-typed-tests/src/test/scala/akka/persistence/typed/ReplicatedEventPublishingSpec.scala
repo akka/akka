@@ -20,6 +20,8 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 object ReplicatedEventPublishingSpec {
 
+  val EntityType = "EventPublishingSpec"
+
   object MyReplicatedBehavior {
     trait Command
     case class Add(text: String, replyTo: ActorRef[Done]) extends Command
@@ -29,13 +31,14 @@ object ReplicatedEventPublishingSpec {
     def apply(entityId: String, replicaId: ReplicaId, allReplicas: Set[ReplicaId]): Behavior[Command] =
       Behaviors.setup { ctx =>
         ReplicatedEventSourcing.withSharedJournal(
+          EntityType,
           entityId,
           replicaId,
           allReplicas,
           PersistenceTestKitReadJournal.Identifier)(
-          replicationctx =>
+          replicationContext =>
             EventSourcedBehavior[Command, String, Set[String]](
-              replicationctx.persistenceId,
+              replicationContext.persistenceId,
               Set.empty,
               (state, command) =>
                 command match {
@@ -83,7 +86,7 @@ class ReplicatedEventPublishingSpec
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId(id, DCB),
+        PersistenceId.replicatedId(EntityType, id, DCB),
         1L,
         "two",
         System.currentTimeMillis(),
@@ -104,7 +107,7 @@ class ReplicatedEventPublishingSpec
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId(id, DCB),
+        PersistenceId.replicatedId(EntityType, id, DCB),
         2L, // missing 1L
         "two",
         System.currentTimeMillis(),
@@ -125,7 +128,7 @@ class ReplicatedEventPublishingSpec
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId(id, DCC),
+        PersistenceId.replicatedId(EntityType, id, DCC),
         1L,
         "two",
         System.currentTimeMillis(),
@@ -146,14 +149,14 @@ class ReplicatedEventPublishingSpec
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId("myId4", DCB),
+        PersistenceId.replicatedId(EntityType, "myId4", DCB),
         1L,
         "two",
         System.currentTimeMillis(),
         Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
       // simulate another published event from that replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId(id, DCB),
+        PersistenceId.replicatedId(EntityType, id, DCB),
         1L,
         "two-again", // ofc this would be the same in the real world, different just so we can detect
         System.currentTimeMillis(),
@@ -185,7 +188,7 @@ class ReplicatedEventPublishingSpec
 
       // simulate a published event from another replica
       incarnation2.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId(id, DCB),
+        PersistenceId.replicatedId(EntityType, id, DCB),
         1L,
         "two",
         System.currentTimeMillis(),
@@ -208,7 +211,7 @@ class ReplicatedEventPublishingSpec
 
       // simulate a published event from another replica
       incarnationA1.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId(id, DCB),
+        PersistenceId.replicatedId(EntityType, id, DCB),
         1L,
         "two",
         System.currentTimeMillis(),
@@ -221,7 +224,7 @@ class ReplicatedEventPublishingSpec
 
       // simulate a published event from another replica
       incarnationA2.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedUniqueId(id, DCB),
+        PersistenceId.replicatedId(EntityType, id, DCB),
         2L,
         "three",
         System.currentTimeMillis(),

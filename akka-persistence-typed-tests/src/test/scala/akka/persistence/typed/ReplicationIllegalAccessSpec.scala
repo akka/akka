@@ -28,7 +28,12 @@ object ReplicationIllegalAccessSpec {
   case class State(all: List[String]) extends CborSerializable
 
   def apply(entityId: String, replica: ReplicaId): Behavior[Command] = {
-    ReplicatedEventSourcing.withSharedJournal(entityId, replica, AllReplicas, PersistenceTestKitReadJournal.Identifier)(
+    ReplicatedEventSourcing.withSharedJournal(
+      "IllegalAccessSpec",
+      entityId,
+      replica,
+      AllReplicas,
+      PersistenceTestKitReadJournal.Identifier)(
       replicationContext =>
         EventSourcedBehavior[Command, String, State](
           replicationContext.persistenceId,
@@ -85,10 +90,14 @@ class ReplicationIllegalAccessSpec
     }
     "detect illegal access in the factory" in {
       val exception = intercept[UnsupportedOperationException] {
-        ReplicatedEventSourcing.withSharedJournal("id2", R1, AllReplicas, PersistenceTestKitReadJournal.Identifier) {
-          replicationContext =>
-            replicationContext.origin
-            ???
+        ReplicatedEventSourcing.withSharedJournal(
+          "IllegalAccessSpec",
+          "id2",
+          R1,
+          AllReplicas,
+          PersistenceTestKitReadJournal.Identifier) { replicationContext =>
+          replicationContext.origin
+          ???
         }
       }
       exception.getMessage should include("from the event handler")

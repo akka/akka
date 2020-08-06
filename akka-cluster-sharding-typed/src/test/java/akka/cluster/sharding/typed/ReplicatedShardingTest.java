@@ -67,6 +67,7 @@ public class ReplicatedShardingTest extends JUnitSuite {
     static Behavior<Command> create(
         String entityId, ReplicaId replicaId, Set<ReplicaId> allReplicas) {
       return ReplicatedEventSourcing.withSharedJournal(
+          "StringSet",
           entityId,
           replicaId,
           allReplicas,

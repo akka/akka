@@ -24,14 +24,15 @@ object ReplicatedEventSourcingCompileOnlySpec {
   trait Event
 
   //#factory-shared
-  ReplicatedEventSourcing.withSharedJournal("entityId", DCA, AllReplicas, queryPluginId) { context =>
+  ReplicatedEventSourcing.withSharedJournal("entityTypeHint", "entityId", DCA, AllReplicas, queryPluginId) { context =>
     EventSourcedBehavior[Command, State, Event](???, ???, ???, ???)
   }
   //#factory-shared
 
   //#factory
-  ReplicatedEventSourcing("entityId", DCA, Map(DCA -> "journalForDCA", DCB -> "journalForDCB")) { context =>
-    EventSourcedBehavior[Command, State, Event](???, ???, ???, ???)
+  ReplicatedEventSourcing("entityTypeHint", "entityId", DCA, Map(DCA -> "journalForDCA", DCB -> "journalForDCB")) {
+    context =>
+      EventSourcedBehavior[Command, State, Event](???, ???, ???, ???)
   }
   //#factory
 

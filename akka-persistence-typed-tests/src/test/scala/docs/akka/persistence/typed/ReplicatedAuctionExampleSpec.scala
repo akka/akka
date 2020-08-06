@@ -218,15 +218,18 @@ object ReplicatedAuctionExampleSpec {
 
   def behavior(replica: ReplicaId, setup: AuctionSetup): Behavior[AuctionCommand] = Behaviors.setup[AuctionCommand] {
     ctx =>
-      ReplicatedEventSourcing
-        .withSharedJournal(setup.name, replica, setup.allReplicas, PersistenceTestKitReadJournal.Identifier) {
-          replicationCtx =>
-            EventSourcedBehavior(
-              replicationCtx.persistenceId,
-              initialState(setup),
-              commandHandler(setup, ctx, replicationCtx),
-              eventHandler(ctx, replicationCtx, setup))
-        }
+      ReplicatedEventSourcing.withSharedJournal(
+        "auction",
+        setup.name,
+        replica,
+        setup.allReplicas,
+        PersistenceTestKitReadJournal.Identifier) { replicationCtx =>
+        EventSourcedBehavior(
+          replicationCtx.persistenceId,
+          initialState(setup),
+          commandHandler(setup, ctx, replicationCtx),
+          eventHandler(ctx, replicationCtx, setup))
+      }
   }
 }
 

@@ -28,6 +28,7 @@ object ORSetSpec {
     def apply(entityId: String, replica: ReplicaId): Behavior[ORSetEntity.Command] = {
 
       ReplicatedEventSourcing.withSharedJournal(
+        "ORSetSpec",
         entityId,
         replica,
         AllReplicas,

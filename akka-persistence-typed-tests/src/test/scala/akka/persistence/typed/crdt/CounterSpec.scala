@@ -29,6 +29,7 @@ object CounterSpec {
       eventProbe: Option[ActorRef[Counter.Updated]] = None) =
     Behaviors.setup[PlainCounter.Command] { context =>
       ReplicatedEventSourcing.withSharedJournal(
+        "CounterSpec",
         entityId,
         replicaId,
         AllReplicas,
