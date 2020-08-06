@@ -165,7 +165,7 @@ private[akka] object Running {
           // needs to be outside of the restart source so that it actually cancels when terminating the replica
           .via(ActorFlow
             .ask[EventEnvelope, ReplicatedEventEnvelope[E], ReplicatedEventAck.type](ref) { (eventEnvelope, replyTo) =>
-              // Need to handle this not being available migration from non-active-active is supported
+              // Need to handle this not being available migration from non-replicated is supported
               val meta = eventEnvelope.eventMetadata.get.asInstanceOf[ReplicatedEventMetadata]
               val re =
                 ReplicatedEvent[E](
