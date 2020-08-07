@@ -7058,6 +7058,17 @@ public final class ClusterMessages {
      * <code>required .VectorClock version = 3;</code>
      */
     akka.cluster.protobuf.msg.ClusterMessages.VectorClockOrBuilder getVersionOrBuilder();
+
+    /**
+     * <code>optional bytes seenDigest = 4;</code>
+     * @return Whether the seenDigest field is set.
+     */
+    boolean hasSeenDigest();
+    /**
+     * <code>optional bytes seenDigest = 4;</code>
+     * @return The seenDigest.
+     */
+    akka.protobufv3.internal.ByteString getSeenDigest();
   }
   /**
    * <pre>
@@ -7078,6 +7089,7 @@ public final class ClusterMessages {
     }
     private GossipStatus() {
       allHashes_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      seenDigest_ = akka.protobufv3.internal.ByteString.EMPTY;
     }
 
     @java.lang.Override
@@ -7144,6 +7156,11 @@ public final class ClusterMessages {
                 version_ = subBuilder.buildPartial();
               }
               bitField0_ |= 0x00000002;
+              break;
+            }
+            case 34: {
+              bitField0_ |= 0x00000004;
+              seenDigest_ = input.readBytes();
               break;
             }
             default: {
@@ -7263,6 +7280,23 @@ public final class ClusterMessages {
       return version_ == null ? akka.cluster.protobuf.msg.ClusterMessages.VectorClock.getDefaultInstance() : version_;
     }
 
+    public static final int SEENDIGEST_FIELD_NUMBER = 4;
+    private akka.protobufv3.internal.ByteString seenDigest_;
+    /**
+     * <code>optional bytes seenDigest = 4;</code>
+     * @return Whether the seenDigest field is set.
+     */
+    public boolean hasSeenDigest() {
+      return ((bitField0_ & 0x00000004) != 0);
+    }
+    /**
+     * <code>optional bytes seenDigest = 4;</code>
+     * @return The seenDigest.
+     */
+    public akka.protobufv3.internal.ByteString getSeenDigest() {
+      return seenDigest_;
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -7302,6 +7336,9 @@ public final class ClusterMessages {
       if (((bitField0_ & 0x00000002) != 0)) {
         output.writeMessage(3, getVersion());
       }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        output.writeBytes(4, seenDigest_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -7326,6 +7363,10 @@ public final class ClusterMessages {
       if (((bitField0_ & 0x00000002) != 0)) {
         size += akka.protobufv3.internal.CodedOutputStream
           .computeMessageSize(3, getVersion());
+      }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeBytesSize(4, seenDigest_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -7354,6 +7395,11 @@ public final class ClusterMessages {
         if (!getVersion()
             .equals(other.getVersion())) return false;
       }
+      if (hasSeenDigest() != other.hasSeenDigest()) return false;
+      if (hasSeenDigest()) {
+        if (!getSeenDigest()
+            .equals(other.getSeenDigest())) return false;
+      }
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -7376,6 +7422,10 @@ public final class ClusterMessages {
       if (hasVersion()) {
         hash = (37 * hash) + VERSION_FIELD_NUMBER;
         hash = (53 * hash) + getVersion().hashCode();
+      }
+      if (hasSeenDigest()) {
+        hash = (37 * hash) + SEENDIGEST_FIELD_NUMBER;
+        hash = (53 * hash) + getSeenDigest().hashCode();
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -7531,6 +7581,8 @@ public final class ClusterMessages {
           versionBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000004);
+        seenDigest_ = akka.protobufv3.internal.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
 
@@ -7580,6 +7632,10 @@ public final class ClusterMessages {
           }
           to_bitField0_ |= 0x00000002;
         }
+        if (((from_bitField0_ & 0x00000008) != 0)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.seenDigest_ = seenDigest_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -7644,6 +7700,9 @@ public final class ClusterMessages {
         }
         if (other.hasVersion()) {
           mergeVersion(other.getVersion());
+        }
+        if (other.hasSeenDigest()) {
+          setSeenDigest(other.getSeenDigest());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -8034,6 +8093,46 @@ public final class ClusterMessages {
           version_ = null;
         }
         return versionBuilder_;
+      }
+
+      private akka.protobufv3.internal.ByteString seenDigest_ = akka.protobufv3.internal.ByteString.EMPTY;
+      /**
+       * <code>optional bytes seenDigest = 4;</code>
+       * @return Whether the seenDigest field is set.
+       */
+      public boolean hasSeenDigest() {
+        return ((bitField0_ & 0x00000008) != 0);
+      }
+      /**
+       * <code>optional bytes seenDigest = 4;</code>
+       * @return The seenDigest.
+       */
+      public akka.protobufv3.internal.ByteString getSeenDigest() {
+        return seenDigest_;
+      }
+      /**
+       * <code>optional bytes seenDigest = 4;</code>
+       * @param value The seenDigest to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSeenDigest(akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000008;
+        seenDigest_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bytes seenDigest = 4;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSeenDigest() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        seenDigest_ = getDefaultInstance().getSeenDigest();
+        onChanged();
+        return this;
       }
       @java.lang.Override
       public final Builder setUnknownFields(
@@ -21819,46 +21918,46 @@ public final class ClusterMessages {
       "iqueAddress\022\022\n\nsequenceNr\030\002 \001(\003\022\024\n\014creat" +
       "ionTime\030\003 \001(\003\"d\n\016GossipEnvelope\022\034\n\004from\030" +
       "\001 \002(\0132\016.UniqueAddress\022\032\n\002to\030\002 \002(\0132\016.Uniq" +
-      "ueAddress\022\030\n\020serializedGossip\030\003 \002(\014\"^\n\014G" +
+      "ueAddress\022\030\n\020serializedGossip\030\003 \002(\014\"r\n\014G" +
       "ossipStatus\022\034\n\004from\030\001 \002(\0132\016.UniqueAddres" +
       "s\022\021\n\tallHashes\030\002 \003(\t\022\035\n\007version\030\003 \002(\0132\014." +
-      "VectorClock\"\317\001\n\006Gossip\022$\n\014allAddresses\030\001" +
-      " \003(\0132\016.UniqueAddress\022\020\n\010allRoles\030\002 \003(\t\022\021" +
-      "\n\tallHashes\030\003 \003(\t\022\030\n\007members\030\004 \003(\0132\007.Mem" +
-      "ber\022!\n\010overview\030\005 \002(\0132\017.GossipOverview\022\035" +
-      "\n\007version\030\006 \002(\0132\014.VectorClock\022\036\n\ntombsto" +
-      "nes\030\007 \003(\0132\n.Tombstone\"S\n\016GossipOverview\022" +
-      "\014\n\004seen\030\001 \003(\005\0223\n\024observerReachability\030\002 " +
-      "\003(\0132\025.ObserverReachability\"p\n\024ObserverRe" +
-      "achability\022\024\n\014addressIndex\030\001 \002(\005\022\017\n\007vers" +
-      "ion\030\004 \002(\003\0221\n\023subjectReachability\030\002 \003(\0132\024" +
-      ".SubjectReachability\"a\n\023SubjectReachabil" +
-      "ity\022\024\n\014addressIndex\030\001 \002(\005\022#\n\006status\030\003 \002(" +
-      "\0162\023.ReachabilityStatus\022\017\n\007version\030\004 \002(\003\"" +
-      "4\n\tTombstone\022\024\n\014addressIndex\030\001 \002(\005\022\021\n\tti" +
-      "mestamp\030\002 \002(\003\"i\n\006Member\022\024\n\014addressIndex\030" +
-      "\001 \002(\005\022\020\n\010upNumber\030\002 \002(\005\022\035\n\006status\030\003 \002(\0162" +
-      "\r.MemberStatus\022\030\n\014rolesIndexes\030\004 \003(\005B\002\020\001" +
-      "\"y\n\013VectorClock\022\021\n\ttimestamp\030\001 \001(\003\022&\n\010ve" +
-      "rsions\030\002 \003(\0132\024.VectorClock.Version\032/\n\007Ve" +
-      "rsion\022\021\n\thashIndex\030\001 \002(\005\022\021\n\ttimestamp\030\002 " +
-      "\002(\003\"\007\n\005Empty\"K\n\007Address\022\016\n\006system\030\001 \002(\t\022" +
-      "\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010proto" +
-      "col\030\004 \001(\t\"E\n\rUniqueAddress\022\031\n\007address\030\001 " +
-      "\002(\0132\010.Address\022\013\n\003uid\030\002 \002(\r\022\014\n\004uid2\030\003 \001(\r" +
-      "\"V\n\021ClusterRouterPool\022\023\n\004pool\030\001 \002(\0132\005.Po" +
-      "ol\022,\n\010settings\030\002 \002(\0132\032.ClusterRouterPool" +
-      "Settings\"<\n\004Pool\022\024\n\014serializerId\030\001 \002(\r\022\020" +
-      "\n\010manifest\030\002 \002(\t\022\014\n\004data\030\003 \002(\014\"\216\001\n\031Clust" +
-      "erRouterPoolSettings\022\026\n\016totalInstances\030\001" +
-      " \002(\r\022\033\n\023maxInstancesPerNode\030\002 \002(\r\022\031\n\021all" +
-      "owLocalRoutees\030\003 \002(\010\022\017\n\007useRole\030\004 \001(\t\022\020\n" +
-      "\010useRoles\030\005 \003(\t*D\n\022ReachabilityStatus\022\r\n" +
-      "\tReachable\020\000\022\017\n\013Unreachable\020\001\022\016\n\nTermina" +
-      "ted\020\002*b\n\014MemberStatus\022\013\n\007Joining\020\000\022\006\n\002Up" +
-      "\020\001\022\013\n\007Leaving\020\002\022\013\n\007Exiting\020\003\022\010\n\004Down\020\004\022\013" +
-      "\n\007Removed\020\005\022\014\n\010WeaklyUp\020\006B\035\n\031akka.cluste" +
-      "r.protobuf.msgH\001"
+      "VectorClock\022\022\n\nseenDigest\030\004 \001(\014\"\317\001\n\006Goss" +
+      "ip\022$\n\014allAddresses\030\001 \003(\0132\016.UniqueAddress" +
+      "\022\020\n\010allRoles\030\002 \003(\t\022\021\n\tallHashes\030\003 \003(\t\022\030\n" +
+      "\007members\030\004 \003(\0132\007.Member\022!\n\010overview\030\005 \002(" +
+      "\0132\017.GossipOverview\022\035\n\007version\030\006 \002(\0132\014.Ve" +
+      "ctorClock\022\036\n\ntombstones\030\007 \003(\0132\n.Tombston" +
+      "e\"S\n\016GossipOverview\022\014\n\004seen\030\001 \003(\005\0223\n\024obs" +
+      "erverReachability\030\002 \003(\0132\025.ObserverReacha" +
+      "bility\"p\n\024ObserverReachability\022\024\n\014addres" +
+      "sIndex\030\001 \002(\005\022\017\n\007version\030\004 \002(\003\0221\n\023subject" +
+      "Reachability\030\002 \003(\0132\024.SubjectReachability" +
+      "\"a\n\023SubjectReachability\022\024\n\014addressIndex\030" +
+      "\001 \002(\005\022#\n\006status\030\003 \002(\0162\023.ReachabilityStat" +
+      "us\022\017\n\007version\030\004 \002(\003\"4\n\tTombstone\022\024\n\014addr" +
+      "essIndex\030\001 \002(\005\022\021\n\ttimestamp\030\002 \002(\003\"i\n\006Mem" +
+      "ber\022\024\n\014addressIndex\030\001 \002(\005\022\020\n\010upNumber\030\002 " +
+      "\002(\005\022\035\n\006status\030\003 \002(\0162\r.MemberStatus\022\030\n\014ro" +
+      "lesIndexes\030\004 \003(\005B\002\020\001\"y\n\013VectorClock\022\021\n\tt" +
+      "imestamp\030\001 \001(\003\022&\n\010versions\030\002 \003(\0132\024.Vecto" +
+      "rClock.Version\032/\n\007Version\022\021\n\thashIndex\030\001" +
+      " \002(\005\022\021\n\ttimestamp\030\002 \002(\003\"\007\n\005Empty\"K\n\007Addr" +
+      "ess\022\016\n\006system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n" +
+      "\004port\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t\"E\n\rUniqueA" +
+      "ddress\022\031\n\007address\030\001 \002(\0132\010.Address\022\013\n\003uid" +
+      "\030\002 \002(\r\022\014\n\004uid2\030\003 \001(\r\"V\n\021ClusterRouterPoo" +
+      "l\022\023\n\004pool\030\001 \002(\0132\005.Pool\022,\n\010settings\030\002 \002(\013" +
+      "2\032.ClusterRouterPoolSettings\"<\n\004Pool\022\024\n\014" +
+      "serializerId\030\001 \002(\r\022\020\n\010manifest\030\002 \002(\t\022\014\n\004" +
+      "data\030\003 \002(\014\"\216\001\n\031ClusterRouterPoolSettings" +
+      "\022\026\n\016totalInstances\030\001 \002(\r\022\033\n\023maxInstances" +
+      "PerNode\030\002 \002(\r\022\031\n\021allowLocalRoutees\030\003 \002(\010" +
+      "\022\017\n\007useRole\030\004 \001(\t\022\020\n\010useRoles\030\005 \003(\t*D\n\022R" +
+      "eachabilityStatus\022\r\n\tReachable\020\000\022\017\n\013Unre" +
+      "achable\020\001\022\016\n\nTerminated\020\002*b\n\014MemberStatu" +
+      "s\022\013\n\007Joining\020\000\022\006\n\002Up\020\001\022\013\n\007Leaving\020\002\022\013\n\007E" +
+      "xiting\020\003\022\010\n\004Down\020\004\022\013\n\007Removed\020\005\022\014\n\010Weakl" +
+      "yUp\020\006B\035\n\031akka.cluster.protobuf.msgH\001"
     };
     descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -21917,7 +22016,7 @@ public final class ClusterMessages {
     internal_static_GossipStatus_fieldAccessorTable = new
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_GossipStatus_descriptor,
-        new java.lang.String[] { "From", "AllHashes", "Version", });
+        new java.lang.String[] { "From", "AllHashes", "Version", "SeenDigest", });
     internal_static_Gossip_descriptor =
       getDescriptor().getMessageTypes().get(9);
     internal_static_Gossip_fieldAccessorTable = new

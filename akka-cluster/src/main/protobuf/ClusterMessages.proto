@@ -119,6 +119,7 @@ message GossipStatus {
   required UniqueAddress from = 1;
   repeated string allHashes = 2;
   required VectorClock version = 3;
+  optional bytes seenDigest = 4;
 }
 
 /**
