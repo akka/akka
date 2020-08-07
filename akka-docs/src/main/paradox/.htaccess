@@ -38,3 +38,5 @@ RedirectMatch 301 ^(.*)/typed/cluster-specification\.html$ $1/typed/cluster-conc
 RedirectMatch 301 ^(.*)/additional/observability\.html$ $1/additional/operations.html
 
 RedirectMatch 301 ^(.*)/stream/stream-integrations\.html$ $1/stream/actor-interop.html
+
+RedirectMatch 301 ^(.*)/additional/deploy\.html$ $1/additional/deploying.html
