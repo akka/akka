@@ -94,24 +94,30 @@ class ClusterSingletonManagerLeaseSpec
       awaitClusterUp(controller, first)
       enterBarrier("initial-up")
       runOn(second) {
-        joinWithin(first)
-        awaitAssert({
-          cluster.state.members.toList.map(_.status) shouldEqual List(Up, Up, Up)
-        }, 10.seconds)
+        within(10.seconds) {
+          joinWithin(first)
+          awaitAssert {
+            cluster.state.members.toList.map(_.status) shouldEqual List(Up, Up, Up)
+          }
+        }
       }
       enterBarrier("second-up")
       runOn(third) {
-        joinWithin(first)
-        awaitAssert({
-          cluster.state.members.toList.map(_.status) shouldEqual List(Up, Up, Up, Up)
-        }, 10.seconds)
+        within(10.seconds) {
+          joinWithin(first)
+          awaitAssert {
+            cluster.state.members.toList.map(_.status) shouldEqual List(Up, Up, Up, Up)
+          }
+        }
       }
       enterBarrier("third-up")
       runOn(fourth) {
-        joinWithin(first)
-        awaitAssert({
-          cluster.state.members.toList.map(_.status) shouldEqual List(Up, Up, Up, Up, Up)
-        }, 10.seconds)
+        within(10.seconds) {
+          joinWithin(first)
+          awaitAssert {
+            cluster.state.members.toList.map(_.status) shouldEqual List(Up, Up, Up, Up, Up)
+          }
+        }
       }
       enterBarrier("fourth-up")
     }
