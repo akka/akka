@@ -28,12 +28,14 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-cluster-typed",
     // use of deprecated akka.protobuf.GeneratedMessage
     "akka-protobuf",
+    "akka-protobuf-v3",
     // references to deprecated PARSER fields in generated message formats?
     "akka-remote",
     // references to deprecated PARSER fields in generated message formats?
     "akka-distributed-data",
     // references to deprecated PARSER fields in generated message formats?
-    "akka-cluster-sharding-typed")
+    "akka-cluster-sharding-typed",
+    "akka-docs")
 
   val looseProjects = Set(
     "akka-actor",
