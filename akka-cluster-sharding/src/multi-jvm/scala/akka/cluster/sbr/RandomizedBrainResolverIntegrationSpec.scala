@@ -284,8 +284,9 @@ class RandomizedSplitBrainResolverIntegrationSpec
           val side1 = nodes.take(1 + random.nextInt(nodes.size - 1))
           val side2 = nodes.drop(side1.size)
 
-          val numberOfFlaky = random.nextInt(5)
-          val healLastFlay = numberOfFlaky > 0 && random.nextBoolean()
+          // The test is limited to one flaky step, see issue #29185.
+          val numberOfFlaky = if (cleanSplit) 0 else 1
+          val healLastFlaky = numberOfFlaky > 0 && random.nextBoolean()
           val flaky: Map[Int, (RoleName, List[RoleName])] =
             (0 until numberOfFlaky).map { i =>
               val from = nodes(random.nextInt(nodes.size))
@@ -296,11 +297,15 @@ class RandomizedSplitBrainResolverIntegrationSpec
 
           val delays = (0 until 10).map(_ => 2 + random.nextInt(13))
 
-          log.info(s"Generated $scenario with random seed [$randomSeed] in round [$c]: " +
-          s"cleanSplit [$cleanSplit], healCleanSplit [$healCleanSplit] " +
-          (if (cleanSplit) s"side1 [${side1.map(_.name).mkString(", ")}], side2 [${side2.map(_.name).mkString(", ")}] ") +
-          s"flaky [${flaky.map { case (_, (from, to)) => from.name -> to.map(_.name).mkString("(", ", ", ")") }.mkString("; ")}] " +
-          s"delays [${delays.mkString(", ")}]")
+          log.info(
+            s"Generated $scenario with random seed [$randomSeed] in round [$c]: " +
+            s"cleanSplit [$cleanSplit], healCleanSplit [$healCleanSplit] " +
+            (if (cleanSplit)
+               s"side1 [${side1.map(_.name).mkString(", ")}], side2 [${side2.map(_.name).mkString(", ")}] "
+             else " ") +
+            s", flaky [${flaky.map { case (_, (from, to)) => from.name -> to.map(_.name).mkString("(", ", ", ")") }.mkString("; ")}] " +
+            s", healLastFlaky [$healLastFlaky] " +
+            s", delays [${delays.mkString(", ")}]")
 
           var delayIndex = 0
           def nextDelay(): Unit = {
@@ -330,7 +335,7 @@ class RandomizedSplitBrainResolverIntegrationSpec
               nextDelay()
           }
 
-          if (healLastFlay) {
+          if (healLastFlaky) {
             val (prevFrom, prevTo) = flaky(flaky.size - 1)
             for (n <- prevTo)
               passThrough(prevFrom, n)
