@@ -105,7 +105,7 @@ object RememberEntitiesFailureSpec {
     override def receive: Receive = {
       case RememberEntitiesShardStore.GetEntities =>
         failShardGetEntities.get(shardId) match {
-          case None             => sender ! RememberEntitiesShardStore.RememberedEntities(Set.empty)
+          case None             => sender() ! RememberEntitiesShardStore.RememberedEntities(Set.empty)
           case Some(NoResponse) => log.debug("Sending no response for GetEntities")
           case Some(CrashStore) => throw TestException("store crash on GetEntities")
           case Some(StopStore)  => context.stop(self)
@@ -115,7 +115,7 @@ object RememberEntitiesFailureSpec {
         }
       case RememberEntitiesShardStore.Update(started, stopped) =>
         failUpdate match {
-          case None             => sender ! RememberEntitiesShardStore.UpdateDone(started, stopped)
+          case None             => sender() ! RememberEntitiesShardStore.UpdateDone(started, stopped)
           case Some(NoResponse) => log.debug("Sending no response for AddEntity")
           case Some(CrashStore) => throw TestException("store crash on AddEntity")
           case Some(StopStore)  => context.stop(self)
@@ -209,7 +209,7 @@ class RememberEntitiesFailureSpec
           val probe = TestProbe()
           val sharding = ClusterSharding(system).start(
             s"initial-$wayToFail",
-            Props[EntityActor],
+            Props[EntityActor](),
             ClusterShardingSettings(system).withRememberEntities(true),
             extractEntityId,
             extractShardId)
@@ -238,7 +238,7 @@ class RememberEntitiesFailureSpec
 
         val sharding = ClusterSharding(system).start(
           s"shardStoreStart-$wayToFail",
-          Props[EntityActor],
+          Props[EntityActor](),
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
           extractShardId)
@@ -280,7 +280,7 @@ class RememberEntitiesFailureSpec
 
         val sharding = ClusterSharding(system).start(
           s"shardStoreStopAbrupt-$wayToFail",
-          Props[EntityActor],
+          Props[EntityActor](),
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
           extractShardId)
@@ -316,7 +316,7 @@ class RememberEntitiesFailureSpec
 
         val sharding = ClusterSharding(system).start(
           s"shardStoreStopGraceful-$wayToFail",
-          Props[EntityActor],
+          Props[EntityActor](),
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
           extractShardId,
@@ -357,7 +357,7 @@ class RememberEntitiesFailureSpec
 
         val sharding = ClusterSharding(system).start(
           s"coordinatorStoreStopGraceful-$wayToFail",
-          Props[EntityActor],
+          Props[EntityActor](),
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
           extractShardId,

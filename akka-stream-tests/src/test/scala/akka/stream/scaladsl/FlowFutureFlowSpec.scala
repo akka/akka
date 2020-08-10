@@ -48,7 +48,7 @@ class FlowFutureFlowSpec extends StreamSpec {
       }
 
       "work in the simple case with a late future" in assertAllStagesStopped {
-        val prFlow = Promise[Flow[Int, Int, NotUsed]]
+        val prFlow = Promise[Flow[Int, Int, NotUsed]]()
         val (fNotUsed, fSeq) = src10()
           .viaMat {
             Flow.futureFlow(prFlow.future)
@@ -85,7 +85,7 @@ class FlowFutureFlowSpec extends StreamSpec {
       }
 
       "fail properly when future is late completed failed future" in assertAllStagesStopped {
-        val prFlow = Promise[Flow[Int, Int, NotUsed]]
+        val prFlow = Promise[Flow[Int, Int, NotUsed]]()
         val (fNotUsed, fSeq) = src10()
           .viaMat {
             Flow.futureFlow(prFlow.future)
@@ -126,7 +126,7 @@ class FlowFutureFlowSpec extends StreamSpec {
       }
 
       "handle upstream failure when future is late-completed" in assertAllStagesStopped {
-        val prFlow = Promise[Flow[Int, Int, NotUsed]]
+        val prFlow = Promise[Flow[Int, Int, NotUsed]]()
         val (fNotUsed, fSeq) = src10WithFailure()(5)
           .viaMat {
             Flow.futureFlow(prFlow.future)
@@ -166,7 +166,7 @@ class FlowFutureFlowSpec extends StreamSpec {
       }
 
       "propagate upstream failure when future is late-completed" in assertAllStagesStopped {
-        val prFlow = Promise[Flow[Int, Int, NotUsed]]
+        val prFlow = Promise[Flow[Int, Int, NotUsed]]()
         val (fNotUsed, fSeq) = src10WithFailure()(5)
           .viaMat {
             Flow.futureFlow(prFlow.future)
@@ -210,7 +210,7 @@ class FlowFutureFlowSpec extends StreamSpec {
       }
 
       "handle early upstream error when flow future is late-completed" in assertAllStagesStopped {
-        val prFlow = Promise[Flow[Int, Int, NotUsed]]
+        val prFlow = Promise[Flow[Int, Int, NotUsed]]()
         val (fNotUsed, fSeq) = Source
           .failed(TE("not today my friend"))
           .viaMat {
@@ -257,7 +257,7 @@ class FlowFutureFlowSpec extends StreamSpec {
       }
 
       "handle closed downstream when flow future is late completed" in assertAllStagesStopped {
-        val prFlow = Promise[Flow[Int, Int, Future[collection.immutable.Seq[Int]]]]
+        val prFlow = Promise[Flow[Int, Int, Future[collection.immutable.Seq[Int]]]]()
         val (fSeq1, fSeq2) = src10()
           .viaMat {
             Flow.futureFlow(prFlow.future)
@@ -305,7 +305,7 @@ class FlowFutureFlowSpec extends StreamSpec {
       }
 
       "handle early downstream failure when flow future is late completed" in assertAllStagesStopped {
-        val prFlow = Promise[Flow[Int, Int, Future[collection.immutable.Seq[Int]]]]
+        val prFlow = Promise[Flow[Int, Int, Future[collection.immutable.Seq[Int]]]]()
         val (fSeq1, fSeq2) = src10()
           .viaMat {
             Flow.futureFlow(prFlow.future)
@@ -351,7 +351,7 @@ class FlowFutureFlowSpec extends StreamSpec {
       }
 
       "handle early upstream completion when flow future is late-completed" in assertAllStagesStopped {
-        val prFlow = Promise[Flow[Int, Int, NotUsed]]
+        val prFlow = Promise[Flow[Int, Int, NotUsed]]()
         val (fNotUsed, fSeq) = Source
           .empty[Int]
           .viaMat {
@@ -389,7 +389,7 @@ class FlowFutureFlowSpec extends StreamSpec {
       }
 
       "fails properly on materialization failure with a late future" in assertAllStagesStopped {
-        val prFlow = Promise[Flow[Int, Int, NotUsed]]
+        val prFlow = Promise[Flow[Int, Int, NotUsed]]()
         val (fNotUsed, fSeq) = src10()
           .viaMat {
             Flow.futureFlow(prFlow.future)
@@ -429,7 +429,7 @@ class FlowFutureFlowSpec extends StreamSpec {
       }
 
       "propagate flow failures with a late future" in assertAllStagesStopped {
-        val prFlow = Promise[Flow[Int, Int, NotUsed]]
+        val prFlow = Promise[Flow[Int, Int, NotUsed]]()
         val (fNotUsed, fSeq) = src10()
           .viaMat {
             Flow.futureFlow(prFlow.future)
@@ -471,7 +471,7 @@ class FlowFutureFlowSpec extends StreamSpec {
       }
 
       "allow flow to handle downstream completion with a late future" in assertAllStagesStopped {
-        val pr = Promise[Flow[Int, Int, Future[Seq[Int]]]]
+        val pr = Promise[Flow[Int, Int, Future[Seq[Int]]]]()
         val (fSeq1, fSeq2) = src10()
           .viaMat {
             Flow.futureFlow(pr.future)
@@ -494,7 +494,7 @@ class FlowFutureFlowSpec extends StreamSpec {
 
       "abrupt termination before future completion" in assertAllStagesStopped {
         val mat = Materializer(system)
-        val prFlow = Promise[Flow[Int, Int, Future[collection.immutable.Seq[Int]]]]
+        val prFlow = Promise[Flow[Int, Int, Future[collection.immutable.Seq[Int]]]]()
         val (fSeq1, fSeq2) = src10()
           .viaMat {
             Flow.futureFlow(prFlow.future)

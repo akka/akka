@@ -7,7 +7,6 @@ package akka.remote.artery.compress
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
-import com.typesafe.config.ConfigFactory
 
 import akka.actor._
 import akka.actor.ExtendedActorSystem

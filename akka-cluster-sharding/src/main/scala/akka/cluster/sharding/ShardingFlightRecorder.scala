@@ -13,7 +13,7 @@ import akka.util.FlightRecorderLoader
 @InternalApi
 object ShardingFlightRecorder extends ExtensionId[ShardingFlightRecorder] with ExtensionIdProvider {
 
-  override def lookup(): ExtensionId[_ <: Extension] = this
+  override def lookup: ExtensionId[_ <: Extension] = this
 
   override def createExtension(system: ExtendedActorSystem): ShardingFlightRecorder =
     FlightRecorderLoader.load[ShardingFlightRecorder](

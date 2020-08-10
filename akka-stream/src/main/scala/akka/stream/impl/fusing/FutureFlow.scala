@@ -26,7 +26,7 @@ import scala.util.{ Failure, Success, Try }
       inheritedAttributes
         .mandatoryAttribute[Attributes.NestedMaterializationCancellationPolicy]
         .propagateToNestedMaterialization
-    val innerMatValue = Promise[M]
+    val innerMatValue = Promise[M]()
     val logic = new GraphStageLogic(shape) {
 
       //seems like we must set handlers BEFORE preStart

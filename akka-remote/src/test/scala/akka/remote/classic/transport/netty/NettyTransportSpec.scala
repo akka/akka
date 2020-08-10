@@ -55,7 +55,7 @@ class NettyTransportSpec extends AnyWordSpec with Matchers with BindBehavior {
         """)
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-      getInternal should contain(getExternal.withProtocol("tcp"))
+      getInternal() should contain(getExternal().withProtocol("tcp"))
 
       Await.result(sys.terminate(), Duration.Inf)
     }
@@ -74,8 +74,8 @@ class NettyTransportSpec extends AnyWordSpec with Matchers with BindBehavior {
         """)
         implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-        getExternal should ===(address.toAkkaAddress("akka.tcp"))
-        getInternal should not contain address.toAkkaAddress("tcp")
+        getExternal() should ===(address.toAkkaAddress("akka.tcp"))
+        getInternal() should not contain address.toAkkaAddress("tcp")
 
         Await.result(sys.terminate(), Duration.Inf)
       } finally {
@@ -102,8 +102,8 @@ class NettyTransportSpec extends AnyWordSpec with Matchers with BindBehavior {
         """)
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-      getExternal should ===(address.toAkkaAddress("akka.tcp"))
-      getInternal should contain(address.toAkkaAddress("tcp"))
+      getExternal() should ===(address.toAkkaAddress("akka.tcp"))
+      getInternal() should contain(address.toAkkaAddress("tcp"))
 
       Await.result(sys.terminate(), Duration.Inf)
     }
@@ -147,8 +147,8 @@ trait BindBehavior {
         """)
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-      getExternal should ===(address.toAkkaAddress(s"akka.tcp"))
-      getInternal should contain(address.toAkkaAddress("tcp"))
+      getExternal() should ===(address.toAkkaAddress(s"akka.tcp"))
+      getInternal() should contain(address.toAkkaAddress("tcp"))
 
       Await.result(sys.terminate(), Duration.Inf)
     }
@@ -179,8 +179,8 @@ trait BindBehavior {
         """)
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-      getExternal should ===(address.toAkkaAddress(s"akka.tcp"))
-      getInternal should contain(bindAddress.toAkkaAddress("tcp"))
+      getExternal() should ===(address.toAkkaAddress(s"akka.tcp"))
+      getInternal() should contain(bindAddress.toAkkaAddress("tcp"))
 
       Await.result(sys.terminate(), Duration.Inf)
     }

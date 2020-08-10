@@ -80,7 +80,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       val probe = TestSubscriber.probe[Int]()
       Source
-        .unfoldResourceAsync[Int, ResourceDummy[Int]](resource.create _, _.read, _.close())
+        .unfoldResourceAsync[Int, ResourceDummy[Int]](() => resource.create, _.read, _.close())
         .runWith(Sink.fromSubscriber(probe))
 
       probe.request(1)
@@ -106,7 +106,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val resource = new ResourceDummy[Int](1 :: Nil, firstReadFuture = firstRead.future)
 
       Source
-        .unfoldResourceAsync[Int, ResourceDummy[Int]](resource.create _, _.read, _.close())
+        .unfoldResourceAsync[Int, ResourceDummy[Int]](() => resource.create, _.read, _.close())
         .runWith(Sink.fromSubscriber(probe))
 
       probe.request(1L)

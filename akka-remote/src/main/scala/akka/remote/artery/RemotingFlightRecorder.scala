@@ -27,7 +27,7 @@ object RemotingFlightRecorder extends ExtensionId[RemotingFlightRecorder] with E
       "akka.remote.artery.jfr.JFRRemotingFlightRecorder",
       NoOpRemotingFlightRecorder)
 
-  override def lookup(): ExtensionId[_ <: Extension] = this
+  override def lookup: ExtensionId[_ <: Extension] = this
 }
 
 /**

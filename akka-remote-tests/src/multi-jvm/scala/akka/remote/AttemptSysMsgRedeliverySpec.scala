@@ -50,7 +50,7 @@ class ArteryAttemptSysMsgRedeliveryMultiJvmNode3
 object AttemptSysMsgRedeliverySpec {
   class Echo extends Actor {
     def receive = {
-      case m => sender ! m
+      case m => sender() ! m
     }
   }
 }

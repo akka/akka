@@ -103,7 +103,7 @@ class SinkForeachAsyncSpec extends StreamSpec {
       }
 
       val p =
-        Source(List(one _, two _, three _, four _)).runWith(sink)
+        Source(List(() => one, () => two, () => three, () => four)).runWith(sink)
 
       latch(1).countDown()
       probe.expectMsg(1)

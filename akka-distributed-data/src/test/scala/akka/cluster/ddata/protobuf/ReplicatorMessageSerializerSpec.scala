@@ -54,7 +54,7 @@ class ReplicatorMessageSerializerSpec
 
   val keyA = GSetKey[String]("A")
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     shutdown()
   }
 

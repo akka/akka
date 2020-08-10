@@ -29,7 +29,7 @@ object IndirectMaterializerCreation extends ExtensionId[IndirectMaterializerCrea
   def createExtension(system: ExtendedActorSystem): IndirectMaterializerCreation =
     new IndirectMaterializerCreation(system)
 
-  def lookup(): ExtensionId[IndirectMaterializerCreation] = this
+  def lookup: ExtensionId[IndirectMaterializerCreation] = this
 }
 
 @silent

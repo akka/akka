@@ -11,7 +11,6 @@ import akka.actor.{ ActorPath, ActorSelection, NotInfluenceReceiveTimeout }
 import akka.actor.Cancellable
 import akka.actor.DeadLetterSuppression
 import akka.annotation.InternalApi
-import akka.persistence.AtLeastOnceDelivery.Internal.Delivery
 import akka.persistence.serialization.Message
 import akka.util.ccompat._
 

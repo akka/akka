@@ -12,7 +12,6 @@ import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 import com.github.ghik.silencer.silent
-import com.github.ghik.silencer.silent
 
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters

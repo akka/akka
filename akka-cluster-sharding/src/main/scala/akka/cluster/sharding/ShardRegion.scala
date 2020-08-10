@@ -812,7 +812,7 @@ private[akka] class ShardRegion(
       }
 
     case msg: GetClusterShardingStats =>
-      coordinator.fold(sender ! ClusterShardingStats(Map.empty))(_.forward(msg))
+      coordinator.fold(sender() ! ClusterShardingStats(Map.empty))(_.forward(msg))
 
     case GetShardRegionState =>
       replyToRegionStateQuery(sender())

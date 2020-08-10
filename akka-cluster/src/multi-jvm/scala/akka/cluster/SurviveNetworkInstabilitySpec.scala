@@ -48,7 +48,7 @@ object SurviveNetworkInstabilityMultiJvmSpec extends MultiNodeConfig {
 
   class Echo extends Actor {
     def receive = {
-      case m => sender ! m
+      case m => sender() ! m
     }
   }
 

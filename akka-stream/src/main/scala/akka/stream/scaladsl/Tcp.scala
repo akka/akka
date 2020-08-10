@@ -12,7 +12,6 @@ import javax.net.ssl.SSLSession
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Success
@@ -85,7 +84,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
   override def get(system: ActorSystem): Tcp = super.get(system)
   override def get(system: ClassicActorSystemProvider): Tcp = super.get(system)
 
-  def lookup() = Tcp
+  def lookup = Tcp
 
   def createExtension(system: ExtendedActorSystem): Tcp = new Tcp(system)
 

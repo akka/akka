@@ -9,7 +9,6 @@ import com.typesafe.config._
 import akka.ConfigurationException
 import akka.actor._
 import akka.japi.Util.immutableSeq
-import akka.remote.routing._
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing._
 import akka.routing.Pool

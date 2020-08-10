@@ -78,12 +78,12 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   override val invokeBeforeAllAndAfterAllEvenIfNoTestsAreExpected = true
 
-  final override def beforeAll: Unit = {
+  final override def beforeAll(): Unit = {
     startCoroner()
     atStartup()
   }
 
-  final override def afterAll: Unit = {
+  final override def afterAll(): Unit = {
     beforeTermination()
     shutdown()
     afterTermination()

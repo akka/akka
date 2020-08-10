@@ -22,7 +22,6 @@ import akka.pattern.gracefulStop
 import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender }
 import akka.testkit.TestActors.echoActorProps
 import akka.testkit.TestProbe
-import akka.testkit.TestProbe
 
 object ConfiguredLocalRoutingSpec {
   val config = """

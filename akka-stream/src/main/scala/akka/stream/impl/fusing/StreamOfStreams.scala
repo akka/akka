@@ -364,7 +364,7 @@ import akka.util.ccompat.JavaConverters._
         }
 
       private def runSubstream(key: K, value: T): Unit = {
-        val substreamSource = new SubstreamSource("GroupBySource " + nextId, key, value)
+        val substreamSource = new SubstreamSource("GroupBySource " + nextId(), key, value)
         activeSubstreamsMap.put(key, substreamSource)
         firstPushCounter += 1
         if (isAvailable(out)) {
