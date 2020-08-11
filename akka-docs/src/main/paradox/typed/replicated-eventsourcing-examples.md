@@ -7,6 +7,7 @@ The following are more realistic examples of building systems with Replicated Ev
 @@@ index
 
 * [auction](replicated-eventsourcing-auction.md)
+* [shopping cart](replicated-eventsourcing-cart.md)
 
 @@@
 
