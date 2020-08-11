@@ -23,7 +23,6 @@ private[akka] final class ReplicationContextImpl(
     extends akka.persistence.typed.scaladsl.ReplicationContext
     with akka.persistence.typed.javadsl.ReplicationContext {
   val allReplicas: Set[ReplicaId] = replicasAndQueryPlugins.keySet
-
   // these are not volatile as they are set on the same thread as they should be accessed
   var _currentThread: OptionVal[Thread] = OptionVal.None
   var _origin: OptionVal[ReplicaId] = OptionVal.None

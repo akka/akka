@@ -41,9 +41,9 @@ class Member private[cluster] (
   }
   override def toString =
     if (dataCenter == ClusterSettings.DefaultDataCenter)
-      s"Member(address = $address, status = $status)"
+      s"Member(address = $address, status = $status, roles = $roles)"
     else
-      s"Member(address = $address, dataCenter = $dataCenter, status = $status)"
+      s"Member(address = $address, dataCenter = $dataCenter, status = $status, roles = $roles)"
 
   def hasRole(role: String): Boolean = roles.contains(role)
 

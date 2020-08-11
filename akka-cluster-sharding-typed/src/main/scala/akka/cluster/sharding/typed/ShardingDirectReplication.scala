@@ -97,7 +97,8 @@ object ShardingDirectReplication {
 
       Behaviors.receiveMessage {
         case WrappedPublishedEvent(event) =>
-          context.log.trace(
+          // FIXME
+          context.log.debug(
             "Forwarding event for persistence id [{}] sequence nr [{}] to replicas",
             event.persistenceId,
             event.sequenceNumber)
