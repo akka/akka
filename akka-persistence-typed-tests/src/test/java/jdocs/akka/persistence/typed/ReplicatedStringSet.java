@@ -26,7 +26,8 @@ public final class ReplicatedStringSet
 
   public static Behavior<Command> create(
       String entityId, ReplicaId replicaId, Set<ReplicaId> allReplicas) {
-    return ReplicatedEventSourcing.withSharedJournal("StringSet",
+    return ReplicatedEventSourcing.withSharedJournal(
+        "StringSet",
         entityId,
         replicaId,
         allReplicas,
