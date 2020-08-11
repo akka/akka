@@ -156,6 +156,21 @@ replica that persisted it. When comparing two @apidoc[LwwTime] the greatest time
 identifier is used if the two timestamps are equal, and then the one from the `replicaId` sorted first in
 alphanumeric order wins.
 
+Scala
+:   @@snip [blog](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedBlogExampleSpec.scala) { #event-handler }
+
+Java
+:   @@snip [blog](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ReplicatedBlogExample.java) { #event-handler }
+
+When creating the `LwwTime` it is good to have a monotonically increasing timestamp, and for that the `increase`
+method in `LwwTime` can be used:
+
+Scala
+:   @@snip [blog](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedBlogExampleSpec.scala) { #command-handler }
+
+Java
+:   @@snip [blog](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ReplicatedBlogExample.java) { #command-handler }
+
 The nature of last writer wins means that if you only have one timestamp for the state the events must represent an
 update of the full state. Otherwise, there is a risk that the state in different replicas will be different and
 not eventually converge.
@@ -188,10 +203,11 @@ Side effects from the event handler are generally discouraged because the event 
 result in undesired re-execution of the side effects.
 
 Uses cases for doing side effects in the event handler:
+
 * Doing a side effect only in a single replica
 * Doing a side effect once all replicas have seen an event
 * A side effect for a replicated event
-* A side effect when a conflict has occured
+* A side effect when a conflict has occurred
 
 There is no built in support for knowing an event has been replicated to all replicas but it can be modelled in your state. 
 For some use cases you may need to trigger side effects after consuming replicated events. For example when an auction has been closed in 
