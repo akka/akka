@@ -5,7 +5,7 @@
 package akka.pattern
 
 import java.util.Optional
-import java.util.concurrent.{ Callable, CompletionStage, CopyOnWriteArrayList }
+import java.util.concurrent.{ Callable, CompletionStage, CopyOnWriteArrayList, ThreadLocalRandom }
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger, AtomicLong }
 import java.util.function.BiFunction
 import java.util.function.Consumer
@@ -19,7 +19,6 @@ import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 
 import com.github.ghik.silencer.silent
-
 import akka.AkkaException
 import akka.actor.Scheduler
 import akka.dispatch.ExecutionContexts.parasitic
@@ -1002,7 +1001,8 @@ class CircuitBreaker(
       scheduler.scheduleOnce(currentResetTimeout) {
         attemptReset()
       }
-      val nextResetTimeout = currentResetTimeout * exponentialBackoffFactor match {
+      val rnd = 1.0 + ThreadLocalRandom.current().nextDouble() * randomFactor
+      val nextResetTimeout = currentResetTimeout * exponentialBackoffFactor * rnd match {
         case f: FiniteDuration => f
         case _                 => currentResetTimeout
       }
