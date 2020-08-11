@@ -4,9 +4,6 @@
 
 package docs.akka.persistence.typed
 
-import org.scalatest.concurrent.Eventually
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.Millis
 import org.scalatest.time.Span
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -140,10 +137,7 @@ object ReplicatedBlogExampleSpec {
 class ReplicatedBlogExampleSpec
     extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
-    with Matchers
-    with LogCapturing
-    with ScalaFutures
-    with Eventually {
+    with LogCapturing {
   import ReplicatedBlogExampleSpec.BlogEntity
   import ReplicatedBlogExampleSpec.BlogEntity._
 
