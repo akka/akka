@@ -171,6 +171,18 @@ class CircuitBreaker(
     this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, 1.0, 0.0)(executor)
   }
 
+  // add the old constructor to make it binary compatible
+  def this(
+      scheduler: Scheduler,
+      maxFailures: Int,
+      callTimeout: FiniteDuration,
+      resetTimeout: FiniteDuration,
+      exponentialBackoffFactor: Double)(
+      implicit
+      executor: ExecutionContext) = {
+    this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, exponentialBackoffFactor, 0.0)(executor)
+  }
+
   /**
    * The `resetTimeout` will be increased exponentially for each failed attempt to close the circuit.
    * The default exponential backoff factor is 2.
