@@ -156,7 +156,14 @@ class CircuitBreaker(
       maxFailures: Int,
       callTimeout: FiniteDuration,
       resetTimeout: FiniteDuration) = {
-    this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, 1.0, 0.0)(executor)
+    this(
+      scheduler,
+      maxFailures,
+      callTimeout,
+      resetTimeout,
+      maxResetTimeout = 36500.days,
+      exponentialBackoffFactor = 1.0,
+      randomFactor = 0.0)(executor)
   }
 
   def this(
@@ -165,14 +172,28 @@ class CircuitBreaker(
       maxFailures: Int,
       callTimeout: java.time.Duration,
       resetTimeout: java.time.Duration) = {
-    this(scheduler, maxFailures, callTimeout.asScala, resetTimeout.asScala, 36500.days, 1.0, 0.0)(executor)
+    this(
+      scheduler,
+      maxFailures,
+      callTimeout.asScala,
+      resetTimeout.asScala,
+      maxResetTimeout = 36500.days,
+      exponentialBackoffFactor = 1.0,
+      randomFactor = 0.0)(executor)
   }
 
   // add the old constructor to make it binary compatible
   def this(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)(
       implicit
       executor: ExecutionContext) = {
-    this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, 1.0, 0.0)(executor)
+    this(
+      scheduler,
+      maxFailures,
+      callTimeout,
+      resetTimeout,
+      maxResetTimeout = 36500.days,
+      exponentialBackoffFactor = 1.0,
+      randomFactor = 0.0)(executor)
   }
 
   // add the old constructor to make it binary compatible
