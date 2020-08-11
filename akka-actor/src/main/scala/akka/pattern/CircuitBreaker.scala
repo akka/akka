@@ -139,10 +139,12 @@ class CircuitBreaker(
     callTimeout: FiniteDuration,
     val resetTimeout: FiniteDuration,
     maxResetTimeout: FiniteDuration,
-    exponentialBackoffFactor: Double)(implicit executor: ExecutionContext)
+    exponentialBackoffFactor: Double,
+    randomFactor: Double)(implicit executor: ExecutionContext)
     extends AbstractCircuitBreaker {
 
-  require(exponentialBackoffFactor >= 1.0, "factor must be >= 1.0")
+  require(exponentialBackoffFactor >= 1.0, "exponentialBackoffFactor must be >= 1.0")
+  require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")
 
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def this(
@@ -151,7 +153,7 @@ class CircuitBreaker(
       maxFailures: Int,
       callTimeout: FiniteDuration,
       resetTimeout: FiniteDuration) = {
-    this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, 1.0)(executor)
+    this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, 1.0, 0.0)(executor)
   }
 
   def this(
@@ -160,14 +162,14 @@ class CircuitBreaker(
       maxFailures: Int,
       callTimeout: java.time.Duration,
       resetTimeout: java.time.Duration) = {
-    this(scheduler, maxFailures, callTimeout.asScala, resetTimeout.asScala, 36500.days, 1.0)(executor)
+    this(scheduler, maxFailures, callTimeout.asScala, resetTimeout.asScala, 36500.days, 1.0, 0.0)(executor)
   }
 
   // add the old constructor to make it binary compatible
   def this(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)(
       implicit
       executor: ExecutionContext) = {
-    this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, 1.0)(executor)
+    this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, 1.0, 0.0)(executor)
   }
 
   /**
@@ -177,7 +179,7 @@ class CircuitBreaker(
    * @param maxResetTimeout the upper bound of resetTimeout
    */
   def withExponentialBackoff(maxResetTimeout: FiniteDuration): CircuitBreaker = {
-    new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout, maxResetTimeout, 2.0)(executor)
+    new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout, maxResetTimeout, 2.0, randomFactor)(executor)
   }
 
   /**
@@ -188,6 +190,23 @@ class CircuitBreaker(
    */
   def withExponentialBackoff(maxResetTimeout: java.time.Duration): CircuitBreaker = {
     withExponentialBackoff(maxResetTimeout.asScala)
+  }
+
+  /**
+   * Adds jitter to the delay.
+   * @param randomFactor after calculation of the back-off an additional random delay based on this
+   *                     factor is added, e.g. 0.2 adds up to 20% delay. In order to skip this
+   *                     additional delay pass in 0.
+   */
+  def withRandomFactor(randomFactor: Double): CircuitBreaker = {
+    new CircuitBreaker(
+      scheduler,
+      maxFailures,
+      callTimeout,
+      resetTimeout,
+      maxResetTimeout,
+      exponentialBackoffFactor,
+      randomFactor)(executor)
   }
 
   /**
