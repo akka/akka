@@ -187,7 +187,7 @@ interface ReplicatedBlogExample {
       return Behaviors.setup(
           context ->
               ReplicatedEventSourcing.withSharedJournal(
-                  "StringSet",
+                  "blog",
                   entityId,
                   replicaId,
                   allReplicas,
