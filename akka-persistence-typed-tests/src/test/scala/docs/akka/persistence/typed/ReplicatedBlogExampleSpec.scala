@@ -4,8 +4,6 @@
 
 package docs.akka.persistence.typed
 
-import org.scalatest.time.Millis
-import org.scalatest.time.Span
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.Done
@@ -140,8 +138,6 @@ class ReplicatedBlogExampleSpec
     with LogCapturing {
   import ReplicatedBlogExampleSpec.BlogEntity
   import ReplicatedBlogExampleSpec.BlogEntity._
-
-  implicit val config: PatienceConfig = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
   "Blog Example" should {
     "work" in {
