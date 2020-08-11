@@ -134,13 +134,41 @@ The factory returns a `Behavior` that can be spawned like any other behavior.
 
 ### Conflict free replicated data types
 
-The following CRDTs are included that can be used to build your own data model:
+Writing code to resolve conflicts can be complicated to get right.
+One well-understood technique to create eventually-consistent systems is to
+model your state as a Conflict Free Replicated Data Type, a CRDT. There are two types of CRDTs;
+operation-based and state-based. For Replicated Event Sourcing the operation-based is a good fit,
+since the events represent the operations. Note that this is distinct from the CRDT's implemented
+in @ref:[Akka Distributed Data](distributed-data.md), which are state-based rather than operation-based.
+
+The rule for operation-based CRDT's is that the operations must be commutative — in other words, applying the same events
+(which represent the operations) in any order should always produce the same final state. You may assume each event
+is applied only once, with @ref:[causal delivery order](#causal-delivery-order).
+
+The following CRDTs are included that can you can use as the state or part of the state in the entity:
 
 * @apidoc[LwwTime]
 * @apidoc[Counter]
 * @apidoc[akka.persistence.typed.crdt.ORSet]
 
-Akka serializers are included for all these types and can be used to serialize when @ref[embedded in Jackson](../serialization-jackson.md#using-akka-serialization-for-embedded-types).
+Akka serializers are included for all these types and can be used to serialize when 
+@ref[embedded in Jackson](../serialization-jackson.md#using-akka-serialization-for-embedded-types).
+
+An example would be a movies watch list that is represented by the general purpose 
+@apidoc[akka.persistence.typed.crdt.ORSet] CRDT. `ORSet` is short for Observed Remove Set. Elements can be added and
+removed any number of times. Concurrent add wins over remove. It is an operation based CRDT where the delta of an
+operation (add/remove) can be represented as an event.
+
+Such movies watch list example:
+
+Scala
+:   @@snip [movie](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedMovieWatchListExampleSpec.scala) { #movie-entity }
+
+Java
+:   @@snip [movie](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ReplicatedMovieExample.java) { #movie-entity }
+
+The @ref[Auction example](replicated-eventsourcing-auction.md) is a more comprehensive example that illustrates how application-specific
+rules can be used to implement an entity with CRDT semantics.
 
 ### Last writer wins
 
@@ -155,6 +183,21 @@ It contains a timestamp representing current time when the event was persisted a
 replica that persisted it. When comparing two @apidoc[LwwTime] the greatest timestamp wins. The replica
 identifier is used if the two timestamps are equal, and then the one from the `replicaId` sorted first in
 alphanumeric order wins.
+
+Scala
+:   @@snip [blog](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedBlogExampleSpec.scala) { #event-handler }
+
+Java
+:   @@snip [blog](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ReplicatedBlogExample.java) { #event-handler }
+
+When creating the `LwwTime` it is good to have a monotonically increasing timestamp, and for that the `increase`
+method in `LwwTime` can be used:
+
+Scala
+:   @@snip [blog](/akka-persistence-typed-tests/src/test/scala/docs/akka/persistence/typed/ReplicatedBlogExampleSpec.scala) { #command-handler }
+
+Java
+:   @@snip [blog](/akka-persistence-typed-tests/src/test/java/jdocs/akka/persistence/typed/ReplicatedBlogExample.java) { #command-handler }
 
 The nature of last writer wins means that if you only have one timestamp for the state the events must represent an
 update of the full state. Otherwise, there is a risk that the state in different replicas will be different and
@@ -188,10 +231,11 @@ Side effects from the event handler are generally discouraged because the event 
 result in undesired re-execution of the side effects.
 
 Uses cases for doing side effects in the event handler:
+
 * Doing a side effect only in a single replica
 * Doing a side effect once all replicas have seen an event
 * A side effect for a replicated event
-* A side effect when a conflict has occured
+* A side effect when a conflict has occurred
 
 There is no built in support for knowing an event has been replicated to all replicas but it can be modelled in your state. 
 For some use cases you may need to trigger side effects after consuming replicated events. For example when an auction has been closed in 
