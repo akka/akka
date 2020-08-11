@@ -26,7 +26,7 @@ interface ReplicatedBlogExample {
 
   public final class BlogEntity
       extends ReplicatedEventSourcedBehavior<
-    BlogEntity.Command, BlogEntity.Event, BlogEntity.BlogState> {
+          BlogEntity.Command, BlogEntity.Event, BlogEntity.BlogState> {
 
     private final ActorContext<Command> context;
 
