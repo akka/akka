@@ -3,7 +3,6 @@
  */
 
 package akka.persistence.typed
-import akka.annotation.ApiMayChange
 
 object PersistenceId {
 
@@ -125,27 +124,6 @@ object PersistenceId {
    */
   def ofUniqueId(id: String): PersistenceId =
     new PersistenceId(id)
-
-  /**
-   * Constructs a [[PersistenceId]] from the given `entityTypeHint`, `entityId` and `replicaId` by
-   * concatenating them with the `|` separator.
-   */
-  @ApiMayChange
-  def replicatedId(entityTypeHint: String, entityId: String, replicaId: ReplicaId): PersistenceId = {
-    if (entityTypeHint.contains(DefaultSeparator))
-      throw new IllegalArgumentException(
-        s"entityTypeHint [$entityTypeHint] contains [$DefaultSeparator] which is a reserved character")
-
-    if (entityId.contains(DefaultSeparator))
-      throw new IllegalArgumentException(
-        s"entityId [$entityId] contains [$DefaultSeparator] which is a reserved character")
-
-    if (replicaId.id.contains(DefaultSeparator))
-      throw new IllegalArgumentException(
-        s"replicaId [${replicaId.id}] contains [$DefaultSeparator] which is a reserved character")
-
-    new PersistenceId(entityTypeHint + DefaultSeparator + entityId + DefaultSeparator + replicaId.id)
-  }
 }
 
 /**

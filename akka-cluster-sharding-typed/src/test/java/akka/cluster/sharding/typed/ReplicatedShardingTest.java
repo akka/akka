@@ -21,6 +21,7 @@ import akka.cluster.typed.Join;
 import akka.persistence.testkit.PersistenceTestKitPlugin;
 import akka.persistence.testkit.query.javadsl.PersistenceTestKitReadJournal;
 import akka.persistence.typed.ReplicaId;
+import akka.persistence.typed.ReplicationId;
 import akka.persistence.typed.javadsl.*;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
@@ -36,7 +37,6 @@ import static org.junit.Assert.assertEquals;
 
 public class ReplicatedShardingTest extends JUnitSuite {
 
-  /*
   static class MyReplicatedStringSet
       extends ReplicatedEventSourcedBehavior<MyReplicatedStringSet.Command, String, Set<String>> {
     interface Command {}
@@ -65,12 +65,9 @@ public class ReplicatedShardingTest extends JUnitSuite {
       }
     }
 
-    static Behavior<Command> create(
-        String entityId, ReplicaId replicaId, Set<ReplicaId> allReplicas) {
+    static Behavior<Command> create(ReplicationId replicationId, Set<ReplicaId> allReplicas) {
       return ReplicatedEventSourcing.withSharedJournal(
-          "StringSet",
-          entityId,
-          replicaId,
+          replicationId,
           allReplicas,
           PersistenceTestKitReadJournal.Identifier(),
           MyReplicatedStringSet::new);
@@ -158,6 +155,7 @@ public class ReplicatedShardingTest extends JUnitSuite {
           replicatedEntityProvider =
               ReplicatedEntityProvider.create(
                   MyReplicatedStringSet.Command.class,
+                  "StringSet",
                   ALL_REPLICAS,
                   // factory for replicated entity for a given replica
                   (entityTypeKey, replicaId, allReplicas) ->
@@ -170,7 +168,8 @@ public class ReplicatedShardingTest extends JUnitSuite {
                                   entityContext ->
                                       // factory for the entity for a given entity in that replica
                                       MyReplicatedStringSet.create(
-                                          entityContext.getEntityId(), replicaId, allReplicas))
+                                          ReplicationId.fromString(entityContext.getEntityId()),
+                                          allReplicas))
                               // potentially use replica id as role or dc in Akka multi dc for the
                               // sharding instance
                               // to control where replicas will live
@@ -259,6 +258,4 @@ public class ReplicatedShardingTest extends JUnitSuite {
           return null;
         });
   }
-
-   */
 }

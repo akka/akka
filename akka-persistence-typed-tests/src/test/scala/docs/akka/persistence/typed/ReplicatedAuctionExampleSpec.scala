@@ -12,6 +12,7 @@ import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing, ReplicationContext }
 import akka.serialization.jackson.CborSerializable
 import org.scalatest.concurrent.{ Eventually, ScalaFutures }
@@ -219,9 +220,7 @@ object ReplicatedAuctionExampleSpec {
   def behavior(replica: ReplicaId, setup: AuctionSetup): Behavior[AuctionCommand] = Behaviors.setup[AuctionCommand] {
     ctx =>
       ReplicatedEventSourcing.withSharedJournal(
-        "auction",
-        setup.name,
-        replica,
+        ReplicationId("auction", setup.name, replica),
         setup.allReplicas,
         PersistenceTestKitReadJournal.Identifier) { replicationCtx =>
         EventSourcedBehavior(

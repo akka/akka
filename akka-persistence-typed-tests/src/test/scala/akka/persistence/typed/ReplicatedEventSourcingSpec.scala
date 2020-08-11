@@ -72,9 +72,7 @@ object ReplicatedEventSourcingSpec {
       replicaId: String,
       probe: Option[ActorRef[EventAndContext]] = None): Behavior[Command] =
     ReplicatedEventSourcing.withSharedJournal(
-      "ReplicatedEventSourcingSpec",
-      entityId,
-      ReplicaId(replicaId),
+      ReplicationId("ReplicatedEventSourcingSpec", entityId, ReplicaId(replicaId)),
       AllReplicas,
       PersistenceTestKitReadJournal.Identifier)(replicationContext => eventSourcedBehavior(replicationContext, probe))
 

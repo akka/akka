@@ -14,6 +14,7 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.testkit.PersistenceTestKitPlugin;
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal;
 import akka.persistence.typed.ReplicaId;
+import akka.persistence.typed.ReplicationId;
 import akka.persistence.typed.javadsl.*;
 import akka.serialization.jackson.CborSerializable;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -100,9 +101,8 @@ class ReplicatedAuctionExample
   public static Behavior<Command> create(AuctionSetup setup, ReplicaId replica) {
     return Behaviors.setup(
         ctx ->
-            ReplicatedEventSourcing.withSharedJournal("Auction",
-                setup.name,
-                replica,
+            ReplicatedEventSourcing.withSharedJournal(
+                new ReplicationId("Auction", setup.name, replica),
                 ALL_REPLICAS,
                 PersistenceTestKitReadJournal.Identifier(),
                 replicationCtx -> new ReplicatedAuctionExample(replicationCtx, ctx, setup)));

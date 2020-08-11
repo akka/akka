@@ -33,9 +33,7 @@ object MultiJournalReplicationSpec {
     private val writeJournalPerReplica = Map("R1" -> "journal1.journal", "R2" -> "journal2.journal")
     def apply(entityId: String, replicaId: String): Behavior[Command] = {
       ReplicatedEventSourcing(
-        "MultiJournalSpec",
-        entityId,
-        ReplicaId(replicaId),
+        ReplicationId("MultiJournalSpec", entityId, ReplicaId(replicaId)),
         Map(ReplicaId("R1") -> "journal1.query", ReplicaId("R2") -> "journal2.query"))(
         replicationContext =>
           EventSourcedBehavior[Command, String, Set[String]](
@@ -100,11 +98,17 @@ class MultiJournalReplicationSpec
       val readJournal2 = PersistenceQuery(system).readJournalFor[CurrentEventsByPersistenceIdQuery]("journal2.query")
 
       val eventsForJournal1 =
-        readJournal1.currentEventsByPersistenceId("id1|R1", 0L, Long.MaxValue).runWith(Sink.seq).futureValue
+        readJournal1
+          .currentEventsByPersistenceId("MultiJournalSpec|id1|R1", 0L, Long.MaxValue)
+          .runWith(Sink.seq)
+          .futureValue
       eventsForJournal1.map(_.event).toSet should ===(Set("r1 m1", "r2 m1"))
 
       val eventsForJournal2 =
-        readJournal2.currentEventsByPersistenceId("id1|R2", 0L, Long.MaxValue).runWith(Sink.seq).futureValue
+        readJournal2
+          .currentEventsByPersistenceId("MultiJournalSpec|id1|R2", 0L, Long.MaxValue)
+          .runWith(Sink.seq)
+          .futureValue
       eventsForJournal2.map(_.event).toSet should ===(Set("r1 m1", "r2 m1"))
 
     }

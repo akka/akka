@@ -7,6 +7,7 @@ package akka.persistence.typed.internal
 import akka.annotation.InternalApi
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicationId
 import akka.util.OptionVal
 import akka.util.WallClock
 import akka.util.ccompat.JavaConverters._
@@ -16,9 +17,7 @@ import akka.util.ccompat.JavaConverters._
  */
 @InternalApi
 private[akka] final class ReplicationContextImpl(
-    val entityTypeHint: String,
-    val entityId: String,
-    val replicaId: ReplicaId,
+    val replicationId: ReplicationId,
     val replicasAndQueryPlugins: Map[ReplicaId, String])
     extends akka.persistence.typed.scaladsl.ReplicationContext
     with akka.persistence.typed.javadsl.ReplicationContext {
@@ -64,7 +63,7 @@ private[akka] final class ReplicationContextImpl(
     _concurrent
   }
 
-  override def persistenceId: PersistenceId = PersistenceId.replicatedId(entityTypeHint, entityId, replicaId)
+  override def persistenceId: PersistenceId = replicationId.persistenceId
 
   override def currentTimeMillis(): Long = {
     WallClock.AlwaysIncreasingClock.currentTimeMillis()

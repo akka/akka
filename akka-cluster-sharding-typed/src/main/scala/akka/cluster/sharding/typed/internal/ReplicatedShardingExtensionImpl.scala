@@ -16,12 +16,12 @@ import akka.cluster.sharding.typed.ReplicatedEntityProvider
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
 import org.slf4j.LoggerFactory
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.typed.ShardingDirectReplication
+import akka.persistence.typed.ReplicationId
 import akka.util.ccompat.JavaConverters._
 
 /**
@@ -52,7 +52,7 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
           replicaSettings.entity.dataCenter)
     }
     val replicaToRegionOrProxy = initializedReplicas.map {
-      case (_, id, _, regionOrProxy, _) => id -> regionOrProxy
+      case (_, replicaId, _, regionOrProxy, _) => replicaId -> regionOrProxy
     }.toMap
     if (settings.directReplication) {
       logger.infoN("Starting Replicated Event Sourcing Direct Replication")
@@ -86,9 +86,9 @@ private[akka] final class ReplicatedShardingImpl[M, E](
     replicaTypeKeys.map {
       case (replicaId, (typeKey, dc, typeName)) =>
         replicaId -> (dc match {
-          case None => sharding.entityRefFor(typeKey, PersistenceId.replicatedId(typeName, entityId, replicaId).id)
+          case None => sharding.entityRefFor(typeKey, ReplicationId(typeName, entityId, replicaId).persistenceId.id)
           case Some(dc) =>
-            sharding.entityRefFor(typeKey, PersistenceId.replicatedId(typeName, entityId, replicaId).id, dc)
+            sharding.entityRefFor(typeKey, ReplicationId(typeName, entityId, replicaId).persistenceId.id, dc)
         })
     }
 

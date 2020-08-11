@@ -7,6 +7,7 @@ package jdocs.akka.persistence.typed;
 import akka.actor.typed.Behavior;
 import akka.persistence.testkit.query.javadsl.PersistenceTestKitReadJournal;
 import akka.persistence.typed.ReplicaId;
+import akka.persistence.typed.ReplicationId;
 import akka.persistence.typed.javadsl.*;
 
 import java.util.HashSet;
@@ -26,9 +27,8 @@ public final class ReplicatedStringSet
 
   public static Behavior<Command> create(
       String entityId, ReplicaId replicaId, Set<ReplicaId> allReplicas) {
-    return ReplicatedEventSourcing.withSharedJournal("StringSet",
-        entityId,
-        replicaId,
+    return ReplicatedEventSourcing.withSharedJournal(
+        new ReplicationId("StringSet", entityId, replicaId),
         allReplicas,
         PersistenceTestKitReadJournal.Identifier(),
         ReplicatedStringSet::new);

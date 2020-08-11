@@ -30,15 +30,14 @@ object ReplicatedEntityProvider {
       messageClass: Class[M],
       typeName: String,
       allReplicaIds: JSet[ReplicaId],
-      settingsPerReplicaFactory: akka.japi.function.Function4[
-        String,
+      settingsPerReplicaFactory: akka.japi.function.Function3[
         JEntityTypeKey[M],
         ReplicaId,
         JSet[ReplicaId],
         ReplicatedEntity[M, E]]): ReplicatedEntityProvider[M, E] = {
     implicit val classTag: ClassTag[M] = ClassTag(messageClass)
     apply[M, E](typeName, allReplicaIds.asScala.toSet)((key, replica, _) =>
-      settingsPerReplicaFactory(typeName, key.asInstanceOf[EntityTypeKeyImpl[M]], replica, allReplicaIds))
+      settingsPerReplicaFactory(key.asInstanceOf[EntityTypeKeyImpl[M]], replica, allReplicaIds))
   }
 
   /**

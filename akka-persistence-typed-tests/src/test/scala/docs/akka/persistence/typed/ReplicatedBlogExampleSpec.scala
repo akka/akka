@@ -11,6 +11,7 @@ import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.crdt.LwwTime
 import akka.persistence.typed.scaladsl._
 import akka.serialization.jackson.CborSerializable
@@ -115,9 +116,7 @@ class ReplicatedBlogExampleSpec
         spawn(
           Behaviors.setup[BlogCommand] { ctx =>
             ReplicatedEventSourcing.withSharedJournal(
-              "blog",
-              "cat",
-              ReplicaId("DC-A"),
+              ReplicationId("blog", "cat", ReplicaId("DC-A")),
               Set(ReplicaId("DC-A"), ReplicaId("DC-B")),
               PersistenceTestKitReadJournal.Identifier) { replicationContext =>
               behavior(replicationContext, ctx)
@@ -129,9 +128,7 @@ class ReplicatedBlogExampleSpec
         spawn(
           Behaviors.setup[BlogCommand] { ctx =>
             ReplicatedEventSourcing.withSharedJournal(
-              "blog",
-              "cat",
-              ReplicaId("DC-B"),
+              ReplicationId("blog", "cat", ReplicaId("DC-B")),
               Set(ReplicaId("DC-A"), ReplicaId("DC-B")),
               PersistenceTestKitReadJournal.Identifier) { replicationContext =>
               behavior(replicationContext, ctx)

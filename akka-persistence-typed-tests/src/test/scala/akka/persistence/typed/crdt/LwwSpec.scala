@@ -6,6 +6,7 @@ package akka.persistence.typed.crdt
 
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
+import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing }
 import akka.persistence.typed.{ ReplicaId, ReplicationBaseSpec }
 import akka.serialization.jackson.CborSerializable
@@ -27,9 +28,7 @@ object LwwSpec {
 
     def apply(entityId: String, replica: ReplicaId): Behavior[Command] = {
       ReplicatedEventSourcing.withSharedJournal(
-        "LwwRegistrySpec",
-        entityId,
-        replica,
+        ReplicationId("LwwRegistrySpec", entityId, replica),
         AllReplicas,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>
         EventSourcedBehavior[Command, Event, Registry](

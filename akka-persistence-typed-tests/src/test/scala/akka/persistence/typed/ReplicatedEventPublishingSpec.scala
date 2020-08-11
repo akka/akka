@@ -31,9 +31,7 @@ object ReplicatedEventPublishingSpec {
     def apply(entityId: String, replicaId: ReplicaId, allReplicas: Set[ReplicaId]): Behavior[Command] =
       Behaviors.setup { ctx =>
         ReplicatedEventSourcing.withSharedJournal(
-          EntityType,
-          entityId,
-          replicaId,
+          ReplicationId(EntityType, entityId, replicaId),
           allReplicas,
           PersistenceTestKitReadJournal.Identifier)(
           replicationContext =>
@@ -86,7 +84,7 @@ class ReplicatedEventPublishingSpec
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedId(EntityType, id, DCB),
+        ReplicationId(EntityType, id, DCB).persistenceId,
         1L,
         "two",
         System.currentTimeMillis(),
@@ -107,7 +105,7 @@ class ReplicatedEventPublishingSpec
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedId(EntityType, id, DCB),
+        ReplicationId(EntityType, id, DCB).persistenceId,
         2L, // missing 1L
         "two",
         System.currentTimeMillis(),
@@ -128,7 +126,7 @@ class ReplicatedEventPublishingSpec
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedId(EntityType, id, DCC),
+        ReplicationId(EntityType, id, DCC).persistenceId,
         1L,
         "two",
         System.currentTimeMillis(),
@@ -149,14 +147,14 @@ class ReplicatedEventPublishingSpec
 
       // simulate a published event from another replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedId(EntityType, "myId4", DCB),
+        ReplicationId(EntityType, "myId4", DCB).persistenceId,
         1L,
         "two",
         System.currentTimeMillis(),
         Some(new ReplicatedPublishedEventMetaData(DCB, VersionVector.empty)))
       // simulate another published event from that replica
       actor.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedId(EntityType, id, DCB),
+        ReplicationId(EntityType, id, DCB).persistenceId,
         1L,
         "two-again", // ofc this would be the same in the real world, different just so we can detect
         System.currentTimeMillis(),
@@ -188,7 +186,7 @@ class ReplicatedEventPublishingSpec
 
       // simulate a published event from another replica
       incarnation2.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedId(EntityType, id, DCB),
+        ReplicationId(EntityType, id, DCB).persistenceId,
         1L,
         "two",
         System.currentTimeMillis(),
@@ -211,7 +209,7 @@ class ReplicatedEventPublishingSpec
 
       // simulate a published event from another replica
       incarnationA1.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedId(EntityType, id, DCB),
+        ReplicationId(EntityType, id, DCB).persistenceId,
         1L,
         "two",
         System.currentTimeMillis(),
@@ -224,7 +222,7 @@ class ReplicatedEventPublishingSpec
 
       // simulate a published event from another replica
       incarnationA2.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-        PersistenceId.replicatedId(EntityType, id, DCB),
+        ReplicationId(EntityType, id, DCB).persistenceId,
         2L,
         "three",
         System.currentTimeMillis(),

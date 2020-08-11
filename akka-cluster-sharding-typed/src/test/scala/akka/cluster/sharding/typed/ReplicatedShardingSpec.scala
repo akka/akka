@@ -73,9 +73,7 @@ object ReplicatedShardingSpec {
 
     def apply(replicationId: ReplicationId, allReplicas: Set[ReplicaId]): Behavior[Command] =
       ReplicatedEventSourcing.withSharedJournal( // it isn't really shared as it is in memory
-        replicationId.typeName,
-        replicationId.entityId,
-        replicationId.replicaId,
+        replicationId,
         allReplicas,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>
         EventSourcedBehavior[Command, String, Set[String]](
@@ -126,9 +124,7 @@ object ReplicatedShardingSpec {
 
     def apply(id: ReplicationId, allReplicas: Set[ReplicaId]): Behavior[Command] =
       ReplicatedEventSourcing.withSharedJournal( // it isn't really shared as it is in memory
-        id.typeName,
-        id.typeName,
-        id.replicaId,
+        id,
         allReplicas,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>
         EventSourcedBehavior[Command, Int, Set[Int]](
