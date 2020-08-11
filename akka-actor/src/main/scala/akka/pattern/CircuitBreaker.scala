@@ -202,10 +202,11 @@ class CircuitBreaker(
       maxFailures: Int,
       callTimeout: FiniteDuration,
       resetTimeout: FiniteDuration,
+      maxResetTimeout: FiniteDuration,
       exponentialBackoffFactor: Double)(
       implicit
       executor: ExecutionContext) = {
-    this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, exponentialBackoffFactor, 0.0)(executor)
+    this(scheduler, maxFailures, callTimeout, resetTimeout, maxResetTimeout, exponentialBackoffFactor, 0.0)(executor)
   }
 
   /**
