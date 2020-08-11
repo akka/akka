@@ -199,17 +199,17 @@ all data centers and all bids have been replicated.
 
 The @api[ReplicationContext] contains the current replica, the origin replica for the event processes, and if a recovery is running. These can be used to 
 implement side effects that take place once events are fully replicated. If the side effect should happen only once then a particular replica can be
-designated to do it. The @ref[Auction example](./replicated-eventsourcing-examples.md#auction) uses these techniques.
+designated to do it. The @ref[Auction example](replicated-eventsourcing-auction.md) uses these techniques.
 
 
 ## How it works
 
 You don’t have to read this section to be able to use the feature, but to use the abstraction efficiently and for the right type of use cases it can be good to understand how it’s implemented. For example, it should give you the right expectations of the overhead that the solution introduces compared to using just `EventSourcedBehavior`s.
 
-### Causal deliver order
+### Causal delivery order
 
 Causal delivery order means that events persisted in one replica are read in the same order in other replicas. The order of concurrent events is undefined, which should be no problem
-when using [CRDT's](#conflict-free-replicated-data-types)
+when using @ref:[CRDT's](#conflict-free-replicated-data-types)
 and otherwise will be detected via the `ReplicationContext` concurrent method.
 
 For example:
