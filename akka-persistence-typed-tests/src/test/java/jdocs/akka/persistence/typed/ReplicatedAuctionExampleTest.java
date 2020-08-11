@@ -11,10 +11,18 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.TimerScheduler;
 import akka.persistence.testkit.PersistenceTestKitPlugin;
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal;
+import akka.persistence.typed.RecoveryCompleted;
 import akka.persistence.typed.ReplicaId;
-import akka.persistence.typed.javadsl.*;
+import akka.persistence.typed.javadsl.CommandHandler;
+import akka.persistence.typed.javadsl.CommandHandlerBuilder;
+import akka.persistence.typed.javadsl.EventHandler;
+import akka.persistence.typed.javadsl.ReplicatedEventSourcedBehavior;
+import akka.persistence.typed.javadsl.ReplicatedEventSourcing;
+import akka.persistence.typed.javadsl.ReplicationContext;
+import akka.persistence.typed.javadsl.SignalHandler;
 import akka.serialization.jackson.CborSerializable;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import org.junit.ClassRule;
@@ -22,6 +30,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,7 +38,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static jdocs.akka.persistence.typed.ReplicatedAuctionExample.*;
+import static jdocs.akka.persistence.typed.AuctionEntity.*;
 import static org.junit.Assert.assertEquals;
 
 public class ReplicatedAuctionExampleTest extends JUnitSuite {
@@ -41,22 +50,14 @@ public class ReplicatedAuctionExampleTest extends JUnitSuite {
 
   @Test
   public void auctionExample() {
-    AuctionSetup setupA =
-        new AuctionSetup(
-            "old-skis",
-            new Bid("chbatey", 12, Instant.now(), R1),
-            Instant.now().plusSeconds(10),
-            true);
+    String auctionName = "old-skis";
+    Bid initialBid = new Bid("chbatey", 12, Instant.now(), R1);
+    Instant closeAt = Instant.now().plusSeconds(10);
 
-    AuctionSetup setupB =
-        new AuctionSetup(
-            "old-skis",
-            new Bid("chbatey", 12, Instant.now(), R1),
-            Instant.now().plusSeconds(10),
-            false);
-
-    ActorRef<Command> replicaA = testKit.spawn(create(setupA, R1));
-    ActorRef<Command> replicaB = testKit.spawn(create(setupA, R2));
+    ActorRef<Command> replicaA =
+        testKit.spawn(AuctionEntity.create(R1, auctionName, initialBid, closeAt, true));
+    ActorRef<Command> replicaB =
+        testKit.spawn(AuctionEntity.create(R2, auctionName, initialBid, closeAt, false));
 
     replicaA.tell(new OfferBid("me", 100));
     replicaA.tell(new OfferBid("me", 99));
@@ -87,52 +88,24 @@ public class ReplicatedAuctionExampleTest extends JUnitSuite {
   }
 }
 
-class ReplicatedAuctionExample
-    extends ReplicatedEventSourcedBehavior<Command, Event, AuctionState> {
+// #setup
+class AuctionEntity extends ReplicatedEventSourcedBehavior<Command, Event, AuctionState> {
 
   public static ReplicaId R1 = new ReplicaId("R1");
   public static ReplicaId R2 = new ReplicaId("R2");
 
   public static Set<ReplicaId> ALL_REPLICAS = new HashSet<>(Arrays.asList(R1, R2));
+
   private final ActorContext<Command> context;
-  private final AuctionSetup setup;
-
-  public static Behavior<Command> create(AuctionSetup setup, ReplicaId replica) {
-    return Behaviors.setup(
-        ctx ->
-            ReplicatedEventSourcing.withSharedJournal("Auction",
-                setup.name,
-                replica,
-                ALL_REPLICAS,
-                PersistenceTestKitReadJournal.Identifier(),
-                replicationCtx -> new ReplicatedAuctionExample(replicationCtx, ctx, setup)));
-  }
-
-  public ReplicatedAuctionExample(
-      ReplicationContext replicationContext, ActorContext<Command> context, AuctionSetup setup) {
-    super(replicationContext);
-    this.context = context;
-    this.setup = setup;
-  }
+  private final TimerScheduler<Command> timers;
+  private final Bid initialBid;
+  private final Instant closingAt;
+  private final boolean responsibleForClosing;
 
   // #setup
-  static class AuctionSetup {
-    final String name;
-    final Bid initialBid; // the initial bid is the minimum price bidden at start time by the owner
-    final Instant closingAt;
-    final boolean responsibleForClosing;
 
-    public AuctionSetup(
-        String name, Bid initialBid, Instant closingAt, boolean responsibleForClosing) {
-      this.name = name;
-      this.initialBid = initialBid;
-      this.closingAt = closingAt;
-      this.responsibleForClosing = responsibleForClosing;
-    }
-  }
-  // #setup
-
-  public static final class Bid implements CborSerializable {
+  // #commands
+  public static final class Bid {
     public final String bidder;
     public final int offer;
     public final Instant timestamp;
@@ -146,7 +119,6 @@ class ReplicatedAuctionExample
     }
   }
 
-  // #commands
   interface Command extends CborSerializable {}
 
   public enum Finish implements Command {
@@ -278,10 +250,71 @@ class ReplicatedAuctionExample
   }
   // #state
 
+  // #setup
+  public static Behavior<Command> create(
+      ReplicaId replica,
+      String name,
+      Bid initialBid,
+      Instant closingAt,
+      boolean responsibleForClosing) {
+    return Behaviors.setup(
+        ctx ->
+            Behaviors.withTimers(
+                timers ->
+                    ReplicatedEventSourcing.withSharedJournal(
+                        "Auction",
+                        name,
+                        replica,
+                        ALL_REPLICAS,
+                        PersistenceTestKitReadJournal.Identifier(),
+                        replicationCtx ->
+                            new AuctionEntity(
+                                ctx,
+                                replicationCtx,
+                                timers,
+                                initialBid,
+                                closingAt,
+                                responsibleForClosing))));
+  }
+
+  private AuctionEntity(
+      ActorContext<Command> context,
+      ReplicationContext replicationContext,
+      TimerScheduler<Command> timers,
+      Bid initialBid,
+      Instant closingAt,
+      boolean responsibleForClosing) {
+    super(replicationContext);
+    this.context = context;
+    this.timers = timers;
+    this.initialBid = initialBid;
+    this.closingAt = closingAt;
+    this.responsibleForClosing = responsibleForClosing;
+  }
+
   @Override
   public AuctionState emptyState() {
-    return new AuctionState(true, setup.initialBid, setup.initialBid.offer, Collections.emptySet());
+    return new AuctionState(true, initialBid, initialBid.offer, Collections.emptySet());
   }
+
+  @Override
+  public SignalHandler<AuctionState> signalHandler() {
+    return newSignalHandlerBuilder()
+        .onSignal(RecoveryCompleted.instance(), this::onRecoveryCompleted)
+        .build();
+  }
+
+  private void onRecoveryCompleted(AuctionState state) {
+    if (shouldClose(state)) {
+      context.getSelf().tell(Close.INSTANCE);
+    }
+
+    long millisUntilClosing =
+        closingAt.toEpochMilli() - getReplicationContext().currentTimeMillis();
+    timers.startSingleTimer(Finish.INSTANCE, Duration.ofMillis(millisUntilClosing));
+  }
+
+  // #setup
 
   // #command-handler
   @Override
@@ -356,6 +389,7 @@ class ReplicatedAuctionExample
   }
   // #command-handler
 
+  // #event-handler
   @Override
   public EventHandler<AuctionState, Event> eventHandler() {
     return newEventHandlerBuilder()
@@ -382,6 +416,7 @@ class ReplicatedAuctionExample
         .onEvent(WinnerDecided.class, (state, event) -> state.close())
         .build();
   }
+  // #event-handler
 
   // #event-triggers
   private void eventTriggers(AuctionFinished event, AuctionState newState) {
@@ -393,14 +428,17 @@ class ReplicatedAuctionExample
       context.getSelf().tell(Finish.INSTANCE);
     }
   }
-  // #event-triggers
 
   private boolean shouldClose(AuctionState state) {
-    return setup.responsibleForClosing
+    return responsibleForClosing
         && !state.isClosed()
         && getReplicationContext().getAllReplicas().stream()
             .map(ReplicaId::id)
             .collect(Collectors.toSet())
             .equals(state.finishedAtDc);
   }
+  // #event-triggers
+
+  // #setup
 }
+// #setup
