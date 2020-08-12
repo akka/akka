@@ -303,7 +303,7 @@ private[akka] class Mailboxes(
   }
 
   private def stashCapacityFromConfig(dispatcher: String, mailbox: String): Int = {
-    val disp = settings.config.getConfig(dispatcher)
+    val disp = Dispatchers.getConfig(settings.config, dispatcher)
     val fallback = disp.withFallback(settings.config.getConfig(Mailboxes.DefaultMailboxId))
     val config =
       if (mailbox == Mailboxes.DefaultMailboxId) fallback
