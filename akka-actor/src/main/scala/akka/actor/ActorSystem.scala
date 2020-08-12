@@ -989,14 +989,18 @@ private[akka] class ActorSystemImpl(
       "akka-persistence",
       "akka-persistence-query",
       "akka-persistence-shared",
+      "akka-persistence-testkit",
       "akka-persistence-typed",
+      "akka-pki",
       "akka-protobuf",
       "akka-protobuf-v3",
       "akka-remote",
+      "akka-serialization-jackson",
       "akka-slf4j",
       "akka-stream",
       "akka-stream-testkit",
-      "akka-stream-typed")
+      "akka-stream-typed",
+      "akka-stream-testkit")
 
   @volatile private var _initialized = false
 
