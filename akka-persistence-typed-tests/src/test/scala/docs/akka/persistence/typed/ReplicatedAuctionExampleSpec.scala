@@ -9,9 +9,6 @@ import java.time.Instant
 import scala.concurrent.duration._
 
 import docs.akka.persistence.typed.ReplicatedAuctionExampleSpec.AuctionEntity
-import org.scalatest.concurrent.Eventually
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -297,10 +294,7 @@ object ReplicatedAuctionExampleSpec {
 class ReplicatedAuctionExampleSpec
     extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
-    with Matchers
-    with LogCapturing
-    with ScalaFutures
-    with Eventually {
+    with LogCapturing {
   import ReplicatedAuctionExampleSpec.AuctionEntity._
 
   "Auction example" should {
