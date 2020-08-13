@@ -33,6 +33,7 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
+import static akka.cluster.sharding.typed.ReplicatedShardingTest.ProxyActor.ALL_REPLICAS;
 import static org.junit.Assert.assertEquals;
 
 public class ReplicatedShardingTest extends JUnitSuite {
@@ -65,10 +66,10 @@ public class ReplicatedShardingTest extends JUnitSuite {
       }
     }
 
-    static Behavior<Command> create(ReplicationId replicationId, Set<ReplicaId> allReplicas) {
+    static Behavior<Command> create(ReplicationId replicationId) {
       return ReplicatedEventSourcing.withSharedJournal(
           replicationId,
-          allReplicas,
+          ALL_REPLICAS,
           PersistenceTestKitReadJournal.Identifier(),
           MyReplicatedStringSet::new);
     }
@@ -158,7 +159,7 @@ public class ReplicatedShardingTest extends JUnitSuite {
                   "StringSet",
                   ALL_REPLICAS,
                   // factory for replicated entity for a given replica
-                  (entityTypeKey, replicaId, allReplicas) ->
+                  (entityTypeKey, replicaId) ->
                       ReplicatedEntity.create(
                           replicaId,
                           // use the replica id as typekey for sharding to get one sharding instance
@@ -168,8 +169,7 @@ public class ReplicatedShardingTest extends JUnitSuite {
                                   entityContext ->
                                       // factory for the entity for a given entity in that replica
                                       MyReplicatedStringSet.create(
-                                          ReplicationId.fromString(entityContext.getEntityId()),
-                                          allReplicas))
+                                          ReplicationId.fromString(entityContext.getEntityId())))
                               // potentially use replica id as role or dc in Akka multi dc for the
                               // sharding instance
                               // to control where replicas will live

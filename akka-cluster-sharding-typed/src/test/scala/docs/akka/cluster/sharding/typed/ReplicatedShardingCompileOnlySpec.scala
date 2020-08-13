@@ -32,7 +32,7 @@ object ReplicatedShardingCompileOnlySpec {
   //#bootstrap
   ReplicatedEntityProvider[Command, ShardingEnvelope[Command]](
     "MyEntityType",
-    Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) { (entityTypeKey, replicaId, replicas) =>
+    Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) { (entityTypeKey, replicaId) =>
     ReplicatedEntity(replicaId, Entity(entityTypeKey) { entityContext =>
       // the sharding entity id contains the business entityId, entityType, and replica id
       // which you'll need to create a ReplicatedEventSourcedBehavior
@@ -45,7 +45,7 @@ object ReplicatedShardingCompileOnlySpec {
   //#bootstrap-dc
   ReplicatedEntityProvider[Command, ShardingEnvelope[Command]](
     "MyEntityType",
-    Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) { (entityTypeKey, replicaId, replicas) =>
+    Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) { (entityTypeKey, replicaId) =>
     ReplicatedEntity(replicaId, Entity(entityTypeKey) { entityContext =>
       val replicationId = ReplicationId.fromString(entityContext.entityId)
       MyEventSourcedBehavior(replicationId)
@@ -56,7 +56,7 @@ object ReplicatedShardingCompileOnlySpec {
   //#bootstrap-role
   val provider = ReplicatedEntityProvider[Command, ShardingEnvelope[Command]](
     "MyEntityType",
-    Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) { (entityTypeKey, replicaId, replicas) =>
+    Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) { (entityTypeKey, replicaId) =>
     ReplicatedEntity(replicaId, Entity(entityTypeKey) { entityContext =>
       val replicationId = ReplicationId.fromString(entityContext.entityId)
       MyEventSourcedBehavior(replicationId)

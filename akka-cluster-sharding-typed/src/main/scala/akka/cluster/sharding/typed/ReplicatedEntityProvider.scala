@@ -16,6 +16,7 @@ import java.util.{ Set => JSet }
 
 import akka.annotation.ApiMayChange
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
+import akka.persistence.typed.ReplicationId.Separator
 
 @ApiMayChange
 object ReplicatedEntityProvider {
@@ -30,14 +31,11 @@ object ReplicatedEntityProvider {
       messageClass: Class[M],
       typeName: String,
       allReplicaIds: JSet[ReplicaId],
-      settingsPerReplicaFactory: akka.japi.function.Function3[
-        JEntityTypeKey[M],
-        ReplicaId,
-        JSet[ReplicaId],
-        ReplicatedEntity[M, E]]): ReplicatedEntityProvider[M, E] = {
+      settingsPerReplicaFactory: akka.japi.function.Function2[JEntityTypeKey[M], ReplicaId, ReplicatedEntity[M, E]])
+      : ReplicatedEntityProvider[M, E] = {
     implicit val classTag: ClassTag[M] = ClassTag(messageClass)
-    apply[M, E](typeName, allReplicaIds.asScala.toSet)((key, replica, _) =>
-      settingsPerReplicaFactory(key.asInstanceOf[EntityTypeKeyImpl[M]], replica, allReplicaIds))
+    apply[M, E](typeName, allReplicaIds.asScala.toSet)((key, replica) =>
+      settingsPerReplicaFactory(key.asInstanceOf[EntityTypeKeyImpl[M]], replica))
   }
 
   /**
@@ -47,12 +45,14 @@ object ReplicatedEntityProvider {
    * @tparam E The type for envelopes used for sending `M`s over sharding
    */
   def apply[M: ClassTag, E](typeName: String, allReplicaIds: Set[ReplicaId])(
-      settingsPerReplicaFactory: (EntityTypeKey[M], ReplicaId, Set[ReplicaId]) => ReplicatedEntity[M, E])
+      settingsPerReplicaFactory: (EntityTypeKey[M], ReplicaId) => ReplicatedEntity[M, E])
       : ReplicatedEntityProvider[M, E] = {
     new ReplicatedEntityProvider(allReplicaIds.map { replicaId =>
-      // TODO validate it does't contain the separator
-      val typeKey = EntityTypeKey[M](s"$typeName|${replicaId.id}")
-      (settingsPerReplicaFactory(typeKey, replicaId, allReplicaIds), typeName)
+      if (typeName.contains(Separator))
+        throw new IllegalArgumentException(s"typeName [$typeName] contains [$Separator] which is a reserved character")
+
+      val typeKey = EntityTypeKey[M](s"$typeName${Separator}${replicaId.id}")
+      (settingsPerReplicaFactory(typeKey, replicaId), typeName)
     }.toVector, directReplication = false)
   }
 }

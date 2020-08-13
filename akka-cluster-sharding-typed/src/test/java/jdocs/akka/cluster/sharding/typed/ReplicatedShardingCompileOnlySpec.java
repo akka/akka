@@ -19,7 +19,7 @@ public class ReplicatedShardingCompileOnlySpec {
 
   private static ActorSystem<?> system = null;
 
-  static interface Command {}
+  interface Command {}
 
   public static Behavior<Command> myEventSourcedBehavior(ReplicationId replicationId) {
     return null;
@@ -36,7 +36,7 @@ public class ReplicatedShardingCompileOnlySpec {
         Command.class,
         "MyReplicatedType",
         ALL_REPLICAS,
-        (entityTypeKey, replicaId, allReplicas) ->
+        (entityTypeKey, replicaId) ->
             ReplicatedEntity.create(
                 replicaId,
                 Entity.of(
@@ -54,7 +54,7 @@ public class ReplicatedShardingCompileOnlySpec {
         Command.class,
         "MyReplicatedType",
         ALL_REPLICAS,
-        (entityTypeKey, replicaId, allReplicas) ->
+        (entityTypeKey, replicaId) ->
             ReplicatedEntity.create(
                 replicaId,
                 Entity.of(
@@ -73,7 +73,7 @@ public class ReplicatedShardingCompileOnlySpec {
         Command.class,
         "MyReplicatedType",
         ALL_REPLICAS,
-        (entityTypeKey, replicaId, allReplicas) ->
+        (entityTypeKey, replicaId) ->
             ReplicatedEntity.create(
                 replicaId,
                 Entity.of(

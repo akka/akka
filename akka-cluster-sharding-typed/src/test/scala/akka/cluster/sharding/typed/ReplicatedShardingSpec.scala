@@ -6,6 +6,7 @@ package akka.cluster.sharding.typed
 
 import java.util.concurrent.ThreadLocalRandom
 
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
@@ -64,6 +65,8 @@ object ReplicatedShardingSpec {
   case object DataCenter extends ReplicationType
   case object Normal extends ReplicationType
 
+  val AllReplicas = Set(ReplicaId("DC-A"), ReplicaId("DC-B"))
+
   object MyReplicatedStringSet {
     trait Command extends CborSerializable
     case class Add(text: String) extends Command
@@ -71,10 +74,10 @@ object ReplicatedShardingSpec {
 
     case class Texts(texts: Set[String]) extends CborSerializable
 
-    def apply(replicationId: ReplicationId, allReplicas: Set[ReplicaId]): Behavior[Command] =
+    def apply(replicationId: ReplicationId): Behavior[Command] =
       ReplicatedEventSourcing.withSharedJournal( // it isn't really shared as it is in memory
         replicationId,
-        allReplicas,
+        AllReplicas,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>
         EventSourcedBehavior[Command, String, Set[String]](
           replicationContext.persistenceId,
@@ -96,11 +99,11 @@ object ReplicatedShardingSpec {
       ReplicatedEntityProvider[MyReplicatedStringSet.Command, ShardingEnvelope[MyReplicatedStringSet.Command]](
         // all replicas
         "StringSet",
-        Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) { (entityTypeKey, replicaId, allReplicaIds) =>
+        AllReplicas) { (entityTypeKey, replicaId) =>
         // factory for replicated entity for a given replica
         val entity = {
           val e = Entity(entityTypeKey) { entityContext =>
-            MyReplicatedStringSet(ReplicationId.fromString(entityContext.entityId), allReplicaIds)
+            MyReplicatedStringSet(ReplicationId.fromString(entityContext.entityId))
           }
           replicationType match {
             case Role =>
@@ -146,11 +149,11 @@ object ReplicatedShardingSpec {
     def provider(replicationType: ReplicationType) =
       ReplicatedEntityProvider[MyReplicatedIntSet.Command, ShardingEnvelope[MyReplicatedIntSet.Command]](
         "IntSet",
-        Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) { (entityTypeKey, replicaId, allReplicaIds) =>
+        AllReplicas) { (entityTypeKey, replicaId) =>
         val entity = {
           val e = Entity(entityTypeKey) { entityContext =>
             val replicationId = ReplicationId.fromString(entityContext.entityId)
-            MyReplicatedIntSet(replicationId, allReplicaIds)
+            MyReplicatedIntSet(replicationId, AllReplicas)
           }
           replicationType match {
             case Role =>
@@ -227,6 +230,14 @@ abstract class ReplicatedShardingSpec(replicationType: ReplicationType, configA:
     with LogCapturing {
 
   val system2 = ActorSystem(Behaviors.ignore[Any], name = system.name, config = configB)
+
+  override protected def afterAll(): Unit = {
+    super.afterAll()
+    ActorTestKit.shutdown(
+      system2,
+      testKitSettings.DefaultActorSystemShutdownTimeout,
+      testKitSettings.ThrowOnShutdownTimeout)
+  }
 
   "Replicated sharding" should {
 
