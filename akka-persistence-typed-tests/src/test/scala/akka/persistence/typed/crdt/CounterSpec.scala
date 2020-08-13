@@ -7,6 +7,7 @@ package akka.persistence.typed.crdt
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
+import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.crdt.CounterSpec.PlainCounter.{ Decrement, Get, Increment }
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplicatedEventSourcing }
 import akka.persistence.typed.{ ReplicaId, ReplicationBaseSpec }
@@ -29,9 +30,7 @@ object CounterSpec {
       eventProbe: Option[ActorRef[Counter.Updated]] = None) =
     Behaviors.setup[PlainCounter.Command] { context =>
       ReplicatedEventSourcing.withSharedJournal(
-        "CounterSpec",
-        entityId,
-        replicaId,
+        ReplicationId("CounterSpec", entityId, replicaId),
         AllReplicas,
         PersistenceTestKitReadJournal.Identifier) { ctx =>
         EventSourcedBehavior[PlainCounter.Command, Counter.Updated, Counter](

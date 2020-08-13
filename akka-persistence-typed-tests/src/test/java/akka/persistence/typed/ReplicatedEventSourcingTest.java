@@ -81,9 +81,7 @@ public class ReplicatedEventSourcingTest extends JUnitSuite {
     public static Behavior<Command> create(
         String entityId, ReplicaId replicaId, Set<ReplicaId> allReplicas) {
       return ReplicatedEventSourcing.withSharedJournal(
-          "ReplicatedEventSourcingTest",
-          entityId,
-          replicaId,
+          new ReplicationId("ReplicatedEventSourcingTest", entityId, replicaId),
           allReplicas,
           PersistenceTestKitReadJournal.Identifier(),
           TestBehavior::new);

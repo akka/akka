@@ -10,10 +10,10 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.eventstream.EventStream
 import akka.persistence.typed
-import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.internal.{ PublishedEventImpl, ReplicatedPublishedEventMetaData, VersionVector }
 import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicationId
 
 class ReplicatedShardingDirectReplicationSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
@@ -37,7 +37,7 @@ class ReplicatedShardingDirectReplicationSpec extends ScalaTestWithActorTestKit 
       upProbe.receiveMessage() // not bullet proof wrt to subscription being complete but good enough
 
       val event = PublishedEventImpl(
-        PersistenceId.replicatedId("ReplicatedShardingSpec", "pid", ReplicaId("ReplicaA")),
+        ReplicationId("ReplicatedShardingSpec", "pid", ReplicaId("ReplicaA")).persistenceId,
         1L,
         "event",
         System.currentTimeMillis(),

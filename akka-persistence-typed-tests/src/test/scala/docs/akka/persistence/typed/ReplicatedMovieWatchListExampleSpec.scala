@@ -5,7 +5,6 @@
 package docs.akka.persistence.typed
 
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
@@ -13,6 +12,7 @@ import akka.actor.typed.Behavior
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.crdt.ORSet
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
@@ -29,9 +29,7 @@ object ReplicatedMovieWatchListExampleSpec {
 
     def apply(entityId: String, replicaId: ReplicaId, allReplicaIds: Set[ReplicaId]): Behavior[Command] = {
       ReplicatedEventSourcing.withSharedJournal(
-        "movies",
-        entityId,
-        replicaId,
+        ReplicationId("movies", entityId, replicaId),
         allReplicaIds,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>
         EventSourcedBehavior[Command, ORSet.DeltaOp, ORSet[String]](

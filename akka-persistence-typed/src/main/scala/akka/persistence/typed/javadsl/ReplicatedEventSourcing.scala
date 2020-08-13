@@ -11,8 +11,8 @@ import java.util.{ Map => JMap }
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.internal.ReplicationContextImpl
-
 import akka.util.ccompat.JavaConverters._
 
 /**
@@ -22,6 +22,8 @@ import akka.util.ccompat.JavaConverters._
  */
 @DoNotInherit
 trait ReplicationContext {
+
+  def replicationId: ReplicationId
 
   /**
    * @return The replica id of this replicated event sourced actor
@@ -81,25 +83,15 @@ object ReplicatedEventSourcing {
    * can be used for each replica.
    * The events from other replicas are read using PersistentQuery.
    *
-   * @param entityType The name of the entity type e.g. account, user. Made part of the persistence id so that entity ids don't need to be unique across different replicated entities
-   * @param replicaId The unique identity for this entity. The underlying persistence id will include the replica.
-   * @param allReplicaIds All replica ids. These need to be known to receive events from all replicas.
    * @param queryPluginId A single query plugin used to read the events from other replicas. Must be the query side of your configured journal plugin.
    */
   def withSharedJournal[Command, Event, State](
-      entityType: String,
-      entityId: String,
-      replicaId: ReplicaId,
+      replicationId: ReplicationId,
       allReplicaIds: JSet[ReplicaId],
       queryPluginId: String,
       behaviorFactory: JFunction[ReplicationContext, EventSourcedBehavior[Command, Event, State]])
       : EventSourcedBehavior[Command, Event, State] =
-    create(
-      entityType,
-      entityId,
-      replicaId,
-      allReplicaIds.asScala.map(id => id -> queryPluginId).toMap.asJava,
-      behaviorFactory)
+    create(replicationId, allReplicaIds.asScala.map(id => id -> queryPluginId).toMap.asJava, behaviorFactory)
 
   /**
    * Initialize a replicated event sourced behavior.
@@ -113,19 +105,15 @@ object ReplicatedEventSourcing {
    * A query side identifier is passed per replica allowing for separate database/journal configuration per
    * replica. The events from other replicas are read using PersistentQuery.
    *
-   * @param entityType The name of the entity type e.g. account, user. Made part of the persistence id so that entity ids don't need to be unique across different replicated entities
-   * @param replicaId The unique identity for this entity. The underlying persistence id will include the replica.
    * @param allReplicasAndQueryPlugins All replica ids and a query plugin per replica id. These need to be known to receive events from all replicas
    *                                   and configured with the query plugin for the journal that each replica uses.
    */
   def create[Command, Event, State](
-      entityType: String,
-      entityId: String,
-      replicaId: ReplicaId,
+      replicationId: ReplicationId,
       allReplicasAndQueryPlugins: JMap[ReplicaId, String],
       eventSourcedBehaviorFactory: JFunction[ReplicationContext, EventSourcedBehavior[Command, Event, State]])
       : EventSourcedBehavior[Command, Event, State] = {
-    val context = new ReplicationContextImpl(entityType, entityId, replicaId, allReplicasAndQueryPlugins.asScala.toMap)
+    val context = new ReplicationContextImpl(replicationId, allReplicasAndQueryPlugins.asScala.toMap)
     eventSourcedBehaviorFactory(context)
   }
 

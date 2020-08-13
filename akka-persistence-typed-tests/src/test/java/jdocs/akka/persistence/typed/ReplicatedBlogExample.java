@@ -11,6 +11,7 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.persistence.testkit.query.javadsl.PersistenceTestKitReadJournal;
 import akka.persistence.typed.ReplicaId;
+import akka.persistence.typed.ReplicationId;
 import akka.persistence.typed.crdt.LwwTime;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.Effect;
@@ -187,9 +188,7 @@ interface ReplicatedBlogExample {
       return Behaviors.setup(
           context ->
               ReplicatedEventSourcing.withSharedJournal(
-                  "blog",
-                  entityId,
-                  replicaId,
+                  new ReplicationId("blog", entityId, replicaId),
                   allReplicas,
                   PersistenceTestKitReadJournal.Identifier(),
                   replicationContext -> new BlogEntity(context, replicationContext)));
