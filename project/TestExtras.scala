@@ -55,7 +55,7 @@ object TestExtras {
             require(file(filename).exists, s"$description should be run as part of the build")
 
           List(
-            "The java JavaExtension.java" -> "akka-actor-tests/target/test-reports/akka.actor.JavaExtension.xml",
+            "The java JavaExtension.java" -> "akka-actor-tests/target/test-reports/TEST-akka.actor.JavaExtension.xml",
             "The jdk9-only FlowPublisherSinkSpec.scala" -> "akka-stream-tests/target/test-reports/TEST-akka.stream.scaladsl.FlowPublisherSinkSpec.xml",
             "The jdk9-only JavaFlowSupportCompileTest.java" -> "akka-stream-tests/target/test-reports/TEST-akka.stream.javadsl.JavaFlowSupportCompileTest.xml",
           ).foreach((shouldExist _).tupled)
