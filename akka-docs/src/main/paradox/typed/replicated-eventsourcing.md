@@ -314,7 +314,7 @@ Scala
 Java
 :  @@snip [ReplicatedShardingTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ReplicatedShardingCompileOnlySpec.java) { #bootstrap }
 
-This will run a single instance of sharding and the replicas will be differentiated by having the replica id in the sharding entity id.
+This will run an instance of sharding and per replica and each entity id contains the replica id and the type name.
 Replicas could be on the same node if they end up in the same shard or if the shards get allocated to the same node.
 
 To prevent this roles can be used. You could for instance add a cluster role per availability zone / rack and have a replica per rack.

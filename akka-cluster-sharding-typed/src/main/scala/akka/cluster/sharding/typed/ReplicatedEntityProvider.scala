@@ -53,7 +53,7 @@ object ReplicatedEntityProvider {
 
       val typeKey = EntityTypeKey[M](s"$typeName${Separator}${replicaId.id}")
       (settingsPerReplicaFactory(typeKey, replicaId), typeName)
-    }.toVector, directReplication = false)
+    }.toVector, directReplication = true)
   }
 }
 
