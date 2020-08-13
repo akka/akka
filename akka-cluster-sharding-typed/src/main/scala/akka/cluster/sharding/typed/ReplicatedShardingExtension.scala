@@ -46,6 +46,17 @@ trait ReplicatedShardingExtension extends Extension {
    * Note, multiple calls on the same node will not start new sharding instances but will return a new instance of [[ReplicatedSharding]]
    */
   def init[M, E](settings: ReplicatedEntityProvider[M, E]): ReplicatedSharding[M, E]
+
+  /**
+   * Init one instance sharding per replica in the given settings and return a [[ReplicatedSharding]] representing those.
+   *
+   * @param thisReplica If provided saves messages being forwarded to sharding for this replica
+   * @tparam M The type of messages the replicated event sourced actor accepts
+   * @tparam E The type of envelope used for routing messages to actors, the same for all replicas
+   *
+   * Note, multiple calls on the same node will not start new sharding instances but will return a new instance of [[ReplicatedSharding]]
+   */
+  def init[M, E](thisReplica: ReplicaId, settings: ReplicatedEntityProvider[M, E]): ReplicatedSharding[M, E]
 }
 
 /**
