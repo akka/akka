@@ -35,6 +35,7 @@ import akka.persistence.journal.Tagged
 import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
 import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.{
   DeleteEventsCompleted,
   DeleteEventsFailed,
@@ -128,8 +129,8 @@ private[akka] object Running {
     val query = PersistenceQuery(system)
     replicationSetup.allReplicas.foldLeft(state) { (state, replicaId) =>
       if (replicaId != replicationSetup.replicaId) {
-        val pid = PersistenceId.replicatedId(
-          replicationSetup.replicationContext.entityTypeHint,
+        val pid = ReplicationId(
+          replicationSetup.replicationContext.replicationId.typeName,
           replicationSetup.replicationContext.entityId,
           replicaId)
         val queryPluginId = replicationSetup.allReplicasAndQueryPlugins(replicaId)
@@ -147,7 +148,7 @@ private[akka] object Running {
             Source.futureSource {
               setup.context.self.ask[Long](replyTo => GetSeenSequenceNr(replicaId, replyTo)).map { seqNr =>
                 replication
-                  .eventsByPersistenceId(pid.id, seqNr + 1, Long.MaxValue)
+                  .eventsByPersistenceId(pid.persistenceId.id, seqNr + 1, Long.MaxValue)
                   // from each replica, only get the events that originated there, this prevents most of the event filtering
                   // the downside is that events can't be received via other replicas in the event of an uneven network partition
                   .filter(event =>

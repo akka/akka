@@ -8,6 +8,7 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.persistence.testkit.query.javadsl.PersistenceTestKitReadJournal;
 import akka.persistence.typed.ReplicaId;
+import akka.persistence.typed.ReplicationId;
 import akka.persistence.typed.crdt.Counter;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.Effect;
@@ -85,9 +86,7 @@ interface ReplicatedShoppingCartExample {
     public static Behavior<Command> create(
         String entityId, ReplicaId replicaId, Set<ReplicaId> allReplicas) {
       return ReplicatedEventSourcing.withSharedJournal(
-          "blog",
-          entityId,
-          replicaId,
+          new ReplicationId("blog", entityId, replicaId),
           allReplicas,
           PersistenceTestKitReadJournal.Identifier(),
           ShoppingCart::new);

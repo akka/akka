@@ -20,7 +20,7 @@ object ReplicationSnapshotSpec {
 
   import ReplicatedEventSourcingSpec._
 
-  val EntityType = "SpapsnotSpec"
+  val EntityType = "SnapshotSpec"
 
   def behaviorWithSnapshotting(entityId: String, replicaId: ReplicaId): Behavior[Command] =
     behaviorWithSnapshotting(entityId, replicaId, None)
@@ -36,9 +36,7 @@ object ReplicationSnapshotSpec {
       replicaId: ReplicaId,
       probe: Option[ActorRef[EventAndContext]]): Behavior[Command] = {
     ReplicatedEventSourcing.withSharedJournal(
-      EntityType,
-      entityId,
-      replicaId,
+      ReplicationId(EntityType, entityId, replicaId),
       AllReplicas,
       PersistenceTestKitReadJournal.Identifier)(replicationContext =>
       eventSourcedBehavior(replicationContext, probe).snapshotWhen((_, _, sequenceNr) => sequenceNr % 2 == 0))
@@ -67,8 +65,8 @@ class ReplicationSnapshotSpec
   "ReplicatedEventSourcing" should {
     "recover state from snapshots" in {
       val entityId = nextEntityId
-      val persistenceIdR1 = s"$entityId|R1"
-      val persistenceIdR2 = s"$entityId|R2"
+      val persistenceIdR1 = s"$EntityType|$entityId|R1"
+      val persistenceIdR2 = s"$EntityType|$entityId|R2"
       val probe = createTestProbe[Done]()
       val r2EventProbe = createTestProbe[EventAndContext]()
 
@@ -84,7 +82,7 @@ class ReplicationSnapshotSpec
         snapshotTestKit.expectNextPersisted(persistenceIdR2, State(List("r1 2", "r1 1")))
 
         r2.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-          PersistenceId.replicatedId(EntityType, entityId, R1),
+          ReplicationId(EntityType, entityId, R1).persistenceId,
           1L,
           "two-again",
           System.currentTimeMillis(),
@@ -98,7 +96,7 @@ class ReplicationSnapshotSpec
       {
         val r2 = spawn(behaviorWithSnapshotting(entityId, R2, r2EventProbe.ref))
         r2.asInstanceOf[ActorRef[Any]] ! internal.PublishedEventImpl(
-          PersistenceId.replicatedId(EntityType, entityId, R1),
+          ReplicationId(EntityType, entityId, R1).persistenceId,
           1L,
           "two-again",
           System.currentTimeMillis(),
@@ -109,8 +107,6 @@ class ReplicationSnapshotSpec
         r2 ! GetState(stateProbe.ref)
         stateProbe.expectMessage(State(List("r1 2", "r1 1")))
       }
-
     }
   }
-
 }

@@ -16,6 +16,7 @@ import akka.persistence.testkit.PersistenceTestKitPlugin;
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal;
 import akka.persistence.typed.RecoveryCompleted;
 import akka.persistence.typed.ReplicaId;
+import akka.persistence.typed.ReplicationId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.CommandHandlerBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
@@ -262,9 +263,7 @@ class AuctionEntity extends ReplicatedEventSourcedBehavior<Command, Event, Aucti
             Behaviors.withTimers(
                 timers ->
                     ReplicatedEventSourcing.withSharedJournal(
-                        "Auction",
-                        name,
-                        replica,
+                        new ReplicationId("Auction", name, replica),
                         ALL_REPLICAS,
                         PersistenceTestKitReadJournal.Identifier(),
                         replicationCtx ->

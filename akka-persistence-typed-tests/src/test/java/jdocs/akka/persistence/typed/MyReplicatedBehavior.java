@@ -6,6 +6,7 @@ package jdocs.akka.persistence.typed;
 
 import akka.actor.typed.Behavior;
 import akka.persistence.typed.ReplicaId;
+import akka.persistence.typed.ReplicationId;
 import akka.persistence.typed.javadsl.*;
 
 import java.util.*;
@@ -33,9 +34,7 @@ public class MyReplicatedBehavior
   public static Behavior<Command> create(
       String entityId, ReplicaId replicaId, String queryPluginId) {
     return ReplicatedEventSourcing.withSharedJournal(
-        "MyReplicatedEntity",
-        entityId,
-        replicaId,
+        new ReplicationId("MyReplicatedEntity", entityId, replicaId),
         ALL_REPLICAS,
         queryPluginId,
         MyReplicatedBehavior::new);
@@ -49,9 +48,7 @@ public class MyReplicatedBehavior
     allReplicasAndQueryPlugins.put(DCB, "journalForDCB");
 
     return ReplicatedEventSourcing.create(
-        "MyReplicatedEntity",
-        entityId,
-        replicaId,
+        new ReplicationId("MyReplicatedEntity", entityId, replicaId),
         allReplicasAndQueryPlugins,
         MyReplicatedBehavior::new);
   }

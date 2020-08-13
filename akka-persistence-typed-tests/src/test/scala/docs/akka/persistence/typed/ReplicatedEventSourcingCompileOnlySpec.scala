@@ -5,6 +5,7 @@
 package docs.akka.persistence.typed
 
 import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.scaladsl.{ EventSourcedBehavior, ReplicatedEventSourcing }
 import com.github.ghik.silencer.silent
 
@@ -24,15 +25,19 @@ object ReplicatedEventSourcingCompileOnlySpec {
   trait Event
 
   //#factory-shared
-  ReplicatedEventSourcing.withSharedJournal("entityTypeHint", "entityId", DCA, AllReplicas, queryPluginId) { context =>
+  ReplicatedEventSourcing.withSharedJournal(
+    ReplicationId("entityTypeHint", "entityId", DCA),
+    AllReplicas,
+    queryPluginId) { context =>
     EventSourcedBehavior[Command, State, Event](???, ???, ???, ???)
   }
   //#factory-shared
 
   //#factory
-  ReplicatedEventSourcing("entityTypeHint", "entityId", DCA, Map(DCA -> "journalForDCA", DCB -> "journalForDCB")) {
-    context =>
-      EventSourcedBehavior[Command, State, Event](???, ???, ???, ???)
+  ReplicatedEventSourcing(
+    ReplicationId("entityTypeHint", "entityId", DCA),
+    Map(DCA -> "journalForDCA", DCB -> "journalForDCB")) { context =>
+    EventSourcedBehavior[Command, State, Event](???, ???, ???, ???)
   }
   //#factory
 

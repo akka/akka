@@ -6,12 +6,18 @@ package akka.cluster.sharding.typed
 
 import java.util.concurrent.ThreadLocalRandom
 
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.MemberStatus
+import akka.cluster.sharding.typed.ReplicatedShardingSpec.DataCenter
+import akka.cluster.sharding.typed.ReplicatedShardingSpec.Normal
+import akka.cluster.sharding.typed.ReplicatedShardingSpec.ReplicationType
+import akka.cluster.sharding.typed.ReplicatedShardingSpec.Role
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
@@ -24,35 +30,54 @@ import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor.typed.scaladsl.LoggerOps
+import akka.cluster.sharding.typed.ReplicatedShardingSpec.MyReplicatedIntSet
+import akka.cluster.sharding.typed.ReplicatedShardingSpec.MyReplicatedStringSet
+import akka.persistence.typed.ReplicationId
+import com.typesafe.config.Config
 
 object ReplicatedShardingSpec {
-  def config = ConfigFactory.parseString("""
-      akka.loglevel = DEBUG
+  def commonConfig = ConfigFactory.parseString("""
+      akka.loglevel = INFO
       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
       akka.actor.provider = "cluster"
-      # pretend we're a node in all dc:s
-      akka.cluster.roles = ["DC-A", "DC-B", "DC-C"]
       akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0""").withFallback(PersistenceTestKitPlugin.config)
-}
 
-class ReplicatedShardingSpec
-    extends ScalaTestWithActorTestKit(ReplicatedShardingSpec.config)
-    with AnyWordSpecLike
-    with LogCapturing {
+  def roleAConfig = ConfigFactory.parseString("""
+            akka.cluster.roles = ["DC-A"]
+            """.stripMargin).withFallback(commonConfig)
+
+  def roleBConfig = ConfigFactory.parseString("""
+            akka.cluster.roles = ["DC-B"]
+            """.stripMargin).withFallback(commonConfig)
+
+  def dcAConfig = ConfigFactory.parseString("""
+      akka.cluster.multi-data-center.self-data-center = "DC-A"
+      """).withFallback(commonConfig)
+
+  def dcBConfig = ConfigFactory.parseString("""
+      akka.cluster.multi-data-center.self-data-center = "DC-B"
+      """).withFallback(commonConfig)
+
+  sealed trait ReplicationType
+  case object Role extends ReplicationType
+  case object DataCenter extends ReplicationType
+  case object Normal extends ReplicationType
+
+  val AllReplicas = Set(ReplicaId("DC-A"), ReplicaId("DC-B"))
 
   object MyReplicatedStringSet {
     trait Command extends CborSerializable
     case class Add(text: String) extends Command
     case class GetTexts(replyTo: ActorRef[Texts]) extends Command
+
     case class Texts(texts: Set[String]) extends CborSerializable
 
-    def apply(entityId: String, replicaId: ReplicaId, allReplicas: Set[ReplicaId]): Behavior[Command] =
-      ReplicatedEventSourcing.withSharedJournal(
-        "StringSet",
-        entityId,
-        replicaId,
-        allReplicas,
+    def apply(replicationId: ReplicationId): Behavior[Command] =
+      ReplicatedEventSourcing.withSharedJournal( // it isn't really shared as it is in memory
+        replicationId,
+        AllReplicas,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>
         EventSourcedBehavior[Command, String, Set[String]](
           replicationContext.persistenceId,
@@ -65,81 +90,205 @@ class ReplicatedShardingSpec
                 replyTo ! Texts(state)
                 Effect.none
             },
-          (state, event) => state + event).withJournalPluginId(PersistenceTestKitPlugin.PluginId)
+          (state, event) => state + event)
+          .withJournalPluginId(PersistenceTestKitPlugin.PluginId)
+          .withEventPublishing(true)
       }
+
+    def provider(replicationType: ReplicationType) =
+      ReplicatedEntityProvider[MyReplicatedStringSet.Command, ShardingEnvelope[MyReplicatedStringSet.Command]](
+        // all replicas
+        "StringSet",
+        AllReplicas) { (entityTypeKey, replicaId) =>
+        // factory for replicated entity for a given replica
+        val entity = {
+          val e = Entity(entityTypeKey) { entityContext =>
+            MyReplicatedStringSet(ReplicationId.fromString(entityContext.entityId))
+          }
+          replicationType match {
+            case Role =>
+              e.withRole(replicaId.id)
+            case DataCenter =>
+              e.withDataCenter(replicaId.id)
+            case Normal =>
+              e
+          }
+        }
+        ReplicatedEntity(replicaId, entity)
+      }.withDirectReplication(true)
+
   }
 
-  object ProxyActor {
-    sealed trait Command
-    case class ForwardToRandom(entityId: String, msg: MyReplicatedStringSet.Command) extends Command
-    case class ForwardToAll(entityId: String, msg: MyReplicatedStringSet.Command) extends Command
+  object MyReplicatedIntSet {
+    trait Command extends CborSerializable
+    case class Add(text: Int) extends Command
+    case class GetInts(replyTo: ActorRef[Ints]) extends Command
+    case class Ints(ints: Set[Int]) extends CborSerializable
 
-    def apply(): Behavior[Command] = Behaviors.setup { context =>
-      // #bootstrap
-      val replicatedShardingProvider =
-        ReplicatedEntityProvider[MyReplicatedStringSet.Command, ShardingEnvelope[MyReplicatedStringSet.Command]](
-          // all replicas
-          Set(ReplicaId("DC-A"), ReplicaId("DC-B"), ReplicaId("DC-C"))) { (entityTypeKey, replicaId, allReplicaIds) =>
-          // factory for replicated entity for a given replica
-          ReplicatedEntity(
-            replicaId,
-            // use the provided entity type key for sharding to get one sharding instance per replica
-            Entity(entityTypeKey) { entityContext =>
-              // factory for the entity for a given entity in that replica
-              MyReplicatedStringSet(entityContext.entityId, replicaId, allReplicaIds)
-            }
-            // potentially use replica id as role or dc in Akka multi dc for the sharding instance
-            // to control where replicas will live
-            // .withDataCenter(replicaId.id))
-              .withRole(replicaId.id))
+    def apply(id: ReplicationId, allReplicas: Set[ReplicaId]): Behavior[Command] =
+      ReplicatedEventSourcing.withSharedJournal( // it isn't really shared as it is in memory
+        id,
+        allReplicas,
+        PersistenceTestKitReadJournal.Identifier) { replicationContext =>
+        EventSourcedBehavior[Command, Int, Set[Int]](
+          replicationContext.persistenceId,
+          Set.empty[Int],
+          (state, command) =>
+            command match {
+              case Add(int) =>
+                Effect.persist(int)
+              case GetInts(replyTo) =>
+                replyTo ! Ints(state)
+                Effect.none
+            },
+          (state, event) => state + event)
+          .withJournalPluginId(PersistenceTestKitPlugin.PluginId)
+          .withEventPublishing(true)
+      }
+
+    def provider(replicationType: ReplicationType) =
+      ReplicatedEntityProvider[MyReplicatedIntSet.Command, ShardingEnvelope[MyReplicatedIntSet.Command]](
+        "IntSet",
+        AllReplicas) { (entityTypeKey, replicaId) =>
+        val entity = {
+          val e = Entity(entityTypeKey) { entityContext =>
+            val replicationId = ReplicationId.fromString(entityContext.entityId)
+            MyReplicatedIntSet(replicationId, AllReplicas)
+          }
+          replicationType match {
+            case Role =>
+              e.withRole(replicaId.id)
+            case DataCenter =>
+              e.withDataCenter(replicaId.id)
+            case Normal =>
+              e
+          }
         }
+        ReplicatedEntity(replicaId, entity)
+      }.withDirectReplication(true)
+  }
+}
 
-      val replicatedSharding = ReplicatedShardingExtension(context.system).init(replicatedShardingProvider)
-      // #bootstrap
+object ProxyActor {
+  sealed trait Command
+  case class ForwardToRandomString(entityId: String, msg: MyReplicatedStringSet.Command) extends Command
+  case class ForwardToAllString(entityId: String, msg: MyReplicatedStringSet.Command) extends Command
+  case class ForwardToRandomInt(entityId: String, msg: MyReplicatedIntSet.Command) extends Command
+  case class ForwardToAllInt(entityId: String, msg: MyReplicatedIntSet.Command) extends Command
 
+  def apply(replicationType: ReplicationType): Behavior[Command] = Behaviors.setup { context =>
+    val replicatedShardingStringSet =
+      ReplicatedShardingExtension(context.system).init(MyReplicatedStringSet.provider(replicationType))
+    val replicatedShardingIntSet =
+      ReplicatedShardingExtension(context.system).init(MyReplicatedIntSet.provider(replicationType))
+    Behaviors.setup { ctx =>
       Behaviors.receiveMessage {
-        case ForwardToAll(entityId, cmd) =>
-          // #all-entity-refs
-          replicatedSharding.entityRefsFor(entityId).foreach {
+        case ForwardToAllString(entityId, cmd) =>
+          val entityRefs = replicatedShardingStringSet.entityRefsFor(entityId)
+
+          ctx.log.infoN("Entity refs {}", entityRefs)
+
+          entityRefs.foreach {
+            case (replica, ref) =>
+              ctx.log.infoN("Forwarding to replica {} ref {}", replica, ref)
+              ref ! cmd
+          }
+          Behaviors.same
+        case ForwardToRandomString(entityId, cmd) =>
+          val refs = replicatedShardingStringSet.entityRefsFor(entityId)
+          val chosenIdx = ThreadLocalRandom.current().nextInt(refs.size)
+          val chosen = refs.values.toIndexedSeq(chosenIdx)
+          ctx.log.info("Forwarding to {}", chosen)
+          chosen ! cmd
+          Behaviors.same
+        case ForwardToAllInt(entityId, cmd) =>
+          replicatedShardingIntSet.entityRefsFor(entityId).foreach {
             case (_, ref) => ref ! cmd
           }
-          // #all-entity-refs
           Behaviors.same
-        case ForwardToRandom(entityId, cmd) =>
-          val refs = replicatedSharding.entityRefsFor(entityId)
+        case ForwardToRandomInt(entityId, cmd) =>
+          val refs =
+            replicatedShardingIntSet.entityRefsFor(entityId)
           val chosenIdx = ThreadLocalRandom.current().nextInt(refs.size)
-          refs.values.toIndexedSeq(chosenIdx) ! cmd;
+          refs.values.toIndexedSeq(chosenIdx) ! cmd
           Behaviors.same
       }
     }
+  }
+}
+
+class NormalReplicatedShardingSpec
+    extends ReplicatedShardingSpec(Normal, ReplicatedShardingSpec.commonConfig, ReplicatedShardingSpec.commonConfig)
+class RoleReplicatedShardingSpec
+    extends ReplicatedShardingSpec(Role, ReplicatedShardingSpec.roleAConfig, ReplicatedShardingSpec.roleBConfig)
+class DataCenterReplicatedShardingSpec
+    extends ReplicatedShardingSpec(DataCenter, ReplicatedShardingSpec.dcAConfig, ReplicatedShardingSpec.dcBConfig)
+
+abstract class ReplicatedShardingSpec(replicationType: ReplicationType, configA: Config, configB: Config)
+    extends ScalaTestWithActorTestKit(configA)
+    with AnyWordSpecLike
+    with LogCapturing {
+
+  val system2 = ActorSystem(Behaviors.ignore[Any], name = system.name, config = configB)
+
+  override protected def afterAll(): Unit = {
+    super.afterAll()
+    ActorTestKit.shutdown(
+      system2,
+      testKitSettings.DefaultActorSystemShutdownTimeout,
+      testKitSettings.ThrowOnShutdownTimeout)
   }
 
   "Replicated sharding" should {
 
     "form a one node cluster" in {
-      val node = Cluster(system)
-      node.manager ! Join(node.selfMember.address)
+      Cluster(system).manager ! Join(Cluster(system).selfMember.address)
+      Cluster(system2).manager ! Join(Cluster(system).selfMember.address)
+
       eventually {
-        node.selfMember.status should ===(MemberStatus.Up)
+        Cluster(system).state.members.size should ===(2)
+        Cluster(system).state.members.map(_.status) should ===(Set[MemberStatus](MemberStatus.Up))
+      }
+      eventually {
+        Cluster(system2).state.members.size should ===(2)
+        Cluster(system2).state.members.map(_.status) should ===(Set[MemberStatus](MemberStatus.Up))
       }
     }
 
-    "forward to replicas" in {
-      val proxy = spawn(ProxyActor())
+    "start replicated sharding on both nodes" in {
+      def start(sys: ActorSystem[_]) = {
+        ReplicatedShardingExtension(sys).init(MyReplicatedStringSet.provider(replicationType))
+        ReplicatedShardingExtension(sys).init(MyReplicatedIntSet.provider(replicationType))
+      }
+      start(system)
+      start(system2)
+    }
 
-      proxy ! ProxyActor.ForwardToAll("id1", MyReplicatedStringSet.Add("to-all"))
-      proxy ! ProxyActor.ForwardToRandom("id1", MyReplicatedStringSet.Add("to-random"))
+    "forward to replicas" in {
+      val proxy = spawn(ProxyActor(replicationType))
+
+      proxy ! ProxyActor.ForwardToAllString("id1", MyReplicatedStringSet.Add("to-all"))
+      proxy ! ProxyActor.ForwardToRandomString("id1", MyReplicatedStringSet.Add("to-random"))
 
       eventually {
         val probe = createTestProbe[MyReplicatedStringSet.Texts]()
-        proxy ! ProxyActor.ForwardToAll("id1", MyReplicatedStringSet.GetTexts(probe.ref))
-        val responses: Seq[MyReplicatedStringSet.Texts] = probe.receiveMessages(3)
+        proxy ! ProxyActor.ForwardToAllString("id1", MyReplicatedStringSet.GetTexts(probe.ref))
+        val responses: Seq[MyReplicatedStringSet.Texts] = probe.receiveMessages(2)
         val uniqueTexts = responses.flatMap(res => res.texts).toSet
         uniqueTexts should ===(Set("to-all", "to-random"))
       }
 
-    }
+      proxy ! ProxyActor.ForwardToAllInt("id1", MyReplicatedIntSet.Add(10))
+      proxy ! ProxyActor.ForwardToRandomInt("id1", MyReplicatedIntSet.Add(11))
 
+      eventually {
+        val probe = createTestProbe[MyReplicatedIntSet.Ints]()
+        proxy ! ProxyActor.ForwardToAllInt("id1", MyReplicatedIntSet.GetInts(probe.ref))
+        val responses: Seq[MyReplicatedIntSet.Ints] = probe.receiveMessages(2)
+        val uniqueTexts = responses.flatMap(res => res.ints).toSet
+        uniqueTexts should ===(Set(10, 11))
+      }
+    }
   }
 
 }

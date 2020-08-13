@@ -23,6 +23,7 @@ import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
@@ -142,12 +143,13 @@ object ReplicatedAuctionExampleSpec {
         responsibleForClosing: Boolean,
         allReplicas: Set[ReplicaId]): Behavior[Command] = Behaviors.setup[Command] { ctx =>
       Behaviors.withTimers { timers =>
-        ReplicatedEventSourcing
-          .withSharedJournal("auction", name, replica, allReplicas, PersistenceTestKitReadJournal.Identifier) {
-            replicationCtx =>
-              new AuctionEntity(ctx, replicationCtx, timers, closingAt, responsibleForClosing, allReplicas)
-                .behavior(initialBid)
-          }
+        ReplicatedEventSourcing.withSharedJournal(
+          ReplicationId("auction", name, replica),
+          allReplicas,
+          PersistenceTestKitReadJournal.Identifier) { replicationCtx =>
+          new AuctionEntity(ctx, replicationCtx, timers, closingAt, responsibleForClosing, allReplicas)
+            .behavior(initialBid)
+        }
       }
     }
 

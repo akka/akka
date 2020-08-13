@@ -10,6 +10,7 @@ import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, Replicate
 import akka.persistence.typed.{ ReplicaId, ReplicationBaseSpec }
 import ORSetSpec.ORSetEntity._
 import akka.persistence.typed.ReplicationBaseSpec.{ R1, R2 }
+import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.crdt.ORSetSpec.ORSetEntity
 
 import scala.util.Random
@@ -28,9 +29,7 @@ object ORSetSpec {
     def apply(entityId: String, replica: ReplicaId): Behavior[ORSetEntity.Command] = {
 
       ReplicatedEventSourcing.withSharedJournal(
-        "ORSetSpec",
-        entityId,
-        replica,
+        ReplicationId("ORSetSpec", entityId, replica),
         AllReplicas,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>
         EventSourcedBehavior[Command, ORSet.DeltaOp, ORSet[String]](

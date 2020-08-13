@@ -7,6 +7,7 @@ package akka.persistence.typed.scaladsl
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.internal.ReplicationContextImpl
 
 /**
@@ -17,6 +18,8 @@ import akka.persistence.typed.internal.ReplicationContextImpl
 @DoNotInherit
 trait ReplicationContext {
 
+  def replicationId: ReplicationId
+
   /**
    * @return The unique id of this replica, including the replica id
    */
@@ -25,7 +28,7 @@ trait ReplicationContext {
   /**
    * @return The replica id of this replicated event sourced actor
    */
-  def replicaId: ReplicaId
+  def replicaId: ReplicaId = replicationId.replicaId
 
   /**
    * @return The ids of all replicas of this replicated event sourced actor
@@ -35,7 +38,7 @@ trait ReplicationContext {
   /**
    * @return The entity id of this replicated event sourced actor (not including the replica id)
    */
-  def entityId: String
+  def entityId: String = replicationId.entityId
 
   /**
    * Must only be called from the event handler
@@ -76,22 +79,16 @@ object ReplicatedEventSourcing {
    * can be used for each replica.
    * The events from other replicas are read using PersistentQuery.
    *
-   * @param entityType The name of the entity type e.g. account, user. Made part of the persistence id so that entity ids don't need to be unique across different replicated entities
-   * @param entityId The unique entity id
-   * @param replicaId The unique identity for this entity. The underlying persistence id will include the replica.
    * @param allReplicaIds All replica ids. These need to be known to receive events from all replicas.
    * @param queryPluginId A single query plugin used to read the events from other replicas. Must be the query side of your configured journal plugin.
    */
   def withSharedJournal[Command, Event, State](
-      entityType: String,
-      entityId: String,
-      replicaId: ReplicaId,
+      replicationId: ReplicationId,
       allReplicaIds: Set[ReplicaId],
       queryPluginId: String)(
       eventSourcedBehaviorFactory: ReplicationContext => EventSourcedBehavior[Command, Event, State])
       : EventSourcedBehavior[Command, Event, State] =
-    apply(entityType, entityId, replicaId, allReplicaIds.map(id => id -> queryPluginId).toMap)(
-      eventSourcedBehaviorFactory)
+    apply(replicationId, allReplicaIds.map(id => id -> queryPluginId).toMap)(eventSourcedBehaviorFactory)
 
   /**
    * Initialize a replicated event sourced behavior.
@@ -104,21 +101,13 @@ object ReplicatedEventSourcing {
    * The journal plugin id for the entity itself can be configured using withJournalPluginId after creation.
    * A query side identifier is passed per replica allowing for separate database/journal configuration per
    * replica. The events from other replicas are read using PersistentQuery.
-   *
-   * @param entityType The name of the entity type e.g. account, user. Made part of the persistence id so that entity ids don't need to be unique across different replicated entities
-   * @param entityId The unique entity id
-   * @param replicaId The unique identity for this entity. The underlying persistence id will include the replica.
    * @param allReplicasAndQueryPlugins All replica ids and a query plugin per replica id. These need to be known to receive events from all replicas
    *                                   and configured with the query plugin for the journal that each replica uses.
    */
-  def apply[Command, Event, State](
-      entityType: String,
-      entityId: String,
-      replicaId: ReplicaId,
-      allReplicasAndQueryPlugins: Map[ReplicaId, String])(
+  def apply[Command, Event, State](replicationId: ReplicationId, allReplicasAndQueryPlugins: Map[ReplicaId, String])(
       eventSourcedBehaviorFactory: ReplicationContext => EventSourcedBehavior[Command, Event, State])
       : EventSourcedBehavior[Command, Event, State] = {
-    val context = new ReplicationContextImpl(entityType, entityId, replicaId, allReplicasAndQueryPlugins)
+    val context = new ReplicationContextImpl(replicationId, allReplicasAndQueryPlugins)
     eventSourcedBehaviorFactory(context).withReplication(context)
   }
 

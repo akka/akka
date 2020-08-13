@@ -8,6 +8,7 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.persistence.testkit.query.javadsl.PersistenceTestKitReadJournal;
 import akka.persistence.typed.ReplicaId;
+import akka.persistence.typed.ReplicationId;
 import akka.persistence.typed.crdt.ORSet;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
@@ -61,9 +62,7 @@ interface ReplicatedMovieExample {
     public static Behavior<Command> create(
         String entityId, ReplicaId replicaId, Set<ReplicaId> allReplicas) {
       return ReplicatedEventSourcing.withSharedJournal(
-          "movies",
-          entityId,
-          replicaId,
+          new ReplicationId("movies", entityId, replicaId),
           allReplicas,
           PersistenceTestKitReadJournal.Identifier(),
           MovieWatchList::new);
