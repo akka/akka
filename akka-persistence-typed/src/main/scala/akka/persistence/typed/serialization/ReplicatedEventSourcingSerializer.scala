@@ -10,10 +10,13 @@ import java.{ lang => jl }
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
+import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.crdt.{ Counter, ORSet }
+import akka.persistence.typed.internal.PublishedEventImpl
 import akka.persistence.typed.internal.ReplicatedEventMetadata
 import akka.persistence.typed.internal.ReplicatedSnapshotMetadata
+import akka.persistence.typed.internal.ReplicatedPublishedEventMetaData
 import akka.persistence.typed.internal.VersionVector
 import akka.protobufv3.internal.ByteString
 import akka.remote.ContainerFormats.Payload
@@ -77,6 +80,8 @@ import scala.collection.immutable.TreeMap
   private val ReplicatedEventMetadataManifest = "RE"
   private val ReplicatedSnapshotMetadataManifest = "RS"
 
+  private val PublishedEventManifest = "PA"
+
   def manifest(o: AnyRef) = o match {
     case _: ORSet[_]                  => ORSetManifest
     case _: ORSet.AddDeltaOp[_]       => ORSetAddManifest
@@ -91,12 +96,14 @@ import scala.collection.immutable.TreeMap
 
     case _: ReplicatedEventMetadata    => ReplicatedEventMetadataManifest
     case _: ReplicatedSnapshotMetadata => ReplicatedSnapshotMetadataManifest
+
+    case _: PublishedEventImpl => PublishedEventManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
 
   def toBinary(o: AnyRef) = o match {
-    case m: ReplicatedEventMetadata    => replicatedEventMetadataToProtoByteArray(m)
+    case m: ReplicatedEventMetadata    => replicatedEventMetadataToProto(m).toByteArray
     case m: ReplicatedSnapshotMetadata => replicatedSnapshotMetadataToByteArray(m)
 
     case m: VersionVector => versionVectorToProto(m).toByteArray
@@ -109,6 +116,8 @@ import scala.collection.immutable.TreeMap
 
     case m: Counter         => counterToProtoByteArray(m)
     case m: Counter.Updated => counterUpdatedToProtoBufByteArray(m)
+
+    case m: PublishedEventImpl => publishedEventToProtoByteArray(m)
 
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
@@ -130,9 +139,48 @@ import scala.collection.immutable.TreeMap
     case CrdtCounterManifest        => counterFromBinary(bytes)
     case CrdtCounterUpdatedManifest => counterUpdatedFromBinary(bytes)
 
+    case PublishedEventManifest => publishedEventFromBinary(bytes)
+
     case _ =>
       throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
+  }
+
+  def publishedEventToProtoByteArray(impl: PublishedEventImpl): Array[Byte] = {
+    val builder = ReplicatedEventSourcing.PublishedEvent
+      .newBuilder()
+      .setPersistenceId(impl.persistenceId.id)
+      .setSequenceNr(impl.sequenceNumber)
+      .setPayload(wrappedSupport.payloadBuilder(impl.payload))
+      .setTimestamp(impl.timestamp)
+
+    (impl.replicatedMetaData match {
+      case None =>
+        builder
+      case Some(m) =>
+        builder.setMetadata(
+          ReplicatedEventSourcing.ReplicatedPublishedEventMetaData
+            .newBuilder()
+            .setReplicaId(m.replicaId.id)
+            .setVersionVector(versionVectorToProto(m.version))
+            .build())
+    }).build().toByteArray
+  }
+
+  def publishedEventFromBinary(bytes: Array[Byte]): PublishedEventImpl = {
+    val p = ReplicatedEventSourcing.PublishedEvent.parseFrom(bytes)
+    PublishedEventImpl(
+      PersistenceId.ofUniqueId(p.getPersistenceId),
+      p.getSequenceNr,
+      wrappedSupport.deserializePayload(p.getPayload),
+      p.getTimestamp,
+      if (p.hasMetadata) {
+        val protoMeta = p.getMetadata
+        Some(
+          new ReplicatedPublishedEventMetaData(
+            ReplicaId(protoMeta.getReplicaId),
+            versionVectorFromProto(protoMeta.getVersionVector)))
+      } else None)
   }
 
   def counterFromBinary(bytes: Array[Byte]): Counter =
@@ -217,7 +265,7 @@ import scala.collection.immutable.TreeMap
     b.build()
   }
 
-  def replicatedEventMetadataToProtoByteArray(rem: ReplicatedEventMetadata): Array[Byte] = {
+  def replicatedEventMetadataToProto(rem: ReplicatedEventMetadata): ReplicatedEventSourcing.ReplicatedEventMetadata = {
     ReplicatedEventSourcing.ReplicatedEventMetadata
       .newBuilder()
       .setOriginSequenceNr(rem.originSequenceNr)
@@ -225,7 +273,6 @@ import scala.collection.immutable.TreeMap
       .setOriginReplica(rem.originReplica.id)
       .setVersionVector(versionVectorToProto(rem.version))
       .build()
-      .toByteArray
   }
 
   def replicatedSnapshotMetadataToByteArray(rsm: ReplicatedSnapshotMetadata): Array[Byte] = {
@@ -332,6 +379,10 @@ import scala.collection.immutable.TreeMap
 
   def replicatedEventMetadataFromBinary(bytes: Array[Byte]): ReplicatedEventMetadata = {
     val parsed = ReplicatedEventSourcing.ReplicatedEventMetadata.parseFrom(bytes)
+    metadataFromProto(parsed)
+  }
+
+  private def metadataFromProto(parsed: ReplicatedEventSourcing.ReplicatedEventMetadata): ReplicatedEventMetadata = {
     ReplicatedEventMetadata(
       ReplicaId(parsed.getOriginReplica),
       parsed.getOriginSequenceNr,
@@ -340,7 +391,8 @@ import scala.collection.immutable.TreeMap
   }
 
   def replicatedSnapshotMetadataFromBinary(bytes: Array[Byte]): ReplicatedSnapshotMetadata = {
-    val parsed = ReplicatedEventSourcing.ReplicatedSnapshotMetadata.parseFrom(bytes)
+    val parsed: ReplicatedEventSourcing.ReplicatedSnapshotMetadata =
+      ReplicatedEventSourcing.ReplicatedSnapshotMetadata.parseFrom(bytes)
     ReplicatedSnapshotMetadata(
       versionVectorFromProto(parsed.getVersion),
       parsed.getSeenPerReplicaList.asScala.map(seen => ReplicaId(seen.getReplicaId) -> seen.getSequenceNr).toMap)
