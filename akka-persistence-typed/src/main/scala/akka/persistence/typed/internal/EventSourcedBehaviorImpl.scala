@@ -98,7 +98,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
     override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty,
     replication: Option[ReplicationSetup] = None,
-    publishEvents: Boolean = false)
+    publishEvents: Boolean = true)
     extends EventSourcedBehavior[Command, Event, State] {
 
   import EventSourcedBehaviorImpl.WriterIdentity
