@@ -384,18 +384,15 @@ with a single stream of tagged events from all replicas without duplicates.
 
 ## Direct Replication of Events
 
-Normally an event has to be written in the journal and then picked up by the trailing read journal in the other replicas. 
-As an optimization the replicated events can be published across the Akka cluster to the replicas. The read side
-query is still needed as delivery is not guaranteed, but can be configured to poll the database less often since most
+In addition to reading each replica's events from the database the replicated events are published across the Akka cluster to the replicas when used with Cluster Sharding. 
+The  query is still needed as delivery is not guaranteed, but can be configured to poll the database less often since most
 events will arrive at the replicas through the cluster.
 
-To enable this feature you first need to enable event publishing on the @scala[`EventSourcedBehavior`]@java[`ReplicatedEventSourcedBehavior`] with `withEventPublishing` 
-and then enable direct replication through `withDirectReplication(true)` on @apidoc[ReplicatedEntityProvider] (if not using
- replicated sharding the replication can be run standalone by starting the @apidoc[ShardingDirectReplication] actor).
+This feature is enabled by default when using sharding. 
+To disable this feature you first need to disable event publishing on the @scala[`EventSourcedBehavior`]@java[`ReplicatedEventSourcedBehavior`] with `withEventPublishing` 
+and then disable direct replication through `withDirectReplication(true)` on @apidoc[ReplicatedEntityProvider] 
 
 The "event publishing" feature publishes each event to the local system event bus as a side effect after it has been written, 
-the @apidoc[ShardingDirectReplication] actor subscribes to these events and forwards them to the replicas allowing them
-to fast forward the stream of events for the origin replica. (With additional potential future support in journals for fast forwarding [#29311](https://github.com/akka/akka/issues/29311)). 
 
 ## Hot Standby
 
