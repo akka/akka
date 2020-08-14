@@ -6,7 +6,6 @@ package akka.persistence.typed.serialization
 
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.SerializationTestKit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.crdt.Counter
@@ -18,24 +17,22 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 class ReplicatedEventSourcingSerializerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
-  val testkit = new SerializationTestKit(system)
-
   "ReplicatedEventSourcingSerializer" should {
     "serializer" in {
-      testkit.verifySerialization(ORSet.empty(ReplicaId("R1")))
-      testkit.verifySerialization(ORSet.empty(ReplicaId("R1")).add("cat"))
-      testkit.verifySerialization(ORSet.empty(ReplicaId("R1")).remove("cat"))
-      testkit.verifySerialization(ORSet.empty(ReplicaId("R1")).addAll(Set("one", "two")))
-      testkit.verifySerialization(ORSet.empty(ReplicaId("R1")).removeAll(Set("one", "two")))
+      serializationTestKit.verifySerialization(ORSet.empty(ReplicaId("R1")))
+      serializationTestKit.verifySerialization(ORSet.empty(ReplicaId("R1")).add("cat"))
+      serializationTestKit.verifySerialization(ORSet.empty(ReplicaId("R1")).remove("cat"))
+      serializationTestKit.verifySerialization(ORSet.empty(ReplicaId("R1")).addAll(Set("one", "two")))
+      serializationTestKit.verifySerialization(ORSet.empty(ReplicaId("R1")).removeAll(Set("one", "two")))
 
-      testkit.verifySerialization(Counter.empty)
-      testkit.verifySerialization(Counter.Updated(BigInt(10)))
-      testkit.verifySerialization(Counter.empty.applyOperation(Counter.Updated(BigInt(12))))
+      serializationTestKit.verifySerialization(Counter.empty)
+      serializationTestKit.verifySerialization(Counter.Updated(BigInt(10)))
+      serializationTestKit.verifySerialization(Counter.empty.applyOperation(Counter.Updated(BigInt(12))))
 
-      testkit.verifySerialization(VersionVector.empty)
-      testkit.verifySerialization(VersionVector.empty.updated("a", 10))
+      serializationTestKit.verifySerialization(VersionVector.empty)
+      serializationTestKit.verifySerialization(VersionVector.empty.updated("a", 10))
 
-      testkit.verifySerialization(
+      serializationTestKit.verifySerialization(
         PublishedEventImpl(
           PersistenceId.ofUniqueId("cat"),
           10,
@@ -44,7 +41,7 @@ class ReplicatedEventSourcingSerializerSpec extends ScalaTestWithActorTestKit wi
           Some(new ReplicatedPublishedEventMetaData(ReplicaId("R1"), VersionVector.empty))),
         assertEquality = false)
 
-      testkit.verifySerialization(
+      serializationTestKit.verifySerialization(
         PublishedEventImpl(PersistenceId.ofUniqueId("cat"), 10, "payload", 1, None),
         assertEquality = false)
     }
