@@ -9,15 +9,14 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.Behaviors
-import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.ReplicaId
 
-import akka.util.ccompat.JavaConverters._
-
 /**
+ * INTERNAL API
+ *
  * Used when sharding Replicated Event Sourced entities in multiple instances of sharding, for example one per DC in a Multi DC
  * Akka Cluster.
  *
@@ -35,8 +34,8 @@ import akka.util.ccompat.JavaConverters._
  * The events are forwarded as [[akka.cluster.sharding.typed.ShardingEnvelope]] this will work out of the box both
  * by default and with a custom extractor since the envelopes are handled internally.
  */
-@ApiMayChange
-object ShardingDirectReplication {
+@InternalApi
+private[akka] object ShardingDirectReplication {
 
   /**
    * Not for user extension
@@ -52,42 +51,7 @@ object ShardingDirectReplication {
 
   private final case class WrappedPublishedEvent(publishedEvent: PublishedEvent) extends Command
 
-  /**
-   * Java API:
-   * Factory for when the self replica id is unknown (or multiple)
-   * @param replicaShardingProxies A replica id to sharding proxy mapping for each replica in the system
-   */
-  def create[T](replicaShardingProxies: java.util.Map[ReplicaId, ActorRef[T]]): Behavior[Command] =
-    apply(None, replicaShardingProxies.asScala.toMap)
-
-  /**
-   * Java API:
-   * @param selfReplica The replica id of the replica that runs on this node
-   * @param replicaShardingProxies A replica id to sharding proxy mapping for each replica in the system
-   */
-  def create[T](
-      selfReplica: ReplicaId,
-      replicaShardingProxies: java.util.Map[ReplicaId, ActorRef[T]]): Behavior[Command] =
-    apply(Some(selfReplica), replicaShardingProxies.asScala.toMap)
-
-  /**
-   * Scala API:
-   * @param replicaShardingProxies A replica id to sharding proxy mapping for each replica in the system
-   */
-  def apply[T](replicaShardingProxies: Map[ReplicaId, ActorRef[T]]): Behavior[Command] =
-    apply(None, replicaShardingProxies)
-
-  /**
-   * Scala API:
-   * @param selfReplica The replica id of the replica that runs on this node
-   * @param replicaShardingProxies A replica id to sharding proxy mapping for each replica in the system
-   */
-  def apply[T](selfReplica: ReplicaId, replicaShardingProxies: Map[ReplicaId, ActorRef[T]]): Behavior[Command] =
-    apply(Some(selfReplica), replicaShardingProxies)
-
-  private def apply[T](
-      selfReplica: Option[ReplicaId],
-      replicaShardingProxies: Map[ReplicaId, ActorRef[T]]): Behavior[Command] =
+  def apply[T](selfReplica: Option[ReplicaId], replicaShardingProxies: Map[ReplicaId, ActorRef[T]]): Behavior[Command] =
     Behaviors.setup[Command] { context =>
       context.log.debug(
         "Subscribing to event stream to forward events to [{}] sharded replicas",
