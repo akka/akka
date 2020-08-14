@@ -25,10 +25,10 @@ abstract class ReplicatedEventSourcedBehavior[Command, Event, State](
   def this(replicationContext: ReplicationContext) = this(replicationContext, Optional.empty())
 
   /**
-   * Override and return true to publish events to the system event stream as
+   * Override and return false to disable events being published to the system event stream as
    * [[akka.persistence.typed.PublishedEvent]] after they have been persisted.
    */
-  def withEventPublishing: Boolean = false
+  def withEventPublishing: Boolean = true
 
   protected def getReplicationContext(): ReplicationContext = replicationContext
 
