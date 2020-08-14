@@ -26,7 +26,7 @@ class ReplicatedShardingDirectReplicationSpec extends ScalaTestWithActorTestKit 
 
       val replicationActor = spawn(
         ShardingDirectReplication(
-          typed.ReplicaId("ReplicaA"),
+          Some(typed.ReplicaId("ReplicaA")),
           replicaShardingProxies = Map(
             ReplicaId("ReplicaA") -> replicaAProbe.ref,
             ReplicaId("ReplicaB") -> replicaBProbe.ref,

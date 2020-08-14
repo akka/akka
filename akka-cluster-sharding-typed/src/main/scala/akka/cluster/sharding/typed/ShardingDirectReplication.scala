@@ -9,13 +9,10 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.Behaviors
-import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.ReplicaId
-
-import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API
