@@ -34,7 +34,15 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def init[M, E](settings: ReplicatedEntityProvider[M, E]): ReplicatedSharding[M, E] = {
+  override def init[M, E](settings: ReplicatedEntityProvider[M, E]): ReplicatedSharding[M, E] =
+    initInternal(None, settings)
+
+  override def init[M, E](thisReplica: ReplicaId, settings: ReplicatedEntityProvider[M, E]): ReplicatedSharding[M, E] =
+    initInternal(Some(thisReplica), settings)
+
+  private def initInternal[M, E](
+      thisReplica: Option[ReplicaId],
+      settings: ReplicatedEntityProvider[M, E]): ReplicatedSharding[M, E] = {
     val sharding = ClusterSharding(system)
     val initializedReplicas = settings.replicas.map {
       case (replicaSettings, typeName) =>
@@ -57,7 +65,7 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
     if (settings.directReplication) {
       logger.infoN("Starting Replicated Event Sourcing Direct Replication")
       system.systemActorOf(
-        ShardingDirectReplication(replicaToRegionOrProxy),
+        ShardingDirectReplication(thisReplica, replicaToRegionOrProxy),
         s"directReplication-${counter.incrementAndGet()}")
     }
 
