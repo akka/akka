@@ -64,3 +64,16 @@ message ReplicatedSnapshotMetadata {
   required VersionVector version = 1;
   repeated Seen seenPerReplica = 2;
 }
+
+message ReplicatedPublishedEventMetaData {
+  optional string replicaId = 1;
+  optional VersionVector versionVector = 2;
+}
+
+message PublishedEvent {
+  optional string persistenceId = 1;
+  optional int64 sequenceNr = 2;
+  optional Payload payload = 3;
+  optional int64 timestamp = 4;
+  optional ReplicatedPublishedEventMetaData metadata = 5;
+}

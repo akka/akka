@@ -368,13 +368,14 @@ private[akka] object Running {
           }
           this
         } else {
-          if (log.isTraceEnabled)
+          if (log.isTraceEnabled) {
             log.traceN(
               "Received published replicated event [{}] with timestamp [{} (UTC)] from replica [{}] seqNr [{}]",
               Logging.simpleName(event.event.getClass),
               formatTimestamp(event.timestamp),
               originReplicaId,
               event.sequenceNumber)
+          }
 
           // fast forward stream for source replica
           state.replicationControl.get(originReplicaId).foreach(_.fastForward(event.sequenceNumber))
@@ -442,6 +443,7 @@ private[akka] object Running {
         state,
         numberOfEvents = 1,
         shouldSnapshotAfterPersist,
+        shouldPublish = false,
         Nil)
     }
 
@@ -489,8 +491,15 @@ private[akka] object Running {
         }
 
         val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
-        (persistingEvents(newState2, state, numberOfEvents = 1, shouldSnapshotAfterPersist, sideEffects), false)
-
+        (
+          persistingEvents(
+            newState2,
+            state,
+            numberOfEvents = 1,
+            shouldSnapshotAfterPersist,
+            shouldPublish = true,
+            sideEffects),
+          false)
       } finally {
         setup.replication.foreach(_.clearContext())
       }
@@ -545,7 +554,15 @@ private[akka] object Running {
           val newState2 =
             internalPersistAll(setup.context, cmd, currentState, eventsToPersist.reverse)
 
-          (persistingEvents(newState2, state, events.size, shouldSnapshotAfterPersist, sideEffects), false)
+          (
+            persistingEvents(
+              newState2,
+              state,
+              events.size,
+              shouldSnapshotAfterPersist,
+              shouldPublish = true,
+              sideEffects = sideEffects),
+            false)
         } finally {
           setup.replication.foreach(_.clearContext())
         }
@@ -614,9 +631,10 @@ private[akka] object Running {
       visibleState: RunningState[S], // previous state until write success
       numberOfEvents: Int,
       shouldSnapshotAfterPersist: SnapshotAfterPersist,
+      shouldPublish: Boolean,
       sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
     setup.setMdcPhase(PersistenceMdc.PersistingEvents)
-    new PersistingEvents(state, visibleState, numberOfEvents, shouldSnapshotAfterPersist, sideEffects)
+    new PersistingEvents(state, visibleState, numberOfEvents, shouldSnapshotAfterPersist, shouldPublish, sideEffects)
   }
 
   /** INTERNAL API */
@@ -625,6 +643,7 @@ private[akka] object Running {
       var visibleState: RunningState[S], // previous state until write success
       numberOfEvents: Int,
       shouldSnapshotAfterPersist: SnapshotAfterPersist,
+      shouldPublish: Boolean,
       var sideEffects: immutable.Seq[SideEffect[S]],
       persistStartTime: Long = System.nanoTime())
       extends AbstractBehavior[InternalProtocol](setup.context)
@@ -691,7 +710,7 @@ private[akka] object Running {
 
         onWriteSuccess(setup.context, p)
 
-        if (setup.publishEvents) {
+        if (setup.publishEvents && shouldPublish) {
           val meta = setup.replication.map(replication =>
             new ReplicatedPublishedEventMetaData(replication.replicaId, state.version))
           context.system.eventStream ! EventStream.Publish(

@@ -13,6 +13,7 @@ import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.ReplicationId
 
 /**
  * INTERNAL API
@@ -67,9 +68,11 @@ private[akka] object ShardingDirectReplication {
             event.sequenceNumber)
           replicaShardingProxies.foreach {
             case (replica, proxy) =>
-              val envelopedEvent = ShardingEnvelope(event.persistenceId.id, event)
-              if (!selfReplica.contains(replica))
+              val newId = ReplicationId.fromString(event.persistenceId.id).withReplica(replica)
+              val envelopedEvent = ShardingEnvelope(newId.persistenceId.id, event)
+              if (!selfReplica.contains(replica)) {
                 proxy.asInstanceOf[ActorRef[ShardingEnvelope[PublishedEvent]]] ! envelopedEvent
+              }
           }
           Behaviors.same
         case VerifyStarted(replyTo) =>

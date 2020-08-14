@@ -181,6 +181,7 @@ object ProxyActor {
       ReplicatedShardingExtension(context.system).init(MyReplicatedStringSet.provider(replicationType))
     val replicatedShardingIntSet =
       ReplicatedShardingExtension(context.system).init(MyReplicatedIntSet.provider(replicationType))
+
     Behaviors.setup { ctx =>
       Behaviors.receiveMessage {
         case ForwardToAllString(entityId, cmd) =>

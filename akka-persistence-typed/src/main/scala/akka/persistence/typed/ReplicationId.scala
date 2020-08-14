@@ -42,4 +42,10 @@ final class ReplicationId(val typeName: String, val entityId: String, val replic
   private val id: String = s"$typeName$Separator$entityId$Separator${replicaId.id}"
 
   def persistenceId: PersistenceId = PersistenceId.ofUniqueId(id)
+
+  override def toString: String = s"ReplicationId($typeName, $entityId, $replicaId)"
+
+  def withReplica(newReplica: ReplicaId): ReplicationId = {
+    new ReplicationId(typeName, entityId, newReplica)
+  }
 }

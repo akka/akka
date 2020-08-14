@@ -10004,6 +10004,2293 @@ public final class ReplicatedEventSourcing {
     }
   }
 
+  public interface ReplicatedPublishedEventMetaDataOrBuilder
+      extends
+      // @@protoc_insertion_point(interface_extends:ReplicatedPublishedEventMetaData)
+      akka.protobufv3.internal.MessageOrBuilder {
+
+    /**
+     * <code>optional string replicaId = 1;</code>
+     *
+     * @return Whether the replicaId field is set.
+     */
+    boolean hasReplicaId();
+    /**
+     * <code>optional string replicaId = 1;</code>
+     *
+     * @return The replicaId.
+     */
+    java.lang.String getReplicaId();
+    /**
+     * <code>optional string replicaId = 1;</code>
+     *
+     * @return The bytes for replicaId.
+     */
+    akka.protobufv3.internal.ByteString getReplicaIdBytes();
+
+    /**
+     * <code>optional .VersionVector versionVector = 2;</code>
+     *
+     * @return Whether the versionVector field is set.
+     */
+    boolean hasVersionVector();
+    /**
+     * <code>optional .VersionVector versionVector = 2;</code>
+     *
+     * @return The versionVector.
+     */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector getVersionVector();
+    /** <code>optional .VersionVector versionVector = 2;</code> */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+        getVersionVectorOrBuilder();
+  }
+  /** Protobuf type {@code ReplicatedPublishedEventMetaData} */
+  public static final class ReplicatedPublishedEventMetaData
+      extends akka.protobufv3.internal.GeneratedMessageV3
+      implements
+      // @@protoc_insertion_point(message_implements:ReplicatedPublishedEventMetaData)
+      ReplicatedPublishedEventMetaDataOrBuilder {
+    private static final long serialVersionUID = 0L;
+    // Use ReplicatedPublishedEventMetaData.newBuilder() to construct.
+    private ReplicatedPublishedEventMetaData(
+        akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
+      super(builder);
+    }
+
+    private ReplicatedPublishedEventMetaData() {
+      replicaId_ = "";
+    }
+
+    @java.lang.Override
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new ReplicatedPublishedEventMetaData();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
+      return this.unknownFields;
+    }
+
+    private ReplicatedPublishedEventMetaData(
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
+      int mutable_bitField0_ = 0;
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            case 10:
+              {
+                akka.protobufv3.internal.ByteString bs = input.readBytes();
+                bitField0_ |= 0x00000001;
+                replicaId_ = bs;
+                break;
+              }
+            case 18:
+              {
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+                    subBuilder = null;
+                if (((bitField0_ & 0x00000002) != 0)) {
+                  subBuilder = versionVector_.toBuilder();
+                }
+                versionVector_ =
+                    input.readMessage(
+                        akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                            .PARSER,
+                        extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(versionVector_);
+                  versionVector_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000002;
+                break;
+              }
+            default:
+              {
+                if (!parseUnknownField(input, unknownFields, extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
+          }
+        }
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+            .setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+
+    public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_ReplicatedPublishedEventMetaData_descriptor;
+    }
+
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_ReplicatedPublishedEventMetaData_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData.class,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData.Builder.class);
+    }
+
+    private int bitField0_;
+    public static final int REPLICAID_FIELD_NUMBER = 1;
+    private volatile java.lang.Object replicaId_;
+    /**
+     * <code>optional string replicaId = 1;</code>
+     *
+     * @return Whether the replicaId field is set.
+     */
+    public boolean hasReplicaId() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>optional string replicaId = 1;</code>
+     *
+     * @return The replicaId.
+     */
+    public java.lang.String getReplicaId() {
+      java.lang.Object ref = replicaId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          replicaId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string replicaId = 1;</code>
+     *
+     * @return The bytes for replicaId.
+     */
+    public akka.protobufv3.internal.ByteString getReplicaIdBytes() {
+      java.lang.Object ref = replicaId_;
+      if (ref instanceof java.lang.String) {
+        akka.protobufv3.internal.ByteString b =
+            akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
+        replicaId_ = b;
+        return b;
+      } else {
+        return (akka.protobufv3.internal.ByteString) ref;
+      }
+    }
+
+    public static final int VERSIONVECTOR_FIELD_NUMBER = 2;
+    private akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        versionVector_;
+    /**
+     * <code>optional .VersionVector versionVector = 2;</code>
+     *
+     * @return Whether the versionVector field is set.
+     */
+    public boolean hasVersionVector() {
+      return ((bitField0_ & 0x00000002) != 0);
+    }
+    /**
+     * <code>optional .VersionVector versionVector = 2;</code>
+     *
+     * @return The versionVector.
+     */
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+        getVersionVector() {
+      return versionVector_ == null
+          ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+              .getDefaultInstance()
+          : versionVector_;
+    }
+    /** <code>optional .VersionVector versionVector = 2;</code> */
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+        getVersionVectorOrBuilder() {
+      return versionVector_ == null
+          ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+              .getDefaultInstance()
+          : versionVector_;
+    }
+
+    private byte memoizedIsInitialized = -1;
+
+    @java.lang.Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      if (hasVersionVector()) {
+        if (!getVersionVector().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
+        throws java.io.IOException {
+      if (((bitField0_ & 0x00000001) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, replicaId_);
+      }
+      if (((bitField0_ & 0x00000002) != 0)) {
+        output.writeMessage(2, getVersionVector());
+      }
+      unknownFields.writeTo(output);
+    }
+
+    @java.lang.Override
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, replicaId_);
+      }
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size +=
+            akka.protobufv3.internal.CodedOutputStream.computeMessageSize(2, getVersionVector());
+      }
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
+      return size;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+        return true;
+      }
+      if (!(obj
+          instanceof
+          akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData)) {
+        return super.equals(obj);
+      }
+      akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData
+          other =
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedPublishedEventMetaData)
+                  obj;
+
+      if (hasReplicaId() != other.hasReplicaId()) return false;
+      if (hasReplicaId()) {
+        if (!getReplicaId().equals(other.getReplicaId())) return false;
+      }
+      if (hasVersionVector() != other.hasVersionVector()) return false;
+      if (hasVersionVector()) {
+        if (!getVersionVector().equals(other.getVersionVector())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasReplicaId()) {
+        hash = (37 * hash) + REPLICAID_FIELD_NUMBER;
+        hash = (53 * hash) + getReplicaId().hashCode();
+      }
+      if (hasVersionVector()) {
+        hash = (37 * hash) + VERSIONVECTOR_FIELD_NUMBER;
+        hash = (53 * hash) + getVersionVector().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(java.nio.ByteBuffer data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(
+            java.nio.ByteBuffer data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(akka.protobufv3.internal.ByteString data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(
+            akka.protobufv3.internal.ByteString data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(byte[] data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseDelimitedFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input, extensionRegistry);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        parseFrom(
+            akka.protobufv3.internal.CodedInputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
+    }
+
+    @java.lang.Override
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+
+    public static Builder newBuilder(
+        akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedPublishedEventMetaData
+            prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /** Protobuf type {@code ReplicatedPublishedEventMetaData} */
+    public static final class Builder
+        extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
+        implements
+        // @@protoc_insertion_point(builder_implements:ReplicatedPublishedEventMetaData)
+        akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaDataOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ReplicatedPublishedEventMetaData_descriptor;
+      }
+
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ReplicatedPublishedEventMetaData_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedPublishedEventMetaData.class,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedPublishedEventMetaData.Builder.class);
+      }
+
+      // Construct using
+      // akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders) {
+          getVersionVectorFieldBuilder();
+        }
+      }
+
+      @java.lang.Override
+      public Builder clear() {
+        super.clear();
+        replicaId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        if (versionVectorBuilder_ == null) {
+          versionVector_ = null;
+        } else {
+          versionVectorBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_ReplicatedPublishedEventMetaData_descriptor;
+      }
+
+      @java.lang.Override
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData
+          getDefaultInstanceForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData.getDefaultInstance();
+      }
+
+      @java.lang.Override
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData
+          build() {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedPublishedEventMetaData
+            result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @java.lang.Override
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData
+          buildPartial() {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedPublishedEventMetaData
+            result =
+                new akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedPublishedEventMetaData(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.replicaId_ = replicaId_;
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          if (versionVectorBuilder_ == null) {
+            result.versionVector_ = versionVector_;
+          } else {
+            result.versionVector_ = versionVectorBuilder_.build();
+          }
+          to_bitField0_ |= 0x00000002;
+        }
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
+        return super.setField(field, value);
+      }
+
+      @java.lang.Override
+      public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+
+      @java.lang.Override
+      public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index,
+          java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
+        if (other
+            instanceof
+            akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedPublishedEventMetaData) {
+          return mergeFrom(
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedPublishedEventMetaData)
+                  other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData
+              other) {
+        if (other
+            == akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedPublishedEventMetaData.getDefaultInstance()) return this;
+        if (other.hasReplicaId()) {
+          bitField0_ |= 0x00000001;
+          replicaId_ = other.replicaId_;
+          onChanged();
+        }
+        if (other.hasVersionVector()) {
+          mergeVersionVector(other.getVersionVector());
+        }
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
+        return this;
+      }
+
+      @java.lang.Override
+      public final boolean isInitialized() {
+        if (hasVersionVector()) {
+          if (!getVersionVector().isInitialized()) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing
+                .ReplicatedPublishedEventMetaData
+            parsedMessage = null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+          parsedMessage =
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedPublishedEventMetaData)
+                  e.getUnfinishedMessage();
+          throw e.unwrapIOException();
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+
+      private int bitField0_;
+
+      private java.lang.Object replicaId_ = "";
+      /**
+       * <code>optional string replicaId = 1;</code>
+       *
+       * @return Whether the replicaId field is set.
+       */
+      public boolean hasReplicaId() {
+        return ((bitField0_ & 0x00000001) != 0);
+      }
+      /**
+       * <code>optional string replicaId = 1;</code>
+       *
+       * @return The replicaId.
+       */
+      public java.lang.String getReplicaId() {
+        java.lang.Object ref = replicaId_;
+        if (!(ref instanceof java.lang.String)) {
+          akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            replicaId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string replicaId = 1;</code>
+       *
+       * @return The bytes for replicaId.
+       */
+      public akka.protobufv3.internal.ByteString getReplicaIdBytes() {
+        java.lang.Object ref = replicaId_;
+        if (ref instanceof String) {
+          akka.protobufv3.internal.ByteString b =
+              akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
+          replicaId_ = b;
+          return b;
+        } else {
+          return (akka.protobufv3.internal.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string replicaId = 1;</code>
+       *
+       * @param value The replicaId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setReplicaId(java.lang.String value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000001;
+        replicaId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string replicaId = 1;</code>
+       *
+       * @return This builder for chaining.
+       */
+      public Builder clearReplicaId() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        replicaId_ = getDefaultInstance().getReplicaId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string replicaId = 1;</code>
+       *
+       * @param value The bytes for replicaId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setReplicaIdBytes(akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000001;
+        replicaId_ = value;
+        onChanged();
+        return this;
+      }
+
+      private akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+          versionVector_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>
+          versionVectorBuilder_;
+      /**
+       * <code>optional .VersionVector versionVector = 2;</code>
+       *
+       * @return Whether the versionVector field is set.
+       */
+      public boolean hasVersionVector() {
+        return ((bitField0_ & 0x00000002) != 0);
+      }
+      /**
+       * <code>optional .VersionVector versionVector = 2;</code>
+       *
+       * @return The versionVector.
+       */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+          getVersionVector() {
+        if (versionVectorBuilder_ == null) {
+          return versionVector_ == null
+              ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                  .getDefaultInstance()
+              : versionVector_;
+        } else {
+          return versionVectorBuilder_.getMessage();
+        }
+      }
+      /** <code>optional .VersionVector versionVector = 2;</code> */
+      public Builder setVersionVector(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
+        if (versionVectorBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          versionVector_ = value;
+          onChanged();
+        } else {
+          versionVectorBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /** <code>optional .VersionVector versionVector = 2;</code> */
+      public Builder setVersionVector(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+              builderForValue) {
+        if (versionVectorBuilder_ == null) {
+          versionVector_ = builderForValue.build();
+          onChanged();
+        } else {
+          versionVectorBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /** <code>optional .VersionVector versionVector = 2;</code> */
+      public Builder mergeVersionVector(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector value) {
+        if (versionVectorBuilder_ == null) {
+          if (((bitField0_ & 0x00000002) != 0)
+              && versionVector_ != null
+              && versionVector_
+                  != akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                      .getDefaultInstance()) {
+            versionVector_ =
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                    .newBuilder(versionVector_)
+                    .mergeFrom(value)
+                    .buildPartial();
+          } else {
+            versionVector_ = value;
+          }
+          onChanged();
+        } else {
+          versionVectorBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /** <code>optional .VersionVector versionVector = 2;</code> */
+      public Builder clearVersionVector() {
+        if (versionVectorBuilder_ == null) {
+          versionVector_ = null;
+          onChanged();
+        } else {
+          versionVectorBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+      /** <code>optional .VersionVector versionVector = 2;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder
+          getVersionVectorBuilder() {
+        bitField0_ |= 0x00000002;
+        onChanged();
+        return getVersionVectorFieldBuilder().getBuilder();
+      }
+      /** <code>optional .VersionVector versionVector = 2;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder
+          getVersionVectorOrBuilder() {
+        if (versionVectorBuilder_ != null) {
+          return versionVectorBuilder_.getMessageOrBuilder();
+        } else {
+          return versionVector_ == null
+              ? akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                  .getDefaultInstance()
+              : versionVector_;
+        }
+      }
+      /** <code>optional .VersionVector versionVector = 2;</code> */
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVectorOrBuilder>
+          getVersionVectorFieldBuilder() {
+        if (versionVectorBuilder_ == null) {
+          versionVectorBuilder_ =
+              new akka.protobufv3.internal.SingleFieldBuilderV3<
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing.VersionVector
+                      .Builder,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .VersionVectorOrBuilder>(
+                  getVersionVector(), getParentForChildren(), isClean());
+          versionVector_ = null;
+        }
+        return versionVectorBuilder_;
+      }
+
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
+      // @@protoc_insertion_point(builder_scope:ReplicatedPublishedEventMetaData)
+    }
+
+    // @@protoc_insertion_point(class_scope:ReplicatedPublishedEventMetaData)
+    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        DEFAULT_INSTANCE;
+
+    static {
+      DEFAULT_INSTANCE =
+          new akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData();
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated
+    public static final akka.protobufv3.internal.Parser<ReplicatedPublishedEventMetaData> PARSER =
+        new akka.protobufv3.internal.AbstractParser<ReplicatedPublishedEventMetaData>() {
+          @java.lang.Override
+          public ReplicatedPublishedEventMetaData parsePartialFrom(
+              akka.protobufv3.internal.CodedInputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
+            return new ReplicatedPublishedEventMetaData(input, extensionRegistry);
+          }
+        };
+
+    public static akka.protobufv3.internal.Parser<ReplicatedPublishedEventMetaData> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<ReplicatedPublishedEventMetaData> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+  }
+
+  public interface PublishedEventOrBuilder
+      extends
+      // @@protoc_insertion_point(interface_extends:PublishedEvent)
+      akka.protobufv3.internal.MessageOrBuilder {
+
+    /**
+     * <code>optional string persistenceId = 1;</code>
+     *
+     * @return Whether the persistenceId field is set.
+     */
+    boolean hasPersistenceId();
+    /**
+     * <code>optional string persistenceId = 1;</code>
+     *
+     * @return The persistenceId.
+     */
+    java.lang.String getPersistenceId();
+    /**
+     * <code>optional string persistenceId = 1;</code>
+     *
+     * @return The bytes for persistenceId.
+     */
+    akka.protobufv3.internal.ByteString getPersistenceIdBytes();
+
+    /**
+     * <code>optional int64 sequenceNr = 2;</code>
+     *
+     * @return Whether the sequenceNr field is set.
+     */
+    boolean hasSequenceNr();
+    /**
+     * <code>optional int64 sequenceNr = 2;</code>
+     *
+     * @return The sequenceNr.
+     */
+    long getSequenceNr();
+
+    /**
+     * <code>optional .Payload payload = 3;</code>
+     *
+     * @return Whether the payload field is set.
+     */
+    boolean hasPayload();
+    /**
+     * <code>optional .Payload payload = 3;</code>
+     *
+     * @return The payload.
+     */
+    akka.remote.ContainerFormats.Payload getPayload();
+    /** <code>optional .Payload payload = 3;</code> */
+    akka.remote.ContainerFormats.PayloadOrBuilder getPayloadOrBuilder();
+
+    /**
+     * <code>optional int64 timestamp = 4;</code>
+     *
+     * @return Whether the timestamp field is set.
+     */
+    boolean hasTimestamp();
+    /**
+     * <code>optional int64 timestamp = 4;</code>
+     *
+     * @return The timestamp.
+     */
+    long getTimestamp();
+
+    /**
+     * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
+     *
+     * @return Whether the metadata field is set.
+     */
+    boolean hasMetadata();
+    /**
+     * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
+     *
+     * @return The metadata.
+     */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing.ReplicatedPublishedEventMetaData
+        getMetadata();
+    /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
+    akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaDataOrBuilder
+        getMetadataOrBuilder();
+  }
+  /** Protobuf type {@code PublishedEvent} */
+  public static final class PublishedEvent extends akka.protobufv3.internal.GeneratedMessageV3
+      implements
+      // @@protoc_insertion_point(message_implements:PublishedEvent)
+      PublishedEventOrBuilder {
+    private static final long serialVersionUID = 0L;
+    // Use PublishedEvent.newBuilder() to construct.
+    private PublishedEvent(akka.protobufv3.internal.GeneratedMessageV3.Builder<?> builder) {
+      super(builder);
+    }
+
+    private PublishedEvent() {
+      persistenceId_ = "";
+    }
+
+    @java.lang.Override
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        akka.protobufv3.internal.GeneratedMessageV3.UnusedPrivateParameter unused) {
+      return new PublishedEvent();
+    }
+
+    @java.lang.Override
+    public final akka.protobufv3.internal.UnknownFieldSet getUnknownFields() {
+      return this.unknownFields;
+    }
+
+    private PublishedEvent(
+        akka.protobufv3.internal.CodedInputStream input,
+        akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      this();
+      if (extensionRegistry == null) {
+        throw new java.lang.NullPointerException();
+      }
+      int mutable_bitField0_ = 0;
+      akka.protobufv3.internal.UnknownFieldSet.Builder unknownFields =
+          akka.protobufv3.internal.UnknownFieldSet.newBuilder();
+      try {
+        boolean done = false;
+        while (!done) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              done = true;
+              break;
+            case 10:
+              {
+                akka.protobufv3.internal.ByteString bs = input.readBytes();
+                bitField0_ |= 0x00000001;
+                persistenceId_ = bs;
+                break;
+              }
+            case 16:
+              {
+                bitField0_ |= 0x00000002;
+                sequenceNr_ = input.readInt64();
+                break;
+              }
+            case 26:
+              {
+                akka.remote.ContainerFormats.Payload.Builder subBuilder = null;
+                if (((bitField0_ & 0x00000004) != 0)) {
+                  subBuilder = payload_.toBuilder();
+                }
+                payload_ =
+                    input.readMessage(
+                        akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(payload_);
+                  payload_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000004;
+                break;
+              }
+            case 32:
+              {
+                bitField0_ |= 0x00000008;
+                timestamp_ = input.readInt64();
+                break;
+              }
+            case 42:
+              {
+                akka.persistence.typed.serialization.ReplicatedEventSourcing
+                        .ReplicatedPublishedEventMetaData.Builder
+                    subBuilder = null;
+                if (((bitField0_ & 0x00000010) != 0)) {
+                  subBuilder = metadata_.toBuilder();
+                }
+                metadata_ =
+                    input.readMessage(
+                        akka.persistence.typed.serialization.ReplicatedEventSourcing
+                            .ReplicatedPublishedEventMetaData.PARSER,
+                        extensionRegistry);
+                if (subBuilder != null) {
+                  subBuilder.mergeFrom(metadata_);
+                  metadata_ = subBuilder.buildPartial();
+                }
+                bitField0_ |= 0x00000010;
+                break;
+              }
+            default:
+              {
+                if (!parseUnknownField(input, unknownFields, extensionRegistry, tag)) {
+                  done = true;
+                }
+                break;
+              }
+          }
+        }
+      } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+        throw e.setUnfinishedMessage(this);
+      } catch (java.io.IOException e) {
+        throw new akka.protobufv3.internal.InvalidProtocolBufferException(e)
+            .setUnfinishedMessage(this);
+      } finally {
+        this.unknownFields = unknownFields.build();
+        makeExtensionsImmutable();
+      }
+    }
+
+    public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_PublishedEvent_descriptor;
+    }
+
+    @java.lang.Override
+    protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return akka.persistence.typed.serialization.ReplicatedEventSourcing
+          .internal_static_PublishedEvent_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.class,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.Builder
+                  .class);
+    }
+
+    private int bitField0_;
+    public static final int PERSISTENCEID_FIELD_NUMBER = 1;
+    private volatile java.lang.Object persistenceId_;
+    /**
+     * <code>optional string persistenceId = 1;</code>
+     *
+     * @return Whether the persistenceId field is set.
+     */
+    public boolean hasPersistenceId() {
+      return ((bitField0_ & 0x00000001) != 0);
+    }
+    /**
+     * <code>optional string persistenceId = 1;</code>
+     *
+     * @return The persistenceId.
+     */
+    public java.lang.String getPersistenceId() {
+      java.lang.Object ref = persistenceId_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          persistenceId_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string persistenceId = 1;</code>
+     *
+     * @return The bytes for persistenceId.
+     */
+    public akka.protobufv3.internal.ByteString getPersistenceIdBytes() {
+      java.lang.Object ref = persistenceId_;
+      if (ref instanceof java.lang.String) {
+        akka.protobufv3.internal.ByteString b =
+            akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
+        persistenceId_ = b;
+        return b;
+      } else {
+        return (akka.protobufv3.internal.ByteString) ref;
+      }
+    }
+
+    public static final int SEQUENCENR_FIELD_NUMBER = 2;
+    private long sequenceNr_;
+    /**
+     * <code>optional int64 sequenceNr = 2;</code>
+     *
+     * @return Whether the sequenceNr field is set.
+     */
+    public boolean hasSequenceNr() {
+      return ((bitField0_ & 0x00000002) != 0);
+    }
+    /**
+     * <code>optional int64 sequenceNr = 2;</code>
+     *
+     * @return The sequenceNr.
+     */
+    public long getSequenceNr() {
+      return sequenceNr_;
+    }
+
+    public static final int PAYLOAD_FIELD_NUMBER = 3;
+    private akka.remote.ContainerFormats.Payload payload_;
+    /**
+     * <code>optional .Payload payload = 3;</code>
+     *
+     * @return Whether the payload field is set.
+     */
+    public boolean hasPayload() {
+      return ((bitField0_ & 0x00000004) != 0);
+    }
+    /**
+     * <code>optional .Payload payload = 3;</code>
+     *
+     * @return The payload.
+     */
+    public akka.remote.ContainerFormats.Payload getPayload() {
+      return payload_ == null
+          ? akka.remote.ContainerFormats.Payload.getDefaultInstance()
+          : payload_;
+    }
+    /** <code>optional .Payload payload = 3;</code> */
+    public akka.remote.ContainerFormats.PayloadOrBuilder getPayloadOrBuilder() {
+      return payload_ == null
+          ? akka.remote.ContainerFormats.Payload.getDefaultInstance()
+          : payload_;
+    }
+
+    public static final int TIMESTAMP_FIELD_NUMBER = 4;
+    private long timestamp_;
+    /**
+     * <code>optional int64 timestamp = 4;</code>
+     *
+     * @return Whether the timestamp field is set.
+     */
+    public boolean hasTimestamp() {
+      return ((bitField0_ & 0x00000008) != 0);
+    }
+    /**
+     * <code>optional int64 timestamp = 4;</code>
+     *
+     * @return The timestamp.
+     */
+    public long getTimestamp() {
+      return timestamp_;
+    }
+
+    public static final int METADATA_FIELD_NUMBER = 5;
+    private akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        metadata_;
+    /**
+     * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
+     *
+     * @return Whether the metadata field is set.
+     */
+    public boolean hasMetadata() {
+      return ((bitField0_ & 0x00000010) != 0);
+    }
+    /**
+     * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
+     *
+     * @return The metadata.
+     */
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaData
+        getMetadata() {
+      return metadata_ == null
+          ? akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData.getDefaultInstance()
+          : metadata_;
+    }
+    /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .ReplicatedPublishedEventMetaDataOrBuilder
+        getMetadataOrBuilder() {
+      return metadata_ == null
+          ? akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData.getDefaultInstance()
+          : metadata_;
+    }
+
+    private byte memoizedIsInitialized = -1;
+
+    @java.lang.Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      if (hasPayload()) {
+        if (!getPayload().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      if (hasMetadata()) {
+        if (!getMetadata().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @java.lang.Override
+    public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
+        throws java.io.IOException {
+      if (((bitField0_ & 0x00000001) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 1, persistenceId_);
+      }
+      if (((bitField0_ & 0x00000002) != 0)) {
+        output.writeInt64(2, sequenceNr_);
+      }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        output.writeMessage(3, getPayload());
+      }
+      if (((bitField0_ & 0x00000008) != 0)) {
+        output.writeInt64(4, timestamp_);
+      }
+      if (((bitField0_ & 0x00000010) != 0)) {
+        output.writeMessage(5, getMetadata());
+      }
+      unknownFields.writeTo(output);
+    }
+
+    @java.lang.Override
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (((bitField0_ & 0x00000001) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(1, persistenceId_);
+      }
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream.computeInt64Size(2, sequenceNr_);
+      }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream.computeMessageSize(3, getPayload());
+      }
+      if (((bitField0_ & 0x00000008) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream.computeInt64Size(4, timestamp_);
+      }
+      if (((bitField0_ & 0x00000010) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream.computeMessageSize(5, getMetadata());
+      }
+      size += unknownFields.getSerializedSize();
+      memoizedSize = size;
+      return size;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+        return true;
+      }
+      if (!(obj
+          instanceof akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent)) {
+        return super.equals(obj);
+      }
+      akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent other =
+          (akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent) obj;
+
+      if (hasPersistenceId() != other.hasPersistenceId()) return false;
+      if (hasPersistenceId()) {
+        if (!getPersistenceId().equals(other.getPersistenceId())) return false;
+      }
+      if (hasSequenceNr() != other.hasSequenceNr()) return false;
+      if (hasSequenceNr()) {
+        if (getSequenceNr() != other.getSequenceNr()) return false;
+      }
+      if (hasPayload() != other.hasPayload()) return false;
+      if (hasPayload()) {
+        if (!getPayload().equals(other.getPayload())) return false;
+      }
+      if (hasTimestamp() != other.hasTimestamp()) return false;
+      if (hasTimestamp()) {
+        if (getTimestamp() != other.getTimestamp()) return false;
+      }
+      if (hasMetadata() != other.hasMetadata()) return false;
+      if (hasMetadata()) {
+        if (!getMetadata().equals(other.getMetadata())) return false;
+      }
+      if (!unknownFields.equals(other.unknownFields)) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      if (hasPersistenceId()) {
+        hash = (37 * hash) + PERSISTENCEID_FIELD_NUMBER;
+        hash = (53 * hash) + getPersistenceId().hashCode();
+      }
+      if (hasSequenceNr()) {
+        hash = (37 * hash) + SEQUENCENR_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(getSequenceNr());
+      }
+      if (hasPayload()) {
+        hash = (37 * hash) + PAYLOAD_FIELD_NUMBER;
+        hash = (53 * hash) + getPayload().hashCode();
+      }
+      if (hasTimestamp()) {
+        hash = (37 * hash) + TIMESTAMP_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(getTimestamp());
+      }
+      if (hasMetadata()) {
+        hash = (37 * hash) + METADATA_FIELD_NUMBER;
+        hash = (53 * hash) + getMetadata().hashCode();
+      }
+      hash = (29 * hash) + unknownFields.hashCode();
+      memoizedHashCode = hash;
+      return hash;
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(java.nio.ByteBuffer data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(
+            java.nio.ByteBuffer data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(akka.protobufv3.internal.ByteString data)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(
+            akka.protobufv3.internal.ByteString data,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(byte[] data) throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(byte[] data, akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobufv3.internal.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseDelimitedFrom(java.io.InputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseDelimitedFrom(
+            java.io.InputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseDelimitedWithIOException(
+          PARSER, input, extensionRegistry);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(akka.protobufv3.internal.CodedInputStream input) throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(PARSER, input);
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        parseFrom(
+            akka.protobufv3.internal.CodedInputStream input,
+            akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+            throws java.io.IOException {
+      return akka.protobufv3.internal.GeneratedMessageV3.parseWithIOException(
+          PARSER, input, extensionRegistry);
+    }
+
+    @java.lang.Override
+    public Builder newBuilderForType() {
+      return newBuilder();
+    }
+
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+
+    public static Builder newBuilder(
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /** Protobuf type {@code PublishedEvent} */
+    public static final class Builder
+        extends akka.protobufv3.internal.GeneratedMessageV3.Builder<Builder>
+        implements
+        // @@protoc_insertion_point(builder_implements:PublishedEvent)
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEventOrBuilder {
+      public static final akka.protobufv3.internal.Descriptors.Descriptor getDescriptor() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_PublishedEvent_descriptor;
+      }
+
+      @java.lang.Override
+      protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_PublishedEvent_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.class,
+                akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.Builder
+                    .class);
+      }
+
+      // Construct using
+      // akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+
+      private Builder(akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+
+      private void maybeForceBuilderInitialization() {
+        if (akka.protobufv3.internal.GeneratedMessageV3.alwaysUseFieldBuilders) {
+          getPayloadFieldBuilder();
+          getMetadataFieldBuilder();
+        }
+      }
+
+      @java.lang.Override
+      public Builder clear() {
+        super.clear();
+        persistenceId_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        sequenceNr_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        if (payloadBuilder_ == null) {
+          payload_ = null;
+        } else {
+          payloadBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000004);
+        timestamp_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000008);
+        if (metadataBuilder_ == null) {
+          metadata_ = null;
+        } else {
+          metadataBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000010);
+        return this;
+      }
+
+      @java.lang.Override
+      public akka.protobufv3.internal.Descriptors.Descriptor getDescriptorForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing
+            .internal_static_PublishedEvent_descriptor;
+      }
+
+      @java.lang.Override
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+          getDefaultInstanceForType() {
+        return akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+            .getDefaultInstance();
+      }
+
+      @java.lang.Override
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent build() {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent result =
+            buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @java.lang.Override
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+          buildPartial() {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent result =
+            new akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.persistenceId_ = persistenceId_;
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.sequenceNr_ = sequenceNr_;
+          to_bitField0_ |= 0x00000002;
+        }
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          if (payloadBuilder_ == null) {
+            result.payload_ = payload_;
+          } else {
+            result.payload_ = payloadBuilder_.build();
+          }
+          to_bitField0_ |= 0x00000004;
+        }
+        if (((from_bitField0_ & 0x00000008) != 0)) {
+          result.timestamp_ = timestamp_;
+          to_bitField0_ |= 0x00000008;
+        }
+        if (((from_bitField0_ & 0x00000010) != 0)) {
+          if (metadataBuilder_ == null) {
+            result.metadata_ = metadata_;
+          } else {
+            result.metadata_ = metadataBuilder_.build();
+          }
+          to_bitField0_ |= 0x00000010;
+        }
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+
+      @java.lang.Override
+      public Builder setField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
+        return super.setField(field, value);
+      }
+
+      @java.lang.Override
+      public Builder clearField(akka.protobufv3.internal.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+
+      @java.lang.Override
+      public Builder clearOneof(akka.protobufv3.internal.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+
+      @java.lang.Override
+      public Builder setRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field,
+          int index,
+          java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+
+      @java.lang.Override
+      public Builder addRepeatedField(
+          akka.protobufv3.internal.Descriptors.FieldDescriptor field, java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(akka.protobufv3.internal.Message other) {
+        if (other
+            instanceof
+            akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent) {
+          return mergeFrom(
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent) other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent other) {
+        if (other
+            == akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+                .getDefaultInstance()) return this;
+        if (other.hasPersistenceId()) {
+          bitField0_ |= 0x00000001;
+          persistenceId_ = other.persistenceId_;
+          onChanged();
+        }
+        if (other.hasSequenceNr()) {
+          setSequenceNr(other.getSequenceNr());
+        }
+        if (other.hasPayload()) {
+          mergePayload(other.getPayload());
+        }
+        if (other.hasTimestamp()) {
+          setTimestamp(other.getTimestamp());
+        }
+        if (other.hasMetadata()) {
+          mergeMetadata(other.getMetadata());
+        }
+        this.mergeUnknownFields(other.unknownFields);
+        onChanged();
+        return this;
+      }
+
+      @java.lang.Override
+      public final boolean isInitialized() {
+        if (hasPayload()) {
+          if (!getPayload().isInitialized()) {
+            return false;
+          }
+        }
+        if (hasMetadata()) {
+          if (!getMetadata().isInitialized()) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(
+          akka.protobufv3.internal.CodedInputStream input,
+          akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent parsedMessage =
+            null;
+        try {
+          parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
+        } catch (akka.protobufv3.internal.InvalidProtocolBufferException e) {
+          parsedMessage =
+              (akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent)
+                  e.getUnfinishedMessage();
+          throw e.unwrapIOException();
+        } finally {
+          if (parsedMessage != null) {
+            mergeFrom(parsedMessage);
+          }
+        }
+        return this;
+      }
+
+      private int bitField0_;
+
+      private java.lang.Object persistenceId_ = "";
+      /**
+       * <code>optional string persistenceId = 1;</code>
+       *
+       * @return Whether the persistenceId field is set.
+       */
+      public boolean hasPersistenceId() {
+        return ((bitField0_ & 0x00000001) != 0);
+      }
+      /**
+       * <code>optional string persistenceId = 1;</code>
+       *
+       * @return The persistenceId.
+       */
+      public java.lang.String getPersistenceId() {
+        java.lang.Object ref = persistenceId_;
+        if (!(ref instanceof java.lang.String)) {
+          akka.protobufv3.internal.ByteString bs = (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            persistenceId_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string persistenceId = 1;</code>
+       *
+       * @return The bytes for persistenceId.
+       */
+      public akka.protobufv3.internal.ByteString getPersistenceIdBytes() {
+        java.lang.Object ref = persistenceId_;
+        if (ref instanceof String) {
+          akka.protobufv3.internal.ByteString b =
+              akka.protobufv3.internal.ByteString.copyFromUtf8((java.lang.String) ref);
+          persistenceId_ = b;
+          return b;
+        } else {
+          return (akka.protobufv3.internal.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string persistenceId = 1;</code>
+       *
+       * @param value The persistenceId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPersistenceId(java.lang.String value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000001;
+        persistenceId_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string persistenceId = 1;</code>
+       *
+       * @return This builder for chaining.
+       */
+      public Builder clearPersistenceId() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        persistenceId_ = getDefaultInstance().getPersistenceId();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string persistenceId = 1;</code>
+       *
+       * @param value The bytes for persistenceId to set.
+       * @return This builder for chaining.
+       */
+      public Builder setPersistenceIdBytes(akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000001;
+        persistenceId_ = value;
+        onChanged();
+        return this;
+      }
+
+      private long sequenceNr_;
+      /**
+       * <code>optional int64 sequenceNr = 2;</code>
+       *
+       * @return Whether the sequenceNr field is set.
+       */
+      public boolean hasSequenceNr() {
+        return ((bitField0_ & 0x00000002) != 0);
+      }
+      /**
+       * <code>optional int64 sequenceNr = 2;</code>
+       *
+       * @return The sequenceNr.
+       */
+      public long getSequenceNr() {
+        return sequenceNr_;
+      }
+      /**
+       * <code>optional int64 sequenceNr = 2;</code>
+       *
+       * @param value The sequenceNr to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSequenceNr(long value) {
+        bitField0_ |= 0x00000002;
+        sequenceNr_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int64 sequenceNr = 2;</code>
+       *
+       * @return This builder for chaining.
+       */
+      public Builder clearSequenceNr() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        sequenceNr_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      private akka.remote.ContainerFormats.Payload payload_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
+              akka.remote.ContainerFormats.Payload,
+              akka.remote.ContainerFormats.Payload.Builder,
+              akka.remote.ContainerFormats.PayloadOrBuilder>
+          payloadBuilder_;
+      /**
+       * <code>optional .Payload payload = 3;</code>
+       *
+       * @return Whether the payload field is set.
+       */
+      public boolean hasPayload() {
+        return ((bitField0_ & 0x00000004) != 0);
+      }
+      /**
+       * <code>optional .Payload payload = 3;</code>
+       *
+       * @return The payload.
+       */
+      public akka.remote.ContainerFormats.Payload getPayload() {
+        if (payloadBuilder_ == null) {
+          return payload_ == null
+              ? akka.remote.ContainerFormats.Payload.getDefaultInstance()
+              : payload_;
+        } else {
+          return payloadBuilder_.getMessage();
+        }
+      }
+      /** <code>optional .Payload payload = 3;</code> */
+      public Builder setPayload(akka.remote.ContainerFormats.Payload value) {
+        if (payloadBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          payload_ = value;
+          onChanged();
+        } else {
+          payloadBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      /** <code>optional .Payload payload = 3;</code> */
+      public Builder setPayload(akka.remote.ContainerFormats.Payload.Builder builderForValue) {
+        if (payloadBuilder_ == null) {
+          payload_ = builderForValue.build();
+          onChanged();
+        } else {
+          payloadBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      /** <code>optional .Payload payload = 3;</code> */
+      public Builder mergePayload(akka.remote.ContainerFormats.Payload value) {
+        if (payloadBuilder_ == null) {
+          if (((bitField0_ & 0x00000004) != 0)
+              && payload_ != null
+              && payload_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
+            payload_ =
+                akka.remote.ContainerFormats.Payload.newBuilder(payload_)
+                    .mergeFrom(value)
+                    .buildPartial();
+          } else {
+            payload_ = value;
+          }
+          onChanged();
+        } else {
+          payloadBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      /** <code>optional .Payload payload = 3;</code> */
+      public Builder clearPayload() {
+        if (payloadBuilder_ == null) {
+          payload_ = null;
+          onChanged();
+        } else {
+          payloadBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000004);
+        return this;
+      }
+      /** <code>optional .Payload payload = 3;</code> */
+      public akka.remote.ContainerFormats.Payload.Builder getPayloadBuilder() {
+        bitField0_ |= 0x00000004;
+        onChanged();
+        return getPayloadFieldBuilder().getBuilder();
+      }
+      /** <code>optional .Payload payload = 3;</code> */
+      public akka.remote.ContainerFormats.PayloadOrBuilder getPayloadOrBuilder() {
+        if (payloadBuilder_ != null) {
+          return payloadBuilder_.getMessageOrBuilder();
+        } else {
+          return payload_ == null
+              ? akka.remote.ContainerFormats.Payload.getDefaultInstance()
+              : payload_;
+        }
+      }
+      /** <code>optional .Payload payload = 3;</code> */
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
+              akka.remote.ContainerFormats.Payload,
+              akka.remote.ContainerFormats.Payload.Builder,
+              akka.remote.ContainerFormats.PayloadOrBuilder>
+          getPayloadFieldBuilder() {
+        if (payloadBuilder_ == null) {
+          payloadBuilder_ =
+              new akka.protobufv3.internal.SingleFieldBuilderV3<
+                  akka.remote.ContainerFormats.Payload,
+                  akka.remote.ContainerFormats.Payload.Builder,
+                  akka.remote.ContainerFormats.PayloadOrBuilder>(
+                  getPayload(), getParentForChildren(), isClean());
+          payload_ = null;
+        }
+        return payloadBuilder_;
+      }
+
+      private long timestamp_;
+      /**
+       * <code>optional int64 timestamp = 4;</code>
+       *
+       * @return Whether the timestamp field is set.
+       */
+      public boolean hasTimestamp() {
+        return ((bitField0_ & 0x00000008) != 0);
+      }
+      /**
+       * <code>optional int64 timestamp = 4;</code>
+       *
+       * @return The timestamp.
+       */
+      public long getTimestamp() {
+        return timestamp_;
+      }
+      /**
+       * <code>optional int64 timestamp = 4;</code>
+       *
+       * @param value The timestamp to set.
+       * @return This builder for chaining.
+       */
+      public Builder setTimestamp(long value) {
+        bitField0_ |= 0x00000008;
+        timestamp_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int64 timestamp = 4;</code>
+       *
+       * @return This builder for chaining.
+       */
+      public Builder clearTimestamp() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        timestamp_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      private akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData
+          metadata_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaDataOrBuilder>
+          metadataBuilder_;
+      /**
+       * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
+       *
+       * @return Whether the metadata field is set.
+       */
+      public boolean hasMetadata() {
+        return ((bitField0_ & 0x00000010) != 0);
+      }
+      /**
+       * <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code>
+       *
+       * @return The metadata.
+       */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData
+          getMetadata() {
+        if (metadataBuilder_ == null) {
+          return metadata_ == null
+              ? akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData.getDefaultInstance()
+              : metadata_;
+        } else {
+          return metadataBuilder_.getMessage();
+        }
+      }
+      /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
+      public Builder setMetadata(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData
+              value) {
+        if (metadataBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          metadata_ = value;
+          onChanged();
+        } else {
+          metadataBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000010;
+        return this;
+      }
+      /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
+      public Builder setMetadata(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData.Builder
+              builderForValue) {
+        if (metadataBuilder_ == null) {
+          metadata_ = builderForValue.build();
+          onChanged();
+        } else {
+          metadataBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000010;
+        return this;
+      }
+      /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
+      public Builder mergeMetadata(
+          akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData
+              value) {
+        if (metadataBuilder_ == null) {
+          if (((bitField0_ & 0x00000010) != 0)
+              && metadata_ != null
+              && metadata_
+                  != akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedPublishedEventMetaData.getDefaultInstance()) {
+            metadata_ =
+                akka.persistence.typed.serialization.ReplicatedEventSourcing
+                    .ReplicatedPublishedEventMetaData.newBuilder(metadata_)
+                    .mergeFrom(value)
+                    .buildPartial();
+          } else {
+            metadata_ = value;
+          }
+          onChanged();
+        } else {
+          metadataBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000010;
+        return this;
+      }
+      /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
+      public Builder clearMetadata() {
+        if (metadataBuilder_ == null) {
+          metadata_ = null;
+          onChanged();
+        } else {
+          metadataBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000010);
+        return this;
+      }
+      /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaData.Builder
+          getMetadataBuilder() {
+        bitField0_ |= 0x00000010;
+        onChanged();
+        return getMetadataFieldBuilder().getBuilder();
+      }
+      /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
+      public akka.persistence.typed.serialization.ReplicatedEventSourcing
+              .ReplicatedPublishedEventMetaDataOrBuilder
+          getMetadataOrBuilder() {
+        if (metadataBuilder_ != null) {
+          return metadataBuilder_.getMessageOrBuilder();
+        } else {
+          return metadata_ == null
+              ? akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData.getDefaultInstance()
+              : metadata_;
+        }
+      }
+      /** <code>optional .ReplicatedPublishedEventMetaData metadata = 5;</code> */
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaData.Builder,
+              akka.persistence.typed.serialization.ReplicatedEventSourcing
+                  .ReplicatedPublishedEventMetaDataOrBuilder>
+          getMetadataFieldBuilder() {
+        if (metadataBuilder_ == null) {
+          metadataBuilder_ =
+              new akka.protobufv3.internal.SingleFieldBuilderV3<
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedPublishedEventMetaData,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedPublishedEventMetaData.Builder,
+                  akka.persistence.typed.serialization.ReplicatedEventSourcing
+                      .ReplicatedPublishedEventMetaDataOrBuilder>(
+                  getMetadata(), getParentForChildren(), isClean());
+          metadata_ = null;
+        }
+        return metadataBuilder_;
+      }
+
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
+      // @@protoc_insertion_point(builder_scope:PublishedEvent)
+    }
+
+    // @@protoc_insertion_point(class_scope:PublishedEvent)
+    private static final akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        DEFAULT_INSTANCE;
+
+    static {
+      DEFAULT_INSTANCE =
+          new akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent();
+    }
+
+    public static akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    @java.lang.Deprecated
+    public static final akka.protobufv3.internal.Parser<PublishedEvent> PARSER =
+        new akka.protobufv3.internal.AbstractParser<PublishedEvent>() {
+          @java.lang.Override
+          public PublishedEvent parsePartialFrom(
+              akka.protobufv3.internal.CodedInputStream input,
+              akka.protobufv3.internal.ExtensionRegistryLite extensionRegistry)
+              throws akka.protobufv3.internal.InvalidProtocolBufferException {
+            return new PublishedEvent(input, extensionRegistry);
+          }
+        };
+
+    public static akka.protobufv3.internal.Parser<PublishedEvent> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.protobufv3.internal.Parser<PublishedEvent> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public akka.persistence.typed.serialization.ReplicatedEventSourcing.PublishedEvent
+        getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+  }
+
   private static final akka.protobufv3.internal.Descriptors.Descriptor
       internal_static_Counter_descriptor;
   private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
@@ -10044,6 +12331,14 @@ public final class ReplicatedEventSourcing {
       internal_static_ReplicatedSnapshotMetadata_Seen_descriptor;
   private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
       internal_static_ReplicatedSnapshotMetadata_Seen_fieldAccessorTable;
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
+      internal_static_ReplicatedPublishedEventMetaData_descriptor;
+  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_ReplicatedPublishedEventMetaData_fieldAccessorTable;
+  private static final akka.protobufv3.internal.Descriptors.Descriptor
+      internal_static_PublishedEvent_descriptor;
+  private static final akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
+      internal_static_PublishedEvent_fieldAccessorTable;
 
   public static akka.protobufv3.internal.Descriptors.FileDescriptor getDescriptor() {
     return descriptor;
@@ -10074,9 +12369,15 @@ public final class ReplicatedEventSourcing {
           + "\002(\0132\016.VersionVector\0228\n\016seenPerReplica\030\002 "
           + "\003(\0132 .ReplicatedSnapshotMetadata.Seen\032-\n"
           + "\004Seen\022\021\n\treplicaId\030\001 \002(\t\022\022\n\nsequenceNr\030\002"
-          + " \002(\003*-\n\014ORSetDeltaOp\022\007\n\003Add\020\000\022\n\n\006Remove\020"
-          + "\001\022\010\n\004Full\020\002B(\n$akka.persistence.typed.se"
-          + "rializationH\001"
+          + " \002(\003\"\\\n ReplicatedPublishedEventMetaData"
+          + "\022\021\n\treplicaId\030\001 \001(\t\022%\n\rversionVector\030\002 \001"
+          + "(\0132\016.VersionVector\"\236\001\n\016PublishedEvent\022\025\n"
+          + "\rpersistenceId\030\001 \001(\t\022\022\n\nsequenceNr\030\002 \001(\003"
+          + "\022\031\n\007payload\030\003 \001(\0132\010.Payload\022\021\n\ttimestamp"
+          + "\030\004 \001(\003\0223\n\010metadata\030\005 \001(\0132!.ReplicatedPub"
+          + "lishedEventMetaData*-\n\014ORSetDeltaOp\022\007\n\003A"
+          + "dd\020\000\022\n\n\006Remove\020\001\022\010\n\004Full\020\002B(\n$akka.persi"
+          + "stence.typed.serializationH\001"
     };
     descriptor =
         akka.protobufv3.internal.Descriptors.FileDescriptor.internalBuildGeneratedFileFrom(
@@ -10163,6 +12464,21 @@ public final class ReplicatedEventSourcing {
             internal_static_ReplicatedSnapshotMetadata_Seen_descriptor,
             new java.lang.String[] {
               "ReplicaId", "SequenceNr",
+            });
+    internal_static_ReplicatedPublishedEventMetaData_descriptor =
+        getDescriptor().getMessageTypes().get(7);
+    internal_static_ReplicatedPublishedEventMetaData_fieldAccessorTable =
+        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+            internal_static_ReplicatedPublishedEventMetaData_descriptor,
+            new java.lang.String[] {
+              "ReplicaId", "VersionVector",
+            });
+    internal_static_PublishedEvent_descriptor = getDescriptor().getMessageTypes().get(8);
+    internal_static_PublishedEvent_fieldAccessorTable =
+        new akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
+            internal_static_PublishedEvent_descriptor,
+            new java.lang.String[] {
+              "PersistenceId", "SequenceNr", "Payload", "Timestamp", "Metadata",
             });
     akka.remote.ContainerFormats.getDescriptor();
   }
