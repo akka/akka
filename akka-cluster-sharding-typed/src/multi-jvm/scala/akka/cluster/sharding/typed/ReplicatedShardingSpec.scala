@@ -40,6 +40,7 @@ object ReplicatedShardingSpec extends MultiNodeConfig {
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     // for the proxy plugin
     akka.actor.allow-java-serialization = on 
+    akka.actor.warn-about-java-serializer-usage = off
       """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first)(ConfigFactory.parseString("""
