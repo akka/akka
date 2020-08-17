@@ -62,12 +62,14 @@ import akka.util.ccompat._
     // If another member in the data center that is UP or LEAVING and has not seen this gossip or is exiting
     // convergence cannot be reached. For the first member in a secondary DC all members must have seen
     // the gossip state.
-    def memberHinderingConvergenceExists =
+    def memberHinderingConvergenceExists = {
+      val memberStatus = if (firstMemberInDc) convergenceMemberStatus + Joining + WeaklyUp else convergenceMemberStatus
       members.exists(
         member =>
           (firstMemberInDc || member.dataCenter == selfDc) &&
-          convergenceMemberStatus(member.status) &&
+          memberStatus(member.status) &&
           !(latestGossip.seenByNode(member.uniqueAddress) || exitingConfirmed(member.uniqueAddress)))
+    }
 
     // Find cluster members in the data center that are unreachable from other members of the data center
     // excluding observations from members outside of the data center, that have status DOWN or is passed in as confirmed exiting.
