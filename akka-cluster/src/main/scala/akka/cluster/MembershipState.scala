@@ -60,8 +60,10 @@ import akka.util.ccompat._
       !members.exists(member => member.dataCenter == selfDc && convergenceMemberStatus(member.status))
 
     // If another member in the data center that is UP or LEAVING and has not seen this gossip or is exiting
-    // convergence cannot be reached. For the first member in a secondary DC all members must have seen
-    // the gossip state.
+    // convergence cannot be reached. For the first member in a secondary DC all Joining, WeaklyUp, Up or Leaving
+    // members must have seen the gossip state. The reason for the stronger requirement for a first member in a
+    // secondary DC is that first member should only be moved to Up once to ensure that the first upNumber is
+    // only assigned once.
     def memberHinderingConvergenceExists = {
       val memberStatus = if (firstMemberInDc) convergenceMemberStatus + Joining + WeaklyUp else convergenceMemberStatus
       members.exists(
