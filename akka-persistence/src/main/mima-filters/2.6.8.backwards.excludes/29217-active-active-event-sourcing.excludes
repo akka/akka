@@ -9,3 +9,8 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.Persisten
 
 # changes to internal class
 ProblemFilters.exclude[Problem]("akka.persistence.PersistentImpl*")
+
+# protobuf
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.serialization.MessageFormats#PersistentMessageOrBuilder.hasMetadata")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.serialization.MessageFormats#PersistentMessageOrBuilder.getMetadata")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.serialization.MessageFormats#PersistentMessageOrBuilder.getMetadataOrBuilder")
