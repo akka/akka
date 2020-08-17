@@ -35,7 +35,8 @@ import akka.cluster.sharding.typed.ReplicatedShardingSpec.MyReplicatedIntSet
 import akka.cluster.sharding.typed.ReplicatedShardingSpec.MyReplicatedStringSet
 import akka.persistence.typed.ReplicationId
 import com.typesafe.config.Config
-
+import akka.util.ccompat._
+@ccompatUsedUntil213
 object ReplicatedShardingSpec {
   def commonConfig = ConfigFactory.parseString("""
       akka.loglevel = INFO
@@ -247,12 +248,12 @@ abstract class ReplicatedShardingSpec(replicationType: ReplicationType, configA:
       Cluster(system2).manager ! Join(Cluster(system).selfMember.address)
 
       eventually {
-        Cluster(system).state.members.size should ===(2)
-        Cluster(system).state.members.map(_.status) should ===(Set[MemberStatus](MemberStatus.Up))
+        Cluster(system).state.members.unsorted.size should ===(2)
+        Cluster(system).state.members.unsorted.map(_.status) should ===(Set[MemberStatus](MemberStatus.Up))
       }
       eventually {
-        Cluster(system2).state.members.size should ===(2)
-        Cluster(system2).state.members.map(_.status) should ===(Set[MemberStatus](MemberStatus.Up))
+        Cluster(system2).state.members.unsorted.size should ===(2)
+        Cluster(system2).state.members.unsorted.map(_.status) should ===(Set[MemberStatus](MemberStatus.Up))
       }
     }
 

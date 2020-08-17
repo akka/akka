@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 import akka.annotation.InternalApi
 import akka.persistence.testkit.ProcessingPolicy
