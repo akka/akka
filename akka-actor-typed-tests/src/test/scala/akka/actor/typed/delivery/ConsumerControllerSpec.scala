@@ -598,6 +598,59 @@ class ConsumerControllerSpec
 
       testKit.stop(consumerController)
     }
+
+    "send Request after half window size when many chunks" in {
+      nextId()
+      val consumerController =
+        spawn(ConsumerController[TestConsumer.Job](), s"consumerController-${idCount}")
+          .unsafeUpcast[ConsumerControllerImpl.InternalCommand]
+      val producerControllerProbe = createTestProbe[ProducerControllerImpl.InternalCommand]()
+
+      val consumerProbe = createTestProbe[ConsumerController.Delivery[TestConsumer.Job]]()
+      consumerController ! ConsumerController.Start(consumerProbe.ref)
+
+      // one chunk for each letter, => 25 chunks
+      val chunks1 =
+        ProducerControllerImpl.createChunks(
+          TestConsumer.Job(s"1234567890123456789012345"),
+          chunkSize = 1,
+          serialization)
+      val seqMessages1 = chunks1.zipWithIndex.map {
+        case (chunk, i) =>
+          ConsumerController.SequencedMessage.fromChunked(
+            producerId,
+            1 + i,
+            chunk,
+            first = i == 0,
+            ack = false,
+            producerControllerProbe.ref)
+      }
+
+      consumerController ! seqMessages1.head
+      producerControllerProbe.expectMessage(ProducerControllerImpl.Request(0, 20, true, false))
+      producerControllerProbe.expectNoMessage() // no more Request yet
+      (1 to 8).foreach(i => consumerController ! seqMessages1(i))
+      producerControllerProbe.expectNoMessage() // sent 9, no more Request yet
+
+      consumerController ! seqMessages1(9)
+      producerControllerProbe.expectMessage(ProducerControllerImpl.Request(0, 30, true, false))
+
+      (10 to 18).foreach(i => consumerController ! seqMessages1(i))
+      producerControllerProbe.expectNoMessage() // sent 19, no more Request yet
+
+      consumerController ! seqMessages1(19)
+      producerControllerProbe.expectMessage(ProducerControllerImpl.Request(0, 40, true, false))
+
+      // not sending more for a while, timeout will trigger new Request
+      producerControllerProbe.expectMessage(ProducerControllerImpl.Request(0, 40, true, true))
+
+      (20 to 24).foreach(i => consumerController ! seqMessages1(i))
+      consumerProbe.expectMessageType[ConsumerController.Delivery[TestConsumer.Job]].message.payload should ===(
+        "1234567890123456789012345")
+      consumerController ! ConsumerController.Confirmed
+
+      testKit.stop(consumerController)
+    }
   }
 
   "ConsumerController without resending" must {
