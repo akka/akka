@@ -494,7 +494,7 @@ private class ConsumerControllerImpl[A](
       s.consumer ! Delivery(assembledSeqMsg.message, context.self, seqMsg.producerId, seqMsg.seqNr)
       waitingForConfirmation(s.clearCollectedChunks(), assembledSeqMsg)
     } else {
-
+      // collecting chunks
       val newRequestedSeqNr =
         if ((s.requestedSeqNr - seqMsg.seqNr) == flowControlWindow / 2) {
           val newRequestedSeqNr = s.requestedSeqNr + flowControlWindow / 2

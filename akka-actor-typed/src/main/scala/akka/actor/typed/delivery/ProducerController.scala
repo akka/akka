@@ -21,6 +21,7 @@ import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
+import akka.util.Helpers.toRootLowerCase
 import akka.util.Helpers.Requiring
 import akka.util.JavaDurationConverters._
 
@@ -154,12 +155,16 @@ object ProducerController {
      * `akka.reliable-delivery.producer-controller`.
      */
     def apply(config: Config): Settings = {
+      val chunkLargeMessagesBytes = toRootLowerCase(config.getString("chunk-large-messages")) match {
+        case "off" => 0
+        case _ =>
+          config.getBytes("chunk-large-messages").requiring(_ <= Int.MaxValue, "Too large chunk-large-messages.").toInt
+      }
       new Settings(
         durableQueueRequestTimeout = config.getDuration("durable-queue.request-timeout").asScala,
         durableQueueRetryAttempts = config.getInt("durable-queue.retry-attempts"),
         durableQueueResendFirstInterval = config.getDuration("durable-queue.resend-first-interval").asScala,
-        chunkLargeMessagesBytes =
-          config.getBytes("chunk-large-messages").requiring(_ <= Int.MaxValue, "Too large chunk-large-messages.").toInt)
+        chunkLargeMessagesBytes)
     }
 
     /**

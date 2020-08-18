@@ -664,7 +664,7 @@ See `inbound-lanes` and `outbound-lanes` in the @ref:[reference configuration](g
 
 All the communication between user defined remote actors are isolated from the channel of Akka internal messages so
 a large user message cannot block an urgent system message. While this provides good isolation for Akka services, all
-user communications by default happen through a shared network connection (an Aeron stream). When some actors
+user communications by default happen through a shared network connection. When some actors
 send large messages this can cause other messages to suffer higher latency as they need to wait until the full
 message has been transported on the shared channel (and hence, shared bottleneck). In these cases it is usually
 helpful to separate actors that have different QoS requirements: large messages vs. low latency.
@@ -694,6 +694,11 @@ This means that all messages sent to the following actors will pass through the 
  * `/user/thirdGroup/actor4/actor5`
 
 Messages destined for actors not matching any of these patterns are sent using the default channel as before.
+
+The large messages channel can still not be used for extremely large messages, a few MB per message at most.
+An alternative is to use the @ref:[Reliable delivery](typed/reliable-delivery.md) that has support for 
+automatically @ref[splitting up large messages](typed/reliable-delivery.md#chunk-large-messages) and assemble
+them again on the receiving side.
 
 ### External, shared Aeron media driver
 
