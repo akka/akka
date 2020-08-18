@@ -440,7 +440,7 @@ private class ProducerControllerImpl[A: ClassTag](
       }
     }
 
-    def checkRecieveMessageRemainingChunksState(): Unit = {
+    def checkReceiveMessageRemainingChunksState(): Unit = {
       if (s.remainingChunks.nonEmpty)
         throw new IllegalStateException(
           s"Received unexpected message before sending remaining [${s.remainingChunks.size}] chunks.")
@@ -562,6 +562,11 @@ private class ProducerControllerImpl[A: ClassTag](
 
         onMsg(seqMsg, newReplyAfterStore, s.remainingChunks.tail)
       } else {
+        context.log.debug(
+          "Received StoreMessageSentCompleted for seqNr [{}] but waiting for [{}]. " +
+          "Probably due to retry.",
+          seqNr,
+          s.storeMessageSentInProgress)
         Behaviors.same
       }
     }
@@ -750,7 +755,7 @@ private class ProducerControllerImpl[A: ClassTag](
 
     Behaviors.receiveMessage {
       case MessageWithConfirmation(m: A, replyTo) =>
-        checkRecieveMessageRemainingChunksState()
+        checkReceiveMessageRemainingChunksState()
         flightRecorder.producerReceived(producerId, s.currentSeqNr)
         val chunks = chunk(m, ack = true)
         val newReplyAfterStore = s.replyAfterStore.updated(chunks.last.seqNr, replyTo)
@@ -769,7 +774,7 @@ private class ProducerControllerImpl[A: ClassTag](
         }
 
       case Msg(m: A) =>
-        checkRecieveMessageRemainingChunksState()
+        checkReceiveMessageRemainingChunksState()
         flightRecorder.producerReceived(producerId, s.currentSeqNr)
         val chunks = chunk(m, ack = false)
         if (durableQueue.isEmpty) {
