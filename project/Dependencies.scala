@@ -35,17 +35,27 @@ object Dependencies {
   val scalaTestVersion = "3.1.1"
   val scalaCheckVersion = "1.14.3"
 
-  val Versions = Seq(
-    crossScalaVersions := Seq(scala212Version, scala213Version),
-    scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
-    java8CompatVersion := {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        // java8-compat is only used in a couple of places for 2.13,
-        // it is probably possible to remove the dependency if needed.
-        case Some((2, n)) if n >= 13 => "0.9.0"
-        case _                       => "0.8.0"
-      }
-    })
+  val Versions =
+    Seq(
+      crossScalaVersions := Seq(scala212Version, scala213Version),
+      scalaVersion := {
+        // don't allow full override to keep compatible with the version of silencer
+        // don't mandate patch not specified to allow builds to migrate
+        System.getProperty("akka.build.scalaVersion", "default") match {
+          case twoThirteen if twoThirteen.startsWith("2.13") => scala213Version
+          case twoTwelve if twoTwelve.startsWith("2.12")     => scala212Version
+          case "default"                                     => crossScalaVersions.value.head
+          case other                                         => throw new IllegalArgumentException(s"Unsupported scala version [$other]. Must be 2.12 or 2.13.")
+        }
+      },
+      java8CompatVersion := {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          // java8-compat is only used in a couple of places for 2.13,
+          // it is probably possible to remove the dependency if needed.
+          case Some((2, n)) if n >= 13 => "0.9.0"
+          case _                       => "0.8.0"
+        }
+      })
 
   object Compile {
     // Compile
