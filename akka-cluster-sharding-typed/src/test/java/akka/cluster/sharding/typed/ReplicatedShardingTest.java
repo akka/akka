@@ -15,7 +15,7 @@ import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import akka.cluster.MemberStatus;
 import akka.cluster.sharding.typed.javadsl.Entity;
-import akka.cluster.sharding.typed.scaladsl.EntityRef;
+import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.cluster.typed.Cluster;
 import akka.cluster.typed.Join;
 import akka.persistence.testkit.PersistenceTestKitPlugin;

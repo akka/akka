@@ -4,12 +4,11 @@
 
 package jdocs.akka.cluster.sharding.typed;
 
-import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.cluster.sharding.typed.*;
 import akka.cluster.sharding.typed.javadsl.Entity;
-import akka.cluster.sharding.typed.scaladsl.EntityRef;
+import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.persistence.typed.ReplicaId;
 import akka.persistence.typed.ReplicationId;
 
@@ -95,8 +94,6 @@ public class ReplicatedShardingCompileOnlySpec {
 
     Map<ReplicaId, EntityRef<Command>> myEntityId =
         replicatedSharding.getEntityRefsFor("myEntityId");
-    Map<ReplicaId, ActorRef<ShardingEnvelope<Command>>> shardingRefs =
-        replicatedSharding.getShardingRefs();
     // #sending-messages
 
   }

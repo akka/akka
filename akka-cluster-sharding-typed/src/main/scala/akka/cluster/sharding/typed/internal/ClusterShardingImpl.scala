@@ -385,6 +385,11 @@ import akka.util.JavaDurationConverters._
   }
 
   override def toString: String = s"EntityRef($typeKey, $entityId)"
+
+  /**
+   * INTERNAL API
+   */
+  override private[akka] def asJava: javadsl.EntityRef[M] = this
 }
 
 /**

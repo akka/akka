@@ -4,7 +4,6 @@
 
 package docs.akka.cluster.sharding.typed
 
-import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.cluster.sharding.typed.ReplicatedEntity
@@ -69,6 +68,5 @@ object ReplicatedShardingCompileOnlySpec {
     ReplicatedShardingExtension(system).init(provider)
 
   val entityRefs: Map[ReplicaId, EntityRef[Command]] = myReplicatedSharding.entityRefsFor("myEntityId")
-  val actorRefs: Map[ReplicaId, ActorRef[ShardingEnvelope[Command]]] = myReplicatedSharding.shardingRefs
   //#sending-messages
 }

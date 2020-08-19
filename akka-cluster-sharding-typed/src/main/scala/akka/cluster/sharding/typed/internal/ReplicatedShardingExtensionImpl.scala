@@ -59,7 +59,7 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
           regionOrProxy,
           replicaSettings.entity.dataCenter)
     }
-    val replicaToRegionOrProxy = initializedReplicas.map {
+    val replicaToRegionOrProxy: Map[ReplicaId, ActorRef[E]] = initializedReplicas.map {
       case (_, replicaId, _, regionOrProxy, _) => replicaId -> regionOrProxy
     }.toMap
     if (settings.directReplication) {
@@ -72,7 +72,7 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
     val replicaToTypeKey = initializedReplicas.map {
       case (typeName, id, typeKey, _, dc) => id -> ((typeKey, dc, typeName))
     }.toMap
-    new ReplicatedShardingImpl(sharding, replicaToRegionOrProxy, replicaToTypeKey)
+    new ReplicatedShardingImpl(sharding, replicaToTypeKey)
   }
 }
 
@@ -82,13 +82,8 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
 @InternalApi
 private[akka] final class ReplicatedShardingImpl[M, E](
     sharding: ClusterSharding,
-    shardingPerReplica: Map[ReplicaId, ActorRef[E]],
     replicaTypeKeys: Map[ReplicaId, (EntityTypeKey[M], Option[DataCenter], String)])
     extends ReplicatedSharding[M, E] {
-
-  // FIXME add test coverage for these
-  override def shardingRefs: Map[ReplicaId, ActorRef[E]] = shardingPerReplica
-  override def getShardingRefs: JMap[ReplicaId, ActorRef[E]] = shardingRefs.asJava
 
   override def entityRefsFor(entityId: String): Map[ReplicaId, EntityRef[M]] =
     replicaTypeKeys.map {
@@ -100,7 +95,7 @@ private[akka] final class ReplicatedShardingImpl[M, E](
         })
     }
 
-  override def getEntityRefsFor(entityId: String): JMap[ReplicaId, EntityRef[M]] =
-    entityRefsFor(entityId).asJava
+  override def getEntityRefsFor(entityId: String): JMap[ReplicaId, akka.cluster.sharding.typed.javadsl.EntityRef[M]] =
+    entityRefsFor(entityId).transform((_, v) => v.asJava).asJava
 
 }
