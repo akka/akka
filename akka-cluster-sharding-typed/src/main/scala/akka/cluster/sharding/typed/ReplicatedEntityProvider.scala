@@ -83,7 +83,8 @@ object ReplicatedEntityProvider {
    * Scala API
    *
    * Create a [[ReplicatedEntityProvider]] that uses the defaults for [[Entity]] when running in
-   * ClusterSharding. A replica will be run per data center.
+   * ClusterSharding. The replicas in allReplicaIds should be roles used by nodes. A replica for each
+   * entity will run on each role.
    */
   def perRole[M: ClassTag, E](typeName: String, allReplicaIds: Set[ReplicaId])(
       create: ReplicationId => Behavior[M]): ReplicatedEntityProvider[M] = {
@@ -117,9 +118,11 @@ object ReplicatedEntityProvider {
    * Java API
    *
    * Create a [[ReplicatedEntityProvider]] that uses the defaults for [[Entity]] when running in
-   * ClusterSharding. A replica will be run per data center.
+   * ClusterSharding.
+   *
+   * Map replicas to roles and then there will be a replica per role e.g. to match to availability zones/racks
    */
-  def createPerDc[M](
+  def createPerRole[M](
       messageClass: Class[M],
       typeName: String,
       allReplicaIds: JSet[ReplicaId],
