@@ -29,7 +29,7 @@ public class ReplicatedShardingCompileOnlySpec {
           new HashSet<>(
               Arrays.asList(new ReplicaId("DC-A"), new ReplicaId("DC-B"), new ReplicaId("DC-C"))));
 
-  public static ReplicatedEntityProvider<Command, ShardingEnvelope<Command>> provider() {
+  public static ReplicatedEntityProvider<Command> provider() {
     // #bootstrap
     return ReplicatedEntityProvider.create(
         Command.class,
@@ -66,7 +66,7 @@ public class ReplicatedShardingCompileOnlySpec {
     // #bootstrap-dc
   }
 
-  public static ReplicatedEntityProvider<Command, ShardingEnvelope<Command>> role() {
+  public static ReplicatedEntityProvider<Command> role() {
     // #bootstrap-role
     return ReplicatedEntityProvider.create(
         Command.class,
@@ -89,8 +89,7 @@ public class ReplicatedShardingCompileOnlySpec {
     // #sending-messages
     ReplicatedShardingExtension extension = ReplicatedShardingExtension.get(system);
 
-    ReplicatedSharding<Command, ShardingEnvelope<Command>> replicatedSharding =
-        extension.init(provider());
+    ReplicatedSharding<Command> replicatedSharding = extension.init(provider());
 
     Map<ReplicaId, EntityRef<Command>> myEntityId =
         replicatedSharding.getEntityRefsFor("myEntityId");

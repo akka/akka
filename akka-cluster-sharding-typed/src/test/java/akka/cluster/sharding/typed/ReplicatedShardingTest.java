@@ -143,44 +143,39 @@ public class ReplicatedShardingTest extends JUnitSuite {
                 Arrays.asList(
                     new ReplicaId("DC-A"), new ReplicaId("DC-B"), new ReplicaId("DC-C"))));
 
-    private final ReplicatedSharding<
-            MyReplicatedStringSet.Command, ShardingEnvelope<MyReplicatedStringSet.Command>>
-        replicatedSharding;
+    private final ReplicatedSharding<MyReplicatedStringSet.Command> replicatedSharding;
 
     private ProxyActor(ActorContext<Command> context) {
       super(context);
 
       // #bootstrap
-      ReplicatedEntityProvider<
-              MyReplicatedStringSet.Command, ShardingEnvelope<MyReplicatedStringSet.Command>>
-          replicatedEntityProvider =
-              ReplicatedEntityProvider.create(
-                  MyReplicatedStringSet.Command.class,
-                  "StringSet",
-                  ALL_REPLICAS,
-                  // factory for replicated entity for a given replica
-                  (entityTypeKey, replicaId) ->
-                      ReplicatedEntity.create(
-                          replicaId,
-                          // use the replica id as typekey for sharding to get one sharding instance
-                          // per replica
-                          Entity.of(
-                                  entityTypeKey,
-                                  entityContext ->
-                                      // factory for the entity for a given entity in that replica
-                                      MyReplicatedStringSet.create(
-                                          ReplicationId.fromString(entityContext.getEntityId())))
-                              // potentially use replica id as role or dc in Akka multi dc for the
-                              // sharding instance
-                              // to control where replicas will live
-                              // .withDataCenter(replicaId.id()))
-                              .withRole(replicaId.id())));
+      ReplicatedEntityProvider<MyReplicatedStringSet.Command> replicatedEntityProvider =
+          ReplicatedEntityProvider.create(
+              MyReplicatedStringSet.Command.class,
+              "StringSet",
+              ALL_REPLICAS,
+              // factory for replicated entity for a given replica
+              (entityTypeKey, replicaId) ->
+                  ReplicatedEntity.create(
+                      replicaId,
+                      // use the replica id as typekey for sharding to get one sharding instance
+                      // per replica
+                      Entity.of(
+                              entityTypeKey,
+                              entityContext ->
+                                  // factory for the entity for a given entity in that replica
+                                  MyReplicatedStringSet.create(
+                                      ReplicationId.fromString(entityContext.getEntityId())))
+                          // potentially use replica id as role or dc in Akka multi dc for the
+                          // sharding instance
+                          // to control where replicas will live
+                          // .withDataCenter(replicaId.id()))
+                          .withRole(replicaId.id())));
 
       ReplicatedShardingExtension extension =
           ReplicatedShardingExtension.get(getContext().getSystem());
-      ReplicatedSharding<
-              MyReplicatedStringSet.Command, ShardingEnvelope<MyReplicatedStringSet.Command>>
-          replicatedSharding = extension.init(replicatedEntityProvider);
+      ReplicatedSharding<MyReplicatedStringSet.Command> replicatedSharding =
+          extension.init(replicatedEntityProvider);
       // #bootstrap
 
       this.replicatedSharding = replicatedSharding;

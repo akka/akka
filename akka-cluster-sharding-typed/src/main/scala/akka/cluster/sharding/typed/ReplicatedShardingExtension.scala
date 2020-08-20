@@ -39,22 +39,20 @@ trait ReplicatedShardingExtension extends Extension {
    * Init one instance sharding per replica in the given settings and return a [[ReplicatedSharding]] representing those.
    *
    * @tparam M The type of messages the replicated event sourced actor accepts
-   * @tparam E The type of envelope used for routing messages to actors, the same for all replicas
    *
    * Note, multiple calls on the same node will not start new sharding instances but will return a new instance of [[ReplicatedSharding]]
    */
-  def init[M, E](settings: ReplicatedEntityProvider[M, E]): ReplicatedSharding[M, E]
+  def init[M](settings: ReplicatedEntityProvider[M]): ReplicatedSharding[M]
 
   /**
    * Init one instance sharding per replica in the given settings and return a [[ReplicatedSharding]] representing those.
    *
    * @param thisReplica If provided saves messages being forwarded to sharding for this replica
    * @tparam M The type of messages the replicated event sourced actor accepts
-   * @tparam E The type of envelope used for routing messages to actors, the same for all replicas
    *
    * Note, multiple calls on the same node will not start new sharding instances but will return a new instance of [[ReplicatedSharding]]
    */
-  def init[M, E](thisReplica: ReplicaId, settings: ReplicatedEntityProvider[M, E]): ReplicatedSharding[M, E]
+  def init[M](thisReplica: ReplicaId, settings: ReplicatedEntityProvider[M]): ReplicatedSharding[M]
 }
 
 /**
@@ -64,22 +62,15 @@ trait ReplicatedShardingExtension extends Extension {
  */
 @DoNotInherit
 @ApiMayChange
-trait ReplicatedSharding[M, E] {
+trait ReplicatedSharding[M] {
 
   /**
    * Scala API: Returns the entity ref for each replica for user defined routing/replica selection
-   *
-   * This can only be used if the default [[ShardingEnvelope]] is used, when using custom envelopes or in message
-   * entity ids you will need to use [[#shardingRefs]]
    */
   def entityRefsFor(entityId: String): Map[ReplicaId, EntityRef[M]]
 
   /**
    * Java API: Returns the entity ref for each replica for user defined routing/replica selection
-   *
-   * This can only be used if the default [[ShardingEnvelope]] is used, when using custom envelopes or in message
-   * entity ids you will need to use [[#getShardingRefs]
    */
   def getEntityRefsFor(entityId: String): JMap[ReplicaId, javadsl.EntityRef[M]]
-
 }

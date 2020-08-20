@@ -97,7 +97,7 @@ object ReplicatedShardingSpec {
       }
 
     def provider(replicationType: ReplicationType) =
-      ReplicatedEntityProvider[MyReplicatedStringSet.Command, ShardingEnvelope[MyReplicatedStringSet.Command]](
+      ReplicatedEntityProvider[MyReplicatedStringSet.Command](
         // all replicas
         "StringSet",
         AllReplicas) { (entityTypeKey, replicaId) =>
@@ -148,9 +148,7 @@ object ReplicatedShardingSpec {
       }
 
     def provider(replicationType: ReplicationType) =
-      ReplicatedEntityProvider[MyReplicatedIntSet.Command, ShardingEnvelope[MyReplicatedIntSet.Command]](
-        "IntSet",
-        AllReplicas) { (entityTypeKey, replicaId) =>
+      ReplicatedEntityProvider[MyReplicatedIntSet.Command]("IntSet", AllReplicas) { (entityTypeKey, replicaId) =>
         val entity = {
           val e = Entity(entityTypeKey) { entityContext =>
             val replicationId = ReplicationId.fromString(entityContext.entityId)

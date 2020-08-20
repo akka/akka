@@ -7,7 +7,6 @@ package akka.cluster.sharding.typed.internal
 import java.util.concurrent.atomic.AtomicLong
 import java.util.{ Map => JMap }
 
-import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.sharding.typed.ReplicatedShardingExtension
@@ -34,15 +33,15 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def init[M, E](settings: ReplicatedEntityProvider[M, E]): ReplicatedSharding[M, E] =
+  override def init[M](settings: ReplicatedEntityProvider[M]): ReplicatedSharding[M] =
     initInternal(None, settings)
 
-  override def init[M, E](thisReplica: ReplicaId, settings: ReplicatedEntityProvider[M, E]): ReplicatedSharding[M, E] =
+  override def init[M](thisReplica: ReplicaId, settings: ReplicatedEntityProvider[M]): ReplicatedSharding[M] =
     initInternal(Some(thisReplica), settings)
 
-  private def initInternal[M, E](
+  private def initInternal[M](
       thisReplica: Option[ReplicaId],
-      settings: ReplicatedEntityProvider[M, E]): ReplicatedSharding[M, E] = {
+      settings: ReplicatedEntityProvider[M]): ReplicatedSharding[M] = {
     val sharding = ClusterSharding(system)
     val initializedReplicas = settings.replicas.map {
       case (replicaSettings, typeName) =>
@@ -59,7 +58,7 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
           regionOrProxy,
           replicaSettings.entity.dataCenter)
     }
-    val replicaToRegionOrProxy: Map[ReplicaId, ActorRef[E]] = initializedReplicas.map {
+    val replicaToRegionOrProxy = initializedReplicas.map {
       case (_, replicaId, _, regionOrProxy, _) => replicaId -> regionOrProxy
     }.toMap
     if (settings.directReplication) {
@@ -80,10 +79,10 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class ReplicatedShardingImpl[M, E](
+private[akka] final class ReplicatedShardingImpl[M](
     sharding: ClusterSharding,
     replicaTypeKeys: Map[ReplicaId, (EntityTypeKey[M], Option[DataCenter], String)])
-    extends ReplicatedSharding[M, E] {
+    extends ReplicatedSharding[M] {
 
   override def entityRefsFor(entityId: String): Map[ReplicaId, EntityRef[M]] =
     replicaTypeKeys.map {
