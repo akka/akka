@@ -228,8 +228,7 @@ private class EventSourcedProducerQueue[A](
     if (initialCleanupDone) {
       command match {
         case StoreMessageSent(sent, replyTo) =>
-          val currentSeqNr =
-            if (initialCleanupDone) state.currentSeqNr else state.cleanupPartialChunkedMessages().currentSeqNr
+          val currentSeqNr = state.currentSeqNr
           if (sent.seqNr == currentSeqNr) {
             if (traceEnabled)
               context.log.trace(
@@ -263,7 +262,7 @@ private class EventSourcedProducerQueue[A](
             Effect.none // duplicate
 
         case LoadState(replyTo) =>
-          Effect.reply(replyTo)(if (initialCleanupDone) state else state.cleanupPartialChunkedMessages())
+          Effect.reply(replyTo)(state)
 
         case _: CleanupTick[_] =>
           onCleanupTick(state)
