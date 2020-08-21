@@ -262,7 +262,7 @@ class AuctionEntity extends ReplicatedEventSourcedBehavior<Command, Event, Aucti
         ctx ->
             Behaviors.withTimers(
                 timers ->
-                    ReplicatedEventSourcing.withSharedJournal(
+                    ReplicatedEventSourcing.commonJournalConfig(
                         new ReplicationId("Auction", name, replica),
                         ALL_REPLICAS,
                         PersistenceTestKitReadJournal.Identifier(),

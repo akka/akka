@@ -40,7 +40,7 @@ object ReplicatedShardingCompileOnlySpec {
   //#bootstrap
 
   //#bootstrap-dc
-  ReplicatedEntityProvider.perDc("MyEntityType", Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) { replicationId =>
+  ReplicatedEntityProvider.perDataCenter("MyEntityType", Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) { replicationId =>
     MyEventSourcedBehavior(replicationId)
   }
   //#bootstrap-dc

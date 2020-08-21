@@ -82,13 +82,14 @@ object ReplicatedEventSourcing {
    * @param allReplicaIds All replica ids. These need to be known to receive events from all replicas.
    * @param queryPluginId A single query plugin used to read the events from other replicas. Must be the query side of your configured journal plugin.
    */
-  def withSharedJournal[Command, Event, State](
+  def commonJournalConfig[Command, Event, State](
       replicationId: ReplicationId,
       allReplicaIds: Set[ReplicaId],
       queryPluginId: String)(
       eventSourcedBehaviorFactory: ReplicationContext => EventSourcedBehavior[Command, Event, State])
       : EventSourcedBehavior[Command, Event, State] =
-    apply(replicationId, allReplicaIds.map(id => id -> queryPluginId).toMap)(eventSourcedBehaviorFactory)
+    perReplicaJournalConfig(replicationId, allReplicaIds.map(id => id -> queryPluginId).toMap)(
+      eventSourcedBehaviorFactory)
 
   /**
    * Initialize a replicated event sourced behavior.
@@ -104,7 +105,9 @@ object ReplicatedEventSourcing {
    * @param allReplicasAndQueryPlugins All replica ids and a query plugin per replica id. These need to be known to receive events from all replicas
    *                                   and configured with the query plugin for the journal that each replica uses.
    */
-  def apply[Command, Event, State](replicationId: ReplicationId, allReplicasAndQueryPlugins: Map[ReplicaId, String])(
+  def perReplicaJournalConfig[Command, Event, State](
+      replicationId: ReplicationId,
+      allReplicasAndQueryPlugins: Map[ReplicaId, String])(
       eventSourcedBehaviorFactory: ReplicationContext => EventSourcedBehavior[Command, Event, State])
       : EventSourcedBehavior[Command, Event, State] = {
     val context = new ReplicationContextImpl(replicationId, allReplicasAndQueryPlugins)

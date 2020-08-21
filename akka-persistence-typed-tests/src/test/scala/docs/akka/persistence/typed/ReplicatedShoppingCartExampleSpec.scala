@@ -41,7 +41,7 @@ object ReplicatedShoppingCartExampleSpec {
     final case class State(items: Map[ProductId, Counter])
 
     def apply(entityId: String, replicaId: ReplicaId, allReplicaIds: Set[ReplicaId]): Behavior[Command] = {
-      ReplicatedEventSourcing.withSharedJournal(
+      ReplicatedEventSourcing.commonJournalConfig(
         ReplicationId("blog", entityId, replicaId),
         allReplicaIds,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>

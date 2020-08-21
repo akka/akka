@@ -27,8 +27,7 @@ object ReplicatedEntityProvider {
    * Java API:
    *
    * Provides full control over the [[ReplicatedEntity]] and the [[Entity]]
-   * Most use cases can use the [[createPerDc]] and [[createPerRole]]
-   *
+   * Most use cases can use the [[createPerDataCenter]] and [[createPerRole]]
    *
    * @tparam M The type of messages the replicated entity accepts
    */
@@ -47,8 +46,7 @@ object ReplicatedEntityProvider {
    * Scala API:
    *
    * Provides full control over the [[ReplicatedEntity]] and the [[Entity]]
-   * Most use cases can use the [[createPerDc]] and [[createPerRole]]
-   *
+   * Most use cases can use the [[perDataCenter and [[createPerRole]]
    *
    * @param typeName The type name used in the [[EntityTypeKey]]
    * @tparam M The type of messages the replicated entity accepts
@@ -70,7 +68,7 @@ object ReplicatedEntityProvider {
    * Create a [[ReplicatedEntityProvider]] that uses the defaults for [[Entity]] when running in
    * ClusterSharding. A replica will be run per data center.
    */
-  def perDc[M: ClassTag, E](typeName: String, allReplicaIds: Set[ReplicaId])(
+  def perDataCenter[M: ClassTag, E](typeName: String, allReplicaIds: Set[ReplicaId])(
       create: ReplicationId => Behavior[M]): ReplicatedEntityProvider[M] = {
     apply(typeName, allReplicaIds) { (typeKey, replicaId) =>
       ReplicatedEntity(replicaId, Entity(typeKey) { entityContext =>
@@ -101,7 +99,7 @@ object ReplicatedEntityProvider {
    * Create a [[ReplicatedEntityProvider]] that uses the defaults for [[Entity]] when running in
    * ClusterSharding. A replica will be run per data center.
    */
-  def createPerDc[M](
+  def createPerDataCenter[M](
       messageClass: Class[M],
       typeName: String,
       allReplicaIds: JSet[ReplicaId],

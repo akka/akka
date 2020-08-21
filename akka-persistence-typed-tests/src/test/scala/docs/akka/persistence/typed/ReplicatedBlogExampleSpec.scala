@@ -52,7 +52,7 @@ object ReplicatedBlogExampleSpec {
 
     def apply(entityId: String, replicaId: ReplicaId, allReplicaIds: Set[ReplicaId]): Behavior[Command] = {
       Behaviors.setup[Command] { ctx =>
-        ReplicatedEventSourcing.withSharedJournal(
+        ReplicatedEventSourcing.commonJournalConfig(
           ReplicationId("blog", entityId, replicaId),
           allReplicaIds,
           PersistenceTestKitReadJournal.Identifier) { replicationContext =>

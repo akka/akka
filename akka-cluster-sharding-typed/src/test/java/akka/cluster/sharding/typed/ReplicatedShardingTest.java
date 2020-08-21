@@ -67,7 +67,7 @@ public class ReplicatedShardingTest extends JUnitSuite {
     }
 
     static Behavior<Command> create(ReplicationId replicationId) {
-      return ReplicatedEventSourcing.withSharedJournal(
+      return ReplicatedEventSourcing.commonJournalConfig(
           replicationId,
           ALL_REPLICAS,
           PersistenceTestKitReadJournal.Identifier(),

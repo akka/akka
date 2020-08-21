@@ -76,7 +76,7 @@ object ReplicatedShardingSpec {
     case class Texts(texts: Set[String]) extends CborSerializable
 
     def apply(replicationId: ReplicationId): Behavior[Command] =
-      ReplicatedEventSourcing.withSharedJournal( // it isn't really shared as it is in memory
+      ReplicatedEventSourcing.commonJournalConfig( // it isn't really shared as it is in memory
         replicationId,
         AllReplicas,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>
@@ -127,7 +127,7 @@ object ReplicatedShardingSpec {
     case class Ints(ints: Set[Int]) extends CborSerializable
 
     def apply(id: ReplicationId, allReplicas: Set[ReplicaId]): Behavior[Command] =
-      ReplicatedEventSourcing.withSharedJournal( // it isn't really shared as it is in memory
+      ReplicatedEventSourcing.commonJournalConfig( // it isn't really shared as it is in memory
         id,
         allReplicas,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>

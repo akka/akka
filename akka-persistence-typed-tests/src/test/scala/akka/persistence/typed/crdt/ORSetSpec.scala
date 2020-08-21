@@ -28,7 +28,7 @@ object ORSetSpec {
 
     def apply(entityId: String, replica: ReplicaId): Behavior[ORSetEntity.Command] = {
 
-      ReplicatedEventSourcing.withSharedJournal(
+      ReplicatedEventSourcing.commonJournalConfig(
         ReplicationId("ORSetSpec", entityId, replica),
         AllReplicas,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>

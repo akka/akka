@@ -30,7 +30,7 @@ object ReplicatedEventPublishingSpec {
 
     def apply(entityId: String, replicaId: ReplicaId, allReplicas: Set[ReplicaId]): Behavior[Command] =
       Behaviors.setup { ctx =>
-        ReplicatedEventSourcing.withSharedJournal(
+        ReplicatedEventSourcing.commonJournalConfig(
           ReplicationId(EntityType, entityId, replicaId),
           allReplicas,
           PersistenceTestKitReadJournal.Identifier)(

@@ -28,7 +28,7 @@ object ReplicatedMovieWatchListExampleSpec {
     final case class MovieList(movieIds: Set[String])
 
     def apply(entityId: String, replicaId: ReplicaId, allReplicaIds: Set[ReplicaId]): Behavior[Command] = {
-      ReplicatedEventSourcing.withSharedJournal(
+      ReplicatedEventSourcing.commonJournalConfig(
         ReplicationId("movies", entityId, replicaId),
         allReplicaIds,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>

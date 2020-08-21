@@ -143,7 +143,7 @@ object ReplicatedAuctionExampleSpec {
         responsibleForClosing: Boolean,
         allReplicas: Set[ReplicaId]): Behavior[Command] = Behaviors.setup[Command] { ctx =>
       Behaviors.withTimers { timers =>
-        ReplicatedEventSourcing.withSharedJournal(
+        ReplicatedEventSourcing.commonJournalConfig(
           ReplicationId("auction", name, replica),
           allReplicas,
           PersistenceTestKitReadJournal.Identifier) { replicationCtx =>
