@@ -205,7 +205,9 @@ We will look at a few scenarios of how the classes may be evolved.
 Removing a field can be done without any migration code. The Jackson serializer will ignore properties that does
 not exist in the class.
 
-### Add Optional Field
+### Add Field
+
+#### Add Optional Field
 
 Adding an optional field can be done without any migration code. The default value will be @scala[None]@java[`Optional.empty`].
 
@@ -226,7 +228,7 @@ Scala
 Java
 :  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/ItemAdded.java) { #add-optional }
 
-### Add Mandatory Field
+#### Add Mandatory Field
 
 Let's say we want to have a mandatory `discount` property without default value instead:
 
@@ -262,19 +264,6 @@ The migration class must be defined in configuration file:
 @@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #migrations-conf }
 
 The same thing could have been done for the `note` field, adding a default value of `""` in the `ItemAddedMigration`.
-
-@@@ note
-
-TODO: add a snippet introducing `supportedVersion`. Probably this _note_ will become a fully fledged section. 
-
-To limit the failures when doing a rolling upgrade you should use a two-step deployment. First, you must deploy 
-your code with a `JacksonMigration` where the `currentVersion` is not increased but the `transform()` code already 
-can read the new wire format (e.g. CBOR with a new field). Then, you can bump the value of the `currentVersion` and 
-do the necessary changes on the serialization code and other classes. This new code, when deployed, will produce 
-a serialized representation of your types that the old, already running code will be able to deserializze. 
-
-
-@@@
 
 ### Rename Field
 
@@ -375,6 +364,63 @@ binding, but it should still be possible to deserialize old data with Jackson.
 @@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #allowed-class-prefix }
 
 It's a list of class names or prefixes of class names.
+
+## Rolling upgrades
+
+When doing a rolling upgrade, for a period of time there are two different binaries running in production. If the schema
+has evolved requiring a new schema version, the data serialized by the new binary will be unreadable from the old 
+binary. This situation causes transient errors on the processes running the old binary. This service degradation is 
+usually fine since the rolling upgrade will eventually complete and all old processes will be replaced with the new 
+binary. To avoid this service degradation you can also use forward-one support in your schema evolutions.
+
+To complete a no-degradation rolling upgrade, you need to make two deloyments. First, deploy a new binary which can read 
+the new schema but still uses the old schema. Then, deploy a second binary which serializes data using the new schema
+and drops the downcasting code from the migration.  
+
+Let's take, for example, the case above where we [renamed a field](#rename-field).
+
+The starting schema is:
+
+Scala
+:  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v1/ItemAdded.scala) { #add-optional }
+
+Java
+:  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v1/ItemAdded.java) { #add-optional }
+
+In a first deployment, we still don't make any change to the event class:
+
+Scala
+:  @@snip [ItemAdded.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v1/ItemAdded.scala) { #forward-one-rename }
+
+Java
+:  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v1/ItemAdded.java) { #forward-one-rename }
+
+but we introduce a migration that can read the newer schema which is versioned `2`:
+
+Scala
+:  @@snip [ItemAddedMigration.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v1withv2/ItemAddedMigration.scala) { #forward-one-rename }
+
+Java
+:  @@snip [ItemAddedMigration.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v1withv2/ItemAddedMigration.java) { #forward-one-rename }
+
+Once all running nodes have the new migration code which can read version `2` of `ItemAdded` we can proceed with the 
+second step. So, we deploy the updated event:
+
+Scala
+:  @@snip [ItemAdded.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2c/ItemAdded.scala) { #rename }
+
+Java
+:  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2c/ItemAdded.java) { #rename }
+
+and the final migration code which no longer needs forward-compatibility code:
+
+Scala
+:  @@snip [ItemAddedMigration.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2c/ItemAddedMigration.scala) { #rename }
+
+Java
+:  @@snip [ItemAddedMigration.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2c/ItemAddedMigration.java) { #rename }
+
+
 
 ## Jackson Modules
 
