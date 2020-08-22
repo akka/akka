@@ -15,7 +15,6 @@ import java.util.Locale
 import java.util.Optional
 import java.util.UUID
 
-import akka.util.ByteString
 import java.util.logging.FileHandler
 
 import scala.collection.immutable
@@ -851,7 +850,6 @@ abstract class JacksonSerializerSpec(serializerName: String)
           val serializerForEvent2 =
             serialization(sysV2WithV3).serializerFor(classOf[Event2]).asInstanceOf[JacksonSerializer]
           val event2 = serializerForEvent2.fromBinary(blobV3, classOf[Event2].getName + "#3").asInstanceOf[Event2]
-          ByteString(blobV3).utf8String should ===("""{"field1V2":"Steve","field3":49}""")
           event2.getField1V2 should ===("Steve")
           event2.getField2 should ===(49)
           serializerForEvent2.toBinary(event2)
