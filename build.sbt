@@ -82,6 +82,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   persistenceShared,
   persistenceTck,
   persistenceTyped,
+  persistenceTypedTests,
   persistenceTestkit,
   protobuf,
   protobufV3,

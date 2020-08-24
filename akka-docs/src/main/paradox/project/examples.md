@@ -61,7 +61,7 @@ from the events, or publish the events to other services.
 
 ## Multi-DC Persistence
 
-This commercial feature has now been superseeded by @ref[Replicated Event Sourcing](../typed/replicated-eventsourcing.md)
+This commercial feature has now been superseded by @ref[Replicated Event Sourcing](../typed/replicated-eventsourcing.md)
 
 ## Cluster with Docker
 

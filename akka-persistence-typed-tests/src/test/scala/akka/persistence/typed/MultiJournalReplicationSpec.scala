@@ -32,10 +32,10 @@ object MultiJournalReplicationSpec {
 
     private val writeJournalPerReplica = Map("R1" -> "journal1.journal", "R2" -> "journal2.journal")
     def apply(entityId: String, replicaId: String): Behavior[Command] = {
-      ReplicatedEventSourcing(
-        ReplicationId("MultiJournalSpec", entityId, ReplicaId(replicaId)),
-        Map(ReplicaId("R1") -> "journal1.query", ReplicaId("R2") -> "journal2.query"))(
-        replicationContext =>
+      ReplicatedEventSourcing
+        .perReplicaJournalConfig(
+          ReplicationId("MultiJournalSpec", entityId, ReplicaId(replicaId)),
+          Map(ReplicaId("R1") -> "journal1.query", ReplicaId("R2") -> "journal2.query"))(replicationContext =>
           EventSourcedBehavior[Command, String, Set[String]](
             replicationContext.persistenceId,
             Set.empty[String],
@@ -47,7 +47,8 @@ object MultiJournalReplicationSpec {
                 case StoreMe(evt, ack) =>
                   Effect.persist(evt).thenRun(_ => ack ! Done)
               },
-            (state, event) => state + event)).withJournalPluginId(writeJournalPerReplica(replicaId))
+            (state, event) => state + event))
+        .withJournalPluginId(writeJournalPerReplica(replicaId))
     }
   }
 

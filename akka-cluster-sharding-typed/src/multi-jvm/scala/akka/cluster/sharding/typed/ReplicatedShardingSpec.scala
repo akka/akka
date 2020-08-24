@@ -96,14 +96,13 @@ object ReplicatedShardingSpec extends MultiNodeConfig {
       }
     }
 
-    def provider(): ReplicatedEntityProvider[Command, ShardingEnvelope[Command]] = {
-      ReplicatedEntityProvider[Command, ShardingEnvelope[Command]]("TestRES", AllReplicas) {
-        (entityTypeKey, replicaId) =>
-          ReplicatedEntity(replicaId, Entity(entityTypeKey) { entityContext =>
-            Behaviors.setup { ctx =>
-              TestRES(ReplicationId.fromString(entityContext.entityId), ctx)
-            }
-          })
+    def provider(): ReplicatedEntityProvider[Command] = {
+      ReplicatedEntityProvider[Command]("TestRES", AllReplicas) { (entityTypeKey, replicaId) =>
+        ReplicatedEntity(replicaId, Entity(entityTypeKey) { entityContext =>
+          Behaviors.setup { ctx =>
+            TestRES(ReplicationId.fromString(entityContext.entityId), ctx)
+          }
+        })
       }.withDirectReplication(true) // this is required as we don't have a shared read journal
     }
   }
@@ -134,7 +133,7 @@ abstract class ReplicatedShardingSpec
     }
 
     "start replicated entities" in {
-      val replicatedSharding: ReplicatedSharding[TestRES.Command, ShardingEnvelope[TestRES.Command]] =
+      val replicatedSharding: ReplicatedSharding[TestRES.Command] =
         ReplicatedShardingExtension(typedSystem).init(TestRES.provider())
 
       runOn(first) {

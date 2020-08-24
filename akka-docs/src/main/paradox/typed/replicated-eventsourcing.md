@@ -8,7 +8,8 @@ warning or deprecation period. It is also not recommended to use this module in 
 
 @@@
 
-@ref[Event sourcing](./persistence.md) with `EventSourcedBehavior`s is based on the single writer principle, which means that there can only be one active instance of a `EventSourcedBehavior` with a given `persistenceId`. Otherwise, multiple instances would store interleaving events based on different states, and when these events would later be replayed it would not be possible to reconstruct the correct state.
+@ref[Event sourcing](./persistence.md) with `EventSourcedBehavior`s is based on the single writer principle, which means that there can only be one active instance of a `EventSourcedBehavior` 
+with a given `persistenceId`. Otherwise, multiple instances would store interleaving events based on different states, and when these events would later be replayed it would not be possible to reconstruct the correct state.
 
 This restriction means that in the event of network partitions, and for a short time during rolling re-deploys, some
 `EventSourcedBehavior` actors are unavailable.
@@ -28,7 +29,7 @@ The motivations are:
 * Balance the load over many servers
 
 However, the event handler must be able to **handle concurrent events** as when replication is enabled
-there is no longer the single writer principle as there is with a normal `EventSourcedBehavior`.
+the single-writer guarantee is not maintained like it is with a normal `EventSourcedBehavior`.
 
 The state of a replicated `EventSourcedBehavior` is **eventually consistent**. Event replication may be delayed
 due to network partitions and outages, which means that the event handler and those reading the state must be designed
@@ -36,7 +37,7 @@ to handle this.
 
 To be able to use Replicated Event Sourcing the journal and snapshot store used is required to have specific support for the metadata that the replication needs (see @ref[Journal Support](#journal-support)).
 
-## Relaxing the single writer principle for availability
+## Relaxing the single-writer principle for availability
 
 Taking the example of using Replicated Event Sourcing to run a replica per data center.
 

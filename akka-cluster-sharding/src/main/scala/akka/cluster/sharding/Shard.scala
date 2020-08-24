@@ -358,6 +358,8 @@ private[akka] object Shard {
     // only called once during handoff
     def activeEntities(): Set[ActorRef] = byRef.keySet.asScala.toSet
 
+    def nrActiveEntities() = byRef.size()
+
     // only called for getting shard stats
     def activeEntityIds(): Set[EntityId] = byRef.values.asScala.toSet
 

@@ -34,7 +34,7 @@ object ReplicatedEventSourcingCompileOnlySpec {
   //#factory-shared
 
   //#factory
-  ReplicatedEventSourcing(
+  ReplicatedEventSourcing.perReplicaJournalConfig(
     ReplicationId("entityTypeHint", "entityId", DCA),
     Map(DCA -> "journalForDCA", DCB -> "journalForDCB")) { context =>
     EventSourcedBehavior[Command, State, Event](???, ???, ???, ???)
