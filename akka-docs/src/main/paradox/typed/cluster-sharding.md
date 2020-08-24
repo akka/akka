@@ -293,7 +293,7 @@ Cluster Sharding uses its own Distributed Data `Replicator` per node.
 If using roles with sharding there is one `Replicator` per role, which enables a subset of
 all nodes for some entity types and another subset for other entity types. Each replicator has a name
 that contains the node role and therefore the role configuration must be the same on all nodes in the
-cluster, for example you can't change the roles when performing a rolling upgrade.
+cluster, for example you can't change the roles when performing a rolling update.
 Changing roles requires @ref:[a full cluster restart](../additional/rolling-updates.md#cluster-sharding-configuration-change).
 
 The `akka.cluster.sharding.distributed-data` config section configures the settings for Distributed Data. 
@@ -413,7 +413,7 @@ akka.persistence.cassandra.journal {
 }
 ```
 
-Once you have migrated you cannot go back to the old persistence store, a rolling upgrade is therefore not possible.
+Once you have migrated you cannot go back to the old persistence store, a rolling update is therefore not possible.
 
 When @ref:[Distributed Data mode](#distributed-data-mode) is used the identifiers of the entities are
 stored in @ref:[Durable Storage](distributed-data.md#durable-storage) of Distributed Data. You may want to change the
