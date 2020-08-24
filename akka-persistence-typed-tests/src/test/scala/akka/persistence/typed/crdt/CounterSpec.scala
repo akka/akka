@@ -29,7 +29,7 @@ object CounterSpec {
       snapshotEvery: Long = 100,
       eventProbe: Option[ActorRef[Counter.Updated]] = None) =
     Behaviors.setup[PlainCounter.Command] { context =>
-      ReplicatedEventSourcing.withSharedJournal(
+      ReplicatedEventSourcing.commonJournalConfig(
         ReplicationId("CounterSpec", entityId, replicaId),
         AllReplicas,
         PersistenceTestKitReadJournal.Identifier) { ctx =>

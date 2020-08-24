@@ -27,7 +27,7 @@ object LwwSpec {
   object LwwRegistry {
 
     def apply(entityId: String, replica: ReplicaId): Behavior[Command] = {
-      ReplicatedEventSourcing.withSharedJournal(
+      ReplicatedEventSourcing.commonJournalConfig(
         ReplicationId("LwwRegistrySpec", entityId, replica),
         AllReplicas,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>

@@ -85,7 +85,7 @@ interface ReplicatedShoppingCartExample {
 
     public static Behavior<Command> create(
         String entityId, ReplicaId replicaId, Set<ReplicaId> allReplicas) {
-      return ReplicatedEventSourcing.withSharedJournal(
+      return ReplicatedEventSourcing.commonJournalConfig(
           new ReplicationId("blog", entityId, replicaId),
           allReplicas,
           PersistenceTestKitReadJournal.Identifier(),

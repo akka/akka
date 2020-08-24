@@ -70,7 +70,7 @@ object ReplicatedShardingSpec extends MultiNodeConfig {
 
     def apply(id: ReplicationId, ctx: ActorContext[Command]): EventSourcedBehavior[Command, String, State] = {
       // Relies on direct replication as there is no proxy query journal
-      ReplicatedEventSourcing.withSharedJournal(id, AllReplicas, PersistenceTestKitReadJournal.Identifier) {
+      ReplicatedEventSourcing.commonJournalConfig(id, AllReplicas, PersistenceTestKitReadJournal.Identifier) {
         replicationContext =>
           ctx.log.info("Creating replica {}", replicationContext.replicationId)
           EventSourcedBehavior[Command, String, State](

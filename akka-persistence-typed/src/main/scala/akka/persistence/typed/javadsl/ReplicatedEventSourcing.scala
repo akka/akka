@@ -72,7 +72,8 @@ trait ReplicationContext {
 object ReplicatedEventSourcing {
 
   /**
-   * Initialize a replicated event sourced behavior where all entity replicas are stored in the same journal.
+   * Initialize a replicated event sourced behavior where all entity replicas are share the same journal configuration.
+   * This is typical if there is a shared database and no replica specific configuratin is required.
    *
    * Events from each replica for the same entityId will be replicated to every copy.
    * Care must be taken to handle events in any order as events can happen concurrently at different replicas.
@@ -85,16 +86,20 @@ object ReplicatedEventSourcing {
    *
    * @param queryPluginId A single query plugin used to read the events from other replicas. Must be the query side of your configured journal plugin.
    */
-  def withSharedJournal[Command, Event, State](
+  def commonJournalConfig[Command, Event, State](
       replicationId: ReplicationId,
       allReplicaIds: JSet[ReplicaId],
       queryPluginId: String,
       behaviorFactory: JFunction[ReplicationContext, EventSourcedBehavior[Command, Event, State]])
       : EventSourcedBehavior[Command, Event, State] =
-    create(replicationId, allReplicaIds.asScala.map(id => id -> queryPluginId).toMap.asJava, behaviorFactory)
+    perReplicaJournalConfig(
+      replicationId,
+      allReplicaIds.asScala.map(id => id -> queryPluginId).toMap.asJava,
+      behaviorFactory)
 
   /**
-   * Initialize a replicated event sourced behavior.
+   * Initialize a replicated event sourced behavior where each journal has different journal configuration e.g.
+   * each replica uses a different database or requires different database configuration for a shared database.
    *
    * Events from each replica for the same entityId will be replicated to every copy.
    * Care must be taken to handle events in any order as events can happen concurrently at different replicas.
@@ -108,7 +113,7 @@ object ReplicatedEventSourcing {
    * @param allReplicasAndQueryPlugins All replica ids and a query plugin per replica id. These need to be known to receive events from all replicas
    *                                   and configured with the query plugin for the journal that each replica uses.
    */
-  def create[Command, Event, State](
+  def perReplicaJournalConfig[Command, Event, State](
       replicationId: ReplicationId,
       allReplicasAndQueryPlugins: JMap[ReplicaId, String],
       eventSourcedBehaviorFactory: JFunction[ReplicationContext, EventSourcedBehavior[Command, Event, State]])

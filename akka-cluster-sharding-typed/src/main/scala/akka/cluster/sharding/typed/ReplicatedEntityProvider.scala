@@ -14,8 +14,10 @@ import scala.reflect.ClassTag
 import akka.util.ccompat.JavaConverters._
 import java.util.{ Set => JSet }
 
+import akka.actor.typed.Behavior
 import akka.annotation.ApiMayChange
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
+import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.ReplicationId.Separator
 
 @ApiMayChange
@@ -24,29 +26,33 @@ object ReplicatedEntityProvider {
   /**
    * Java API:
    *
+   * Provides full control over the [[ReplicatedEntity]] and the [[Entity]]
+   * Most use cases can use the [[createPerDataCenter]] and [[createPerRole]]
+   *
    * @tparam M The type of messages the replicated entity accepts
-   * @tparam E The type for envelopes used for sending `M`s over sharding
    */
-  def create[M, E](
+  def create[M](
       messageClass: Class[M],
       typeName: String,
       allReplicaIds: JSet[ReplicaId],
-      settingsPerReplicaFactory: akka.japi.function.Function2[JEntityTypeKey[M], ReplicaId, ReplicatedEntity[M, E]])
-      : ReplicatedEntityProvider[M, E] = {
+      settingsPerReplicaFactory: akka.japi.function.Function2[JEntityTypeKey[M], ReplicaId, ReplicatedEntity[M]])
+      : ReplicatedEntityProvider[M] = {
     implicit val classTag: ClassTag[M] = ClassTag(messageClass)
-    apply[M, E](typeName, allReplicaIds.asScala.toSet)((key, replica) =>
+    apply[M](typeName, allReplicaIds.asScala.toSet)((key, replica) =>
       settingsPerReplicaFactory(key.asInstanceOf[EntityTypeKeyImpl[M]], replica))
   }
 
   /**
    * Scala API:
+   *
+   * Provides full control over the [[ReplicatedEntity]] and the [[Entity]]
+   * Most use cases can use the [[perDataCenter]] and [[perRole]]
+   *
    * @param typeName The type name used in the [[EntityTypeKey]]
    * @tparam M The type of messages the replicated entity accepts
-   * @tparam E The type for envelopes used for sending `M`s over sharding
    */
-  def apply[M: ClassTag, E](typeName: String, allReplicaIds: Set[ReplicaId])(
-      settingsPerReplicaFactory: (EntityTypeKey[M], ReplicaId) => ReplicatedEntity[M, E])
-      : ReplicatedEntityProvider[M, E] = {
+  def apply[M: ClassTag](typeName: String, allReplicaIds: Set[ReplicaId])(
+      settingsPerReplicaFactory: (EntityTypeKey[M], ReplicaId) => ReplicatedEntity[M]): ReplicatedEntityProvider[M] = {
     new ReplicatedEntityProvider(allReplicaIds.map { replicaId =>
       if (typeName.contains(Separator))
         throw new IllegalArgumentException(s"typeName [$typeName] contains [$Separator] which is a reserved character")
@@ -55,15 +61,86 @@ object ReplicatedEntityProvider {
       (settingsPerReplicaFactory(typeKey, replicaId), typeName)
     }.toVector, directReplication = true)
   }
+
+  /**
+   * Scala API
+   *
+   * Create a [[ReplicatedEntityProvider]] that uses the defaults for [[Entity]] when running in
+   * ClusterSharding. A replica will be run per data center.
+   */
+  def perDataCenter[M: ClassTag, E](typeName: String, allReplicaIds: Set[ReplicaId])(
+      create: ReplicationId => Behavior[M]): ReplicatedEntityProvider[M] = {
+    apply(typeName, allReplicaIds) { (typeKey, replicaId) =>
+      ReplicatedEntity(replicaId, Entity(typeKey) { entityContext =>
+        create(ReplicationId.fromString(entityContext.entityId))
+      }.withDataCenter(replicaId.id))
+    }
+  }
+
+  /**
+   * Scala API
+   *
+   * Create a [[ReplicatedEntityProvider]] that uses the defaults for [[Entity]] when running in
+   * ClusterSharding. The replicas in allReplicaIds should be roles used by nodes. A replica for each
+   * entity will run on each role.
+   */
+  def perRole[M: ClassTag, E](typeName: String, allReplicaIds: Set[ReplicaId])(
+      create: ReplicationId => Behavior[M]): ReplicatedEntityProvider[M] = {
+    apply(typeName, allReplicaIds) { (typeKey, replicaId) =>
+      ReplicatedEntity(replicaId, Entity(typeKey) { entityContext =>
+        create(ReplicationId.fromString(entityContext.entityId))
+      }.withRole(replicaId.id))
+    }
+  }
+
+  /**
+   * Java API
+   *
+   * Create a [[ReplicatedEntityProvider]] that uses the defaults for [[Entity]] when running in
+   * ClusterSharding. A replica will be run per data center.
+   */
+  def createPerDataCenter[M](
+      messageClass: Class[M],
+      typeName: String,
+      allReplicaIds: JSet[ReplicaId],
+      createBehavior: java.util.function.Function[ReplicationId, Behavior[M]]): ReplicatedEntityProvider[M] = {
+    implicit val classTag: ClassTag[M] = ClassTag(messageClass)
+    apply(typeName, allReplicaIds.asScala.toSet) { (typeKey, replicaId) =>
+      ReplicatedEntity(replicaId, Entity(typeKey) { entityContext =>
+        createBehavior(ReplicationId.fromString(entityContext.entityId))
+      }.withDataCenter(replicaId.id))
+    }
+  }
+
+  /**
+   * Java API
+   *
+   * Create a [[ReplicatedEntityProvider]] that uses the defaults for [[Entity]] when running in
+   * ClusterSharding.
+   *
+   * Map replicas to roles and then there will be a replica per role e.g. to match to availability zones/racks
+   */
+  def createPerRole[M](
+      messageClass: Class[M],
+      typeName: String,
+      allReplicaIds: JSet[ReplicaId],
+      createBehavior: akka.japi.function.Function[ReplicationId, Behavior[M]]): ReplicatedEntityProvider[M] = {
+    implicit val classTag: ClassTag[M] = ClassTag(messageClass)
+    apply(typeName, allReplicaIds.asScala.toSet) { (typeKey, replicaId) =>
+      ReplicatedEntity(replicaId, Entity(typeKey) { entityContext =>
+        createBehavior(ReplicationId.fromString(entityContext.entityId))
+      }.withRole(replicaId.id))
+    }
+  }
 }
 
 /**
+ *
  * @tparam M The type of messages the replicated entity accepts
- * @tparam E The type for envelopes used for sending `M`s over sharding
  */
 @ApiMayChange
-final class ReplicatedEntityProvider[M, E] private (
-    val replicas: immutable.Seq[(ReplicatedEntity[M, E], String)],
+final class ReplicatedEntityProvider[M] private (
+    val replicas: immutable.Seq[(ReplicatedEntity[M], String)],
     val directReplication: Boolean) {
 
   /**
@@ -73,7 +150,7 @@ final class ReplicatedEntityProvider[M, E] private (
    * to work.
    *
    */
-  def withDirectReplication(enabled: Boolean): ReplicatedEntityProvider[M, E] =
+  def withDirectReplication(enabled: Boolean): ReplicatedEntityProvider[M] =
     new ReplicatedEntityProvider(replicas, directReplication = enabled)
 
 }
@@ -87,7 +164,7 @@ object ReplicatedEntity {
    * [[akka.actor.typed.Behavior]] but must never be a regular [[akka.persistence.typed.javadsl.EventSourcedBehavior]]
    * as that requires a single writer and that would cause it to have multiple writers.
    */
-  def create[M, E](replicaId: ReplicaId, entity: JEntity[M, E]): ReplicatedEntity[M, E] =
+  def create[M](replicaId: ReplicaId, entity: JEntity[M, ShardingEnvelope[M]]): ReplicatedEntity[M] =
     apply(replicaId, entity.toScala)
 
   /**
@@ -96,12 +173,13 @@ object ReplicatedEntity {
    * [[akka.actor.typed.Behavior]] but must never be a regular [[akka.persistence.typed.scaladsl.EventSourcedBehavior]]
    * as that requires a single writer and that would cause it to have multiple writers.
    */
-  def apply[M, E](replicaId: ReplicaId, entity: Entity[M, E]): ReplicatedEntity[M, E] =
+  def apply[M](replicaId: ReplicaId, entity: Entity[M, ShardingEnvelope[M]]): ReplicatedEntity[M] =
     new ReplicatedEntity(replicaId, entity)
 }
 
 /**
  * Settings for a specific replica id in replicated sharding
+ * Currently only Entity's with ShardingEnvelope are supported but this may change in the future
  */
 @ApiMayChange
-final class ReplicatedEntity[M, E] private (val replicaId: ReplicaId, val entity: Entity[M, E])
+final class ReplicatedEntity[M] private (val replicaId: ReplicaId, val entity: Entity[M, ShardingEnvelope[M]])

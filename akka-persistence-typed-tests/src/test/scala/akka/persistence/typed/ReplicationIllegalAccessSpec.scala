@@ -28,7 +28,7 @@ object ReplicationIllegalAccessSpec {
   case class State(all: List[String]) extends CborSerializable
 
   def apply(entityId: String, replica: ReplicaId): Behavior[Command] = {
-    ReplicatedEventSourcing.withSharedJournal(
+    ReplicatedEventSourcing.commonJournalConfig(
       ReplicationId("IllegalAccessSpec", entityId, replica),
       AllReplicas,
       PersistenceTestKitReadJournal.Identifier)(
@@ -88,7 +88,7 @@ class ReplicationIllegalAccessSpec
     }
     "detect illegal access in the factory" in {
       val exception = intercept[UnsupportedOperationException] {
-        ReplicatedEventSourcing.withSharedJournal(
+        ReplicatedEventSourcing.commonJournalConfig(
           ReplicationId("IllegalAccessSpec", "id2", R1),
           AllReplicas,
           PersistenceTestKitReadJournal.Identifier) { replicationContext =>

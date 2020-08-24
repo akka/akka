@@ -15,6 +15,7 @@ import akka.actor.typed.Scheduler
 import akka.actor.typed.internal.InternalRecipientRef
 import akka.annotation.InternalApi
 import akka.cluster.sharding.typed.javadsl
+import akka.cluster.sharding.typed.javadsl.EntityRef
 import akka.cluster.sharding.typed.scaladsl
 import akka.japi.function.{ Function => JFunction }
 import akka.pattern.StatusReply
@@ -59,4 +60,6 @@ import akka.util.Timeout
   }
 
   override def toString: String = s"TestEntityRef($entityId)"
+
+  override private[akka] def asJava: EntityRef[M] = this
 }

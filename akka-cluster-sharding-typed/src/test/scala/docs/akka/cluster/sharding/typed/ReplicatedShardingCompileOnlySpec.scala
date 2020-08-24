@@ -4,14 +4,12 @@
 
 package docs.akka.cluster.sharding.typed
 
-import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.cluster.sharding.typed.ReplicatedEntity
 import akka.cluster.sharding.typed.ReplicatedEntityProvider
 import akka.cluster.sharding.typed.ReplicatedSharding
 import akka.cluster.sharding.typed.ReplicatedShardingExtension
-import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.persistence.typed.ReplicaId
@@ -30,45 +28,34 @@ object ReplicatedShardingCompileOnlySpec {
   }
 
   //#bootstrap
-  ReplicatedEntityProvider[Command, ShardingEnvelope[Command]](
-    "MyEntityType",
-    Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) { (entityTypeKey, replicaId) =>
-    ReplicatedEntity(replicaId, Entity(entityTypeKey) { entityContext =>
-      // the sharding entity id contains the business entityId, entityType, and replica id
-      // which you'll need to create a ReplicatedEventSourcedBehavior
-      val replicationId = ReplicationId.fromString(entityContext.entityId)
-      MyEventSourcedBehavior(replicationId)
-    })
+  ReplicatedEntityProvider[Command]("MyEntityType", Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) {
+    (entityTypeKey, replicaId) =>
+      ReplicatedEntity(replicaId, Entity(entityTypeKey) { entityContext =>
+        // the sharding entity id contains the business entityId, entityType, and replica id
+        // which you'll need to create a ReplicatedEventSourcedBehavior
+        val replicationId = ReplicationId.fromString(entityContext.entityId)
+        MyEventSourcedBehavior(replicationId)
+      })
   }
   //#bootstrap
 
   //#bootstrap-dc
-  ReplicatedEntityProvider[Command, ShardingEnvelope[Command]](
-    "MyEntityType",
-    Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) { (entityTypeKey, replicaId) =>
-    ReplicatedEntity(replicaId, Entity(entityTypeKey) { entityContext =>
-      val replicationId = ReplicationId.fromString(entityContext.entityId)
-      MyEventSourcedBehavior(replicationId)
-    }.withDataCenter(replicaId.id))
+  ReplicatedEntityProvider.perDataCenter("MyEntityType", Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) { replicationId =>
+    MyEventSourcedBehavior(replicationId)
   }
   //#bootstrap-dc
 
   //#bootstrap-role
-  val provider = ReplicatedEntityProvider[Command, ShardingEnvelope[Command]](
-    "MyEntityType",
-    Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) { (entityTypeKey, replicaId) =>
-    ReplicatedEntity(replicaId, Entity(entityTypeKey) { entityContext =>
-      val replicationId = ReplicationId.fromString(entityContext.entityId)
+  val provider = ReplicatedEntityProvider.perRole("MyEntityType", Set(ReplicaId("DC-A"), ReplicaId("DC-B"))) {
+    replicationId =>
       MyEventSourcedBehavior(replicationId)
-    }.withRole(replicaId.id))
   }
   //#bootstrap-role
 
   //#sending-messages
-  val myReplicatedSharding: ReplicatedSharding[Command, ShardingEnvelope[Command]] =
+  val myReplicatedSharding: ReplicatedSharding[Command] =
     ReplicatedShardingExtension(system).init(provider)
 
   val entityRefs: Map[ReplicaId, EntityRef[Command]] = myReplicatedSharding.entityRefsFor("myEntityId")
-  val actorRefs: Map[ReplicaId, ActorRef[ShardingEnvelope[Command]]] = myReplicatedSharding.shardingRefs
   //#sending-messages
 }

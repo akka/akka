@@ -441,7 +441,7 @@ object EntityTypeKey {
  *
  * Not for user extension.
  */
-@DoNotInherit abstract class EntityRef[M] extends RecipientRef[M] {
+@DoNotInherit abstract class EntityRef[-M] extends RecipientRef[M] {
   scaladslSelf: scaladsl.EntityRef[M] with InternalRecipientRef[M] =>
 
   /**

@@ -500,6 +500,11 @@ object EntityTypeKey {
   def ?[Res](message: ActorRef[Res] => M)(implicit timeout: Timeout): Future[Res] =
     this.ask(message)(timeout)
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def asJava: javadsl.EntityRef[M]
+
 }
 
 object ClusterShardingSetup {

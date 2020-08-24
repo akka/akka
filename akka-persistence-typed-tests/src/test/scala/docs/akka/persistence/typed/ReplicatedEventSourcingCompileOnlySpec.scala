@@ -25,7 +25,7 @@ object ReplicatedEventSourcingCompileOnlySpec {
   trait Event
 
   //#factory-shared
-  ReplicatedEventSourcing.withSharedJournal(
+  ReplicatedEventSourcing.commonJournalConfig(
     ReplicationId("entityTypeHint", "entityId", DCA),
     AllReplicas,
     queryPluginId) { context =>

@@ -76,7 +76,7 @@ object ReplicatedShardingSpec {
     case class Texts(texts: Set[String]) extends CborSerializable
 
     def apply(replicationId: ReplicationId): Behavior[Command] =
-      ReplicatedEventSourcing.withSharedJournal( // it isn't really shared as it is in memory
+      ReplicatedEventSourcing.commonJournalConfig( // it isn't really shared as it is in memory
         replicationId,
         AllReplicas,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>
@@ -97,7 +97,7 @@ object ReplicatedShardingSpec {
       }
 
     def provider(replicationType: ReplicationType) =
-      ReplicatedEntityProvider[MyReplicatedStringSet.Command, ShardingEnvelope[MyReplicatedStringSet.Command]](
+      ReplicatedEntityProvider[MyReplicatedStringSet.Command](
         // all replicas
         "StringSet",
         AllReplicas) { (entityTypeKey, replicaId) =>
@@ -127,7 +127,7 @@ object ReplicatedShardingSpec {
     case class Ints(ints: Set[Int]) extends CborSerializable
 
     def apply(id: ReplicationId, allReplicas: Set[ReplicaId]): Behavior[Command] =
-      ReplicatedEventSourcing.withSharedJournal( // it isn't really shared as it is in memory
+      ReplicatedEventSourcing.commonJournalConfig( // it isn't really shared as it is in memory
         id,
         allReplicas,
         PersistenceTestKitReadJournal.Identifier) { replicationContext =>
@@ -148,9 +148,7 @@ object ReplicatedShardingSpec {
       }
 
     def provider(replicationType: ReplicationType) =
-      ReplicatedEntityProvider[MyReplicatedIntSet.Command, ShardingEnvelope[MyReplicatedIntSet.Command]](
-        "IntSet",
-        AllReplicas) { (entityTypeKey, replicaId) =>
+      ReplicatedEntityProvider[MyReplicatedIntSet.Command]("IntSet", AllReplicas) { (entityTypeKey, replicaId) =>
         val entity = {
           val e = Entity(entityTypeKey) { entityContext =>
             val replicationId = ReplicationId.fromString(entityContext.entityId)

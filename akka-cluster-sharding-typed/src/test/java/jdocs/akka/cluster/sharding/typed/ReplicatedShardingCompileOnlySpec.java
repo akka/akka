@@ -4,12 +4,11 @@
 
 package jdocs.akka.cluster.sharding.typed;
 
-import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.cluster.sharding.typed.*;
 import akka.cluster.sharding.typed.javadsl.Entity;
-import akka.cluster.sharding.typed.scaladsl.EntityRef;
+import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.persistence.typed.ReplicaId;
 import akka.persistence.typed.ReplicationId;
 
@@ -30,7 +29,7 @@ public class ReplicatedShardingCompileOnlySpec {
           new HashSet<>(
               Arrays.asList(new ReplicaId("DC-A"), new ReplicaId("DC-B"), new ReplicaId("DC-C"))));
 
-  public static ReplicatedEntityProvider<Command, ShardingEnvelope<Command>> provider() {
+  public static ReplicatedEntityProvider<Command> provider() {
     // #bootstrap
     return ReplicatedEntityProvider.create(
         Command.class,
@@ -67,7 +66,7 @@ public class ReplicatedShardingCompileOnlySpec {
     // #bootstrap-dc
   }
 
-  public static ReplicatedEntityProvider<Command, ShardingEnvelope<Command>> role() {
+  public static ReplicatedEntityProvider<Command> role() {
     // #bootstrap-role
     return ReplicatedEntityProvider.create(
         Command.class,
@@ -90,13 +89,10 @@ public class ReplicatedShardingCompileOnlySpec {
     // #sending-messages
     ReplicatedShardingExtension extension = ReplicatedShardingExtension.get(system);
 
-    ReplicatedSharding<Command, ShardingEnvelope<Command>> replicatedSharding =
-        extension.init(provider());
+    ReplicatedSharding<Command> replicatedSharding = extension.init(provider());
 
     Map<ReplicaId, EntityRef<Command>> myEntityId =
         replicatedSharding.getEntityRefsFor("myEntityId");
-    Map<ReplicaId, ActorRef<ShardingEnvelope<Command>>> shardingRefs =
-        replicatedSharding.getShardingRefs();
     // #sending-messages
 
   }

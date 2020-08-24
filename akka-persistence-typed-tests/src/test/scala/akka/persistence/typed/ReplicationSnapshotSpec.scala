@@ -35,7 +35,7 @@ object ReplicationSnapshotSpec {
       entityId: String,
       replicaId: ReplicaId,
       probe: Option[ActorRef[EventAndContext]]): Behavior[Command] = {
-    ReplicatedEventSourcing.withSharedJournal(
+    ReplicatedEventSourcing.commonJournalConfig(
       ReplicationId(EntityType, entityId, replicaId),
       AllReplicas,
       PersistenceTestKitReadJournal.Identifier)(replicationContext =>
