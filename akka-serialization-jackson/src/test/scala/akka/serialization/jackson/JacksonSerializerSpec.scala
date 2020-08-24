@@ -759,7 +759,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
         akka.serialization.jackson.migrations {
           ## Usually the key is a FQCN but we're hacking the name to use multiple migrations for the
           ## same type in a single test.
-          "deserialize-Java.Event1-into-Java.Event2" = "akka.serialization.jackson.JavaTestEventMigrationV2"
+          "deserialize-Java.Event1-into-Java.Event3" = "akka.serialization.jackson.JavaTestEventMigrationV3"
         }
         """ + JacksonSerializerSpec.baseConfig(serializerName)) { sys =>
       val event1 = new Event1("a")
@@ -770,9 +770,9 @@ abstract class JacksonSerializerSpec(serializerName: String)
       serializer.manifest(event1) should ===(classOf[Event1].getName)
 
       // Hack the manifest to enforce the use a particular migration when deserializing the blob of Event1
-      val event2 = serializer.fromBinary(blob, "deserialize-Java.Event1-into-Java.Event2").asInstanceOf[Event2]
-      event1.getField1 should ===(event2.getField1V2)
-      event2.getField2 should ===(17)
+      val event3 = serializer.fromBinary(blob, "deserialize-Java.Event1-into-Java.Event3").asInstanceOf[Event3]
+      event1.getField1 should ===(event3.getField1V2)
+      event3.getField3 should ===(17)
     }
 
     "deserialize with migrations from V2" in {
@@ -985,7 +985,7 @@ abstract class JacksonSerializerSpec(serializerName: String)
         akka.serialization.jackson.migrations {
           ## Usually the key is a FQCN but we're hacking the name to use multiple migrations for the
           ## same type in a single test.
-          "deserialize-Event1-into-Event2" = "akka.serialization.jackson.ScalaTestEventMigrationV2"
+          "deserialize-Event1-into-Event3" = "akka.serialization.jackson.ScalaTestEventMigrationV3"
         }
         """ + JacksonSerializerSpec.baseConfig(serializerName)) { sys =>
       val event1 = Event1("a")
@@ -996,9 +996,9 @@ abstract class JacksonSerializerSpec(serializerName: String)
       serializer.manifest(event1) should ===(classOf[Event1].getName)
 
       // Hack the manifest to enforce the use a particular migration when deserializing the blob of Event1
-      val event2 = serializer.fromBinary(blob, "deserialize-Event1-into-Event2").asInstanceOf[Event2]
-      event1.field1 should ===(event2.field1V2)
-      event2.field2 should ===(17)
+      val event3 = serializer.fromBinary(blob, "deserialize-Event1-into-Event3").asInstanceOf[Event3]
+      event1.field1 should ===(event3.field1V2)
+      event3.field3 should ===(17)
     }
 
     "deserialize with migrations from V2" in {

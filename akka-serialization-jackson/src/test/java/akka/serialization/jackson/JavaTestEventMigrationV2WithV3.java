@@ -29,21 +29,28 @@ public class JavaTestEventMigrationV2WithV3 extends JacksonMigration {
 
   @Override
   public JsonNode transform(int fromVersion, JsonNode json) {
+    ObjectNode root = (ObjectNode) json;
     if (fromVersion < 2) {
-      ObjectNode root = (ObjectNode) json;
-      root.set("field1V2", root.get("field1"));
-      root.remove("field1");
-      root.set("field2", IntNode.valueOf(17));
-      return root;
+      root = upcastV1ToV2((ObjectNode) json);
     }
     if (fromVersion == 3) {
-      // downcast the V3 representation to the V2 representation. A field
-      // is renamed.
-      ObjectNode root = (ObjectNode) json;
-      root.set("field2", root.get("field3"));
-      root.remove("field3");
-      return root;
+      root = downcastV3ToV2((ObjectNode) json);
     }
-    return json;
+    return root;
+  }
+
+  private ObjectNode upcastV1ToV2(ObjectNode json) {
+    ObjectNode root = json;
+    root.set("field1V2", root.get("field1"));
+    root.remove("field1");
+    root.set("field2", IntNode.valueOf(17));
+    return root;
+  }
+
+  private ObjectNode downcastV3ToV2(ObjectNode json) {
+    ObjectNode root = json;
+    root.set("field2", root.get("field3"));
+    root.remove("field3");
+    return root;
   }
 }
