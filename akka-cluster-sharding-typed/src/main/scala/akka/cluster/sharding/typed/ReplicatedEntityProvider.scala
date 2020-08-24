@@ -46,7 +46,7 @@ object ReplicatedEntityProvider {
    * Scala API:
    *
    * Provides full control over the [[ReplicatedEntity]] and the [[Entity]]
-   * Most use cases can use the [[perDataCenter and [[createPerRole]]
+   * Most use cases can use the [[perDataCenter]] and [[perRole]]
    *
    * @param typeName The type name used in the [[EntityTypeKey]]
    * @tparam M The type of messages the replicated entity accepts
@@ -103,7 +103,7 @@ object ReplicatedEntityProvider {
       messageClass: Class[M],
       typeName: String,
       allReplicaIds: JSet[ReplicaId],
-      createBehavior: akka.japi.function.Function[ReplicationId, Behavior[M]]): ReplicatedEntityProvider[M] = {
+      createBehavior: java.util.function.Function[ReplicationId, Behavior[M]]): ReplicatedEntityProvider[M] = {
     implicit val classTag: ClassTag[M] = ClassTag(messageClass)
     apply(typeName, allReplicaIds.asScala.toSet) { (typeKey, replicaId) =>
       ReplicatedEntity(replicaId, Entity(typeKey) { entityContext =>
