@@ -224,7 +224,7 @@ needs to have an associated code which indicates if it is a window or aisle seat
 Adding fields is the most common change you'll need to apply to your messages so make sure the serialization format
 you picked for your payloads can handle it apropriately, i.e. such changes should be *binary compatible*.
 This is achieved using the right serializer toolkit. In the following examples we will be using protobuf.
-See also @ref:[how to add fields with Jackson](serialization-jackson.md#add-field).
+See also @ref:[how to add fields with Jackson](serialization-jackson.md#add-optional-field).
 
 While being able to read messages with missing fields is half of the solution, you also need to deal with the missing
 values somehow. This is usually modeled as some kind of default value, or by representing the field as an @scala[`Option[T]`]@java[`Optional<T>`]

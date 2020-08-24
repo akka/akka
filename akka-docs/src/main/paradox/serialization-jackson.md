@@ -205,9 +205,7 @@ We will look at a few scenarios of how the classes may be evolved.
 Removing a field can be done without any migration code. The Jackson serializer will ignore properties that does
 not exist in the class.
 
-### Add Field
-
-#### Add Optional Field
+### Add Optional Field
 
 Adding an optional field can be done without any migration code. The default value will be @scala[None]@java[`Optional.empty`].
 
@@ -228,7 +226,7 @@ Scala
 Java
 :  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/ItemAdded.java) { #add-optional }
 
-#### Add Mandatory Field
+### Add Mandatory Field
 
 Let's say we want to have a mandatory `discount` property without default value instead:
 
@@ -365,15 +363,15 @@ binding, but it should still be possible to deserialize old data with Jackson.
 
 It's a list of class names or prefixes of class names.
 
-## Rolling upgrades
+## Rolling updates
 
-When doing a rolling upgrade, for a period of time there are two different binaries running in production. If the schema
+When doing a rolling update, for a period of time there are two different binaries running in production. If the schema
 has evolved requiring a new schema version, the data serialized by the new binary will be unreadable from the old 
 binary. This situation causes transient errors on the processes running the old binary. This service degradation is 
-usually fine since the rolling upgrade will eventually complete and all old processes will be replaced with the new 
+usually fine since the rolling update will eventually complete and all old processes will be replaced with the new 
 binary. To avoid this service degradation you can also use forward-one support in your schema evolutions.
 
-To complete a no-degradation rolling upgrade, you need to make two deloyments. First, deploy a new binary which can read 
+To complete a no-degradation rolling update, you need to make two deloyments. First, deploy a new binary which can read 
 the new schema but still uses the old schema. Then, deploy a second binary which serializes data using the new schema
 and drops the downcasting code from the migration.  
 
