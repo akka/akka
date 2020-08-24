@@ -8,7 +8,7 @@ Akka offers tiny helpers for use with @scala[@scaladoc[Future](scala.concurrent.
   symbol1=AkkaVersion
   value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-actor_$scala.binary.version$
+  artifact="akka-actor_$scala.binary.version$"
   version=AkkaVersion
 }
 
