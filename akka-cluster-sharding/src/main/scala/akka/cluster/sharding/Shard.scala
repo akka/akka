@@ -358,6 +358,8 @@ private[akka] object Shard {
     // only called once during handoff
     def activeEntities(): Set[ActorRef] = byRef.keySet.asScala.toSet
 
+    def nrActiveEntities: Int = byRef.size
+
     // only called for getting shard stats
     def activeEntityIds(): Set[EntityId] = byRef.values.asScala.toSet
 
@@ -1058,7 +1060,7 @@ private[akka] class Shard(
    * of active entities.
    */
   @InternalStableApi
-  def entityCreated(@unused id: EntityId): Int = entities.size
+  def entityCreated(@unused id: EntityId): Int = entities.nrActiveEntities
 
   // ===== buffering while busy saving a start or stop when remembering entities =====
   def appendToMessageBuffer(id: EntityId, msg: Any, snd: ActorRef): Unit = {
