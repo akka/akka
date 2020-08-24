@@ -36,7 +36,7 @@ abstract class JacksonMigration {
 
   require(
     currentVersion <= supportedForwardVersion,
-    """The "currentVersion" of a JacksonMigration must be less or equal to the "supportedForwardVersion".""")
+    s"""The "currentVersion" [$currentVersion] of a JacksonMigration must be less or equal to the "supportedForwardVersion" [$supportedForwardVersion].""")
 
   /**
    * Override this method if you have changed the class name. Return
