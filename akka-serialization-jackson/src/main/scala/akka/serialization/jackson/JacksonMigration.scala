@@ -30,7 +30,7 @@ abstract class JacksonMigration {
   /**
    * Define the supported forward version this migration can read (must be greater or equal than `currentVersion`).
    * If this value is different from [[currentVersion]] a [[JacksonMigration]] may be required to downcast
-   * the received blob to the current schema.
+   * the received payload to the current schema.
    */
   def supportedForwardVersion: Int = currentVersion
 

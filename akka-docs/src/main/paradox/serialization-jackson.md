@@ -371,7 +371,7 @@ binary. This situation causes transient errors on the processes running the old 
 usually fine since the rolling update will eventually complete and all old processes will be replaced with the new 
 binary. To avoid this service degradation you can also use forward-one support in your schema evolutions.
 
-To complete a no-degradation rolling update, you need to make two deloyments. First, deploy a new binary which can read 
+To complete a no-degradation rolling update, you need to make two deployments. First, deploy a new binary which can read 
 the new schema but still uses the old schema. Then, deploy a second binary which serializes data using the new schema
 and drops the downcasting code from the migration.  
 
