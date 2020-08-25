@@ -9,15 +9,16 @@ import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.JsonNode;
 
-public class JavaTestEventMigration extends JacksonMigration {
+public class JavaTestEventMigrationV2 extends JacksonMigration {
 
   @Override
   public int currentVersion() {
-    return 3;
+    return 2;
   }
 
   @Override
   public String transformClassName(int fromVersion, String className) {
+    // Ignore the incoming manifest and produce the same class name always.
     return JavaTestMessages.Event2.class.getName();
   }
 

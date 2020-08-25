@@ -22,10 +22,21 @@ import akka.util.unused
 abstract class JacksonMigration {
 
   /**
-   * Define current version. The first version, when no migration was used,
-   * is always 1.
+   * Define current version, that is, the value used when serializing new data. The first version, when no
+   * migration was used, is always 1.
    */
   def currentVersion: Int
+
+  /**
+   * Define the supported forward version this migration can read (must be greater or equal than `currentVersion`).
+   * If this value is different from [[currentVersion]] a [[JacksonMigration]] may be required to downcast
+   * the received payload to the current schema.
+   */
+  def supportedForwardVersion: Int = currentVersion
+
+  require(
+    currentVersion <= supportedForwardVersion,
+    s"""The "currentVersion" [$currentVersion] of a JacksonMigration must be less or equal to the "supportedForwardVersion" [$supportedForwardVersion].""")
 
   /**
    * Override this method if you have changed the class name. Return
