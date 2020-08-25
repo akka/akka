@@ -931,20 +931,20 @@ private[akka] class ShardRegion(
         val coordinatorMessage =
           if (cluster.state.unreachable(membersByAge.head)) s"Coordinator [${membersByAge.head}] is unreachable."
           else s"Coordinator [${membersByAge.head}] is reachable."
-        if (shardBuffers.totalSize > 0) {
+        val bufferSize = shardBuffers.totalSize
+        if (bufferSize > 0) {
           if (log.isWarningEnabled) {
             log.warning(
               "{}: Trying to register to coordinator at [{}], but no acknowledgement. Total [{}] buffered messages. [{}]",
               typeName,
               actorSelections.mkString(", "),
-              shardBuffers.totalSize,
+              bufferSize,
               coordinatorMessage)
           } else {
             log.debug(
               "{}: Trying to register to coordinator at [{}], but no acknowledgement. No buffered messages yet. [{}]",
               typeName,
               actorSelections.mkString(", "),
-              shardBuffers.totalSize,
               coordinatorMessage)
           }
         }
@@ -958,12 +958,13 @@ private[akka] class ShardRegion(
           else
             "Probably, no seed-nodes configured and manual cluster or bootstrap join not performed?"
 
-        if (shardBuffers.totalSize > 0) {
+        val bufferSize = shardBuffers.totalSize
+        if (bufferSize > 0) {
           log.warning(
             "{}: No coordinator found to register. {} Total [{}] buffered messages.",
             typeName,
             possibleReason,
-            shardBuffers.totalSize)
+            bufferSize)
         } else {
           log.debug("{}: No coordinator found to register. {} No buffered messages yet.", typeName, possibleReason)
         }
