@@ -180,7 +180,7 @@ should be serialized by it.
 It's recommended to throw `IllegalArgumentException` or `java.io.NotSerializableException` in
 `fromBinary` if the manifest is unknown. This makes it possible to introduce new message types and
 send them to nodes that don't know about them. This is typically needed when performing
-rolling upgrades, i.e. running a cluster with mixed versions for a while.
+rolling updates, i.e. running a cluster with mixed versions for a while.
 Those exceptions are treated as a transient problem in the classic remoting
 layer. The problem will be logged and the message dropped. Other exceptions will tear down
 the TCP connection because it can be an indication of corrupt bytes from the underlying
@@ -252,24 +252,24 @@ akka.actor.warn-about-java-serializer-usage = off
 It is not safe to mix major Scala versions when using the Java serialization as Scala does not guarantee compatibility
 and this could lead to very surprising errors.
 
-## Rolling upgrades
+## Rolling updates
 
 A serialized remote message (or persistent event) consists of serializer-id, the manifest, and the binary payload.
 When deserializing it is only looking at the serializer-id to pick which `Serializer` to use for `fromBinary`.
 The message class (the bindings) is not used for deserialization. The manifest is only used within the
 `Serializer` to decide how to deserialize the payload, so one `Serializer` can handle many classes.
 
-That means that it is possible to change serialization for a message by performing two rolling upgrade steps to
+That means that it is possible to change serialization for a message by performing two rolling update steps to
 switch to the new serializer.
 
 1. Add the `Serializer` class and define it in `akka.actor.serializers` config section, but not in
-  `akka.actor.serialization-bindings`. Perform a rolling upgrade for this change. This means that the
+  `akka.actor.serialization-bindings`. Perform a rolling update for this change. This means that the
   serializer class exists on all nodes and is registered, but it is still not used for serializing any
-  messages. That is important because during the rolling upgrade the old nodes still don't know about
+  messages. That is important because during the rolling update the old nodes still don't know about
   the new serializer and would not be able to deserialize messages with that format.
 
 1. The second change is to register that the serializer is to be used for certain classes by defining
-   those in the `akka.actor.serialization-bindings` config section. Perform a rolling upgrade for this
+   those in the `akka.actor.serialization-bindings` config section. Perform a rolling update for this
    change. This means that new nodes will use the new serializer when sending messages and old nodes will
    be able to deserialize the new format. Old nodes will continue to use the old serializer when sending
    messages and new nodes will be able to deserialize the old format.
