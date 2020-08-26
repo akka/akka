@@ -221,10 +221,11 @@ public class GraphDslTest extends StreamTest {
   @Test
   public void canUseMapMaterializedValueOnGraphs() {
     Graph<SourceShape<Object>, NotUsed> srcGraph = Source.empty();
-    Graph<SourceShape<Object>, Pair> mappedMatValueSrcGraph =
-        Graph.mapMaterializedValue(srcGraph, notUsed -> new Pair(notUsed, notUsed));
+    Graph<SourceShape<Object>, Pair<NotUsed, NotUsed>> mappedMatValueSrcGraph =
+        Graph.mapMaterializedValue(
+            srcGraph, notUsed -> new Pair<NotUsed, NotUsed>(notUsed, notUsed));
     Sink<Object, CompletionStage<Done>> snk = Sink.ignore();
     Pair<NotUsed, NotUsed> pair = Source.fromGraph(mappedMatValueSrcGraph).to(snk).run(system);
-    assertEquals(pair, new Pair(NotUsed.getInstance(), NotUsed.getInstance()));
+    assertEquals(pair, new Pair<NotUsed, NotUsed>(NotUsed.getInstance(), NotUsed.getInstance()));
   }
 }

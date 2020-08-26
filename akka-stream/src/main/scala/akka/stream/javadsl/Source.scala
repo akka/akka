@@ -1876,7 +1876,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover(pf: PartialFunction[Throwable, Out]): javadsl.Source[Out, Mat] =
     new Source(delegate.recover(pf))
 
@@ -1895,7 +1894,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover(clazz: Class[_ <: Throwable], supplier: Supplier[Out]): javadsl.Source[Out, Mat] =
     recover {
       case elem if clazz.isInstance(elem) => supplier.get()
@@ -1966,7 +1964,10 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    *
+   * @deprecated use `recoverWithRetries` instead
    */
+  @Deprecated
+  @deprecated("Use recoverWithRetries instead.", "2.6.6")
   @silent("deprecated")
   def recoverWith(pf: PartialFunction[Throwable, _ <: Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
     new Source(delegate.recoverWith(pf))
@@ -1990,7 +1991,11 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    *
+   * @deprecated use `recoverWithRetries` instead
    */
+  @Deprecated
+  @deprecated("Use recoverWithRetries instead.", "2.6.6")
+  @silent("deprecated")
   def recoverWith(
       clazz: Class[_ <: Throwable],
       supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =

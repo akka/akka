@@ -127,7 +127,7 @@ public class DistributedDataDocTest extends AbstractJavaTest {
   static
   // #update-request-context
   class DemonstrateUpdateWithRequestContext extends AbstractActor {
-    final Cluster node = Cluster.get(getContext().getSystem());
+    final SelfUniqueAddress node = DistributedData.get(system).selfUniqueAddress();
     final ActorRef replicator = DistributedData.get(getContext().getSystem()).replicator();
 
     final WriteConsistency writeTwo = new WriteTo(2, Duration.ofSeconds(3));

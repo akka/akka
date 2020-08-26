@@ -1,0 +1,7 @@
+# Actor termination task not working #29355
+# internals only
+ProblemFilters.exclude[MissingTypesProblem]("akka.actor.CoordinatedShutdownTerminationWatcher$Watch$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.CoordinatedShutdownTerminationWatcher#Watch.apply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.actor.CoordinatedShutdownTerminationWatcher#Watch.unapply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.CoordinatedShutdownTerminationWatcher#Watch.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.CoordinatedShutdownTerminationWatcher#Watch.this")

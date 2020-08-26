@@ -989,14 +989,18 @@ private[akka] class ActorSystemImpl(
       "akka-persistence",
       "akka-persistence-query",
       "akka-persistence-shared",
+      "akka-persistence-testkit",
       "akka-persistence-typed",
+      "akka-pki",
       "akka-protobuf",
       "akka-protobuf-v3",
       "akka-remote",
+      "akka-serialization-jackson",
       "akka-slf4j",
       "akka-stream",
       "akka-stream-testkit",
-      "akka-stream-typed")
+      "akka-stream-typed",
+      "akka-stream-testkit")
 
   @volatile private var _initialized = false
 
@@ -1185,7 +1189,7 @@ private[akka] class ActorSystemImpl(
             dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil).recoverWith { case _ => Failure(firstProblem) }
         } match {
           case Success(p: ExtensionIdProvider) =>
-            registerExtension(p.lookup())
+            registerExtension(p.lookup)
           case Success(p: ExtensionId[_]) =>
             registerExtension(p)
           case Success(_) =>

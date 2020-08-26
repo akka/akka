@@ -19,7 +19,11 @@ import org.scalatest.wordspec.AnyWordSpec
 class EntitiesSpec extends AnyWordSpec with Matchers {
 
   private def newEntities(rememberingEntities: Boolean) =
-    new sharding.Shard.Entities(NoLogging, rememberingEntities = rememberingEntities, false)
+    new sharding.Shard.Entities(
+      NoLogging,
+      rememberingEntities = rememberingEntities,
+      verboseDebug = false,
+      failOnIllegalTransition = true)
 
   "Entities" should {
     "start empty" in {
@@ -54,6 +58,7 @@ class EntitiesSpec extends AnyWordSpec with Matchers {
     }
     "set state to remembering stop" in {
       val entities = newEntities(rememberingEntities = true)
+      entities.rememberingStart("a", None) // need to go through remembering start to become active
       entities.addEntity("a", ActorRef.noSender) // need to go through active to passivate
       entities.entityPassivating("a") // need to go through passivate to remember stop
       entities.rememberingStop("a")
@@ -71,9 +76,10 @@ class EntitiesSpec extends AnyWordSpec with Matchers {
 
     "fully remove an entity" in {
       val entities = newEntities(rememberingEntities = true)
-      val ref = ActorRef.noSender
-      entities.addEntity("a", ref)
+      entities.rememberingStart("a", None) // need to go through remembering start to become active
+      entities.addEntity("a", ActorRef.noSender) // need to go through active to passivate
       entities.entityPassivating("a") // needs to go through passivating to be removed
+      entities.rememberingStop("a") // need to go through remembering stop to become active
       entities.removeEntity("a")
       entities.entityState("a") shouldEqual NoState
       entities.activeEntities() should be(empty)

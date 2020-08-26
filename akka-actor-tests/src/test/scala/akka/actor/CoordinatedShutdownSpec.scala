@@ -31,7 +31,6 @@ class CoordinatedShutdownSpec
   // some convenience to make the test readable
   def phase(dependsOn: String*): Phase = Phase(dependsOn.toSet, timeout = 10.seconds, recover = true, enabled = true)
   val emptyPhase: Phase = Phase(Set.empty, timeout = 10.seconds, recover = true, enabled = true)
-  val abortingPhase: Phase = Phase(Set.empty, timeout = 10.seconds, recover = false, enabled = true)
 
   private def checkTopologicalSort(phases: Map[String, Phase]): List[String] = {
     val result = CoordinatedShutdown.topologicalSort(phases)
@@ -643,21 +642,41 @@ class CoordinatedShutdownSpec
       }
     }
 
-    def withCoordinatedShutdown(phases: Map[String, Phase])(block: CoordinatedShutdown => Unit): Unit = {
-      val co = new CoordinatedShutdown(extSys, phases)
+    def withCoordinatedShutdown(block: (ActorSystem, CoordinatedShutdown) => Unit): Unit = {
+      val system = ActorSystem(
+        s"CoordinatedShutdownSpec-terminated-${System.currentTimeMillis()}",
+        ConfigFactory.parseString("""
+          akka.coordinated-shutdown.phases {
+            before-actor-system-terminate {
+
+            }
+            a {
+              # as late as possible
+              dependsOn = [before-actor-system-terminate]
+              timeout=10s
+              recover=off
+              enabled=on
+            }
+
+            b {
+              dependsOn = [a]
+              timeout=10s
+              recover=off
+              enabled=on
+            }
+          }
+          """))
       try {
-        block(co)
+        block(system, CoordinatedShutdown(system))
       } finally {
-        watch(co.terminationWatcher) ! PoisonPill
-        expectTerminated(co.terminationWatcher)
+        TestKit.shutdownActorSystem(system)
       }
     }
 
     "support actor termination tasks with a stop message" in {
-      val phases = Map("a" -> abortingPhase)
-      withCoordinatedShutdown(phases) { co =>
-        val actorToWatch = TestProbe()
-        co.addActorTerminationTask("a", "a1", actorToWatch.ref, Some("stop"))
+      withCoordinatedShutdown { (system, co) =>
+        val actorToWatch = TestProbe()(system)
+        co.addActorTerminationTask("before-actor-system-terminate", "a1", actorToWatch.ref, Some("stop"))
         val result = co.run(UnknownReason)
         actorToWatch.expectMsg("stop")
         result.isReadyWithin(100.millis) should be(false)
@@ -667,10 +686,9 @@ class CoordinatedShutdownSpec
     }
 
     "support actor termination tasks without a stop message" in {
-      val phases = Map("a" -> abortingPhase)
-      withCoordinatedShutdown(phases) { co =>
-        val actorToWatch = TestProbe()
-        co.addActorTerminationTask("a", "a1", actorToWatch.ref, None)
+      withCoordinatedShutdown { (system, co) =>
+        val actorToWatch = TestProbe()(system)
+        co.addActorTerminationTask("before-actor-system-terminate", "a1", actorToWatch.ref, None)
         val result = co.run(UnknownReason)
         actorToWatch.expectNoMessage(100.millis)
         result.isReadyWithin(100.millis) should be(false)
@@ -680,24 +698,22 @@ class CoordinatedShutdownSpec
     }
 
     "support actor termination tasks for actors that are already shutdown" in {
-      val phases = Map("a" -> abortingPhase)
-      withCoordinatedShutdown(phases) { co =>
-        val actorToWatch = TestProbe()
+      withCoordinatedShutdown { (system, co) =>
+        val actorToWatch = TestProbe()(system)
         watch(actorToWatch.ref)
         actorToWatch.ref ! PoisonPill
         expectTerminated(actorToWatch.ref)
-        co.addActorTerminationTask("a", "a1", actorToWatch.ref, None)
+        co.addActorTerminationTask("before-actor-system-terminate", "a1", actorToWatch.ref, None)
         val result = co.run(UnknownReason)
         result.futureValue should ===(Done)
       }
     }
 
     "allow watching the same actor twice in the same phase" in {
-      val phases = Map("a" -> abortingPhase)
-      withCoordinatedShutdown(phases) { co =>
-        val actorToWatch = TestProbe()
-        co.addActorTerminationTask("a", "a1", actorToWatch.ref, Some("stop1"))
-        co.addActorTerminationTask("a", "a2", actorToWatch.ref, Some("stop2"))
+      withCoordinatedShutdown { (system, co) =>
+        val actorToWatch = TestProbe()(system)
+        co.addActorTerminationTask("before-actor-system-terminate", "a1", actorToWatch.ref, Some("stop1"))
+        co.addActorTerminationTask("before-actor-system-terminate", "a2", actorToWatch.ref, Some("stop2"))
         val result = co.run(UnknownReason)
         actorToWatch.expectMsgAllOf("stop1", "stop2")
         actorToWatch.ref ! PoisonPill
@@ -706,12 +722,12 @@ class CoordinatedShutdownSpec
     }
 
     "allow watching the same actor twice in different phases" in {
-      val phases = Map("a" -> abortingPhase, "b" -> abortingPhase.copy(dependsOn = Set("a")))
-      withCoordinatedShutdown(phases) { co =>
-        val actorToWatch = TestProbe()
-        co.addActorTerminationTask("a", "a1", actorToWatch.ref, Some("stopa"))
+      withCoordinatedShutdown { (system, co) =>
+        val actorToWatch = TestProbe()(system)
+        // arbitrary phase that runs before the phase of b1
+        co.addActorTerminationTask("service-stop", "a1", actorToWatch.ref, Some("stopa"))
         // no stop message because it's just going to end up being dead lettered
-        co.addActorTerminationTask("b", "b1", actorToWatch.ref, None)
+        co.addActorTerminationTask("before-actor-system-terminate", "b1", actorToWatch.ref, None)
         val result = co.run(UnknownReason)
         actorToWatch.expectMsg("stopa")
         actorToWatch.expectNoMessage(100.millis)

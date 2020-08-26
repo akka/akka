@@ -187,13 +187,13 @@ class AskSpec extends ScalaTestWithActorTestKit("""
 
   "askWithStatus pattern" must {
     "unwrap nested response a successful response" in {
-      val probe = createTestProbe[Request]
+      val probe = createTestProbe[Request]()
       val result: Future[String] = probe.ref.askWithStatus(Request(_))
       probe.expectMessageType[Request].replyTo ! StatusReply.success("goodie")
       result.futureValue should ===("goodie")
     }
     "fail future for a fail response with text" in {
-      val probe = createTestProbe[Request]
+      val probe = createTestProbe[Request]()
       val result: Future[String] = probe.ref.askWithStatus(Request(_))
       probe.expectMessageType[Request].replyTo ! StatusReply.error("boom")
       val exception = result.failed.futureValue
@@ -201,7 +201,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       exception.getMessage should ===("boom")
     }
     "fail future for a fail response with custom exception" in {
-      val probe = createTestProbe[Request]
+      val probe = createTestProbe[Request]()
       val result: Future[String] = probe.ref.askWithStatus(Request(_))
       probe.expectMessageType[Request].replyTo ! StatusReply.error(TestException("boom"))
       val exception = result.failed.futureValue

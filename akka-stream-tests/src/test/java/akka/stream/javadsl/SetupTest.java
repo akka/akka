@@ -29,7 +29,7 @@ public class SetupTest extends StreamTest {
   @Test
   public void shouldExposeMaterializerAndAttributesToSource() throws Exception {
     final Source<Pair<Boolean, Boolean>, CompletionStage<NotUsed>> source =
-        Source.setup(
+        Source.fromMaterializer(
             (mat, attr) ->
                 Source.single(Pair.create(mat.isShutdown(), attr.attributeList().isEmpty())));
 
@@ -41,7 +41,7 @@ public class SetupTest extends StreamTest {
   @Test
   public void shouldExposeMaterializerAndAttributesToFlow() throws Exception {
     final Flow<Object, Pair<Boolean, Boolean>, CompletionStage<NotUsed>> flow =
-        Flow.setup(
+        Flow.fromMaterializer(
             (mat, attr) ->
                 Flow.fromSinkAndSource(
                     Sink.ignore(),
@@ -59,7 +59,7 @@ public class SetupTest extends StreamTest {
   @Test
   public void shouldExposeMaterializerAndAttributesToSink() throws Exception {
     Sink<Object, CompletionStage<CompletionStage<Pair<Boolean, Boolean>>>> sink =
-        Sink.setup(
+        Sink.fromMaterializer(
             (mat, attr) ->
                 Sink.fold(
                     Pair.create(mat.isShutdown(), attr.attributeList().isEmpty()), Keep.left()));

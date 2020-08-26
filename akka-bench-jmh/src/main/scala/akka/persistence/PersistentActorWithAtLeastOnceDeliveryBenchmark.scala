@@ -8,7 +8,6 @@ import java.io.File
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.concurrent.duration._
 
 import org.apache.commons.io.FileUtils
 import org.openjdk.jmh.annotations._

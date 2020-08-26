@@ -96,8 +96,6 @@ abstract class ClusterShardingRememberEntitiesPerfSpec
   import ClusterShardingRememberEntitiesPerfSpec._
   import ClusterShardingRememberEntitiesPerfSpecConfig._
 
-  import ClusterShardingRememberEntitiesPerfSpec._
-
   def startSharding(): Unit = {
     (1 to NrRegions).foreach { n =>
       startSharding(

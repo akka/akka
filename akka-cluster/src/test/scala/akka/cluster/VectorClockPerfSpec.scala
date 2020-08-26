@@ -59,7 +59,7 @@ class VectorClockPerfSpec extends AnyWordSpec with Matchers {
     vc1.compareTo(vc2) should ===(order)
   }
 
-  def !==(vc1: VectorClock, vc2: VectorClock): Unit = {
+  def notEqual(vc1: VectorClock, vc2: VectorClock): Unit = {
     vc1 == vc2 should ===(false)
   }
 
@@ -98,15 +98,15 @@ class VectorClockPerfSpec extends AnyWordSpec with Matchers {
     }
 
     s"compare !== Before (middle) $iterations times" in {
-      checkThunkFor(vcBefore, vcBaseMiddle, !==, iterations)
+      checkThunkFor(vcBefore, vcBaseMiddle, notEqual, iterations)
     }
 
     s"compare !== After (middle) $iterations times" in {
-      checkThunkFor(vcAfterMiddle, vcBaseMiddle, !==, iterations)
+      checkThunkFor(vcAfterMiddle, vcBaseMiddle, notEqual, iterations)
     }
 
     s"compare !== Concurrent (middle) $iterations times" in {
-      checkThunkFor(vcAfterMiddle, vcConcurrentMiddle, !==, iterations)
+      checkThunkFor(vcAfterMiddle, vcConcurrentMiddle, notEqual, iterations)
     }
 
   }

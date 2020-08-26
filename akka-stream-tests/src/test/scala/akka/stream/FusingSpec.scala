@@ -102,7 +102,7 @@ class FusingSpec extends StreamSpec {
     }
 
     "propagate downstream errors through async boundary" in {
-      val promise = Promise[Done]
+      val promise = Promise[Done]()
       val slowInitSrc = UnfoldResourceNoAsyncBoundry(
         () => { Await.result(promise.future, 1.minute); () },
         (_: Unit) => Some(1),
@@ -132,7 +132,7 @@ class FusingSpec extends StreamSpec {
     }
 
     "propagate 'parallel' errors through async boundary via a common downstream" in {
-      val promise = Promise[Done]
+      val promise = Promise[Done]()
       val slowInitSrc = UnfoldResourceNoAsyncBoundry(
         () => { Await.result(promise.future, 1.minute); () },
         (_: Unit) => Some(1),

@@ -116,7 +116,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       val shardingBaseSettings =
         settings.shardingSettings match {
           case None =>
-            // defaults in akka.cluster.sharding but allow overrides specifically for actor-set
+            // defaults in akka.cluster.sharding but allow overrides specifically for sharded-daemon-process
             ClusterShardingSettings.fromConfig(
               system.settings.config.getConfig("akka.cluster.sharded-daemon-process.sharding"))
           case Some(shardingSettings) => shardingSettings
@@ -124,7 +124,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
 
       new ClusterShardingSettings(
         numberOfShards,
-        shardingBaseSettings.role,
+        if (settings.role.isDefined) settings.role else shardingBaseSettings.role,
         shardingBaseSettings.dataCenter,
         false, // remember entities disabled
         "",

@@ -244,7 +244,8 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
   def lookup(path: Iterable[String]): Option[Deploy] = deployments.get().find(path)
 
   def deploy(d: Deploy): Unit = {
-    @tailrec def add(path: Array[String], d: Deploy, w: WildcardIndex[Deploy] = deployments.get): Unit = {
+    @tailrec def add(path: Array[String], d: Deploy): Unit = {
+      val w: WildcardIndex[Deploy] = deployments.get
       for (i <- path.indices) path(i) match {
         case "" => throw InvalidActorNameException(s"Actor name in deployment [${d.path}] must not be empty")
         case el => ActorPath.validatePathElement(el, fullPath = d.path)

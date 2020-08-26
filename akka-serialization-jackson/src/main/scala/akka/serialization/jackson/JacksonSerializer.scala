@@ -319,11 +319,16 @@ import akka.util.OptionVal
     val className = migration match {
       case Some(transformer) if fromVersion < transformer.currentVersion =>
         transformer.transformClassName(fromVersion, manifestClassName)
-      case Some(transformer) if fromVersion > transformer.currentVersion =>
+      case Some(transformer) if fromVersion == transformer.currentVersion =>
+        manifestClassName
+      case Some(transformer) if fromVersion <= transformer.supportedForwardVersion =>
+        transformer.transformClassName(fromVersion, manifestClassName)
+      case Some(transformer) if fromVersion > transformer.supportedForwardVersion =>
         throw new IllegalStateException(
-          s"Migration version ${transformer.currentVersion} is " +
+          s"Migration version ${transformer.supportedForwardVersion} is " +
           s"behind version $fromVersion of deserialized type [$manifestClassName]")
-      case _ => manifestClassName
+      case None =>
+        manifestClassName
     }
 
     if (typeInManifest && (className ne manifestClassName))
@@ -359,7 +364,13 @@ import akka.util.OptionVal
           val jsonTree = objectMapper.readTree(decompressedBytes)
           val newJsonTree = transformer.transform(fromVersion, jsonTree)
           objectMapper.treeToValue(newJsonTree, clazz)
-        case _ =>
+        case Some(transformer) if fromVersion == transformer.currentVersion =>
+          objectMapper.readValue(decompressedBytes, clazz)
+        case Some(transformer) if fromVersion <= transformer.supportedForwardVersion =>
+          val jsonTree = objectMapper.readTree(decompressedBytes)
+          val newJsonTree = transformer.transform(fromVersion, jsonTree)
+          objectMapper.treeToValue(newJsonTree, clazz)
+        case None =>
           objectMapper.readValue(decompressedBytes, clazz)
       }
 

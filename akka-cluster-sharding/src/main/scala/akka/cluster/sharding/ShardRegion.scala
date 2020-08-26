@@ -812,7 +812,7 @@ private[akka] class ShardRegion(
       }
 
     case msg: GetClusterShardingStats =>
-      coordinator.fold(sender ! ClusterShardingStats(Map.empty))(_.forward(msg))
+      coordinator.fold(sender() ! ClusterShardingStats(Map.empty))(_.forward(msg))
 
     case GetShardRegionState =>
       replyToRegionStateQuery(sender())
@@ -1140,7 +1140,9 @@ private[akka] class ShardRegion(
   }
 
   def sendGracefulShutdownToCoordinator(): Unit = {
-    if (gracefulShutdownInProgress)
+    if (gracefulShutdownInProgress) {
+      log.debug("Sending graceful shutdown to {}", coordinatorSelection)
       coordinatorSelection.foreach(_ ! GracefulShutdownReq(self))
+    }
   }
 }

@@ -11,7 +11,6 @@ import com.typesafe.config.ConfigFactory
 
 import akka.actor._
 import akka.remote.testconductor.RoleName
-import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 

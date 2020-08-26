@@ -19,6 +19,23 @@ object AkkaDisciplinePlugin extends AutoPlugin {
 
   // We allow warnings in docs to get the 'snippets' right
   val nonFatalWarningsFor = Set("akka-docs")
+  val nonFatalJavaWarningsFor = Set(
+    // for sun.misc.Unsafe and AbstractScheduler
+    "akka-actor",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-actor-typed-tests",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-cluster-typed",
+    // use of deprecated akka.protobuf.GeneratedMessage
+    "akka-protobuf",
+    "akka-protobuf-v3",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-remote",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-distributed-data",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-cluster-sharding-typed",
+    "akka-docs")
 
   val looseProjects = Set(
     "akka-actor",
@@ -45,7 +62,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-testkit")
 
   lazy val silencerSettings = {
-    val silencerVersion = "1.6.0"
+    val silencerVersion = "1.7.1"
     Seq(
       libraryDependencies ++= Seq(
           compilerPlugin(("com.github.ghik" %% "silencer-plugin" % silencerVersion).cross(CrossVersion.patch)),
@@ -60,6 +77,11 @@ object AkkaDisciplinePlugin extends AutoPlugin {
             else Seq.empty
           ),
         Test / scalacOptions --= testUndicipline,
+        Compile / javacOptions ++= (
+            if (!nonFatalJavaWarningsFor(name.value)) Seq("-Werror", "-Xlint:deprecation", "-Xlint:unchecked")
+            else Seq.empty
+          ),
+        Compile / javacOptions in doc := Seq("-Xdoclint:none"),
         Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
             case Some((2, 13)) =>
               disciplineScalacOptions -- Set(

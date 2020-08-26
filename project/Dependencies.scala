@@ -21,31 +21,41 @@ object Dependencies {
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
   val agronaVersion = "1.4.1"
   val nettyVersion = "3.10.6.Final"
-  val jacksonVersion = "2.10.4"
+  val jacksonVersion = "2.10.5"
   val protobufJavaVersion = "3.11.4"
   val logbackVersion = "1.2.3"
 
   val scala212Version = "2.12.11"
-  val scala213Version = "2.13.1"
+  val scala213Version = "2.13.3"
 
   val reactiveStreamsVersion = "1.0.3"
 
-  val sslConfigVersion = "0.4.1"
+  val sslConfigVersion = "0.4.2"
 
   val scalaTestVersion = "3.1.1"
   val scalaCheckVersion = "1.14.3"
 
-  val Versions = Seq(
-    crossScalaVersions := Seq(scala212Version, scala213Version),
-    scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
-    java8CompatVersion := {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        // java8-compat is only used in a couple of places for 2.13,
-        // it is probably possible to remove the dependency if needed.
-        case Some((2, n)) if n >= 13 => "0.9.0"
-        case _                       => "0.8.0"
-      }
-    })
+  val Versions =
+    Seq(
+      crossScalaVersions := Seq(scala212Version, scala213Version),
+      scalaVersion := {
+        // don't allow full override to keep compatible with the version of silencer
+        // don't mandate patch not specified to allow builds to migrate
+        System.getProperty("akka.build.scalaVersion", "default") match {
+          case twoThirteen if twoThirteen.startsWith("2.13") => scala213Version
+          case twoTwelve if twoTwelve.startsWith("2.12")     => scala212Version
+          case "default"                                     => crossScalaVersions.value.head
+          case other                                         => throw new IllegalArgumentException(s"Unsupported scala version [$other]. Must be 2.12 or 2.13.")
+        }
+      },
+      java8CompatVersion := {
+        CrossVersion.partialVersion(scalaVersion.value) match {
+          // java8-compat is only used in a couple of places for 2.13,
+          // it is probably possible to remove the dependency if needed.
+          case Some((2, n)) if n >= 13 => "0.9.0"
+          case _                       => "0.8.0"
+        }
+      })
 
   object Compile {
     // Compile
@@ -63,7 +73,7 @@ object Dependencies {
 
     val sigar = "org.fusesource" % "sigar" % "1.6.4" // ApacheV2
 
-    val jctools = "org.jctools" % "jctools-core" % "3.0.0" // ApacheV2
+    val jctools = "org.jctools" % "jctools-core" % "3.0.1" // ApacheV2
 
     // reactive streams
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
@@ -131,8 +141,8 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.9" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.9" % "test" // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.12.1" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.12.1" % "test" // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
       val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)

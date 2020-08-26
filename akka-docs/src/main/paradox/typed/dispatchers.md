@@ -173,7 +173,7 @@ avoid blocking APIs. The following solution explains how to handle blocking
 operations properly.
 
 Note that the same hints apply to managing blocking operations anywhere in Akka,
-including Streams, Http and other reactive libraries built on top of it.
+including Streams, HTTP and other reactive libraries built on top of it.
 
 @@@
 

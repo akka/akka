@@ -970,10 +970,20 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     else if (!latestGossip.isReachable(selfUniqueAddress, from))
       gossipLogger.logInfo("Ignoring received gossip status from unreachable [{}] ", from)
     else {
-      status.version.compareTo(latestGossip.version) match {
-        case VectorClock.Same  => // same version
-        case VectorClock.After => gossipStatusTo(from, sender()) // remote is newer
-        case _                 => gossipTo(from, sender()) // conflicting or local is newer
+      val localSeenDigest = latestGossip.seenDigest
+      val seenSame =
+        if (status.seenDigest.isEmpty || localSeenDigest.isEmpty) true
+        else java.util.Arrays.equals(status.seenDigest, localSeenDigest)
+      if (!seenSame) {
+        gossipTo(from, sender())
+      } else {
+        status.version.compareTo(latestGossip.version) match {
+          case VectorClock.Same => // same version
+          case VectorClock.After =>
+            gossipStatusTo(from, sender()) // remote is newer
+          case _ =>
+            gossipTo(from, sender()) // conflicting or local is newer
+        }
       }
     }
   }
@@ -1492,11 +1502,11 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
   def gossipStatusTo(node: UniqueAddress, destination: ActorRef): Unit =
     if (membershipState.validNodeForGossip(node))
-      destination ! GossipStatus(selfUniqueAddress, latestGossip.version)
+      destination ! GossipStatus(selfUniqueAddress, latestGossip.version, latestGossip.seenDigest)
 
   def gossipStatusTo(node: UniqueAddress): Unit =
     if (membershipState.validNodeForGossip(node))
-      clusterCore(node.address) ! GossipStatus(selfUniqueAddress, latestGossip.version)
+      clusterCore(node.address) ! GossipStatus(selfUniqueAddress, latestGossip.version, latestGossip.seenDigest)
 
   def updateLatestGossip(gossip: Gossip): Unit = {
     // Updating the vclock version for the changes

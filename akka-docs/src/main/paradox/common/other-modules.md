@@ -12,6 +12,12 @@ Alpakka is a Reactive Enterprise Integration library for Java and Scala, based o
 
 The Alpakka Kafka Connector connects Apache Kafka with Akka Streams.
 
+
+## [Akka Projection](https://doc.akka.io/docs/akka-projection/current/)
+
+Akka Projections let you process a stream of events or records from a source to a projected model or external system.
+
+
 ## [Cassandra Plugin for Akka Persistence](https://doc.akka.io/docs/akka-persistence-cassandra/current/)
 
 An Akka Persistence journal and snapshot store backed by Apache Cassandra.
@@ -19,6 +25,17 @@ An Akka Persistence journal and snapshot store backed by Apache Cassandra.
 ## [Couchbase Plugin for Akka Persistence](https://doc.akka.io/docs/akka-persistence-couchbase/current/)
 
 An Akka Persistence journal and snapshot store backed by Couchbase.
+
+
+## [JDBC Plugin for Akka Persistence](https://doc.akka.io/docs/akka-persistence-jdbc/current/)
+
+An Akka Persistence journal and snapshot store for use with JDBC-compatible databases. This implementation relies on [Slick](https://scala-slick.org/).
+
+
+## [Google Cloud Spanner Plugin for Akka Persistence](https://doc.akka.io/docs/akka-persistence-spanner/current/)
+
+Use [Google Cloud Spanner](https://cloud.google.com/spanner/) as Akka Persistence journal and snapshot store. This integration relies on [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/).
+
 
 ## Akka Management
 

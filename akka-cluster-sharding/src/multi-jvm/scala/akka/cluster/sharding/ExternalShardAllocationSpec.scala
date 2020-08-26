@@ -135,7 +135,7 @@ abstract class ExternalShardAllocationSpec
       }
       enterBarrier("allocated-to-new-node")
       runOn(forth) {
-        joinWithin(first)
+        joinWithin(first, max = 10.seconds)
       }
       enterBarrier("forth-node-joined")
       runOn(first, second, third) {

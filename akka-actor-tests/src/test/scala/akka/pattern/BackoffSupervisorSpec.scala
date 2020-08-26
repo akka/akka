@@ -283,6 +283,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
     }
 
     "stop restarting the child after reaching maxNrOfRetries limit (Backoff.onStop)" in {
+      val supervisorWatcher = TestProbe()
       val supervisor = create(onStopOptions(maxNrOfRetries = 2))
       def waitForChild: Option[ActorRef] = {
         eventually(timeout(1.second), interval(50.millis)) {
@@ -295,7 +296,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
         expectMsgType[BackoffSupervisor.CurrentChild].ref
       }
 
-      watch(supervisor)
+      supervisorWatcher.watch(supervisor)
 
       supervisor ! BackoffSupervisor.GetRestartCount
       expectMsg(BackoffSupervisor.RestartCount(0))
@@ -327,11 +328,12 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
       watch(c3)
       c3 ! PoisonPill
       expectTerminated(c3)
-      expectTerminated(supervisor)
+      supervisorWatcher.expectTerminated(supervisor)
     }
 
     "stop restarting the child after reaching maxNrOfRetries limit (Backoff.onFailure)" in {
       filterException[TestException] {
+        val supervisorWatcher = TestProbe()
         val supervisor = create(onFailureOptions(maxNrOfRetries = 2))
 
         def waitForChild: Option[ActorRef] = {
@@ -345,7 +347,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
           expectMsgType[BackoffSupervisor.CurrentChild].ref
         }
 
-        watch(supervisor)
+        supervisorWatcher.watch(supervisor)
 
         supervisor ! BackoffSupervisor.GetRestartCount
         expectMsg(BackoffSupervisor.RestartCount(0))
@@ -377,26 +379,25 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
         awaitAssert(c3 should !==(c2))
         watch(c3)
         c3 ! "boom"
-        withClue("Expected child and supervisor to terminate") {
-          Set(expectMsgType[Terminated].actor, expectMsgType[Terminated].actor) shouldEqual Set(c3, supervisor)
-        }
-
+        expectTerminated(c3)
+        supervisorWatcher.expectTerminated(supervisor)
       }
     }
 
     "stop restarting the child if final stop message received (Backoff.onStop)" in {
       val stopMessage = "stop"
+      val supervisorWatcher = TestProbe()
       val supervisor: ActorRef = create(onStopOptions(maxNrOfRetries = 100).withFinalStopMessage(_ == stopMessage))
       supervisor ! BackoffSupervisor.GetCurrentChild
       val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
       watch(c1)
-      watch(supervisor)
+      supervisorWatcher.watch(supervisor)
 
       supervisor ! stopMessage
       expectMsg("stop")
       c1 ! PoisonPill
       expectTerminated(c1)
-      expectTerminated(supervisor)
+      supervisorWatcher.expectTerminated(supervisor)
     }
 
     "supervisor must not stop when final stop message has not been received" in {
@@ -406,7 +407,6 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
       supervisor ! BackoffSupervisor.GetCurrentChild
       val c1 = expectMsgType[BackoffSupervisor.CurrentChild].ref.get
       watch(c1)
-      watch(supervisor)
       supervisorWatcher.watch(supervisor)
 
       c1 ! PoisonPill
@@ -417,7 +417,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
         supervisorWatcher.expectNoMessage(20.millis) // supervisor must not terminate
 
         supervisor ! stopMessage
-        expectTerminated(supervisor)
+        supervisorWatcher.expectTerminated(supervisor)
       }
     }
   }

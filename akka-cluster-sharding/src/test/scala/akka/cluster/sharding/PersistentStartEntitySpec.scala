@@ -47,6 +47,7 @@ object PersistentStartEntitySpec {
       akka.remote.classic.netty.tcp.port = 0
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.cluster.sharding.verbose-debug-logging = on
+      akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
     """.stripMargin)
 }
 
@@ -71,7 +72,7 @@ class PersistentStartEntitySpec
     "remember entities started with StartEntity" in {
       val sharding = ClusterSharding(system).start(
         s"startEntity",
-        Props[EntityActor],
+        Props[EntityActor](),
         ClusterShardingSettings(system)
           .withRememberEntities(true)
           .withStateStoreMode(ClusterShardingSettings.StateStoreModePersistence),

@@ -4,6 +4,7 @@
 
 package jdocs.stream;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
@@ -157,7 +158,7 @@ public class FlowDocTest extends AbstractJavaTest {
     Source.from(list);
 
     // Create a source form a Future
-    Source.fromFuture(Futures.successful("Hello Streams!"));
+    Source.future(Futures.successful("Hello Streams!"));
 
     // Create a source from a single element
     Source.single("only one element");
@@ -274,7 +275,17 @@ public class FlowDocTest extends AbstractJavaTest {
   @Test
   public void sourcePreMaterialization() {
     // #source-prematerialization
-    Source<String, ActorRef> matValuePoweredSource = Source.actorRef(100, OverflowStrategy.fail());
+    Source<String, ActorRef> matValuePoweredSource =
+        Source.actorRef(
+            elem -> {
+              // complete stream immediately if we send it Done
+              if (elem == Done.done()) return Optional.of(CompletionStrategy.immediately());
+              else return Optional.empty();
+            },
+            // never fail the stream because of a message
+            elem -> Optional.empty(),
+            100,
+            OverflowStrategy.fail());
 
     Pair<ActorRef, Source<String, NotUsed>> actorRefSourcePair =
         matValuePoweredSource.preMaterialize(system);

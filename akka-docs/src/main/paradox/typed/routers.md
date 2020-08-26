@@ -32,6 +32,8 @@ then forward messages to.
 If a child is stopped the pool router removes it from its set of routees. When the last child stops the router itself stops.
 To make a resilient router that deals with failures the routee `Behavior` must be supervised.
 
+As actor children are always local the routees are never spread across a cluster with a pool router.
+
 Scala
 :  @@snip [RouterSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/RouterSpec.scala) { #pool }
 

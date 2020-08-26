@@ -491,7 +491,8 @@ public class FlowTest extends StreamTest {
     final CompletionStage<Graph<SourceShape<String>, NotUsed>> stage =
         CompletableFuture.supplyAsync(fn);
 
-    final Source<String, CompletionStage<NotUsed>> source = Source.fromSourceCompletionStage(stage);
+    final Source<String, CompletionStage<NotUsed>> source =
+        Source.completionStageSource(stage.thenApply(Source::fromGraph));
 
     // collecting
     final Publisher<String> pub = source.runWith(publisher, system);
@@ -881,11 +882,13 @@ public class FlowTest extends StreamTest {
                   if (elem == 2) throw new RuntimeException("ex");
                   else return elem;
                 })
-            .recover(
-                new JavaPartialFunction<Throwable, Integer>() {
-                  public Integer apply(Throwable elem, boolean isCheck) {
-                    if (isCheck) return null;
-                    return 0;
+            .recoverWithRetries(
+                1,
+                new JavaPartialFunction<Throwable, Graph<SourceShape<Integer>, NotUsed>>() {
+                  public Graph<SourceShape<Integer>, NotUsed> apply(
+                      Throwable elem, boolean isCheck) {
+                    if (isCheck) return Source.empty();
+                    return Source.single(0);
                   }
                 });
 
@@ -919,7 +922,7 @@ public class FlowTest extends StreamTest {
                   if (elem == 2) throw new RuntimeException("ex");
                   else return elem;
                 })
-            .recover(RuntimeException.class, () -> 0);
+            .recoverWithRetries(1, RuntimeException.class, () -> Source.single(0));
 
     final CompletionStage<Done> future =
         source
@@ -983,6 +986,7 @@ public class FlowTest extends StreamTest {
         TestPublisher.manualProbe(true, system);
     final TestKit probe = new TestKit(system);
     final Iterable<Integer> recover = Arrays.asList(55, 0);
+    final int maxRetries = 10;
 
     final Source<Integer, NotUsed> source = Source.fromPublisher(publisherProbe);
     final Flow<Integer, Integer, NotUsed> flow =
@@ -992,7 +996,7 @@ public class FlowTest extends StreamTest {
                   if (elem == 2) throw new RuntimeException("ex");
                   else return elem;
                 })
-            .recoverWith(RuntimeException.class, () -> Source.from(recover));
+            .recoverWithRetries(maxRetries, RuntimeException.class, () -> Source.from(recover));
 
     final CompletionStage<Done> future =
         source
@@ -1028,7 +1032,9 @@ public class FlowTest extends StreamTest {
                 })
             .recoverWithRetries(
                 3,
-                new PFBuilder().match(RuntimeException.class, ex -> Source.from(recover)).build());
+                new PFBuilder<Throwable, Graph<SourceShape<Integer>, NotUsed>>()
+                    .match(RuntimeException.class, ex -> Source.from(recover))
+                    .build());
 
     final CompletionStage<Done> future =
         source
@@ -1191,7 +1197,12 @@ public class FlowTest extends StreamTest {
                 }));
 
     final TestKit probe = new TestKit(system);
-    Source<String, ActorRef> source = Source.actorRef(1, OverflowStrategy.dropNew());
+    Source<String, ActorRef> source =
+        Source.actorRef(
+            msg -> Optional.<CompletionStrategy>empty(),
+            msg -> Optional.<Throwable>empty(),
+            1,
+            OverflowStrategy.dropNew());
     final ActorRef actor = source.toMat(sink, Keep.<ActorRef, NotUsed>left()).run(system);
     probe.watch(actor);
     probe.expectTerminated(actor);
@@ -1378,7 +1389,7 @@ public class FlowTest extends StreamTest {
     future.toCompletableFuture().complete(Flow.fromFunction((id) -> id));
     Integer result =
         Source.range(1, 10)
-            .via(Flow.lazyInitAsync(() -> future))
+            .via(Flow.lazyCompletionStageFlow(() -> future))
             .runWith(Sink.<Integer>head(), system)
             .toCompletableFuture()
             .get(3, TimeUnit.SECONDS);

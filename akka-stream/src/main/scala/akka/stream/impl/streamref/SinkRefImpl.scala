@@ -196,7 +196,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       }
 
       private def tryPull(): Unit =
-        if (remoteCumulativeDemandConsumed < remoteCumulativeDemandReceived && !hasBeenPulled(in)) {
+        if (remoteCumulativeDemandConsumed < remoteCumulativeDemandReceived && !hasBeenPulled(in) && !isClosed(in)) {
           pull(in)
         }
 

@@ -179,7 +179,9 @@ public class FlowErrorDocTest extends AbstractJavaTest {
             })
         .recoverWithRetries(
             1, // max attempts
-            new PFBuilder().match(RuntimeException.class, ex -> planB).build())
+            new PFBuilder<Throwable, Source<String, NotUsed>>()
+                .match(RuntimeException.class, ex -> planB)
+                .build())
         .runForeach(System.out::println, system);
     // #recoverWithRetries
 

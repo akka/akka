@@ -169,6 +169,11 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
         val probe3 = TestProbe()(sys3)
         cluster3.join(node(first).address)
 
+        awaitAssert({
+          cluster.state.members.exists(m =>
+            m.uniqueAddress == cluster3.selfUniqueAddress && m.status == MemberStatus.Up) should ===(true)
+        }, 10.seconds)
+
         within(10.seconds) {
           var values = Set.empty[Int]
           awaitAssert {
