@@ -20,6 +20,10 @@ a-aaaa IN AAAA fd4d:36b2:3eca:a2d8:0:0:0:4
 a-aaaa IN AAAA fd4d:36b2:3eca:a2d8:0:0:0:5
 a-aaaa IN A  192.168.1.23
 a-aaaa IN A  192.168.1.24
+mapped-single IN AAAA ::ffff:192.168.1.25
+mapped-mixed IN AAAA ::ffff:192.168.1.26
+mapped-mixed IN A  192.168.1.26
+mapped-mixed IN A  192.168.1.27
 
 many in AAAA 2001:985:965:1:ba27:ebff:fe5f:9d00
 many in AAAA 2001:985:965:1:ba27:ebff:fe5f:9d01

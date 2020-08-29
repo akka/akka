@@ -156,9 +156,20 @@ private[dns] object ResourceRecord {
     val data = it.clone().take(rdLength)
     it.drop(rdLength)
     (recType: @switch) match {
-      case 1  => ARecord.parseBody(name, ttl, rdLength, data)
-      case 5  => CNameRecord.parseBody(name, ttl, rdLength, data, msg)
-      case 28 => AAAARecord.parseBody(name, ttl, rdLength, data)
+      case 1 => ARecord.parseBody(name, ttl, rdLength, data)
+      case 5 => CNameRecord.parseBody(name, ttl, rdLength, data, msg)
+      case 28 => {
+        val (it1, it2) = data.duplicate
+        try {
+          AAAARecord.parseBody(name, ttl, rdLength, it1)
+        } catch {
+          case _: java.lang.ClassCastException => {
+            val address = Array.ofDim[Byte](16)
+            it2.getBytes(address)
+            ARecord(name, ttl, InetAddress.getByAddress(address).asInstanceOf[Inet4Address])
+          }
+        }
+      }
       case 33 => SRVRecord.parseBody(name, ttl, rdLength, data, msg)
       case _  => UnknownRecord.parseBody(name, ttl, recType, recClass, rdLength, data)
     }

@@ -33,6 +33,7 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(s"""
     akka.io.dns.async-dns.search-domains = ["foo.test", "test"]
     akka.io.dns.async-dns.ndots = 2
   """) with DockerBindDnsService with WithLogCapturing {
+
   val duration = 10.seconds
   implicit val timeout: Timeout = Timeout(duration)
 
@@ -95,6 +96,29 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(s"""
       answer.records.collect { case r: AAAARecord => r.ip }.toSet shouldEqual Set(
         InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:4"),
         InetAddress.getByName("fd4d:36b2:3eca:a2d8:0:0:0:5"))
+    }
+
+    "resolve single A record from IPv4-Mapped address" in {
+      val name = "mapped-single.foo.test"
+      val answer = resolve(name)
+      withClue(answer) {
+        answer.name shouldEqual name
+        answer.records.size shouldEqual 1
+        answer.records.head.name shouldEqual name
+        answer.records.head.asInstanceOf[ARecord].ip shouldEqual InetAddress.getByName("192.168.1.25")
+      }
+    }
+
+    "resolve mixed A/AAAA records from IPv4-Mapped address" in {
+      val name = "mapped-mixed.foo.test"
+      val answer = resolve(name)
+      answer.name shouldEqual name
+
+      answer.records.collect { case r: ARecord => r.ip }.toSet shouldEqual Set(
+        InetAddress.getByName("192.168.1.26"),
+        InetAddress.getByName("192.168.1.27"))
+
+      answer.records.collect { case r: AAAARecord => r.ip }.toSet shouldEqual Set.empty
     }
 
     "resolve external CNAME record" in {
