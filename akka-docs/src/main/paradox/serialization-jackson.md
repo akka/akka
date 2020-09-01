@@ -164,7 +164,7 @@ when using polymorphic types.
 
 ### ADT with trait and case object
 
-In Scala, it's common to use a sealed trait and case objects to represent enums. If the values are case classes
+It's common in Scala to use a sealed trait and case objects to represent enums. If the values are case classes
 the `@JsonSubTypes` annotation as described above works, but if the values are case objects it will not.
 The annotation requires a `Class` and there is no way to define that in an annotation for a `case object`.
 
