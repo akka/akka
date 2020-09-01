@@ -318,7 +318,7 @@ import scala.util.Success
       case OptionVal.Some(t) =>
         throw new IllegalStateException(
           s"Invalid access by thread from the outside of $self. " +
-          s"Current message is processed by $t, but also accessed from from ${Thread.currentThread()}.")
+          s"Current message is processed by $t, but also accessed from ${Thread.currentThread()}.")
     }
   }
 
