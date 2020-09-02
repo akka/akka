@@ -26,6 +26,7 @@ import akka.pattern.ask
 import akka.remote.{ QuarantinedEvent => ClassicQuarantinedEvent }
 import akka.remote.artery.QuarantinedEvent
 import akka.util.Timeout
+import akka.util.Version
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -74,7 +75,7 @@ private[cluster] object InternalClusterAction {
    * @param node the node that wants to join the cluster
    */
   @SerialVersionUID(1L)
-  final case class Join(node: UniqueAddress, roles: Set[String]) extends ClusterMessage
+  final case class Join(node: UniqueAddress, roles: Set[String], appVersion: Version) extends ClusterMessage
 
   /**
    * Reply to Join
@@ -557,7 +558,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       case InitJoin(joiningNodeConfig) =>
         logInfo("Received InitJoin message from [{}] to [{}]", sender(), selfAddress)
         initJoin(joiningNodeConfig)
-      case Join(node, roles)                     => joining(node, roles)
+      case Join(node, roles, appVersion)         => joining(node, roles, appVersion)
       case ClusterUserAction.Down(address)       => downing(address)
       case ClusterUserAction.Leave(address)      => leaving(address)
       case SendGossipTo(address)                 => sendGossipTo(address)
@@ -705,14 +706,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
       if (address == selfAddress) {
         becomeInitialized()
-        joining(selfUniqueAddress, cluster.selfRoles)
+        joining(selfUniqueAddress, cluster.selfRoles, cluster.settings.AppVersion)
       } else {
         val joinDeadline = RetryUnsuccessfulJoinAfter match {
           case d: FiniteDuration => Some(Deadline.now + d)
           case _                 => None
         }
         context.become(tryingToJoin(address, joinDeadline))
-        clusterCore(address) ! Join(selfUniqueAddress, cluster.selfRoles)
+        clusterCore(address) ! Join(selfUniqueAddress, cluster.selfRoles, cluster.settings.AppVersion)
       }
     }
   }
@@ -732,7 +733,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
    * Received `Join` message and replies with `Welcome` message, containing
    * current gossip state, including the new joining member.
    */
-  def joining(joiningNode: UniqueAddress, roles: Set[String]): Unit = {
+  def joining(joiningNode: UniqueAddress, roles: Set[String], appVersion: Version): Unit = {
     val selfStatus = latestGossip.member(selfUniqueAddress).status
     if (joiningNode.address.protocol != selfAddress.protocol)
       logWarning(
@@ -781,7 +782,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
           // add joining node as Joining
           // add self in case someone else joins before self has joined (Set discards duplicates)
-          val newMembers = localMembers + Member(joiningNode, roles) + Member(selfUniqueAddress, cluster.selfRoles)
+          val newMembers = localMembers + Member(joiningNode, roles, appVersion) + Member(
+              selfUniqueAddress,
+              cluster.selfRoles,
+              cluster.settings.AppVersion)
           val newGossip = latestGossip.copy(members = newMembers)
 
           updateLatestGossip(newGossip)
@@ -789,17 +793,19 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           if (joiningNode == selfUniqueAddress) {
             logInfo(
               ClusterLogMarker.memberChanged(joiningNode, MemberStatus.Joining),
-              "Node [{}] is JOINING itself (with roles [{}]) and forming new cluster",
+              "Node [{}] is JOINING itself (with roles [{}], version [{}]) and forming new cluster",
               joiningNode.address,
-              roles.mkString(", "))
+              roles.mkString(", "),
+              appVersion)
             if (localMembers.isEmpty)
               leaderActions() // important for deterministic oldest when bootstrapping
           } else {
             logInfo(
               ClusterLogMarker.memberChanged(joiningNode, MemberStatus.Joining),
-              "Node [{}] is JOINING, roles [{}]",
+              "Node [{}] is JOINING, roles [{}], version [{}]",
               joiningNode.address,
-              roles.mkString(", "))
+              roles.mkString(", "),
+              appVersion)
             sender() ! Welcome(selfUniqueAddress, latestGossip)
           }
 

@@ -16,6 +16,7 @@ import akka.actor.AddressFromURIString
 import akka.annotation.InternalApi
 import akka.japi.Util.immutableSeq
 import akka.util.Helpers.{ toRootLowerCase, ConfigOps, Requiring }
+import akka.util.Version
 
 object ClusterSettings {
   type DataCenter = String
@@ -145,6 +146,9 @@ final class ClusterSettings(val config: Config, val systemName: String) {
 
     configuredRoles + s"$DcRolePrefix$SelfDataCenter"
   }
+
+  val AppVersion: Version =
+    Version(cc.getString("app-version"))
 
   val MinNrOfMembers: Int = {
     cc.getInt("min-nr-of-members")
