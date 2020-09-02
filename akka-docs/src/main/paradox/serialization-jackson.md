@@ -164,11 +164,20 @@ when using polymorphic types.
 
 ### ADT with trait and case object
 
-In Scala it's common to use a sealed trait and case objects to represent enums. If the values are case classes
+It's common in Scala to use a sealed trait and case objects to represent enums. If the values are case classes
 the `@JsonSubTypes` annotation as described above works, but if the values are case objects it will not.
 The annotation requires a `Class` and there is no way to define that in an annotation for a `case object`.
 
-This can be solved by implementing a custom serialization for the enums. Annotate the `trait` with
+The easiest workaround is to define the case objects as case class without any field. 
+
+Alternatively, you can define an intermediate trait for the case object and a custom deserializer for it. The example below builds on the previous `Animal` sample by adding a fictitious, single instance, new animal, an `Unicorn`. 
+
+Scala
+:  @@snip [SerializationDocSpec.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #polymorphism-case-object }
+
+The case object `Unicorn` can't be used in a `@JsonSubTypes` annotation, but its trait can. When serializing the case object we need to know which type tag to use, hence the `@JsonTypeName` annotation on the object. When deserializing, Jackson will only know about the trait variant therefore we need a custom deserializer that returns the case object. 
+
+On the other hand, if the ADT only has case objects, you can solve it by implementing a custom serialization for the enums. Annotate the `trait` with
 `@JsonSerialize` and `@JsonDeserialize` and implement the serialization with `StdSerializer` and
 `StdDeserializer`.
 

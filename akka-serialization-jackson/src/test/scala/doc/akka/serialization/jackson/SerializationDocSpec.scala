@@ -12,8 +12,11 @@ import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
 import akka.serialization.Serializers
 import akka.testkit.TestKit
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.annotation.{ JsonSubTypes, JsonTypeInfo, JsonTypeName }
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -126,20 +129,51 @@ object SerializationDocSpec {
     #//#manifestless
   """
 
-  //#polymorphism
-  final case class Zoo(primaryAttraction: Animal) extends MySerializable
+  object Polymorphism {
 
-  @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-  @JsonSubTypes(
-    Array(
-      new JsonSubTypes.Type(value = classOf[Lion], name = "lion"),
-      new JsonSubTypes.Type(value = classOf[Elephant], name = "elephant")))
-  sealed trait Animal
+    //#polymorphism
+    final case class Zoo(primaryAttraction: Animal) extends MySerializable
 
-  final case class Lion(name: String) extends Animal
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+    @JsonSubTypes(
+      Array(
+        new JsonSubTypes.Type(value = classOf[Lion], name = "lion"),
+        new JsonSubTypes.Type(value = classOf[Elephant], name = "elephant")))
+    sealed trait Animal
 
-  final case class Elephant(name: String, age: Int) extends Animal
-  //#polymorphism
+    final case class Lion(name: String) extends Animal
+
+    final case class Elephant(name: String, age: Int) extends Animal
+    //#polymorphism
+  }
+
+  object PolymorphismMixedClassObject {
+
+    //#polymorphism-case-object
+    final case class Zoo(primaryAttraction: Animal) extends MySerializable
+
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+    @JsonSubTypes(
+      Array(
+        new JsonSubTypes.Type(value = classOf[Lion], name = "lion"),
+        new JsonSubTypes.Type(value = classOf[Elephant], name = "elephant"),
+        new JsonSubTypes.Type(value = classOf[Unicorn], name = "unicorn")))
+    sealed trait Animal
+
+    final case class Lion(name: String) extends Animal
+    final case class Elephant(name: String, age: Int) extends Animal
+
+    @JsonDeserialize(using = classOf[UnicornDeserializer])
+    sealed trait Unicorn extends Animal
+    @JsonTypeName("unicorn")
+    case object Unicorn extends Unicorn
+
+    class UnicornDeserializer extends StdDeserializer[Unicorn](Unicorn.getClass) {
+      // whenever we need to deserialize an instance of Unicorn trait, we return the object Unicorn
+      override def deserialize(p: JsonParser, ctxt: DeserializationContext): Unicorn = Unicorn
+    }
+    //#polymorphism-case-object
+  }
 
   val configDateTime = """
     #//#date-time
@@ -206,6 +240,19 @@ class SerializationDocSpec
 
   private def serializerFor(obj: Any): SerializerWithStringManifest =
     serialization.serializerFor(obj.getClass).asInstanceOf[SerializerWithStringManifest]
+
+  "serialize trait + case classes" in {
+    import doc.akka.serialization.jackson.SerializationDocSpec.Polymorphism._
+    verifySerialization(Zoo(Lion("Simba"))) should ===(Zoo(Lion("Simba")))
+    verifySerialization(Zoo(Elephant("Dumbo", 1))) should ===(Zoo(Elephant("Dumbo", 1)))
+  }
+
+  "serialize trait + case classes + case object" in {
+    import doc.akka.serialization.jackson.SerializationDocSpec.PolymorphismMixedClassObject._
+    verifySerialization(Zoo(Lion("Simba"))) should ===(Zoo(Lion("Simba")))
+    verifySerialization(Zoo(Elephant("Dumbo", 1))) should ===(Zoo(Elephant("Dumbo", 1)))
+    verifySerialization(Zoo(Unicorn)) should ===(Zoo(Unicorn))
+  }
 
   "serialize trait + object ADT" in {
     import CustomAdtSerializer.Compass
