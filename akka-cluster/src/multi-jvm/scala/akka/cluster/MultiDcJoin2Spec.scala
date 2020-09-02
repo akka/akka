@@ -94,7 +94,7 @@ abstract class MultiDcJoin2Spec extends MultiNodeSpec(MultiDcJoin2MultiJvmSpec) 
       // at the same time join fifth, which is the difference compared to MultiDcJoinSpec
       runOn(fifth) {
         Cluster(system).join(second)
-        within(10.seconds) {
+        within(20.seconds) {
           awaitAssert {
             Cluster(system).state.members
               .exists(m => m.address == address(fifth) && m.status == MemberStatus.Up) should ===(true)

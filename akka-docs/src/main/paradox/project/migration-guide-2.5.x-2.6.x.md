@@ -19,7 +19,9 @@ reading this migration guide and testing your application thoroughly is recommen
 
 Rolling updates are possible without shutting down all nodes of the Akka Cluster, but will require
 configuration adjustments as described in the @ref:[Remoting](#remoting) section of this migration
-guide.
+guide. Due to the @ref:[changed serialization of the Cluster messages in Akka 2.6.2](rolling-update.md#2-6-2-clustermessageserializer-manifests-change)
+a rolling update from 2.5.x must first be made to Akka 2.6.2 and then a second rolling update can change to Akka 2.6.3
+or later.
 
 ## Scala 2.11 no longer supported
 

@@ -448,6 +448,10 @@ object ShardCoordinator {
    */
   private final case class RebalanceResult(shards: Set[ShardId])
 
+  private[akka] object RebalanceWorker {
+    final case class ShardRegionTerminated(region: ActorRef)
+  }
+
   /**
    * INTERNAL API. Rebalancing process is performed by this actor.
    * It sends `BeginHandOff` to all `ShardRegion` actors followed by
@@ -467,7 +471,6 @@ object ShardCoordinator {
     import Internal._
 
     regions.foreach { region =>
-      context.watch(region)
       region ! BeginHandOff(shard)
     }
     var remaining = regions
@@ -480,7 +483,7 @@ object ShardCoordinator {
       case BeginHandOffAck(`shard`) =>
         log.debug("BeginHandOffAck for shard [{}] received from [{}].", shard, sender())
         acked(sender())
-      case Terminated(shardRegion) =>
+      case ShardRegionTerminated(shardRegion) =>
         log.debug("ShardRegion [{}] terminated while waiting for BeginHandOffAck for shard [{}].", shardRegion, shard)
         acked(shardRegion)
       case ReceiveTimeout =>
@@ -489,7 +492,6 @@ object ShardCoordinator {
     }
 
     private def acked(shardRegion: ActorRef) = {
-      context.unwatch(shardRegion)
       remaining -= shardRegion
       if (remaining.isEmpty) {
         log.debug("All shard regions acked, handing off shard [{}].", shard)
@@ -547,6 +549,7 @@ abstract class ShardCoordinator(
   var state = State.empty.withRememberEntities(settings.rememberEntities)
   // rebalanceInProgress for the ShardId keys, pending GetShardHome requests by the ActorRef values
   var rebalanceInProgress = Map.empty[ShardId, Set[ActorRef]]
+  var rebalanceWorkers: Set[ActorRef] = Set.empty
   var unAckedHostShards = Map.empty[ShardId, Cancellable]
   // regions that have requested handoff, for graceful shutdown
   var gracefulShutdownInProgress = Set.empty[ActorRef]
@@ -687,6 +690,7 @@ abstract class ShardCoordinator(
         continueRebalance(shards)
 
       case RebalanceDone(shard, ok) =>
+        rebalanceWorkers -= sender()
         if (ok)
           log.debug("Rebalance shard [{}] completed successfully.", shard)
         else
@@ -887,7 +891,8 @@ abstract class ShardCoordinator(
     }
   }
 
-  def regionTerminated(ref: ActorRef): Unit =
+  def regionTerminated(ref: ActorRef): Unit = {
+    rebalanceWorkers.foreach(_ ! RebalanceWorker.ShardRegionTerminated(ref))
     if (state.regions.contains(ref)) {
       log.debug("ShardRegion terminated: [{}]", ref)
       regionTerminationInProgress += ref
@@ -903,6 +908,7 @@ abstract class ShardCoordinator(
         allocateShardHomesForRememberEntities()
       }
     }
+  }
 
   def regionProxyTerminated(ref: ActorRef): Unit =
     if (state.regionProxies.contains(ref)) {
@@ -974,7 +980,7 @@ abstract class ShardCoordinator(
           case Some(rebalanceFromRegion) =>
             rebalanceInProgress = rebalanceInProgress.updated(shard, Set.empty)
             log.debug("Rebalance shard [{}] from [{}]", shard, rebalanceFromRegion)
-            context.actorOf(
+            rebalanceWorkers += context.actorOf(
               rebalanceWorkerProps(
                 shard,
                 rebalanceFromRegion,
@@ -1150,8 +1156,8 @@ private[akka] class DDataShardCoordinator(
     case additional   => ReadMajorityPlus(settings.tuningParameters.waitingForStateTimeout, majorityMinCap, additional)
   }
   private val stateWriteConsistency = settings.tuningParameters.coordinatorStateWriteMajorityPlus match {
-    case Int.MaxValue => WriteAll(settings.tuningParameters.waitingForStateTimeout)
-    case additional   => WriteMajorityPlus(settings.tuningParameters.waitingForStateTimeout, majorityMinCap, additional)
+    case Int.MaxValue => WriteAll(settings.tuningParameters.updatingStateTimeout)
+    case additional   => WriteMajorityPlus(settings.tuningParameters.updatingStateTimeout, majorityMinCap, additional)
   }
 
   implicit val node: Cluster = Cluster(context.system)

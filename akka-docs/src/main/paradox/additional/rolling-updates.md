@@ -27,30 +27,30 @@ There are two parts of Akka that need careful consideration when performing an r
 1. Serialization format of persisted events and snapshots. New nodes must be able to read old data, and
    during the update old nodes must be able to read data stored by new nodes.
 
-There are many more application specific aspects for serialization changes during rolling upgrades to consider. 
+There are many more application specific aspects for serialization changes during rolling updates to consider. 
 For example based on the use case and requirements, whether to allow dropped messages or tear down the TCP connection when the manifest is unknown.
-When some message loss during a rolling upgrade is acceptable versus a full shutdown and restart, assuming the application recovers afterwards 
+When some message loss during a rolling update is acceptable versus a full shutdown and restart, assuming the application recovers afterwards 
 * If a `java.io.NotSerializableException` is thrown in `fromBinary` this is treated as a transient problem, the issue logged and the message is dropped
 * If other exceptions are thrown it can be an indication of corrupt bytes from the underlying transport, and the connection is broken
 
-For more zero-impact rolling upgrades, it is important to consider a strategy for serialization that can be evolved. 
-One approach to retiring a serializer without downtime is described in @ref:[two rolling upgrade steps to switch to the new serializer](../serialization.md#rolling-upgrades). 
+For more zero-impact rolling updates, it is important to consider a strategy for serialization that can be evolved. 
+One approach to retiring a serializer without downtime is described in @ref:[two rolling update steps to switch to the new serializer](../serialization.md#rolling-updates). 
 Additionally you can find advice on @ref:[Persistence - Schema Evolution](../persistence-schema-evolution.md) which also applies to remote messages when deploying with rolling updates.
 
 ## Cluster Sharding
 
-During a rolling upgrade, sharded entities receiving traffic may be moved during @ref:[shard rebalancing](../typed/cluster-sharding-concepts.md#shard-rebalancing), 
+During a rolling update, sharded entities receiving traffic may be moved during @ref:[shard rebalancing](../typed/cluster-sharding-concepts.md#shard-rebalancing), 
 to an old or new node in the cluster, based on the pluggable allocation strategy and settings.
 When an old node is stopped the shards that were running on it are moved to one of the
 other old nodes remaining in the cluster. The `ShardCoordinator` is itself a cluster singleton. 
-To minimize downtime of the shard coordinator, see the strategies about @ref[ClusterSingleton](#cluster-singleton) rolling upgrades below.
+To minimize downtime of the shard coordinator, see the strategies about @ref[ClusterSingleton](#cluster-singleton) rolling updates below.
 
 A few specific changes to sharding configuration require @ref:[a full cluster restart](#cluster-sharding-configuration-change).
 
 ## Cluster Singleton
 
-Cluster singletons are always running on the oldest node. To avoid moving cluster singletons more than necessary during a rolling upgrade, 
-it is recommended to upgrade the oldest node last. This way cluster singletons are only moved once during a full rolling upgrade. 
+Cluster singletons are always running on the oldest node. To avoid moving cluster singletons more than necessary during a rolling update, 
+it is recommended to upgrade the oldest node last. This way cluster singletons are only moved once during a full rolling update. 
 Otherwise, in the worst case cluster singletons may be migrated from node to node which requires coordination and initialization 
 overhead several times.
 
@@ -160,5 +160,5 @@ Rolling update is not supported when @ref:[changing the remoting transport](../r
 
 ### Migrating from Classic Sharding to Typed Sharding
 
-If you have been using classic sharding it is possible to do a rolling upgrade to typed sharding using a 3 step procedure.
+If you have been using classic sharding it is possible to do a rolling update to typed sharding using a 3 step procedure.
 The steps along with example commits are detailed in [this sample PR](https://github.com/akka/akka-samples/pull/110) 

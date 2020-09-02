@@ -29,6 +29,8 @@ import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.sharding.typed.scaladsl.StartEntity
 import akka.cluster.typed.Cluster
+import akka.cluster.typed.SelfUp
+import akka.cluster.typed.Subscribe
 import akka.util.PrettyDuration
 
 /**
@@ -39,7 +41,8 @@ private[akka] object ShardedDaemonProcessImpl {
 
   object KeepAlivePinger {
     sealed trait Event
-    case object Tick extends Event
+    private case object Tick extends Event
+    private case object StartTick extends Event
 
     def apply[T](
         settings: ShardedDaemonProcessSettings,
@@ -47,19 +50,22 @@ private[akka] object ShardedDaemonProcessImpl {
         identities: Set[EntityId],
         shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[Event] =
       Behaviors.setup { context =>
+        Cluster(context.system).subscriptions ! Subscribe(
+          context.messageAdapter[SelfUp](_ => StartTick),
+          classOf[SelfUp])
         Behaviors.withTimers { timers =>
           def triggerStartAll(): Unit = {
             identities.foreach(id => shardingRef ! StartEntity(id))
           }
-
-          context.log.debug2(
-            s"Starting Sharded Daemon Process KeepAlivePinger for [{}], with ping interval [{}]",
-            name,
-            PrettyDuration.format(settings.keepAliveInterval))
-          timers.startTimerWithFixedDelay(Tick, settings.keepAliveInterval)
-          triggerStartAll()
-
           Behaviors.receiveMessage {
+            case StartTick =>
+              triggerStartAll()
+              context.log.debug2(
+                s"Starting Sharded Daemon Process KeepAlivePinger for [{}], with ping interval [{}]",
+                name,
+                PrettyDuration.format(settings.keepAliveInterval))
+              timers.startTimerWithFixedDelay(Tick, settings.keepAliveInterval)
+              Behaviors.same
             case Tick =>
               triggerStartAll()
               context.log.debug("Periodic ping sent to [{}] processes", identities.size)
@@ -116,7 +122,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       val shardingBaseSettings =
         settings.shardingSettings match {
           case None =>
-            // defaults in akka.cluster.sharding but allow overrides specifically for actor-set
+            // defaults in akka.cluster.sharding but allow overrides specifically for sharded-daemon-process
             ClusterShardingSettings.fromConfig(
               system.settings.config.getConfig("akka.cluster.sharded-daemon-process.sharding"))
           case Some(shardingSettings) => shardingSettings
@@ -124,7 +130,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
 
       new ClusterShardingSettings(
         numberOfShards,
-        shardingBaseSettings.role,
+        if (settings.role.isDefined) settings.role else shardingBaseSettings.role,
         shardingBaseSettings.dataCenter,
         false, // remember entities disabled
         "",
