@@ -33,5 +33,12 @@ class VersionSpec extends AnyWordSpec with Matchers {
       new Version("1.2-foo") should be > new Version("1.2.3")
       new Version("1.2.3-foo") should be > new Version("1.2.3-bar")
     }
+
+    "compare extra without digits" in {
+      new Version("foo") should ===(new Version("foo"))
+      new Version("foo") should !==(new Version("bar"))
+      new Version("foo") should be > new Version("1.2.3")
+      new Version("foo") should be > new Version("bar")
+    }
   }
 }
