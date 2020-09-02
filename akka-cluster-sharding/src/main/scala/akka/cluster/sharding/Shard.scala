@@ -772,7 +772,8 @@ private[akka] class Shard(
   private def startEntity(entityId: EntityId, ackTo: Option[ActorRef]): Unit = {
     entities.entityState(entityId) match {
       case Active(_) =>
-        log.debug("Request to start entity [{}] (Already started)", entityId)
+        if (verboseDebug)
+          log.debug("Request to start entity [{}] (Already started)", entityId)
         touchLastMessageTimestamp(entityId)
         ackTo.foreach(_ ! ShardRegion.StartEntityAck(entityId, shardId))
       case _: RememberingStart =>
