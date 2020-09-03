@@ -137,6 +137,7 @@ Example: configuring `internal-dispatcher` to be an alias for `default-dispatche
 akka.actor.internal-dispatcher = akka.actor.default-dispatcher
 ```
 
+<a id="blocking-management"></a>
 ## Blocking Needs Careful Management
 
 In some cases it is unavoidable to do blocking operations, i.e. to put a thread
