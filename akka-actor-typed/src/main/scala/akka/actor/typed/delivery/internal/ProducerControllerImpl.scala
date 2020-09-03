@@ -348,14 +348,17 @@ object ProducerControllerImpl {
     if (bytes.length <= chunkSize) {
       ChunkedMessage(ByteString(bytes), firstChunk = true, lastChunk = true, serializerId, manifest) :: Nil
     } else {
-      val chunks = ByteString(bytes).grouped(chunkSize).toVector
-      var i = 0
-      chunks.map { chunk =>
-        val firstChunk = i == 0
-        val lastChunk = i == chunks.size - 1
-        i += 1
-        ChunkedMessage(chunk, firstChunk, lastChunk, serializerId, manifest)
+      val builder = Vector.newBuilder[ChunkedMessage]
+      val chunksIter = ByteString(bytes).grouped(chunkSize)
+      var first = true
+      while (chunksIter.hasNext) {
+        val chunk = chunksIter.next()
+        val firstChunk = first
+        first = false
+        val lastChunk = !chunksIter.hasNext
+        builder += ChunkedMessage(chunk, firstChunk, lastChunk, serializerId, manifest)
       }
+      builder.result()
     }
   }
 

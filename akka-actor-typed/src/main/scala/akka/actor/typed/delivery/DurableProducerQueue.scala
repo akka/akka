@@ -98,26 +98,27 @@ object DurableProducerQueue {
       if (unconfirmed.isEmpty || unconfirmed.forall(u => u.isFirstChunk && u.isLastChunk)) {
         this
       } else {
-        var tmp = Vector.empty[MessageSent[A]]
-        var newUnconfirmed = Vector.empty[MessageSent[A]]
+        val tmp = Vector.newBuilder[MessageSent[A]]
+        val newUnconfirmed = Vector.newBuilder[MessageSent[A]]
         var newCurrentSeqNr = highestConfirmedSeqNr + 1
         unconfirmed.foreach { u =>
           if (u.isFirstChunk && u.isLastChunk) {
-            tmp = Vector.empty
-            newUnconfirmed :+= u
+            tmp.clear()
+            newUnconfirmed += u
             newCurrentSeqNr = u.seqNr + 1
           } else if (u.isFirstChunk && !u.isLastChunk) {
-            tmp = Vector(u)
+            tmp.clear()
+            tmp += u
           } else if (!u.isLastChunk) {
-            tmp :+= u
+            tmp += u
           } else if (u.isLastChunk) {
-            newUnconfirmed ++= tmp
-            newUnconfirmed :+= u
+            newUnconfirmed ++= tmp.result()
+            newUnconfirmed += u
             newCurrentSeqNr = u.seqNr + 1
-            tmp = Vector.empty
+            tmp.clear()
           }
         }
-        copy(currentSeqNr = newCurrentSeqNr, unconfirmed = newUnconfirmed)
+        copy(currentSeqNr = newCurrentSeqNr, unconfirmed = newUnconfirmed.result())
       }
     }
   }
