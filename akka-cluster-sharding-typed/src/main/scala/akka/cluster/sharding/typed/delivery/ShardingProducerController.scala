@@ -203,6 +203,9 @@ object ShardingProducerController {
       val resendFirsUnconfirmedIdleTimeout: FiniteDuration,
       val producerControllerSettings: ProducerController.Settings) {
 
+    if (producerControllerSettings.chunkLargeMessagesBytes > 0)
+      throw new IllegalArgumentException("Chunked messages not implemented for sharding yet.")
+
     def withBufferSize(newBufferSize: Int): Settings =
       copy(bufferSize = newBufferSize)
 

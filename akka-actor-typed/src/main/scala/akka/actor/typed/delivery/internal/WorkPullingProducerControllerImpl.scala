@@ -278,8 +278,7 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
   import WorkPullingProducerController.WorkerStats
   import WorkPullingProducerControllerImpl._
 
-  // Chunked messages not implemented for ShardingProducerController (yet)
-  private val producerControllerSettings = settings.producerControllerSettings.withChunkLargeMessagesBytes(0)
+  private val producerControllerSettings = settings.producerControllerSettings
   private val traceEnabled = context.log.isTraceEnabled
   private val durableQueueAskTimeout: Timeout = producerControllerSettings.durableQueueRequestTimeout
   private val workerAskTimeout: Timeout = settings.internalAskTimeout

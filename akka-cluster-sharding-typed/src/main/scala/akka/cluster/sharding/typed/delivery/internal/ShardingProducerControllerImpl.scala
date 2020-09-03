@@ -279,8 +279,7 @@ private class ShardingProducerControllerImpl[A: ClassTag](
   import ShardingProducerController.Start
   import ShardingProducerControllerImpl._
 
-  // Chunked messages not implemented for ShardingProducerController (yet)
-  private val producerControllerSettings = settings.producerControllerSettings.withChunkLargeMessagesBytes(0)
+  private val producerControllerSettings = settings.producerControllerSettings
   private val durableQueueAskTimeout: Timeout = producerControllerSettings.durableQueueRequestTimeout
   private val entityAskTimeout: Timeout = settings.internalAskTimeout
   private val traceEnabled = context.log.isTraceEnabled
