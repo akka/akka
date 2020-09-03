@@ -32,6 +32,9 @@ class VersionSpec extends AnyWordSpec with Matchers {
       new Version("1.2.3-foo") should !==(new Version("1.2.3-bar"))
       new Version("1.2-foo") should be > new Version("1.2.3")
       new Version("1.2.3-foo") should be > new Version("1.2.3-bar")
+
+      // dynver format
+      new Version("1.0.10+3-1234abcd") should be < new Version("1.0.11")
     }
 
     "compare extra without digits" in {

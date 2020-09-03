@@ -23,7 +23,7 @@ object Version {
 final class Version(val version: String) extends Comparable[Version] {
   private val (numbers: Array[Int], rest: String) = {
     val numbers = new Array[Int](3)
-    val segments: Array[String] = version.split("[.-]")
+    val segments: Array[String] = version.split("""[.-]|\+""")
     var segmentPos = 0
     var numbersPos = 0
     while (numbersPos < 3) {
