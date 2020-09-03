@@ -608,7 +608,7 @@ private class ProducerControllerImpl[A: ClassTag](
               throw new IllegalStateException(s"Wrong remainingChunks: $newRemainingChunks")
 
             storeMessageSent(
-              MessageSent(
+              MessageSent.fromMessageOrChunked(
                 firstChunk.seqNr,
                 firstChunk.message,
                 firstChunk.ack,
@@ -706,7 +706,8 @@ private class ProducerControllerImpl[A: ClassTag](
         } else {
           val seqMsg = s.remainingChunks.head
           storeMessageSent(
-            MessageSent(seqMsg.seqNr, seqMsg.message, seqMsg.ack, NoQualifier, System.currentTimeMillis()),
+            MessageSent
+              .fromMessageOrChunked(seqMsg.seqNr, seqMsg.message, seqMsg.ack, NoQualifier, System.currentTimeMillis()),
             attempt = 1)
           active(s.copy(storeMessageSentInProgress = seqMsg.seqNr)) // still same s.remainingChunks
         }
@@ -748,7 +749,7 @@ private class ProducerControllerImpl[A: ClassTag](
         }
       } else {
         val seqMsg =
-          SequencedMessage(producerId, s.currentSeqNr, m, s.currentSeqNr == s.firstSeqNr, ack)(context.self)
+          SequencedMessage[A](producerId, s.currentSeqNr, m, s.currentSeqNr == s.firstSeqNr, ack)(context.self)
         seqMsg :: Nil
       }
     }
@@ -764,7 +765,8 @@ private class ProducerControllerImpl[A: ClassTag](
         } else {
           val seqMsg = chunks.head
           storeMessageSent(
-            MessageSent(seqMsg.seqNr, seqMsg.message, seqMsg.ack, NoQualifier, System.currentTimeMillis()),
+            MessageSent
+              .fromMessageOrChunked(seqMsg.seqNr, seqMsg.message, seqMsg.ack, NoQualifier, System.currentTimeMillis()),
             attempt = 1)
           active(
             s.copy(
@@ -782,13 +784,14 @@ private class ProducerControllerImpl[A: ClassTag](
         } else {
           val seqMsg = chunks.head
           storeMessageSent(
-            MessageSent(seqMsg.seqNr, seqMsg.message, seqMsg.ack, NoQualifier, System.currentTimeMillis()),
+            MessageSent
+              .fromMessageOrChunked(seqMsg.seqNr, seqMsg.message, seqMsg.ack, NoQualifier, System.currentTimeMillis()),
             attempt = 1)
           active(s.copy(remainingChunks = chunks, storeMessageSentInProgress = seqMsg.seqNr))
         }
 
-      case StoreMessageSentCompleted(MessageSent(seqNr, _, _, _, _)) =>
-        receiveStoreMessageSentCompleted(seqNr)
+      case StoreMessageSentCompleted(sent: MessageSent[_]) =>
+        receiveStoreMessageSentCompleted(sent.seqNr)
 
       case f: StoreMessageSentFailed[A] =>
         receiveStoreMessageSentFailed(f)

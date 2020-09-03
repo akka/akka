@@ -491,7 +491,7 @@ private class ConsumerControllerImpl[A](
       val assembledSeqMsg =
         if (seqMsg.message.isInstanceOf[ChunkedMessage]) assembleChunks(seqMsg :: previouslyCollectedChunks)
         else seqMsg
-      s.consumer ! Delivery(assembledSeqMsg.message, context.self, seqMsg.producerId, seqMsg.seqNr)
+      s.consumer ! Delivery(assembledSeqMsg.message.asInstanceOf[A], context.self, seqMsg.producerId, seqMsg.seqNr)
       waitingForConfirmation(s.clearCollectedChunks(), assembledSeqMsg)
     } else {
       // collecting chunks
@@ -533,7 +533,7 @@ private class ConsumerControllerImpl[A](
     val headMessage = head.message.asInstanceOf[ChunkedMessage]
     // serialization exceptions are thrown, because it will anyway be stuck with same error if retried and
     // we can't just ignore the message
-    val message = serialization.deserialize(bytes, headMessage.serializerId, headMessage.manifest).get.asInstanceOf[A]
+    val message = serialization.deserialize(bytes, headMessage.serializerId, headMessage.manifest).get
     SequencedMessage(head.producerId, head.seqNr, message, reverseCollectedChunks.head.first, head.ack)(
       head.producerController)
   }
@@ -623,7 +623,7 @@ private class ConsumerControllerImpl[A](
           Behaviors.same
 
         case start: Start[A] =>
-          start.deliverTo ! Delivery(seqMsg.message, context.self, seqMsg.producerId, seqMsg.seqNr)
+          start.deliverTo ! Delivery(seqMsg.message.asInstanceOf[A], context.self, seqMsg.producerId, seqMsg.seqNr)
           receiveStart(s, start, newState => waitingForConfirmation(newState, seqMsg))
 
         case ConsumerTerminated(c) =>

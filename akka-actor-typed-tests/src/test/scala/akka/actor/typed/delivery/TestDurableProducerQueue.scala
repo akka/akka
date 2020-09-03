@@ -70,9 +70,9 @@ class TestDurableProducerQueue[A](
           maybeFail(cmd)
           val reply = StoreMessageSentAck(cmd.sent.seqNr)
           if (delay == Duration.Zero) cmd.replyTo ! reply else context.scheduleOnce(delay, cmd.replyTo, reply)
-          active(state.addMessageSent(cmd.sent.copy(timestampMillis = TestTimestamp)))
+          active(state.addMessageSent(cmd.sent.withTimestampMillis(TestTimestamp)))
         } else if (cmd.sent.seqNr == state.currentSeqNr - 1) {
-          // already stored, could be a retry after timout
+          // already stored, could be a retry after timeout
           context.log.info("Duplicate seqNr [{}], currentSeqNr [{}]", cmd.sent.seqNr, state.currentSeqNr)
           val reply = StoreMessageSentAck(cmd.sent.seqNr)
           if (delay == Duration.Zero) cmd.replyTo ! reply else context.scheduleOnce(delay, cmd.replyTo, reply)

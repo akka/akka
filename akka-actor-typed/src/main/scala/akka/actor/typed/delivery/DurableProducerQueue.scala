@@ -130,12 +130,12 @@ object DurableProducerQueue {
   /**
    * The fact (event) that a message has been sent.
    */
-  final case class MessageSent[A](
-      seqNr: SeqNr,
-      message: A,
-      ack: Boolean,
-      confirmationQualifier: ConfirmationQualifier,
-      timestampMillis: TimestampMillis)
+  final class MessageSent[A](
+      val seqNr: SeqNr,
+      val message: MessageSent.MessageOrChunk,
+      val ack: Boolean,
+      val confirmationQualifier: ConfirmationQualifier,
+      val timestampMillis: TimestampMillis)
       extends Event {
 
     /** INTERNAL API */
@@ -153,9 +153,42 @@ object DurableProducerQueue {
         case _                 => true
       }
     }
+
+    def withConfirmationQualifier(qualifier: ConfirmationQualifier): MessageSent[A] =
+      new MessageSent(seqNr, message, ack, qualifier, timestampMillis)
+
+    def withTimestampMillis(timestamp: TimestampMillis): MessageSent[A] =
+      new MessageSent(seqNr, message, ack, confirmationQualifier, timestamp)
+
+    override def equals(obj: Any): Boolean = {
+      obj match {
+        case other: MessageSent[_] =>
+          seqNr == other.seqNr && message == other.message && ack == other.ack && confirmationQualifier == other.confirmationQualifier && timestampMillis == other.timestampMillis
+        case _ => false
+      }
+    }
+
+    override def hashCode(): Int = seqNr.hashCode()
+
+    override def toString: ConfirmationQualifier =
+      s"MessageSent($seqNr,$message,$ack,$confirmationQualifier,$timestampMillis)"
+
   }
 
   object MessageSent {
+
+    /**
+     * SequencedMessage.message can be `A` or `ChunkedMessage`.
+     */
+    type MessageOrChunk = Any
+
+    def apply[A](
+        seqNr: SeqNr,
+        message: A,
+        ack: Boolean,
+        confirmationQualifier: ConfirmationQualifier,
+        timestampMillis: TimestampMillis): MessageSent[A] =
+      new MessageSent(seqNr, message, ack, confirmationQualifier, timestampMillis)
 
     /**
      * INTERNAL API
@@ -165,8 +198,23 @@ object DurableProducerQueue {
         chunkedMessage: ChunkedMessage,
         ack: Boolean,
         confirmationQualifier: ConfirmationQualifier,
-        timestampMillis: TimestampMillis) =
-      MessageSent(seqNr, chunkedMessage.asInstanceOf[A], ack, confirmationQualifier, timestampMillis)
+        timestampMillis: TimestampMillis): MessageSent[A] =
+      new MessageSent(seqNr, chunkedMessage, ack, confirmationQualifier, timestampMillis)
+
+    /**
+     * INTERNAL API
+     */
+    @InternalApi private[akka] def fromMessageOrChunked[A](
+        seqNr: SeqNr,
+        message: MessageOrChunk,
+        ack: Boolean,
+        confirmationQualifier: ConfirmationQualifier,
+        timestampMillis: TimestampMillis): MessageSent[A] =
+      new MessageSent(seqNr, message, ack, confirmationQualifier, timestampMillis)
+
+    def unapply(
+        sent: MessageSent[_]): Option[(SeqNr, MessageOrChunk, Boolean, ConfirmationQualifier, TimestampMillis)] =
+      Some((sent.seqNr, sent.message, sent.ack, sent.confirmationQualifier, sent.timestampMillis))
   }
 
   /**

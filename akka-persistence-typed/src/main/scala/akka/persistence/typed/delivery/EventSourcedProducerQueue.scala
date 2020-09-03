@@ -237,7 +237,7 @@ private class EventSourcedProducerQueue[A](
                 sent.confirmationQualifier)
             Effect.persist(sent).thenReply(replyTo)(_ => StoreMessageSentAck(sent.seqNr))
           } else if (sent.seqNr == currentSeqNr - 1) {
-            // already stored, could be a retry after timout
+            // already stored, could be a retry after timeout
             context.log.debug("Duplicate seqNr [{}], currentSeqNr [{}]", sent.seqNr, currentSeqNr)
             Effect.reply(replyTo)(StoreMessageSentAck(sent.seqNr))
           } else {
