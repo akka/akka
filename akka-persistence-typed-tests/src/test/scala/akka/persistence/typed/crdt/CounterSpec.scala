@@ -44,8 +44,8 @@ object CounterSpec {
               case PlainCounter.Decrement =>
                 Effect.persist(Counter.Updated(-1))
               case Get(replyTo) =>
-                context.log.info("Get request. {} {}", state.value, state.value.longValue())
-                replyTo ! state.value.longValue()
+                context.log.info("Get request. {} {}", state.value, state.value.longValue)
+                replyTo ! state.value.longValue
                 Effect.none
             },
           (counter, event) => {

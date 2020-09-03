@@ -1061,7 +1061,7 @@ private[akka] class Shard(
    * of active entities.
    */
   @InternalStableApi
-  def entityCreated(@unused id: EntityId): Int = entities.nrActiveEntities
+  def entityCreated(@unused id: EntityId): Int = entities.nrActiveEntities()
 
   // ===== buffering while busy saving a start or stop when remembering entities =====
   def appendToMessageBuffer(id: EntityId, msg: Any, snd: ActorRef): Unit = {

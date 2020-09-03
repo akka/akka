@@ -90,7 +90,9 @@ public class ReplicatedAuctionExampleTest extends JUnitSuite {
 }
 
 // #setup
-class AuctionEntity extends ReplicatedEventSourcedBehavior<Command, Event, AuctionState> {
+class AuctionEntity
+    extends ReplicatedEventSourcedBehavior<
+        AuctionEntity.Command, AuctionEntity.Event, AuctionEntity.AuctionState> {
 
   public static ReplicaId R1 = new ReplicaId("R1");
   public static ReplicaId R2 = new ReplicaId("R2");
