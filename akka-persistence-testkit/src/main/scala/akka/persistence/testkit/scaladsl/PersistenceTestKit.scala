@@ -7,9 +7,7 @@ package akka.persistence.testkit.scaladsl
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
-
 import com.typesafe.config.Config
-
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
@@ -20,6 +18,7 @@ import akka.annotation.ApiMayChange
 import akka.persistence.Persistence
 import akka.persistence.PersistentRepr
 import akka.persistence.SnapshotMetadata
+import akka.persistence.journal.Tagged
 import akka.persistence.testkit._
 import akka.persistence.testkit.internal.InMemStorageExtension
 import akka.persistence.testkit.internal.SnapshotStorageEmulatorExtension
@@ -433,7 +432,7 @@ class PersistenceTestKit(system: ActorSystem)
 
   import PersistenceTestKit._
 
-  override protected val storage = InMemStorageExtension(system)
+  override protected val storage = InMemStorageExtension(system).storageFor(PersistenceTestKitPlugin.PluginId)
 
   private final lazy val settings = Settings(system)
 
@@ -495,7 +494,10 @@ class PersistenceTestKit(system: ActorSystem)
   def persistedInStorage(persistenceId: String): immutable.Seq[Any] =
     storage.read(persistenceId).getOrElse(List.empty).map(reprToAny)
 
-  override private[testkit] def reprToAny(repr: PersistentRepr): Any = repr.payload
+  override private[testkit] def reprToAny(repr: PersistentRepr): Any = repr.payload match {
+    case Tagged(payload, _) => payload
+    case payload            => payload
+  }
 }
 
 @ApiMayChange

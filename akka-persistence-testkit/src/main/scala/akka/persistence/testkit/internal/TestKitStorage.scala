@@ -8,8 +8,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.immutable
+import akka.util.ccompat.JavaConverters._
 
-import akka.actor.Extension
 import akka.annotation.InternalApi
 import akka.persistence.testkit.ProcessingPolicy
 
@@ -87,6 +87,10 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
   def read(key: K): Option[Vector[R]] =
     Option(eventsMap.get(key)).map(_._2.map(toRepr))
 
+  def readAll(): Iterable[R] = {
+    eventsMap.values().asScala.flatMap { case (_, events) => events }.map(toRepr)
+  }
+
   def clearAll(): Unit =
     eventsMap.clear()
 
@@ -151,4 +155,4 @@ sealed trait PolicyOps[U] {
  * INTERNAL API
  */
 @InternalApi
-private[testkit] trait TestKitStorage[P, R] extends InMemStorage[String, R] with PolicyOps[P] with Extension
+private[testkit] trait TestKitStorage[P, R] extends InMemStorage[String, R] with PolicyOps[P]

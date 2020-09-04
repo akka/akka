@@ -185,6 +185,9 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding =
    * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
    * here provided `entityId`.
    *
+   * This can only be used if the default [[ShardingEnvelope]] is used, when using custom envelopes or in message
+   * entity ids you will need to use the `ActorRef[E]` returned by sharding init for messaging with the sharded actors.
+   *
    * For in-depth documentation of its semantics, see [[EntityRef]].
    */
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String): EntityRef[M]
@@ -196,6 +199,9 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding =
    *
    * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
    * here provided `entityId`.
+   *
+   * This can only be used if the default [[ShardingEnvelope]] is used, when using custom envelopes or in message
+   * entity ids you will need to use the `ActorRef[E]` returned by sharding init for messaging with the sharded actors.
    *
    * For in-depth documentation of its semantics, see [[EntityRef]].
    */
@@ -348,7 +354,18 @@ final class Entity[M, E] private[akka] (
 final class EntityContext[M](
     val entityTypeKey: EntityTypeKey[M],
     val entityId: String,
-    val shard: ActorRef[ClusterSharding.ShardCommand])
+    val shard: ActorRef[ClusterSharding.ShardCommand]) {
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def toJava: akka.cluster.sharding.typed.javadsl.EntityContext[M] =
+    new akka.cluster.sharding.typed.javadsl.EntityContext[M](
+      entityTypeKey.asInstanceOf[EntityTypeKeyImpl[M]],
+      entityId,
+      shard)
+}
 
 /** Allows starting a specific Sharded Entity by its entity identifier */
 object StartEntity {
@@ -482,6 +499,11 @@ object EntityTypeKey {
    */
   def ?[Res](message: ActorRef[Res] => M)(implicit timeout: Timeout): Future[Res] =
     this.ask(message)(timeout)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def asJava: javadsl.EntityRef[M]
 
 }
 

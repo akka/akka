@@ -102,6 +102,10 @@ final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends Per
 
   def withTimestamp(newTimestamp: Long): PersistentRepr
 
+  def metadata: Option[Any]
+
+  def withMetadata(metadata: Any): PersistentRepr
+
   /**
    * Unique identifier of the writing persistent actor.
    * Used to detect anomalies with overlapping writes from multiple
@@ -163,7 +167,7 @@ object PersistentRepr {
       deleted: Boolean = false,
       sender: ActorRef = null,
       writerUuid: String = PersistentRepr.Undefined): PersistentRepr =
-    PersistentImpl(payload, sequenceNr, persistenceId, manifest, deleted, sender, writerUuid, 0L)
+    PersistentImpl(payload, sequenceNr, persistenceId, manifest, deleted, sender, writerUuid, 0L, None)
 
   /**
    * Java API, Plugin API.
@@ -188,7 +192,8 @@ private[persistence] final case class PersistentImpl(
     override val deleted: Boolean,
     override val sender: ActorRef,
     override val writerUuid: String,
-    override val timestamp: Long)
+    override val timestamp: Long,
+    override val metadata: Option[Any])
     extends PersistentRepr
     with NoSerializationVerificationNeeded {
 
@@ -202,6 +207,10 @@ private[persistence] final case class PersistentImpl(
   override def withTimestamp(newTimestamp: Long): PersistentRepr =
     if (this.timestamp == newTimestamp) this
     else copy(timestamp = newTimestamp)
+
+  override def withMetadata(metadata: Any): PersistentRepr = {
+    copy(metadata = Some(metadata))
+  }
 
   def update(sequenceNr: Long, persistenceId: String, deleted: Boolean, sender: ActorRef, writerUuid: String) =
     copy(
@@ -221,6 +230,7 @@ private[persistence] final case class PersistentImpl(
     result = HashCode.hash(result, sender)
     result = HashCode.hash(result, writerUuid)
     // timestamp not included in equals for backwards compatibility
+    // meta not included in equals for backwards compatibility
     result
   }
 
@@ -233,7 +243,6 @@ private[persistence] final case class PersistentImpl(
   }
 
   override def toString: String = {
-    s"PersistentRepr($persistenceId,$sequenceNr,$writerUuid,$timestamp)"
+    s"PersistentRepr($persistenceId,$sequenceNr,$writerUuid,$timestamp,$metadata)"
   }
-
 }

@@ -22,7 +22,7 @@ import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.japi.function.{ Function => JFunction }
 import akka.pattern.StatusReply
-
+import scala.compat.java8.OptionConverters._
 @FunctionalInterface
 trait EntityFactory[M] {
   def apply(shardRegion: ActorRef[ClusterSharding.ShardCommand], entityId: String): Behavior[M]
@@ -185,6 +185,9 @@ abstract class ClusterSharding {
    * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
    * here provided `entityId`.
    *
+   * This can only be used if the default [[ShardingEnvelope]] is used, when using custom envelopes or in message
+   * entity ids you will need to use the `ActorRef&lt;E>` returned by sharding init for messaging with the sharded actors.
+   *
    * For in-depth documentation of its semantics, see [[EntityRef]].
    */
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String): EntityRef[M]
@@ -196,6 +199,9 @@ abstract class ClusterSharding {
    *
    * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
    * provided `entityId`.
+   *
+   * This can only be used if the default [[ShardingEnvelope]] is used, when using custom envelopes or in message
+   * entity ids you will need to use the `ActorRef[E]` returned by sharding init for messaging with the sharded actors.
    *
    * For in-depth documentation of its semantics, see [[EntityRef]].
    */
@@ -337,6 +343,22 @@ final class Entity[M, E] private (
       dataCenter)
   }
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def toScala: akka.cluster.sharding.typed.scaladsl.Entity[M, E] =
+    new akka.cluster.sharding.typed.scaladsl.Entity(
+      eCtx => createBehavior(eCtx.toJava),
+      typeKey.asScala,
+      stopMessage.asScala,
+      entityProps,
+      settings.asScala,
+      messageExtractor.asScala,
+      allocationStrategy.asScala,
+      role.asScala,
+      dataCenter.asScala)
+
 }
 
 /**
@@ -419,7 +441,7 @@ object EntityTypeKey {
  *
  * Not for user extension.
  */
-@DoNotInherit abstract class EntityRef[M] extends RecipientRef[M] {
+@DoNotInherit abstract class EntityRef[-M] extends RecipientRef[M] {
   scaladslSelf: scaladsl.EntityRef[M] with InternalRecipientRef[M] =>
 
   /**

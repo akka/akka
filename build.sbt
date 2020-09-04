@@ -82,6 +82,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   persistenceShared,
   persistenceTck,
   persistenceTyped,
+  persistenceTypedTests,
   persistenceTestkit,
   protobuf,
   protobufV3,
@@ -314,6 +315,14 @@ lazy val persistenceTestkit = akkaModule("akka-persistence-testkit")
   .settings(AutomaticModuleName.settings("akka.persistence.testkit"))
   .disablePlugins(MimaPlugin)
 
+lazy val persistenceTypedTests = akkaModule("akka-persistence-typed-tests")
+  .dependsOn(persistenceTyped, persistenceTestkit % "test", actorTestkitTyped % "test", jackson % "test->test")
+  .settings(AkkaBuild.mayChangeSettings)
+  .settings(Dependencies.persistenceTypedTests)
+  .settings(javacOptions += "-parameters") // for Jackson
+  .disablePlugins(MimaPlugin)
+  .enablePlugins(NoPublish)
+
 lazy val protobuf = akkaModule("akka-protobuf")
   .settings(OSGi.protobuf)
   .settings(AutomaticModuleName.settings("akka.protobuf"))
@@ -455,8 +464,10 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
 lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .dependsOn(
     actorTyped,
+    streamTyped,
+    remote,
     persistence % "compile->compile;test->test",
-    persistenceQuery % "test",
+    persistenceQuery,
     actorTestkitTyped % "test->test",
     clusterTyped % "test->test",
     actorTestkitTyped % "test->test",
@@ -464,6 +475,9 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .settings(javacOptions += "-parameters") // for Jackson
   .settings(Dependencies.persistenceShared)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
+  .settings(Protobuf.settings)
+  // To be able to import ContainerFormats.proto
+  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
   .settings(OSGi.persistenceTyped)
 
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
@@ -493,7 +507,7 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     clusterSharding % "compile->compile;compile->CompileJdk9;multi-jvm->multi-jvm",
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
-    persistenceTyped % "test->test",
+    persistenceTyped % "optional->compile;test->test",
     persistenceTestkit % "test->test",
     remote % "compile->CompileJdk9;test->test",
     remoteTests % "test->test",

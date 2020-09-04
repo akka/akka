@@ -6,7 +6,6 @@ package akka.persistence.typed.internal
 
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-
 import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.internal.UnstashException
@@ -19,8 +18,9 @@ import akka.persistence.typed.EmptyEventSeq
 import akka.persistence.typed.EventsSeq
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.RecoveryFailed
+import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.SingleEventSeq
-import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState }
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.util.OptionVal
@@ -51,7 +51,9 @@ private[akka] object ReplayingEvents {
       eventSeenInInterval: Boolean,
       toSeqNr: Long,
       receivedPoisonPill: Boolean,
-      recoveryStartTime: Long)
+      recoveryStartTime: Long,
+      version: VersionVector,
+      seenSeqNrPerReplica: Map[ReplicaId, Long])
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: ReplayingState[S]): Behavior[InternalProtocol] =
     Behaviors.setup { _ =>
@@ -88,12 +90,15 @@ private[akka] final class ReplayingEvents[C, E, S](
 
   override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
     msg match {
-      case JournalResponse(r)          => onJournalResponse(r)
-      case SnapshotterResponse(r)      => onSnapshotterResponse(r)
-      case RecoveryTickEvent(snap)     => onRecoveryTick(snap)
-      case cmd: IncomingCommand[C]     => onCommand(cmd)
-      case get: GetState[S @unchecked] => stashInternal(get)
-      case RecoveryPermitGranted       => Behaviors.unhandled // should not happen, we already have the permit
+      case JournalResponse(r)              => onJournalResponse(r)
+      case SnapshotterResponse(r)          => onSnapshotterResponse(r)
+      case RecoveryTickEvent(snap)         => onRecoveryTick(snap)
+      case evt: ReplicatedEventEnvelope[E] => onInternalCommand(evt)
+      case pe: PublishedEventImpl          => onInternalCommand(pe)
+      case cmd: IncomingCommand[C]         => onInternalCommand(cmd)
+      case get: GetState[S @unchecked]     => stashInternal(get)
+      case get: GetSeenSequenceNr          => stashInternal(get)
+      case RecoveryPermitGranted           => Behaviors.unhandled // should not happen, we already have the permit
     }
   }
 
@@ -117,7 +122,45 @@ private[akka] final class ReplayingEvents[C, E, S](
             def handleEvent(event: E): Unit = {
               eventForErrorReporting = OptionVal.Some(event)
               state = state.copy(seqNr = repr.sequenceNr)
-              state = state.copy(state = setup.eventHandler(state.state, event), eventSeenInInterval = true)
+
+              val replicatedMetaAndSelfReplica: Option[(ReplicatedEventMetadata, ReplicaId, ReplicationSetup)] =
+                setup.replication match {
+                  case Some(replication) =>
+                    val meta = repr.metadata match {
+                      case Some(m) => m.asInstanceOf[ReplicatedEventMetadata]
+                      case None =>
+                        throw new IllegalStateException(
+                          s"Replicated Event Sourcing enabled but existing event has no metadata. Migration isn't supported yet.")
+
+                    }
+                    replication.setContext(recoveryRunning = true, meta.originReplica, meta.concurrent)
+                    Some((meta, replication.replicaId, replication))
+                  case None => None
+                }
+
+              val newState = setup.eventHandler(state.state, event)
+
+              setup.replication match {
+                case Some(replication) =>
+                  replication.clearContext()
+                case None =>
+              }
+
+              replicatedMetaAndSelfReplica match {
+                case Some((meta, selfReplica, replication)) if meta.originReplica != selfReplica =>
+                  // keep track of highest origin seqnr per other replica
+                  state = state.copy(
+                    state = newState,
+                    eventSeenInInterval = true,
+                    version = meta.version,
+                    seenSeqNrPerReplica = state.seenSeqNrPerReplica + (meta.originReplica -> meta.originSequenceNr))
+                  replication.clearContext()
+                case Some((_, _, replication)) =>
+                  replication.clearContext()
+                  state = state.copy(state = newState, eventSeenInInterval = true)
+                case _ =>
+                  state = state.copy(state = newState, eventSeenInInterval = true)
+              }
             }
 
             eventSeq match {
@@ -154,7 +197,7 @@ private[akka] final class ReplayingEvents[C, E, S](
     }
   }
 
-  private def onCommand(cmd: InternalProtocol): Behavior[InternalProtocol] = {
+  private def onInternalCommand(cmd: InternalProtocol): Behavior[InternalProtocol] = {
     // during recovery, stash all incoming commands
     if (state.receivedPoisonPill) {
       if (setup.settings.logOnStashing)
@@ -237,7 +280,15 @@ private[akka] final class ReplayingEvents[C, E, S](
         Behaviors.stopped
       else {
         val running =
-          Running[C, E, S](setup, Running.RunningState[S](state.seqNr, state.state, state.receivedPoisonPill))
+          Running[C, E, S](
+            setup,
+            Running.RunningState[S](
+              seqNr = state.seqNr,
+              state = state.state,
+              receivedPoisonPill = state.receivedPoisonPill,
+              state.version,
+              seenPerReplica = state.seenSeqNrPerReplica,
+              replicationControl = Map.empty))
 
         tryUnstashOne(running)
       }

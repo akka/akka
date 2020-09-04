@@ -5,7 +5,6 @@
 package akka.persistence.typed.internal
 
 import scala.collection.immutable
-
 import akka.actor.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
@@ -19,40 +18,60 @@ import akka.annotation.InternalStableApi
 import akka.persistence._
 import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
-import akka.util.unused
+import akka.util.{ unused, OptionVal }
+
+/** INTERNAL API */
+@InternalApi
+private[akka] object JournalInteractions {
+
+  type EventOrTaggedOrReplicated = Any // `Any` since can be `E` or `Tagged` or a `ReplicatedEvent`
+
+  final case class EventToPersist(
+      adaptedEvent: EventOrTaggedOrReplicated,
+      manifest: String,
+      metadata: Option[ReplicatedEventMetadata])
+
+}
 
 /** INTERNAL API */
 @InternalApi
 private[akka] trait JournalInteractions[C, E, S] {
 
-  def setup: BehaviorSetup[C, E, S]
+  import JournalInteractions._
 
-  type EventOrTagged = Any // `Any` since can be `E` or `Tagged`
+  def setup: BehaviorSetup[C, E, S]
 
   protected def internalPersist(
       ctx: ActorContext[_],
       cmd: Any,
       state: Running.RunningState[S],
-      event: EventOrTagged,
-      eventAdapterManifest: String): Running.RunningState[S] = {
+      event: EventOrTaggedOrReplicated,
+      eventAdapterManifest: String,
+      metadata: OptionVal[Any]): Running.RunningState[S] = {
 
-    val newState = state.nextSequenceNr()
+    val newRunningState = state.nextSequenceNr()
 
     val repr = PersistentRepr(
       event,
       persistenceId = setup.persistenceId.id,
-      sequenceNr = newState.seqNr,
+      sequenceNr = newRunningState.seqNr,
       manifest = eventAdapterManifest,
       writerUuid = setup.writerIdentity.writerUuid,
       sender = ActorRef.noSender)
 
+    // FIXME check cinnamon is okay with this being null
+    // https://github.com/akka/akka/issues/29262
     onWriteInitiated(ctx, cmd, repr)
 
-    val write = AtomicWrite(repr) :: Nil
+    val write = AtomicWrite(metadata match {
+        case OptionVal.Some(meta) => repr.withMetadata(meta)
+        case OptionVal.None       => repr
+      }) :: Nil
+
     setup.journal
       .tell(JournalProtocol.WriteMessages(write, setup.selfClassic, setup.writerIdentity.instanceId), setup.selfClassic)
 
-    newState
+    newRunningState
   }
 
   @InternalStableApi
@@ -65,20 +84,24 @@ private[akka] trait JournalInteractions[C, E, S] {
       ctx: ActorContext[_],
       cmd: Any,
       state: Running.RunningState[S],
-      events: immutable.Seq[(EventOrTagged, String)]): Running.RunningState[S] = {
+      events: immutable.Seq[EventToPersist]): Running.RunningState[S] = {
     if (events.nonEmpty) {
       var newState = state
 
       val writes = events.map {
-        case (event, eventAdapterManifest) =>
+        case EventToPersist(event, eventAdapterManifest, metadata) =>
           newState = newState.nextSequenceNr()
-          PersistentRepr(
+          val repr = PersistentRepr(
             event,
             persistenceId = setup.persistenceId.id,
             sequenceNr = newState.seqNr,
             manifest = eventAdapterManifest,
             writerUuid = setup.writerIdentity.writerUuid,
             sender = ActorRef.noSender)
+          metadata match {
+            case Some(metadata) => repr.withMetadata(metadata)
+            case None           => repr
+          }
       }
 
       onWritesInitiated(ctx, cmd, writes)
@@ -167,12 +190,19 @@ private[akka] trait SnapshotInteractions[C, E, S] {
     setup.log.debug("Saving snapshot sequenceNr [{}]", state.seqNr)
     if (state.state == null)
       throw new IllegalStateException("A snapshot must not be a null state.")
-    else
+    else {
+      val meta = setup.replication match {
+        case Some(_) =>
+          val m = ReplicatedSnapshotMetadata(state.version, state.seenPerReplica)
+          Some(m)
+        case None => None
+      }
       setup.snapshotStore.tell(
         SnapshotProtocol.SaveSnapshot(
-          SnapshotMetadata(setup.persistenceId.id, state.seqNr),
+          new SnapshotMetadata(setup.persistenceId.id, state.seqNr, meta),
           setup.snapshotAdapter.toJournal(state.state)),
         setup.selfClassic)
+    }
   }
 
   /** Deletes the snapshots up to and including the `sequenceNr`. */

@@ -632,7 +632,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       case null =>
         proxies.get(proxyName(typeName, None)) match {
           case null =>
-            throw new IllegalStateException(s"Shard type [$typeName] must be started first")
+            throw new IllegalStateException(
+              s"Shard type [$typeName] must be started first. Started ${regions.keySet()} proxies ${proxies.keySet()}")
           case ref => ref
         }
       case ref => ref

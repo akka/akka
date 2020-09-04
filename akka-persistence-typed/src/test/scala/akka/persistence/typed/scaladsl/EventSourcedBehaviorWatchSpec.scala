@@ -66,7 +66,9 @@ class EventSourcedBehaviorWatchSpec
       RetentionCriteria.disabled,
       holdingRecoveryPermit = false,
       settings = settings,
-      stashState = new StashState(context.asInstanceOf[ActorContext[InternalProtocol]], settings))
+      stashState = new StashState(context.asInstanceOf[ActorContext[InternalProtocol]], settings),
+      replication = None,
+      publishEvents = false)
 
   "A typed persistent parent actor watching a child" must {
 

@@ -169,6 +169,21 @@ public final class MessageFormats {
      * @return The timestamp.
      */
     long getTimestamp();
+
+    /**
+     * <code>optional .PersistentPayload metadata = 15;</code>
+     * @return Whether the metadata field is set.
+     */
+    boolean hasMetadata();
+    /**
+     * <code>optional .PersistentPayload metadata = 15;</code>
+     * @return The metadata.
+     */
+    akka.persistence.serialization.MessageFormats.PersistentPayload getMetadata();
+    /**
+     * <code>optional .PersistentPayload metadata = 15;</code>
+     */
+    akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder getMetadataOrBuilder();
   }
   /**
    * Protobuf type {@code PersistentMessage}
@@ -270,6 +285,19 @@ public final class MessageFormats {
             case 112: {
               bitField0_ |= 0x00000080;
               timestamp_ = input.readSInt64();
+              break;
+            }
+            case 122: {
+              akka.persistence.serialization.MessageFormats.PersistentPayload.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000100) != 0)) {
+                subBuilder = metadata_.toBuilder();
+              }
+              metadata_ = input.readMessage(akka.persistence.serialization.MessageFormats.PersistentPayload.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(metadata_);
+                metadata_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000100;
               break;
             }
             default: {
@@ -591,6 +619,29 @@ public final class MessageFormats {
       return timestamp_;
     }
 
+    public static final int METADATA_FIELD_NUMBER = 15;
+    private akka.persistence.serialization.MessageFormats.PersistentPayload metadata_;
+    /**
+     * <code>optional .PersistentPayload metadata = 15;</code>
+     * @return Whether the metadata field is set.
+     */
+    public boolean hasMetadata() {
+      return ((bitField0_ & 0x00000100) != 0);
+    }
+    /**
+     * <code>optional .PersistentPayload metadata = 15;</code>
+     * @return The metadata.
+     */
+    public akka.persistence.serialization.MessageFormats.PersistentPayload getMetadata() {
+      return metadata_ == null ? akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : metadata_;
+    }
+    /**
+     * <code>optional .PersistentPayload metadata = 15;</code>
+     */
+    public akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder getMetadataOrBuilder() {
+      return metadata_ == null ? akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : metadata_;
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -600,6 +651,12 @@ public final class MessageFormats {
 
       if (hasPayload()) {
         if (!getPayload().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      if (hasMetadata()) {
+        if (!getMetadata().isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
         }
@@ -634,6 +691,9 @@ public final class MessageFormats {
       }
       if (((bitField0_ & 0x00000080) != 0)) {
         output.writeSInt64(14, timestamp_);
+      }
+      if (((bitField0_ & 0x00000100) != 0)) {
+        output.writeMessage(15, getMetadata());
       }
       unknownFields.writeTo(output);
     }
@@ -671,6 +731,10 @@ public final class MessageFormats {
       if (((bitField0_ & 0x00000080) != 0)) {
         size += akka.protobufv3.internal.CodedOutputStream
           .computeSInt64Size(14, timestamp_);
+      }
+      if (((bitField0_ & 0x00000100) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeMessageSize(15, getMetadata());
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -727,6 +791,11 @@ public final class MessageFormats {
         if (getTimestamp()
             != other.getTimestamp()) return false;
       }
+      if (hasMetadata() != other.hasMetadata()) return false;
+      if (hasMetadata()) {
+        if (!getMetadata()
+            .equals(other.getMetadata())) return false;
+      }
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -772,6 +841,10 @@ public final class MessageFormats {
         hash = (37 * hash) + TIMESTAMP_FIELD_NUMBER;
         hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
             getTimestamp());
+      }
+      if (hasMetadata()) {
+        hash = (37 * hash) + METADATA_FIELD_NUMBER;
+        hash = (53 * hash) + getMetadata().hashCode();
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -902,6 +975,7 @@ public final class MessageFormats {
         if (akka.protobufv3.internal.GeneratedMessageV3
                 .alwaysUseFieldBuilders) {
           getPayloadFieldBuilder();
+          getMetadataFieldBuilder();
         }
       }
       @java.lang.Override
@@ -927,6 +1001,12 @@ public final class MessageFormats {
         bitField0_ = (bitField0_ & ~0x00000040);
         timestamp_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000080);
+        if (metadataBuilder_ == null) {
+          metadata_ = null;
+        } else {
+          metadataBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000100);
         return this;
       }
 
@@ -990,6 +1070,14 @@ public final class MessageFormats {
         if (((from_bitField0_ & 0x00000080) != 0)) {
           result.timestamp_ = timestamp_;
           to_bitField0_ |= 0x00000080;
+        }
+        if (((from_bitField0_ & 0x00000100) != 0)) {
+          if (metadataBuilder_ == null) {
+            result.metadata_ = metadata_;
+          } else {
+            result.metadata_ = metadataBuilder_.build();
+          }
+          to_bitField0_ |= 0x00000100;
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
@@ -1072,6 +1160,9 @@ public final class MessageFormats {
         if (other.hasTimestamp()) {
           setTimestamp(other.getTimestamp());
         }
+        if (other.hasMetadata()) {
+          mergeMetadata(other.getMetadata());
+        }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
         return this;
@@ -1081,6 +1172,11 @@ public final class MessageFormats {
       public final boolean isInitialized() {
         if (hasPayload()) {
           if (!getPayload().isInitialized()) {
+            return false;
+          }
+        }
+        if (hasMetadata()) {
+          if (!getMetadata().isInitialized()) {
             return false;
           }
         }
@@ -1736,6 +1832,126 @@ public final class MessageFormats {
         timestamp_ = 0L;
         onChanged();
         return this;
+      }
+
+      private akka.persistence.serialization.MessageFormats.PersistentPayload metadata_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
+          akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder> metadataBuilder_;
+      /**
+       * <code>optional .PersistentPayload metadata = 15;</code>
+       * @return Whether the metadata field is set.
+       */
+      public boolean hasMetadata() {
+        return ((bitField0_ & 0x00000100) != 0);
+      }
+      /**
+       * <code>optional .PersistentPayload metadata = 15;</code>
+       * @return The metadata.
+       */
+      public akka.persistence.serialization.MessageFormats.PersistentPayload getMetadata() {
+        if (metadataBuilder_ == null) {
+          return metadata_ == null ? akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : metadata_;
+        } else {
+          return metadataBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>optional .PersistentPayload metadata = 15;</code>
+       */
+      public Builder setMetadata(akka.persistence.serialization.MessageFormats.PersistentPayload value) {
+        if (metadataBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          metadata_ = value;
+          onChanged();
+        } else {
+          metadataBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000100;
+        return this;
+      }
+      /**
+       * <code>optional .PersistentPayload metadata = 15;</code>
+       */
+      public Builder setMetadata(
+          akka.persistence.serialization.MessageFormats.PersistentPayload.Builder builderForValue) {
+        if (metadataBuilder_ == null) {
+          metadata_ = builderForValue.build();
+          onChanged();
+        } else {
+          metadataBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000100;
+        return this;
+      }
+      /**
+       * <code>optional .PersistentPayload metadata = 15;</code>
+       */
+      public Builder mergeMetadata(akka.persistence.serialization.MessageFormats.PersistentPayload value) {
+        if (metadataBuilder_ == null) {
+          if (((bitField0_ & 0x00000100) != 0) &&
+              metadata_ != null &&
+              metadata_ != akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance()) {
+            metadata_ =
+              akka.persistence.serialization.MessageFormats.PersistentPayload.newBuilder(metadata_).mergeFrom(value).buildPartial();
+          } else {
+            metadata_ = value;
+          }
+          onChanged();
+        } else {
+          metadataBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000100;
+        return this;
+      }
+      /**
+       * <code>optional .PersistentPayload metadata = 15;</code>
+       */
+      public Builder clearMetadata() {
+        if (metadataBuilder_ == null) {
+          metadata_ = null;
+          onChanged();
+        } else {
+          metadataBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000100);
+        return this;
+      }
+      /**
+       * <code>optional .PersistentPayload metadata = 15;</code>
+       */
+      public akka.persistence.serialization.MessageFormats.PersistentPayload.Builder getMetadataBuilder() {
+        bitField0_ |= 0x00000100;
+        onChanged();
+        return getMetadataFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>optional .PersistentPayload metadata = 15;</code>
+       */
+      public akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder getMetadataOrBuilder() {
+        if (metadataBuilder_ != null) {
+          return metadataBuilder_.getMessageOrBuilder();
+        } else {
+          return metadata_ == null ?
+              akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : metadata_;
+        }
+      }
+      /**
+       * <code>optional .PersistentPayload metadata = 15;</code>
+       */
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
+          akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder> 
+          getMetadataFieldBuilder() {
+        if (metadataBuilder_ == null) {
+          metadataBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
+              akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder>(
+                  getMetadata(),
+                  getParentForChildren(),
+                  isClean());
+          metadata_ = null;
+        }
+        return metadataBuilder_;
       }
       @java.lang.Override
       public final Builder setUnknownFields(
@@ -7059,27 +7275,28 @@ public final class MessageFormats {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\024MessageFormats.proto\"\275\001\n\021PersistentMes" +
+      "\n\024MessageFormats.proto\"\343\001\n\021PersistentMes" +
       "sage\022#\n\007payload\030\001 \001(\0132\022.PersistentPayloa" +
       "d\022\022\n\nsequenceNr\030\002 \001(\003\022\025\n\rpersistenceId\030\003" +
       " \001(\t\022\017\n\007deleted\030\004 \001(\010\022\016\n\006sender\030\013 \001(\t\022\020\n" +
       "\010manifest\030\014 \001(\t\022\022\n\nwriterUuid\030\r \001(\t\022\021\n\tt" +
-      "imestamp\030\016 \001(\022\"S\n\021PersistentPayload\022\024\n\014s" +
-      "erializerId\030\001 \002(\005\022\017\n\007payload\030\002 \002(\014\022\027\n\017pa" +
-      "yloadManifest\030\003 \001(\014\"2\n\013AtomicWrite\022#\n\007pa" +
-      "yload\030\001 \003(\0132\022.PersistentMessage\"\356\001\n\033AtLe" +
-      "astOnceDeliverySnapshot\022\031\n\021currentDelive" +
-      "ryId\030\001 \002(\003\022O\n\025unconfirmedDeliveries\030\002 \003(" +
-      "\01320.AtLeastOnceDeliverySnapshot.Unconfir" +
-      "medDelivery\032c\n\023UnconfirmedDelivery\022\022\n\nde" +
-      "liveryId\030\001 \002(\003\022\023\n\013destination\030\002 \002(\t\022#\n\007p" +
-      "ayload\030\003 \002(\0132\022.PersistentPayload\"\\\n\032Pers" +
-      "istentStateChangeEvent\022\027\n\017stateIdentifie" +
-      "r\030\001 \002(\t\022\017\n\007timeout\030\002 \001(\t\022\024\n\014timeoutNanos" +
-      "\030\003 \001(\003\"h\n\025PersistentFSMSnapshot\022\027\n\017state" +
-      "Identifier\030\001 \002(\t\022 \n\004data\030\002 \002(\0132\022.Persist" +
-      "entPayload\022\024\n\014timeoutNanos\030\003 \001(\003B\"\n\036akka" +
-      ".persistence.serializationH\001"
+      "imestamp\030\016 \001(\022\022$\n\010metadata\030\017 \001(\0132\022.Persi" +
+      "stentPayload\"S\n\021PersistentPayload\022\024\n\014ser" +
+      "ializerId\030\001 \002(\005\022\017\n\007payload\030\002 \002(\014\022\027\n\017payl" +
+      "oadManifest\030\003 \001(\014\"2\n\013AtomicWrite\022#\n\007payl" +
+      "oad\030\001 \003(\0132\022.PersistentMessage\"\356\001\n\033AtLeas" +
+      "tOnceDeliverySnapshot\022\031\n\021currentDelivery" +
+      "Id\030\001 \002(\003\022O\n\025unconfirmedDeliveries\030\002 \003(\0132" +
+      "0.AtLeastOnceDeliverySnapshot.Unconfirme" +
+      "dDelivery\032c\n\023UnconfirmedDelivery\022\022\n\ndeli" +
+      "veryId\030\001 \002(\003\022\023\n\013destination\030\002 \002(\t\022#\n\007pay" +
+      "load\030\003 \002(\0132\022.PersistentPayload\"\\\n\032Persis" +
+      "tentStateChangeEvent\022\027\n\017stateIdentifier\030" +
+      "\001 \002(\t\022\017\n\007timeout\030\002 \001(\t\022\024\n\014timeoutNanos\030\003" +
+      " \001(\003\"h\n\025PersistentFSMSnapshot\022\027\n\017stateId" +
+      "entifier\030\001 \002(\t\022 \n\004data\030\002 \002(\0132\022.Persisten" +
+      "tPayload\022\024\n\014timeoutNanos\030\003 \001(\003B\"\n\036akka.p" +
+      "ersistence.serializationH\001"
     };
     descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -7090,7 +7307,7 @@ public final class MessageFormats {
     internal_static_PersistentMessage_fieldAccessorTable = new
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_PersistentMessage_descriptor,
-        new java.lang.String[] { "Payload", "SequenceNr", "PersistenceId", "Deleted", "Sender", "Manifest", "WriterUuid", "Timestamp", });
+        new java.lang.String[] { "Payload", "SequenceNr", "PersistenceId", "Deleted", "Sender", "Manifest", "WriterUuid", "Timestamp", "Metadata", });
     internal_static_PersistentPayload_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_PersistentPayload_fieldAccessorTable = new
