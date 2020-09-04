@@ -188,10 +188,11 @@ object ClusterEvent {
       scala.collection.JavaConverters.setAsJavaSetConverter(allDataCenters).asJava
 
     /**
-     * @return `true` if more than one more than one `Version` among the members, which
+     * INTERNAL API
+     * @return `true` if more than one `Version` among the members, which
      *        indicates that a rolling update is in progress
      */
-    def hasMoreThanOneAppVersion: Boolean = {
+    @InternalApi private[akka] def hasMoreThanOneAppVersion: Boolean = {
       if (members.isEmpty) false
       else {
         val v = members.head.appVersion
