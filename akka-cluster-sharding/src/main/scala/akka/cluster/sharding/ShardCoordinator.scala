@@ -535,6 +535,7 @@ abstract class ShardCoordinator(
   import settings.tuningParameters._
 
   val log = Logging.withMarker(context.system, this)
+  private val ignoreRef = context.system.asInstanceOf[ExtendedActorSystem].provider.ignoreRef
 
   val cluster = Cluster(context.system)
   val removalMargin = cluster.downingProvider.downRemovalMargin
@@ -703,6 +704,7 @@ abstract class ShardCoordinator(
               state = state.updated(evt)
               clearRebalanceInProgress(shard)
               allocateShardHomesForRememberEntities()
+              self.tell(GetShardHome(shard), ignoreRef)
             }
           } else {
             // rebalance not completed, graceful shutdown will be retried
@@ -749,10 +751,6 @@ abstract class ShardCoordinator(
             case _: AskTimeoutException => ShardRegion.ClusterShardingStats(Map.empty)
           }
           .pipeTo(sender())
-
-      case ShardHome(_, _) =>
-      //On rebalance, we send ourselves a GetShardHome message to reallocate a
-      // shard. This receive handles the "response" from that message. i.e. ignores it.
 
       case ClusterShuttingDown =>
         log.debug("Shutting down ShardCoordinator")
@@ -897,7 +895,7 @@ abstract class ShardCoordinator(
       log.debug("ShardRegion terminated: [{}]", ref)
       regionTerminationInProgress += ref
       state.regions(ref).foreach { s =>
-        self ! GetShardHome(s)
+        self.tell(GetShardHome(s), ignoreRef)
       }
 
       update(ShardRegionTerminated(ref)) { evt =>
@@ -930,7 +928,9 @@ abstract class ShardCoordinator(
 
   def allocateShardHomesForRememberEntities(): Unit = {
     if (settings.rememberEntities && state.unallocatedShards.nonEmpty)
-      state.unallocatedShards.foreach { self ! GetShardHome(_) }
+      state.unallocatedShards.foreach { shard =>
+        self.tell(GetShardHome(shard), ignoreRef)
+      }
   }
 
   def continueGetShardHome(shard: ShardId, region: ActorRef, getShardHomeSender: ActorRef): Unit =
