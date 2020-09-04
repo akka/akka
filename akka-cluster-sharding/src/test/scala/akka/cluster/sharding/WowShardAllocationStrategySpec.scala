@@ -63,8 +63,7 @@ class WowShardAllocationStrategySpec extends AkkaSpec {
     }
 
     "rebalance shards [4, 4, 2]" in {
-      // FIXME
-      pending
+      // this is handled by phase 2, to find diff of 2
       val allocationStrategy = strategyWithoutLimits
       val allocations = createAllocations(aCount = 4, bCount = 4, cCount = 2)
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("001"))
@@ -74,9 +73,11 @@ class WowShardAllocationStrategySpec extends AkkaSpec {
       val allocationStrategy = strategyWithoutLimits
       val allocations = createAllocations(aCount = 5, bCount = 5)
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("001", "006"))
-      // FIXME can we do better than [4, 4, 2]
-      // optimal would be [4, 3, 3]
-      // Maybe we can find diff 2 in a second round and rebalance single shards
+
+      // so far [4, 4, 2]
+      val allocations2 = createAllocations(aCount = 4, bCount = 4, cCount = 2)
+      // second phase will find the diff of 2, resulting in [3, 4, 3]
+      allocationStrategy.rebalance(allocations2, Set.empty).futureValue should ===(Set("001"))
     }
 
     "rebalance shards [50, 50, 0]" in {
@@ -85,7 +86,10 @@ class WowShardAllocationStrategySpec extends AkkaSpec {
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(
         shards.take(50 - 34).toSet ++ shards.drop(50).take(50 - 34))
 
-      // FIXME resulting in [34, 34, 32], again diff 2
+      // so far [34, 34, 32]
+      val allocations2 = createAllocations(aCount = 34, bCount = 34, cCount = 32)
+      // second phase will find the diff of 2, resulting in [33, 34, 33]
+      allocationStrategy.rebalance(allocations2, Set.empty).futureValue should ===(Set("001"))
     }
 
     "respect absolute limit of number shards" in {

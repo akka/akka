@@ -40,22 +40,48 @@ class WowAllocationStrategy(absoluteLimit: Int, relativeLimit: Double) extends S
       val numberOfRegions = currentShardAllocations.size
       val optimalPerRegion = numberOfShards / numberOfRegions + (if (numberOfShards % numberOfRegions == 0) 0 else 1)
 
+      def limit(resultSize: Int): Int =
+        max(1, min(min((relativeLimit * numberOfShards).toInt, resultSize), min(absoluteLimit, resultSize)))
+
       val selected = Vector.newBuilder[ShardId]
-      currentShardAllocations.valuesIterator.toVector.sortBy(_.size).foreach { shards =>
+      val sortedAllocations = currentShardAllocations.valuesIterator.toVector.sortBy(_.size)
+      sortedAllocations.foreach { shards =>
         if (shards.size > optimalPerRegion) {
           selected ++= shards.take(shards.size - optimalPerRegion)
         }
       }
       val result = selected.result()
-      val limit = max(1, min(min((relativeLimit * numberOfShards).toInt, result.size), min(absoluteLimit, result.size)))
-      val limitedResult = result.take(limit)
+      val limitedResult = result.take(limit(result.size)).toSet
 
-      println(
-        s"# rebalance, currentShardAllocations [${currentShardAllocations.valuesIterator.map(_.size).mkString(",")}], " +
-        s"numberOfShards $numberOfShards, numberOfRegions, $numberOfRegions, optimalPerRegion $optimalPerRegion, " +
-        s"currentShards [${currentShardAllocations.valuesIterator.map(_.sorted.mkString("(", ", ", ")")).mkString(" ")}] " +
-        s"limit $limit, result [${limitedResult.toList.sorted.mkString(",")}]") // FIXME
-      Future.successful(limitedResult.toSet)
+      if (limitedResult.nonEmpty) {
+        println(
+          s"# rebalance, currentShardAllocations [${currentShardAllocations.valuesIterator.map(_.size).mkString(",")}], " +
+          s"numberOfShards $numberOfShards, numberOfRegions, $numberOfRegions, optimalPerRegion $optimalPerRegion, " +
+          s"currentShards [${currentShardAllocations.valuesIterator.map(_.sorted.mkString("(", ", ", ")")).mkString(" ")}] " +
+          s"limit ${limit(result.size)}, result [${limitedResult.toList.sorted.mkString(",")}]") // FIXME
+
+        Future.successful(limitedResult)
+      } else {
+        // in second phase we look for diff of 2
+        val countBelowOptimal = currentShardAllocations.valuesIterator.count(optimalPerRegion - _.size >= 2)
+
+        val selected2 = Vector.newBuilder[ShardId]
+        sortedAllocations.foreach { shards =>
+          if (shards.size >= optimalPerRegion) {
+            selected2 += shards.head
+          }
+        }
+        val result2 = selected2.result().take(countBelowOptimal)
+        val limitedResult2 = result2.take(limit(result2.size)).toSet
+
+        println(
+          s"# rebalance phase2, currentShardAllocations [${currentShardAllocations.valuesIterator.map(_.size).mkString(",")}], " +
+          s"numberOfShards $numberOfShards, numberOfRegions, $numberOfRegions, optimalPerRegion $optimalPerRegion, " +
+          s"currentShards [${currentShardAllocations.valuesIterator.map(_.sorted.mkString("(", ", ", ")")).mkString(" ")}] " +
+          s"limit ${limit(result2.size)}, result [${limitedResult2.toList.sorted.mkString(",")}]") // FIXME
+
+        Future.successful(limitedResult2)
+      }
     }
   }
 }
