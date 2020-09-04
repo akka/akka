@@ -276,7 +276,8 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
   private def deserializeJoin(bytes: Array[Byte]): InternalClusterAction.Join = {
     val m = cm.Join.parseFrom(bytes)
     val roles = Set.empty[String] ++ m.getRolesList.asScala
-    val appVersion = if (m.hasAppVersion) Version(m.getAppVersion) else Version.Zero
+    // important to use new Version here for lazy parsing
+    val appVersion = if (m.hasAppVersion) new Version(m.getAppVersion) else Version.Zero
     InternalClusterAction.Join(
       uniqueAddressFromProto(m.getNode),
       if (roles.exists(_.startsWith(ClusterSettings.DcRolePrefix))) roles

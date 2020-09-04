@@ -4,13 +4,17 @@
 
 package akka.util
 
+import akka.annotation.InternalApi
+
 object Version {
   val Zero: Version = Version("0.0.0")
 
   private val Undefined = 0
 
-  def apply(version: String): Version =
-    new Version(version)
+  def apply(version: String): Version = {
+    val v = new Version(version)
+    v.parse()
+  }
 }
 
 /**
@@ -32,7 +36,14 @@ object Version {
 final class Version(val version: String) extends Comparable[Version] {
   import Version.Undefined
 
-  private val (numbers: Array[Int], rest: String) = {
+  // lazy initialized via `parse` method
+  @volatile private var numbers: Array[Int] = Array.emptyIntArray
+  private var rest: String = ""
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def parse(): Version = {
     def parseLastPart(s: String): (Int, String) = {
       // for example 2, 2-SNAPSHOT or dynver 2+10-1234abcd
       if (s.length == 0) {
@@ -81,73 +92,84 @@ final class Version(val version: String) extends Comparable[Version] {
       }
     }
 
-    val numbers = new Array[Int](4)
-    val segments = version.split('.')
+    if (numbers.length == 0) {
 
-    val rest =
-      if (segments.length == 1) {
-        // single digit or alphanumeric
-        val s = segments(0)
-        if (s.isEmpty)
-          throw new IllegalArgumentException("Empty version not supported.")
-        numbers(1) = Undefined
-        numbers(2) = Undefined
-        numbers(3) = Undefined
-        if (s.charAt(0).isDigit) {
-          try {
-            numbers(0) = s.toInt
-            ""
-          } catch {
-            case _: NumberFormatException =>
-              s
+      val nbrs = new Array[Int](4)
+      val segments = version.split('.')
+
+      val rst =
+        if (segments.length == 1) {
+          // single digit or alphanumeric
+          val s = segments(0)
+          if (s.isEmpty)
+            throw new IllegalArgumentException("Empty version not supported.")
+          nbrs(1) = Undefined
+          nbrs(2) = Undefined
+          nbrs(3) = Undefined
+          if (s.charAt(0).isDigit) {
+            try {
+              nbrs(0) = s.toInt
+              ""
+            } catch {
+              case _: NumberFormatException =>
+                s
+            }
+          } else {
+            s
           }
+        } else if (segments.length == 2) {
+          // for example 1.2, 1.2-SNAPSHOT or dynver 1.2+10-1234abcd
+          val (n1, n2, rest) = parseLastParts(segments(1))
+          nbrs(0) = segments(0).toInt
+          nbrs(1) = n1
+          nbrs(2) = n2
+          nbrs(3) = Undefined
+          rest
+        } else if (segments.length == 3) {
+          // for example 1.2.3, 1.2.3-SNAPSHOT or dynver 1.2.3+10-1234abcd
+          val (n1, n2, rest) = parseLastParts(segments(2))
+          nbrs(0) = segments(0).toInt
+          nbrs(1) = segments(1).toInt
+          nbrs(2) = n1
+          nbrs(3) = n2
+          rest
         } else {
-          s
+          throw new IllegalArgumentException(s"Only 3 digits separated with '.' are supported. [$version]")
         }
-      } else if (segments.length == 2) {
-        // for example 1.2, 1.2-SNAPSHOT or dynver 1.2+10-1234abcd
-        val (n1, n2, rest) = parseLastParts(segments(1))
-        numbers(0) = segments(0).toInt
-        numbers(1) = n1
-        numbers(2) = n2
-        numbers(3) = Undefined
-        rest
-      } else if (segments.length == 3) {
-        // for example 1.2.3, 1.2.3-SNAPSHOT or dynver 1.2.3+10-1234abcd
-        val (n1, n2, rest) = parseLastParts(segments(2))
-        numbers(0) = segments(0).toInt
-        numbers(1) = segments(1).toInt
-        numbers(2) = n1
-        numbers(3) = n2
-        rest
-      } else {
-        throw new IllegalArgumentException(s"Only 3 digits separated with '.' are supported. [$version]")
-      }
 
-    numbers -> rest
+      this.rest = rst
+      this.numbers = nbrs
+    }
+    this
   }
 
   override def compareTo(other: Version): Int = {
-    var diff = 0
-    diff = numbers(0) - other.numbers(0)
-    if (diff == 0) {
-      diff = numbers(1) - other.numbers(1)
+    if (version == other.version) // String equals without requiring parse
+      0
+    else {
+      parse()
+      other.parse()
+      var diff = 0
+      diff = numbers(0) - other.numbers(0)
       if (diff == 0) {
-        diff = numbers(2) - other.numbers(2)
+        diff = numbers(1) - other.numbers(1)
         if (diff == 0) {
-          diff = numbers(3) - other.numbers(3)
+          diff = numbers(2) - other.numbers(2)
           if (diff == 0) {
-            if (rest == "" && other.rest != "")
-              diff = 1
-            if (other.rest == "" && rest != "")
-              diff = -1
-            else
-              diff = rest.compareTo(other.rest)
+            diff = numbers(3) - other.numbers(3)
+            if (diff == 0) {
+              if (rest == "" && other.rest != "")
+                diff = 1
+              if (other.rest == "" && rest != "")
+                diff = -1
+              else
+                diff = rest.compareTo(other.rest)
+            }
           }
         }
       }
+      diff
     }
-    diff
   }
 
   override def equals(o: Any): Boolean = o match {
@@ -156,6 +178,7 @@ final class Version(val version: String) extends Comparable[Version] {
   }
 
   override def hashCode(): Int = {
+    parse()
     var result = HashCode.SEED
     result = HashCode.hash(result, numbers(0))
     result = HashCode.hash(result, numbers(1))
