@@ -290,6 +290,9 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
 
       probe.cancel()
     }
+
+    //TODO test lifetimeMaxRestarts
+
   }
 
   "A restart with backoff sink" should {
@@ -491,10 +494,12 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       sinkProbe.cancel()
       probe.sendComplete()
     }
+
+    //TODO test lifetimeMaxRestarts
+
   }
 
   "A restart with backoff flow" should {
-
     // helps reuse all the setupFlow code for both methods: withBackoff, and onlyOnFailuresWithBackoff
     def RestartFlowFactory[In, Out](onlyOnFailures: Boolean)
         : (FiniteDuration, FiniteDuration, Double, Int) => (() => Flow[In, Out, _]) => Flow[In, Out, NotUsed] =
@@ -820,5 +825,8 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       elements shouldEqual List(1, 2, 4, 5, 7)
       flowCreations.get() shouldEqual 3
     }
+
+    //TODO test lifetimeMaxRestarts
+
   }
 }
