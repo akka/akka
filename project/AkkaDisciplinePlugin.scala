@@ -146,8 +146,10 @@ object AkkaDisciplinePlugin extends AutoPlugin {
       "-P:silencer:globalFilters=in object Dns is deprecated",
       "-P:silencer:globalFilters=in class Dns is deprecated",
       // Because we sometimes wrap things in a class:
-      "-P:silencer:globalFilters=The outer reference in this type test cannot be checked at run time"
-
+      "-P:silencer:globalFilters=The outer reference in this type test cannot be checked at run time",
+      // Because we show some things that are deprecated in
+      // 2.13 but don't have a replacement that was in 2.12:
+      "-P:silencer:globalFilters=deprecated \\(since 2.13.0\\)"
     )
   )
 }

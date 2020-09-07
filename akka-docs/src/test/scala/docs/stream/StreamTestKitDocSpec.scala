@@ -132,9 +132,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     val (probe, future) = TestSource.probe[Int].toMat(sinkUnderTest)(Keep.both).run()
     probe.sendError(new Exception("boom"))
 
-    Await.ready(future, 3.seconds)
-    val Failure(exception) = future.value.get
-    assert(exception.getMessage == "boom")
+    assert(future.failed.futureValue.getMessage == "boom")
     //#injecting-failure
   }
 

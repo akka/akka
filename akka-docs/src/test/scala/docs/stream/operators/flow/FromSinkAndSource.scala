@@ -60,7 +60,7 @@ object FromSinkAndSource {
   def testing(): Unit = {
     def myApiThatTakesAFlow[In, Out](flow: Flow[In, Out, NotUsed]): Unit = ???
     // #testing
-    val inProbe = TestSubscriber.probe[String]
+    val inProbe = TestSubscriber.probe[String]()
     val outProbe = TestPublisher.probe[String]()
     val testFlow = Flow.fromSinkAndSource(Sink.fromSubscriber(inProbe), Source.fromPublisher(outProbe))
 
