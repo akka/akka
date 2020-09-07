@@ -65,13 +65,14 @@ class WowAllocationStrategy(absoluteLimit: Int, relativeLimit: Double) extends S
 
           Future.successful(limitedResult)
         } else {
-          // in second phase we look for diff of >= 2 below optimalPerRegion
+          // In the first phase the optimalPerRegion is rounded up, and depending on number of shards per region and number
+          // of regions that might not be the exact optimal.
+          // In second phase we look for diff of >= 2 below optimalPerRegion and rebalance that number of shards.
           val countBelowOptimal =
             sortedAllocations.iterator.map(shards => max(0, (optimalPerRegion - 1) - shards.size)).sum
           if (countBelowOptimal == 0) {
             emptyRebalanceResult
           } else {
-
             val selected2 = Vector.newBuilder[ShardId]
             sortedAllocations.foreach { shards =>
               if (shards.size >= optimalPerRegion) {

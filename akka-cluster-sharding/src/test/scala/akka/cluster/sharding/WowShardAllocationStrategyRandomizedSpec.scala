@@ -13,7 +13,7 @@ import akka.actor.Props
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.testkit.AkkaSpec
 
-class WowShardAllocationStrategyRandomizedSpec extends AkkaSpec {
+class WowShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel = INFO") {
 
   def createAllocations(countPerRegion: Map[ActorRef, Int]): Map[ActorRef, immutable.IndexedSeq[ShardId]] = {
     countPerRegion.map {
@@ -89,7 +89,7 @@ class WowShardAllocationStrategyRandomizedSpec extends AkkaSpec {
     val diff = max - min
     val newSteps = steps :+ newAllocations
     if (diff <= 1) {
-      if (round > 3 && maxSteps >= 10) {
+      if (round >= 3 && maxSteps <= 10) {
         // Should be very rare (I have not seen it)
         system.log.info(
           s"rebalance solved in round $round, [${newSteps.map(step => countShardsPerRegion(step).mkString(",")).mkString(" => ")}]")
