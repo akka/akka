@@ -940,15 +940,14 @@ private[akka] class ShardRegion(
               actorSelections.mkString(", "),
               bufferSize,
               coordinatorMessage)
-          } else {
-            log.debug(
-              "{}: Trying to register to coordinator at [{}], but no acknowledgement. No buffered messages yet. [{}]",
-              typeName,
-              actorSelections.mkString(", "),
-              coordinatorMessage)
           }
+        } else if (log.isDebugEnabled) {
+          log.debug(
+            "{}: Trying to register to coordinator at [{}], but no acknowledgement. No buffered messages yet. [{}]",
+            typeName,
+            actorSelections.mkString(", "),
+            coordinatorMessage)
         }
-
       } else {
         // Members start off as "Removed"
         val partOfCluster = cluster.selfMember.status != MemberStatus.Removed
