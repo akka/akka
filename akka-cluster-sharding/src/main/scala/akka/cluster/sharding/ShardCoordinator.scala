@@ -16,12 +16,12 @@ import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent
 import akka.cluster.ClusterEvent._
-import akka.cluster.Member
 import akka.cluster.ddata.LWWRegister
 import akka.cluster.ddata.LWWRegisterKey
 import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.sharding.ShardRegion.ShardId
+import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy
 import akka.cluster.sharding.internal.EventSourcedRememberEntitiesCoordinatorStore.MigrationMarker
 import akka.cluster.sharding.internal.{
   EventSourcedRememberEntitiesCoordinatorStore,
@@ -35,8 +35,6 @@ import akka.pattern.{ pipe, AskTimeoutException }
 import akka.persistence._
 import akka.util.PrettyDuration._
 import akka.util.Timeout
-
-import scala.collection.immutable.SortedSet
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -280,35 +278,22 @@ object ShardCoordinator {
   @SerialVersionUID(1L)
   @DoNotInherit
   class LeastShardAllocationStrategy(rebalanceThreshold: Int, maxSimultaneousRebalance: Int)
-      extends ActorSystemDependentAllocationStrategy
+      extends AbstractLeastShardAllocationStrategy
       with Serializable {
-
-    import LeastShardAllocationStrategy._
-
-    @volatile private var cluster: Cluster = _
-
-    override def start(system: ActorSystem): Unit = {
-      cluster = Cluster(system)
-    }
-
-    protected def rollingUpdateInProgress: Boolean =
-      cluster.state.hasMoreThanOneAppVersion
 
     override def allocateShard(
         requester: ActorRef,
         shardId: ShardId,
         currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef] = {
-      val (regionWithLeastShards, _) = possibleShardDestinations(currentShardAllocations).minBy {
-        case (_, v) => v.size
-      }
-      Future.successful(regionWithLeastShards)
+      val (region, _) = mostSuitableRegion(currentShardAllocations)
+      Future.successful(region)
     }
 
     override def rebalance(
         currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
         rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
-      if (rebalanceInProgress.size < maxSimultaneousRebalance && !rollingUpdateInProgress) {
-        val (_, leastShards) = currentShardAllocations.minBy { case (_, v) => v.size }
+      if (rebalanceInProgress.size < maxSimultaneousRebalance && isAGoodTimeToRebalance) {
+        val (_, leastShards) = mostSuitableRegion(currentShardAllocations)
         // even if it is to another new node.
         val mostShards = currentShardAllocations
           .collect {
@@ -325,48 +310,6 @@ object ShardCoordinator {
           emptyRebalanceResult
       } else emptyRebalanceResult
     }
-
-    private def possibleShardDestinations(currentShardAllocations: AllocationMap): AllocationMap =
-      if (!rollingUpdateInProgress) currentShardAllocations
-      else {
-        // rolling upgrade in progress, nodes with old version should be avoided
-        // note that this could return an empty map if the shard has not registered yet but a member has
-        // joined, in that case allocating on an old node is unavoidable
-        val filtered = onlyShardsOfHighestVersion(currentShardAllocations, cluster.selfAddress, cluster.state.members)
-        if (filtered.isEmpty) currentShardAllocations
-        else filtered
-      }
-
-  }
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[akka] object LeastShardAllocationStrategy {
-
-    type AllocationMap = Map[ActorRef, immutable.IndexedSeq[ShardId]]
-
-    def onlyShardsOfHighestVersion(
-        currentShardAllocations: AllocationMap,
-        selfAddress: Address,
-        members: SortedSet[Member]): AllocationMap =
-      if (members.isEmpty) Map.empty
-      else {
-        val highestVersion = members.maxBy(_.appVersion).appVersion
-        val membersWithHighestVersion: immutable.Set[Address] = members.collect {
-          case m if m.appVersion == highestVersion => m.address
-        }
-        currentShardAllocations.filter {
-          case (ref, _) =>
-            val address = {
-              if (ref.path.address.hasLocalScope) selfAddress
-              else ref.path.address
-            }
-            membersWithHighestVersion.contains(address)
-        }
-      }
-
   }
 
   /**
