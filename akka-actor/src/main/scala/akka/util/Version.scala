@@ -4,10 +4,10 @@
 
 package akka.util
 
-import java.util.Arrays
-
 object Version {
   val Zero: Version = Version("0.0.0")
+
+  private val Undefined = 0
 
   def apply(version: String): Version =
     new Version(version)
@@ -16,34 +16,115 @@ object Version {
 /**
  * Comparable version information.
  *
- * The typical convention is to use
- * 3 digit version numbers `major.minor.patch`, but 1 or two digits are
- * also supported. It may also have a qualifier at the end, such as "1.2-rc1".
+ * The typical convention is to use 3 digit version numbers `major.minor.patch`,
+ * but 1 or two digits are also supported.
+ *
+ * If no `.` is used it is interpreted as a single digit version number or as
+ * plain alphanumeric if it couldn't be parsed as a number.
+ *
+ * It may also have a qualifier at the end for 2 or 3 digit version numbers such as "1.2-RC1".
+ * For 1 digit with qualifier, 1-RC1, it is interpreted as plain alphanumeric.
+ *
+ * It has support for https://github.com/dwijnand/sbt-dynver format with `+` or
+ * `-` separator. The number of commits from the tag is handled as a numeric part.
+ * For example `1.0.0+3-73475dce26` is less than `1.0.10+10-ed316bd024` (3 < 10).
  */
 final class Version(val version: String) extends Comparable[Version] {
+  import Version.Undefined
+
   private val (numbers: Array[Int], rest: String) = {
-    val numbers = new Array[Int](3)
-    val segments: Array[String] = version.split("[.+-]")
-    var segmentPos = 0
-    var numbersPos = 0
-    while (numbersPos < 3) {
-      if (segmentPos < segments.length) try {
-        numbers(numbersPos) = segments(segmentPos).toInt
-        segmentPos += 1
-      } catch {
-        case _: NumberFormatException =>
-          // This means that we have a trailing part on the version string and
-          // less than 3 numbers, so we assume that this is a "newer" version
-          numbers(numbersPos) = Integer.MAX_VALUE
+    def parseLastPart(s: String): (Int, String) = {
+      // for example 2, 2-SNAPSHOT or dynver 2+10-1234abcd
+      if (s.length == 0) {
+        Undefined -> s
+      } else {
+        val i = s.indexOf('-')
+        val j = s.indexOf('+') // for dynver
+        val k =
+          if (i == -1) j
+          else if (j == -1) i
+          else math.min(i, j)
+        if (k == -1)
+          s.toInt -> ""
+        else
+          s.substring(0, k).toInt -> s.substring(k + 1)
       }
-      numbersPos += 1
     }
 
-    val rest: String =
-      if (segmentPos >= segments.length) ""
-      else String.join("-", Arrays.asList(Arrays.copyOfRange(segments, segmentPos, segments.length): _*))
+    def parseDynverPart(s: String): (Int, String) = {
+      // for example SNAPSHOT or dynver 10-1234abcd
+      if (s.isEmpty || !s.charAt(0).isDigit) {
+        Undefined -> s
+      } else {
+        s.indexOf('-') match {
+          case -1 =>
+            Undefined -> s
+          case i =>
+            try {
+              s.substring(0, i).toInt -> s.substring(i + 1)
+            } catch {
+              case _: NumberFormatException =>
+                Undefined -> s
+            }
+        }
+      }
+    }
 
-    (numbers, rest)
+    def parseLastParts(s: String): (Int, Int, String) = {
+      // for example 2, 2-SNAPSHOT or dynver 2+10-1234abcd
+      val (lastNumber, rest) = parseLastPart(s)
+      if (rest == "")
+        (lastNumber, Undefined, rest)
+      else {
+        val (dynverNumber, rest2) = parseDynverPart(rest)
+        (lastNumber, dynverNumber, rest2)
+      }
+    }
+
+    val numbers = new Array[Int](4)
+    val segments = version.split('.')
+
+    val rest =
+      if (segments.length == 1) {
+        // single digit or alphanumeric
+        val s = segments(0)
+        if (s.isEmpty)
+          throw new IllegalArgumentException("Empty version not supported.")
+        numbers(1) = Undefined
+        numbers(2) = Undefined
+        numbers(3) = Undefined
+        if (s.charAt(0).isDigit) {
+          try {
+            numbers(0) = s.toInt
+            ""
+          } catch {
+            case _: NumberFormatException =>
+              s
+          }
+        } else {
+          s
+        }
+      } else if (segments.length == 2) {
+        // for example 1.2, 1.2-SNAPSHOT or dynver 1.2+10-1234abcd
+        val (n1, n2, rest) = parseLastParts(segments(1))
+        numbers(0) = segments(0).toInt
+        numbers(1) = n1
+        numbers(2) = n2
+        numbers(3) = Undefined
+        rest
+      } else if (segments.length == 3) {
+        // for example 1.2.3, 1.2.3-SNAPSHOT or dynver 1.2.3+10-1234abcd
+        val (n1, n2, rest) = parseLastParts(segments(2))
+        numbers(0) = segments(0).toInt
+        numbers(1) = segments(1).toInt
+        numbers(2) = n1
+        numbers(3) = n2
+        rest
+      } else {
+        throw new IllegalArgumentException(s"Only 3 digits separated with '.' are supported. [$version]")
+      }
+
+    numbers -> rest
   }
 
   override def compareTo(other: Version): Int = {
@@ -54,7 +135,15 @@ final class Version(val version: String) extends Comparable[Version] {
       if (diff == 0) {
         diff = numbers(2) - other.numbers(2)
         if (diff == 0) {
-          diff = rest.compareTo(other.rest)
+          diff = numbers(3) - other.numbers(3)
+          if (diff == 0) {
+            if (rest == "" && other.rest != "")
+              diff = 1
+            if (other.rest == "" && rest != "")
+              diff = -1
+            else
+              diff = rest.compareTo(other.rest)
+          }
         }
       }
     }
@@ -71,6 +160,7 @@ final class Version(val version: String) extends Comparable[Version] {
     result = HashCode.hash(result, numbers(0))
     result = HashCode.hash(result, numbers(1))
     result = HashCode.hash(result, numbers(2))
+    result = HashCode.hash(result, numbers(3))
     result = HashCode.hash(result, rest)
     result
   }
