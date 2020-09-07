@@ -56,14 +56,14 @@ class WorkPullingSpec
       val jobProducer =
         spawn(TestProducerWorkPulling(defaultProducerDelay, workPullingController), name = s"jobProducer-${idCount}")
 
-      val consumerEndProbe1 = createTestProbe[TestConsumer.CollectedProducerIds]()
+      val consumerEndProbe1 = createTestProbe[TestConsumer.Collected]()
       val workerController1 =
         spawn(ConsumerController[TestConsumer.Job](workerServiceKey), s"workerController1-${idCount}")
       spawn(
         TestConsumer(defaultConsumerDelay, 42, consumerEndProbe1.ref, workerController1),
         name = s"worker1-${idCount}")
 
-      val consumerEndProbe2 = createTestProbe[TestConsumer.CollectedProducerIds]()
+      val consumerEndProbe2 = createTestProbe[TestConsumer.Collected]()
       val workerController2 =
         spawn(ConsumerController[TestConsumer.Job](workerServiceKey), s"workerController2-${idCount}")
       spawn(

@@ -278,8 +278,9 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
   import WorkPullingProducerController.WorkerStats
   import WorkPullingProducerControllerImpl._
 
+  private val producerControllerSettings = settings.producerControllerSettings
   private val traceEnabled = context.log.isTraceEnabled
-  private val durableQueueAskTimeout: Timeout = settings.producerControllerSettings.durableQueueRequestTimeout
+  private val durableQueueAskTimeout: Timeout = producerControllerSettings.durableQueueRequestTimeout
   private val workerAskTimeout: Timeout = settings.internalAskTimeout
 
   private val workerRequestNextAdapter: ActorRef[ProducerController.RequestNext[A]] =
@@ -556,7 +557,7 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
         val outKey = s"$producerId-$uuid"
         context.log.debug2("Registered worker [{}], with producerId [{}].", c, outKey)
         val p = context.spawn(
-          ProducerController[A](outKey, durableQueueBehavior = None, settings.producerControllerSettings),
+          ProducerController[A](outKey, durableQueueBehavior = None, producerControllerSettings),
           uuid,
           DispatcherSelector.sameAsParent())
         p ! ProducerController.Start(workerRequestNextAdapter)
@@ -657,7 +658,7 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
   }
 
   private def receiveStoreMessageSentFailed(f: StoreMessageSentFailed[A]): Behavior[InternalCommand] = {
-    if (f.attempt >= settings.producerControllerSettings.durableQueueRetryAttempts) {
+    if (f.attempt >= producerControllerSettings.durableQueueRetryAttempts) {
       val errorMessage =
         s"StoreMessageSentFailed seqNr [${f.messageSent.seqNr}] failed after [${f.attempt}] attempts, giving up."
       context.log.error(errorMessage)

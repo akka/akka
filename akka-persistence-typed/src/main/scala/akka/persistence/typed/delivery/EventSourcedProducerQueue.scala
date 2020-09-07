@@ -221,77 +221,103 @@ private class EventSourcedProducerQueue[A](
   import DurableProducerQueue._
 
   private val traceEnabled = context.log.isTraceEnabled
+  // transient
+  private var initialCleanupDone = false
 
-  def onCommand(state: State[A], command: Command[A]): Effect[Event, State[A]] = {
-    command match {
-      case StoreMessageSent(sent, replyTo) =>
-        if (sent.seqNr == state.currentSeqNr) {
+  def onCommand(state: State[A], command: Command[A]): Effect[Event, State[A]] =
+    if (initialCleanupDone) {
+      command match {
+        case StoreMessageSent(sent, replyTo) =>
+          val currentSeqNr = state.currentSeqNr
+          if (sent.seqNr == currentSeqNr) {
+            if (traceEnabled)
+              context.log.trace(
+                "StoreMessageSent seqNr [{}], confirmationQualifier [{}]",
+                sent.seqNr,
+                sent.confirmationQualifier)
+            Effect.persist(sent).thenReply(replyTo)(_ => StoreMessageSentAck(sent.seqNr))
+          } else if (sent.seqNr == currentSeqNr - 1) {
+            // already stored, could be a retry after timeout
+            context.log.debug("Duplicate seqNr [{}], currentSeqNr [{}]", sent.seqNr, currentSeqNr)
+            Effect.reply(replyTo)(StoreMessageSentAck(sent.seqNr))
+          } else {
+            // may happen after failure
+            context.log.debug("Ignoring unexpected seqNr [{}], currentSeqNr [{}]", sent.seqNr, currentSeqNr)
+            Effect.unhandled // no reply, request will timeout
+          }
+
+        case StoreMessageConfirmed(seqNr, confirmationQualifier, timestampMillis) =>
           if (traceEnabled)
             context.log.trace(
-              "StoreMessageSent seqNr [{}], confirmationQualifier [{}]",
-              sent.seqNr,
-              sent.confirmationQualifier)
-          Effect.persist(sent).thenReply(replyTo)(_ => StoreMessageSentAck(sent.seqNr))
-        } else if (sent.seqNr == state.currentSeqNr - 1) {
-          // already stored, could be a retry after timout
-          context.log.debug("Duplicate seqNr [{}], currentSeqNr [{}]", sent.seqNr, state.currentSeqNr)
-          Effect.reply(replyTo)(StoreMessageSentAck(sent.seqNr))
-        } else {
-          // may happen after failure
-          context.log.debug("Ignoring unexpected seqNr [{}], currentSeqNr [{}]", sent.seqNr, state.currentSeqNr)
-          Effect.unhandled // no reply, request will timeout
-        }
+              "StoreMessageConfirmed seqNr [{}], confirmationQualifier [{}]",
+              seqNr,
+              confirmationQualifier)
+          val previousConfirmedSeqNr = state.confirmedSeqNr.get(confirmationQualifier) match {
+            case Some((nr, _)) => nr
+            case None          => 0L
+          }
+          if (seqNr > previousConfirmedSeqNr)
+            Effect.persist(Confirmed(seqNr, confirmationQualifier, timestampMillis))
+          else
+            Effect.none // duplicate
 
-      case StoreMessageConfirmed(seqNr, confirmationQualifier, timestampMillis) =>
-        if (traceEnabled)
-          context.log.trace(
-            "StoreMessageConfirmed seqNr [{}], confirmationQualifier [{}]",
-            seqNr,
-            confirmationQualifier)
-        val previousConfirmedSeqNr = state.confirmedSeqNr.get(confirmationQualifier) match {
-          case Some((nr, _)) => nr
-          case None          => 0L
-        }
-        if (seqNr > previousConfirmedSeqNr)
-          Effect.persist(Confirmed(seqNr, confirmationQualifier, timestampMillis))
-        else
-          Effect.none // duplicate
+        case LoadState(replyTo) =>
+          Effect.reply(replyTo)(state)
 
-      case LoadState(replyTo) =>
-        Effect.reply(replyTo)(state)
+        case _: CleanupTick[_] =>
+          onCleanupTick(state)
+      }
+    } else {
+      onCommandBeforeInitialCleanup(state, command)
+    }
 
+  private def onCleanupTick(state: State[A]): Effect[Event, State[A]] = {
+    val old = oldUnconfirmedToCleanup(state)
+    if (old.isEmpty) {
+      Effect.none
+    } else {
+      if (context.log.isDebugEnabled)
+        context.log.debug("Periodic cleanup [{}]", old.mkString(","))
+      Effect.persist(DurableProducerQueue.Cleanup(old))
+    }
+  }
+
+  private def oldUnconfirmedToCleanup(state: State[A]): Set[ConfirmationQualifier] = {
+    val now = System.currentTimeMillis()
+    state.confirmedSeqNr.collect {
+      case (confirmationQualifier, (_, timestampMillis))
+          if (now - timestampMillis) >= cleanupUnusedAfter.toMillis && !state.unconfirmed.exists(
+            _.confirmationQualifier != confirmationQualifier) =>
+        confirmationQualifier
+    }.toSet
+  }
+
+  def onCommandBeforeInitialCleanup(state: State[A], command: Command[A]): Effect[Event, State[A]] = {
+    command match {
       case _: CleanupTick[_] =>
-        val now = System.currentTimeMillis()
-        val old = state.confirmedSeqNr.collect {
-          case (confirmationQualifier, (_, timestampMillis))
-              if (now - timestampMillis) >= cleanupUnusedAfter.toMillis && !state.unconfirmed.exists(
-                _.confirmationQualifier != confirmationQualifier) =>
-            confirmationQualifier
-        }.toSet
-        if (old.isEmpty) {
-          Effect.none
+        val old = oldUnconfirmedToCleanup(state)
+        val stateWithoutPartialChunkedMessages = state.cleanupPartialChunkedMessages()
+        initialCleanupDone = true
+        if (old.isEmpty && (stateWithoutPartialChunkedMessages eq state)) {
+          Effect.unstashAll()
         } else {
           if (context.log.isDebugEnabled)
-            context.log.debug("Cleanup [{}]", old.mkString(","))
-          Effect.persist(DurableProducerQueue.Cleanup(old))
+            context.log.debug("Initial cleanup [{}]", old.mkString(","))
+          Effect.persist(DurableProducerQueue.Cleanup(old)).thenUnstashAll()
         }
+      case _ =>
+        Effect.stash()
     }
   }
 
   def onEvent(state: State[A], event: Event): State[A] = {
     event match {
       case sent: MessageSent[A] @unchecked =>
-        state.copy(currentSeqNr = sent.seqNr + 1, unconfirmed = state.unconfirmed :+ sent)
+        state.addMessageSent(sent)
       case Confirmed(seqNr, confirmationQualifier, timestampMillis) =>
-        val newUnconfirmed = state.unconfirmed.filterNot { u =>
-          u.confirmationQualifier == confirmationQualifier && u.seqNr <= seqNr
-        }
-        state.copy(
-          highestConfirmedSeqNr = math.max(state.highestConfirmedSeqNr, seqNr),
-          confirmedSeqNr = state.confirmedSeqNr.updated(confirmationQualifier, (seqNr, timestampMillis)),
-          unconfirmed = newUnconfirmed)
+        state.confirmed(seqNr, confirmationQualifier, timestampMillis)
       case Cleanup(confirmationQualifiers) =>
-        state.copy(confirmedSeqNr = state.confirmedSeqNr -- confirmationQualifiers)
+        state.cleanup(confirmationQualifiers).cleanupPartialChunkedMessages()
     }
   }
 

@@ -50,6 +50,10 @@ There are 3 supported patterns, which are described in the following sections:
 * @ref:[Work pulling](#work-pulling)
 * @ref:[Sharding](#sharding)
 
+The Point-to-Point pattern has support for automatically @ref:[splitting up large messages](#chunk-large-messages)
+and assemble them again on the consumer side. This feature is useful for avoiding head of line blocking from
+serialization and transfer of large messages.
+
 ## Point-to-point
 
 This pattern implements point-to-point reliable delivery between a single producer actor sending messages and a single consumer actor
@@ -409,6 +413,25 @@ for example be useful when both consumer and producer are know to be located in 
 This can be more efficient since messages don't have to be kept in memory in the `ProducerController` until
 they have been confirmed, but the drawback is that lost messages will not be delivered. See configuration
 `only-flow-control` of the `ConsumerController`.
+
+## Chunk large messages
+
+To avoid head of line blocking from serialization and transfer of large messages the @ref:[Point-to-Point](#point-to-point) 
+pattern has support for automatically @ref:[splitting up large messages](#chunk-large-messages) and assemble them
+again on the consumer side.
+
+Serialization and deserialization is performed by the `ProducerController` and `ConsumerController` respectively
+instead of in the remote transport layer.
+
+This is enabled by configuration `akka.reliable-delivery.producer-controller.chunk-large-messages` and defines
+the maximum size in bytes of the chunked pieces. Messages smaller than the configured size are not chunked, but
+serialization still takes place in the `ProducerController` and `ConsumerController`. 
+
+Aside from the configuration the API is the same as the @ref:[Point-to-point](#point-to-point) pattern. If
+@ref:[Durable producer](#durable-producer) is enabled the chunked pieces are stored rather than the full large
+message.
+
+This feature is not implemented for @ref:[Work pulling](#work-pulling) and @ref:[Sharding](#sharding) yet.
 
 ## Configuration
 

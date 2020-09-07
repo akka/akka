@@ -14,7 +14,6 @@ import scala.language.implicitConversions
 import org.scalatest.Suite
 import org.scalatest.matchers.should.Matchers
 
-import akka.actor.{ Address, Scheduler }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -22,9 +21,13 @@ import akka.actor.typed.Props
 import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.adapter._
-import akka.cluster.{ ClusterEvent, MemberStatus }
+import akka.actor.Address
+import akka.actor.Scheduler
+import akka.cluster.ClusterEvent
+import akka.cluster.MemberStatus
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{ MultiNodeSpec, STMultiNodeSpec }
+import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit.WatchedByCoroner
 import akka.util.Timeout
 
@@ -84,7 +87,8 @@ trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedB
     enterBarrier("all-joined")
   }
 
-  private lazy val spawnActor = system.actorOf(PropsAdapter(SpawnProtocol())).toTyped[SpawnProtocol.Command]
+  private lazy val spawnActor =
+    system.actorOf(PropsAdapter(SpawnProtocol()), "testSpawn").toTyped[SpawnProtocol.Command]
   def spawn[T](behavior: Behavior[T], name: String): ActorRef[T] = {
     implicit val timeout: Timeout = testKitSettings.DefaultTimeout
     val f: Future[ActorRef[T]] = spawnActor.ask(SpawnProtocol.Spawn(behavior, name, Props.empty, _))

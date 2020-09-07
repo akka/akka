@@ -18,6 +18,8 @@ message SequencedMessage {
   required bool ack = 4;
   required string producerControllerRef = 5;
   required Payload message = 6;
+  optional bool firstChunk = 7;
+  optional bool lastChunk = 8;
 }
 
 // ProducerController
@@ -65,6 +67,8 @@ message MessageSent {
   required bool ack = 3;
   required int64 timestamp = 4;
   required Payload message = 5;
+  optional bool firstChunk = 6;
+  optional bool lastChunk = 7;
 }
 
 // DurableProducerQueue

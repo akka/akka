@@ -12,10 +12,12 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.delivery.ConsumerController
 import akka.actor.typed.delivery.DurableProducerQueue
 import akka.actor.typed.delivery.ProducerController
+import akka.actor.typed.delivery.internal.ChunkedMessage
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializationExtension
+import akka.util.ByteString
 
 class ReliableDeliverySerializerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
@@ -53,7 +55,17 @@ class ReliableDeliverySerializerSpec extends ScalaTestWithActorTestKit with AnyW
         Vector(
           DurableProducerQueue.MessageSent(15L, "msg15", true, "q4", timestamp),
           DurableProducerQueue.MessageSent(16L, "msg16", true, "q4", timestamp))),
-      "DurableProducerQueue.Cleanup" -> DurableProducerQueue.Cleanup(Set("q1", "q2", "q3"))).foreach {
+      "DurableProducerQueue.Cleanup" -> DurableProducerQueue.Cleanup(Set("q1", "q2", "q3")),
+      "SequencedMessage-chunked-1" -> ConsumerController.SequencedMessage
+        .fromChunked("prod-1", 1L, ChunkedMessage(ByteString.fromString("abc"), true, true, 20, ""), true, true, ref),
+      "SequencedMessage-chunked-2" -> ConsumerController.SequencedMessage
+        .fromChunked("prod-1", 1L, ChunkedMessage(ByteString(1, 2, 3), true, false, 123456, "A"), false, false, ref),
+      "DurableProducerQueue.MessageSent-chunked" -> DurableProducerQueue.MessageSent.fromChunked(
+        3L,
+        ChunkedMessage(ByteString.fromString("abc"), true, true, 20, ""),
+        false,
+        "",
+        timestamp)).foreach {
       case (scenario, item) =>
         s"resolve serializer for $scenario" in {
           val serializer = SerializationExtension(classicSystem)
