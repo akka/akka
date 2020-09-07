@@ -92,4 +92,7 @@ class WowAllocationStrategy(absoluteLimit: Int, relativeLimit: Double) extends S
       }
     }
   }
+
+  override def toString: ShardId =
+    s"WowAllocationStrategy($absoluteLimit,$relativeLimit)"
 }

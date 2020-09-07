@@ -24,25 +24,25 @@ class WowShardAllocationStrategyRandomizedSpec extends AkkaSpec {
 
   private val strategyWithoutLimits = new WowAllocationStrategy(absoluteLimit = 100000, relativeLimit = 1.0)
 
-  private val rndSeed = 1599462125830L //System.currentTimeMillis()
+  private val rndSeed = System.currentTimeMillis()
   private val rnd = new Random(rndSeed)
   info(s"Random seed: $rndSeed")
 
-  private var iteration = 0
-  private val iterationsPerTest = 100 // FIXME test is slow when using 10000
+  private var iteration = 1
+  private val iterationsPerTest = 10
 
   private def afterRebalance(
       allocationStrategy: WowAllocationStrategy,
       allocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
       rebalance: Set[ShardId]): Map[ActorRef, immutable.IndexedSeq[ShardId]] = {
-    rebalance.foldLeft(allocations) {
-      case (acc, shard) =>
-        val removedAllocations = acc.map {
-          case (region, shards) => region -> shards.filterNot(_ == shard)
-        }.toMap
+    val allocationsAfterRemoval = allocations.map {
+      case (region, shards) => region -> shards.filterNot(rebalance)
+    }
 
-        val region = allocationStrategy.allocateShard(testActor, shard, removedAllocations).value.get.get
-        removedAllocations.updated(region, removedAllocations(region) :+ shard)
+    rebalance.foldLeft(allocationsAfterRemoval) {
+      case (acc, shard) =>
+        val region = allocationStrategy.allocateShard(testActor, shard, acc).value.get.get
+        acc.updated(region, acc(region) :+ shard)
     }
   }
 
@@ -54,17 +54,20 @@ class WowShardAllocationStrategyRandomizedSpec extends AkkaSpec {
     countShardsPerRegion(allocations).sum
   }
 
-  private def testStrategyWithoutLimits(maxRegions: Int, maxShardsPerRegion: Int, expectedMaxSteps: Int): Unit = {
+  private def testRebalance(
+      allocationStrategy: WowAllocationStrategy,
+      maxRegions: Int,
+      maxShardsPerRegion: Int,
+      expectedMaxSteps: Int): Unit = {
     (1 to iterationsPerTest).foreach { _ =>
       iteration += 1
-      val allocationStrategy = strategyWithoutLimits
       val numberOfRegions = rnd.nextInt(maxRegions) + 1
       val regions = (1 to numberOfRegions).map(n => system.actorOf(Props.empty, s"$iteration-R$n"))
       val countPerRegion = regions.map { region =>
         region -> rnd.nextInt(maxShardsPerRegion)
       }.toMap
       val allocations = createAllocations(countPerRegion)
-      withClue(s"test [${countShardsPerRegion(allocations).mkString(",")}]: ") {
+      withClue(s"test $allocationStrategy [${countShardsPerRegion(allocations).mkString(",")}]: ") {
         testRebalance(allocationStrategy, allocations, Vector(allocations), expectedMaxSteps)
       }
       regions.foreach(system.stop)
@@ -77,11 +80,8 @@ class WowShardAllocationStrategyRandomizedSpec extends AkkaSpec {
       steps: Vector[Map[ActorRef, immutable.IndexedSeq[ShardId]]],
       maxSteps: Int): Unit = {
     val round = steps.size
-//    println(s"# test [${countShardsPerRegion(allocations).mkString(",")}]") // FIXME
     val rebalanceResult = allocationStrategy.rebalance(allocations, Set.empty).value.get.get
     val newAllocations = afterRebalance(allocationStrategy, allocations, rebalanceResult)
-//    println(
-//      s"# [${countShardsPerRegion(allocations).mkString(",")}] => [${countShardsPerRegion(newAllocations).mkString(",")}]") // FIXME
 
     countShards(newAllocations) should ===(countShards(allocations))
     val min = countShardsPerRegion(newAllocations).min
@@ -89,9 +89,11 @@ class WowShardAllocationStrategyRandomizedSpec extends AkkaSpec {
     val diff = max - min
     val newSteps = steps :+ newAllocations
     if (diff <= 1) {
-      if (round > 3)
-        println(
-          s"# rebalance solved in round $round, [${newSteps.map(step => countShardsPerRegion(step).mkString(",")).mkString(" => ")}]") // FIXME
+      if (round > 3 && maxSteps >= 10) {
+        // Should be very rare (I have not seen it)
+        system.log.info(
+          s"rebalance solved in round $round, [${newSteps.map(step => countShardsPerRegion(step).mkString(",")).mkString(" => ")}]")
+      }
       ()
     } else if (round == maxSteps) {
       fail(
@@ -104,35 +106,40 @@ class WowShardAllocationStrategyRandomizedSpec extends AkkaSpec {
   "WowShardAllocationStrategy with random scenario" must {
 
     "rebalance shards with max 5 regions / 5 shards" in {
-      testStrategyWithoutLimits(maxRegions = 5, maxShardsPerRegion = 5, expectedMaxSteps = 2)
+      testRebalance(strategyWithoutLimits, maxRegions = 5, maxShardsPerRegion = 5, expectedMaxSteps = 2)
     }
 
     "rebalance shards with max 5 regions / 100 shards" in {
-      testStrategyWithoutLimits(maxRegions = 5, maxShardsPerRegion = 100, expectedMaxSteps = 2)
+      testRebalance(strategyWithoutLimits, maxRegions = 5, maxShardsPerRegion = 100, expectedMaxSteps = 2)
     }
 
     "rebalance shards with max 20 regions / 5 shards" in {
-      testStrategyWithoutLimits(maxRegions = 20, maxShardsPerRegion = 5, expectedMaxSteps = 2)
+      testRebalance(strategyWithoutLimits, maxRegions = 20, maxShardsPerRegion = 5, expectedMaxSteps = 2)
     }
 
     "rebalance shards with max 20 regions / 20 shards" in {
-      testStrategyWithoutLimits(maxRegions = 20, maxShardsPerRegion = 20, expectedMaxSteps = 2)
+      testRebalance(strategyWithoutLimits, maxRegions = 20, maxShardsPerRegion = 20, expectedMaxSteps = 2)
     }
 
     "rebalance shards with max 20 regions / 200 shards" in {
-      testStrategyWithoutLimits(maxRegions = 20, maxShardsPerRegion = 200, expectedMaxSteps = 5)
+      testRebalance(strategyWithoutLimits, maxRegions = 20, maxShardsPerRegion = 200, expectedMaxSteps = 5)
     }
 
     "rebalance shards with max 100 regions / 100 shards" in {
-      testStrategyWithoutLimits(maxRegions = 100, maxShardsPerRegion = 100, expectedMaxSteps = 5)
+      testRebalance(strategyWithoutLimits, maxRegions = 100, maxShardsPerRegion = 100, expectedMaxSteps = 5)
     }
 
     "rebalance shards with max 100 regions / 1000 shards" in {
-      pending // FIXME this is very slow
-      testStrategyWithoutLimits(maxRegions = 100, maxShardsPerRegion = 1000, expectedMaxSteps = 5)
+      testRebalance(strategyWithoutLimits, maxRegions = 100, maxShardsPerRegion = 1000, expectedMaxSteps = 5)
     }
 
-    // FIXME also test with random limits
+    "rebalance shards with max 20 regions / 20 shards and limits" in {
+      val absoluteLimit = 3 + rnd.nextInt(7) + 3
+      val relativeLimit = 0.05 + (rnd.nextDouble() * 0.95)
+
+      val strategy = new WowAllocationStrategy(absoluteLimit, relativeLimit)
+      testRebalance(strategy, maxRegions = 20, maxShardsPerRegion = 20, expectedMaxSteps = 20)
+    }
 
   }
 
