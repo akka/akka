@@ -59,9 +59,13 @@ This project contains a Shopping Cart sample illustrating how to use Akka Persis
 The events are tagged to be consumed by even processors to build other representations
 from the events, or publish the events to other services.
 
-## Multi-DC Persistence
+## Replicated Event Sourcing
 
-This commercial feature has now been superseded by @ref[Replicated Event Sourcing](../typed/replicated-eventsourcing.md)
+@java[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-java)]
+@scala[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-scala)]
+
+Illustrates how to use @ref:[Replicated Event Sourcing](../typed/replicated-eventsourcing.md) that supports
+active-active persistent entities across data centers.
 
 ## Cluster with Docker
 
