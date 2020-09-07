@@ -18,7 +18,6 @@ object AkkaDisciplinePlugin extends AutoPlugin {
   val enabled = !sys.props.contains("akka.no.discipline")
 
   // We allow warnings in docs to get the 'snippets' right
-  val nonFatalWarningsFor = Set("akka-docs")
   val nonFatalJavaWarningsFor = Set(
     // for sun.misc.Unsafe and AbstractScheduler
     "akka-actor",
@@ -51,6 +50,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-cluster-sharding",
     "akka-cluster-sharding-typed",
     "akka-distributed-data",
+    "akka-docs",
     "akka-persistence",
     "akka-persistence-tck",
     "akka-persistence-typed",
@@ -74,10 +74,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
   lazy val disciplineSettings =
     if (enabled) {
       silencerSettings ++ Seq(
-        Compile / scalacOptions ++= (
-            if (!nonFatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
-            else Seq.empty
-          ),
+        Compile / scalacOptions ++= Seq("-Xfatal-warnings"),
         Test / scalacOptions --= testUndicipline,
         Compile / javacOptions ++= (
             if (!nonFatalJavaWarningsFor(name.value)) Seq("-Werror", "-Xlint:deprecation", "-Xlint:unchecked")
@@ -136,4 +133,21 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "-Ypartial-unification",
     "-Ywarn-extra-implicit")
 
+  /**
+   * We are a little less strict in docs
+   */
+  val docs = Seq(
+    scalacOptions ++= Seq(
+      // In docs, 'unused' variables can be useful for naming and showing the type
+      "-P:silencer:globalFilters=is never used",
+      // Import statements are often duplicated across multiple snippets in one file
+      "-P:silencer:globalFilters=Unused import",
+      // We keep documentation for this old API around for a while:
+      "-P:silencer:globalFilters=in object Dns is deprecated",
+      "-P:silencer:globalFilters=in class Dns is deprecated",
+      // Because we sometimes wrap things in a class:
+      "-P:silencer:globalFilters=The outer reference in this type test cannot be checked at run time"
+
+    )
+  )
 }

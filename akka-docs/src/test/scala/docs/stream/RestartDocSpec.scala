@@ -41,7 +41,7 @@ class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
         maxRestarts = 20 // limits the amount of restarts to 20
       ) { () =>
         // Create a source from a future of a source
-        Source.fromFutureSource {
+        Source.futureSource {
           // Make a single request with akka-http
           Http()
             .singleRequest(HttpRequest(uri = "http://example.com/eventstream"))

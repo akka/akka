@@ -4,6 +4,8 @@
 
 package docs.persistence.testkit
 
+import java.util.UUID
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -18,8 +20,7 @@ import scala.concurrent.duration._
 //#imports
 
 class PersistenceInitSpec
-    extends ScalaTestWithActorTestKit(
-      """
+    extends ScalaTestWithActorTestKit(s"""
   akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
   akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
   akka.persistence.snapshot-store.local.dir = "target/snapshot-${UUID.randomUUID().toString}"

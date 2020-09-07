@@ -226,7 +226,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
     "not batch if uninitialized" in {
       val buncher = system.actorOf(Props(classOf[Buncher], this))
       buncher ! Queue(42)
-      expectNoMsg
+      expectNoMessage()
     }
   }
 }

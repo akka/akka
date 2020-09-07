@@ -4,7 +4,6 @@
 
 package docs.stream.operators.source
 
-import akka.NotUsed
 import akka.actor.typed.ActorSystem
 import akka.stream.scaladsl.Source
 

@@ -4,8 +4,10 @@
 
 package docs.stream
 
+import akka.Done
 import akka.NotUsed
 import akka.actor.{ Actor, ActorSystem, Cancellable }
+import akka.stream.CompletionStrategy
 import akka.stream.Materializer
 import akka.stream.{ ClosedShape, FlowShape, OverflowStrategy }
 import akka.stream.scaladsl._
@@ -99,7 +101,7 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
     Source(List(1, 2, 3))
 
     // Create a source from a Future
-    Source.fromFuture(Future.successful("Hello Streams!"))
+    Source.future(Future.successful("Hello Streams!"))
 
     // Create a source from a single element
     Source.single("only one element")
@@ -227,8 +229,13 @@ class FlowDocSpec extends AkkaSpec with CompileOnlySpec {
 
   "source pre-materialization" in {
     //#source-prematerialization
+    val completeWithDone: PartialFunction[Any, CompletionStrategy] = { case Done => CompletionStrategy.immediately }
     val matValuePoweredSource =
-      Source.actorRef[String](bufferSize = 100, overflowStrategy = OverflowStrategy.fail)
+      Source.actorRef[String](
+        completionMatcher = completeWithDone,
+        failureMatcher = PartialFunction.empty,
+        bufferSize = 100,
+        overflowStrategy = OverflowStrategy.fail)
 
     val (actorRef, source) = matValuePoweredSource.preMaterialize()
 

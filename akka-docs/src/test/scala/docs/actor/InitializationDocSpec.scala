@@ -62,7 +62,7 @@ class InitializationDocSpec extends AkkaSpec with ImplicitSender {
       val probe = "U OK?"
 
       example ! probe
-      expectNoMsg()
+      expectNoMessage()
 
       example ! "init"
       example ! probe

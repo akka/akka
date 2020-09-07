@@ -368,7 +368,7 @@ class FutureDocSpec extends AkkaSpec {
     //#fold
     // Create a sequence of Futures
     val futures = for (i <- 1 to 1000) yield Future(i * 2)
-    val futureSum = Future.fold(futures)(0)(_ + _)
+    val futureSum = Future.foldLeft(futures)(0)(_ + _)
     futureSum.foreach(println)
     //#fold
     Await.result(futureSum, 3 seconds) should be(1001000)
@@ -378,7 +378,7 @@ class FutureDocSpec extends AkkaSpec {
     //#reduce
     // Create a sequence of Futures
     val futures = for (i <- 1 to 1000) yield Future(i * 2)
-    val futureSum = Future.reduce(futures)(_ + _)
+    val futureSum = Future.reduceLeft(futures)(_ + _)
     futureSum.foreach(println)
     //#reduce
     Await.result(futureSum, 3 seconds) should be(1001000)
