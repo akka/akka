@@ -160,8 +160,7 @@ private class ResumeSupervisor[T, Thr <: Throwable: ClassTag](ss: Resume) extend
   }
 }
 
-@InternalApi
-private[akka] object BackoffCalculator {
+private object RestartSupervisor {
 
   /**
    * Calculates an exponential back off delay.
@@ -178,10 +177,6 @@ private[akka] object BackoffCalculator {
       case _                 => maxBackoff
     }
   }
-
-}
-
-private object RestartSupervisor {
 
   final case class ScheduledRestart(owner: RestartSupervisor[_, _ <: Throwable]) extends DeadLetterSuppression
   final case class ResetRestartCount(current: Int, owner: RestartSupervisor[_, _ <: Throwable])
@@ -350,11 +345,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
     strategy match {
       case backoff: Backoff =>
         val restartDelay =
-          BackoffCalculator.calculateDelay(
-            currentRestartCount,
-            backoff.minBackoff,
-            backoff.maxBackoff,
-            backoff.randomFactor)
+          calculateDelay(currentRestartCount, backoff.minBackoff, backoff.maxBackoff, backoff.randomFactor)
         gotScheduledRestart = false
         ctx.asScala.scheduleOnce(restartDelay, ctx.asScala.self, ScheduledRestart(this))
         Behaviors.empty
