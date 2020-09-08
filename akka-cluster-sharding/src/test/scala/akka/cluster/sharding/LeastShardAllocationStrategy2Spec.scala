@@ -8,7 +8,7 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.testkit.AkkaSpec
 
-class WowShardAllocationStrategySpec extends AkkaSpec {
+class LeastShardAllocationStrategy2Spec extends AkkaSpec {
 
   private val regionA = system.actorOf(Props.empty, "regionA")
   private val regionB = system.actorOf(Props.empty, "regionB")
@@ -23,9 +23,9 @@ class WowShardAllocationStrategySpec extends AkkaSpec {
       regionC -> shards.slice(aCount + bCount, aCount + bCount + cCount).toVector)
   }
 
-  private val strategyWithoutLimits = new WowAllocationStrategy(absoluteLimit = 1000, relativeLimit = 1.0)
+  private val strategyWithoutLimits = new LeastShardAllocationStrategy2(absoluteLimit = 1000, relativeLimit = 1.0)
 
-  "WowShardAllocationStrategy" must {
+  "LeastShardAllocationStrategy2" must {
     "allocate to region with least number of shards" in {
       val allocationStrategy = strategyWithoutLimits
       val allocations = createAllocations(aCount = 1, bCount = 1)
@@ -93,13 +93,13 @@ class WowShardAllocationStrategySpec extends AkkaSpec {
     }
 
     "respect absolute limit of number shards" in {
-      val allocationStrategy = new WowAllocationStrategy(absoluteLimit = 3, relativeLimit = 1.0)
+      val allocationStrategy = new LeastShardAllocationStrategy2(absoluteLimit = 3, relativeLimit = 1.0)
       val allocations = createAllocations(aCount = 1, bCount = 9)
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("002", "003", "004"))
     }
 
     "respect relative limit of number shards" in {
-      val allocationStrategy = new WowAllocationStrategy(absoluteLimit = 5, relativeLimit = 0.3)
+      val allocationStrategy = new LeastShardAllocationStrategy2(absoluteLimit = 5, relativeLimit = 0.3)
       val allocations = createAllocations(aCount = 1, bCount = 9)
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("002", "003", "004"))
     }

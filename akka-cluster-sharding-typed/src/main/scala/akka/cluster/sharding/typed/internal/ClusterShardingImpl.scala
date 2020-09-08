@@ -33,7 +33,7 @@ import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.{ StartEntity => ClassicStartEntity }
-import akka.cluster.sharding.WowAllocationStrategy
+import akka.cluster.sharding.LeastShardAllocationStrategy2
 import akka.cluster.sharding.typed.scaladsl.EntityContext
 import akka.cluster.typed.Cluster
 import akka.event.Logging
@@ -283,7 +283,7 @@ import akka.util.JavaDurationConverters._
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
     // FIXME real settings
     if (System.getProperties.containsKey("absoluteLimit")) {
-      new WowAllocationStrategy(
+      new LeastShardAllocationStrategy2(
         System.getProperty("absoluteLimit", "5").toInt,
         System.getProperty("relativeLimit", "0.5").toDouble)
     } else {

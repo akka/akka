@@ -13,7 +13,7 @@ import akka.actor.Props
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.testkit.AkkaSpec
 
-class WowShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel = INFO") {
+class LeastShardAllocationStrategy2RandomizedSpec extends AkkaSpec("akka.loglevel = INFO") {
 
   def createAllocations(countPerRegion: Map[ActorRef, Int]): Map[ActorRef, immutable.IndexedSeq[ShardId]] = {
     countPerRegion.map {
@@ -22,7 +22,7 @@ class WowShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel =
     }
   }
 
-  private val strategyWithoutLimits = new WowAllocationStrategy(absoluteLimit = 100000, relativeLimit = 1.0)
+  private val strategyWithoutLimits = new LeastShardAllocationStrategy2(absoluteLimit = 100000, relativeLimit = 1.0)
 
   private val rndSeed = System.currentTimeMillis()
   private val rnd = new Random(rndSeed)
@@ -32,7 +32,7 @@ class WowShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel =
   private val iterationsPerTest = 10
 
   private def afterRebalance(
-      allocationStrategy: WowAllocationStrategy,
+      allocationStrategy: LeastShardAllocationStrategy2,
       allocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
       rebalance: Set[ShardId]): Map[ActorRef, immutable.IndexedSeq[ShardId]] = {
     val allocationsAfterRemoval = allocations.map {
@@ -55,7 +55,7 @@ class WowShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel =
   }
 
   private def testRebalance(
-      allocationStrategy: WowAllocationStrategy,
+      allocationStrategy: LeastShardAllocationStrategy2,
       maxRegions: Int,
       maxShardsPerRegion: Int,
       expectedMaxSteps: Int): Unit = {
@@ -75,7 +75,7 @@ class WowShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel =
   }
 
   @tailrec private def testRebalance(
-      allocationStrategy: WowAllocationStrategy,
+      allocationStrategy: LeastShardAllocationStrategy2,
       allocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
       steps: Vector[Map[ActorRef, immutable.IndexedSeq[ShardId]]],
       maxSteps: Int): Unit = {
@@ -103,7 +103,7 @@ class WowShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel =
     }
   }
 
-  "WowShardAllocationStrategy with random scenario" must {
+  "LeastShardAllocationStrategy2 with random scenario" must {
 
     "rebalance shards with max 5 regions / 5 shards" in {
       testRebalance(strategyWithoutLimits, maxRegions = 5, maxShardsPerRegion = 5, expectedMaxSteps = 2)
@@ -137,7 +137,7 @@ class WowShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel =
       val absoluteLimit = 3 + rnd.nextInt(7) + 3
       val relativeLimit = 0.05 + (rnd.nextDouble() * 0.95)
 
-      val strategy = new WowAllocationStrategy(absoluteLimit, relativeLimit)
+      val strategy = new LeastShardAllocationStrategy2(absoluteLimit, relativeLimit)
       testRebalance(strategy, maxRegions = 20, maxShardsPerRegion = 20, expectedMaxSteps = 20)
     }
 

@@ -11,13 +11,12 @@ import akka.actor.ActorRef
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.ShardId
 
-object WowAllocationStrategy {
+object LeastShardAllocationStrategy2 {
   private val emptyRebalanceResult = Future.successful(Set.empty[ShardId])
 }
 
-// FIXME name
-class WowAllocationStrategy(absoluteLimit: Int, relativeLimit: Double) extends ShardAllocationStrategy {
-  import WowAllocationStrategy.emptyRebalanceResult
+class LeastShardAllocationStrategy2(absoluteLimit: Int, relativeLimit: Double) extends ShardAllocationStrategy {
+  import LeastShardAllocationStrategy2.emptyRebalanceResult
 
   override def allocateShard(
       requester: ActorRef,
@@ -95,5 +94,5 @@ class WowAllocationStrategy(absoluteLimit: Int, relativeLimit: Double) extends S
   }
 
   override def toString: ShardId =
-    s"WowAllocationStrategy($absoluteLimit,$relativeLimit)"
+    s"LeastShardAllocationStrategy2($absoluteLimit,$relativeLimit)"
 }
