@@ -4,6 +4,10 @@
 
 A full server- and client-side HTTP stack on top of akka-actor and akka-stream.
 
+## [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/)
+
+Akka gRPC provides support for building streaming gRPC servers and clients on top of Akka Streams.
+
 ## [Alpakka](https://doc.akka.io/docs/alpakka/current/)
 
 Alpakka is a Reactive Enterprise Integration library for Java and Scala, based on Reactive Streams and Akka.
@@ -13,7 +17,7 @@ Alpakka is a Reactive Enterprise Integration library for Java and Scala, based o
 The Alpakka Kafka Connector connects Apache Kafka with Akka Streams.
 
 
-## [Akka Projection](https://doc.akka.io/docs/akka-projection/current/)
+## [Akka Projections](https://doc.akka.io/docs/akka-projection/current/)
 
 Akka Projections let you process a stream of events or records from a source to a projected model or external system.
 
@@ -45,10 +49,6 @@ Use [Google Cloud Spanner](https://cloud.google.com/spanner/) as Akka Persistenc
 * [Akka Discovery for Kubernetes, Consul, Marathon, and AWS](https://doc.akka.io/docs/akka-management/current/discovery/)
 * [Kubernetes Lease](https://doc.akka.io/docs/akka-management/current/kubernetes-lease.html)
 
-## [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/)
-
-Akka gRPC provides support for building streaming gRPC servers and clients on top of Akka Streams.
-
 ## Akka Resilience Enhancements
 
 * [Akka Thread Starvation Detector](https://doc.akka.io/docs/akka-enhancements/current/starvation-detector.html)
@@ -57,7 +57,6 @@ Akka gRPC provides support for building streaming gRPC servers and clients on to
 
 ## Akka Persistence Enhancements
 
-* [Akka Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
 * [Akka GDPR for Persistence](https://doc.akka.io/docs/akka-enhancements/current/gdpr/index.html)
 
 ## Community Projects
