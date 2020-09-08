@@ -27,7 +27,7 @@ object Tick {
     case class Response(text: String)
   }
 
-  def simple() {
+  def simple() = {
     // #simple
     Source
       .tick(
@@ -39,7 +39,7 @@ object Tick {
     // #simple
   }
 
-  def pollSomething() {
+  def pollSomething() = {
     // #poll-actor
     val periodicActorResponse: Source[String, Cancellable] = Source
       .tick(1.second, 1.second, "tick")

@@ -4,9 +4,10 @@
 
 package docs.stream
 
-import akka.NotUsed
-
 import scala.concurrent.duration._
+
+import akka.Done
+import akka.NotUsed
 import akka.testkit.AkkaSpec
 import akka.stream.scaladsl._
 import akka.stream._
@@ -134,7 +135,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
   import TwitterStreamQuickstartDocSpec._
   import IntegrationDocSpec._
 
-  val ref: ActorRef = system.actorOf(Props[Translator])
+  val ref: ActorRef = system.actorOf(Props[Translator]())
 
   "ask" in {
     //#ask
@@ -494,16 +495,25 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#source-actorRef
     val bufferSize = 10
 
+    val cm: PartialFunction[Any, CompletionStrategy] = {
+      case Done =>
+        CompletionStrategy.immediately
+    }
+
     val ref = Source
-      .actorRef[Int](bufferSize, OverflowStrategy.fail) // note: backpressure is not supported
+      .actorRef[Int](
+        completionMatcher = cm,
+        failureMatcher = PartialFunction.empty[Any, Throwable],
+        bufferSize = bufferSize,
+        overflowStrategy = OverflowStrategy.fail) // note: backpressure is not supported
       .map(x => x * x)
-      .toMat(Sink.foreach(x => println(s"completed $x")))(Keep.left)
+      .toMat(Sink.foreach((x: Int) => println(s"completed $x")))(Keep.left)
       .run()
 
     ref ! 1
     ref ! 2
     ref ! 3
-    ref ! akka.actor.Status.Success("done")
+    ref ! Done
     //#source-actorRef
   }
 }

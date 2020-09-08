@@ -28,7 +28,11 @@ class RateTransformationDocSpec extends AkkaSpec {
     //#conflate-summarize
 
     val fut =
-      Source.fromIterator(() => Iterator.continually(Random.nextGaussian)).via(statsFlow).grouped(10).runWith(Sink.head)
+      Source
+        .fromIterator(() => Iterator.continually(Random.nextGaussian()))
+        .via(statsFlow)
+        .grouped(10)
+        .runWith(Sink.head)
 
     fut.futureValue
   }
@@ -38,8 +42,8 @@ class RateTransformationDocSpec extends AkkaSpec {
     val p = 0.01
     val sampleFlow = Flow[Double]
       .conflateWithSeed(immutable.Seq(_)) {
-        case (acc, elem) if Random.nextDouble < p => acc :+ elem
-        case (acc, _)                             => acc
+        case (acc, elem) if Random.nextDouble() < p => acc :+ elem
+        case (acc, _)                               => acc
       }
       .mapConcat(identity)
     //#conflate-sample

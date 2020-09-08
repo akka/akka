@@ -233,6 +233,7 @@ lazy val docs = akkaModule("akka-docs")
     streamTestkit % "compile->compile;test->test",
     persistenceTestkit % "compile->compile;test->test")
   .settings(Dependencies.docs)
+  .settings(AkkaDisciplinePlugin.docs)
   .settings(Paradox.settings)
   .settings(javacOptions += "-parameters") // for Jackson
   .enablePlugins(

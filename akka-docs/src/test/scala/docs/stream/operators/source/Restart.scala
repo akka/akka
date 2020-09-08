@@ -52,7 +52,7 @@ object Restart extends App {
 
   }
 
-  def onRestartWithBackoffInnerComplete() {
+  def onRestartWithBackoffInnerComplete() = {
 
     //#restart-failure-inner-complete
     val finiteSource = Source.tick(1.second, 1.second, "tick").take(3)

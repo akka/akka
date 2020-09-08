@@ -18,13 +18,13 @@ class RecipeAdhocSource extends RecipeSpec {
 
   //#adhoc-source
   def adhocSource[T](source: Source[T, _], timeout: FiniteDuration, maxRetries: Int): Source[T, _] =
-    Source.lazily(
+    Source.lazySource(
       () =>
         source
           .backpressureTimeout(timeout)
           .recoverWithRetries(maxRetries, {
             case t: TimeoutException =>
-              Source.lazily(() => source.backpressureTimeout(timeout)).mapMaterializedValue(_ => NotUsed)
+              Source.lazySource(() => source.backpressureTimeout(timeout)).mapMaterializedValue(_ => NotUsed)
           }))
   //#adhoc-source
 

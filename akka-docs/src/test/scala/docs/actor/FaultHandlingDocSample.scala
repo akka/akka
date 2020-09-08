@@ -32,8 +32,8 @@ object FaultHandlingDocSample extends App {
     """)
 
   val system = ActorSystem("FaultToleranceSample", config)
-  val worker = system.actorOf(Props[Worker], name = "worker")
-  val listener = system.actorOf(Props[Listener], name = "listener")
+  val worker = system.actorOf(Props[Worker](), name = "worker")
+  val listener = system.actorOf(Props[Listener](), name = "listener")
   // start the work and listen on progress
   // note that the listener is used as sender of the tell,
   // i.e. it will receive replies from the worker
@@ -90,7 +90,7 @@ class Worker extends Actor with ActorLogging {
   // The sender of the initial Start message will continuously be notified
   // about progress
   var progressListener: Option[ActorRef] = None
-  val counterService = context.actorOf(Props[CounterService], name = "counter")
+  val counterService = context.actorOf(Props[CounterService](), name = "counter")
   val totalCount = 51
   import context.dispatcher // Use this Actors' Dispatcher as ExecutionContext
 
@@ -160,7 +160,7 @@ class CounterService extends Actor {
    * Watch the child so we receive Terminated message when it has been terminated.
    */
   def initStorage(): Unit = {
-    storage = Some(context.watch(context.actorOf(Props[Storage], name = "storage")))
+    storage = Some(context.watch(context.actorOf(Props[Storage](), name = "storage")))
     // Tell the counter, if any, to use the new storage
     counter.foreach { _ ! UseStorage(storage) }
     // We need the initial value to be able to operate

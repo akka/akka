@@ -199,7 +199,7 @@ object PersistenceQueryDocSpec {
 class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
   import PersistenceQueryDocSpec._
 
-  def this() {
+  def this() = {
     this("""
         akka.persistence.query.my-read-journal {
           class = "docs.persistence.query.PersistenceQueryDocSpec$MyReadJournalProvider"

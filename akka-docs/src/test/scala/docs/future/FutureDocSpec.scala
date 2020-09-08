@@ -150,7 +150,7 @@ class FutureDocSpec extends AkkaSpec {
   }
 
   "demonstrate usage of blocking from actor" in {
-    val actor = system.actorOf(Props[MyActor])
+    val actor = system.actorOf(Props[MyActor]())
     val msg = "hello"
     //#ask-blocking
     import scala.concurrent.Await
@@ -167,7 +167,7 @@ class FutureDocSpec extends AkkaSpec {
   }
 
   "demonstrate usage of mapTo" in {
-    val actor = system.actorOf(Props[MyActor])
+    val actor = system.actorOf(Props[MyActor]())
     val msg = "hello"
     implicit val timeout = Timeout(5 seconds)
     //#map-to
@@ -280,9 +280,9 @@ class FutureDocSpec extends AkkaSpec {
   }
 
   "demonstrate wrong way of composing" in {
-    val actor1 = system.actorOf(Props[MyActor])
-    val actor2 = system.actorOf(Props[MyActor])
-    val actor3 = system.actorOf(Props[MyActor])
+    val actor1 = system.actorOf(Props[MyActor]())
+    val actor2 = system.actorOf(Props[MyActor]())
+    val actor3 = system.actorOf(Props[MyActor]())
     val msg1 = 1
     val msg2 = 2
     implicit val timeout = Timeout(5 seconds)
@@ -304,9 +304,9 @@ class FutureDocSpec extends AkkaSpec {
   }
 
   "demonstrate composing" in {
-    val actor1 = system.actorOf(Props[MyActor])
-    val actor2 = system.actorOf(Props[MyActor])
-    val actor3 = system.actorOf(Props[MyActor])
+    val actor1 = system.actorOf(Props[MyActor]())
+    val actor2 = system.actorOf(Props[MyActor]())
+    val actor3 = system.actorOf(Props[MyActor]())
     val msg1 = 1
     val msg2 = 2
     implicit val timeout = Timeout(5 seconds)
@@ -331,7 +331,7 @@ class FutureDocSpec extends AkkaSpec {
 
   "demonstrate usage of sequence with actors" in {
     implicit val timeout = Timeout(5 seconds)
-    val oddActor = system.actorOf(Props[OddActor])
+    val oddActor = system.actorOf(Props[OddActor]())
     //#sequence-ask
     // oddActor returns odd numbers sequentially from 1 as a List[Future[Int]]
     val listOfFutures = List.fill(100)(akka.pattern.ask(oddActor, GetNext).mapTo[Int])
@@ -368,7 +368,7 @@ class FutureDocSpec extends AkkaSpec {
     //#fold
     // Create a sequence of Futures
     val futures = for (i <- 1 to 1000) yield Future(i * 2)
-    val futureSum = Future.fold(futures)(0)(_ + _)
+    val futureSum = Future.foldLeft(futures)(0)(_ + _)
     futureSum.foreach(println)
     //#fold
     Await.result(futureSum, 3 seconds) should be(1001000)
@@ -378,7 +378,7 @@ class FutureDocSpec extends AkkaSpec {
     //#reduce
     // Create a sequence of Futures
     val futures = for (i <- 1 to 1000) yield Future(i * 2)
-    val futureSum = Future.reduce(futures)(_ + _)
+    val futureSum = Future.reduceLeft(futures)(_ + _)
     futureSum.foreach(println)
     //#reduce
     Await.result(futureSum, 3 seconds) should be(1001000)
@@ -386,7 +386,7 @@ class FutureDocSpec extends AkkaSpec {
 
   "demonstrate usage of recover" in {
     implicit val timeout = Timeout(5 seconds)
-    val actor = system.actorOf(Props[MyActor])
+    val actor = system.actorOf(Props[MyActor]())
     val msg1 = -1
     //#recover
     val future = akka.pattern.ask(actor, msg1).recover {
@@ -399,7 +399,7 @@ class FutureDocSpec extends AkkaSpec {
 
   "demonstrate usage of recoverWith" in {
     implicit val timeout = Timeout(5 seconds)
-    val actor = system.actorOf(Props[MyActor])
+    val actor = system.actorOf(Props[MyActor]())
     val msg1 = -1
     //#try-recover
     val future = akka.pattern.ask(actor, msg1).recoverWith {

@@ -45,7 +45,7 @@ class TestKitUsageSpec
   val seqRef =
     system.actorOf(Props(classOf[SequencingActor], testActor, headList, tailList))
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     shutdown()
   }
 
@@ -72,7 +72,7 @@ class TestKitUsageSpec
         filterRef ! "test"
         expectMsg("test")
         filterRef ! 1
-        expectNoMsg
+        expectNoMessage()
         filterRef ! "some"
         filterRef ! "more"
         filterRef ! 1
@@ -98,8 +98,8 @@ class TestKitUsageSpec
         ignoreMsg {
           case msg: String => msg == "1"
         }
-        expectNoMsg
-        ignoreNoMsg
+        expectNoMessage()
+        ignoreNoMsg()
       }
     }
   }

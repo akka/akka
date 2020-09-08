@@ -52,6 +52,6 @@ object TransformationBackend {
       .withFallback(ConfigFactory.load())
 
     val system = ActorSystem("ClusterSystem", config)
-    system.actorOf(Props[TransformationBackend], name = "backend")
+    system.actorOf(Props[TransformationBackend](), name = "backend")
   }
 }

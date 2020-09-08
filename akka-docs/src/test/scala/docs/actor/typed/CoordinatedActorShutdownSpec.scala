@@ -51,7 +51,7 @@ class CoordinatedActorShutdownSpec {
 
   }
 
-  def showCancel: Unit = {
+  def showCancel(): Unit = {
     val system = ActorSystem(root, "main")
 
     def cleanup(): Unit = {}
