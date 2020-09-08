@@ -4,7 +4,6 @@
 
 package docs.stream
 
-
 import scala.concurrent.duration._
 
 import akka.Done
@@ -497,17 +496,16 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val bufferSize = 10
 
     val cm: PartialFunction[Any, CompletionStrategy] = {
-          case Done =>
-            CompletionStrategy.immediately
-        }
+      case Done =>
+        CompletionStrategy.immediately
+    }
 
     val ref = Source
       .actorRef[Int](
         completionMatcher = cm,
         failureMatcher = PartialFunction.empty[Any, Throwable],
         bufferSize = bufferSize,
-        overflowStrategy = OverflowStrategy.fail
-      ) // note: backpressure is not supported
+        overflowStrategy = OverflowStrategy.fail) // note: backpressure is not supported
       .map(x => x * x)
       .toMat(Sink.foreach((x: Int) => println(s"completed $x")))(Keep.left)
       .run()

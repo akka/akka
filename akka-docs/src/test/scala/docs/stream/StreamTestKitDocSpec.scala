@@ -69,13 +69,9 @@ class StreamTestKitDocSpec extends AkkaSpec {
     val sourceUnderTest = Source.tick(0.seconds, 200.millis, Tick)
 
     val probe = TestProbe()
-    val cancellable = sourceUnderTest.to(
-      Sink.actorRef(
-        probe.ref,
-        onCompleteMessage = "completed",
-        onFailureMessage = _ => "failed"
-      )
-    ).run()
+    val cancellable = sourceUnderTest
+      .to(Sink.actorRef(probe.ref, onCompleteMessage = "completed", onFailureMessage = _ => "failed"))
+      .run()
 
     probe.expectMsg(1.second, Tick)
     probe.expectNoMessage(100.millis)
@@ -89,15 +85,18 @@ class StreamTestKitDocSpec extends AkkaSpec {
     //#source-actorref
     val sinkUnderTest = Flow[Int].map(_.toString).toMat(Sink.fold("")(_ + _))(Keep.right)
 
-    val (ref, future) = Source.actorRef(
-      completionMatcher = {
-        case Done =>
-          CompletionStrategy.draining
-      },
-      // Never fail the stream because of a message:
-      failureMatcher = PartialFunction.empty,
-      bufferSize = 8,
-      overflowStrategy = OverflowStrategy.fail).toMat(sinkUnderTest)(Keep.both).run()
+    val (ref, future) = Source
+      .actorRef(
+        completionMatcher = {
+          case Done =>
+            CompletionStrategy.draining
+        },
+        // Never fail the stream because of a message:
+        failureMatcher = PartialFunction.empty,
+        bufferSize = 8,
+        overflowStrategy = OverflowStrategy.fail)
+      .toMat(sinkUnderTest)(Keep.both)
+      .run()
 
     ref ! 1
     ref ! 2
