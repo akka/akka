@@ -84,7 +84,10 @@ object ClusterShardingSettings {
       entityRecoveryConstantRateStrategyNumberOfEntities =
         config.getInt("entity-recovery-constant-rate-strategy.number-of-entities"),
       coordinatorStateWriteMajorityPlus = configMajorityPlus("coordinator-state.write-majority-plus"),
-      coordinatorStateReadMajorityPlus = configMajorityPlus("coordinator-state.read-majority-plus"))
+      coordinatorStateReadMajorityPlus = configMajorityPlus("coordinator-state.read-majority-plus"),
+      allocationStrategy = config.getString("allocation-strategy"),
+      leastShardAllocation2AbsoluteLimit = config.getInt("least-shard-allocation-strategy2.absolute-limit"),
+      leastShardAllocation2RelativeLimit = config.getDouble("least-shard-allocation-strategy2.relative-limit"))
 
     val coordinatorSingletonSettings = ClusterSingletonManagerSettings(config.getConfig("coordinator-singleton"))
 
@@ -148,11 +151,63 @@ object ClusterShardingSettings {
       val entityRecoveryConstantRateStrategyFrequency: FiniteDuration,
       val entityRecoveryConstantRateStrategyNumberOfEntities: Int,
       val coordinatorStateWriteMajorityPlus: Int,
-      val coordinatorStateReadMajorityPlus: Int) {
+      val coordinatorStateReadMajorityPlus: Int,
+      val allocationStrategy: String,
+      val leastShardAllocation2AbsoluteLimit: Int,
+      val leastShardAllocation2RelativeLimit: Double) {
 
     require(
       entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
       s"Unknown 'entity-recovery-strategy' [$entityRecoveryStrategy], valid values are 'all' or 'constant'")
+
+    // included for binary compatibility
+    @deprecated(
+      "Use the ClusterShardingSettings factory methods or the constructor including " +
+      "allocationStrategy, leastShardAllocation2AbsoluteLimit and leastShardAllocationRelativeLimit instead",
+      since = "2.6.10")
+    def this(
+        coordinatorFailureBackoff: FiniteDuration,
+        retryInterval: FiniteDuration,
+        bufferSize: Int,
+        handOffTimeout: FiniteDuration,
+        shardStartTimeout: FiniteDuration,
+        shardFailureBackoff: FiniteDuration,
+        entityRestartBackoff: FiniteDuration,
+        rebalanceInterval: FiniteDuration,
+        snapshotAfter: Int,
+        keepNrOfBatches: Int,
+        leastShardAllocationRebalanceThreshold: Int,
+        leastShardAllocationMaxSimultaneousRebalance: Int,
+        waitingForStateTimeout: FiniteDuration,
+        updatingStateTimeout: FiniteDuration,
+        entityRecoveryStrategy: String,
+        entityRecoveryConstantRateStrategyFrequency: FiniteDuration,
+        entityRecoveryConstantRateStrategyNumberOfEntities: Int,
+        coordinatorStateWriteMajorityPlus: Int,
+        coordinatorStateReadMajorityPlus: Int) =
+      this(
+        coordinatorFailureBackoff,
+        retryInterval,
+        bufferSize,
+        handOffTimeout,
+        shardStartTimeout,
+        shardFailureBackoff,
+        entityRestartBackoff,
+        rebalanceInterval,
+        snapshotAfter,
+        keepNrOfBatches,
+        leastShardAllocationRebalanceThreshold,
+        leastShardAllocationMaxSimultaneousRebalance,
+        waitingForStateTimeout,
+        updatingStateTimeout,
+        entityRecoveryStrategy,
+        entityRecoveryConstantRateStrategyFrequency,
+        entityRecoveryConstantRateStrategyNumberOfEntities,
+        coordinatorStateWriteMajorityPlus,
+        coordinatorStateReadMajorityPlus,
+        allocationStrategy = ShardCoordinator.LeastShardAllocationStrategy.ConfigValue,
+        leastShardAllocation2AbsoluteLimit = 100,
+        leastShardAllocation2RelativeLimit = 0.1)
 
     // included for binary compatibility
     @deprecated(

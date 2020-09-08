@@ -177,6 +177,13 @@ object ShardCoordinator {
   private val emptyRebalanceResult = Future.successful(Set.empty[ShardId])
 
   /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] object LeastShardAllocationStrategy {
+    val ConfigValue = "least-shard-allocation-strategy"
+  }
+
+  /**
    * The default implementation of [[ShardCoordinator.LeastShardAllocationStrategy]]
    * allocates new shards to the `ShardRegion` with least number of previously allocated shards.
    *

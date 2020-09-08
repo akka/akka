@@ -8,11 +8,17 @@ import scala.collection.immutable
 import scala.concurrent.Future
 
 import akka.actor.ActorRef
+import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.ShardId
 
-object LeastShardAllocationStrategy2 {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object LeastShardAllocationStrategy2 {
   private val emptyRebalanceResult = Future.successful(Set.empty[ShardId])
+
+  val ConfigValue = "least-shard-allocation-strategy2"
 }
 
 class LeastShardAllocationStrategy2(absoluteLimit: Int, relativeLimit: Double) extends ShardAllocationStrategy {
@@ -29,7 +35,8 @@ class LeastShardAllocationStrategy2(absoluteLimit: Int, relativeLimit: Double) e
   override def rebalance(
       currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
       rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
-    import math.{ max, min }
+    import math.max
+    import math.min
 
     if (rebalanceInProgress.nonEmpty) {
       // one rebalance at a time

@@ -281,17 +281,18 @@ import akka.util.JavaDurationConverters._
   }
 
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
-    // FIXME real settings
-    if (System.getProperties.containsKey("absoluteLimit")) {
-      new LeastShardAllocationStrategy2(
-        System.getProperty("absoluteLimit", "5").toInt,
-        System.getProperty("relativeLimit", "0.5").toDouble)
-    } else {
-      val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
-      val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
-      new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+    settings.tuningParameters.allocationStrategy match {
+      case LeastShardAllocationStrategy2.ConfigValue =>
+        val absoluteLimit = settings.tuningParameters.leastShardAllocation2AbsoluteLimit
+        val relativeLimit = settings.tuningParameters.leastShardAllocation2RelativeLimit
+        new LeastShardAllocationStrategy2(absoluteLimit, relativeLimit)
+      case LeastShardAllocationStrategy.ConfigValue =>
+        val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
+        val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
+        new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+      case other =>
+        throw new IllegalArgumentException(s"Unknown allocation-strategy: [$other]")
     }
-
   }
 
   override lazy val shardState: ActorRef[ClusterShardingQuery] = {

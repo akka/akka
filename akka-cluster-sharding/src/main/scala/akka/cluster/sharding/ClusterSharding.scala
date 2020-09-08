@@ -655,13 +655,21 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   }
 
   /**
-   * The default is currently [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] with the
-   * given `settings`. This could be changed in the future.
+   * The default `ShardAllocationStrategy` is configured by `akka.cluster.sharding.allocation-strategy`.
    */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
-    val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
-    val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
-    new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+    settings.tuningParameters.allocationStrategy match {
+      case LeastShardAllocationStrategy2.ConfigValue =>
+        val absoluteLimit = settings.tuningParameters.leastShardAllocation2AbsoluteLimit
+        val relativeLimit = settings.tuningParameters.leastShardAllocation2RelativeLimit
+        new LeastShardAllocationStrategy2(absoluteLimit, relativeLimit)
+      case LeastShardAllocationStrategy.ConfigValue =>
+        val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
+        val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
+        new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+      case other =>
+        throw new IllegalArgumentException(s"Unknown allocation-strategy: [$other]")
+    }
   }
 }
 
