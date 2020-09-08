@@ -116,6 +116,7 @@ Now wait until all artifacts have been properly propagated. Then:
   * Tweet about it
   * Post about it on Discuss
   * Post about it on Gitter
+  * Create a GitHub 'release' for the tag via https://github.com/akka/akka/releases with a link to the release notes
 
 ## Update references
 
