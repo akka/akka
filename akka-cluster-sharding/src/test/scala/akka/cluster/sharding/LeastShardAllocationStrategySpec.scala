@@ -151,10 +151,10 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       // so far [34, 34, 32]
       allocationCountsAfterRebalance(allocationStrategy, allocations, result1).sorted should ===(
         Vector(34, 34, 32).sorted)
-      val allocations2 = createAllocations(aCount = 34, bCount = 34, cCount = 32)
+      val allocations2 = afterRebalance(allocationStrategy, allocations, result1)
       // second phase will find the diff of 2, resulting in [33, 34, 33]
       val result2 = allocationStrategy.rebalance(allocations2, Set.empty).futureValue
-      result2 should ===(Set("001"))
+      result2 should ===(Set("017"))
       allocationCountsAfterRebalance(allocationStrategy, allocations2, result2).sorted should ===(
         Vector(33, 34, 33).sorted)
     }
