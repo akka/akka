@@ -115,8 +115,7 @@ import akka.util.ccompat.JavaConverters._
  *
  * '''Shard Allocation''':
  * The logic deciding which shards to rebalance is defined in a plugable shard allocation
- * strategy. The default implementation [[ShardCoordinator.LeastShardAllocationStrategy]] or
- * [[akka.cluster.sharding.LeastShardAllocationStrategy]]
+ * strategy. The default implementation `LeastShardAllocationStrategy`
  * picks shards for handoff from the `ShardRegion` with highest number of previously allocated shards.
  * They will then be allocated to the `ShardRegion` with lowest number of previously allocated shards,
  * i.e. new members in the cluster. This strategy can be replaced by an application
@@ -664,7 +663,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       // new algorithm
       val absoluteLimit = settings.tuningParameters.leastShardAllocationAbsoluteLimit
       val relativeLimit = settings.tuningParameters.leastShardAllocationRelativeLimit
-      new akka.cluster.sharding.LeastShardAllocationStrategy(absoluteLimit, relativeLimit)
+      ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit, relativeLimit)
     } else {
       // deprecated algorithm
       val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold

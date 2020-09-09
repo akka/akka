@@ -19,8 +19,9 @@ import akka.testkit.WithLogCapturing
 import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import scala.concurrent.duration._
+
+import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 
 object RememberEntitiesFailureSpec {
   val config = ConfigFactory.parseString(s"""
@@ -320,7 +321,7 @@ class RememberEntitiesFailureSpec
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
           extractShardId,
-          new LeastShardAllocationStrategy(absoluteLimit = 1, relativeLimit = 0.1),
+          ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 1, relativeLimit = 0.1),
           "graceful-stop")
 
         val probe = TestProbe()
@@ -361,7 +362,7 @@ class RememberEntitiesFailureSpec
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
           extractShardId,
-          new LeastShardAllocationStrategy(absoluteLimit = 1, relativeLimit = 0.1),
+          ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 1, relativeLimit = 0.1),
           "graceful-stop")
 
         val probe = TestProbe()

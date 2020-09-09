@@ -2,7 +2,7 @@
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.cluster.sharding
+package akka.cluster.sharding.internal
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -20,7 +20,9 @@ import akka.cluster.sharding.ShardRegion.ShardId
 }
 
 /**
- * The default implementation `LeastShardAllocationStrategy` allocates new shards to the `ShardRegion` (node) with least
+ * INTERNAL API: Use `ShardCoordinator.ShardAllocationStrategy.leastShardAllocationStrategy` factory method.
+ *
+ * `ShardAllocationStrategy` that  allocates new shards to the `ShardRegion` (node) with least
  * number of previously allocated shards.
  *
  * When a node is added to the cluster the shards on the existing nodes will be rebalanced to the new node.
@@ -37,7 +39,8 @@ import akka.cluster.sharding.ShardRegion.ShardId
  * @param relativeLimit fraction (< 1.0) of total number of (known) shards that will be rebalanced
  *                      in one rebalance round
  */
-final class LeastShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Double) extends ShardAllocationStrategy {
+@InternalApi private[akka] final class LeastShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Double)
+    extends ShardAllocationStrategy {
   import LeastShardAllocationStrategy.emptyRebalanceResult
 
   override def allocateShard(

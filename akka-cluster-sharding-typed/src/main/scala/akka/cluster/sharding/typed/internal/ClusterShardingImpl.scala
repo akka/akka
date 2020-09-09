@@ -287,7 +287,7 @@ import akka.util.JavaDurationConverters._
       // new algorithm
       val absoluteLimit = settings.tuningParameters.leastShardAllocationAbsoluteLimit
       val relativeLimit = settings.tuningParameters.leastShardAllocationRelativeLimit
-      new akka.cluster.sharding.LeastShardAllocationStrategy(absoluteLimit, relativeLimit)
+      ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit, relativeLimit)
     } else {
       // deprecated algorithm
       val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold

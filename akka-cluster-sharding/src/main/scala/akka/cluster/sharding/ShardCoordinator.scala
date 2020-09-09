@@ -74,6 +74,51 @@ object ShardCoordinator {
         rememberEntitiesStoreProvider)).withDeploy(Deploy.local)
 
   /**
+   * Java API: `ShardAllocationStrategy` that  allocates new shards to the `ShardRegion` (node) with least
+   * number of previously allocated shards.
+   *
+   * When a node is added to the cluster the shards on the existing nodes will be rebalanced to the new node.
+   * The `LeastShardAllocationStrategy` picks shards for rebalancing from the `ShardRegion`s with most number
+   * of previously allocated shards. They will then be allocated to the `ShardRegion` with least number of
+   * previously allocated shards, i.e. new members in the cluster. The amount of shards to rebalance in each
+   * round can be limited to make it progress slower since rebalancing too many shards at the same time could
+   * result in additional load on the system. For example, causing many Event Sourced entites to be started
+   * at the same time.
+   *
+   * It will not rebalance when there is already an ongoing rebalance in progress.
+   *
+   * @param absoluteLimit the maximum number of shards that will be rebalanced in one rebalance round
+   * @param relativeLimit fraction (< 1.0) of total number of (known) shards that will be rebalanced
+   *                      in one rebalance round
+   */
+  def leastShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Double): ShardAllocationStrategy =
+    ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit, relativeLimit)
+
+  object ShardAllocationStrategy {
+
+    /**
+     * Scala API: `ShardAllocationStrategy` that  allocates new shards to the `ShardRegion` (node) with least
+     * number of previously allocated shards.
+     *
+     * When a node is added to the cluster the shards on the existing nodes will be rebalanced to the new node.
+     * The `LeastShardAllocationStrategy` picks shards for rebalancing from the `ShardRegion`s with most number
+     * of previously allocated shards. They will then be allocated to the `ShardRegion` with least number of
+     * previously allocated shards, i.e. new members in the cluster. The amount of shards to rebalance in each
+     * round can be limited to make it progress slower since rebalancing too many shards at the same time could
+     * result in additional load on the system. For example, causing many Event Sourced entites to be started
+     * at the same time.
+     *
+     * It will not rebalance when there is already an ongoing rebalance in progress.
+     *
+     * @param absoluteLimit the maximum number of shards that will be rebalanced in one rebalance round
+     * @param relativeLimit fraction (< 1.0) of total number of (known) shards that will be rebalanced
+     *                      in one rebalance round
+     */
+    def leastShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Double): ShardAllocationStrategy =
+      new internal.LeastShardAllocationStrategy(absoluteLimit, relativeLimit)
+  }
+
+  /**
    * Interface of the pluggable shard allocation and rebalancing logic used by the [[ShardCoordinator]].
    *
    * Java implementations should extend [[AbstractShardAllocationStrategy]].
@@ -177,7 +222,7 @@ object ShardCoordinator {
   private val emptyRebalanceResult = Future.successful(Set.empty[ShardId])
 
   /**
-   * Deprecated: Use [[akka.cluster.sharding.LeastShardAllocationStrategy]] instead.
+   * Use [[akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy.leastShardAllocationStrategy]] instead.
    * The new rebalance algorithm was included in Akka 2.6.10. It can reach optimal balance in
    * less rebalance rounds (typically 1 or 2 rounds). The amount of shards to rebalance in each
    * round can still be limited to make it progress slower.
@@ -205,7 +250,6 @@ object ShardCoordinator {
    *
    * The number of ongoing rebalancing processes can be limited by `maxSimultaneousRebalance`.
    */
-  @deprecated("Use akka.cluster.sharding.LeastShardAllocationStrategy instead", "2.6.10")
   @SerialVersionUID(1L)
   class LeastShardAllocationStrategy(rebalanceThreshold: Int, maxSimultaneousRebalance: Int)
       extends ShardAllocationStrategy

@@ -8,7 +8,6 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.testkit.AkkaSpec
 
-@deprecated("Use akka.cluster.sharding.LeastShardAllocationStrategy instead", "2.6.10")
 class DeprecatedLeastShardAllocationStrategySpec extends AkkaSpec {
   import ShardCoordinator._
 

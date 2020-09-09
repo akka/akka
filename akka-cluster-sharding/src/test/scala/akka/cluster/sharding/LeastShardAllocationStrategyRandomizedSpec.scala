@@ -10,6 +10,7 @@ import scala.util.Random
 
 import akka.actor.ActorRef
 import akka.actor.Props
+import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.testkit.AkkaSpec
 
@@ -23,7 +24,8 @@ class LeastShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel
     }
   }
 
-  private val strategyWithoutLimits = new LeastShardAllocationStrategy(absoluteLimit = 100000, relativeLimit = 1.0)
+  private val strategyWithoutLimits =
+    ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 100000, relativeLimit = 1.0)
 
   private val rndSeed = System.currentTimeMillis()
   private val rnd = new Random(rndSeed)
@@ -33,7 +35,7 @@ class LeastShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel
   private val iterationsPerTest = 10
 
   private def testRebalance(
-      allocationStrategy: LeastShardAllocationStrategy,
+      allocationStrategy: ShardAllocationStrategy,
       maxRegions: Int,
       maxShardsPerRegion: Int,
       expectedMaxSteps: Int): Unit = {
@@ -53,7 +55,7 @@ class LeastShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel
   }
 
   @tailrec private def testRebalance(
-      allocationStrategy: LeastShardAllocationStrategy,
+      allocationStrategy: ShardAllocationStrategy,
       allocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
       steps: Vector[Map[ActorRef, immutable.IndexedSeq[ShardId]]],
       maxSteps: Int): Unit = {
@@ -115,7 +117,7 @@ class LeastShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel
       val absoluteLimit = 3 + rnd.nextInt(7) + 3
       val relativeLimit = 0.05 + (rnd.nextDouble() * 0.95)
 
-      val strategy = new LeastShardAllocationStrategy(absoluteLimit, relativeLimit)
+      val strategy = ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit, relativeLimit)
       testRebalance(strategy, maxRegions = 20, maxShardsPerRegion = 20, expectedMaxSteps = 20)
     }
 

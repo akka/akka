@@ -119,9 +119,8 @@ object ClusterSharding {
  * location.
  *
  * The logic that decides which shards to rebalance is defined in a plugable shard
- * allocation strategy. The default implementation [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]]
- * or [[akka.cluster.sharding.LeastShardAllocationStrategy]]
- * picks shards for handoff from the `ShardRegion` with most number of previously allocated shards.
+ * allocation strategy. The default implementation `LeastShardAllocationStrategy`
+ * picks shards for handoff from the ShardRegion` with most number of previously allocated shards.
  * They will then be allocated to the `ShardRegion` with least number of previously allocated shards,
  * i.e. new members in the cluster. This strategy can be replaced by an application specific
  * implementation.

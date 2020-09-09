@@ -13,6 +13,7 @@ import akka.actor.Address
 import akka.actor.MinimalActorRef
 import akka.actor.Props
 import akka.actor.RootActorPath
+import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.testkit.AkkaSpec
 
@@ -25,7 +26,7 @@ object LeastShardAllocationStrategySpec {
   }
 
   def afterRebalance(
-      allocationStrategy: LeastShardAllocationStrategy,
+      allocationStrategy: ShardAllocationStrategy,
       allocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
       rebalance: Set[ShardId]): Map[ActorRef, immutable.IndexedSeq[ShardId]] = {
     val allocationsAfterRemoval = allocations.map {
@@ -48,7 +49,7 @@ object LeastShardAllocationStrategySpec {
   }
 
   def allocationCountsAfterRebalance(
-      allocationStrategy: LeastShardAllocationStrategy,
+      allocationStrategy: ShardAllocationStrategy,
       allocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
       rebalance: Set[ShardId]): Vector[Int] = {
     countShardsPerRegion(afterRebalance(allocationStrategy, allocations, rebalance))
@@ -71,7 +72,8 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       regionC -> shards.slice(aCount + bCount, aCount + bCount + cCount).toVector)
   }
 
-  private val strategyWithoutLimits = new LeastShardAllocationStrategy(absoluteLimit = 1000, relativeLimit = 1.0)
+  private val strategyWithoutLimits =
+    ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 1000, relativeLimit = 1.0)
 
   "LeastShardAllocationStrategy" must {
     "allocate to region with least number of shards" in {
@@ -160,7 +162,8 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
     }
 
     "respect absolute limit of number shards" in {
-      val allocationStrategy = new LeastShardAllocationStrategy(absoluteLimit = 3, relativeLimit = 1.0)
+      val allocationStrategy =
+        ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 3, relativeLimit = 1.0)
       val allocations = createAllocations(aCount = 1, bCount = 9)
       val result = allocationStrategy.rebalance(allocations, Set.empty).futureValue
       result should ===(Set("002", "003", "004"))
@@ -168,7 +171,8 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
     }
 
     "respect relative limit of number shards" in {
-      val allocationStrategy = new LeastShardAllocationStrategy(absoluteLimit = 5, relativeLimit = 0.3)
+      val allocationStrategy =
+        ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 5, relativeLimit = 0.3)
       val allocations = createAllocations(aCount = 1, bCount = 9)
       val result = allocationStrategy.rebalance(allocations, Set.empty).futureValue
       result should ===(Set("002", "003", "004"))
