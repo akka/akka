@@ -13,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
 
+import com.github.ghik.silencer.silent
+
 import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InternalActorRef
@@ -29,11 +31,10 @@ import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.cluster.ClusterSettings.DataCenter
-import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
+import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.{ StartEntity => ClassicStartEntity }
-import akka.cluster.sharding.LeastShardAllocationStrategy2
 import akka.cluster.sharding.typed.scaladsl.EntityContext
 import akka.cluster.typed.Cluster
 import akka.event.Logging
@@ -280,18 +281,18 @@ import akka.util.JavaDurationConverters._
         typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
   }
 
+  @silent("deprecated")
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
-    settings.tuningParameters.allocationStrategy match {
-      case LeastShardAllocationStrategy2.ConfigValue =>
-        val absoluteLimit = settings.tuningParameters.leastShardAllocation2AbsoluteLimit
-        val relativeLimit = settings.tuningParameters.leastShardAllocation2RelativeLimit
-        new LeastShardAllocationStrategy2(absoluteLimit, relativeLimit)
-      case LeastShardAllocationStrategy.ConfigValue =>
-        val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
-        val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
-        new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
-      case other =>
-        throw new IllegalArgumentException(s"Unknown allocation-strategy: [$other]")
+    if (settings.tuningParameters.leastShardAllocationAbsoluteLimit > 0) {
+      // new algorithm
+      val absoluteLimit = settings.tuningParameters.leastShardAllocationAbsoluteLimit
+      val relativeLimit = settings.tuningParameters.leastShardAllocationRelativeLimit
+      new akka.cluster.sharding.LeastShardAllocationStrategy(absoluteLimit, relativeLimit)
+    } else {
+      // deprecated algorithm
+      val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
+      val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
+      new ShardCoordinator.LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
     }
   }
 

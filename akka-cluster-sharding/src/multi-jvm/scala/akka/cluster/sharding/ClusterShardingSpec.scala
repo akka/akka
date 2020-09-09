@@ -150,8 +150,8 @@ abstract class ClusterShardingSpecConfig(
         number-of-entities = 1
       }
       least-shard-allocation-strategy {
-        rebalance-threshold = 1
-        max-simultaneous-rebalance = 1
+        rebalance-absolute-limit = 1
+        rebalance-relative-limit = 1.0
       }
     }
     akka.testconductor.barrier-timeout = 70s
@@ -299,7 +299,7 @@ abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
 
     def coordinatorProps(typeName: String, rebalanceEnabled: Boolean, rememberEntities: Boolean): Props = {
       val allocationStrategy =
-        new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
+        new LeastShardAllocationStrategy(absoluteLimit = 2, relativeLimit = 1.0)
       val cfg = ConfigFactory.parseString(s"""
       handoff-timeout = 10s
       shard-start-timeout = 10s

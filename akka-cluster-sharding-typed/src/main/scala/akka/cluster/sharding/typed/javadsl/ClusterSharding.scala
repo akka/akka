@@ -120,10 +120,10 @@ object ClusterSharding {
  *
  * The logic that decides which shards to rebalance is defined in a plugable shard
  * allocation strategy. The default implementation [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]]
+ * or [[akka.cluster.sharding.LeastShardAllocationStrategy]]
  * picks shards for handoff from the `ShardRegion` with most number of previously allocated shards.
  * They will then be allocated to the `ShardRegion` with least number of previously allocated shards,
- * i.e. new members in the cluster. There is a configurable threshold of how large the difference
- * must be to begin the rebalancing. This strategy can be replaced by an application specific
+ * i.e. new members in the cluster. This strategy can be replaced by an application specific
  * implementation.
  *
  * The state of shard locations in the `ShardCoordinator` is stored with `akka-distributed-data` or
@@ -207,8 +207,7 @@ abstract class ClusterSharding {
   def shardState: ActorRef[ClusterShardingQuery]
 
   /**
-   * The default is currently [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] with the
-   * given `settings`. This could be changed in the future.
+   * The default `ShardAllocationStrategy` is configured by `least-shard-allocation-strategy` properties.
    */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy
 }

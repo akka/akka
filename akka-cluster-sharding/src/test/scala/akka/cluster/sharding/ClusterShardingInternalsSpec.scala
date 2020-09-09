@@ -9,7 +9,6 @@ import scala.concurrent.duration._
 import akka.actor.{ Actor, ActorRef, ExtendedActorSystem, NoSerializationVerificationNeeded, PoisonPill, Props }
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.ShardCoordinator.Internal.ShardStopped
-import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.{ ExtractEntityId, ExtractShardId, HandOffStopper, Msg }
 import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, TestProbe }
@@ -74,7 +73,7 @@ class ClusterShardingInternalsSpec extends AkkaSpec("""
         settings = settingsWithRole,
         extractEntityId = extractEntityId,
         extractShardId = extractShardId,
-        allocationStrategy = new LeastShardAllocationStrategy(3, 4),
+        allocationStrategy = new LeastShardAllocationStrategy(3, 0.1),
         handOffStopMessage = PoisonPill)
 
       probe.expectMsg(StartingProxy(typeName, settingsWithRole.role, None, extractEntityId, extractShardId))

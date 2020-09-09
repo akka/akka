@@ -57,8 +57,7 @@ abstract class ClusterShardingMinMembersSpec(multiNodeConfig: ClusterShardingMin
       entityProps = TestActors.echoActorProps,
       extractEntityId = MultiNodeClusterShardingSpec.intExtractEntityId,
       extractShardId = MultiNodeClusterShardingSpec.intExtractShardId,
-      allocationStrategy =
-        new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1),
+      allocationStrategy = new LeastShardAllocationStrategy(absoluteLimit = 2, relativeLimit = 1.0),
       handOffStopMessage = ShardedEntity.Stop)
   }
 

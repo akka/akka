@@ -320,7 +320,7 @@ class RememberEntitiesFailureSpec
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
           extractShardId,
-          new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 1, maxSimultaneousRebalance = 3),
+          new LeastShardAllocationStrategy(absoluteLimit = 1, relativeLimit = 0.1),
           "graceful-stop")
 
         val probe = TestProbe()
@@ -361,7 +361,7 @@ class RememberEntitiesFailureSpec
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
           extractShardId,
-          new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 1, maxSimultaneousRebalance = 3),
+          new LeastShardAllocationStrategy(absoluteLimit = 1, relativeLimit = 0.1),
           "graceful-stop")
 
         val probe = TestProbe()

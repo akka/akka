@@ -15,14 +15,12 @@ import akka.cluster.sharding.ShardRegion.ShardId
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] object LeastShardAllocationStrategy2 {
+@InternalApi private[akka] object LeastShardAllocationStrategy {
   private val emptyRebalanceResult = Future.successful(Set.empty[ShardId])
-
-  val ConfigValue = "least-shard-allocation-strategy2"
 }
 
-final class LeastShardAllocationStrategy2(absoluteLimit: Int, relativeLimit: Double) extends ShardAllocationStrategy {
-  import LeastShardAllocationStrategy2.emptyRebalanceResult
+final class LeastShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Double) extends ShardAllocationStrategy {
+  import LeastShardAllocationStrategy.emptyRebalanceResult
 
   override def allocateShard(
       requester: ActorRef,
@@ -102,5 +100,5 @@ final class LeastShardAllocationStrategy2(absoluteLimit: Int, relativeLimit: Dou
   }
 
   override def toString: ShardId =
-    s"LeastShardAllocationStrategy2($absoluteLimit,$relativeLimit)"
+    s"LeastShardAllocationStrategy($absoluteLimit,$relativeLimit)"
 }

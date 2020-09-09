@@ -85,9 +85,8 @@ object ClusterShardingSettings {
         config.getInt("entity-recovery-constant-rate-strategy.number-of-entities"),
       coordinatorStateWriteMajorityPlus = configMajorityPlus("coordinator-state.write-majority-plus"),
       coordinatorStateReadMajorityPlus = configMajorityPlus("coordinator-state.read-majority-plus"),
-      allocationStrategy = config.getString("allocation-strategy"),
-      leastShardAllocation2AbsoluteLimit = config.getInt("least-shard-allocation-strategy2.absolute-limit"),
-      leastShardAllocation2RelativeLimit = config.getDouble("least-shard-allocation-strategy2.relative-limit"))
+      leastShardAllocationAbsoluteLimit = config.getInt("least-shard-allocation-strategy.rebalance-absolute-limit"),
+      leastShardAllocationRelativeLimit = config.getDouble("least-shard-allocation-strategy.rebalance-relative-limit"))
 
     val coordinatorSingletonSettings = ClusterSingletonManagerSettings(config.getConfig("coordinator-singleton"))
 
@@ -152,9 +151,8 @@ object ClusterShardingSettings {
       val entityRecoveryConstantRateStrategyNumberOfEntities: Int,
       val coordinatorStateWriteMajorityPlus: Int,
       val coordinatorStateReadMajorityPlus: Int,
-      val allocationStrategy: String,
-      val leastShardAllocation2AbsoluteLimit: Int,
-      val leastShardAllocation2RelativeLimit: Double) {
+      val leastShardAllocationAbsoluteLimit: Int,
+      val leastShardAllocationRelativeLimit: Double) {
 
     require(
       entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
@@ -163,7 +161,7 @@ object ClusterShardingSettings {
     // included for binary compatibility
     @deprecated(
       "Use the ClusterShardingSettings factory methods or the constructor including " +
-      "allocationStrategy, leastShardAllocation2AbsoluteLimit and leastShardAllocationRelativeLimit instead",
+      "leastShardAllocationAbsoluteLimit and leastShardAllocationRelativeLimit instead",
       since = "2.6.10")
     def this(
         coordinatorFailureBackoff: FiniteDuration,
@@ -205,9 +203,8 @@ object ClusterShardingSettings {
         entityRecoveryConstantRateStrategyNumberOfEntities,
         coordinatorStateWriteMajorityPlus,
         coordinatorStateReadMajorityPlus,
-        allocationStrategy = ShardCoordinator.LeastShardAllocationStrategy.ConfigValue,
-        leastShardAllocation2AbsoluteLimit = 100,
-        leastShardAllocation2RelativeLimit = 0.1)
+        leastShardAllocationAbsoluteLimit = 100,
+        leastShardAllocationRelativeLimit = 0.1)
 
     // included for binary compatibility
     @deprecated(

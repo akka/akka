@@ -177,14 +177,12 @@ object ShardCoordinator {
   private val emptyRebalanceResult = Future.successful(Set.empty[ShardId])
 
   /**
-   * INTERNAL API
-   */
-  @InternalApi private[akka] object LeastShardAllocationStrategy {
-    val ConfigValue = "least-shard-allocation-strategy"
-  }
-
-  /**
-   * The default implementation of [[ShardCoordinator.LeastShardAllocationStrategy]]
+   * Deprecated: Use [[akka.cluster.sharding.LeastShardAllocationStrategy]] instead.
+   * The new rebalance algorithm was included in Akka 2.6.10. It can reach optimal balance in
+   * less rebalance rounds (typically 1 or 2 rounds). The amount of shards to rebalance in each
+   * round can still be limited to make it progress slower.
+   *
+   * This implementation of [[ShardCoordinator.ShardAllocationStrategy]]
    * allocates new shards to the `ShardRegion` with least number of previously allocated shards.
    *
    * When a node is removed from the cluster the shards on that node will be started on the remaining nodes,
@@ -207,6 +205,7 @@ object ShardCoordinator {
    *
    * The number of ongoing rebalancing processes can be limited by `maxSimultaneousRebalance`.
    */
+  @deprecated("Use akka.cluster.sharding.LeastShardAllocationStrategy instead", "2.6.10")
   @SerialVersionUID(1L)
   class LeastShardAllocationStrategy(rebalanceThreshold: Int, maxSimultaneousRebalance: Int)
       extends ShardAllocationStrategy

@@ -91,9 +91,8 @@ object ClusterShardingSettings {
           settings.tuningParameters.entityRecoveryConstantRateStrategyNumberOfEntities,
         coordinatorStateWriteMajorityPlus = settings.tuningParameters.coordinatorStateWriteMajorityPlus,
         coordinatorStateReadMajorityPlus = settings.tuningParameters.coordinatorStateReadMajorityPlus,
-        allocationStrategy = settings.tuningParameters.allocationStrategy,
-        leastShardAllocation2AbsoluteLimit = settings.tuningParameters.leastShardAllocation2AbsoluteLimit,
-        leastShardAllocation2RelativeLimit = settings.tuningParameters.leastShardAllocation2RelativeLimit),
+        leastShardAllocationAbsoluteLimit = settings.tuningParameters.leastShardAllocationAbsoluteLimit,
+        leastShardAllocationRelativeLimit = settings.tuningParameters.leastShardAllocationRelativeLimit),
       new ClassicClusterSingletonManagerSettings(
         settings.coordinatorSingletonSettings.singletonName,
         settings.coordinatorSingletonSettings.role,
@@ -179,9 +178,8 @@ object ClusterShardingSettings {
       val waitingForStateTimeout: FiniteDuration,
       val coordinatorStateWriteMajorityPlus: Int,
       val coordinatorStateReadMajorityPlus: Int,
-      val allocationStrategy: String,
-      val leastShardAllocation2AbsoluteLimit: Int,
-      val leastShardAllocation2RelativeLimit: Double) {
+      val leastShardAllocationAbsoluteLimit: Int,
+      val leastShardAllocationRelativeLimit: Double) {
 
     def this(classic: ClassicShardingSettings.TuningParameters) =
       this(
@@ -204,9 +202,8 @@ object ClusterShardingSettings {
         entityRecoveryConstantRateStrategyNumberOfEntities = classic.entityRecoveryConstantRateStrategyNumberOfEntities,
         coordinatorStateWriteMajorityPlus = classic.coordinatorStateWriteMajorityPlus,
         coordinatorStateReadMajorityPlus = classic.coordinatorStateReadMajorityPlus,
-        allocationStrategy = classic.allocationStrategy,
-        leastShardAllocation2AbsoluteLimit = classic.leastShardAllocation2AbsoluteLimit,
-        leastShardAllocation2RelativeLimit = classic.leastShardAllocation2RelativeLimit)
+        leastShardAllocationAbsoluteLimit = classic.leastShardAllocationAbsoluteLimit,
+        leastShardAllocationRelativeLimit = classic.leastShardAllocationRelativeLimit)
 
     require(
       entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
@@ -250,10 +247,10 @@ object ClusterShardingSettings {
       copy(coordinatorStateWriteMajorityPlus = value)
     def withCoordinatorStateReadMajorityPlus(value: Int): TuningParameters =
       copy(coordinatorStateReadMajorityPlus = value)
-    def withLeastShardAllocation2AbsoluteLimit(value: Int): TuningParameters =
-      copy(leastShardAllocation2AbsoluteLimit = value)
-    def withLeastShardAllocation2RelativeLimit(value: Double): TuningParameters =
-      copy(leastShardAllocation2RelativeLimit = value)
+    def withLeastShardAllocationAbsoluteLimit(value: Int): TuningParameters =
+      copy(leastShardAllocationAbsoluteLimit = value)
+    def withLeastShardAllocationRelativeLimit(value: Double): TuningParameters =
+      copy(leastShardAllocationRelativeLimit = value)
 
     private def copy(
         bufferSize: Int = bufferSize,
@@ -275,8 +272,8 @@ object ClusterShardingSettings {
         waitingForStateTimeout: FiniteDuration = waitingForStateTimeout,
         coordinatorStateWriteMajorityPlus: Int = coordinatorStateWriteMajorityPlus,
         coordinatorStateReadMajorityPlus: Int = coordinatorStateReadMajorityPlus,
-        leastShardAllocation2AbsoluteLimit: Int = leastShardAllocation2AbsoluteLimit,
-        leastShardAllocation2RelativeLimit: Double = leastShardAllocation2RelativeLimit): TuningParameters =
+        leastShardAllocationAbsoluteLimit: Int = leastShardAllocationAbsoluteLimit,
+        leastShardAllocationRelativeLimit: Double = leastShardAllocationRelativeLimit): TuningParameters =
       new TuningParameters(
         bufferSize = bufferSize,
         coordinatorFailureBackoff = coordinatorFailureBackoff,
@@ -297,12 +294,11 @@ object ClusterShardingSettings {
         waitingForStateTimeout = waitingForStateTimeout,
         coordinatorStateWriteMajorityPlus = coordinatorStateWriteMajorityPlus,
         coordinatorStateReadMajorityPlus = coordinatorStateReadMajorityPlus,
-        allocationStrategy,
-        leastShardAllocation2AbsoluteLimit = leastShardAllocation2AbsoluteLimit,
-        leastShardAllocation2RelativeLimit = leastShardAllocation2RelativeLimit)
+        leastShardAllocationAbsoluteLimit = leastShardAllocationAbsoluteLimit,
+        leastShardAllocationRelativeLimit = leastShardAllocationRelativeLimit)
 
     override def toString =
-      s"""TuningParameters($bufferSize,$coordinatorFailureBackoff,$entityRecoveryConstantRateStrategyFrequency,$entityRecoveryConstantRateStrategyNumberOfEntities,$entityRecoveryStrategy,$entityRestartBackoff,$handOffTimeout,$keepNrOfBatches,$leastShardAllocationMaxSimultaneousRebalance,$leastShardAllocationRebalanceThreshold,$rebalanceInterval,$retryInterval,$shardFailureBackoff,$shardStartTimeout,$snapshotAfter,$updatingStateTimeout,$waitingForStateTimeout,$coordinatorStateReadMajorityPlus,$coordinatorStateReadMajorityPlus,$leastShardAllocation2AbsoluteLimit,$leastShardAllocation2RelativeLimit)"""
+      s"""TuningParameters($bufferSize,$coordinatorFailureBackoff,$entityRecoveryConstantRateStrategyFrequency,$entityRecoveryConstantRateStrategyNumberOfEntities,$entityRecoveryStrategy,$entityRestartBackoff,$handOffTimeout,$keepNrOfBatches,$leastShardAllocationMaxSimultaneousRebalance,$leastShardAllocationRebalanceThreshold,$rebalanceInterval,$retryInterval,$shardFailureBackoff,$shardStartTimeout,$snapshotAfter,$updatingStateTimeout,$waitingForStateTimeout,$coordinatorStateReadMajorityPlus,$coordinatorStateReadMajorityPlus,$leastShardAllocationAbsoluteLimit,$leastShardAllocationRelativeLimit)"""
   }
 }
 
