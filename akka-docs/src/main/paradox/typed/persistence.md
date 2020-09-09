@@ -49,7 +49,7 @@ provides tools to facilitate in building GDPR capable systems.
 
 ### Event sourcing concepts
 
-See an [introduction to EventSourcing](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj591559(v=pandp.10)?redirectedfrom=MSDN) at MSDN.
+See an [introduction to EventSourcing](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj591559%28v=pandp.10%29) at MSDN.
 
 Another excellent article about "thinking in Events" is [Events As First-Class Citizens](https://hackernoon.com/events-as-first-class-citizens-8633e8479493)
 by Randy Shoup. It is a short and recommended read if you're starting developing Events based applications.
