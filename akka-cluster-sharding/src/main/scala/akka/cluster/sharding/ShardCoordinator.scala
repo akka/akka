@@ -22,6 +22,7 @@ import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy
+import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy.RegionEntry
 import akka.cluster.sharding.internal.EventSourcedRememberEntitiesCoordinatorStore.MigrationMarker
 import akka.cluster.sharding.internal.{
   EventSourcedRememberEntitiesCoordinatorStore,
@@ -285,29 +286,33 @@ object ShardCoordinator {
         requester: ActorRef,
         shardId: ShardId,
         currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef] = {
-      val (region, _) = mostSuitableRegion(currentShardAllocations)
+      val decorated = regionEntriesFor(currentShardAllocations)
+      val (region, _) = mostSuitableRegion(decorated)
       Future.successful(region)
     }
 
     override def rebalance(
         currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
         rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
-      if (rebalanceInProgress.size < maxSimultaneousRebalance && isAGoodTimeToRebalance) {
-        val (_, leastShards) = mostSuitableRegion(currentShardAllocations)
-        // even if it is to another new node.
-        val mostShards = currentShardAllocations
-          .collect {
-            case (_, v) => v.filterNot(s => rebalanceInProgress(s))
-          }
-          .maxBy(_.size)
-        val difference = mostShards.size - leastShards.size
-        if (difference > rebalanceThreshold) {
-          val n = math.min(
-            math.min(difference - rebalanceThreshold, rebalanceThreshold),
-            maxSimultaneousRebalance - rebalanceInProgress.size)
-          Future.successful(mostShards.sorted.take(n).toSet)
-        } else
-          emptyRebalanceResult
+      if (rebalanceInProgress.size < maxSimultaneousRebalance) {
+        val regionEntries = regionEntriesFor(currentShardAllocations)
+        if (isAGoodTimeToRebalance(regionEntries)) {
+          val (_, leastShards) = mostSuitableRegion(regionEntries)
+          // even if it is to another new node.
+          val mostShards = regionEntries
+            .collect {
+              case RegionEntry(_, _, v) => v.filterNot(s => rebalanceInProgress(s))
+            }
+            .maxBy(_.size)
+          val difference = mostShards.size - leastShards.size
+          if (difference > rebalanceThreshold) {
+            val n = math.min(
+              math.min(difference - rebalanceThreshold, rebalanceThreshold),
+              maxSimultaneousRebalance - rebalanceInProgress.size)
+            Future.successful(mostShards.sorted.take(n).toSet)
+          } else
+            emptyRebalanceResult
+        } else emptyRebalanceResult
       } else emptyRebalanceResult
     }
   }
