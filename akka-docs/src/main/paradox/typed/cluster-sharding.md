@@ -164,9 +164,33 @@ The `number-of-shards` configuration value must be the same for all nodes in the
 configuration check when joining. Changing the value requires stopping all nodes in the cluster.
 
 The shards are allocated to the nodes in the cluster. The decision of where to allocate a shard is done
-by a shard allocation strategy. The default implementation @apidoc[ShardCoordinator.LeastShardAllocationStrategy]
-allocates new shards to the `ShardRegion` (node) with least number of previously allocated shards.
-This strategy can be replaced by an application specific implementation.
+by a shard allocation strategy. 
+
+The default implementation `LeastShardAllocationStrategy` allocates new shards to the `ShardRegion` (node) with least
+number of previously allocated shards. This strategy can be replaced by an application specific implementation.
+
+When a node is added to the cluster the shards on the existing nodes will be rebalanced to the new node.
+The `LeastShardAllocationStrategy` picks shards for rebalancing from the `ShardRegion`s with most number
+of previously allocated shards. They will then be allocated to the `ShardRegion` with least number of
+previously allocated shards, i.e. new members in the cluster. The amount of shards to rebalance in each
+round can be limited to make it progress slower since rebalancing too many shards at the same time could
+result in additional load on the system. For example, causing many Event Sourced entites to be started
+at the same time.
+
+A new rebalance algorithm was included in Akka 2.6.10. It can reach optimal balance in a few rebalance rounds
+(typically 1 or 2 rounds). For backwards compatibility the new algorithm is not enabled by default.
+The new algorithm is recommended and will become the default in future versions of Akka.
+You enable the new algorithm by setting `rebalance-absolute-limit` > 0, for example:
+
+```
+akka.cluster.sharding.least-shard-allocation-strategy.rebalance-absolute-limit = 20
+``` 
+
+The `rebalance-absolute-limit` is the maximum number of shards that will be rebalanced in one rebalance round.
+
+You may also want to tune the `akka.cluster.sharding.least-shard-allocation-strategy.rebalance-relative-limit`.
+The `rebalance-relative-limit` is a fraction (< 1.0) of total number of (known) shards that will be rebalanced
+in one rebalance round. The lower result of `rebalance-relative-limit` and `rebalance-absolute-limit` will be used.
 
 ### External shard allocation
 
@@ -538,7 +562,10 @@ properties are read by the `ClusterShardingSettings` when created with an ActorS
 It is also possible to amend the `ClusterShardingSettings` or create it from another config section
 with the same layout as below. 
 
-One important configuration property is `number-of-shards` as described in @ref:[Shard allocation](#shard-allocation)
+One important configuration property is `number-of-shards` as described in @ref:[Shard allocation](#shard-allocation).
+
+You may also need to tune the configuration properties is `rebalance-absolute-limit` and `rebalance-relative-limit`
+as described in @ref:[Shard allocation](#shard-allocation).
 
 @@snip [reference.conf](/akka-cluster-sharding/src/main/resources/reference.conf) { #sharding-ext-config }
 

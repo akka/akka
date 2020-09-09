@@ -19,6 +19,24 @@ import akka.cluster.sharding.ShardRegion.ShardId
   private val emptyRebalanceResult = Future.successful(Set.empty[ShardId])
 }
 
+/**
+ * The default implementation `LeastShardAllocationStrategy` allocates new shards to the `ShardRegion` (node) with least
+ * number of previously allocated shards.
+ *
+ * When a node is added to the cluster the shards on the existing nodes will be rebalanced to the new node.
+ * The `LeastShardAllocationStrategy` picks shards for rebalancing from the `ShardRegion`s with most number
+ * of previously allocated shards. They will then be allocated to the `ShardRegion` with least number of
+ * previously allocated shards, i.e. new members in the cluster. The amount of shards to rebalance in each
+ * round can be limited to make it progress slower since rebalancing too many shards at the same time could
+ * result in additional load on the system. For example, causing many Event Sourced entites to be started
+ * at the same time.
+ *
+ * It will not rebalance when there is already an ongoing rebalance in progress.
+ *
+ * @param absoluteLimit the maximum number of shards that will be rebalanced in one rebalance round
+ * @param relativeLimit fraction (< 1.0) of total number of (known) shards that will be rebalanced
+ *                      in one rebalance round
+ */
 final class LeastShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Double) extends ShardAllocationStrategy {
   import LeastShardAllocationStrategy.emptyRebalanceResult
 
