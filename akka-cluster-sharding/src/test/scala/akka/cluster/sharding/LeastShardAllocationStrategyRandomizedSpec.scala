@@ -14,6 +14,7 @@ import akka.cluster.sharding.ShardRegion.ShardId
 import akka.testkit.AkkaSpec
 
 class LeastShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel = INFO") {
+  import LeastShardAllocationStrategySpec.{ afterRebalance, countShards, countShardsPerRegion }
 
   def createAllocations(countPerRegion: Map[ActorRef, Int]): Map[ActorRef, immutable.IndexedSeq[ShardId]] = {
     countPerRegion.map {
@@ -30,29 +31,6 @@ class LeastShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel
 
   private var iteration = 1
   private val iterationsPerTest = 10
-
-  private def afterRebalance(
-      allocationStrategy: LeastShardAllocationStrategy,
-      allocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
-      rebalance: Set[ShardId]): Map[ActorRef, immutable.IndexedSeq[ShardId]] = {
-    val allocationsAfterRemoval = allocations.map {
-      case (region, shards) => region -> shards.filterNot(rebalance)
-    }
-
-    rebalance.foldLeft(allocationsAfterRemoval) {
-      case (acc, shard) =>
-        val region = allocationStrategy.allocateShard(testActor, shard, acc).value.get.get
-        acc.updated(region, acc(region) :+ shard)
-    }
-  }
-
-  private def countShardsPerRegion(newAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Vector[Int] = {
-    newAllocations.valuesIterator.map(_.size).toVector
-  }
-
-  private def countShards(allocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Int = {
-    countShardsPerRegion(allocations).sum
-  }
 
   private def testRebalance(
       allocationStrategy: LeastShardAllocationStrategy,
