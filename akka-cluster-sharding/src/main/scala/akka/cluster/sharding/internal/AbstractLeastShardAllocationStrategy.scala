@@ -4,27 +4,30 @@
 
 package akka.cluster.sharding.internal
 
+import java.lang.{ Boolean => JBoolean, Integer => JInteger }
+
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.annotation.InternalApi
 import akka.cluster.Cluster
+import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardCoordinator.ActorSystemDependentAllocationStrategy
 import akka.cluster.sharding.ShardRegion.ShardId
 
 import scala.collection.immutable
-import scala.collection.immutable.SortedSet
 
 /**
  * Common logic for the least shard allocation strategy implementations
  *
  * INTERNAL API
  */
+@InternalApi
 private[akka] object AbstractLeastShardAllocationStrategy {
   import MemberStatus._
-  private val DoNotRebalanceTo: Set[MemberStatus] = Set(Leaving, Exiting, Down)
+  private val LeavingClusterStatuses: Set[MemberStatus] = Set(Leaving, Exiting, Down)
   // defer rebalance when nodes are soon becoming up
   private val AvoidRebalanceWhen: Set[MemberStatus] = Set(Joining, WeaklyUp)
 
@@ -37,16 +40,16 @@ private[akka] object AbstractLeastShardAllocationStrategy {
       val (_, memberX, allocatedShardsX) = x
       val (_, memberY, allocatedShardsY) = y
       if (memberX.status != memberY.status) {
-        // allocating to nodes that are on their way out of the cluster should always be
-        // the least option
-        // FIXME: more clever logic around states here (prefer up over joining)?
-        DoNotRebalanceTo(memberX.status).compareTo(DoNotRebalanceTo(memberY.status))
+        // prefer allocating to nodes that are not on their way out of the cluster
+        val xIsLeaving = LeavingClusterStatuses(memberX.status)
+        val yIsLeaving = LeavingClusterStatuses(memberY.status)
+        JBoolean.compare(xIsLeaving, yIsLeaving)
       } else if (memberX.appVersion != memberY.appVersion) {
         // prefer nodes with the highest rolling update app version
         memberY.appVersion.compareTo(memberX.appVersion)
       } else {
         // prefer the node with the least allocated shards
-        allocatedShardsX.size.compareTo(allocatedShardsY.size)
+        JInteger.compare(allocatedShardsX.size, allocatedShardsY.size)
       }
     }
   }
@@ -69,12 +72,14 @@ private[akka] abstract class AbstractLeastShardAllocationStrategy extends ActorS
 
   // protected for testability
   protected def selfAddress: Address = cluster.selfAddress
-  private[akka] def members: SortedSet[Member] = cluster.state.members
-  protected def rollingUpdateInProgress: Boolean =
-    cluster.state.hasMoreThanOneAppVersion
-  protected def isAGoodTimeToRebalance: Boolean =
-    !rollingUpdateInProgress &&
-    !cluster.state.members.exists(m => AvoidRebalanceWhen(m.status))
+  protected def clusterState: CurrentClusterState = cluster.state
+
+  protected def isAGoodTimeToRebalance: Boolean = {
+    // rolling upgrade in progress
+    !clusterState.hasMoreThanOneAppVersion &&
+    !clusterState.members.exists(m => AvoidRebalanceWhen(m.status))
+    clusterState.unreachable.isEmpty // because rebalance requires ack from all anyway
+  }
 
   protected def mostSuitableRegion(
       currentShardAllocations: AllocationMap): (ActorRef, immutable.IndexedSeq[ShardId]) = {
@@ -84,7 +89,7 @@ private[akka] abstract class AbstractLeastShardAllocationStrategy extends ActorS
 
   private def decorate(
       currentShardAllocations: AllocationMap): Iterable[(ActorRef, Member, immutable.IndexedSeq[ShardId])] = {
-    val addressToMember: Map[Address, Member] = members.toIterator.map(m => m.address -> m).toMap
+    val addressToMember: Map[Address, Member] = clusterState.members.iterator.map(m => m.address -> m).toMap
     currentShardAllocations.flatMap {
       case (region, shardIds) =>
         val regionAddress = {
