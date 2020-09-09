@@ -7,19 +7,16 @@ package akka.cluster.sharding.internal
 import java.lang.{ Boolean => JBoolean, Integer => JInteger }
 
 import akka.actor.ActorRef
-import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.Member
-import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardCoordinator.ActorSystemDependentAllocationStrategy
 import akka.cluster.sharding.ShardRegion.ShardId
 
-import scala.collection.immutable
 import scala.collection.immutable
 
 /**
