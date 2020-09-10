@@ -12,6 +12,7 @@ import akka.stream.ActorMaterializer
 import akka.stream.impl.FastDroppingQueue
 import FastDroppingQueue.OfferResult
 import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.scaladsl.TestSink
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.MustMatchers
@@ -115,6 +116,26 @@ class FastDroppingQueueSpec extends WordSpec with BeforeAndAfterAll with MustMat
       result.futureValue mustBe counter.get()
     }
 
+    // copied from akka-remote SendQueueSpec
+    "deliver bursts of messages" in {
+      // this test verifies that the wakeup signal is triggered correctly
+      val burstSize = 100
+      val (sendQueue, downstream) =
+        Source.fromGraph(FastDroppingQueue[Int](128)).grouped(burstSize).async.toMat(TestSink.probe)(Keep.both).run()
+
+      downstream.request(10)
+
+      for (round <- 1 to 100000) {
+        for (n <- 1 to burstSize) {
+          if (sendQueue.offer(round * 1000 + n) != OfferResult.Enqueued)
+            fail(s"offer failed at round $round message $n")
+        }
+        downstream.expectNext((1 to burstSize).map(_ + round * 1000).toList)
+        downstream.request(1)
+      }
+
+      downstream.cancel()
+    }
   }
 
   override implicit def patienceConfig: PatienceConfig = PatienceConfig(5.seconds)

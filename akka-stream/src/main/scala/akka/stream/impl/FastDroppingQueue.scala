@@ -127,10 +127,11 @@ class FastDroppingQueueStage[T](bufferSize: Int)
 
     object Mat extends FastDroppingQueue[T] {
       override def offer(elem: T): OfferResult = state.get() match {
-        case Done(result) => result
-        case x =>
+        case Running | NeedsActivation =>
           if (queue.add(elem)) {
-            if (x == NeedsActivation)
+            // need to query state again because stage might have switched from Running -> NeedsActivation only after
+            // the last state.get but before queue.add.
+            if (state.get() == NeedsActivation)
               // if this thread wins the race to toggle the flag, schedule async callback here
               if (clearNeedsActivation())
                 Logic.callback.invoke(())
@@ -138,6 +139,7 @@ class FastDroppingQueueStage[T](bufferSize: Int)
             OfferResult.Enqueued
           } else
             OfferResult.Dropped
+        case Done(result) => result
       }
 
       override def complete(): Unit = // FIXME: should we fail here in some way if it was already completed?
