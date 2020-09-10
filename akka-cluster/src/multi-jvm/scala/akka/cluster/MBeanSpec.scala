@@ -26,6 +26,7 @@ object MBeanMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
     akka.cluster.jmx.enabled = on
     akka.cluster.roles = [testNode]
+    akka.cluster.app-version = "1.2.3"
     """)).withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
@@ -122,7 +123,8 @@ abstract class MBeanSpec extends MultiNodeSpec(MBeanMultiJvmSpec) with MultiNode
              |        "dc-default",
              |        "testNode"
              |      ],
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "app-version": "1.2.3"
              |    },
              |    {
              |      "address": "${sortedNodes(1)}",
@@ -130,7 +132,8 @@ abstract class MBeanSpec extends MultiNodeSpec(MBeanMultiJvmSpec) with MultiNode
              |        "dc-default",
              |        "testNode"
              |      ],
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "app-version": "1.2.3"
              |    },
              |    {
              |      "address": "${sortedNodes(2)}",
@@ -138,7 +141,8 @@ abstract class MBeanSpec extends MultiNodeSpec(MBeanMultiJvmSpec) with MultiNode
              |        "dc-default",
              |        "testNode"
              |      ],
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "app-version": "1.2.3"
              |    },
              |    {
              |      "address": "${sortedNodes(3)}",
@@ -146,7 +150,8 @@ abstract class MBeanSpec extends MultiNodeSpec(MBeanMultiJvmSpec) with MultiNode
              |        "dc-default",
              |        "testNode"
              |      ],
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "app-version": "1.2.3"
              |    }
              |  ],
              |  "self-address": "${address(first)}",

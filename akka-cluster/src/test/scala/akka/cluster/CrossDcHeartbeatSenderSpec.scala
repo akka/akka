@@ -11,6 +11,7 @@ import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterHeartbeatSender.Heartbeat
 import akka.cluster.CrossDcHeartbeatSenderSpec.TestCrossDcHeartbeatSender
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
+import akka.util.Version
 
 object CrossDcHeartbeatSenderSpec {
   class TestCrossDcHeartbeatSender(probe: TestProbe) extends CrossDcHeartbeatSender {
@@ -41,7 +42,8 @@ class CrossDcHeartbeatSenderSpec extends AkkaSpec("""
       underTest ! CurrentClusterState(
         members = SortedSet(
           Cluster(system).selfMember,
-          Member(UniqueAddress(Address("akka", system.name), 2L), Set("dc-dc2")).copy(status = MemberStatus.Up)))
+          Member(UniqueAddress(Address("akka", system.name), 2L), Set("dc-dc2"), Version.Zero)
+            .copy(status = MemberStatus.Up)))
 
       probe.expectMsgType[Heartbeat].sequenceNr shouldEqual 1
       probe.expectMsgType[Heartbeat].sequenceNr shouldEqual 2

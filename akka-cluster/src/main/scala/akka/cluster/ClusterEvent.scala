@@ -188,6 +188,19 @@ object ClusterEvent {
       scala.collection.JavaConverters.setAsJavaSetConverter(allDataCenters).asJava
 
     /**
+     * INTERNAL API
+     * @return `true` if more than one `Version` among the members, which
+     *        indicates that a rolling update is in progress
+     */
+    @InternalApi private[akka] def hasMoreThanOneAppVersion: Boolean = {
+      if (members.isEmpty) false
+      else {
+        val v = members.head.appVersion
+        members.exists(_.appVersion != v)
+      }
+    }
+
+    /**
      * Replace the set of unreachable datacenters with the given set
      */
     def withUnreachableDataCenters(unreachableDataCenters: Set[DataCenter]): CurrentClusterState =

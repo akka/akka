@@ -10,7 +10,9 @@ import scala.util.Random
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import akka.actor.{ Address, AddressFromURIString }
+import akka.actor.Address
+import akka.actor.AddressFromURIString
+import akka.util.Version
 
 class MemberOrderingSpec extends AnyWordSpec with Matchers {
   import Member.addressOrdering
@@ -52,7 +54,7 @@ class MemberOrderingSpec extends AnyWordSpec with Matchers {
     "have stable equals and hashCode" in {
       val address = Address("akka", "sys1", "host1", 9000)
       val m1 = m(address, Joining)
-      val m11 = Member(UniqueAddress(address, -3L), Set.empty)
+      val m11 = Member(UniqueAddress(address, -3L), Set.empty, Version.Zero)
       val m2 = m1.copy(status = Up)
       val m22 = m11.copy(status = Up)
       val m3 = m(address.copy(port = Some(10000)), Up)
@@ -83,7 +85,7 @@ class MemberOrderingSpec extends AnyWordSpec with Matchers {
 
       // different uid
       val a = m(address1, Joining)
-      val b = Member(UniqueAddress(address1, -3L), Set.empty)
+      val b = Member(UniqueAddress(address1, -3L), Set.empty, Version.Zero)
       Member.ordering.compare(a, b) should ===(1)
       Member.ordering.compare(b, a) should ===(-1)
 

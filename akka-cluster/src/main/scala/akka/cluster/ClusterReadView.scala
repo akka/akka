@@ -38,7 +38,8 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
 
   @volatile
   private var _cachedSelf: Member =
-    Member(cluster.selfUniqueAddress, cluster.selfRoles).copy(status = MemberStatus.Removed)
+    Member(cluster.selfUniqueAddress, cluster.selfRoles, cluster.settings.AppVersion)
+      .copy(status = MemberStatus.Removed)
   @volatile
   private var _closed: Boolean = false
 
