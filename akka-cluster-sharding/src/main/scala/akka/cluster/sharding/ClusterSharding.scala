@@ -12,8 +12,6 @@ import scala.collection.immutable
 import scala.concurrent.Await
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -657,7 +655,6 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   /**
    * The default `ShardAllocationStrategy` is configured by `least-shard-allocation-strategy` properties.
    */
-  @silent("deprecated")
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
     if (settings.tuningParameters.leastShardAllocationAbsoluteLimit > 0) {
       // new algorithm
@@ -665,7 +662,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       val relativeLimit = settings.tuningParameters.leastShardAllocationRelativeLimit
       ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit, relativeLimit)
     } else {
-      // deprecated algorithm
+      // old algorithm
       val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
       val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
       new ShardCoordinator.LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)

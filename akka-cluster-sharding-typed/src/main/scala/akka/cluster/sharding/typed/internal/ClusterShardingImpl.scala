@@ -13,8 +13,6 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
 
-import com.github.ghik.silencer.silent
-
 import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InternalActorRef
@@ -281,7 +279,6 @@ import akka.util.JavaDurationConverters._
         typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
   }
 
-  @silent("deprecated")
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
     if (settings.tuningParameters.leastShardAllocationAbsoluteLimit > 0) {
       // new algorithm
@@ -289,7 +286,7 @@ import akka.util.JavaDurationConverters._
       val relativeLimit = settings.tuningParameters.leastShardAllocationRelativeLimit
       ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit, relativeLimit)
     } else {
-      // deprecated algorithm
+      // old algorithm
       val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
       val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
       new ShardCoordinator.LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
