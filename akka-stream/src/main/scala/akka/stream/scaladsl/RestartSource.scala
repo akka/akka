@@ -31,7 +31,8 @@ object RestartSource {
    *
    * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
    *
-   * @param minBackoff minimum (initial) duration until the child actor will started again, if it is terminated
+   * @param minBackoff minimum (initial) duration until the child actor will
+   *   started again, if it is terminated
    * @param maxBackoff the exponential back-off is capped to this duration
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
@@ -55,7 +56,8 @@ object RestartSource {
    *
    * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
    *
-   * @param minBackoff minimum (initial) duration until the child actor will started again, if it is terminated
+   * @param minBackoff minimum (initial) duration until the child actor will
+   *   started again, if it is terminated
    * @param maxBackoff the exponential back-off is capped to this duration
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
@@ -81,7 +83,8 @@ object RestartSource {
    *
    * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
    *
-   * @param minBackoff minimum (initial) duration until the child actor will started again, if it is terminated
+   * @param minBackoff minimum (initial) duration until the child actor will
+   *   started again, if it is terminated
    * @param maxBackoff the exponential back-off is capped to this duration
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
@@ -120,7 +123,8 @@ object RestartSource {
    *
    * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
    *
-   * @param minBackoff minimum (initial) duration until the child actor will started again, if it is terminated
+   * @param minBackoff minimum (initial) duration until the child actor will
+   *   started again, if it is terminated
    * @param maxBackoff the exponential back-off is capped to this duration
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
@@ -144,7 +148,8 @@ object RestartSource {
    *
    * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
    *
-   * @param minBackoff minimum (initial) duration until the child actor will started again, if it is terminated
+   * @param minBackoff minimum (initial) duration until the child actor will
+   *   started again, if it is terminated
    * @param maxBackoff the exponential back-off is capped to this duration
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
@@ -173,7 +178,8 @@ object RestartSource {
    *
    * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
    *
-   * @param minBackoff minimum (initial) duration until the child actor will started again, if it is terminated
+   * @param minBackoff minimum (initial) duration until the child actor will
+   *   started again, if it is terminated
    * @param maxBackoff the exponential back-off is capped to this duration
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
