@@ -10,7 +10,6 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
-
 import akka.Done
 import akka.NotUsed
 import akka.stream.Attributes
@@ -290,6 +289,30 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
 
       probe.cancel()
     }
+
+    "allow using resetDeadline instead of minBackoff to determine maxRestarts reset time" in assertAllStagesStopped {
+      val created = new AtomicInteger()
+      val probe = RestartSource
+        .withBackoff(shortMinBackoff, maxBackoff, 0, maxRestarts = 2, resetDeadline = 1.second) { () =>
+          created.incrementAndGet()
+          Source(List("a", "b")).takeWhile(_ != "b")
+        }
+        .runWith(TestSink.probe)
+
+      probe.requestNext("a")
+      probe.requestNext("a")
+
+      Thread.sleep((shortMinBackoff + (shortMinBackoff * 2) + shortMinBackoff).toMillis) // if using shortMinBackoff as deadline cause reset
+
+      probe.requestNext("a")
+
+      probe.request(1)
+      probe.expectComplete()
+
+      created.get() should ===(3)
+
+      probe.cancel()
+    }
   }
 
   "A restart with backoff sink" should {
@@ -476,7 +499,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       // The probe should now be backing off for 2 * minBackoff
 
       // Now wait for the 2 * minBackoff delay to pass, then it will start the new source, we also want to wait for the
-      // subsequent minBackoff min backoff to pass, so it resets the restart count
+      // subsequent minBackoff to pass, so it resets the restart count
       Thread.sleep((minBackoff + (minBackoff * 2) + minBackoff + 500.millis).toMillis)
 
       probe.sendNext("cancel")
@@ -491,6 +514,40 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       sinkProbe.cancel()
       probe.sendComplete()
     }
+
+    "allow using resetDeadline instead of minBackoff to determine maxRestarts reset time" in assertAllStagesStopped {
+      val created = new AtomicInteger()
+      val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
+      val probe = TestSource
+        .probe[String]
+        .toMat(RestartSink.withBackoff(shortMinBackoff, shortMaxBackoff, 0, maxRestarts = 2, resetDeadline = 1.second) { () =>
+          created.incrementAndGet()
+          Flow[String].takeWhile(_ != "cancel", inclusive = true).to(Sink.foreach(queue.sendNext))
+        })(Keep.left)
+        .run()
+
+      probe.sendNext("cancel")
+      sinkProbe.requestNext("cancel")
+      // There should be a shortMinBackoff delay
+      probe.sendNext("cancel")
+      sinkProbe.requestNext("cancel")
+      // The probe should now be backing off for 2 * shortMinBackoff
+
+      Thread.sleep((shortMinBackoff + (shortMinBackoff * 2) + minBackoff).toMillis) // if using shortMinBackoff as deadline cause reset
+
+      probe.sendNext("cancel")
+      sinkProbe.requestNext("cancel")
+
+      // We cannot get a final element
+      probe.sendNext("cancel")
+      sinkProbe.request(1)
+      sinkProbe.expectNoMessage()
+
+      created.get() should ===(3)
+
+      sinkProbe.cancel()
+      probe.sendComplete()
+    }
   }
 
   "A restart with backoff flow" should {
@@ -498,11 +555,10 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
     // helps reuse all the setupFlow code for both methods: withBackoff, and onlyOnFailuresWithBackoff
     def RestartFlowFactory[In, Out](onlyOnFailures: Boolean)
         : (FiniteDuration, FiniteDuration, Double, Int) => (() => Flow[In, Out, _]) => Flow[In, Out, NotUsed] =
-      if (onlyOnFailures) {
-        RestartFlow.onFailuresWithBackoff
-      } else {
-        // choose the correct backoff method
-        (minBackoff, maxBackoff, randomFactor, maxRestarts) =>
+      (minBackoff, maxBackoff, randomFactor, maxRestarts) =>
+        if (onlyOnFailures) {
+          RestartFlow.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts)
+        } else {
           RestartFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts)
       }
 
