@@ -351,7 +351,7 @@ This strategy is very safe since coordination is added by an external arbiter. T
 strategies is that it requires additional infrastructure for implementing the lease and it reduces the availability
 of a decision to that of the system backing the lease store.
 
-Similar to other strategies it is important that decisions are not deferred for too because the nodes that couldn't
+Similar to other strategies it is important that decisions are not deferred for too long because the nodes that couldn't
 acquire the lease must decide to down themselves, see @ref[Down all when unstable](#down-all-when-unstable).
 
 In some cases the lease will be unavailable when needed for a decision from all SBR instances, e.g. because it is
