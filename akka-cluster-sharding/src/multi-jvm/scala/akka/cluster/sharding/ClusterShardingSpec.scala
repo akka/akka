@@ -13,6 +13,7 @@ import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ddata.{ Replicator, ReplicatorSettings }
 import akka.cluster.sharding.ShardCoordinator.Internal.{ HandOff, ShardStopped }
+import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.{ CurrentRegions, GetCurrentRegions, Passivate }
 import akka.cluster.sharding.internal.{ DDataRememberEntitiesProvider, EventSourcedRememberEntitiesProvider }
 import akka.cluster.singleton.{ ClusterSingletonManager, ClusterSingletonManagerSettings }
@@ -150,8 +151,8 @@ abstract class ClusterShardingSpecConfig(
         number-of-entities = 1
       }
       least-shard-allocation-strategy {
-        rebalance-threshold = 1
-        max-simultaneous-rebalance = 1
+        rebalance-absolute-limit = 1
+        rebalance-relative-limit = 1.0
       }
     }
     akka.testconductor.barrier-timeout = 70s
@@ -299,7 +300,7 @@ abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
 
     def coordinatorProps(typeName: String, rebalanceEnabled: Boolean, rememberEntities: Boolean): Props = {
       val allocationStrategy =
-        new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
+        ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 2, relativeLimit = 1.0)
       val cfg = ConfigFactory.parseString(s"""
       handoff-timeout = 10s
       shard-start-timeout = 10s

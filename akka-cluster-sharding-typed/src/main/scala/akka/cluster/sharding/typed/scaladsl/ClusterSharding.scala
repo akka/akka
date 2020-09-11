@@ -213,8 +213,7 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding =
   def shardState: ActorRef[ClusterShardingQuery]
 
   /**
-   * The default is currently [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] with the
-   * given `settings`. This could be changed in the future.
+   * The default `ShardAllocationStrategy` is configured by `least-shard-allocation-strategy` properties.
    */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy
 

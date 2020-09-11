@@ -14,7 +14,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.ShardCoordinator
-import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
+import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.ClusterShardingQuery
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.javadsl
@@ -73,7 +73,7 @@ class TestEntityRefSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike w
 
         override def defaultShardAllocationStrategy(
             settings: ClusterShardingSettings): ShardCoordinator.ShardAllocationStrategy =
-          new LeastShardAllocationStrategy(1, 1)
+          ShardAllocationStrategy.leastShardAllocationStrategy(1, 0.1)
 
         // below are for javadsl
         override def init[M, E](entity: javadsl.Entity[M, E]): ActorRef[E] = ???

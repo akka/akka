@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
+
 import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InternalActorRef
@@ -28,7 +29,7 @@ import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.cluster.ClusterSettings.DataCenter
-import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
+import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.{ StartEntity => ClassicStartEntity }
@@ -279,9 +280,17 @@ import akka.util.JavaDurationConverters._
   }
 
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
-    val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
-    val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
-    new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+    if (settings.tuningParameters.leastShardAllocationAbsoluteLimit > 0) {
+      // new algorithm
+      val absoluteLimit = settings.tuningParameters.leastShardAllocationAbsoluteLimit
+      val relativeLimit = settings.tuningParameters.leastShardAllocationRelativeLimit
+      ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit, relativeLimit)
+    } else {
+      // old algorithm
+      val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
+      val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
+      new ShardCoordinator.LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+    }
   }
 
   override lazy val shardState: ActorRef[ClusterShardingQuery] = {
