@@ -32,6 +32,11 @@ object EventSourcedBehaviorTestKitSpec {
     sealed trait Command
     case object Increment extends Command with CborSerializable
     final case class IncrementWithConfirmation(replyTo: ActorRef[Done]) extends Command with CborSerializable
+    final case class IncrementWithNoReply(replyTo: ActorRef[Done]) extends Command with CborSerializable
+    final case class IncrementWithAsyncReply(replyTo: ActorRef[Done]) extends Command with CborSerializable
+
+    private case class AsyncReply(replyTo: ActorRef[Done]) extends Command with CborSerializable
+
     case class IncrementSeveral(n: Int) extends Command with CborSerializable
     final case class GetValue(replyTo: ActorRef[State]) extends Command with CborSerializable
 
@@ -62,7 +67,7 @@ object EventSourcedBehaviorTestKitSpec {
       Behaviors.setup(ctx => counter(ctx, persistenceId, emptyState))
 
     private def counter(
-        @unused ctx: ActorContext[Command],
+        ctx: ActorContext[Command],
         persistenceId: PersistenceId,
         emptyState: State): EventSourcedBehavior[Command, Event, State] = {
       EventSourcedBehavior.withEnforcedReplies[Command, Event, State](
@@ -72,6 +77,16 @@ object EventSourcedBehaviorTestKitSpec {
           command match {
             case Increment =>
               Effect.persist(Incremented(1)).thenNoReply()
+
+            case IncrementWithNoReply(_) =>
+              Effect.persist(Incremented(1)).thenNoReply()
+
+            case IncrementWithAsyncReply(replyTo) =>
+              Effect.persist[Event, State](Incremented(1)).thenRun(_ => ctx.self ! AsyncReply(replyTo)).thenNoReply()
+
+            case AsyncReply(replyTo) =>
+              ctx.log.info("Async reply")
+              Effect.persist(Incremented(1)).thenReply(replyTo)(_ => Done)
 
             case IncrementWithConfirmation(replyTo) =>
               Effect.persist(Incremented(1)).thenReply(replyTo)(_ => Done)
@@ -143,6 +158,21 @@ class EventSourcedBehaviorTestKitSpec
         // wrong event type
         result2.eventOfType[TestCounter.NotSerializableEvent].delta should ===(1)
       }
+    }
+
+    // Fails - we need a way to say a reply isn't expected
+    "run command with no reply" in {
+      val eventSourcedTestKit = createTestKit()
+      val result = eventSourcedTestKit.runCommand(replyTo => TestCounter.IncrementWithNoReply(replyTo))
+      result.event should ===(TestCounter.Incremented(1))
+    }
+
+    // Passes - the reply comes after an internal command
+    "run command with async reply" in {
+      val eventSourcedTestKit = createTestKit()
+      val result = eventSourcedTestKit.runCommand(replyTo => TestCounter.IncrementWithAsyncReply(replyTo))
+      result.event should ===(TestCounter.Incremented(1))
+      result.reply should ===(Done)
     }
 
     "run command emitting several events" in {
