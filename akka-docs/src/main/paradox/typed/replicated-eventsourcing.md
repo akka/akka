@@ -37,6 +37,9 @@ to handle this.
 
 To be able to use Replicated Event Sourcing the journal and snapshot store used is required to have specific support for the metadata that the replication needs (see @ref[Journal Support](#journal-support)).
 
+The [Replicated Event Sourcing video](https://akka.io/blog/news/2020/09/09/replicated-event-sourcing-video)
+is a good starting point describing the use cases and motivation for when to use Replicated Event Sourcing.
+
 ## Relaxing the single-writer principle for availability
 
 Taking the example of using Replicated Event Sourcing to run a replica per data center.
