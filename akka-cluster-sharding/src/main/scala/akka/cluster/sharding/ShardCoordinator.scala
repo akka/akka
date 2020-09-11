@@ -525,7 +525,7 @@ object ShardCoordinator {
     }
     var remaining = regions
 
-    log.debug("Rebalance [{}] from region [{}]", shard, regions)
+    log.debug("Rebalance [{}] from [{}] regions", regions.size, shard)
 
     timers.startSingleTimer("hand-off-timeout", ReceiveTimeout, handOffTimeout)
 
@@ -585,6 +585,7 @@ abstract class ShardCoordinator(
   import settings.tuningParameters._
 
   val log = Logging.withMarker(context.system, this)
+  private val verboseDebug = context.system.settings.config.getBoolean("akka.cluster.sharding.verbose-debug-logging")
   private val ignoreRef = context.system.asInstanceOf[ExtendedActorSystem].provider.ignoreRef
 
   val cluster = Cluster(context.system)
@@ -655,7 +656,7 @@ abstract class ShardCoordinator(
           }
         } else {
           log.debug(
-            "ShardRegion {} was not registered since the coordinator currently does not know about a node of that region",
+            "ShardRegion [{}] was not registered since the coordinator currently does not know about a node of that region",
             region)
         }
 
@@ -769,7 +770,16 @@ abstract class ShardCoordinator(
         if (!gracefulShutdownInProgress(region))
           state.regions.get(region) match {
             case Some(shards) =>
-              log.debug("Graceful shutdown of region [{}] with shards [{}]", region, shards)
+              if (log.isDebugEnabled) {
+                if (verboseDebug)
+                  log.debug(
+                    "Graceful shutdown of region [{}] with [{}] shards [{}]",
+                    region,
+                    shards.size,
+                    shards.mkString(", "))
+                else
+                  log.debug("Graceful shutdown of region [{}] with [{}] shards", region, shards.size)
+              }
               gracefulShutdownInProgress += region
               continueRebalance(shards.toSet)
             case None =>
@@ -818,10 +828,15 @@ abstract class ShardCoordinator(
       case ShardCoordinator.Internal.Terminate =>
         if (rebalanceInProgress.isEmpty)
           log.debug("Received termination message.")
-        else
-          log.debug(
-            "Received termination message. Rebalance in progress of shards [{}].",
-            rebalanceInProgress.keySet.mkString(", "))
+        else if (log.isDebugEnabled) {
+          if (verboseDebug)
+            log.debug(
+              "Received termination message. Rebalance in progress of [{}] shards [{}].",
+              rebalanceInProgress.size,
+              rebalanceInProgress.keySet.mkString(", "))
+          else
+            log.debug("Received termination message. Rebalance in progress of [{}] shards.", rebalanceInProgress.size)
+        }
         context.stop(self)
     }: Receive).orElse[Any, Unit](receiveTerminated)
 
@@ -1003,12 +1018,19 @@ abstract class ShardCoordinator(
               sendHostShardMsg(evt.shard, evt.region)
               getShardHomeSender ! ShardHome(evt.shard, evt.region)
             }
-          } else
-            log.debug(
-              "Allocated region {} for shard [{}] is not (any longer) one of the registered regions: {}",
-              region,
-              shard,
-              state)
+          } else {
+            if (verboseDebug)
+              log.debug(
+                "Allocated region [{}] for shard [{}] is not (any longer) one of the registered regions: {}",
+                region,
+                shard,
+                state)
+            else
+              log.debug(
+                "Allocated region [{}] for shard [{}] is not (any longer) one of the registered regions.",
+                region,
+                shard)
+          }
       }
     }
 
@@ -1064,6 +1086,8 @@ class PersistentShardCoordinator(
   import ShardCoordinator.Internal._
   import settings.tuningParameters._
 
+  private val verboseDebug = context.system.settings.config.getBoolean("akka.cluster.sharding.verbose-debug-logging")
+
   override def persistenceId = s"/sharding/${typeName}Coordinator"
 
   override def journalPluginId: String = settings.journalPluginId
@@ -1075,7 +1099,8 @@ class PersistentShardCoordinator(
       throw new IllegalStateException(
         "state-store is set to persistence but a migration has taken place to remember-entities-store=eventsourced. You can not downgrade.")
     case evt: DomainEvent =>
-      log.debug("receiveRecover {}", evt)
+      if (verboseDebug)
+        log.debug("receiveRecover {}", evt)
       evt match {
         case _: ShardRegionRegistered =>
           state = state.updated(evt)
@@ -1103,7 +1128,8 @@ class PersistentShardCoordinator(
       }
 
     case SnapshotOffer(_, st: State) =>
-      log.debug("receiveRecover SnapshotOffer {}", st)
+      if (verboseDebug)
+        log.debug("receiveRecover SnapshotOffer {}", st)
       state = st.withRememberEntities(settings.rememberEntities)
       //Old versions of the state object may not have unallocatedShard set,
       // thus it will be null.
@@ -1131,24 +1157,24 @@ class PersistentShardCoordinator(
 
   def receiveSnapshotResult: Receive = {
     case e: SaveSnapshotSuccess =>
-      log.debug("Persistent snapshot saved successfully")
+      log.debug("Persistent snapshot to [{}] saved successfully", e.metadata.sequenceNr)
       internalDeleteMessagesBeforeSnapshot(e, keepNrOfBatches, snapshotAfter)
 
     case SaveSnapshotFailure(_, reason) =>
-      log.warning("Persistent snapshot failure: {}", reason.getMessage)
+      log.warning("Persistent snapshot failure: {}", reason)
 
     case DeleteMessagesSuccess(toSequenceNr) =>
-      log.debug("Persistent messages to {} deleted successfully", toSequenceNr)
+      log.debug("Persistent messages to [{}] deleted successfully", toSequenceNr)
       deleteSnapshots(SnapshotSelectionCriteria(maxSequenceNr = toSequenceNr - 1))
 
     case DeleteMessagesFailure(reason, toSequenceNr) =>
-      log.warning("Persistent messages to {} deletion failure: {}", toSequenceNr, reason.getMessage)
+      log.warning("Persistent messages to [{}] deletion failure: {}", toSequenceNr, reason)
 
     case DeleteSnapshotsSuccess(m) =>
-      log.debug("Persistent snapshots matching {} deleted successfully", m)
+      log.debug("Persistent snapshots to [{}] deleted successfully", m.maxSequenceNr)
 
     case DeleteSnapshotsFailure(m, reason) =>
-      log.warning("Persistent snapshots matching {} deletion failure: {}", m, reason.getMessage)
+      log.warning("Persistent snapshots to [{}] deletion failure: {}", m.maxSequenceNr, reason)
   }
 
   def update[E <: DomainEvent](evt: E)(f: E => Unit): Unit = {
@@ -1201,6 +1227,8 @@ private[akka] class DDataShardCoordinator(
 
   import akka.cluster.ddata.Replicator.Update
 
+  private val verboseDebug = context.system.settings.config.getBoolean("akka.cluster.sharding.verbose-debug-logging")
+
   private val stateReadConsistency = settings.tuningParameters.coordinatorStateReadMajorityPlus match {
     case Int.MaxValue => ReadAll(settings.tuningParameters.waitingForStateTimeout)
     case additional   => ReadMajorityPlus(settings.tuningParameters.waitingForStateTimeout, majorityMinCap, additional)
@@ -1243,7 +1271,12 @@ private[akka] class DDataShardCoordinator(
 
       case g @ GetSuccess(CoordinatorStateKey, _) =>
         val existingState = g.get(CoordinatorStateKey).value.withRememberEntities(settings.rememberEntities)
-        log.debug("Received initial coordinator state [{}]", existingState)
+        if (verboseDebug)
+          log.debug("Received initial coordinator state [{}]", existingState)
+        else
+          log.debug(
+            "Received initial coordinator state with [{}] shards",
+            existingState.shards.size + existingState.unallocatedShards.size)
         onInitialState(existingState, rememberedShards)
 
       case GetFailure(CoordinatorStateKey, _) =>
@@ -1254,7 +1287,7 @@ private[akka] class DDataShardCoordinator(
         getCoordinatorState()
 
       case NotFound(CoordinatorStateKey, _) =>
-        log.debug("Initial coordinator unknown using empty state")
+        log.debug("Initial coordinator is empty.")
         // this.state is empty initially
         onInitialState(this.state, rememberedShards)
 
@@ -1448,7 +1481,8 @@ private[akka] class DDataShardCoordinator(
   private def unbecomeAfterUpdate[E <: DomainEvent](evt: E, afterUpdateCallback: E => Unit): Unit = {
     context.unbecome()
     afterUpdateCallback(evt)
-    log.debug("New coordinator state after [{}]: [{}]", evt, state)
+    if (verboseDebug)
+      log.debug("New coordinator state after [{}]: [{}]", evt, state)
     unstashGetShardHomeRequests()
     unstashAll()
   }
@@ -1529,7 +1563,8 @@ private[akka] class DDataShardCoordinator(
 
   def sendCoordinatorStateUpdate(evt: DomainEvent) = {
     val s = state.updated(evt)
-    log.debug("Storing new coordinator state [{}]", state)
+    if (verboseDebug)
+      log.debug("Storing new coordinator state [{}]", state)
     replicator ! Update(
       CoordinatorStateKey,
       LWWRegister(selfUniqueAddress, initEmptyState),

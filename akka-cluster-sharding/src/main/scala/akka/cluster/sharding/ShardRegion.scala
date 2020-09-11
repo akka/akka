@@ -539,6 +539,8 @@ private[akka] class ShardRegion(
 
   val cluster = Cluster(context.system)
 
+  private val verboseDebug = context.system.settings.config.getBoolean("akka.cluster.sharding.verbose-debug-logging")
+
   // sort by age, oldest first
   val ageOrdering = Member.ageOrdering
   var membersByAge: immutable.SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
@@ -831,8 +833,17 @@ private[akka] class ShardRegion(
       val shards = regions(ref)
       regionByShard --= shards
       regions -= ref
-      if (log.isDebugEnabled)
-        log.debug("{}: Region [{}] with shards [{}] terminated", typeName, ref, shards.mkString(", "))
+      if (log.isDebugEnabled) {
+        if (verboseDebug)
+          log.debug(
+            "{}: Region [{}] terminated with [{}] shards [{}]",
+            typeName,
+            ref,
+            shards.size,
+            shards.mkString(", "))
+        else
+          log.debug("{}: Region [{}] terminated with [{}] shards", typeName, ref, shards.size)
+      }
     } else if (shardsByRef.contains(ref)) {
       val shardId: ShardId = shardsByRef(ref)
 
@@ -1104,7 +1115,8 @@ private[akka] class ShardRegion(
               case None => bufferMessage(shardId, msg, snd)
             }
           case Some(shardRegionRef) =>
-            log.debug("{}: Forwarding message for shard [{}] to [{}]", typeName, shardId, shardRegionRef)
+            if (verboseDebug)
+              log.debug("{}: Forwarding message for shard [{}] to [{}]", typeName, shardId, shardRegionRef)
             shardRegionRef.tell(msg, snd)
           case None if shardId == null || shardId == "" =>
             log.warning("{}: Shard must not be empty, dropping message [{}]", typeName, msg.getClass.getName)
