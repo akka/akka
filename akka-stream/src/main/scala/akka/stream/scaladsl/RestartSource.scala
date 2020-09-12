@@ -89,9 +89,9 @@ object RestartSource {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
-   * @param maxRestarts the amount of restarts is capped to this amount within a time frame of resetDeadline.
+   * @param maxRestarts the amount of restarts is capped to this amount within a time frame of maxRestartsWithin.
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
-   * @param resetDeadline the duration after which to reset the restart count and current exponential backoff
+   * @param maxRestartsWithin the duration after which to reset the restart count and current exponential backoff
    *   back to `0` and minBackoff respectively
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    */
@@ -100,7 +100,7 @@ object RestartSource {
       maxBackoff: FiniteDuration,
       randomFactor: Double,
       maxRestarts: Int,
-      resetDeadline: FiniteDuration)(sourceFactory: () => Source[T, _]): Source[T, NotUsed] = {
+      maxRestartsWithin: FiniteDuration)(sourceFactory: () => Source[T, _]): Source[T, NotUsed] = {
     Source.fromGraph(
       new RestartWithBackoffSource(
         sourceFactory,
@@ -109,7 +109,7 @@ object RestartSource {
         randomFactor,
         onlyOnFailures = false,
         maxRestarts,
-        resetDeadline))
+        maxRestartsWithin))
   }
 
   /**
@@ -184,9 +184,9 @@ object RestartSource {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
-   * @param maxRestarts the amount of restarts is capped to this amount within a time frame of the resetDeadline.
+   * @param maxRestarts the amount of restarts is capped to this amount within a time frame of the maxRestartsWithin.
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
-   * @param resetDeadline the duration after which to reset the restart count and current exponential backoff
+   * @param maxRestartsWithin the duration after which to reset the restart count and current exponential backoff
    *   back to `0` and minBackoff respectively
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    *
@@ -196,7 +196,7 @@ object RestartSource {
       maxBackoff: FiniteDuration,
       randomFactor: Double,
       maxRestarts: Int,
-      resetDeadline: FiniteDuration)(sourceFactory: () => Source[T, _]): Source[T, NotUsed] = {
+      maxRestartsWithin: FiniteDuration)(sourceFactory: () => Source[T, _]): Source[T, NotUsed] = {
     Source.fromGraph(
       new RestartWithBackoffSource(
         sourceFactory,
@@ -205,7 +205,7 @@ object RestartSource {
         randomFactor,
         onlyOnFailures = true,
         maxRestarts,
-        resetDeadline))
+        maxRestartsWithin))
   }
 }
 
@@ -216,7 +216,7 @@ private final class RestartWithBackoffSource[T](
     randomFactor: Double,
     onlyOnFailures: Boolean,
     maxRestarts: Int,
-    resetDeadline: FiniteDuration)
+    maxRestartsWithin: FiniteDuration)
     extends GraphStage[SourceShape[T]] { self =>
 
   val out = Outlet[T]("RestartWithBackoffSource.out")
@@ -232,7 +232,7 @@ private final class RestartWithBackoffSource[T](
       randomFactor,
       onlyOnFailures,
       maxRestarts,
-      resetDeadline) {
+      maxRestartsWithin) {
 
       override protected def logSource = self.getClass
 

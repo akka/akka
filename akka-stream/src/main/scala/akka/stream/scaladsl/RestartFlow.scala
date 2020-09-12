@@ -106,9 +106,9 @@ object RestartFlow {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
-   * @param maxRestarts the amount of restarts is capped to this amount within a time frame of resetDeadline.
+   * @param maxRestarts the amount of restarts is capped to this amount within a time frame of maxRestartsWithin.
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
-   * @param resetDeadline the duration after which to reset the restart count and current exponential backoff
+   * @param maxRestartsWithin the duration after which to reset the restart count and current exponential backoff
    *   back to `0` and minBackoff respectively
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
@@ -117,7 +117,7 @@ object RestartFlow {
       maxBackoff: FiniteDuration,
       randomFactor: Double,
       maxRestarts: Int,
-      resetDeadline: FiniteDuration)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
+      maxRestartsWithin: FiniteDuration)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
     Flow.fromGraph(
       new RestartWithBackoffFlow(
         flowFactory,
@@ -126,7 +126,7 @@ object RestartFlow {
         randomFactor,
         onlyOnFailures = false,
         maxRestarts,
-        resetDeadline))
+        maxRestartsWithin))
   }
 
   /**
@@ -184,9 +184,9 @@ object RestartFlow {
    * @param randomFactor after calculation of the exponential back-off an additional
    *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
    *   In order to skip this additional delay pass in `0`.
-   * @param maxRestarts the amount of restarts is capped to this amount within a time frame of resetDeadline.
+   * @param maxRestarts the amount of restarts is capped to this amount within a time frame of maxRestartsWithin.
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
-   * @param resetDeadline the duration after which to reset the restart count and current exponential backoff
+   * @param maxRestartsWithin the duration after which to reset the restart count and current exponential backoff
    *   back to `0` and minBackoff respectively
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
@@ -195,7 +195,7 @@ object RestartFlow {
       maxBackoff: FiniteDuration,
       randomFactor: Double,
       maxRestarts: Int,
-      resetDeadline: FiniteDuration)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
+      maxRestartsWithin: FiniteDuration)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
     Flow.fromGraph(
       new RestartWithBackoffFlow(
         flowFactory,
@@ -204,7 +204,7 @@ object RestartFlow {
         randomFactor,
         onlyOnFailures = true,
         maxRestarts,
-        resetDeadline))
+        maxRestartsWithin))
   }
 
 }
@@ -216,7 +216,7 @@ private final class RestartWithBackoffFlow[In, Out](
     randomFactor: Double,
     onlyOnFailures: Boolean,
     maxRestarts: Int,
-    resetDeadline: FiniteDuration)
+    maxRestartsWithin: FiniteDuration)
     extends GraphStage[FlowShape[In, Out]] { self =>
 
   val in = Inlet[In]("RestartWithBackoffFlow.in")
@@ -234,7 +234,7 @@ private final class RestartWithBackoffFlow[In, Out](
       randomFactor,
       onlyOnFailures,
       maxRestarts,
-      resetDeadline) {
+      maxRestartsWithin) {
       val delay = inheritedAttributes.get[Delay](Delay(50.millis)).duration
 
       var activeOutIn: Option[(SubSourceOutlet[In], SubSinkInlet[Out])] = None
@@ -296,10 +296,10 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
     randomFactor: Double,
     onlyOnFailures: Boolean,
     maxRestarts: Int,
-    resetDeadline: FiniteDuration)
+    maxRestartsWithin: FiniteDuration)
     extends TimerGraphStageLogicWithLogging(shape) {
   var restartCount = 0
-  var resetAfter = resetDeadline.fromNow
+  var resetDeadline = maxRestartsWithin.fromNow
 
   // This is effectively only used for flows, if either the main inlet or outlet of this stage finishes, then we
   // don't want to restart the sub inlet when it finishes, we just finish normally.
@@ -410,8 +410,8 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
 
   protected final def maxRestartsReached(): Boolean = {
     // Check if the last start attempt was more than the reset deadline
-    if (resetAfter.isOverdue()) {
-      log.debug("Last restart attempt was more than {} ago, resetting restart count", resetDeadline)
+    if (resetDeadline.isOverdue()) {
+      log.debug("Last restart attempt was more than {} ago, resetting restart count", maxRestartsWithin)
       restartCount = 0
     }
     restartCount == maxRestarts
@@ -430,7 +430,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   // Invoked when the backoff timer ticks
   override protected def onTimer(timerKey: Any) = {
     startGraph()
-    resetAfter = resetDeadline.fromNow
+    resetDeadline = maxRestartsWithin.fromNow
   }
 
   // When the stage starts, start the source
