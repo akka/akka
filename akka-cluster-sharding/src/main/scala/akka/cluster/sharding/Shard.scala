@@ -520,7 +520,7 @@ private[akka] class Shard(
       receiveLeaseLost(ll)
     case msg =>
       if (verboseDebug)
-        log.debug("Got msg of type [{}] from [{}] while waiting for lease, stashing", msg.getClass, sender())
+        log.debug("Got msg of type [{}] from [{}] while waiting for lease, stashing", msg.getClass.getName, sender())
       stash()
   }
 
@@ -557,7 +557,7 @@ private[akka] class Shard(
       if (verboseDebug)
         log.debug(
           "Got msg of type [{}] from [{}] while waiting for remember entities, stashing",
-          msg.getClass,
+          msg.getClass.getName,
           sender())
       stash()
   }
@@ -676,7 +676,7 @@ private[akka] class Shard(
       // shouldn't be any other message types, but just in case
       log.warning(
         "Stashing unexpected message [{}] while waiting for remember entities update of starts [{}], stops [{}]",
-        msg.getClass,
+        msg.getClass.getName,
         update.started.mkString(", "),
         update.stopped.mkString(", "))
       stash()
@@ -995,7 +995,7 @@ private[akka] class Shard(
           entities.entityState(entityId) match {
             case Active(ref) =>
               if (verboseDebug)
-                log.debug("Delivering message of type [{}] to [{}]", payload.getClass, entityId)
+                log.debug("Delivering message of type [{}] to [{}]", payload.getClass.getName, entityId)
               touchLastMessageTimestamp(entityId)
               ref.tell(payload, snd)
             case RememberingStart(_) | RememberingStop | Passivating(_) =>
@@ -1004,7 +1004,7 @@ private[akka] class Shard(
               if (verboseDebug)
                 log.debug(
                   "Delivering message of type [{}] to [{}] (starting because [{}])",
-                  payload.getClass,
+                  payload.getClass.getName,
                   entityId,
                   state)
               val actor = getOrCreateEntity(entityId)
@@ -1021,7 +1021,7 @@ private[akka] class Shard(
                   if (verboseDebug)
                     log.debug(
                       "Buffer message [{}] to [{}] (which is not started) because of write in progress for [{}]",
-                      payload.getClass,
+                      payload.getClass.getName,
                       entityId,
                       entities.pendingRememberEntities())
                   appendToMessageBuffer(entityId, msg, snd)
@@ -1029,7 +1029,7 @@ private[akka] class Shard(
                 } else {
                   // No actor running and no write in progress, start actor and deliver message when started
                   if (verboseDebug)
-                    log.debug("Buffering message [{}] to [{}] and starting actor", payload.getClass, entityId)
+                    log.debug("Buffering message [{}] to [{}] and starting actor", payload.getClass.getName, entityId)
                   appendToMessageBuffer(entityId, msg, snd)
                   entities.rememberingStart(entityId, ackTo = None)
                   rememberUpdate(add = Set(entityId))
