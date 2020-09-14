@@ -100,7 +100,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       failure-detector.acceptable-heartbeat-pause =  3s
       downing-provider-class = akka.cluster.sbr.SplitBrainResolverProvider
       split-brain-resolver {
-          stable-after = 5s
+          stable-after = 10s
       }
       publish-stats-interval = 1s
     }
