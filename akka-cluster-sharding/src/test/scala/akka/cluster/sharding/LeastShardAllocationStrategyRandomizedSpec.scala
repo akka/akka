@@ -43,6 +43,8 @@ class LeastShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel
       // we don't really "start" it as we fake the cluster access
       override protected def clusterState: ClusterEvent.CurrentClusterState =
         CurrentClusterState(clusterMembers)
+
+      override protected def selfMember: Member = clusterMembers.head
     }
 
   private val rndSeed = System.currentTimeMillis()

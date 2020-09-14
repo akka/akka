@@ -27,6 +27,7 @@ import scala.collection.immutable
 @InternalApi
 private[akka] object AbstractLeastShardAllocationStrategy {
   import MemberStatus._
+  private val JoiningCluster: Set[MemberStatus] = Set(Joining, WeaklyUp)
   private val LeavingClusterStatuses: Set[MemberStatus] = Set(Leaving, Exiting, Down)
 
   type AllocationMap = Map[ActorRef, immutable.IndexedSeq[ShardId]]
@@ -69,8 +70,8 @@ private[akka] abstract class AbstractLeastShardAllocationStrategy extends ActorS
   }
 
   // protected for testability
-  protected def selfAddress: Address = cluster.selfAddress
   protected def clusterState: CurrentClusterState = cluster.state
+  protected def selfMember: Member = cluster.selfMember
 
   final protected def isAGoodTimeToRebalance(regionEntries: Iterable[RegionEntry]): Boolean = {
     // this will filter out member with no shard regions (bc role or not yet completed joining)
@@ -79,8 +80,11 @@ private[akka] abstract class AbstractLeastShardAllocationStrategy extends ActorS
     def allNodesSameVersion = shardRegionMembers.map(_.appVersion).toSet.size == 1
     // rebalance requires ack from all anyway
     def allRegionsReachable = clusterState.unreachable.diff(shardRegionMembers.toSet).isEmpty
+    // no members in same dc joining
+    def membersInProgressOfJoining =
+      clusterState.members.exists(m => m.dataCenter == selfMember.dataCenter && JoiningCluster(m.status))
 
-    allNodesSameVersion && allRegionsReachable
+    allNodesSameVersion && allRegionsReachable && !membersInProgressOfJoining
   }
 
   final protected def mostSuitableRegion(
@@ -96,7 +100,7 @@ private[akka] abstract class AbstractLeastShardAllocationStrategy extends ActorS
     currentShardAllocations.flatMap {
       case (region, shardIds) =>
         val regionAddress = {
-          if (region.path.address.hasLocalScope) selfAddress
+          if (region.path.address.hasLocalScope) selfMember.address
           else region.path.address
         }
 

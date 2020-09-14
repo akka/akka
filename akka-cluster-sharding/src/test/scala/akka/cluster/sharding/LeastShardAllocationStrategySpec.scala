@@ -13,6 +13,7 @@ import akka.actor.MinimalActorRef
 import akka.actor.RootActorPath
 import akka.cluster.ClusterEvent
 import akka.cluster.ClusterEvent.CurrentClusterState
+import akka.cluster.ClusterSettings
 import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.cluster.UniqueAddress
@@ -69,7 +70,10 @@ object LeastShardAllocationStrategySpec {
   }
 
   def newUpMember(host: String, port: Int = 252525, version: Version = Version("1.0.0")) =
-    Member(UniqueAddress(Address("akka", "myapp", host, port), 1L), Set.empty, version).copy(MemberStatus.Up)
+    Member(
+      UniqueAddress(Address("akka", "myapp", host, port), 1L),
+      Set(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter),
+      version).copy(MemberStatus.Up)
 
   def newFakeRegion(idForDebug: String, member: Member): ActorRef =
     new DummyActorRef(RootActorPath(member.address) / "system" / "fake" / idForDebug)
@@ -103,6 +107,7 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
     new LeastShardAllocationStrategy(absoluteLimit, relativeLimit) {
       override protected def clusterState: ClusterEvent.CurrentClusterState =
         CurrentClusterState(SortedSet(memberA, memberB, memberC))
+      override protected def selfMember: Member = memberA
     }
 
   "LeastShardAllocationStrategy" must {
@@ -258,12 +263,14 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       val allocationStrategy =
         new LeastShardAllocationStrategy(absoluteLimit = 1000, relativeLimit = 1.0) {
 
+          val member1 = newUpMember("127.0.0.1", version = Version("1.0.0"))
+          val member2 = newUpMember("127.0.0.1", version = Version("1.0.1"))
+
           // multiple versions to simulate rolling update in progress
           override protected def clusterState: CurrentClusterState =
-            CurrentClusterState(
-              SortedSet(
-                newUpMember("127.0.0.1", version = Version("1.0.0")),
-                newUpMember("127.0.0.1", version = Version("1.0.1"))))
+            CurrentClusterState(SortedSet(member1, member2))
+
+          override protected def selfMember: Member = member1
         }
       val allocations = createAllocations(aCount = 5, bCount = 5)
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty)
@@ -275,12 +282,34 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       val allocationStrategy =
         new LeastShardAllocationStrategy(absoluteLimit = 1000, relativeLimit = 1.0) {
 
-          val memberA = newUpMember("127.0.0.1")
-          val memberB = newUpMember("127.0.0.2")
+          val member1 = newUpMember("127.0.0.1")
+          val member2 = newUpMember("127.0.0.2")
 
           // multiple versions to simulate rolling update in progress
           override protected def clusterState: CurrentClusterState =
-            CurrentClusterState(SortedSet(memberA, memberB), unreachable = Set(memberB))
+            CurrentClusterState(SortedSet(member1, member2), unreachable = Set(member2))
+          override protected def selfMember: Member = member2
+        }
+      val allocations = createAllocations(aCount = 5, bCount = 5)
+      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations, Set("001", "002")).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(Set.empty)
+    }
+    "not rebalance when members are joining dc" in {
+      val allocationStrategy =
+        new LeastShardAllocationStrategy(absoluteLimit = 1000, relativeLimit = 1.0) {
+
+          val member1 = newUpMember("127.0.0.1")
+          val member2 =
+            Member(
+              UniqueAddress(Address("akka", "myapp", "127.0.0.2", 252525), 1L),
+              Set(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter),
+              member1.appVersion)
+
+          // multiple versions to simulate rolling update in progress
+          override protected def clusterState: CurrentClusterState =
+            CurrentClusterState(SortedSet(member1, member2), unreachable = Set(member2))
+          override protected def selfMember: Member = member2
         }
       val allocations = createAllocations(aCount = 5, bCount = 5)
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty)
