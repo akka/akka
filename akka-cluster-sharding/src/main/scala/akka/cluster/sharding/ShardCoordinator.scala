@@ -536,7 +536,7 @@ object ShardCoordinator {
       log.debug("Rebalance [{}] from region [{}]", shard, regions)
     else
       log.debug(
-        "Shutting shard [{}] from region [{}]. Asking [{}] region(s) to hand-off shard",
+        "Shutting down shard [{}] from region [{}]. Asking [{}] region(s) to hand-off shard",
         shard,
         from,
         regions.size)
