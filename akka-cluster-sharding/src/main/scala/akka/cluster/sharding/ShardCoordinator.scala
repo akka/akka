@@ -1092,8 +1092,7 @@ abstract class ShardCoordinator(
                 shard,
                 rebalanceFromRegion,
                 handOffTimeout,
-                state.regions.keySet.union(state.regionProxies)
-              ).withDispatcher(context.props.dispatcher))
+                state.regions.keySet.union(state.regionProxies)).withDispatcher(context.props.dispatcher))
           case None =>
             log.debug("Rebalance of non-existing shard [{}] is ignored", shard)
         }
@@ -1116,8 +1115,7 @@ abstract class ShardCoordinator(
                 shard,
                 shuttingDownFromRegion,
                 handOffTimeout,
-                state.regions.keySet.union(state.regionProxies)
-              ).withDispatcher(context.props.dispatcher))
+                state.regions.keySet.union(state.regionProxies)).withDispatcher(context.props.dispatcher))
           case None =>
             log.debug("Shutting down of non-existing shard [{}] is ignored", shard)
         }
