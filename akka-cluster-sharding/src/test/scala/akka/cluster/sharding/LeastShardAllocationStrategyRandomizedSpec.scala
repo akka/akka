@@ -61,7 +61,7 @@ class LeastShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel
       iteration += 1
       val numberOfRegions = rnd.nextInt(maxRegions) + 1
       val memberArray = (1 to numberOfRegions).map(n => newUpMember("127.0.0.1", port = n)).toArray
-      clusterMembers = SortedSet(memberArray: _*)
+      clusterMembers = SortedSet(memberArray.toIndexedSeq: _*)
       val regions = (1 to numberOfRegions).map(n => newFakeRegion(s"$iteration-R$n", memberArray(n - 1)))
       val countPerRegion = regions.map { region =>
         region -> rnd.nextInt(maxShardsPerRegion)
