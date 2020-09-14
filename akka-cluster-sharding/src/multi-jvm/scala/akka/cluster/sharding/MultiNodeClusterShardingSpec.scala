@@ -189,7 +189,7 @@ abstract class MultiNodeClusterShardingSpec(val config: MultiNodeClusterSharding
 
   /**
    * {{{
-   *    startPersistenceIfNotDdataMode(startOn = first, setStoreOn = Seq(first, second, third))
+   *    startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second, third))
    * }}}
    *
    * @param startOn the node to start the `SharedLeveldbStore` store on
