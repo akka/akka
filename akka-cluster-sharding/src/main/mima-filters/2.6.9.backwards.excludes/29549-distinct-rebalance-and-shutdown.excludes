@@ -1,0 +1,4 @@
+ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.ShardCoordinator$RebalanceWorker$ShardRegionTerminated")
+ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.ShardCoordinator$RebalanceWorker")
+ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.ShardCoordinator$RebalanceWorker$ShardRegionTerminated$")
+ProblemFilters.exclude[MissingClassProblem]("akka.cluster.sharding.ShardCoordinator$RebalanceWorker$")
