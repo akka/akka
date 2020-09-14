@@ -6,11 +6,10 @@ package akka.cluster.sharding.internal
 
 import scala.collection.immutable
 import scala.concurrent.Future
-
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
-import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.ShardId
+import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy.RegionEntry
 
 /**
  * INTERNAL API
@@ -39,16 +38,17 @@ import akka.cluster.sharding.ShardRegion.ShardId
  * @param relativeLimit fraction (< 1.0) of total number of (known) shards that will be rebalanced
  *                      in one rebalance round
  */
-@InternalApi private[akka] final class LeastShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Double)
-    extends ShardAllocationStrategy {
+@InternalApi private[akka] class LeastShardAllocationStrategy(absoluteLimit: Int, relativeLimit: Double)
+    extends AbstractLeastShardAllocationStrategy {
   import LeastShardAllocationStrategy.emptyRebalanceResult
 
   override def allocateShard(
       requester: ActorRef,
       shardId: ShardId,
       currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef] = {
-    val (regionWithLeastShards, _) = currentShardAllocations.minBy { case (_, v) => v.size }
-    Future.successful(regionWithLeastShards)
+    val decorated = regionEntriesFor(currentShardAllocations)
+    val (region, _) = mostSuitableRegion(decorated)
+    Future.successful(region)
   }
 
   override def rebalance(
@@ -63,12 +63,13 @@ import akka.cluster.sharding.ShardRegion.ShardId
     def rebalancePhase1(
         numberOfShards: Int,
         optimalPerRegion: Int,
-        sortedAllocations: Vector[immutable.IndexedSeq[ShardId]]): Set[ShardId] = {
+        sortedAllocations: Iterable[RegionEntry]): Set[ShardId] = {
       val selected = Vector.newBuilder[ShardId]
-      sortedAllocations.foreach { shards =>
-        if (shards.size > optimalPerRegion) {
-          selected ++= shards.take(shards.size - optimalPerRegion)
-        }
+      sortedAllocations.foreach {
+        case RegionEntry(_, _, shards) =>
+          if (shards.size > optimalPerRegion) {
+            selected ++= shards.take(shards.size - optimalPerRegion)
+          }
       }
       val result = selected.result()
       result.take(limit(numberOfShards)).toSet
@@ -77,20 +78,21 @@ import akka.cluster.sharding.ShardRegion.ShardId
     def rebalancePhase2(
         numberOfShards: Int,
         optimalPerRegion: Int,
-        sortedAllocations: Vector[immutable.IndexedSeq[ShardId]]): Future[Set[ShardId]] = {
+        sortedAllocations: Iterable[RegionEntry]): Future[Set[ShardId]] = {
       // In the first phase the optimalPerRegion is rounded up, and depending on number of shards per region and number
       // of regions that might not be the exact optimal.
       // In second phase we look for diff of >= 2 below optimalPerRegion and rebalance that number of shards.
       val countBelowOptimal =
-        sortedAllocations.iterator.map(shards => max(0, (optimalPerRegion - 1) - shards.size)).sum
+        sortedAllocations.iterator.map(entry => max(0, (optimalPerRegion - 1) - entry.shardIds.size)).sum
       if (countBelowOptimal == 0) {
         emptyRebalanceResult
       } else {
         val selected = Vector.newBuilder[ShardId]
-        sortedAllocations.foreach { shards =>
-          if (shards.size >= optimalPerRegion) {
-            selected += shards.head
-          }
+        sortedAllocations.foreach {
+          case RegionEntry(_, _, shards) =>
+            if (shards.size >= optimalPerRegion) {
+              selected += shards.head
+            }
         }
         val result = selected.result().take(min(countBelowOptimal, limit(numberOfShards))).toSet
         Future.successful(result)
@@ -101,20 +103,25 @@ import akka.cluster.sharding.ShardRegion.ShardId
       // one rebalance at a time
       emptyRebalanceResult
     } else {
-      val numberOfShards = currentShardAllocations.valuesIterator.map(_.size).sum
-      val numberOfRegions = currentShardAllocations.size
-      if (numberOfRegions == 0 || numberOfShards == 0) {
+      val sortedRegionEntries = regionEntriesFor(currentShardAllocations)
+      if (!isAGoodTimeToRebalance(sortedRegionEntries)) {
         emptyRebalanceResult
       } else {
-        val sortedAllocations = currentShardAllocations.valuesIterator.toVector.sortBy(_.size)
-        val optimalPerRegion = numberOfShards / numberOfRegions + (if (numberOfShards % numberOfRegions == 0) 0 else 1)
-
-        val result1 = rebalancePhase1(numberOfShards, optimalPerRegion, sortedAllocations)
-
-        if (result1.nonEmpty) {
-          Future.successful(result1)
+        val numberOfShards = sortedRegionEntries.map(_.shardIds.size).sum
+        val numberOfRegions = sortedRegionEntries.size
+        if (numberOfRegions == 0 || numberOfShards == 0) {
+          emptyRebalanceResult
         } else {
-          rebalancePhase2(numberOfShards, optimalPerRegion, sortedAllocations)
+          val optimalPerRegion = numberOfShards / numberOfRegions + (if (numberOfShards % numberOfRegions == 0) 0
+                                                                     else 1)
+
+          val result1 = rebalancePhase1(numberOfShards, optimalPerRegion, sortedRegionEntries)
+
+          if (result1.nonEmpty) {
+            Future.successful(result1)
+          } else {
+            rebalancePhase2(numberOfShards, optimalPerRegion, sortedRegionEntries)
+          }
         }
       }
     }
