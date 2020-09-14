@@ -548,8 +548,11 @@ object ShardCoordinator {
         log.debug("BeginHandOffAck for shard [{}] received from [{}].", shard, sender())
         acked(sender())
       case ShardRegionTerminated(shardRegion) =>
-        log.debug("ShardRegion [{}] terminated while waiting for BeginHandOffAck for shard [{}].", shardRegion, shard)
-        acked(shardRegion)
+        // ignore if already received the ack
+        if (remaining.contains(shardRegion)) {
+          log.debug("ShardRegion [{}] terminated while waiting for BeginHandOffAck for shard [{}].", shardRegion, shard)
+          acked(shardRegion)
+        }
       case ReceiveTimeout =>
         if (isRebalance)
           log.debug("Rebalance of [{}]  from [{}] timed out", shard, from)
