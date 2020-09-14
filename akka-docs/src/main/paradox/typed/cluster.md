@@ -149,7 +149,7 @@ Please refer to its documentation for more details.
 
 When a new node is started it sends a message to all seed nodes and then sends join command to the one that
 answers first. If no one of the seed nodes replied (might not be started yet)
-it retries this procedure until successful or shutdown.
+it retries this procedure until success or shutdown.
 
 You can define the seed nodes in the @ref:[configuration](#configuration) file (application.conf):
 
