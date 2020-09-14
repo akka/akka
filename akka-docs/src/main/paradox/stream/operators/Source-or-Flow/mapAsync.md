@@ -67,8 +67,7 @@ Processing event numner Event(18)...
 [...]
 ```
 
-See @ref[mapAsyncUnordered](/mapAsyncUnorderedindex.md#example)
-
+See also @ref[mapAsyncUnordered](mapAsyncUnordered.md#examples).
 
 ## Reactive Streams semantics
 

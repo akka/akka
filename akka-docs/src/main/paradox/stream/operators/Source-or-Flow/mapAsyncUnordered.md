@@ -50,6 +50,8 @@ Completed processing 31
 [...]
 ``` 
 
+See @ref[mapAsync](mapAsync.md#examples) for a variant with ordering guarantees.
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
