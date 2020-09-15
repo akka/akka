@@ -14,9 +14,9 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 
 /**
- * 
+ *
  */
-object CommonMapAsync{
+object CommonMapAsync {
   case class Event(sequenceNumber: Int)
   case class EventProcessingRequest(evt: Event, replyTo: ActorRef[Int])
 
@@ -37,15 +37,12 @@ object CommonMapAsync{
   // #mapasyncunordered
 
   val events: Source[Event, NotUsed] = //...
-  // #mapasync-strict-order
-  // #mapasync-concurrent
-  // #mapasyncunordered
-    Source
-      .fromIterator(() => Iterator.from(1))
-      .throttle(1, 50.millis)
-      .map { in =>
-        Event(in)
-      }
+    // #mapasync-strict-order
+    // #mapasync-concurrent
+    // #mapasyncunordered
+    Source.fromIterator(() => Iterator.from(1)).throttle(1, 50.millis).map { in =>
+      Event(in)
+    }
 
   // #mapasync-strict-order
   // #mapasync-concurrent
@@ -67,9 +64,9 @@ object CommonMapAsync{
         Future.successful(event.sequenceNumber)
       }
     result
-  // #mapasync-strict-order
-  // #mapasync-concurrent
-  // #mapasyncunordered
+    // #mapasync-strict-order
+    // #mapasync-concurrent
+    // #mapasyncunordered
   }
   // #mapasync-strict-order
   // #mapasync-concurrent
@@ -78,7 +75,7 @@ object CommonMapAsync{
 }
 
 object MapAsyncStrictOrder extends App {
- import CommonMapAsync._
+  import CommonMapAsync._
   // #mapasync-strict-order
 
   events
@@ -88,14 +85,13 @@ object MapAsyncStrictOrder extends App {
     .map { in =>
       println(s"`mapAsync` emitted event number: $in")
     }
-  // #mapasync-strict-order
+    // #mapasync-strict-order
     .runWith(Sink.ignore)
-
 
 }
 
 object MapAsync extends App {
- import CommonMapAsync._
+  import CommonMapAsync._
   // #mapasync-concurrent
 
   events
@@ -105,14 +101,13 @@ object MapAsync extends App {
     .map { in =>
       println(s"`mapAsync` emitted event number: $in")
     }
-  // #mapasync-concurrent
+    // #mapasync-concurrent
     .runWith(Sink.ignore)
-
 
 }
 
-object MapAsyncUnordered extends App{
- import CommonMapAsync._
+object MapAsyncUnordered extends App {
+  import CommonMapAsync._
   // #mapasyncunordered
 
   events
@@ -122,8 +117,7 @@ object MapAsyncUnordered extends App{
     .map { in =>
       println(s"`mapAsyncUnordered` emitted event number: $in")
     }
-  // #mapasyncunordered
+    // #mapasyncunordered
     .runWith(Sink.ignore)
-
 
 }
