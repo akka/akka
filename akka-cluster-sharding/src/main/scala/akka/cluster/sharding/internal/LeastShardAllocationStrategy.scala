@@ -66,9 +66,9 @@ import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy.Regio
         sortedAllocations: Iterable[RegionEntry]): Set[ShardId] = {
       val selected = Vector.newBuilder[ShardId]
       sortedAllocations.foreach {
-        case RegionEntry(_, _, shards) =>
-          if (shards.size > optimalPerRegion) {
-            selected ++= shards.take(shards.size - optimalPerRegion)
+        case RegionEntry(_, _, shardIds) =>
+          if (shardIds.size > optimalPerRegion) {
+            selected ++= shardIds.take(shardIds.size - optimalPerRegion)
           }
       }
       val result = selected.result()
@@ -89,9 +89,9 @@ import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy.Regio
       } else {
         val selected = Vector.newBuilder[ShardId]
         sortedAllocations.foreach {
-          case RegionEntry(_, _, shards) =>
-            if (shards.size >= optimalPerRegion) {
-              selected += shards.head
+          case RegionEntry(_, _, shardIds) =>
+            if (shardIds.size >= optimalPerRegion) {
+              selected += shardIds.head
             }
         }
         val result = selected.result().take(min(countBelowOptimal, limit(numberOfShards))).toSet

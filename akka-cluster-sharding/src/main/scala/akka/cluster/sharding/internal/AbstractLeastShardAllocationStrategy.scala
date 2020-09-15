@@ -91,7 +91,7 @@ private[akka] abstract class AbstractLeastShardAllocationStrategy extends ActorS
       regionEntries: Iterable[RegionEntry]): (ActorRef, immutable.IndexedSeq[ShardId]) = {
     regionEntries.toVector
       .sorted(ShardSuitabilityOrdering)
-      .map { case RegionEntry(region, _, shards) => region -> shards }
+      .map { case RegionEntry(region, _, shardIds) => region -> shardIds }
       .head
   }
 

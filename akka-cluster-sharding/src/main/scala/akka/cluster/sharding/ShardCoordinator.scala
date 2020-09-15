@@ -301,7 +301,7 @@ object ShardCoordinator {
           // even if it is to another new node.
           val mostShards = regionEntries
             .collect {
-              case RegionEntry(_, _, v) => v.filterNot(s => rebalanceInProgress(s))
+              case RegionEntry(_, _, shardIds) => shardIds.filterNot(id => rebalanceInProgress(id))
             }
             .maxBy(_.size)
           val difference = mostShards.size - leastShards.size
