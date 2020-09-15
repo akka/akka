@@ -423,8 +423,23 @@ object ShardRegion {
     }
   }
 
+  /**
+   * Periodic tick to run some house-keeping.
+   * This message is continuously sent to `self` using a timer configured with `retryInterval`.
+   */
   private case object Retry extends ShardRegionCommand
 
+  /**
+   * Similar to Retry but used only when ShardRegion is starting and when we detect that
+   * the coordinator is moving.
+   *
+   * This is to ensure that a ShardRegion can register as soon as possible while the
+   * ShardCoordinator is in the process of recovering its state.
+   *
+   * This message is sent to `self` using a interval lower then [[Retry]] (higher frequency).
+   * The interval increases exponentially until it equals `retryInterval` in which case
+   * we stop to schedule it and let [[Retry]] take over.
+   */
   private case object RegisterRetry extends ShardRegionCommand
 
   /**
@@ -737,7 +752,7 @@ private[akka] class ShardRegion(
       context.watch(coord)
       coordinator = Some(coord)
       finishRegistration()
-      requestShardBufferHomes()
+      tryRequestShardBufferHomes()
 
     case BeginHandOff(shard) =>
       log.debug("{}: BeginHandOff shard [{}]", typeName, shard)
@@ -778,18 +793,26 @@ private[akka] class ShardRegion(
   }
 
   def receiveCommand(cmd: ShardRegionCommand): Unit = cmd match {
-    case Retry =>
-      sendGracefulShutdownToCoordinator()
 
-      if (shardBuffers.nonEmpty)
-        retryCount += 1
-      if (coordinator.isEmpty)
-        register()
+    case Retry =>
+      // retryCount is used to avoid flooding the logs
+      // it's used inside register() whenever shardBuffers.nonEmpty
+      // therefore we update it if needed on each Retry msg
+      // the reason why it's updated here is because we don't want to increase it on each RegisterRetry, only on Retry
+      if (shardBuffers.nonEmpty) retryCount += 1
+
+      // we depend on the coordinator each time, if empty we need to register
+      // otherwise we can try to deliver some buffered messages
+      if (coordinator.isEmpty) register()
       else {
-        requestShardBufferHomes()
+        // Note: we do try to deliver buffered messages even in the middle of
+        // a graceful shutdown every message that we manage to deliver is a win
+        tryRequestShardBufferHomes()
       }
 
-      tryCompleteGracefulShutdown()
+      // eventually, also re-trigger a graceful shutdown if one is in progress
+      sendGracefulShutdownToCoordinatorIfInProgress()
+      tryCompleteGracefulShutdownIfInProgress()
 
     case RegisterRetry =>
       if (coordinator.isEmpty) {
@@ -800,8 +823,8 @@ private[akka] class ShardRegion(
     case GracefulShutdown =>
       log.debug("{}: Starting graceful shutdown of region and all its shards", typeName)
       gracefulShutdownInProgress = true
-      sendGracefulShutdownToCoordinator()
-      tryCompleteGracefulShutdown()
+      sendGracefulShutdownToCoordinatorIfInProgress()
+      tryCompleteGracefulShutdownIfInProgress()
 
     case _ => unhandled(cmd)
   }
@@ -861,7 +884,9 @@ private[akka] class ShardRegion(
         }
       }
 
-      tryCompleteGracefulShutdown()
+      // did this shard get removed because the ShardRegion is shutting down?
+      // If so, we can try to speed-up the region shutdown. We don't need to wait for the next tick.
+      tryCompleteGracefulShutdownIfInProgress()
     }
   }
 
@@ -910,7 +935,7 @@ private[akka] class ShardRegion(
       case Failure(_) => Success(Left(shardId))
     }
 
-  private def tryCompleteGracefulShutdown() =
+  private def tryCompleteGracefulShutdownIfInProgress(): Unit =
     if (gracefulShutdownInProgress && shards.isEmpty && shardBuffers.isEmpty) {
       context.stop(self) // all shards have been rebalanced, complete graceful shutdown
     }
@@ -986,32 +1011,36 @@ private[akka] class ShardRegion(
   def registrationMessage: Any =
     if (entityProps.isDefined) Register(self) else RegisterProxy(self)
 
-  def requestShardBufferHomes(): Unit = {
-    // Have to use vars because MessageBufferMap has no map, only foreach
-    var totalBuffered = 0
-    var shards = List.empty[String]
-    shardBuffers.foreach {
-      case (shard, buf) =>
-        coordinator.foreach { c =>
+  /**
+   * Send GetShardHome for all shards with buffered messages
+   * If coordinator is empty, nothing happens
+   */
+  def tryRequestShardBufferHomes(): Unit = {
+    coordinator.foreach { coord =>
+      // Have to use vars because MessageBufferMap has no map, only foreach
+      var totalBuffered = 0
+      var shards = List.empty[String]
+      shardBuffers.foreach {
+        case (shard, buf) =>
           totalBuffered += buf.size
           shards ::= shard
           log.debug(
-            "{}: Retry request for shard [{}] homes from coordinator at [{}]. [{}] buffered messages.",
+            "{}: Requesting shard home for [{}] to coordinator at [{}]. [{}] buffered messages.",
             typeName,
             shard,
-            c,
+            coord,
             buf.size)
-          c ! GetShardHome(shard)
-        }
-    }
+          coord ! GetShardHome(shard)
+      }
 
-    if (retryCount >= 5 && retryCount % 5 == 0 && log.isWarningEnabled) {
-      log.warning(
-        "{}: Retry request for shards [{}] homes from coordinator. [{}] total buffered messages. Coordinator [{}]",
-        typeName,
-        shards.sorted.mkString(","),
-        totalBuffered,
-        coordinator)
+      if (retryCount >= 5 && retryCount % 5 == 0 && log.isWarningEnabled) {
+        log.warning(
+          "{}: Requested shard homes [{}] to coordinator at [{}]. [{}] total buffered messages.",
+          typeName,
+          shards.sorted.mkString(","),
+          coord,
+          totalBuffered)
+      }
     }
   }
 
@@ -1168,7 +1197,7 @@ private[akka] class ShardRegion(
     }
   }
 
-  def sendGracefulShutdownToCoordinator(): Unit = {
+  def sendGracefulShutdownToCoordinatorIfInProgress(): Unit = {
     if (gracefulShutdownInProgress) {
       val actorSelections = coordinatorSelection()
       log.debug("Sending graceful shutdown to {}", actorSelections)
