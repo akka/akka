@@ -614,7 +614,7 @@ private[akka] class ShardRegion(
    * oldest node and therefore it is good to send the Register and GracefulShutdownReq to
    * the likely locations of the coordinator.
    */
-  def coordinatorSelection: List[ActorSelection] = {
+  def coordinatorSelection(): List[ActorSelection] = {
     @tailrec def select(result: List[Member], remaining: immutable.SortedSet[Member]): List[Member] = {
       if (remaining.isEmpty)
         result
@@ -935,7 +935,7 @@ private[akka] class ShardRegion(
   }
 
   def register(): Unit = {
-    val actorSelections = coordinatorSelection
+    val actorSelections = coordinatorSelection()
     actorSelections.foreach(_ ! registrationMessage)
     if (shardBuffers.nonEmpty && retryCount >= 5) {
       if (actorSelections.nonEmpty) {
@@ -1170,8 +1170,9 @@ private[akka] class ShardRegion(
 
   def sendGracefulShutdownToCoordinator(): Unit = {
     if (gracefulShutdownInProgress) {
-      log.debug("Sending graceful shutdown to {}", coordinatorSelection)
-      coordinatorSelection.foreach(_ ! GracefulShutdownReq(self))
+      val actorSelections = coordinatorSelection()
+      log.debug("Sending graceful shutdown to {}", actorSelections)
+      actorSelections.foreach(_ ! GracefulShutdownReq(self))
     }
   }
 }
