@@ -4,36 +4,25 @@
 
 package docs.stream.operators.sourceorflow
 
-import java.util.concurrent.TimeUnit
-
 import akka.NotUsed
-import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.Timeout
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.util.Random
 
 /**
  *
  */
 object CommonMapAsync {
   case class Event(sequenceNumber: Int)
-  case class EventProcessingRequest(evt: Event, replyTo: ActorRef[Int])
 
-  val guardian = Behaviors.receiveMessage[EventProcessingRequest] {
-    case EventProcessingRequest(evt, replyTo) =>
-      TimeUnit.MILLISECONDS.sleep(500)
-      replyTo.tell(evt.sequenceNumber)
-      Behaviors.same
-  }
-
-  implicit val sys =
-    ActorSystem.apply[EventProcessingRequest](guardian, "mapAsync-stream")
-  implicit val exCtx = sys.executionContext
+  implicit val sys: ActorSystem = ActorSystem("mapAsync-stream")
+  implicit val exCtx: ExecutionContextExecutor = sys.dispatcher
   implicit val timeout: Timeout = 3.seconds
 
   // #mapasync-strict-order
@@ -59,15 +48,15 @@ object CommonMapAsync {
     // #mapasync-concurrent
     // #mapasyncunordered
     val result =
-      if (event.sequenceNumber % 5 == 0) {
-        import akka.actor.typed.scaladsl.AskPattern._
-        sys.ask { replyTo =>
-          EventProcessingRequest(event, replyTo)
-        }
+      if (Random.nextInt(5) == 0) {
+        akka.pattern.after(500.millis)(Future.successful(event.sequenceNumber))
       } else {
         Future.successful(event.sequenceNumber)
       }
-    result
+    result.map { x =>
+      println(s"Completed processing $x")
+      x
+    }
     // #mapasync-strict-order
     // #mapasync-concurrent
     // #mapasyncunordered

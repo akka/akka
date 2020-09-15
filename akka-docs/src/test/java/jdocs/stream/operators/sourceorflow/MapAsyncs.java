@@ -5,11 +5,8 @@
 package jdocs.stream.operators.sourceorflow;
 
 import akka.NotUsed;
-import akka.actor.typed.ActorRef;
-import akka.actor.typed.ActorSystem;
-import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.AskPattern;
-import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.ActorSystem;
+import akka.pattern.Patterns;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 
@@ -17,7 +14,6 @@ import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 public class MapAsyncs {
@@ -36,16 +32,7 @@ public class MapAsyncs {
   // #mapasync-concurrent
   // #mapasyncunordered
 
-  private final Behavior<EventProcessingRequest> guardian =
-      Behaviors.<EventProcessingRequest>receiveMessage(
-          request -> {
-            TimeUnit.MILLISECONDS.sleep(500);
-            request.replyTo.tell(request.evt.sequenceNumber);
-            return Behaviors.same();
-          });
-  private final ActorSystem<EventProcessingRequest> system =
-      ActorSystem.create(guardian, "mapAsync-operator-examples");
-  private final ActorRef<EventProcessingRequest> actorRef = system;
+  private final ActorSystem system = ActorSystem.create("mapAsync-operator-examples");
 
   public MapAsyncs() {}
 
@@ -62,17 +49,16 @@ public class MapAsyncs {
     CompletionStage<Integer> cs;
     if (random.nextInt(5) == 0) {
       cs =
-          AskPattern.ask(
-              actorRef,
-              replyTo -> new EventProcessingRequest(in, replyTo),
-              Duration.ofSeconds(3),
-              system.scheduler());
+          Patterns.after(
+              Duration.ofMillis(500),
+              system,
+              () -> CompletableFuture.completedFuture(in.sequenceNumber));
     } else {
       cs = CompletableFuture.completedFuture(in.sequenceNumber);
     }
     return cs.thenApply(
         i -> {
-          System.out.println("Compelted processing " + i.intValue());
+          System.out.println("Completed processing " + i.intValue());
           return i;
         });
     // #mapasync-strict-order
@@ -87,7 +73,7 @@ public class MapAsyncs {
     // #mapasync-strict-order
 
     events
-        .mapAsyncUnordered(10, this::eventHandler)
+        .mapAsync(1, this::eventHandler)
         .map(in -> "`mapSync` emitted event number " + in.intValue())
         .runWith(Sink.foreach(str -> System.out.println(str)), system);
     // #mapasync-strict-order
@@ -97,7 +83,7 @@ public class MapAsyncs {
     // #mapasync-concurrent
 
     events
-        .mapAsyncUnordered(10, this::eventHandler)
+        .mapAsync(10, this::eventHandler)
         .map(in -> "`mapSync` emitted event number " + in.intValue())
         .runWith(Sink.foreach(str -> System.out.println(str)), system);
     // #mapasync-concurrent
@@ -127,16 +113,6 @@ public class MapAsyncs {
     @Override
     public String toString() {
       return "Event(" + sequenceNumber + ')';
-    }
-  }
-
-  static class EventProcessingRequest {
-    public final Event evt;
-    public final ActorRef<Integer> replyTo;
-
-    public EventProcessingRequest(Event evt, ActorRef<Integer> replyTo) {
-      this.evt = evt;
-      this.replyTo = replyTo;
     }
   }
 }
