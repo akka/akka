@@ -74,41 +74,46 @@ private[akka] abstract class AbstractLeastShardAllocationStrategy extends ActorS
   protected def selfMember: Member = cluster.selfMember
 
   final protected def isAGoodTimeToRebalance(regionEntries: Iterable[RegionEntry]): Boolean = {
-    // this will filter out member with no shard regions (bc role or not yet completed joining)
-    val shardRegionMembers = regionEntries.map { case RegionEntry(_, member, _) => member }
-    // avoid rebalance when rolling update is in progress
-    def allNodesSameVersion = shardRegionMembers.map(_.appVersion).toSet.size == 1
-    // rebalance requires ack from all anyway
-    def allRegionsReachable = clusterState.unreachable.diff(shardRegionMembers.toSet).isEmpty
-    // no members in same dc joining
+    // Avoid rebalance when rolling update is in progress
+    // (This will ignore versions on members with no shard regions, because of role or not yet completed joining)
+    val version = regionEntries.head.member.appVersion
+    def allNodesSameVersion = {
+      regionEntries.forall(_.member.appVersion == version)
+    }
+    // Rebalance requires ack from regions and proxies - no need to rebalance if it cannot be completed
+    // FIXME #29589, we currently only look at same dc but proxies in other dcs may delay complete as well right now
+    def neededMembersReachable =
+      !clusterState.members.exists(m => m.dataCenter == selfMember.dataCenter && clusterState.unreachable(m))
+    // No members in same dc joining, we want that to complete before rebalance, such nodes should reach Up soon
     def membersInProgressOfJoining =
       clusterState.members.exists(m => m.dataCenter == selfMember.dataCenter && JoiningCluster(m.status))
 
-    allNodesSameVersion && allRegionsReachable && !membersInProgressOfJoining
+    allNodesSameVersion && neededMembersReachable && !membersInProgressOfJoining
   }
 
   final protected def mostSuitableRegion(
       regionEntries: Iterable[RegionEntry]): (ActorRef, immutable.IndexedSeq[ShardId]) = {
-    regionEntries.toVector
-      .sorted(ShardSuitabilityOrdering)
-      .map { case RegionEntry(region, _, shardIds) => region -> shardIds }
-      .head
+    val mostSuitableEntry = regionEntries.min(ShardSuitabilityOrdering)
+    mostSuitableEntry.region -> mostSuitableEntry.shardIds
   }
 
   final protected def regionEntriesFor(currentShardAllocations: AllocationMap): Iterable[RegionEntry] = {
     val addressToMember: Map[Address, Member] = clusterState.members.iterator.map(m => m.address -> m).toMap
-    currentShardAllocations.flatMap {
-      case (region, shardIds) =>
-        val regionAddress = {
-          if (region.path.address.hasLocalScope) selfMember.address
-          else region.path.address
-        }
+    currentShardAllocations
+      .flatMap {
+        case (region, shardIds) =>
+          val regionAddress = {
+            if (region.path.address.hasLocalScope) selfMember.address
+            else region.path.address
+          }
 
-        val memberForRegion = addressToMember.get(regionAddress)
-        // if the member is unknown (very unlikely but not impossible) because of view not updated yet
-        // that node is ignored for this invocation
-        memberForRegion.map(member => RegionEntry(region, member, shardIds))
-    }
+          val memberForRegion = addressToMember.get(regionAddress)
+          // if the member is unknown (very unlikely but not impossible) because of view not updated yet
+          // that node is ignored for this invocation
+          memberForRegion.map(member => RegionEntry(region, member, shardIds))
+      }
+      .toSeq
+      .sorted(ShardSuitabilityOrdering)
   }
 
 }
