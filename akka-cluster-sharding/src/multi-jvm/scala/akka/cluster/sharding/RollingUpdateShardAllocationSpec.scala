@@ -25,6 +25,8 @@ object RollingUpdateShardAllocationSpecConfig
         rebalance-interval = 1s
         # we are leaving cluster nodes but they need to stay in test
         akka.coordinated-shutdown.terminate-actor-system = off
+        # use the new LeastShardAllocationStrategy
+        akka.cluster.sharding.least-shard-allocation-strategy.rebalance-absolute-limit = 1
       }
      """) {
 
@@ -103,7 +105,14 @@ abstract class RollingUpdateShardAllocationSpec
 
     "start cluster sharding on first" in {
       runOn(first, second) {
-        shardRegion
+
+        // make sure both regions have completed registration before triggering entity allocation
+        // so the folloing allocations end up as one on each node
+        awaitAssert {
+          shardRegion ! ShardRegion.GetCurrentRegions
+          expectMsgType[ShardRegion.CurrentRegions].regions should have size (2)
+        }
+
         shardRegion ! GiveMeYourHome.Get("id1")
         // started on either of the nodes
         val address1 = expectMsgType[GiveMeYourHome.Home].address
@@ -169,7 +178,7 @@ abstract class RollingUpdateShardAllocationSpec
       }
       enterBarrier("sharding-handed-off")
 
-      // trigger allocation (we don't know which id was on node 1)
+      // trigger allocation (no verification because we don't know which id was on node 1)
       runOn(second, third, fourth) {
         awaitAssert {
           shardRegion ! GiveMeYourHome.Get("id1")
@@ -186,11 +195,15 @@ abstract class RollingUpdateShardAllocationSpec
         cluster.leave(cluster.selfAddress)
       }
       runOn(third, fourth) {
-        awaitAssert(upMembers.size should ===(2))
+        // make sure coordinator has noticed there are only two regions
+        awaitAssert({
+          shardRegion ! ShardRegion.GetCurrentRegions
+          expectMsgType[ShardRegion.CurrentRegions].regions should have size (2)
+        }, 30.seconds)
       }
       enterBarrier("second-left")
 
-      // trigger allocation (we don't know which id was on node 1)
+      // trigger allocation and verify where each was started
       runOn(third, fourth) {
         awaitAssert {
           shardRegion ! GiveMeYourHome.Get("id1")

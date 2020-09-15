@@ -99,21 +99,18 @@ private[akka] abstract class AbstractLeastShardAllocationStrategy extends ActorS
 
   final protected def regionEntriesFor(currentShardAllocations: AllocationMap): Iterable[RegionEntry] = {
     val addressToMember: Map[Address, Member] = clusterState.members.iterator.map(m => m.address -> m).toMap
-    currentShardAllocations
-      .flatMap {
-        case (region, shardIds) =>
-          val regionAddress = {
-            if (region.path.address.hasLocalScope) selfMember.address
-            else region.path.address
-          }
+    currentShardAllocations.flatMap {
+      case (region, shardIds) =>
+        val regionAddress = {
+          if (region.path.address.hasLocalScope) selfMember.address
+          else region.path.address
+        }
 
-          val memberForRegion = addressToMember.get(regionAddress)
-          // if the member is unknown (very unlikely but not impossible) because of view not updated yet
-          // that node is ignored for this invocation
-          memberForRegion.map(member => RegionEntry(region, member, shardIds))
-      }
-      .toSeq
-      .sorted(ShardSuitabilityOrdering)
+        val memberForRegion = addressToMember.get(regionAddress)
+        // if the member is unknown (very unlikely but not impossible) because of view not updated yet
+        // that node is ignored for this invocation
+        memberForRegion.map(member => RegionEntry(region, member, shardIds))
+    }
   }
 
 }

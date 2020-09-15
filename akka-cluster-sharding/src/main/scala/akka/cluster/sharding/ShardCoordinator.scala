@@ -282,12 +282,14 @@ object ShardCoordinator {
       extends AbstractLeastShardAllocationStrategy
       with Serializable {
 
+    import AbstractLeastShardAllocationStrategy.ShardSuitabilityOrdering
+
     override def allocateShard(
         requester: ActorRef,
         shardId: ShardId,
         currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef] = {
-      val decorated = regionEntriesFor(currentShardAllocations)
-      val (region, _) = mostSuitableRegion(decorated)
+      val regionEntries = regionEntriesFor(currentShardAllocations)
+      val (region, _) = mostSuitableRegion(regionEntries)
       Future.successful(region)
     }
 
@@ -295,11 +297,11 @@ object ShardCoordinator {
         currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
         rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
       if (rebalanceInProgress.size < maxSimultaneousRebalance) {
-        val regionEntries = regionEntriesFor(currentShardAllocations)
-        if (isAGoodTimeToRebalance(regionEntries)) {
-          val (_, leastShards) = mostSuitableRegion(regionEntries)
+        val sortedRegionEntries = regionEntriesFor(currentShardAllocations).toVector.sorted(ShardSuitabilityOrdering)
+        if (isAGoodTimeToRebalance(sortedRegionEntries)) {
+          val (_, leastShards) = mostSuitableRegion(sortedRegionEntries)
           // even if it is to another new node.
-          val mostShards = regionEntries
+          val mostShards = sortedRegionEntries
             .collect {
               case RegionEntry(_, _, shardIds) => shardIds.filterNot(id => rebalanceInProgress(id))
             }

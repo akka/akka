@@ -10,6 +10,7 @@ import akka.actor.ActorRef
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy.RegionEntry
+import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy.ShardSuitabilityOrdering
 
 /**
  * INTERNAL API
@@ -46,8 +47,8 @@ import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy.Regio
       requester: ActorRef,
       shardId: ShardId,
       currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef] = {
-    val decorated = regionEntriesFor(currentShardAllocations)
-    val (region, _) = mostSuitableRegion(decorated)
+    val regionEntries = regionEntriesFor(currentShardAllocations)
+    val (region, _) = mostSuitableRegion(regionEntries)
     Future.successful(region)
   }
 
@@ -63,9 +64,9 @@ import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy.Regio
     def rebalancePhase1(
         numberOfShards: Int,
         optimalPerRegion: Int,
-        sortedAllocations: Iterable[RegionEntry]): Set[ShardId] = {
+        sortedEntries: Iterable[RegionEntry]): Set[ShardId] = {
       val selected = Vector.newBuilder[ShardId]
-      sortedAllocations.foreach {
+      sortedEntries.foreach {
         case RegionEntry(_, _, shardIds) =>
           if (shardIds.size > optimalPerRegion) {
             selected ++= shardIds.take(shardIds.size - optimalPerRegion)
@@ -78,17 +79,17 @@ import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy.Regio
     def rebalancePhase2(
         numberOfShards: Int,
         optimalPerRegion: Int,
-        sortedAllocations: Iterable[RegionEntry]): Future[Set[ShardId]] = {
+        sortedEntries: Iterable[RegionEntry]): Future[Set[ShardId]] = {
       // In the first phase the optimalPerRegion is rounded up, and depending on number of shards per region and number
       // of regions that might not be the exact optimal.
       // In second phase we look for diff of >= 2 below optimalPerRegion and rebalance that number of shards.
       val countBelowOptimal =
-        sortedAllocations.iterator.map(entry => max(0, (optimalPerRegion - 1) - entry.shardIds.size)).sum
+        sortedEntries.iterator.map(entry => max(0, (optimalPerRegion - 1) - entry.shardIds.size)).sum
       if (countBelowOptimal == 0) {
         emptyRebalanceResult
       } else {
         val selected = Vector.newBuilder[ShardId]
-        sortedAllocations.foreach {
+        sortedEntries.foreach {
           case RegionEntry(_, _, shardIds) =>
             if (shardIds.size >= optimalPerRegion) {
               selected += shardIds.head
@@ -103,7 +104,7 @@ import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy.Regio
       // one rebalance at a time
       emptyRebalanceResult
     } else {
-      val sortedRegionEntries = regionEntriesFor(currentShardAllocations)
+      val sortedRegionEntries = regionEntriesFor(currentShardAllocations).toVector.sorted(ShardSuitabilityOrdering)
       if (!isAGoodTimeToRebalance(sortedRegionEntries)) {
         emptyRebalanceResult
       } else {
