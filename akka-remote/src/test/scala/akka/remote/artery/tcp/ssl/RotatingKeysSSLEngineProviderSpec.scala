@@ -268,13 +268,11 @@ abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
   }
 
   override def beforeTermination(): Unit = {
-    systemsToTerminate.map { systemToTerminate =>
-    val patienceConfig1 = implicitly[PatienceConfig]
-      system.log.info(s"Terminating $systemToTerminate... $patienceConfig1")
-              systemToTerminate.terminate()
-    }.foreach(fut => eventually(fut))
-
-
+    systemsToTerminate.foreach { systemToTerminate =>
+      system.log.info(s"Terminating $systemToTerminate...")
+      systemToTerminate.terminate()
+    }
+    systemsToTerminate.foreach(shutdown(_, verifySystemShutdown = true))
     super.beforeTermination()
   }
 
