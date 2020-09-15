@@ -25,15 +25,13 @@ import akka.remote.artery.tcp.SSLEngineProviderSetup
 import akka.remote.artery.tcp.TlsTcpSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
-import akka.testkit.TestDuration
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
+import org.scalatest.concurrent.Eventually
 
-import scala.concurrent.duration._
-import scala.concurrent.Await
 import scala.concurrent.blocking
 import scala.util.control.NonFatal
 
@@ -223,7 +221,8 @@ object RotatingKeysSSLEngineProviderSpec {
 // are in `TlsTcpWithRotatingKeysSSLEngineSpec`
 abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
     extends ArteryMultiNodeSpec(ConfigFactory.parseString(extraConfig).withFallback(TlsTcpSpec.config))
-    with ImplicitSender {
+    with ImplicitSender
+    with Eventually {
   import RotatingKeysSSLEngineProviderSpec._
 
   var systemsToTerminate: Seq[ActorSystem] = Nil
@@ -269,13 +268,13 @@ abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
   }
 
   override def beforeTermination(): Unit = {
-    systemsToTerminate.foreach { systemToTerminate =>
-      system.log.info(s"Terminating $systemToTerminate...")
-      val now = System.nanoTime()
-      Await.result(systemToTerminate.terminate(), 8.seconds.dilated)
-      val lasted = System.nanoTime() - now
-      system.log.info(s"Terminated $systemToTerminate after ${lasted / 1000000} ms")
-    }
+    systemsToTerminate.map { systemToTerminate =>
+    val patienceConfig1 = implicitly[PatienceConfig]
+      system.log.info(s"Terminating $systemToTerminate... $patienceConfig1")
+              systemToTerminate.terminate()
+    }.foreach(fut => eventually(fut))
+
+
     super.beforeTermination()
   }
 
