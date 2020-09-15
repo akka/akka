@@ -12,8 +12,7 @@ import scala.util.Failure
 import scala.util.Success
 import akka.Done
 import akka.NotUsed
-import akka.stream.Attributes
-import akka.stream.OverflowStrategy
+import akka.stream.{ Attributes, OverflowStrategy, RestartSettings }
 import akka.stream.scaladsl.RestartWithBackoffFlow.Delay
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
@@ -34,11 +33,14 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
   private val minBackoff = 1.second.dilated
   private val maxBackoff = 3.seconds.dilated
 
+  private val shortRestartSettings = RestartSettings(shortMinBackoff, shortMaxBackoff, 0)
+  private val restartSettings = RestartSettings(minBackoff, maxBackoff, 0)
+
   "A restart with backoff source" should {
     "run normally" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
-        .withBackoff(shortMinBackoff, shortMaxBackoff, 0) { () =>
+        .withBackoff(shortRestartSettings) { () =>
           created.incrementAndGet()
           Source.repeat("a")
         }
@@ -58,7 +60,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
     "restart on completion" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
-        .withBackoff(shortMinBackoff, shortMaxBackoff, 0) { () =>
+        .withBackoff(shortRestartSettings) { () =>
           created.incrementAndGet()
           Source(List("a", "b"))
         }
@@ -78,7 +80,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
     "restart on failure" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
-        .withBackoff(shortMinBackoff, shortMaxBackoff, 0) { () =>
+        .withBackoff(shortRestartSettings) { () =>
           created.incrementAndGet()
           Source(List("a", "b", "c")).map {
             case "c"   => throw TE("failed")
@@ -101,7 +103,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
     "backoff before restart" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
-        .withBackoff(minBackoff, maxBackoff, 0) { () =>
+        .withBackoff(restartSettings) { () =>
           created.incrementAndGet()
           Source(List("a", "b"))
         }
@@ -125,7 +127,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
     "reset exponential backoff back to minimum when source runs for at least minimum backoff without completing" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
-        .withBackoff(minBackoff, maxBackoff, 0) { () =>
+        .withBackoff(restartSettings) { () =>
           created.incrementAndGet()
           Source(List("a", "b"))
         }
@@ -159,7 +161,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val created = new AtomicInteger()
       val promise = Promise[Done]()
       val probe = RestartSource
-        .withBackoff(shortMinBackoff, shortMaxBackoff, 0) { () =>
+        .withBackoff(shortRestartSettings) { () =>
           created.incrementAndGet()
           Source.repeat("a").watchTermination() { (_, term) =>
             promise.completeWith(term)
@@ -180,7 +182,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
     "not restart the source when cancelled while backing off" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
-        .withBackoff(minBackoff, maxBackoff, 0) { () =>
+        .withBackoff(restartSettings) { () =>
           created.incrementAndGet()
           Source.single("a")
         }
@@ -199,7 +201,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
     "stop on completion if it should only be restarted in failures" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
-        .onFailuresWithBackoff(shortMinBackoff, shortMaxBackoff, 0) { () =>
+        .onFailuresWithBackoff(shortRestartSettings) { () =>
           created.incrementAndGet()
           Source(List("a", "b", "c")).map {
             case "c"   => if (created.get() == 1) throw TE("failed") else "c"
@@ -224,7 +226,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
     "restart on failure when only due to failures should be restarted" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
-        .onFailuresWithBackoff(shortMinBackoff, shortMaxBackoff, 0) { () =>
+        .onFailuresWithBackoff(shortRestartSettings) { () =>
           created.incrementAndGet()
           Source(List("a", "b", "c")).map {
             case "c"   => throw TE("failed")
@@ -248,7 +250,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
     "not restart the source when maxRestarts is reached" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
-        .withBackoff(shortMinBackoff, shortMaxBackoff, 0, maxRestarts = 1) { () =>
+        .withBackoff(shortRestartSettings.withMaxRestarts(1)) { () =>
           created.incrementAndGet()
           Source.single("a")
         }
@@ -266,7 +268,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
     "reset maxRestarts when source runs for at least minimum backoff without completing" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
-        .withBackoff(minBackoff, maxBackoff, 0, maxRestarts = 2) { () =>
+        .withBackoff(restartSettings.withMaxRestarts(2)) { () =>
           created.incrementAndGet()
           Source(List("a"))
         }
@@ -293,7 +295,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
     "allow using maxRestartsWithin instead of minBackoff to determine maxRestarts reset time" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
-        .withBackoff(shortMinBackoff, shortMaxBackoff, 0, maxRestarts = 2, maxRestartsWithin = 1.second) { () =>
+        .withBackoff(shortRestartSettings.withMaxRestarts(2).withMaxRestartsWithin(1.second)) { () =>
           created.incrementAndGet()
           Source(List("a", "b")).takeWhile(_ != "b")
         }
@@ -321,7 +323,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val result = Promise[Seq[String]]()
       val probe = TestSource
         .probe[String]
-        .toMat(RestartSink.withBackoff(shortMinBackoff, shortMaxBackoff, 0) { () =>
+        .toMat(RestartSink.withBackoff(shortRestartSettings) { () =>
           created.incrementAndGet()
           Sink.seq.mapMaterializedValue(result.completeWith)
         })(Keep.left)
@@ -341,7 +343,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
         .probe[String]
-        .toMat(RestartSink.withBackoff(shortMinBackoff, shortMaxBackoff, 0) { () =>
+        .toMat(RestartSink.withBackoff(shortRestartSettings) { () =>
           created.incrementAndGet()
           Flow[String].takeWhile(_ != "cancel", inclusive = true).to(Sink.foreach(queue.sendNext))
         })(Keep.left)
@@ -367,7 +369,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
         .probe[String]
-        .toMat(RestartSink.withBackoff(minBackoff, maxBackoff, 0) { () =>
+        .toMat(RestartSink.withBackoff(restartSettings) { () =>
           created.incrementAndGet()
           Flow[String].takeWhile(_ != "cancel", inclusive = true).to(Sink.foreach(queue.sendNext))
         })(Keep.left)
@@ -394,7 +396,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
         .probe[String]
-        .toMat(RestartSink.withBackoff(minBackoff, maxBackoff, 0) { () =>
+        .toMat(RestartSink.withBackoff(restartSettings) { () =>
           created.incrementAndGet()
           Flow[String].takeWhile(_ != "cancel", inclusive = true).to(Sink.foreach(queue.sendNext))
         })(Keep.left)
@@ -436,7 +438,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
         .probe[String]
-        .toMat(RestartSink.withBackoff(minBackoff, maxBackoff, 0) { () =>
+        .toMat(RestartSink.withBackoff(restartSettings) { () =>
           created.incrementAndGet()
           Flow[String].takeWhile(_ != "cancel", inclusive = true).to(Sink.foreach(queue.sendNext))
         })(Keep.left)
@@ -461,7 +463,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
         .probe[String]
-        .toMat(RestartSink.withBackoff(shortMinBackoff, shortMaxBackoff, 0, maxRestarts = 1) { () =>
+        .toMat(RestartSink.withBackoff(shortRestartSettings.withMaxRestarts(1)) { () =>
           created.incrementAndGet()
           Flow[String].takeWhile(_ != "cancel", inclusive = true).to(Sink.foreach(queue.sendNext))
         })(Keep.left)
@@ -485,7 +487,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
         .probe[String]
-        .toMat(RestartSink.withBackoff(minBackoff, maxBackoff, 0, maxRestarts = 2) { () =>
+        .toMat(RestartSink.withBackoff(restartSettings.withMaxRestarts(2)) { () =>
           created.incrementAndGet()
           Flow[String].takeWhile(_ != "cancel", inclusive = true).to(Sink.foreach(queue.sendNext))
         })(Keep.left)
@@ -520,12 +522,10 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
         .probe[String]
-        .toMat(
-          RestartSink.withBackoff(shortMinBackoff, shortMaxBackoff, 0, maxRestarts = 2, maxRestartsWithin = 1.second) {
-            () =>
-              created.incrementAndGet()
-              Flow[String].takeWhile(_ != "cancel", inclusive = true).to(Sink.foreach(queue.sendNext))
-          })(Keep.left)
+        .toMat(RestartSink.withBackoff(shortRestartSettings.withMaxRestarts(2).withMaxRestartsWithin(1.second)) { () =>
+          created.incrementAndGet()
+          Flow[String].takeWhile(_ != "cancel", inclusive = true).to(Sink.foreach(queue.sendNext))
+        })(Keep.left)
         .run()
 
       probe.sendNext("cancel")
@@ -555,14 +555,11 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
   "A restart with backoff flow" should {
 
     // helps reuse all the setupFlow code for both methods: withBackoff, and onlyOnFailuresWithBackoff
-    def RestartFlowFactory[In, Out](onlyOnFailures: Boolean)
-        : (FiniteDuration, FiniteDuration, Double, Int) => (() => Flow[In, Out, _]) => Flow[In, Out, NotUsed] =
-      (minBackoff, maxBackoff, randomFactor, maxRestarts) =>
-        if (onlyOnFailures) {
-          RestartFlow.onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts)
-        } else {
-          RestartFlow.withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts)
-        }
+    def RestartFlowFactory[In, Out](
+        onlyOnFailures: Boolean,
+        settings: RestartSettings): (() => Flow[In, Out, _]) => Flow[In, Out, NotUsed] =
+      if (onlyOnFailures) RestartFlow.onFailuresWithBackoff(settings)
+      else RestartFlow.withBackoff(settings)
 
     def setupFlow(
         minBackoff: FiniteDuration,
@@ -581,32 +578,34 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       // simply use the probes as a message bus for feeding and capturing events.
       val (source, sink) = TestSource
         .probe[String]
-        .viaMat(RestartFlowFactory(onlyOnFailures)(minBackoff, maxBackoff, 0, maxRestarts) { () =>
-          created.incrementAndGet()
-          Flow.fromSinkAndSource(
-            Flow[String]
-              .takeWhile(_ != "cancel")
-              .map {
-                case "in error" => throw TE("in error")
-                case other      => other
-              }
-              .to(Sink
-                .foreach(flowInSource.sendNext)
-                .mapMaterializedValue(_.onComplete {
-                  case Success(_) => flowInSource.sendNext("in complete")
-                  case Failure(_) => flowInSource.sendNext("in error")
-                })),
-            flowOutSource
-              .takeWhile(_ != "complete")
-              .map {
-                case "error" => throw TE("error")
-                case other   => other
-              }
-              .watchTermination()((_, term) =>
-                term.foreach(_ => {
-                  flowInSource.sendNext("out complete")
-                })))
-        })(Keep.left)
+        .viaMat(
+          RestartFlowFactory(onlyOnFailures, RestartSettings(minBackoff, maxBackoff, 0).withMaxRestarts(maxRestarts)) {
+            () =>
+              created.incrementAndGet()
+              Flow.fromSinkAndSource(
+                Flow[String]
+                  .takeWhile(_ != "cancel")
+                  .map {
+                    case "in error" => throw TE("in error")
+                    case other      => other
+                  }
+                  .to(Sink
+                    .foreach(flowInSource.sendNext)
+                    .mapMaterializedValue(_.onComplete {
+                      case Success(_) => flowInSource.sendNext("in complete")
+                      case Failure(_) => flowInSource.sendNext("in error")
+                    })),
+                flowOutSource
+                  .takeWhile(_ != "complete")
+                  .map {
+                    case "error" => throw TE("error")
+                    case other   => other
+                  }
+                  .watchTermination()((_, term) =>
+                    term.foreach(_ => {
+                      flowInSource.sendNext("out complete")
+                    })))
+          })(Keep.left)
         .toMat(TestSink.probe[String])(Keep.both)
         .run()
 
@@ -617,7 +616,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val created = new AtomicInteger()
       val (source, sink) = TestSource
         .probe[String]
-        .viaMat(RestartFlow.withBackoff(shortMinBackoff, shortMaxBackoff, 0) { () =>
+        .viaMat(RestartFlow.withBackoff(shortRestartSettings) { () =>
           created.incrementAndGet()
           Flow[String]
         })(Keep.left)
@@ -868,7 +867,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
 
       val restartOnFailures =
         RestartFlow
-          .onFailuresWithBackoff(1.second, 2.seconds, 0.2, 2)(() => {
+          .onFailuresWithBackoff(RestartSettings(1.second, 2.seconds, 0.2).withMaxRestarts(2))(() => {
             flowCreations.incrementAndGet()
             failsSomeTimes
           })

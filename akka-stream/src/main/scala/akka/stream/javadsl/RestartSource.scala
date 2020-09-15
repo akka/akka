@@ -8,6 +8,7 @@ import scala.concurrent.duration.FiniteDuration
 
 import akka.NotUsed
 import akka.japi.function.Creator
+import akka.stream.RestartSettings
 
 /**
  * A RestartSource wraps a [[Source]] that gets restarted when it completes or fails.
@@ -44,8 +45,10 @@ object RestartSource {
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
       randomFactor: Double,
-      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] =
-    withBackoff(minBackoff, maxBackoff, randomFactor, Int.MaxValue, sourceFactory)
+      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor)
+    withBackoff(settings, sourceFactory)
+  }
 
   /**
    * Wrap the given [[Source]] with a [[Source]] that will restart it when it fails or complete using an exponential
@@ -67,12 +70,16 @@ object RestartSource {
    *   In order to skip this additional delay pass in `0`.
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    */
+  @Deprecated
+  @deprecated("Use the overloaded method which accepts akka.stream.RestartSettings instead.", since = "2.6.10")
   def withBackoff[T](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,
       randomFactor: Double,
-      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] =
-    withBackoff(minBackoff, maxBackoff, randomFactor, Int.MaxValue, minBackoff, sourceFactory)
+      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
+    val settings = RestartSettings.create(minBackoff, maxBackoff, randomFactor)
+    withBackoff(settings, sourceFactory)
+  }
 
   /**
    * Wrap the given [[Source]] with a [[Source]] that will restart it when it fails or complete using an exponential
@@ -105,11 +112,8 @@ object RestartSource {
       randomFactor: Double,
       maxRestarts: Int,
       sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
-    akka.stream.scaladsl.RestartSource
-      .withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
-        sourceFactory.create().asScala
-      }
-      .asJava
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    withBackoff(settings, sourceFactory)
   }
 
   /**
@@ -135,13 +139,17 @@ object RestartSource {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    */
+  @Deprecated
+  @deprecated("Use the overloaded method which accepts akka.stream.RestartSettings instead.", since = "2.6.10")
   def withBackoff[T](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,
       randomFactor: Double,
       maxRestarts: Int,
-      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] =
-    withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts, minBackoff, sourceFactory)
+      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
+    val settings = RestartSettings.create(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    withBackoff(settings, sourceFactory)
+  }
 
   /**
    * Wrap the given [[Source]] with a [[Source]] that will restart it when it fails or complete using an exponential
@@ -156,32 +164,15 @@ object RestartSource {
    *
    * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
    *
-   * @param minBackoff minimum (initial) duration until the child actor
-   *   will started again, if it is terminated
-   * @param maxBackoff the exponential back-off is capped to this duration
-   * @param randomFactor after calculation of the exponential back-off an additional
-   *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
-   *   In order to skip this additional delay pass in `0`.
-   * @param maxRestarts the amount of restarts is capped to this amount within a time frame of minBackoff.
-   *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
-   * @param maxRestartsWithin the duration after which to reset the restart count and current exponential backoff
-   *   back to `0` and minBackoff respectively
+   * @param settings [[RestartSettings]] defining restart configuration
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    */
-  def withBackoff[T](
-      minBackoff: java.time.Duration,
-      maxBackoff: java.time.Duration,
-      randomFactor: Double,
-      maxRestarts: Int,
-      maxRestartsWithin: java.time.Duration,
-      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
-    import akka.util.JavaDurationConverters._
+  def withBackoff[T](settings: RestartSettings, sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] =
     akka.stream.scaladsl.RestartSource
-      .withBackoff(minBackoff.asScala, maxBackoff.asScala, randomFactor, maxRestarts, maxRestartsWithin.asScala) { () =>
+      .withBackoff(settings) { () =>
         sourceFactory.create().asScala
       }
       .asJava
-  }
 
   /**
    * Wrap the given [[Source]] with a [[Source]] that will restart it when it fails using an exponential backoff.
@@ -209,8 +200,10 @@ object RestartSource {
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
       randomFactor: Double,
-      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] =
-    onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, Int.MaxValue, sourceFactory)
+      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor)
+    onFailuresWithBackoff(settings, sourceFactory)
+  }
 
   /**
    * Wrap the given [[Source]] with a [[Source]] that will restart it when it fails using an exponential backoff.
@@ -232,12 +225,16 @@ object RestartSource {
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    *
    */
+  @Deprecated
+  @deprecated("Use the overloaded method which accepts akka.stream.RestartSettings instead.", since = "2.6.10")
   def onFailuresWithBackoff[T](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,
       randomFactor: Double,
-      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] =
-    onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, Int.MaxValue, minBackoff, sourceFactory)
+      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
+    val settings = RestartSettings.create(minBackoff, maxBackoff, randomFactor)
+    onFailuresWithBackoff(settings, sourceFactory)
+  }
 
   /**
    * Wrap the given [[Source]] with a [[Source]] that will restart it when it fails using an exponential backoff.
@@ -269,11 +266,8 @@ object RestartSource {
       randomFactor: Double,
       maxRestarts: Int,
       sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
-    akka.stream.scaladsl.RestartSource
-      .onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
-        sourceFactory.create().asScala
-      }
-      .asJava
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    onFailuresWithBackoff(settings, sourceFactory)
   }
 
   /**
@@ -298,13 +292,17 @@ object RestartSource {
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    *
    */
+  @Deprecated
+  @deprecated("Use the overloaded method which accepts akka.stream.RestartSettings instead.", since = "2.6.10")
   def onFailuresWithBackoff[T](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,
       randomFactor: Double,
       maxRestarts: Int,
-      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] =
-    onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts, minBackoff, sourceFactory)
+      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
+    val settings = RestartSettings.create(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    onFailuresWithBackoff(settings, sourceFactory)
+  }
 
   /**
    * Wrap the given [[Source]] with a [[Source]] that will restart it when it fails using an exponential backoff.
@@ -317,36 +315,14 @@ object RestartSource {
    *
    * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
    *
-   * @param minBackoff minimum (initial) duration until the child actor
-   *   will started again, if it is terminated
-   * @param maxBackoff the exponential back-off is capped to this duration
-   * @param randomFactor after calculation of the exponential back-off an additional
-   *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
-   *   In order to skip this additional delay pass in `0`.
-   * @param maxRestarts the amount of restarts is capped to this amount within a time frame of maxRestartsWithin.
-   *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
-   * @param maxRestartsWithin the duration after which to reset the restart count and current exponential backoff
-   *   back to `0` and minBackoff respectively
+   * @param settings [[RestartSettings]] defining restart configuration
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
    *
    */
-  def onFailuresWithBackoff[T](
-      minBackoff: java.time.Duration,
-      maxBackoff: java.time.Duration,
-      randomFactor: Double,
-      maxRestarts: Int,
-      maxRestartsWithin: java.time.Duration,
-      sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] = {
-    import akka.util.JavaDurationConverters._
+  def onFailuresWithBackoff[T](settings: RestartSettings, sourceFactory: Creator[Source[T, _]]): Source[T, NotUsed] =
     akka.stream.scaladsl.RestartSource
-      .onFailuresWithBackoff(
-        minBackoff.asScala,
-        maxBackoff.asScala,
-        randomFactor,
-        maxRestarts,
-        maxRestartsWithin.asScala) { () =>
+      .onFailuresWithBackoff(settings) { () =>
         sourceFactory.create().asScala
       }
       .asJava
-  }
 }

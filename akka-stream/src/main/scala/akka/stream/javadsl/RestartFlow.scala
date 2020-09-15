@@ -6,10 +6,9 @@ package akka.stream.javadsl
 
 import scala.concurrent.duration.FiniteDuration
 
-import com.github.ghik.silencer.silent
-
 import akka.NotUsed
 import akka.japi.function.Creator
+import akka.stream.RestartSettings
 
 /**
  * A RestartFlow wraps a [[Flow]] that gets restarted when it completes or fails.
@@ -50,11 +49,8 @@ object RestartFlow {
       maxBackoff: FiniteDuration,
       randomFactor: Double,
       flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
-    akka.stream.scaladsl.RestartFlow
-      .withBackoff(minBackoff, maxBackoff, randomFactor) { () =>
-        flowFactory.create().asScala
-      }
-      .asJava
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor)
+    withBackoff(settings, flowFactory)
   }
 
   /**
@@ -80,14 +76,15 @@ object RestartFlow {
    *   In order to skip this additional delay pass in `0`.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  @silent("deprecated")
+  @Deprecated
+  @deprecated("Use the overloaded method which accepts akka.stream.RestartSettings instead.", since = "2.6.10")
   def withBackoff[In, Out](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,
       randomFactor: Double,
       flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
-    import akka.util.JavaDurationConverters._
-    withBackoff(minBackoff.asScala, maxBackoff.asScala, randomFactor, flowFactory)
+    val settings = RestartSettings.create(minBackoff, maxBackoff, randomFactor)
+    withBackoff(settings, flowFactory)
   }
 
   /**
@@ -123,11 +120,8 @@ object RestartFlow {
       randomFactor: Double,
       maxRestarts: Int,
       flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
-    akka.stream.scaladsl.RestartFlow
-      .withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts) { () =>
-        flowFactory.create().asScala
-      }
-      .asJava
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    withBackoff(settings, flowFactory)
   }
 
   /**
@@ -155,13 +149,17 @@ object RestartFlow {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
+  @Deprecated
+  @deprecated("Use the overloaded method which accepts akka.stream.RestartSettings instead.", since = "2.6.10")
   def withBackoff[In, Out](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,
       randomFactor: Double,
       maxRestarts: Int,
-      flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] =
-    withBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts, minBackoff, flowFactory)
+      flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
+    val settings = RestartSettings.create(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    withBackoff(settings, flowFactory)
+  }
 
   /**
    * Wrap the given [[Flow]] with a [[Flow]] that will restart it when it fails or complete using an exponential
@@ -178,32 +176,15 @@ object RestartFlow {
    *
    * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
    *
-   * @param minBackoff minimum (initial) duration until the child actor will
-   *   started again, if it is terminated
-   * @param maxBackoff the exponential back-off is capped to this duration
-   * @param randomFactor after calculation of the exponential back-off an additional
-   *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
-   *   In order to skip this additional delay pass in `0`.
-   * @param maxRestarts the amount of restarts is capped to this amount within a time frame of maxRestartsWithin.
-   *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
-   * @param maxRestartsWithin the duration after which to reset the restart count and current exponential backoff
-   *   back to `0` and minBackoff respectively
+   * @param settings [[RestartSettings]] defining restart configuration
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  def withBackoff[In, Out](
-      minBackoff: java.time.Duration,
-      maxBackoff: java.time.Duration,
-      randomFactor: Double,
-      maxRestarts: Int,
-      maxRestartsWithin: java.time.Duration,
-      flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
-    import akka.util.JavaDurationConverters._
+  def withBackoff[In, Out](settings: RestartSettings, flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] =
     akka.stream.scaladsl.RestartFlow
-      .withBackoff(minBackoff.asScala, maxBackoff.asScala, randomFactor, maxRestarts, maxRestartsWithin.asScala) { () =>
+      .withBackoff(settings) { () =>
         flowFactory.create().asScala
       }
       .asJava
-  }
 
   /**
    * Wrap the given [[Flow]] with a [[Flow]] that will restart only when it fails that restarts
@@ -238,11 +219,8 @@ object RestartFlow {
       randomFactor: Double,
       maxRestarts: Int,
       flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
-    akka.stream.scaladsl.RestartFlow
-      .onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts, minBackoff) { () =>
-        flowFactory.create().asScala
-      }
-      .asJava
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    onFailuresWithBackoff(settings, flowFactory)
   }
 
   /**
@@ -270,13 +248,17 @@ object RestartFlow {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
+  @Deprecated
+  @deprecated("Use the overloaded method which accepts akka.stream.RestartSettings instead.", since = "2.6.10")
   def onFailuresWithBackoff[In, Out](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,
       randomFactor: Double,
       maxRestarts: Int,
-      flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] =
-    onFailuresWithBackoff(minBackoff, maxBackoff, randomFactor, maxRestarts, minBackoff, flowFactory)
+      flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
+    val settings = RestartSettings.create(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    onFailuresWithBackoff(settings, flowFactory)
+  }
 
   /**
    * Wrap the given [[Flow]] with a [[Flow]] that will restart only when it fails that restarts
@@ -293,35 +275,15 @@ object RestartFlow {
    *
    * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
    *
-   * @param minBackoff minimum (initial) duration until the child actor will
-   *   started again, if it is terminated
-   * @param maxBackoff the exponential back-off is capped to this duration
-   * @param randomFactor after calculation of the exponential back-off an additional
-   *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
-   *   In order to skip this additional delay pass in `0`.
-   * @param maxRestarts the amount of restarts is capped to this amount within a time frame of maxRestartsWithin.
-   *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
-   * @param maxRestartsWithin the duration after which to reset the restart count and current exponential backoff
-   *   back to `0` and minBackoff respectively
+   * @param settings [[RestartSettings]] defining restart configuration
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
   def onFailuresWithBackoff[In, Out](
-      minBackoff: java.time.Duration,
-      maxBackoff: java.time.Duration,
-      randomFactor: Double,
-      maxRestarts: Int,
-      maxRestartsWithin: java.time.Duration,
-      flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
-    import akka.util.JavaDurationConverters._
+      settings: RestartSettings,
+      flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] =
     akka.stream.scaladsl.RestartFlow
-      .onFailuresWithBackoff(
-        minBackoff.asScala,
-        maxBackoff.asScala,
-        randomFactor,
-        maxRestarts,
-        maxRestartsWithin.asScala) { () =>
+      .onFailuresWithBackoff(settings) { () =>
         flowFactory.create().asScala
       }
       .asJava
-  }
 }

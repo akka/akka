@@ -5,7 +5,7 @@
 package docs.stream
 
 import akka.NotUsed
-import akka.stream.KillSwitches
+import akka.stream.{ KillSwitches, RestartSettings }
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
@@ -34,11 +34,11 @@ class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
     "demonstrate a restart with backoff source" in compileOnlySpec {
 
       //#restart-with-backoff-source
-      val restartSource = RestartSource.withBackoff(
+      val restartSource = RestartSource.withBackoff(RestartSettings(
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
-        randomFactor = 0.2, // adds 20% "noise" to vary the intervals slightly
-        maxRestarts = 20 // limits the amount of restarts to 20
+        randomFactor = 0.2) // adds 20% "noise" to vary the intervals slightly
+        .withMaxRestarts(20) // limits the amount of restarts to 20
       ) { () =>
         // Create a source from a future of a source
         Source.futureSource {
