@@ -46,7 +46,7 @@ class DeprecatedLeastShardAllocationStrategySpec extends AkkaSpec {
     }
 
   "DeprecatedLeastShardAllocationStrategy" must {
-    "allocate to region with least number of shards" in {
+    "allocate to region with least number of shards [1, 1, 0]" in {
       val allocationStrategy = allocationStrategyWithFakeCluster(rebalanceThreshold = 3, maxSimultaneousRebalance = 10)
       val allocations = createAllocations(aCount = 1, bCount = 1)
       allocationStrategy.allocateShard(regionA, "003", allocations).futureValue should ===(regionC)
@@ -151,14 +151,14 @@ class DeprecatedLeastShardAllocationStrategySpec extends AkkaSpec {
         Set("003", "004"))
     }
 
-    "limit number of simultaneous rebalance" in {
+    "limit number of simultaneous rebalance [1, 10, 0]" in {
       val allocationStrategy = allocationStrategyWithFakeCluster(rebalanceThreshold = 3, maxSimultaneousRebalance = 2)
       val allocations = createAllocations(aCount = 1, bCount = 10)
       allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set("002", "003"))
       allocationStrategy.rebalance(allocations, Set("002", "003")).futureValue should ===(Set.empty[String])
     }
 
-    "not pick shards that are in progress" in {
+    "not pick shards that are in progress [10, 0, 0]" in {
       val allocationStrategy = allocationStrategyWithFakeCluster(rebalanceThreshold = 3, maxSimultaneousRebalance = 4)
       val allocations = createAllocations(aCount = 10)
       allocationStrategy.rebalance(allocations, Set("002", "003")).futureValue should ===(Set("001", "004"))
