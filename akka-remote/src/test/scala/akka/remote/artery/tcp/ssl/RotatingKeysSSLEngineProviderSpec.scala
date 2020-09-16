@@ -30,7 +30,6 @@ import com.typesafe.config.ConfigFactory
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
-import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.blocking
 import scala.util.control.NonFatal
@@ -221,8 +220,7 @@ object RotatingKeysSSLEngineProviderSpec {
 // are in `TlsTcpWithRotatingKeysSSLEngineSpec`
 abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
     extends ArteryMultiNodeSpec(ConfigFactory.parseString(extraConfig).withFallback(TlsTcpSpec.config))
-    with ImplicitSender
-    with Eventually {
+    with ImplicitSender {
   import RotatingKeysSSLEngineProviderSpec._
 
   var systemsToTerminate: Seq[ActorSystem] = Nil
