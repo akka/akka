@@ -80,7 +80,6 @@ object EventSourcedBehaviorTestKitSpec {
               Effect.persist(Incremented(1)).thenReply(replyTo)(_ => Done)
 
             case IncrementWithAsyncReply(replyTo) =>
-              Thread.sleep(500)
               ctx.self ! AsyncReply(replyTo)
               Effect.noReply
 
