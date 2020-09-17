@@ -6,10 +6,9 @@ import akka.stream.scaladsl.{Sink, Source}
 import scala.concurrent.Future
 
 object Fold {
-  implicit val system: ActorSystem = ActorSystem("example")
+  implicit val system: ActorSystem = ???
 
   def foldExample: Future[Int] = {
-
     //#fold
     Source(1 to 100)
       .runWith(Sink.fold(0)(_ + _))
