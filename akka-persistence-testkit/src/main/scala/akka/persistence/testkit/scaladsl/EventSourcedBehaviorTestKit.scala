@@ -205,6 +205,11 @@ object EventSourcedBehaviorTestKit {
   def runCommand[R](creator: ActorRef[R] => Command): CommandResultWithReply[Command, Event, State, R]
 
   /**
+   * Retrieve the current state of the Behavior.
+   */
+  def getState(): State
+
+  /**
    * Restart the behavior, which will then recover from stored snapshot and events. Can be used for testing
    * that the recovery is correct.
    */

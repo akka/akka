@@ -145,7 +145,7 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
     persistenceTestKit.persistedInStorage(persistenceId.id).map(_.asInstanceOf[Event]).drop(dropOldEvents)
   }
 
-  private def getState(): State = {
+  override def getState(): State = {
     internalActor ! EventSourcedBehaviorImpl.GetState(stateProbe.ref)
     val newState = stateProbe.receiveMessage()
     newState

@@ -219,6 +219,17 @@ class EventSourcedBehaviorTestKitSpec
       replyToProbe.expectNoMessage()
     }
 
+    "give access to current state" in {
+      val eventSourcedTestKit = createTestKit()
+
+      // initial state
+      eventSourcedTestKit.getState() should ===(TestCounter.RealState(0, Vector.empty))
+
+      // state after command
+      eventSourcedTestKit.runCommand(TestCounter.Increment)
+      eventSourcedTestKit.getState() should ===(TestCounter.RealState(1, Vector(0)))
+    }
+
     "detect non-serializable events" in {
       val eventSourcedTestKit = createTestKit()
 
