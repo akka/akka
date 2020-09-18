@@ -147,8 +147,7 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
 
   override def getState(): State = {
     internalActor ! EventSourcedBehaviorImpl.GetState(stateProbe.ref)
-    val newState = stateProbe.receiveMessage()
-    newState
+    stateProbe.receiveMessage()
   }
 
   private def preCommandCheck(command: Command): Unit = {
