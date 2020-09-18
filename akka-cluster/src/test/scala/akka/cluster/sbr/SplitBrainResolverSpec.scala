@@ -82,6 +82,12 @@ object SplitBrainResolverSpec {
       } else if (!leader)
         probe ! "down must only be done by leader"
     }
+
+    override def receive: Receive =
+      ({
+        case UnreachableMember(m) if strategy.unreachable(m.uniqueAddress) => // already unreachable
+        case ReachableMember(m) if !strategy.unreachable(m.uniqueAddress)  => // already reachable
+      }: Receive).orElse(super.receive)
   }
 }
 
@@ -1464,7 +1470,7 @@ class SplitBrainResolverSpec
       stop()
     }
 
-    "down all when unstable" in new SetupKeepMajority(
+    "down all when unstable, scenario 1" in new SetupKeepMajority(
       stableAfter = 2.seconds,
       downAllWhenUnstable = 1.second,
       selfUniqueAddress = memberA.uniqueAddress,
@@ -1491,6 +1497,48 @@ class SplitBrainResolverSpec
       reachabilityChanged(memberB -> memberD)
       reachable(memberE)
       tick()
+      expectDownCalled(memberA, memberB, memberC, memberD, memberE)
+    }
+
+    "down all when unstable, scenario 2" in new SetupKeepMajority(
+      stableAfter = 2.seconds,
+      downAllWhenUnstable = 500.millis,
+      selfUniqueAddress = memberA.uniqueAddress,
+      role = None,
+      tickInterval = 100.seconds) {
+      memberUp(memberA, memberB, memberC, memberD, memberE)
+      leader(memberA)
+      // E and D are unreachable
+      reachabilityChanged(memberA -> memberE, memberB -> memberD, memberC -> memberD)
+      tick()
+      expectNoDecision(100.millis)
+
+      Thread.sleep(500)
+      // E and D are still unreachable
+      reachabilityChanged(memberA -> memberE, memberB -> memberD)
+      tick()
+      expectNoDecision(100.millis)
+      // 600 ms has elapsed
+
+      Thread.sleep(500)
+      reachabilityChanged(memberA -> memberE)
+      reachable(memberD) // reset stableDeadline
+      tick()
+      expectNoDecision(100.millis)
+      // 1200 ms has elapsed
+
+      Thread.sleep(500)
+      // E and D are unreachable, reset stableDeadline
+      reachabilityChanged(memberA -> memberE, memberB -> memberD, memberC -> memberD)
+      tick()
+      expectNoDecision(100.millis)
+      // 1800 ms has elapsed
+
+      Thread.sleep(1000)
+      // E and D are still unreachable
+      reachabilityChanged(memberA -> memberE, memberB -> memberD)
+      tick()
+      // 2800 ms has elapsed and still no stability so downing all
       expectDownCalled(memberA, memberB, memberC, memberD, memberE)
     }
 
@@ -1591,48 +1639,6 @@ class SplitBrainResolverSpec
 
     "be loadable through the cluster extension" in {
       Cluster(system).downingProvider shouldBe a[SplitBrainResolverProvider]
-    }
-  }
-
-  "Reachability changes" must {
-    val strategy = new KeepMajority(defaultDataCenter, None)
-    strategy.add(memberA)
-    strategy.add(memberB)
-    strategy.add(memberC)
-
-    val memberDInOtherDC = dcMember("otherDC", memberD)
-    val memberEInOtherDC = dcMember("otherDC", memberE)
-
-    "be noticed when records added" in {
-      strategy.setReachability(createReachability(List(memberA -> memberB)))
-      strategy.setReachability(createReachability(List(memberA -> memberB, memberA -> memberC))) should ===(true)
-    }
-
-    "be noticed when records removed" in {
-      strategy.setReachability(createReachability(List(memberA -> memberB, memberA -> memberC)))
-      strategy.setReachability(createReachability(List(memberA -> memberB))) should ===(true)
-      strategy.setReachability(Reachability.empty) should ===(true)
-    }
-
-    "be noticed when records change to Reachable" in {
-      val r = createReachability(List(memberA -> memberB, memberA -> memberC))
-      strategy.setReachability(r)
-      strategy.setReachability(r.reachable(memberA.uniqueAddress, memberC.uniqueAddress)) should ===(true)
-    }
-
-    "be noticed when records added and removed" in {
-      strategy.setReachability(createReachability(List(memberA -> memberB)))
-      strategy.setReachability(createReachability(List(memberC -> memberB))) should ===(true)
-    }
-
-    "be ignored when records for other DC added" in {
-      strategy.setReachability(createReachability(List(memberA -> memberB)))
-      strategy.setReachability(createReachability(List(memberA -> memberB, memberA -> memberDInOtherDC))) should ===(
-        false)
-      strategy.setReachability(createReachability(List(memberA -> memberB, memberDInOtherDC -> memberB))) should ===(
-        false)
-      strategy.setReachability(createReachability(List(memberA -> memberB, memberDInOtherDC -> memberEInOtherDC))) should ===(
-        false)
     }
   }
 

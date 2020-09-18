@@ -205,26 +205,12 @@ import akka.coordination.lease.scaladsl.Lease
     _allMembers.exists(m => m.uniqueAddress == node && m.dataCenter == selfDc)
   }
 
-  /**
-   * @return true if it was changed
-   */
-  private[sbr] def setReachability(r: Reachability): Boolean = {
+  private[sbr] def setReachability(r: Reachability): Unit = {
     // skip records with Reachability.Reachable, and skip records related to other DC
-    val newReachability = r.filterRecords(
+    _reachability = r.filterRecords(
       record =>
         (record.status == Reachability.Unreachable || record.status == Reachability.Terminated) &&
         isInSelfDc(record.observer) && isInSelfDc(record.subject))
-    val oldReachability = _reachability
-
-    val changed =
-      if (oldReachability.records.size != newReachability.records.size)
-        true
-      else
-        oldReachability.records.map(r => r.observer -> r.subject).toSet !=
-          newReachability.records.map(r => r.observer -> r.subject).toSet
-
-    _reachability = newReachability
-    changed
   }
 
   def seenBy: Set[Address] =
