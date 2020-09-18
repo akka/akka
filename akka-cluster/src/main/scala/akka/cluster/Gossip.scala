@@ -333,13 +333,6 @@ private[cluster] class GossipEnvelope private (
       ser = null
     }
   }
-
-  @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = {
-    deserialize()
-    this
-  }
-
 }
 
 /**
