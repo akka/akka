@@ -233,7 +233,7 @@ private[cluster] final class ClusterDaemon(joinConfigCompatChecker: JoinConfigCo
       name = "heartbeatReceiver")
   }
 
-  def receive = {
+  override def receive: Receive = {
     case msg: GetClusterCoreRef.type =>
       if (coreSupervisor.isEmpty)
         createChildren()
@@ -287,7 +287,7 @@ private[cluster] final class ClusterCoreSupervisor(joinConfigCompatChecker: Join
 
   override def postStop(): Unit = Cluster(context.system).shutdown()
 
-  def receive = {
+  override def receive: Receive = {
     case InternalClusterAction.GetClusterCoreRef =>
       if (coreDaemon.isEmpty)
         createChildren()
@@ -572,13 +572,13 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       case ExitingConfirmed(address) => receiveExitingConfirmed(address)
     }: Actor.Receive).orElse(receiveExitingCompleted)
 
-  def receiveExitingCompleted: Actor.Receive = {
+  private def receiveExitingCompleted: Actor.Receive = {
     case ExitingCompleted =>
       exitingCompleted()
       sender() ! Done // reply to ask
   }
 
-  def receive = uninitialized
+  override def receive: Receive = uninitialized
 
   override def unhandled(message: Any): Unit = message match {
     case _: Tick             =>
@@ -898,7 +898,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     shutdown()
   }
 
-  def receiveExitingConfirmed(node: UniqueAddress): Unit = {
+  private def receiveExitingConfirmed(node: UniqueAddress): Unit = {
     logInfo("Exiting confirmed [{}]", node.address)
     exitingConfirmed += node
   }
@@ -969,7 +969,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
   }
 
-  def receiveGossipStatus(status: GossipStatus): Unit = {
+  private def receiveGossipStatus(status: GossipStatus): Unit = {
     val from = status.from
     if (!latestGossip.hasMember(from))
       gossipLogger.logInfo("Ignoring received gossip status from unknown [{}]", from)
@@ -1007,7 +1007,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   /**
    * Receive new gossip.
    */
-  def receiveGossip(envelope: GossipEnvelope): ReceiveGossipType = {
+  private def receiveGossip(envelope: GossipEnvelope): ReceiveGossipType = {
 
     val from = envelope.from
     val remoteGossip = envelope.gossip
@@ -1582,7 +1582,7 @@ private[cluster] class OnMemberStatusChangedListener(callback: Runnable, status:
     cluster.unsubscribe(self)
   }
 
-  def receive = {
+  override def receive: Receive = {
     case state: CurrentClusterState =>
       if (state.members.exists(isTriggered))
         done()
