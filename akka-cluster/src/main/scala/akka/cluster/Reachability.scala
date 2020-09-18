@@ -195,7 +195,7 @@ private[cluster] class Reachability private (
   }
 
   def remove(nodes: Iterable[UniqueAddress]): Reachability = {
-    val nodesSet = nodes.to(immutable.HashSet)
+    val nodesSet: Set[UniqueAddress] = nodes.toSet
     val newRecords = records.filterNot(r => nodesSet(r.observer) || nodesSet(r.subject))
     val newVersions = versions -- nodes
     Reachability(newRecords, newVersions)
