@@ -49,6 +49,6 @@ See also:
 
 **cancels** when the actor terminates
 
-**backpressure** never
+**backpressures** never
 
 @@@
