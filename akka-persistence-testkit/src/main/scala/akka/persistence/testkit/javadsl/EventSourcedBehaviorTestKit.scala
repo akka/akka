@@ -224,14 +224,6 @@ final class EventSourcedBehaviorTestKit[Command, Event, State](
     new CommandResultWithReply(delegate.runCommand(replyTo => creator.apply(replyTo)))
 
   /**
-   * Run one command  with a `replyTo: ActorRef[R]` through the behavior, but a reply is not expected.
-   * Useful when testing commands that return `Effect.noReply`.
-   * The returned result contains emitted events, the state after applying the events, and the reply.
-   */
-  def runCommandExpectNoReply[R](creator: JFunction[ActorRef[R], Command]): CommandResult[Command, Event, State] =
-    new CommandResult(delegate.runCommandExpectNoReply[R](replyTo => creator.apply(replyTo)))
-
-  /**
    * Restart the behavior, which will then recover from stored snapshot and events. Can be used for testing
    * that the recovery is correct.
    */

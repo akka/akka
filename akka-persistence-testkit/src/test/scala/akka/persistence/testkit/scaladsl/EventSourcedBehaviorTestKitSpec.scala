@@ -209,11 +209,14 @@ class EventSourcedBehaviorTestKitSpec
     }
 
     "run command with no reply" in {
+      // This is a fictive usage scenario. If the command has a replyTo the Behavior should (eventually) reply,
+      // but here we verify that it doesn't reply.
       val eventSourcedTestKit = createTestKit()
-      val result =
-        eventSourcedTestKit.runCommandExpectNoReply[Done](replyTo => TestCounter.IncrementWithNoReply(replyTo))
+      val replyToProbe = createTestProbe[Done]()
+      val result = eventSourcedTestKit.runCommand(TestCounter.IncrementWithNoReply(replyToProbe.ref))
       result.event should ===(TestCounter.Incremented(1))
       result.state should ===(TestCounter.RealState(1, Vector(0)))
+      replyToProbe.expectNoMessage()
     }
 
     "detect non-serializable events" in {

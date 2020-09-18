@@ -140,31 +140,6 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
     CommandResultImpl[Command, Event, State, R](command, newEvents, newState, Some(reply))
   }
 
-  override def runCommandExpectNoReply[R](creator: ActorRef[R] => Command): CommandResult[Command, Event, State] = {
-    val replyProbe = actorTestKit.createTestProbe[R]()
-    val command = creator(replyProbe.ref)
-    preCommandCheck(command)
-    val oldEvents = getEvents(dropOldEvents = 0)
-
-    actor ! command
-
-    try {
-      replyProbe.expectNoMessage()
-    } catch {
-      case NonFatal(e) =>
-        throw new AssertionError(s"Received unexpected reply for command [$command]. ${e.getMessage}")
-    } finally {
-      replyProbe.stop()
-    }
-
-    val newState = getState()
-    val newEvents = getEvents(oldEvents.size)
-
-    postCommandCheck(newEvents, newState, reply = None)
-
-    CommandResultImpl[Command, Event, State, Nothing](command, newEvents, newState, None)
-  }
-
   private def getEvents[R](dropOldEvents: Int): immutable.Seq[Event] = {
     // FIXME we can expand the api of persistenceTestKit to read from storage from a seqNr instead
     persistenceTestKit.persistedInStorage(persistenceId.id).map(_.asInstanceOf[Event]).drop(dropOldEvents)
