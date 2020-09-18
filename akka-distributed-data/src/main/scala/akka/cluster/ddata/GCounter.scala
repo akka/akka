@@ -114,13 +114,12 @@ final class GCounter private[akka] (
     if ((this eq that) || that.isAncestorOf(this)) this.clearAncestor()
     else if (this.isAncestorOf(that)) that.clearAncestor()
     else {
-      var merged = that.state
-      for ((key, thisValue) <- state) {
-        val thatValue = merged.getOrElse(key, Zero)
-        if (thisValue > thatValue)
-          merged = merged.updated(key, thisValue)
-      }
       clearAncestor()
+      val merged = (state.keys ++ that.state.keys).map { key =>
+        val thisValue = state.getOrElse(key, Zero)
+        val thatValue = that.state.getOrElse(key, Zero)
+        (key, thisValue.max(thatValue))
+      }.toMap
       new GCounter(merged)
     }
 
