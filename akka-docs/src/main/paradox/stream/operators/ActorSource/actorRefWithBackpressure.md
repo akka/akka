@@ -23,7 +23,7 @@ This operator is included in:
 ## Description
 
 Materialize an @java[`ActorRef<T>`]@scala[`ActorRef[T]`], sending messages to it will emit them on the stream. The actor responds with the provided ack message
-once the element could be emitted allowing for backpressure from the source. Sending another message before the previous one has been acknowledged will fail the stream.
+once the element could be emitted allowing for the backpressure from the source. Sending another message before the previous one has been acknowledged will fail the stream.
 
 See also:
 
@@ -34,7 +34,7 @@ See also:
 
 ## Example
 
-With `actorRefWithBackpressure` two actors get into play: one which feeds the stream and is materialized when the stream runs, and one which is provided by us and gets the ack signal when an element is emitted into the stream.
+With `actorRefWithBackpressure` two actors get into play: one which feeds the stream and is materialized when the stream runs, and one which is provided by us which gets the ack signal when an element is emitted into the stream.
 
 For the ack signal we create an @scala[`Emitted` object]@java[empty `Emitted` class].
 
@@ -53,7 +53,7 @@ Java
 
 @@@div { .callout }
 
-**emits** when there is demand and a message is sent to the materialized @scala[`ActorRef[T]`]@java[`ActorRef<T>`]
+**emits** when there is demand, and a message is sent to the materialized @scala[`ActorRef[T]`]@java[`ActorRef<T>`]
 
 **completes** when the passed completion matcher returns a `CompletionStrategy`
 

@@ -1,6 +1,6 @@
 # ActorSink.actorRefWithBackpressure
 
-Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`] of the new actors API with backpressure, to be able to signal demand when the actor is ready to receive more elements.
+Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`] of the new actors API with the backpressure, to be able to signal demand when the actor is ready to receive more elements.
 
 @ref[Actor interop operators](../index.md#actor-interop-operators)
 
@@ -44,7 +44,7 @@ Java
 
 **cancels** when the actor terminates
 
-**backpressures** when the actor acknowledgement has not arrived
+**backpressure** when the actor acknowledgement has not arrived
 
 @@@
 

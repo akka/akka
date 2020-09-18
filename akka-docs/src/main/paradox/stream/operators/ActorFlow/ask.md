@@ -1,6 +1,6 @@
 # ActorFlow.ask
 
-Use the "Ask Pattern" to send each stream element as an `ask` to the target actor (of the new actors API), and expect a reply back that will be emitted downstream.
+Use the "Ask Pattern" to send each stream element as an `ask` to the target actor (of the new actors API), and expect a reply that will be emitted downstream.
 
 @ref[Actor interop operators](../index.md#actor-interop-operators)
 
@@ -28,8 +28,7 @@ If any of the asks times out it will fail the stream with an @apidoc[AskTimeoutE
 The `ask` operator requires
 
 * the actor `ref`,
-* a `makeMessage` function to create the message sent to the actor from the incoming element and the actor ref accepting the actor's reply message,
-* and a timeout.
+* a `makeMessage` function to create the message sent to the actor from the incoming element, and the actor ref accepting the actor's reply message and a timeout.
 
 See also:
 
@@ -37,7 +36,7 @@ See also:
 
 ## Examples
 
-The `ActorFlow.ask` sends a message to the actor which expects `Asking` messages which contain the actor ref for replies of type `Reply`. The replies are emitted when received and the `map` extracts the message `String`.
+The `ActorFlow.ask` sends a message to the actor which expects `Asking` messages which contain the actor ref for replies of type `Reply`. When it receives a reply, it emits it  and the `map` extracts the message `String`.
 
 Scala
 :  @@snip [ask.scala](/akka-stream-typed/src/test/scala/docs/scaladsl/ActorFlowSpec.scala) { #imports #ask-actor #ask }
@@ -52,11 +51,11 @@ Java
 
 **emits** when the futures (in submission order) created by the ask pattern internally are completed
 
-**backpressures** when the number of futures reaches the configured parallelism and the downstream backpressures
+**backpressure** when the number of futures reaches the configured parallelism and the downstream backpressure
 
 **completes** when upstream completes and all futures have been completed and all elements have been emitted
 
-**fails** when the passed in actor terminates, or a timeout is exceeded in any of the asks performed
+**fails** when the passed in an actor terminates, or a timeout exceeds in any of the asks performed
 
 **cancels** when downstream cancels
 
