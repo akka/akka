@@ -399,11 +399,9 @@ class NodeMessageQueue extends AbstractNodeQueue[Envelope] with MessageQueue wit
 
   final def hasMessages: Boolean = !isEmpty()
 
-  @tailrec final def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
-    val envelope = dequeue()
-    if (envelope ne null) {
-      deadLetters.enqueue(owner, envelope)
-      cleanUp(owner, deadLetters)
+  final def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
+    while (hasMessages) {
+      deadLetters.enqueue(owner, dequeue())
     }
   }
 }
@@ -433,11 +431,9 @@ class BoundedNodeMessageQueue(capacity: Int)
 
   final def hasMessages: Boolean = !isEmpty()
 
-  @tailrec final def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
-    val envelope = dequeue()
-    if (envelope ne null) {
-      deadLetters.enqueue(owner, envelope)
-      cleanUp(owner, deadLetters)
+  final def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
+    while (hasMessages) {
+      deadLetters.enqueue(owner, dequeue())
     }
   }
 }
@@ -510,12 +506,8 @@ trait QueueBasedMessageQueue extends MessageQueue with MultipleConsumerSemantics
   def numberOfMessages = queue.size
   def hasMessages = !queue.isEmpty
   def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
-    if (hasMessages) {
-      var envelope = dequeue()
-      while (envelope ne null) {
-        deadLetters.enqueue(owner, envelope)
-        envelope = dequeue()
-      }
+    while (hasMessages) {
+      deadLetters.enqueue(owner, dequeue())
     }
   }
 }
