@@ -210,7 +210,7 @@ private[cluster] class Reachability private (
       Reachability(newRecords, newVersions)
     }
 
-  def filterRecords(f: Record => Boolean) =
+  def filterRecords(f: Record => Boolean): Reachability =
     Reachability(records.filter(f), versions)
 
   def status(observer: UniqueAddress, subject: UniqueAddress): ReachabilityStatus =
@@ -278,7 +278,7 @@ private[cluster] class Reachability private (
       case (subject, records) if records.exists(_.status == Unreachable) =>
         val observers: Set[UniqueAddress] =
           records.iterator.collect { case r if r.status == Unreachable => r.observer }.to(immutable.Set)
-        (subject -> observers)
+        subject -> observers
     }
   }
 
