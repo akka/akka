@@ -1,17 +1,19 @@
 package docs.stream.operators.sink
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.scaladsl.{Sink, Source}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContextExecutor, Future}
 
 object Fold {
   implicit val system: ActorSystem = ???
-
-  def foldExample: Future[Int] = {
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
+  def foldExample: Future[Unit] = {
     //#fold
-    Source(1 to 100).runWith(Sink.fold(0)(_ + _))
-    //Future(Success(5050))
+    val source = Source(1 to 100)
+    val result: Future[Int] = source.runWith(Sink.fold(0)((acc, element) => acc + element))
+    result.map(println)
+    //5050
     //#fold
   }
 }
