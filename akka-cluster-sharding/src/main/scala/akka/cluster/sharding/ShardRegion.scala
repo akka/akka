@@ -435,7 +435,7 @@ object ShardRegion {
    */
   final class ShardRegionStatus(val typeName: String, val registeredWithCoordinator: Boolean)
 
-  final private case object Retry extends ShardRegionCommand
+  private case object Retry extends ShardRegionCommand
 
   private case object RegisterRetry extends ShardRegionCommand
 
