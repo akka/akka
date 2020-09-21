@@ -107,8 +107,9 @@ public class SinkDocExamples {
 
   static void foldExample() {
     // #fold
-    Source<Integer, NotUsed> source = Source.range(1,100);
-    CompletionStage<Integer> sum = source.runWith(Sink.fold(0, (res, element) -> res + element), system);
+    Source<Integer, NotUsed> source = Source.range(1, 100);
+    CompletionStage<Integer> sum =
+        source.runWith(Sink.fold(0, (res, element) -> res + element), system);
     sum.thenAccept(System.out::println);
     // #fold
   }
