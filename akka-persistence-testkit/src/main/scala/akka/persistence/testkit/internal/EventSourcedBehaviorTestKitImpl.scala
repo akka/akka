@@ -155,7 +155,7 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
       verifySerializationAndThrow(command, "Command")
 
     if (serializationSettings.enabled && !emptyStateVerified) {
-      val emptyState = getState
+      val emptyState = getState()
       verifySerializationAndThrow(emptyState, "Empty State")
       emptyStateVerified = true
     }
