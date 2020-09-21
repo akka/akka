@@ -423,7 +423,19 @@ object ShardRegion {
     }
   }
 
-  private case object Retry extends ShardRegionCommand
+  /**
+   * Discover if the shard region is registered with the coordinator.
+   * Not serializable as only to be sent to the local shard region
+   * Response is [[ShardRegionState]]
+   */
+  final object GetShardRegionStatus extends ShardRegionQuery
+
+  /**
+   * Status of a ShardRegion. Only for local requests so not serializable.
+   */
+  final class ShardRegionStatus(val typeName: String, val registeredWithCoordinator: Boolean)
+
+  final private case object Retry extends ShardRegionCommand
 
   private case object RegisterRetry extends ShardRegionCommand
 
@@ -821,6 +833,9 @@ private[akka] class ShardRegion(
 
     case GetShardRegionStats =>
       replyToRegionStatsQuery(sender())
+
+    case GetShardRegionStatus =>
+      sender() ! new ShardRegionStatus(typeName, coordinator.isDefined)
 
     case _ => unhandled(query)
   }
