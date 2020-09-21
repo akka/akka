@@ -81,6 +81,7 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
   private def system: ActorSystem[_] = actorTestKit.system
 
   override val persistenceTestKit: PersistenceTestKit = PersistenceTestKit(system)
+  persistenceTestKit.clearAll()
 
   private val probe = actorTestKit.createTestProbe[Any]()
   private val stateProbe = actorTestKit.createTestProbe[State]()
@@ -98,8 +99,6 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
   private val serializationTestKit = new SerializationTestKit(system)
 
   private var emptyStateVerified = false
-
-  persistenceTestKit.clearByPersistenceId(persistenceId.id)
 
   override def runCommand(command: Command): CommandResult[Command, Event, State] = {
     if (serializationSettings.enabled && serializationSettings.verifyCommands)
