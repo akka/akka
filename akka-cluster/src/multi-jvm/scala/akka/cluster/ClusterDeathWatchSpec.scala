@@ -30,7 +30,7 @@ object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   val fifth = role("fifth")
 
   commonConfig(
-    debugConfig(on = false)
+    debugConfig(false)
       .withFallback(ConfigFactory.parseString("""
       # test is using Java serialization and not priority to rewrite
       akka.actor.allow-java-serialization = on
@@ -72,6 +72,9 @@ abstract class ClusterDeathWatchSpec
     system.actorSelection("/system/remote-watcher") ! Identify(None)
     expectMsgType[ActorIdentity].ref.get
   }
+
+  // only assigned on node 1
+  private var subject6: ActorRef = _
 
   "An actor watching a remote actor in the cluster" must {
 
@@ -188,7 +191,7 @@ abstract class ClusterDeathWatchSpec
       runOn(first) {
         // fifth is member, so the node is handled by the ClusterRemoteWatcher.
         system.actorSelection(RootActorPath(fifth) / "user" / "subject6") ! Identify("subject6")
-        val subject6 = expectMsgType[ActorIdentity].ref.get
+        subject6 = expectMsgType[ActorIdentity].ref.get
         watch(subject6)
 
         system.actorSelection(RootActorPath(fifth) / "user" / "subject5") ! Identify("subject5")
@@ -231,6 +234,15 @@ abstract class ClusterDeathWatchSpec
       }
       enterBarrier("terminated-subject6")
       enterBarrier("after-3")
+    }
+
+    "get a terminated when trying to watch actor after node was downed" in within(max = 120.seconds) {
+      runOn(first) {
+        // node 5 is long gone (downed)
+        watch(subject6)
+        expectTerminated(subject6, 60.seconds)
+      }
+      enterBarrier("after-4")
     }
 
     "be able to shutdown system when using remote deployed actor on node that crash" in within(20 seconds) {
@@ -292,10 +304,10 @@ abstract class ClusterDeathWatchSpec
         runOn(first) {
           // fourth system will be shutdown, remove to not participate in barriers any more
           testConductor.shutdown(fourth).await
-          expectMsg(EndActor.End)
+          awaitAssert(expectMsg(EndActor.End)) // get a Unit back here for some reason
         }
 
-        enterBarrier("after-4")
+        enterBarrier("after-5")
       }
 
     }

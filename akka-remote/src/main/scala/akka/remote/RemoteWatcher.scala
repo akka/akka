@@ -22,6 +22,7 @@ import akka.util.unused
 /**
  * INTERNAL API
  */
+@InternalApi
 private[akka] object RemoteWatcher {
 
   /**
@@ -91,6 +92,7 @@ private[akka] object RemoteWatcher {
  * both directions, but independent of each other.
  *
  */
+@InternalApi
 private[akka] class RemoteWatcher(
     failureDetector: FailureDetectorRegistry[Address],
     heartbeatInterval: FiniteDuration,
@@ -206,7 +208,7 @@ private[akka] class RemoteWatcher(
   /** Returns true if either has cluster or `akka.remote.use-unsafe-remote-features-outside-cluster`
    * is enabled. Can be overridden when using RemoteWatcher as a superclass.
    */
-  @InternalApi protected def shouldWatch(@unused watchee: InternalActorRef): Boolean = {
+  protected def shouldWatch(@unused watchee: InternalActorRef): Boolean = {
     // In this it is unnecessary if only created by RARP, but cluster needs it.
     // Cleaner than overriding Cluster watcher addWatch/removeWatch just for one boolean test
     remoteProvider.remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster
