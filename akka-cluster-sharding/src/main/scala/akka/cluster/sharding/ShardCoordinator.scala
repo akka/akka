@@ -284,15 +284,6 @@ object ShardCoordinator {
 
     import AbstractLeastShardAllocationStrategy.ShardSuitabilityOrdering
 
-    override def allocateShard(
-        requester: ActorRef,
-        shardId: ShardId,
-        currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef] = {
-      val regionEntries = regionEntriesFor(currentShardAllocations)
-      val (region, _) = mostSuitableRegion(regionEntries)
-      Future.successful(region)
-    }
-
     override def rebalance(
         currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
         rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {

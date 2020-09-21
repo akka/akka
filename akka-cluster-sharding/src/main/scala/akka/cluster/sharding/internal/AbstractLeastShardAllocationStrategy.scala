@@ -16,8 +16,11 @@ import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardCoordinator.ActorSystemDependentAllocationStrategy
 import akka.cluster.sharding.ShardRegion.ShardId
+import akka.pattern.after
 
 import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
 /**
  * Common logic for the least shard allocation strategy implementations
@@ -63,9 +66,11 @@ private[akka] object AbstractLeastShardAllocationStrategy {
 private[akka] abstract class AbstractLeastShardAllocationStrategy extends ActorSystemDependentAllocationStrategy {
   import AbstractLeastShardAllocationStrategy._
 
+  @volatile private var system: ActorSystem = _
   @volatile private var cluster: Cluster = _
 
   override def start(system: ActorSystem): Unit = {
+    this.system = system
     cluster = Cluster(system)
   }
 
@@ -73,9 +78,24 @@ private[akka] abstract class AbstractLeastShardAllocationStrategy extends ActorS
   protected def clusterState: CurrentClusterState = cluster.state
   protected def selfMember: Member = cluster.selfMember
 
+  override def allocateShard(
+      requester: ActorRef,
+      shardId: ShardId,
+      currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef] = {
+    val regionEntries = regionEntriesFor(currentShardAllocations)
+    if (regionEntries.isEmpty) {
+      // very unlikely to ever happen but possible because of cluster state view not yet updated when collecting
+      // region entries, view should be updated after a very short time
+      after(50.millis)(allocateShard(requester, shardId, currentShardAllocations))(system)
+    } else {
+      val (region, _) = mostSuitableRegion(regionEntries)
+      Future.successful(region)
+    }
+  }
+
   final protected def isAGoodTimeToRebalance(regionEntries: Iterable[RegionEntry]): Boolean = {
     // Avoid rebalance when rolling update is in progress
-    // (This will ignore versions on members with no shard regions, because of role or not yet completed joining)
+    // (This will ignore versions on members with no shard regions, because of sharding role or not yet completed joining)
     val version = regionEntries.head.member.appVersion
     def allNodesSameVersion = {
       regionEntries.forall(_.member.appVersion == version)
