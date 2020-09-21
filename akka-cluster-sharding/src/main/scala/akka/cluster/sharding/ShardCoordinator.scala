@@ -11,6 +11,7 @@ import scala.util.Success
 import com.github.ghik.silencer.silent
 import akka.actor._
 import akka.actor.DeadLetterSuppression
+import akka.annotation.DoNotInherit
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent
@@ -20,6 +21,8 @@ import akka.cluster.ddata.LWWRegisterKey
 import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.sharding.ShardRegion.ShardId
+import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy
+import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy.RegionEntry
 import akka.cluster.sharding.internal.EventSourcedRememberEntitiesCoordinatorStore.MigrationMarker
 import akka.cluster.sharding.internal.{
   EventSourcedRememberEntitiesCoordinatorStore,
@@ -170,6 +173,24 @@ object ShardCoordinator {
   }
 
   /**
+   * Shard allocation strategy where start is called by the shard coordinator before any calls to
+   * rebalance or allocate shard. This is much like the [[StartableAllocationStrategy]] but will
+   * get access to the actor system when started, for example to interact with extensions.
+   *
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] trait ActorSystemDependentAllocationStrategy extends ShardAllocationStrategy {
+
+    /**
+     * Called before any calls to allocate/rebalance.
+     * Do not block. If asynchronous actions are required they can be started here and
+     * delay the Futures returned by allocate/rebalance.
+     */
+    def start(system: ActorSystem): Unit
+  }
+
+  /**
    * Java API: Java implementations of custom shard allocation and rebalancing logic used by the [[ShardCoordinator]]
    * should extend this abstract class and implement the two methods.
    */
@@ -249,38 +270,42 @@ object ShardCoordinator {
    * 10 shards per node. One node may have 19 shards and others 10 without a rebalance occurring.
    *
    * The number of ongoing rebalancing processes can be limited by `maxSimultaneousRebalance`.
+   *
+   * During a rolling upgrade (when nodes with multiple application versions are present) allocating to
+   * old nodes are avoided.
+   *
+   * Not intended for user extension.
    */
   @SerialVersionUID(1L)
+  @DoNotInherit
   class LeastShardAllocationStrategy(rebalanceThreshold: Int, maxSimultaneousRebalance: Int)
-      extends ShardAllocationStrategy
+      extends AbstractLeastShardAllocationStrategy
       with Serializable {
 
-    override def allocateShard(
-        requester: ActorRef,
-        shardId: ShardId,
-        currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): Future[ActorRef] = {
-      val (regionWithLeastShards, _) = currentShardAllocations.minBy { case (_, v) => v.size }
-      Future.successful(regionWithLeastShards)
-    }
+    import AbstractLeastShardAllocationStrategy.ShardSuitabilityOrdering
 
     override def rebalance(
         currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
         rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
       if (rebalanceInProgress.size < maxSimultaneousRebalance) {
-        val (_, leastShards) = currentShardAllocations.minBy { case (_, v) => v.size }
-        val mostShards = currentShardAllocations
-          .collect {
-            case (_, v) => v.filterNot(s => rebalanceInProgress(s))
-          }
-          .maxBy(_.size)
-        val difference = mostShards.size - leastShards.size
-        if (difference > rebalanceThreshold) {
-          val n = math.min(
-            math.min(difference - rebalanceThreshold, rebalanceThreshold),
-            maxSimultaneousRebalance - rebalanceInProgress.size)
-          Future.successful(mostShards.sorted.take(n).toSet)
-        } else
-          emptyRebalanceResult
+        val sortedRegionEntries = regionEntriesFor(currentShardAllocations).toVector.sorted(ShardSuitabilityOrdering)
+        if (isAGoodTimeToRebalance(sortedRegionEntries)) {
+          val (_, leastShards) = mostSuitableRegion(sortedRegionEntries)
+          // even if it is to another new node.
+          val mostShards = sortedRegionEntries
+            .collect {
+              case RegionEntry(_, _, shardIds) => shardIds.filterNot(id => rebalanceInProgress(id))
+            }
+            .maxBy(_.size)
+          val difference = mostShards.size - leastShards.size
+          if (difference > rebalanceThreshold) {
+            val n = math.min(
+              math.min(difference - rebalanceThreshold, rebalanceThreshold),
+              maxSimultaneousRebalance - rebalanceInProgress.size)
+            Future.successful(mostShards.sorted.take(n).toSet)
+          } else
+            emptyRebalanceResult
+        } else emptyRebalanceResult
       } else emptyRebalanceResult
     }
   }
@@ -620,6 +645,8 @@ abstract class ShardCoordinator(
     allocationStrategy match {
       case strategy: StartableAllocationStrategy =>
         strategy.start()
+      case strategy: ActorSystemDependentAllocationStrategy =>
+        strategy.start(context.system)
       case _ =>
     }
   }

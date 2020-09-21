@@ -5,17 +5,27 @@
 package akka.cluster.sharding
 
 import scala.collection.immutable
-
 import akka.actor.ActorPath
 import akka.actor.ActorRef
 import akka.actor.ActorRefProvider
 import akka.actor.Address
 import akka.actor.MinimalActorRef
-import akka.actor.Props
 import akka.actor.RootActorPath
+import akka.cluster.ClusterEvent
+import akka.cluster.ClusterEvent.CurrentClusterState
+import akka.cluster.ClusterSettings
+import akka.cluster.Member
+import akka.cluster.MemberStatus
+import akka.cluster.UniqueAddress
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.ShardId
+import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy
+import akka.cluster.sharding.internal.AbstractLeastShardAllocationStrategy.RegionEntry
+import akka.cluster.sharding.internal.LeastShardAllocationStrategy
 import akka.testkit.AkkaSpec
+import akka.util.Version
+
+import scala.collection.immutable.SortedSet
 
 object LeastShardAllocationStrategySpec {
 
@@ -54,14 +64,31 @@ object LeastShardAllocationStrategySpec {
       rebalance: Set[ShardId]): Vector[Int] = {
     countShardsPerRegion(afterRebalance(allocationStrategy, allocations, rebalance))
   }
+
+  final class DummyActorRef(val path: ActorPath) extends MinimalActorRef {
+    override def provider: ActorRefProvider = ???
+  }
+
+  def newUpMember(host: String, port: Int = 252525, version: Version = Version("1.0.0")) =
+    Member(
+      UniqueAddress(Address("akka", "myapp", host, port), 1L),
+      Set(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter),
+      version).copy(MemberStatus.Up)
+
+  def newFakeRegion(idForDebug: String, member: Member): ActorRef =
+    new DummyActorRef(RootActorPath(member.address) / "system" / "fake" / idForDebug)
 }
 
 class LeastShardAllocationStrategySpec extends AkkaSpec {
-  import LeastShardAllocationStrategySpec.{ afterRebalance, allocationCountsAfterRebalance }
+  import LeastShardAllocationStrategySpec._
 
-  private val regionA = system.actorOf(Props.empty, "regionA")
-  private val regionB = system.actorOf(Props.empty, "regionB")
-  private val regionC = system.actorOf(Props.empty, "regionC")
+  val memberA = newUpMember("127.0.0.1")
+  val memberB = newUpMember("127.0.0.2")
+  val memberC = newUpMember("127.0.0.3")
+
+  val regionA = newFakeRegion("regionA", memberA)
+  val regionB = newFakeRegion("regionB", memberB)
+  val regionC = newFakeRegion("regionC", memberC)
 
   private val shards = (1 to 999).map(n => ("00" + n.toString).takeRight(3))
 
@@ -73,7 +100,15 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
   }
 
   private val strategyWithoutLimits =
-    ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 1000, relativeLimit = 1.0)
+    strategyWithFakeCluster(absoluteLimit = 1000, relativeLimit = 1.0)
+
+  private def strategyWithFakeCluster(absoluteLimit: Int, relativeLimit: Double) =
+    // we don't really "start" it as we fake the cluster access
+    new LeastShardAllocationStrategy(absoluteLimit, relativeLimit) {
+      override protected def clusterState: ClusterEvent.CurrentClusterState =
+        CurrentClusterState(SortedSet(memberA, memberB, memberC))
+      override protected def selfMember: Member = memberA
+    }
 
   "LeastShardAllocationStrategy" must {
     "allocate to region with least number of shards" in {
@@ -163,7 +198,7 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
 
     "respect absolute limit of number shards" in {
       val allocationStrategy =
-        ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 3, relativeLimit = 1.0)
+        strategyWithFakeCluster(absoluteLimit = 3, relativeLimit = 1.0)
       val allocations = createAllocations(aCount = 1, bCount = 9)
       val result = allocationStrategy.rebalance(allocations, Set.empty).futureValue
       result should ===(Set("002", "003", "004"))
@@ -172,7 +207,7 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
 
     "respect relative limit of number shards" in {
       val allocationStrategy =
-        ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 5, relativeLimit = 0.3)
+        strategyWithFakeCluster(absoluteLimit = 5, relativeLimit = 0.3)
       val allocations = createAllocations(aCount = 1, bCount = 9)
       val result = allocationStrategy.rebalance(allocations, Set.empty).futureValue
       result should ===(Set("002", "003", "004"))
@@ -183,6 +218,103 @@ class LeastShardAllocationStrategySpec extends AkkaSpec {
       val allocationStrategy = strategyWithoutLimits
       val allocations = createAllocations(aCount = 10)
       allocationStrategy.rebalance(allocations, Set("002", "003")).futureValue should ===(Set.empty[String])
+    }
+
+    "prefer least shards, latest version, non downed, leaving or exiting nodes" in {
+      // old version, up
+      val oldMember = newUpMember("127.0.0.1", version = Version("1.0.0"))
+      // leaving, new version
+      val leavingMember = newUpMember("127.0.0.2", version = Version("1.0.0")).copy(MemberStatus.Leaving)
+      // new version, up
+      val newVersionMember1 = newUpMember("127.0.0.3", version = Version("1.0.1"))
+      // new version, up
+      val newVersionMember2 = newUpMember("127.0.0.4", version = Version("1.0.1"))
+      // new version, up
+      val newVersionMember3 = newUpMember("127.0.0.5", version = Version("1.0.1"))
+
+      val fakeLocalRegion = newFakeRegion("oldapp", oldMember)
+      val fakeRegionA = newFakeRegion("leaving", leavingMember)
+      val fakeRegionB = newFakeRegion("fewest", newVersionMember1)
+      val fakeRegionC = newFakeRegion("oneshard", newVersionMember2)
+      val fakeRegionD = newFakeRegion("most", newVersionMember3)
+
+      val shardsAndMembers =
+        Seq(
+          RegionEntry(fakeRegionB, newVersionMember1, Vector.empty),
+          RegionEntry(fakeRegionA, leavingMember, Vector.empty),
+          RegionEntry(fakeRegionD, newVersionMember3, Vector("ShardId2", "ShardId3")),
+          RegionEntry(fakeLocalRegion, oldMember, Vector.empty),
+          RegionEntry(fakeRegionC, newVersionMember2, Vector("ShardId1")))
+
+      val sortedRegions =
+        shardsAndMembers.sorted(AbstractLeastShardAllocationStrategy.ShardSuitabilityOrdering).map(_.region)
+
+      // only node b has the new version
+      sortedRegions should ===(
+        Seq(
+          fakeRegionB, // fewest shards, newest version, up
+          fakeRegionC, // newest version, up
+          fakeRegionD, // most shards, up
+          fakeLocalRegion, // old app version
+          fakeRegionA)) // leaving
+    }
+
+    "not rebalance when rolling update in progress" in {
+      val allocationStrategy =
+        new LeastShardAllocationStrategy(absoluteLimit = 1000, relativeLimit = 1.0) {
+
+          val member1 = newUpMember("127.0.0.1", version = Version("1.0.0"))
+          val member2 = newUpMember("127.0.0.1", version = Version("1.0.1"))
+
+          // multiple versions to simulate rolling update in progress
+          override protected def clusterState: CurrentClusterState =
+            CurrentClusterState(SortedSet(member1, member2))
+
+          override protected def selfMember: Member = member1
+        }
+      val allocations = createAllocations(aCount = 5, bCount = 5)
+      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations, Set("001", "002")).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(Set.empty)
+    }
+
+    "not rebalance when regions are unreachable" in {
+      val allocationStrategy =
+        new LeastShardAllocationStrategy(absoluteLimit = 1000, relativeLimit = 1.0) {
+
+          val member1 = newUpMember("127.0.0.1")
+          val member2 = newUpMember("127.0.0.2")
+
+          // multiple versions to simulate rolling update in progress
+          override protected def clusterState: CurrentClusterState =
+            CurrentClusterState(SortedSet(member1, member2), unreachable = Set(member2))
+          override protected def selfMember: Member = member2
+        }
+      val allocations = createAllocations(aCount = 5, bCount = 5)
+      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations, Set("001", "002")).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(Set.empty)
+    }
+    "not rebalance when members are joining dc" in {
+      val allocationStrategy =
+        new LeastShardAllocationStrategy(absoluteLimit = 1000, relativeLimit = 1.0) {
+
+          val member1 = newUpMember("127.0.0.1")
+          val member2 =
+            Member(
+              UniqueAddress(Address("akka", "myapp", "127.0.0.2", 252525), 1L),
+              Set(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter),
+              member1.appVersion)
+
+          // multiple versions to simulate rolling update in progress
+          override protected def clusterState: CurrentClusterState =
+            CurrentClusterState(SortedSet(member1, member2), unreachable = Set(member2))
+          override protected def selfMember: Member = member2
+        }
+      val allocations = createAllocations(aCount = 5, bCount = 5)
+      allocationStrategy.rebalance(allocations, Set.empty).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations, Set("001", "002")).futureValue should ===(Set.empty)
+      allocationStrategy.rebalance(allocations, Set("001", "002", "051", "052")).futureValue should ===(Set.empty)
     }
 
   }
