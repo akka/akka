@@ -1,0 +1,2 @@
+# Internal API change
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.GraphStageLogic.onFeedbackDispatched")
