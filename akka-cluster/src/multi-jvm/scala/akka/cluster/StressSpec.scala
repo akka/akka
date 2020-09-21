@@ -28,6 +28,8 @@ import akka.actor.RootActorPath
 import akka.actor.Terminated
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.CurrentInternalStats
+import akka.cluster.ClusterEvent.InitialStateAsSnapshot
+import akka.cluster.ClusterEvent.MemberDowned
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.remote.DefaultFailureDetectorRegistry
 import akka.remote.PhiAccrualFailureDetector
@@ -35,6 +37,7 @@ import akka.remote.RARP
 import akka.remote.artery.ArterySettings.AeronUpd
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
+import akka.remote.transport.ThrottlerTransportAdapter
 import akka.testkit.TestEvent._
 import akka.testkit._
 import akka.util.Helpers.ConfigOps
@@ -59,7 +62,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
   val totalNumberOfNodes =
     System.getProperty("MultiJvm.akka.cluster.Stress.nrOfNodes") match {
-      case null  => 13
+      case null  => 26
       case value => value.toInt.requiring(_ >= 10, "nrOfNodes should be >= 10")
     }
 
@@ -69,9 +72,9 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   // not MultiNodeClusterSpec.clusterConfig
   commonConfig(ConfigFactory.parseString("""
     akka.test.cluster-stress-spec {
-      infolog = off
+      infolog = on
       # scale the nr-of-nodes* settings with this factor
-      nr-of-nodes-factor = 1
+      nr-of-nodes-factor = 2
       # not scaled
       nr-of-seed-nodes = 3
       nr-of-nodes-joining-to-seed-initially = 2
@@ -83,13 +86,14 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       nr-of-nodes-leaving = 2
       nr-of-nodes-shutdown-one-by-one-small = 1
       nr-of-nodes-shutdown-one-by-one-large = 2
+      nr-of-nodes-partition = 6
       nr-of-nodes-shutdown = 2
       nr-of-nodes-join-remove = 2
       # not scaled
       # scale the *-duration settings with this factor
       duration-factor = 1
       join-remove-duration = 90s
-      idle-gossip-duration = 10s
+      idle-gossip-duration = 5s
       expected-test-duration = 600s
       # scale convergence within timeouts with this factor
       convergence-within-factor = 1.0
@@ -117,6 +121,8 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     akka.actor.warn-about-java-serializer-usage = off
     """))
 
+  testTransport(on = true)
+
   class Settings(conf: Config) {
     private val testConfig = conf.getConfig("akka.test.cluster-stress-spec")
     import testConfig._
@@ -139,6 +145,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     val numberOfNodesShutdownOneByOneSmall = getInt("nr-of-nodes-shutdown-one-by-one-small") * nFactor
     val numberOfNodesShutdownOneByOneLarge = getInt("nr-of-nodes-shutdown-one-by-one-large") * nFactor
     val numberOfNodesShutdown = getInt("nr-of-nodes-shutdown") * nFactor
+    val numberOfNodesPartition = getInt("nr-of-nodes-partition") * nFactor
     val numberOfNodesJoinRemove = getInt("nr-of-nodes-join-remove") // not scaled by nodes factor
 
     val dFactor = getInt("duration-factor")
@@ -400,6 +407,19 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   final case class StatsResult(from: Address, stats: CurrentInternalStats)
   case object Reset
 
+  class MeasureDurationUntilDown extends Actor with ActorLogging {
+    private val startTime = System.nanoTime()
+    private val cluster = Cluster(context.system)
+    cluster.subscribe(self, InitialStateAsSnapshot, classOf[MemberDowned])
+
+    override def receive: Receive = {
+      case MemberDowned(m) =>
+        if (m.uniqueAddress == cluster.selfUniqueAddress)
+          log.info("Downed [{}] after [{} ms]", cluster.selfAddress, (System.nanoTime() - startTime).nanos.toMillis)
+      case _: CurrentClusterState =>
+    }
+  }
+
 }
 
 class StressMultiJvmNode1 extends StressSpec
@@ -415,6 +435,19 @@ class StressMultiJvmNode10 extends StressSpec
 class StressMultiJvmNode11 extends StressSpec
 class StressMultiJvmNode12 extends StressSpec
 class StressMultiJvmNode13 extends StressSpec
+class StressMultiJvmNode14 extends StressSpec
+class StressMultiJvmNode15 extends StressSpec
+class StressMultiJvmNode16 extends StressSpec
+class StressMultiJvmNode17 extends StressSpec
+class StressMultiJvmNode18 extends StressSpec
+class StressMultiJvmNode19 extends StressSpec
+class StressMultiJvmNode20 extends StressSpec
+class StressMultiJvmNode21 extends StressSpec
+class StressMultiJvmNode22 extends StressSpec
+class StressMultiJvmNode23 extends StressSpec
+class StressMultiJvmNode24 extends StressSpec
+class StressMultiJvmNode25 extends StressSpec
+class StressMultiJvmNode26 extends StressSpec
 
 abstract class StressSpec
     extends MultiNodeSpec(StressMultiJvmSpec)
@@ -529,9 +562,10 @@ abstract class StressSpec
     }
     enterBarrier("result-aggregator-created-" + step)
     runOn(roles.take(nbrUsedRoles): _*) {
-      phiObserver ! ReportTo(clusterResultAggregator)
+      val resultAggregator = clusterResultAggregator
+      phiObserver ! ReportTo(resultAggregator)
       statsObserver ! Reset
-      statsObserver ! ReportTo(clusterResultAggregator)
+      statsObserver ! ReportTo(resultAggregator)
     }
   }
 
@@ -687,6 +721,41 @@ abstract class StressSpec
       enterBarrier("remove-several-" + step)
     }
 
+  def partitionSeveral(numberOfNodes: Int): Unit =
+    within(25.seconds + convergenceWithin(5.seconds, nbrUsedRoles - numberOfNodes)) {
+      val currentRoles = roles.take(nbrUsedRoles - numberOfNodes)
+      val removeRoles = roles.slice(currentRoles.size, nbrUsedRoles)
+      val title = s"partition ${numberOfNodes} in ${nbrUsedRoles} nodes cluster"
+      createResultAggregator(title, expectedResults = currentRoles.size, includeInHistory = true)
+
+      runOn(roles.head) {
+        for (x <- currentRoles; y <- removeRoles) {
+          testConductor.blackhole(x, y, ThrottlerTransportAdapter.Direction.Both).await
+        }
+      }
+      enterBarrier("partition-several-blackhole")
+
+      runOn(currentRoles: _*) {
+        reportResult {
+          val startTime = System.nanoTime()
+          awaitMembersUp(currentRoles.size, timeout = remainingOrDefault)
+          system.log.info(
+            "Removed [{}] members after [{} ms].",
+            removeRoles.size,
+            (System.nanoTime() - startTime).nanos.toMillis)
+          awaitAllReachable()
+        }
+      }
+      runOn(removeRoles: _*) {
+        system.actorOf(Props[MeasureDurationUntilDown]())
+        awaitAssert {
+          cluster.isTerminated should ===(true)
+        }
+      }
+      awaitClusterResult()
+      enterBarrier("partition-several-" + step)
+    }
+
   def reportResult[T](thunk: => T): T = {
     val startTime = System.nanoTime
     val startStats = clusterView.latestStats.gossipStats
@@ -840,53 +909,60 @@ abstract class StressSpec
       enterBarrier("after-" + step)
     }
 
-    "exercise join/remove/join/remove" taggedAs LongRunningTest in {
-      exerciseJoinRemove("exercise join/remove", joinRemoveDuration)
-      enterBarrier("after-" + step)
-    }
+//    "exercise join/remove/join/remove" taggedAs LongRunningTest in {
+//      exerciseJoinRemove("exercise join/remove", joinRemoveDuration)
+//      enterBarrier("after-" + step)
+//    }
 
     "gossip when idle" taggedAs LongRunningTest in {
       idleGossip("idle gossip")
       enterBarrier("after-" + step)
     }
 
-    "leave nodes one-by-one from large cluster" taggedAs LongRunningTest in {
-      removeOneByOne(numberOfNodesLeavingOneByOneLarge, shutdown = false)
+//    "leave nodes one-by-one from large cluster" taggedAs LongRunningTest in {
+//      removeOneByOne(numberOfNodesLeavingOneByOneLarge, shutdown = false)
+//      enterBarrier("after-" + step)
+//    }
+
+//    "shutdown nodes one-by-one from large cluster" taggedAs LongRunningTest in {
+//      removeOneByOne(numberOfNodesShutdownOneByOneLarge, shutdown = true)
+//      enterBarrier("after-" + step)
+//    }
+
+//    "leave several nodes" taggedAs LongRunningTest in {
+//      removeSeveral(numberOfNodesLeaving, shutdown = false)
+//      nbrUsedRoles -= numberOfNodesLeaving
+//      enterBarrier("after-" + step)
+//    }
+//
+
+    "down partitioned nodes" taggedAs LongRunningTest in {
+      partitionSeveral(numberOfNodesPartition)
+      nbrUsedRoles -= numberOfNodesPartition
       enterBarrier("after-" + step)
     }
 
-    "shutdown nodes one-by-one from large cluster" taggedAs LongRunningTest in {
-      removeOneByOne(numberOfNodesShutdownOneByOneLarge, shutdown = true)
-      enterBarrier("after-" + step)
-    }
-
-    "leave several nodes" taggedAs LongRunningTest in {
-      removeSeveral(numberOfNodesLeaving, shutdown = false)
-      nbrUsedRoles -= numberOfNodesLeaving
-      enterBarrier("after-" + step)
-    }
-
-    "shutdown several nodes" taggedAs LongRunningTest in {
-      removeSeveral(numberOfNodesShutdown, shutdown = true)
-      nbrUsedRoles -= numberOfNodesShutdown
-      enterBarrier("after-" + step)
-    }
-
-    "shutdown nodes one-by-one from small cluster" taggedAs LongRunningTest in {
-      removeOneByOne(numberOfNodesShutdownOneByOneSmall, shutdown = true)
-      enterBarrier("after-" + step)
-    }
-
-    "leave nodes one-by-one from small cluster" taggedAs LongRunningTest in {
-      removeOneByOne(numberOfNodesLeavingOneByOneSmall, shutdown = false)
-      enterBarrier("after-" + step)
-    }
-
-    "log jvm info" taggedAs LongRunningTest in {
-      if (infolog) {
-        log.info("StressSpec JVM:\n{}", jvmInfo())
-      }
-      enterBarrier("after-" + step)
-    }
+//    "shutdown several nodes" taggedAs LongRunningTest in {
+//      removeSeveral(numberOfNodesShutdown, shutdown = true)
+//      nbrUsedRoles -= numberOfNodesShutdown
+//      enterBarrier("after-" + step)
+//    }
+//
+//    "shutdown nodes one-by-one from small cluster" taggedAs LongRunningTest in {
+//      removeOneByOne(numberOfNodesShutdownOneByOneSmall, shutdown = true)
+//      enterBarrier("after-" + step)
+//    }
+//
+//    "leave nodes one-by-one from small cluster" taggedAs LongRunningTest in {
+//      removeOneByOne(numberOfNodesLeavingOneByOneSmall, shutdown = false)
+//      enterBarrier("after-" + step)
+//    }
+//
+//    "log jvm info" taggedAs LongRunningTest in {
+//      if (infolog) {
+//        log.info("StressSpec JVM:\n{}", jvmInfo())
+//      }
+//      enterBarrier("after-" + step)
+//    }
   }
 }

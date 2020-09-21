@@ -617,6 +617,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
               }
 
             case Quarantined(from, to) if to == localAddress =>
+              log.warning("Other node [{}#{}] quarantined this node.", from.address, from.uid)
               // Don't quarantine the other system here, since that will result cluster member removal
               // and can result in forming two separate clusters (cluster split).
               // Instead, the downing strategy should act on ThisActorSystemQuarantinedEvent, e.g.
