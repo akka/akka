@@ -21,7 +21,6 @@ import akka.stream.impl.fusing.ActorGraphInterpreter
 import akka.stream.impl.fusing.GraphInterpreterShell
 import akka.stream.snapshot.StreamSnapshot
 import akka.util.OptionVal
-import akka.util.Timeout
 
 /**
  * ExtendedActorMaterializer used by subtypes which delegates in-island wiring to [[akka.stream.impl.PhaseIsland]]s
@@ -277,7 +276,7 @@ private[akka] final class SnapshotCollector(streamActors: Set[ActorRef], timeout
     }
   }
 
-  timers.startSingleTimer(Timeout, Timeout, timeout)
+  timers.startSingleTimer(SnapshotTimeout, SnapshotTimeout, timeout)
 
   override def receive: Receive = {
     case snap: StreamSnapshot =>

@@ -7,3 +7,5 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.StreamSuper
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.StreamSupervisor#GetChildrenSnapshots.canEqual")
 ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.StreamSupervisor#GetChildrenSnapshots.toString")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.StreamSupervisor.takeSnapshotsOfChildren")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.StreamSupervisor#GetChildrenSnapshots.productElementName")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.StreamSupervisor#GetChildrenSnapshots.productElementNames")
