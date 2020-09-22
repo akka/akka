@@ -15,6 +15,17 @@ Start with first element and then apply the current and next value to the given 
 Start with first element and then apply the current and next value to the given function, when upstream
 complete the current value is emitted downstream. Similar to `fold`.
 
+## Example
+
+`reduce` will take a function and apply it on the incoming elements in the Stream and only emits its result when upstream completes.
+Here, it will add the incoming elements.
+Scala
+:   @@snip [Reduce.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Reduce.scala) { #reduceExample }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/SourceOrFlow.java) { #reduceExample }
+
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
