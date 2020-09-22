@@ -137,6 +137,7 @@ class ReliableDeliverySpec(config: Config)
       consumerController ! ConsumerController.RegisterToProducerController(producerController)
 
       consumerEndProbe.receiveMessage(5.seconds)
+      consumerEndProbe.expectTerminated(consumerController)
 
       val consumerEndProbe2 = createTestProbe[TestConsumer.Collected]()
       val consumerController2 =
@@ -148,7 +149,7 @@ class ReliableDeliverySpec(config: Config)
 
       testKit.stop(producer)
       testKit.stop(producerController)
-      testKit.stop(consumerController)
+      testKit.stop(consumerController2)
     }
 
     "allow replacement of producer" in {
@@ -178,6 +179,7 @@ class ReliableDeliverySpec(config: Config)
 
       // replace producer
       testKit.stop(producerController1)
+      producerProbe1.expectTerminated(producerController1)
       val producerController2 =
         spawn(ProducerController[TestConsumer.Job](s"p-${idCount}", None), s"producerController2-${idCount}")
       val producerProbe2 = createTestProbe[ProducerController.RequestNext[TestConsumer.Job]]()
