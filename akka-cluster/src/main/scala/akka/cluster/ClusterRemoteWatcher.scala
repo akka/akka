@@ -10,6 +10,7 @@ import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberJoined
 import akka.cluster.ClusterEvent.MemberRemoved
+import akka.cluster.ClusterEvent.MemberTombstonesChanged
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberWeaklyUp
 import akka.dispatch.Dispatchers
@@ -44,7 +45,6 @@ private[cluster] object ClusterRemoteWatcher {
   private final case class DelayedQuarantine(m: Member, previousStatus: MemberStatus)
       extends NoSerializationVerificationNeeded
 
-  private case object TombstoneCleanUpTick
 }
 
 /**
@@ -66,7 +66,7 @@ private[cluster] class ClusterRemoteWatcher(
     extends RemoteWatcher(failureDetector, heartbeatInterval, unreachableReaperInterval, heartbeatExpectedResponseAfter)
     with Timers {
 
-  import ClusterRemoteWatcher.{ DelayedQuarantine, TombstoneCleanUpTick }
+  import ClusterRemoteWatcher.DelayedQuarantine
 
   private val arteryEnabled = RARP(context.system).provider.remoteSettings.Artery.Enabled
   val cluster = Cluster(context.system)
@@ -80,12 +80,11 @@ private[cluster] class ClusterRemoteWatcher(
   private var pendingDelayedQuarantine: Set[UniqueAddress] = Set.empty
 
   var clusterNodes: Set[Address] = Set.empty
-  var tombstones: Map[Address, Long] = Map.empty
+  var memberTombstones: Set[UniqueAddress] = Set.empty
 
   override def preStart(): Unit = {
     super.preStart()
-    cluster.subscribe(self, classOf[MemberEvent])
-    timers.startTimerWithFixedDelay(TombstoneCleanUpTick, TombstoneCleanUpTick, 1.minute)
+    cluster.subscribe(self, classOf[MemberEvent], classOf[MemberTombstonesChanged])
   }
 
   override def postStop(): Unit = {
@@ -100,13 +99,14 @@ private[cluster] class ClusterRemoteWatcher(
       clusterNodes = state.members.collect { case m if m.address != selfAddress => m.address }
       clusterNodes.foreach(takeOverResponsibility)
       unreachable = unreachable.diff(clusterNodes)
+      memberTombstones = state.memberTombstones
     case MemberJoined(m)                      => memberJoined(m)
     case MemberUp(m)                          => memberUp(m)
     case MemberWeaklyUp(m)                    => memberUp(m)
     case MemberRemoved(m, previousStatus)     => memberRemoved(m, previousStatus)
+    case MemberTombstonesChanged(tombstones)  => memberTombstones = tombstones
     case _: MemberEvent                       => // not interesting
     case DelayedQuarantine(m, previousStatus) => delayedQuarantine(m, previousStatus)
-    case TombstoneCleanUpTick                 => cleanUpTombstones()
   }
 
   private def memberJoined(m: Member): Unit = {
@@ -118,8 +118,6 @@ private[cluster] class ClusterRemoteWatcher(
     if (m.address != selfAddress) {
       quarantineOldIncarnation(m)
       clusterNodes += m.address
-      if (tombstones.contains(m.address)) // new node with same address joined
-        tombstones -= m.address
       takeOverResponsibility(m.address)
       unreachable -= m.address
     }
@@ -127,7 +125,6 @@ private[cluster] class ClusterRemoteWatcher(
   def memberRemoved(m: Member, previousStatus: MemberStatus): Unit =
     if (m.address != selfAddress) {
       clusterNodes -= m.address
-      tombstones += (m.address -> System.currentTimeMillis())
 
       if (previousStatus == MemberStatus.Down) {
         quarantine(
@@ -173,14 +170,17 @@ private[cluster] class ClusterRemoteWatcher(
     }
   }
 
-  override def addWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit =
-    if (tombstones.contains(watchee.path.address)) {
-      log.info("Watchee terminated because address [{}] has tombstone", watchee.path.address)
+  override def addWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit = {
+    val watcheeNode = watchee.path.address
+    if (!clusterNodes.contains(watcheeNode) && memberTombstones.exists(_.address == watcheeNode)) {
+      // node is not currently, but was previously part of cluster, trigger death watch notification immediately
+      log.debug("Death watch for [{}] triggered immediately because address has tombstone", watchee)
       watcher ! watcher.sendSystemMessage(
         DeathWatchNotification(watchee, existenceConfirmed = false, addressTerminated = true))
     } else {
       super.addWatch(watchee, watcher)
     }
+  }
 
   override def watchNode(watchee: InternalActorRef): Unit =
     if (!clusterNodes(watchee.path.address)) super.watchNode(watchee)
@@ -210,10 +210,5 @@ private[cluster] class ClusterRemoteWatcher(
       log.debug("Cluster is taking over responsibility of node: [{}]", address)
       unwatchNode(address)
     }
-
-  private def cleanUpTombstones(): Unit = {
-    val pruneOlderThanMs = System.currentTimeMillis() - 1.hour.toMillis // FIXME does it need to be configurable?
-    tombstones = tombstones.filter { case (_, timestamp) => timestamp > pruneOlderThanMs }
-  }
 
 }

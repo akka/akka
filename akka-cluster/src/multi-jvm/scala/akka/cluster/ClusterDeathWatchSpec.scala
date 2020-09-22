@@ -30,7 +30,7 @@ object ClusterDeathWatchMultiJvmSpec extends MultiNodeConfig {
   val fifth = role("fifth")
 
   commonConfig(
-    debugConfig(false)
+    debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
       # test is using Java serialization and not priority to rewrite
       akka.actor.allow-java-serialization = on
@@ -236,11 +236,11 @@ abstract class ClusterDeathWatchSpec
       enterBarrier("after-3")
     }
 
-    "get a terminated when trying to watch actor after node was downed" in within(max = 120.seconds) {
+    "get a terminated when trying to watch actor after node was downed" in within(max = 20.seconds) {
       runOn(first) {
         // node 5 is long gone (downed)
         watch(subject6)
-        expectTerminated(subject6, 60.seconds)
+        expectTerminated(subject6, 10.seconds)
       }
       enterBarrier("after-4")
     }

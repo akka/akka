@@ -300,6 +300,26 @@ class ClusterDomainEventSpec extends AnyWordSpec with Matchers {
       diffLeader(state(g1), state(g2)) should ===(Seq(LeaderChanged(Some(bUp.address))))
     }
 
+    "be produced for tombstone changes" in {
+      val s1 = state(Gossip(members = SortedSet(aUp)))
+      val s2 = state(
+        Gossip(members = SortedSet(aUp)).copy(tombstones = Map(eDown.uniqueAddress -> System.currentTimeMillis())))
+
+      diffTombstones(s1, s2) should ===(Seq(MemberTombstonesChanged(Set(eDown.uniqueAddress))))
+    }
+
+    "be produced for removed and rejoined members" in {
+      val s1 = state(Gossip(members = SortedSet(aUp.copy(MemberStatus.Removed))))
+      val s2 = state(
+        Gossip(members = SortedSet(TestMember
+          .withUniqueAddress(UniqueAddress(aUp.address, 77L), MemberStatus.Joining, aUp.roles, aUp.dataCenter))))
+      var events = Vector.empty[AnyRef]
+      publishDiff(s1, s2, event => events = events :+ event)
+      // should give us a removed event first, for the old one, then a joined for the new one
+      events(0) shouldBe an[MemberRemoved]
+      events(1) shouldBe an[MemberJoined]
+    }
+
     "be produced for role leader changes in the same data center" in {
       val g0 = Gossip.empty
       val g1 = Gossip(members = SortedSet(aUp, bUp, cUp, dLeaving, eJoining))

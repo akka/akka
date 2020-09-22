@@ -88,7 +88,8 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
                 _state = _state.withUnreachableDataCenters(_state.unreachableDataCenters - r.dataCenter)
               case r: UnreachableDataCenter =>
                 _state = _state.withUnreachableDataCenters(_state.unreachableDataCenters + r.dataCenter)
-
+              case MemberTombstonesChanged(tombstones) =>
+                _state = _state.withMemberTombstones(tombstones)
             }
 
             e match {
