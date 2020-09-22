@@ -23,7 +23,7 @@ Scala
 :   @@snip [Reduce.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Reduce.scala) { #reduceExample }
 
 Java
-:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/SourceOrFlow.java) { #reduceExample }
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #reduceExample }
 
 
 ## Reactive Streams semantics
