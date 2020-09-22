@@ -273,7 +273,8 @@ private[remote] class FlushOnShutdown(
     timeout: FiniteDuration,
     @unused inboundContext: InboundContext,
     associations: Set[Association])
-    extends Actor {
+    extends Actor
+    with ActorLogging {
 
   var remaining = Map.empty[UniqueAddress, Int]
 
@@ -318,6 +319,10 @@ private[remote] class FlushOnShutdown(
       if (remaining.isEmpty)
         context.stop(self)
     case FlushOnShutdown.Timeout =>
+      log.debug(
+        "Flush of remote transport timed out after [{}]. Remaining [{}] associations.",
+        timeout.toCoarsest,
+        remaining.size)
       context.stop(self)
   }
 }
