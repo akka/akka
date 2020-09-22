@@ -517,7 +517,7 @@ private[remote] class Association(
           case Some(peer) =>
             log.info(
               RemoteLogMarker.quarantine(remoteAddress, Some(u)),
-              "Quarantine of [{}] ignored due to non-matching UID, quarantine requested for [{}] but current is [{}]. {}",
+              "Quarantine of [{}] ignored due to non-matching UID, quarantine requested for [{}] but current is [{}]. Reason: {}",
               remoteAddress,
               u,
               peer.uid,
@@ -526,15 +526,16 @@ private[remote] class Association(
           case None =>
             log.info(
               RemoteLogMarker.quarantine(remoteAddress, Some(u)),
-              "Quarantine of [{}] ignored because handshake not completed, quarantine request was for old incarnation. {}",
+              "Quarantine of [{}] ignored because handshake not completed, quarantine request was for old incarnation. Reason: {}",
               remoteAddress,
               reason)
         }
       case None =>
         log.warning(
           RemoteLogMarker.quarantine(remoteAddress, None),
-          "Quarantine of [{}] ignored because unknown UID",
-          remoteAddress)
+          "Quarantine of [{}] ignored because unknown UID. Reason: {}",
+          remoteAddress,
+          reason)
     }
 
   }
