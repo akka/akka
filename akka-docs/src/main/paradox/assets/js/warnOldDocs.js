@@ -99,6 +99,8 @@ jQuery(document).ready(function ($) {
           $('#samePageLink').html('<a href="' + insteadPage + '">Click here to go to the same page on the ' + instead.latest + ' version of the docs.</a>');
         }
       });
+    } else if (version == series) {
+      // The series already points to the latest version in that series
     } else if (version != seriesInfo.latest) {
       showWarning(
         site,
