@@ -26,11 +26,12 @@ object CrossDcHeartbeatSenderSpec {
 
 class CrossDcHeartbeatSenderSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
-    akka.actor.provider = cluster 
-    akka.cluster.failure-detector.heartbeat-interval = 0.2s
+    akka.actor.provider = cluster
+    # should not be used here
+    akka.cluster.failure-detector.heartbeat-interval = 5s
     akka.cluster.multi-data-center {
       self-data-center = "dc1"
-      heartbeat-interval = 0.2s
+      failure-detector.heartbeat-interval = 0.2s
     }
   """) with ImplicitSender {
   "CrossDcHeartBeatSender" should {
