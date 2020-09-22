@@ -387,19 +387,12 @@ object ShardCoordinator {
 
     // DomainEvents for the persistent state of the event sourced ShardCoordinator
     sealed trait DomainEvent extends ClusterShardingSerializable
-
     @SerialVersionUID(1L) final case class ShardRegionRegistered(region: ActorRef) extends DomainEvent
-
     @SerialVersionUID(1L) final case class ShardRegionProxyRegistered(regionProxy: ActorRef) extends DomainEvent
-
     @SerialVersionUID(1L) final case class ShardRegionTerminated(region: ActorRef) extends DomainEvent
-
     @SerialVersionUID(1L) final case class ShardRegionProxyTerminated(regionProxy: ActorRef) extends DomainEvent
-
     @SerialVersionUID(1L) final case class ShardHomeAllocated(shard: ShardId, region: ActorRef) extends DomainEvent
-
     @SerialVersionUID(1L) final case class ShardHomeDeallocated(shard: ShardId) extends DomainEvent
-
     @SerialVersionUID(1L) final case object ShardCoordinatorInitialized extends DomainEvent
 
     case object StateInitialized
@@ -509,9 +502,7 @@ object ShardCoordinator {
   private final case class RebalanceResult(shards: Set[ShardId])
 
   private[akka] object RebalanceWorker {
-
     final case class ShardRegionTerminated(region: ActorRef)
-
   }
 
   /**
@@ -775,17 +766,13 @@ abstract class ShardCoordinator(
       case RebalanceDone(shard, ok) =>
         rebalanceWorkers -= sender()
 
-        val logContext =
-          if (gracefulShutdownInProgress(state.shards(shard))) "shutdown"
-          else "rebalance"
-
         if (ok) {
-          log.debug("Shard [{}] {} completed successfully.", shard, logContext)
+          log.debug("Shard [{}] deallocation completed successfully.", shard)
 
           // The shard could have been removed by ShardRegionTerminated
           if (state.shards.contains(shard)) {
             update(ShardHomeDeallocated(shard)) { evt =>
-              log.debug("Shard [{}] deallocated after {}", shard, logContext)
+              log.debug("Shard [{}] deallocated after", shard)
               state = state.updated(evt)
               clearRebalanceInProgress(shard)
               allocateShardHomesForRememberEntities()
@@ -796,12 +783,11 @@ abstract class ShardCoordinator(
           }
 
         } else {
-          log.warning("Shard [{}] {} didn't complete within [{}].", shard, logContext, handOffTimeout.pretty)
+          log.warning("Shard [{}] deallocation didn't complete within [{}].", shard, handOffTimeout.pretty)
 
           // was that due to a graceful region shutdown?
           // if so, consider the region as still alive and let it retry to gracefully shutdown later
-          if (gracefulShutdownInProgress(state.shards(shard)))
-            gracefulShutdownInProgress -= state.shards(shard)
+          gracefulShutdownInProgress -= state.shards(shard)
 
           clearRebalanceInProgress(shard)
         }
@@ -1127,7 +1113,6 @@ abstract class ShardCoordinator(
       log.info("Starting shutting down shards [{}] due to region shutting down.", shards.mkString(","))
     }
     shards.foreach { shard =>
-      log.debug("Shutting down shard [{}] from [{}]", shard, shuttingDownRegion)
       startShardRebalanceIfNeeded(shard, shuttingDownRegion, handOffTimeout, isRebalance = false)
     }
   }
