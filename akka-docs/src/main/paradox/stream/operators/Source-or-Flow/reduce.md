@@ -19,6 +19,7 @@ complete the current value is emitted downstream. Similar to `fold`.
 
 `reduce` will take a function and apply it on the incoming elements in the Stream and only emits its result when upstream completes.
 Here, it will add the incoming elements.
+
 Scala
 :   @@snip [Reduce.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Reduce.scala) { #reduceExample }
 
@@ -37,4 +38,3 @@ Java
 **completes** when upstream completes
 
 @@@
-
