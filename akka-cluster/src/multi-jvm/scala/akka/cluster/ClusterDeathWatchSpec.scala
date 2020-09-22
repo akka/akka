@@ -304,7 +304,7 @@ abstract class ClusterDeathWatchSpec
         runOn(first) {
           // fourth system will be shutdown, remove to not participate in barriers any more
           testConductor.shutdown(fourth).await
-          awaitAssert(expectMsg(EndActor.End)) // get a Unit back here for some reason
+          expectMsg(EndActor.End)
         }
 
         enterBarrier("after-5")

@@ -173,8 +173,7 @@ private[cluster] class ClusterRemoteWatcher(
     if (!clusterNodes.contains(watcheeNode) && memberTombstones.exists(_.address == watcheeNode)) {
       // node is not currently, but was previously part of cluster, trigger death watch notification immediately
       log.debug("Death watch for [{}] triggered immediately because address has tombstone", watchee)
-      watcher ! watcher.sendSystemMessage(
-        DeathWatchNotification(watchee, existenceConfirmed = false, addressTerminated = true))
+      watcher.sendSystemMessage(DeathWatchNotification(watchee, existenceConfirmed = false, addressTerminated = true))
     } else {
       super.addWatch(watchee, watcher)
     }
