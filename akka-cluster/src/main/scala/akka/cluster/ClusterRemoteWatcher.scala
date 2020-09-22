@@ -22,8 +22,6 @@ import akka.remote.RARP
 import akka.remote.RemoteSettings
 import akka.remote.RemoteWatcher
 
-import scala.concurrent.duration._
-
 /**
  * INTERNAL API
  */
