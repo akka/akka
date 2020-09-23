@@ -63,7 +63,7 @@ final class ClusterShardingHealthCheck private[akka] (
   @volatile private var registered = false
 
   override def apply(): Future[Boolean] = {
-    if (settings.typeNames.isEmpty && registered) {
+    if (settings.typeNames.isEmpty || registered) {
       ClusterShardingHealthCheck.Success
     } else {
       Future
