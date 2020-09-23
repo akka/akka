@@ -13,7 +13,7 @@ addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.3.4")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.15")
 // sbt-osgi 0.9.5 is available but breaks including jdk9-only classes
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.4")
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.7.0")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.8.0")
 addSbtPlugin("com.jsuereth" % "sbt-pgp" % "2.0.1")
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.3")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
