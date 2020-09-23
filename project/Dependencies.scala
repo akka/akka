@@ -73,7 +73,7 @@ object Dependencies {
 
     val sigar = "org.fusesource" % "sigar" % "1.6.4" // ApacheV2
 
-    val jctools = "org.jctools" % "jctools-core" % "3.0.1" // ApacheV2
+    val jctools = "org.jctools" % "jctools-core" % "3.1.0" // ApacheV2
 
     // reactive streams
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
@@ -114,7 +114,7 @@ object Dependencies {
 
     object Test {
       val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % "test" // ApacheV2
-      val commonsIo = "commons-io" % "commons-io" % "2.7" % "test" // ApacheV2
+      val commonsIo = "commons-io" % "commons-io" % "2.8.0" % "test" // ApacheV2
       val commonsCodec = "commons-codec" % "commons-codec" % "1.15" % "test" // ApacheV2
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
       val logback = Compile.logback % "test" // EPL 1.0
