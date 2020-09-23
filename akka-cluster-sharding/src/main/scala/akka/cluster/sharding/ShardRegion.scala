@@ -424,16 +424,22 @@ object ShardRegion {
   }
 
   /**
+   * INTERNAL API
+   *
    * Discover if the shard region is registered with the coordinator.
    * Not serializable as only to be sent to the local shard region
    * Response is [[ShardRegionState]]
    */
-  final object GetShardRegionStatus extends ShardRegionQuery
+  @InternalApi
+  private[akka] final object GetShardRegionStatus extends ShardRegionQuery
 
   /**
+   * INTERNAL API
+   *
    * Status of a ShardRegion. Only for local requests so not serializable.
    */
-  final class ShardRegionStatus(val typeName: String, val registeredWithCoordinator: Boolean)
+  @InternalApi
+  private[akka] final class ShardRegionStatus(val typeName: String, val registeredWithCoordinator: Boolean)
 
   private case object Retry extends ShardRegionCommand
 

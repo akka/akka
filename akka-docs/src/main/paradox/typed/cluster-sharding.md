@@ -472,11 +472,11 @@ for shards. For shard regions that aren't critical and therefore should not bloc
 
 The health check does not fail after initial success as that would result in all nodes failing their health check if the coordinator is unavailable.
 
-To configure the health check add it to the list of Akka Management health checks:
+Cluster sharding enables the health check automatically. To disable:
 
 ```ruby
 akka.management.health-checks.readiness-checks {
-  sharding = "akka.cluster.sharding.ClusterShardingHealthCheck"
+  sharding = ""
 }
 ```
 

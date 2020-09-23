@@ -57,13 +57,13 @@ final class ClusterShardingHealthCheck private[akka] (
       name => ClusterSharding(system).shardRegion(name))
 
   private implicit val timeout: Timeout = settings.timeout
-  private implicit val ec = system.dispatcher
+  private implicit val ec = system.dispatchers.internalDispatcher
 
   // Once the check has passed it always does
   @volatile private var registered = false
 
   override def apply(): Future[Boolean] = {
-    if (registered) {
+    if (settings.typeNames.isEmpty && registered) {
       ClusterShardingHealthCheck.Success
     } else {
       Future
