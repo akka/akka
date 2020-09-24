@@ -62,7 +62,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
   val totalNumberOfNodes =
     System.getProperty("MultiJvm.akka.cluster.Stress.nrOfNodes") match {
-      case null  => 26
+      case null  => 13
       case value => value.toInt.requiring(_ >= 10, "nrOfNodes should be >= 10")
     }
 
@@ -72,9 +72,9 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   // not MultiNodeClusterSpec.clusterConfig
   commonConfig(ConfigFactory.parseString("""
     akka.test.cluster-stress-spec {
-      infolog = on
+      infolog = off
       # scale the nr-of-nodes* settings with this factor
-      nr-of-nodes-factor = 2
+      nr-of-nodes-factor = 1
       # not scaled
       nr-of-seed-nodes = 3
       nr-of-nodes-joining-to-seed-initially = 2
@@ -82,18 +82,18 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       nr-of-nodes-joining-one-by-one-large = 2
       nr-of-nodes-joining-to-one = 2
       nr-of-nodes-leaving-one-by-one-small = 1
-      nr-of-nodes-leaving-one-by-one-large = 2
+      nr-of-nodes-leaving-one-by-one-large = 1
       nr-of-nodes-leaving = 2
       nr-of-nodes-shutdown-one-by-one-small = 1
-      nr-of-nodes-shutdown-one-by-one-large = 2
-      nr-of-nodes-partition = 6
+      nr-of-nodes-shutdown-one-by-one-large = 1
+      nr-of-nodes-partition = 2
       nr-of-nodes-shutdown = 2
       nr-of-nodes-join-remove = 2
       # not scaled
       # scale the *-duration settings with this factor
       duration-factor = 1
       join-remove-duration = 90s
-      idle-gossip-duration = 5s
+      idle-gossip-duration = 10s
       expected-test-duration = 600s
       # scale convergence within timeouts with this factor
       convergence-within-factor = 1.0
@@ -435,19 +435,6 @@ class StressMultiJvmNode10 extends StressSpec
 class StressMultiJvmNode11 extends StressSpec
 class StressMultiJvmNode12 extends StressSpec
 class StressMultiJvmNode13 extends StressSpec
-class StressMultiJvmNode14 extends StressSpec
-class StressMultiJvmNode15 extends StressSpec
-class StressMultiJvmNode16 extends StressSpec
-class StressMultiJvmNode17 extends StressSpec
-class StressMultiJvmNode18 extends StressSpec
-class StressMultiJvmNode19 extends StressSpec
-class StressMultiJvmNode20 extends StressSpec
-class StressMultiJvmNode21 extends StressSpec
-class StressMultiJvmNode22 extends StressSpec
-class StressMultiJvmNode23 extends StressSpec
-class StressMultiJvmNode24 extends StressSpec
-class StressMultiJvmNode25 extends StressSpec
-class StressMultiJvmNode26 extends StressSpec
 
 abstract class StressSpec
     extends MultiNodeSpec(StressMultiJvmSpec)
@@ -909,32 +896,15 @@ abstract class StressSpec
       enterBarrier("after-" + step)
     }
 
-//    "exercise join/remove/join/remove" taggedAs LongRunningTest in {
-//      exerciseJoinRemove("exercise join/remove", joinRemoveDuration)
-//      enterBarrier("after-" + step)
-//    }
+    "exercise join/remove/join/remove" taggedAs LongRunningTest in {
+      exerciseJoinRemove("exercise join/remove", joinRemoveDuration)
+      enterBarrier("after-" + step)
+    }
 
     "gossip when idle" taggedAs LongRunningTest in {
       idleGossip("idle gossip")
       enterBarrier("after-" + step)
     }
-
-//    "leave nodes one-by-one from large cluster" taggedAs LongRunningTest in {
-//      removeOneByOne(numberOfNodesLeavingOneByOneLarge, shutdown = false)
-//      enterBarrier("after-" + step)
-//    }
-
-//    "shutdown nodes one-by-one from large cluster" taggedAs LongRunningTest in {
-//      removeOneByOne(numberOfNodesShutdownOneByOneLarge, shutdown = true)
-//      enterBarrier("after-" + step)
-//    }
-
-//    "leave several nodes" taggedAs LongRunningTest in {
-//      removeSeveral(numberOfNodesLeaving, shutdown = false)
-//      nbrUsedRoles -= numberOfNodesLeaving
-//      enterBarrier("after-" + step)
-//    }
-//
 
     "down partitioned nodes" taggedAs LongRunningTest in {
       partitionSeveral(numberOfNodesPartition)
@@ -942,27 +912,43 @@ abstract class StressSpec
       enterBarrier("after-" + step)
     }
 
-//    "shutdown several nodes" taggedAs LongRunningTest in {
-//      removeSeveral(numberOfNodesShutdown, shutdown = true)
-//      nbrUsedRoles -= numberOfNodesShutdown
-//      enterBarrier("after-" + step)
-//    }
-//
-//    "shutdown nodes one-by-one from small cluster" taggedAs LongRunningTest in {
-//      removeOneByOne(numberOfNodesShutdownOneByOneSmall, shutdown = true)
-//      enterBarrier("after-" + step)
-//    }
-//
-//    "leave nodes one-by-one from small cluster" taggedAs LongRunningTest in {
-//      removeOneByOne(numberOfNodesLeavingOneByOneSmall, shutdown = false)
-//      enterBarrier("after-" + step)
-//    }
-//
-//    "log jvm info" taggedAs LongRunningTest in {
-//      if (infolog) {
-//        log.info("StressSpec JVM:\n{}", jvmInfo())
-//      }
-//      enterBarrier("after-" + step)
-//    }
+    "leave nodes one-by-one from large cluster" taggedAs LongRunningTest in {
+      removeOneByOne(numberOfNodesLeavingOneByOneLarge, shutdown = false)
+      enterBarrier("after-" + step)
+    }
+
+    "shutdown nodes one-by-one from large cluster" taggedAs LongRunningTest in {
+      removeOneByOne(numberOfNodesShutdownOneByOneLarge, shutdown = true)
+      enterBarrier("after-" + step)
+    }
+
+    "leave several nodes" taggedAs LongRunningTest in {
+      removeSeveral(numberOfNodesLeaving, shutdown = false)
+      nbrUsedRoles -= numberOfNodesLeaving
+      enterBarrier("after-" + step)
+    }
+
+    "shutdown several nodes" taggedAs LongRunningTest in {
+      removeSeveral(numberOfNodesShutdown, shutdown = true)
+      nbrUsedRoles -= numberOfNodesShutdown
+      enterBarrier("after-" + step)
+    }
+
+    "shutdown nodes one-by-one from small cluster" taggedAs LongRunningTest in {
+      removeOneByOne(numberOfNodesShutdownOneByOneSmall, shutdown = true)
+      enterBarrier("after-" + step)
+    }
+
+    "leave nodes one-by-one from small cluster" taggedAs LongRunningTest in {
+      removeOneByOne(numberOfNodesLeavingOneByOneSmall, shutdown = false)
+      enterBarrier("after-" + step)
+    }
+
+    "log jvm info" taggedAs LongRunningTest in {
+      if (infolog) {
+        log.info("StressSpec JVM:\n{}", jvmInfo())
+      }
+      enterBarrier("after-" + step)
+    }
   }
 }
