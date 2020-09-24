@@ -103,7 +103,7 @@ import akka.pattern.pipe
     Logging.simpleName(strategy.getClass),
     stableAfter.toCoarsest,
     if (downAllWhenUnstable == Duration.Zero) "off" else downAllWhenUnstable.toCoarsest,
-    selfUniqueAddress.address + "#" + selfUniqueAddress.longUid)
+    s"${selfUniqueAddress.address}#${selfUniqueAddress.longUid})
 
   override def selfUniqueAddress: UniqueAddress = cluster.selfUniqueAddress
   override def selfDc: DataCenter = cluster.selfDataCenter
