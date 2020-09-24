@@ -99,11 +99,11 @@ import akka.pattern.pipe
   private val cluster = Cluster(context.system)
 
   log.info(
-    "SBR started. Config: stableAfter: {} ms, strategy: {}, selfUniqueAddress: {}, selfDc: {}",
-    stableAfter.toMillis,
+    s"SBR started. Config: strategy [{}], stable-after [{}], down-all-when-unstable [{}], selfUniqueAddress [{}], selfDc [$selfDc].",
     Logging.simpleName(strategy.getClass),
-    selfUniqueAddress,
-    selfDc)
+    stableAfter.toCoarsest,
+    if (downAllWhenUnstable == Duration.Zero) "off" else downAllWhenUnstable.toCoarsest,
+    selfUniqueAddress.address + "#" + selfUniqueAddress.longUid)
 
   override def selfUniqueAddress: UniqueAddress = cluster.selfUniqueAddress
   override def selfDc: DataCenter = cluster.selfDataCenter
