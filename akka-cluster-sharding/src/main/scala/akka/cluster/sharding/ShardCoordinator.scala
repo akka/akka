@@ -1258,11 +1258,11 @@ private[akka] class DDataShardCoordinator(
 
   private val stateReadConsistency = settings.tuningParameters.coordinatorStateReadMajorityPlus match {
     case Int.MaxValue => ReadAll(settings.tuningParameters.waitingForStateTimeout)
-    case additional   => ReadMajorityPlus(settings.tuningParameters.waitingForStateTimeout, majorityMinCap, additional)
+    case additional   => ReadMajorityPlus(settings.tuningParameters.waitingForStateTimeout, additional, majorityMinCap)
   }
   private val stateWriteConsistency = settings.tuningParameters.coordinatorStateWriteMajorityPlus match {
     case Int.MaxValue => WriteAll(settings.tuningParameters.updatingStateTimeout)
-    case additional   => WriteMajorityPlus(settings.tuningParameters.updatingStateTimeout, majorityMinCap, additional)
+    case additional   => WriteMajorityPlus(settings.tuningParameters.updatingStateTimeout, additional, majorityMinCap)
   }
 
   implicit val node: Cluster = Cluster(context.system)
