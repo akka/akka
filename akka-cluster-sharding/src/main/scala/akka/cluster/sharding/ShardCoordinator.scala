@@ -552,7 +552,7 @@ object ShardCoordinator {
         }
       case ReceiveTimeout =>
         if (isRebalance)
-          log.debug("Rebalance of [{}]  from [{}] timed out", shard, from)
+          log.debug("Rebalance of [{}] from [{}] timed out", shard, from)
         else
           log.debug("Shutting down [{}] shard from [{}] timed out", shard, from)
 
