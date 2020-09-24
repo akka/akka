@@ -172,7 +172,7 @@ private[cluster] class ClusterRemoteWatcher(
     val watcheeNode = watchee.path.address
     if (!clusterNodes.contains(watcheeNode) && memberTombstones.exists(_.address == watcheeNode)) {
       // node is not currently, but was previously part of cluster, trigger death watch notification immediately
-      log.debug("Death watch for [{}] triggered immediately because address has tombstone", watchee)
+      log.debug("Death watch for [{}] triggered immediately because member was removed from cluster", watchee)
       watcher.sendSystemMessage(DeathWatchNotification(watchee, existenceConfirmed = false, addressTerminated = true))
     } else {
       super.addWatch(watchee, watcher)

@@ -74,6 +74,7 @@ object ClusterEvent {
         Map[String, Option[Address]],
         CurrentClusterState] {
 
+    @silent("deprecated")
     def apply(
         members: immutable.SortedSet[Member] = immutable.SortedSet.empty,
         unreachable: Set[Member] = Set.empty,
@@ -112,6 +113,18 @@ object ClusterEvent {
       with Serializable {
 
     // for binary compatibility
+    @deprecated("use main constructor", since = "2.5.10")
+    def this(
+        members: immutable.SortedSet[Member],
+        unreachable: Set[Member],
+        seenBy: Set[Address],
+        leader: Option[Address],
+        roleLeaderMap: Map[String, Option[Address]],
+        unreachableDataCenters: Set[DataCenter]) =
+      this(members, unreachable, seenBy, leader, roleLeaderMap, unreachableDataCenters, Set.empty)
+
+    // for binary compatibility
+    @deprecated("use main constructor", since = "2.5.10")
     def this(
         members: immutable.SortedSet[Member] = immutable.SortedSet.empty,
         unreachable: Set[Member] = Set.empty,
@@ -423,28 +436,33 @@ object ClusterEvent {
    * INTERNAL API
    * The nodes that have seen current version of the Gossip.
    */
+  @InternalApi
   @ccompatUsedUntil213
   private[cluster] final case class SeenChanged(convergence: Boolean, seenBy: Set[Address]) extends ClusterDomainEvent
 
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[cluster] final case class ReachabilityChanged(reachability: Reachability) extends ClusterDomainEvent
 
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[cluster] final case class CurrentInternalStats(gossipStats: GossipStats, vclockStats: VectorClockStats)
       extends ClusterDomainEvent
 
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[cluster] final case class MemberTombstonesChanged(tombstones: Set[UniqueAddress]) extends ClusterDomainEvent
 
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[cluster] def diffUnreachable(
       oldState: MembershipState,
       newState: MembershipState): immutable.Seq[UnreachableMember] =
@@ -463,6 +481,7 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[cluster] def diffReachable(
       oldState: MembershipState,
       newState: MembershipState): immutable.Seq[ReachableMember] =
@@ -481,6 +500,7 @@ object ClusterEvent {
   /**
    * Internal API
    */
+  @InternalApi
   private[cluster] def isDataCenterReachable(state: MembershipState)(otherDc: DataCenter): Boolean = {
     val unrelatedDcNodes = state.latestGossip.members.collect {
       case m if m.dataCenter != otherDc && m.dataCenter != state.selfDc => m.uniqueAddress
@@ -493,6 +513,7 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[cluster] def diffUnreachableDataCenter(
       oldState: MembershipState,
       newState: MembershipState): immutable.Seq[UnreachableDataCenter] = {
@@ -511,6 +532,7 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[cluster] def diffReachableDataCenter(
       oldState: MembershipState,
       newState: MembershipState): immutable.Seq[ReachableDataCenter] = {
@@ -529,6 +551,7 @@ object ClusterEvent {
   /**
    * INTERNAL API.
    */
+  @InternalApi
   private[cluster] def diffMemberEvents(
       oldState: MembershipState,
       newState: MembershipState): immutable.Seq[MemberEvent] =
@@ -615,12 +638,14 @@ object ClusterEvent {
       oldState: MembershipState,
       newState: MembershipState): immutable.Seq[MemberTombstonesChanged] =
     if (newState.latestGossip.tombstones == oldState.latestGossip.tombstones) Nil
-    else MemberTombstonesChanged(newState.latestGossip.tombstones.keys.toSet) :: Nil
+    else MemberTombstonesChanged(newState.latestGossip.tombstones.keySet) :: Nil
 
   /**
    * INTERNAL API
    */
+  @InternalApi
   private[cluster] def publishDiff(oldState: MembershipState, newState: MembershipState, pub: AnyRef => Unit): Unit = {
+    diffTombstones(oldState, newState).foreach(pub)
     diffMemberEvents(oldState, newState).foreach(pub)
     diffUnreachable(oldState, newState).foreach(pub)
     diffReachable(oldState, newState).foreach(pub)
@@ -631,7 +656,6 @@ object ClusterEvent {
     // publish internal SeenState for testing purposes
     diffSeen(oldState, newState).foreach(pub)
     diffReachability(oldState, newState).foreach(pub)
-    diffTombstones(oldState, newState).foreach(pub)
   }
 
 }
@@ -641,6 +665,7 @@ object ClusterEvent {
  * Responsible for domain event subscriptions and publishing of
  * domain events to event bus.
  */
+@InternalApi
 private[cluster] final class ClusterDomainEventPublisher
     extends Actor
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {

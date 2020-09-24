@@ -1,3 +1,2 @@
 # internal apis
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent#CurrentClusterState.this")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterDomainEventPublisher.publishDiff")
