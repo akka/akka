@@ -4,7 +4,7 @@ Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorR
 
 @ref[Actor interop operators](../index.md#actor-interop-operators)
 
-## Dependency 
+## Dependency
 
 This operator is included in:
 
@@ -47,4 +47,3 @@ Java
 **backpressures** when the actor acknowledgement has not arrived
 
 @@@
-
