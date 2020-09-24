@@ -18,6 +18,16 @@ Materializes into a @scala[`Future`] @java[`CompletionStage`] that will complete
 This operator allows combining values into a result without a global mutable state by instead passing the state along
 between invocations.
 
+## Example
+
+This example reads the numbers from a source and do some calculation in the flow part and in the end uses Sink.fold and adds the incoming elements.
+
+Scala
+:   @@snip [Fold.scala](/akka-docs/src/test/scala/docs/stream/operators/sink/Fold.scala) { #fold }
+
+Java
+:   @@snip [SinkDocExamples.java](/akka-docs/src/test/java/jdocs/stream/operators/SinkDocExamples.java) { #fold }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }

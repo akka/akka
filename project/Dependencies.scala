@@ -16,10 +16,10 @@ object Dependencies {
   val junitVersion = "4.13"
   val slf4jVersion = "1.7.30"
   // check agrona version when updating this
-  val aeronVersion = "1.27.0"
+  val aeronVersion = "1.30.0"
   // needs to be inline with the aeron version, check
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
-  val agronaVersion = "1.4.1"
+  val agronaVersion = "1.7.2"
   val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.10.5"
   val protobufJavaVersion = "3.11.4"
@@ -73,7 +73,7 @@ object Dependencies {
 
     val sigar = "org.fusesource" % "sigar" % "1.6.4" // ApacheV2
 
-    val jctools = "org.jctools" % "jctools-core" % "3.0.1" // ApacheV2
+    val jctools = "org.jctools" % "jctools-core" % "3.1.0" // ApacheV2
 
     // reactive streams
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
@@ -114,8 +114,8 @@ object Dependencies {
 
     object Test {
       val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % "test" // ApacheV2
-      val commonsIo = "commons-io" % "commons-io" % "2.7" % "test" // ApacheV2
-      val commonsCodec = "commons-codec" % "commons-codec" % "1.14" % "test" // ApacheV2
+      val commonsIo = "commons-io" % "commons-io" % "2.8.0" % "test" // ApacheV2
+      val commonsCodec = "commons-codec" % "commons-codec" % "1.15" % "test" // ApacheV2
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
       val logback = Compile.logback % "test" // EPL 1.0
 

@@ -237,37 +237,37 @@ object MemberStatus {
   @SerialVersionUID(1L) case object Removed extends MemberStatus
 
   /**
-   * Java API: retrieve the “joining” status singleton
+   * Java API: retrieve the `Joining` status singleton
    */
   def joining: MemberStatus = Joining
 
   /**
-   * Java API: retrieve the “weaklyUp” status singleton.
+   * Java API: retrieve the `WeaklyUp` status singleton.
    */
   def weaklyUp: MemberStatus = WeaklyUp
 
   /**
-   * Java API: retrieve the “up” status singleton
+   * Java API: retrieve the `Up` status singleton
    */
   def up: MemberStatus = Up
 
   /**
-   * Java API: retrieve the “leaving” status singleton
+   * Java API: retrieve the `Leaving` status singleton
    */
   def leaving: MemberStatus = Leaving
 
   /**
-   * Java API: retrieve the “exiting” status singleton
+   * Java API: retrieve the `Exiting` status singleton
    */
   def exiting: MemberStatus = Exiting
 
   /**
-   * Java API: retrieve the “down” status singleton
+   * Java API: retrieve the `Down` status singleton
    */
   def down: MemberStatus = Down
 
   /**
-   * Java API: retrieve the “removed” status singleton
+   * Java API: retrieve the `Removed` status singleton
    */
   def removed: MemberStatus = Removed
 

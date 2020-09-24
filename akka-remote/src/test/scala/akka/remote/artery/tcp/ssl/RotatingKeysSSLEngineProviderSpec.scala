@@ -25,15 +25,12 @@ import akka.remote.artery.tcp.SSLEngineProviderSetup
 import akka.remote.artery.tcp.TlsTcpSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
-import akka.testkit.TestDuration
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
 
-import scala.concurrent.duration._
-import scala.concurrent.Await
 import scala.concurrent.blocking
 import scala.util.control.NonFatal
 
@@ -271,11 +268,9 @@ abstract class RotatingKeysSSLEngineProviderSpec(extraConfig: String)
   override def beforeTermination(): Unit = {
     systemsToTerminate.foreach { systemToTerminate =>
       system.log.info(s"Terminating $systemToTerminate...")
-      val now = System.nanoTime()
-      Await.result(systemToTerminate.terminate(), 8.seconds.dilated)
-      val lasted = System.nanoTime() - now
-      system.log.info(s"Terminated $systemToTerminate after ${lasted / 1000000} ms")
+      systemToTerminate.terminate()
     }
+    systemsToTerminate.foreach(shutdown(_, verifySystemShutdown = true))
     super.beforeTermination()
   }
 

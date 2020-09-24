@@ -7,15 +7,27 @@ package akka.cluster.sharding
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.Random
-
 import akka.actor.ActorRef
-import akka.actor.Props
+import akka.cluster.ClusterEvent
+import akka.cluster.ClusterEvent.CurrentClusterState
+import akka.cluster.Member
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.ShardId
+import akka.cluster.sharding.internal.LeastShardAllocationStrategy
 import akka.testkit.AkkaSpec
 
+import scala.collection.immutable.SortedSet
+
 class LeastShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel = INFO") {
-  import LeastShardAllocationStrategySpec.{ afterRebalance, countShards, countShardsPerRegion }
+  import LeastShardAllocationStrategySpec.{
+    afterRebalance,
+    countShards,
+    countShardsPerRegion,
+    newFakeRegion,
+    newUpMember
+  }
+
+  @volatile var clusterMembers: SortedSet[Member] = SortedSet.empty
 
   def createAllocations(countPerRegion: Map[ActorRef, Int]): Map[ActorRef, immutable.IndexedSeq[ShardId]] = {
     countPerRegion.map {
@@ -24,8 +36,16 @@ class LeastShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel
     }
   }
 
-  private val strategyWithoutLimits =
-    ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 100000, relativeLimit = 1.0)
+  private val strategyWithoutLimits = strategyWithFakeCluster()
+
+  private def strategyWithFakeCluster(absoluteLimit: Int = 100000, relativeLimit: Double = 1.0) =
+    new LeastShardAllocationStrategy(absoluteLimit, relativeLimit) {
+      // we don't really "start" it as we fake the cluster access
+      override protected def clusterState: ClusterEvent.CurrentClusterState =
+        CurrentClusterState(clusterMembers)
+
+      override protected def selfMember: Member = clusterMembers.head
+    }
 
   private val rndSeed = System.currentTimeMillis()
   private val rnd = new Random(rndSeed)
@@ -42,7 +62,9 @@ class LeastShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel
     (1 to iterationsPerTest).foreach { _ =>
       iteration += 1
       val numberOfRegions = rnd.nextInt(maxRegions) + 1
-      val regions = (1 to numberOfRegions).map(n => system.actorOf(Props.empty, s"$iteration-R$n"))
+      val memberArray = (1 to numberOfRegions).map(n => newUpMember("127.0.0.1", port = n)).toArray
+      clusterMembers = SortedSet(memberArray.toIndexedSeq: _*)
+      val regions = (1 to numberOfRegions).map(n => newFakeRegion(s"$iteration-R$n", memberArray(n - 1)))
       val countPerRegion = regions.map { region =>
         region -> rnd.nextInt(maxShardsPerRegion)
       }.toMap
@@ -117,7 +139,7 @@ class LeastShardAllocationStrategyRandomizedSpec extends AkkaSpec("akka.loglevel
       val absoluteLimit = 3 + rnd.nextInt(7) + 3
       val relativeLimit = 0.05 + (rnd.nextDouble() * 0.95)
 
-      val strategy = ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit, relativeLimit)
+      val strategy = strategyWithFakeCluster(absoluteLimit, relativeLimit)
       testRebalance(strategy, maxRegions = 20, maxShardsPerRegion = 20, expectedMaxSteps = 20)
     }
 

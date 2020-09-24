@@ -19,6 +19,56 @@ order will be kept when results complete. For use cases where order does not mat
 If a @scala[`Future`] @java[`CompletionStage`] completes with `null`, element is not passed downstream.
 If a @scala[`Future`] @java[`CompletionStage`] fails, the stream also fails (unless a different supervision strategy is applied)
 
+## Examples
+
+Imagine you are consuming messages from a broker. These messages represent business events produced on a service upstream. In that case, you want to consume the messages in order and one at a time:
+
+Scala
+:   @@snip [MapAsyncs.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/MapAsyncs.scala) { #mapasync-strict-order }
+
+Java
+:   @@snip [MapAsyncs.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/MapAsyncs.java) { #mapasync-strict-order }
+
+When running the stream above the logging output would look like:
+
+```
+[...]
+Processing event numner Event(33)...
+Completed processing 33
+`mapAsync` emitted event number: 33
+Processing event numner Event(34)...
+Completed processing 34
+`mapAsync` emitted event number: 34
+[...]
+``` 
+
+If, instead, you may process information concurrently, but still emit the messages downstream in order, you may increase the parallelism. In this case, the events could some IoT payload with weather metrics, for example, where processing the data in strict ordering is not critical:
+
+Scala
+:   @@snip [MapAsyncs.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/MapAsyncs.scala) { #mapasync-concurrent }
+
+Java
+:   @@snip [MapAsyncs.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/MapAsyncs.java) { #mapasync-concurrent }
+
+In this case, the logging soon shows how processing of the events happens concurrently which may break the ordering. Still, the stage  emits the events back in the correct order:
+
+```
+[...]
+Processing event numner Event(15)...
+Processing event numner Event(16)...
+Completed processing 16
+Processing event numner Event(17)...
+Completed processing 17
+Completed processing 15
+`mapAsync` emitted event number: 15
+`mapAsync` emitted event number: 16
+Processing event numner Event(18)...
+`mapAsync` emitted event number: 17
+[...]
+```
+
+See also @ref[mapAsyncUnordered](mapAsyncUnordered.md#examples).
+
 ## Reactive Streams semantics
 
 @@@div { .callout }

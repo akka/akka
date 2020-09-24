@@ -175,15 +175,15 @@ private[cluster] final case class Gossip(
       vclock.prune(VectorClock.Node(Gossip.vclockName(node)))
     }
 
-    // 2. merge members by selecting the single Member with highest MemberStatus out of the Member groups
+    // 3. merge members by selecting the single Member with highest MemberStatus out of the Member groups
     val mergedMembers =
       Gossip.emptyMembers.union(Member.pickHighestPriority(this.members, that.members, mergedTombstones))
 
-    // 3. merge reachability table by picking records with highest version
+    // 4. merge reachability table by picking records with highest version
     val mergedReachability =
       this.overview.reachability.merge(mergedMembers.map(_.uniqueAddress), that.overview.reachability)
 
-    // 4. Nobody can have seen this new gossip yet
+    // 5. Nobody can have seen this new gossip yet
     val mergedSeen = Set.empty[UniqueAddress]
 
     Gossip(mergedMembers, GossipOverview(mergedSeen, mergedReachability), mergedVClock, mergedTombstones)
@@ -333,13 +333,6 @@ private[cluster] class GossipEnvelope private (
       ser = null
     }
   }
-
-  @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = {
-    deserialize()
-    this
-  }
-
 }
 
 /**

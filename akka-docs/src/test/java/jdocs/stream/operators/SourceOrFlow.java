@@ -456,6 +456,15 @@ class SourceOrFlow {
     // #dropWhile
   }
 
+  static void reduceExample() {
+    // #reduceExample
+    Source<Integer, NotUsed> source = Source.range(1, 100).reduce((acc, element) -> acc + element);
+    CompletionStage<Integer> result = source.runWith(Sink.head(), system);
+    result.thenAccept(System.out::println);
+    // 5050
+    // #reduceExample
+  }
+
   void watchExample() {
     // #watch
     final ActorRef ref = someActor();

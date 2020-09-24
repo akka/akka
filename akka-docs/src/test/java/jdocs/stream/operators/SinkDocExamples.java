@@ -105,6 +105,15 @@ public class SinkDocExamples {
     // #lastOption-operator-example
   }
 
+  static void foldExample() {
+    // #fold
+    Source<Integer, NotUsed> source = Source.range(1, 100);
+    CompletionStage<Integer> sum =
+        source.runWith(Sink.fold(0, (res, element) -> res + element), system);
+    sum.thenAccept(System.out::println);
+    // #fold
+  }
+
   static void ignoreExample() {
     // #ignore
     Source<String, NotUsed> lines = readLinesFromFile();
