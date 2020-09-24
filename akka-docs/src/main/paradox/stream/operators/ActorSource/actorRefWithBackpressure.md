@@ -35,6 +35,7 @@ See also:
 ## Example
 
 With `actorRefWithBackpressure` two actors get into play: 
+
 1. An actor that is materialized when the stream runs. It feeds the stream.
 2. An actor provided by the user. It gets the ack signal when an element is emitted into the stream.
 
