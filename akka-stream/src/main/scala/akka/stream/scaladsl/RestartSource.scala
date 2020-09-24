@@ -74,7 +74,7 @@ object RestartSource {
   @deprecated("Use the overloaded method which accepts akka.stream.RestartSettings instead.", since = "2.6.10")
   def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(
       sourceFactory: () => Source[T, _]): Source[T, NotUsed] = {
-    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts, minBackoff)
     withBackoff(settings)(sourceFactory)
   }
 
@@ -155,7 +155,7 @@ object RestartSource {
       maxBackoff: FiniteDuration,
       randomFactor: Double,
       maxRestarts: Int)(sourceFactory: () => Source[T, _]): Source[T, NotUsed] = {
-    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts, minBackoff)
     onFailuresWithBackoff(settings)(sourceFactory)
   }
 

@@ -250,7 +250,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
     "not restart the source when maxRestarts is reached" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
-        .withBackoff(shortRestartSettings.withMaxRestarts(1)) { () =>
+        .withBackoff(shortRestartSettings.withMaxRestarts(1, shortMinBackoff)) { () =>
           created.incrementAndGet()
           Source.single("a")
         }
@@ -268,7 +268,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
     "reset maxRestarts when source runs for at least minimum backoff without completing" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
-        .withBackoff(restartSettings.withMaxRestarts(2)) { () =>
+        .withBackoff(restartSettings.withMaxRestarts(2, minBackoff)) { () =>
           created.incrementAndGet()
           Source(List("a"))
         }
@@ -295,7 +295,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
     "allow using maxRestartsWithin instead of minBackoff to determine maxRestarts reset time" in assertAllStagesStopped {
       val created = new AtomicInteger()
       val probe = RestartSource
-        .withBackoff(shortRestartSettings.withMaxRestarts(2).withMaxRestartsWithin(1.second)) { () =>
+        .withBackoff(shortRestartSettings.withMaxRestarts(2, 1.second)) { () =>
           created.incrementAndGet()
           Source(List("a", "b")).takeWhile(_ != "b")
         }
@@ -463,7 +463,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
         .probe[String]
-        .toMat(RestartSink.withBackoff(shortRestartSettings.withMaxRestarts(1)) { () =>
+        .toMat(RestartSink.withBackoff(shortRestartSettings.withMaxRestarts(1, shortMinBackoff)) { () =>
           created.incrementAndGet()
           Flow[String].takeWhile(_ != "cancel", inclusive = true).to(Sink.foreach(queue.sendNext))
         })(Keep.left)
@@ -487,7 +487,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
         .probe[String]
-        .toMat(RestartSink.withBackoff(restartSettings.withMaxRestarts(2)) { () =>
+        .toMat(RestartSink.withBackoff(restartSettings.withMaxRestarts(2, minBackoff)) { () =>
           created.incrementAndGet()
           Flow[String].takeWhile(_ != "cancel", inclusive = true).to(Sink.foreach(queue.sendNext))
         })(Keep.left)
@@ -522,7 +522,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val (queue, sinkProbe) = TestSource.probe[String].toMat(TestSink.probe)(Keep.both).run()
       val probe = TestSource
         .probe[String]
-        .toMat(RestartSink.withBackoff(shortRestartSettings.withMaxRestarts(2).withMaxRestartsWithin(1.second)) { () =>
+        .toMat(RestartSink.withBackoff(shortRestartSettings.withMaxRestarts(2, 1.second)) { () =>
           created.incrementAndGet()
           Flow[String].takeWhile(_ != "cancel", inclusive = true).to(Sink.foreach(queue.sendNext))
         })(Keep.left)
@@ -579,32 +579,33 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val (source, sink) = TestSource
         .probe[String]
         .viaMat(
-          RestartFlowFactory(onlyOnFailures, RestartSettings(minBackoff, maxBackoff, 0).withMaxRestarts(maxRestarts)) {
-            () =>
-              created.incrementAndGet()
-              Flow.fromSinkAndSource(
-                Flow[String]
-                  .takeWhile(_ != "cancel")
-                  .map {
-                    case "in error" => throw TE("in error")
-                    case other      => other
-                  }
-                  .to(Sink
-                    .foreach(flowInSource.sendNext)
-                    .mapMaterializedValue(_.onComplete {
-                      case Success(_) => flowInSource.sendNext("in complete")
-                      case Failure(_) => flowInSource.sendNext("in error")
-                    })),
-                flowOutSource
-                  .takeWhile(_ != "complete")
-                  .map {
-                    case "error" => throw TE("error")
-                    case other   => other
-                  }
-                  .watchTermination()((_, term) =>
-                    term.foreach(_ => {
-                      flowInSource.sendNext("out complete")
-                    })))
+          RestartFlowFactory(
+            onlyOnFailures,
+            RestartSettings(minBackoff, maxBackoff, 0).withMaxRestarts(maxRestarts, minBackoff)) { () =>
+            created.incrementAndGet()
+            Flow.fromSinkAndSource(
+              Flow[String]
+                .takeWhile(_ != "cancel")
+                .map {
+                  case "in error" => throw TE("in error")
+                  case other      => other
+                }
+                .to(Sink
+                  .foreach(flowInSource.sendNext)
+                  .mapMaterializedValue(_.onComplete {
+                    case Success(_) => flowInSource.sendNext("in complete")
+                    case Failure(_) => flowInSource.sendNext("in error")
+                  })),
+              flowOutSource
+                .takeWhile(_ != "complete")
+                .map {
+                  case "error" => throw TE("error")
+                  case other   => other
+                }
+                .watchTermination()((_, term) =>
+                  term.foreach(_ => {
+                    flowInSource.sendNext("out complete")
+                  })))
           })(Keep.left)
         .toMat(TestSink.probe[String])(Keep.both)
         .run()
@@ -867,7 +868,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
 
       val restartOnFailures =
         RestartFlow
-          .onFailuresWithBackoff(RestartSettings(1.second, 2.seconds, 0.2).withMaxRestarts(2))(() => {
+          .onFailuresWithBackoff(RestartSettings(1.second, 2.seconds, 0.2).withMaxRestarts(2, 1.second))(() => {
             flowCreations.incrementAndGet()
             failsSomeTimes
           })

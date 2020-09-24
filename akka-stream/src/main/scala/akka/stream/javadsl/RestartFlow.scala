@@ -120,7 +120,7 @@ object RestartFlow {
       randomFactor: Double,
       maxRestarts: Int,
       flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
-    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts, minBackoff)
     withBackoff(settings, flowFactory)
   }
 
@@ -157,7 +157,7 @@ object RestartFlow {
       randomFactor: Double,
       maxRestarts: Int,
       flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
-    val settings = RestartSettings.create(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    val settings = RestartSettings.create(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts, minBackoff)
     withBackoff(settings, flowFactory)
   }
 
@@ -219,7 +219,7 @@ object RestartFlow {
       randomFactor: Double,
       maxRestarts: Int,
       flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
-    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts, minBackoff)
     onFailuresWithBackoff(settings, flowFactory)
   }
 
@@ -256,7 +256,7 @@ object RestartFlow {
       randomFactor: Double,
       maxRestarts: Int,
       flowFactory: Creator[Flow[In, Out, _]]): Flow[In, Out, NotUsed] = {
-    val settings = RestartSettings.create(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    val settings = RestartSettings.create(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts, minBackoff)
     onFailuresWithBackoff(settings, flowFactory)
   }
 

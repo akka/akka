@@ -123,7 +123,7 @@ object RestartSink {
       randomFactor: Double,
       maxRestarts: Int,
       sinkFactory: Creator[Sink[T, _]]): Sink[T, NotUsed] = {
-    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts, minBackoff)
     withBackoff(settings, sinkFactory)
   }
 
@@ -161,7 +161,7 @@ object RestartSink {
       randomFactor: Double,
       maxRestarts: Int,
       sinkFactory: Creator[Sink[T, _]]): Sink[T, NotUsed] = {
-    val settings = RestartSettings.create(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts)
+    val settings = RestartSettings.create(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts, minBackoff)
     withBackoff(settings, sinkFactory)
   }
 

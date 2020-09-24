@@ -33,14 +33,13 @@ final class RestartSettings private (
    */
   def withRandomFactor(value: Double): RestartSettings = copy(randomFactor = value)
 
-  /** The amount of restarts is capped to this amount within a timeframe of [[maxRestartsWithin]] */
-  def withMaxRestarts(value: Int): RestartSettings = copy(maxRestarts = value)
+  /** Scala API: The amount of restarts is capped to `count` within a timeframe of `within` */
+  def withMaxRestarts(count: Int, within: FiniteDuration): RestartSettings =
+    copy(maxRestarts = count, maxRestartsWithin = within)
 
-  /** Scala API: the duration after which to reset the restart count and current exponential backoff */
-  def withMaxRestartsWithin(value: FiniteDuration): RestartSettings = copy(maxRestartsWithin = value)
-
-  /** Java API: the duration after which to reset the restart count and current exponential backoff */
-  def withMaxRestartsWithin(value: java.time.Duration): RestartSettings = copy(maxRestartsWithin = value.asScala)
+  /** Java API: The amount of restarts is capped to `count` within a timeframe of `within` */
+  def withMaxRestarts(count: Int, within: java.time.Duration): RestartSettings =
+    copy(maxRestarts = count, maxRestartsWithin = within.asScala)
 
   private def copy(
       minBackoff: FiniteDuration = minBackoff,

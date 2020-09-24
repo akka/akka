@@ -210,7 +210,7 @@ private[remote] class ArteryTcpTransport(
       RestartFlow
         .withBackoff[ByteString, ByteString](
           RestartSettings(settings.Advanced.OutboundRestartBackoff, settings.Advanced.OutboundRestartBackoff * 5, 0.1)
-            .withMaxRestarts(maxRestarts))(flowFactory)
+            .withMaxRestarts(maxRestarts, settings.Advanced.OutboundRestartBackoff))(flowFactory)
         // silence "Restarting graph due to failure" logging by RestartFlow
         .addAttributes(Attributes.logLevels(onFailure = LogLevels.Off))
 

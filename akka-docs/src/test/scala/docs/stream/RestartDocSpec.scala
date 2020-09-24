@@ -38,7 +38,7 @@ class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
         minBackoff = 3.seconds,
         maxBackoff = 30.seconds,
         randomFactor = 0.2) // adds 20% "noise" to vary the intervals slightly
-        .withMaxRestarts(20) // limits the amount of restarts to 20
+        .withMaxRestarts(20, 5.minutes) // limits the amount of restarts to 20 within 5 minutes
       ) { () =>
         // Create a source from a future of a source
         Source.futureSource {
