@@ -5,6 +5,7 @@
 package akka.persistence.testkit.internal
 
 import scala.collection.immutable
+import scala.concurrent.Await
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
@@ -14,6 +15,9 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.annotation.InternalApi
+import akka.persistence.query.PersistenceQuery
+import akka.persistence.query.scaladsl.CurrentEventsByPersistenceIdQuery
+import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.CommandResult
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.CommandResultWithReply
@@ -22,6 +26,7 @@ import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.Serializati
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl
+import akka.stream.scaladsl.Sink
 
 /**
  * INTERNAL API
@@ -83,6 +88,9 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
   override val persistenceTestKit: PersistenceTestKit = PersistenceTestKit(system)
   persistenceTestKit.clearAll()
 
+  private val queries =
+    PersistenceQuery(system).readJournalFor[CurrentEventsByPersistenceIdQuery](PersistenceTestKitReadJournal.Identifier)
+
   private val probe = actorTestKit.createTestProbe[Any]()
   private val stateProbe = actorTestKit.createTestProbe[State]()
   private var actor: ActorRef[Command] = actorTestKit.spawn(behavior)
@@ -102,12 +110,12 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
 
   override def runCommand(command: Command): CommandResult[Command, Event, State] = {
     preCommandCheck(command)
-    val oldEvents = getEvents(dropOldEvents = 0)
+    val seqNrBefore = getHighestSeqNr()
 
     actor ! command
 
     val newState = getState()
-    val newEvents = getEvents(oldEvents.size)
+    val newEvents = getEvents(seqNrBefore + 1)
 
     postCommandCheck(newEvents, newState, reply = None)
 
@@ -118,7 +126,7 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
     val replyProbe = actorTestKit.createTestProbe[R]()
     val command = creator(replyProbe.ref)
     preCommandCheck(command)
-    val oldEvents = getEvents(dropOldEvents = 0)
+    val seqNrBefore = getHighestSeqNr()
 
     actor ! command
 
@@ -132,16 +140,30 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
     }
 
     val newState = getState()
-    val newEvents = getEvents(oldEvents.size)
+    val newEvents = getEvents(seqNrBefore + 1)
 
     postCommandCheck(newEvents, newState, Some(reply))
 
     CommandResultImpl[Command, Event, State, R](command, newEvents, newState, Some(reply))
   }
 
-  private def getEvents[R](dropOldEvents: Int): immutable.Seq[Event] = {
-    // FIXME we can expand the api of persistenceTestKit to read from storage from a seqNr instead
-    persistenceTestKit.persistedInStorage(persistenceId.id).map(_.asInstanceOf[Event]).drop(dropOldEvents)
+  private def getHighestSeqNr(): Long = {
+    implicit val sys: ActorSystem[_] = system
+    val result =
+      queries.currentEventsByPersistenceId(persistenceId.id, 0L, toSequenceNr = Long.MaxValue).runWith(Sink.lastOption)
+
+    Await.result(result, actorTestKit.testKitSettings.SingleExpectDefaultTimeout) match {
+      case None      => 0L
+      case Some(env) => env.sequenceNr
+    }
+  }
+
+  private def getEvents(fromSeqNr: Long): immutable.Seq[Event] = {
+    implicit val sys: ActorSystem[_] = system
+    val result =
+      queries.currentEventsByPersistenceId(persistenceId.id, fromSeqNr, toSequenceNr = Long.MaxValue).runWith(Sink.seq)
+
+    Await.result(result, actorTestKit.testKitSettings.SingleExpectDefaultTimeout).map(_.event.asInstanceOf[Event])
   }
 
   override def getState(): State = {
