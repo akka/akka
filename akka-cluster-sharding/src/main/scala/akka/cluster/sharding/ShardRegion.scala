@@ -1025,7 +1025,7 @@ private[akka] class ShardRegion(
           totalBuffered += buf.size
           shards ::= shard
           log.debug(
-            "{}: Requesting shard home for [{}] to coordinator at [{}]. [{}] buffered messages.",
+            "{}: Requesting shard home for [{}] from coordinator at [{}]. [{}] buffered messages.",
             typeName,
             shard,
             coord,
@@ -1035,7 +1035,7 @@ private[akka] class ShardRegion(
 
       if (retryCount >= 5 && retryCount % 5 == 0 && log.isWarningEnabled) {
         log.warning(
-          "{}: Requested shard homes [{}] to coordinator at [{}]. [{}] total buffered messages.",
+          "{}: Requested shard homes [{}] from coordinator at [{}]. [{}] total buffered messages.",
           typeName,
           shards.sorted.mkString(","),
           coord,
