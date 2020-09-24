@@ -787,7 +787,9 @@ abstract class ShardCoordinator(
 
           // was that due to a graceful region shutdown?
           // if so, consider the region as still alive and let it retry to gracefully shutdown later
-          gracefulShutdownInProgress -= state.shards(shard)
+          state.shards.get(shard).foreach { region =>
+            gracefulShutdownInProgress -= region
+          }
 
           clearRebalanceInProgress(shard)
         }
