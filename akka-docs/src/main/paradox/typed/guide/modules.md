@@ -180,7 +180,7 @@ Persistence tackles the following challenges:
   symbol1=AkkaVersion
   value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-cluster-typed_$scala.binary.version$
+  artifact=akka-distributed-data_$scala.binary.version$
   version=AkkaVersion
 }
 
