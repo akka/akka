@@ -470,7 +470,7 @@ An [Akka Management compatible health check](https://doc.akka.io/docs/akka-manag
 has registered with the coordinator. This health check should be used in cases where you don't want to receive production traffic until the local shard region is ready to retrieve locations
 for shards. For shard regions that aren't critical and therefore should not block this node becoming ready do not include them.
 
-The health check does not fail after initial success as that would result in all nodes failing their health check if the coordinator is unavailable.
+The health check does not fail after an initial successful check. Once a shard region is registered and is operational it stays available for incoming message. 
 
 Cluster sharding enables the health check automatically. To disable:
 
