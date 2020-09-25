@@ -62,7 +62,7 @@ object LeaseDocSpec {
   }
 }
 
-class LeaseDocSpec extends AkkaSpec(LeaseDocSpec.config()) {
+class LeaseDocSpec extends AkkaSpec(LeaseDocSpec.config) {
   import LeaseDocSpec._
 
   "A docs lease" should {
