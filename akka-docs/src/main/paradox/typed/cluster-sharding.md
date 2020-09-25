@@ -464,6 +464,28 @@ rebalanced to other nodes.
 See @ref:[How To Startup when Cluster Size Reached](cluster.md#how-to-startup-when-a-cluster-size-is-reached)
 for more information about `min-nr-of-members`.
 
+## Health check
+
+An [Akka Management compatible health check](https://doc.akka.io/docs/akka-management/current/healthchecks.html) is included that returns healthy once the local shard region
+has registered with the coordinator. This health check should be used in cases where you don't want to receive production traffic until the local shard region is ready to retrieve locations
+for shards. For shard regions that aren't critical and therefore should not block this node becoming ready do not include them.
+
+The health check does not fail after an initial successful check. Once a shard region is registered and is operational it stays available for incoming message. 
+
+Cluster sharding enables the health check automatically. To disable:
+
+```ruby
+akka.management.health-checks.readiness-checks {
+  sharding = ""
+}
+```
+
+Monitoring of each shard region is off by default. Add them by defining the entity type names (`EntityTypeKey.name`):
+
+```ruby
+akka.cluster.sharding.healthcheck.names = ["counter-1", "HelloWorld"]
+```
+
 ## Inspecting cluster sharding state
 
 Two requests to inspect the cluster state are available:
