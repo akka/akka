@@ -537,7 +537,7 @@ object ShardCoordinator {
    */
   private[akka] class RebalanceWorker(
       shard: String,
-      from: ActorRef,
+      shardRegionFrom: ActorRef,
       handOffTimeout: FiniteDuration,
       regions: Set[ActorRef])
       extends Actor
@@ -554,15 +554,15 @@ object ShardCoordinator {
 
     timers.startSingleTimer("hand-off-timeout", ReceiveTimeout, handOffTimeout)
 
-    def receive = {
+    def receive: Receive = {
       case BeginHandOffAck(`shard`) =>
         log.debug("BeginHandOffAck for shard [{}] received from [{}].", shard, sender())
         acked(sender())
-      case ShardRegionTerminated(shardRegion) =>
+      case RebalanceWorker.ShardRegionTerminated(shardRegion) =>
         log.debug("ShardRegion [{}] terminated while waiting for BeginHandOffAck for shard [{}].", shardRegion, shard)
         acked(shardRegion)
       case ReceiveTimeout =>
-        log.debug("Rebalance of [{}]  from [{}] timed out", shard, from)
+        log.debug("Rebalance of shard [{}] from [{}] timed out", shard, shardRegionFrom)
         done(ok = false)
     }
 
@@ -570,14 +570,19 @@ object ShardCoordinator {
       remaining -= shardRegion
       if (remaining.isEmpty) {
         log.debug("All shard regions acked, handing off shard [{}].", shard)
-        from ! HandOff(shard)
+        shardRegionFrom ! HandOff(shard)
         context.become(stoppingShard, discardOld = true)
+      } else {
+        log.debug("Remaining shard regions: {}", remaining.size)
       }
     }
 
     def stoppingShard: Receive = {
       case ShardStopped(`shard`) => done(ok = true)
       case ReceiveTimeout        => done(ok = false)
+      case RebalanceWorker.ShardRegionTerminated(`shardRegionFrom`) =>
+        log.debug("ShardRegion [{}] terminated while waiting for ShardStopped for shard [{}].", shardRegionFrom, shard)
+        done(ok = true)
     }
 
     def done(ok: Boolean): Unit = {
@@ -588,10 +593,10 @@ object ShardCoordinator {
 
   private[akka] def rebalanceWorkerProps(
       shard: String,
-      from: ActorRef,
+      shardRegionFrom: ActorRef,
       handOffTimeout: FiniteDuration,
       regions: Set[ActorRef]): Props = {
-    Props(new RebalanceWorker(shard, from, handOffTimeout, regions))
+    Props(new RebalanceWorker(shard, shardRegionFrom, handOffTimeout, regions))
   }
 }
 
@@ -1000,13 +1005,15 @@ abstract class ShardCoordinator(
     }
   }
 
-  def regionProxyTerminated(ref: ActorRef): Unit =
+  def regionProxyTerminated(ref: ActorRef): Unit = {
+    rebalanceWorkers.foreach(_ ! RebalanceWorker.ShardRegionTerminated(ref))
     if (state.regionProxies.contains(ref)) {
       log.debug("ShardRegion proxy terminated: [{}]", ref)
       update(ShardRegionProxyTerminated(ref)) { evt =>
         state = state.updated(evt)
       }
     }
+  }
 
   def shuttingDown: Receive = {
     case _ => // ignore all

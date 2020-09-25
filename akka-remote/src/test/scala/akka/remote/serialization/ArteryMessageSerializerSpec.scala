@@ -7,6 +7,8 @@ package akka.remote.serialization
 import java.io.NotSerializableException
 
 import akka.actor._
+import akka.remote.artery.Flush
+import akka.remote.artery.FlushAck
 import akka.remote.{ RemoteWatcher, UniqueAddress }
 import akka.remote.artery.{ ActorSystemTerminating, ActorSystemTerminatingAck, Quarantined, SystemMessageDelivery }
 import akka.remote.artery.OutboundHandshake.{ HandshakeReq, HandshakeRsp }
@@ -29,6 +31,8 @@ class ArteryMessageSerializerSpec extends AkkaSpec {
       "Quarantined" -> Quarantined(uniqueAddress(), uniqueAddress()),
       "ActorSystemTerminating" -> ActorSystemTerminating(uniqueAddress()),
       "ActorSystemTerminatingAck" -> ActorSystemTerminatingAck(uniqueAddress()),
+      "Flush" -> Flush,
+      "FlushAck" -> FlushAck,
       "HandshakeReq" -> HandshakeReq(uniqueAddress(), uniqueAddress().address),
       "HandshakeRsp" -> HandshakeRsp(uniqueAddress()),
       "ActorRefCompressionAdvertisement" -> ActorRefCompressionAdvertisement(
