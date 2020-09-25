@@ -12,6 +12,10 @@ object ReplicationId {
     ReplicationId(split(0), split(1), ReplicaId(split(2)))
   }
 
+  def isReplicationId(id: String): Boolean = {
+    id.count(_ == '|') == 2
+  }
+
   /**
    * @param typeName The name of the entity type e.g. account, user. Made part of the persistence id so that entity ids don't need to be unique across different replicated entities
    * @param entityId The unique entity id

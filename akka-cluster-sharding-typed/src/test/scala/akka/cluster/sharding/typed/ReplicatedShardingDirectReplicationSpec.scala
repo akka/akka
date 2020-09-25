@@ -7,7 +7,6 @@ package akka.cluster.sharding.typed
 import org.scalatest.wordspec.AnyWordSpecLike
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.eventstream.EventStream
 import akka.persistence.typed
@@ -89,17 +88,15 @@ class ReplicatedShardingDirectReplicationSpec extends ScalaTestWithActorTestKit 
       replicationActor ! ShardingDirectReplication.VerifyStarted(upProbe.ref)
       upProbe.receiveMessage() // not bullet proof wrt to subscription being complete but good enough
 
-      LoggingTestKit.error[IllegalArgumentException].withOccurrences(0).expect {
-        val event = PublishedEventImpl(
-          PersistenceId.ofUniqueId("cats"),
-          1L,
-          "event",
-          System.currentTimeMillis(),
-          Some(new ReplicatedPublishedEventMetaData(ReplicaId("ReplicaA"), VersionVector.empty)))
-        system.eventStream ! EventStream.Publish(event)
+      val event = PublishedEventImpl(
+        PersistenceId.ofUniqueId("cats"),
+        1L,
+        "event",
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData(ReplicaId("ReplicaA"), VersionVector.empty)))
+      system.eventStream ! EventStream.Publish(event)
 
-        replicaAProbe.expectNoMessage()
-      }
+      replicaAProbe.expectNoMessage()
     }
   }
 

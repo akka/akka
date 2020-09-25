@@ -66,7 +66,7 @@ private[akka] object ShardingDirectReplication {
 
       Behaviors.receiveMessage {
         case WrappedPublishedEvent(event) =>
-          try {
+          if (ReplicationId.isReplicationId(event.persistenceId.id)) {
             val replicationId = ReplicationId.fromString(event.persistenceId.id)
             if (replicationId.typeName == typeName) {
               context.log.traceN(
@@ -82,9 +82,6 @@ private[akka] object ShardingDirectReplication {
                   }
               }
             }
-          } catch {
-            case _: IllegalArgumentException =>
-            // ignore event as persistence id not from replicated event sourcing
           }
           Behaviors.same
         case VerifyStarted(replyTo) =>
