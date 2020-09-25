@@ -32,7 +32,7 @@ private[akka] object ClusterShardingHealthCheckSettings {
 }
 
 @ApiMayChange
-final class ClusterShardingHealthCheckSettings(val typeNames: Set[String], val timeout: FiniteDuration)
+final class ClusterShardingHealthCheckSettings(val names: Set[String], val timeout: FiniteDuration)
 
 private object ClusterShardingHealthCheck {
   val Success = Future.successful(true)
@@ -63,11 +63,11 @@ final class ClusterShardingHealthCheck private[akka] (
   @volatile private var registered = false
 
   override def apply(): Future[Boolean] = {
-    if (settings.typeNames.isEmpty || registered) {
+    if (settings.names.isEmpty || registered) {
       ClusterShardingHealthCheck.Success
     } else {
       Future
-        .traverse(settings.typeNames) { name =>
+        .traverse(settings.names) { name =>
           shardRegion(name) // this can throw if shard region not registered and it'll fail the check
             .ask(ShardRegion.GetShardRegionStatus)
             .mapTo[ShardRegion.ShardRegionStatus]
@@ -90,6 +90,11 @@ final class ClusterShardingHealthCheck private[akka] (
         }
         .recover {
           case _: AskTimeoutException =>
+            if (log.isDebugEnabled) {
+              log.debug(
+                "Shard regions [{}] did not respond in time. Failing health check.",
+                settings.names.mkString(","))
+            }
             false
         }
     }

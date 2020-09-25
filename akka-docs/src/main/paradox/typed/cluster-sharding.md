@@ -480,10 +480,10 @@ akka.management.health-checks.readiness-checks {
 }
 ```
 
-Monitoring of each shard region is off by default. Add them with:
+Monitoring of each shard region is off by default. Add them by defining the entity type names (`EntityTypeKey.name`):
 
 ```ruby
-akka.cluster.sharding.healthcheck.names = ["shard-region-1", "shard-region-2"]
+akka.cluster.sharding.healthcheck.names = ["counter-1", "HelloWorld"]
 ```
 
 ## Inspecting cluster sharding state
