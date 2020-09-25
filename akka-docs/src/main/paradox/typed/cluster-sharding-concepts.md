@@ -82,20 +82,10 @@ persistent (durable), e.g. with @ref:[Persistence](persistence.md) (or see @ref:
 location.
 
 The logic that decides which shards to rebalance is defined in a pluggable shard
-allocation strategy. The default implementation `ShardCoordinator.LeastShardAllocationStrategy`
-picks shards for handoff from the `ShardRegion` with most number of previously allocated shards.
-They will then be allocated to the `ShardRegion` with least number of previously allocated shards,
-i.e. new members in the cluster.
+allocation strategy. The default implementation `LeastShardAllocationStrategy` allocates new shards
+to the `ShardRegion` (node) with least number of previously allocated shards. 
 
-For the `LeastShardAllocationStrategy` there is a configurable threshold (`rebalance-threshold`) of
-how large the difference must be to begin the rebalancing. The difference between number of shards in
-the region with most shards and the region with least shards must be greater than the `rebalance-threshold`
-for the rebalance to occur.
-
-A `rebalance-threshold` of 1 gives the best distribution and therefore typically the best choice.
-A higher threshold means that more shards can be rebalanced at the same time instead of one-by-one.
-That has the advantage that the rebalance process can be quicker but has the drawback that the
-the number of shards (and therefore load) between different nodes may be significantly different.
+See also @ref:[Shard allocation](cluster-sharding.md#shard-allocation).
 
 ### ShardCoordinator state
 

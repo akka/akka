@@ -105,7 +105,6 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       awaitAssert(clusterView.status should ===(MemberStatus.Up))
       clusterView.self.appVersion should ===(Version("1.2.3"))
       clusterView.members.find(_.address == selfAddress).get.appVersion should ===(Version("1.2.3"))
-      clusterView.state.hasMoreThanOneAppVersion should ===(false)
     }
 
     "reply with InitJoinAck for InitJoin after joining" in {
