@@ -5,7 +5,7 @@
 package akka.persistence.typed
 
 object ReplicationId {
-  private[akka] val Separator = "|"
+  private[akka] val Separator = '|'
   def fromString(id: String): ReplicationId = {
     val split = id.split("\\|")
     require(split.size == 3, s"invalid replication id $id")
@@ -13,7 +13,7 @@ object ReplicationId {
   }
 
   def isReplicationId(id: String): Boolean = {
-    id.count(_ == '|') == 2
+    id.count(_ == Separator) == 2
   }
 
   /**
