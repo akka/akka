@@ -59,7 +59,7 @@ import akka.util.Switch
 private[testkit] object CallingThreadDispatcherQueues
     extends ExtensionId[CallingThreadDispatcherQueues]
     with ExtensionIdProvider {
-  override def lookup() = CallingThreadDispatcherQueues
+  override def lookup = CallingThreadDispatcherQueues
   override def createExtension(system: ExtendedActorSystem): CallingThreadDispatcherQueues =
     new CallingThreadDispatcherQueues
 }

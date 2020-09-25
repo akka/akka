@@ -24,7 +24,7 @@ import akka.util.Timeout
  */
 object TestConductor extends ExtensionId[TestConductorExt] with ExtensionIdProvider {
 
-  override def lookup() = TestConductor
+  override def lookup = TestConductor
 
   override def createExtension(system: ExtendedActorSystem): TestConductorExt = new TestConductorExt(system)
 

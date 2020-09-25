@@ -20,7 +20,7 @@ object BoundAddressesExtension extends ExtensionId[BoundAddressesExtension] with
   override def get(system: ActorSystem): BoundAddressesExtension = super.get(system)
   override def get(system: ClassicActorSystemProvider): BoundAddressesExtension = super.get(system)
 
-  override def lookup() = BoundAddressesExtension
+  override def lookup = BoundAddressesExtension
 
   override def createExtension(system: ExtendedActorSystem): BoundAddressesExtension =
     new BoundAddressesExtension(system)

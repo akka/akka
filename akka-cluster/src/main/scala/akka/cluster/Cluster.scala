@@ -38,7 +38,7 @@ object Cluster extends ExtensionId[Cluster] with ExtensionIdProvider {
 
   override def get(system: ClassicActorSystemProvider): Cluster = super.get(system)
 
-  override def lookup() = Cluster
+  override def lookup = Cluster
 
   override def createExtension(system: ExtendedActorSystem): Cluster = new Cluster(system)
 

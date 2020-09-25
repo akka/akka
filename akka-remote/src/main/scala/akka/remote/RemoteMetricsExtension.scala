@@ -30,7 +30,7 @@ private[akka] object RemoteMetricsExtension extends ExtensionId[RemoteMetrics] w
   override def get(system: ActorSystem): RemoteMetrics = super.get(system)
   override def get(system: ClassicActorSystemProvider): RemoteMetrics = super.get(system)
 
-  override def lookup() = RemoteMetricsExtension
+  override def lookup = RemoteMetricsExtension
 
   override def createExtension(system: ExtendedActorSystem): RemoteMetrics =
     if (RARP(system).provider.remoteSettings.LogFrameSizeExceeding.isEmpty)

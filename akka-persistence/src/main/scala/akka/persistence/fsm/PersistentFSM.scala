@@ -28,7 +28,7 @@ private[akka] object SnapshotAfter extends ExtensionId[SnapshotAfter] with Exten
 
   override def get(system: ClassicActorSystemProvider): SnapshotAfter = super.get(system)
 
-  override def lookup() = SnapshotAfter
+  override def lookup = SnapshotAfter
 
   override def createExtension(system: ExtendedActorSystem): SnapshotAfter = new SnapshotAfter(system.settings.config)
 }

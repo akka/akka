@@ -33,7 +33,7 @@ import akka.util.ccompat._
 @ccompatUsedUntil213
 object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
 
-  override def lookup() = Udp
+  override def lookup = Udp
 
   override def createExtension(system: ExtendedActorSystem): UdpExt = new UdpExt(system)
 

@@ -49,7 +49,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
   override def get(system: ActorSystem): JacksonObjectMapperProvider = super.get(system)
   override def get(system: ClassicActorSystemProvider): JacksonObjectMapperProvider = super.get(system)
 
-  override def lookup() = JacksonObjectMapperProvider
+  override def lookup = JacksonObjectMapperProvider
 
   override def createExtension(system: ExtendedActorSystem): JacksonObjectMapperProvider =
     new JacksonObjectMapperProvider(system)
