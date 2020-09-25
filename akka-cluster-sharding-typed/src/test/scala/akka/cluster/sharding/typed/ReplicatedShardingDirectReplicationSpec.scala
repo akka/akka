@@ -10,6 +10,7 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.eventstream.EventStream
 import akka.persistence.typed
+import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.PublishedEvent
 import akka.persistence.typed.internal.{ PublishedEventImpl, ReplicatedPublishedEventMetaData, VersionVector }
 import akka.persistence.typed.ReplicaId
@@ -26,6 +27,7 @@ class ReplicatedShardingDirectReplicationSpec extends ScalaTestWithActorTestKit 
 
       val replicationActor = spawn(
         ShardingDirectReplication(
+          "ReplicatedShardingSpec",
           Some(typed.ReplicaId("ReplicaA")),
           replicaShardingProxies = Map(
             ReplicaId("ReplicaA") -> replicaAProbe.ref,
@@ -49,6 +51,53 @@ class ReplicatedShardingDirectReplicationSpec extends ScalaTestWithActorTestKit 
       replicaAProbe.expectNoMessage() // no publishing to the replica emitting it
     }
 
+    "not forward messages for a different type name" in {
+      val replicaAProbe = createTestProbe[ShardingEnvelope[PublishedEvent]]()
+
+      val replicationActor = spawn(
+        ShardingDirectReplication(
+          "ReplicatedShardingSpec",
+          None,
+          replicaShardingProxies = Map(ReplicaId("ReplicaA") -> replicaAProbe.ref)))
+
+      val upProbe = createTestProbe[Done]()
+      replicationActor ! ShardingDirectReplication.VerifyStarted(upProbe.ref)
+      upProbe.receiveMessage() // not bullet proof wrt to subscription being complete but good enough
+
+      val event = PublishedEventImpl(
+        ReplicationId("ADifferentReplicationId", "pid", ReplicaId("ReplicaA")).persistenceId,
+        1L,
+        "event",
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData(ReplicaId("ReplicaA"), VersionVector.empty)))
+      system.eventStream ! EventStream.Publish(event)
+
+      replicaAProbe.expectNoMessage()
+    }
+
+    "ignore messages not from replicated event sourcing" in {
+      val replicaAProbe = createTestProbe[ShardingEnvelope[PublishedEvent]]()
+
+      val replicationActor = spawn(
+        ShardingDirectReplication(
+          "ReplicatedShardingSpec",
+          None,
+          replicaShardingProxies = Map(ReplicaId("ReplicaA") -> replicaAProbe.ref)))
+
+      val upProbe = createTestProbe[Done]()
+      replicationActor ! ShardingDirectReplication.VerifyStarted(upProbe.ref)
+      upProbe.receiveMessage() // not bullet proof wrt to subscription being complete but good enough
+
+      val event = PublishedEventImpl(
+        PersistenceId.ofUniqueId("cats"),
+        1L,
+        "event",
+        System.currentTimeMillis(),
+        Some(new ReplicatedPublishedEventMetaData(ReplicaId("ReplicaA"), VersionVector.empty)))
+      system.eventStream ! EventStream.Publish(event)
+
+      replicaAProbe.expectNoMessage()
+    }
   }
 
 }

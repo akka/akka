@@ -9,6 +9,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.persistence.typed.PublishedEvent
@@ -52,7 +53,10 @@ private[akka] object ShardingDirectReplication {
 
   private final case class WrappedPublishedEvent(publishedEvent: PublishedEvent) extends Command
 
-  def apply[T](selfReplica: Option[ReplicaId], replicaShardingProxies: Map[ReplicaId, ActorRef[T]]): Behavior[Command] =
+  def apply[T](
+      typeName: String,
+      selfReplica: Option[ReplicaId],
+      replicaShardingProxies: Map[ReplicaId, ActorRef[T]]): Behavior[Command] =
     Behaviors.setup[Command] { context =>
       context.log.debug(
         "Subscribing to event stream to forward events to [{}] sharded replicas",
@@ -62,17 +66,22 @@ private[akka] object ShardingDirectReplication {
 
       Behaviors.receiveMessage {
         case WrappedPublishedEvent(event) =>
-          context.log.trace(
-            "Forwarding event for persistence id [{}] sequence nr [{}] to replicas",
-            event.persistenceId,
-            event.sequenceNumber)
-          replicaShardingProxies.foreach {
-            case (replica, proxy) =>
-              val newId = ReplicationId.fromString(event.persistenceId.id).withReplica(replica)
-              val envelopedEvent = ShardingEnvelope(newId.persistenceId.id, event)
-              if (!selfReplica.contains(replica)) {
-                proxy.asInstanceOf[ActorRef[ShardingEnvelope[PublishedEvent]]] ! envelopedEvent
+          if (ReplicationId.isReplicationId(event.persistenceId.id)) {
+            val replicationId = ReplicationId.fromString(event.persistenceId.id)
+            if (replicationId.typeName == typeName) {
+              context.log.traceN(
+                "Forwarding event for persistence id [{}] sequence nr [{}] to replicas.",
+                event.persistenceId,
+                event.sequenceNumber)
+              replicaShardingProxies.foreach {
+                case (replica, proxy) =>
+                  val newId = ReplicationId.fromString(event.persistenceId.id).withReplica(replica)
+                  val envelopedEvent = ShardingEnvelope(newId.persistenceId.id, event)
+                  if (!selfReplica.contains(replica)) {
+                    proxy.asInstanceOf[ActorRef[ShardingEnvelope[PublishedEvent]]] ! envelopedEvent
+                  }
               }
+            }
           }
           Behaviors.same
         case VerifyStarted(replyTo) =>
