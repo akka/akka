@@ -36,6 +36,7 @@ import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
+import akka.persistence.typed.internal.BehaviorSetup.SnapshotWithoutRetention
 import akka.persistence.typed.{
   DeleteEventsCompleted,
   DeleteEventsFailed,
@@ -106,15 +107,6 @@ private[akka] object Running {
       val updated = setup.eventHandler(state, event)
       copy(state = updated)
     }
-  }
-
-  def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] = {
-    val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
-    val initialState = setup.replication match {
-      case Some(replication) => startReplicationStream(setup, state, replication)
-      case None              => state
-    }
-    new running.HandlingCommands(initialState)
   }
 
   def startReplicationStream[C, E, S](
