@@ -1,0 +1,2 @@
+# internal apis
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterDomainEventPublisher.publishDiff")
