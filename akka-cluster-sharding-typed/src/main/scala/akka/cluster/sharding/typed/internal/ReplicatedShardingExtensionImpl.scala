@@ -43,13 +43,14 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
       thisReplica: Option[ReplicaId],
       settings: ReplicatedEntityProvider[M]): ReplicatedSharding[M] = {
     require(settings.replicas.nonEmpty, "Replicas must not be empty")
-    val typeName = settings.replicas.head._1.entity.typeKey.name
+    // typeName without the replica id
+    val typeName = settings.replicas.head._2
     val sharding = ClusterSharding(system)
     val initializedReplicas = settings.replicas.map {
       case (replicaSettings, typeName) =>
         // start up a sharding instance per replica id
         logger.infoN(
-          "Starting Replicated Event Sourcing sharding for replica [{}] (ShardType: [{}])",
+          "Starting Replicated Event Sourcing sharding for replica [{}] (ShardType: [{}], typeName [{}])",
           replicaSettings.replicaId.id,
           replicaSettings.entity.typeKey.name)
         val regionOrProxy = sharding.init(replicaSettings.entity)
