@@ -43,8 +43,6 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
       thisReplica: Option[ReplicaId],
       settings: ReplicatedEntityProvider[M]): ReplicatedSharding[M] = {
     require(settings.replicas.nonEmpty, "Replicas must not be empty")
-    // typeName without the replica id
-    val typeName = settings.replicas.head._2
     val sharding = ClusterSharding(system)
     val initializedReplicas = settings.replicas.map {
       case (replicaSettings, typeName) =>
@@ -61,13 +59,14 @@ private[akka] final class ReplicatedShardingExtensionImpl(system: ActorSystem[_]
           regionOrProxy,
           replicaSettings.entity.dataCenter)
     }
-    val replicaToRegionOrProxy = initializedReplicas.map {
-      case (_, replicaId, _, regionOrProxy, _) => replicaId -> regionOrProxy
-    }.toMap
     if (settings.directReplication) {
+      val replicaToRegionOrProxy = initializedReplicas.map {
+        case (_, replicaId, _, regionOrProxy, _) => replicaId -> regionOrProxy
+      }.toMap
+      val typeNameWithoutReplicaId = settings.replicas.head._2
       logger.infoN("Starting Replicated Event Sourcing Direct Replication")
       system.systemActorOf(
-        ShardingDirectReplication(typeName, thisReplica, replicaToRegionOrProxy),
+        ShardingDirectReplication(typeNameWithoutReplicaId, thisReplica, replicaToRegionOrProxy),
         s"directReplication-${counter.incrementAndGet()}")
     }
 
