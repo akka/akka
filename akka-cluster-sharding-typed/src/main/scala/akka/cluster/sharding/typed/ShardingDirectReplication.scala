@@ -75,12 +75,17 @@ private[akka] object ShardingDirectReplication {
                 event.sequenceNumber)
               replicaShardingProxies.foreach {
                 case (replica, proxy) =>
-                  val newId = ReplicationId.fromString(event.persistenceId.id).withReplica(replica)
+                  val newId = replicationId.withReplica(replica)
                   val envelopedEvent = ShardingEnvelope(newId.persistenceId.id, event)
                   if (!selfReplica.contains(replica)) {
                     proxy.asInstanceOf[ActorRef[ShardingEnvelope[PublishedEvent]]] ! envelopedEvent
                   }
               }
+            } else {
+              context.log.traceN(
+                "Not forwarding event for persistence id [{}] to replicas (wrong type name, expected [{}]).",
+                event.persistenceId,
+                typeName)
             }
           }
           Behaviors.same
