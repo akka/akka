@@ -17,7 +17,7 @@ with a `TimeoutException`.
 
 ## Example
 
-This example reads the numbers from a source and do some calculation in the flow with a completion timeout of 10 milliseconds. It will throw `TimeoutException` if stream does not complete in given time.
+This example reads the numbers from a source and do some calculation in the flow with a completion timeout of 10 milliseconds. It will fail the stream, leading to failing the materialized @scala[`Future`] @java[`CompletionStage`] if the stream has not completed mapping the numbers from the source when the timeout hits.
 
 Scala
 :   @@snip [CompletionTimeout.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/CompletionTimeout.scala) { #completionTimeout }

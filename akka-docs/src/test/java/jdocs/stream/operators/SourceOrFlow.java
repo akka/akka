@@ -4,9 +4,11 @@
 
 package jdocs.stream.operators;
 
+import akka.Done;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.japi.pf.PFBuilder;
+import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 
 import akka.NotUsed;
@@ -475,13 +477,10 @@ class SourceOrFlow {
     // #watch
   }
 
-  static CompletionStage<Integer> completionTimeoutExample() {
+  static CompletionStage<Done> completionTimeoutExample() {
     // #completionTimeout
-    Source<Integer, NotUsed> source = Source.range(1, 100000);
-    Flow<Integer, Integer, NotUsed> flow =
-        Flow.of(Integer.class).map(x -> x * x).completionTimeout(Duration.ofMillis(10));
-    CompletionStage<Integer> result =
-        source.via(flow).runWith(Sink.reduce((acc, element) -> acc + element), system);
+    Source<Integer, NotUsed> source = Source.range(1, 100000).map(number -> number * number);
+    CompletionStage<Done> result = source.completionTimeout(Duration.ofMillis(10)).run(system);
     return result;
     // #completionTimeout
   }
