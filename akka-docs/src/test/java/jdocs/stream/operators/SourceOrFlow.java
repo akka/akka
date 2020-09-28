@@ -475,6 +475,17 @@ class SourceOrFlow {
     // #watch
   }
 
+  static CompletionStage<Integer> completionTimeoutExample() {
+    // #completionTimeout
+    Source<Integer, NotUsed> source = Source.range(1, 100000);
+    Flow<Integer, Integer, NotUsed> flow =
+        Flow.of(Integer.class).map(x -> x * x).completionTimeout(Duration.ofMillis(10));
+    CompletionStage<Integer> result =
+        source.via(flow).runWith(Sink.reduce((acc, element) -> acc + element), system);
+    return result;
+    // #completionTimeout
+  }
+
   private ActorRef someActor() {
     return null;
   }
