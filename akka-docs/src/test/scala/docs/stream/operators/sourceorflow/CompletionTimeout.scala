@@ -8,7 +8,7 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 
-import scala.concurrent.duration.{ FiniteDuration, MILLISECONDS }
+import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 
 object CompletionTimeout {
@@ -17,7 +17,7 @@ object CompletionTimeout {
   def completionTimeoutExample: Future[Done] = {
     //#completionTimeout
     val source = Source(1 to 10000).map(number => number * number)
-    source.completionTimeout(FiniteDuration(10, MILLISECONDS)).run()
+    source.completionTimeout(10 milliseconds).run()
     //#completionTimeout
   }
 }
