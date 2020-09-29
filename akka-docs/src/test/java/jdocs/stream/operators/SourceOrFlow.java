@@ -4,9 +4,11 @@
 
 package jdocs.stream.operators;
 
+import akka.Done;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.japi.pf.PFBuilder;
+import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 
 import akka.NotUsed;
@@ -473,6 +475,14 @@ class SourceOrFlow {
             .watch(ref)
             .recover(akka.stream.WatchedActorTerminatedException.class, () -> ref + " terminated");
     // #watch
+  }
+
+  static CompletionStage<Done> completionTimeoutExample() {
+    // #completionTimeout
+    Source<Integer, NotUsed> source = Source.range(1, 100000).map(number -> number * number);
+    CompletionStage<Done> result = source.completionTimeout(Duration.ofMillis(10)).run(system);
+    return result;
+    // #completionTimeout
   }
 
   private ActorRef someActor() {
