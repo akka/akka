@@ -138,7 +138,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     val key = "allow-weakly-up-members"
     toRootLowerCase(cc.getString(key)) match {
       case "off" => Duration.Zero
-      case "on"  => 5.seconds // for backwards compatibility when it wasn't a duration
+      case "on"  => 7.seconds // for backwards compatibility when it wasn't a duration
       case _     => cc.getMillisDuration(key).requiring(_ > Duration.Zero, key + " > 0s, or off")
     }
   }
