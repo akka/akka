@@ -59,7 +59,8 @@ To understand which is old and new it compares the version numbers using normal 
 see @apidoc[akka.util.Version] for more details.
 
 Rebalance is also disabled during rolling updates, since shards from stopped nodes are anyway supposed to be
-started on new nodes.
+started on new nodes. Messages to shards that were stopped on the old nodes will allocate corresponding shards
+on the new nodes, without waiting for rebalance actions. 
 
 You should also enable the @ref:[health check for Cluster Sharding](../typed/cluster-sharding.md#health-check) if
 you use Akka Management. The readiness check will delay incoming traffic to the node until Sharding has been
