@@ -169,7 +169,7 @@ cluster for example) or alternate views (like reports).
 Persistence tackles the following challenges:
 
 * How to restore the state of an entity/actor when system restarts or crashes.
-* How to implement a [CQRS system](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj591573\(v=pandp.10\)?redirectedfrom=MSDN).
+* How to implement a [CQRS system](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj591573%28v=pandp.10%29).
 * How to ensure reliable delivery of messages in face of network errors and system crashes.
 * How to introspect domain events that have led an entity to its current state.
 * How to leverage [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) in your application to support long-running processes while the project continues to evolve.
