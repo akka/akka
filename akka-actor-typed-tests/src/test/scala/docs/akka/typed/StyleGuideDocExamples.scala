@@ -322,7 +322,7 @@ object StyleGuideDocExamples {
 
       sealed trait OperationResult
       case object Confirmed extends OperationResult
-      final case class Rejected(reason: String)
+      final case class Rejected(reason: String) extends OperationResult
     }
     //#message-protocol
   }
