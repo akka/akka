@@ -1195,7 +1195,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         leaderActionsOnConvergence()
       } else {
         leaderActionCounter += 1
-        if (cluster.settings.AllowWeaklyUpMembers && leaderActionCounter >= 3)
+        import cluster.settings.{ AllowWeaklyUpMembers, LeaderActionsInterval, WeaklyUpAfter }
+        if (AllowWeaklyUpMembers && LeaderActionsInterval * leaderActionCounter >= WeaklyUpAfter)
           moveJoiningToWeaklyUp()
 
         if (leaderActionCounter == firstNotice || leaderActionCounter % periodicNotice == 0)
