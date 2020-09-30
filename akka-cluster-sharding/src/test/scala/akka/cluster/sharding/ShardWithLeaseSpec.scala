@@ -89,7 +89,7 @@ class ShardWithLeaseSpec extends AkkaSpec(ShardWithLeaseSpec.config) with WithLo
     "retry if lease acquire returns false" in new Setup {
       val probe = TestProbe()
       val lease =
-        EventFilter.error(start = s"Failed to get lease for shard type [$typeName] id [1]", occurrences = 1).intercept {
+        EventFilter.error(start = s"$typeName: Failed to get lease for shard id [1]", occurrences = 1).intercept {
           sharding.tell(EntityEnvelope(1, "hello"), probe.ref)
           val lease = leaseFor("1")
           lease.initialPromise.complete(Success(false))
@@ -104,7 +104,7 @@ class ShardWithLeaseSpec extends AkkaSpec(ShardWithLeaseSpec.config) with WithLo
     "retry if the lease acquire fails" in new Setup {
       val probe = TestProbe()
       val lease =
-        EventFilter.error(start = s"Failed to get lease for shard type [$typeName] id [1]", occurrences = 1).intercept {
+        EventFilter.error(start = s"$typeName: Failed to get lease for shard id [1]", occurrences = 1).intercept {
           sharding.tell(EntityEnvelope(1, "hello"), probe.ref)
           val lease = leaseFor("1")
           lease.initialPromise.failure(BadLease("no lease for you"))
@@ -125,7 +125,7 @@ class ShardWithLeaseSpec extends AkkaSpec(ShardWithLeaseSpec.config) with WithLo
       EventFilter
         .error(
           start =
-            s"Shard type [$typeName] id [1] lease lost, stopping shard and killing [1] entities. Reason for losing lease: ${classOf[
+            s"$typeName: Shard id [1] lease lost, stopping shard and killing [1] entities. Reason for losing lease: ${classOf[
               BadLease].getName}: bye bye lease",
           occurrences = 1)
         .intercept {
