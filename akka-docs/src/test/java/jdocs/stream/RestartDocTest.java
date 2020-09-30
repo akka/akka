@@ -62,24 +62,29 @@ public class RestartDocTest {
 
   public void recoverWithBackoffSource() {
     // #restart-with-backoff-source
-    RestartSettings settings = RestartSettings.create(
-        Duration.ofSeconds(3), // min backoff
-        Duration.ofSeconds(30), // max backoff
-        0.2 // adds 20% "noise" to vary the intervals slightly
-    ).withMaxRestarts(20, Duration.ofMinutes(5)); // limits the amount of restarts to 20 within 5 minutes
+    RestartSettings settings =
+        RestartSettings.create(
+                Duration.ofSeconds(3), // min backoff
+                Duration.ofSeconds(30), // max backoff
+                0.2 // adds 20% "noise" to vary the intervals slightly
+                )
+            .withMaxRestarts(
+                20, Duration.ofMinutes(5)); // limits the amount of restarts to 20 within 5 minutes
 
     Source<ServerSentEvent, NotUsed> eventStream =
-        RestartSource.withBackoff(settings, () ->
-            // Create a source from a future of a source
-            Source.completionStageSource(
-                // Issue a GET request on the event stream
-                Http.get(system)
-                    .singleRequest(HttpRequest.create("http://example.com/eventstream"))
-                    .thenCompose(
-                        response ->
-                            // Unmarshall it to a stream of ServerSentEvents
-                            EventStreamUnmarshalling.fromEventStream()
-                                .unmarshall(response, materializer))));
+        RestartSource.withBackoff(
+            settings,
+            () ->
+                // Create a source from a future of a source
+                Source.completionStageSource(
+                    // Issue a GET request on the event stream
+                    Http.get(system)
+                        .singleRequest(HttpRequest.create("http://example.com/eventstream"))
+                        .thenCompose(
+                            response ->
+                                // Unmarshall it to a stream of ServerSentEvents
+                                EventStreamUnmarshalling.fromEventStream()
+                                    .unmarshall(response, materializer))));
     // #restart-with-backoff-source
 
     // #with-kill-switch
