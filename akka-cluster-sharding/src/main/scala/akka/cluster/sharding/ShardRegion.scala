@@ -630,7 +630,7 @@ private[akka] class ShardRegion(
         PrettyDuration.format(settings.passivateIdleEntityAfter))
 
     if (settings.rememberEntities)
-      log.debug("Idle entities will not be passivated because 'rememberEntities' is enabled.")
+      log.debug("{}: Idle entities will not be passivated because 'rememberEntities' is enabled.", typeName)
   }
 
   // when using proxy the data center can be different from the own data center
@@ -794,7 +794,8 @@ private[akka] class ShardRegion(
           .drop(shard, "Avoiding reordering of buffered messages at shard handoff", context.system.deadLetters)
         if (dropped > 0)
           log.warning(
-            "Dropping [{}] buffered messages to shard [{}] during hand off to avoid re-ordering",
+            "{}: Dropping [{}] buffered messages to shard [{}] during hand off to avoid re-ordering",
+            typeName,
             dropped,
             shard)
         loggedFullBufferWarning = false
@@ -944,7 +945,7 @@ private[akka] class ShardRegion(
 
     Future.traverse(shards.toSeq) { case (shardId, shard) => askOne(shard, msg, shardId) }.map { ps =>
       val qr = ShardsQueryResult[T](ps, this.shards.size, timeout.duration)
-      if (qr.failed.nonEmpty) log.warning(s"$qr")
+      if (qr.failed.nonEmpty) log.warning(s"{}: $qr", typeName)
       qr
     }
   }
@@ -1106,7 +1107,10 @@ private[akka] class ShardRegion(
         case (msg, snd) =>
           msg match {
             case msg @ RestartShard(_) if receiver != self =>
-              log.debug("Dropping buffered message {}, these are only processed by a local ShardRegion.", msg)
+              log.debug(
+                "{}: Dropping buffered message {}, these are only processed by a local ShardRegion.",
+                typeName,
+                msg)
             case _ =>
               receiver.tell(msg, snd)
           }
@@ -1221,7 +1225,7 @@ private[akka] class ShardRegion(
   def sendGracefulShutdownToCoordinatorIfInProgress(): Unit = {
     if (gracefulShutdownInProgress) {
       val actorSelections = coordinatorSelection
-      log.debug("Sending graceful shutdown to {}", actorSelections)
+      log.debug("{}: Sending graceful shutdown to {}", typeName, actorSelections)
       actorSelections.foreach(_ ! GracefulShutdownReq(self))
     }
   }
