@@ -29,7 +29,7 @@ object RestartSource {
    * This can be triggered simply by the downstream cancelling, or externally by introducing a [[KillSwitch]] right
    * after this [[Source]] in the graph.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -60,7 +60,7 @@ object RestartSource {
    * This can be triggered simply by the downstream cancelling, or externally by introducing a [[KillSwitch]] right
    * after this [[Source]] in the graph.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -92,7 +92,7 @@ object RestartSource {
    * This can be triggered simply by the downstream cancelling, or externally by introducing a [[KillSwitch]] right
    * after this [[Source]] in the graph.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -127,7 +127,7 @@ object RestartSource {
    * This can be triggered simply by the downstream cancelling, or externally by introducing a [[KillSwitch]] right
    * after this [[Source]] in the graph.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -162,7 +162,7 @@ object RestartSource {
    * This can be triggered simply by the downstream cancelling, or externally by introducing a [[KillSwitch]] right
    * after this [[Source]] in the graph.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param settings [[RestartSettings]] defining restart configuration
    * @param sourceFactory A factory for producing the [[Source]] to wrap.
@@ -183,7 +183,7 @@ object RestartSource {
    * This can be triggered simply by the downstream cancelling, or externally by introducing a [[KillSwitch]] right
    * after this [[Source]] in the graph.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -214,7 +214,7 @@ object RestartSource {
    * This can be triggered simply by the downstream cancelling, or externally by introducing a [[KillSwitch]] right
    * after this [[Source]] in the graph.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -245,7 +245,7 @@ object RestartSource {
    * and it will not be restarted. This can be triggered simply by the downstream cancelling, or externally by
    * introducing a [[KillSwitch]] right after this [[Source]] in the graph.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -279,7 +279,7 @@ object RestartSource {
    * and it will not be restarted. This can be triggered simply by the downstream cancelling, or externally by
    * introducing a [[KillSwitch]] right after this [[Source]] in the graph.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -313,7 +313,7 @@ object RestartSource {
    * and it will not be restarted. This can be triggered simply by the downstream cancelling, or externally by
    * introducing a [[KillSwitch]] right after this [[Source]] in the graph.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param settings [[RestartSettings]] defining restart configuration
    * @param sourceFactory A factory for producing the [[Source]] to wrap.

@@ -33,7 +33,7 @@ object RestartSink {
    * messages. When the wrapped [[Sink]] does cancel, this [[Sink]] will backpressure, however any elements already
    * sent may have been lost.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -68,7 +68,7 @@ object RestartSink {
    * messages. When the wrapped [[Sink]] does cancel, this [[Sink]] will backpressure, however any elements already
    * sent may have been lost.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -103,7 +103,7 @@ object RestartSink {
    * messages. When the wrapped [[Sink]] does cancel, this [[Sink]] will backpressure, however any elements already
    * sent may have been lost.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -141,7 +141,7 @@ object RestartSink {
    * messages. When the wrapped [[Sink]] does cancel, this [[Sink]] will backpressure, however any elements already
    * sent may have been lost.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -179,7 +179,7 @@ object RestartSink {
    * messages. When the wrapped [[Sink]] does cancel, this [[Sink]] will backpressure, however any elements already
    * sent may have been lost.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param settings [[RestartSettings]] defining restart configuration
    * @param sinkFactory A factory for producing the [[Sink]] to wrap.

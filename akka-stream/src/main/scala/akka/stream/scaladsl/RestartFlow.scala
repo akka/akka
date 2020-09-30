@@ -39,7 +39,7 @@ object RestartFlow {
    * messages. A termination signal from either end of the wrapped [[Flow]] will cause the other end to be terminated,
    * and any in transit messages will be lost. During backoff, this [[Flow]] will backpressure.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -70,7 +70,7 @@ object RestartFlow {
    * messages. A termination signal from either end of the wrapped [[Flow]] will cause the other end to be terminated,
    * and any in transit messages will be lost. During backoff, this [[Flow]] will backpressure.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -106,7 +106,7 @@ object RestartFlow {
    * messages. A termination signal from either end of the wrapped [[Flow]] will cause the other end to be terminated,
    * and any in transit messages will be lost. During backoff, this [[Flow]] will backpressure.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param settings [[RestartSettings]] defining restart configuration
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
@@ -128,7 +128,7 @@ object RestartFlow {
    * messages. A termination signal from either end of the wrapped [[Flow]] will cause the other end to be terminated,
    * and any in transit messages will be lost. During backoff, this [[Flow]] will backpressure.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -165,7 +165,7 @@ object RestartFlow {
    * messages. A termination signal from either end of the wrapped [[Flow]] will cause the other end to be terminated,
    * and any in transit messages will be lost. During backoff, this [[Flow]] will backpressure.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param settings [[RestartSettings]] defining restart configuration
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
