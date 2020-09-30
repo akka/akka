@@ -344,6 +344,34 @@ final class ClusterShardingSettings(
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
     val leaseSettings: Option[LeaseUsageSettings]) {
 
+  @deprecated("Use constructor with leaseSettings", "2.6.9")
+  def this(
+      numberOfShards: Int,
+      role: Option[String],
+      dataCenter: Option[DataCenter],
+      rememberEntities: Boolean,
+      journalPluginId: String,
+      snapshotPluginId: String,
+      passivateIdleEntityAfter: FiniteDuration,
+      shardRegionQueryTimeout: FiniteDuration,
+      stateStoreMode: ClusterShardingSettings.StateStoreMode,
+      rememberEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode,
+      tuningParameters: ClusterShardingSettings.TuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
+    this(
+      numberOfShards,
+      role,
+      dataCenter,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      passivateIdleEntityAfter,
+      shardRegionQueryTimeout,
+      stateStoreMode,
+      rememberEntitiesStoreMode,
+      tuningParameters,
+      coordinatorSingletonSettings,
+      None)
   @deprecated("Use constructor with rememberEntitiesStoreMode", "2.6.6") // FIXME update version once merged
   def this(
       numberOfShards: Int,
@@ -356,8 +384,7 @@ final class ClusterShardingSettings(
       shardRegionQueryTimeout: FiniteDuration,
       stateStoreMode: ClusterShardingSettings.StateStoreMode,
       tuningParameters: ClusterShardingSettings.TuningParameters,
-      coordinatorSingletonSettings: ClusterSingletonManagerSettings,
-      leaseSettings: Option[LeaseUsageSettings]) =
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
     this(
       numberOfShards,
       role,
@@ -371,7 +398,7 @@ final class ClusterShardingSettings(
       RememberEntitiesStoreModeDData,
       tuningParameters,
       coordinatorSingletonSettings,
-      leaseSettings)
+      None)
 
   /**
    * INTERNAL API
@@ -456,6 +483,5 @@ final class ClusterShardingSettings(
       rememberEntitiesStoreMode,
       tuningParameters,
       coordinatorSingletonSettings,
-      leaseSettings
-      )
+      leaseSettings)
 }
