@@ -39,10 +39,34 @@ Additionally you can find advice on @ref:[Persistence - Schema Evolution](../per
 
 ## Cluster Sharding
 
-During a rolling update, sharded entities receiving traffic may be moved during @ref:[shard rebalancing](../typed/cluster-sharding-concepts.md#shard-rebalancing), 
-to an old or new node in the cluster, based on the pluggable allocation strategy and settings.
-When an old node is stopped the shards that were running on it are moved to one of the
-other old nodes remaining in the cluster. The `ShardCoordinator` is itself a cluster singleton. 
+During a rolling update, sharded entities receiving traffic may be moved, based on the pluggable allocation
+strategy and settings. When an old node is stopped the shards that were running on it are moved to one of the
+other remaining nodes in the cluster when messages are sent to those shards.
+
+To make rolling updates as smooth as possible there is a configuration property that defines the version of the
+application. This is used by rolling update features to distinguish between old and new nodes. For example,
+the default `LeasShardAllocationStrategy` avoids allocating shards to old nodes during a rolling update.
+The `LeasShardAllocationStrategy` sees that there is rolling update in progress when there are members with
+different configured `app-version`.
+
+To make use of this feature you need to define the `app-version` and increase it for each rolling update.
+
+```
+akka.cluster.app-version = 1.2.3
+```
+
+To understand which is old and new it compares the version numbers using normal conventions,
+see @apidoc[akka.util.Version] for more details.
+
+Rebalance is also disabled during rolling updates, since shards from stopped nodes are anyway supposed to be
+started on new nodes. Messages to shards that were stopped on the old nodes will allocate corresponding shards
+on the new nodes, without waiting for rebalance actions. 
+
+You should also enable the @ref:[health check for Cluster Sharding](../typed/cluster-sharding.md#health-check) if
+you use Akka Management. The readiness check will delay incoming traffic to the node until Sharding has been
+initialized and can accept messages.
+
+The `ShardCoordinator` is itself a cluster singleton.
 To minimize downtime of the shard coordinator, see the strategies about @ref[ClusterSingleton](#cluster-singleton) rolling updates below.
 
 A few specific changes to sharding configuration require @ref:[a full cluster restart](#cluster-sharding-configuration-change).
@@ -53,6 +77,9 @@ Cluster singletons are always running on the oldest node. To avoid moving cluste
 it is recommended to upgrade the oldest node last. This way cluster singletons are only moved once during a full rolling update. 
 Otherwise, in the worst case cluster singletons may be migrated from node to node which requires coordination and initialization 
 overhead several times.
+
+[Kubernetes Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) with `RollingUpdate`
+strategy will roll out updates in this preferred order, from newest to oldest. 
 
 ## Cluster Shutdown
  

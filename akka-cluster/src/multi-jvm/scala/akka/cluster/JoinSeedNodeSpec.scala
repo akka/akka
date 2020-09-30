@@ -72,7 +72,6 @@ abstract class JoinSeedNodeSpec extends MultiNodeSpec(JoinSeedNodeMultiJvmSpec) 
       List(address(ordinary1), address(ordinary2)).foreach { a =>
         cluster.state.members.find(_.address == a).get.appVersion should ===(Version("2.0"))
       }
-      cluster.state.hasMoreThanOneAppVersion should ===(true)
 
       enterBarrier("after-2")
     }

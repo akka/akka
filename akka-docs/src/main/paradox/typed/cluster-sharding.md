@@ -486,6 +486,8 @@ Monitoring of each shard region is off by default. Add them by defining the enti
 akka.cluster.sharding.healthcheck.names = ["counter-1", "HelloWorld"]
 ```
 
+See also additional information about how to make @ref:[smooth rolling updates](../additional/rolling-updates.md#cluster-sharding).
+
 ## Inspecting cluster sharding state
 
 Two requests to inspect the cluster state are available:
