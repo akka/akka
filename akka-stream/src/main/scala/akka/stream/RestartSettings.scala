@@ -41,6 +41,14 @@ final class RestartSettings private (
   def withMaxRestarts(count: Int, within: java.time.Duration): RestartSettings =
     copy(maxRestarts = count, maxRestartsWithin = within.asScala)
 
+  override def toString: String =
+    "RestartSettings(" +
+    s"minBackoff=$minBackoff," +
+    s"maxBackoff=$maxBackoff," +
+    s"randomFactor=$randomFactor," +
+    s"maxRestarts=$maxRestarts," +
+    s"maxRestartsWithin=$maxRestartsWithin)"
+
   private def copy(
       minBackoff: FiniteDuration = minBackoff,
       maxBackoff: FiniteDuration = maxBackoff,
