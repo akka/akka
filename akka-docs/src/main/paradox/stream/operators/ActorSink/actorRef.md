@@ -24,11 +24,11 @@ This operator is included in:
 
 Sends the elements of the stream to the given `ActorRef`.
 If the target actor terminates the stream will be canceled.
-When the stream is completed successfully the given `onCompleteMessage`
+When the stream completes successfully the given `onCompleteMessage`
 will be sent to the destination actor.
-When the stream is completed with failure a the throwable that was signaled
-to the stream is adapted to the Actors protocol using `onFailureMessage` and
-then then sent to the destination actor.
+When the stream completes with failure the throwable that was signaled
+to the stream is adapted to the Actor's protocol using `onFailureMessage` and
+then sent to the destination actor.
 
 It will request at most `maxInputBufferSize` number of elements from
 upstream, but there is no back-pressure signal from the destination actor,

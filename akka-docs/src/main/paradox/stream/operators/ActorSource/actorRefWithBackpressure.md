@@ -34,7 +34,10 @@ See also:
 
 ## Example
 
-With `actorRefWithBackpressure` two actors get into play: one which feeds the stream and is materialized when the stream runs, and one which is provided by us and gets the ack signal when an element is emitted into the stream.
+With `actorRefWithBackpressure` two actors get into play: 
+
+1. An actor that is materialized when the stream runs. It feeds the stream.
+2. An actor provided by the user. It gets the ack signal when an element is emitted into the stream.
 
 For the ack signal we create an @scala[`Emitted` object]@java[empty `Emitted` class].
 
@@ -53,7 +56,7 @@ Java
 
 @@@div { .callout }
 
-**emits** when there is demand and a message is sent to the materialized @scala[`ActorRef[T]`]@java[`ActorRef<T>`]
+**emits** when a message is sent to the materialized @scala[`ActorRef[T]`]@java[`ActorRef<T>`] it is emitted as soon as there is demand from downstream
 
 **completes** when the passed completion matcher returns a `CompletionStrategy`
 
