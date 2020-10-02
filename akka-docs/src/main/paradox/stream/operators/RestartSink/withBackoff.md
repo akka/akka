@@ -10,7 +10,7 @@ Wrap the given @apidoc[Sink] with a @apidoc[Sink] that will restart it when it f
 
 ## Description
 
-Wrap the given @apidoc[Sink] with a @apidoc[Sink] that will restart it when it fails or complete using an exponential backoff.
+Wrap the given @apidoc[Sink] with a @apidoc[Sink] that will restart it when it completes or fails using exponential backoff.
 The backoff resets back to `minBackoff` if there hasn't been a restart within `maxRestartsWithin`  (which defaults to `minBackoff`).
 
 This @apidoc[Sink] will not cancel as long as maxRestarts is not reached, since cancellation by the wrapped @apidoc[Sink]
@@ -31,3 +31,13 @@ See also:
 * @ref:[RestartSource.onFailuresWithBackoff](../RestartSource/onFailuresWithBackoff.md)
 * @ref:[RestartFlow.onFailuresWithBackoff](../RestartFlow/onFailuresWithBackoff.md)
 * @ref:[RestartFlow.withBackoff](../RestartFlow/withBackoff.md)
+
+## Reactive Streams semantics
+
+@@@div { .callout }
+
+**backpressures** during backoff and when the wrapped sink backpressures
+
+**completes** when upstream completes or when `maxRestarts` are reached within the given time limit
+
+@@@

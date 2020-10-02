@@ -10,10 +10,10 @@ Wrap the given @apidoc[Source] with a @apidoc[Source] that will restart it when 
 
 ## Description
 
-Wraps the given @apidoc[Source] with a @apidoc[Source] that will restart it when it fails or completes using an exponential backoff.
+Wrap the given @apidoc[Source] with a @apidoc[Source] that will restart it when it completes or fails using exponential backoff.
 The backoff resets back to `minBackoff` if there hasn't been a restart within `maxRestartsWithin`  (which defaults to `minBackoff`).
 
-This @apidoc[Source] will not emit a complete or failure as long as maxRestarts is not reached, since the completion
+This @apidoc[Source] will not emit a complete or fail as long as maxRestarts is not reached, since the completion
 or failure of the wrapped @apidoc[Source] is handled by restarting it. The wrapped @apidoc[Source] can however be cancelled
 by cancelling this @apidoc[Source]. When that happens, the wrapped @apidoc[Source], if currently running, will be cancelled,
 and it will not be restarted.
@@ -37,7 +37,7 @@ See also:
 
 **backpressures** during backoff and when downstream backpressures
 
-**completes** when maxRestarts is reached
+**completes** when `maxRestarts` are reached within the given time limit
 
 **cancels** when downstream cancels
 

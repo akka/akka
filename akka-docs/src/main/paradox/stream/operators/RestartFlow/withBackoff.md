@@ -10,7 +10,7 @@ Wrap the given @apidoc[Flow] with a @apidoc[Flow] that will restart it when it f
 
 ## Description
 
-Wrap the given @apidoc[Flow] with a @apidoc[Flow] that will restart it when it fails or complete using an exponential backoff.
+Wrap the given @apidoc[Flow] with a @apidoc[Flow] that will restart it when it completes or fails using exponential backoff.
 The backoff resets back to `minBackoff` if there hasn't been a restart within `maxRestartsWithin`  (which defaults to `minBackoff`).
 
 This @apidoc[Flow] will not cancel, complete or emit a failure, until the opposite end of it has been cancelled or
@@ -39,6 +39,6 @@ See also:
 
 **backpressures** during backoff and when the wrapped flow backpressures
 
-**completes** when maxRestarts are reached
+**completes** when `maxRestarts` are reached within the given time limit
 
 @@@

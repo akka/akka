@@ -10,7 +10,7 @@ Wrap the given @apidoc[Source] with a @apidoc[Source] that will restart it when 
 
 ## Description
 
-Wraps the given @apidoc[Source] with a @apidoc[Source] that will restart it when it fails using an exponential backoff.
+Wraps the given @apidoc[Source] with a @apidoc[Source] that will restart it when it fails using exponential backoff.
 The backoff resets back to `minBackoff` if there hasn't been a restart within `maxRestartsWithin`  (which defaults to `minBackoff`).
  
 This @apidoc[Source] will not emit a failure as long as maxRestarts is not reached.
@@ -66,7 +66,7 @@ Java
 
 **backpressures** during backoff and when downstream backpressures
 
-**completes** when the wrapped source completes or maxRestarts is reached
+**completes** when the wrapped source completes or `maxRestarts` are reached within the given time limit
 
 **cancels** when downstream cancels
 
