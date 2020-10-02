@@ -340,14 +340,14 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   override def awaitAssert[A](a: => A): A =
     awaitAssert_internal(a, remainingOrDefault, 100.millis)
 
-  override def awaitAssert[A](max: JDuration, interval: JDuration, supplier: Creator[A]): A =
-    awaitAssert_internal(supplier.create(), max.asScala.dilated, interval.asScala)
+  override def awaitAssert[A](max: JDuration, interval: JDuration, creator: Creator[A]): A =
+    awaitAssert_internal(creator.create(), max.asScala.dilated, interval.asScala)
 
-  def awaitAssert[A](max: JDuration, supplier: Creator[A]): A =
-    awaitAssert(max, JDuration.ofMillis(100), supplier)
+  def awaitAssert[A](max: JDuration, creator: Creator[A]): A =
+    awaitAssert(max, JDuration.ofMillis(100), creator)
 
-  def awaitAssert[A](supplier: Creator[A]): A =
-    awaitAssert(getRemainingOrDefault, supplier)
+  def awaitAssert[A](creator: Creator[A]): A =
+    awaitAssert(getRemainingOrDefault, creator)
 
   private def awaitAssert_internal[A](a: => A, max: FiniteDuration, interval: FiniteDuration): A = {
     val stop = now + max

@@ -242,7 +242,7 @@ abstract class TestProbe[M] {
    *
    * Note that the timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
    */
-  def awaitAssert[A](max: Duration, interval: Duration, supplier: Creator[A]): A
+  def awaitAssert[A](max: Duration, interval: Duration, creator: Creator[A]): A
 
   /**
    * Evaluate the given assert every 100 milliseconds until it does not throw an exception and return the
@@ -252,13 +252,13 @@ abstract class TestProbe[M] {
    *
    * Note that the timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
    */
-  def awaitAssert[A](max: Duration, supplier: Creator[A]): A
+  def awaitAssert[A](max: Duration, creator: Creator[A]): A
 
   /**
    * Evaluate the given assert every 100 milliseconds until it does not throw an exception and return the
    * result. A max time is taken it from the innermost enclosing `within` block.
    */
-  def awaitAssert[A](supplier: Creator[A]): A
+  def awaitAssert[A](creator: Creator[A]): A
 
   // FIXME awaitAssert(Procedure): Unit would be nice for java people to not have to return null
 
