@@ -9,6 +9,8 @@ import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.actor.{ Actor, ActorIdentity, ActorSystem, ExtendedActorSystem, Identify, Props, RootActorPath }
 import akka.serialization.jackson.CborSerializable
+import akka.testkit.EventFilter
+import akka.testkit.TestActors
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestKit }
 
 object MessageLoggingSpec {
@@ -20,6 +22,7 @@ object MessageLoggingSpec {
       classic {
         log-received-messages = on
         log-sent-messages = on
+        log-frame-size-exceeding = 10000b
         netty.tcp {
           hostname = localhost
           port = 0
@@ -34,6 +37,7 @@ object MessageLoggingSpec {
         canonical.port = 0
         log-received-messages = on
         log-sent-messages = on
+        log-frame-size-exceeding = 10000b
       }
      }
     """.stripMargin)
@@ -67,6 +71,25 @@ abstract class MessageLoggingSpec(config: Config) extends AkkaSpec(config) with 
       val ref = expectMsgType[ActorIdentity].ref.get
       ref ! "hello"
       expectMsgType[BadMsg]
+    }
+
+    "log increasing message sizes" in {
+      remoteSystem.actorOf(TestActors.blackholeProps, "destination")
+      system.actorSelection(RootActorPath(remoteAddress) / "user" / "destination") ! Identify("lookup")
+      val ref = expectMsgType[ActorIdentity].ref.get
+      EventFilter.info(pattern = s"Payload size for *", occurrences = 1).intercept {
+        ref ! (1 to 10000).mkString("")
+      }
+      EventFilter.info(pattern = s"New maximum payload size *", occurrences = 1).intercept {
+        ref ! (1 to 11000).mkString("")
+      }
+      EventFilter.info(pattern = s"New maximum payload size *", occurrences = 0).intercept {
+        ref ! (1 to 11100).mkString("")
+      }
+      EventFilter.info(pattern = s"New maximum payload size *", occurrences = 1).intercept {
+        ref ! (1 to 13000).mkString("")
+      }
+
     }
   }
 

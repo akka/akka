@@ -695,6 +695,22 @@ This means that all messages sent to the following actors will pass through the 
 
 Messages destined for actors not matching any of these patterns are sent using the default channel as before.
 
+To notice large messages you can enable logging of message types with payload size in bytes larger than the
+configured `log-frame-size-exceeding`.
+
+```
+akka.remote.artery {
+  log-frame-size-exceeding = 10000b
+}
+```
+
+Example log messages:
+
+```
+[INFO] Payload size for [java.lang.String] is [39068] bytes. Sent to Actor[akka://Sys@localhost:53039/user/destination#-1908386800]
+[INFO] New maximum payload size for [java.lang.String] is [44068] bytes. Sent to Actor[akka://Sys@localhost:53039/user/destination#-1908386800].
+```
+
 The large messages channel can still not be used for extremely large messages, a few MB per message at most.
 An alternative is to use the @ref:[Reliable delivery](typed/reliable-delivery.md) that has support for 
 automatically @ref[splitting up large messages](typed/reliable-delivery.md#chunk-large-messages) and assemble

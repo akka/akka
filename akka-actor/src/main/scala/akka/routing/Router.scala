@@ -10,6 +10,7 @@ import akka.actor.ActorRef
 import akka.actor.ActorSelection
 import akka.actor.InternalActorRef
 import akka.actor.NoSerializationVerificationNeeded
+import akka.actor.WrappedMessage
 import akka.japi.Util.immutableSeq
 
 /**
@@ -184,6 +185,6 @@ final case class Broadcast(message: Any) extends RouterEnvelope
  * Only the contained message will be forwarded to the
  * destination, i.e. the envelope will be stripped off.
  */
-trait RouterEnvelope {
+trait RouterEnvelope extends WrappedMessage {
   def message: Any
 }

@@ -5,16 +5,23 @@
 package akka.remote.artery
 
 import java.nio.ByteBuffer
+import java.util.concurrent.ConcurrentHashMap
 
 import scala.annotation.tailrec
-import scala.collection.immutable
 import scala.util.control.NonFatal
 
-import akka.actor.{ ActorRef, ExtendedActorSystem }
+import akka.actor.ActorSystem
+import akka.actor.WrappedMessage
+import akka.actor.ActorRef
+import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
-import akka.event.{ Logging, LoggingAdapter }
-import akka.util.{ unused, OptionVal }
+import akka.event.Logging
+import akka.event.LoggingAdapter
+import akka.remote.RemoteActorRefProvider
 import akka.util.ccompat._
+import akka.util.OptionVal
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -76,6 +83,71 @@ abstract class RemoteInstrument {
    * in the message in nanoseconds, otherwise it is 0.
    */
   def remoteMessageReceived(recipient: ActorRef, message: Object, sender: ActorRef, size: Int, time: Long): Unit
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] class LoggingRemoteInstrument(system: ActorSystem) extends RemoteInstrument {
+
+  private val settings = system
+    .asInstanceOf[ExtendedActorSystem]
+    .provider
+    .asInstanceOf[RemoteActorRefProvider]
+    .transport
+    .asInstanceOf[ArteryTransport]
+    .settings
+  private val logFrameSizeExceeding = settings.LogFrameSizeExceeding.get
+
+  private val log = Logging(system, this.getClass)
+
+  private val maxPayloadBytes: ConcurrentHashMap[Class[_], Integer] = new ConcurrentHashMap
+
+  override def identifier: Byte = 1 // Cinnamon is using 0
+
+  override def remoteWriteMetadata(recipient: ActorRef, message: Object, sender: ActorRef, buffer: ByteBuffer): Unit =
+    ()
+
+  override def remoteMessageSent(
+      recipient: ActorRef,
+      message: Object,
+      sender: ActorRef,
+      size: Int,
+      time: Long): Unit = {
+    if (size >= logFrameSizeExceeding) {
+      val clazz = message match {
+        case x: WrappedMessage => x.message.getClass
+        case _                 => message.getClass
+      }
+
+      // 10% threshold until next log
+      def newMax = (size * 1.1).toInt
+
+      @tailrec def check(): Unit = {
+        val max = maxPayloadBytes.get(clazz)
+        if (max eq null) {
+          if (maxPayloadBytes.putIfAbsent(clazz, newMax) eq null)
+            log.info("Payload size for [{}] is [{}] bytes. Sent to {}", clazz.getName, size, recipient)
+          else check()
+        } else if (size > max) {
+          if (maxPayloadBytes.replace(clazz, max, newMax))
+            log.info("New maximum payload size for [{}] is [{}] bytes. Sent to {}.", clazz.getName, size, recipient)
+          else check()
+        }
+      }
+      check()
+    }
+  }
+
+  override def remoteReadMetadata(recipient: ActorRef, message: Object, sender: ActorRef, buffer: ByteBuffer): Unit =
+    ()
+
+  override def remoteMessageReceived(
+      recipient: ActorRef,
+      message: Object,
+      sender: ActorRef,
+      size: Int,
+      time: Long): Unit = ()
 }
 
 /**
@@ -313,7 +385,7 @@ private[remote] final class RemoteInstruments(
 
   def isEmpty: Boolean = instruments.isEmpty
   def nonEmpty: Boolean = instruments.nonEmpty
-  def timeSerialization = serializationTimingEnabled
+  def timeSerialization: Boolean = serializationTimingEnabled
 }
 
 /** INTERNAL API */
@@ -334,7 +406,8 @@ private[remote] object RemoteInstruments {
     val c = system.settings.config
     val path = "akka.remote.artery.advanced.instruments"
     import akka.util.ccompat.JavaConverters._
-    c.getStringList(path)
+    val configuredInstruments = c
+      .getStringList(path)
       .asScala
       .iterator
       .map { fqcn =>
@@ -344,6 +417,19 @@ private[remote] object RemoteInstruments {
             .createInstanceFor[RemoteInstrument](fqcn, List(classOf[ExtendedActorSystem] -> system)))
           .get
       }
-      .to(immutable.Vector)
+      .toVector
+
+    system.provider match {
+      case rarp: RemoteActorRefProvider =>
+        rarp.transport match {
+          case artery: ArteryTransport =>
+            artery.settings.LogFrameSizeExceeding match {
+              case Some(_) => configuredInstruments :+ new LoggingRemoteInstrument(system)
+              case None    => configuredInstruments
+            }
+          case _ => configuredInstruments
+        }
+      case _ => configuredInstruments
+    }
   }
 }
