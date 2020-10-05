@@ -36,7 +36,6 @@ import akka.persistence.query.{ EventEnvelope, PersistenceQuery }
 import akka.persistence.query.scaladsl.EventsByPersistenceIdQuery
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
-import akka.persistence.typed.internal.BehaviorSetup.SnapshotWithoutRetention
 import akka.persistence.typed.{
   DeleteEventsCompleted,
   DeleteEventsFailed,

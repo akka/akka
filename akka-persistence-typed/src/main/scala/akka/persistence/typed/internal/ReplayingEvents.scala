@@ -25,7 +25,6 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenc
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.internal.Running.startReplicationStream
-import akka.persistence.typed.scaladsl.SnapshotCountRetentionCriteria
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.unused
@@ -59,7 +58,7 @@ private[akka] object ReplayingEvents {
       recoveryStartTime: Long,
       version: VersionVector,
       seenSeqNrPerReplica: Map[ReplicaId, Long],
-      eventsRecovered: Long)
+      eventsReplayed: Long)
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: ReplayingState[S]): Behavior[InternalProtocol] =
     Behaviors.setup { _ =>
@@ -127,7 +126,7 @@ private[akka] final class ReplayingEvents[C, E, S](
 
             def handleEvent(event: E): Unit = {
               eventForErrorReporting = OptionVal.Some(event)
-              state = state.copy(seqNr = repr.sequenceNr, eventsRecovered = state.eventsRecovered + 1)
+              state = state.copy(seqNr = repr.sequenceNr, eventsReplayed = state.eventsReplayed + 1)
 
               val replicatedMetaAndSelfReplica: Option[(ReplicatedEventMetadata, ReplicaId, ReplicationSetup)] =
                 setup.replication match {
@@ -298,7 +297,7 @@ private[akka] final class ReplayingEvents[C, E, S](
           case None              => runningState
         }
         setup.retention match {
-          case criteria: SnapshotCountRetentionCriteriaImpl if criteria.snapshotEveryNEvents <= state.eventsRecovered =>
+          case criteria: SnapshotCountRetentionCriteriaImpl if criteria.snapshotEveryNEvents <= state.eventsReplayed =>
             internalSaveSnapshot(initialRunningState)
             new running.StoringSnapshot(initialRunningState, immutable.Seq.empty, SnapshotWithoutRetention)
           case _ =>
