@@ -567,7 +567,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
         member.getUpNumber,
         memberStatusFromInt(member.getStatus.getNumber),
         rolesFromProto(member.getRolesIndexesList.asScala.toSeq),
-        appVersionMapping(member.getAppVersionIndex))
+        if (appVersionMapping.isEmpty) Version.Zero else appVersionMapping(member.getAppVersionIndex))
 
     def rolesFromProto(roleIndexes: Seq[Integer]): Set[String] = {
       var containsDc = false
