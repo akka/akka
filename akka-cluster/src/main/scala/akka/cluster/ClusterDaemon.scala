@@ -945,6 +945,13 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         val newGossip = localGossip.markAsDown(m)
         updateLatestGossip(newGossip)
         publishMembershipState()
+        if (address == cluster.selfAddress) {
+          // spread the word quickly, without waiting for next gossip tick
+          gossipRandomN(MaxGossipsBeforeShuttingDownMyself)
+        } else {
+          // try to gossip immediately to downed node, as a STONITH signal
+          gossipTo(m.uniqueAddress)
+        }
       case Some(_) => // already down
       case None =>
         logInfo("Ignoring down of unknown node [{}]", address)
@@ -1120,6 +1127,11 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         coordShutdown.run(CoordinatedShutdown.ClusterLeavingReason)
       }
 
+      if (selfStatus == Down && localGossip.member(selfUniqueAddress).status != Down) {
+        logWarning("Received gossip where this member has been downed, from [{}]", from.address)
+        shutdownSelfWhenDown()
+      }
+
       if (talkback) {
         // send back gossip to sender() when sender() had different view, i.e. merge, or sender() had
         // older or sender() had newer
@@ -1141,11 +1153,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     if (isGossipSpeedupNeeded) gossip()
 
   def isGossipSpeedupNeeded: Boolean = {
-    if (latestGossip.isMultiDc)
+    if (latestGossip.isMultiDc) {
+      latestGossip.members.exists(m => m.status == Down || m.dataCenter == cluster.selfDataCenter) ||
       latestGossip.overview.seen
         .count(membershipState.isInSameDc) < latestGossip.members.count(_.dataCenter == cluster.selfDataCenter) / 2
-    else
+    } else {
+      latestGossip.members.exists(m => m.status == Down) ||
       latestGossip.overview.seen.size < latestGossip.members.size / 2
+    }
   }
 
   /**

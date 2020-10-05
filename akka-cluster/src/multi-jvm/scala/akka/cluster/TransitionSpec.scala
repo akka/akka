@@ -248,12 +248,21 @@ abstract class TransitionSpec
 
       enterBarrier("after-second-down")
 
+      runOn(second) {
+        // first should have sent immediate gossip to second when it downed second
+        // and second should then shutdown
+        awaitAssert(cluster.isTerminated should ===(true))
+      }
+
+      enterBarrier("second-received-down")
+
       first.gossipTo(third)
 
       runOn(first, third) {
         awaitAssert(clusterView.unreachableMembers.map(_.address) should contain(address(second)))
         awaitMemberStatus(second, Down)
-        awaitAssert(seenLatestGossip should ===(Set(first, third)))
+        // second will also gossip when it shuts down, so it has seen it
+        awaitAssert(seenLatestGossip should ===(Set(first, second, third)))
       }
 
       enterBarrier("after-6")
