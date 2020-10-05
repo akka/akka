@@ -344,7 +344,7 @@ final class ClusterShardingSettings(
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
     val leaseSettings: Option[LeaseUsageSettings]) {
 
-  @deprecated("Use constructor with leaseSettings", "2.6.9")
+  @deprecated("Use constructor with leaseSettings", "2.6.10")
   def this(
       numberOfShards: Int,
       role: Option[String],
