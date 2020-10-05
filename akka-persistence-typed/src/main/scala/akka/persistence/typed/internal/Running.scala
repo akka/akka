@@ -55,8 +55,7 @@ import akka.persistence.typed.internal.JournalInteractions.EventToPersist
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 import akka.stream.scaladsl.Keep
-import akka.stream.SystemMaterializer
-import akka.stream.WatchedActorTerminatedException
+import akka.stream.{ RestartSettings, SystemMaterializer, WatchedActorTerminatedException }
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.{ RestartSource, Sink }
 import akka.stream.typed.scaladsl.ActorFlow
@@ -144,7 +143,7 @@ private[akka] object Running {
 
         import akka.actor.typed.scaladsl.AskPattern._
         val source = RestartSource
-          .withBackoff(2.seconds, 10.seconds, randomFactor = 0.2) { () =>
+          .withBackoff(RestartSettings(2.seconds, 10.seconds, randomFactor = 0.2)) { () =>
             Source.futureSource {
               setup.context.self.ask[Long](replyTo => GetSeenSequenceNr(replicaId, replyTo)).map { seqNr =>
                 replication

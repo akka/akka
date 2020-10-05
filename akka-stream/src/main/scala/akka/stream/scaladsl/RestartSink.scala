@@ -7,7 +7,7 @@ package akka.stream.scaladsl
 import scala.concurrent.duration.FiniteDuration
 
 import akka.NotUsed
-import akka.stream.{ Attributes, Inlet, SinkShape }
+import akka.stream.{ Attributes, Inlet, RestartSettings, SinkShape }
 import akka.stream.stage.{ GraphStage, InHandler }
 
 /**
@@ -33,7 +33,7 @@ object RestartSink {
    * messages. When the wrapped [[Sink]] does cancel, this [[Sink]] will backpressure, however any elements already
    * sent may have been lost.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -43,9 +43,12 @@ object RestartSink {
    *   In order to skip this additional delay pass in `0`.
    * @param sinkFactory A factory for producing the [[Sink]] to wrap.
    */
+  @Deprecated
+  @deprecated("Use the overloaded method which accepts akka.stream.RestartSettings instead.", since = "2.6.10")
   def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(
       sinkFactory: () => Sink[T, _]): Sink[T, NotUsed] = {
-    Sink.fromGraph(new RestartWithBackoffSink(sinkFactory, minBackoff, maxBackoff, randomFactor, Int.MaxValue))
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor)
+    withBackoff(settings)(sinkFactory)
   }
 
   /**
@@ -62,7 +65,7 @@ object RestartSink {
    * messages. When the wrapped [[Sink]] does cancel, this [[Sink]] will backpressure, however any elements already
    * sent may have been lost.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -74,33 +77,45 @@ object RestartSink {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param sinkFactory A factory for producing the [[Sink]] to wrap.
    */
+  @Deprecated
+  @deprecated("Use the overloaded method which accepts akka.stream.RestartSettings instead.", since = "2.6.10")
   def withBackoff[T](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double, maxRestarts: Int)(
       sinkFactory: () => Sink[T, _]): Sink[T, NotUsed] = {
-    Sink.fromGraph(new RestartWithBackoffSink(sinkFactory, minBackoff, maxBackoff, randomFactor, maxRestarts))
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts, minBackoff)
+    withBackoff(settings)(sinkFactory)
   }
+
+  /**
+   * Wrap the given [[Sink]] with a [[Sink]] that will restart it when it fails or complete using an exponential
+   * backoff.
+   *
+   * This [[Sink]] will not cancel as long as maxRestarts is not reached, since cancellation by the wrapped [[Sink]]
+   * is handled by restarting it. The wrapped [[Sink]] can however be completed by feeding a completion or error into
+   * this [[Sink]]. When that happens, the [[Sink]], if currently running, will terminate and will not be restarted.
+   * This can be triggered simply by the upstream completing, or externally by introducing a [[KillSwitch]] right
+   * before this [[Sink]] in the graph.
+   *
+   * The restart process is inherently lossy, since there is no coordination between cancelling and the sending of
+   * messages. When the wrapped [[Sink]] does cancel, this [[Sink]] will backpressure, however any elements already
+   * sent may have been lost.
+   *
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
+   *
+   * @param settings [[RestartSettings]] defining restart configuration
+   * @param sinkFactory A factory for producing the [[Sink]] to wrap.
+   */
+  def withBackoff[T](settings: RestartSettings)(sinkFactory: () => Sink[T, _]): Sink[T, NotUsed] =
+    Sink.fromGraph(new RestartWithBackoffSink(sinkFactory, settings))
 }
 
-private final class RestartWithBackoffSink[T](
-    sinkFactory: () => Sink[T, _],
-    minBackoff: FiniteDuration,
-    maxBackoff: FiniteDuration,
-    randomFactor: Double,
-    maxRestarts: Int)
+private final class RestartWithBackoffSink[T](sinkFactory: () => Sink[T, _], restartSettings: RestartSettings)
     extends GraphStage[SinkShape[T]] { self =>
 
   val in = Inlet[T]("RestartWithBackoffSink.in")
 
   override def shape = SinkShape(in)
   override def createLogic(inheritedAttributes: Attributes) =
-    new RestartWithBackoffLogic(
-      "Sink",
-      shape,
-      inheritedAttributes,
-      minBackoff,
-      maxBackoff,
-      randomFactor,
-      onlyOnFailures = false,
-      maxRestarts) {
+    new RestartWithBackoffLogic("Sink", shape, inheritedAttributes, restartSettings, onlyOnFailures = false) {
       override protected def logSource = self.getClass
 
       override protected def startGraph() = {

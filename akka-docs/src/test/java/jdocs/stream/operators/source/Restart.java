@@ -8,6 +8,7 @@ import akka.NotUsed;
 import akka.actor.Cancellable;
 import akka.japi.Creator;
 import akka.stream.KillSwitches;
+import akka.stream.RestartSettings;
 import akka.stream.UniqueKillSwitch;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.RestartSource;
@@ -34,7 +35,8 @@ public class Restart {
                 }));
     Source<Creator<Integer>, NotUsed> forever =
         RestartSource.onFailuresWithBackoff(
-            Duration.ofSeconds(1), Duration.ofSeconds(10), 0.1, () -> flakySource);
+            RestartSettings.create(Duration.ofSeconds(1), Duration.ofSeconds(10), 0.1),
+            () -> flakySource);
     forever.runWith(
         Sink.foreach((Creator<Integer> nr) -> system.log().info("{}", nr.create())), system);
     // logs
@@ -99,7 +101,8 @@ public class Restart {
                 }));
     UniqueKillSwitch stopRestarting =
         RestartSource.onFailuresWithBackoff(
-                Duration.ofSeconds(1), Duration.ofSeconds(10), 0.1, () -> flakySource)
+                RestartSettings.create(Duration.ofSeconds(1), Duration.ofSeconds(10), 0.1),
+                () -> flakySource)
             .viaMat(KillSwitches.single(), Keep.right())
             .toMat(Sink.foreach(nr -> System.out.println("nr " + nr.create())), Keep.left())
             .run(system);

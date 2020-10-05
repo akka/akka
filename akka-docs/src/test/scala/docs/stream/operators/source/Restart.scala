@@ -6,8 +6,7 @@ package docs.stream.operators.source
 
 import akka.NotUsed
 import akka.actor.ActorSystem
-import akka.stream.KillSwitches
-import akka.stream.UniqueKillSwitch
+import akka.stream.{ KillSwitches, RestartSettings, UniqueKillSwitch }
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.RestartSource
 import akka.stream.scaladsl.Sink
@@ -31,7 +30,8 @@ object Restart extends App {
     val flakySource: Source[() => Int, NotUsed] =
       Source(List(() => 1, () => 2, () => 3, () => throw CantConnectToDatabase("darn")))
     val forever =
-      RestartSource.onFailuresWithBackoff(minBackoff = 1.second, maxBackoff = 10.seconds, 0.1)(() => flakySource)
+      RestartSource.onFailuresWithBackoff(
+        RestartSettings(minBackoff = 1.second, maxBackoff = 10.seconds, randomFactor = 0.1))(() => flakySource)
     forever.runWith(Sink.foreach(nr => system.log.info("{}", nr())))
     // logs
     //[INFO] [12/10/2019 13:51:58.300] [default-akka.test.stream-dispatcher-7] [akka.actor.ActorSystemImpl(default)] 1
@@ -56,7 +56,7 @@ object Restart extends App {
 
     //#restart-failure-inner-complete
     val finiteSource = Source.tick(1.second, 1.second, "tick").take(3)
-    val forever = RestartSource.onFailuresWithBackoff(1.second, 10.seconds, 0.1)(() => finiteSource)
+    val forever = RestartSource.onFailuresWithBackoff(RestartSettings(1.second, 10.seconds, 0.1))(() => finiteSource)
     forever.runWith(Sink.foreach(println))
     // prints
     // tick
@@ -71,7 +71,7 @@ object Restart extends App {
       Source(List(() => 1, () => 2, () => 3, () => throw CantConnectToDatabase("darn")))
     val stopRestarting: UniqueKillSwitch =
       RestartSource
-        .onFailuresWithBackoff(1.second, 10.seconds, 0.1)(() => flakySource)
+        .onFailuresWithBackoff(RestartSettings(1.second, 10.seconds, 0.1))(() => flakySource)
         .viaMat(KillSwitches.single)(Keep.right)
         .toMat(Sink.foreach(nr => println(s"Nr ${nr()}")))(Keep.left)
         .run()

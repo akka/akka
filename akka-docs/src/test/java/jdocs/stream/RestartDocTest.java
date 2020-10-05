@@ -9,6 +9,7 @@ import akka.actor.ActorSystem;
 import akka.stream.KillSwitch;
 import akka.stream.KillSwitches;
 import akka.stream.Materializer;
+import akka.stream.RestartSettings;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.RestartSource;
 import akka.stream.javadsl.Sink;
@@ -61,12 +62,18 @@ public class RestartDocTest {
 
   public void recoverWithBackoffSource() {
     // #restart-with-backoff-source
+    RestartSettings settings =
+        RestartSettings.create(
+                Duration.ofSeconds(3), // min backoff
+                Duration.ofSeconds(30), // max backoff
+                0.2 // adds 20% "noise" to vary the intervals slightly
+                )
+            .withMaxRestarts(
+                20, Duration.ofMinutes(5)); // limits the amount of restarts to 20 within 5 minutes
+
     Source<ServerSentEvent, NotUsed> eventStream =
         RestartSource.withBackoff(
-            Duration.ofSeconds(3), // min backoff
-            Duration.ofSeconds(30), // max backoff
-            0.2, // adds 20% "noise" to vary the intervals slightly
-            20, // limits the amount of restarts to 20
+            settings,
             () ->
                 // Create a source from a future of a source
                 Source.completionStageSource(
