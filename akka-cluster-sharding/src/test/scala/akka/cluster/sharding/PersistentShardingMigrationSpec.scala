@@ -107,7 +107,7 @@ class PersistentShardingMigrationSpec extends AkkaSpec(PersistentShardingMigrati
   import PersistentShardingMigrationSpec._
 
   "Migration" should {
-    "allow migration of remembered shards and now allow going back" in {
+    "allow migration of remembered shards and not allow going back" in {
       val typeName = "Migration"
 
       withSystem(config, typeName, "OldMode") { (_, region, _) =>
