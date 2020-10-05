@@ -61,6 +61,9 @@ abstract class JournalSpec(config: Config)
     senderProbe = TestProbe()
     receiverProbe = TestProbe()
     preparePersistenceId(pid)
+  }
+
+  protected def writeDefaultMessages(): Unit = {
     writeMessages(1, 5, pid, senderProbe.ref, writerUuid)
   }
 
@@ -122,6 +125,7 @@ abstract class JournalSpec(config: Config)
 
   "A journal" must {
     "replay all messages" in {
+      writeDefaultMessages()
       journal ! ReplayMessages(1, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
       (1 to 5).foreach { i =>
         receiverProbe.expectMsg(replayedMessage(i))
@@ -129,6 +133,7 @@ abstract class JournalSpec(config: Config)
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay messages using a lower sequence number bound" in {
+      writeDefaultMessages()
       journal ! ReplayMessages(3, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
       (3 to 5).foreach { i =>
         receiverProbe.expectMsg(replayedMessage(i))
@@ -136,6 +141,7 @@ abstract class JournalSpec(config: Config)
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay messages using an upper sequence number bound" in {
+      writeDefaultMessages()
       journal ! ReplayMessages(1, 3, Long.MaxValue, pid, receiverProbe.ref)
       (1 to 3).foreach { i =>
         receiverProbe.expectMsg(replayedMessage(i))
@@ -143,6 +149,7 @@ abstract class JournalSpec(config: Config)
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay messages using a count limit" in {
+      writeDefaultMessages()
       journal ! ReplayMessages(1, Long.MaxValue, 3, pid, receiverProbe.ref)
       (1 to 3).foreach { i =>
         receiverProbe.expectMsg(replayedMessage(i))
@@ -150,6 +157,7 @@ abstract class JournalSpec(config: Config)
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay messages using a lower and upper sequence number bound" in {
+      writeDefaultMessages()
       journal ! ReplayMessages(2, 3, Long.MaxValue, pid, receiverProbe.ref)
       (2 to 3).foreach { i =>
         receiverProbe.expectMsg(replayedMessage(i))
@@ -157,6 +165,7 @@ abstract class JournalSpec(config: Config)
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay messages using a lower and upper sequence number bound and a count limit" in {
+      writeDefaultMessages()
       journal ! ReplayMessages(2, 5, 2, pid, receiverProbe.ref)
       (2 to 3).foreach { i =>
         receiverProbe.expectMsg(replayedMessage(i))
@@ -164,6 +173,7 @@ abstract class JournalSpec(config: Config)
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay a single if lower sequence number bound equals upper sequence number bound" in {
+      writeDefaultMessages()
       journal ! ReplayMessages(2, 2, Long.MaxValue, pid, receiverProbe.ref)
       (2 to 2).foreach { i =>
         receiverProbe.expectMsg(replayedMessage(i))
@@ -171,6 +181,7 @@ abstract class JournalSpec(config: Config)
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "replay a single message if count limit equals 1" in {
+      writeDefaultMessages()
       journal ! ReplayMessages(2, 4, 1, pid, receiverProbe.ref)
       (2 to 2).foreach { i =>
         receiverProbe.expectMsg(replayedMessage(i))
@@ -178,18 +189,22 @@ abstract class JournalSpec(config: Config)
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "not replay messages if count limit equals 0" in {
+      writeDefaultMessages()
       journal ! ReplayMessages(2, 4, 0, pid, receiverProbe.ref)
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "not replay messages if lower  sequence number bound is greater than upper sequence number bound" in {
+      writeDefaultMessages()
       journal ! ReplayMessages(3, 2, Long.MaxValue, pid, receiverProbe.ref)
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
     }
     "not replay messages if the persistent actor has not yet written messages" in {
+      writeDefaultMessages()
       journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, "non-existing-pid", receiverProbe.ref)
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 0L))
     }
     "not replay permanently deleted messages (range deletion)" in {
+      writeDefaultMessages()
       val receiverProbe2 = TestProbe()
       val cmd = DeleteMessagesTo(pid, 3, receiverProbe2.ref)
       val sub = TestProbe()
@@ -208,6 +223,7 @@ abstract class JournalSpec(config: Config)
     }
 
     "not reset highestSequenceNr after message deletion" in {
+      writeDefaultMessages()
       journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
       (1 to 5).foreach { i =>
         receiverProbe.expectMsg(replayedMessage(i))
@@ -225,6 +241,7 @@ abstract class JournalSpec(config: Config)
     }
 
     "not reset highestSequenceNr after journal cleanup" in {
+      writeDefaultMessages()
       journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
       (1 to 5).foreach { i =>
         receiverProbe.expectMsg(replayedMessage(i))
@@ -243,6 +260,8 @@ abstract class JournalSpec(config: Config)
 
     optional(flag = supportsRejectingNonSerializableObjects) {
       "reject non-serializable events" in EventFilter[java.io.NotSerializableException]().intercept {
+        writeDefaultMessages()
+
         // there is no chance that a journal could create a data representation for type of event
         val notSerializableEvent = new Object {
           override def toString = "not serializable"
@@ -281,6 +300,7 @@ abstract class JournalSpec(config: Config)
 
     optional(flag = supportsSerialization) {
       "serialize events" in {
+        writeDefaultMessages()
         val probe = TestProbe()
         val event = TestPayload(probe.ref)
         val aw =
@@ -316,6 +336,7 @@ abstract class JournalSpec(config: Config)
     optional(flag = supportsMetadata) {
 
       "return metadata" in {
+        writeDefaultMessages()
         val probe = TestProbe()
         val event = TestPayload(probe.ref)
         val meta = "meta-data"
