@@ -1268,7 +1268,12 @@ class PersistentShardCoordinator(
 
       case StateInitialized =>
         stateInitialized()
+        log.debug("{}: Coordinator initialization completed", typeName)
         context.become(active.orElse[Any, Unit](receiveSnapshotResult))
+
+      case Register(region) =>
+        // region will retry so ok to ignore
+        log.debug("{}: Ignoring registration from region [{}] while initializing", typeName, region)
 
     }: Receive).orElse[Any, Unit](receiveTerminated).orElse[Any, Unit](receiveSnapshotResult)
 
