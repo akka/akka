@@ -737,14 +737,23 @@ private[akka] class ShardRegion(
 
   def receiveCoordinatorMessage(msg: CoordinatorMessage): Unit = msg match {
     case HostShard(shard) =>
-      log.debug("{}: Host Shard [{}] ", typeName, shard)
-      regionByShard = regionByShard.updated(shard, self)
-      regions = regions.updated(self, regions.getOrElse(self, Set.empty) + shard)
+      if (gracefulShutdownInProgress) {
+        log.debug("{}: Ignoring Host Shard request for [{}] as region is shutting down", typeName, shard)
 
-      //Start the shard, if already started this does nothing
-      getShard(shard)
+        // if the coordinator is sending HostShard to a region that is shutting down
+        // it means that it missed the shutting down message (coordinator moved?)
+        // we want to inform it as soon as possible so it doesn't keep trying to allocate the shard here
+        sendGracefulShutdownToCoordinatorIfInProgress()
 
-      sender() ! ShardStarted(shard)
+      } else {
+        log.debug("{}: Host Shard [{}] ", typeName, shard)
+        regionByShard = regionByShard.updated(shard, self)
+        regions = regions.updated(self, regions.getOrElse(self, Set.empty) + shard)
+
+        //Start the shard, if already started this does nothing
+        getShard(shard)
+        sender() ! ShardStarted(shard)
+      }
 
     case ShardHome(shard, shardRegionRef) =>
       log.debug("{}: Shard [{}] located at [{}]", typeName, shard, shardRegionRef)
