@@ -742,7 +742,7 @@ private[akka] class ShardRegion(
 
         // if the coordinator is sending HostShard to a region that is shutting down
         // it means that it missed the shutting down message (coordinator moved?)
-        // we want to inform it as soon as possible so it doesn't keep try to allocate the shard here
+        // we want to inform it as soon as possible so it doesn't keep trying to allocate the shard here
         sendGracefulShutdownToCoordinatorIfInProgress()
 
       } else {
