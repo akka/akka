@@ -69,7 +69,7 @@ Once a method has been deprecated then the guideline* is that it will be kept, a
 
 Since the release of Akka `2.4.0` a new versioning scheme is in effect.
 
-Historically, Akka has been following the Java or Scala style of versioning where as the first number would mean "**epoch**",
+Historically, Akka has been following the Java or Scala style of versioning in which the first number would mean "**epoch**",
 the second one would mean **major**, and third be the **minor**, thus: `epoch.major.minor` (versioning scheme followed until and during `2.3.x`).
 
 **Currently**, since Akka `2.4.0`, the new versioning applies which is closer to semantic versioning many have come to expect, 
@@ -134,7 +134,7 @@ No compatibility guarantees are given about these classes. They may change or ev
 and user code is not supposed to call them.
 
 Side-note on JVM representation details of the Scala `private[akka]` pattern that Akka is using extensively in 
-it's internals: Such methods or classes, which act as "accessible only from the given package" in Scala, are compiled
+its internals: Such methods or classes, which act as "accessible only from the given package" in Scala, are compiled
 down to `public` (!) in raw Java bytecode. The access restriction, that Scala understands is carried along
 as metadata stored in the classfile. Thus, such methods are safely guarded from being accessed from Scala,
 however Java users will not be warned about this fact by the `javac` compiler. Please be aware of this and do not call
