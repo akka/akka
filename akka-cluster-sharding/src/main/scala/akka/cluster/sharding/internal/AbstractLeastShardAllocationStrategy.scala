@@ -96,19 +96,22 @@ private[akka] abstract class AbstractLeastShardAllocationStrategy extends ActorS
   final protected def isAGoodTimeToRebalance(regionEntries: Iterable[RegionEntry]): Boolean = {
     // Avoid rebalance when rolling update is in progress
     // (This will ignore versions on members with no shard regions, because of sharding role or not yet completed joining)
-    val version = regionEntries.head.member.appVersion
-    def allNodesSameVersion = {
-      regionEntries.forall(_.member.appVersion == version)
-    }
-    // Rebalance requires ack from regions and proxies - no need to rebalance if it cannot be completed
-    // FIXME #29589, we currently only look at same dc but proxies in other dcs may delay complete as well right now
-    def neededMembersReachable =
-      !clusterState.members.exists(m => m.dataCenter == selfMember.dataCenter && clusterState.unreachable(m))
-    // No members in same dc joining, we want that to complete before rebalance, such nodes should reach Up soon
-    def membersInProgressOfJoining =
-      clusterState.members.exists(m => m.dataCenter == selfMember.dataCenter && JoiningCluster(m.status))
+    regionEntries.headOption match {
+      case None => false // empty list of regions, probably not a good time to rebalance...
+      case Some(firstRegion) =>
+        def allNodesSameVersion = {
+          regionEntries.forall(_.member.appVersion == firstRegion.member.appVersion)
+        }
+        // Rebalance requires ack from regions and proxies - no need to rebalance if it cannot be completed
+        // FIXME #29589, we currently only look at same dc but proxies in other dcs may delay complete as well right now
+        def neededMembersReachable =
+          !clusterState.members.exists(m => m.dataCenter == selfMember.dataCenter && clusterState.unreachable(m))
+        // No members in same dc joining, we want that to complete before rebalance, such nodes should reach Up soon
+        def membersInProgressOfJoining =
+          clusterState.members.exists(m => m.dataCenter == selfMember.dataCenter && JoiningCluster(m.status))
 
-    allNodesSameVersion && neededMembersReachable && !membersInProgressOfJoining
+        allNodesSameVersion && neededMembersReachable && !membersInProgressOfJoining
+    }
   }
 
   final protected def mostSuitableRegion(
