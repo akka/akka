@@ -119,7 +119,7 @@ public class SinkDocExamples {
     Source<Integer, NotUsed> source = Source.empty();
     CompletionStage<Optional<Integer>> result = source.runWith(Sink.headOption(), system);
     result.thenAccept(System.out::println);
-    // None
+    // Optional.empty
     // #headoption
   }
 

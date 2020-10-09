@@ -12,11 +12,11 @@ import scala.concurrent.{ ExecutionContextExecutor, Future }
 object HeadOption {
   implicit val system: ActorSystem = ???
   implicit val ec: ExecutionContextExecutor = system.dispatcher
-  def headOptionExample: Future[Unit] = {
+  def headOptionExample: Unit = {
     //#headoption
     val source = Source.empty
     val result: Future[Option[Int]] = source.runWith(Sink.headOption)
-    result.map(println)
+    result.foreach(println)
     //None
     //#headoption
   }
