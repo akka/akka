@@ -73,6 +73,11 @@ private[akka] final class ArterySettings private (config: Config) {
   val LogReceive: Boolean = getBoolean("log-received-messages")
   val LogSend: Boolean = getBoolean("log-sent-messages")
 
+  val LogFrameSizeExceeding: Option[Int] = {
+    if (toRootLowerCase(getString("log-frame-size-exceeding")) == "off") None
+    else Some(getBytes("log-frame-size-exceeding").toInt)
+  }
+
   val Transport: Transport = toRootLowerCase(getString("transport")) match {
     case AeronUpd.configName => AeronUpd
     case Tcp.configName      => Tcp
