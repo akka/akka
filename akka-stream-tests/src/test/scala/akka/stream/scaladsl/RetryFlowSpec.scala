@@ -6,11 +6,9 @@ package akka.stream.scaladsl
 
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
-
 import org.scalatest.matchers.{ MatchResult, Matcher }
-
 import akka.NotUsed
-import akka.stream.OverflowStrategy
+import akka.stream.{ OverflowStrategy, RestartSettings }
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 
@@ -38,6 +36,9 @@ class RetryFlowSpec extends StreamSpec("""
     case _                    => None
   }
 
+  val defaultRestartSettings: RestartSettings =
+    RestartSettings(minBackoff = 10.millis, maxBackoff = 100.millis, randomFactor = 0d).withMaxRestarts(5, 20.seconds)
+
   /** increments the value and the context with every failure */
   def incrementFailedValues[OutData](in: (Int, Int), out: (Try[OutData], Int)): Option[(Int, Int)] = {
     (in, out) match {
@@ -64,8 +65,7 @@ class RetryFlowSpec extends StreamSpec("""
     "send elements through" in {
       val sink =
         Source(List(13, 17, 19, 23, 27))
-          .via(
-            RetryFlow.withBackoff(10.millis, 5.second, 0d, maxRetries = 3, failEvenValuesFlow)(incrementFailedValues))
+          .via(RetryFlow.withBackoff(defaultRestartSettings, failEvenValuesFlow)(incrementFailedValues))
           .runWith(Sink.seq)
       sink.futureValue should contain inOrderElementsOf List(
         Success(13),
@@ -82,13 +82,11 @@ class RetryFlowSpec extends StreamSpec("""
         Flow.fromFunction(i => i / 2)
 
       // #withBackoff-demo
-
       val retryFlow: Flow[Int, Int, NotUsed] =
-        RetryFlow.withBackoff(minBackoff = 10.millis, maxBackoff = 5.seconds, randomFactor = 0d, maxRetries = 3, flow)(
-          decideRetry = {
-            case (_, result) if result > 0 => Some(result)
-            case _                         => None
-          })
+        RetryFlow.withBackoff(defaultRestartSettings, flow)(decideRetry = {
+          case (_, result) if result > 0 => Some(result)
+          case _                         => None
+        })
       // #withBackoff-demo
 
       val (source, sink) = TestSource.probe[Int].via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
@@ -110,13 +108,16 @@ class RetryFlowSpec extends StreamSpec("""
       // The flow will ignore input and always return -1
       val flow: Flow[Int, Int, NotUsed] = Flow[Int].map(_ => -1)
 
+      val restartSettings: RestartSettings =
+        RestartSettings(minBackoff = 10.millis, maxBackoff = 100.millis, randomFactor = 0d)
+          .withMaxRestarts(5, 20.seconds)
+
       // The retry flow will retry on negative input values
       val retryFlow: Flow[Int, Int, NotUsed] =
-        RetryFlow.withBackoff(minBackoff = 10.millis, maxBackoff = 100.millis, randomFactor = 0d, maxRetries = 5, flow)(
-          decideRetry = {
-            case (x, result) if result < 0 => Some(x)
-            case (_, _)                    => None
-          })
+        RetryFlow.withBackoff(restartSettings, flow)(decideRetry = {
+          case (x, result) if result < 0 => Some(x)
+          case (_, _)                    => None
+        })
 
       val (source, sink) = TestSource.probe[Int].via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
 
@@ -137,8 +138,7 @@ class RetryFlowSpec extends StreamSpec("""
     "send elements through" in {
       val sink =
         Source(List(13, 17, 19, 23, 27).map(_ -> 0))
-          .via(RetryFlow.withBackoffAndContext(10.millis, 5.second, 0d, maxRetries = 3, failEvenValuesFlow)(
-            incrementFailedValues))
+          .via(RetryFlow.withBackoffAndContext(defaultRestartSettings, failEvenValuesFlow)(incrementFailedValues))
           .runWith(Sink.seq)
       sink.futureValue should contain inOrderElementsOf List(
         Success(13) -> 0,
@@ -152,8 +152,7 @@ class RetryFlowSpec extends StreamSpec("""
       val maxRetries = 2
       val sink =
         Source(List(13, 17).map(_ -> 0))
-          .via(RetryFlow.withBackoffAndContext(1.millis, 5.millis, 0d, maxRetries, failAllValuesFlow)(
-            incrementFailedValues))
+          .via(RetryFlow.withBackoffAndContext(defaultRestartSettings, failAllValuesFlow)(incrementFailedValues))
           .runWith(Sink.seq)
       sink.futureValue should contain inOrderElementsOf List(FailedElem -> maxRetries, FailedElem -> maxRetries)
     }
@@ -161,8 +160,7 @@ class RetryFlowSpec extends StreamSpec("""
     "send elements through (with retrying)" in {
       val sink =
         Source(List(12, 13, 14).map(_ -> 0))
-          .via(RetryFlow.withBackoffAndContext(1.millis, 5.millis, 0d, maxRetries = 3, failEvenValuesFlow)(
-            incrementFailedValues))
+          .via(RetryFlow.withBackoffAndContext(defaultRestartSettings, failEvenValuesFlow)(incrementFailedValues))
           .runWith(Sink.seq)
       sink.futureValue should contain inOrderElementsOf List(Success(13) -> 1, Success(13) -> 0, Success(15) -> 1)
     }
@@ -180,12 +178,7 @@ class RetryFlowSpec extends StreamSpec("""
       //#retry-success
 
       val retryFlow: FlowWithContext[Int, SomeContext, Int, SomeContext, NotUsed] =
-        RetryFlow.withBackoffAndContext(
-          minBackoff = 10.millis,
-          maxBackoff = 5.seconds,
-          randomFactor = 0d,
-          maxRetries = 3,
-          flow)(decideRetry = {
+        RetryFlow.withBackoffAndContext(defaultRestartSettings, flow)(decideRetry = {
           case ((_, _), (result, ctx)) if result > 0 => Some(result -> ctx)
           case _                                     => None
         })
@@ -211,7 +204,7 @@ class RetryFlowSpec extends StreamSpec("""
         FlowWithContext.fromTuples(Flow[(Int, Int)].buffer(10, OverflowStrategy.backpressure).via(failEvenValuesFlow))
       val (source, sink) = TestSource
         .probe[(Int, Int)]
-        .via(RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, 3, flow)((_, _) => None))
+        .via(RetryFlow.withBackoffAndContext(defaultRestartSettings, flow)((_, _) => None))
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
@@ -230,7 +223,7 @@ class RetryFlowSpec extends StreamSpec("""
       val minBackoff = 200.millis
       val (source, sink) = TestSource
         .probe[(Int, Int)]
-        .via(RetryFlow.withBackoffAndContext(minBackoff, 5.second, 0d, 3, failEvenValuesFlow)(incrementFailedValues))
+        .via(RetryFlow.withBackoffAndContext(defaultRestartSettings, failEvenValuesFlow)(incrementFailedValues))
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
@@ -245,25 +238,20 @@ class RetryFlowSpec extends StreamSpec("""
     }
 
     "use min backoff for every try" in {
-      val minBackoff = 50.millis
-      val maxRetries = 3
       val (source, sink) = TestSource
         .probe[(Int, Int)]
-        .via(RetryFlow.withBackoffAndContext(minBackoff, 5.seconds, 0d, maxRetries, failAllValuesFlow)(
-          incrementFailedValues))
+        .via(RetryFlow.withBackoffAndContext(defaultRestartSettings, failAllValuesFlow)(incrementFailedValues))
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
       sink.request(1)
 
       source.sendNext(10 -> 0)
-      sink.expectNoMessage(minBackoff * maxRetries)
-      sink.expectNext(FailedElem -> maxRetries)
+      sink.expectNoMessage(defaultRestartSettings.minBackoff * defaultRestartSettings.maxRestarts)
+      sink.expectNext(FailedElem -> defaultRestartSettings.maxRestarts)
     }
 
     "exponentially backoff between retries" in {
-      val NumRetries = 7
-
       val nanoTimeOffset = System.nanoTime()
       case class State(retriedAt: List[Long])
 
@@ -273,7 +261,7 @@ class RetryFlowSpec extends StreamSpec("""
 
       val (source, sink) = TestSource
         .probe[(State, NotUsed)]
-        .via(RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, NumRetries, flow) {
+        .via(RetryFlow.withBackoffAndContext(defaultRestartSettings, flow) {
           case (_, (s, _)) => Some(s -> NotUsed)
           case _           => None
         })
@@ -303,15 +291,11 @@ class RetryFlowSpec extends StreamSpec("""
   "Aborting" should {
     "propagate error from upstream" in {
       val retryFlow: FlowWithContext[Int, Int, Try[Int], Int, NotUsed] =
-        RetryFlow.withBackoffAndContext(
-          minBackoff = 10.millis,
-          maxBackoff = 5.seconds,
-          randomFactor = 0d,
-          maxRetries = 3,
-          flow = failEvenValuesFlow)(decideRetry = {
-          case ((in, _), (Failure(_), ctx)) => Some((in + 1, ctx))
-          case _                            => None
-        })
+        RetryFlow.withBackoffAndContext(restartSettings = defaultRestartSettings, flow = failEvenValuesFlow)(
+          decideRetry = {
+            case ((in, _), (Failure(_), ctx)) => Some((in + 1, ctx))
+            case _                            => None
+          })
 
       val (source, sink) = TestSource.probe[(Int, Int)].via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
 
@@ -554,13 +538,7 @@ class RetryFlowSpec extends StreamSpec("""
     val ((externalIn, (internalOut, internalIn)), externalOut) =
       TestSource
         .probe[(In, Ctx)]
-        .viaMat(
-          RetryFlow.withBackoffAndContext(
-            minBackoff = 10.millis,
-            maxBackoff = 1.second,
-            randomFactor = 0d,
-            maxRetries = 3,
-            throughDangerousFlow)(retryWith))(Keep.both)
+        .viaMat(RetryFlow.withBackoffAndContext(defaultRestartSettings, throughDangerousFlow)(retryWith))(Keep.both)
         .toMat(TestSink.probe[(Out, Ctx)])(Keep.both)
         .run()
   }

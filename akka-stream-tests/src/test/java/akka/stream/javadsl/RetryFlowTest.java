@@ -6,6 +6,7 @@ package akka.stream.javadsl;
 
 import akka.NotUsed;
 import akka.japi.Pair;
+import akka.stream.RestartSettings;
 import akka.stream.StreamTest;
 import akka.stream.testkit.TestPublisher;
 import akka.stream.testkit.TestSubscriber;
@@ -46,7 +47,10 @@ public class RetryFlowTest extends StreamTest {
         // #withBackoff-signature
       {
     return RetryFlow.<In, Out, Mat>withBackoff(
-        minBackoff, maxBackoff, randomFactor, maxRetries, flow, decideRetry);
+        RestartSettings.create(minBackoff, maxBackoff, randomFactor)
+            .withMaxRestarts(maxRetries, Duration.ofSeconds(5)),
+        flow,
+        decideRetry);
   }
 
   public static
@@ -62,7 +66,10 @@ public class RetryFlowTest extends StreamTest {
         // #signature
       {
     return RetryFlow.<In, InCtx, Out, OutCtx, Mat>withBackoffAndContext(
-        minBackoff, maxBackoff, randomFactor, maxRetries, flow, decideRetry);
+        RestartSettings.create(minBackoff, maxBackoff, randomFactor)
+            .withMaxRestarts(maxRetries, Duration.ofSeconds(5)),
+        flow,
+        decideRetry);
   }
 
   @Test
@@ -82,10 +89,8 @@ public class RetryFlowTest extends StreamTest {
 
     Flow<Integer, Integer, NotUsed> retryFlow =
         RetryFlow.withBackoff(
-            minBackoff,
-            maxBackoff,
-            randomFactor,
-            maxRetries,
+            RestartSettings.create(minBackoff, maxBackoff, randomFactor)
+                .withMaxRestarts(maxRetries, Duration.ofSeconds(5)),
             flow,
             (in, out) -> {
               if (out > 0) return Optional.of(out);
@@ -135,10 +140,8 @@ public class RetryFlowTest extends StreamTest {
 
     FlowWithContext<Integer, SomeContext, Integer, SomeContext, NotUsed> retryFlow =
         RetryFlow.withBackoffAndContext(
-            minBackoff,
-            maxBackoff,
-            randomFactor,
-            maxRetries,
+            RestartSettings.create(minBackoff, maxBackoff, randomFactor)
+                .withMaxRestarts(maxRetries, Duration.ofSeconds(5)),
             flow,
             (in, out) -> {
               Integer value = out.first();
@@ -189,10 +192,8 @@ public class RetryFlowTest extends StreamTest {
 
     final FlowWithContext<Integer, Integer, Try<Integer>, Integer, NotUsed> retryFlow =
         RetryFlow.withBackoffAndContext(
-            minBackoff,
-            maxBackoff,
-            randomFactor,
-            maxRetries,
+            RestartSettings.create(minBackoff, maxBackoff, randomFactor)
+                .withMaxRestarts(maxRetries, Duration.ofSeconds(5)),
             failEvenValuesFlow,
             (in, out) -> {
               if (out.first().isFailure()) {
@@ -245,10 +246,8 @@ public class RetryFlowTest extends StreamTest {
                 .asSourceWithContext(ctx -> ctx)
                 .via(
                     RetryFlow.withBackoffAndContext(
-                        minBackoff,
-                        maxBackoff,
-                        randomFactor,
-                        maxRetries,
+                        RestartSettings.create(minBackoff, maxBackoff, randomFactor)
+                            .withMaxRestarts(maxRetries, Duration.ofSeconds(5)),
                         flow,
                         (in, out) -> {
                           if (out.first().isFailure()) {

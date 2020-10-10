@@ -4,11 +4,9 @@
 
 package akka.stream.impl
 
-import scala.concurrent.duration._
-
 import akka.annotation.InternalApi
 import akka.pattern.BackoffSupervisor
-import akka.stream.{ Attributes, BidiShape, Inlet, Outlet }
+import akka.stream.{ Attributes, BidiShape, Inlet, Outlet, RestartSettings }
 import akka.stream.SubscriptionWithCancelException.NonFailureCancellation
 import akka.stream.stage._
 import akka.util.OptionVal
@@ -33,10 +31,7 @@ import akka.util.OptionVal
  * ```
  */
 @InternalApi private[akka] final class RetryFlowCoordinator[In, Out](
-    minBackoff: FiniteDuration,
-    maxBackoff: FiniteDuration,
-    randomFactor: Double,
-    maxRetries: Int,
+    restartSettings: RestartSettings,
     decideRetry: (In, Out) => Option[In])
     extends GraphStage[BidiShape[In, In, Out, Out]] {
 
@@ -102,7 +97,7 @@ import akka.util.OptionVal
               failStage(
                 new IllegalStateException(
                   s"inner flow emitted unexpected element $result; the flow must be one-in one-out"))
-            case OptionVal.Some(_) if retryNo == maxRetries => pushExternal(result)
+            case OptionVal.Some(_) if retryNo == restartSettings.maxRestarts => pushExternal(result)
             case OptionVal.Some(in) =>
               decideRetry(in, result) match {
                 case None          => pushExternal(result)
@@ -133,7 +128,8 @@ import akka.util.OptionVal
     }
 
     private def planRetry(element: In): Unit = {
-      val delay = BackoffSupervisor.calculateDelay(retryNo, minBackoff, maxBackoff, randomFactor)
+      val delay = BackoffSupervisor
+        .calculateDelay(retryNo, restartSettings.minBackoff, restartSettings.maxBackoff, restartSettings.randomFactor)
       elementInProgress = OptionVal.Some(element)
       retryNo += 1
       pull(internalIn)
