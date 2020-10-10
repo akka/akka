@@ -83,7 +83,7 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
           .take(3)
           .runWith(Sink.seq)
 
-      in.failed shouldEqual List.fill(3)("hello!!!")
+      in.futureValue shouldEqual List.fill(3)("hello!!!")
     }
 
     "produce status error elements unwrap " in {
