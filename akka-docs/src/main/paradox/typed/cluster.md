@@ -316,7 +316,7 @@ The node roles are defined in the configuration property named `akka.cluster.rol
 and typically defined in the start script as a system property or environment variable.
 
 The roles are part of the membership information in `MemberEvent` that you can subscribe to. The roles
-of the own node are available from the `selfMember` and that can be used for conditionally start certain
+of the own node are available from the `selfMember` and that can be used for conditionally starting certain
 actors:
 
 Scala
