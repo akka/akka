@@ -12,7 +12,7 @@ import scala.concurrent.{ ExecutionContextExecutor, Future }
 object Collection {
   implicit val system: ActorSystem = ???
   implicit val ec: ExecutionContextExecutor = system.dispatcher
-  def collectionExample: Unit = {
+  def collectionExample(): Unit = {
     //#collection
     val source = Source(1 to 5)
     val result: Future[List[Int]] = source.runWith(Sink.collection[Int, List[Int]])
