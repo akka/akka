@@ -65,6 +65,20 @@ object ActorFlow {
       .asJava
 
   /**
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply#success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply#error]] arrives the future is instead
+   * failed.
+   */
+  def askWithStatus[I, Q, A](
+      ref: ActorRef[Q],
+      timeout: java.time.Duration,
+      makeMessage: BiFunction[I, ActorRef[A], Q]): Flow[I, A, NotUsed] =
+    akka.stream.typed.scaladsl.ActorFlow
+      .askWithStatus[I, Q, A](parallelism = 2)(ref)((i, ref) => makeMessage(i, ref))(
+        JavaDurationConverters.asFiniteDuration(timeout))
+      .asJava
+
+  /**
    * Use the `ask` pattern to send a request-reply message to the target `ref` actor.
    * If any of the asks times out it will fail the stream with a [[java.util.concurrent.TimeoutException]].
    *
@@ -104,6 +118,20 @@ object ActorFlow {
       makeMessage: (I, ActorRef[A]) => Q): Flow[I, A, NotUsed] =
     akka.stream.typed.scaladsl.ActorFlow
       .ask[I, Q, A](parallelism)(ref)((i, ref) => makeMessage(i, ref))(timeout.toMillis.millis)
+      .asJava
+
+  /**
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply#success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply#error]] arrives the future is instead
+   * failed.
+   */
+  def askWithStatus[I, Q, A](
+      parallelism: Int,
+      ref: ActorRef[Q],
+      timeout: java.time.Duration,
+      makeMessage: (I, ActorRef[A]) => Q): Flow[I, A, NotUsed] =
+    akka.stream.typed.scaladsl.ActorFlow
+      .askWithStatus[I, Q, A](parallelism)(ref)((i, ref) => makeMessage(i, ref))(timeout.toMillis.millis)
       .asJava
 
 }

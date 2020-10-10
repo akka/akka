@@ -219,6 +219,13 @@ trait ExplicitAskSupport {
       implicit timeout: Timeout): Future[Any] =
     actorRef.internalAsk(messageFactory, timeout, sender)
 
+  def askWithStatus(actorRef: ActorRef, messageFactory: ActorRef => Any)(implicit timeout: Timeout): Future[Any] =
+    actorRef.askWithStatus(messageFactory)
+
+  def askWithStatus(actorRef: ActorRef, messageFactory: ActorRef => Any, sender: ActorRef)(
+      implicit timeout: Timeout): Future[Any] =
+    actorRef.askWithStatus(messageFactory)(timeout, sender)
+
   /**
    * Import this implicit conversion to gain `?` and `ask` methods on
    * [[akka.actor.ActorSelection]], which will defer to the
@@ -277,6 +284,7 @@ trait ExplicitAskSupport {
   def ask(actorSelection: ActorSelection, messageFactory: ActorRef => Any, sender: ActorRef)(
       implicit timeout: Timeout): Future[Any] =
     actorSelection.internalAsk(messageFactory, timeout, sender)
+
 }
 
 object AskableActorRef {
@@ -387,6 +395,19 @@ final class ExplicitlyAskableActorRef(val actorRef: ActorRef) extends AnyVal {
 
   def ?(message: ActorRef => Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender)
+
+  def askWithStatus(
+      message: ActorRef => Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
+    internalAskWithStatus(message, timeout, sender)
+
+  /**
+   * INTERNAL API
+   */
+  private[pattern] def internalAskWithStatus(
+      messageFactory: ActorRef => Any,
+      timeout: Timeout,
+      sender: ActorRef): Future[Any] =
+    StatusReply.flattenStatusFuture[Any](internalAsk(messageFactory, timeout, sender).mapTo[StatusReply[Any]])
 
   /**
    * INTERNAL API: for binary compatibility

@@ -128,4 +128,48 @@ object ActorFlow {
     askFlow
   }
 
+  /**
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply#success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply#error]] arrives the future is instead
+   * failed.
+   */
+  def askWithStatus[I, Q, A](ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
+      implicit timeout: Timeout): Flow[I, A, NotUsed] =
+    askWithStatus(2)(ref)(makeMessage)
+
+  /**
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply#success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply#error]] arrives the future is instead
+   * failed.
+   */
+  def askWithStatus[I, Q, A](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
+      implicit timeout: Timeout): Flow[I, A, NotUsed] = {
+    import akka.actor.typed.scaladsl.adapter._
+    val classicRef = ref.toClassic
+
+    val askFlow = Flow[I]
+      .watch(classicRef)
+      .mapAsync(parallelism) { el =>
+        val res =
+          akka.pattern.extended.askWithStatus(classicRef, (replyTo: akka.actor.ActorRef) => makeMessage(el, replyTo))
+        // we need to cast manually (yet safely, by construction!) since otherwise we need a ClassTag,
+        // which in Scala is fine, but then we would force JavaDSL to create one, which is a hassle in the Akka Typed DSL,
+        // since one may say "but I already specified the type!", and that we have to go via the classic ask is an implementation detail
+        res.asInstanceOf[Future[A]]
+      }
+      .mapError {
+        case ex: AskTimeoutException =>
+          // in Akka Typed we use the `TimeoutException` everywhere
+          new java.util.concurrent.TimeoutException(ex.getMessage)
+
+        // the purpose of this recovery is to change the name of the stage in that exception
+        // we do so in order to help users find which stage caused the failure -- "the ask stage"
+        case ex: WatchedActorTerminatedException =>
+          new WatchedActorTerminatedException("askWithStatus()", ex.ref)
+      }
+      .named("askWithStatus")
+
+    askFlow
+  }
+
 }
