@@ -228,7 +228,7 @@ and a restart with new seed-nodes should be tried after unsuccessful attempts.
 
 ```
 akka.cluster.shutdown-after-unsuccessful-join-seed-nodes = 20s
-akka.coordinated-shutdown.terminate-actor-system = on
+akka.coordinated-shutdown.exit-jvm = on
 ```
 
 If you don't configure seed nodes or use one of the join seed node functions, you need to join the cluster manually
