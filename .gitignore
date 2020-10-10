@@ -16,7 +16,7 @@
 .#*
 .*.swp
 .DS_Store
-.cache
+.bloop/
 .cache
 .classpath
 .codefellow
@@ -25,6 +25,7 @@
 .history
 .idea
 .manager
+.metals/
 .multi-jvm
 .project
 .sbtserver
@@ -60,6 +61,7 @@ etags
 lib_managed
 logs
 manifest.mf
+metals.sbt
 mongoDB/
 multiverse.log
 out
