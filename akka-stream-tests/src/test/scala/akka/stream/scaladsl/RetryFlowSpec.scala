@@ -149,12 +149,13 @@ class RetryFlowSpec extends StreamSpec("""
     }
 
     "send failures through (after retrying)" in {
-      val maxRetries = 2
       val sink =
         Source(List(13, 17).map(_ -> 0))
           .via(RetryFlow.withBackoffAndContext(defaultRestartSettings, failAllValuesFlow)(incrementFailedValues))
           .runWith(Sink.seq)
-      sink.futureValue should contain inOrderElementsOf List(FailedElem -> maxRetries, FailedElem -> maxRetries)
+      sink.futureValue should contain inOrderElementsOf List(
+        FailedElem -> defaultRestartSettings.maxRestarts,
+        FailedElem -> defaultRestartSettings.maxRestarts)
     }
 
     "send elements through (with retrying)" in {
@@ -220,7 +221,6 @@ class RetryFlowSpec extends StreamSpec("""
 
   "Backing off" should {
     "have min backoff" in {
-      val minBackoff = 200.millis
       val (source, sink) = TestSource
         .probe[(Int, Int)]
         .via(RetryFlow.withBackoffAndContext(defaultRestartSettings, failEvenValuesFlow)(incrementFailedValues))
@@ -233,7 +233,7 @@ class RetryFlowSpec extends StreamSpec("""
       sink.expectNext(80.millis, Success(1) -> 0)
 
       source.sendNext(2 -> 0)
-      sink.expectNoMessage(minBackoff)
+      sink.expectNoMessage(defaultRestartSettings.minBackoff)
       sink.expectNext(Success(3) -> 1)
     }
 
