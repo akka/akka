@@ -4,15 +4,16 @@
 
 package akka.remote
 
+import com.typesafe.config.ConfigFactory
+import testkit.MultiNodeConfig
+
 import akka.actor.Actor
+import akka.actor.ActorIdentity
 import akka.actor.ActorRef
+import akka.actor.Identify
 import akka.actor.Props
 import akka.pattern.ask
-import testkit.MultiNodeConfig
 import akka.testkit._
-import akka.actor.Identify
-import akka.actor.ActorIdentity
-import com.typesafe.config.ConfigFactory
 
 class LookupRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
 
@@ -20,8 +21,8 @@ class LookupRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
       akka.remote.artery.enabled = $artery
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
-  val master = role("master")
-  val slave = role("slave")
+  val leader = role("leader")
+  val follower = role("follower")
 
 }
 
@@ -43,24 +44,24 @@ object LookupRemoteActorSpec {
 
 abstract class LookupRemoteActorSpec(multiNodeConfig: LookupRemoteActorMultiJvmSpec)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
-  import multiNodeConfig._
   import LookupRemoteActorSpec._
+  import multiNodeConfig._
 
   def initialParticipants = 2
 
-  runOn(master) {
-    system.actorOf(Props[SomeActor], "service-hello")
+  runOn(leader) {
+    system.actorOf(Props[SomeActor](), "service-hello")
   }
 
   "Remoting" must {
     "lookup remote actor" taggedAs LongRunningTest in {
-      runOn(slave) {
+      runOn(follower) {
         val hello = {
-          system.actorSelection(node(master) / "user" / "service-hello") ! Identify("id1")
+          system.actorSelection(node(leader) / "user" / "service-hello") ! Identify("id1")
           expectMsgType[ActorIdentity].ref.get
         }
         hello.isInstanceOf[RemoteActorRef] should ===(true)
-        val masterAddress = testConductor.getAddressFor(master).await
+        val masterAddress = testConductor.getAddressFor(leader).await
         (hello ? "identify").await.asInstanceOf[ActorRef].path.address should ===(masterAddress)
       }
       enterBarrier("done")

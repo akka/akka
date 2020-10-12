@@ -5,8 +5,8 @@
 package akka.stream.javadsl
 
 import akka.NotUsed
-import akka.japi.function
 import akka.japi.Pair
+import akka.japi.function
 
 object Keep {
   private val _left = new function.Function2[Any, Any, Any] with ((Any, Any) => Any) { def apply(l: Any, r: Any) = l }

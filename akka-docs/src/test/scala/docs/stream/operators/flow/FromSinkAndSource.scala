@@ -16,9 +16,6 @@ import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Tcp
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
-import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 
 import scala.concurrent.duration._
@@ -63,7 +60,7 @@ object FromSinkAndSource {
   def testing(): Unit = {
     def myApiThatTakesAFlow[In, Out](flow: Flow[In, Out, NotUsed]): Unit = ???
     // #testing
-    val inProbe = TestSubscriber.probe[String]
+    val inProbe = TestSubscriber.probe[String]()
     val outProbe = TestPublisher.probe[String]()
     val testFlow = Flow.fromSinkAndSource(Sink.fromSubscriber(inProbe), Source.fromPublisher(outProbe))
 

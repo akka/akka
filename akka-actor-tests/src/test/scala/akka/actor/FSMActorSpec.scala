@@ -4,14 +4,14 @@
 
 package akka.actor
 
-import language.postfixOps
-import akka.testkit._
-
-import scala.concurrent.duration._
-import akka.event._
-import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
+import akka.event._
+import akka.testkit._
 import akka.util.{ unused, Timeout }
 
 object FSMActorSpec {
@@ -43,17 +43,17 @@ object FSMActorSpec {
       case Event(digit: Char, CodeState(soFar, code)) => {
         soFar + digit match {
           case incomplete if incomplete.length < code.length =>
-            stay.using(CodeState(incomplete, code))
+            stay().using(CodeState(incomplete, code))
           case codeTry if (codeTry == code) => {
             doUnlock()
             goto(Open).using(CodeState("", code)).forMax(timeout)
           }
           case _ => {
-            stay.using(CodeState("", code))
+            stay().using(CodeState("", code))
           }
         }
       }
-      case Event("hello", _) => stay.replying("world")
+      case Event("hello", _) => stay().replying("world")
       case Event("bye", _)   => stop(FSM.Shutdown)
     }
 
@@ -67,13 +67,13 @@ object FSMActorSpec {
     whenUnhandled {
       case Event(msg, _) => {
         log.warning("unhandled event " + msg + " in state " + stateName + " with data " + stateData)
-        unhandledLatch.open
-        stay
+        unhandledLatch.open()
+        stay()
       }
     }
 
     onTransition {
-      case Locked -> Open => transitionLatch.open
+      case Locked -> Open => transitionLatch.open()
     }
 
     // verify that old-style does still compile
@@ -119,8 +119,8 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
 
       val transitionTester = system.actorOf(Props(new Actor {
         def receive = {
-          case Transition(_, _, _)                          => transitionCallBackLatch.open
-          case CurrentState(_, s: LockState) if s eq Locked => initialStateLatch.open // SI-5900 workaround
+          case Transition(_, _, _)                          => transitionCallBackLatch.open()
+          case CurrentState(_, s: LockState) if s eq Locked => initialStateLatch.open() // SI-5900 workaround
         }
       }))
 
@@ -147,7 +147,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       val tester = system.actorOf(Props(new Actor {
         def receive = {
           case Hello   => lock ! "hello"
-          case "world" => answerLatch.open
+          case "world" => answerLatch.open()
           case Bye     => lock ! "bye"
         }
       }))
@@ -183,7 +183,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
        * It is necessary here because of the path-dependent type fsm.StopEvent.
        */
       lazy val fsm = new Actor with FSM[Int, Null] {
-        override def preStart = { started.countDown }
+        override def preStart = { started.countDown() }
         startWith(1, null)
         when(1) { FSM.NullFunction }
         onTermination {
@@ -269,7 +269,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
               when(2) {
                 case Event("stop", _) =>
                   cancelTimer("t")
-                  stop
+                  stop()
               }
               onTermination {
                 case StopEvent(r, _, _) => testActor ! r
@@ -307,8 +307,8 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
         override def logDepth = 3
         startWith(1, 0)
         when(1) {
-          case Event("count", c) => stay.using(c + 1)
-          case Event("log", _)   => stay.replying(getLog)
+          case Event("count", c) => stay().using(c + 1)
+          case Event("log", _)   => stay().replying(getLog)
         }
       })
       fsmref ! "log"
@@ -327,12 +327,12 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       val fsmref = system.actorOf(Props(new Actor with FSM[Int, Int] {
         startWith(0, 0)
         when(0)(transform {
-          case Event("go", _) => stay
+          case Event("go", _) => stay()
         }.using {
           case _ => goto(1)
         })
         when(1) {
-          case _ => stay
+          case _ => stay()
         }
       }))
       fsmref ! SubscribeTransitionCallBack(testActor)

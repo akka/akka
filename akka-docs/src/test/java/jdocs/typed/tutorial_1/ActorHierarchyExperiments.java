@@ -195,25 +195,28 @@ public class ActorHierarchyExperiments {
 }
 // #print-refs
 
-class ActorHierarchyExperimentsTest extends JUnitSuite {
+class StartingActorHierarchyActors {
 
-  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
-
-  @Test
-  public void testStartAndStopActors() {
-    // #start-stop-main
-    ActorRef<String> first = testKit.spawn(StartStopActor1.create(), "first");
-    first.tell("stop");
-    // #start-stop-main
+  public void showStartAndStopActors() {
+    Behaviors.setup(
+        context -> {
+          // #start-stop-main
+          ActorRef<String> first = context.spawn(StartStopActor1.create(), "first");
+          first.tell("stop");
+          // #start-stop-main
+          return Behaviors.empty();
+        });
   }
 
-  @Test
-  public void testSuperviseActors() throws Exception {
-    // #supervise-main
-    ActorRef<String> supervisingActor =
-        testKit.spawn(SupervisingActor.create(), "supervising-actor");
-    supervisingActor.tell("failChild");
-    // #supervise-main
-    Thread.sleep(200); // allow for the println/logging to complete
+  public void showSuperviseActors() {
+    Behaviors.setup(
+        context -> {
+          // #supervise-main
+          ActorRef<String> supervisingActor =
+              context.spawn(SupervisingActor.create(), "supervising-actor");
+          supervisingActor.tell("failChild");
+          // #supervise-main
+          return Behaviors.empty();
+        });
   }
 }

@@ -4,16 +4,17 @@
 
 package akka.cluster.typed
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.{ ActorRef, ActorRefResolver, ActorSystem }
-import akka.actor.{ ExtendedActorSystem, IgnoreActorRef }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
 import akka.{ actor => classic }
+import akka.actor.{ ExtendedActorSystem, IgnoreActorRef }
+import akka.actor.typed.{ ActorRef, ActorRefResolver, ActorSystem }
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._
 
 class ActorRefIgnoreSerializationSpec extends AnyWordSpec with ScalaFutures with Matchers with BeforeAndAfterAll {
 

@@ -7,16 +7,19 @@ package akka.actor
 import java.io.Closeable
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
+
 import com.typesafe.config.Config
+
+import akka.dispatch.AbstractNodeQueue
 import akka.event.LoggingAdapter
 import akka.util.Helpers
 import akka.util.Unsafe.{ instance => unsafe }
-import akka.dispatch.AbstractNodeQueue
 
 /**
  * This scheduler implementation is based on a revolving wheel of buckets,
@@ -38,8 +41,8 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
     extends Scheduler
     with Closeable {
 
-  import Helpers.Requiring
   import Helpers.ConfigOps
+  import Helpers.Requiring
 
   val WheelSize =
     config
@@ -183,7 +186,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
   private val queue = new TaskQueue
 
   private def schedule(ec: ExecutionContext, r: Runnable, delay: FiniteDuration): TimerTask =
-    if (delay <= Duration.Zero) {
+    if (delay.length <= 0L) { // use simple comparision instead of Ordering for performance
       if (stopped.get != null) throw SchedulerException("cannot enqueue after timer shutdown")
       ec.execute(r)
       NotCancellable

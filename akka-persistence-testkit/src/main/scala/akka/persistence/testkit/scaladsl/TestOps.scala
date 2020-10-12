@@ -4,16 +4,16 @@
 
 package akka.persistence.testkit.scaladsl
 
-import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies
-import akka.persistence.testkit.internal.TestKitStorage
-import akka.persistence.testkit.{ ExpectedFailure, ExpectedRejection }
-import akka.testkit.TestKitBase
-import akka.util
-import akka.util.BoxedType
-
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
+
+import akka.persistence.testkit.{ ExpectedFailure, ExpectedRejection }
+import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies
+import akka.persistence.testkit.internal.TestKitStorage
+import akka.testkit.TestKitBase
+import akka.util
+import akka.util.BoxedType
 
 private[testkit] trait RejectSupport[U] {
   this: PolicyOpsTestKit[U] with HasStorage[U, _] =>
@@ -109,7 +109,7 @@ private[testkit] trait PolicyOpsTestKit[P] extends {
   /**
    * Returns default policy if it was changed by [[PolicyOpsTestKit.this.withPolicy()]].
    */
-  def returnDefaultPolicy(): Unit = storage.returnDefaultPolicy()
+  def resetPolicy(): Unit = storage.resetPolicy()
 
 }
 
@@ -119,6 +119,7 @@ private[testkit] trait ExpectOps[U] {
   private[testkit] val probe: TestKitBase
 
   import probe._
+
   import akka.testkit._
 
   private[testkit] def pollInterval: FiniteDuration

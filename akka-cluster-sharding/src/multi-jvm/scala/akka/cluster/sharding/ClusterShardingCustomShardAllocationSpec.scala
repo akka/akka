@@ -4,16 +4,16 @@
 
 package akka.cluster.sharding
 
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
 import akka.actor._
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.pattern.ask
 import akka.remote.testconductor.RoleName
 import akka.testkit._
 import akka.util.Timeout
-
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.concurrent.duration._
 
 object ClusterShardingCustomShardAllocationSpec {
 
@@ -43,7 +43,7 @@ object ClusterShardingCustomShardAllocationSpec {
   }
 
   case class TestAllocationStrategy(ref: ActorRef) extends ShardAllocationStrategy {
-    implicit val timeout = Timeout(3.seconds)
+    implicit val timeout: Timeout = Timeout(3.seconds)
     override def allocateShard(
         requester: ActorRef,
         shardId: ShardRegion.ShardId,
@@ -113,12 +113,12 @@ abstract class ClusterShardingCustomShardAllocationSpec(multiNodeConfig: Cluster
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
 
-  lazy val allocator = system.actorOf(Props[Allocator], "allocator")
+  lazy val allocator = system.actorOf(Props[Allocator](), "allocator")
 
   s"Cluster sharding ($mode) with custom allocation strategy" must {
 
     "use specified region" in within(30.seconds) {
-      startPersistenceIfNotDdataMode(startOn = first, setStoreOn = Seq(first, second))
+      startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second))
 
       join(first, first)
 

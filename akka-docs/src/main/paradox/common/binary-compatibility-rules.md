@@ -69,7 +69,7 @@ Once a method has been deprecated then the guideline* is that it will be kept, a
 
 Since the release of Akka `2.4.0` a new versioning scheme is in effect.
 
-Historically, Akka has been following the Java or Scala style of versioning where as the first number would mean "**epoch**",
+Historically, Akka has been following the Java or Scala style of versioning in which the first number would mean "**epoch**",
 the second one would mean **major**, and third be the **minor**, thus: `epoch.major.minor` (versioning scheme followed until and during `2.3.x`).
 
 **Currently**, since Akka `2.4.0`, the new versioning applies which is closer to semantic versioning many have come to expect, 
@@ -93,17 +93,15 @@ If you accidentally mix Akka versions, for example through transitive
 dependencies, you might get a warning at run time such as:
 
 ```
-Detected possible incompatible versions on the classpath. Please note that a given Akka version MUST be the same
-across all modules of Akka that you are using, e.g. if you use [2.5.20] all other modules that are released together
-MUST be of the same version. Make sure you're using a compatible set of libraries. Possibly conflicting versions
-[2.5.19, 2.5.20] in libraries [akka-persistence:2.5.19, akka-cluster-sharding:2.5.19, akka-protobuf:2.5.19,
-akka-persistence-query:2.5.19, akka-actor:2.5.20, akka-slf4j:2.5.19, akka-remote:2.5.19, akka-cluster:2.5.19,
-akka-distributed-data:2.5.19, akka-stream:2.5.19, akka-cluster-tools:2.5.19]
+You are using version 2.6.6 of Akka, but it appears you (perhaps indirectly) also depend on older versions
+of related artifacts. You can solve this by adding an explicit dependency on version 2.6.6 of the
+[akka-persistence-query] artifacts to your project. 
+See also: https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html#mixed-versioning-is-not-allowed
 ```
 
 The fix is typically to pick the highest Akka version, and add explicit
 dependencies to your project as needed. For example, in the example above
-you might want to add dependencies for 2.5.20.
+you might want to add `akka-persistence-query` dependency for 2.6.6.
 
 @@@ note
 
@@ -136,7 +134,7 @@ No compatibility guarantees are given about these classes. They may change or ev
 and user code is not supposed to call them.
 
 Side-note on JVM representation details of the Scala `private[akka]` pattern that Akka is using extensively in 
-it's internals: Such methods or classes, which act as "accessible only from the given package" in Scala, are compiled
+its internals: Such methods or classes, which act as "accessible only from the given package" in Scala, are compiled
 down to `public` (!) in raw Java bytecode. The access restriction, that Scala understands is carried along
 as metadata stored in the classfile. Thus, such methods are safely guarded from being accessed from Scala,
 however Java users will not be warned about this fact by the `javac` compiler. Please be aware of this and do not call

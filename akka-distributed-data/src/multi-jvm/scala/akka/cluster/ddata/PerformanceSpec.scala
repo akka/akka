@@ -6,6 +6,9 @@ package akka.cluster.ddata
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Deploy
@@ -15,7 +18,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 
 object PerformanceSpec extends MultiNodeConfig {
   val n1 = role("n1")
@@ -33,6 +35,7 @@ object PerformanceSpec extends MultiNodeConfig {
     akka.log-dead-letters-during-shutdown = off
     akka.remote.classic.log-remote-lifecycle-events = ERROR
     akka.remote.classic.log-frame-size-exceeding=1000b
+    akka.remote.artery.log-frame-size-exceeding=1000b
     akka.testconductor.barrier-timeout = 60 s
     akka.cluster.distributed-data.gossip-interval = 1 s
 
@@ -69,7 +72,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
   override def initialParticipants = roles.size
 
   val cluster = Cluster(system)
-  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
+  implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
   val replicator = DistributedData(system).replicator
   val timeout = 3.seconds.dilated
   val factor = 1 // use 3 here for serious tuning

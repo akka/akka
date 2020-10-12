@@ -6,10 +6,10 @@ package akka.persistence.typed.internal
 
 import scala.collection.immutable
 
+import akka.actor.typed.ActorRef
 import akka.annotation.InternalApi
 import akka.persistence.typed.javadsl
 import akka.persistence.typed.scaladsl
-import akka.actor.typed.ActorRef
 
 /** INTERNAL API */
 @InternalApi

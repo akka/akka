@@ -7,9 +7,10 @@ package akka.remote.artery.compress
 import java.util
 import java.util.Comparator
 
-import akka.util.HashCode
 import org.agrona.collections.Hashing
 import org.agrona.collections.Object2IntHashMap
+
+import akka.util.HashCode
 
 /**
  * INTERNAL API: Versioned compression table to be advertised between systems

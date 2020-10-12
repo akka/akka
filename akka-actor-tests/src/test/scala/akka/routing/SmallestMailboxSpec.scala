@@ -5,7 +5,9 @@
 package akka.routing
 
 import java.util.concurrent.ConcurrentHashMap
+
 import scala.concurrent.Await
+
 import akka.actor.{ Actor, Props }
 import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TestLatch }
 

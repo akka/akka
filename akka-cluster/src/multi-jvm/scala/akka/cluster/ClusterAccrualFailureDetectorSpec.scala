@@ -4,11 +4,13 @@
 
 package akka.cluster
 
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
-import scala.concurrent.duration._
 import akka.testkit._
 
 object ClusterAccrualFailureDetectorMultiJvmSpec extends MultiNodeConfig {

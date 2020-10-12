@@ -4,13 +4,11 @@ Pass elements downstream as long as a predicate function returns true and then c
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #takeWhile }
+@apidoc[Source.takeWhile](Source) { scala="#takeWhile(p:Out=&gt;Boolean,inclusive:Boolean):FlowOps.this.Repr[Out]" java="#takeWhile(akka.japi.function.Predicate)" }
+@apidoc[Flow.takeWhile](Flow) { scala="#takeWhile(p:Out=&gt;Boolean,inclusive:Boolean):FlowOps.this.Repr[Out]" java="#takeWhile(akka.japi.function.Predicate)" }
 
-@@@
 
 ## Description
 

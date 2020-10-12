@@ -6,16 +6,17 @@ package akka.actor.typed
 
 import java.util.concurrent.TimeoutException
 
-import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.scalatest.concurrent.PatienceConfiguration.{ Timeout => PatienceTimeout }
-import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.scaladsl.AskPattern._
-import akka.util.Timeout
-
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
+
+import org.scalatest.concurrent.PatienceConfiguration.{ Timeout => PatienceTimeout }
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
+import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._
+import akka.util.Timeout
 
 class ActorRefIgnoreSpec extends ScalaTestWithActorTestKit() with AnyWordSpecLike {
 
@@ -83,7 +84,7 @@ class ActorRefIgnoreSpec extends ScalaTestWithActorTestKit() with AnyWordSpecLik
 
       val failedAsk =
         askMeRef
-          .ask { _: ActorRef[Request] =>
+          .ask { (_: ActorRef[Request]) =>
             Request(testKit.system.ignoreRef) // <- pass the ignoreRef instead, so Future never completes
           }
           .failed

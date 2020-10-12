@@ -15,7 +15,7 @@ class GraphInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
     // Reusable components
     val identity = GraphStages.identity[Int]
     val detach = detacher[Int]
-    val zip = Zip[Int, String]
+    val zip = Zip[Int, String]()
     val bcast = Broadcast[Int](2)
     val merge = Merge[Int](2)
     val balance = Balance[Int](2)

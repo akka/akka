@@ -14,6 +14,7 @@ import "ContainerFormats.proto";
 message ReceptionistEntry {
   required string actorRef = 1;
   required uint64 systemUid = 2;
+  optional int64 createdTimestamp = 3;
 }
 
 message PubSubMessagePublished {

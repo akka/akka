@@ -4,11 +4,12 @@
 
 package akka.persistence.japi.journal
 
-import akka.persistence.CapabilityFlag
-import akka.persistence.journal.JournalPerfSpec
 import com.typesafe.config.Config
 import org.scalactic.source.Position
 import org.scalatest.Informer
+
+import akka.persistence.CapabilityFlag
+import akka.persistence.journal.JournalPerfSpec
 
 /**
  * JAVA API
@@ -49,7 +50,7 @@ class JavaJournalPerfSpec(config: Config) extends JournalPerfSpec(config) {
       System.out.println(message)
   }
 
-  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = CapabilityFlag.on
+  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = CapabilityFlag.on()
 
-  override protected def supportsSerialization: CapabilityFlag = CapabilityFlag.on
+  override protected def supportsSerialization: CapabilityFlag = CapabilityFlag.on()
 }

@@ -4,10 +4,11 @@
 
 package akka.cluster.ddata.typed.javadsl
 
-import akka.cluster.{ ddata => dd }
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.adapter._
-import com.typesafe.config.Config
+import akka.cluster.{ ddata => dd }
 
 object ReplicatorSettings {
 

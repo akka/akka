@@ -4,9 +4,9 @@
 
 package akka.actor.typed.delivery
 
+import scala.concurrent.duration._
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration._
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
@@ -17,7 +17,7 @@ object TestProducer {
 
   trait Command
   final case class RequestNext(sendTo: ActorRef[TestConsumer.Job]) extends Command
-  private final case object Tick extends Command
+  private case object Tick extends Command
 
   val defaultProducerDelay: FiniteDuration = 20.millis
 

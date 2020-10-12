@@ -4,12 +4,12 @@
 
 package akka.persistence
 
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
 import akka.actor._
 import akka.actor.SupervisorStrategy.{ Escalate, Stop }
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
-import scala.concurrent.duration._
-
-import scala.util.control.NoStackTrace
 
 object AtLeastOnceDeliveryCrashSpec {
 

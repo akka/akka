@@ -4,13 +4,13 @@
 
 package akka.actor.typed.pubsub
 
+import scala.reflect.ClassTag
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.pubsub.TopicImpl
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.DoNotInherit
-
-import scala.reflect.ClassTag
 
 /**
  * A pub sub topic is an actor that handles subscribing to a topic and publishing messages to all subscribed actors.

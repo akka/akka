@@ -7,15 +7,16 @@ package akka.remote.classic.transport.netty
 import java.net.{ InetAddress, InetSocketAddress }
 import java.nio.channels.ServerSocketChannel
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.{ ActorSystem, Address, ExtendedActorSystem }
 import akka.remote.BoundAddressesExtension
 import akka.testkit.SocketUtil
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 object NettyTransportSpec {
   val commonConfig = ConfigFactory.parseString("""
@@ -54,7 +55,7 @@ class NettyTransportSpec extends AnyWordSpec with Matchers with BindBehavior {
         """)
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-      getInternal should contain(getExternal.withProtocol("tcp"))
+      getInternal() should contain(getExternal().withProtocol("tcp"))
 
       Await.result(sys.terminate(), Duration.Inf)
     }
@@ -73,8 +74,8 @@ class NettyTransportSpec extends AnyWordSpec with Matchers with BindBehavior {
         """)
         implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-        getExternal should ===(address.toAkkaAddress("akka.tcp"))
-        getInternal should not contain address.toAkkaAddress("tcp")
+        getExternal() should ===(address.toAkkaAddress("akka.tcp"))
+        getInternal() should not contain address.toAkkaAddress("tcp")
 
         Await.result(sys.terminate(), Duration.Inf)
       } finally {
@@ -101,8 +102,8 @@ class NettyTransportSpec extends AnyWordSpec with Matchers with BindBehavior {
         """)
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-      getExternal should ===(address.toAkkaAddress("akka.tcp"))
-      getInternal should contain(address.toAkkaAddress("tcp"))
+      getExternal() should ===(address.toAkkaAddress("akka.tcp"))
+      getInternal() should contain(address.toAkkaAddress("tcp"))
 
       Await.result(sys.terminate(), Duration.Inf)
     }
@@ -116,8 +117,8 @@ class NettyTransportSpec extends AnyWordSpec with Matchers with BindBehavior {
         """)
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-      getInternal.flatMap(_.port) should contain(getExternal.port.get)
-      getInternal.map(x => (x.host.get should include).regex("0.0.0.0".r)) // regexp dot is intentional to match IPv4 and 6 addresses
+      getInternal().flatMap(_.port) should contain(getExternal().port.get)
+      getInternal().map(x => (x.host.get should include).regex("0.0.0.0".r)) // regexp dot is intentional to match IPv4 and 6 addresses
 
       Await.result(sys.terminate(), Duration.Inf)
     }
@@ -146,8 +147,8 @@ trait BindBehavior {
         """)
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-      getExternal should ===(address.toAkkaAddress(s"akka.tcp"))
-      getInternal should contain(address.toAkkaAddress("tcp"))
+      getExternal() should ===(address.toAkkaAddress(s"akka.tcp"))
+      getInternal() should contain(address.toAkkaAddress("tcp"))
 
       Await.result(sys.terminate(), Duration.Inf)
     }
@@ -178,8 +179,8 @@ trait BindBehavior {
         """)
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-      getExternal should ===(address.toAkkaAddress(s"akka.tcp"))
-      getInternal should contain(bindAddress.toAkkaAddress("tcp"))
+      getExternal() should ===(address.toAkkaAddress(s"akka.tcp"))
+      getInternal() should contain(bindAddress.toAkkaAddress("tcp"))
 
       Await.result(sys.terminate(), Duration.Inf)
     }

@@ -28,7 +28,7 @@ object GracefulStopDocSpec {
   object MasterControlProgram {
     sealed trait Command
     final case class SpawnJob(name: String) extends Command
-    final case object GracefulShutdown extends Command
+    case object GracefulShutdown extends Command
 
     // Predefined cleanup operation
     def cleanup(log: Logger): Unit = log.info("Cleaning up!")

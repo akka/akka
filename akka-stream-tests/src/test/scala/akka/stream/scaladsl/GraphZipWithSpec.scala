@@ -4,9 +4,10 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
 import scala.concurrent.duration._
+
 import akka.stream._
+import akka.stream.testkit._
 import akka.testkit.EventFilter
 
 class GraphZipWithSpec extends TwoStreamsSetup {

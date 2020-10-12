@@ -4,10 +4,10 @@
 
 package akka.stream.impl.fusing
 
-import akka.stream.testkit.StreamSpec
-
 import scala.util.control.NoStackTrace
+
 import akka.stream.Supervision
+import akka.stream.testkit.StreamSpec
 
 class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit {
 

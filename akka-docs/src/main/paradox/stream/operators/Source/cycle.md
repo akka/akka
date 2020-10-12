@@ -1,16 +1,13 @@
-# cycle
+# Source.cycle
 
 Stream iterator in cycled manner.
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #cycle }
+@apidoc[Source.cycle](Source$) { scala="#cycle[T](f:()=&gt;Iterator[T]):akka.stream.scaladsl.Source[T,akka.NotUsed]" java="#cycle(akka.japi.function.Creator)" }
 
-@@@
 
 ## Description
 

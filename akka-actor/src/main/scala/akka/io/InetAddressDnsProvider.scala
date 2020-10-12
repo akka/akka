@@ -4,8 +4,9 @@
 
 package akka.io
 
-import akka.annotation.InternalApi
 import com.github.ghik.silencer.silent
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

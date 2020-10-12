@@ -4,12 +4,13 @@
 
 package akka.cluster
 
-import akka.actor.Address
-import akka.cluster.MemberStatus.Up
-
 import scala.collection.immutable.SortedSet
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.Address
+import akka.cluster.MemberStatus.Up
 
 class MembershipStateSpec extends AnyWordSpec with Matchers {
   // DC-a is in reverse age order

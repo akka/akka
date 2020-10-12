@@ -4,8 +4,8 @@
 
 package akka.util
 
-import scala.collection.immutable
 import scala.annotation.tailrec
+import scala.collection.immutable
 
 /**
  * INTERNAL API

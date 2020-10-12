@@ -6,10 +6,11 @@ package akka.stream.tck
 
 import java.io.InputStream
 
+import org.reactivestreams.Publisher
+
 import akka.stream.ActorAttributes
 import akka.stream.scaladsl.{ Sink, StreamConverters }
 import akka.util.ByteString
-import org.reactivestreams.Publisher
 
 class InputStreamSourceTest extends AkkaPublisherVerification[ByteString] {
 

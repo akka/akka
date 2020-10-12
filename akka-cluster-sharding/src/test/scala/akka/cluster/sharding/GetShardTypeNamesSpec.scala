@@ -8,14 +8,17 @@ import akka.actor.Props
 import akka.cluster.Cluster
 import akka.testkit.AkkaSpec
 import akka.testkit.TestActors.EchoActor
+import akka.testkit.WithLogCapturing
 
 object GetShardTypeNamesSpec {
   val config =
     """
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.actor.provider = "cluster"
     akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
+    akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
     """
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
@@ -27,7 +30,7 @@ object GetShardTypeNamesSpec {
   }
 }
 
-class GetShardTypeNamesSpec extends AkkaSpec(GetShardTypeNamesSpec.config) {
+class GetShardTypeNamesSpec extends AkkaSpec(GetShardTypeNamesSpec.config) with WithLogCapturing {
   import GetShardTypeNamesSpec._
 
   "GetShardTypeNames" must {

@@ -4,9 +4,9 @@
 
 package akka.actor.typed.internal
 
-import akka.actor.typed.internal.adapter.EventStreamAdapter
 import akka.actor.typed._
 import akka.actor.typed.eventstream.EventStream
+import akka.actor.typed.internal.adapter.EventStreamAdapter
 import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
 

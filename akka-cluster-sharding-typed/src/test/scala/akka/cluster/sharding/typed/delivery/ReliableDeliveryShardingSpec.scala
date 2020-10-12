@@ -8,6 +8,9 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
@@ -20,14 +23,12 @@ import akka.actor.typed.delivery.TestConsumer
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
-import akka.cluster.typed.Cluster
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object ReliableDeliveryShardingSpec {
   val config = ConfigFactory.parseString("""
@@ -42,7 +43,7 @@ object ReliableDeliveryShardingSpec {
     trait Command
     final case class RequestNext(sendToRef: ActorRef[ShardingEnvelope[TestConsumer.Job]]) extends Command
 
-    private final case object Tick extends Command
+    private case object Tick extends Command
 
     def apply(producerController: ActorRef[ShardingProducerController.Start[TestConsumer.Job]]): Behavior[Command] = {
       Behaviors.setup { context =>
@@ -109,7 +110,7 @@ class ReliableDeliveryShardingSpec
 
     "illustrate sharding usage" in {
       nextId()
-      val consumerEndProbe = createTestProbe[TestConsumer.CollectedProducerIds]()
+      val consumerEndProbe = createTestProbe[TestConsumer.Collected]()
       val typeKey = EntityTypeKey[SequencedMessage[TestConsumer.Job]](s"TestConsumer-$idCount")
       val sharding: ActorRef[ShardingEnvelope[SequencedMessage[TestConsumer.Job]]] =
         ClusterSharding(system).init(Entity(typeKey)(_ =>
@@ -129,7 +130,7 @@ class ReliableDeliveryShardingSpec
 
     "illustrate sharding usage with several producers" in {
       nextId()
-      val consumerEndProbe = createTestProbe[TestConsumer.CollectedProducerIds]()
+      val consumerEndProbe = createTestProbe[TestConsumer.Collected]()
       val typeKey = EntityTypeKey[SequencedMessage[TestConsumer.Job]](s"TestConsumer-$idCount")
       val sharding: ActorRef[ShardingEnvelope[SequencedMessage[TestConsumer.Job]]] =
         ClusterSharding(system).init(Entity(typeKey)(_ =>
@@ -174,7 +175,7 @@ class ReliableDeliveryShardingSpec
 
     "reply to MessageWithConfirmation" in {
       nextId()
-      val consumerEndProbe = createTestProbe[TestConsumer.CollectedProducerIds]()
+      val consumerEndProbe = createTestProbe[TestConsumer.Collected]()
       val typeKey = EntityTypeKey[SequencedMessage[TestConsumer.Job]](s"TestConsumer-$idCount")
       val sharding: ActorRef[ShardingEnvelope[SequencedMessage[TestConsumer.Job]]] =
         ClusterSharding(system).init(Entity(typeKey)(_ =>

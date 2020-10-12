@@ -4,9 +4,9 @@
 
 package akka.stream.scaladsl
 
-import akka.NotUsed
-
 import scala.annotation.unchecked.uncheckedVariance
+
+import akka.NotUsed
 import akka.japi.Pair
 import akka.stream._
 

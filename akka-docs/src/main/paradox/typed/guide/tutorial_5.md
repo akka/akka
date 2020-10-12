@@ -228,7 +228,7 @@ In the context of the IoT system, this guide introduced the following concepts, 
 
 To continue your journey with Akka, we recommend:
 
-* Start building your own applications with Akka, make sure you [get involved in our amazing community](https://akka.io/get-involved) for help if you get stuck.
+* Start building your own applications with Akka, make sure you [get involved in our amazing community](https://akka.io/get-involved/) for help if you get stuck.
 * If you’d like some additional background, and detail, read the rest of the @ref:[reference documentation](../actors.md) and check out some of the @ref:[books and videos](../../additional/books.md) on Akka.
 * If you are interested in functional programming, read how actors can be defined in a @ref:[functional style](../actors.md#functional-style). In this guide the object-oriented style was used, but you can mix both as you like.
 

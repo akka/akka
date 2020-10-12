@@ -6,23 +6,23 @@ package akka.io
 
 import java.net.{ Inet4Address, Inet6Address, InetAddress, UnknownHostException }
 import java.util.concurrent.ConcurrentHashMap
-
-import akka.actor._
-import akka.annotation.InternalApi
-import akka.routing.ConsistentHashingRouter.ConsistentHashable
-import com.typesafe.config.Config
 import java.util.function.{ Function => JFunction }
 
+import scala.collection.immutable
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+
+import akka.actor._
 import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
+import akka.event.Logging
 import akka.io.dns.AAAARecord
 import akka.io.dns.ARecord
 import akka.io.dns.DnsProtocol
-import akka.util.unused
-import scala.collection.immutable
-
-import akka.event.Logging
+import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import akka.util.ccompat._
-import com.github.ghik.silencer.silent
+import akka.util.unused
 
 /**
  * Not for user extension.
@@ -137,7 +137,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
     Dns(system).cache.resolve(name, system, sender)
   }
 
-  override def lookup() = Dns
+  override def lookup = Dns
 
   override def createExtension(system: ExtendedActorSystem): DnsExt = new DnsExt(system)
 

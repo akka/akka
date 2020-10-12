@@ -4,11 +4,12 @@
 
 package akka.remote
 
-import akka.testkit._
+import com.typesafe.config._
+
+import akka.ConfigurationException
 import akka.actor._
 import akka.routing._
-import com.typesafe.config._
-import akka.ConfigurationException
+import akka.testkit._
 
 object RemoteDeployerSpec {
   val deployerConf = ConfigFactory.parseString(

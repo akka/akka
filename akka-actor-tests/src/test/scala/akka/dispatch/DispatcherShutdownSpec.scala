@@ -4,13 +4,16 @@
 
 package akka.dispatch
 
-import akka.actor.ActorSystem
-import akka.testkit.TestKit
 import java.lang.management.ManagementFactory
+
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.ActorSystem
+import akka.testkit.TestKit
 
 class DispatcherShutdownSpec extends AnyWordSpec with Matchers {
 

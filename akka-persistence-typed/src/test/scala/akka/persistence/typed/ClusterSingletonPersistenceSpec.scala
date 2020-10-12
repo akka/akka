@@ -4,17 +4,20 @@
 
 package akka.persistence.typed
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.cluster.typed.ClusterSingleton
 import akka.cluster.typed.SingletonActor
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object ClusterSingletonPersistenceSpec {
   val config = ConfigFactory.parseString("""
@@ -32,7 +35,7 @@ object ClusterSingletonPersistenceSpec {
   sealed trait Command
   final case class Add(s: String) extends Command
   final case class Get(replyTo: ActorRef[String]) extends Command
-  private final case object StopPlz extends Command
+  private case object StopPlz extends Command
 
   val persistentActor: Behavior[Command] =
     EventSourcedBehavior[Command, String, String](
@@ -55,11 +58,12 @@ class ClusterSingletonPersistenceSpec
     with AnyWordSpecLike
     with LogCapturing {
   import ClusterSingletonPersistenceSpec._
+
   import akka.actor.typed.scaladsl.adapter._
 
-  implicit val s = system
+  implicit val s: ActorSystem[Nothing] = system
 
-  implicit val classicSystem = system.toClassic
+  implicit val classicSystem: actor.ActorSystem = system.toClassic
   private val classicCluster = akka.cluster.Cluster(classicSystem)
 
   "A typed cluster singleton with persistent actor" must {

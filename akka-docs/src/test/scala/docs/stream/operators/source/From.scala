@@ -4,6 +4,8 @@
 
 package docs.stream.operators.source
 
+import java.util.stream.IntStream
+
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
 
@@ -19,6 +21,16 @@ object From {
     // 2
     // 3
     //#from-iterator
+  }
+
+  def fromJavaStreamSample(): Unit = {
+    //#from-javaStream
+    Source.fromJavaStream(() => IntStream.rangeClosed(1, 3)).runForeach(println)
+    // could print
+    // 1
+    // 2
+    // 3
+    //#from-javaStream
   }
 
 }

@@ -6,8 +6,8 @@ package akka.stream.impl
 
 import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.InternalApi
-import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.{ AbruptStageTerminationException, Attributes, Inlet, SinkShape }
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, StageLogging }
 
 /**

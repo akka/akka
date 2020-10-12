@@ -38,7 +38,8 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
 
   @volatile
   private var _cachedSelf: Member =
-    Member(cluster.selfUniqueAddress, cluster.selfRoles).copy(status = MemberStatus.Removed)
+    Member(cluster.selfUniqueAddress, cluster.selfRoles, cluster.settings.AppVersion)
+      .copy(status = MemberStatus.Removed)
   @volatile
   private var _closed: Boolean = false
 
@@ -87,7 +88,8 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
                 _state = _state.withUnreachableDataCenters(_state.unreachableDataCenters - r.dataCenter)
               case r: UnreachableDataCenter =>
                 _state = _state.withUnreachableDataCenters(_state.unreachableDataCenters + r.dataCenter)
-
+              case MemberTombstonesChanged(tombstones) =>
+                _state = _state.withMemberTombstones(tombstones)
             }
 
             e match {

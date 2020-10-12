@@ -9,6 +9,8 @@ import java.nio.ByteOrder
 
 import scala.util.Random
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ExtendedActorSystem
 import akka.serialization.BaseSerializer
 import akka.serialization.ByteBufferSerializer
@@ -16,7 +18,6 @@ import akka.serialization.SerializationExtension
 import akka.serialization.Serializer
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
-import com.typesafe.config.ConfigFactory
 
 object PrimitivesSerializationSpec {
   val serializationTestOverrides = ""

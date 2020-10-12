@@ -4,15 +4,15 @@
 
 package akka.util
 
-import annotation.tailrec
-
-import java.util.concurrent.{ ConcurrentHashMap, ConcurrentSkipListSet }
 import java.util.Comparator
+import java.util.concurrent.{ ConcurrentHashMap, ConcurrentSkipListSet }
 
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
-import akka.util.ccompat.JavaConverters._
 
+import annotation.tailrec
 import com.github.ghik.silencer.silent
+
+import akka.util.ccompat.JavaConverters._
 
 /**
  * An implementation of a ConcurrentMultiMap
@@ -22,9 +22,7 @@ import com.github.ghik.silencer.silent
 class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
 
   def this(mapSize: Int, cmp: (V, V) => Int) =
-    this(mapSize, new Comparator[V] {
-      def compare(a: V, b: V): Int = cmp(a, b)
-    })
+    this(mapSize, ((a: V, b: V) => cmp(a, b)): Comparator[V])
 
   private val container = new ConcurrentHashMap[K, ConcurrentSkipListSet[V]](mapSize)
   private val emptySet = new ConcurrentSkipListSet[V]

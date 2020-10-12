@@ -4,9 +4,10 @@
 
 package akka.cluster
 
-import akka.actor.Address
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.Address
 
 class ReachabilitySpec extends AnyWordSpec with Matchers {
 

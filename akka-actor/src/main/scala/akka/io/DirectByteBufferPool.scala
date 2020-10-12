@@ -5,6 +5,7 @@
 package akka.io
 
 import java.nio.ByteBuffer
+
 import scala.util.control.NonFatal
 
 trait BufferPool {

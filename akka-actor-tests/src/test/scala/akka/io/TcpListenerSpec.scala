@@ -9,13 +9,15 @@ import java.nio.channels.{ SelectableChannel, SocketChannel }
 import java.nio.channels.SelectionKey.OP_ACCEPT
 
 import scala.concurrent.duration._
-import akka.actor._
-import akka.testkit.{ AkkaSpec, EventFilter, TestActorRef, TestProbe }
-import akka.io.TcpListener.{ FailedRegisterIncoming, RegisterIncoming }
-import akka.io.SelectionHandler._
-import akka.testkit.SocketUtil
+
 import Tcp._
+
+import akka.actor._
+import akka.io.SelectionHandler._
+import akka.io.TcpListener.{ FailedRegisterIncoming, RegisterIncoming }
 import akka.io.TcpListenerSpec.RegisterChannel
+import akka.testkit.{ AkkaSpec, EventFilter, TestActorRef, TestProbe }
+import akka.testkit.SocketUtil
 
 class TcpListenerSpec extends AkkaSpec("""
     akka.io.tcp.batch-accept-limit = 2

@@ -6,9 +6,9 @@ package akka.actor.typed
 package internal
 package adapter
 
+import akka.{ actor => classic }
 import akka.actor.ActorRefProvider
 import akka.actor.InvalidMessageException
-import akka.{ actor => classic }
 import akka.annotation.InternalApi
 import akka.dispatch.sysmsg
 
@@ -37,6 +37,8 @@ import akka.dispatch.sysmsg
   override def provider: ActorRefProvider = classicRef.provider
   // impl InternalRecipientRef
   def isTerminated: Boolean = classicRef.isTerminated
+
+  override def refPrefix: String = path.name
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = SerializedActorRef[T](this)

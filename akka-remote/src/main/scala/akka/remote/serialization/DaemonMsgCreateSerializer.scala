@@ -5,34 +5,33 @@
 package akka.remote.serialization
 
 import scala.collection.immutable
+import scala.reflect.ClassTag
 
-import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
-import akka.protobufv3.internal.ByteString
+import com.typesafe.config.{ Config, ConfigFactory }
+import util.{ Failure, Success }
+
 import akka.actor.{ Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
+import akka.protobufv3.internal.ByteString
 import akka.remote.DaemonMsgCreate
 import akka.remote.WireFormats.{ DaemonMsgCreateData, DeployData, PropsData }
 import akka.routing.{ NoRouter, RouterConfig }
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
 import akka.util.ccompat._
-
-import scala.reflect.ClassTag
-import util.{ Failure, Success }
 import akka.util.ccompat.JavaConverters._
 
 /**
  * Serializes Akka's internal DaemonMsgCreate using protobuf
  * for the core structure of DaemonMsgCreate, Props and Deploy.
  * Serialization of contained RouterConfig, Config, and Scope
- * is done with configured serializer for those classes, by
- * default java.io.Serializable.
+ * is done with configured serializer for those classes.
  *
  * INTERNAL API
  */
 @ccompatUsedUntil213
 private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
-  import ProtobufSerializer.serializeActorRef
-  import ProtobufSerializer.deserializeActorRef
   import Deploy.NoDispatcherGiven
+  import ProtobufSerializer.deserializeActorRef
+  import ProtobufSerializer.serializeActorRef
 
   private lazy val serialization = SerializationExtension(system)
 

@@ -8,19 +8,21 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
+
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeMap
-import akka.util.ccompat.JavaConverters._
+
 import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.cluster.UniqueAddress
+import akka.cluster.ddata.VersionVector
 import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
-import akka.serialization._
 import akka.protobufv3.internal.ByteString
 import akka.protobufv3.internal.MessageLite
-import akka.cluster.ddata.VersionVector
+import akka.serialization._
 import akka.util.ccompat._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * Some useful serialization helper methods.

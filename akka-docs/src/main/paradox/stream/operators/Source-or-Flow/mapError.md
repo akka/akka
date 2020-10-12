@@ -4,13 +4,11 @@ While similar to `recover` this operators can be used to transform an error sign
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #mapError }
+@apidoc[Source.mapError](Source) { scala="#mapError(pf:PartialFunction[Throwable,Throwable]):FlowOps.this.Repr[Out]" java="#mapError(java.lang.Class,akka.japi.function.Function)" }
+@apidoc[Flow.mapError](Flow) { scala="#mapError(pf:PartialFunction[Throwable,Throwable]):FlowOps.this.Repr[Out]" java="#mapError(java.lang.Class,akka.japi.function.Function)" }
 
-@@@
 
 ## Description
 

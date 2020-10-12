@@ -4,26 +4,28 @@
 
 package akka.actor
 
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
+import java.io.ObjectStreamException
+import java.lang.reflect.{ InvocationHandler, InvocationTargetException, Method, Proxy }
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.{ AtomicReference => AtomVar }
+
 import scala.collection.immutable
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-import scala.concurrent.{ Await, Future }
+import scala.util.{ Failure, Success, Try }
+import scala.util.control.NonFatal
 
+import com.github.ghik.silencer.silent
+
+import akka.dispatch._
 import akka.japi.{ Creator, Option => JOption }
 import akka.japi.Util.{ immutableSeq, immutableSingletonSeq }
 import akka.pattern.AskTimeoutException
-import akka.util.Timeout
-import akka.util.Reflect.instantiator
 import akka.serialization.{ JavaSerializer, SerializationExtension, Serializers }
-import akka.dispatch._
-import java.util.concurrent.atomic.{ AtomicReference => AtomVar }
-import java.util.concurrent.TimeoutException
-import java.io.ObjectStreamException
-import java.lang.reflect.{ InvocationHandler, InvocationTargetException, Method, Proxy }
-
-import com.github.ghik.silencer.silent
+import akka.util.Reflect.instantiator
+import akka.util.Timeout
 
 /**
  * A TypedActorFactory is something that can created TypedActor instances.
@@ -47,7 +49,7 @@ trait TypedActorFactory {
    */
   def stop(proxy: AnyRef): Boolean = getActorRefFor(proxy) match {
     case null => false
-    case ref  => ref.asInstanceOf[InternalActorRef].stop; true
+    case ref  => ref.asInstanceOf[InternalActorRef].stop(); true
   }
 
   /**
@@ -76,7 +78,7 @@ trait TypedActorFactory {
     val proxyVar = new AtomVar[R] //Chicken'n'egg-resolver
     val c = props.creator //Cache this to avoid closing over the Props
     val i = props.interfaces //Cache this to avoid closing over the Props
-    val ap = Props(new TypedActor.TypedActor[R, T](proxyVar, c(), i)).withDeploy(props.actorProps.deploy)
+    val ap = Props(new TypedActor.TypedActor[R, T](proxyVar, c(), i)).withDeploy(props.actorProps().deploy)
     typedActor.createActorRefProxy(props, proxyVar, actorFactory.actorOf(ap))
   }
 
@@ -87,7 +89,7 @@ trait TypedActorFactory {
     val proxyVar = new AtomVar[R] //Chicken'n'egg-resolver
     val c = props.creator //Cache this to avoid closing over the Props
     val i = props.interfaces //Cache this to avoid closing over the Props
-    val ap = Props(new akka.actor.TypedActor.TypedActor[R, T](proxyVar, c(), i)).withDeploy(props.actorProps.deploy)
+    val ap = Props(new akka.actor.TypedActor.TypedActor[R, T](proxyVar, c(), i)).withDeploy(props.actorProps().deploy)
     typedActor.createActorRefProxy(props, proxyVar, actorFactory.actorOf(ap, name))
   }
 
@@ -108,7 +110,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   override def get(system: ActorSystem): TypedActorExtension = super.get(system)
   override def get(system: ClassicActorSystemProvider): TypedActorExtension = super.get(system)
 
-  def lookup() = this
+  def lookup = this
   def createExtension(system: ExtendedActorSystem): TypedActorExtension = new TypedActorExtension(system)
 
   /**
@@ -252,7 +254,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   /**
    * Returns the default dispatcher (for a TypedActor) when inside a method call in a TypedActor.
    */
-  implicit def dispatcher = context.dispatcher
+  implicit def dispatcher: ExecutionContextExecutor = context.dispatcher
 
   /**
    * INTERNAL API
@@ -271,7 +273,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     private val me = withContext[T](createInstance)
 
     override def supervisorStrategy: SupervisorStrategy = me match {
-      case l: Supervisor => l.supervisorStrategy
+      case l: Supervisor => l.supervisorStrategy()
       case _             => super.supervisorStrategy
     }
 
@@ -687,6 +689,7 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
   protected def typedActor = this
 
   import system.settings
+
   import akka.util.Helpers.ConfigOps
 
   /**

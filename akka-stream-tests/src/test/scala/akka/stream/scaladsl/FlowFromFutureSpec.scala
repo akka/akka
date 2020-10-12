@@ -4,14 +4,15 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import com.github.ghik.silencer.silent
+
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 @silent("deprecated") // testing deprecated API
 class FlowFromFutureSpec extends StreamSpec {

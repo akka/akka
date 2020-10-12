@@ -9,27 +9,28 @@ import java.util.Optional
 import java.util.concurrent.{ CompletableFuture, CompletionStage }
 import java.util.function.{ BiFunction, Supplier }
 
-import akka.actor.{ ActorRef, Cancellable, ClassicActorSystemProvider }
-import akka.dispatch.ExecutionContexts
-import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
-import akka.japi.function.Creator
-import akka.japi.{ function, JavaPartialFunction, Pair, Util }
-import akka.stream._
-import akka.stream.impl.LinearTraversalBuilder
-import akka.util.JavaDurationConverters._
-import akka.util.ccompat.JavaConverters._
-import akka.util.{ unused, _ }
-import akka.{ Done, NotUsed }
-import com.github.ghik.silencer.silent
-import org.reactivestreams.{ Publisher, Subscriber }
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
+
+import com.github.ghik.silencer.silent
+import org.reactivestreams.{ Publisher, Subscriber }
+
+import akka.{ Done, NotUsed }
+import akka.actor.{ ActorRef, Cancellable, ClassicActorSystemProvider }
+import akka.dispatch.ExecutionContexts
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
+import akka.japi.{ function, JavaPartialFunction, Pair, Util }
+import akka.japi.function.Creator
+import akka.stream._
+import akka.stream.impl.LinearTraversalBuilder
+import akka.util.{ unused, _ }
+import akka.util.JavaDurationConverters._
+import akka.util.ccompat.JavaConverters._
 
 /** Java API */
 object Source {
@@ -98,6 +99,17 @@ object Source {
    */
   def fromIterator[O](f: function.Creator[java.util.Iterator[O]]): javadsl.Source[O, NotUsed] =
     new Source(scaladsl.Source.fromIterator(() => f.create().asScala))
+
+  /**
+   * Creates a source that wraps a Java 8 ``Stream``. ``Source`` uses a stream iterator to get all its
+   * elements and send them downstream on demand.
+   *
+   * You can use [[Source.async]] to create asynchronous boundaries between synchronous java stream
+   * and the rest of flow.
+   */
+  def fromJavaStream[O, S <: java.util.stream.BaseStream[O, S]](
+      stream: function.Creator[java.util.stream.BaseStream[O, S]]): javadsl.Source[O, NotUsed] =
+    StreamConverters.fromJavaStream(stream)
 
   /**
    * Helper to create 'cycled' [[Source]] from iterator provider.
@@ -291,6 +303,13 @@ object Source {
    */
   def future[T](futureElement: Future[T]): Source[T, NotUsed] =
     scaladsl.Source.future(futureElement).asJava
+
+  /**
+   * Never emits any elements, never completes and never fails.
+   * This stream could be useful in tests.
+   */
+  def never[T]: Source[T, NotUsed] =
+    scaladsl.Source.never.asJava
 
   /**
    * Emits a single value when the given `CompletionStage` is successfully completed and then completes the stream.
@@ -697,13 +716,52 @@ object Source {
    * for downstream demand unless there is another message waiting for downstream demand, in that case
    * offer result will be completed according to the overflow strategy.
    *
-   * SourceQueue that current source is materialized to is for single thread usage only.
+   * The materialized SourceQueue may only be used from a single producer.
    *
    * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, SourceQueueWithComplete[T]] =
-    new Source(scaladsl.Source.queue[T](bufferSize, overflowStrategy).mapMaterializedValue(_.asJava))
+    new Source(
+      scaladsl.Source.queue[T](bufferSize, overflowStrategy, maxConcurrentOffers = 1).mapMaterializedValue(_.asJava))
+
+  /**
+   * Creates a `Source` that is materialized as an [[akka.stream.javadsl.SourceQueueWithComplete]].
+   * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
+   * otherwise they will be buffered until request for demand is received. Elements in the buffer will be discarded
+   * if downstream is terminated.
+   *
+   * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements if
+   * there is no space available in the buffer.
+   *
+   * Acknowledgement mechanism is available.
+   * [[akka.stream.javadsl.SourceQueueWithComplete.offer]] returns `CompletionStage<QueueOfferResult>` which completes with
+   * `QueueOfferResult.enqueued` if element was added to buffer or sent downstream. It completes with
+   * `QueueOfferResult.dropped` if element was dropped. Can also complete with `QueueOfferResult.Failure` -
+   * when stream failed or `QueueOfferResult.QueueClosed` when downstream is completed.
+   *
+   * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete `maxConcurrentOffers` number of
+   * `offer():CompletionStage` call when buffer is full.
+   *
+   * You can watch accessibility of stream with [[akka.stream.javadsl.SourceQueueWithComplete.watchCompletion]].
+   * It returns a future that completes with success when this operator is completed or fails when stream is failed.
+   *
+   * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait
+   * for downstream demand unless there is another message waiting for downstream demand, in that case
+   * offer result will be completed according to the overflow strategy.
+   *
+   * The materialized SourceQueue may be used by up to maxConcurrentOffers concurrent producers.
+   *
+   * @param bufferSize size of buffer in element count
+   * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
+   * @param maxConcurrentOffers maximum number of pending offers when buffer is full, should be greater than 0
+   */
+  def queue[T](
+      bufferSize: Int,
+      overflowStrategy: OverflowStrategy,
+      maxConcurrentOffers: Int): Source[T, SourceQueueWithComplete[T]] =
+    new Source(
+      scaladsl.Source.queue[T](bufferSize, overflowStrategy, maxConcurrentOffers).mapMaterializedValue(_.asJava))
 
   /**
    * Start a new `Source` from some resource which can be opened, read and closed.
@@ -1587,7 +1645,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def zipMat[T, M, M2](
       that: Graph[SourceShape[T], M],
       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
-    this.viaMat(Flow.create[Out].zipMat(that, Keep.right[NotUsed, M]), matF)
+    this.viaMat(Flow.create[Out]().zipMat(that, Keep.right[NotUsed, M]), matF)
 
   /**
    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
@@ -1650,7 +1708,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def zipLatestMat[T, M, M2](
       that: Graph[SourceShape[T], M],
       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
-    this.viaMat(Flow.create[Out].zipLatestMat(that, Keep.right[NotUsed, M]), matF)
+    this.viaMat(Flow.create[Out]().zipLatestMat(that, Keep.right[NotUsed, M]), matF)
 
   /**
    * Put together the elements of current [[Source]] and the given one
@@ -1818,7 +1876,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover(pf: PartialFunction[Throwable, Out]): javadsl.Source[Out, Mat] =
     new Source(delegate.recover(pf))
 
@@ -1837,7 +1894,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover(clazz: Class[_ <: Throwable], supplier: Supplier[Out]): javadsl.Source[Out, Mat] =
     recover {
       case elem if clazz.isInstance(elem) => supplier.get()
@@ -1908,7 +1964,10 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    *
+   * @deprecated use `recoverWithRetries` instead
    */
+  @Deprecated
+  @deprecated("Use recoverWithRetries instead.", "2.6.6")
   @silent("deprecated")
   def recoverWith(pf: PartialFunction[Throwable, _ <: Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
     new Source(delegate.recoverWith(pf))
@@ -1932,7 +1991,11 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    *
+   * @deprecated use `recoverWithRetries` instead
    */
+  @Deprecated
+  @deprecated("Use recoverWithRetries instead.", "2.6.6")
+  @silent("deprecated")
   def recoverWith(
       clazz: Class[_ <: Throwable],
       supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
@@ -4272,6 +4335,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def logWithMarker(name: String, marker: function.Function[Out, LogMarker]): javadsl.Source[Out, Mat] =
     this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], null)
 
+  /**
+   * Transform this source whose element is ``e`` into a source producing tuple ``(e, f(e))``
+   **/
   def asSourceWithContext[Ctx](extractContext: function.Function[Out, Ctx]): SourceWithContext[Out, Ctx, Mat] =
     new scaladsl.SourceWithContext(this.asScala.map(x => (x, extractContext.apply(x)))).asJava
 }

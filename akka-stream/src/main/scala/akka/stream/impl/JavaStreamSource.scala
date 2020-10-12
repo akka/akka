@@ -4,9 +4,9 @@
 
 package akka.stream.impl
 
+import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
-import akka.annotation.InternalApi
 
 /** INTERNAL API */
 @InternalApi private[stream] final class JavaStreamSource[T, S <: java.util.stream.BaseStream[T, S]](

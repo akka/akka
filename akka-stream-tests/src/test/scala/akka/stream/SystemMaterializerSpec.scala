@@ -4,13 +4,14 @@
 
 package akka.stream
 
+import scala.concurrent.Future
+
+import org.scalatest.concurrent.ScalaFutures
+
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.StreamSpec
-import org.scalatest.concurrent.ScalaFutures
-
-import scala.concurrent.Future
 
 class SystemMaterializerSpec extends StreamSpec with ScalaFutures {
 

@@ -4,15 +4,17 @@
 
 package akka.stream.tck
 
-import java.util.concurrent.Executors
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import akka.stream.testkit.TestPublisher
+
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 import org.reactivestreams.tck.IdentityProcessorVerification
 import org.reactivestreams.tck.TestEnvironment
 import org.scalatestplus.testng.TestNGSuiteLike
 import org.testng.annotations.AfterClass
+
+import akka.stream.testkit.TestPublisher
 
 abstract class AkkaIdentityProcessorVerification[T](env: TestEnvironment, publisherShutdownTimeout: Long)
     extends IdentityProcessorVerification[T](env, publisherShutdownTimeout)

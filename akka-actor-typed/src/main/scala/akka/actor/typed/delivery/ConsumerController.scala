@@ -8,10 +8,13 @@ import java.time.{ Duration => JavaDuration }
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.Config
+
 import akka.actor.DeadLetterSuppression
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
+import akka.actor.typed.delivery.internal.ChunkedMessage
 import akka.actor.typed.delivery.internal.ConsumerControllerImpl
 import akka.actor.typed.delivery.internal.DeliverySerializable
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
@@ -21,7 +24,6 @@ import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
 
 /**
  * `ConsumerController` and [[ProducerController]] or [[WorkPullingProducerController]] are used
@@ -123,6 +125,26 @@ object ConsumerController {
 
   final case class DeliverThenStop[A]() extends Command[A]
 
+  object SequencedMessage {
+
+    /**
+     * SequencedMessage.message can be `A` or `ChunkedMessage`.
+     */
+    type MessageOrChunk = Any
+
+    /**
+     * INTERNAL API
+     */
+    @InternalApi private[akka] def fromChunked[A](
+        producerId: String,
+        seqNr: SeqNr,
+        chunk: ChunkedMessage,
+        first: Boolean,
+        ack: Boolean,
+        producerController: ActorRef[ProducerControllerImpl.InternalCommand]): SequencedMessage[A] =
+      new SequencedMessage(producerId, seqNr, chunk, first, ack)(producerController)
+  }
+
   /**
    * This is used between the `ProducerController` and `ConsumerController`. Should rarely be used in
    * application code but is public because it's in the signature for the `EntityTypeKey` when using
@@ -134,8 +156,12 @@ object ConsumerController {
    *
    * @param producerController INTERNAL API: construction of SequencedMessage is internal
    */
-  final case class SequencedMessage[A](producerId: String, seqNr: SeqNr, message: A, first: Boolean, ack: Boolean)(
-      @InternalApi private[akka] val producerController: ActorRef[ProducerControllerImpl.InternalCommand])
+  final case class SequencedMessage[A](
+      producerId: String,
+      seqNr: SeqNr,
+      message: SequencedMessage.MessageOrChunk,
+      first: Boolean,
+      ack: Boolean)(@InternalApi private[akka] val producerController: ActorRef[ProducerControllerImpl.InternalCommand])
       extends Command[A]
       with DeliverySerializable
       with DeadLetterSuppression {
@@ -143,6 +169,22 @@ object ConsumerController {
     /** INTERNAL API */
     @InternalApi private[akka] def asFirst: SequencedMessage[A] =
       copy(first = true)(producerController)
+
+    /** INTERNAL API */
+    @InternalApi private[akka] def isFirstChunk: Boolean = {
+      message match {
+        case c: ChunkedMessage => c.firstChunk
+        case _                 => true
+      }
+    }
+
+    /** INTERNAL API */
+    @InternalApi private[akka] def isLastChunk: Boolean = {
+      message match {
+        case c: ChunkedMessage => c.lastChunk
+        case _                 => true
+      }
+    }
   }
 
   object Settings {
@@ -161,7 +203,8 @@ object ConsumerController {
     def apply(config: Config): Settings = {
       new Settings(
         flowControlWindow = config.getInt("flow-control-window"),
-        resendInterval = config.getDuration("resend-interval").asScala,
+        resendIntervalMin = config.getDuration("resend-interval-min").asScala,
+        resendIntervalMax = config.getDuration("resend-interval-max").asScala,
         onlyFlowControl = config.getBoolean("only-flow-control"))
     }
 
@@ -182,7 +225,8 @@ object ConsumerController {
 
   final class Settings private (
       val flowControlWindow: Int,
-      val resendInterval: FiniteDuration,
+      val resendIntervalMin: FiniteDuration,
+      val resendIntervalMax: FiniteDuration,
       val onlyFlowControl: Boolean) {
 
     def withFlowControlWindow(newFlowControlWindow: Int): Settings =
@@ -191,20 +235,32 @@ object ConsumerController {
     /**
      * Scala API
      */
-    def withResendInterval(newResendInterval: FiniteDuration): Settings =
-      copy(resendInterval = newResendInterval)
+    def withResendIntervalMin(newResendIntervalMin: FiniteDuration): Settings =
+      copy(resendIntervalMin = newResendIntervalMin)
+
+    /**
+     * Scala API
+     */
+    def withResendIntervalMax(newResendIntervalMax: FiniteDuration): Settings =
+      copy(resendIntervalMax = newResendIntervalMax)
 
     /**
      * Java API
      */
-    def withResendInterval(newResendInterval: JavaDuration): Settings =
-      copy(resendInterval = newResendInterval.asScala)
+    def withResendIntervalMin(newResendIntervalMin: JavaDuration): Settings =
+      copy(resendIntervalMin = newResendIntervalMin.asScala)
 
     /**
      * Java API
      */
-    def getResendInterval(): JavaDuration =
-      resendInterval.asJava
+    def withResendIntervalMax(newResendIntervalMax: JavaDuration): Settings =
+      copy(resendIntervalMax = newResendIntervalMax.asScala)
+
+    /**
+     * Java API
+     */
+    def getResendIntervalMax(): JavaDuration =
+      resendIntervalMax.asJava
 
     def withOnlyFlowControl(newOnlyFlowControl: Boolean): Settings =
       copy(onlyFlowControl = newOnlyFlowControl)
@@ -214,12 +270,13 @@ object ConsumerController {
      */
     private def copy(
         flowControlWindow: Int = flowControlWindow,
-        resendInterval: FiniteDuration = resendInterval,
+        resendIntervalMin: FiniteDuration = resendIntervalMin,
+        resendIntervalMax: FiniteDuration = resendIntervalMax,
         onlyFlowControl: Boolean = onlyFlowControl) =
-      new Settings(flowControlWindow, resendInterval, onlyFlowControl)
+      new Settings(flowControlWindow, resendIntervalMin, resendIntervalMax, onlyFlowControl)
 
     override def toString: String =
-      s"Settings($flowControlWindow, $resendInterval, $onlyFlowControl)"
+      s"Settings($flowControlWindow, $resendIntervalMin, $onlyFlowControl)"
   }
 
   def apply[A](): Behavior[Command[A]] =

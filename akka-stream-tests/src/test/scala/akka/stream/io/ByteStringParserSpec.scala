@@ -4,6 +4,11 @@
 
 package akka.stream.io
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import akka.stream.Attributes
+import akka.stream.ThrottleMode
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.impl.io.ByteStringParser.ByteReader
 import akka.stream.impl.io.ByteStringParser.ParseResult
@@ -14,12 +19,7 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
-import akka.stream.Attributes
-import akka.stream.ThrottleMode
 import akka.util.ByteString
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class ByteStringParserSpec extends StreamSpec {
 

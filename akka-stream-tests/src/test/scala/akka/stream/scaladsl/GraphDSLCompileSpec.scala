@@ -4,12 +4,13 @@
 
 package akka.stream.scaladsl
 
-import akka.NotUsed
-import akka.stream.impl.fusing.GraphStages
-import akka.stream._
-import akka.stream.testkit._
-import akka.stream.stage._
 import com.github.ghik.silencer.silent
+
+import akka.NotUsed
+import akka.stream._
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.stage._
+import akka.stream.testkit._
 
 object GraphDSLCompileSpec {
   class Fruit

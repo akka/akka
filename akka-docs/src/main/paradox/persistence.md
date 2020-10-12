@@ -11,9 +11,11 @@ For the full documentation of this feature and for new projects see @ref:[Event 
 To use Akka Persistence, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-persistence_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-persistence_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 You also have to select journal plugin and optionally snapshot store plugin, see 
@@ -564,9 +566,11 @@ Scala
 Java
 :  @@snip [LambdaPersistenceDocTest.java](/akka-docs/src/test/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #save-snapshot }
 
-where `metadata` is of type `SnapshotMetadata`:
+where `metadata` is of type `SnapshotMetadata` and contains:
 
-@@snip [SnapshotProtocol.scala](/akka-persistence/src/main/scala/akka/persistence/SnapshotProtocol.scala) { #snapshot-metadata }
+* persistenceId 
+* sequenceNr
+* timestamp
 
 During recovery, the persistent actor is offered the latest saved snapshot via a `SnapshotOffer` message from
 which it can initialize internal state.

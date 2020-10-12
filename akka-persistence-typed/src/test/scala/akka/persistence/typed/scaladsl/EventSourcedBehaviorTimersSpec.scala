@@ -9,14 +9,15 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedBehaviorTimersSpec {
 

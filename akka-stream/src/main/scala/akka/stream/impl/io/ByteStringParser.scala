@@ -4,13 +4,13 @@
 
 package akka.stream.impl.io
 
+import scala.annotation.tailrec
+import scala.util.control.{ NoStackTrace, NonFatal }
+
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.stage._
 import akka.util.ByteString
-
-import scala.annotation.tailrec
-import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
  * INTERNAL API

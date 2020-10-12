@@ -7,16 +7,18 @@
 To use Classic Actors, add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-actor_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-actor_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-actor" }
 
 ## Introduction
 
-The [Actor Model](http://en.wikipedia.org/wiki/Actor_model) provides a higher level of abstraction for writing concurrent
+The [Actor Model](https://en.wikipedia.org/wiki/Actor_model) provides a higher level of abstraction for writing concurrent
 and distributed systems. It alleviates the developer from having to deal with
 explicit locking and thread management, making it easier to write correct
 concurrent and parallel systems. Actors were defined in the 1973 paper by Carl
@@ -294,7 +296,7 @@ singleton scope.
 
 Techniques for dependency injection and integration with dependency injection frameworks
 are described in more depth in the
-[Using Akka with Dependency Injection](http://letitcrash.com/post/55958814293/akka-dependency-injection)
+[Using Akka with Dependency Injection](https://letitcrash.com/post/55958814293/akka-dependency-injection)
 guideline and the [Akka Java Spring](https://github.com/typesafehub/activator-akka-java-spring) tutorial.
 
 ## Actor API
@@ -832,7 +834,7 @@ That has benefits such as:
 The `Receive` can be implemented in other ways than using the `ReceiveBuilder` since it in the
 end is just a wrapper around a Scala `PartialFunction`. In Java, you can implement `PartialFunction` by
 extending `AbstractPartialFunction`. For example, one could implement an adapter
-to [Vavr Pattern Matching DSL](http://www.vavr.io/vavr-docs/#_pattern_matching). See the [Akka Vavr sample project](https://github.com/akka/akka-samples/tree/2.5/akka-sample-vavr) for more details.
+to [Vavr Pattern Matching DSL](https://www.vavr.io/vavr-docs/#_pattern_matching). See the [Akka Vavr sample project](https://github.com/akka/akka-samples/tree/2.5/akka-sample-vavr) for more details.
 
 If the validation of the `ReceiveBuilder` match logic turns out to be a bottleneck for some of your
 actors you can consider to implement it at lower level by extending `UntypedAbstractActor` instead

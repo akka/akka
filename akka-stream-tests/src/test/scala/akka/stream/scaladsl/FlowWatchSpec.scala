@@ -4,15 +4,15 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestActors
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 object FlowWatchSpec {
   case class Reply(payload: Int)

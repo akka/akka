@@ -4,13 +4,15 @@
 
 package akka.persistence.journal
 
-import akka.actor.ActorRef
-import akka.actor.Actor
-import akka.persistence.JournalProtocol
 import java.util.LinkedList
-import akka.actor.Props
-import akka.actor.ActorLogging
+
 import scala.collection.mutable.LinkedHashSet
+
+import akka.actor.Actor
+import akka.actor.ActorLogging
+import akka.actor.ActorRef
+import akka.actor.Props
+import akka.persistence.JournalProtocol
 
 /**
  * INTERNAL API

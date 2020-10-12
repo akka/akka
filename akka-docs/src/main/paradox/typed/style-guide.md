@@ -271,6 +271,9 @@ Scala
 Java
 :  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #message-protocol }
 
+Note that the response message hierarchy in this case could be completely avoided by using the @apiDoc[StatusReply] API 
+instead (see @ref[Generic Response Wrapper](interaction-patterns.md#generic-response-wrapper)).
+
 ## Public versus private messages
 
 Often an actor has some messages that are only for its internal implementation and not part of the public
@@ -446,8 +449,8 @@ be good to know that it's optional in case you would prefer a different approach
 * direct processing because there is only one message type
 * if or switch statements
 * annotation processor
-* [Vavr Pattern Matching DSL](http://www.vavr.io/vavr-docs/#_pattern_matching)
-* future pattern matching in Java ([JEP 305](http://openjdk.java.net/jeps/305))
+* [Vavr Pattern Matching DSL](https://www.vavr.io/vavr-docs/#_pattern_matching)
+* pattern matching since JDK 14 ([JEP 305](https://openjdk.java.net/jeps/305))
 
 In `Behaviors` there are `receive`, `receiveMessage` and `receiveSignal` factory methods that takes functions
 instead of using the `ReceiveBuilder`, which is the `receive` with the class parameter.

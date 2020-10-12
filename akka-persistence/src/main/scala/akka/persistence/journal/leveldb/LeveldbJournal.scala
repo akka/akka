@@ -4,19 +4,20 @@
 
 package akka.persistence.journal.leveldb
 
-import akka.actor._
-import akka.persistence.Persistence
-import akka.persistence.journal._
-import akka.util.Timeout
-import akka.util.Helpers.ConfigOps
-import akka.persistence.PersistentRepr
 import scala.concurrent.Future
 
-import akka.persistence.JournalProtocol.RecoverySuccess
-import akka.persistence.JournalProtocol.ReplayMessagesFailure
-import akka.pattern.pipe
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+
+import akka.actor._
+import akka.pattern.pipe
+import akka.persistence.JournalProtocol.RecoverySuccess
+import akka.persistence.JournalProtocol.ReplayMessagesFailure
+import akka.persistence.Persistence
+import akka.persistence.PersistentRepr
+import akka.persistence.journal._
+import akka.util.Helpers.ConfigOps
+import akka.util.Timeout
 
 /**
  * INTERNAL API.
@@ -92,7 +93,7 @@ private[persistence] object LeveldbJournal {
    * subscriber followed by [[PersistenceIdAdded]] messages when new persistenceIds
    * are created.
    */
-  final case object SubscribeAllPersistenceIds extends SubscriptionCommand
+  case object SubscribeAllPersistenceIds extends SubscriptionCommand
   final case class CurrentPersistenceIds(allPersistenceIds: Set[String]) extends DeadLetterSuppression
   final case class PersistenceIdAdded(persistenceId: String) extends DeadLetterSuppression
 

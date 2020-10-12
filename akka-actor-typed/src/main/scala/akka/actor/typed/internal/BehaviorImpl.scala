@@ -7,10 +7,10 @@ package internal
 
 import scala.reflect.ClassTag
 
-import akka.util.LineNumbers
-import akka.annotation.InternalApi
 import akka.actor.typed.{ TypedActorContext => AC }
 import akka.actor.typed.scaladsl.{ ActorContext => SAC }
+import akka.annotation.InternalApi
+import akka.util.LineNumbers
 import akka.util.OptionVal
 
 /**

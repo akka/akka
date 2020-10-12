@@ -6,9 +6,11 @@ package akka.actor.typed.delivery
 
 import java.util.Optional
 
-import scala.reflect.ClassTag
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
+
+import com.typesafe.config.Config
 
 import akka.Done
 import akka.actor.typed.ActorRef
@@ -19,7 +21,6 @@ import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.ApiMayChange
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
 
 /**
  * Work pulling is a pattern where several worker actors pull tasks in their own pace from
@@ -90,6 +91,10 @@ import com.typesafe.config.Config
  * The `producerId` is used in logging and included as MDC entry with key `"producerId"`. It's propagated
  * to the `ConsumerController` and is useful for correlating log messages. It can be any `String` but it's
  * recommended to use a unique identifier of representing the producer.
+ *
+ * If the `DurableProducerQueue` is defined it is created as a child actor of the `WorkPullingProducerController` actor.
+ * `ProducerController` actors are created for each registered worker. Those child actors use the same dispatcher
+ * as the parent `WorkPullingProducerController`.
  */
 @ApiMayChange // TODO #28719 when removing ApiMayChange consider removing `case class` for some of the messages
 object WorkPullingProducerController {
@@ -172,6 +177,9 @@ object WorkPullingProducerController {
       val bufferSize: Int,
       val internalAskTimeout: FiniteDuration,
       val producerControllerSettings: ProducerController.Settings) {
+
+    if (producerControllerSettings.chunkLargeMessagesBytes > 0)
+      throw new IllegalArgumentException("Chunked messages not implemented for work-pulling yet.")
 
     def withBufferSize(newBufferSize: Int): Settings =
       copy(bufferSize = newBufferSize)

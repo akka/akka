@@ -6,23 +6,24 @@ package akka.stream.stage
 
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.annotation.tailrec
+import scala.collection.{ immutable, mutable }
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration.FiniteDuration
+
+import com.github.ghik.silencer.silent
+
+import akka.{ Done, NotUsed }
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream._
+import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
 import akka.stream.impl.ActorSubscriberMessage
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
-import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
 import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.util.OptionVal
 import akka.util.unused
-import akka.{ Done, NotUsed }
-
-import scala.annotation.tailrec
-import scala.collection.{ immutable, mutable }
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Future, Promise }
-import com.github.ghik.silencer.silent
 
 /**
  * Scala API: A GraphStage represents a reusable graph stream processing operator.

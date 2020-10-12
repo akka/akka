@@ -4,25 +4,26 @@
 
 package akka.actor.dispatch
 
-import language.postfixOps
 import java.rmi.RemoteException
 import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch, TimeUnit }
 import java.util.concurrent.atomic.{ AtomicInteger, AtomicLong }
 
-import org.scalatest.Assertions._
+import scala.annotation.tailrec
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
+import language.postfixOps
+import org.scalatest.Assertions._
+
 import akka.actor._
-import akka.dispatch.sysmsg.SystemMessageList
 import akka.dispatch._
+import akka.dispatch.sysmsg.SystemMessageList
 import akka.event.Logging.Error
 import akka.pattern.ask
 import akka.testkit._
 import akka.util.Switch
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
-import scala.annotation.tailrec
 
 object ActorModelSpec {
 
@@ -257,7 +258,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
 
   import ActorModelSpec._
 
-  def newTestActor(dispatcher: String) = system.actorOf(Props[DispatcherActor].withDispatcher(dispatcher))
+  def newTestActor(dispatcher: String) = system.actorOf(Props[DispatcherActor]().withDispatcher(dispatcher))
 
   def awaitStarted(ref: ActorRef): Unit = {
     awaitCond(ref match {
@@ -352,7 +353,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       val a = newTestActor(dispatcher.id).asInstanceOf[InternalActorRef]
       awaitStarted(a)
       val done = new CountDownLatch(1)
-      a.suspend
+      a.suspend()
       a ! CountDown(done)
       assertNoCountDown(done, 1000, "Should not process messages while suspended")
       assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, suspensions = 1)
@@ -373,7 +374,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
 
     "handle waves of actors" in {
       val dispatcher = interceptedDispatcher()
-      val props = Props[DispatcherActor].withDispatcher(dispatcher.id)
+      val props = Props[DispatcherActor]().withDispatcher(dispatcher.id)
 
       def flood(num: Int): Unit = {
         val cachedMessage = CountDownNStop(new CountDownLatch(num))
@@ -410,14 +411,14 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
                     "Teammates left: " + team.size + " stopLatch: " + stopLatch.getCount + " inhab:" + dispatcher.inhabitants)
 
                   import akka.util.ccompat.JavaConverters._
-                  team.asScala.toList.sortBy(_.self.path).foreach { cell: ActorCell =>
+                  team.asScala.toList.sortBy(_.self.path).foreach { (cell: ActorCell) =>
                     System.err.println(
                       " - " + cell.self.path + " " + cell.isTerminated + " " + cell.mailbox.currentStatus + " "
                       + cell.mailbox.numberOfMessages + " " + cell.mailbox.systemDrain(SystemMessageList.LNil).size)
                   }
 
                   System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages)
-                  Iterator.continually(mq.dequeue).takeWhile(_ ne null).foreach(System.err.println)
+                  Iterator.continually(mq.dequeue()).takeWhile(_ ne null).foreach(System.err.println)
                 case _ =>
               }
 

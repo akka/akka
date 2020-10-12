@@ -1,0 +1,11 @@
+# internal changes
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.StreamSupervisor$GetChildrenSnapshots$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.StreamSupervisor#GetChildrenSnapshots.productPrefix")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.StreamSupervisor#GetChildrenSnapshots.productArity")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.StreamSupervisor#GetChildrenSnapshots.productElement")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.StreamSupervisor#GetChildrenSnapshots.productIterator")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.StreamSupervisor#GetChildrenSnapshots.canEqual")
+ProblemFilters.exclude[FinalMethodProblem]("akka.stream.impl.StreamSupervisor#GetChildrenSnapshots.toString")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.StreamSupervisor.takeSnapshotsOfChildren")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.StreamSupervisor#GetChildrenSnapshots.productElementName")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.StreamSupervisor#GetChildrenSnapshots.productElementNames")

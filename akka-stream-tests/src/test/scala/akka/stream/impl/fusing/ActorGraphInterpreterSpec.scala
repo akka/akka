@@ -6,6 +6,14 @@ package akka.stream.impl.fusing
 
 import java.util.concurrent.CountDownLatch
 
+import scala.concurrent.Await
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
+
 import akka.Done
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance.SpecViolation
@@ -22,13 +30,6 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.EventFilter
 import akka.testkit.TestLatch
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
-import org.reactivestreams.Subscription
-
-import scala.concurrent.Await
-import scala.concurrent.Promise
-import scala.concurrent.duration._
 
 class ActorGraphInterpreterSpec extends StreamSpec {
   "ActorGraphInterpreter" must {

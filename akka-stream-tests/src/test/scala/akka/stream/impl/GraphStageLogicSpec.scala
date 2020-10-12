@@ -4,18 +4,19 @@
 
 package akka.stream.impl
 
-import akka.NotUsed
-import akka.stream.stage.GraphStageLogic.{ EagerTerminateInput, EagerTerminateOutput }
-import akka.stream.testkit.StreamSpec
-import akka.stream._
-import akka.stream.scaladsl._
-import akka.stream.stage._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.impl.fusing._
+import scala.concurrent.duration.Duration
+
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.duration.Duration
+import akka.NotUsed
+import akka.stream._
+import akka.stream.impl.fusing._
+import akka.stream.scaladsl._
+import akka.stream.stage._
+import akka.stream.stage.GraphStageLogic.{ EagerTerminateInput, EagerTerminateOutput }
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
 
 class GraphStageLogicSpec extends StreamSpec with GraphInterpreterSpecKit with ScalaFutures {
 

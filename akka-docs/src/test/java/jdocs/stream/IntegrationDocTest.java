@@ -4,6 +4,7 @@
 
 package jdocs.stream;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.*;
 import akka.stream.*;
@@ -773,7 +774,15 @@ public class IntegrationDocTest extends AbstractJavaTest {
 
         Source<Integer, ActorRef> source =
             Source.actorRef(
-                bufferSize, OverflowStrategy.dropHead()); // note: backpressure is not supported
+                elem -> {
+                  // complete stream immediately if we send it Done
+                  if (elem == Done.done()) return Optional.of(CompletionStrategy.immediately());
+                  else return Optional.empty();
+                },
+                // never fail the stream because of a message
+                elem -> Optional.empty(),
+                bufferSize,
+                OverflowStrategy.dropHead()); // note: backpressure is not supported
         ActorRef actorRef =
             source
                 .map(x -> x * x)

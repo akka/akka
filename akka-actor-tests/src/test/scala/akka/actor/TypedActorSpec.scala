@@ -4,8 +4,17 @@
 
 package akka.actor
 
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ CountDownLatch, TimeUnit, TimeoutException }
+import java.util.concurrent.atomic.AtomicReference
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import com.github.ghik.silencer.silent
+import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
 import akka.actor.TypedActor._
 import akka.japi.{ Option => JOption }
@@ -14,14 +23,6 @@ import akka.routing.RoundRobinGroup
 import akka.serialization.{ JavaSerializer, SerializerWithStringManifest }
 import akka.testkit.{ filterEvents, AkkaSpec, DefaultTimeout, EventFilter, TimingTest }
 import akka.util.Timeout
-import com.github.ghik.silencer.silent
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
-
-import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
-import scala.language.postfixOps
 
 object TypedActorSpec {
 
@@ -47,9 +48,9 @@ object TypedActorSpec {
 
     def hasNext = items != Nil
 
-    def next: T = {
+    def next(): T = {
       @tailrec
-      def findNext: T = {
+      def findNext(): T = {
         val currentItems = current.get
         val newItems = currentItems match {
           case Nil => items
@@ -57,10 +58,10 @@ object TypedActorSpec {
         }
 
         if (current.compareAndSet(currentItems, newItems.tail)) newItems.head
-        else findNext
+        else findNext()
       }
 
-      findNext
+      findNext()
     }
 
     override def exists(f: T => Boolean): Boolean = items.exists(f)
@@ -121,18 +122,18 @@ object TypedActorSpec {
 
     import akka.actor.TypedActor.dispatcher
 
-    def pigdog = "Pigdog"
+    def pigdog() = "Pigdog"
 
-    def futurePigdog(): Future[String] = Future.successful(pigdog)
+    def futurePigdog(): Future[String] = Future.successful(pigdog())
 
     def futurePigdog(delay: FiniteDuration): Future[String] = {
       Thread.sleep(delay.toMillis)
-      futurePigdog
+      futurePigdog()
     }
 
     def futurePigdog(delay: FiniteDuration, numbered: Int): Future[String] = {
       Thread.sleep(delay.toMillis)
-      Future.successful(pigdog + numbered)
+      Future.successful(pigdog() + numbered)
     }
 
     @silent
@@ -140,16 +141,16 @@ object TypedActorSpec {
       foo.futurePigdog(500 millis).map(_.toUpperCase)
     }
 
-    def optionPigdog(): Option[String] = Some(pigdog)
+    def optionPigdog(): Option[String] = Some(pigdog())
 
     def optionPigdog(delay: FiniteDuration): Option[String] = {
       Thread.sleep(delay.toMillis)
-      Some(pigdog)
+      Some(pigdog())
     }
 
     def joptionPigdog(delay: FiniteDuration): JOption[String] = {
       Thread.sleep(delay.toMillis)
-      JOption.some(pigdog)
+      JOption.some(pigdog())
     }
 
     var internalNumber = 0
@@ -408,14 +409,14 @@ class TypedActorSpec
         t.failingPigdog()
         t.read() should ===(1) //Make sure state is not reset after failure
 
-        intercept[IllegalStateException] { Await.result(t.failingFuturePigdog, 2 seconds) }.getMessage should ===(
+        intercept[IllegalStateException] { Await.result(t.failingFuturePigdog(), 2 seconds) }.getMessage should ===(
           "expected")
         t.read() should ===(1) //Make sure state is not reset after failure
 
-        intercept[IllegalStateException] { t.failingJOptionPigdog }.getMessage should ===("expected")
+        intercept[IllegalStateException] { t.failingJOptionPigdog() }.getMessage should ===("expected")
         t.read() should ===(1) //Make sure state is not reset after failure
 
-        intercept[IllegalStateException] { t.failingOptionPigdog }.getMessage should ===("expected")
+        intercept[IllegalStateException] { t.failingOptionPigdog() }.getMessage should ===("expected")
 
         t.read() should ===(1) //Make sure state is not reset after failure
 
@@ -466,7 +467,7 @@ class TypedActorSpec
       val thais = for (_ <- 1 to 60) yield newFooBar("pooled-dispatcher", 6 seconds)
       val iterator = new CyclicIterator(thais)
 
-      val results = for (i <- 1 to 120) yield (i, iterator.next.futurePigdog(200 millis, i))
+      val results = for (i <- 1 to 120) yield (i, iterator.next().futurePigdog(200 millis, i))
 
       for ((i, r) <- results) Await.result(r, remaining) should ===("Pigdog" + i)
 

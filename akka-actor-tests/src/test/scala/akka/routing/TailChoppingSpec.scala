@@ -5,10 +5,12 @@
 package akka.routing
 
 import java.util.concurrent.atomic.AtomicInteger
-import akka.actor.Status.Failure
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
+import akka.actor.Status.Failure
 import akka.pattern.{ ask, AskTimeoutException }
 import akka.testkit._
 
@@ -23,7 +25,7 @@ object TailChoppingSpec {
         case _ =>
           times += 1
           Thread.sleep(sleepTime.toMillis)
-          sender ! "ack"
+          sender() ! "ack"
       }
     }), "Actor:" + id)
 }

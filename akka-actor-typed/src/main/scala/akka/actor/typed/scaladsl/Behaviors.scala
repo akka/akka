@@ -5,10 +5,10 @@
 package akka.actor.typed
 package scaladsl
 
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.actor.typed.internal._
-
 import scala.reflect.{ classTag, ClassTag }
+
+import akka.actor.typed.internal._
+import akka.annotation.{ DoNotInherit, InternalApi }
 
 /**
  * Factories for [[akka.actor.typed.Behavior]].

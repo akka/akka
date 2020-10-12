@@ -4,12 +4,12 @@
 
 package akka.testkit
 
-import scala.collection.immutable
-import scala.util.Random
 import java.net.{ DatagramSocket, InetSocketAddress, NetworkInterface, StandardProtocolFamily }
 import java.nio.channels.DatagramChannel
 import java.nio.channels.ServerSocketChannel
 
+import scala.collection.immutable
+import scala.util.Random
 import scala.util.control.NonFatal
 
 /**
@@ -24,15 +24,14 @@ object SocketUtil {
       SocketUtil.temporaryServerAddress(address = "127.20.0.0")
       true
     } catch {
-      case _: java.net.BindException =>
-        false
+      case NonFatal(_) => false
     }
   }
 
   sealed trait Protocol
-  final case object Tcp extends Protocol
-  final case object Udp extends Protocol
-  final case object Both extends Protocol
+  case object Tcp extends Protocol
+  case object Udp extends Protocol
+  case object Both extends Protocol
 
   /** @return A port on 'localhost' that is currently available */
   def temporaryLocalPort(udp: Boolean = false): Int = temporaryServerAddress("localhost", udp).getPort
@@ -82,22 +81,27 @@ object SocketUtil {
 
         val address = hostname match {
           case RANDOM_LOOPBACK_ADDRESS =>
-            if (canBindOnAlternativeLoopbackAddresses) s"127.20.${Random.nextInt(256)}.${Random.nextInt(256)}"
+            // JDK limitation? You cannot bind on addresses matching the pattern 127.x.y.255,
+            // that's why the last component must be < 255
+            if (canBindOnAlternativeLoopbackAddresses) s"127.20.${Random.nextInt(256)}.${Random.nextInt(255)}"
             else "127.0.0.1"
           case other =>
             other
         }
 
-        if (udp) {
+        val addr = new InetSocketAddress(address, 0)
+        try if (udp) {
           val ds = DatagramChannel.open().socket()
-          ds.bind(new InetSocketAddress(address, 0))
+          ds.bind(addr)
           (ds, new InetSocketAddress(address, ds.getLocalPort))
         } else {
           val ss = ServerSocketChannel.open().socket()
-          ss.bind(new InetSocketAddress(address, 0))
+          ss.bind(addr)
           (ss, new InetSocketAddress(address, ss.getLocalPort))
+        } catch {
+          case NonFatal(ex) =>
+            throw new RuntimeException(s"Binding to $addr failed with ${ex.getMessage}", ex)
         }
-
       }
       .collect { case (socket, address) => socket.close(); address }
   }

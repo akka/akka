@@ -6,9 +6,10 @@ package akka.actor.typed
 
 import java.util.Optional
 
-import akka.annotation.{ DoNotInherit, InternalApi }
 import org.slf4j.Logger
 import org.slf4j.event.Level
+
+import akka.annotation.{ DoNotInherit, InternalApi }
 
 /**
  * Logging options when using `Behaviors.logMessages`.

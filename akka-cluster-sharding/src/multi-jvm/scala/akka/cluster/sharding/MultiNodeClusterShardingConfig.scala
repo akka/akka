@@ -6,10 +6,11 @@ package akka.cluster.sharding
 
 import java.lang.reflect.Modifier
 
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.cluster.MultiNodeClusterSpec
 import akka.persistence.journal.leveldb.SharedLeveldbJournal
 import akka.remote.testkit.MultiNodeConfig
-import com.typesafe.config.{ Config, ConfigFactory }
 
 object MultiNodeClusterShardingConfig {
 
@@ -85,6 +86,7 @@ object MultiNodeClusterShardingConfig {
 abstract class MultiNodeClusterShardingConfig(
     val mode: String = ClusterShardingSettings.StateStoreModeDData,
     val rememberEntities: Boolean = false,
+    val rememberEntitiesStore: String = ClusterShardingSettings.RememberEntitiesStoreDData,
     additionalConfig: String = "",
     loglevel: String = "INFO")
     extends MultiNodeConfig {
@@ -95,7 +97,8 @@ abstract class MultiNodeClusterShardingConfig(
     s"target/ClusterSharding${testNameFromCallStack(classOf[MultiNodeClusterShardingConfig]).replace("Config", "").replace("_", "")}"
 
   val persistenceConfig: Config =
-    if (mode == ClusterShardingSettings.StateStoreModeDData) ConfigFactory.empty
+    if (mode == ClusterShardingSettings.StateStoreModeDData && rememberEntitiesStore != ClusterShardingSettings.RememberEntitiesStoreEventsourced)
+      ConfigFactory.empty
     else MultiNodeClusterShardingConfig.persistenceConfig(targetDir)
 
   val common: Config =
@@ -105,10 +108,13 @@ abstract class MultiNodeClusterShardingConfig(
         akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
         akka.cluster.testkit.auto-down-unreachable-after = 0s
         akka.cluster.sharding.state-store-mode = "$mode"
+        akka.cluster.sharding.remember-entities = $rememberEntities
+        akka.cluster.sharding.remember-entities-store = "$rememberEntitiesStore"
         akka.cluster.sharding.distributed-data.durable.lmdb {
           dir = $targetDir/sharding-ddata
           map-size = 10 MiB
         }
+        akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
         akka.loglevel = $loglevel
         akka.remote.log-remote-lifecycle-events = off
         """)

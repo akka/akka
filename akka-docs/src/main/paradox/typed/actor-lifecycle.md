@@ -3,16 +3,18 @@ project.description: The Akka Actor lifecycle.
 ---
 # Actor lifecycle
 
-For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Actors](../actors.md).
 
 ## Dependency
 
 To use Akka Actor Typed, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-actor-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-actor-typed_$scala.binary.version$
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -100,7 +102,7 @@ is a tool that mimics the old style of starting up actors.
 Child actors are created and started with @apidoc[typed.*.ActorContext]'s `spawn`.
 In the example below, when the root actor
 is started, it spawns a child actor described by the `HelloWorld` behavior. Additionally, when the root actor receives a
-`Start` message, it creates a child actor defined by the behavior `HelloWorldBot`:
+`SayHello` message, it creates a child actor defined by the behavior `HelloWorldBot`:
 
 Scala
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-main }

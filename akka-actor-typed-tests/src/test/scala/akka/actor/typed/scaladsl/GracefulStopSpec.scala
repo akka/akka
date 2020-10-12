@@ -5,12 +5,13 @@
 package akka.actor.typed
 package scaladsl
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.NotUsed
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.wordspec.AnyWordSpecLike
 
 final class GracefulStopSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 

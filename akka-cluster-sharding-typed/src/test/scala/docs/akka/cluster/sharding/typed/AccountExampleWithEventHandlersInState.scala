@@ -4,9 +4,11 @@
 
 package docs.akka.cluster.sharding.typed
 
+import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+import akka.pattern.StatusReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
@@ -27,26 +29,18 @@ object AccountExampleWithEventHandlersInState {
   object AccountEntity {
     // Command
     //#reply-command
-    sealed trait Command[Reply <: CommandReply] extends CborSerializable {
-      def replyTo: ActorRef[Reply]
-    }
+    sealed trait Command extends CborSerializable
     //#reply-command
-    final case class CreateAccount(replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
-    final case class Deposit(amount: BigDecimal, replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
+    final case class CreateAccount(replyTo: ActorRef[StatusReply[Done]]) extends Command
+    final case class Deposit(amount: BigDecimal, replyTo: ActorRef[StatusReply[Done]]) extends Command
     //#reply-command
-    final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
+    final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[StatusReply[Done]]) extends Command
     //#reply-command
-    final case class GetBalance(replyTo: ActorRef[CurrentBalance]) extends Command[CurrentBalance]
-    final case class CloseAccount(replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
+    final case class GetBalance(replyTo: ActorRef[CurrentBalance]) extends Command
+    final case class CloseAccount(replyTo: ActorRef[StatusReply[Done]]) extends Command
 
     // Reply
-    //#reply-command
-    sealed trait CommandReply extends CborSerializable
-    sealed trait OperationResult extends CommandReply
-    case object Confirmed extends OperationResult
-    final case class Rejected(reason: String) extends OperationResult
-    //#reply-command
-    final case class CurrentBalance(balance: BigDecimal) extends CommandReply
+    final case class CurrentBalance(balance: BigDecimal) extends CborSerializable
 
     // Event
     sealed trait Event extends CborSerializable
@@ -89,20 +83,20 @@ object AccountExampleWithEventHandlersInState {
     }
 
     // when used with sharding, this TypeKey can be used in `sharding.init` and `sharding.entityRefFor`:
-    val TypeKey: EntityTypeKey[Command[_]] =
-      EntityTypeKey[Command[_]]("Account")
+    val TypeKey: EntityTypeKey[Command] =
+      EntityTypeKey[Command]("Account")
 
     // Note that after defining command, event and state classes you would probably start here when writing this.
     // When filling in the parameters of EventSourcedBehavior.apply you can use IntelliJ alt+Enter > createValue
     // to generate the stub with types for the command and event handlers.
 
     //#withEnforcedReplies
-    def apply(accountNumber: String, persistenceId: PersistenceId): Behavior[Command[_]] = {
+    def apply(accountNumber: String, persistenceId: PersistenceId): Behavior[Command] = {
       EventSourcedBehavior.withEnforcedReplies(persistenceId, EmptyAccount, commandHandler(accountNumber), eventHandler)
     }
     //#withEnforcedReplies
 
-    private def commandHandler(accountNumber: String): (Account, Command[_]) => ReplyEffect[Event, Account] = {
+    private def commandHandler(accountNumber: String): (Account, Command) => ReplyEffect[Event, Account] = {
       (state, cmd) =>
         state match {
           case EmptyAccount =>
@@ -113,25 +107,34 @@ object AccountExampleWithEventHandlersInState {
 
           case acc @ OpenedAccount(_) =>
             cmd match {
-              case c: Deposit       => deposit(c)
-              case c: Withdraw      => withdraw(acc, c)
-              case c: GetBalance    => getBalance(acc, c)
-              case c: CloseAccount  => closeAccount(acc, c)
-              case c: CreateAccount => Effect.reply(c.replyTo)(Rejected(s"Account $accountNumber is already created"))
+              case c: Deposit      => deposit(c)
+              case c: Withdraw     => withdraw(acc, c)
+              case c: GetBalance   => getBalance(acc, c)
+              case c: CloseAccount => closeAccount(acc, c)
+              case c: CreateAccount =>
+                Effect.reply(c.replyTo)(StatusReply.Error(s"Account $accountNumber is already created"))
             }
 
           case ClosedAccount =>
             cmd match {
-              case c @ (_: Deposit | _: Withdraw) =>
-                Effect.reply(c.replyTo)(Rejected(s"Account $accountNumber is closed"))
+              case c: Deposit =>
+                replyClosed(accountNumber, c.replyTo)
+              case c: Withdraw =>
+                replyClosed(accountNumber, c.replyTo)
               case GetBalance(replyTo) =>
                 Effect.reply(replyTo)(CurrentBalance(Zero))
               case CloseAccount(replyTo) =>
-                Effect.reply(replyTo)(Rejected(s"Account $accountNumber is already closed"))
+                replyClosed(accountNumber, replyTo)
               case CreateAccount(replyTo) =>
-                Effect.reply(replyTo)(Rejected(s"Account $accountNumber is already closed"))
+                replyClosed(accountNumber, replyTo)
             }
         }
+    }
+
+    private def replyClosed(
+        accountNumber: String,
+        replyTo: ActorRef[StatusReply[Done]]): ReplyEffect[Event, Account] = {
+      Effect.reply(replyTo)(StatusReply.Error(s"Account $accountNumber is closed"))
     }
 
     private val eventHandler: (Account, Event) => Account = { (state, event) =>
@@ -139,19 +142,20 @@ object AccountExampleWithEventHandlersInState {
     }
 
     private def createAccount(cmd: CreateAccount): ReplyEffect[Event, Account] = {
-      Effect.persist(AccountCreated).thenReply(cmd.replyTo)(_ => Confirmed)
+      Effect.persist(AccountCreated).thenReply(cmd.replyTo)(_ => StatusReply.Ack)
     }
 
     private def deposit(cmd: Deposit): ReplyEffect[Event, Account] = {
-      Effect.persist(Deposited(cmd.amount)).thenReply(cmd.replyTo)(_ => Confirmed)
+      Effect.persist(Deposited(cmd.amount)).thenReply(cmd.replyTo)(_ => StatusReply.Ack)
     }
 
     //#reply
     private def withdraw(acc: OpenedAccount, cmd: Withdraw): ReplyEffect[Event, Account] = {
       if (acc.canWithdraw(cmd.amount))
-        Effect.persist(Withdrawn(cmd.amount)).thenReply(cmd.replyTo)(_ => Confirmed)
+        Effect.persist(Withdrawn(cmd.amount)).thenReply(cmd.replyTo)(_ => StatusReply.Ack)
       else
-        Effect.reply(cmd.replyTo)(Rejected(s"Insufficient balance ${acc.balance} to be able to withdraw ${cmd.amount}"))
+        Effect.reply(cmd.replyTo)(
+          StatusReply.Error(s"Insufficient balance ${acc.balance} to be able to withdraw ${cmd.amount}"))
     }
     //#reply
 
@@ -161,9 +165,9 @@ object AccountExampleWithEventHandlersInState {
 
     private def closeAccount(acc: OpenedAccount, cmd: CloseAccount): ReplyEffect[Event, Account] = {
       if (acc.balance == Zero)
-        Effect.persist(AccountClosed).thenReply(cmd.replyTo)(_ => Confirmed)
+        Effect.persist(AccountClosed).thenReply(cmd.replyTo)(_ => StatusReply.Ack)
       else
-        Effect.reply(cmd.replyTo)(Rejected("Can't close account with non-zero balance"))
+        Effect.reply(cmd.replyTo)(StatusReply.Error("Can't close account with non-zero balance"))
     }
 
   }

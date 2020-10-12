@@ -5,23 +5,22 @@
 package akka.actor.testkit.typed.internal
 
 import java.time.{ Duration => JDuration }
+import java.util.{ List => JList }
 import java.util.concurrent.BlockingDeque
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.function.Supplier
-import java.util.{ List => JList }
 
 import scala.annotation.tailrec
-import akka.util.ccompat.JavaConverters._
-
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
+
 import akka.actor.testkit.typed.FishingOutcome
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.javadsl.{ TestProbe => JavaTestProbe }
-import akka.actor.testkit.typed.scaladsl.TestDuration
 import akka.actor.testkit.typed.scaladsl.{ TestProbe => ScalaTestProbe }
+import akka.actor.testkit.typed.scaladsl.TestDuration
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -29,9 +28,11 @@ import akka.actor.typed.Signal
 import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
+import akka.japi.function.Creator
 import akka.util.BoxedType
 import akka.util.JavaDurationConverters._
 import akka.util.PrettyDuration._
+import akka.util.ccompat.JavaConverters._
 
 @InternalApi
 private[akka] object TestProbeImpl {
@@ -339,14 +340,14 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   override def awaitAssert[A](a: => A): A =
     awaitAssert_internal(a, remainingOrDefault, 100.millis)
 
-  override def awaitAssert[A](max: JDuration, interval: JDuration, supplier: Supplier[A]): A =
-    awaitAssert_internal(supplier.get(), max.asScala.dilated, interval.asScala)
+  override def awaitAssert[A](max: JDuration, interval: JDuration, creator: Creator[A]): A =
+    awaitAssert_internal(creator.create(), max.asScala.dilated, interval.asScala)
 
-  def awaitAssert[A](max: JDuration, supplier: Supplier[A]): A =
-    awaitAssert(max, JDuration.ofMillis(100), supplier)
+  def awaitAssert[A](max: JDuration, creator: Creator[A]): A =
+    awaitAssert(max, JDuration.ofMillis(100), creator)
 
-  def awaitAssert[A](supplier: Supplier[A]): A =
-    awaitAssert(getRemainingOrDefault, supplier)
+  def awaitAssert[A](creator: Creator[A]): A =
+    awaitAssert(getRemainingOrDefault, creator)
 
   private def awaitAssert_internal[A](a: => A, max: FiniteDuration, interval: FiniteDuration): A = {
     val stop = now + max
@@ -389,4 +390,5 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     testActor.asInstanceOf[ActorRef[AnyRef]] ! Stop
   }
 
+  override private[akka] def asJava: JavaTestProbe[M] = this
 }

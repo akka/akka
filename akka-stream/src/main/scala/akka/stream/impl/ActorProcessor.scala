@@ -4,13 +4,14 @@
 
 package akka.stream.impl
 
+import org.reactivestreams.{ Processor, Subscriber, Subscription }
+
 import akka.actor._
 import akka.annotation.InternalApi
-import akka.stream.{ AbruptTerminationException, Attributes }
-import akka.stream.impl.ActorSubscriberMessage.{ OnComplete, OnError, OnNext, OnSubscribe }
-import org.reactivestreams.{ Processor, Subscriber, Subscription }
 import akka.event.Logging
+import akka.stream.{ AbruptTerminationException, Attributes }
 import akka.stream.ActorAttributes
+import akka.stream.impl.ActorSubscriberMessage.{ OnComplete, OnError, OnNext, OnSubscribe }
 import akka.util.unused
 
 /**

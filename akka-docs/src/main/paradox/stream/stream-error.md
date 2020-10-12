@@ -5,9 +5,11 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -111,6 +113,15 @@ and we need to give it some time to start-up again. One of the prime examples wh
 when a WebSocket connection fails due to the HTTP server it's running on going down, perhaps because it is overloaded. 
 By using an exponential backoff, we avoid going into a tight reconnect loop, which both gives the HTTP server some time
 to recover, and it avoids using needless resources on the client side.
+
+The various restart shapes mentioned all expect an `akka.stream.RestartSettings` which configures the restart behaviour.
+Configurable parameters are:
+
+* `minBackoff` is the initial duration until the underlying stream is restarted
+* `maxBackoff` caps the exponential backoff
+* `randomFactor` allows addition of a random delay following backoff calculation
+* `maxRestarts` caps the total number of restarts
+* `maxRestartsWithin` sets a timeframe during which restarts are counted towards the same total for `maxRestarts`
 
 The following snippet shows how to create a backoff supervisor using @scala[`akka.stream.scaladsl.RestartSource`] 
 @java[`akka.stream.javadsl.RestartSource`] which will supervise the given `Source`. The `Source` in this case is a 

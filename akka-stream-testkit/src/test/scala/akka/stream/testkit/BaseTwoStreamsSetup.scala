@@ -4,13 +4,14 @@
 
 package akka.stream.testkit
 
+import scala.collection.immutable
+import scala.util.control.NoStackTrace
+
+import org.reactivestreams.Publisher
+
 import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.AkkaSpec
-import org.reactivestreams.Publisher
-
-import scala.collection.immutable
-import scala.util.control.NoStackTrace
 
 abstract class BaseTwoStreamsSetup extends AkkaSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -25,7 +26,7 @@ abstract class BaseTwoStreamsSetup extends AkkaSpec("""
 
   def failedPublisher[T]: Publisher[T] = TestPublisher.error[T](TestException)
 
-  def completedPublisher[T]: Publisher[T] = TestPublisher.empty[T]
+  def completedPublisher[T]: Publisher[T] = TestPublisher.empty[T]()
 
   def nonemptyPublisher[T](elems: immutable.Iterable[T]): Publisher[T] = Source(elems).runWith(Sink.asPublisher(false))
 

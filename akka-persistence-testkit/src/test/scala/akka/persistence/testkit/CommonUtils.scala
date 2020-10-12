@@ -6,11 +6,12 @@ package akka.persistence.testkit
 
 import java.util.UUID
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.persistence._
 import akka.testkit.TestKitBase
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 trait CommonUtils extends AnyWordSpecLike with TestKitBase {
 

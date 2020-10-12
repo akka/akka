@@ -7,10 +7,10 @@ package akka.discovery
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.{ Function => JFunction }
 
+import scala.util.{ Failure, Success, Try }
+
 import akka.actor._
 import akka.annotation.InternalApi
-
-import scala.util.{ Failure, Success, Try }
 
 final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
 

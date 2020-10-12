@@ -4,11 +4,12 @@
 
 package akka.cluster.pubsub
 
-import akka.testkit._
-import akka.routing.{ ConsistentHashingRoutingLogic, RouterEnvelope }
-import akka.actor.ActorRef
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.ActorRef
+import akka.routing.{ ConsistentHashingRoutingLogic, RouterEnvelope }
+import akka.testkit._
 
 case class WrappedMessage(msg: String) extends RouterEnvelope {
   override def message = msg

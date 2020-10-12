@@ -1,4 +1,4 @@
-# completionStageSource
+# Source.completionStageSource
 
 Streams the elements of an asynchronous source once its given *completion* operator completes.
 

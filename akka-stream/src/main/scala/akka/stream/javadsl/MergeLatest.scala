@@ -4,9 +4,8 @@
 
 package akka.stream.javadsl
 
-import akka.stream.stage.GraphStage
 import akka.stream.{ scaladsl, UniformFanInShape }
-
+import akka.stream.stage.GraphStage
 import akka.util.ccompat.JavaConverters._
 
 /**

@@ -4,6 +4,8 @@
 
 package akka.cluster.sharding.external
 
+import scala.concurrent.duration._
+
 import akka.cluster.sharding.external.ExternalShardAllocationStrategy.GetShardLocation
 import akka.cluster.sharding.external.ExternalShardAllocationStrategy.GetShardLocationResponse
 import akka.cluster.sharding.external.ExternalShardAllocationStrategy.GetShardLocations
@@ -11,11 +13,10 @@ import akka.testkit.AkkaSpec
 import akka.testkit.TestProbe
 import akka.util.Timeout
 
-import scala.concurrent.duration._
-
 class ExternalShardAllocationStrategySpec extends AkkaSpec("""
     akka.actor.provider = cluster 
     akka.loglevel = INFO 
+    akka.remote.artery.canonical.port = 0
     """) {
 
   val requester = TestProbe()

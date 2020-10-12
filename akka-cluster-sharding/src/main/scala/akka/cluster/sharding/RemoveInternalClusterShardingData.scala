@@ -91,7 +91,7 @@ object RemoveInternalClusterShardingData {
       if (journalPluginId == "") system.settings.config.getString("akka.persistence.journal.plugin")
       else journalPluginId
     if (resolvedJournalPluginId == "akka.persistence.journal.leveldb-shared") {
-      val store = system.actorOf(Props[SharedLeveldbStore], "store")
+      val store = system.actorOf(Props[SharedLeveldbStore](), "store")
       SharedLeveldbJournal.setStore(store, system)
     }
 

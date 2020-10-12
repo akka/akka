@@ -49,6 +49,17 @@ public final class ClusterMessages {
      * @return The systemUid.
      */
     long getSystemUid();
+
+    /**
+     * <code>optional int64 createdTimestamp = 3;</code>
+     * @return Whether the createdTimestamp field is set.
+     */
+    boolean hasCreatedTimestamp();
+    /**
+     * <code>optional int64 createdTimestamp = 3;</code>
+     * @return The createdTimestamp.
+     */
+    long getCreatedTimestamp();
   }
   /**
    * Protobuf type {@code akka.cluster.typed.ReceptionistEntry}
@@ -106,6 +117,11 @@ public final class ClusterMessages {
             case 16: {
               bitField0_ |= 0x00000002;
               systemUid_ = input.readUInt64();
+              break;
+            }
+            case 24: {
+              bitField0_ |= 0x00000004;
+              createdTimestamp_ = input.readInt64();
               break;
             }
             default: {
@@ -203,6 +219,23 @@ public final class ClusterMessages {
       return systemUid_;
     }
 
+    public static final int CREATEDTIMESTAMP_FIELD_NUMBER = 3;
+    private long createdTimestamp_;
+    /**
+     * <code>optional int64 createdTimestamp = 3;</code>
+     * @return Whether the createdTimestamp field is set.
+     */
+    public boolean hasCreatedTimestamp() {
+      return ((bitField0_ & 0x00000004) != 0);
+    }
+    /**
+     * <code>optional int64 createdTimestamp = 3;</code>
+     * @return The createdTimestamp.
+     */
+    public long getCreatedTimestamp() {
+      return createdTimestamp_;
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -231,6 +264,9 @@ public final class ClusterMessages {
       if (((bitField0_ & 0x00000002) != 0)) {
         output.writeUInt64(2, systemUid_);
       }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        output.writeInt64(3, createdTimestamp_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -246,6 +282,10 @@ public final class ClusterMessages {
       if (((bitField0_ & 0x00000002) != 0)) {
         size += akka.protobufv3.internal.CodedOutputStream
           .computeUInt64Size(2, systemUid_);
+      }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeInt64Size(3, createdTimestamp_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -272,6 +312,11 @@ public final class ClusterMessages {
         if (getSystemUid()
             != other.getSystemUid()) return false;
       }
+      if (hasCreatedTimestamp() != other.hasCreatedTimestamp()) return false;
+      if (hasCreatedTimestamp()) {
+        if (getCreatedTimestamp()
+            != other.getCreatedTimestamp()) return false;
+      }
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -291,6 +336,11 @@ public final class ClusterMessages {
         hash = (37 * hash) + SYSTEMUID_FIELD_NUMBER;
         hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
             getSystemUid());
+      }
+      if (hasCreatedTimestamp()) {
+        hash = (37 * hash) + CREATEDTIMESTAMP_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashLong(
+            getCreatedTimestamp());
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -429,6 +479,8 @@ public final class ClusterMessages {
         bitField0_ = (bitField0_ & ~0x00000001);
         systemUid_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000002);
+        createdTimestamp_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -464,6 +516,10 @@ public final class ClusterMessages {
         if (((from_bitField0_ & 0x00000002) != 0)) {
           result.systemUid_ = systemUid_;
           to_bitField0_ |= 0x00000002;
+        }
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          result.createdTimestamp_ = createdTimestamp_;
+          to_bitField0_ |= 0x00000004;
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
@@ -521,6 +577,9 @@ public final class ClusterMessages {
         }
         if (other.hasSystemUid()) {
           setSystemUid(other.getSystemUid());
+        }
+        if (other.hasCreatedTimestamp()) {
+          setCreatedTimestamp(other.getCreatedTimestamp());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -675,6 +734,43 @@ public final class ClusterMessages {
       public Builder clearSystemUid() {
         bitField0_ = (bitField0_ & ~0x00000002);
         systemUid_ = 0L;
+        onChanged();
+        return this;
+      }
+
+      private long createdTimestamp_ ;
+      /**
+       * <code>optional int64 createdTimestamp = 3;</code>
+       * @return Whether the createdTimestamp field is set.
+       */
+      public boolean hasCreatedTimestamp() {
+        return ((bitField0_ & 0x00000004) != 0);
+      }
+      /**
+       * <code>optional int64 createdTimestamp = 3;</code>
+       * @return The createdTimestamp.
+       */
+      public long getCreatedTimestamp() {
+        return createdTimestamp_;
+      }
+      /**
+       * <code>optional int64 createdTimestamp = 3;</code>
+       * @param value The createdTimestamp to set.
+       * @return This builder for chaining.
+       */
+      public Builder setCreatedTimestamp(long value) {
+        bitField0_ |= 0x00000004;
+        createdTimestamp_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int64 createdTimestamp = 3;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearCreatedTimestamp() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        createdTimestamp_ = 0L;
         onChanged();
         return this;
       }
@@ -1394,11 +1490,12 @@ public final class ClusterMessages {
   static {
     java.lang.String[] descriptorData = {
       "\n\025ClusterMessages.proto\022\022akka.cluster.ty" +
-      "ped\032\026ContainerFormats.proto\"8\n\021Reception" +
+      "ped\032\026ContainerFormats.proto\"R\n\021Reception" +
       "istEntry\022\020\n\010actorRef\030\001 \002(\t\022\021\n\tsystemUid\030" +
-      "\002 \002(\004\"3\n\026PubSubMessagePublished\022\031\n\007messa" +
-      "ge\030\001 \002(\0132\010.PayloadB(\n$akka.cluster.typed" +
-      ".internal.protobufH\001"
+      "\002 \002(\004\022\030\n\020createdTimestamp\030\003 \001(\003\"3\n\026PubSu" +
+      "bMessagePublished\022\031\n\007message\030\001 \002(\0132\010.Pay" +
+      "loadB(\n$akka.cluster.typed.internal.prot" +
+      "obufH\001"
     };
     descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -1410,7 +1507,7 @@ public final class ClusterMessages {
     internal_static_akka_cluster_typed_ReceptionistEntry_fieldAccessorTable = new
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_akka_cluster_typed_ReceptionistEntry_descriptor,
-        new java.lang.String[] { "ActorRef", "SystemUid", });
+        new java.lang.String[] { "ActorRef", "SystemUid", "CreatedTimestamp", });
     internal_static_akka_cluster_typed_PubSubMessagePublished_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_akka_cluster_typed_PubSubMessagePublished_fieldAccessorTable = new

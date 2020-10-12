@@ -4,16 +4,17 @@
 
 package akka.stream.javadsl
 
-import akka.japi.{ function, Pair, Util }
-import akka.stream._
-import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
-import akka.util.ConstantFun
-
-import scala.annotation.unchecked.uncheckedVariance
-import akka.util.ccompat.JavaConverters._
 import java.util.concurrent.CompletionStage
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
+
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
+import akka.japi.{ function, Pair, Util }
+import akka.stream._
+import akka.util.ConstantFun
+import akka.util.ccompat.JavaConverters._
+import akka.util.JavaDurationConverters._
 
 object FlowWithContext {
 
@@ -45,6 +46,10 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
   /**
    * Transform this flow by the regular flow. The given flow must support manual context propagation by
    * taking and producing tuples of (data, context).
+   *
+   *  It is up to the implementer to ensure the inner flow does not exhibit any behaviour that is not expected
+   *  by the downstream elements, such as reordering. For more background on these requirements
+   *  see https://doc.akka.io/docs/akka/current/stream/stream-context.html.
    *
    * This can be used as an escape hatch for operations that are not (yet) provided with automatic
    * context propagation here.
@@ -281,6 +286,50 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
       name: String,
       marker: function.Function2[Out, CtxOut, LogMarker]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], null)
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Flow.throttle]]
+   */
+  def throttle(elements: Int, per: java.time.Duration): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    viaScala(_.throttle(elements, per.asScala))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Flow.throttle]]
+   */
+  def throttle(
+      elements: Int,
+      per: java.time.Duration,
+      maximumBurst: Int,
+      mode: ThrottleMode): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    viaScala(_.throttle(elements, per.asScala, maximumBurst, mode))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Flow.throttle]]
+   */
+  def throttle(
+      cost: Int,
+      per: java.time.Duration,
+      costCalculation: function.Function[Out, Integer]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    viaScala(_.throttle(cost, per.asScala, costCalculation.apply))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.throttle]].
+   *
+   * @see [[akka.stream.javadsl.Flow.throttle]]
+   */
+  def throttle(
+      cost: Int,
+      per: java.time.Duration,
+      maximumBurst: Int,
+      costCalculation: function.Function[Out, Integer],
+      mode: ThrottleMode): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    viaScala(_.throttle(cost, per.asScala, maximumBurst, costCalculation.apply, mode))
 
   def asScala: scaladsl.FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     scaladsl.FlowWithContext.fromTuples(

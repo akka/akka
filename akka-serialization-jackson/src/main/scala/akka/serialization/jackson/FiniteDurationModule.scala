@@ -6,8 +6,6 @@ package akka.serialization.jackson
 
 import scala.concurrent.duration.FiniteDuration
 
-import akka.annotation.InternalApi
-import akka.util.JavaDurationConverters._
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
@@ -16,6 +14,9 @@ import com.fasterxml.jackson.databind.deser.std.StdScalarDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdScalarSerializer
 import com.fasterxml.jackson.datatype.jsr310.deser.DurationDeserializer
 import com.fasterxml.jackson.datatype.jsr310.ser.DurationSerializer
+
+import akka.annotation.InternalApi
+import akka.util.JavaDurationConverters._
 
 /**
  * INTERNAL API: Adds support for serializing and deserializing [[FiniteDuration]].

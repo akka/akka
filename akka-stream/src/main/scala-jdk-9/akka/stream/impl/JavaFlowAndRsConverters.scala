@@ -6,9 +6,10 @@ package akka.stream.impl
 
 import java.util.concurrent.Flow
 
-import akka.annotation.InternalApi
-import org.{ reactivestreams => rs }
 import JavaFlowAndRsConverters.Implicits._
+import org.{reactivestreams => rs}
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API: Provides converters between Reactive Streams (reactive-streams.org) and their Java 9+ counter-parts,

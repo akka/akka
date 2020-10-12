@@ -4,13 +4,11 @@ Split off elements into a new substream whenever a predicate function return `tr
 
 @ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #splitWhen }
+@apidoc[Source.splitWhen](Source) { scala="#splitWhen(substreamCancelStrategy:akka.stream.SubstreamCancelStrategy)(p:Out=&gt;Boolean):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#splitWhen(akka.stream.SubstreamCancelStrategy,akka.japi.function.Predicate)" }
+@apidoc[Flow.splitWhen](Flow) { scala="#splitWhen(substreamCancelStrategy:akka.stream.SubstreamCancelStrategy)(p:Out=&gt;Boolean):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#splitWhen(akka.stream.SubstreamCancelStrategy,akka.japi.function.Predicate)" }
 
-@@@
 
 ## Description
 

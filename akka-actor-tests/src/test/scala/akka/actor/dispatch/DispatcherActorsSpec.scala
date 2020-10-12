@@ -5,6 +5,7 @@
 package akka.actor.dispatch
 
 import java.util.concurrent.CountDownLatch
+
 import akka.actor._
 import akka.testkit.AkkaSpec
 

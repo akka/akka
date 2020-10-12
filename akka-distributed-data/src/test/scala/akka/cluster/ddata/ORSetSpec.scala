@@ -6,11 +6,12 @@ package akka.cluster.ddata
 
 import scala.collection.immutable.TreeMap
 
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.Address
 import akka.cluster.UniqueAddress
 import akka.cluster.ddata.Replicator.Changed
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class ORSetSpec extends AnyWordSpec with Matchers {
 

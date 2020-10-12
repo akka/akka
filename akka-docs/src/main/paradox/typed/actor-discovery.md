@@ -1,15 +1,17 @@
 # Actor discovery
 
-For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md#actorselection).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Actors](../actors.md#actorselection).
 
 ## Dependency
 
 To use Akka Actor Typed, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-actor-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-actor-typed_$scala.binary.version$
+  version=AkkaVersion
 }
 
 ## Obtaining Actor references
@@ -26,9 +28,9 @@ applicable.
 ## Receptionist
 
 When an actor needs to be discovered by another actor but you are unable to put a reference to it in an incoming message,
-you can use the `Receptionist`. You register the specific actors that should be discoverable 
-from other nodes in the local `Receptionist` instance. The API of the receptionist is also based on actor messages. 
-This registry of actor references is then automatically distributed to all other nodes in the cluster. 
+you can use the `Receptionist`. It supports both local and cluster(see @ref:[cluster](#cluster-receptionist)). You register the specific actors that should be discoverable 
+from each node in the local `Receptionist` instance. The API of the receptionist is also based on actor messages. 
+This registry of actor references is then automatically distributed to all other nodes in the case of a cluster. 
 You can lookup such actors with the key that was used when they were registered. The reply to such a `Find` request is 
 a `Listing`, which contains a `Set` of actor references that are registered for the key. Note that several actors can be 
 registered to the same key.
@@ -36,7 +38,7 @@ registered to the same key.
 The registry is dynamic. New actors can be registered during the lifecycle of the system. Entries are removed when 
 registered actors are stopped, manually deregistered or the node they live on is removed from the @ref:[Cluster](cluster.md). 
 To facilitate this dynamic aspect you can also subscribe to changes with the `Receptionist.Subscribe` message. It will send 
-`Listing` messages to the subscriber when entries for a key are changed.
+`Listing` messages to the subscriber, first with the set of entries upon subscription, then whenever the entries for a key are changed.
 
 These imports are used in the following example:
 

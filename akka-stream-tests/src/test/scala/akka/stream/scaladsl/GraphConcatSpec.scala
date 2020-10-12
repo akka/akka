@@ -4,7 +4,7 @@
 
 package akka.stream.scaladsl
 
-import scala.concurrent.{ Promise }
+import scala.concurrent.Promise
 
 import akka.stream._
 import akka.stream.testkit._

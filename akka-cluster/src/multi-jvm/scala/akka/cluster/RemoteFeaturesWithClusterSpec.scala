@@ -4,6 +4,9 @@
 
 package akka.cluster
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.ScalaFutures
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.AddressFromURIString
@@ -17,8 +20,6 @@ import akka.remote.RemoteWatcher.Heartbeat
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
-import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
 
 class ClusterRemoteFeaturesConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -98,7 +99,7 @@ abstract class ClusterRemoteFeaturesSpec(multiNodeConfig: ClusterRemoteFeaturesC
       enterBarrier("cluster-up")
 
       runOn(first) {
-        val actor = system.actorOf(Props[AddressPing], "kattdjur")
+        val actor = system.actorOf(Props[AddressPing](), "kattdjur")
         actor.isInstanceOf[RemoteActorRef] shouldBe true
         actor.path.address shouldEqual node(second).address
         actor.path.address.hasGlobalScope shouldBe true
@@ -110,7 +111,7 @@ abstract class ClusterRemoteFeaturesSpec(multiNodeConfig: ClusterRemoteFeaturesC
       enterBarrier("CARP-in-cluster-remote-validated")
 
       def assertIsLocalRef(): Unit = {
-        val actor = system.actorOf(Props[AddressPing], "kattdjur")
+        val actor = system.actorOf(Props[AddressPing](), "kattdjur")
         actor.isInstanceOf[RepointableActorRef] shouldBe true
         val localAddress = AddressFromURIString(s"akka://${system.name}")
         actor.path.address shouldEqual localAddress

@@ -8,16 +8,16 @@ import java.io.{ IOException, InputStream }
 import java.util.concurrent.{ BlockingQueue, LinkedBlockingDeque, TimeUnit }
 import java.util.concurrent.atomic.AtomicBoolean
 
+import scala.annotation.tailrec
+import scala.concurrent.duration.FiniteDuration
+
 import akka.annotation.InternalApi
+import akka.stream.{ AbruptStageTerminationException, Attributes, Inlet, SinkShape }
 import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.InputStreamSinkStage._
 import akka.stream.stage._
-import akka.stream.{ AbruptStageTerminationException, Attributes, Inlet, SinkShape }
 import akka.util.ByteString
-
-import scala.annotation.tailrec
-import scala.concurrent.duration.FiniteDuration
 
 private[stream] object InputStreamSinkStage {
 

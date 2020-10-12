@@ -4,9 +4,10 @@
 
 package akka.routing
 
+import java.util.Arrays
+
 import scala.collection.immutable
 import scala.reflect.ClassTag
-import java.util.Arrays
 
 /**
  * Consistent Hashing node ring implementation.

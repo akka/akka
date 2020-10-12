@@ -4,8 +4,12 @@
 
 package akka.cluster.sharding.typed.internal
 
+import java.util.function.IntFunction
 import java.util.Optional
 
+import scala.compat.java8.OptionConverters._
+import scala.concurrent.duration.Duration
+import scala.reflect.ClassTag
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -14,23 +18,20 @@ import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.typed.ClusterShardingSettings
-import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModeDData
+import akka.cluster.sharding.typed.ClusterShardingSettings.{ RememberEntitiesStoreModeDData, StateStoreModeDData }
+import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.ShardingMessageExtractor
-import akka.cluster.sharding.typed.scaladsl
 import akka.cluster.sharding.typed.javadsl
-import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
+import akka.cluster.sharding.typed.scaladsl
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.sharding.typed.scaladsl.StartEntity
 import akka.cluster.typed.Cluster
-import akka.japi.function
+import akka.cluster.typed.SelfUp
+import akka.cluster.typed.Subscribe
 import akka.util.PrettyDuration
-
-import scala.compat.java8.OptionConverters._
-import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 
 /**
  * INTERNAL API
@@ -40,7 +41,8 @@ private[akka] object ShardedDaemonProcessImpl {
 
   object KeepAlivePinger {
     sealed trait Event
-    case object Tick extends Event
+    private case object Tick extends Event
+    private case object StartTick extends Event
 
     def apply[T](
         settings: ShardedDaemonProcessSettings,
@@ -48,19 +50,22 @@ private[akka] object ShardedDaemonProcessImpl {
         identities: Set[EntityId],
         shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[Event] =
       Behaviors.setup { context =>
+        Cluster(context.system).subscriptions ! Subscribe(
+          context.messageAdapter[SelfUp](_ => StartTick),
+          classOf[SelfUp])
         Behaviors.withTimers { timers =>
           def triggerStartAll(): Unit = {
             identities.foreach(id => shardingRef ! StartEntity(id))
           }
-
-          context.log.debug2(
-            s"Starting Sharded Daemon Process KeepAlivePinger for [{}], with ping interval [{}]",
-            name,
-            PrettyDuration.format(settings.keepAliveInterval))
-          timers.startTimerWithFixedDelay(Tick, settings.keepAliveInterval)
-          triggerStartAll()
-
           Behaviors.receiveMessage {
+            case StartTick =>
+              triggerStartAll()
+              context.log.debug2(
+                s"Starting Sharded Daemon Process KeepAlivePinger for [{}], with ping interval [{}]",
+                name,
+                PrettyDuration.format(settings.keepAliveInterval))
+              timers.startTimerWithFixedDelay(Tick, settings.keepAliveInterval)
+              Behaviors.same
             case Tick =>
               triggerStartAll()
               context.log.debug("Periodic ping sent to [{}] processes", identities.size)
@@ -93,9 +98,12 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
   import ShardedDaemonProcessImpl._
 
   def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(
-      implicit classTag: ClassTag[T]): Unit = {
+      implicit classTag: ClassTag[T]): Unit =
     init(name, numberOfInstances, behaviorFactory, ShardedDaemonProcessSettings(system), None)(classTag)
-  }
+
+  override def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T], stopMessage: T)(
+      implicit classTag: ClassTag[T]): Unit =
+    init(name, numberOfInstances, behaviorFactory, ShardedDaemonProcessSettings(system), Some(stopMessage))(classTag)
 
   def init[T](
       name: String,
@@ -114,7 +122,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
       val shardingBaseSettings =
         settings.shardingSettings match {
           case None =>
-            // defaults in akka.cluster.sharding but allow overrides specifically for actor-set
+            // defaults in akka.cluster.sharding but allow overrides specifically for sharded-daemon-process
             ClusterShardingSettings.fromConfig(
               system.settings.config.getConfig("akka.cluster.sharded-daemon-process.sharding"))
           case Some(shardingSettings) => shardingSettings
@@ -122,7 +130,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
 
       new ClusterShardingSettings(
         numberOfShards,
-        shardingBaseSettings.role,
+        if (settings.role.isDefined) settings.role else shardingBaseSettings.role,
         shardingBaseSettings.dataCenter,
         false, // remember entities disabled
         "",
@@ -130,6 +138,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
         Duration.Zero, // passivation disabled
         shardingBaseSettings.shardRegionQueryTimeout,
         StateStoreModeDData,
+        RememberEntitiesStoreModeDData, // not used as remembered entities is off
         shardingBaseSettings.tuningParameters,
         shardingBaseSettings.coordinatorSingletonSettings)
     }
@@ -153,18 +162,28 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     }
   }
 
+  // Java API
   def init[T](
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
-      behaviorFactory: function.Function[Integer, Behavior[T]]): Unit =
+      behaviorFactory: IntFunction[Behavior[T]]): Unit =
     init(name, numberOfInstances, n => behaviorFactory(n))(ClassTag(messageClass))
+
+  override def init[T](
+      messageClass: Class[T],
+      name: String,
+      numberOfInstances: Int,
+      behaviorFactory: IntFunction[Behavior[T]],
+      stopMessage: T): Unit =
+    init(name, numberOfInstances, n => behaviorFactory(n), ShardedDaemonProcessSettings(system), Some(stopMessage))(
+      ClassTag(messageClass))
 
   def init[T](
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
-      behaviorFactory: function.Function[Integer, Behavior[T]],
+      behaviorFactory: IntFunction[Behavior[T]],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Optional[T]): Unit =
     init(name, numberOfInstances, n => behaviorFactory(n), settings, stopMessage.asScala)(ClassTag(messageClass))

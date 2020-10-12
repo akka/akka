@@ -4,19 +4,18 @@
 
 package akka.persistence.journal
 
-import scala.concurrent.duration._
-
-import akka.actor._
-import akka.pattern.pipe
-import akka.persistence._
-import akka.util.Helpers.toRootLowerCase
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
 
+import akka.actor._
 import akka.pattern.CircuitBreaker
+import akka.pattern.pipe
+import akka.persistence._
+import akka.util.Helpers.toRootLowerCase
 
 /**
  * Abstract journal, optimized for asynchronous, non-blocking writes.

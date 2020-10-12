@@ -3,15 +3,16 @@
  */
 
 package akka.actor
+import java.net.MalformedURLException
 import java.net.URI
 import java.net.URISyntaxException
-import java.net.MalformedURLException
 import java.util.Optional
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import akka.annotation.InternalApi
 import scala.compat.java8.OptionConverters._
+
+import akka.annotation.InternalApi
 
 /**
  * The address specifies the physical location under which an Actor can be

@@ -4,8 +4,8 @@
 
 package akka.actor.typed.scaladsl
 
-import akka.actor.typed.MessageAdaptionFailure
 import akka.actor.typed.{ Behavior, ExtensibleBehavior, Signal, TypedActorContext }
+import akka.actor.typed.MessageAdaptionFailure
 
 /**
  * An actor `Behavior` can be implemented by extending this class and implement the
@@ -70,12 +70,13 @@ abstract class AbstractBehavior[T](protected val context: ActorContext[T]) exten
   @throws(classOf[Exception])
   def onSignal: PartialFunction[Signal, Behavior[T]] = PartialFunction.empty
 
-  private def checkRightContext(ctx: TypedActorContext[T]): Unit =
+  private def checkRightContext(ctx: TypedActorContext[T]): Unit = {
     if (ctx.asJava ne context)
       throw new IllegalStateException(
         s"Actor [${ctx.asJava.getSelf}] of AbstractBehavior class " +
         s"[${getClass.getName}] was created with wrong ActorContext [${context.asJava.getSelf}]. " +
         "Wrap in Behaviors.setup and pass the context to the constructor of AbstractBehavior.")
+  }
 
   @throws(classOf[Exception])
   override final def receive(ctx: TypedActorContext[T], msg: T): Behavior[T] = {

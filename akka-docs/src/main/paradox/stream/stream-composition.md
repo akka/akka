@@ -5,9 +5,11 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -52,8 +54,8 @@ parameters.
 Please note that when combining a `Flow` using that method, the termination signals are not carried 
 "through" as the `Sink` and `Source` are assumed to be fully independent. If however you want to construct
 a `Flow` like this but need the termination events to trigger "the other side" of the composite flow, you can use
-`CoupledTerminationFlow.fromSinkAndSource` which does just that. For example the cancelation of the composite flows 
-source-side will then lead to completion of its sink-side. Read `CoupledTerminationFlow`'s scaladoc for a 
+`Flow.fromSinkAndSourceCoupled` or `Flow.fromSinkAndSourceCoupledMat` which does just that. For example the cancelation of the composite flows 
+source-side will then lead to completion of its sink-side. Read @apidoc[Flow]'s API documentation for a 
 detailed explanation how this works.
 
 The example `BidiFlow` demonstrates that internally a module can be of arbitrary complexity, and the exposed

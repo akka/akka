@@ -4,16 +4,17 @@
 
 package akka.cluster.typed
 
+import scala.concurrent.Promise
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.{ Behaviors, GroupRouter, Routers }
 import akka.serialization.jackson.CborSerializable
 import akka.util.Timeout
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Promise
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object GroupRouterSpec {
   def config = ConfigFactory.parseString(s"""
@@ -68,6 +69,7 @@ class GroupRouterSpec extends ScalaTestWithActorTestKit(GroupRouterSpec.config) 
   def checkGroupRouterBehavior[T](groupRouter: GroupRouter[Ping.type], settings: GroupRouterSpecSettings)(
       resultCheck: (Seq[ActorRef[Ping.type]], Seq[ActorRef[Ping.type]]) => T): T = {
     import scala.concurrent.duration._
+
     import akka.actor.typed.scaladsl.AskPattern._
     implicit val system1 =
       createSystem(
@@ -105,7 +107,7 @@ class GroupRouterSpec extends ScalaTestWithActorTestKit(GroupRouterSpec.config) 
     val node2 = Cluster(system2)
     node2.manager ! Join(node1.selfMember.address)
 
-    val statsPromise = Promise[(Seq[ActorRef[Ping.type]], Seq[ActorRef[Ping.type]])]
+    val statsPromise = Promise[(Seq[ActorRef[Ping.type]], Seq[ActorRef[Ping.type]])]()
     val cancelable = system.scheduler.scheduleAtFixedRate(200.millis, 200.millis)(() => {
       implicit val timeout = Timeout(3.seconds)
       val actorRefsInNode1 = system1.ask[Seq[ActorRef[Ping.type]]](ref => GetWorkers(ref)).futureValue

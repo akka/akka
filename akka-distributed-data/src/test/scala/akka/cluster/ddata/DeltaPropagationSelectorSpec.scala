@@ -4,6 +4,10 @@
 
 package akka.cluster.ddata
 
+import org.scalactic.TypeCheckedTripleEquals
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.Address
 import akka.cluster.UniqueAddress
 import akka.cluster.ddata.Key.KeyId
@@ -11,9 +15,6 @@ import akka.cluster.ddata.Replicator.Internal.DataEnvelope
 import akka.cluster.ddata.Replicator.Internal.Delta
 import akka.cluster.ddata.Replicator.Internal.DeltaPropagation
 import akka.cluster.ddata.Replicator.Internal.DeltaPropagation.NoDeltaPlaceholder
-import org.scalactic.TypeCheckedTripleEquals
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 object DeltaPropagationSelectorSpec {
   class TestSelector(val selfUniqueAddress: UniqueAddress, override val allNodes: Vector[UniqueAddress])

@@ -74,7 +74,7 @@ package object adapter {
    * Extension methods added to [[akka.actor.typed.ActorSystem]].
    */
   implicit class TypedActorSystemOps(val sys: ActorSystem[_]) extends AnyVal {
-    def toClassic: akka.actor.ActorSystem = ActorSystemAdapter.toClassic(sys)
+    def toClassic: akka.actor.ActorSystem = sys.classicSystem
 
     /**
      * INTERNAL API

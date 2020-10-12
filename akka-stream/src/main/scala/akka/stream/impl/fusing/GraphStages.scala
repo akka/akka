@@ -6,23 +6,23 @@ package akka.stream.impl.fusing
 
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 
+import scala.annotation.unchecked.uncheckedVariance
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration.FiniteDuration
+import scala.util.Try
+
 import akka.Done
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
+import akka.stream.{ Shape, _ }
 import akka.stream.FlowMonitorState._
+import akka.stream.impl.{ LinearTraversalBuilder, ReactiveStreamsCompliance }
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout._
-import akka.stream.impl.{ LinearTraversalBuilder, ReactiveStreamsCompliance }
 import akka.stream.scaladsl._
 import akka.stream.stage._
-import akka.stream.{ Shape, _ }
-
-import scala.annotation.unchecked.uncheckedVariance
-import scala.util.Try
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Future, Promise }
 
 /**
  * INTERNAL API

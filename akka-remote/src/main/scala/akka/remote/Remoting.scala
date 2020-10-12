@@ -4,36 +4,37 @@
 
 package akka.remote
 
+import java.net.URLEncoder
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeoutException
+
+import scala.collection.immutable
+import scala.collection.immutable.{ HashMap, Seq }
+import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
+import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+
 import akka.Done
-import akka.actor.SupervisorStrategy._
 import akka.actor._
+import akka.actor.ActorInitializationException
+import akka.actor.SupervisorStrategy._
+import akka.annotation.InternalStableApi
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.MessageDispatcher
 import akka.event.{ Logging, LoggingAdapter }
 import akka.pattern.{ ask, gracefulStop, pipe }
 import akka.remote.EndpointManager._
 import akka.remote.Remoting.TransportSupervisor
-import akka.remote.transport.Transport.{ ActorAssociationEventListener, AssociationEventListener, InboundAssociation }
 import akka.remote.transport._
-import com.typesafe.config.Config
-import java.net.URLEncoder
-import java.util.concurrent.TimeoutException
-
-import scala.collection.immutable.{ HashMap, Seq }
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Success }
 import akka.remote.transport.AkkaPduCodec.Message
-import java.util.concurrent.ConcurrentHashMap
-
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.remote.transport.Transport.{ ActorAssociationEventListener, AssociationEventListener, InboundAssociation }
 import akka.util.ByteString.UTF_8
 import akka.util.OptionVal
-
-import scala.collection.immutable
-import akka.actor.ActorInitializationException
-import akka.annotation.InternalStableApi
 import akka.util.ccompat._
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -54,7 +55,7 @@ private[akka] final case class RARP(provider: RemoteActorRefProvider) extends Ex
  */
 private[akka] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
 
-  override def lookup() = RARP
+  override def lookup = RARP
 
   override def createExtension(system: ExtendedActorSystem) = RARP(system.provider.asInstanceOf[RemoteActorRefProvider])
 }
@@ -149,9 +150,9 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   import provider.remoteSettings._
 
-  private implicit val ec = system.dispatchers.lookup(Dispatcher)
+  private implicit val ec: MessageDispatcher = system.dispatchers.lookup(Dispatcher)
 
-  val transportSupervisor = system.systemActorOf(configureDispatcher(Props[TransportSupervisor]), "transports")
+  val transportSupervisor = system.systemActorOf(configureDispatcher(Props[TransportSupervisor]()), "transports")
 
   override def localAddressForRemote(remote: Address): Address =
     Remoting.localAddressForRemote(transportMapping, remote)
@@ -459,17 +460,17 @@ private[remote] object EndpointManager {
 
     def prune(): Unit = {
       addressToWritable = addressToWritable.collect {
-        case entry @ (_, Gated(timeOfRelease)) if timeOfRelease.hasTimeLeft =>
+        case entry @ (_, Gated(timeOfRelease)) if timeOfRelease.hasTimeLeft() =>
           // Gated removed when no time left
           entry
-        case entry @ (_, Quarantined(_, timeOfRelease)) if timeOfRelease.hasTimeLeft =>
+        case entry @ (_, Quarantined(_, timeOfRelease)) if timeOfRelease.hasTimeLeft() =>
           // Quarantined removed when no time left
           entry
         case entry @ (_, _: Pass) => entry
       }
 
       addressToRefuseUid = addressToRefuseUid.collect {
-        case entry @ (_, (_, timeOfRelease)) if timeOfRelease.hasTimeLeft =>
+        case entry @ (_, (_, timeOfRelease)) if timeOfRelease.hasTimeLeft() =>
           // // Quarantined/refuseUid removed when no time left
           entry
       }

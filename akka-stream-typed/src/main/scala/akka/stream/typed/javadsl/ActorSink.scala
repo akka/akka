@@ -4,8 +4,8 @@
 
 package akka.stream.typed.javadsl
 
-import akka.actor.typed._
 import akka.NotUsed
+import akka.actor.typed._
 import akka.stream.javadsl._
 import akka.stream.typed
 
@@ -48,6 +48,13 @@ object ActorSink {
    * will be sent to the destination actor.
    * When the stream is completed with failure - result of `onFailureMessage(throwable)`
    * function will be sent to the destination actor.
+   *
+   * @param ref the receiving actor as `ActorRef<T>` (where `T` must include the control messages below)
+   * @param messageAdapter a function that wraps the stream elements to be sent to the actor together with an `ActorRef[A]` which accepts the ack message
+   * @param onInitMessage a function that wraps an `ActorRef<A>` into a messages to couple the receiving actor to the sink
+   * @param ackMessage a fixed message that is expected after every element sent to the receiving actor
+   * @param onCompleteMessage the message to be sent to the actor when the stream completes
+   * @param onFailureMessage a function that creates a message to be sent to the actor in case the stream fails from a `Throwable`
    */
   def actorRefWithBackpressure[T, M, A](
       ref: ActorRef[M],

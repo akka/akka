@@ -4,16 +4,16 @@
 
 package akka.stream.scaladsl
 
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
 import akka.NotUsed
 import akka.stream.ActorAttributes
 import akka.stream.Supervision
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.testkit._
-
-import scala.collection.immutable
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 class FlowSupervisionSpec extends StreamSpec {
   import ActorAttributes.supervisionStrategy

@@ -4,9 +4,10 @@
 
 package akka.io
 
+import Tcp._
+
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.testkit.SocketUtil.temporaryServerAddresses
-import Tcp._
 
 class CapacityLimitSpec extends AkkaSpec("""
     akka.loglevel = ERROR

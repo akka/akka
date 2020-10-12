@@ -8,6 +8,9 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -27,8 +30,6 @@ import akka.pattern.AskTimeoutException
 import akka.serialization.jackson.CborSerializable
 import akka.util.Timeout
 import akka.util.ccompat._
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 @ccompatUsedUntil213
 object ClusterShardingSpec {
@@ -77,7 +78,7 @@ object ClusterShardingSpec {
 
         case (ctx, WhoAreYou(replyTo)) =>
           val address = Cluster(ctx.system).selfMember.address
-          replyTo ! s"I'm ${ctx.self.path.name} at ${address.host.get}:${address.port.get}"
+          replyTo ! s"I'm ${ctx.self.path.name} at ${address.host.get}:${address.port.get} responding to $replyTo"
           Behaviors.same
 
         case (_, ReplyPlz(toMe)) =>
@@ -269,7 +270,10 @@ class ClusterShardingSpec
       val charlieRef = sharding.entityRefFor(typeKeyWithEnvelopes, "charlie")
 
       val reply1 = bobRef ? WhoAreYou // TODO document that WhoAreYou(_) would not work
-      reply1.futureValue should startWith("I'm bob")
+      val response = reply1.futureValue
+      response should startWith("I'm bob")
+      // typekey and entity id encoded in promise ref path
+      response should include(s"${typeKeyWithEnvelopes.name}-bob")
 
       val reply2 = charlieRef.ask(WhoAreYou)
       reply2.futureValue should startWith("I'm charlie")
@@ -294,7 +298,10 @@ class ClusterShardingSpec
         }
       })
 
-      p.receiveMessage().s should startWith("I'm alice")
+      val response = p.receiveMessage()
+      response.s should startWith("I'm alice")
+      // typekey and entity id encoded in promise ref path
+      response.s should include(s"${typeKeyWithEnvelopes.name}-alice")
 
       aliceRef ! StopPlz()
 

@@ -4,15 +4,15 @@
 
 package akka.cluster
 
-import language.postfixOps
+import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.testkit._
-import scala.concurrent.duration._
-import scala.concurrent.duration._
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.testkit._
 
 final case class SplitBrainMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")

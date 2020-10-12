@@ -60,13 +60,35 @@ copied over to a maven server. If you have access, the Jenkins job at
 https://jenkins.akka.io:8498/job/akka-publish-wip/ can be used to publish
 a snapshot to https://repo.akka.io/snapshots from any branch.
 
+## Releasing only updated docs
+
+It is possible to release a revised documentation to the already existing release.
+
+1. Create a new branch from a release tag. If a revised documentation is for the `v2.6.4` release, then the name of the new branch should be `docs/v2.6.4`.
+1. Add and commit `version.sbt` file that pins the version to the one that is being revised. Also set `isSnapshot` to `false` for the stable documentation links. For example:
+    ```scala
+    ThisBuild / version := "2.6.4"
+    ThisBuild / isSnapshot := false
+    ```
+1. Make all of the required changes to the documentation.
+1. Build documentation locally with:
+    ```sh
+    sbt akka-docs/paradoxBrowse
+    ```
+1. If the generated documentation looks good, send it to Gustav:
+    ```sh
+    sbt akka-docs/publishRsync
+    ```
+1. Do not forget to push the new branch back to GitHub.
+
 ## Release steps
 
-* Do a `project/scripts/release <version>` dry run
-* If all goes well, `project/scripts/release --real-run <version>`
+* Tag the release: `git tag -am "Version 2.6.x" v2.6.x`
+* Do a `project/scripts/release` to build and release to sonatype
 * Log into sonatype, 'close' the staging repo.
 * Test the artifacts by adding `resolvers += "Staging Repo" at "https://oss.sonatype.org/content/repositories/comtypesafe-xxxx"` to a test project
 * If all is well, 'release' the staging repo.
+* Push the release tag to github
 
 ## Announcing
 
@@ -94,17 +116,19 @@ Now wait until all artifacts have been properly propagated. Then:
   * Tweet about it
   * Post about it on Discuss
   * Post about it on Gitter
+  * Create a GitHub 'release' for the tag via https://github.com/akka/akka/releases with a link to the release notes
 
 ## Update references
 
 Update the versions used in:
 
 * https://github.com/akka/akka-samples
+* https://github.com/lightbend/lightbend-platform-docs/blob/master/docs/modules/getting-help/examples/build.sbt (this populates https://developer.lightbend.com/docs/lightbend-platform/introduction/getting-help/build-dependencies.html#_akka)
+
+These are autoupdated by latest stable on maven central:
 * https://github.com/akka/akka-quickstart-java.g8
 * https://github.com/akka/akka-quickstart-scala.g8
 * https://github.com/akka/akka-http-quickstart-java.g8
 * https://github.com/akka/akka-http-quickstart-scala.g8
-* https://github.com/akka/akka-distributed-workers-scala.g8
 * https://github.com/akka/akka-grpc-quickstart-java.g8
 * https://github.com/akka/akka-grpc-quickstart-scala.g8
-* https://github.com/lightbend/lightbend-platform-docs/blob/master/docs/modules/getting-help/examples/build.sbt (this populates https://developer.lightbend.com/docs/lightbend-platform/introduction/getting-help/build-dependencies.html#_akka)

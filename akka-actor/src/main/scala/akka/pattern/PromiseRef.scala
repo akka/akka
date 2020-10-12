@@ -4,10 +4,10 @@
 
 package akka.pattern
 
+import scala.concurrent.{ Future, Promise }
+
 import akka.actor._
 import akka.util.Timeout
-
-import scala.concurrent.{ Future, Promise }
 
 /**
  * A combination of a Future and an ActorRef associated with it, which points
@@ -154,7 +154,8 @@ private[akka] final class AskPromiseRef private (promiseActorRef: PromiseActorRe
 private[akka] object AskPromiseRef {
   def apply(provider: ActorRefProvider, timeout: Timeout): AskPromiseRef = {
     if (timeout.duration.length > 0) {
-      val promiseActorRef = PromiseActorRef(provider, timeout, "unknown", "unknown", provider.deadLetters)
+      val promiseActorRef =
+        PromiseActorRef(provider, timeout, "unknown", "unknown", "deadLetters", provider.deadLetters)
       new AskPromiseRef(promiseActorRef)
     } else {
       throw new IllegalArgumentException(s"Timeout length must not be negative, was: $timeout")

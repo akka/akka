@@ -4,13 +4,13 @@
 
 package akka.stream.impl.fusing
 
+import scala.concurrent.duration._
+
 import akka.stream.Attributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
-
-import scala.concurrent.duration._
 
 class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
@@ -101,7 +101,7 @@ class LifecycleInterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should ===(Set())
 
       upstream.onComplete()
-      lastEvents should ===(Set(OnComplete))
+      lastEvents() should ===(Set(OnComplete))
     }
 
     "postStop when pushAndFinish called if upstream completes with pushAndFinish" in new OneBoundedSetup[String](

@@ -4,13 +4,11 @@ Chunk up this stream into groups of elements received within a time window, or l
 
 @ref[Timer driven operators](../index.md#timer-driven-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #groupedWithin }
+@apidoc[Source.groupedWithin](Source) { scala="#groupedWithin(n:Int,d:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[scala.collection.immutable.Seq[Out]]" java="#groupedWithin(int,java.time.Duration)" }
+@apidoc[Flow.groupedWithin](Flow) { scala="#groupedWithin(n:Int,d:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[scala.collection.immutable.Seq[Out]]" java="#groupedWithin(int,java.time.Duration)" }
 
-@@@
 
 ## Description
 

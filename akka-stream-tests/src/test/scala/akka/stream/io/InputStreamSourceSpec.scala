@@ -7,23 +7,24 @@ package akka.stream.io
 import java.io.{ ByteArrayInputStream, InputStream }
 import java.util.concurrent.CountDownLatch
 
+import scala.util.Success
+
+import com.github.ghik.silencer.silent
+
 import akka.Done
+import akka.stream.{ AbruptStageTerminationException, ActorMaterializer, ActorMaterializerSettings, IOResult }
 import akka.stream.scaladsl.{ Keep, Sink, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ AbruptStageTerminationException, ActorMaterializer, ActorMaterializerSettings, IOResult }
 import akka.util.ByteString
-
-import scala.util.Success
-import com.github.ghik.silencer.silent
 
 @silent
 class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   private def inputStreamFor(bytes: Array[Byte]): InputStream =
     new ByteArrayInputStream(bytes)
@@ -54,7 +55,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
             override def close(): Unit = throw fail
           })
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
         .failed
         .futureValue
         .getCause shouldEqual fail
@@ -67,7 +68,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           throw fail
         })
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
         .failed
         .futureValue
         .getCause shouldEqual fail
@@ -78,7 +79,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       StreamConverters
         .fromInputStream(() => () => throw fail)
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
         .failed
         .futureValue
         .getCause shouldEqual fail

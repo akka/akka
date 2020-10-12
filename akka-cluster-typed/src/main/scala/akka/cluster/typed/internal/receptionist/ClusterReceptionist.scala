@@ -4,30 +4,30 @@
 
 package akka.cluster.typed.internal.receptionist
 
+import scala.concurrent.duration._
+
+import akka.actor.Address
+import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.internal.receptionist.{ AbstractServiceKey, ReceptionistBehaviorProvider, ReceptionistMessages }
 import akka.actor.typed.receptionist.Receptionist.Command
 import akka.actor.typed.receptionist.ServiceKey
-import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, LoggerOps }
-import akka.actor.typed.{ ActorRef, Behavior }
+import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
-import akka.cluster.ClusterEvent.MemberRemoved
-import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey, Replicator }
 import akka.cluster.{ Cluster, ClusterEvent, UniqueAddress }
-import akka.remote.AddressUidExtension
-import akka.util.TypedMultiMap
-
-import scala.concurrent.duration._
-import akka.actor.Address
 import akka.cluster.ClusterEvent.ClusterDomainEvent
 import akka.cluster.ClusterEvent.ClusterShuttingDown
 import akka.cluster.ClusterEvent.MemberJoined
+import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberWeaklyUp
 import akka.cluster.ClusterEvent.ReachabilityEvent
 import akka.cluster.ClusterEvent.ReachableMember
 import akka.cluster.ClusterEvent.UnreachableMember
+import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey, Replicator }
 import akka.cluster.ddata.SelfUniqueAddress
+import akka.remote.AddressUidExtension
+import akka.util.TypedMultiMap
 
 // just to provide a log class
 /** INTERNAL API */
@@ -48,13 +48,13 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
   // values contain system uid to make it possible to discern actors at the same
   // path in different incarnations of a cluster node
-  final case class Entry(ref: ActorRef[_], systemUid: Long) {
+  final case class Entry(ref: ActorRef[_], systemUid: Long)(val createdTimestamp: Long) {
     def uniqueAddress(selfAddress: Address): UniqueAddress =
       if (ref.path.address.hasLocalScope) UniqueAddress(selfAddress, systemUid)
       else UniqueAddress(ref.path.address, systemUid)
+
     override def toString: String =
       s"${ref.path.toString}#${ref.path.uid} @ $systemUid"
-
   }
 
   private sealed trait InternalCommand extends Command
@@ -106,7 +106,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           tombstones.foldLeft(tombstones) {
             case (acc, (actorRef, entries)) =>
               val entriesToKeep = entries.filter {
-                case (_, deadline) => deadline.hasTimeLeft
+                case (_, deadline) => deadline.hasTimeLeft()
               }
               if (entriesToKeep.size == entries.size) acc
               else if (entriesToKeep.isEmpty) acc - actorRef
@@ -184,7 +184,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     val cluster = Cluster(classicSystem)
     // don't use DistributedData.selfUniqueAddress here, because that will initialize extension, which
     // isn't used otherwise by the ClusterReceptionist
-    implicit val selfNodeAddress = SelfUniqueAddress(cluster.selfUniqueAddress)
+    implicit val selfNodeAddress: SelfUniqueAddress = SelfUniqueAddress(cluster.selfUniqueAddress)
 
     val replicator = ctx.actorOf(Replicator.props(settings.replicatorSettings), "replicator")
 
@@ -262,56 +262,67 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         cluster.state.leader.contains(cluster.selfAddress)
       }
 
-      def nodesRemoved(addresses: Set[UniqueAddress]): Unit = {
+      def nodesRemoved(addresses: Set[UniqueAddress], onlyRemoveOldEntries: Boolean): Unit = {
         // ok to update from several nodes but more efficient to try to do it from one node
-        if (isLeader) {
-          def isOnRemovedNode(entry: Entry): Boolean = addresses(entry.uniqueAddress(setup.selfUniqueAddress.address))
+        def isOnRemovedNode(entry: Entry): Boolean = addresses(entry.uniqueAddress(setup.selfUniqueAddress.address))
 
-          val removals = {
-            state.registry.allServices.foldLeft(Map.empty[AbstractServiceKey, Set[Entry]]) {
-              case (acc, (key, entries)) =>
-                val removedEntries = entries.filter(isOnRemovedNode)
-                if (removedEntries.isEmpty) acc // no change
-                else acc + (key -> removedEntries)
-            }
+        val now = System.currentTimeMillis()
+
+        // it possible that an entry is added before MemberJoined is visible and such entries should not be removed
+        def isOld(entry: Entry): Boolean = (now - entry.createdTimestamp) >= settings.pruneRemovedOlderThan.toMillis
+
+        val removals = {
+          state.registry.allServices.foldLeft(Map.empty[AbstractServiceKey, Set[Entry]]) {
+            case (acc, (key, entries)) =>
+              val removedEntries =
+                entries.filter(entry => isOnRemovedNode(entry) && (!onlyRemoveOldEntries || isOld(entry)))
+
+              if (removedEntries.isEmpty) acc // no change
+              else acc + (key -> removedEntries)
           }
+        }
 
-          if (removals.nonEmpty) {
-            if (ctx.log.isDebugEnabled)
-              ctx.log.debugN(
-                "ClusterReceptionist [{}] - Node(s) removed [{}], updating registry removing entries: [{}]",
-                cluster.selfAddress,
-                addresses.mkString(","),
-                removals
-                  .map {
-                    case (key, entries) => key.asServiceKey.id -> entries.mkString("[", ", ", "]")
-                  }
-                  .mkString(","))
-
-            // shard changes over the ddata keys they belong to
-            val removalsPerDdataKey = state.registry.entriesPerDdataKey(removals)
-
-            removalsPerDdataKey.foreach {
-              case (ddataKey, removalForKey) =>
-                replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry =>
-                  ServiceRegistry(registry).removeAll(removalForKey).toORMultiMap
+        if (removals.nonEmpty) {
+          if (ctx.log.isDebugEnabled)
+            ctx.log.debugN(
+              "ClusterReceptionist [{}] - Node(s) removed [{}], updating registry removing entries: [{}]",
+              cluster.selfAddress,
+              addresses.mkString(","),
+              removals
+                .map {
+                  case (key, entries) => key.asServiceKey.id -> entries.mkString("[", ", ", "]")
                 }
-            }
+                .mkString(","))
 
+          // shard changes over the ddata keys they belong to
+          val removalsPerDdataKey = state.registry.entriesPerDdataKey(removals)
+
+          removalsPerDdataKey.foreach {
+            case (ddataKey, removalForKey) =>
+              replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry =>
+                ServiceRegistry(registry).removeAll(removalForKey).toORMultiMap
+              }
           }
 
         }
       }
 
       def reachabilityChanged(keysForNode: Set[AbstractServiceKey], newState: State): Unit = {
-        keysForNode.foreach { changedKey =>
+        notifySubscribers(keysForNode, servicesWereAddedOrRemoved = false, newState)
+      }
+
+      def notifySubscribers(
+          changedKeys: Set[AbstractServiceKey],
+          servicesWereAddedOrRemoved: Boolean,
+          newState: State): Unit = {
+        changedKeys.foreach { changedKey =>
           val serviceKey = changedKey.asServiceKey
 
-          val subscribers = state.subscriptions.get(changedKey)
+          val subscribers = newState.subscriptions.get(changedKey)
           if (subscribers.nonEmpty) {
             val (reachable, all) = newState.activeActorRefsFor(serviceKey, selfUniqueAddress)
             val listing =
-              ReceptionistMessages.Listing(serviceKey, reachable, all, servicesWereAddedOrRemoved = false)
+              ReceptionistMessages.Listing(serviceKey, reachable, all, servicesWereAddedOrRemoved)
             subscribers.foreach(_ ! listing)
           }
         }
@@ -320,7 +331,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
       def onCommand(cmd: Command): Behavior[Command] = cmd match {
         case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) =>
           if (serviceInstance.path.address.hasLocalScope) {
-            val entry = Entry(serviceInstance, setup.selfSystemUid)
+            val entry = Entry(serviceInstance, setup.selfSystemUid)(System.currentTimeMillis())
             ctx.log
               .debugN("ClusterReceptionist [{}] - Actor was registered: [{}] [{}]", cluster.selfAddress, key, entry)
             // actor already watched after one service key registration
@@ -343,7 +354,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
         case ReceptionistMessages.Deregister(key, serviceInstance, maybeReplyTo) =>
           if (serviceInstance.path.address.hasLocalScope) {
-            val entry = Entry(serviceInstance, setup.selfSystemUid)
+            val entry = Entry(serviceInstance, setup.selfSystemUid)(0L)
             ctx.log.debugN(
               "ClusterReceptionist [{}] - Unregister actor: [{}] [{}]",
               cluster.selfAddress,
@@ -400,7 +411,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           behavior(setup, state.removeSubscriber(subscriber))
 
         case LocalServiceActorTerminated(serviceInstance) =>
-          val entry = Entry(serviceInstance, setup.selfSystemUid)
+          val entry = Entry(serviceInstance, setup.selfSystemUid)(0L)
 
           // could be empty if there was a race between termination and unregistration
           val keys = state.servicesPerActor.getOrElse(serviceInstance, Set.empty)
@@ -439,16 +450,10 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
                 state.tombstones.mkString(", "))
             }
 
+            notifySubscribers(changedKeys, servicesWereAddedOrRemoved = true, newState)
+
             changedKeys.foreach { changedKey =>
               val serviceKey = changedKey.asServiceKey
-
-              val subscribers = state.subscriptions.get(changedKey)
-              if (subscribers.nonEmpty) {
-                val (reachable, all) = newState.activeActorRefsFor(serviceKey, selfUniqueAddress)
-                val listing =
-                  ReceptionistMessages.Listing(serviceKey, reachable, all, servicesWereAddedOrRemoved = true)
-                subscribers.foreach(_ ! listing)
-              }
 
               // because of how ORMultiMap/ORset works, we could have a case where an actor we removed
               // is re-introduced because of a concurrent update, in that case we need to re-remove it
@@ -463,7 +468,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
                 replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry =>
                   tombstonedButReAdded
                     .foldLeft(ServiceRegistry(registry)) { (acc, ref) =>
-                      acc.removeBinding(serviceKey, Entry(ref, setup.selfSystemUid))
+                      acc.removeBinding(serviceKey, Entry(ref, setup.selfSystemUid)(0L))
                     }
                     .toORMultiMap
                 }
@@ -476,7 +481,23 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           }
 
         case NodeAdded(uniqueAddress) =>
-          behavior(setup, state.copy(registry = state.registry.addNode(uniqueAddress)))
+          if (state.registry.nodes.contains(uniqueAddress)) {
+            Behaviors.same
+          } else {
+            val newState = state.copy(registry = state.registry.addNode(uniqueAddress))
+            val keysForNode = newState.registry.keysFor(uniqueAddress)
+            if (keysForNode.nonEmpty) {
+              ctx.log.debug2(
+                "ClusterReceptionist [{}] - Node with registered services added [{}]",
+                cluster.selfAddress,
+                uniqueAddress)
+              notifySubscribers(keysForNode, servicesWereAddedOrRemoved = true, newState)
+            } else {
+              ctx.log.debug2("ClusterReceptionist [{}] - Node added [{}]", cluster.selfAddress, uniqueAddress)
+            }
+
+            behavior(setup, newState)
+          }
 
         case NodeRemoved(uniqueAddress) =>
           if (uniqueAddress == selfUniqueAddress) {
@@ -484,17 +505,30 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             // If self cluster node is shutting down our own entries should have been removed via
             // watch-Terminated or will be removed by other nodes. This point is anyway too late.
             Behaviors.stopped
-          } else {
+          } else if (state.registry.nodes.contains(uniqueAddress)) {
+
+            val keysForNode = state.registry.keysFor(uniqueAddress)
+            val newState = state.copy(registry = state.registry.removeNode(uniqueAddress))
+            if (keysForNode.nonEmpty) {
+              ctx.log.debug2(
+                "ClusterReceptionist [{}] - Node with registered services removed [{}]",
+                cluster.selfAddress,
+                uniqueAddress)
+              notifySubscribers(keysForNode, servicesWereAddedOrRemoved = true, newState)
+            }
+
             // Ok to update from several nodes but more efficient to try to do it from one node.
             if (isLeader) {
               ctx.log.debug2(
                 "ClusterReceptionist [{}] - Leader node observed removed node [{}]",
                 cluster.selfAddress,
                 uniqueAddress)
-              nodesRemoved(Set(uniqueAddress))
+              nodesRemoved(Set(uniqueAddress), onlyRemoveOldEntries = false)
             }
 
-            behavior(setup, state.copy(registry = state.registry.removeNode(uniqueAddress)))
+            behavior(setup, newState)
+          } else {
+            Behaviors.same
           }
 
         case NodeUnreachable(uniqueAddress) =>
@@ -528,14 +562,13 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               state.registry.allUniqueAddressesInState(setup.selfUniqueAddress)
             val notInCluster = allAddressesInState.diff(state.registry.nodes)
 
-            if (notInCluster.isEmpty) Behaviors.same
-            else {
+            if (notInCluster.nonEmpty) {
               if (ctx.log.isDebugEnabled)
                 ctx.log.debug2(
                   "ClusterReceptionist [{}] - Leader node cleanup tick, removed nodes: [{}]",
                   cluster.selfAddress,
                   notInCluster.mkString(","))
-              nodesRemoved(notInCluster)
+              nodesRemoved(notInCluster, onlyRemoveOldEntries = true)
             }
           }
           Behaviors.same

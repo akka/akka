@@ -4,12 +4,20 @@
 
 package akka.pattern.internal
 
-import akka.actor.SupervisorStrategy._
-import akka.actor.{ OneForOneStrategy, _ }
-import akka.annotation.InternalApi
-import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
-
 import scala.concurrent.duration._
+
+import akka.actor.{ OneForOneStrategy, _ }
+import akka.actor.SupervisorStrategy._
+import akka.annotation.InternalApi
+import akka.pattern.{
+  BackoffReset,
+  BackoffSupervisor,
+  ForwardDeathLetters,
+  ForwardTo,
+  HandleBackoff,
+  HandlingWhileStopped,
+  ReplyWith
+}
 
 /**
  * INTERNAL API
@@ -26,7 +34,7 @@ import scala.concurrent.duration._
     val reset: BackoffReset,
     randomFactor: Double,
     strategy: OneForOneStrategy,
-    replyWhileStopped: Option[Any])
+    handlingWhileStopped: HandlingWhileStopped)
     extends Actor
     with HandleBackoff
     with ActorLogging {
@@ -34,7 +42,7 @@ import scala.concurrent.duration._
   import BackoffSupervisor._
   import context._
 
-  override val supervisorStrategy =
+  override val supervisorStrategy: OneForOneStrategy =
     OneForOneStrategy(strategy.maxNrOfRetries, strategy.withinTimeRange, strategy.loggingEnabled) {
       case ex =>
         val defaultDirective: Directive =
@@ -94,9 +102,10 @@ import scala.concurrent.duration._
     case Some(c) =>
       c.forward(msg)
     case None =>
-      replyWhileStopped match {
-        case None    => context.system.deadLetters.forward(msg)
-        case Some(r) => sender() ! r
+      handlingWhileStopped match {
+        case ForwardDeathLetters => context.system.deadLetters.forward(msg)
+        case ForwardTo(h)        => h.forward(msg)
+        case ReplyWith(r)        => sender() ! r
       }
   }
 }

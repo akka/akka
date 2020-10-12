@@ -4,16 +4,17 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Actor, ActorRef, Address, Props }
-import akka.cluster.sharding.ShardRegion.{ CurrentRegions, GetCurrentRegions }
 import akka.cluster.{ Cluster, MemberStatus }
+import akka.cluster.sharding.ShardRegion.{ CurrentRegions, GetCurrentRegions }
 import akka.remote.testconductor.RoleName
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 import akka.util.ccompat._
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 @ccompatUsedUntil213
 object MultiDcClusterShardingSpec {

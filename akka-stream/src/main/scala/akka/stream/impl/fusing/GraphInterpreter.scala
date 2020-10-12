@@ -4,19 +4,19 @@
 
 package akka.stream.impl.fusing
 
-import akka.actor.ActorRef
-import akka.event.LoggingAdapter
-import akka.stream.stage._
-import akka.stream._
 import java.util.concurrent.ThreadLocalRandom
-
-import akka.Done
-import akka.annotation.{ InternalApi, InternalStableApi }
 
 import scala.concurrent.Promise
 import scala.util.control.NonFatal
+
+import akka.Done
+import akka.actor.ActorRef
+import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.event.LoggingAdapter
+import akka.stream._
 import akka.stream.Attributes.LogLevels
 import akka.stream.snapshot._
+import akka.stream.stage._
 
 /**
  * INTERNAL API

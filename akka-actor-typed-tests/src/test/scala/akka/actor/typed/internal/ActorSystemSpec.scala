@@ -9,16 +9,18 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import akka.Done
-import akka.actor.{ Address, CoordinatedShutdown, InvalidMessageException }
-import akka.actor.testkit.typed.scaladsl.TestInbox
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.typed.scaladsl.Behaviors
+
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.Done
+import akka.actor.{ Address, CoordinatedShutdown, InvalidMessageException }
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.TestInbox
+import akka.actor.typed.scaladsl.Behaviors
 
 class ActorSystemSpec
     extends AnyWordSpec
@@ -28,7 +30,7 @@ class ActorSystemSpec
     with Eventually
     with LogCapturing {
 
-  override implicit val patienceConfig = PatienceConfig(1.second)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(1.second)
   def system[T](behavior: Behavior[T], name: String) = ActorSystem(behavior, name)
   def suite = "adapter"
 
@@ -73,7 +75,7 @@ class ActorSystemSpec
         Behaviors.receiveMessage[Done] { _ =>
           Behaviors.stopped
         }
-      withSystem("shutdown", stoppable, doTerminate = false) { sys: ActorSystem[Done] =>
+      withSystem("shutdown", stoppable, doTerminate = false) { (sys: ActorSystem[Done]) =>
         sys ! Done
         sys.whenTerminated.futureValue
       }
@@ -133,7 +135,7 @@ class ActorSystemSpec
 
     "have a working thread factory" in {
       withSystem("thread", Behaviors.empty[String]) { sys =>
-        val p = Promise[Int]
+        val p = Promise[Int]()
         sys.threadFactory
           .newThread(new Runnable {
             def run(): Unit = p.success(42)

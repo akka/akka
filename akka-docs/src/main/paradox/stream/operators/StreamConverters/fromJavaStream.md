@@ -6,7 +6,7 @@ Create a source that wraps a Java 8 `java.util.stream.Stream`.
 
 ## Signature
 
-@apidoc[StreamConverters](StreamConverters$) { scala="#fromJavaStream[T,S%3C:java.util.stream.BaseStream[T,S]](stream:()=%3Ejava.util.stream.BaseStream[T,S]):akka.stream.scaladsl.Source[T,akka.NotUsed]" java="#fromJavaStream(akka.japi.function.Creator)" }
+@apidoc[StreamConverters](StreamConverters$) { scala="#fromJavaStream%5BT,S%3C:java.util.stream.BaseStream[T,S]](stream:()=%3Ejava.util.stream.BaseStream[T,S]):akka.stream.scaladsl.Source[T,akka.NotUsed]" java="#fromJavaStream(akka.japi.function.Creator)" }
 
 ## Example
 
@@ -17,4 +17,3 @@ Scala
 
 Java
 :   @@snip [StreamConvertersToJava.java](/akka-docs/src/test/java/jdocs/stream/operators/converters/StreamConvertersToJava.java) { #import #fromJavaStream }
-

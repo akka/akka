@@ -4,8 +4,9 @@
 
 package akka.osgi
 
-import akka.event.Logging
 import org.osgi.service.log.LogService
+
+import akka.event.Logging
 import akka.event.Logging.{ DefaultLogger, LogEvent }
 import akka.event.Logging.Error.NoCause
 

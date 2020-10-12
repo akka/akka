@@ -75,7 +75,7 @@ a distributed application.
     requests) in an event-driven manner. Actors should not block (i.e. passively
     wait while occupying a Thread) on some external entity—which might be a
     lock, a network socket, etc.—unless it is unavoidable; in the latter case
-    see below.
+    see @ref:[`Blocking Needs Careful Management`](../typed/dispatchers.md#blocking-management).
  2. Do not pass mutable objects between actors. In order to ensure that, prefer
     immutable messages. If the encapsulation of actors is broken by exposing
     their mutable state to the outside, you are back in normal Java concurrency

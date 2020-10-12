@@ -13,6 +13,7 @@ import scala.util.Success
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.DispatcherSelector
 import akka.actor.typed.delivery.ConsumerController
 import akka.actor.typed.delivery.DurableProducerQueue
 import akka.actor.typed.delivery.DurableProducerQueue.ConfirmationQualifier
@@ -236,7 +237,7 @@ import akka.util.Timeout
       settings: ShardingProducerController.Settings): Option[ActorRef[DurableProducerQueue.Command[A]]] = {
 
     durableQueueBehavior.map { b =>
-      val ref = context.spawn(b, "durable")
+      val ref = context.spawn(b, "durable", DispatcherSelector.sameAsParent())
       context.watchWith(ref, DurableQueueTerminated)
       askLoadState(context, Some(ref), settings, attempt = 1)
       ref
@@ -278,8 +279,10 @@ private class ShardingProducerControllerImpl[A: ClassTag](
   import ShardingProducerController.Start
   import ShardingProducerControllerImpl._
 
-  private val durableQueueAskTimeout: Timeout = settings.producerControllerSettings.durableQueueRequestTimeout
+  private val producerControllerSettings = settings.producerControllerSettings
+  private val durableQueueAskTimeout: Timeout = producerControllerSettings.durableQueueRequestTimeout
   private val entityAskTimeout: Timeout = settings.internalAskTimeout
+  private val traceEnabled = context.log.isTraceEnabled
 
   private val requestNextAdapter: ActorRef[ProducerController.RequestNext[A]] =
     context.messageAdapter(WrappedRequestNext.apply)
@@ -331,8 +334,9 @@ private class ShardingProducerControllerImpl[A: ClassTag](
               region ! ShardingEnvelope(entityId, seqMsg)
             }
             val p = context.spawn(
-              ProducerController[A](outKey, durableQueueBehavior = None, settings.producerControllerSettings, send),
-              entityId)
+              ProducerController[A](outKey, durableQueueBehavior = None, producerControllerSettings, send),
+              entityId,
+              DispatcherSelector.sameAsParent())
             p ! ProducerController.Start(requestNextAdapter)
             s.copy(
               out = s.out.updated(
@@ -386,7 +390,7 @@ private class ShardingProducerControllerImpl[A: ClassTag](
     }
 
     def receiveStoreMessageSentFailed(f: StoreMessageSentFailed[A]): Behavior[InternalCommand] = {
-      if (f.attempt >= settings.producerControllerSettings.durableQueueRetryAttempts) {
+      if (f.attempt >= producerControllerSettings.durableQueueRetryAttempts) {
         val errorMessage =
           s"StoreMessageSentFailed seqNr [${f.messageSent.seqNr}] failed after [${f.attempt}] attempts, giving up."
         context.log.error(errorMessage)
@@ -402,7 +406,8 @@ private class ShardingProducerControllerImpl[A: ClassTag](
     def receiveAck(ack: Ack): Behavior[InternalCommand] = {
       s.out.get(ack.outKey) match {
         case Some(outState) =>
-          context.log.trace2("Received Ack, confirmed [{}], current [{}].", ack.confirmedSeqNr, s.currentSeqNr)
+          if (traceEnabled)
+            context.log.trace2("Received Ack, confirmed [{}], current [{}].", ack.confirmedSeqNr, s.currentSeqNr)
           val newUnconfirmed = onAck(outState, ack.confirmedSeqNr)
           val newUsedNanoTime =
             if (newUnconfirmed.size != outState.unconfirmed.size) System.nanoTime() else outState.usedNanoTime
@@ -424,7 +429,8 @@ private class ShardingProducerControllerImpl[A: ClassTag](
             throw new IllegalStateException(s"Received RequestNext but already has demand for [$outKey]")
 
           val confirmedSeqNr = w.next.confirmedSeqNr
-          context.log.trace("Received RequestNext from [{}], confirmed seqNr [{}]", out.entityId, confirmedSeqNr)
+          if (traceEnabled)
+            context.log.trace("Received RequestNext from [{}], confirmed seqNr [{}]", out.entityId, confirmedSeqNr)
           val newUnconfirmed = onAck(out, confirmedSeqNr)
 
           if (out.buffered.nonEmpty) {
@@ -571,7 +577,7 @@ private class ShardingProducerControllerImpl[A: ClassTag](
   }
 
   private def send(msg: A, outKey: OutKey, outSeqNr: OutSeqNr, nextTo: ProducerController.RequestNext[A]): Unit = {
-    if (context.log.isTraceEnabled)
+    if (traceEnabled)
       context.log.traceN("Sending [{}] to [{}] with outSeqNr [{}].", msg.getClass.getName, outKey, outSeqNr)
     implicit val askTimeout: Timeout = entityAskTimeout
     context.ask[ProducerController.MessageWithConfirmation[A], OutSeqNr](

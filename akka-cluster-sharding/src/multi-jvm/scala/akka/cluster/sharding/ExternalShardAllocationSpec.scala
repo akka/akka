@@ -4,15 +4,16 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
+import org.scalatest.concurrent.ScalaFutures
+
 import akka.actor.{ Actor, ActorLogging, Address, Props }
 import akka.cluster.Cluster
 import akka.cluster.sharding.ExternalShardAllocationSpec.GiveMeYourHome.{ Get, Home }
 import akka.cluster.sharding.external.{ ExternalShardAllocation, ExternalShardAllocationStrategy }
 import akka.serialization.jackson.CborSerializable
 import akka.testkit.{ ImplicitSender, TestProbe }
-import org.scalatest.concurrent.ScalaFutures
-
-import scala.concurrent.duration._
 
 object ExternalShardAllocationSpecConfig
     extends MultiNodeClusterShardingConfig(additionalConfig = """
@@ -68,8 +69,8 @@ abstract class ExternalShardAllocationSpec
     with ImplicitSender
     with ScalaFutures {
 
-  import ExternalShardAllocationSpec.GiveMeYourHome._
   import ExternalShardAllocationSpec._
+  import ExternalShardAllocationSpec.GiveMeYourHome._
   import ExternalShardAllocationSpecConfig._
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.second)
@@ -86,7 +87,7 @@ abstract class ExternalShardAllocationSpec
     lazy val shardRegion = startSharding(
       system,
       typeName = typeName,
-      entityProps = Props[GiveMeYourHome],
+      entityProps = Props[GiveMeYourHome](),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId,
       allocationStrategy = new ExternalShardAllocationStrategy(system, typeName))
@@ -130,11 +131,11 @@ abstract class ExternalShardAllocationSpec
       val forthAddress = address(forth)
       runOn(second) {
         system.log.info("Allocating {} on {}", onForthShardId, forthAddress)
-        ExternalShardAllocation(system).clientFor(typeName).updateShardLocation(onForthShardId, forthAddress)
+        ExternalShardAllocation(system).clientFor(typeName).updateShardLocations(Map(onForthShardId -> forthAddress))
       }
       enterBarrier("allocated-to-new-node")
       runOn(forth) {
-        joinWithin(first)
+        joinWithin(first, max = 10.seconds)
       }
       enterBarrier("forth-node-joined")
       runOn(first, second, third) {

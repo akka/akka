@@ -4,12 +4,23 @@
 
 package akka.remote.artery
 
-import akka.actor.{ Actor, ActorIdentity, ActorRef, Deploy, Identify, PoisonPill, Props, RootActorPath }
-import akka.testkit.{ ImplicitSender, TestActors, TestProbe }
-import com.typesafe.config.{ Config, ConfigFactory }
+import java.util.UUID
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import akka.actor.Actor
+import akka.actor.ActorIdentity
+import akka.actor.ActorPath
+import akka.actor.ActorRef
 import akka.actor.ActorSelection
+import akka.actor.Deploy
+import akka.actor.Identify
+import akka.actor.PoisonPill
+import akka.actor.Props
+import akka.actor.RootActorPath
+import akka.testkit.{ ImplicitSender, TestActors, TestProbe }
 
 class ArteryUpdSendConsistencyWithOneLaneSpec
     extends AbstractRemoteSendConsistencySpec(ConfigFactory.parseString("""
@@ -20,6 +31,7 @@ class ArteryUpdSendConsistencyWithOneLaneSpec
 
 class ArteryUpdSendConsistencyWithThreeLanesSpec
     extends AbstractRemoteSendConsistencySpec(ConfigFactory.parseString("""
+      akka.loglevel = DEBUG
       akka.remote.artery.transport = aeron-udp
       akka.remote.artery.advanced.outbound-lanes = 3
       akka.remote.artery.advanced.inbound-lanes = 3
@@ -61,6 +73,17 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config)
   val addressB = address(systemB)
   val rootB = RootActorPath(addressB)
 
+  private def actorRefBySelection(path: ActorPath) = {
+
+    val correlationId = Some(UUID.randomUUID().toString)
+    system.actorSelection(path) ! Identify(correlationId)
+
+    val actorIdentity = expectMsgType[ActorIdentity](5.seconds)
+    actorIdentity.correlationId shouldBe correlationId
+
+    actorIdentity.ref.get
+  }
+
   "Artery" must {
 
     "be able to identify a remote actor and ping it" in {
@@ -70,11 +93,9 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config)
         }
       }), "echo")
 
-      val echoSel = system.actorSelection(rootB / "user" / "echo")
-      val echoRef = {
-        system.actorSelection(rootB / "user" / "echo") ! Identify(None)
-        expectMsgType[ActorIdentity](5.seconds).ref.get
-      }
+      val actorPath = rootB / "user" / "echo"
+      val echoSel = system.actorSelection(actorPath)
+      val echoRef = actorRefBySelection(actorPath)
 
       echoRef ! "ping"
       expectMsg("pong")
@@ -118,18 +139,9 @@ abstract class AbstractRemoteSendConsistencySpec(config: Config)
       systemB.actorOf(TestActors.echoActorProps, "echoB")
       systemB.actorOf(TestActors.echoActorProps, "echoC")
 
-      val remoteRefA = {
-        system.actorSelection(rootB / "user" / "echoA") ! Identify(None)
-        expectMsgType[ActorIdentity].ref.get
-      }
-      val remoteRefB = {
-        system.actorSelection(rootB / "user" / "echoB") ! Identify(None)
-        expectMsgType[ActorIdentity].ref.get
-      }
-      val remoteRefC = {
-        system.actorSelection(rootB / "user" / "echoC") ! Identify(None)
-        expectMsgType[ActorIdentity].ref.get
-      }
+      val remoteRefA = actorRefBySelection(rootB / "user" / "echoA")
+      val remoteRefB = actorRefBySelection(rootB / "user" / "echoB")
+      val remoteRefC = actorRefBySelection(rootB / "user" / "echoC")
 
       def senderProps(remoteRef: ActorRef) =
         Props(new Actor {

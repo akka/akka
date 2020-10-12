@@ -70,8 +70,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     "alsoToGraph",
     "orElseGraph",
     "divertToGraph",
-    "zipWithGraph",
-  )
+    "zipWithGraph")
 
   // FIXME document these methods as well
   val pendingTestCases = Map(
@@ -98,14 +97,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       "fromGraph",
       "actorSubscriber",
       "foldAsync",
-      "newOnCompleteStage",
-    ),
-    "Compression" -> Seq(
-      "inflate",
-      "gunzip",
-    )
-
-  )
+      "newOnCompleteStage"))
 
   val ignore =
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++
@@ -179,6 +171,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
           .map(method => (element, method))
       } ++ List(
         (noElement, "Partition"),
+        (noElement, "MergeSequence"),
         (noElement, "Broadcast"),
         (noElement, "Balance"),
         (noElement, "Unzip"),
@@ -230,7 +223,10 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       "# Operators\n\n" +
       tables +
       "\n\n@@@ index\n\n" +
-      groupedDefs.map { case (_, method, md) => s"* [${methodToShow(method)}]($md)" }.mkString("\n") + "\n\n@@@\n"
+      groupedDefs
+        .sortBy { case (_, method, _) => method.toLowerCase }
+        .map { case (_, method, md) => s"* [$method]($md)" }
+        .mkString("\n") + "\n\n@@@\n"
 
     if (!file.exists || IO.read(file) != content) IO.write(file, content)
     Seq(file)

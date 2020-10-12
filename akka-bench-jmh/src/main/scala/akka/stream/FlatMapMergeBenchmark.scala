@@ -4,20 +4,23 @@
 
 package akka.stream
 
-import akka.{ Done, NotUsed }
-import akka.actor.ActorSystem
-import akka.stream.scaladsl._
 import java.util.concurrent.TimeUnit
-import akka.remote.artery.BenchTestSourceSameElement
-import org.openjdk.jmh.annotations._
+
 import scala.concurrent._
 import scala.concurrent.duration._
+
+import org.openjdk.jmh.annotations._
+
+import akka.{ Done, NotUsed }
+import akka.actor.ActorSystem
+import akka.remote.artery.BenchTestSourceSameElement
+import akka.stream.scaladsl._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
 class FlatMapMergeBenchmark {
-  implicit val system = ActorSystem("FlatMapMergeBenchmark")
+  implicit val system: ActorSystem = ActorSystem("FlatMapMergeBenchmark")
 
   val NumberOfElements = 100000
 

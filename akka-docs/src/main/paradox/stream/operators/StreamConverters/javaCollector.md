@@ -4,13 +4,10 @@ Create a sink which materializes into a @scala[`Future`] @java[`CompletionStage`
 
 @ref[Additional Sink and Source converters](../index.md#additional-sink-and-source-converters)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [StreamConverters.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #javaCollector }
+@apidoc[StreamConverters.javaCollector](StreamConverters$) { scala="#javaCollector[T,R](collectorFactory:()=&gt;java.util.stream.Collector[T,_,R]):akka.stream.scaladsl.Sink[T,scala.concurrent.Future[R]]" java="#javaCollector(akka.japi.function.Creator)" }
 
-@@@
 
 ## Description
 

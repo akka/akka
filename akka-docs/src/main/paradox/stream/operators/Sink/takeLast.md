@@ -4,13 +4,10 @@ Collect the last `n` values emitted from the stream into a collection.
 
 @ref[Sink operators](../index.md#sink-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #takeLast }
+@apidoc[Sink.takeLast](Sink$) { scala="#takeLast[T](n:Int):akka.stream.scaladsl.Sink[T,scala.concurrent.Future[scala.collection.immutable.Seq[T]]]" java="#takeLast(int)" }
 
-@@@
 
 ## Description
 

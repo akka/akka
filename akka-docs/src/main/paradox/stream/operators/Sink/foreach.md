@@ -1,4 +1,4 @@
-# foreach
+# Sink.foreach
 
 Invoke a given procedure for each element received.
 

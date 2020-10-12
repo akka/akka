@@ -5,9 +5,11 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Overview

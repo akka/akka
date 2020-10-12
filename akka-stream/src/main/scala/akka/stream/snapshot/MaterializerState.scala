@@ -4,19 +4,19 @@
 
 package akka.stream.snapshot
 
-import akka.actor.ActorSystem
-import akka.actor.{ ActorPath, ActorRef }
-import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
-import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
-import akka.pattern.ask
-import akka.stream.SystemMaterializer
-import akka.stream.impl.fusing.ActorGraphInterpreter
-import akka.stream.{ Attributes, Materializer }
-import akka.util.Timeout
-
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
+
+import akka.actor.{ ActorPath, ActorRef }
+import akka.actor.ActorSystem
+import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
+import akka.pattern.ask
+import akka.stream.{ Attributes, Materializer }
+import akka.stream.SystemMaterializer
+import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
+import akka.stream.impl.fusing.ActorGraphInterpreter
+import akka.util.Timeout
 
 /**
  * Debug utility to dump the running streams of a materializers in a structure describing the graph layout
@@ -56,7 +56,10 @@ object MaterializerState {
       implicit ec: ExecutionContext): Future[immutable.Seq[StreamSnapshot]] = {
     // Arbitrary timeout: operation should always be quick, when it times out it will be because the materializer stopped
     implicit val timeout: Timeout = 10.seconds
-    (supervisor ? StreamSupervisor.GetChildrenSnapshots).mapTo[StreamSupervisor.ChildrenSnapshots].map(_.seq)
+    supervisor
+      .askWithStatus(StreamSupervisor.GetChildrenSnapshots(timeout.duration))
+      .mapTo[StreamSupervisor.ChildrenSnapshots]
+      .map(_.seq)
   }
 
   /** INTERNAL API */
@@ -170,8 +173,9 @@ final private[akka] case class StreamSnapshotImpl(
     self: ActorPath,
     activeInterpreters: Seq[RunningInterpreter],
     newShells: Seq[UninitializedInterpreter])
-    extends StreamSnapshot
-    with HideImpl
+    extends StreamSnapshot {
+  override def toString: String = s"StreamSnapshot($self, $activeInterpreters, $newShells)"
+}
 
 /**
  * INTERNAL API

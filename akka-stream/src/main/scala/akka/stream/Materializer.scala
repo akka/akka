@@ -4,6 +4,11 @@
 
 package akka.stream
 
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration.FiniteDuration
+
+import com.github.ghik.silencer.silent
+
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Cancellable
@@ -13,10 +18,6 @@ import akka.actor.Props
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.event.LoggingAdapter
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * The Materializer is the component responsible for turning a stream blueprint into a running stream.

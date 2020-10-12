@@ -4,27 +4,28 @@
 
 package akka.cluster.metrics
 
-import scala.language.postfixOps
+import java.io.Closeable
 import java.util.logging.LogManager
 
-import org.slf4j.bridge.SLF4JBridgeHandler
-import akka.testkit.AkkaSpec
-import akka.actor.ExtendedActorSystem
-import akka.actor.Address
-import java.io.Closeable
+import scala.language.postfixOps
 
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.actor.Actor
-import akka.dispatch.RequiresMessageQueue
-import akka.actor.Deploy
-import akka.dispatch.UnboundedMessageQueueSemantics
-import akka.actor.PoisonPill
-import akka.actor.ActorLogging
 import org.scalatestplus.mockito.MockitoSugar
+import org.slf4j.bridge.SLF4JBridgeHandler
+
+import akka.actor.Actor
+import akka.actor.ActorLogging
+import akka.actor.ActorRef
 import akka.actor.ActorSystem
+import akka.actor.Address
+import akka.actor.Deploy
+import akka.actor.ExtendedActorSystem
+import akka.actor.PoisonPill
+import akka.actor.Props
 import akka.dispatch.Dispatchers
+import akka.dispatch.RequiresMessageQueue
+import akka.dispatch.UnboundedMessageQueueSemantics
 import akka.remote.RARP
+import akka.testkit.AkkaSpec
 
 /**
  * Redirect different logging sources to SLF4J.

@@ -4,16 +4,16 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
+import scala.util.control.NoStackTrace
+
 import akka.Done
 import akka.stream.Materializer
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestProbe
-
-import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Success
-import scala.util.control.NoStackTrace
 
 class FlowOnCompleteSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -25,7 +25,7 @@ class FlowOnCompleteSpec extends StreamSpec("""
       val onCompleteProbe = TestProbe()
       val p = TestPublisher.manualProbe[Int]()
       Source.fromPublisher(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()
-      val proc = p.expectSubscription
+      val proc = p.expectSubscription()
       proc.expectRequest()
       proc.sendNext(42)
       onCompleteProbe.expectNoMessage(100.millis)
@@ -37,7 +37,7 @@ class FlowOnCompleteSpec extends StreamSpec("""
       val onCompleteProbe = TestProbe()
       val p = TestPublisher.manualProbe[Int]()
       Source.fromPublisher(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()
-      val proc = p.expectSubscription
+      val proc = p.expectSubscription()
       proc.expectRequest()
       val ex = new RuntimeException("ex") with NoStackTrace
       proc.sendError(ex)
@@ -49,7 +49,7 @@ class FlowOnCompleteSpec extends StreamSpec("""
       val onCompleteProbe = TestProbe()
       val p = TestPublisher.manualProbe[Int]()
       Source.fromPublisher(p).to(Sink.onComplete[Int](onCompleteProbe.ref ! _)).run()
-      val proc = p.expectSubscription
+      val proc = p.expectSubscription()
       proc.expectRequest()
       proc.sendComplete()
       onCompleteProbe.expectMsg(Success(Done))
@@ -71,7 +71,7 @@ class FlowOnCompleteSpec extends StreamSpec("""
         }
         .runWith(foreachSink)
       future.onComplete { onCompleteProbe.ref ! _ }
-      val proc = p.expectSubscription
+      val proc = p.expectSubscription()
       proc.expectRequest()
       proc.sendNext(42)
       proc.sendComplete()

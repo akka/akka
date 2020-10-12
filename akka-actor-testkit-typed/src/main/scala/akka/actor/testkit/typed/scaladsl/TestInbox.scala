@@ -4,13 +4,14 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.{ Address, RootActorPath }
-import akka.actor.typed.ActorRef
-import akka.annotation.{ ApiMayChange, DoNotInherit }
-import akka.actor.testkit.typed.internal.TestInboxImpl
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.immutable
+
+import akka.actor.{ Address, RootActorPath }
+import akka.actor.testkit.typed.internal.TestInboxImpl
+import akka.actor.typed.ActorRef
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 
 @ApiMayChange
 object TestInbox {

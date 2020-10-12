@@ -4,9 +4,10 @@
 
 package akka.stream.testkit
 
+import org.reactivestreams.Publisher
+
 import akka.stream._
 import akka.stream.scaladsl._
-import org.reactivestreams.Publisher
 
 abstract class TwoStreamsSetup extends BaseTwoStreamsSetup {
 

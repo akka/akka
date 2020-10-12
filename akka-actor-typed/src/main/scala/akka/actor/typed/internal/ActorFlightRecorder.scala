@@ -4,15 +4,10 @@
 
 package akka.actor.typed.internal
 
-import scala.util.Failure
-import scala.util.Success
-
 import akka.actor.ActorPath
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.Extension
-import akka.actor.typed.ExtensionId
+import akka.actor.typed.{ ActorSystem, Extension, ExtensionId }
 import akka.annotation.InternalApi
-import akka.util.JavaVersion
+import akka.util.FlightRecorderLoader
 
 /**
  * INTERNAL API
@@ -21,20 +16,10 @@ import akka.util.JavaVersion
 object ActorFlightRecorder extends ExtensionId[ActorFlightRecorder] {
 
   override def createExtension(system: ActorSystem[_]): ActorFlightRecorder =
-    if (JavaVersion.majorVersion >= 11 && system.settings.config.getBoolean("akka.java-flight-recorder.enabled")) {
-      // Dynamic instantiation to not trigger class load on earlier JDKs
-      import scala.language.existentials
-      system.dynamicAccess.createInstanceFor[ActorFlightRecorder](
-        "akka.actor.typed.internal.jfr.JFRActorFlightRecorder",
-        (classOf[ActorSystem[_]], system) :: Nil) match {
-        case Success(jfr) => jfr
-        case Failure(ex) =>
-          system.log.warn("Failed to load JFR Actor flight recorder, falling back to noop. Exception: {}", ex.toString)
-          NoOpActorFlightRecorder
-      } // fallback if not possible to dynamically load for some reason
-    } else
-      // JFR not available on Java 8
-      NoOpActorFlightRecorder
+    FlightRecorderLoader.load[ActorFlightRecorder](
+      system,
+      "akka.actor.typed.internal.jfr.JFRActorFlightRecorder",
+      NoOpActorFlightRecorder)
 }
 
 /**
@@ -43,7 +28,6 @@ object ActorFlightRecorder extends ExtensionId[ActorFlightRecorder] {
 @InternalApi
 private[akka] trait ActorFlightRecorder extends Extension {
   val delivery: DeliveryFlightRecorder
-
 }
 
 /**
@@ -60,18 +44,19 @@ private[akka] trait ActorFlightRecorder extends Extension {
   def producerResentFirst(producerId: String, firstSeqNr: Long): Unit
   def producerResentFirstUnconfirmed(producerId: String, seqNr: Long): Unit
   def producerReceived(producerId: String, currentSeqNr: Long): Unit
-  def producerReceivedRequest(producerId: String, requestedSeqNr: Long): Unit
+  def producerReceivedRequest(producerId: String, requestedSeqNr: Long, confirmedSeqNr: Long): Unit
   def producerReceivedResend(producerId: String, fromSeqNr: Long): Unit
 
   def consumerCreated(path: ActorPath): Unit
   def consumerStarted(path: ActorPath): Unit
   def consumerReceived(producerId: String, seqNr: Long): Unit
   def consumerReceivedPreviousInProgress(producerId: String, seqNr: Long, stashed: Int): Unit
-  def consumerDuplicate(pid: String, expectedSeqNr: Long, seqNr: Long): Unit
-  def consumerMissing(pid: String, expectedSeqNr: Long, seqNr: Long): Unit
+  def consumerDuplicate(producerId: String, expectedSeqNr: Long, seqNr: Long): Unit
+  def consumerMissing(producerId: String, expectedSeqNr: Long, seqNr: Long): Unit
   def consumerReceivedResend(seqNr: Long): Unit
   def consumerSentRequest(producerId: String, requestedSeqNr: Long): Unit
   def consumerChangedProducer(producerId: String): Unit
+  def consumerStashFull(producerId: String, seqNr: Long): Unit
 }
 
 /**
@@ -99,17 +84,18 @@ private[akka] case object NoOpActorFlightRecorder extends ActorFlightRecorder {
   override def producerResentFirst(producerId: String, firstSeqNr: Long): Unit = ()
   override def producerResentFirstUnconfirmed(producerId: String, seqNr: Long): Unit = ()
   override def producerReceived(producerId: String, currentSeqNr: Long): Unit = ()
-  override def producerReceivedRequest(producerId: String, requestedSeqNr: Long): Unit = ()
+  override def producerReceivedRequest(producerId: String, requestedSeqNr: Long, confirmedSeqNr: Long): Unit = ()
   override def producerReceivedResend(producerId: String, fromSeqNr: Long): Unit = ()
 
   override def consumerCreated(path: ActorPath): Unit = ()
   override def consumerStarted(path: ActorPath): Unit = ()
   override def consumerReceived(producerId: String, seqNr: Long): Unit = ()
   override def consumerReceivedPreviousInProgress(producerId: String, seqNr: Long, stashed: Int): Unit = ()
-  override def consumerDuplicate(pid: String, expectedSeqNr: Long, seqNr: Long): Unit = ()
-  override def consumerMissing(pid: String, expectedSeqNr: Long, seqNr: Long): Unit = ()
+  override def consumerDuplicate(producerId: String, expectedSeqNr: Long, seqNr: Long): Unit = ()
+  override def consumerMissing(producerId: String, expectedSeqNr: Long, seqNr: Long): Unit = ()
   override def consumerReceivedResend(seqNr: Long): Unit = ()
   override def consumerSentRequest(producerId: String, requestedSeqNr: Long): Unit = ()
   override def consumerChangedProducer(producerId: String): Unit = ()
+  override def consumerStashFull(producerId: String, seqNr: Long): Unit = ()
 
 }

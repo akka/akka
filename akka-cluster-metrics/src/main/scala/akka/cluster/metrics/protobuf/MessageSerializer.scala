@@ -4,24 +4,23 @@
 
 package akka.cluster.metrics.protobuf
 
-import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
-import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
 import java.{ lang => jl }
-
-import akka.actor.{ Address, ExtendedActorSystem }
-import akka.cluster.metrics.protobuf.msg.{ ClusterMetricsMessages => cm }
-import akka.cluster.metrics._
-import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest, Serializers }
-import akka.util.ClassLoaderObjectInputStream
-import akka.protobufv3.internal.{ ByteString, MessageLite }
-import akka.util.ccompat._
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
+import java.io.NotSerializableException
+import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import akka.util.ccompat.JavaConverters._
-import java.io.NotSerializableException
 
+import akka.actor.{ Address, ExtendedActorSystem }
+import akka.cluster.metrics._
+import akka.cluster.metrics.protobuf.msg.{ ClusterMetricsMessages => cm }
 import akka.dispatch.Dispatchers
+import akka.protobufv3.internal.{ ByteString, MessageLite }
+import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest, Serializers }
+import akka.util.ClassLoaderObjectInputStream
+import akka.util.ccompat._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * Protobuf serializer for [[akka.cluster.metrics.ClusterMetricsMessage]] types.

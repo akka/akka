@@ -26,7 +26,7 @@ import scala.collection.immutable
 @silent // tests assigning to typed val
 class SourceSpec extends StreamSpec with DefaultTimeout {
 
-  implicit val config = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
+  implicit val config: PatienceConfig = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
   "Single Source" must {
 
@@ -86,7 +86,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     "merge from many inputs" in {
       val probes = immutable.Seq.fill(5)(TestPublisher.manualProbe[Int]())
       val source = Source.asSubscriber[Int]
-      val out = TestSubscriber.manualProbe[Int]
+      val out = TestSubscriber.manualProbe[Int]()
 
       val s = Source
         .fromGraph(GraphDSL.create(source, source, source, source, source)(immutable.Seq(_, _, _, _, _)) {
@@ -122,7 +122,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     "combine from many inputs with simplified API" in {
       val probes = immutable.Seq.fill(3)(TestPublisher.manualProbe[Int]())
       val source = for (i <- 0 to 2) yield Source.fromPublisher(probes(i))
-      val out = TestSubscriber.manualProbe[Int]
+      val out = TestSubscriber.manualProbe[Int]()
 
       Source.combine(source(0), source(1), source(2))(Merge(_)).to(Sink.fromSubscriber(out)).run()
       val sub = out.expectSubscription()
@@ -143,7 +143,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     "combine from two inputs with simplified API" in {
       val probes = immutable.Seq.fill(2)(TestPublisher.manualProbe[Int]())
       val source = Source.fromPublisher(probes(0)) :: Source.fromPublisher(probes(1)) :: Nil
-      val out = TestSubscriber.manualProbe[Int]
+      val out = TestSubscriber.manualProbe[Int]()
 
       Source.combine(source(0), source(1))(Merge(_)).to(Sink.fromSubscriber(out)).run()
 

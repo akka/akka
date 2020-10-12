@@ -4,12 +4,13 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
 import akka.actor._
+import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.GracefulShutdown
 import akka.remote.testconductor.RoleName
 import akka.testkit._
-
-import scala.concurrent.duration._
 
 abstract class ClusterShardingGracefulShutdownSpecConfig(mode: String)
     extends MultiNodeClusterShardingConfig(
@@ -56,11 +57,10 @@ abstract class ClusterShardingGracefulShutdownSpec(multiNodeConfig: ClusterShard
     startSharding(
       system,
       typeName,
-      entityProps = Props[ShardedEntity],
+      entityProps = Props[ShardedEntity](),
       extractEntityId = MultiNodeClusterShardingSpec.intExtractEntityId,
       extractShardId = MultiNodeClusterShardingSpec.intExtractShardId,
-      allocationStrategy =
-        new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1),
+      allocationStrategy = ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 2, relativeLimit = 1.0),
       handOffStopMessage = ShardedEntity.Stop)
 
   lazy val region = ClusterSharding(system).shardRegion(typeName)
@@ -68,7 +68,7 @@ abstract class ClusterShardingGracefulShutdownSpec(multiNodeConfig: ClusterShard
   s"Cluster sharding ($mode)" must {
 
     "start some shards in both regions" in within(30.seconds) {
-      startPersistenceIfNotDdataMode(startOn = first, setStoreOn = Seq(first, second))
+      startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second))
 
       join(first, first, typeName)
       join(second, first, typeName)

@@ -1,0 +1,2 @@
+# #28747 Change of private ProducerController#Settings constructor (also ApiMayChange)
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.typed.delivery.ProducerController#Settings.this")

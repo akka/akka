@@ -4,6 +4,8 @@
 
 package akka.actor.typed.internal.pubsub
 
+import scala.reflect.ClassTag
+
 import akka.actor.Dropped
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
@@ -15,8 +17,6 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
-
-import scala.reflect.ClassTag
 
 /**
  * INTERNAL API

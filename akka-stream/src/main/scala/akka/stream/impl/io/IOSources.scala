@@ -8,16 +8,16 @@ import java.nio.ByteBuffer
 import java.nio.channels.{ CompletionHandler, FileChannel }
 import java.nio.file.{ Files, NoSuchFileException, Path, StandardOpenOption }
 
-import akka.Done
-import akka.stream.Attributes.InputBuffer
-import akka.stream.stage._
-import akka.stream.{ IOResult, _ }
-import akka.util.ByteString
-
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
-import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
+import scala.util.control.NonFatal
+
+import akka.Done
+import akka.stream.{ IOResult, _ }
+import akka.stream.Attributes.InputBuffer
+import akka.stream.stage._
+import akka.util.ByteString
 
 /**
  * INTERNAL API

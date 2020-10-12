@@ -1,0 +1,2 @@
+# change to internal
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sbr.DowningStrategy.setReachability")

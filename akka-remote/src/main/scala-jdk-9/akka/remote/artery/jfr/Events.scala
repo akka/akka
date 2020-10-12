@@ -6,16 +6,17 @@ package akka.remote.artery.jfr
 
 import java.net.InetSocketAddress
 
+import jdk.jfr.Category
+import jdk.jfr.DataAmount
+import jdk.jfr.Enabled
+import jdk.jfr.Event
+import jdk.jfr.Label
+import jdk.jfr.StackTrace
+import jdk.jfr.Timespan
+
 import akka.actor.Address
 import akka.annotation.InternalApi
 import akka.remote.UniqueAddress
-import jdk.jfr.StackTrace
-import jdk.jfr.Category
-import jdk.jfr.Label
-import jdk.jfr.Event
-import jdk.jfr.DataAmount
-import jdk.jfr.Enabled
-import jdk.jfr.Timespan
 
 // requires jdk9+ to compile
 // for editing these in IntelliJ, open module settings, change JDK dependency to 11 for only this module

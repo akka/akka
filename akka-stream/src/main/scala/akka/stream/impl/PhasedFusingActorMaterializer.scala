@@ -7,6 +7,15 @@ package akka.stream.impl
 import java.util
 import java.util.concurrent.atomic.AtomicBoolean
 
+import scala.collection.immutable.Map
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration.FiniteDuration
+
+import com.github.ghik.silencer.silent
+import org.reactivestreams.Processor
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+
 import akka.NotUsed
 import akka.actor.ActorContext
 import akka.actor.ActorRef
@@ -21,30 +30,20 @@ import akka.annotation.InternalStableApi
 import akka.dispatch.Dispatchers
 import akka.event.Logging
 import akka.event.LoggingAdapter
-import akka.stream.Attributes.InputBuffer
 import akka.stream._
+import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.AtomicModule
+import akka.stream.impl.fusing._
 import akka.stream.impl.fusing.ActorGraphInterpreter.ActorOutputBoundary
 import akka.stream.impl.fusing.ActorGraphInterpreter.BatchingActorInputBoundary
 import akka.stream.impl.fusing.GraphInterpreter.Connection
-import akka.stream.impl.fusing._
 import akka.stream.impl.io.TLSActor
 import akka.stream.impl.io.TlsModule
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 import akka.util.OptionVal
-import org.reactivestreams.Processor
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
-
-import scala.collection.immutable.Map
-import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContextExecutor
-import akka.util.OptionVal
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -705,7 +704,7 @@ private final case class SavedIslandData(
     logic.stageId = logics.size() - 1
     fullIslandName match {
       case OptionVal.Some(_) => // already set
-      case OptionVal.None    => fullIslandName = OptionVal.Some(islandName + "-" + logic.attributes.nameOrDefault())
+      case OptionVal.None    => fullIslandName = OptionVal.Some(islandName + "-" + logic.attributes.nameForActorRef())
     }
     matAndLogic
   }
@@ -966,7 +965,7 @@ private final case class SavedIslandData(
 
     val props =
       TLSActor.props(maxInputBuffer, tls.createSSLEngine, tls.verifySession, tls.closing).withDispatcher(dispatcher)
-    tlsActor = materializer.actorOf(props, islandName)
+    tlsActor = materializer.actorOf(props, "TLS-for-" + islandName)
     def factory(id: Int) = new ActorPublisher[Any](tlsActor) {
       override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)
     }

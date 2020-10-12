@@ -506,7 +506,7 @@ class GraphStageDocSpec extends AkkaSpec {
                 if (buffer.isEmpty) {
                   downstreamWaiting = true
                 } else {
-                  val elem = buffer.dequeue
+                  val elem = buffer.dequeue()
                   push(out, elem)
                 }
                 if (!bufferFull && !hasBeenPulled(in)) {

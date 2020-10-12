@@ -5,8 +5,8 @@
 package akka.stream.impl
 
 import akka.annotation.InternalApi
-import akka.japi.function.{ Function => JFun, Function2 => JFun2 }
 import akka.japi.{ Pair => JPair }
+import akka.japi.function.{ Function => JFun, Function2 => JFun2 }
 
 /**
  * INTERNAL API

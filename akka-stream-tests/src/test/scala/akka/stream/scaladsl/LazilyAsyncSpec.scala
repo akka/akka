@@ -6,15 +6,16 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import akka.Done
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.TestSubscriber
-import akka.testkit.DefaultTimeout
+import scala.concurrent.Future
+
 import com.github.ghik.silencer.silent
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.Future
+import akka.Done
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.DefaultTimeout
 
 @silent("deprecated") // tests deprecated methods
 class LazilyAsyncSpec extends StreamSpec with DefaultTimeout with ScalaFutures {

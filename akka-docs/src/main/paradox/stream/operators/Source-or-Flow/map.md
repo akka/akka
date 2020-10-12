@@ -4,13 +4,10 @@ Transform each element in the stream by calling a mapping function with it and p
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #map }
-
-@@@
+@apidoc[Source.map](Source) { scala="#map[T](f:Out=&gt;T):FlowOps.this.Repr[T]" java="#map(akka.japi.function.Function)" }
+@apidoc[Flow.map](Flow) { scala="#map[T](f:Out=&gt;T):FlowOps.this.Repr[T]" java="#map(akka.japi.function.Function)" }
 
 ## Description
 

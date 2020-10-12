@@ -4,16 +4,16 @@
 
 package akka.remote.artery.compress
 
-import com.typesafe.config.ConfigFactory
-import akka.actor._
-import akka.remote.artery.compress.CompressionProtocol.Events
-import akka.testkit._
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.duration._
+import akka.actor._
 import akka.actor.ExtendedActorSystem
-import akka.serialization.SerializerWithStringManifest
 import akka.remote.artery.ArteryMultiNodeSpec
+import akka.remote.artery.compress.CompressionProtocol.Events
+import akka.serialization.SerializerWithStringManifest
+import akka.testkit._
 
 object CompressionIntegrationSpec {
 
@@ -132,6 +132,72 @@ class CompressionIntegrationSpec
           b2.table.version.toInt should be >= (3)
         }
       }
+    }
+
+    "not be advertised if ActorRef compression disabled" in {
+      val config = """
+       akka.remote.artery.advanced.compression.actor-refs.max = off
+       akka.remote.artery.advanced.compression {
+         actor-refs.advertisement-interval = 50 ms
+         manifests.advertisement-interval = 50 ms
+       }
+      """
+      val systemC = newRemoteSystem(Some(config))
+      val systemD = newRemoteSystem(Some(config))
+      val cRefProbe = TestProbe()(systemC)
+      val dRefProbe = TestProbe()(systemD)
+      systemC.eventStream.subscribe(cRefProbe.ref, classOf[CompressionProtocol.Events.ReceivedActorRefCompressionTable])
+      systemD.eventStream.subscribe(dRefProbe.ref, classOf[CompressionProtocol.Events.ReceivedActorRefCompressionTable])
+
+      systemD.actorOf(TestActors.echoActorProps, "echo")
+
+      val cProbe = TestProbe()(systemC)
+      systemC.actorSelection(rootActorPath(systemD) / "user" / "echo").tell(Identify(None), cProbe.ref)
+      val echoRefD = cProbe.expectMsgType[ActorIdentity].ref.get
+
+      (1 to messagesToExchange).foreach { _ =>
+        echoRefD.tell(TestMessage("hello"), cProbe.ref)
+      }
+      cProbe.receiveN(messagesToExchange) // the replies
+      cRefProbe.expectNoMessage(100.millis)
+      dRefProbe.expectNoMessage(100.millis)
+
+      shutdown(systemC)
+      shutdown(systemD)
+    }
+
+    "not be advertised if manifest compression disabled" in {
+      val config = """
+       akka.remote.artery.advanced.compression.manifests.max = off
+       akka.remote.artery.advanced.compression {
+         actor-refs.advertisement-interval = 50 ms
+         manifests.advertisement-interval = 50 ms
+       }
+      """
+      val systemC = newRemoteSystem(Some(config))
+      val systemD = newRemoteSystem(Some(config))
+      val cManifestProbe = TestProbe()(systemC)
+      val dManifestProbe = TestProbe()(systemD)
+      systemC.eventStream
+        .subscribe(cManifestProbe.ref, classOf[CompressionProtocol.Events.ReceivedClassManifestCompressionTable])
+      systemD.eventStream
+        .subscribe(dManifestProbe.ref, classOf[CompressionProtocol.Events.ReceivedClassManifestCompressionTable])
+
+      systemD.actorOf(TestActors.echoActorProps, "echo")
+
+      val cProbe = TestProbe()(systemC)
+      systemC.actorSelection(rootActorPath(systemD) / "user" / "echo").tell(Identify(None), cProbe.ref)
+      val echoRefD = cProbe.expectMsgType[ActorIdentity].ref.get
+
+      (1 to messagesToExchange).foreach { _ =>
+        echoRefD.tell(TestMessage("hello"), cProbe.ref)
+      }
+      cProbe.receiveN(messagesToExchange) // the replies
+      cManifestProbe.expectNoMessage(100.millis)
+      dManifestProbe.expectNoMessage(100.millis)
+
+      shutdown(systemC)
+      shutdown(systemD)
     }
 
   }

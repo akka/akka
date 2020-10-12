@@ -7,9 +7,12 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.query.EventEnvelope
@@ -22,8 +25,6 @@ import akka.persistence.typed.PersistenceId
 import akka.serialization.jackson.CborSerializable
 import akka.stream.scaladsl.Sink
 import akka.testkit.JavaSerializable
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedEventAdapterSpec {
 
@@ -84,7 +85,6 @@ class EventSourcedEventAdapterSpec
     extends ScalaTestWithActorTestKit(EventSourcedEventAdapterSpec.conf)
     with AnyWordSpecLike
     with LogCapturing {
-  import EventSourcedEventAdapterSpec._
   import EventSourcedBehaviorSpec.{
     counter,
     Command,
@@ -95,6 +95,7 @@ class EventSourcedEventAdapterSpec
     Incremented,
     State
   }
+  import EventSourcedEventAdapterSpec._
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")

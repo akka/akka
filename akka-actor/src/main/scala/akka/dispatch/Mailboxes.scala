@@ -8,6 +8,12 @@ import java.lang.reflect.ParameterizedType
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.annotation.tailrec
+import scala.concurrent.duration.Duration
+import scala.util.control.NonFatal
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.ConfigurationException
 import akka.actor.{ Actor, ActorRef, ActorSystem, DeadLetter, Deploy, DynamicAccess, Props }
 import akka.dispatch.sysmsg.{
@@ -19,11 +25,6 @@ import akka.dispatch.sysmsg.{
 import akka.event.EventStream
 import akka.event.Logging.Warning
 import akka.util.Reflect
-import com.typesafe.config.{ Config, ConfigFactory }
-
-import scala.util.control.NonFatal
-import scala.annotation.tailrec
-import scala.concurrent.duration.Duration
 
 object Mailboxes {
   final val DefaultMailboxId = "akka.actor.default-mailbox"
@@ -139,7 +140,7 @@ private[akka] class Mailboxes(
   protected[akka] def getMailboxType(props: Props, dispatcherConfig: Config): MailboxType = {
     val id = dispatcherConfig.getString("id")
     val deploy = props.deploy
-    val actorClass = props.actorClass
+    val actorClass = props.actorClass()
     lazy val actorRequirement = getRequiredType(actorClass)
 
     val mailboxRequirement: Class[_] = getMailboxRequirement(dispatcherConfig)
@@ -302,7 +303,7 @@ private[akka] class Mailboxes(
   }
 
   private def stashCapacityFromConfig(dispatcher: String, mailbox: String): Int = {
-    val disp = settings.config.getConfig(dispatcher)
+    val disp = Dispatchers.getConfig(settings.config, dispatcher)
     val fallback = disp.withFallback(settings.config.getConfig(Mailboxes.DefaultMailboxId))
     val config =
       if (mailbox == Mailboxes.DefaultMailboxId) fallback

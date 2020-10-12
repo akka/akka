@@ -10,6 +10,8 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
+import com.typesafe.config.Config
+
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -22,7 +24,6 @@ import akka.annotation.ApiMayChange
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.delivery.internal.ShardingProducerControllerImpl
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
 
 /**
  * Reliable delivery between a producer actor sending messages to sharded consumer
@@ -84,6 +85,10 @@ import com.typesafe.config.Config
  * The `producerId` is used in logging and included as MDC entry with key `"producerId"`. It's propagated
  * to the `ConsumerController` and is useful for correlating log messages. It can be any `String` but it's
  * recommended to use a unique identifier of representing the producer.
+ *
+ * If the `DurableProducerQueue` is defined it is created as a child actor of the `ShardingProducerController` actor.
+ * `ProducerController` actors are created for each destination entity. Those child actors use the same dispatcher
+ * as the parent `ShardingProducerController`.
  */
 @ApiMayChange // TODO #28719 when removing ApiMayChange consider removing `case class` for some of the messages
 object ShardingProducerController {
@@ -197,6 +202,9 @@ object ShardingProducerController {
       val cleanupUnusedAfter: FiniteDuration,
       val resendFirsUnconfirmedIdleTimeout: FiniteDuration,
       val producerControllerSettings: ProducerController.Settings) {
+
+    if (producerControllerSettings.chunkLargeMessagesBytes > 0)
+      throw new IllegalArgumentException("Chunked messages not implemented for sharding yet.")
 
     def withBufferSize(newBufferSize: Int): Settings =
       copy(bufferSize = newBufferSize)

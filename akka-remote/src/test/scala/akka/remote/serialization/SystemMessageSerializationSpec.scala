@@ -4,12 +4,13 @@
 
 package akka.remote.serialization
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ ActorInitializationException, ExtendedActorSystem, InternalActorRef }
 import akka.dispatch.sysmsg._
 import akka.serialization.SerializationExtension
-import akka.testkit.JavaSerializable
 import akka.testkit.{ AkkaSpec, TestProbe }
-import com.typesafe.config.ConfigFactory
+import akka.testkit.JavaSerializable
 
 object SystemMessageSerializationSpec {
   val serializationTestOverrides =

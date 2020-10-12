@@ -3,21 +3,22 @@
  */
 
 package akka.cluster.sharding
-import akka.actor.Props
-import akka.cluster.{ Cluster, MemberStatus, TestLease, TestLeaseExt }
-import akka.testkit.TestActors.EchoActor
-import akka.testkit.{ AkkaSpec, ImplicitSender }
-import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
 import scala.util.control.NoStackTrace
+import com.typesafe.config.{ Config, ConfigFactory }
+import akka.actor.Props
+import akka.cluster.{ Cluster, MemberStatus }
+import akka.coordination.lease.TestLease
+import akka.coordination.lease.TestLeaseExt
+import akka.testkit.{ AkkaSpec, ImplicitSender, WithLogCapturing }
+import akka.testkit.TestActors.EchoActor
 
 object ClusterShardingLeaseSpec {
   val config = ConfigFactory.parseString("""
     akka.loglevel = DEBUG
-    #akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.actor.provider = "cluster"
     akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
@@ -27,6 +28,8 @@ object ClusterShardingLeaseSpec {
        distributed-data.durable {
         keys = []
        }
+       verbose-debug-logging = on
+       fail-on-invalid-entity-state-transition = on
      }
     """).withFallback(TestLease.config)
 
@@ -59,7 +62,8 @@ class DDataClusterShardingLeaseSpec extends ClusterShardingLeaseSpec(ClusterShar
 
 class ClusterShardingLeaseSpec(config: Config, rememberEntities: Boolean)
     extends AkkaSpec(config.withFallback(ClusterShardingLeaseSpec.config))
-    with ImplicitSender {
+    with ImplicitSender
+    with WithLogCapturing {
   import ClusterShardingLeaseSpec._
 
   def this() = this(ConfigFactory.empty(), false)
@@ -76,7 +80,7 @@ class ClusterShardingLeaseSpec(config: Config, rememberEntities: Boolean)
     }
     ClusterSharding(system).start(
       typeName = typeName,
-      entityProps = Props[EchoActor],
+      entityProps = Props[EchoActor](),
       settings = ClusterShardingSettings(system).withRememberEntities(rememberEntities),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId)
@@ -129,7 +133,7 @@ class ClusterShardingLeaseSpec(config: Config, rememberEntities: Boolean)
       awaitAssert({
         region ! 4
         expectMsg(4)
-      }, max = 5.seconds)
+      }, max = 10.seconds)
     }
   }
 }

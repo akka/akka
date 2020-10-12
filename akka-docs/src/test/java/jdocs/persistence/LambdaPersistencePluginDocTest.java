@@ -139,7 +139,7 @@ public class LambdaPersistencePluginDocTest {
           public MyJournalSpecTest() {
             super(
                 ConfigFactory.parseString(
-                    "persistence.journal.plugin = "
+                    "akka.persistence.journal.plugin = "
                         + "\"akka.persistence.journal.leveldb-shared\""));
           }
 

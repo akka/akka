@@ -4,12 +4,13 @@
 
 package akka.stream.javadsl
 
+import scala.concurrent.duration.FiniteDuration
+
+import com.github.ghik.silencer.silent
+
 import akka.NotUsed
 import akka.japi.function
 import akka.stream._
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.duration.FiniteDuration
 
 object BidiFlow {
 

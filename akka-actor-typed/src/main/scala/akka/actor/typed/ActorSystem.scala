@@ -6,19 +6,20 @@ package akka.actor.typed
 
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
-import akka.actor.setup.ActorSystemSetup
-import akka.actor.typed.eventstream.EventStream
-import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, GuardianStartupBehavior, PropsAdapter }
-import akka.actor.typed.internal.{ EventStreamExtension, InternalRecipientRef }
-import akka.actor.typed.receptionist.Receptionist
-import akka.actor.{ Address, BootstrapSetup, ClassicActorSystemProvider }
-import akka.annotation.DoNotInherit
-import akka.util.Helpers.Requiring
-import akka.{ Done, actor => classic }
+import scala.concurrent.{ ExecutionContextExecutor, Future }
+
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.slf4j.Logger
 
-import scala.concurrent.{ ExecutionContextExecutor, Future }
+import akka.{ Done, actor => classic }
+import akka.actor.{ Address, BootstrapSetup, ClassicActorSystemProvider }
+import akka.actor.setup.ActorSystemSetup
+import akka.actor.typed.eventstream.EventStream
+import akka.actor.typed.internal.{ EventStreamExtension, InternalRecipientRef }
+import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, GuardianStartupBehavior, PropsAdapter }
+import akka.actor.typed.receptionist.Receptionist
+import akka.annotation.DoNotInherit
+import akka.util.Helpers.Requiring
 
 /**
  * An ActorSystem is home to a hierarchy of Actors. It is created using

@@ -9,6 +9,11 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.concurrent.duration._
+
+import com.google.common.jimfs.Configuration
+import com.google.common.jimfs.Jimfs
+
 import akka.stream.ActorAttributes
 import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
@@ -23,10 +28,6 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.EventFilter
 import akka.util.ByteString
-import com.google.common.jimfs.Configuration
-import com.google.common.jimfs.Jimfs
-
-import scala.concurrent.duration._
 
 class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 

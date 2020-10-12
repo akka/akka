@@ -8,9 +8,11 @@ project.description: Multi node testing of distributed systems built with Akka.
 To use Multi Node Testing, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-multi-node-testkit_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-multi-node-testkit_$scala.binary.version$
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-multi-node-testkit" }

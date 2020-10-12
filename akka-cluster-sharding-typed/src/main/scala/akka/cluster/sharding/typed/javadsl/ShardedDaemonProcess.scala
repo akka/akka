@@ -4,6 +4,7 @@
 
 package akka.cluster.sharding.typed.javadsl
 
+import java.util.function.IntFunction
 import java.util.Optional
 
 import akka.actor.typed.ActorSystem
@@ -11,7 +12,6 @@ import akka.actor.typed.Behavior
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
-import akka.japi.function
 
 object ShardedDaemonProcess {
   def get(system: ActorSystem[_]): ShardedDaemonProcess =
@@ -43,7 +43,21 @@ abstract class ShardedDaemonProcess {
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
-      behaviorFactory: function.Function[Integer, Behavior[T]]): Unit
+      behaviorFactory: IntFunction[Behavior[T]]): Unit
+
+  /**
+   * Start a specific number of actors that is then kept alive in the cluster.
+   *
+   * @param behaviorFactory Given a unique id of `0` until `numberOfInstance` create the behavior for that actor.
+   * @param stopMessage sent to the actors when they need to stop because of a rebalance across the nodes of the cluster
+   *                    or cluster shutdown.
+   */
+  def init[T](
+      messageClass: Class[T],
+      name: String,
+      numberOfInstances: Int,
+      behaviorFactory: IntFunction[Behavior[T]],
+      stopMessage: T): Unit
 
   /**
    * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
@@ -55,7 +69,7 @@ abstract class ShardedDaemonProcess {
       messageClass: Class[T],
       name: String,
       numberOfInstances: Int,
-      behaviorFactory: function.Function[Integer, Behavior[T]],
+      behaviorFactory: IntFunction[Behavior[T]],
       settings: ShardedDaemonProcessSettings,
       stopMessage: Optional[T]): Unit
 

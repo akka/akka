@@ -4,12 +4,13 @@
 
 package akka.actor.typed.internal.receptionist
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.ActorRefSerializationSpec
 import akka.actor.typed.receptionist.ServiceKey
 import akka.serialization.SerializationExtension
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class ServiceKeySerializationSpec
     extends ScalaTestWithActorTestKit(ActorRefSerializationSpec.config)

@@ -4,9 +4,10 @@
 
 package akka.actor.typed
 
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 
 class PropsSpec extends AnyWordSpec with Matchers with LogCapturing {
 

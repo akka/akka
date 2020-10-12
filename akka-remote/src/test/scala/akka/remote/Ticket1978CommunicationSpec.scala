@@ -8,20 +8,21 @@ import java.io.ByteArrayOutputStream
 import java.security.NoSuchAlgorithmException
 import java.util.zip.GZIPOutputStream
 
-import akka.actor._
-import akka.event.NoMarkerLogging
-import akka.pattern.ask
-import akka.remote.Configuration.{ getCipherConfig, CipherConfig }
-import akka.remote.transport.netty.SSLSettings
-import akka.testkit._
-import akka.util.Timeout
-import com.typesafe.config._
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.reflect.classTag
 
-import akka.remote.transport.netty.ConfigSSLEngineProvider
 import com.github.ghik.silencer.silent
+import com.typesafe.config._
+
+import akka.actor._
+import akka.event.NoMarkerLogging
+import akka.pattern.ask
+import akka.remote.Configuration.{ getCipherConfig, CipherConfig }
+import akka.remote.transport.netty.ConfigSSLEngineProvider
+import akka.remote.transport.netty.SSLSettings
+import akka.testkit._
+import akka.util.Timeout
 
 @silent("deprecated")
 object Configuration {
@@ -96,10 +97,10 @@ object Configuration {
       val engine = sslEngineProvider.createClientSSLEngine()
       val gotAllSupported = enabled.toSet.diff(engine.getSupportedCipherSuites.toSet)
       val gotAllEnabled = enabled.toSet.diff(engine.getEnabledCipherSuites.toSet)
-      gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
-      gotAllEnabled.isEmpty || (throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled))
-      engine.getSupportedProtocols.contains(settings.SSLProtocol) ||
-      (throw new IllegalArgumentException("Protocol not supported: " + settings.SSLProtocol))
+      if (gotAllSupported.nonEmpty) throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported)
+      if (gotAllEnabled.nonEmpty) throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled)
+      if (!engine.getSupportedProtocols.contains(settings.SSLProtocol))
+        throw new IllegalArgumentException("Protocol not supported: " + settings.SSLProtocol)
 
       CipherConfig(true, config, cipher, localPort, remotePort, Some(sslEngineProvider))
     } catch {
@@ -110,10 +111,12 @@ object Configuration {
 }
 
 class Ticket1978SHA1PRNGSpec
-    extends Ticket1978CommunicationSpec(getCipherConfig("SHA1PRNG", "TLS_RSA_WITH_AES_128_CBC_SHA"))
+    extends Ticket1978CommunicationSpec(
+      getCipherConfig("SHA1PRNG", "TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"))
 
 class Ticket1978DefaultRNGSecureSpec
-    extends Ticket1978CommunicationSpec(getCipherConfig("", "TLS_RSA_WITH_AES_128_CBC_SHA"))
+    extends Ticket1978CommunicationSpec(
+      getCipherConfig("", "TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"))
 
 class Ticket1978CrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec
     extends Ticket1978CommunicationSpec(getCipherConfig("", "SSL_RSA_WITH_NULL_MD5"))

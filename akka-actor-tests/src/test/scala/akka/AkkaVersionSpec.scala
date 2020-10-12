@@ -60,23 +60,25 @@ class AkkaVersionSpec extends AnyWordSpec with Matchers {
       }
     }
 
-    "succeed if Akka version is SNAPSHOT" in {
+    "succeed if current Akka version is SNAPSHOT" in {
       AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5-SNAPSHOT")
     }
 
-    "succeed if Akka version is timestamped SNAPSHOT" in {
+    "succeed if current Akka version is timestamped SNAPSHOT" in {
       AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5-20180109-133700")
+    }
+
+    "succeed if required Akka version is SNAPSHOT" in {
+      AkkaVersion.require("AkkaVersionSpec", "2.5-SNAPSHOT", "2.5-SNAPSHOT")
+    }
+
+    "succeed if required Akka version is timestamped SNAPSHOT" in {
+      AkkaVersion.require("AkkaVersionSpec", "2.5-20180109-133700", "2.5-20180109-133700")
     }
 
     "silently comply if current version is incomprehensible" in {
       // because we may want to release with weird numbers for some reason
       AkkaVersion.require("nonsense", "2.5.6", "nonsense")
-    }
-
-    "fail if fed incomprehensible requirement" in {
-      intercept[IllegalArgumentException] {
-        AkkaVersion.require("AkkaVersionSpec", "nonsense", "2.5.6")
-      }
     }
 
   }

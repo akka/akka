@@ -4,12 +4,13 @@
 
 package akka.actor.typed.internal.adpater
 
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor
 import akka.actor.typed.Props
 import akka.actor.typed.internal.adapter.PropsAdapter
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class PropsAdapterSpec extends AnyWordSpec with Matchers {
 

@@ -12,8 +12,8 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
 object MiMa extends AutoPlugin {
 
-  private val latestPatchOf25 = 29
-  private val latestPatchOf26 = 3
+  private val latestPatchOf25 = 31
+  private val latestPatchOf26 = 10
 
   override def requires = MimaPlugin
   override def trigger = allRequirements
@@ -40,7 +40,9 @@ object MiMa extends AutoPlugin {
           // https://github.com/scala/bug/issues/11207 produced many more
           // static methods than expected. These are hard to filter out, so
           // we exclude it here and rely on the checks for 2.5.17 and 2.5.19.
-          expandVersions(2, 5, ((firstPatchOf25 to latestPatchOf25).toSet - 18).toList)
+          // Additionally, 2.5.30 had some problems related to
+          // https://github.com/akka/akka/issues/28807
+          expandVersions(2, 5, ((firstPatchOf25 to latestPatchOf25).toSet - 18 - 30).toList)
         } else {
           Nil
         }

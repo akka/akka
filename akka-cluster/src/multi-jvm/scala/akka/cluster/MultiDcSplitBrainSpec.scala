@@ -4,16 +4,17 @@
 
 package akka.cluster
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorSystem
 import akka.cluster.ClusterEvent._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")

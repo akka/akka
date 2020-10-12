@@ -4,20 +4,21 @@
 
 package akka.osgi
 
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import PojoSRTestSupport.bundle
+import de.kalpatec.pojosr.framework.launch.BundleDescriptor
 import language.postfixOps
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import test.{ PingPongActorSystemActivator, RuntimeNameActorSystemActivator, TestActivators }
+import test.PingPong._
 
 import akka.actor.ActorSystem
 import akka.pattern.ask
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.collection.immutable
 import akka.util.Timeout
-import de.kalpatec.pojosr.framework.launch.BundleDescriptor
-import test.{ PingPongActorSystemActivator, RuntimeNameActorSystemActivator, TestActivators }
-import test.PingPong._
-import PojoSRTestSupport.bundle
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 /**
  * Test cases for [[akka.osgi.ActorSystemActivator]] in 2 different scenarios:

@@ -4,9 +4,11 @@
 
 package docs.akka.cluster.sharding.typed
 
+import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+import akka.pattern.StatusReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
@@ -24,21 +26,15 @@ object AccountExampleWithCommandHandlersInState {
   //#account-entity
   object AccountEntity {
     // Command
-    sealed trait Command[Reply <: CommandReply] extends CborSerializable {
-      def replyTo: ActorRef[Reply]
-    }
-    final case class CreateAccount(replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
-    final case class Deposit(amount: BigDecimal, replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
-    final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
-    final case class GetBalance(replyTo: ActorRef[CurrentBalance]) extends Command[CurrentBalance]
-    final case class CloseAccount(replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
+    sealed trait Command extends CborSerializable
+    final case class CreateAccount(replyTo: ActorRef[StatusReply[Done]]) extends Command
+    final case class Deposit(amount: BigDecimal, replyTo: ActorRef[StatusReply[Done]]) extends Command
+    final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[StatusReply[Done]]) extends Command
+    final case class GetBalance(replyTo: ActorRef[CurrentBalance]) extends Command
+    final case class CloseAccount(replyTo: ActorRef[StatusReply[Done]]) extends Command
 
     // Reply
-    sealed trait CommandReply extends CborSerializable
-    sealed trait OperationResult extends CommandReply
-    case object Confirmed extends OperationResult
-    final case class Rejected(reason: String) extends OperationResult
-    final case class CurrentBalance(balance: BigDecimal) extends CommandReply
+    final case class CurrentBalance(balance: BigDecimal)
 
     // Event
     sealed trait Event extends CborSerializable
@@ -54,14 +50,14 @@ object AccountExampleWithCommandHandlersInState {
 
     // State
     sealed trait Account extends CborSerializable {
-      def applyCommand(cmd: Command[_]): ReplyEffect
+      def applyCommand(cmd: Command): ReplyEffect
       def applyEvent(event: Event): Account
     }
     case object EmptyAccount extends Account {
-      override def applyCommand(cmd: Command[_]): ReplyEffect =
+      override def applyCommand(cmd: Command): ReplyEffect =
         cmd match {
           case CreateAccount(replyTo) =>
-            Effect.persist(AccountCreated).thenReply(replyTo)(_ => Confirmed)
+            Effect.persist(AccountCreated).thenReply(replyTo)(_ => StatusReply.Ack)
           case _ =>
             // CreateAccount before handling any other commands
             Effect.unhandled.thenNoReply()
@@ -76,28 +72,28 @@ object AccountExampleWithCommandHandlersInState {
     case class OpenedAccount(balance: BigDecimal) extends Account {
       require(balance >= Zero, "Account balance can't be negative")
 
-      override def applyCommand(cmd: Command[_]): ReplyEffect =
+      override def applyCommand(cmd: Command): ReplyEffect =
         cmd match {
           case Deposit(amount, replyTo) =>
-            Effect.persist(Deposited(amount)).thenReply(replyTo)(_ => Confirmed)
+            Effect.persist(Deposited(amount)).thenReply(replyTo)(_ => StatusReply.Ack)
 
           case Withdraw(amount, replyTo) =>
             if (canWithdraw(amount))
-              Effect.persist(Withdrawn(amount)).thenReply(replyTo)(_ => Confirmed)
+              Effect.persist(Withdrawn(amount)).thenReply(replyTo)(_ => StatusReply.Ack)
             else
-              Effect.reply(replyTo)(Rejected(s"Insufficient balance $balance to be able to withdraw $amount"))
+              Effect.reply(replyTo)(StatusReply.Error(s"Insufficient balance $balance to be able to withdraw $amount"))
 
           case GetBalance(replyTo) =>
             Effect.reply(replyTo)(CurrentBalance(balance))
 
           case CloseAccount(replyTo) =>
             if (balance == Zero)
-              Effect.persist(AccountClosed).thenReply(replyTo)(_ => Confirmed)
+              Effect.persist(AccountClosed).thenReply(replyTo)(_ => StatusReply.Ack)
             else
-              Effect.reply(replyTo)(Rejected("Can't close account with non-zero balance"))
+              Effect.reply(replyTo)(StatusReply.Error("Can't close account with non-zero balance"))
 
           case CreateAccount(replyTo) =>
-            Effect.reply(replyTo)(Rejected("Account is already created"))
+            Effect.reply(replyTo)(StatusReply.Error("Account is already created"))
 
         }
 
@@ -115,28 +111,33 @@ object AccountExampleWithCommandHandlersInState {
 
     }
     case object ClosedAccount extends Account {
-      override def applyCommand(cmd: Command[_]): ReplyEffect =
+      override def applyCommand(cmd: Command): ReplyEffect =
         cmd match {
-          case c @ (_: Deposit | _: Withdraw) =>
-            Effect.reply(c.replyTo)(Rejected("Account is closed"))
+          case c: Deposit =>
+            replyClosed(c.replyTo)
+          case c: Withdraw =>
+            replyClosed(c.replyTo)
           case GetBalance(replyTo) =>
             Effect.reply(replyTo)(CurrentBalance(Zero))
           case CloseAccount(replyTo) =>
-            Effect.reply(replyTo)(Rejected("Account is already closed"))
+            replyClosed(replyTo)
           case CreateAccount(replyTo) =>
-            Effect.reply(replyTo)(Rejected("Account is already created"))
+            replyClosed(replyTo)
         }
+
+      private def replyClosed(replyTo: ActorRef[StatusReply[Done]]): ReplyEffect =
+        Effect.reply(replyTo)(StatusReply.Error(s"Account is closed"))
 
       override def applyEvent(event: Event): Account =
         throw new IllegalStateException(s"unexpected event [$event] in state [ClosedAccount]")
     }
 
     // when used with sharding, this TypeKey can be used in `sharding.init` and `sharding.entityRefFor`:
-    val TypeKey: EntityTypeKey[Command[_]] =
-      EntityTypeKey[Command[_]]("Account")
+    val TypeKey: EntityTypeKey[Command] =
+      EntityTypeKey[Command]("Account")
 
-    def apply(persistenceId: PersistenceId): Behavior[Command[_]] = {
-      EventSourcedBehavior.withEnforcedReplies[Command[_], Event, Account](
+    def apply(persistenceId: PersistenceId): Behavior[Command] = {
+      EventSourcedBehavior.withEnforcedReplies[Command, Event, Account](
         persistenceId,
         EmptyAccount,
         (state, cmd) => state.applyCommand(cmd),

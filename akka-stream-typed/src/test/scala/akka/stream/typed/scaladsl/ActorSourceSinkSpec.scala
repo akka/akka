@@ -4,14 +4,15 @@
 
 package akka.stream.typed.scaladsl
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.{ CompletionStrategy, OverflowStrategy }
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.actor.testkit.typed.scaladsl._
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object ActorSourceSinkSpec {
 

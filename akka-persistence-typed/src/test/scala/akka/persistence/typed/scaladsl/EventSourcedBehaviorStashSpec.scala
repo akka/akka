@@ -10,13 +10,17 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.NotUsed
+import akka.actor.Dropped
+import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.actor.Dropped
-import akka.actor.UnhandledMessage
 import akka.actor.typed.PostStop
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.eventstream.EventStream
@@ -26,9 +30,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedBehaviorStashSpec {
   def conf: Config = ConfigFactory.parseString(s"""
@@ -177,8 +178,8 @@ class EventSourcedBehaviorStashSpec
 
     "stash and unstash" in {
       val c = spawn(counter(nextPid()))
-      val ackProbe = TestProbe[Ack]
-      val stateProbe = TestProbe[State]
+      val ackProbe = TestProbe[Ack]()
+      val stateProbe = TestProbe[State]()
 
       c ! Increment("1", ackProbe.ref)
       ackProbe.expectMessage(Ack("1"))
@@ -205,8 +206,8 @@ class EventSourcedBehaviorStashSpec
 
     "handle mix of stash, persist and unstash" in {
       val c = spawn(counter(nextPid()))
-      val ackProbe = TestProbe[Ack]
-      val stateProbe = TestProbe[State]
+      val ackProbe = TestProbe[Ack]()
+      val stateProbe = TestProbe[State]()
 
       c ! Increment("1", ackProbe.ref)
       ackProbe.expectMessage(Ack("1"))
@@ -233,8 +234,8 @@ class EventSourcedBehaviorStashSpec
 
     "unstash in right order" in {
       val c = spawn(counter(nextPid()))
-      val ackProbe = TestProbe[Ack]
-      val stateProbe = TestProbe[State]
+      val ackProbe = TestProbe[Ack]()
+      val stateProbe = TestProbe[State]()
 
       c ! Increment(s"inc-1", ackProbe.ref)
 
@@ -270,9 +271,9 @@ class EventSourcedBehaviorStashSpec
 
     "handle many stashed" in {
       val c = spawn(counter(nextPid()))
-      val ackProbe = TestProbe[Ack]
-      val stateProbe = TestProbe[State]
-      val notUsedProbe = TestProbe[NotUsed]
+      val ackProbe = TestProbe[Ack]()
+      val stateProbe = TestProbe[State]()
+      val notUsedProbe = TestProbe[NotUsed]()
       val unhandledProbe = createTestProbe[UnhandledMessage]()
       system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
 
@@ -383,8 +384,8 @@ class EventSourcedBehaviorStashSpec
 
     "discard user stash when restarted due to thrown exception" in {
       val c = spawn(counter(nextPid()))
-      val ackProbe = TestProbe[Ack]
-      val stateProbe = TestProbe[State]
+      val ackProbe = TestProbe[Ack]()
+      val stateProbe = TestProbe[State]()
 
       c ! Increment("inc-1", ackProbe.ref)
       ackProbe.expectMessage(Ack("inc-1"))
@@ -418,8 +419,8 @@ class EventSourcedBehaviorStashSpec
 
     "discard internal stash when restarted due to thrown exception" in {
       val c = spawn(counter(nextPid()))
-      val ackProbe = TestProbe[Ack]
-      val stateProbe = TestProbe[State]
+      val ackProbe = TestProbe[Ack]()
+      val stateProbe = TestProbe[State]()
       val latch = new CountDownLatch(1)
 
       // make first command slow to ensure that all subsequent commands are enqueued first
@@ -448,8 +449,8 @@ class EventSourcedBehaviorStashSpec
 
     "preserve internal stash when persist failed" in {
       val c = spawn(counter(PersistenceId.ofUniqueId("fail-fifth-a")))
-      val ackProbe = TestProbe[Ack]
-      val stateProbe = TestProbe[State]
+      val ackProbe = TestProbe[Ack]()
+      val stateProbe = TestProbe[State]()
 
       (1 to 10).foreach { n =>
         c ! Increment(s"inc-$n", ackProbe.ref)
@@ -466,8 +467,8 @@ class EventSourcedBehaviorStashSpec
 
     "preserve user stash when persist failed" in {
       val c = spawn(counter(PersistenceId.ofUniqueId("fail-fifth-b")))
-      val ackProbe = TestProbe[Ack]
-      val stateProbe = TestProbe[State]
+      val ackProbe = TestProbe[Ack]()
+      val stateProbe = TestProbe[State]()
 
       c ! Increment("inc-1", ackProbe.ref)
       ackProbe.expectMessage(Ack("inc-1"))
@@ -604,7 +605,7 @@ class EventSourcedBehaviorStashSpec
 
     "stop from PoisonPill even though user stash is not empty" in {
       val c = spawn(counter(nextPid()))
-      val ackProbe = TestProbe[Ack]
+      val ackProbe = TestProbe[Ack]()
 
       c ! Increment("1", ackProbe.ref)
       ackProbe.expectMessage(Ack("1"))
@@ -622,7 +623,7 @@ class EventSourcedBehaviorStashSpec
 
     "stop from PoisonPill after unstashing completed" in {
       val c = spawn(counter(nextPid()))
-      val ackProbe = TestProbe[Ack]
+      val ackProbe = TestProbe[Ack]()
       val unhandledProbe = createTestProbe[UnhandledMessage]()
       system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
 
@@ -658,7 +659,7 @@ class EventSourcedBehaviorStashSpec
     "stop from PoisonPill after recovery completed" in {
       val pid = nextPid()
       val c = spawn(counter(pid))
-      val ackProbe = TestProbe[Ack]
+      val ackProbe = TestProbe[Ack]()
 
       c ! Increment("1", ackProbe.ref)
       c ! Increment("2", ackProbe.ref)
@@ -667,7 +668,7 @@ class EventSourcedBehaviorStashSpec
       ackProbe.expectMessage(Ack("2"))
       ackProbe.expectMessage(Ack("3"))
 
-      val signalProbe = TestProbe[String]
+      val signalProbe = TestProbe[String]()
       val c2 = spawn(counter(pid, Some(signalProbe.ref)))
       // this PoisonPill will most likely be received in RequestingRecoveryPermit since it's sent immediately
       c2.toClassic ! PoisonPill

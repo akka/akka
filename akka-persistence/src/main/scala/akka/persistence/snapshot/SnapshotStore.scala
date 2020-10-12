@@ -5,13 +5,13 @@
 package akka.persistence.snapshot
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 import akka.actor._
+import akka.pattern.CircuitBreaker
 import akka.pattern.pipe
 import akka.persistence._
-import akka.pattern.CircuitBreaker
 
 /**
  * Abstract snapshot store.
@@ -61,11 +61,12 @@ trait SnapshotStore extends Actor with ActorLogging {
           }
           .recover {
             case e => SaveSnapshotFailure(metadata, e)
-          } to (self, senderPersistentActor())
+          }
+          .to(self, senderPersistentActor())
 
       case evt: SaveSnapshotSuccess =>
         try tryReceivePluginInternal(evt)
-        finally senderPersistentActor ! evt // sender is persistentActor
+        finally senderPersistentActor() ! evt // sender is persistentActor
       case evt @ SaveSnapshotFailure(metadata, _) =>
         try {
           tryReceivePluginInternal(evt)

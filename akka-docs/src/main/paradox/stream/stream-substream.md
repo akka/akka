@@ -5,9 +5,11 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -54,9 +56,9 @@ Java
 ![stream-substream-groupBy2.png](../../images/stream-substream-groupBy2.png)
 
 Also substreams, more precisely, `SubFlow` and `SubSource` have methods that allow you to
-merge or concat substreams into the master stream again.
+merge or concat substreams into the main stream again.
 
-The `mergeSubstreams` method merges an unbounded number of substreams back to the master stream.
+The `mergeSubstreams` method merges an unbounded number of substreams back to the main stream.
 
 Scala
 :   @@snip [SubstreamDocSpec.scala](/akka-docs/src/test/scala/docs/stream/SubstreamDocSpec.scala) { #groupBy3 }

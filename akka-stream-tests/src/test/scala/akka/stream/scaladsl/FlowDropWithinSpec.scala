@@ -4,9 +4,9 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
-
 import scala.concurrent.duration._
+
+import akka.stream.testkit._
 
 class FlowDropWithinSpec extends StreamSpec {
 
@@ -17,18 +17,18 @@ class FlowDropWithinSpec extends StreamSpec {
       val p = TestPublisher.manualProbe[Int]()
       val c = TestSubscriber.manualProbe[Int]()
       Source.fromPublisher(p).dropWithin(1.second).to(Sink.fromSubscriber(c)).run()
-      val pSub = p.expectSubscription
-      val cSub = c.expectSubscription
+      val pSub = p.expectSubscription()
+      val cSub = c.expectSubscription()
       cSub.request(100)
-      val demand1 = pSub.expectRequest
+      val demand1 = pSub.expectRequest()
       (1 to demand1.toInt).foreach { _ =>
         pSub.sendNext(input.next())
       }
-      val demand2 = pSub.expectRequest
+      val demand2 = pSub.expectRequest()
       (1 to demand2.toInt).foreach { _ =>
         pSub.sendNext(input.next())
       }
-      val demand3 = pSub.expectRequest
+      val demand3 = pSub.expectRequest()
       c.expectNoMessage(1500.millis)
       (1 to demand3.toInt).foreach { _ =>
         pSub.sendNext(input.next())
@@ -37,7 +37,7 @@ class FlowDropWithinSpec extends StreamSpec {
         c.expectNext(n)
       }
       pSub.sendComplete()
-      c.expectComplete
+      c.expectComplete()
       c.expectNoMessage(200.millis)
     }
 

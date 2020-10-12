@@ -11,9 +11,9 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
-import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.Utils.TE
 import akka.testkit.AkkaSpec
 
 class ChasingEventsSpec extends AkkaSpec("""

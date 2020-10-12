@@ -1,17 +1,14 @@
-# Source/Flow.fromMaterializer
+# fromMaterializer
 
 Defer the creation of a `Source/Flow` until materialization and access `Materializer` and `Attributes`
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@ div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromMaterializer }
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #fromMaterializer }
+@apidoc[Source.fromMaterializer](Source$) { scala="#fromMaterializer[T,M](factory:(akka.stream.Materializer,akka.stream.Attributes)=&gt;akka.stream.scaladsl.Source[T,M]):akka.stream.scaladsl.Source[T,scala.concurrent.Future[M]]" java="#fromMaterializer(java.util.function.BiFunction)" }
+@apidoc[Flow.fromMaterializer](Flow$) { scala="#fromMaterializer[T,U,M](factory:(akka.stream.Materializer,akka.stream.Attributes)=&gt;akka.stream.scaladsl.Flow[T,U,M]):akka.stream.scaladsl.Flow[T,U,scala.concurrent.Future[M]]" java="#fromMaterializer(java.util.function.BiFunction)" }
 
-@@@
 
 ## Description
 

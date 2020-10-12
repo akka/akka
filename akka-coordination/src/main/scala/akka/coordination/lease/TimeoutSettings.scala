@@ -4,9 +4,11 @@
 
 package akka.coordination.lease
 
-import com.typesafe.config.{ Config, ConfigValueType }
-import akka.util.JavaDurationConverters._
 import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigValueType }
+
+import akka.util.JavaDurationConverters._
 
 object TimeoutSettings {
   def apply(config: Config): TimeoutSettings = {

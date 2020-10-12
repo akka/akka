@@ -1,15 +1,17 @@
 # Testing
 
-For the Akka Classic documentation of this feature see @ref:[Classic Testing](../testing.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Testing](../testing.md).
 
 ## Module info
 
 To use Actor TestKit add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-actor-testkit-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-actor-testkit-typed_$scala.binary.version$
+  version=AkkaVersion
   scope=test
 }
 
@@ -19,7 +21,7 @@ We recommend using Akka TestKit with ScalaTest:
 
 @@dependency[sbt,Maven,Gradle] {
   group=org.scalatest
-  artifact=scalatest_$scala.binary_version$
+  artifact=scalatest_$scala.binary.version$
   version=$scalatest.version$
   scope=test
 }

@@ -4,12 +4,16 @@
 
 package akka.cluster
 
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.ConfigurationException
 import akka.actor.ActorPath
-import akka.actor.Address
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.ActorSystemImpl
+import akka.actor.Address
 import akka.actor.Deploy
 import akka.actor.DynamicAccess
 import akka.actor.NoScopeGiven
@@ -20,14 +24,11 @@ import akka.cluster.routing.ClusterRouterGroupSettings
 import akka.cluster.routing.ClusterRouterPool
 import akka.cluster.routing.ClusterRouterPoolSettings
 import akka.event.EventStream
-import akka.remote.routing.RemoteRouterConfig
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteDeployer
+import akka.remote.routing.RemoteRouterConfig
 import akka.routing.Group
 import akka.routing.Pool
-import com.github.ghik.silencer.silent
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 
 /**
  * INTERNAL API

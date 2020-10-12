@@ -8,16 +8,16 @@ import java.io.{ InputStream, OutputStream }
 import java.util.Spliterators
 import java.util.stream.{ Collector, StreamSupport }
 
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+import scala.concurrent.duration.Duration._
+
+import akka.NotUsed
 import akka.stream.{ Attributes, IOResult, SinkShape }
 import akka.stream.impl._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.{ InputStreamSinkStage, InputStreamSource, OutputStreamGraphStage, OutputStreamSourceStage }
 import akka.util.ByteString
-
-import scala.concurrent.duration.Duration._
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
-import akka.NotUsed
 
 /**
  * Converters for interacting with the blocking `java.io` streams APIs and Java 8 Streams
@@ -27,7 +27,7 @@ object StreamConverters {
   /**
    * Creates a Source from an [[InputStream]] created by the given function.
    * Emitted elements are up to `chunkSize` sized [[akka.util.ByteString]] elements.
-   * The actual size of emitted elements depends how much data the underlying
+   * The actual size of the emitted elements depends on how much data the underlying
    * [[java.io.InputStream]] returns on each read invocation. Such chunks will
    * never be larger than chunkSize though.
    *

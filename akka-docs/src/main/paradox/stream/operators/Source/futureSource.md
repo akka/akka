@@ -1,16 +1,13 @@
-# futureSource
+# Source.futureSource
 
 Streams the elements of the given future source once it successfully completes.
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #futureSource }
+@apidoc[Source.futureSource](Source$) { scala="#futureSource[T,M](futureSource:scala.concurrent.Future[akka.stream.scaladsl.Source[T,M]]):akka.stream.scaladsl.Source[T,scala.concurrent.Future[M]]" }
 
-@@@
 
 ## Description
 

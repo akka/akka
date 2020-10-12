@@ -5,26 +5,25 @@
 package akka.stream.scaladsl
 
 import java.util
-import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
-
-import akka.NotUsed
-import akka.dispatch.AbstractNodeQueue
-import akka.stream._
-import akka.stream.stage._
-import scala.annotation.tailrec
-import scala.concurrent.{ Future, Promise }
-import scala.util.{ Failure, Success, Try }
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReferenceArray
 
+import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.collection.mutable.LongMap
 import scala.collection.immutable.Queue
+import scala.collection.mutable.LongMap
+import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success, Try }
 
-import akka.annotation.InternalApi
+import akka.NotUsed
 import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
+import akka.dispatch.AbstractNodeQueue
+import akka.stream._
 import akka.stream.Attributes.LogLevels
+import akka.stream.stage._
 
 /**
  * A MergeHub is a special streaming hub that is able to collect streamed elements from a dynamic set of
@@ -1012,8 +1011,8 @@ object PartitionHub {
     startAfterNrOfConsumers: Int,
     bufferSize: Int)
     extends GraphStageWithMaterializedValue[SinkShape[T], Source[T, NotUsed]] {
-  import PartitionHub.Internal._
   import PartitionHub.ConsumerInfo
+  import PartitionHub.Internal._
 
   val in: Inlet[T] = Inlet("PartitionHub.in")
   override val shape: SinkShape[T] = SinkShape(in)

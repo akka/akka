@@ -1,4 +1,4 @@
-# foreachParallel
+# Sink.foreachParallel
 
 Like `foreach` but allows up to `parallellism` procedure calls to happen in parallel.
 

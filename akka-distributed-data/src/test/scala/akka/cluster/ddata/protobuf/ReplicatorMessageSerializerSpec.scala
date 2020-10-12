@@ -5,29 +5,31 @@
 package akka.cluster.ddata.protobuf
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.actor.Props
+import akka.cluster.UniqueAddress
+import akka.cluster.ddata.DurableStore.DurableDataEnvelope
+import akka.cluster.ddata.GCounter
 import akka.cluster.ddata.GSet
 import akka.cluster.ddata.GSetKey
+import akka.cluster.ddata.ORMultiMap
+import akka.cluster.ddata.ORSet
 import akka.cluster.ddata.PruningState.PruningInitialized
 import akka.cluster.ddata.PruningState.PruningPerformed
 import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.Replicator.Internal._
+import akka.cluster.ddata.VersionVector
+import akka.remote.RARP
 import akka.testkit.TestKit
 import akka.util.{ unused, ByteString }
-import akka.cluster.UniqueAddress
-import akka.remote.RARP
-import com.typesafe.config.ConfigFactory
-import akka.cluster.ddata.DurableStore.DurableDataEnvelope
-import akka.cluster.ddata.GCounter
-import akka.cluster.ddata.VersionVector
-import akka.cluster.ddata.ORSet
-import akka.cluster.ddata.ORMultiMap
 
 class ReplicatorMessageSerializerSpec
     extends TestKit(
@@ -52,7 +54,7 @@ class ReplicatorMessageSerializerSpec
 
   val keyA = GSetKey[String]("A")
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     shutdown()
   }
 
@@ -76,6 +78,7 @@ class ReplicatorMessageSerializerSpec
       checkSerialization(Get(keyA, ReadLocal))
       checkSerialization(Get(keyA, ReadMajority(2.seconds), Some("x")))
       checkSerialization(Get(keyA, ReadMajority((Int.MaxValue.toLong + 50).milliseconds), Some("x")))
+      checkSerialization(Get(keyA, ReadMajority(2.seconds, minCap = 3), Some("x")))
       try {
         serializer.toBinary(Get(keyA, ReadMajority((Int.MaxValue.toLong * 3).milliseconds), Some("x")))
         fail("Our protobuf protocol does not support timeouts larger than unsigned ints")
@@ -83,6 +86,8 @@ class ReplicatorMessageSerializerSpec
         case e: IllegalArgumentException =>
           e.getMessage should include("unsigned int")
       }
+      checkSerialization(Get(keyA, ReadMajorityPlus(2.seconds, 3), Some("x")))
+      checkSerialization(Get(keyA, ReadMajorityPlus(2.seconds, 3, 5), Some("x")))
       checkSerialization(GetSuccess(keyA, None)(data1))
       checkSerialization(GetSuccess(keyA, Some("x"))(data1))
       checkSerialization(NotFound(keyA, Some("x")))

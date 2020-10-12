@@ -3,16 +3,18 @@ project.description: Event Sourcing with Akka Persistence enables actors to pers
 ---
 # Event Sourcing
 
-For the Akka Classic documentation of this feature see @ref:[Classic Akka Persistence](../persistence.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Akka Persistence](../persistence.md).
 
 ## Module info
 
 To use Akka Persistence, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-persistence-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-persistence-typed_$scala.binary.version$
+  version=AkkaVersion
 }
 
 You also have to select journal plugin and optionally snapshot store plugin, see 
@@ -47,7 +49,7 @@ provides tools to facilitate in building GDPR capable systems.
 
 ### Event sourcing concepts
 
-See an [introduction to EventSourcing](https://msdn.microsoft.com/en-us/library/jj591559.aspx) at MSDN.
+See an [introduction to EventSourcing](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj591559%28v=pandp.10%29) at MSDN.
 
 Another excellent article about "thinking in Events" is [Events As First-Class Citizens](https://hackernoon.com/events-as-first-class-citizens-8633e8479493)
 by Randy Shoup. It is a short and recommended read if you're starting developing Events based applications.
@@ -384,8 +386,13 @@ The @ref:[Request-Response interaction pattern](interaction-patterns.md#request-
 persistent actors, because you typically want to know if the command was rejected due to validation errors and
 when accepted you want a confirmation when the events have been successfully stored.
 
-Therefore you typically include a @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`] in the
-commands. After validation errors or after persisting events, using a `thenRun` side effect, the reply message can
+Therefore you typically include a @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`]. If the 
+command can either have a successful response or a validation error returned, the generic response type @scala[`StatusReply[ReplyType]]`]
+@java[`StatusReply<ReplyType>`] can be used. If the successful reply does not contain a value but is more of an acknowledgement
+a pre defined @scala[`StatusReply.Ack`]@java[`StatusReply.ack()`] of type @scala[`StatusReply[Done]`]@java[`StatusReply<Done>`]
+can be used.
+
+After validation errors or after persisting events, using a `thenRun` side effect, the reply message can
 be sent to the `ActorRef`.
 
 Scala
@@ -516,6 +523,20 @@ akka.persistence.journal.leveldb.replay-filter {
 }
 ```
 
+### Disable recovery
+
+You can also completely disable the recovery of events and snapshots:
+
+Scala
+:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #recovery-disabled }
+
+Java
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #recovery-disabled }
+
+Please refer to @ref[snapshots](persistence-snapshot.md#snapshots) if you need to disable only the snapshot recovery, or you need to select specific snapshots.
+
+In any case, the highest sequence number will always be recovered so you can keep persisting new events without corrupting your event log.
+
 ## Tagging
 
 Persistence allows you to use event tags without using an @ref[`EventAdapter`](../persistence.md#event-adapters):
@@ -636,9 +657,9 @@ cluster and address them by id.
 Akka Persistence is based on the single-writer principle. For a particular `PersistenceId` only one `EventSourcedBehavior`
 instance should be active at one time. If multiple instances were to persist events at the same time, the events would
 be interleaved and might not be interpreted correctly on replay. Cluster Sharding ensures that there is only one
-active entity (`EventSourcedBehavior`) for each id within a data center. Lightbend's
-[Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
-supports active-active persistent entities across data centers.
+active entity (`EventSourcedBehavior`) for each id within a data center.
+@ref:[Replicated Event Sourcing](replicated-eventsourcing.md) supports active-active persistent entities across
+data centers.
 
 ## Configuration
 
@@ -663,5 +684,5 @@ from the events, or publish the events to other services.
 
 @java[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-java)]
 @scala[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-scala)]
-illustrates how to use Lightbend's [Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
-with active-active persistent entities across data centers.
+illustrates how to use @ref:[Replicated Event Sourcing](replicated-eventsourcing.md) that supports
+active-active persistent entities across data centers.

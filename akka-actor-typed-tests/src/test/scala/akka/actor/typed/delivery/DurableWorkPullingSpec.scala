@@ -8,15 +8,16 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.concurrent.duration._
 
+import DurableProducerQueue.MessageSent
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
-import DurableProducerQueue.MessageSent
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class DurableWorkPullingSpec
     extends ScalaTestWithActorTestKit("""
@@ -52,10 +53,11 @@ class DurableWorkPullingSpec
       s: DurableProducerQueue.State[TestConsumer.Job],
       expected: DurableProducerQueue.State[TestConsumer.Job]): Unit = {
 
-    def cleanup(a: DurableProducerQueue.State[TestConsumer.Job]) =
+    def cleanup(a: DurableProducerQueue.State[TestConsumer.Job]): DurableProducerQueue.State[TestConsumer.Job] = {
       a.copy(
         confirmedSeqNr = Map.empty,
-        unconfirmed = s.unconfirmed.map(m => m.copy(confirmationQualifier = DurableProducerQueue.NoQualifier)))
+        unconfirmed = s.unconfirmed.map(m => m.withConfirmationQualifier(DurableProducerQueue.NoQualifier)))
+    }
 
     cleanup(s) should ===(cleanup(expected))
   }

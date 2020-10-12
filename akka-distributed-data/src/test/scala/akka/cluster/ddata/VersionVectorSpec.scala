@@ -4,13 +4,14 @@
 
 package akka.cluster.ddata
 
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.cluster.UniqueAddress
 import akka.testkit.TestKit
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class VersionVectorSpec
     extends TestKit(ActorSystem("VersionVectorSpec"))
@@ -23,7 +24,7 @@ class VersionVectorSpec
   val node3 = UniqueAddress(node1.address.copy(port = Some(2553)), 3L)
   val node4 = UniqueAddress(node1.address.copy(port = Some(2554)), 4L)
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     shutdown()
   }
 

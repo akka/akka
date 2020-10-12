@@ -6,19 +6,20 @@ package akka.actor.typed.internal.receptionist
 
 import scala.concurrent.Future
 
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.{ AnyWordSpec, AnyWordSpecLike }
+
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed._
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.Receptionist._
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.{ AnyWordSpec, AnyWordSpecLike }
 
 object LocalReceptionistSpec {
   trait ServiceA

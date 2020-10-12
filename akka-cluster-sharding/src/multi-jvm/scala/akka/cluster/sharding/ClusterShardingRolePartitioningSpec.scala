@@ -4,12 +4,13 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.actor._
 import akka.cluster.sharding.ShardRegion.{ ClusterShardingStats, GetClusterShardingStats }
 import akka.testkit._
-import com.typesafe.config.{ Config, ConfigFactory }
-
-import scala.concurrent.duration._
 
 // Tests the case where cluster roles are used with cluster.min-nr-of-members, no per role min set
 // with 5 node cluster, 2 roles: 3 nodes role R1, 2 nodes role R2

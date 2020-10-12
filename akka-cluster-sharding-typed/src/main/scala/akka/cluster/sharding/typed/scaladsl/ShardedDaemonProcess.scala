@@ -4,6 +4,8 @@
 
 package akka.cluster.sharding.typed.scaladsl
 
+import scala.reflect.ClassTag
+
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Extension
@@ -14,8 +16,6 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.internal.ShardedDaemonProcessImpl
 import akka.cluster.sharding.typed.javadsl
-
-import scala.reflect.ClassTag
 
 object ShardedDaemonProcess extends ExtensionId[ShardedDaemonProcess] {
   override def createExtension(system: ActorSystem[_]): ShardedDaemonProcess = new ShardedDaemonProcessImpl(system)
@@ -43,6 +43,16 @@ trait ShardedDaemonProcess extends Extension { javadslSelf: javadsl.ShardedDaemo
    * @param behaviorFactory Given a unique id of `0` until `numberOfInstance` create the behavior for that actor.
    */
   def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(
+      implicit classTag: ClassTag[T]): Unit
+
+  /**
+   * Start a specific number of actors that is then kept alive in the cluster.
+   *
+   * @param behaviorFactory Given a unique id of `0` until `numberOfInstance` create the behavior for that actor.
+   * @param stopMessage sent to the actors when they need to stop because of a rebalance across the nodes of the cluster
+   *                    or cluster shutdown.
+   */
+  def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T], stopMessage: T)(
       implicit classTag: ClassTag[T]): Unit
 
   /**

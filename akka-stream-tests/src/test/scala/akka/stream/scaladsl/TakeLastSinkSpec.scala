@@ -4,19 +4,20 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings }
-import com.github.ghik.silencer.silent
-
 import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
+
+import com.github.ghik.silencer.silent
+
+import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.testkit.{ StreamSpec, TestPublisher }
 
 @silent
 class TakeLastSinkSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val mat = ActorMaterializer(settings)
+  implicit val mat: ActorMaterializer = ActorMaterializer(settings)
 
   "Sink.takeLast" must {
     "return the last 3 elements" in {

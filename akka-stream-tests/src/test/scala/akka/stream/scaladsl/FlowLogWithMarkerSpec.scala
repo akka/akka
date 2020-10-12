@@ -4,18 +4,18 @@
 
 package akka.stream.scaladsl
 
-import akka.NotUsed
-import akka.event.{ DummyClassForStringSources, LogMarker, Logging }
-import akka.stream.ActorAttributes._
-import akka.stream.Attributes.LogLevels
-import akka.stream.Supervision._
-import akka.stream._
-import akka.stream.testkit.{ ScriptedTest, StreamSpec }
-import akka.testkit.TestProbe
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import akka.NotUsed
+import akka.event.{ DummyClassForStringSources, LogMarker, Logging }
+import akka.stream._
+import akka.stream.ActorAttributes._
+import akka.stream.Attributes.LogLevels
+import akka.stream.Supervision._
+import akka.stream.testkit.{ ScriptedTest, StreamSpec }
+import akka.testkit.TestProbe
 
 class FlowLogWithMarkerSpec extends StreamSpec("""
      akka.loglevel = DEBUG # test verifies logging

@@ -4,14 +4,15 @@
 
 package akka.persistence.testkit.javadsl
 
+import org.scalatest.matchers.should.Matchers._
+
 import akka.actor.Props
+import akka.actor.typed.javadsl.Adapter
+import akka.japi.Pair
 import akka.persistence._
 import akka.persistence.testkit._
 import akka.testkit.EventFilter
-import org.scalatest.matchers.should.Matchers._
 import akka.util.ccompat.JavaConverters._
-import akka.japi.Pair
-import akka.actor.typed.javadsl.Adapter
 
 trait CommonSnapshotTests extends JavaDslUtils {
 
@@ -91,7 +92,7 @@ trait CommonSnapshotTests extends JavaDslUtils {
       expectMsgPF() { case SaveSnapshotSuccess(_) => }
       expectNextPersisted(pid, 777)
 
-      returnDefaultPolicy()
+      resetPolicy()
 
     }
 

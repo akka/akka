@@ -5,40 +5,39 @@
 package akka.stream.javadsl
 
 import java.lang.{ Iterable => JIterable }
-import java.util.Optional
-import java.util.function.{ Function => JFunction }
-
-import akka.{ Done, NotUsed }
-import scala.concurrent.duration._
 import java.net.InetSocketAddress
-
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
-import akka.stream.Materializer
-import akka.stream.scaladsl
-import akka.util.ByteString
-import akka.japi.Util.immutableSeq
-import akka.io.Inet.SocketOption
-import scala.compat.java8.OptionConverters._
-import scala.compat.java8.FutureConverters._
+import java.util.Optional
 import java.util.concurrent.CompletionStage
+import java.util.function.{ Function => JFunction }
 import java.util.function.Supplier
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLEngine
+import javax.net.ssl.SSLSession
 
+import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
+import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 
+import com.github.ghik.silencer.silent
+
+import akka.{ Done, NotUsed }
+import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
-import javax.net.ssl.SSLContext
+import akka.actor.ExtendedActorSystem
+import akka.actor.ExtensionId
+import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalApi
+import akka.io.Inet.SocketOption
+import akka.japi.Util.immutableSeq
+import akka.stream.Materializer
 import akka.stream.SystemMaterializer
 import akka.stream.TLSClosing
 import akka.stream.TLSProtocol.NegotiateNewSession
+import akka.stream.scaladsl
+import akka.util.ByteString
 import akka.util.JavaDurationConverters._
-import com.github.ghik.silencer.silent
-import javax.net.ssl.SSLEngine
-import javax.net.ssl.SSLSession
 
 object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
@@ -132,13 +131,14 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
   override def get(system: ClassicActorSystemProvider): Tcp = super.get(system)
 
-  def lookup() = Tcp
+  def lookup = Tcp
 
   def createExtension(system: ExtendedActorSystem): Tcp = new Tcp(system)
 }
 
 class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   import Tcp._
+
   import akka.dispatch.ExecutionContexts.parasitic
 
   private lazy val delegate: scaladsl.Tcp = scaladsl.Tcp(system)

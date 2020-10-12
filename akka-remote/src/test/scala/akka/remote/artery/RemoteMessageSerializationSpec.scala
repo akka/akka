@@ -7,13 +7,12 @@ package akka.remote.artery
 import java.io.NotSerializableException
 import java.util.concurrent.ThreadLocalRandom
 
-import akka.actor.{ Actor, ActorRef, PoisonPill, Props }
-import akka.remote.{ AssociationErrorEvent, DisassociatedEvent, OversizedPayloadException, RARP }
-import akka.testkit.{ EventFilter, ImplicitSender, TestActors }
-import akka.util.ByteString
-import com.github.ghik.silencer.silent
-
 import scala.concurrent.duration._
+import com.github.ghik.silencer.silent
+import akka.actor.{ Actor, ActorRef, Dropped, PoisonPill, Props }
+import akka.remote.{ AssociationErrorEvent, DisassociatedEvent, OversizedPayloadException, RARP }
+import akka.testkit.{ EventFilter, ImplicitSender, TestActors, TestProbe }
+import akka.util.ByteString
 
 object RemoteMessageSerializationSpec {
   class ProxyActor(val one: ActorRef, val another: ActorRef) extends Actor {
@@ -51,6 +50,8 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec with ImplicitSe
     }
 
     "drop sent messages over payload size" in {
+      val droppedProbe = TestProbe()
+      system.eventStream.subscribe(droppedProbe.ref, classOf[Dropped])
       val oversized = byteStringOfSize(maxPayloadBytes + 1)
       EventFilter[OversizedPayloadException](start = "Failed to serialize oversized message", occurrences = 1)
         .intercept {
@@ -58,6 +59,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec with ImplicitSe
             expectNoMessage(1.second) // No AssocitionErrorEvent should be published
           }
         }
+      droppedProbe.expectMsgType[Dropped].message should ===(oversized)
     }
 
     // TODO max payload size is not configurable yet, so we cannot send a too big message, it fails no sending side

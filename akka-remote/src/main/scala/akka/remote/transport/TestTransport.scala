@@ -6,16 +6,17 @@ package akka.remote.transport
 
 import java.util.concurrent.{ ConcurrentHashMap, CopyOnWriteArrayList }
 
+import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+
+import TestTransport._
+import com.typesafe.config.Config
+
 import akka.actor._
 import akka.remote.transport.AssociationHandle._
 import akka.remote.transport.Transport._
 import akka.util.ByteString
-import com.typesafe.config.Config
-import TestTransport._
-
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
-import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Transport implementation to be used for testing.

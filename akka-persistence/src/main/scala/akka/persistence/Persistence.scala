@@ -7,20 +7,20 @@ package akka.persistence
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
 
+import scala.annotation.tailrec
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.actor._
+import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 import akka.event.{ Logging, LoggingAdapter }
 import akka.persistence.journal.{ EventAdapters, IdentityEventAdapters }
 import akka.util.Collections.EmptyImmutableSeq
 import akka.util.Helpers.ConfigOps
-import com.typesafe.config.{ Config, ConfigFactory }
-import scala.annotation.tailrec
-import scala.concurrent.duration._
-
 import akka.util.Reflect
-import scala.util.control.NonFatal
-
-import akka.annotation.InternalApi
-import akka.annotation.InternalStableApi
 
 /**
  * Persistence configuration.
@@ -149,7 +149,7 @@ object Persistence extends ExtensionId[Persistence] with ExtensionIdProvider {
 
   def createExtension(system: ExtendedActorSystem): Persistence = new Persistence(system)
 
-  def lookup() = Persistence
+  def lookup = Persistence
 
   /** INTERNAL API. */
   private[persistence] case class PluginHolder(actorFactory: () => ActorRef, adapters: EventAdapters, config: Config)

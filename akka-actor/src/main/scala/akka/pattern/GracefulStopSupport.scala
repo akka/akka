@@ -4,13 +4,13 @@
 
 package akka.pattern
 
-import akka.actor._
-import akka.dispatch.ExecutionContexts
-import akka.util.Timeout
-import akka.dispatch.sysmsg.{ Unwatch, Watch }
-
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+
+import akka.actor._
+import akka.dispatch.ExecutionContexts
+import akka.dispatch.sysmsg.{ Unwatch, Watch }
+import akka.util.Timeout
 
 trait GracefulStopSupport {
 
@@ -48,7 +48,8 @@ trait GracefulStopSupport {
    */
   def gracefulStop(target: ActorRef, timeout: FiniteDuration, stopMessage: Any = PoisonPill): Future[Boolean] = {
     val internalTarget = target.asInstanceOf[InternalActorRef]
-    val ref = PromiseActorRef(internalTarget.provider, Timeout(timeout), target, stopMessage.getClass.getName)
+    val ref =
+      PromiseActorRef(internalTarget.provider, Timeout(timeout), target, stopMessage.getClass.getName, target.path.name)
     internalTarget.sendSystemMessage(Watch(internalTarget, ref))
     target.tell(stopMessage, Actor.noSender)
     ref.result.future.transform({

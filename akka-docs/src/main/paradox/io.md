@@ -5,9 +5,11 @@
 To use I/O, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-actor_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-actor_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -93,17 +95,17 @@ To maintain isolation, actors should communicate with immutable objects only. `B
 immutable container for bytes. It is used by Akka's I/O system as an efficient, immutable alternative
 the traditional byte containers used for I/O on the JVM, such as @scala[`Array[Byte]`]@java[`byte[]`] and `ByteBuffer`.
 
-`ByteString` is a [rope-like](http://en.wikipedia.org/wiki/Rope_\(computer_science\)) data structure that is immutable
+`ByteString` is a [rope-like](https://en.wikipedia.org/wiki/Rope_\(computer_science\)) data structure that is immutable
 and provides fast concatenation and slicing operations (perfect for I/O). When two `ByteString`s are concatenated
 together they are both stored within the resulting `ByteString` instead of copying both to a new @scala[`Array`]@java[array]. Operations
 such as `drop` and `take` return `ByteString`s that still reference the original @scala[`Array`]@java[array], but just change the
 offset and length that is visible. Great care has also been taken to make sure that the internal @scala[`Array`]@java[array] cannot be
 modified. Whenever a potentially unsafe @scala[`Array`]@java[array] is used to create a new `ByteString` a defensive copy is created. If
-you require a `ByteString` that only blocks as much memory as necessary for it's content, use the `compact` method to
+you require a `ByteString` that only blocks as much memory as necessary for its content, use the `compact` method to
 get a `CompactByteString` instance. If the `ByteString` represented only a slice of the original array, this will
 result in copying all bytes in that slice.
 
-`ByteString` inherits all methods from `IndexedSeq`, and it also has some new ones. For more information, look up the `akka.util.ByteString` class and it's companion object in the ScalaDoc.
+`ByteString` inherits all methods from `IndexedSeq`, and it also has some new ones. For more information, look up the `akka.util.ByteString` class and its companion object in the ScalaDoc.
 
 `ByteString` also comes with its own optimized builder and iterator classes `ByteStringBuilder` and
 `ByteIterator` which provide extra features in addition to those of normal builders and iterators.

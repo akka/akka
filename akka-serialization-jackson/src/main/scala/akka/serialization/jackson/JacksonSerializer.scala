@@ -4,27 +4,25 @@
 
 package akka.serialization.jackson
 
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.NotSerializableException
-import java.util.zip.GZIPInputStream
-import java.util.zip.GZIPOutputStream
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, NotSerializableException }
+import java.nio.ByteBuffer
+import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
 
 import scala.annotation.tailrec
-import scala.util.Failure
-import scala.util.Success
+import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
-import akka.actor.ExtendedActorSystem
-import akka.annotation.InternalApi
-import akka.event.LogMarker
-import akka.event.Logging
-import akka.serialization.BaseSerializer
-import akka.serialization.SerializationExtension
-import akka.serialization.SerializerWithStringManifest
-import akka.util.Helpers.toRootLowerCase
+
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory
+import net.jpountz.lz4.LZ4Factory
+
+import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
+import akka.event.{ LogMarker, Logging }
+import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
+import akka.util.Helpers.toRootLowerCase
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -32,11 +30,11 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
 @InternalApi private[akka] object JacksonSerializer {
 
   /**
-   * Using the blacklist from Jackson databind of class names that shouldn't be allowed.
+   * Using the deny list from Jackson databind of class names that shouldn't be allowed.
    * Not nice to depend on implementation details of Jackson, but good to use the same
    * list to automatically have the list updated when new classes are added in Jackson.
    */
-  class GadgetClassBlacklist extends SubTypeValidator {
+  class GadgetClassDenyList extends SubTypeValidator {
 
     private def defaultNoDeserClassNames: java.util.Set[String] =
       SubTypeValidator.DEFAULT_NO_DESER_CLASS_NAMES // it's has protected visibility
@@ -84,6 +82,51 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     (bytes(0) == GZIPInputStream.GZIP_MAGIC.toByte) &&
     (bytes(1) == (GZIPInputStream.GZIP_MAGIC >> 8).toByte)
   }
+
+  final case class LZ4Meta(offset: Int, length: Int) {
+    import LZ4Meta._
+
+    def putInto(buffer: ByteBuffer): Unit = {
+      buffer.putInt(LZ4_MAGIC)
+      buffer.putInt(length)
+    }
+
+    def prependTo(bytes: Array[Byte]): Array[Byte] = {
+      val buffer = ByteBuffer.allocate(bytes.length + offset)
+      putInto(buffer)
+      buffer.put(bytes)
+      buffer.array()
+    }
+
+  }
+
+  object LZ4Meta {
+    val LZ4_MAGIC = 0x87d96df6 // The last 4 bytes of `printf akka | sha512sum`
+
+    def apply(bytes: Array[Byte]): LZ4Meta = {
+      LZ4Meta(8, bytes.length)
+    }
+
+    def get(buffer: ByteBuffer): OptionVal[LZ4Meta] = {
+      if (buffer.remaining() < 4) {
+        OptionVal.None
+      } else if (buffer.getInt() != LZ4_MAGIC) {
+        OptionVal.None
+      } else {
+        OptionVal.Some(LZ4Meta(8, buffer.getInt()))
+      }
+    }
+
+    def get(bytes: Array[Byte]): OptionVal[LZ4Meta] = {
+      get(ByteBuffer.wrap(bytes))
+    }
+
+  }
+
+  def isLZ4(bytes: Array[Byte]): Boolean = {
+    LZ4Meta.get(bytes).isDefined
+  }
+
 }
 
 /**
@@ -112,7 +155,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
   sealed trait Algoritm
   object Off extends Algoritm
   final case class GZip(largerThan: Long) extends Algoritm
-  // TODO add LZ4, issue #27066
+  final case class LZ4(largerThan: Long) extends Algoritm
 }
 
 /**
@@ -129,8 +172,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     val bindingName: String,
     val objectMapper: ObjectMapper)
     extends SerializerWithStringManifest {
-  import JacksonSerializer.GadgetClassBlacklist
-  import JacksonSerializer.isGZipped
+  import JacksonSerializer._
 
   // TODO issue #27107: it should be possible to implement ByteBufferSerializer as well, using Jackson's
   //      ByteBufferBackedOutputStream/ByteBufferBackedInputStream
@@ -145,6 +187,9 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
       case "gzip" =>
         val compressLargerThan = conf.getBytes("compression.compress-larger-than")
         Compression.GZip(compressLargerThan)
+      case "lz4" =>
+        val compressLargerThan = conf.getBytes("compression.compress-larger-than")
+        Compression.LZ4(compressLargerThan)
       case other =>
         throw new IllegalArgumentException(
           s"Unknown compression algorithm [$other], possible values are " +
@@ -159,10 +204,10 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
         k -> transformer
     }
   }
-  private val blacklist: GadgetClassBlacklist = new GadgetClassBlacklist
-  private val whitelistClassPrefix = {
+  private val denyList: GadgetClassDenyList = new GadgetClassDenyList
+  private val allowedClassPrefix = {
     import akka.util.ccompat.JavaConverters._
-    conf.getStringList("whitelist-class-prefix").asScala.toVector
+    conf.getStringList("allowed-class-prefix").asScala.toVector
   }
   private val typeInManifest: Boolean = conf.getBoolean("type-in-manifest")
   // Calculated eagerly so as to fail fast
@@ -206,6 +251,10 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
 
   // doesn't have to be volatile, doesn't matter if check is run more than once
   private var serializationBindingsCheckedOk = false
+
+  private lazy val lz4Factory = LZ4Factory.fastestInstance()
+  private lazy val lz4Compressor = lz4Factory.fastCompressor()
+  private lazy val lz4Decompressor = lz4Factory.safeDecompressor()
 
   override val identifier: Int = BaseSerializer.identifierFromConfig(bindingName, system)
 
@@ -270,11 +319,16 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     val className = migration match {
       case Some(transformer) if fromVersion < transformer.currentVersion =>
         transformer.transformClassName(fromVersion, manifestClassName)
-      case Some(transformer) if fromVersion > transformer.currentVersion =>
+      case Some(transformer) if fromVersion == transformer.currentVersion =>
+        manifestClassName
+      case Some(transformer) if fromVersion <= transformer.supportedForwardVersion =>
+        transformer.transformClassName(fromVersion, manifestClassName)
+      case Some(transformer) if fromVersion > transformer.supportedForwardVersion =>
         throw new IllegalStateException(
-          s"Migration version ${transformer.currentVersion} is " +
+          s"Migration version ${transformer.supportedForwardVersion} is " +
           s"behind version $fromVersion of deserialized type [$manifestClassName]")
-      case _ => manifestClassName
+      case None =>
+        manifestClassName
     }
 
     if (typeInManifest && (className ne manifestClassName))
@@ -310,7 +364,13 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
           val jsonTree = objectMapper.readTree(decompressedBytes)
           val newJsonTree = transformer.transform(fromVersion, jsonTree)
           objectMapper.treeToValue(newJsonTree, clazz)
-        case _ =>
+        case Some(transformer) if fromVersion == transformer.currentVersion =>
+          objectMapper.readValue(decompressedBytes, clazz)
+        case Some(transformer) if fromVersion <= transformer.supportedForwardVersion =>
+          val jsonTree = objectMapper.readTree(decompressedBytes)
+          val newJsonTree = transformer.transform(fromVersion, jsonTree)
+          objectMapper.treeToValue(newJsonTree, clazz)
+        case None =>
           objectMapper.readValue(decompressedBytes, clazz)
       }
 
@@ -348,32 +408,32 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     className.length > 0 && className.charAt(className.length - 1) == '$'
 
   private def checkAllowedClassName(className: String): Unit = {
-    if (!blacklist.isAllowedClassName(className)) {
+    if (!denyList.isAllowedClassName(className)) {
       val warnMsg = s"Can't serialize/deserialize object of type [$className] in [${getClass.getName}]. " +
-        s"Blacklisted for security reasons."
+        s"Disallowed (on deny list) for security reasons."
       log.warning(LogMarker.Security, warnMsg)
       throw new IllegalArgumentException(warnMsg)
     }
   }
 
   private def checkAllowedClass(clazz: Class[_]): Unit = {
-    if (!blacklist.isAllowedClass(clazz)) {
+    if (!denyList.isAllowedClass(clazz)) {
       val warnMsg = s"Can't serialize/deserialize object of type [${clazz.getName}] in [${getClass.getName}]. " +
-        s"Blacklisted for security reasons."
+        s"Not allowed for security reasons."
       log.warning(LogMarker.Security, warnMsg)
       throw new IllegalArgumentException(warnMsg)
-    } else if (!isInWhitelist(clazz)) {
+    } else if (!isInAllowList(clazz)) {
       val warnMsg = s"Can't serialize/deserialize object of type [${clazz.getName}] in [${getClass.getName}]. " +
-        "Only classes that are whitelisted are allowed for security reasons. " +
-        "Configure whitelist with akka.actor.serialization-bindings or " +
-        "akka.serialization.jackson.whitelist-class-prefix."
+        "Only classes that are listed as allowed are allowed for security reasons. " +
+        "Configure allowed classes with akka.actor.serialization-bindings or " +
+        "akka.serialization.jackson.allowed-class-prefix."
       log.warning(LogMarker.Security, warnMsg)
       throw new IllegalArgumentException(warnMsg)
     }
   }
 
   /**
-   * Using the `serialization-bindings` as source for the whitelist.
+   * Using the `serialization-bindings` as source for the allowed classes.
    * Note that the intended usage of serialization-bindings is for lookup of
    * serializer when serializing (`toBinary`). For deserialization (`fromBinary`) the serializer-id is
    * used for selecting serializer.
@@ -382,13 +442,13 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
    *
    * If an old class is removed from `serialization-bindings` when it's not used for serialization
    * but still used for deserialization (e.g. rolling update with serialization changes) it can
-   * be allowed by specifying in `whitelist-class-prefix`.
+   * be allowed by specifying in `allowed-class-prefix`.
    *
    * That is also possible when changing a binding from a JacksonSerializer to another serializer (e.g. protobuf)
    * and still bind with the same class (interface).
    */
-  private def isInWhitelist(clazz: Class[_]): Boolean = {
-    isBoundToJacksonSerializer(clazz) || isInWhitelistClassPrefix(clazz.getName)
+  private def isInAllowList(clazz: Class[_]): Boolean = {
+    isBoundToJacksonSerializer(clazz) || hasAllowedClassPrefix(clazz.getName)
   }
 
   private def isBoundToJacksonSerializer(clazz: Class[_]): Boolean = {
@@ -403,8 +463,8 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     }
   }
 
-  private def isInWhitelistClassPrefix(className: String): Boolean =
-    whitelistClassPrefix.exists(className.startsWith)
+  private def hasAllowedClassPrefix(className: String): Boolean =
+    allowedClassPrefix.exists(className.startsWith)
 
   /**
    * Check that serialization-bindings are not configured with open-ended interfaces,
@@ -444,42 +504,47 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
 
   def compress(bytes: Array[Byte]): Array[Byte] = {
     compressionAlgorithm match {
-      case Compression.Off => bytes
-      case Compression.GZip(largerThan) =>
-        if (bytes.length > largerThan) compressGzip(bytes) else bytes
+      case Compression.Off                                            => bytes
+      case Compression.GZip(largerThan) if bytes.length <= largerThan => bytes
+      case Compression.GZip(_) =>
+        val bos = new ByteArrayOutputStream(BufferSize)
+        val zip = new GZIPOutputStream(bos)
+        try zip.write(bytes)
+        finally zip.close()
+        bos.toByteArray
+      case Compression.LZ4(largerThan) if bytes.length <= largerThan => bytes
+      case Compression.LZ4(_) => {
+        val meta = LZ4Meta(bytes)
+        val compressed = lz4Compressor.compress(bytes)
+        meta.prependTo(compressed)
+      }
     }
-  }
-
-  private def compressGzip(bytes: Array[Byte]): Array[Byte] = {
-    val bos = new ByteArrayOutputStream(BufferSize)
-    val zip = new GZIPOutputStream(bos)
-    try zip.write(bytes)
-    finally zip.close()
-    bos.toByteArray
   }
 
   def decompress(bytes: Array[Byte]): Array[Byte] = {
-    if (isGZipped(bytes))
-      decompressGzip(bytes)
-    else
-      bytes
-  }
+    if (isGZipped(bytes)) {
+      val in = new GZIPInputStream(new ByteArrayInputStream(bytes))
+      val out = new ByteArrayOutputStream()
+      val buffer = new Array[Byte](BufferSize)
 
-  private def decompressGzip(bytes: Array[Byte]): Array[Byte] = {
-    val in = new GZIPInputStream(new ByteArrayInputStream(bytes))
-    val out = new ByteArrayOutputStream()
-    val buffer = new Array[Byte](BufferSize)
+      @tailrec def readChunk(): Unit = in.read(buffer) match {
+        case -1 => ()
+        case n =>
+          out.write(buffer, 0, n)
+          readChunk()
+      }
 
-    @tailrec def readChunk(): Unit = in.read(buffer) match {
-      case -1 => ()
-      case n =>
-        out.write(buffer, 0, n)
-        readChunk()
+      try readChunk()
+      finally in.close()
+      out.toByteArray
+    } else {
+      LZ4Meta.get(bytes) match {
+        case OptionVal.None => bytes
+        case OptionVal.Some(meta) =>
+          val srcLen = bytes.length - meta.offset
+          lz4Decompressor.decompress(bytes, meta.offset, srcLen, meta.length)
+      }
     }
-
-    try readChunk()
-    finally in.close()
-    out.toByteArray
   }
 
 }

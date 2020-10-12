@@ -4,12 +4,13 @@
 
 package akka.actor
 
-import language.postfixOps
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, ImplicitSender }
+
+import language.postfixOps
+
 import akka.pattern.ask
+import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, ImplicitSender }
 
 class SupervisorTreeSpec extends AkkaSpec with ImplicitSender with DefaultTimeout {
 

@@ -4,11 +4,13 @@
 
 package akka.util
 
-import scala.collection.immutable
 import java.io.IOException
-import java.util.Arrays
 import java.util.jar.Attributes
 import java.util.jar.Manifest
+
+import scala.collection.immutable
+
+import com.github.ghik.silencer.silent
 
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
@@ -17,7 +19,6 @@ import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.event.Logging
-import com.github.ghik.silencer.silent
 
 /**
  * Akka extension that extracts [[ManifestInfo.Version]] information from META-INF/MANIFEST.MF in jar files
@@ -43,7 +44,7 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
   override def get(system: ActorSystem): ManifestInfo = super.get(system)
   override def get(system: ClassicActorSystemProvider): ManifestInfo = super.get(system)
 
-  override def lookup(): ManifestInfo.type = ManifestInfo
+  override def lookup: ManifestInfo.type = ManifestInfo
 
   override def createExtension(system: ExtendedActorSystem): ManifestInfo = new ManifestInfo(system)
 
@@ -51,61 +52,41 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
    * Comparable version information
    */
   final class Version(val version: String) extends Comparable[Version] {
-    private val (numbers: Array[Int], rest: String) = {
-      val numbers = new Array[Int](3)
-      val segments: Array[String] = version.split("[.-]")
-      var segmentPos = 0
-      var numbersPos = 0
-      while (numbersPos < 3) {
-        if (segmentPos < segments.length) try {
-          numbers(numbersPos) = segments(segmentPos).toInt
-          segmentPos += 1
-        } catch {
-          case _: NumberFormatException =>
-            // This means that we have a trailing part on the version string and
-            // less than 3 numbers, so we assume that this is a "newer" version
-            numbers(numbersPos) = Integer.MAX_VALUE
-        }
-        numbersPos += 1
-      }
+    private val impl = new akka.util.Version(version)
 
-      val rest: String =
-        if (segmentPos >= segments.length) ""
-        else String.join("-", Arrays.asList(Arrays.copyOfRange(segments, segmentPos, segments.length): _*))
-
-      (numbers, rest)
-    }
-
-    override def compareTo(other: Version): Int = {
-      var diff = 0
-      diff = numbers(0) - other.numbers(0)
-      if (diff == 0) {
-        diff = numbers(1) - other.numbers(1)
-        if (diff == 0) {
-          diff = numbers(2) - other.numbers(2)
-          if (diff == 0) {
-            diff = rest.compareTo(other.rest)
-          }
-        }
-      }
-      diff
-    }
+    override def compareTo(other: Version): Int =
+      impl.compareTo(other.impl)
 
     override def equals(o: Any): Boolean = o match {
-      case v: Version => compareTo(v) == 0
+      case v: Version => impl.equals(v.impl)
       case _          => false
     }
 
-    override def hashCode(): Int = {
-      var result = HashCode.SEED
-      result = HashCode.hash(result, numbers(0))
-      result = HashCode.hash(result, numbers(1))
-      result = HashCode.hash(result, numbers(2))
-      result = HashCode.hash(result, rest)
-      result
-    }
+    override def hashCode(): Int =
+      impl.hashCode()
 
-    override def toString: String = version
+    override def toString: String =
+      impl.toString
+  }
+
+  /** INTERNAL API */
+  private[util] def checkSameVersion(
+      productName: String,
+      dependencies: immutable.Seq[String],
+      versions: Map[String, Version]): Option[String] = {
+    @silent("deprecated")
+    val filteredVersions = versions.filterKeys(dependencies.toSet)
+    val values = filteredVersions.values.toSet
+    if (values.size > 1) {
+      val highestVersion = values.max
+      val toBeUpdated = filteredVersions.collect { case (k, v) if v != highestVersion => s"$k" }.mkString(", ")
+      Some(
+        s"You are using version $highestVersion of $productName, but it appears " +
+        s"you (perhaps indirectly) also depend on older versions of related artifacts. " +
+        s"You can solve this by adding an explicit dependency on version $highestVersion " +
+        s"of the [$toBeUpdated] artifacts to your project. " +
+        "See also: https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html#mixed-versioning-is-not-allowed")
+    } else None
   }
 }
 
@@ -186,28 +167,16 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
       dependencies: immutable.Seq[String],
       logWarning: Boolean,
       throwException: Boolean): Boolean = {
-    @silent("deprecated")
-    val filteredVersions = versions.filterKeys(dependencies.toSet)
-    val values = filteredVersions.values.toSet
-    if (values.size > 1) {
-      val conflictingVersions = values.mkString(", ")
-      val fullInfo = filteredVersions.map { case (k, v) => s"$k:$v" }.mkString(", ")
-      val highestVersion = values.max
-      val message = "Detected possible incompatible versions on the classpath. " +
-        s"Please note that a given $productName version MUST be the same across all modules of $productName " +
-        s"that you are using, e.g. if you use [$highestVersion] all other modules that are released together MUST be of the " +
-        "same version. Make sure you're using a compatible set of libraries. " +
-        s"Possibly conflicting versions [$conflictingVersions] in libraries [$fullInfo]"
+    ManifestInfo.checkSameVersion(productName, dependencies, versions) match {
+      case Some(message) =>
+        if (logWarning)
+          Logging(system, getClass).warning(message)
 
-      if (logWarning)
-        Logging(system, getClass).warning(message)
-
-      if (throwException)
-        throw new IllegalStateException(message)
-      else
-        false
-    } else
-      true
+        if (throwException)
+          throw new IllegalStateException(message)
+        else
+          false
+      case None => true
+    }
   }
-
 }

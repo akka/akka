@@ -4,9 +4,11 @@
 
 package akka.persistence.query.journal.leveldb
 
-import akka.testkit.AkkaSpec
 import java.io.File
+
 import org.apache.commons.io.FileUtils
+
+import akka.testkit.AkkaSpec
 
 trait Cleanup { this: AkkaSpec =>
   val storageLocations =

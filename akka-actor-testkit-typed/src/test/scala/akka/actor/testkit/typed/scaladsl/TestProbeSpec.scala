@@ -4,11 +4,12 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.typed.scaladsl.Behaviors
-import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.typed.scaladsl.Behaviors
 
 class TestProbeSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
@@ -148,7 +149,7 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
       val probe = createTestProbe[EventT]()
       eventsT(10).forall { e =>
         probe.ref ! e
-        probe.receiveMessage == e
+        probe.receiveMessage() == e
       } should ===(true)
 
       probe.expectNoMessage()

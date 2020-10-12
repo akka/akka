@@ -4,14 +4,16 @@
 
 package akka.event
 
+import scala.runtime.BoxedUnit
+
 import language.existentials
+
+import akka.actor.AbstractActor
 import akka.actor.Actor.Receive
-import akka.actor.ActorContext
 import akka.actor.ActorCell
+import akka.actor.ActorContext
 import akka.actor.DiagnosticActorLogging
 import akka.event.Logging.{ LogEvent, LogLevel }
-import akka.actor.AbstractActor
-import scala.runtime.BoxedUnit
 
 object LoggingReceive {
 

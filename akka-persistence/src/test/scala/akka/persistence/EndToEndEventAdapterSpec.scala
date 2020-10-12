@@ -6,18 +6,19 @@ package akka.persistence
 
 import java.io.File
 
-import akka.actor._
-import akka.persistence.journal.{ EventAdapter, EventSeq }
-import akka.testkit.TestProbe
-import akka.util.unused
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.apache.commons.io.FileUtils
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import akka.actor._
+import akka.persistence.journal.{ EventAdapter, EventSeq }
+import akka.testkit.TestProbe
+import akka.util.unused
 
 object EndToEndEventAdapterSpec {
 

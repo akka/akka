@@ -4,13 +4,10 @@ Consume all elements but discards them.
 
 @ref[Sink operators](../index.md#sink-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #ignore }
+@apidoc[Sink.ignore](Sink$) { java="#ignore()" }
 
-@@@
 
 ## Description
 

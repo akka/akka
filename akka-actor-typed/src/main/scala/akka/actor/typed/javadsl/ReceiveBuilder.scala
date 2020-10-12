@@ -4,14 +4,14 @@
 
 package akka.actor.typed.javadsl
 
-import akka.actor.typed.MessageAdaptionFailure
-
 import scala.annotation.tailrec
-import akka.japi.function.Creator
+
+import akka.actor.typed.{ Behavior, Signal }
+import akka.actor.typed.MessageAdaptionFailure
+import akka.annotation.InternalApi
 import akka.japi.function.{ Function => JFunction }
 import akka.japi.function.{ Predicate => JPredicate }
-import akka.actor.typed.{ Behavior, Signal }
-import akka.annotation.InternalApi
+import akka.japi.function.Creator
 import akka.util.OptionVal
 
 /**

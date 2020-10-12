@@ -4,12 +4,13 @@
 
 package akka.actor
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.pattern.{ ask, AskTimeoutException }
 import akka.testkit._
 import akka.testkit.TestEvent._
-import scala.concurrent.Await
 import akka.util.Timeout
-import akka.pattern.{ ask, AskTimeoutException }
 
 class ActorTimeoutSpec extends AkkaSpec {
 

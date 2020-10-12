@@ -8,6 +8,19 @@ import java.net._
 import java.security.SecureRandom
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.PatienceConfiguration
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+
 import akka.Done
 import akka.NotUsed
 import akka.actor.Actor
@@ -23,10 +36,10 @@ import akka.io.SimpleDnsCache
 import akka.io.Tcp._
 import akka.io.dns.DnsProtocol
 import akka.stream._
+import akka.stream.scaladsl._
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Tcp.IncomingConnection
 import akka.stream.scaladsl.Tcp.ServerBinding
-import akka.stream.scaladsl._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.EventFilter
@@ -36,19 +49,6 @@ import akka.testkit.TestLatch
 import akka.testkit.TestProbe
 import akka.testkit.WithLogCapturing
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.PatienceConfiguration
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
-
-import scala.collection.immutable
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.concurrent.duration._
-import com.github.ghik.silencer.silent
 
 @silent("never used")
 class NonResolvingDnsActor(cache: SimpleDnsCache, config: Config) extends Actor {
@@ -920,10 +920,11 @@ class TcpSpec extends StreamSpec("""
 
     // #setting-up-ssl-engine
     import java.security.KeyStore
-    import javax.net.ssl.SSLEngine
-    import javax.net.ssl.TrustManagerFactory
     import javax.net.ssl.KeyManagerFactory
     import javax.net.ssl.SSLContext
+    import javax.net.ssl.SSLEngine
+    import javax.net.ssl.TrustManagerFactory
+
     import akka.stream.TLSRole
 
     // initialize SSLContext once
@@ -1007,11 +1008,12 @@ class TcpSpec extends StreamSpec("""
     def initSslMess() = {
       // #setting-up-ssl-context
       import java.security.KeyStore
+      import javax.net.ssl._
+
+      import com.typesafe.sslconfig.akka.AkkaSSLConfig
 
       import akka.stream.TLSClientAuth
       import akka.stream.TLSProtocol
-      import com.typesafe.sslconfig.akka.AkkaSSLConfig
-      import javax.net.ssl._
 
       val sslConfig = AkkaSSLConfig()
 

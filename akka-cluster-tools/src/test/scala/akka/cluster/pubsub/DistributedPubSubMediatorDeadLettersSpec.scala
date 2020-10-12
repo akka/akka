@@ -4,10 +4,11 @@
 
 package akka.cluster.pubsub
 
+import scala.concurrent.duration._
+
 import akka.actor.DeadLetter
 import akka.cluster.pubsub.DistributedPubSubMediator.{ Subscribe, _ }
 import akka.testkit._
-import scala.concurrent.duration._
 
 object DistributedPubSubMediatorDeadLettersSpec {
   def config(sendToDeadLettersWhenNoSubscribers: Boolean) =

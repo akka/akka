@@ -4,20 +4,23 @@
 
 package akka.persistence.typed.scaladsl
 
-import scala.annotation.tailrec
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
-import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.Signal
+import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.InterceptorImpl
 import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.scaladsl.ActorContext
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 import akka.persistence.typed.EventAdapter
-import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
+
+import scala.annotation.tailrec
 
 object EventSourcedBehavior {
 
@@ -45,9 +48,9 @@ object EventSourcedBehavior {
    * Create a `Behavior` for a persistent actor.
    *
    * @param persistenceId stable unique identifier for the event sourced behavior
-   * @param emtpyState the intial state for the entity before any events have been processed
+   * @param emptyState the intial state for the entity before any events have been processed
    * @param commandHandler map commands to effects e.g. persisting events, replying to commands
-   * @param evnetHandler compute the new state given the current state when an event has been persisted
+   * @param eventHandler compute the new state given the current state when an event has been persisted
    */
   def apply[Command, Event, State](
       persistenceId: PersistenceId,
@@ -157,6 +160,7 @@ object EventSourcedBehavior {
    * You may configure the behavior to skip replaying snapshots completely, in which case the recovery will be
    * performed by replaying all events -- which may take a long time.
    */
+  @deprecated("use withRecovery(Recovery.withSnapshotSelectionCriteria(...))", "2.6.5")
   def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State]
 
   /**
@@ -207,4 +211,22 @@ object EventSourcedBehavior {
    * If not specified the actor will be stopped on failure.
    */
   def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Change the recovery strategy.
+   * By default, snapshots and events are recovered.
+   */
+  def withRecovery(recovery: Recovery): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Publish events to the system event stream as [[akka.persistence.typed.PublishedEvent]] after they have been persisted
+   */
+  @ApiMayChange
+  def withEventPublishing(enabled: Boolean): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def withReplication(context: ReplicationContextImpl): EventSourcedBehavior[Command, Event, State]
 }

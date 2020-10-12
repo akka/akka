@@ -4,10 +4,11 @@ Storage backends for journals and snapshot stores are pluggable in the Akka pers
 
 A directory of persistence journal and snapshot store plugins is available at the Akka Community Projects page, see [Community plugins](https://akka.io/community/)
 
-Two popular plugins are:
+Plugins maintained within the Akka organization are:
 
 * [akka-persistence-cassandra](https://doc.akka.io/docs/akka-persistence-cassandra/current/)
-* [akka-persistence-jdbc](https://github.com/dnvriend/akka-persistence-jdbc)
+* [akka-persistence-couchbase](https://doc.akka.io/docs/akka-persistence-couchbase/current/)
+* [akka-persistence-jdbc](https://doc.akka.io/docs/akka-persistence-jdbc/current/)
 
 Plugins can be selected either by "default" for all persistent actors,
 or "individually", when a persistent actor defines its own set of plugins.

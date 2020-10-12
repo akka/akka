@@ -4,15 +4,16 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
 import akka.actor._
 import akka.cluster.sharding.ShardRegion.Passivate
+import akka.cluster.sharding.ShardRegion.StartEntity
 import akka.remote.testconductor.RoleName
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 import akka.util.ccompat._
-
-import scala.concurrent.duration._
 
 @ccompatUsedUntil213
 object ClusterShardingFailureSpec {
@@ -20,13 +21,20 @@ object ClusterShardingFailureSpec {
   case class Add(id: String, i: Int) extends CborSerializable
   case class Value(id: String, n: Int) extends CborSerializable
 
-  class Entity extends Actor {
+  class Entity extends Actor with ActorLogging {
+    log.debug("Starting")
     var n = 0
 
     def receive = {
-      case Get(id)   => sender() ! Value(id, n)
-      case Add(_, i) => n += i
+      case Get(id) =>
+        log.debug("Got get request from {}", sender())
+        sender() ! Value(id, n)
+      case Add(_, i) =>
+        n += i
+        log.debug("Got add request from {}", sender())
     }
+
+    override def postStop(): Unit = log.debug("Stopping")
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
@@ -35,8 +43,9 @@ object ClusterShardingFailureSpec {
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case Get(id)    => id.charAt(0).toString
-    case Add(id, _) => id.charAt(0).toString
+    case Get(id)         => id.charAt(0).toString
+    case Add(id, _)      => id.charAt(0).toString
+    case StartEntity(id) => id
   }
 }
 
@@ -44,11 +53,14 @@ abstract class ClusterShardingFailureSpecConfig(override val mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
       additionalConfig = s"""
+        akka.loglevel=DEBUG
         akka.cluster.roles = ["backend"]
         akka.cluster.sharding {
           coordinator-failure-backoff = 3s
           shard-failure-backoff = 3s
         }
+        # don't leak ddata state across runs
+        akka.cluster.sharding.distributed-data.durable.keys = []
         akka.persistence.journal.leveldb-shared.store.native = off
         # using Java serialization for these messages because test is sending them
         # to other nodes, which isn't normal usage.
@@ -95,7 +107,7 @@ abstract class ClusterShardingFailureSpec(multiNodeConfig: ClusterShardingFailur
       startSharding(
         system,
         typeName = "Entity",
-        entityProps = Props[Entity],
+        entityProps = Props[Entity](),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId))
   }
@@ -105,7 +117,7 @@ abstract class ClusterShardingFailureSpec(multiNodeConfig: ClusterShardingFailur
   s"Cluster sharding ($mode) with flaky journal/network" must {
 
     "join cluster" in within(20.seconds) {
-      startPersistenceIfNotDdataMode(startOn = controller, setStoreOn = Seq(first, second))
+      startPersistenceIfNeeded(startOn = controller, setStoreOn = Seq(first, second))
 
       join(first, first)
       join(second, first)
@@ -127,11 +139,11 @@ abstract class ClusterShardingFailureSpec(multiNodeConfig: ClusterShardingFailur
 
     "recover after journal/network failure" in within(20.seconds) {
       runOn(controller) {
-        if (isDdataMode)
-          testConductor.blackhole(first, second, Direction.Both).await
-        else {
+        if (persistenceIsNeeded) {
           testConductor.blackhole(controller, first, Direction.Both).await
           testConductor.blackhole(controller, second, Direction.Both).await
+        } else {
+          testConductor.blackhole(first, second, Direction.Both).await
         }
       }
       enterBarrier("journal-blackholed")
@@ -147,11 +159,11 @@ abstract class ClusterShardingFailureSpec(multiNodeConfig: ClusterShardingFailur
       enterBarrier("first-delayed")
 
       runOn(controller) {
-        if (isDdataMode)
-          testConductor.passThrough(first, second, Direction.Both).await
-        else {
+        if (persistenceIsNeeded) {
           testConductor.passThrough(controller, first, Direction.Both).await
           testConductor.passThrough(controller, second, Direction.Both).await
+        } else {
+          testConductor.passThrough(first, second, Direction.Both).await
         }
       }
       enterBarrier("journal-ok")

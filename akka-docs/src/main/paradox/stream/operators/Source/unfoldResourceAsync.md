@@ -4,13 +4,10 @@ Wrap any resource that can be opened, queried for next element and closed in an 
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #unfoldResourceAsync }
+@apidoc[Source.unfoldResourceAsync](Source$) { scala="#unfoldResourceAsync[T,S](create:()=&gt;scala.concurrent.Future[S],read:S=&gt;scala.concurrent.Future[Option[T]],close:S=&gt;scala.concurrent.Future[akka.Done]):akka.stream.scaladsl.Source[T,akka.NotUsed]" java="#unfoldResourceAsync(akka.japi.function.Creator,akka.japi.function.Function,akka.japi.function.Function)" }
 
-@@@
 
 ## Description
 

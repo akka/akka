@@ -4,25 +4,23 @@
 
 package akka.actor.typed
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.TimeoutException
+import scala.concurrent.duration._
+import scala.util.Success
+import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
-import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.pattern.StatusReply
+import akka.testkit.TestException
 import akka.util.Timeout
-import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, TimeoutException }
-import scala.util.Success
-
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import scala.concurrent.Future
-
-import akka.actor.DeadLetter
-import akka.actor.UnhandledMessage
-import akka.actor.testkit.typed.scaladsl.LoggingTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.typed.eventstream.EventStream
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object AskSpec {
   sealed trait Msg
@@ -76,10 +74,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
     }
 
     "fail the future if the actor doesn't reply in time" in {
-      val unhandledProbe = createTestProbe[UnhandledMessage]()
-      LoggingTestKit.debug(s"subscribing ${unhandledProbe.ref} to channel class akka.actor.UnhandledMessage").expect {
-        system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
-      }
+      val unhandledProbe = createUnhandledMessageProbe()
 
       val actor = spawn(Behaviors.empty[Foo])
       implicit val timeout: Timeout = 10.millis
@@ -100,10 +95,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
           fail("this test must only run in an adapted actor system")
       }
 
-      val deadLetterProbe = createTestProbe[DeadLetter]()
-      LoggingTestKit.debug(s"subscribing ${deadLetterProbe.ref} to channel class akka.actor.DeadLetter").expect {
-        system.eventStream ! EventStream.Subscribe(deadLetterProbe.ref)
-      }
+      val deadLetterProbe = createDeadLetterProbe()
 
       val answer: Future[String] = noSuchActor.ask(Foo("bar", _))
       val result = answer.failed.futureValue
@@ -135,6 +127,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
         val legacyActor = classicSystem.actorOf(akka.actor.Props(new LegacyActor))
 
         import scaladsl.AskPattern._
+
         import akka.actor.typed.scaladsl.adapter._
         implicit val timeout: Timeout = 3.seconds
         val typedLegacy: ActorRef[AnyRef] = legacyActor
@@ -188,5 +181,33 @@ class AskSpec extends ScalaTestWithActorTestKit("""
 
       probe.expectTerminated(ref, probe.remainingOrDefault)
     }
+  }
+
+  case class Request(replyTo: ActorRef[StatusReply[String]])
+
+  "askWithStatus pattern" must {
+    "unwrap nested response a successful response" in {
+      val probe = createTestProbe[Request]()
+      val result: Future[String] = probe.ref.askWithStatus(Request(_))
+      probe.expectMessageType[Request].replyTo ! StatusReply.success("goodie")
+      result.futureValue should ===("goodie")
+    }
+    "fail future for a fail response with text" in {
+      val probe = createTestProbe[Request]()
+      val result: Future[String] = probe.ref.askWithStatus(Request(_))
+      probe.expectMessageType[Request].replyTo ! StatusReply.error("boom")
+      val exception = result.failed.futureValue
+      exception should be(a[StatusReply.ErrorMessage])
+      exception.getMessage should ===("boom")
+    }
+    "fail future for a fail response with custom exception" in {
+      val probe = createTestProbe[Request]()
+      val result: Future[String] = probe.ref.askWithStatus(Request(_))
+      probe.expectMessageType[Request].replyTo ! StatusReply.error(TestException("boom"))
+      val exception = result.failed.futureValue
+      exception should be(a[TestException])
+      exception.getMessage should ===("boom")
+    }
+
   }
 }

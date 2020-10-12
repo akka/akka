@@ -5,27 +5,25 @@
 package akka.pattern
 
 import java.util.Optional
+import java.util.concurrent.{ Callable, CompletionStage, CopyOnWriteArrayList, ThreadLocalRandom }
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger, AtomicLong }
+import java.util.function.BiFunction
 import java.util.function.Consumer
 
+import scala.compat.java8.FutureConverters
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.concurrent.TimeoutException
+import scala.concurrent.duration._
+import scala.util.{ Failure, Success, Try }
+import scala.util.control.NoStackTrace
+import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
 import akka.AkkaException
 import akka.actor.Scheduler
+import akka.dispatch.ExecutionContexts.parasitic
 import akka.util.JavaDurationConverters._
 import akka.util.Unsafe
-
-import scala.util.control.NoStackTrace
-import java.util.concurrent.{ Callable, CompletionStage, CopyOnWriteArrayList }
-import java.util.function.BiFunction
-
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
-import scala.concurrent.duration._
-import scala.concurrent.TimeoutException
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
-import akka.dispatch.ExecutionContexts.parasitic
-import com.github.ghik.silencer.silent
-
-import scala.compat.java8.FutureConverters
 
 /**
  * Companion object providing factory methods for Circuit Breaker which runs callbacks in caller's thread
@@ -132,6 +130,10 @@ object CircuitBreaker {
  * @param maxFailures Maximum number of failures before opening the circuit
  * @param callTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to consider a call a failure
  * @param resetTimeout [[scala.concurrent.duration.FiniteDuration]] of time after which to attempt to close the circuit
+ * @param randomFactor after calculation of the exponential back-off an additional random delay
+ *                     based on this factor is added, e.g. `0.2` adds up to `20%` delay.
+ *                     randomFactor should be in range `0.0` (inclusive) and `1.0` (inclusive).
+ *                     In order to skip this additional delay pass in `0`.
  * @param executor [[scala.concurrent.ExecutionContext]] used for execution of state transition listeners
  */
 class CircuitBreaker(
@@ -140,10 +142,12 @@ class CircuitBreaker(
     callTimeout: FiniteDuration,
     val resetTimeout: FiniteDuration,
     maxResetTimeout: FiniteDuration,
-    exponentialBackoffFactor: Double)(implicit executor: ExecutionContext)
+    exponentialBackoffFactor: Double,
+    randomFactor: Double)(implicit executor: ExecutionContext)
     extends AbstractCircuitBreaker {
 
-  require(exponentialBackoffFactor >= 1.0, "factor must be >= 1.0")
+  require(exponentialBackoffFactor >= 1.0, "exponentialBackoffFactor must be >= 1.0")
+  require(0.0 <= randomFactor && randomFactor <= 1.0, "randomFactor must be between 0.0 and 1.0")
 
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def this(
@@ -152,7 +156,14 @@ class CircuitBreaker(
       maxFailures: Int,
       callTimeout: FiniteDuration,
       resetTimeout: FiniteDuration) = {
-    this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, 1.0)(executor)
+    this(
+      scheduler,
+      maxFailures,
+      callTimeout,
+      resetTimeout,
+      maxResetTimeout = 36500.days,
+      exponentialBackoffFactor = 1.0,
+      randomFactor = 0.0)(executor)
   }
 
   def this(
@@ -161,14 +172,41 @@ class CircuitBreaker(
       maxFailures: Int,
       callTimeout: java.time.Duration,
       resetTimeout: java.time.Duration) = {
-    this(scheduler, maxFailures, callTimeout.asScala, resetTimeout.asScala, 36500.days, 1.0)(executor)
+    this(
+      scheduler,
+      maxFailures,
+      callTimeout.asScala,
+      resetTimeout.asScala,
+      maxResetTimeout = 36500.days,
+      exponentialBackoffFactor = 1.0,
+      randomFactor = 0.0)(executor)
   }
 
   // add the old constructor to make it binary compatible
   def this(scheduler: Scheduler, maxFailures: Int, callTimeout: FiniteDuration, resetTimeout: FiniteDuration)(
       implicit
       executor: ExecutionContext) = {
-    this(scheduler, maxFailures, callTimeout, resetTimeout, 36500.days, 1.0)(executor)
+    this(
+      scheduler,
+      maxFailures,
+      callTimeout,
+      resetTimeout,
+      maxResetTimeout = 36500.days,
+      exponentialBackoffFactor = 1.0,
+      randomFactor = 0.0)(executor)
+  }
+
+  // add the old constructor to make it binary compatible
+  def this(
+      scheduler: Scheduler,
+      maxFailures: Int,
+      callTimeout: FiniteDuration,
+      resetTimeout: FiniteDuration,
+      maxResetTimeout: FiniteDuration,
+      exponentialBackoffFactor: Double)(
+      implicit
+      executor: ExecutionContext) = {
+    this(scheduler, maxFailures, callTimeout, resetTimeout, maxResetTimeout, exponentialBackoffFactor, 0.0)(executor)
   }
 
   /**
@@ -178,7 +216,7 @@ class CircuitBreaker(
    * @param maxResetTimeout the upper bound of resetTimeout
    */
   def withExponentialBackoff(maxResetTimeout: FiniteDuration): CircuitBreaker = {
-    new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout, maxResetTimeout, 2.0)(executor)
+    new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout, maxResetTimeout, 2.0, randomFactor)(executor)
   }
 
   /**
@@ -189,6 +227,23 @@ class CircuitBreaker(
    */
   def withExponentialBackoff(maxResetTimeout: java.time.Duration): CircuitBreaker = {
     withExponentialBackoff(maxResetTimeout.asScala)
+  }
+
+  /**
+   * Adds jitter to the delay.
+   * @param randomFactor after calculation of the back-off an additional random delay based on this
+   *                     factor is added, e.g. 0.2 adds up to 20% delay. In order to skip this
+   *                     additional delay pass in 0.
+   */
+  def withRandomFactor(randomFactor: Double): CircuitBreaker = {
+    new CircuitBreaker(
+      scheduler,
+      maxFailures,
+      callTimeout,
+      resetTimeout,
+      maxResetTimeout,
+      exponentialBackoffFactor,
+      randomFactor)(executor)
   }
 
   /**
@@ -769,12 +824,12 @@ class CircuitBreaker(
         materialize(body).onComplete {
           case Success(result) =>
             p.trySuccess(result)
-            timeout.cancel
+            timeout.cancel()
           case Failure(ex) =>
             if (p.tryFailure(ex)) {
               notifyCallFailureListeners(start)
             }
-            timeout.cancel
+            timeout.cancel()
         }(parasitic)
         p.future
       }
@@ -984,7 +1039,8 @@ class CircuitBreaker(
       scheduler.scheduleOnce(currentResetTimeout) {
         attemptReset()
       }
-      val nextResetTimeout = currentResetTimeout * exponentialBackoffFactor match {
+      val rnd = 1.0 + ThreadLocalRandom.current().nextDouble() * randomFactor
+      val nextResetTimeout = currentResetTimeout * exponentialBackoffFactor * rnd match {
         case f: FiniteDuration => f
         case _                 => currentResetTimeout
       }

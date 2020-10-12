@@ -7,12 +7,13 @@ package akka.actor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.util.Timeout
-import org.openjdk.jmh.annotations._
-
+import scala.concurrent.{ Await, Promise }
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Promise }
+
+import org.openjdk.jmh.annotations._
+
+import akka.util.Timeout
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))

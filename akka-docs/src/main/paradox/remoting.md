@@ -25,9 +25,11 @@ such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
 To use Akka Remoting, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-remote_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-remote_$scala.binary.version$
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-remote" }
@@ -63,7 +65,7 @@ akka {
 }
 ```
 
-As you can see in the example above there are five things you need to add to get started:
+As you can see in the example above there are four things you need to add to get started:
 
  * Change provider from `local`. We recommend using @ref:[Akka Cluster](cluster-usage.md) over using remoting directly.
  * Disable artery remoting. Artery is the default remoting implementation since `2.6.0`
@@ -271,22 +273,22 @@ Scala
 Java
 :   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
 
-### Remote deployment whitelist
+### Remote deployment allow list
 
-As remote deployment can potentially be abused by both users and even attackers a whitelist feature
+As remote deployment can potentially be abused by both users and even attackers an allow list feature
 is available to guard the ActorSystem from deploying unexpected actors. Please note that remote deployment
 is *not* remote code loading, the Actors class to be deployed onto a remote system needs to be present on that
 remote system. This still however may pose a security risk, and one may want to restrict remote deployment to
-only a specific set of known actors by enabling the whitelist feature.
+only a specific set of known actors by enabling the allow list feature.
 
-To enable remote deployment whitelisting set the `akka.remote.deployment.enable-whitelist` value to `on`.
+To enable remote deployment allow list set the `akka.remote.deployment.enable-allow-list` value to `on`.
 The list of allowed classes has to be configured on the "remote" system, in other words on the system onto which
 others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or
 should not allow others to remote deploy onto it. The full settings section may for example look like this:
 
-@@snip [RemoteDeploymentWhitelistSpec.scala](/akka-remote/src/test/scala/akka/remote/classic/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
+@@snip [RemoteDeploymentAllowListSpec.scala](/akka-remote/src/test/scala/akka/remote/classic/RemoteDeploymentAllowListSpec.scala) { #allow-list-config }
 
-Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
+Actor classes not included in the allow list will not be allowed to be remote deployed onto this system.
 
 ## Lifecycle and Failure Recovery Model
 
@@ -486,13 +488,13 @@ According to [RFC 7525](https://tools.ietf.org/html/rfc7525) the recommended alg
 You should always check the latest information about security and algorithm recommendations though before you configure your system.
 
 Creating and working with keystores and certificates is well documented in the
-[Generating X.509 Certificates](http://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
+[Generating X.509 Certificates](https://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
 section of Lightbend's SSL-Config library.
 
 Since an Akka remoting is inherently @ref:[peer-to-peer](general/remoting.md#symmetric-communication) both the key-store as well as trust-store
 need to be configured on each remoting node participating in the cluster.
 
-The official [Java Secure Socket Extension documentation](http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html)
+The official [Java Secure Socket Extension documentation](https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html)
 as well as the [Oracle documentation on creating KeyStore and TrustStores](https://docs.oracle.com/cd/E19509-01/820-3503/6nf1il6er/index.html)
 are both great resources to research when setting up security on the JVM. Please consult those resources when troubleshooting
 and configuring SSL.

@@ -4,13 +4,14 @@
 
 package akka.actor.typed.internal
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.ActorRef
-import akka.serialization.{ JavaSerializer, SerializationExtension }
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.ActorRef
+import akka.actor.typed.scaladsl.Behaviors
+import akka.serialization.{ JavaSerializer, SerializationExtension }
 
 object ActorRefSerializationSpec {
   def config = ConfigFactory.parseString("""

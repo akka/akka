@@ -6,23 +6,23 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.reflect.ClassTag
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.PoisonPill
 import akka.actor.Props
+import akka.stream.ActorAttributes
 import akka.stream.ActorAttributes.supervisionStrategy
+import akka.stream.Supervision
 import akka.stream.Supervision.resumingDecider
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.ActorAttributes
-import akka.stream.Supervision
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
-
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.reflect.ClassTag
 
 object FlowAskSpec {
   case class Reply(payload: Int)

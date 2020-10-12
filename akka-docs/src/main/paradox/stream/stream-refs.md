@@ -5,9 +5,11 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -29,7 +31,7 @@ distributed processing framework or to introduce such capabilities in specific p
 Stream refs are trivial to use in existing clustered Akka applications and require no additional configuration
 or setup. They automatically maintain flow-control / back-pressure over the network and employ Akka's failure detection
 mechanisms to fail-fast ("let it crash!") in the case of failures of remote nodes. They can be seen as an implementation 
-of the [Work Pulling Pattern](http://www.michaelpollmeier.com/akka-work-pulling-pattern), which one would otherwise 
+of the [Work Pulling Pattern](https://www.michaelpollmeier.com/akka-work-pulling-pattern), which one would otherwise 
 implement manually.
 
 @@@ note

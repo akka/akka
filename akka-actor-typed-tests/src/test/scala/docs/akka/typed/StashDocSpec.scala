@@ -31,7 +31,7 @@ object StashDocSpec {
     final case class Save(value: String, replyTo: ActorRef[Done]) extends Command
     final case class Get(replyTo: ActorRef[String]) extends Command
     private final case class InitialState(value: String) extends Command
-    private final case object SaveSuccess extends Command
+    private case object SaveSuccess extends Command
     private final case class DBError(cause: Throwable) extends Command
 
     def apply(id: String, db: DB): Behavior[Command] = {

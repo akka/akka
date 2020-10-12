@@ -4,15 +4,18 @@
 
 package akka.actor
 
-import language.implicitConversions
-import scala.concurrent.duration.Duration
 import scala.collection.mutable
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
-import akka.routing.{ Deafen, Listen, Listeners }
-import akka.annotation.InternalApi
-import akka.util.{ unused, JavaDurationConverters }
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
+
 import com.github.ghik.silencer.silent
+import language.implicitConversions
+
+import akka.annotation.InternalApi
+import akka.routing.{ Deafen, Listen, Listeners }
+import akka.util.{ unused, JavaDurationConverters }
 
 object FSM {
 
@@ -121,7 +124,7 @@ object FSM {
       extends NoSerializationVerificationNeeded {
     private var ref: Option[Cancellable] = _
     private val scheduler = context.system.scheduler
-    private implicit val executionContext = context.dispatcher
+    private implicit val executionContext: ExecutionContextExecutor = context.dispatcher
 
     def schedule(actor: ActorRef, timeout: FiniteDuration): Unit = {
       val timerMsg = msg match {
@@ -465,7 +468,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
   /**
    * Produce change descriptor to stop this FSM actor including specified reason.
    */
-  final def stop(reason: Reason, stateData: D): State = stay.using(stateData).withStopReason(reason)
+  final def stop(reason: Reason, stateData: D): State = stay().using(stateData).withStopReason(reason)
 
   final class TransformHelper(func: StateFunction) {
     def using(andThen: PartialFunction[State, State]): StateFunction =
@@ -558,7 +561,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
     if (timers contains name) {
       timers(name).cancel()
     }
-    val timer = Timer(name, msg, mode, timerGen.next, this)(context)
+    val timer = Timer(name, msg, mode, timerGen.next(), this)(context)
     timer.schedule(self, timeout)
     timers(name) = timer
   }
@@ -727,7 +730,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
   private val handleEventDefault: StateFunction = {
     case Event(value, _) =>
       log.warning("unhandled event " + value + " in state " + stateName)
-      stay
+      stay()
   }
   private var handleEvent: StateFunction = handleEventDefault
 
@@ -820,7 +823,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
 
   private[akka] def makeTransition(nextState: State): Unit = {
     if (!stateFunctions.contains(nextState.stateName)) {
-      terminate(stay.withStopReason(Failure("Next state %s does not exist".format(nextState.stateName))))
+      terminate(stay().withStopReason(Failure("Next state %s does not exist".format(nextState.stateName))))
     } else {
       nextState.replies.reverse.foreach { r =>
         sender() ! r
@@ -861,7 +864,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
      * setting this instance’s state to terminated does no harm during restart
      * since the new instance will initialize fresh using startWith()
      */
-    terminate(stay.withStopReason(Shutdown))
+    terminate(stay().withStopReason(Shutdown))
     super.postStop()
   }
 

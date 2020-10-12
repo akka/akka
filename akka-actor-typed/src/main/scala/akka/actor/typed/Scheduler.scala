@@ -4,11 +4,11 @@
 
 package akka.actor.typed
 
-import akka.actor.Cancellable
-import akka.annotation.DoNotInherit
-
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.Cancellable
+import akka.annotation.DoNotInherit
 
 /**
  * The ActorSystem facility for scheduling tasks.

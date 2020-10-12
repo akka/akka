@@ -4,13 +4,13 @@
 
 package akka.stream.impl
 
-import akka.annotation.InternalApi
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
-import akka.stream._
-
 import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
+
+import akka.annotation.InternalApi
+import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 
 /**
  * INTERNAL API

@@ -4,12 +4,13 @@
 
 package akka.remote.artery
 
-import akka.actor.setup.ActorSystemSetup
-import akka.actor.{ ActorSystem, Address, BootstrapSetup, RootActorPath }
-import akka.remote.RARP
-import akka.testkit.{ AkkaSpec, SocketUtil }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ Outcome, Pending }
+
+import akka.actor.{ ActorSystem, Address, BootstrapSetup, RootActorPath }
+import akka.actor.setup.ActorSystemSetup
+import akka.remote.RARP
+import akka.testkit.{ AkkaSpec, SocketUtil }
 
 /**
  * Base class for remoting tests what needs to test interaction between a "local" actor system

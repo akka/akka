@@ -3,7 +3,7 @@ project.description: Akka dispatchers and how to choose the right ones.
 ---
 # Dispatchers
 
-For the Akka Classic documentation of this feature see @ref:[Classic Dispatchers](../dispatchers.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Dispatchers](../dispatchers.md).
 
 ## Dependency
 
@@ -11,9 +11,11 @@ Dispatchers are part of core Akka, which means that they are part of the `akka-a
 page describes how to use dispatchers with `akka-actor-typed`, which has dependency:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-actor-typed_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-actor-typed_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction 
@@ -135,6 +137,7 @@ Example: configuring `internal-dispatcher` to be an alias for `default-dispatche
 akka.actor.internal-dispatcher = akka.actor.default-dispatcher
 ```
 
+<a id="blocking-management"></a>
 ## Blocking Needs Careful Management
 
 In some cases it is unavoidable to do blocking operations, i.e. to put a thread
@@ -171,7 +174,7 @@ avoid blocking APIs. The following solution explains how to handle blocking
 operations properly.
 
 Note that the same hints apply to managing blocking operations anywhere in Akka,
-including Streams, Http and other reactive libraries built on top of it.
+including Streams, HTTP and other reactive libraries built on top of it.
 
 @@@
 

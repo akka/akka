@@ -8,6 +8,9 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 
+import org.scalatest.concurrent.Eventually
+import org.scalatest.time.Span
+
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
@@ -17,8 +20,6 @@ import akka.remote.UniqueAddress
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
-import org.scalatest.concurrent.Eventually
-import org.scalatest.time.Span
 
 class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
   akka.loglevel=INFO

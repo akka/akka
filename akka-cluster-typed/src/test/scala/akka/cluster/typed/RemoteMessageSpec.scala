@@ -6,15 +6,16 @@ package akka.cluster.typed
 
 import scala.concurrent.Promise
 
+import com.typesafe.config.ConfigFactory
+
 import akka.Done
+import akka.actor.{ ActorSystem => ClassicActorSystem }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{ ActorSystem => ClassicActorSystem }
 import akka.serialization.jackson.CborSerializable
 import akka.testkit.AkkaSpec
-import com.typesafe.config.ConfigFactory
 
 object RemoteMessageSpec {
   def config = ConfigFactory.parseString(s"""

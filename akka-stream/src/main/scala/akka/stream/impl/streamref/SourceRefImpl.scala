@@ -4,6 +4,8 @@
 
 package akka.stream.impl.streamref
 
+import com.github.ghik.silencer.silent
+
 import akka.NotUsed
 import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.InternalApi
@@ -13,7 +15,6 @@ import akka.stream.impl.FixedSizeBuffer
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.util.{ OptionVal, PrettyDuration }
-import com.github.ghik.silencer.silent
 
 /** INTERNAL API: Implementation class, not intended to be touched directly by end-users */
 @InternalApi

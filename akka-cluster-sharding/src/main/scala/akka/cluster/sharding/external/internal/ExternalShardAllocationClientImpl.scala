@@ -6,6 +6,9 @@ package akka.cluster.sharding.external.internal
 
 import java.util.concurrent.CompletionStage
 
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.Future
+
 import akka.Done
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -29,14 +32,13 @@ import akka.cluster.sharding.external.ClientTimeoutException
 import akka.cluster.sharding.external.ExternalShardAllocationStrategy
 import akka.cluster.sharding.external.ExternalShardAllocationStrategy.ShardLocation
 import akka.cluster.sharding.external.ShardLocations
+import akka.dispatch.MessageDispatcher
 import akka.event.Logging
-import akka.util.Timeout
-import akka.util.PrettyDuration._
 import akka.pattern.ask
-
-import scala.concurrent.Future
-import scala.compat.java8.FutureConverters._
 import akka.util.JavaDurationConverters._
+import akka.util.PrettyDuration._
+import akka.util.Timeout
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API
@@ -55,8 +57,8 @@ final private[external] class ExternalShardAllocationClientImpl(system: ActorSys
     system.settings.config
       .getDuration("akka.cluster.sharding.external-shard-allocation-strategy.client-timeout")
       .asScala
-  private implicit val askTimeout = Timeout(timeout * 2)
-  private implicit val ec = system.dispatchers.internalDispatcher
+  private implicit val askTimeout: Timeout = Timeout(timeout * 2)
+  private implicit val ec: MessageDispatcher = system.dispatchers.internalDispatcher
 
   private val Key = ExternalShardAllocationStrategy.ddataKey(typeName)
 
@@ -91,4 +93,21 @@ final private[external] class ExternalShardAllocationClientImpl(system: ActorSys
   }
 
   override def getShardLocations(): CompletionStage[ShardLocations] = shardLocations().toJava
+
+  override def updateShardLocations(locations: Map[ShardId, Address]): Future[Done] = {
+    log.debug("updateShardLocations {} for {}", locations, Key)
+    (replicator ? Update(Key, LWWMap.empty[ShardId, String], WriteLocal, None) { existing =>
+      locations.foldLeft(existing) {
+        case (acc, (shardId, address)) => acc.put(self, shardId, address.toString)
+      }
+    }).flatMap {
+      case UpdateSuccess(_, _) => Future.successful(Done)
+      case UpdateTimeout =>
+        Future.failed(new ClientTimeoutException(s"Unable to update shard location after ${timeout.duration.pretty}"))
+    }
+  }
+
+  override def setShardLocations(locations: java.util.Map[ShardId, Address]): CompletionStage[Done] = {
+    updateShardLocations(locations.asScala.toMap).toJava
+  }
 }

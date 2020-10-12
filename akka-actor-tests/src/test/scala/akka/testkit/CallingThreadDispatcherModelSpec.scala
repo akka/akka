@@ -5,8 +5,10 @@
 package akka.testkit
 
 import java.util.concurrent.atomic.AtomicInteger
-import akka.actor.dispatch.ActorModelSpec
+
 import com.typesafe.config.Config
+
+import akka.actor.dispatch.ActorModelSpec
 import akka.dispatch.DispatcherPrerequisites
 import akka.dispatch.MessageDispatcher
 import akka.dispatch.MessageDispatcherConfigurator

@@ -4,19 +4,20 @@
 
 package akka.remote
 
-import akka.remote.testkit.MultiNodeConfig
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.remote.transport.ThrottlerTransportAdapter.Direction._
-import com.typesafe.config.ConfigFactory
-import akka.actor.ActorSystem
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorLogging
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
 import akka.actor.Identify
+import akka.actor.Props
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.transport.ThrottlerTransportAdapter.Direction._
 import akka.testkit.TestProbe
 
 class RemoteReDeploymentConfig(artery: Boolean) extends MultiNodeConfig {
@@ -118,8 +119,8 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
 
   def initialParticipants = roles.size
 
-  import multiNodeConfig._
   import RemoteReDeploymentMultiJvmSpec._
+  import multiNodeConfig._
 
   "A remote deployment target system" must {
 
@@ -131,7 +132,7 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
       runOn(second) {
         // Create a 'Parent' actor on the 'second' node
         // have it create a 'Hello' child (which will be on the 'first' node due to the deployment config):
-        system.actorOf(Props[Parent], "parent") ! ((Props[Hello], "hello"))
+        system.actorOf(Props[Parent](), "parent") ! ((Props[Hello](), "hello"))
         // The 'Hello' child will send "HelloParent" to the 'Parent', which will pass it to the 'echo' monitor:
         expectMsg(15.seconds, "HelloParent")
       }
@@ -189,7 +190,7 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
       runOn(second) {
         val p = TestProbe()(sys)
         sys.actorOf(echoProps(p.ref), "echo")
-        p.send(sys.actorOf(Props[Parent], "parent"), (Props[Hello], "hello"))
+        p.send(sys.actorOf(Props[Parent](), "parent"), (Props[Hello](), "hello"))
         p.expectMsg(15.seconds, "HelloParent")
       }
 

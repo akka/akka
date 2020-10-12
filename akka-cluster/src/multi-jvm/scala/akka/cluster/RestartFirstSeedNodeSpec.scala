@@ -4,21 +4,22 @@
 
 package akka.cluster
 
-import language.postfixOps
 import scala.collection.immutable
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
+import akka.actor.Actor
+import akka.actor.ActorSystem
+import akka.actor.Address
+import akka.actor.Deploy
+import akka.actor.Props
+import akka.actor.RootActorPath
+import akka.cluster.MemberStatus._
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-
-import scala.concurrent.duration._
-import akka.actor.Address
-import akka.actor.ActorSystem
-import akka.actor.Props
-import akka.actor.Actor
-import akka.actor.RootActorPath
-import akka.cluster.MemberStatus._
-import akka.actor.Deploy
 import akka.util.ccompat._
 
 @ccompatUsedUntil213

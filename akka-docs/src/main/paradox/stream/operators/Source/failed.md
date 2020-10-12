@@ -1,16 +1,13 @@
-# failed
+# Source.failed
 
 Fail directly with a user specified exception.
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #failed }
+@apidoc[Source.failed](Source$) { scala="#failed[T](cause:Throwable):akka.stream.scaladsl.Source[T,akka.NotUsed]" java="#failed(java.lang.Throwable)" }
 
-@@@
 
 ## Description
 

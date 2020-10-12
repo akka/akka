@@ -7,21 +7,22 @@ package akka.stream.scaladsl
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.Supervision.resumingDecider
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.scaladsl._
-import akka.testkit.TestLatch
-import akka.testkit.TestProbe
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
-
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+
+import akka.stream.ActorAttributes.supervisionStrategy
+import akka.stream.Supervision.resumingDecider
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.TestLatch
+import akka.testkit.TestProbe
 
 class FlowMapAsyncUnorderedSpec extends StreamSpec {
 
@@ -137,7 +138,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
         .run()
       val sub = c.expectSubscription()
       sub.request(10)
-      c.expectError.getMessage should be("err1")
+      c.expectError().getMessage should be("err1")
       latch.countDown()
     }
 
@@ -180,7 +181,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
         .run()
       val sub = c.expectSubscription()
       sub.request(10)
-      c.expectError.getMessage should be("err2")
+      c.expectError().getMessage should be("err2")
       latch.countDown()
     }
 
@@ -251,7 +252,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       }
       val result = Source(List(1, 2, 3)).via(flow).runWith(Sink.seq)
 
-      result.futureValue should contain only ("1", "3")
+      result.futureValue should contain.only("1", "3")
     }
 
     "continue emitting after a sequence of nulls" in {
@@ -262,7 +263,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
 
       val result = Source(0 to 102).via(flow).runWith(Sink.seq)
 
-      result.futureValue should contain only ("0", "100", "101", "102")
+      result.futureValue should contain.only("0", "100", "101", "102")
     }
 
     "complete without emitting any element after a sequence of nulls only" in {
@@ -292,7 +293,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
 
       val result = Source(List(1, 2, 3)).via(flow).runWith(Sink.seq)
 
-      result.futureValue should contain only ("1", "3")
+      result.futureValue should contain.only("1", "3")
     }
 
     "handle cancel properly" in assertAllStagesStopped {
@@ -339,7 +340,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       def deferred(): Future[Int] = {
         if (counter.incrementAndGet() > parallelism) Future.failed(new Exception("parallelism exceeded"))
         else {
-          val p = Promise[Int]
+          val p = Promise[Int]()
           queue.offer(p -> System.nanoTime())
           p.future
         }

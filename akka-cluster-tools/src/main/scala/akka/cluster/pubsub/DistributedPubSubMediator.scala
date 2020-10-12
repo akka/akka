@@ -4,12 +4,16 @@
 
 package akka.cluster.pubsub
 
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.util.concurrent.ThreadLocalRandom
+
 import scala.collection.immutable
 import scala.collection.immutable.Set
+import scala.collection.immutable.TreeMap
 import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
-import java.net.URLEncoder
-import java.net.URLDecoder
+
+import com.typesafe.config.Config
 
 import akka.actor._
 import akka.annotation.DoNotInherit
@@ -17,18 +21,15 @@ import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.Member
 import akka.cluster.MemberStatus
-import akka.routing.RandomRoutingLogic
-import akka.routing.RoutingLogic
-import akka.routing.Routee
 import akka.routing.ActorRefRoutee
+import akka.routing.BroadcastRoutingLogic
+import akka.routing.ConsistentHashingRoutingLogic
+import akka.routing.RandomRoutingLogic
+import akka.routing.RoundRobinRoutingLogic
+import akka.routing.Routee
 import akka.routing.Router
 import akka.routing.RouterEnvelope
-import akka.routing.RoundRobinRoutingLogic
-import akka.routing.ConsistentHashingRoutingLogic
-import akka.routing.BroadcastRoutingLogic
-
-import scala.collection.immutable.TreeMap
-import com.typesafe.config.Config
+import akka.routing.RoutingLogic
 
 object DistributedPubSubSettings {
 
@@ -104,7 +105,7 @@ final class DistributedPubSubSettings(
       routingLogic: RoutingLogic,
       gossipInterval: FiniteDuration,
       removedTimeToLive: FiniteDuration,
-      maxDeltaElements: Int) {
+      maxDeltaElements: Int) =
     this(
       role,
       routingLogic,
@@ -112,7 +113,6 @@ final class DistributedPubSubSettings(
       removedTimeToLive,
       maxDeltaElements,
       sendToDeadLettersWhenNoSubscribers = true)
-  }
 
   require(
     !routingLogic.isInstanceOf[ConsistentHashingRoutingLogic],
@@ -674,7 +674,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
       forwardMessages(key, sender())
 
     case GetTopics =>
-      sender ! CurrentTopics(getCurrentTopics())
+      sender() ! CurrentTopics(getCurrentTopics())
 
     case Subscribed(ack, ref) =>
       ref ! ack

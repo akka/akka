@@ -14,7 +14,7 @@ object OptimizedRecoverySpec {
     case object TakeSnapshot
     final case class Save(s: String)
     final case class Saved(s: String, seqNr: Long)
-    final case object PersistFromRecoveryCompleted
+    case object PersistFromRecoveryCompleted
 
     def props(name: String, recovery: Recovery, probe: ActorRef): Props = {
       Props(new TestPersistentActor(name, recovery, probe))

@@ -386,6 +386,42 @@ public interface JavaTestMessages {
     }
   }
 
+  public class Event3 implements TestMessage {
+    private final String field1V2; // same as in Event2
+    private final int field3; // renamed field (was field2)
+
+    public Event3(String field1V2, int field3) {
+      this.field1V2 = field1V2;
+      this.field3 = field3;
+    }
+
+    public String getField1V2() {
+      return field1V2;
+    }
+
+    public int getField3() {
+      return field3;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      Event3 event3 = (Event3) o;
+
+      if (field3 != event3.field3) return false;
+      return field1V2 != null ? field1V2.equals(event3.field1V2) : event3.field1V2 == null;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = field1V2 != null ? field1V2.hashCode() : 0;
+      result = 31 * result + field3;
+      return result;
+    }
+  }
+
   public class Zoo implements TestMessage {
     public final Animal first;
 

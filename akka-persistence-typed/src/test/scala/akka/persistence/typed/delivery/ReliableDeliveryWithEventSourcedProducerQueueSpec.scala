@@ -6,13 +6,14 @@ package akka.persistence.typed.delivery
 
 import java.util.UUID
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.delivery.ConsumerController
 import akka.actor.typed.delivery.ProducerController
 import akka.persistence.typed.PersistenceId
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object ReliableDeliveryWithEventSourcedProducerQueueSpec {
   def conf: Config =
@@ -27,10 +28,12 @@ object ReliableDeliveryWithEventSourcedProducerQueueSpec {
     """)
 }
 
-class ReliableDeliveryWithEventSourcedProducerQueueSpec
-    extends ScalaTestWithActorTestKit(WorkPullingWithEventSourcedProducerQueueSpec.conf)
+class ReliableDeliveryWithEventSourcedProducerQueueSpec(config: Config)
+    extends ScalaTestWithActorTestKit(config)
     with AnyWordSpecLike
     with LogCapturing {
+
+  def this() = this(ReliableDeliveryWithEventSourcedProducerQueueSpec.conf)
 
   "ReliableDelivery with EventSourcedProducerQueue" must {
 
@@ -167,3 +170,10 @@ class ReliableDeliveryWithEventSourcedProducerQueueSpec
   }
 
 }
+
+// same tests but with chunked messages
+class ReliableDeliveryWithEventSourcedProducerQueueChunkedSpec
+    extends ReliableDeliveryWithEventSourcedProducerQueueSpec(
+      ConfigFactory.parseString("""
+    akka.reliable-delivery.producer-controller.chunk-large-messages = 1b
+    """).withFallback(ReliableDeliveryWithEventSourcedProducerQueueSpec.conf))

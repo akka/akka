@@ -1,4 +1,4 @@
-# fromPublisher
+# Source.fromPublisher
 
 Integration with Reactive Streams, subscribes to a @javadoc[Publisher](java.util.concurrent.Flow.Publisher).
 

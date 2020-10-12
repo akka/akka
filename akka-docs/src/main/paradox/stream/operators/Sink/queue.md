@@ -4,13 +4,10 @@ Materialize a `SinkQueue` that can be pulled to trigger demand through the sink.
 
 @ref[Sink operators](../index.md#sink-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #queue }
+@apidoc[Sink.queue](Sink$) { scala="#queue[T](maxConcurrentPulls:Int):akka.stream.scaladsl.Sink[T,akka.stream.scaladsl.SinkQueueWithCancel[T]]" java="#queue(int)" }
 
-@@@
 
 ## Description
 

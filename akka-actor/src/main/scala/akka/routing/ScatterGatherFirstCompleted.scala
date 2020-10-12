@@ -4,23 +4,26 @@
 
 package akka.routing
 
+import java.util.concurrent.TimeoutException
+
 import scala.collection.immutable
-import akka.dispatch.Dispatchers
-import com.typesafe.config.Config
-import akka.actor.SupervisorStrategy
-import akka.japi.Util.immutableSeq
-import akka.actor.ActorRef
+import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration.FiniteDuration
+
+import com.typesafe.config.Config
+
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.SupervisorStrategy
+import akka.dispatch.Dispatchers
+import akka.dispatch.ExecutionContexts
+import akka.japi.Util.immutableSeq
 import akka.pattern.ask
 import akka.pattern.pipe
-import akka.dispatch.ExecutionContexts
-import scala.concurrent.duration.FiniteDuration
-import akka.util.Timeout
 import akka.util.Helpers.ConfigOps
 import akka.util.JavaDurationConverters._
-import akka.actor.ActorSystem
-import scala.concurrent.Future
-import java.util.concurrent.TimeoutException
+import akka.util.Timeout
 
 /**
  * Broadcasts the message to all routees, and replies with the first response.

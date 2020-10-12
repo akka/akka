@@ -5,18 +5,18 @@
 package akka.stream.javadsl
 
 import java.io.{ InputStream, OutputStream }
+import java.util.concurrent.CompletionStage
 import java.util.stream.Collector
 
+import scala.concurrent.duration.FiniteDuration
+
+import com.github.ghik.silencer.silent
+
+import akka.NotUsed
 import akka.japi.function
 import akka.stream.{ javadsl, scaladsl }
 import akka.stream.IOResult
 import akka.util.ByteString
-
-import scala.concurrent.duration.FiniteDuration
-import java.util.concurrent.CompletionStage
-
-import akka.NotUsed
-import com.github.ghik.silencer.silent
 
 /**
  * Converters for interacting with the blocking `java.io` streams APIs and Java 8 Streams
@@ -121,7 +121,7 @@ object StreamConverters {
   /**
    * Creates a Source from an [[java.io.InputStream]] created by the given function.
    * Emitted elements are up to `chunkSize` sized [[akka.util.ByteString]] elements.
-   * The actual size of emitted elements depends how much data the underlying
+   * The actual size of the emitted elements depends on how much data the underlying
    * [[java.io.InputStream]] returns on each read invocation. Such chunks will
    * never be larger than chunkSize though.
    *
@@ -142,7 +142,7 @@ object StreamConverters {
   /**
    * Creates a Source from an [[java.io.InputStream]] created by the given function.
    * Emitted elements are up to 8192 bytes sized [[akka.util.ByteString]] elements.
-   * The actual size of emitted elements depends how much data the underlying
+   * The actual size of the emitted elements depends on how much data the underlying
    * [[java.io.InputStream]] returns on each read invocation. Such chunks will
    * never be larger than chunkSize though.
    *

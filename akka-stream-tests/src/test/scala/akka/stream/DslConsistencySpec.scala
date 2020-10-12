@@ -6,6 +6,7 @@ package akka.stream
 
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

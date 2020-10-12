@@ -4,13 +4,13 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
 import akka.Done
 import akka.actor._
 import akka.cluster.MemberStatus
 import akka.testkit.{ ImplicitSender, TestProbe }
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
 
 /**
  * Test for issue #28416
@@ -66,7 +66,7 @@ abstract class ClusterShardingRegistrationCoordinatedShutdownSpec
       startSharding(
         system,
         typeName = "Entity",
-        entityProps = Props[ShardedEntity],
+        entityProps = Props[ShardedEntity](),
         extractEntityId = MultiNodeClusterShardingSpec.intExtractEntityId,
         extractShardId = MultiNodeClusterShardingSpec.intExtractShardId)
 

@@ -4,13 +4,19 @@
 
 package akka.stream.impl.fusing
 
+import scala.collection.{ Map => SMap }
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration.FiniteDuration
+
+import com.github.ghik.silencer.silent
+
 import akka.actor.ActorSystem
 import akka.actor.Cancellable
 import akka.actor.Props
 import akka.annotation.InternalApi
 import akka.event.Logging
-import akka.stream.Supervision.Decider
 import akka.stream._
+import akka.stream.Supervision.Decider
 import akka.stream.impl.fusing.GraphInterpreter.{
   Connection,
   DownstreamBoundaryStageLogic,
@@ -20,11 +26,6 @@ import akka.stream.impl.fusing.GraphInterpreter.{
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, _ }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
-import com.github.ghik.silencer.silent
-
-import scala.collection.{ Map => SMap }
-import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API

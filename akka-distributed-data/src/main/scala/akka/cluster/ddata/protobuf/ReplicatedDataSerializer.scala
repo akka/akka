@@ -4,33 +4,33 @@
 
 package akka.cluster.ddata.protobuf
 
-import java.{ util, lang => jl }
+import java.{ lang => jl }
+import java.io.NotSerializableException
+import java.util
 import java.util.ArrayList
 import java.util.Collections
 import java.util.Comparator
 
 import scala.annotation.tailrec
-import akka.util.ccompat.JavaConverters._
-
 import scala.collection.immutable
+
+import com.github.ghik.silencer.silent
+
+import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.cluster.ddata._
 import akka.cluster.ddata.Replicator.Internal._
 import akka.cluster.ddata.protobuf.msg.{ ReplicatedDataMessages => rd }
 import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
-import akka.serialization.SerializerWithStringManifest
-import akka.serialization.BaseSerializer
-import akka.protobufv3.internal.{ ByteString, GeneratedMessageV3 }
-import akka.util.ByteString.UTF_8
-import java.io.NotSerializableException
-import java.util
-
-import com.github.ghik.silencer.silent
-import akka.actor.ActorRef
 import akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage
+import akka.protobufv3.internal.ByteString
 import akka.protobufv3.internal.GeneratedMessageV3
+import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
+import akka.serialization.SerializerWithStringManifest
+import akka.util.ByteString.UTF_8
 import akka.util.ccompat._
+import akka.util.ccompat.JavaConverters._
 
 @ccompatUsedUntil213
 private object ReplicatedDataSerializer {

@@ -4,14 +4,14 @@
 
 package akka.stream.scaladsl
 
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.Future
+
 import akka.stream.AbruptTerminationException
 import akka.stream.Materializer
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
-
-import scala.collection.immutable
-import scala.concurrent.Await
-import scala.concurrent.Future
 
 class CollectionSinkSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

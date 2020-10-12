@@ -6,10 +6,11 @@ package akka.cluster.sharding
 
 import scala.concurrent.duration._
 
-import akka.actor.Props
-import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
+
+import akka.actor.Props
+import akka.testkit.TestProbe
 
 object ClusterShardingQueriesSpec {
   import MultiNodeClusterShardingSpec.PingPongActor

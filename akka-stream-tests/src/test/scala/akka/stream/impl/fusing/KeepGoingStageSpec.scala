@@ -4,8 +4,16 @@
 
 package akka.stream.impl.fusing
 
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+
 import akka.actor.ActorRef
 import akka.actor.NoSerializationVerificationNeeded
+import akka.stream.Attributes
+import akka.stream.Inlet
+import akka.stream.SinkShape
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.stream.stage.AsyncCallback
@@ -15,14 +23,6 @@ import akka.stream.stage.InHandler
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.Attributes
-import akka.stream.Inlet
-import akka.stream.SinkShape
-
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.Promise
 
 class KeepGoingStageSpec extends StreamSpec {
 

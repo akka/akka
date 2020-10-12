@@ -6,8 +6,18 @@ package akka.remote.transport
 
 import java.util.concurrent.TimeoutException
 
-import akka.actor.SupervisorStrategy.Stop
+import scala.collection.immutable
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+
+import akka.{ AkkaException, OnlyCauseStackTrace }
 import akka.actor._
+import akka.actor.SupervisorStrategy.Stop
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.pattern.pipe
 import akka.remote._
 import akka.remote.transport.ActorTransportAdapter._
@@ -18,15 +28,6 @@ import akka.remote.transport.ProtocolStateActor._
 import akka.remote.transport.Transport._
 import akka.util.ByteString
 import akka.util.Helpers.Requiring
-import akka.{ AkkaException, OnlyCauseStackTrace }
-import com.typesafe.config.Config
-
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.concurrent.{ Future, Promise }
-import scala.util.control.NonFatal
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import com.github.ghik.silencer.silent
 
 @SerialVersionUID(1L)
 class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException(msg, cause) with OnlyCauseStackTrace {
@@ -35,8 +36,9 @@ class AkkaProtocolException(msg: String, cause: Throwable) extends AkkaException
 
 private[remote] class AkkaProtocolSettings(config: Config) {
 
-  import akka.util.Helpers.ConfigOps
   import config._
+
+  import akka.util.Helpers.ConfigOps
 
   val TransportFailureDetectorConfig: Config = getConfig("akka.remote.classic.transport-failure-detector")
   val TransportFailureDetectorImplementationClass: String =

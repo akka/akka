@@ -6,26 +6,27 @@ package akka.actor.typed
 
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations.Benchmark
-import org.openjdk.jmh.annotations.Level
-import org.openjdk.jmh.annotations.OperationsPerInvocation
-import org.openjdk.jmh.annotations.Param
-import org.openjdk.jmh.annotations.Setup
-import akka.actor.typed.scaladsl.AskPattern._
 import org.openjdk.jmh.annotations.BenchmarkMode
 import org.openjdk.jmh.annotations.Fork
+import org.openjdk.jmh.annotations.Level
 import org.openjdk.jmh.annotations.Measurement
 import org.openjdk.jmh.annotations.Mode
+import org.openjdk.jmh.annotations.OperationsPerInvocation
+import org.openjdk.jmh.annotations.Param
 import org.openjdk.jmh.annotations.Scope
+import org.openjdk.jmh.annotations.Setup
 import org.openjdk.jmh.annotations.State
 import org.openjdk.jmh.annotations.TearDown
 import org.openjdk.jmh.annotations.Threads
 import org.openjdk.jmh.annotations.Warmup
 
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.Future
+import akka.actor.typed.scaladsl.AskPattern._
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
@@ -34,8 +35,8 @@ import scala.concurrent.Future
 @Warmup(iterations = 10, time = 5, timeUnit = TimeUnit.SECONDS, batchSize = 1)
 @Measurement(iterations = 10, time = 15, timeUnit = TimeUnit.SECONDS, batchSize = 1)
 class TypedForkJoinActorBenchmark {
-  import TypedForkJoinActorBenchmark._
   import TypedBenchmarkActors._
+  import TypedForkJoinActorBenchmark._
 
   @Param(Array("50"))
   var tpt = 0

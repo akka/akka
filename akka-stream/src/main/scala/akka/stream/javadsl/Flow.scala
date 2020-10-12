@@ -4,13 +4,22 @@
 
 package akka.stream.javadsl
 
+import java.util.Comparator
+import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 import java.util.function.Supplier
-import java.util.Comparator
-import java.util.Optional
-import java.util.concurrent.CompletableFuture
 
+import scala.annotation.unchecked.uncheckedVariance
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
+
+import com.github.ghik.silencer.silent
+import org.reactivestreams.Processor
+
+import akka.Done
+import akka.NotUsed
 import akka.actor.ActorRef
 import akka.actor.ClassicActorSystemProvider
 import akka.dispatch.ExecutionContexts
@@ -18,22 +27,12 @@ import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.Pair
 import akka.japi.Util
 import akka.japi.function
-import akka.stream._
-import akka.stream.impl.fusing.LazyFlow
-import akka.util.JavaDurationConverters._
-import akka.util.unused
-import akka.util.ConstantFun
-import akka.util.Timeout
-import akka.Done
-import akka.NotUsed
 import akka.japi.function.Creator
-import com.github.ghik.silencer.silent
-import org.reactivestreams.Processor
-
-import scala.annotation.unchecked.uncheckedVariance
-import scala.compat.java8.FutureConverters._
-import scala.concurrent.duration.FiniteDuration
-import scala.reflect.ClassTag
+import akka.stream._
+import akka.util.ConstantFun
+import akka.util.JavaDurationConverters._
+import akka.util.Timeout
+import akka.util.unused
 
 object Flow {
 
@@ -262,9 +261,9 @@ object Flow {
       flowFactory: function.Function[I, CompletionStage[Flow[I, O, M]]],
       fallback: function.Creator[M]): Flow[I, O, M] = {
     import scala.compat.java8.FutureConverters._
-    val sflow = scaladsl.Flow
-      .fromGraph(new LazyFlow[I, O, M](t => flowFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.parasitic)))
-      .mapMaterializedValue(_ => fallback.create())
+    val sflow = scaladsl.Flow.lazyInit(
+      (flowFactory.apply(_)).andThen(_.toScala.map(_.asScala)(ExecutionContexts.parasitic)),
+      fallback.create _)
     new Flow(sflow)
   }
 
@@ -303,8 +302,12 @@ object Flow {
    * The materialized completion stage value is completed with the materialized value of the future flow or failed with a
    * [[NeverMaterializedException]] if upstream fails or downstream cancels before the completion stage has completed.
    */
-  def completionStageFlow[I, O, M](flow: CompletionStage[Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] =
-    lazyCompletionStageFlow(() => flow)
+  def completionStageFlow[I, O, M](flow: CompletionStage[Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] = {
+    import scala.compat.java8.FutureConverters._
+    val sflow =
+      scaladsl.Flow.futureFlow(flow.toScala.map(_.asScala)(ExecutionContexts.parasitic)).mapMaterializedValue(_.toJava)
+    new javadsl.Flow(sflow)
+  }
 
   /**
    * Defers invoking the `create` function to create a future flow until there is downstream demand and passing
@@ -321,8 +324,15 @@ object Flow {
    *
    * '''Cancels when''' downstream cancels
    */
-  def lazyFlow[I, O, M](create: Creator[Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] =
-    lazyCompletionStageFlow(() => CompletableFuture.completedFuture(create.create()))
+  def lazyFlow[I, O, M](create: Creator[Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] = {
+    import scala.compat.java8.FutureConverters._
+    val sflow = scaladsl.Flow
+      .lazyFlow { () =>
+        create.create().asScala
+      }
+      .mapMaterializedValue(_.toJava)
+    new javadsl.Flow(sflow)
+  }
 
   /**
    * Defers invoking the `create` function to create a future flow until there downstream demand has caused upstream
@@ -364,7 +374,9 @@ object Flow {
 
 }
 
-/** Create a `Flow` which can process elements of type `T`. */
+/**
+ * A `Flow` is a set of stream processing steps that has one open input and one open output.
+ */
 final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
   import akka.util.ccompat.JavaConverters._
 
@@ -1502,7 +1514,6 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover(pf: PartialFunction[Throwable, Out]): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.recover(pf))
 
@@ -1521,7 +1532,6 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover(clazz: Class[_ <: Throwable], supplier: Supplier[Out]): javadsl.Flow[In, Out, Mat] =
     recover {
       case elem if clazz.isInstance(elem) => supplier.get()
@@ -1616,7 +1626,10 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    *
+   * @deprecated use `recoverWithRetries` instead
    */
+  @Deprecated
+  @deprecated("Use recoverWithRetries instead.", "2.6.6")
   def recoverWith(
       clazz: Class[_ <: Throwable],
       supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =

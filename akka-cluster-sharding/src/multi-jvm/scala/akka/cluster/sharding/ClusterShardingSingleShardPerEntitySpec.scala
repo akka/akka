@@ -4,12 +4,12 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
 import akka.actor._
 import akka.remote.testconductor.RoleName
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-
-import scala.concurrent.duration._
 
 /**
  * one-to-one mapping between shards and entities is not efficient but some use that anyway
@@ -45,7 +45,7 @@ abstract class ClusterShardingSingleShardPerEntitySpec
       startSharding(
         system,
         typeName = "Entity",
-        entityProps = Props[ShardedEntity],
+        entityProps = Props[ShardedEntity](),
         extractEntityId = MultiNodeClusterShardingSpec.intExtractEntityId,
         extractShardId = MultiNodeClusterShardingSpec.intExtractShardId))
   }

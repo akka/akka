@@ -5,10 +5,10 @@
 package akka.persistence.testkit.scaladsl
 
 import akka.actor.typed.ActorRef
-import akka.persistence.typed.RecoveryCompleted
-import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import akka.persistence.testkit.{ Cmd, CommonUtils, EmptyState, Evt, Passivate, Recovered, Stopped, TestCommand }
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.RecoveryCompleted
+import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 
 trait ScalaDslUtils extends CommonUtils {
 

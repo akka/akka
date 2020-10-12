@@ -4,11 +4,12 @@
 
 package akka.persistence
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Actor, Props }
 import akka.event.Logging
 import akka.event.Logging.Warning
 import akka.testkit.{ EventFilter, ImplicitSender, TestEvent }
-import com.typesafe.config.ConfigFactory
 
 object OptionalSnapshotStoreSpec {
 

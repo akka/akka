@@ -4,11 +4,9 @@
 
 package akka.pattern
 
-import akka.actor.ActorSystem
-import akka.testkit._
-
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
@@ -16,6 +14,9 @@ import scala.language.postfixOps
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+
+import akka.actor.ActorSystem
+import akka.testkit._
 
 object CircuitBreakerSpec {
 
@@ -73,7 +74,7 @@ object CircuitBreakerSpec {
     new Breaker(new CircuitBreaker(system.scheduler, 5, 200.millis.dilated, 500.millis.dilated))
 
   def nonOneFactorCb()(implicit system: ActorSystem, ec: ExecutionContext): Breaker =
-    new Breaker(new CircuitBreaker(system.scheduler, 1, 2000.millis.dilated, 1000.millis.dilated, 1.day.dilated, 5))
+    new Breaker(new CircuitBreaker(system.scheduler, 1, 2000.millis.dilated, 1000.millis.dilated, 1.day.dilated, 5, 0))
 
   val evenNumberIsFailure: Try[Int] => Boolean = {
     case Success(i) => i % 2 == 0
@@ -83,7 +84,7 @@ object CircuitBreakerSpec {
 
 class CircuitBreakerSpec extends AkkaSpec {
   import CircuitBreakerSpec._
-  implicit def ec = system.dispatcher
+  implicit def ec: ExecutionContextExecutor = system.dispatcher
 
   val awaitTimeout = 2.seconds.dilated
 
@@ -179,7 +180,7 @@ class CircuitBreakerSpec extends AkkaSpec {
       val breaker = shortResetTimeoutCb()
       intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
       checkLatch(breaker.halfOpenLatch)
-      breaker.openLatch.reset
+      breaker.openLatch.reset()
       intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
       checkLatch(breaker.openLatch)
     }
@@ -189,7 +190,7 @@ class CircuitBreakerSpec extends AkkaSpec {
         val breaker = shortResetTimeoutCb()
         intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
         checkLatch(breaker.halfOpenLatch)
-        breaker.openLatch.reset
+        breaker.openLatch.reset()
         breaker().withSyncCircuitBreaker(2, evenNumberIsFailure)
         checkLatch(breaker.openLatch)
       }
@@ -199,7 +200,7 @@ class CircuitBreakerSpec extends AkkaSpec {
       val breaker = shortResetTimeoutCb()
       intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
       checkLatch(breaker.halfOpenLatch)
-      breaker.openLatch.reset
+      breaker.openLatch.reset()
       breaker().fail()
       checkLatch(breaker.openLatch)
     }
@@ -450,7 +451,7 @@ class CircuitBreakerSpec extends AkkaSpec {
       checkLatch(breaker.halfOpenLatch)
 
       // transit to open again
-      breaker.openLatch.reset
+      breaker.openLatch.reset()
       breaker().withCircuitBreaker(Future(throwException))
       checkLatch(breaker.openLatch)
 
@@ -512,7 +513,7 @@ class CircuitBreakerSpec extends AkkaSpec {
       val breaker = shortResetTimeoutCb()
       breaker().withCircuitBreaker(Future(throwException))
       checkLatch(breaker.halfOpenLatch)
-      breaker.openLatch.reset
+      breaker.openLatch.reset()
       intercept[TestException] { Await.result(breaker().withCircuitBreaker(Future(throwException)), awaitTimeout) }
       checkLatch(breaker.openLatch)
     }
@@ -522,7 +523,7 @@ class CircuitBreakerSpec extends AkkaSpec {
         val breaker = shortResetTimeoutCb()
         intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
         checkLatch(breaker.halfOpenLatch)
-        breaker.openLatch.reset
+        breaker.openLatch.reset()
         Await.result(breaker().withCircuitBreaker(Future(2), evenNumberIsFailure), awaitTimeout)
         checkLatch(breaker.openLatch)
       }
@@ -533,7 +534,7 @@ class CircuitBreakerSpec extends AkkaSpec {
       breaker().withCircuitBreaker(Future(throwException))
       checkLatch(breaker.halfOpenLatch)
 
-      breaker.openLatch.reset
+      breaker.openLatch.reset()
       breaker().withCircuitBreaker(Future(throwException))
       checkLatch(breaker.openLatch)
     }

@@ -4,13 +4,14 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
 import akka.actor._
 import akka.cluster.MemberStatus
+import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.{ ClusterShardingStats, GetClusterShardingStats }
 import akka.testkit._
 import akka.util.ccompat._
-
-import scala.concurrent.duration._
 
 @ccompatUsedUntil213
 abstract class ClusterShardingMinMembersSpecConfig(mode: String)
@@ -57,8 +58,7 @@ abstract class ClusterShardingMinMembersSpec(multiNodeConfig: ClusterShardingMin
       entityProps = TestActors.echoActorProps,
       extractEntityId = MultiNodeClusterShardingSpec.intExtractEntityId,
       extractShardId = MultiNodeClusterShardingSpec.intExtractShardId,
-      allocationStrategy =
-        new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1),
+      allocationStrategy = ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 2, relativeLimit = 1.0),
       handOffStopMessage = ShardedEntity.Stop)
   }
 
@@ -67,7 +67,7 @@ abstract class ClusterShardingMinMembersSpec(multiNodeConfig: ClusterShardingMin
   s"Cluster with min-nr-of-members using sharding ($mode)" must {
 
     "use all nodes" in within(30.seconds) {
-      startPersistenceIfNotDdataMode(startOn = first, setStoreOn = Seq(first, second, third))
+      startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second, third))
 
       // the only test not asserting join status before starting to shard
       join(first, first, onJoinedRunOnFrom = startSharding(), assertNodeUp = false)

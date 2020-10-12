@@ -4,10 +4,11 @@
 
 package akka.cluster.ddata
 
+import java.math.BigInteger
+
+import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
-import java.math.BigInteger
-import akka.annotation.InternalApi
 
 object GCounter {
   val empty: GCounter = new GCounter

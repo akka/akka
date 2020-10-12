@@ -4,17 +4,18 @@
 
 package akka.dispatch
 
-import language.postfixOps
 import java.util.concurrent.{ BlockingQueue, ConcurrentLinkedQueue }
-
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
-import com.typesafe.config.{ Config, ConfigFactory }
-import akka.actor._
-import akka.testkit.{ AkkaSpec, EventFilter }
-import akka.util.unused
 
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory }
+import language.postfixOps
+import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
+
+import akka.actor._
+import akka.testkit.{ AkkaSpec, EventFilter }
+import akka.util.unused
 
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   def name: String
@@ -59,7 +60,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
       expectMsg(DeadLetter(exampleMessage.message, system.deadLetters, testActor))
       system.eventStream.unsubscribe(testActor, classOf[DeadLetter])
 
-      q.dequeue should ===(exampleMessage)
+      q.dequeue() should ===(exampleMessage)
       q.numberOfMessages should ===(config.capacity - 1)
       q.hasMessages should ===(true)
     }
@@ -97,7 +98,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
   def ensureSingleConsumerEnqueueDequeue(config: MailboxType): Unit = {
     val q = factory(config)
     ensureMailboxSize(q, 0)
-    q.dequeue should ===(null)
+    q.dequeue() should ===(null)
     for (i <- 1 to 100) {
       q.enqueue(testActor, exampleMessage)
       ensureMailboxSize(q, i)
@@ -110,7 +111,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
       ensureMailboxSize(q, i)
     }
 
-    q.dequeue should ===(null)
+    q.dequeue() should ===(null)
     ensureMailboxSize(q, 0)
   }
 
@@ -157,7 +158,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
       def createConsumer: Future[Vector[Envelope]] = spawn {
         var r = Vector[Envelope]()
 
-        while (producers.exists(_.isCompleted == false) || q.hasMessages) Option(q.dequeue).foreach { message =>
+        while (producers.exists(_.isCompleted == false) || q.hasMessages) Option(q.dequeue()).foreach { message =>
           r = r :+ message
         }
 

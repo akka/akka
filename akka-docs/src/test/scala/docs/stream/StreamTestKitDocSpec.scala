@@ -4,12 +4,14 @@
 
 package docs.stream
 
-import akka.stream._
-import akka.stream.scaladsl._
-import akka.stream.testkit.scaladsl._
 import scala.util._
 import scala.concurrent.duration._
 import scala.concurrent._
+
+import akka.Done
+import akka.stream._
+import akka.stream.scaladsl._
+import akka.stream.testkit.scaladsl._
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.pattern
 
@@ -67,10 +69,12 @@ class StreamTestKitDocSpec extends AkkaSpec {
     val sourceUnderTest = Source.tick(0.seconds, 200.millis, Tick)
 
     val probe = TestProbe()
-    val cancellable = sourceUnderTest.to(Sink.actorRef(probe.ref, "completed")).run()
+    val cancellable = sourceUnderTest
+      .to(Sink.actorRef(probe.ref, onCompleteMessage = "completed", onFailureMessage = _ => "failed"))
+      .run()
 
     probe.expectMsg(1.second, Tick)
-    probe.expectNoMsg(100.millis)
+    probe.expectNoMessage(100.millis)
     probe.expectMsg(3.seconds, Tick)
     cancellable.cancel()
     probe.expectMsg(3.seconds, "completed")
@@ -81,12 +85,23 @@ class StreamTestKitDocSpec extends AkkaSpec {
     //#source-actorref
     val sinkUnderTest = Flow[Int].map(_.toString).toMat(Sink.fold("")(_ + _))(Keep.right)
 
-    val (ref, future) = Source.actorRef(8, OverflowStrategy.fail).toMat(sinkUnderTest)(Keep.both).run()
+    val (ref, future) = Source
+      .actorRef(
+        completionMatcher = {
+          case Done =>
+            CompletionStrategy.draining
+        },
+        // Never fail the stream because of a message:
+        failureMatcher = PartialFunction.empty,
+        bufferSize = 8,
+        overflowStrategy = OverflowStrategy.fail)
+      .toMat(sinkUnderTest)(Keep.both)
+      .run()
 
     ref ! 1
     ref ! 2
     ref ! 3
-    ref ! akka.actor.Status.Success(CompletionStrategy.draining)
+    ref ! Done
 
     val result = Await.result(future, 3.seconds)
     assert(result == "123")
@@ -116,9 +131,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     val (probe, future) = TestSource.probe[Int].toMat(sinkUnderTest)(Keep.both).run()
     probe.sendError(new Exception("boom"))
 
-    Await.ready(future, 3.seconds)
-    val Failure(exception) = future.value.get
-    assert(exception.getMessage == "boom")
+    assert(future.failed.futureValue.getMessage == "boom")
     //#injecting-failure
   }
 

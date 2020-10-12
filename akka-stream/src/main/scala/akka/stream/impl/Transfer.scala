@@ -5,6 +5,7 @@
 package akka.stream.impl
 
 import scala.util.control.NonFatal
+
 import akka.actor.Actor
 import akka.annotation.InternalApi
 

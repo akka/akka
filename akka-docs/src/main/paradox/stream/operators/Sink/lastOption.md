@@ -4,13 +4,10 @@ Materialize a @scala[`Future[Option[T]]`] @java[`CompletionStage<Optional<T>>`] 
 
 @ref[Sink operators](../index.md#sink-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #lastOption }
+@apidoc[Sink.lastOption](Sink$) { scala="#lastOption[T]:akka.stream.scaladsl.Sink[T,scala.concurrent.Future[Option[T]]]" java="#lastOption()" }
 
-@@@
 
 ## Description
 

@@ -4,18 +4,18 @@
 
 package akka.persistence.typed.internal
 
-import akka.actor.typed.Signal
-import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.{ ActorRef, Cancellable }
-import akka.annotation.InternalApi
-import akka.persistence._
-import akka.persistence.typed.scaladsl.{ EventSourcedBehavior, RetentionCriteria }
-import akka.persistence.typed.{ EventAdapter, PersistenceId, SnapshotAdapter }
-import akka.util.OptionVal
-import org.slf4j.{ Logger, MDC }
-
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
+import org.slf4j.{ Logger, MDC }
+import akka.actor.{ Cancellable, ActorRef => ClassicActorRef }
+import akka.actor.typed.Signal
+import akka.actor.typed.scaladsl.ActorContext
+import akka.annotation.InternalApi
+import akka.persistence._
+import akka.persistence.typed.ReplicaId
+import akka.persistence.typed.{ EventAdapter, PersistenceId, SnapshotAdapter }
+import akka.persistence.typed.scaladsl.{ EventSourcedBehavior, RetentionCriteria }
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -47,18 +47,23 @@ private[akka] final class BehaviorSetup[C, E, S](
     val retention: RetentionCriteria,
     var holdingRecoveryPermit: Boolean,
     val settings: EventSourcedSettings,
-    val stashState: StashState) {
+    val stashState: StashState,
+    val replication: Option[ReplicationSetup],
+    val publishEvents: Boolean) {
 
   import BehaviorSetup._
   import InternalProtocol.RecoveryTickEvent
+
   import akka.actor.typed.scaladsl.adapter._
 
   val persistence: Persistence = Persistence(context.system.toClassic)
 
-  val journal: ActorRef = persistence.journalFor(settings.journalPluginId)
-  val snapshotStore: ActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
+  val journal: ClassicActorRef = persistence.journalFor(settings.journalPluginId)
+  val snapshotStore: ClassicActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
 
-  def selfClassic: ActorRef = context.self.toClassic
+  val replicaId: Option[ReplicaId] = replication.map(_.replicaId)
+
+  def selfClassic: ClassicActorRef = context.self.toClassic
 
   private var mdcPhase = PersistenceMdc.Initializing
   def log: Logger = {

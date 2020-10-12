@@ -4,13 +4,11 @@ Filter the incoming elements using a predicate.
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #filterNot }
+@apidoc[Source.filterNot](Source) { scala="#filterNot(p:Out=&gt;Boolean):FlowOps.this.Repr[Out]" java="#filterNot(akka.japi.function.Predicate)" }
+@apidoc[Flow.filterNot](Flow) { scala="#filterNot(p:Out=&gt;Boolean):FlowOps.this.Repr[Out]" java="#filterNot(akka.japi.function.Predicate)" }
 
-@@@
 
 ## Description
 

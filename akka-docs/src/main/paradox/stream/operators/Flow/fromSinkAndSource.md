@@ -34,7 +34,7 @@ Java
 
 With this server running you could use `telnet 127.0.0.1 9999` to see a stream of timestamps being printed, one every second. 
 
-The following sample is a little bit more advanced and uses the @apidoc[MergeHub] to dynamically merge incoming messages to a single stream which is then fed into a @apidoc[BroadcastHub] which emits elements over a dynamic set of downstreams allowing us to create a simplistic little TCP chat server in which a text entered from one client is emitted to all connected clients.
+The following sample is a little bit more advanced and uses the @apidoc[MergeHub$] to dynamically merge incoming messages to a single stream which is then fed into a @apidoc[BroadcastHub$] which emits elements over a dynamic set of downstreams allowing us to create a simplistic little TCP chat server in which a text entered from one client is emitted to all connected clients.
 
 Scala
 :   @@snip [FromSinkAndSource.scala](/akka-docs/src/test/scala/docs/stream/operators/flow/FromSinkAndSource.scala) { #chat }

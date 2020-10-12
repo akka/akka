@@ -30,6 +30,12 @@ Users should pick one of the built in extensions.
 Akka DNS is a pluggable way to interact with DNS. Implementations much implement `akka.io.DnsProvider` and provide a configuration
 block that specifies the implementation via `provider-object`.
 
+@@@ note { title="DNS via Akka Discovery" }
+
+@ref[Akka Discovery](discovery/index.md) can be backed by the Akka DNS implementation and provides a more general API for service lookups which is not limited to domain name lookup.
+
+@@@
+
 To select which `DnsProvider` to use set `akka.io.dns.resolver ` to the location of the configuration.
 
 There are currently two implementations:

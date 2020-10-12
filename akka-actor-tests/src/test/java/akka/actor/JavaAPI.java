@@ -91,7 +91,7 @@ public class JavaAPI extends JUnitSuite {
   public void mustBeAbleToCreateActorWIthConstructorParams() {
     ActorRef ref =
         system.actorOf(
-            Props.create(ActorWithConstructorParams.class, "a", "b", new Integer(17), 18));
+            Props.create(ActorWithConstructorParams.class, "a", "b", Integer.valueOf(17), 18));
     final TestProbe probe = new TestProbe(system);
     probe.send(ref, "get");
     probe.expectMsg("a-b-17-18");
@@ -101,7 +101,7 @@ public class JavaAPI extends JUnitSuite {
   public void mustBeAbleToCreateActorWIthBoxedAndUnBoxedConstructorParams() {
     ActorRef ref =
         system.actorOf(
-            Props.create(ActorWithConstructorParams.class, "a", "b", 17, new Integer(18)));
+            Props.create(ActorWithConstructorParams.class, "a", "b", 17, Integer.valueOf(18)));
     final TestProbe probe = new TestProbe(system);
     probe.send(ref, "get");
     probe.expectMsg("a-b-17-18");

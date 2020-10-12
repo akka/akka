@@ -6,13 +6,16 @@ package akka.osgi
 
 import java.net.URL
 import java.util.Enumeration
-import org.osgi.framework.{ Bundle, BundleContext }
-import scala.util.Try
-import org.osgi.framework.wiring.{ BundleRevision, BundleWire, BundleWiring }
-import akka.util.ccompat.JavaConverters._
-import scala.util.Success
-import scala.util.Failure
+
 import scala.annotation.tailrec
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
+import org.osgi.framework.{ Bundle, BundleContext }
+import org.osgi.framework.wiring.{ BundleRevision, BundleWire, BundleWiring }
+
+import akka.util.ccompat.JavaConverters._
 
 /*
  * Companion object to create bundle delegating ClassLoader instances

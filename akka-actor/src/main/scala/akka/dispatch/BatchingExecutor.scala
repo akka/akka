@@ -4,10 +4,11 @@
 
 package akka.dispatch
 
-import java.util.concurrent.{ Executor }
 import java.util.ArrayDeque
-import scala.concurrent._
+import java.util.concurrent.Executor
+
 import scala.annotation.tailrec
+import scala.concurrent._
 
 /**
  * All Batchables are automatically batched when submitted to a BatchingExecutor

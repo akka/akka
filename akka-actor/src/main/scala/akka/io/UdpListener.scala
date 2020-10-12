@@ -10,12 +10,13 @@ import java.nio.channels.SelectionKey._
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
+
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.util.ByteString
 import akka.io.Inet.DatagramChannelCreator
 import akka.io.SelectionHandler._
 import akka.io.Udp._
+import akka.util.ByteString
 
 /**
  * INTERNAL API

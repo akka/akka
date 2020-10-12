@@ -4,9 +4,11 @@
 
 package akka.cluster.ddata
 
-import akka.cluster.UniqueAddress
-import scala.compat.java8.OptionConverters._
 import java.util.Optional
+
+import scala.compat.java8.OptionConverters._
+
+import akka.cluster.UniqueAddress
 
 /**
  * Interface for implementing a state based convergent

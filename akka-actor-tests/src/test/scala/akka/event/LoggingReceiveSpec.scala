@@ -4,16 +4,17 @@
 
 package akka.event
 
-import language.postfixOps
-
-import org.scalatest.BeforeAndAfterAll
-import scala.concurrent.duration._
-import akka.testkit._
-import org.scalatest.wordspec.AnyWordSpec
-import com.typesafe.config.ConfigFactory
-import akka.util.ccompat.JavaConverters._
-import akka.actor._
 import scala.annotation.tailrec
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import language.postfixOps
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor._
+import akka.testkit._
+import akka.util.ccompat.JavaConverters._
 
 object LoggingReceiveSpec {
   class TestLogActor extends Actor {
@@ -195,7 +196,7 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
         within(3 seconds) {
           val lifecycleGuardian = appLifecycle.asInstanceOf[ActorSystemImpl].guardian
           val lname = lifecycleGuardian.path.toString
-          val supervisor = TestActorRef[TestLogActor](Props[TestLogActor])
+          val supervisor = TestActorRef[TestLogActor](Props[TestLogActor]())
           val sname = supervisor.path.toString
 
           fishForMessage(hint = "now supervising") {
@@ -203,7 +204,7 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
             case _                                                                           => false
           }
 
-          TestActorRef[TestLogActor](Props[TestLogActor], supervisor, "none")
+          TestActorRef[TestLogActor](Props[TestLogActor](), supervisor, "none")
 
           fishForMessage(hint = "now supervising") {
             case Logging.Debug(`sname`, _, msg: String) if msg.startsWith("now supervising") => true
@@ -217,9 +218,9 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
       new TestKit(appLifecycle) {
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         within(3 seconds) {
-          val supervisor = TestActorRef[TestLogActor](Props[TestLogActor])
+          val supervisor = TestActorRef[TestLogActor](Props[TestLogActor]())
           val sclass = classOf[TestLogActor]
-          val actor = TestActorRef[TestLogActor](Props[TestLogActor], supervisor, "none")
+          val actor = TestActorRef[TestLogActor](Props[TestLogActor](), supervisor, "none")
           val aname = actor.path.toString
 
           supervisor.watch(actor)
@@ -242,7 +243,7 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
         system.eventStream.subscribe(testActor, classOf[Logging.Error])
         within(3 seconds) {
-          val supervisor = TestActorRef[TestLogActor](Props[TestLogActor])
+          val supervisor = TestActorRef[TestLogActor](Props[TestLogActor]())
           val sname = supervisor.path.toString
           val sclass = classOf[TestLogActor]
 
@@ -251,7 +252,7 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
             case Logging.Debug(_, _, msg: String) if msg.startsWith("now supervising")      => 1
           }
 
-          val actor = TestActorRef[TestLogActor](Props[TestLogActor], supervisor, "none")
+          val actor = TestActorRef[TestLogActor](Props[TestLogActor](), supervisor, "none")
           val aname = actor.path.toString
           val aclass = classOf[TestLogActor]
 

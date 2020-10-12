@@ -5,11 +5,13 @@
 package akka.actor
 
 import java.lang.reflect.{ Modifier, ParameterizedType, TypeVariable }
+import java.lang.reflect.Constructor
+
+import scala.annotation.tailrec
+import scala.annotation.varargs
+
 import akka.japi.Creator
 import akka.util.Reflect
-import scala.annotation.varargs
-import scala.annotation.tailrec
-import java.lang.reflect.Constructor
 
 /**
  *
@@ -20,9 +22,15 @@ private[akka] trait AbstractProps {
   /**
    * INTERNAL API
    */
-  private[akka] def validate(clazz: Class[_]) =
-    if (Modifier.isAbstract(clazz.getModifiers))
+  private[akka] def validate(clazz: Class[_]): Unit = {
+    if (Modifier.isAbstract(clazz.getModifiers)) {
       throw new IllegalArgumentException(s"Actor class [${clazz.getName}] must not be abstract")
+    } else if (!classOf[Actor].isAssignableFrom(clazz) &&
+               !classOf[IndirectActorProducer].isAssignableFrom(clazz)) {
+      throw new IllegalArgumentException(
+        s"Actor class [${clazz.getName}] must be subClass of akka.actor.Actor or akka.actor.IndirectActorProducer.")
+    }
+  }
 
   /**
    * Java API: create a Props given a class and its constructor arguments.

@@ -4,6 +4,11 @@
 
 package akka.cluster.sharding.typed
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.ScalaFutures
+
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.Behavior
 import akka.actor.typed.receptionist.Receptionist
@@ -16,10 +21,6 @@ import akka.cluster.typed.MultiNodeTypedClusterSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.jackson.CborSerializable
-import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
-
-import scala.concurrent.duration._
 
 object ShardedDaemonProcessSpec extends MultiNodeConfig {
   val first = role("first")
@@ -91,7 +92,7 @@ abstract class ShardedDaemonProcessSpec
 
     "init actor set" in {
       ShardedDaemonProcess(typedSystem).init("the-fearless", 4, id => ProcessActor(id))
-      enterBarrier("actor-set-initialized")
+      enterBarrier("sharded-daemon-process-initialized")
       runOn(first) {
         val startedIds = (0 to 3).map { _ =>
           val event = probe.expectMessageType[ProcessActorEvent](5.seconds)
@@ -100,7 +101,7 @@ abstract class ShardedDaemonProcessSpec
         }.toSet
         startedIds.size should ===(4)
       }
-      enterBarrier("actor-set-started")
+      enterBarrier("sharded-daemon-process-started")
     }
 
     // FIXME test removing one cluster node and verify all are alive (how do we do that?)

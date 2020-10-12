@@ -4,11 +4,13 @@
 
 package akka.actor.testkit.typed.javadsl
 
-import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
-import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
-import akka.actor.typed.{ ActorRef, Behavior, Signal }
-import akka.annotation.{ ApiMayChange, DoNotInherit }
 import java.util.concurrent.ThreadLocalRandom
+
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
+import akka.actor.typed.{ ActorRef, Behavior, Signal }
+import akka.actor.typed.receptionist.Receptionist
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 
 object BehaviorTestKit {
   import akka.actor.testkit.typed.scaladsl.TestInbox.address
@@ -75,7 +77,7 @@ abstract class BehaviorTestKit[T] {
   /**
    * The self reference of the actor living inside this testkit.
    */
-  def getRef(): ActorRef[T] = selfInbox.getRef()
+  def getRef(): ActorRef[T] = selfInbox().getRef()
 
   /**
    * Requests all the effects. The effects are consumed, subsequent calls will only
@@ -141,4 +143,9 @@ abstract class BehaviorTestKit[T] {
    * Clear the log entries
    */
   def clearLog(): Unit
+
+  /**
+   * The receptionist inbox contains messages sent to `system.receptionist`
+   */
+  def receptionistInbox(): TestInbox[Receptionist.Command]
 }

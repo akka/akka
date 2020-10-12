@@ -7,7 +7,11 @@ package akka.cluster.client
 import java.net.URLEncoder
 
 import scala.collection.immutable
+import scala.collection.immutable.{ HashMap, HashSet }
 import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorLogging
@@ -34,14 +38,11 @@ import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.cluster.pubsub._
 import akka.japi.Util.immutableSeq
+import akka.remote.DeadlineFailureDetector
 import akka.routing.ConsistentHash
 import akka.routing.MurmurHash
-import com.typesafe.config.Config
-import akka.remote.DeadlineFailureDetector
 import akka.util.MessageBuffer
 import akka.util.ccompat._
-
-import scala.collection.immutable.{ HashMap, HashSet }
 
 @ccompatUsedUntil213
 @deprecated(
@@ -560,7 +561,7 @@ object ClusterClientReceptionist extends ExtensionId[ClusterClientReceptionist] 
   override def get(system: ActorSystem): ClusterClientReceptionist = super.get(system)
   override def get(system: ClassicActorSystemProvider): ClusterClientReceptionist = super.get(system)
 
-  override def lookup() = ClusterClientReceptionist
+  override def lookup = ClusterClientReceptionist
 
   override def createExtension(system: ExtendedActorSystem): ClusterClientReceptionist =
     new ClusterClientReceptionist(system)
@@ -948,9 +949,8 @@ final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterRecep
     extends Actor
     with ActorLogging {
 
-  import DistributedPubSubMediator.{ Publish, Send, SendToAll }
-
   import ClusterReceptionist.Internal._
+  import DistributedPubSubMediator.{ Publish, Send, SendToAll }
   import settings._
 
   val cluster = Cluster(context.system)

@@ -4,11 +4,12 @@
 
 package akka.actor
 
-import akka.testkit.{ AkkaSpec, TestProbe }
+import scala.util.control.NoStackTrace
+
 import akka.actor.SupervisorStrategy.{ Restart, Stop }
 import akka.dispatch.sysmsg.SystemMessage
 import akka.event.EventStream
-import scala.util.control.NoStackTrace
+import akka.testkit.{ AkkaSpec, TestProbe }
 
 object UidClashTest {
 
@@ -76,7 +77,7 @@ object UidClashTest {
         Stop
       case _ => Restart
     }
-    val theRestartedOne = context.actorOf(Props[RestartedActor], "theRestartedOne")
+    val theRestartedOne = context.actorOf(Props[RestartedActor](), "theRestartedOne")
 
     def receive = {
       case PleaseRestart   => theRestartedOne ! PleaseRestart

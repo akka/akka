@@ -3,16 +3,18 @@ project.description: Shard a clustered compute process across the network with l
 ---
 # Cluster Sharding
 
-For the Akka Classic documentation of this feature see @ref:[Classic Cluster Sharding](../cluster-sharding.md)
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Cluster Sharding](../cluster-sharding.md)
 
 ## Module info
 
 To use Akka Cluster Sharding, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-cluster-sharding-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-cluster-sharding-typed_$scala.binary.version$
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-cluster-sharding-typed" }
@@ -162,9 +164,33 @@ The `number-of-shards` configuration value must be the same for all nodes in the
 configuration check when joining. Changing the value requires stopping all nodes in the cluster.
 
 The shards are allocated to the nodes in the cluster. The decision of where to allocate a shard is done
-by a shard allocation strategy. The default implementation @apidoc[ShardCoordinator.LeastShardAllocationStrategy]
-allocates new shards to the `ShardRegion` (node) with least number of previously allocated shards.
-This strategy can be replaced by an application specific implementation.
+by a shard allocation strategy. 
+
+The default implementation `LeastShardAllocationStrategy` allocates new shards to the `ShardRegion` (node) with least
+number of previously allocated shards. This strategy can be replaced by an application specific implementation.
+
+When a node is added to the cluster the shards on the existing nodes will be rebalanced to the new node.
+The `LeastShardAllocationStrategy` picks shards for rebalancing from the `ShardRegion`s with most number
+of previously allocated shards. They will then be allocated to the `ShardRegion` with least number of
+previously allocated shards, i.e. new members in the cluster. The amount of shards to rebalance in each
+round can be limited to make it progress slower since rebalancing too many shards at the same time could
+result in additional load on the system. For example, causing many Event Sourced entites to be started
+at the same time.
+
+A new rebalance algorithm was included in Akka 2.6.10. It can reach optimal balance in a few rebalance rounds
+(typically 1 or 2 rounds). For backwards compatibility the new algorithm is not enabled by default.
+The new algorithm is recommended and will become the default in future versions of Akka.
+You enable the new algorithm by setting `rebalance-absolute-limit` > 0, for example:
+
+```
+akka.cluster.sharding.least-shard-allocation-strategy.rebalance-absolute-limit = 20
+``` 
+
+The `rebalance-absolute-limit` is the maximum number of shards that will be rebalanced in one rebalance round.
+
+You may also want to tune the `akka.cluster.sharding.least-shard-allocation-strategy.rebalance-relative-limit`.
+The `rebalance-relative-limit` is a fraction (< 1.0) of total number of (known) shards that will be rebalanced
+in one rebalance round. The lower result of `rebalance-relative-limit` and `rebalance-absolute-limit` will be used.
 
 ### External shard allocation
 
@@ -210,66 +236,6 @@ See the API documentation of @scala[`akka.cluster.sharding.ShardAllocationStrate
 
 See @ref:[Cluster Sharding concepts](cluster-sharding-concepts.md).
 
-## Sharding State Store Mode
-
-There are two cluster sharding states managed:
-
-1. @ref:[ShardCoordinator State](cluster-sharding-concepts.md#shardcoordinator-state) - the `Shard` locations
-1. @ref:[Remembering Entities](#remembering-entities) - the entities in each `Shard`, which is optional, and disabled by default
- 
-For these, there are currently two modes which define how these states are stored:
-
-* @ref:[Distributed Data Mode](#distributed-data-mode) - uses Akka @ref:[Distributed Data](distributed-data.md) (CRDTs) (the default)
-* @ref:[Persistence Mode](#persistence-mode) - (deprecated) uses Akka @ref:[Persistence](persistence.md) (Event Sourcing)
-
-@@include[cluster.md](../includes/cluster.md) { #sharding-persistence-mode-deprecated }
- 
-Changing the mode requires @ref:[a full cluster restart](../additional/rolling-updates.md#cluster-sharding-configuration-change).
-
-### Distributed Data Mode
-
-This mode is enabled with configuration (enabled by default):
-
-```
-akka.cluster.sharding.state-store-mode = ddata
-```
-
-The state of the `ShardCoordinator` is replicated across the cluster but is not durable, not stored to disk.
-The `ShardCoordinator` state replication is handled by @ref:[Distributed Data](distributed-data.md) with `WriteMajority`/`ReadMajority` consistency.
-When all nodes in the cluster have been stopped, the state is no longer needed and dropped.
-
-The state of @ref:[Remembering Entities](#remembering-entities) is durable and stored to
-disk. This means remembered entities are restarted even after a complete (non-rolling) cluster restart when the disk is still available.
-
-Cluster Sharding uses its own Distributed Data `Replicator` per node. 
-If using roles with sharding there is one `Replicator` per role, which enables a subset of
-all nodes for some entity types and another subset for other entity types. Each such replicator has a name
-that contains the node role and therefore the role configuration must be the same on all nodes in the
-cluster, for example you can't change the roles when performing a rolling upgrade.
-Changing roles requires @ref:[a full cluster restart](../additional/rolling-updates.md#cluster-sharding-configuration-change).
-
-The settings for Distributed Data are configured in the section
-`akka.cluster.sharding.distributed-data`. It's not possible to have different
-`distributed-data` settings for different sharding entity types.
-
-### Persistence Mode
-
-This mode is enabled with configuration:
-
-```
-akka.cluster.sharding.state-store-mode = persistence
-```
-
-Since it is running in a cluster @ref:[Persistence](persistence.md) must be configured with a distributed journal.
-
-@@@ note
-
-Persistence mode for @ref:[Remembering Entities](#remembering-entities) will be replaced by a pluggable data access API with storage implementations,
-see @github[#27763](#27763).
-New sharding applications should no longer choose persistence mode. Existing users of persistence mode
-[can eventually migrate to the replacement options](https://github.com/akka/akka/issues/26177). 
-
-@@@
 
 ## Passivation
 
@@ -315,32 +281,163 @@ to the `ActorRef` or messages that the actor sends to itself are not counted in 
 Passivation can be disabled by setting `akka.cluster.sharding.passivate-idle-entity-after = off`.
 It is disabled automatically if @ref:[Remembering Entities](#remembering-entities) is enabled.
 
+## Sharding State 
+
+There are two types of state managed:
+
+1. @ref:[ShardCoordinator State](cluster-sharding-concepts.md#shardcoordinator-state) - the `Shard` locations. This is stored in the `State Store`.
+1. @ref:[Remembering Entities](#remembering-entities) - the active shards and the entities in each `Shard`, which is optional, and disabled by default. This is stored in the `Remember Entities Store`. 
+ 
+
+### State Store
+
+A state store is mandatory for sharding, it contains the location of shards. The `ShardCoordinator` needs to load this state after
+it moves between nodes.
+
+There are two options for the state store:
+
+* @ref:[Distributed Data Mode](#distributed-data-mode) - uses Akka @ref:[Distributed Data](distributed-data.md) (CRDTs) (the default)
+* @ref:[Persistence Mode](#persistence-mode) - (deprecated) uses Akka @ref:[Persistence](persistence.md) (Event Sourcing)
+
+@@include[cluster.md](../includes/cluster.md) { #sharding-persistence-mode-deprecated }
+
+#### Distributed Data Mode
+
+To enable distributed data store mode (the default):
+
+```
+akka.cluster.sharding.state-store-mode = ddata
+```
+
+The state of the `ShardCoordinator` is replicated across the cluster but is not stored to disk.
+@ref:[Distributed Data](distributed-data.md) handles the `ShardCoordinator`'s state with `WriteMajorityPlus`/`ReadMajorityPlus` consistency.
+When all nodes in the cluster have been stopped, the state is no longer needed and dropped.
+
+Cluster Sharding uses its own Distributed Data `Replicator` per node. 
+If using roles with sharding there is one `Replicator` per role, which enables a subset of
+all nodes for some entity types and another subset for other entity types. Each replicator has a name
+that contains the node role and therefore the role configuration must be the same on all nodes in the
+cluster, for example you can't change the roles when performing a rolling update.
+Changing roles requires @ref:[a full cluster restart](../additional/rolling-updates.md#cluster-sharding-configuration-change).
+
+The `akka.cluster.sharding.distributed-data` config section configures the settings for Distributed Data. 
+It's not possible to have different `distributed-data` settings for different sharding entity types.
+
+#### Persistence mode
+
+To enable persistence store mode:
+
+```
+akka.cluster.sharding.state-store-mode = persistence
+```
+
+Since it is running in a cluster @ref:[Persistence](persistence.md) must be configured with a distributed journal.
+
+@@@ warning 
+
+Persistence mode for @ref:[Remembering Entities](#remembering-entities) has been replaced by a remember entities state mode. It should not be
+used for new projects and existing projects should migrate as soon as possible.
+
+@@@
+
 ## Remembering Entities
 
-Remembering entities pertains to restarting entities after a rebalance or recovering from a crash.
-Enabling or disabling (the default) this feature drives the behavior of the restarts:
+Remembering entities automatically restarts entities after a rebalance or entity crash. 
+Without remembered entities restarts happen on the arrival of a message.
 
-* enabled: entities are restarted, even though no new messages are sent to them. This will also disable @ref:[Automtic Passivation](#passivation).
-* disabled: entities are restarted, on demand when a new message arrives.
+Enabling remembered entities disables @ref:[Automatic Passivation](#passivation).
 
-Note that the state of the entities themselves will not be restored unless they have been made persistent,
+The state of the entities themselves is not restored unless they have been made persistent,
 for example with @ref:[Event Sourcing](persistence.md).
 
-To make the list of entities in each `Shard` persistent (durable) set the `rememberEntities` flag to true in
+To enable remember entities set `rememberEntities` flag to true in
 `ClusterShardingSettings` when starting a shard region (or its proxy) for a given `entity` type or configure
 `akka.cluster.sharding.remember-entities = on`.
 
-The performance cost of `rememberEntities` is rather high when starting/stopping entities and when
-shards are rebalanced. This cost increases with number of entities per shard, thus it is not
-recommended with more than 10000 active entities per shard.  
+Starting and stopping entities has an overhead but this is limited by batching operations to the
+underlying remember entities store.
 
 ### Behavior When Enabled 
 
 When `rememberEntities` is enabled, whenever a `Shard` is rebalanced onto another
-node or recovers after a crash it will recreate all the entities which were previously
-running in that `Shard`. To permanently stop entities, a `Passivate` message must be
-sent to the parent of the entity actor, otherwise the entity will be automatically
-restarted after the entity restart backoff specified in the configuration.
+node or recovers after a crash, it will recreate all the entities which were previously
+running in that `Shard`. 
+
+To permanently stop entities send a `ClusterSharding.Passivate` to the
+@scala[`ActorRef[ShardCommand]`]@java[`ActorRef<ShardCommand>`] that was passed in to
+the factory method when creating the entity.
+Otherwise, the entity will be automatically restarted after the entity restart backoff specified in the configuration.
+
+### Remember entities store
+
+There are two options for the remember entities store:
+
+1. `ddata` 
+1. `eventsourced` 
+
+#### Remember entities distributed data mode
+
+Enable ddata mode with (enabled by default):
+
+```
+akka.cluster.sharding.remember-entities-store = ddata
+```
+
+To support restarting entities after a full cluster restart (non-rolling) the remember entities store is persisted to disk by distributed data.
+This can be disabled if not needed:
+```
+akka.cluster.sharding.distributed-data.durable.keys = []
+```
+
+Reasons for disabling:
+
+* No requirement for remembering entities after a full cluster shutdown
+* Running in an environment without access to disk between restarts e.g. Kubernetes without persistent volumes
+
+For supporting remembered entities in an environment without disk storage use `eventsourced` mode instead.
+
+#### Event sourced mode
+
+Enable `eventsourced` mode with:
+
+```
+akka.cluster.sharding.remember-entities-store = eventsourced
+```
+
+This mode uses @ref:[Event Sourcing](./persistence.md) to store the active shards and active entities for each shard 
+so a persistence and snapshot plugin must be configured.
+
+```
+akka.cluster.sharding.journal-plugin-id = <plugin>
+akka.cluster.sharding.snapshot-plugin-id = <plugin>
+```
+
+### Migrating from deprecated persistence mode
+
+If not using remembered entities you can migrate to ddata with a full cluster restart.
+
+If using remembered entities there are two migration options: 
+
+* `ddata` for the state store and `ddata` for remembering entities. All remembered entities will be lost after a full cluster restart.
+* `ddata` for the state store and `eventsourced` for remembering entities. The new `eventsourced` remembering entities store 
+   reads the data written by the old `persistence` mode. Your remembered entities will be remembered after a full cluster restart. 
+
+For migrating existing remembered entities an event adapter needs to be configured in the config for the journal you use in your `application.conf`.
+In this example `cassandra` is the used journal:
+
+```
+akka.persistence.cassandra.journal {
+  event-adapters {
+    coordinator-migration = "akka.cluster.sharding.OldCoordinatorStateMigrationEventAdapter"
+  }
+
+  event-adapter-bindings {
+    "akka.cluster.sharding.ShardCoordinator$Internal$DomainEvent" = coordinator-migration
+  }
+}
+```
+
+Once you have migrated you cannot go back to the old persistence store, a rolling update is therefore not possible.
 
 When @ref:[Distributed Data mode](#distributed-data-mode) is used the identifiers of the entities are
 stored in @ref:[Durable Storage](distributed-data.md#durable-storage) of Distributed Data. You may want to change the
@@ -356,14 +453,7 @@ you can disable durable storage and benefit from better performance by using the
 ```
 akka.cluster.sharding.distributed-data.durable.keys = []
 ```
-
-### Behavior When Not Enabled 
-
-When `rememberEntities` is disabled (the default), a `Shard` will not automatically restart any entities
-after a rebalance or recovering from a crash. Instead, entities are started once the first message
-for that entity has been received in the `Shard`.
-
-### Startup after minimum number of members
+## Startup after minimum number of members
 
 It's recommended to use Cluster Sharding with the Cluster setting `akka.cluster.min-nr-of-members` or
 `akka.cluster.role.<role-name>.min-nr-of-members`. `min-nr-of-members` will defer the allocation of the shards
@@ -373,6 +463,60 @@ rebalanced to other nodes.
 
 See @ref:[How To Startup when Cluster Size Reached](cluster.md#how-to-startup-when-a-cluster-size-is-reached)
 for more information about `min-nr-of-members`.
+
+## Health check
+
+An [Akka Management compatible health check](https://doc.akka.io/docs/akka-management/current/healthchecks.html) is included that returns healthy once the local shard region
+has registered with the coordinator. This health check should be used in cases where you don't want to receive production traffic until the local shard region is ready to retrieve locations
+for shards. For shard regions that aren't critical and therefore should not block this node becoming ready do not include them.
+
+The health check does not fail after an initial successful check. Once a shard region is registered and is operational it stays available for incoming message. 
+
+Cluster sharding enables the health check automatically. To disable:
+
+```ruby
+akka.management.health-checks.readiness-checks {
+  sharding = ""
+}
+```
+
+Monitoring of each shard region is off by default. Add them by defining the entity type names (`EntityTypeKey.name`):
+
+```ruby
+akka.cluster.sharding.healthcheck.names = ["counter-1", "HelloWorld"]
+```
+
+See also additional information about how to make @ref:[smooth rolling updates](../additional/rolling-updates.md#cluster-sharding).
+
+## Inspecting cluster sharding state
+
+Two requests to inspect the cluster state are available:
+
+@apidoc[akka.cluster.sharding.typed.GetShardRegionState] which will reply with a 
+@apidoc[ShardRegion.CurrentShardRegionState] that contains the identifiers of the shards running in
+a Region and what entities are alive for each of them.
+
+Scala
+:  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #get-shard-region-state }
+
+Java
+:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #get-shard-region-state }
+
+@apidoc[akka.cluster.sharding.typed.GetClusterShardingStats] which will query all the regions in the cluster and reply with a
+@apidoc[ShardRegion.ClusterShardingStats] containing the identifiers of the shards running in each region and a count
+of entities that are alive in each shard.
+
+Scala
+:  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #get-cluster-sharding-stats }
+
+Java
+:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #get-cluster-sharding-stats }
+
+If any shard queries failed, for example due to timeout if a shard was too busy to reply within the configured `akka.cluster.sharding.shard-region-query-timeout`, 
+`ShardRegion.CurrentShardRegionState` and `ShardRegion.ClusterShardingStats` will also include the set of shard identifiers by region that failed.
+
+The purpose of these messages is testing and monitoring, they are not provided to give access to
+directly sending messages to the individual entities.
 
 ## Lease
 
@@ -442,7 +586,10 @@ properties are read by the `ClusterShardingSettings` when created with an ActorS
 It is also possible to amend the `ClusterShardingSettings` or create it from another config section
 with the same layout as below. 
 
-One important configuration property is `number-of-shards` as described in @ref:[Shard allocation](#shard-allocation)
+One important configuration property is `number-of-shards` as described in @ref:[Shard allocation](#shard-allocation).
+
+You may also need to tune the configuration properties is `rebalance-absolute-limit` and `rebalance-relative-limit`
+as described in @ref:[Shard allocation](#shard-allocation).
 
 @@snip [reference.conf](/akka-cluster-sharding/src/main/resources/reference.conf) { #sharding-ext-config }
 

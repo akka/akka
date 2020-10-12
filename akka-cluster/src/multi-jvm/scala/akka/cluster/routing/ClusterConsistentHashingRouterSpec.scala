@@ -5,7 +5,9 @@
 package akka.cluster.routing
 
 import scala.concurrent.Await
+
 import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Address
@@ -14,14 +16,14 @@ import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
-import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
-import akka.routing.GetRoutees
-import akka.routing.FromConfig
-import akka.testkit._
 import akka.routing.ActorRefRoutee
 import akka.routing.ConsistentHashingPool
+import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
+import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
+import akka.routing.FromConfig
+import akka.routing.GetRoutees
 import akka.routing.Routees
+import akka.testkit._
 
 object ClusterConsistentHashingRouterMultiJvmSpec extends MultiNodeConfig {
 
@@ -65,7 +67,7 @@ abstract class ClusterConsistentHashingRouterSpec
     with DefaultTimeout {
   import ClusterConsistentHashingRouterMultiJvmSpec._
 
-  lazy val router1 = system.actorOf(FromConfig.props(Props[Echo]), "router1")
+  lazy val router1 = system.actorOf(FromConfig.props(Props[Echo]()), "router1")
 
   def currentRoutees(router: ActorRef) =
     Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees
@@ -125,7 +127,7 @@ abstract class ClusterConsistentHashingRouterSpec
           ClusterRouterPool(
             local = ConsistentHashingPool(nrOfInstances = 0),
             settings = ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 2, allowLocalRoutees = true))
-            .props(Props[Echo]),
+            .props(Props[Echo]()),
           "router2")
         // it may take some time until router receives cluster member events
         awaitAssert { currentRoutees(router2).size should ===(6) }
@@ -144,7 +146,7 @@ abstract class ClusterConsistentHashingRouterSpec
 
         val router3 =
           system.actorOf(
-            ConsistentHashingPool(nrOfInstances = 0, hashMapping = hashMapping).props(Props[Echo]),
+            ConsistentHashingPool(nrOfInstances = 0, hashMapping = hashMapping).props(Props[Echo]()),
             "router3")
 
         assertHashMapping(router3)
@@ -165,7 +167,7 @@ abstract class ClusterConsistentHashingRouterSpec
               local = ConsistentHashingPool(nrOfInstances = 0, hashMapping = hashMapping),
               settings =
                 ClusterRouterPoolSettings(totalInstances = 10, maxInstancesPerNode = 1, allowLocalRoutees = true))
-              .props(Props[Echo]),
+              .props(Props[Echo]()),
             "router4")
 
         assertHashMapping(router4)

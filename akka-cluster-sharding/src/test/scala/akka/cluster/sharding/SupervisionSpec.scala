@@ -4,20 +4,27 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Actor, ActorLogging, ActorRef, PoisonPill, Props }
 import akka.cluster.Cluster
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.pattern.{ BackoffOpts, BackoffSupervisor }
+import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, ImplicitSender }
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 object SupervisionSpec {
   val config =
     ConfigFactory.parseString("""
     akka.actor.provider = "cluster"
-    akka.loglevel = INFO
+    akka.remote.artery.canonical.port = 0
+    akka.remote.classic.netty.tcp.port = 0
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+    akka.loglevel = DEBUG
+    akka.cluster.sharding.verbose-debug-logging = on
+    akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
     """)
 
   case class Msg(id: Long, msg: Any)
@@ -48,10 +55,12 @@ object SupervisionSpec {
         context.parent ! Passivate(StopMessage)
         // simulate another message causing a stop before the region sends the stop message
         // e.g. a persistent actor having a persist failure while processing the next message
+        // note that this means the StopMessage will go to dead letters
         context.stop(self)
       case "hello" =>
         sender() ! Response(self)
       case StopMessage =>
+        // note that we never see this because we stop early
         log.info("Received stop from region")
         context.parent ! PoisonPill
     }
@@ -59,13 +68,12 @@ object SupervisionSpec {
 
 }
 
-class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSender {
-
+class DeprecatedSupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSender with WithLogCapturing {
   import SupervisionSpec._
 
   "Supervision for a sharded actor (deprecated)" must {
 
-    "allow passivation" in {
+    "allow passivation and early stop" in {
 
       val supervisedProps =
         BackoffOpts
@@ -98,10 +106,15 @@ class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSend
       expectMsgType[Response](20.seconds)
     }
   }
+}
+
+class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSender {
+
+  import SupervisionSpec._
 
   "Supervision for a sharded actor" must {
 
-    "allow passivation" in {
+    "allow passivation and early stop" in {
 
       val supervisedProps = BackoffSupervisor.props(
         BackoffOpts
@@ -125,10 +138,16 @@ class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSend
       val response = expectMsgType[Response](5.seconds)
       watch(response.self)
 
+      // 1. passivation message is passed on from supervisor to shard (which starts buffering messages for the entity id)
+      // 2. child stops
+      // 3. the supervisor has or has not yet seen gotten the stop message back from the shard
+      //   a. if has it will stop immediatel, and the next message will trigger the shard to restart it
+      //   b. if it hasn't the supervisor will back off before restarting the child, when the
+      //     final stop message `StopMessage` comes in from the shard it will stop itself
+      // 4. when the supervisor stops the shard should start it anew and deliver the buffered messages
       region ! Msg(10, "passivate")
       expectTerminated(response.self)
 
-      // This would fail before as sharded actor would be stuck passivating
       region ! Msg(10, "hello")
       expectMsgType[Response](20.seconds)
     }

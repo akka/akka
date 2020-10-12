@@ -41,7 +41,7 @@ final case class Message(s: String)
 
 //#context-actorOf
 class FirstActor extends Actor {
-  val child = context.actorOf(Props[MyActor], name = "myChild")
+  val child = context.actorOf(Props[MyActor](), name = "myChild")
   //#plus-some-behavior
   def receive = {
     case x => sender() ! x
@@ -124,7 +124,7 @@ class Hook extends Actor {
   var child: ActorRef = _
   //#preStart
   override def preStart(): Unit = {
-    child = context.actorOf(Props[MyActor], "child")
+    child = context.actorOf(Props[MyActor](), "child")
   }
   //#preStart
   def receive = Actor.emptyBehavior
@@ -182,7 +182,7 @@ object Manager {
 
 class Manager extends Actor {
   import Manager._
-  val worker = context.watch(context.actorOf(Props[Cruncher], "worker"))
+  val worker = context.watch(context.actorOf(Props[Cruncher](), "worker"))
 
   def receive = {
     case "job" => worker ! "crunch"
@@ -224,7 +224,7 @@ class Swapper extends Actor {
 
 object SwapperApp extends App {
   val system = ActorSystem("SwapperSystem")
-  val swap = system.actorOf(Props[Swapper], name = "swapper")
+  val swap = system.actorOf(Props[Swapper](), name = "swapper")
   swap ! Swap // logs Hi
   swap ! Swap // logs Ho
   swap ! Swap // logs Hi
@@ -328,7 +328,7 @@ class ActorDocSpec extends AkkaSpec("""
       //#import-context
       class FirstActor extends Actor {
         import context._
-        val myActor = actorOf(Props[MyActor], name = "myactor")
+        val myActor = actorOf(Props[MyActor](), name = "myactor")
         def receive = {
           case x => myActor ! x
         }
@@ -341,7 +341,7 @@ class ActorDocSpec extends AkkaSpec("""
   }
 
   "creating actor with system.actorOf" in {
-    val myActor = system.actorOf(Props[MyActor])
+    val myActor = system.actorOf(Props[MyActor]())
 
     // testing the actor
 
@@ -369,7 +369,7 @@ class ActorDocSpec extends AkkaSpec("""
     //#fiddle_code
     val system = ActorSystem("pingpong")
 
-    val pinger = system.actorOf(Props[Pinger], "pinger")
+    val pinger = system.actorOf(Props[Pinger](), "pinger")
 
     val ponger = system.actorOf(Props(classOf[Ponger], pinger), "ponger")
 
@@ -397,7 +397,7 @@ class ActorDocSpec extends AkkaSpec("""
   }
 
   "use poison pill" in {
-    val victim = system.actorOf(Props[MyActor])
+    val victim = system.actorOf(Props[MyActor]())
     //#poison-pill
     watch(victim)
     victim ! PoisonPill
@@ -409,7 +409,7 @@ class ActorDocSpec extends AkkaSpec("""
     //#creating-props
     import akka.actor.Props
 
-    val props1 = Props[MyActor]
+    val props1 = Props[MyActor]()
     val props2 = Props(new ActorWithArgs("arg")) // careful, see below
     val props3 = Props(classOf[ActorWithArgs], "arg") // no support for value class arguments
     //#creating-props
@@ -427,7 +427,7 @@ class ActorDocSpec extends AkkaSpec("""
 
     // ActorSystem is a heavy object: create only one per application
     val system = ActorSystem("mySystem")
-    val myActor = system.actorOf(Props[MyActor], "myactor2")
+    val myActor = system.actorOf(Props[MyActor](), "myactor2")
     //#system-actorOf
     shutdown(system)
   }
@@ -480,7 +480,7 @@ class ActorDocSpec extends AkkaSpec("""
   }
 
   "using implicit timeout" in {
-    val myActor = system.actorOf(Props[FirstActor])
+    val myActor = system.actorOf(Props[FirstActor]())
     //#using-implicit-timeout
     import scala.concurrent.duration._
     import akka.util.Timeout
@@ -493,7 +493,7 @@ class ActorDocSpec extends AkkaSpec("""
   }
 
   "using explicit timeout" in {
-    val myActor = system.actorOf(Props[FirstActor])
+    val myActor = system.actorOf(Props[FirstActor]())
     //#using-explicit-timeout
     import scala.concurrent.duration._
     import akka.pattern.ask
@@ -658,7 +658,7 @@ class ActorDocSpec extends AkkaSpec("""
   }
 
   "using pattern gracefulStop" in {
-    val actorRef = system.actorOf(Props[Manager])
+    val actorRef = system.actorOf(Props[Manager]())
     //#gracefulStop
     import akka.pattern.gracefulStop
     import scala.concurrent.Await
@@ -724,34 +724,8 @@ class ActorDocSpec extends AkkaSpec("""
   }
 
   "using CoordinatedShutdown" in {
-    val someActor = system.actorOf(Props(classOf[Replier], this))
-    //#coordinated-shutdown-addTask
-    CoordinatedShutdown(system).addTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "someTaskName") { () =>
-      import akka.pattern.ask
-      import system.dispatcher
-      implicit val timeout = Timeout(5.seconds)
-      (someActor ? "stop").map(_ => Done)
-    }
-    //#coordinated-shutdown-addTask
-
-    {
-      def cleanup(): Unit = {}
-      import system.dispatcher
-      //#coordinated-shutdown-cancellable
-      val c = CoordinatedShutdown(system).addCancellableTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "cleanup") {
-        () =>
-          Future {
-            cleanup()
-            Done
-          }
-      }
-
-      // much later...
-      c.cancel()
-      //#coordinated-shutdown-cancellable
-    }
-
-    {
+    // other snippets moved to docs.actor.typed.CoordinatedActorShutdownSpec
+    { // https://github.com/akka/akka/issues/29056
       val someActor = system.actorOf(Props(classOf[Replier], this))
       someActor ! PoisonPill
       //#coordinated-shutdown-addActorTerminationTask
@@ -761,19 +735,6 @@ class ActorDocSpec extends AkkaSpec("""
         someActor,
         Some("stop"))
       //#coordinated-shutdown-addActorTerminationTask
-    }
-
-    //#coordinated-shutdown-jvm-hook
-    CoordinatedShutdown(system).addJvmShutdownHook {
-      println("custom JVM shutdown hook...")
-    }
-    //#coordinated-shutdown-jvm-hook
-
-    // don't run this
-    def dummy(): Unit = {
-      //#coordinated-shutdown-run
-      val done: Future[Done] = CoordinatedShutdown(system).run(CoordinatedShutdown.UnknownReason)
-      //#coordinated-shutdown-run
     }
   }
 

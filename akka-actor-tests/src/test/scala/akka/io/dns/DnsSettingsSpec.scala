@@ -6,11 +6,12 @@ package akka.io.dns
 
 import java.net.InetAddress
 
-import akka.actor.ExtendedActorSystem
-import akka.testkit.AkkaSpec
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.duration._
+import akka.actor.ExtendedActorSystem
+import akka.testkit.AkkaSpec
 
 class DnsSettingsSpec extends AkkaSpec {
 

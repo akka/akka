@@ -4,8 +4,6 @@
 
 package akka.persistence.fsm.japi.pf;
 
-import akka.persistence.fsm.PersistentFSM;
-import akka.persistence.fsm.PersistentFSMBase;
 import akka.japi.pf.FI;
 import akka.japi.pf.PFBuilder;
 import scala.PartialFunction;
@@ -15,15 +13,22 @@ import java.util.List;
 /**
  * Builder used to create a partial function for {@link akka.actor.FSM#whenUnhandled}.
  *
+ * @deprecated use EventSourcedBehavior since 2.6.0
  * @param <S> the state type
  * @param <D> the data type
  * @param <E> the domain event type
  */
 @SuppressWarnings("rawtypes")
+@Deprecated
 public class FSMStateFunctionBuilder<S, D, E> {
 
-  private PFBuilder<PersistentFSM.Event<D>, PersistentFSM.State<S, D, E>> builder =
-      new PFBuilder<PersistentFSM.Event<D>, PersistentFSM.State<S, D, E>>();
+  private PFBuilder<
+          akka.persistence.fsm.PersistentFSM.Event<D>,
+          akka.persistence.fsm.PersistentFSM.State<S, D, E>>
+      builder =
+          new PFBuilder<
+              akka.persistence.fsm.PersistentFSM.Event<D>,
+              akka.persistence.fsm.PersistentFSM.State<S, D, E>>();
 
   /**
    * An erased processing of the event matcher. The compile time checks are enforced by the public
@@ -47,10 +52,10 @@ public class FSMStateFunctionBuilder<S, D, E> {
       final FI.TypedPredicate2 predicate,
       final FI.Apply2 apply) {
     builder.match(
-        PersistentFSM.Event.class,
-        new FI.TypedPredicate<PersistentFSM.Event>() {
+        akka.persistence.fsm.PersistentFSM.Event.class,
+        new FI.TypedPredicate<akka.persistence.fsm.PersistentFSM.Event>() {
           @Override
-          public boolean defined(PersistentFSM.Event e) {
+          public boolean defined(akka.persistence.fsm.PersistentFSM.Event e) {
             boolean res = true;
             if (eventOrType != null) {
               if (eventOrType instanceof Class) {
@@ -76,11 +81,15 @@ public class FSMStateFunctionBuilder<S, D, E> {
             return res;
           }
         },
-        new FI.Apply<PersistentFSM.Event, PersistentFSM.State<S, D, E>>() {
-          public PersistentFSM.State<S, D, E> apply(PersistentFSM.Event e) throws Exception {
+        new FI.Apply<
+            akka.persistence.fsm.PersistentFSM.Event,
+            akka.persistence.fsm.PersistentFSM.State<S, D, E>>() {
+          public akka.persistence.fsm.PersistentFSM.State<S, D, E> apply(
+              akka.persistence.fsm.PersistentFSM.Event e) throws Exception {
             @SuppressWarnings("unchecked")
-            PersistentFSM.State<S, D, E> res =
-                (PersistentFSM.State<S, D, E>) apply.apply(e.event(), e.stateData());
+            akka.persistence.fsm.PersistentFSM.State<S, D, E> res =
+                (akka.persistence.fsm.PersistentFSM.State<S, D, E>)
+                    apply.apply(e.event(), e.stateData());
             return res;
           }
         });
@@ -103,7 +112,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
       final Class<P> eventType,
       final Class<Q> dataType,
       final FI.TypedPredicate2<P, Q> predicate,
-      final FI.Apply2<P, Q, PersistentFSM.State<S, D, E>> apply) {
+      final FI.Apply2<P, Q, akka.persistence.fsm.PersistentFSM.State<S, D, E>> apply) {
     erasedEvent(eventType, dataType, predicate, apply);
     return this;
   }
@@ -121,7 +130,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
   public <P, Q> FSMStateFunctionBuilder<S, D, E> event(
       final Class<P> eventType,
       final Class<Q> dataType,
-      final FI.Apply2<P, Q, PersistentFSM.State<S, D, E>> apply) {
+      final FI.Apply2<P, Q, akka.persistence.fsm.PersistentFSM.State<S, D, E>> apply) {
     return erasedEvent(eventType, dataType, null, apply);
   }
 
@@ -136,7 +145,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
   public <P> FSMStateFunctionBuilder<S, D, E> event(
       final Class<P> eventType,
       final FI.TypedPredicate2<P, D> predicate,
-      final FI.Apply2<P, D, PersistentFSM.State<S, D, E>> apply) {
+      final FI.Apply2<P, D, akka.persistence.fsm.PersistentFSM.State<S, D, E>> apply) {
     return erasedEvent(eventType, null, predicate, apply);
   }
 
@@ -148,7 +157,8 @@ public class FSMStateFunctionBuilder<S, D, E> {
    * @return the builder with the case statement added
    */
   public <P> FSMStateFunctionBuilder<S, D, E> event(
-      final Class<P> eventType, final FI.Apply2<P, D, PersistentFSM.State<S, D, E>> apply) {
+      final Class<P> eventType,
+      final FI.Apply2<P, D, akka.persistence.fsm.PersistentFSM.State<S, D, E>> apply) {
     return erasedEvent(eventType, null, null, apply);
   }
 
@@ -161,7 +171,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
    */
   public FSMStateFunctionBuilder<S, D, E> event(
       final FI.TypedPredicate2<Object, D> predicate,
-      final FI.Apply2<Object, D, PersistentFSM.State<S, D, E>> apply) {
+      final FI.Apply2<Object, D, akka.persistence.fsm.PersistentFSM.State<S, D, E>> apply) {
     return erasedEvent(null, null, predicate, apply);
   }
 
@@ -178,12 +188,12 @@ public class FSMStateFunctionBuilder<S, D, E> {
   public <Q> FSMStateFunctionBuilder<S, D, E> event(
       final List<Object> eventMatches,
       final Class<Q> dataType,
-      final FI.Apply2<Object, Q, PersistentFSM.State<S, D, E>> apply) {
+      final FI.Apply2<Object, Q, akka.persistence.fsm.PersistentFSM.State<S, D, E>> apply) {
     builder.match(
-        PersistentFSM.Event.class,
-        new FI.TypedPredicate<PersistentFSM.Event>() {
+        akka.persistence.fsm.PersistentFSM.Event.class,
+        new FI.TypedPredicate<akka.persistence.fsm.PersistentFSM.Event>() {
           @Override
-          public boolean defined(PersistentFSM.Event e) {
+          public boolean defined(akka.persistence.fsm.PersistentFSM.Event e) {
             if (dataType != null && !dataType.isInstance(e.stateData())) return false;
 
             boolean emMatch = false;
@@ -200,8 +210,11 @@ public class FSMStateFunctionBuilder<S, D, E> {
             return emMatch;
           }
         },
-        new FI.Apply<PersistentFSM.Event, PersistentFSM.State<S, D, E>>() {
-          public PersistentFSM.State<S, D, E> apply(PersistentFSM.Event e) throws Exception {
+        new FI.Apply<
+            akka.persistence.fsm.PersistentFSM.Event,
+            akka.persistence.fsm.PersistentFSM.State<S, D, E>>() {
+          public akka.persistence.fsm.PersistentFSM.State<S, D, E> apply(
+              akka.persistence.fsm.PersistentFSM.Event e) throws Exception {
             @SuppressWarnings("unchecked")
             Q q = (Q) e.stateData();
             return apply.apply(e.event(), q);
@@ -221,7 +234,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
    */
   public FSMStateFunctionBuilder<S, D, E> event(
       final List<Object> eventMatches,
-      final FI.Apply2<Object, D, PersistentFSM.State<S, D, E>> apply) {
+      final FI.Apply2<Object, D, akka.persistence.fsm.PersistentFSM.State<S, D, E>> apply) {
     return event(eventMatches, null, apply);
   }
 
@@ -237,7 +250,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
   public <P, Q> FSMStateFunctionBuilder<S, D, E> eventEquals(
       final P event,
       final Class<Q> dataType,
-      final FI.Apply2<P, Q, PersistentFSM.State<S, D, E>> apply) {
+      final FI.Apply2<P, Q, akka.persistence.fsm.PersistentFSM.State<S, D, E>> apply) {
     return erasedEvent(event, dataType, null, apply);
   }
 
@@ -249,7 +262,8 @@ public class FSMStateFunctionBuilder<S, D, E> {
    * @return the builder with the case statement added
    */
   public <P> FSMStateFunctionBuilder<S, D, E> eventEquals(
-      final P event, final FI.Apply2<P, D, PersistentFSM.State<S, D, E>> apply) {
+      final P event,
+      final FI.Apply2<P, D, akka.persistence.fsm.PersistentFSM.State<S, D, E>> apply) {
     return erasedEvent(event, null, null, apply);
   }
 
@@ -260,7 +274,7 @@ public class FSMStateFunctionBuilder<S, D, E> {
    * @return the builder with the case statement added
    */
   public FSMStateFunctionBuilder<S, D, E> anyEvent(
-      final FI.Apply2<Object, D, PersistentFSM.State<S, D, E>> apply) {
+      final FI.Apply2<Object, D, akka.persistence.fsm.PersistentFSM.State<S, D, E>> apply) {
     return erasedEvent(null, null, null, apply);
   }
 
@@ -270,7 +284,10 @@ public class FSMStateFunctionBuilder<S, D, E> {
    *
    * @return a PartialFunction for this builder.
    */
-  public PartialFunction<PersistentFSM.Event<D>, PersistentFSM.State<S, D, E>> build() {
+  public PartialFunction<
+          akka.persistence.fsm.PersistentFSM.Event<D>,
+          akka.persistence.fsm.PersistentFSM.State<S, D, E>>
+      build() {
     return builder.build();
   }
 }

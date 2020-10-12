@@ -103,6 +103,28 @@ public final class ReliableDelivery {
      * <code>required .Payload message = 6;</code>
      */
     akka.remote.ContainerFormats.PayloadOrBuilder getMessageOrBuilder();
+
+    /**
+     * <code>optional bool firstChunk = 7;</code>
+     * @return Whether the firstChunk field is set.
+     */
+    boolean hasFirstChunk();
+    /**
+     * <code>optional bool firstChunk = 7;</code>
+     * @return The firstChunk.
+     */
+    boolean getFirstChunk();
+
+    /**
+     * <code>optional bool lastChunk = 8;</code>
+     * @return Whether the lastChunk field is set.
+     */
+    boolean hasLastChunk();
+    /**
+     * <code>optional bool lastChunk = 8;</code>
+     * @return The lastChunk.
+     */
+    boolean getLastChunk();
   }
   /**
    * <pre>
@@ -194,6 +216,16 @@ public final class ReliableDelivery {
                 message_ = subBuilder.buildPartial();
               }
               bitField0_ |= 0x00000020;
+              break;
+            }
+            case 56: {
+              bitField0_ |= 0x00000040;
+              firstChunk_ = input.readBool();
+              break;
+            }
+            case 64: {
+              bitField0_ |= 0x00000080;
+              lastChunk_ = input.readBool();
               break;
             }
             default: {
@@ -393,6 +425,40 @@ public final class ReliableDelivery {
       return message_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : message_;
     }
 
+    public static final int FIRSTCHUNK_FIELD_NUMBER = 7;
+    private boolean firstChunk_;
+    /**
+     * <code>optional bool firstChunk = 7;</code>
+     * @return Whether the firstChunk field is set.
+     */
+    public boolean hasFirstChunk() {
+      return ((bitField0_ & 0x00000040) != 0);
+    }
+    /**
+     * <code>optional bool firstChunk = 7;</code>
+     * @return The firstChunk.
+     */
+    public boolean getFirstChunk() {
+      return firstChunk_;
+    }
+
+    public static final int LASTCHUNK_FIELD_NUMBER = 8;
+    private boolean lastChunk_;
+    /**
+     * <code>optional bool lastChunk = 8;</code>
+     * @return Whether the lastChunk field is set.
+     */
+    public boolean hasLastChunk() {
+      return ((bitField0_ & 0x00000080) != 0);
+    }
+    /**
+     * <code>optional bool lastChunk = 8;</code>
+     * @return The lastChunk.
+     */
+    public boolean getLastChunk() {
+      return lastChunk_;
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -453,6 +519,12 @@ public final class ReliableDelivery {
       if (((bitField0_ & 0x00000020) != 0)) {
         output.writeMessage(6, getMessage());
       }
+      if (((bitField0_ & 0x00000040) != 0)) {
+        output.writeBool(7, firstChunk_);
+      }
+      if (((bitField0_ & 0x00000080) != 0)) {
+        output.writeBool(8, lastChunk_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -483,6 +555,14 @@ public final class ReliableDelivery {
       if (((bitField0_ & 0x00000020) != 0)) {
         size += akka.protobufv3.internal.CodedOutputStream
           .computeMessageSize(6, getMessage());
+      }
+      if (((bitField0_ & 0x00000040) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeBoolSize(7, firstChunk_);
+      }
+      if (((bitField0_ & 0x00000080) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeBoolSize(8, lastChunk_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -529,6 +609,16 @@ public final class ReliableDelivery {
         if (!getMessage()
             .equals(other.getMessage())) return false;
       }
+      if (hasFirstChunk() != other.hasFirstChunk()) return false;
+      if (hasFirstChunk()) {
+        if (getFirstChunk()
+            != other.getFirstChunk()) return false;
+      }
+      if (hasLastChunk() != other.hasLastChunk()) return false;
+      if (hasLastChunk()) {
+        if (getLastChunk()
+            != other.getLastChunk()) return false;
+      }
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -566,6 +656,16 @@ public final class ReliableDelivery {
       if (hasMessage()) {
         hash = (37 * hash) + MESSAGE_FIELD_NUMBER;
         hash = (53 * hash) + getMessage().hashCode();
+      }
+      if (hasFirstChunk()) {
+        hash = (37 * hash) + FIRSTCHUNK_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashBoolean(
+            getFirstChunk());
+      }
+      if (hasLastChunk()) {
+        hash = (37 * hash) + LASTCHUNK_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashBoolean(
+            getLastChunk());
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -721,6 +821,10 @@ public final class ReliableDelivery {
           messageBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000020);
+        firstChunk_ = false;
+        bitField0_ = (bitField0_ & ~0x00000040);
+        lastChunk_ = false;
+        bitField0_ = (bitField0_ & ~0x00000080);
         return this;
       }
 
@@ -776,6 +880,14 @@ public final class ReliableDelivery {
             result.message_ = messageBuilder_.build();
           }
           to_bitField0_ |= 0x00000020;
+        }
+        if (((from_bitField0_ & 0x00000040) != 0)) {
+          result.firstChunk_ = firstChunk_;
+          to_bitField0_ |= 0x00000040;
+        }
+        if (((from_bitField0_ & 0x00000080) != 0)) {
+          result.lastChunk_ = lastChunk_;
+          to_bitField0_ |= 0x00000080;
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
@@ -847,6 +959,12 @@ public final class ReliableDelivery {
         }
         if (other.hasMessage()) {
           mergeMessage(other.getMessage());
+        }
+        if (other.hasFirstChunk()) {
+          setFirstChunk(other.getFirstChunk());
+        }
+        if (other.hasLastChunk()) {
+          setLastChunk(other.getLastChunk());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -1296,6 +1414,80 @@ public final class ReliableDelivery {
           message_ = null;
         }
         return messageBuilder_;
+      }
+
+      private boolean firstChunk_ ;
+      /**
+       * <code>optional bool firstChunk = 7;</code>
+       * @return Whether the firstChunk field is set.
+       */
+      public boolean hasFirstChunk() {
+        return ((bitField0_ & 0x00000040) != 0);
+      }
+      /**
+       * <code>optional bool firstChunk = 7;</code>
+       * @return The firstChunk.
+       */
+      public boolean getFirstChunk() {
+        return firstChunk_;
+      }
+      /**
+       * <code>optional bool firstChunk = 7;</code>
+       * @param value The firstChunk to set.
+       * @return This builder for chaining.
+       */
+      public Builder setFirstChunk(boolean value) {
+        bitField0_ |= 0x00000040;
+        firstChunk_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bool firstChunk = 7;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearFirstChunk() {
+        bitField0_ = (bitField0_ & ~0x00000040);
+        firstChunk_ = false;
+        onChanged();
+        return this;
+      }
+
+      private boolean lastChunk_ ;
+      /**
+       * <code>optional bool lastChunk = 8;</code>
+       * @return Whether the lastChunk field is set.
+       */
+      public boolean hasLastChunk() {
+        return ((bitField0_ & 0x00000080) != 0);
+      }
+      /**
+       * <code>optional bool lastChunk = 8;</code>
+       * @return The lastChunk.
+       */
+      public boolean getLastChunk() {
+        return lastChunk_;
+      }
+      /**
+       * <code>optional bool lastChunk = 8;</code>
+       * @param value The lastChunk to set.
+       * @return This builder for chaining.
+       */
+      public Builder setLastChunk(boolean value) {
+        bitField0_ |= 0x00000080;
+        lastChunk_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bool lastChunk = 8;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearLastChunk() {
+        bitField0_ = (bitField0_ & ~0x00000080);
+        lastChunk_ = false;
+        onChanged();
+        return this;
       }
       @java.lang.Override
       public final Builder setUnknownFields(
@@ -6168,6 +6360,28 @@ public final class ReliableDelivery {
      * <code>required .Payload message = 5;</code>
      */
     akka.remote.ContainerFormats.PayloadOrBuilder getMessageOrBuilder();
+
+    /**
+     * <code>optional bool firstChunk = 6;</code>
+     * @return Whether the firstChunk field is set.
+     */
+    boolean hasFirstChunk();
+    /**
+     * <code>optional bool firstChunk = 6;</code>
+     * @return The firstChunk.
+     */
+    boolean getFirstChunk();
+
+    /**
+     * <code>optional bool lastChunk = 7;</code>
+     * @return Whether the lastChunk field is set.
+     */
+    boolean hasLastChunk();
+    /**
+     * <code>optional bool lastChunk = 7;</code>
+     * @return The lastChunk.
+     */
+    boolean getLastChunk();
   }
   /**
    * <pre>
@@ -6252,6 +6466,16 @@ public final class ReliableDelivery {
                 message_ = subBuilder.buildPartial();
               }
               bitField0_ |= 0x00000010;
+              break;
+            }
+            case 48: {
+              bitField0_ |= 0x00000020;
+              firstChunk_ = input.readBool();
+              break;
+            }
+            case 56: {
+              bitField0_ |= 0x00000040;
+              lastChunk_ = input.readBool();
               break;
             }
             default: {
@@ -6406,6 +6630,40 @@ public final class ReliableDelivery {
       return message_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : message_;
     }
 
+    public static final int FIRSTCHUNK_FIELD_NUMBER = 6;
+    private boolean firstChunk_;
+    /**
+     * <code>optional bool firstChunk = 6;</code>
+     * @return Whether the firstChunk field is set.
+     */
+    public boolean hasFirstChunk() {
+      return ((bitField0_ & 0x00000020) != 0);
+    }
+    /**
+     * <code>optional bool firstChunk = 6;</code>
+     * @return The firstChunk.
+     */
+    public boolean getFirstChunk() {
+      return firstChunk_;
+    }
+
+    public static final int LASTCHUNK_FIELD_NUMBER = 7;
+    private boolean lastChunk_;
+    /**
+     * <code>optional bool lastChunk = 7;</code>
+     * @return Whether the lastChunk field is set.
+     */
+    public boolean hasLastChunk() {
+      return ((bitField0_ & 0x00000040) != 0);
+    }
+    /**
+     * <code>optional bool lastChunk = 7;</code>
+     * @return The lastChunk.
+     */
+    public boolean getLastChunk() {
+      return lastChunk_;
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -6459,6 +6717,12 @@ public final class ReliableDelivery {
       if (((bitField0_ & 0x00000010) != 0)) {
         output.writeMessage(5, getMessage());
       }
+      if (((bitField0_ & 0x00000020) != 0)) {
+        output.writeBool(6, firstChunk_);
+      }
+      if (((bitField0_ & 0x00000040) != 0)) {
+        output.writeBool(7, lastChunk_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -6486,6 +6750,14 @@ public final class ReliableDelivery {
       if (((bitField0_ & 0x00000010) != 0)) {
         size += akka.protobufv3.internal.CodedOutputStream
           .computeMessageSize(5, getMessage());
+      }
+      if (((bitField0_ & 0x00000020) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeBoolSize(6, firstChunk_);
+      }
+      if (((bitField0_ & 0x00000040) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeBoolSize(7, lastChunk_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -6527,6 +6799,16 @@ public final class ReliableDelivery {
         if (!getMessage()
             .equals(other.getMessage())) return false;
       }
+      if (hasFirstChunk() != other.hasFirstChunk()) return false;
+      if (hasFirstChunk()) {
+        if (getFirstChunk()
+            != other.getFirstChunk()) return false;
+      }
+      if (hasLastChunk() != other.hasLastChunk()) return false;
+      if (hasLastChunk()) {
+        if (getLastChunk()
+            != other.getLastChunk()) return false;
+      }
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -6560,6 +6842,16 @@ public final class ReliableDelivery {
       if (hasMessage()) {
         hash = (37 * hash) + MESSAGE_FIELD_NUMBER;
         hash = (53 * hash) + getMessage().hashCode();
+      }
+      if (hasFirstChunk()) {
+        hash = (37 * hash) + FIRSTCHUNK_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashBoolean(
+            getFirstChunk());
+      }
+      if (hasLastChunk()) {
+        hash = (37 * hash) + LASTCHUNK_FIELD_NUMBER;
+        hash = (53 * hash) + akka.protobufv3.internal.Internal.hashBoolean(
+            getLastChunk());
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -6713,6 +7005,10 @@ public final class ReliableDelivery {
           messageBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000010);
+        firstChunk_ = false;
+        bitField0_ = (bitField0_ & ~0x00000020);
+        lastChunk_ = false;
+        bitField0_ = (bitField0_ & ~0x00000040);
         return this;
       }
 
@@ -6764,6 +7060,14 @@ public final class ReliableDelivery {
             result.message_ = messageBuilder_.build();
           }
           to_bitField0_ |= 0x00000010;
+        }
+        if (((from_bitField0_ & 0x00000020) != 0)) {
+          result.firstChunk_ = firstChunk_;
+          to_bitField0_ |= 0x00000020;
+        }
+        if (((from_bitField0_ & 0x00000040) != 0)) {
+          result.lastChunk_ = lastChunk_;
+          to_bitField0_ |= 0x00000040;
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
@@ -6830,6 +7134,12 @@ public final class ReliableDelivery {
         }
         if (other.hasMessage()) {
           mergeMessage(other.getMessage());
+        }
+        if (other.hasFirstChunk()) {
+          setFirstChunk(other.getFirstChunk());
+        }
+        if (other.hasLastChunk()) {
+          setLastChunk(other.getLastChunk());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -7192,6 +7502,80 @@ public final class ReliableDelivery {
           message_ = null;
         }
         return messageBuilder_;
+      }
+
+      private boolean firstChunk_ ;
+      /**
+       * <code>optional bool firstChunk = 6;</code>
+       * @return Whether the firstChunk field is set.
+       */
+      public boolean hasFirstChunk() {
+        return ((bitField0_ & 0x00000020) != 0);
+      }
+      /**
+       * <code>optional bool firstChunk = 6;</code>
+       * @return The firstChunk.
+       */
+      public boolean getFirstChunk() {
+        return firstChunk_;
+      }
+      /**
+       * <code>optional bool firstChunk = 6;</code>
+       * @param value The firstChunk to set.
+       * @return This builder for chaining.
+       */
+      public Builder setFirstChunk(boolean value) {
+        bitField0_ |= 0x00000020;
+        firstChunk_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bool firstChunk = 6;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearFirstChunk() {
+        bitField0_ = (bitField0_ & ~0x00000020);
+        firstChunk_ = false;
+        onChanged();
+        return this;
+      }
+
+      private boolean lastChunk_ ;
+      /**
+       * <code>optional bool lastChunk = 7;</code>
+       * @return Whether the lastChunk field is set.
+       */
+      public boolean hasLastChunk() {
+        return ((bitField0_ & 0x00000040) != 0);
+      }
+      /**
+       * <code>optional bool lastChunk = 7;</code>
+       * @return The lastChunk.
+       */
+      public boolean getLastChunk() {
+        return lastChunk_;
+      }
+      /**
+       * <code>optional bool lastChunk = 7;</code>
+       * @param value The lastChunk to set.
+       * @return This builder for chaining.
+       */
+      public Builder setLastChunk(boolean value) {
+        bitField0_ |= 0x00000040;
+        lastChunk_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bool lastChunk = 7;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearLastChunk() {
+        bitField0_ = (bitField0_ & ~0x00000040);
+        lastChunk_ = false;
+        onChanged();
+        return this;
       }
       @java.lang.Override
       public final Builder setUnknownFields(
@@ -7946,27 +8330,29 @@ public final class ReliableDelivery {
   static {
     java.lang.String[] descriptorData = {
       "\n\026ReliableDelivery.proto\022\033akka.cluster.t" +
-      "yped.delivery\032\026ContainerFormats.proto\"\213\001" +
+      "yped.delivery\032\026ContainerFormats.proto\"\262\001" +
       "\n\020SequencedMessage\022\022\n\nproducerId\030\001 \002(\t\022\r" +
       "\n\005seqNr\030\002 \002(\003\022\r\n\005first\030\003 \002(\010\022\013\n\003ack\030\004 \002(" +
       "\010\022\035\n\025producerControllerRef\030\005 \002(\t\022\031\n\007mess" +
-      "age\030\006 \002(\0132\010.Payload\"1\n\020RegisterConsumer\022" +
-      "\035\n\025consumerControllerRef\030\001 \002(\t\"f\n\007Reques" +
-      "t\022\026\n\016confirmedSeqNr\030\001 \002(\003\022\030\n\020requestUpTo" +
-      "SeqNr\030\002 \002(\003\022\025\n\rsupportResend\030\003 \002(\010\022\022\n\nvi" +
-      "aTimeout\030\004 \002(\010\"\033\n\006Resend\022\021\n\tfromSeqNr\030\001 " +
-      "\002(\003\"\035\n\003Ack\022\026\n\016confirmedSeqNr\030\001 \002(\003\"\266\001\n\005S" +
-      "tate\022\024\n\014currentSeqNr\030\001 \002(\003\022\035\n\025highestCon" +
-      "firmedSeqNr\030\002 \002(\003\0229\n\tconfirmed\030\003 \003(\0132&.a" +
-      "kka.cluster.typed.delivery.Confirmed\022=\n\013" +
-      "unconfirmed\030\004 \003(\0132(.akka.cluster.typed.d" +
-      "elivery.MessageSent\"@\n\tConfirmed\022\r\n\005seqN" +
-      "r\030\001 \002(\003\022\021\n\tqualifier\030\002 \002(\t\022\021\n\ttimestamp\030" +
-      "\003 \002(\003\"j\n\013MessageSent\022\r\n\005seqNr\030\001 \002(\003\022\021\n\tq" +
+      "age\030\006 \002(\0132\010.Payload\022\022\n\nfirstChunk\030\007 \001(\010\022" +
+      "\021\n\tlastChunk\030\010 \001(\010\"1\n\020RegisterConsumer\022\035" +
+      "\n\025consumerControllerRef\030\001 \002(\t\"f\n\007Request" +
+      "\022\026\n\016confirmedSeqNr\030\001 \002(\003\022\030\n\020requestUpToS" +
+      "eqNr\030\002 \002(\003\022\025\n\rsupportResend\030\003 \002(\010\022\022\n\nvia" +
+      "Timeout\030\004 \002(\010\"\033\n\006Resend\022\021\n\tfromSeqNr\030\001 \002" +
+      "(\003\"\035\n\003Ack\022\026\n\016confirmedSeqNr\030\001 \002(\003\"\266\001\n\005St" +
+      "ate\022\024\n\014currentSeqNr\030\001 \002(\003\022\035\n\025highestConf" +
+      "irmedSeqNr\030\002 \002(\003\0229\n\tconfirmed\030\003 \003(\0132&.ak" +
+      "ka.cluster.typed.delivery.Confirmed\022=\n\013u" +
+      "nconfirmed\030\004 \003(\0132(.akka.cluster.typed.de" +
+      "livery.MessageSent\"@\n\tConfirmed\022\r\n\005seqNr" +
+      "\030\001 \002(\003\022\021\n\tqualifier\030\002 \002(\t\022\021\n\ttimestamp\030\003" +
+      " \002(\003\"\221\001\n\013MessageSent\022\r\n\005seqNr\030\001 \002(\003\022\021\n\tq" +
       "ualifier\030\002 \002(\t\022\013\n\003ack\030\003 \002(\010\022\021\n\ttimestamp" +
-      "\030\004 \002(\003\022\031\n\007message\030\005 \002(\0132\010.Payload\"\035\n\007Cle" +
-      "anup\022\022\n\nqualifiers\030\001 \003(\tB(\n$akka.cluster" +
-      ".typed.internal.protobufH\001"
+      "\030\004 \002(\003\022\031\n\007message\030\005 \002(\0132\010.Payload\022\022\n\nfir" +
+      "stChunk\030\006 \001(\010\022\021\n\tlastChunk\030\007 \001(\010\"\035\n\007Clea" +
+      "nup\022\022\n\nqualifiers\030\001 \003(\tB(\n$akka.cluster." +
+      "typed.internal.protobufH\001"
     };
     descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -7978,7 +8364,7 @@ public final class ReliableDelivery {
     internal_static_akka_cluster_typed_delivery_SequencedMessage_fieldAccessorTable = new
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_akka_cluster_typed_delivery_SequencedMessage_descriptor,
-        new java.lang.String[] { "ProducerId", "SeqNr", "First", "Ack", "ProducerControllerRef", "Message", });
+        new java.lang.String[] { "ProducerId", "SeqNr", "First", "Ack", "ProducerControllerRef", "Message", "FirstChunk", "LastChunk", });
     internal_static_akka_cluster_typed_delivery_RegisterConsumer_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_akka_cluster_typed_delivery_RegisterConsumer_fieldAccessorTable = new
@@ -8020,7 +8406,7 @@ public final class ReliableDelivery {
     internal_static_akka_cluster_typed_delivery_MessageSent_fieldAccessorTable = new
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_akka_cluster_typed_delivery_MessageSent_descriptor,
-        new java.lang.String[] { "SeqNr", "Qualifier", "Ack", "Timestamp", "Message", });
+        new java.lang.String[] { "SeqNr", "Qualifier", "Ack", "Timestamp", "Message", "FirstChunk", "LastChunk", });
     internal_static_akka_cluster_typed_delivery_Cleanup_descriptor =
       getDescriptor().getMessageTypes().get(8);
     internal_static_akka_cluster_typed_delivery_Cleanup_fieldAccessorTable = new

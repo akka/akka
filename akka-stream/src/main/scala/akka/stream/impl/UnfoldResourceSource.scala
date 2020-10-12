@@ -4,14 +4,14 @@
 
 package akka.stream.impl
 
-import akka.annotation.InternalApi
-import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream._
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.stage._
-
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
+
+import akka.annotation.InternalApi
+import akka.stream._
+import akka.stream.ActorAttributes.SupervisionStrategy
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.stage._
 
 /**
  * INTERNAL API

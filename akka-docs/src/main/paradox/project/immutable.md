@@ -83,5 +83,5 @@ getter, toString, hashCode, equals.
 
 ### Integrating Lombok with an IDE
 Lombok integrates with popular IDEs:
-* To use Lombok in IntelliJ IDEA you'll need the [Lombok Plugin for IntelliJ IDEA](https://plugins.jetbrains.com/idea/plugin/6317-lombok-plugin) and you'll also need to enable Annotation Processing (`Settings / Build,Execution,Deployment / Compiler / Annotation Processors` and tick `Enable annotation processing`)
+* To use Lombok in IntelliJ IDEA you'll need the [Lombok Plugin for IntelliJ IDEA](https://plugins.jetbrains.com/plugin/6317-lombok) and you'll also need to enable Annotation Processing (`Settings / Build,Execution,Deployment / Compiler / Annotation Processors` and tick `Enable annotation processing`)
 * To Use Lombok in Eclipse, run `java -jar lombok.jar` (see the video at [Project Lombok](https://projectlombok.org/)).

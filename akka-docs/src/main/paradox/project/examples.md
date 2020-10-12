@@ -5,8 +5,8 @@ of how to run.
 
 ## Quickstart
 
-@scala[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-scala)]
-@java[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-java)]
+@scala[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-scala/)]
+@java[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-java/)]
  
 The *Quickstart* guide walks you through example code that introduces how to define actor systems, actors, and
 messages as well as how to use the test module and logging.
@@ -59,13 +59,13 @@ This project contains a Shopping Cart sample illustrating how to use Akka Persis
 The events are tagged to be consumed by even processors to build other representations
 from the events, or publish the events to other services.
 
-## Multi-DC Persistence
+## Replicated Event Sourcing
 
 @java[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-java)]
 @scala[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-scala)]
 
-Illustrates how to use Lightbend's [Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
-with active-active persistent entities across data centers.
+Illustrates how to use @ref:[Replicated Event Sourcing](../typed/replicated-eventsourcing.md) that supports
+active-active persistent entities across data centers.
 
 ## Cluster with Docker
 

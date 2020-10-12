@@ -6,6 +6,9 @@ package akka.remote.artery
 
 import scala.concurrent.duration._
 
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.actor.ActorIdentity
 import akka.actor.Identify
@@ -13,8 +16,6 @@ import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
 
 object SurviveNetworkPartitionSpec extends MultiNodeConfig {
   val first = role("first")

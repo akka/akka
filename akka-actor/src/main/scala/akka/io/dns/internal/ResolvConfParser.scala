@@ -7,8 +7,9 @@ package akka.io.dns.internal
 import java.io.File
 import java.nio.file.Files
 
-import akka.util.ccompat.JavaConverters._
 import scala.util.Try
+
+import akka.util.ccompat.JavaConverters._
 
 private[dns] case class ResolvConf(search: List[String], ndots: Int)
 

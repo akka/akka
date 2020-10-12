@@ -4,12 +4,12 @@
 
 package akka.stream.scaladsl
 
+import scala.collection.immutable
+import scala.concurrent.duration._
+
 import akka.NotUsed
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-
-import scala.collection.immutable
-import scala.concurrent.duration._
 
 class FlowIteratorSpec extends AbstractFlowIteratorSpec {
   override def testName = "A Flow based on an iterator producing function"

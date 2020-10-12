@@ -4,11 +4,12 @@
 
 package akka.stream
 
-import akka.util.Collections.EmptyImmutableSeq
-import scala.collection.immutable
-import akka.util.ccompat.JavaConverters._
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
+
 import akka.annotation.InternalApi
+import akka.util.Collections.EmptyImmutableSeq
+import akka.util.ccompat.JavaConverters._
 
 /**
  * An input port of a StreamLayout.Module. This type logically belongs

@@ -4,9 +4,10 @@
 
 package akka.testkit.metrics
 
-import com.codahale.metrics._
-import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.TimeUnit._
+import java.util.concurrent.atomic.AtomicLong
+
+import com.codahale.metrics._
 
 /**
  * Specialized "one-shot" Timer.

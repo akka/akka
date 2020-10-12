@@ -5,14 +5,16 @@
 package akka.actor.typed.internal
 
 import scala.reflect.ClassTag
-import akka.actor.typed
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.LogOptions
-import akka.actor.typed._
-import akka.annotation.InternalApi
-import akka.util.LineNumbers
+
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
+
+import akka.actor.typed
+import akka.actor.typed._
+import akka.actor.typed.LogOptions
+import akka.actor.typed.scaladsl.Behaviors
+import akka.annotation.InternalApi
+import akka.util.LineNumbers
 
 /**
  * Provides the impl of any behavior that could nest another behavior

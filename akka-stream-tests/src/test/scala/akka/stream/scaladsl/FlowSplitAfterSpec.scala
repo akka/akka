@@ -4,20 +4,21 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import org.reactivestreams.Publisher
+
 import akka.NotUsed
+import akka.stream._
 import akka.stream.StreamSubscriptionTimeoutTerminationMode
 import akka.stream.Supervision.resumingDecider
-import akka.stream._
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import org.reactivestreams.Publisher
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 object FlowSplitAfterSpec {
 

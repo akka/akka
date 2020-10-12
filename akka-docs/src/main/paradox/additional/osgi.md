@@ -5,14 +5,16 @@
 To use Akka in OSGi, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-osgi_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-osgi_$scala.binary.version$
+  version=AkkaVersion
 }
 
 ## Background
 
-[OSGi](http://www.osgi.org/developer) is a mature packaging and deployment standard for component-based systems. It
+[OSGi](https://www.osgi.org/developer/where-to-start/) is a mature packaging and deployment standard for component-based systems. It
 has similar capabilities as Project Jigsaw (originally scheduled for JDK 1.8), but has far stronger facilities to
 support legacy Java code. This is to say that while Jigsaw-ready modules require significant changes to most source files
 and on occasion to the structure of the overall application, OSGi can be used to modularize almost any Java code as far

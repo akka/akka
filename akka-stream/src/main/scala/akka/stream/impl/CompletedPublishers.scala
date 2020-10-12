@@ -4,8 +4,9 @@
 
 package akka.stream.impl
 
-import akka.annotation.InternalApi
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

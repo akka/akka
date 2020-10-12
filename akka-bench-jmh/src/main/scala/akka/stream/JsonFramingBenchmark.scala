@@ -6,9 +6,10 @@ package akka.stream
 
 import java.util.concurrent.TimeUnit
 
+import org.openjdk.jmh.annotations._
+
 import akka.stream.impl.JsonObjectParser
 import akka.util.ByteString
-import org.openjdk.jmh.annotations._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)

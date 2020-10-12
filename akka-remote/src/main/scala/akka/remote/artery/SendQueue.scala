@@ -6,18 +6,18 @@ package akka.remote.artery
 
 import java.util.Queue
 
-import akka.stream.stage.OutHandler
+import scala.annotation.tailrec
+import scala.concurrent.Promise
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
 import akka.stream.Attributes
 import akka.stream.Outlet
 import akka.stream.SourceShape
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStageWithMaterializedValue
-
-import scala.annotation.tailrec
-import scala.concurrent.Promise
-import scala.util.Try
-import scala.util.Success
-import scala.util.Failure
+import akka.stream.stage.OutHandler
 
 /**
  * INTERNAL API
