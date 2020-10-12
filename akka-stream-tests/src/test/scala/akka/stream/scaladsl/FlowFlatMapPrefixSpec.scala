@@ -604,7 +604,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
             Flow[Int].prepend(Source(seq))
           }(Keep.right)
           .toMat(Sink.queue(10))(Keep.both)
-          .run
+          .run()
 
         println("assigning closer")
         closeSink = () => qOut.cancel()
