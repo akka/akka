@@ -6,7 +6,6 @@ package docs.javadsl;
 
 import akka.NotUsed;
 // #ask-actor
-import akka.actor.Status;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.pattern.StatusReply;
@@ -63,6 +62,7 @@ public class ActorFlowCompileTest {
         // #ask
         null;
 
+    // #ask
     final ActorRef<AskingWithStatus> actorWithStatusRef = // ???
         // #ask
         null;

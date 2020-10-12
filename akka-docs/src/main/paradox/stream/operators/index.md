@@ -325,6 +325,7 @@ Operators meant for inter-operating between Akka Streams and Actors:
 |ActorSink|<a name="actorrefwithbackpressure"></a>@ref[actorRefWithBackpressure](ActorSink/actorRefWithBackpressure.md)|Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`] of the new actors API with backpressure, to be able to signal demand when the actor is ready to receive more elements.|
 |Source/Flow|<a name="ask"></a>@ref[ask](Source-or-Flow/ask.md)|Use the "Ask Pattern" to send a request-reply message to the target `ref` actor (of the classic actors API).|
 |ActorFlow|<a name="ask"></a>@ref[ask](ActorFlow/ask.md)|Use the "Ask Pattern" to send each stream element as an `ask` to the target actor (of the new actors API), and expect a reply that will be emitted downstream.|
+|ActorFlow|<a name="askwithstatus"></a>@ref[askWithStatus](ActorFlow/askWithStatus.md)|Use the "Ask Pattern" to send each stream element as an `ask` to the target actor (of the new actors API),  and expect a reply of Type StatusReply[T] where the T will be unwrapped and emitted downstream.|
 |Source/Flow|<a name="watch"></a>@ref[watch](Source-or-Flow/watch.md)|Watch a specific `ActorRef` and signal a failure downstream once the actor terminates.|
 
 ## Compression operators
@@ -368,6 +369,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [asJavaStream](StreamConverters/asJavaStream.md)
 * [ask](Source-or-Flow/ask.md)
 * [ask](ActorFlow/ask.md)
+* [askWithStatus](ActorFlow/askWithStatus.md)
 * [asOutputStream](StreamConverters/asOutputStream.md)
 * [asPublisher](Sink/asPublisher.md)
 * [asSourceWithContext](Source/asSourceWithContext.md)
