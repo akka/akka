@@ -8,7 +8,7 @@ import scala.annotation.implicitNotFound
 import scala.concurrent.Future
 import akka.NotUsed
 import akka.actor.typed.ActorRef
-import akka.pattern.{AskTimeoutException, StatusReply}
+import akka.pattern.{ AskTimeoutException, StatusReply }
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.Timeout
@@ -133,7 +133,7 @@ object ActorFlow {
    * failed.
    */
   def askWithStatus[I, Q, A](ref: ActorRef[Q])(makeMessage: (I, ActorRef[StatusReply[A]]) => Q)(
-    implicit timeout: Timeout): Flow[I, A, NotUsed] =
+      implicit timeout: Timeout): Flow[I, A, NotUsed] =
     askWithStatus(2)(ref)(makeMessage)
 
   /**
@@ -142,7 +142,7 @@ object ActorFlow {
    * failed.
    */
   def askWithStatus[I, Q, A](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[StatusReply[A]]) => Q)(
-    implicit timeout: Timeout): Flow[I, A, NotUsed] = {
+      implicit timeout: Timeout): Flow[I, A, NotUsed] = {
     ActorFlow.ask(parallelism)(ref)(makeMessage).map {
       case StatusReply.Success(a) => a.asInstanceOf[A]
       case StatusReply.Error(err) => throw err
