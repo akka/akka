@@ -75,7 +75,7 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
     }
 
     "produced status success elements unwrap " in {
-      val in: Future[immutable.Seq[StatusReply[String]]] =
+      val in: Future[immutable.Seq[String]] =
         Source
           .repeat("hello")
           .via(ActorFlow.askWithStatus(replierWithSuccess)((el, replyTo: ActorRef[StatusReply[String]]) =>
@@ -87,7 +87,7 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
     }
 
     "produce status error elements unwrap " in {
-      val in: Future[immutable.Seq[StatusReply[String]]] =
+      val in: Future[immutable.Seq[String]] =
         Source
           .repeat("hello")
           .via(ActorFlow.askWithStatus(replierWithError)((el, replyTo: ActorRef[StatusReply[String]]) =>

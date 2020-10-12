@@ -7,9 +7,9 @@ package akka.stream.typed.javadsl
 import java.util.function.BiFunction
 
 import scala.concurrent.duration._
-
 import akka.NotUsed
 import akka.actor.typed.ActorRef
+import akka.pattern.StatusReply
 import akka.stream.javadsl.Flow
 import akka.util.JavaDurationConverters
 
@@ -72,7 +72,7 @@ object ActorFlow {
   def askWithStatus[I, Q, A](
       ref: ActorRef[Q],
       timeout: java.time.Duration,
-      makeMessage: BiFunction[I, ActorRef[A], Q]): Flow[I, A, NotUsed] =
+      makeMessage: BiFunction[I, ActorRef[StatusReply[A]], Q]): Flow[I, A, NotUsed] =
     akka.stream.typed.scaladsl.ActorFlow
       .askWithStatus[I, Q, A](parallelism = 2)(ref)((i, ref) => makeMessage(i, ref))(
         JavaDurationConverters.asFiniteDuration(timeout))
@@ -129,7 +129,7 @@ object ActorFlow {
       parallelism: Int,
       ref: ActorRef[Q],
       timeout: java.time.Duration,
-      makeMessage: (I, ActorRef[A]) => Q): Flow[I, A, NotUsed] =
+      makeMessage: (I, ActorRef[StatusReply[A]]) => Q): Flow[I, A, NotUsed] =
     akka.stream.typed.scaladsl.ActorFlow
       .askWithStatus[I, Q, A](parallelism)(ref)((i, ref) => makeMessage(i, ref))(timeout.toMillis.millis)
       .asJava

@@ -77,7 +77,7 @@ public class ActorFlowCompileTest {
     Flow<String, Reply, NotUsed> askFlowExplicit =
         ActorFlow.ask(actorRef, timeout, (msg, replyTo) -> new Asking(msg, replyTo));
 
-    Flow<String, StatusReply<String>, NotUsed> askFlowExplicitWithStatus =
+    Flow<String, String, NotUsed> askFlowExplicitWithStatus =
         ActorFlow.askWithStatus(
             actorWithStatusRef, timeout, (msg, replyTo) -> new AskingWithStatus(msg, replyTo));
 

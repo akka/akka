@@ -132,8 +132,8 @@ object ActorFlow {
    * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply#error]] arrives the future is instead
    * failed.
    */
-  def askWithStatus[I, Q, A](ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
-      implicit timeout: Timeout): Flow[I, A, NotUsed] =
+  def askWithStatus[I, Q, A](ref: ActorRef[Q])(makeMessage: (I, ActorRef[StatusReply[A]]) => Q)(
+    implicit timeout: Timeout): Flow[I, A, NotUsed] =
     askWithStatus(2)(ref)(makeMessage)
 
   /**
@@ -141,8 +141,8 @@ object ActorFlow {
    * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply#error]] arrives the future is instead
    * failed.
    */
-  def askWithStatus[I, Q, A](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
-      implicit timeout: Timeout): Flow[I, A, NotUsed] = {
+  def askWithStatus[I, Q, A](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[StatusReply[A]]) => Q)(
+    implicit timeout: Timeout): Flow[I, A, NotUsed] = {
     ActorFlow.ask(parallelism)(ref)(makeMessage).map {
       case StatusReply.Success(a) => a.asInstanceOf[A]
       case StatusReply.Error(err) => throw err

@@ -1,6 +1,6 @@
 # ActorFlow.askWithStatus
 
-Use the "Ask Pattern" to send each stream element as an `ask` to the target actor (of the new actors API), and expect StatusReply reply that will be unwrapped emitted downstream.
+Use the "Ask Pattern" to send each stream element as an `ask` to the target actor (of the new actors API),  and expect a reply of Type StatusReply[T] where the T will be unwrapped and emitted downstream.
 
 @ref[Actor interop operators](../index.md#actor-interop-operators)
 
@@ -18,7 +18,7 @@ This operator is included in:
 
 ## Signature
 
-@apidoc[ActorFlow.askWithStatus](ActorFlow$) { scala="#ask%5BI,Q,A](ref:akka.actor.typed.ActorRef%5BQ])(makeMessage:(I,akka.actor.typed.ActorRef%5BA])=%3EQ)(implicittimeout:akka.util.Timeout):akka.stream.scaladsl.Flow%5BI,A,akka.NotUsed]" java="#ask(akka.actor.typed.ActorRef,java.time.Duration,java.util.function.BiFunction)" }
+//TODO
 
 ## Description
 
@@ -34,7 +34,7 @@ The `askWithStatus` operator requires
 
 ## Examples
 
-The `ActorFlow.askWithStatus` sends a message to the actor. The actor expects `Asking` messages which contain the actor ref for replies of type `Reply`. When the actor for replies receives a reply, the `ActorFlow.ask` stream stage emits the reply and the `map` extracts the message `String`.
+The `ActorFlow.askWithStatus` sends a message to the actor. The actor expects `AskingWithStatus` messages which contain the actor ref for replies of type `StatusReply[String]`. When the actor for replies receives a reply, the `ActorFlow.askWihStatus` stream stage emits the reply and the `map` extracts the message `String`.
 
 Scala
 :  @@snip [ask.scala](/akka-stream-typed/src/test/scala/docs/scaladsl/ActorFlowSpec.scala) { #imports #ask-actor #ask }
@@ -53,7 +53,7 @@ Java
 
 **completes** when upstream completes and all futures have been completed and all elements have been emitted
 
-**fails** when the passed-in actor terminates, or when any of the `ask`s exceed a timeout
+**fails** when the passed-in actor terminates, or when any of the `askWithStatus`s exceed a timeout
 
 **cancels** when downstream cancels
 
