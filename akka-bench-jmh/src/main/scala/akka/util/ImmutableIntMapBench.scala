@@ -4,9 +4,11 @@
 
 package akka.util
 
-import org.openjdk.jmh.annotations._
 import java.util.concurrent.TimeUnit
+
 import scala.annotation.tailrec
+
+import org.openjdk.jmh.annotations._
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))

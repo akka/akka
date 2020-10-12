@@ -4,12 +4,15 @@
 
 package akka.actor
 
+import java.util.concurrent.TimeUnit
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.testkit.TestProbe
+
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
-import java.util.concurrent.TimeUnit
+
+import akka.testkit.TestProbe
 
 object StashCreationBenchmark {
   class StashingActor extends Actor with Stash {
@@ -18,7 +21,7 @@ object StashCreationBenchmark {
     }
   }
 
-  val props = Props[StashingActor]
+  val props = Props[StashingActor]()
 }
 
 @State(Scope.Benchmark)

@@ -4,13 +4,13 @@
 
 package akka.cluster
 
+import akka.actor.Actor
+import akka.actor.Deploy
+import akka.actor.Props
+import akka.cluster.MemberStatus._
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.actor.Props
-import akka.actor.Actor
-import akka.cluster.MemberStatus._
-import akka.actor.Deploy
 
 object MembershipChangeListenerExitingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -28,8 +28,8 @@ abstract class MembershipChangeListenerExitingSpec
     extends MultiNodeSpec(MembershipChangeListenerExitingMultiJvmSpec)
     with MultiNodeClusterSpec {
 
-  import MembershipChangeListenerExitingMultiJvmSpec._
   import ClusterEvent._
+  import MembershipChangeListenerExitingMultiJvmSpec._
 
   "A registered MembershipChangeListener" must {
     "be notified when new node is EXITING" taggedAs LongRunningTest in {

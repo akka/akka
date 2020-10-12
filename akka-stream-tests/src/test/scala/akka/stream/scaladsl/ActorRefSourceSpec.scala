@@ -4,16 +4,17 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
+
+import org.reactivestreams.Publisher
+
 import akka.Done
 import akka.actor.{ ActorRef, PoisonPill, Status }
 import akka.stream.{ OverflowStrategy, _ }
-import akka.stream.testkit.Utils._
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl._
-import org.reactivestreams.Publisher
-
-import scala.concurrent.duration._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class ActorRefSourceSpec extends StreamSpec {
 

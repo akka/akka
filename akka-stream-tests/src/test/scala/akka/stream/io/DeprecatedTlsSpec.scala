@@ -8,6 +8,7 @@ import java.security.KeyStore
 import java.security.SecureRandom
 import java.security.cert.CertificateException
 import java.util.concurrent.TimeoutException
+import javax.net.ssl._
 
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -15,22 +16,22 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
 
+import com.github.ghik.silencer.silent
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
+
 import akka.NotUsed
 import akka.pattern.{ after => later }
-import akka.stream.TLSProtocol._
 import akka.stream._
+import akka.stream.TLSProtocol._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.testkit.WithLogCapturing
 import akka.testkit.TestDuration
+import akka.testkit.WithLogCapturing
 import akka.util.ByteString
 import akka.util.JavaVersion
-import com.github.ghik.silencer.silent
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import javax.net.ssl._
 
 object DeprecatedTlsSpec {
 
@@ -98,8 +99,8 @@ object DeprecatedTlsSpec {
 
 @silent("deprecated")
 class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) with WithLogCapturing {
-  import GraphDSL.Implicits._
   import DeprecatedTlsSpec._
+  import GraphDSL.Implicits._
   import system.dispatcher
 
   val sslConfig: Option[AkkaSSLConfig] = None // no special settings to be applied here

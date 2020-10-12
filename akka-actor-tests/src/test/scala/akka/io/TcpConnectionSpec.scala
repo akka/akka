@@ -6,33 +6,32 @@ package akka.io
 
 import java.io.IOException
 import java.net.{ InetSocketAddress, ServerSocket }
+import java.net.SocketTimeoutException
 import java.nio.ByteBuffer
 import java.nio.channels._
-import java.nio.channels.spi.SelectorProvider
 import java.nio.channels.SelectionKey._
-
-import com.typesafe.config.ConfigFactory
+import java.nio.channels.spi.SelectorProvider
+import java.nio.file.Files
+import java.util.Random
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.util.control.NonFatal
-import org.scalatest.matchers._
-import akka.io.Tcp._
-import akka.io.SelectionHandler._
-import akka.io.Inet.SocketOption
-import akka.actor._
-import akka.testkit.{ AkkaSpec, EventFilter, SocketUtil, TestActorRef, TestProbe }
-import akka.util.{ ByteString, Helpers }
-import akka.testkit.SocketUtil.temporaryServerAddress
-import java.util.Random
-import java.net.SocketTimeoutException
-import java.nio.file.Files
-
-import akka.testkit.WithLogCapturing
-import com.google.common.jimfs.{ Configuration, Jimfs }
-
 import scala.util.Try
+import scala.util.control.NonFatal
+
+import com.google.common.jimfs.{ Configuration, Jimfs }
+import com.typesafe.config.ConfigFactory
+import org.scalatest.matchers._
+
+import akka.actor._
+import akka.io.Inet.SocketOption
+import akka.io.SelectionHandler._
+import akka.io.Tcp._
+import akka.testkit.{ AkkaSpec, EventFilter, SocketUtil, TestActorRef, TestProbe }
+import akka.testkit.SocketUtil.temporaryServerAddress
+import akka.testkit.WithLogCapturing
+import akka.util.{ ByteString, Helpers }
 
 object TcpConnectionSpec {
   case class Ack(i: Int) extends Event
@@ -945,7 +944,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         })
   }
 
-  trait SmallRcvBuffer { _: LocalServerTest =>
+  trait SmallRcvBuffer { this: LocalServerTest =>
     override def setServerSocketOptions(): Unit = localServerChannel.socket.setReceiveBufferSize(1024)
   }
 
@@ -957,7 +956,7 @@ class TcpConnectionSpec extends AkkaSpec("""
 
     override def run(body: => Unit): Unit = super.run {
       registerCallReceiver.expectMsg(Registration(clientSideChannel, 0))
-      registerCallReceiver.sender should ===(connectionActor)
+      registerCallReceiver.sender() should ===(connectionActor)
       body
     }
   }

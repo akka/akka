@@ -7,6 +7,7 @@ package akka.persistence.query
 import java.util.UUID
 
 import scala.util.Random
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 

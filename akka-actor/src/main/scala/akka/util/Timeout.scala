@@ -4,10 +4,11 @@
 
 package akka.util
 
-import language.implicitConversions
-
 import java.util.concurrent.TimeUnit
+
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+
+import language.implicitConversions
 
 @SerialVersionUID(1L)
 case class Timeout(duration: FiniteDuration) {

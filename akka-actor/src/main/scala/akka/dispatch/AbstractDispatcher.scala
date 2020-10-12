@@ -4,8 +4,16 @@
 
 package akka.dispatch
 
-import java.util.concurrent._
 import java.{ util => ju }
+import java.util.concurrent._
+
+import scala.annotation.tailrec
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
 
 import akka.actor._
 import akka.annotation.InternalStableApi
@@ -14,15 +22,8 @@ import akka.dispatch.sysmsg._
 import akka.event.EventStream
 import akka.event.Logging.{ Debug, Error, LogEventException }
 import akka.util.{ unused, Index, Unsafe }
-import com.github.ghik.silencer.silent
-import com.typesafe.config.Config
 
-import scala.annotation.tailrec
-import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.util.control.NonFatal
-
-final case class Envelope private (val message: Any, val sender: ActorRef)
+final case class Envelope private (message: Any, sender: ActorRef)
 
 object Envelope {
   def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope = {
@@ -75,7 +76,7 @@ private[akka] object MessageDispatcher {
     if (debug) {
       for {
         d <- actors.keys
-        a <- { println(d + " inhabitants: " + d.inhabitants); actors.valueIterator(d) }
+        a <- { println("" + d + " inhabitants: " + d.inhabitants); actors.valueIterator(d) }
       } {
         val status = if (a.isTerminated) " (terminated)" else " (alive)"
         val messages = a match {

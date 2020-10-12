@@ -3,16 +3,18 @@ project.description: Share data between nodes and perform updates without coordi
 ---
 # Distributed Data
 
-For the Akka Classic documentation of this feature see @ref:[Classic Distributed Data](../distributed-data.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Distributed Data](../distributed-data.md).
 
 ## Module info
 
 To use Akka Cluster Distributed Data, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-cluster-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-cluster-typed_$scala.binary.version$
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-cluster-typed" }
@@ -224,6 +226,9 @@ including the local replica
  * `WriteMajority` the value will immediately be written to a majority of replicas, i.e.
 at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
 (or cluster role group)
+ * `WriteMajorityPlus` is like `WriteMajority` but with the given number of `additional` nodes added
+   to the majority count. At most all nodes. This gives better tolerance for membership changes between
+   writes and reads.
  * `WriteAll` the value will immediately be written to all nodes in the cluster
 (or all nodes in the cluster role group)
 
@@ -232,7 +237,8 @@ If there are not enough Acks after a 1/5th of the timeout, the update will be re
 nodes. If there are less than n nodes left all of the remaining nodes are used. Reachable nodes
 are preferred over unreachable nodes.
 
-Note that `WriteMajority` has a `minCap` parameter that is useful to specify to achieve better safety for small clusters.
+Note that `WriteMajority` and `WriteMajorityPlus` have a `minCap` parameter that is useful to specify to
+achieve better safety for small clusters.
 
 #### Read consistency
 
@@ -254,16 +260,20 @@ including the local replica
  * `ReadMajority` the value will be read and merged from a majority of replicas, i.e.
 at least **N/2 + 1** replicas, where N is the number of nodes in the cluster
 (or cluster role group)
+* `ReadMajorityPlus` is like `ReadMajority` but with the given number of `additional` nodes added
+   to the majority count. At most all nodes. This gives better tolerance for membership changes between
+   writes and reads.
  * `ReadAll` the value will be read and merged from all nodes in the cluster
 (or all nodes in the cluster role group)
 
-Note that `ReadMajority` has a `minCap` parameter that is useful to specify to achieve better safety for small clusters.
+Note that `ReadMajority` and `ReadMajorityPlus` have a `minCap` parameter that is useful to specify to achieve
+better safety for small clusters.
 
 #### Consistency and response types
 
 When using `ReadLocal`, you will never receive a `GetFailure` response, since the local replica is always available to
-local readers. `WriteLocal` however may still reply with `UpdateFailure` messages, in the event that the `modify` function
-threw an exception, or, if using @ref:[durable storage](#durable-storage), if storing failed.
+local readers. `WriteLocal` however may still reply with `UpdateFailure` messages if the `modify` function
+throws an exception, or if it fails to persist to @ref:[durable storage](#durable-storage).
 
 #### Examples
 
@@ -305,7 +315,8 @@ read stale data if the cluster membership has changed between the `Update` and t
 For example, in cluster of 5 nodes when you `Update` and that change is written to 3 nodes:
 n1, n2, n3. Then 2 more nodes are added and a `Get` request is reading from 4 nodes, which
 happens to be n4, n5, n6, n7, i.e. the value on n1, n2, n3 is not seen in the response of the
-`Get` request.
+`Get` request. For additional tolerance of membership changes between writes and reads you can
+use `WriteMajorityPlus` and `ReadMajorityPlus`.
 
 @@@
 
@@ -515,11 +526,17 @@ This means that the timestamp is increased for changes on the same node that occ
 the same millisecond. It also means that it is safe to use the `LWWRegister` without
 synchronized clocks when there is only one active writer, e.g. a Cluster Singleton. Such a
 single writer should then first read current value with `ReadMajority` (or more) before
-changing and writing the value with `WriteMajority` (or more).
+changing and writing the value with `WriteMajority` (or more). When using `LWWRegister`
+with Cluster Singleton it's also recommended to enable:
+
+```
+# Update and Get operations are sent to oldest nodes first.
+akka.cluster.distributed-data.prefer-oldest = on
+```
 
 ### Delta-CRDT
 
-[Delta State Replicated Data Types](http://arxiv.org/abs/1603.01529)
+[Delta State Replicated Data Types](https://arxiv.org/abs/1603.01529)
 are supported. A delta-CRDT is a way to reduce the need for sending the full state
 for updates. For example adding element `'c'` and `'d'` to set `{'a', 'b'}` would
 result in sending the delta `{'c', 'd'}` and merge that with the state on the
@@ -650,7 +667,7 @@ All entries can be made durable by specifying:
 akka.cluster.distributed-data.durable.keys = ["*"]
 ```
 
-@scala[[LMDB](https://symas.com/products/lightning-memory-mapped-database/)]@java[[LMDB](https://github.com/lmdbjava/lmdbjava/)] is the default storage implementation. It is
+@scala[[LMDB](https://symas.com/lmdb/technical/)]@java[[LMDB](https://github.com/lmdbjava/lmdbjava/)] is the default storage implementation. It is
 possible to replace that with another implementation by implementing the actor protocol described in
 `akka.cluster.ddata.DurableStore` and defining the `akka.cluster.distributed-data.durable.store-actor-class`
 property for the new implementation.
@@ -746,11 +763,9 @@ API documentation of the `Replicator` for details.
 
 ## Learn More about CRDTs
 
- * [Eventually Consistent Data Structures](https://vimeo.com/43903960)
-talk by Sean Cribbs
  * [Strong Eventual Consistency and Conflict-free Replicated Data Types (video)](https://www.youtube.com/watch?v=oyUHd894w18&amp;feature=youtu.be)
 talk by Mark Shapiro
- * [A comprehensive study of Convergent and Commutative Replicated Data Types](http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf)
+ * [A comprehensive study of Convergent and Commutative Replicated Data Types](https://hal.inria.fr/file/index/docid/555588/filename/techreport.pdf)
 paper by Mark Shapiro et. al.
 
 ## Configuration

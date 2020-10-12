@@ -109,9 +109,7 @@ import akka.util.PrettyDuration.PrettyPrintableDuration
           if (isAvailable(out))
             pull(in) // onPull from downstream already called
         }
-        outboundContext.controlSubject
-          .attach(this)
-          .foreach(callback.invoke)(ExecutionContexts.sameThreadExecutionContext)
+        outboundContext.controlSubject.attach(this).foreach(callback.invoke)(ExecutionContexts.parasitic)
       }
 
       override def postStop(): Unit = {

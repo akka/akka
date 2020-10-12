@@ -11,7 +11,6 @@ import java.util.concurrent.CompletionStage
 
 import akka.stream.{ javadsl, scaladsl, IOResult }
 import akka.util.ByteString
-
 import akka.util.ccompat.JavaConverters._
 
 /**

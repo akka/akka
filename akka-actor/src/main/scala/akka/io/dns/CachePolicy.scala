@@ -4,10 +4,10 @@
 
 package akka.io.dns
 
+import scala.concurrent.duration.{ Duration, FiniteDuration, _ }
+
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters._
-
-import scala.concurrent.duration.{ Duration, FiniteDuration, _ }
 
 object CachePolicy {
 

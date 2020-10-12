@@ -8,9 +8,11 @@ For the new API see @ref[Logging](typed/logging.md).
 To use Logging, you must at least use the Akka actors dependency in your project, and will most likely want to configure logging via the SLF4J module (@ref:[see below](#slf4j)).
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-actor_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-actor_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-slf4j" }
@@ -338,9 +340,11 @@ Akka provides a logger for [SLF4J](http://www.slf4j.org/). This module is availa
 It has a single dependency: the slf4j-api jar. In your runtime, you also need a SLF4J backend. We recommend [Logback](http://logback.qos.ch/):
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-slf4j_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-slf4j_$scala.binary.version$"
+  version=AkkaVersion
   group2="ch.qos.logback"
   artifact2="logback-classic"
   version2="$logback_version$"
@@ -445,7 +449,7 @@ All MDC properties as key-value entries can be included with `%mdc`:
 
 ```
   <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} - %msg {%mdc}%n</pattern>
+    <pattern>%date{ISO8601} %-5level %logger{36} - %msg MDC: {%mdc}%n</pattern>
   </encoder>
 ```
 
@@ -544,7 +548,7 @@ All MDC properties as key-value entries can be included with `%mdc`:
 
 ```
   <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} - %msg {%mdc}%n</pattern>
+    <pattern>%date{ISO8601} %-5level %logger{36} - %msg MDC: {%mdc}%n</pattern>
   </encoder>
 ```
 
@@ -574,7 +578,7 @@ The marker can be included in the Logback output with `%marker` and all MDC prop
 
 ```
   <encoder>
-    <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg {%mdc}%n</pattern>
+    <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg MDC: {%mdc}%n</pattern>
   </encoder>
 ```
 

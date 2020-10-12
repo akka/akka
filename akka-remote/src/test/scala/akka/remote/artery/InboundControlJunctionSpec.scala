@@ -4,6 +4,8 @@
 
 package akka.remote.artery
 
+import scala.util.Try
+
 import akka.Done
 import akka.actor.Address
 import akka.remote.UniqueAddress
@@ -15,8 +17,6 @@ import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import akka.util.OptionVal
-
-import scala.util.Try
 
 object InboundControlJunctionSpec {
   trait TestControlMessage extends ControlMessage

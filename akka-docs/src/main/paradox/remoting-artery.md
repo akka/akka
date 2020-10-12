@@ -21,9 +21,11 @@ such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
 To use Artery Remoting, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-remote_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-remote_$scala.binary.version$
+  version=AkkaVersion
 }
 
 Artery UDP depends on Aeron. This needs to be explicitly added as a dependency if using `aeron-udp` so that users
@@ -311,13 +313,13 @@ According to [RFC 7525](https://tools.ietf.org/html/rfc7525) the recommended alg
 You should always check the latest information about security and algorithm recommendations though before you configure your system.
 
 Creating and working with keystores and certificates is well documented in the
-[Generating X.509 Certificates](http://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
+[Generating X.509 Certificates](https://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
 section of Lightbend's SSL-Config library.
 
 Since an Akka remoting is inherently @ref:[peer-to-peer](general/remoting.md#symmetric-communication) both the key-store as well as trust-store
 need to be configured on each remoting node participating in the cluster.
 
-The official [Java Secure Socket Extension documentation](http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html)
+The official [Java Secure Socket Extension documentation](https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html)
 as well as the [Oracle documentation on creating KeyStore and TrustStores](https://docs.oracle.com/cd/E19509-01/820-3503/6nf1il6er/index.html)
 are both great resources to research when setting up security on the JVM. Please consult those resources when troubleshooting
 and configuring SSL.
@@ -662,7 +664,7 @@ See `inbound-lanes` and `outbound-lanes` in the @ref:[reference configuration](g
 
 All the communication between user defined remote actors are isolated from the channel of Akka internal messages so
 a large user message cannot block an urgent system message. While this provides good isolation for Akka services, all
-user communications by default happen through a shared network connection (an Aeron stream). When some actors
+user communications by default happen through a shared network connection. When some actors
 send large messages this can cause other messages to suffer higher latency as they need to wait until the full
 message has been transported on the shared channel (and hence, shared bottleneck). In these cases it is usually
 helpful to separate actors that have different QoS requirements: large messages vs. low latency.
@@ -693,6 +695,27 @@ This means that all messages sent to the following actors will pass through the 
 
 Messages destined for actors not matching any of these patterns are sent using the default channel as before.
 
+To notice large messages you can enable logging of message types with payload size in bytes larger than the
+configured `log-frame-size-exceeding`.
+
+```
+akka.remote.artery {
+  log-frame-size-exceeding = 10000b
+}
+```
+
+Example log messages:
+
+```
+[INFO] Payload size for [java.lang.String] is [39068] bytes. Sent to Actor[akka://Sys@localhost:53039/user/destination#-1908386800]
+[INFO] New maximum payload size for [java.lang.String] is [44068] bytes. Sent to Actor[akka://Sys@localhost:53039/user/destination#-1908386800].
+```
+
+The large messages channel can still not be used for extremely large messages, a few MB per message at most.
+An alternative is to use the @ref:[Reliable delivery](typed/reliable-delivery.md) that has support for 
+automatically @ref[splitting up large messages](typed/reliable-delivery.md#chunk-large-messages) and assemble
+them again on the receiving side.
+
 ### External, shared Aeron media driver
 
 The Aeron transport is running in a so called [media driver](https://github.com/real-logic/Aeron/wiki/Media-Driver-Operation).
@@ -717,7 +740,7 @@ The needed classpath:
 Agrona-0.5.4.jar:aeron-driver-1.0.1.jar:aeron-client-1.0.1.jar
 ```
 
-You find those jar files on [Maven Central](http://search.maven.org/), or you can create a
+You find those jar files on [Maven Central](https://search.maven.org/), or you can create a
 package with your preferred build tool.
 
 You can pass [Aeron properties](https://github.com/real-logic/Aeron/wiki/Configuration-Options) as

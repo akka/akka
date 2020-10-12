@@ -7,17 +7,18 @@ package akka.persistence
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.collection.immutable
+import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Actor, ActorCell, DeadLetter, StashOverflowException }
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.Envelope
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.Helpers.ConfigOps
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
-
-import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
-import scala.util.control.NonFatal
 
 /** INTERNAL API */
 @InternalApi
@@ -873,9 +874,10 @@ private[persistence] trait Eventsourced
         writeInProgress = false
         flushJournalBatch()
 
-      case WriteMessagesFailed(_) =>
-        writeInProgress = false
-        () // it will be stopped by the first WriteMessageFailure message
+      case WriteMessagesFailed(_, writeCount) =>
+        // if writeCount > 0 then WriteMessageFailure will follow that will stop the actor
+        if (writeCount == 0) writeInProgress = false
+        ()
 
       case _: RecoveryTick =>
       // we may have one of these in the mailbox before the scheduled timeout

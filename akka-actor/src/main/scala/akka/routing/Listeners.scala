@@ -4,8 +4,9 @@
 
 package akka.routing
 
-import akka.actor.{ Actor, ActorRef }
 import java.util.{ Set, TreeSet }
+
+import akka.actor.{ Actor, ActorRef }
 
 sealed trait ListenerMessage
 final case class Listen(listener: ActorRef) extends ListenerMessage

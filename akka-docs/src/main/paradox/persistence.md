@@ -11,9 +11,11 @@ For the full documentation of this feature and for new projects see @ref:[Event 
 To use Akka Persistence, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-persistence_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-persistence_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 You also have to select journal plugin and optionally snapshot store plugin, see 
@@ -38,10 +40,10 @@ case of sender and receiver JVM crashes.
  * `AsyncWriteJournal`: A journal stores the sequence of messages sent to a persistent actor. An application can control which messages
 are journaled and which are received by the persistent actor without being journaled. Journal maintains `highestSequenceNr` that is increased on each message.
 The storage backend of a journal is pluggable. The persistence extension comes with a "leveldb" journal plugin, which writes to the local filesystem.
-Replicated journals are available as [Community plugins](http://akka.io/community/).
+Replicated journals are available as [Community plugins](https://akka.io/community/).
  * *Snapshot store*: A snapshot store persists snapshots of a persistent actor's state. Snapshots are
 used for optimizing recovery times. The storage backend of a snapshot store is pluggable.
-The persistence extension comes with a "local" snapshot storage plugin, which writes to the local filesystem. Replicated snapshot stores are available as [Community plugins](http://akka.io/community/)
+The persistence extension comes with a "local" snapshot storage plugin, which writes to the local filesystem. Replicated snapshot stores are available as [Community plugins](https://akka.io/community/)
  * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
 development of event sourced applications (see section @ref:[Event sourcing](typed/persistence.md#event-sourcing-concepts)).
 
@@ -564,9 +566,11 @@ Scala
 Java
 :  @@snip [LambdaPersistenceDocTest.java](/akka-docs/src/test/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #save-snapshot }
 
-where `metadata` is of type `SnapshotMetadata`:
+where `metadata` is of type `SnapshotMetadata` and contains:
 
-@@snip [SnapshotProtocol.scala](/akka-persistence/src/main/scala/akka/persistence/SnapshotProtocol.scala) { #snapshot-metadata }
+* persistenceId 
+* sequenceNr
+* timestamp
 
 During recovery, the persistent actor is offered the latest saved snapshot via a `SnapshotOffer` message from
 which it can initialize internal state.
@@ -804,7 +808,7 @@ to the application configuration. If not specified, an exception will be throw w
 
 For more advanced schema evolution techniques refer to the @ref:[Persistence - Schema Evolution](persistence-schema-evolution.md) documentation.
 
-## Testing
+## Testing with LevelDB journal
 
 When running tests with LevelDB default settings in `sbt`, make sure to set `fork := true` in your sbt project. Otherwise, you'll see an `UnsatisfiedLinkError`. Alternatively, you can switch to a LevelDB Java port by setting
 
@@ -889,5 +893,5 @@ Java
 ## See also
 
 * @ref[Persistent FSM](persistence-fsm.md)
-* @ref[Building a new storage backend](persistence-plugins.md)
+* @ref[Persistence plugins](persistence-plugins.md)
 * @ref[Building a new storage backend](persistence-journals.md)

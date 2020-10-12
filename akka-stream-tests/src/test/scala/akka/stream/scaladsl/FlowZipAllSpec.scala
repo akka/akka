@@ -4,9 +4,10 @@
 
 package akka.stream.scaladsl
 
+import org.reactivestreams.Publisher
+
 import akka.stream.testkit.{ BaseTwoStreamsSetup, TestSubscriber }
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import org.reactivestreams.Publisher
 
 class FlowZipAllSpec extends BaseTwoStreamsSetup {
   override type Outputs = (Int, Int)

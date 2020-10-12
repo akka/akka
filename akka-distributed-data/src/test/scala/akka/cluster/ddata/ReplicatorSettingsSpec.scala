@@ -4,10 +4,11 @@
 
 package akka.cluster.ddata
 
-import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.testkit.AkkaSpec
 
 object ReplicatorSettingsSpec {
 

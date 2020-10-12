@@ -4,11 +4,14 @@
 
 package akka.remote
 
-import language.postfixOps
 import java.util.concurrent.TimeoutException
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.actor.Actor
 import akka.actor.ActorSystemImpl
 import akka.actor.Props
@@ -68,8 +71,8 @@ object RemoteDeploymentDeathWatchSpec {
 
 abstract class RemoteDeploymentDeathWatchSpec(multiNodeConfig: RemoteDeploymentDeathWatchMultiJvmSpec)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
-  import multiNodeConfig._
   import RemoteDeploymentDeathWatchSpec._
+  import multiNodeConfig._
 
   def scenario: String
   // Possible to override to let them heartbeat for a while.
@@ -82,7 +85,7 @@ abstract class RemoteDeploymentDeathWatchSpec(multiNodeConfig: RemoteDeploymentD
     "be able to shutdown when remote node crash" taggedAs LongRunningTest in within(20 seconds) {
       runOn(second) {
         // remote deployment to third
-        val hello = system.actorOf(Props[Hello], "hello")
+        val hello = system.actorOf(Props[Hello](), "hello")
         hello.path.address should ===(node(third).address)
         enterBarrier("hello-deployed")
 

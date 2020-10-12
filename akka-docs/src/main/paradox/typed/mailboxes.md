@@ -1,6 +1,6 @@
 # Mailboxes
 
-For the Akka Classic documentation of this feature see @ref:[Classic Mailboxes](../mailboxes.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Mailboxes](../mailboxes.md).
 
 ## Dependency
 
@@ -8,9 +8,11 @@ Mailboxes are part of core Akka, which means that they are part of the `akka-act
 page describes how to use mailboxes with `akka-actor-typed`, which has dependency:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-actor-typed_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-actor-typed_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction 

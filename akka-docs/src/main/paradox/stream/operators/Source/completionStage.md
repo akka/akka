@@ -1,16 +1,13 @@
-# completionStage
+# Source.completionStage
 
 Send the single value of the `CompletionStage` when it completes and there is demand.
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #completionStage }
+@apidoc[Source.completionStage](Source$) { scala="#completionStage[T](completionStage:java.util.concurrent.CompletionStage[T]):akka.stream.scaladsl.Source[T,akka.NotUsed]" java="#completionStage(java.util.concurrent.CompletionStage)" }
 
-@@@
 
 ## Description
 
@@ -19,6 +16,11 @@ If the `CompletionStage` completes with `null` stage is completed without emitti
 If the `CompletionStage` fails the stream is failed with that exception.
 
 For the corresponding operator for the Scala standard library `Future` see @ref:[future](future.md).
+
+## Example
+
+Java
+:  @@snip [SourceFromCompletionStage.java](/akka-docs/src/test/java/jdocs/stream/operators/source/FromCompletionStage.java) { #sourceFromCompletionStage }
 
 ## Reactive Streams semantics
 
@@ -29,10 +31,3 @@ For the corresponding operator for the Scala standard library `Future` see @ref:
 **completes** after the future has completed
 
 @@@
-
-## Example
-
-Java
-:  @@snip [SourceFromCompletionStage.java](/akka-docs/src/test/java/jdocs/stream/operators/source/FromCompletionStage.java) { #sourceFromCompletionStage }
-
-For the corresponding operator for the Scala standard library `Future` see @ref:[future](future.md).

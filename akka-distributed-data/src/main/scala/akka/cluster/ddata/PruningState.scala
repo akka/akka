@@ -5,9 +5,9 @@
 package akka.cluster.ddata
 
 import akka.actor.Address
+import akka.annotation.InternalApi
 import akka.cluster.Member
 import akka.cluster.UniqueAddress
-import akka.annotation.InternalApi
 import akka.util.unused
 
 /**

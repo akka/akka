@@ -4,19 +4,21 @@
 
 package akka.cluster.metrics
 
-import akka.actor.Actor
-import akka.actor.ActorLogging
-import akka.actor.Props
-import akka.actor.Address
-import akka.cluster.ClusterEvent
-import akka.cluster.Member
-import akka.cluster.Cluster
-import scala.collection.immutable
-import akka.cluster.MemberStatus
 import java.util.concurrent.ThreadLocalRandom
-import akka.actor.DeadLetterSuppression
+
+import scala.collection.immutable
 
 import com.github.ghik.silencer.silent
+
+import akka.actor.Actor
+import akka.actor.ActorLogging
+import akka.actor.Address
+import akka.actor.DeadLetterSuppression
+import akka.actor.Props
+import akka.cluster.Cluster
+import akka.cluster.ClusterEvent
+import akka.cluster.Member
+import akka.cluster.MemberStatus
 
 /**
  *  Runtime collection management commands.
@@ -50,8 +52,8 @@ case object CollectionStopMessage extends CollectionControlMessage {
  */
 private[metrics] class ClusterMetricsSupervisor extends Actor with ActorLogging {
   val metrics = ClusterMetricsExtension(context.system)
-  import metrics.settings._
   import context._
+  import metrics.settings._
 
   override val supervisorStrategy = metrics.strategy
 
@@ -132,8 +134,8 @@ private[metrics] object ClusterMetricsCollector {
  * Actor responsible for periodic data sampling in the node and publication to the cluster.
  */
 private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
-  import ClusterMetricsCollector._
   import ClusterEvent._
+  import ClusterMetricsCollector._
   import Member.addressOrdering
   import context.dispatcher
   val cluster = Cluster(context.system)
@@ -198,7 +200,7 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
 
   }
 
-  override def postStop: Unit = {
+  override def postStop(): Unit = {
     cluster.unsubscribe(self)
     gossipTask.cancel()
     sampleTask.cancel()

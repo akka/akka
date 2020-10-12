@@ -29,7 +29,7 @@ object GracefulStopDocSpec {
   object MasterControlProgram {
     sealed trait Command
     final case class SpawnJob(name: String) extends Command
-    final case object GracefulShutdown extends Command
+    case object GracefulShutdown extends Command
     final case class Cleaned(actor: ActorRef[Job.Command]) extends Command
 
     // Predefined cleanup operation

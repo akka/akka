@@ -10,13 +10,14 @@ import java.util.function.{ Function => JFunction }
 import scala.util.Failure
 import scala.util.Success
 
-import akka.util.JavaDurationConverters._
+import com.github.ghik.silencer.silent
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.ActorContext
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
+import akka.util.JavaDurationConverters._
 import akka.util.Timeout
-import com.github.ghik.silencer.silent
 
 /**
  * When interacting with the `Replicator` from an actor this class provides convenient

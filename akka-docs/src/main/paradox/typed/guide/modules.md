@@ -1,6 +1,6 @@
 # Overview of Akka libraries and modules
 
-Before delving into some best practices for writing actors, it will be helpful to preview the most commonly used Akka libraries. This will help you start thinking about the functionality you want to use in your system. All core Akka functionality is available as Open Source Software (OSS). Lightbend sponsors Akka development but can also help you with [commercial offerings ](https://www.lightbend.com/platform/subscription) such as training, consulting, support, and [Enterprise Suite](https://www.lightbend.com/platform/production) &#8212; a comprehensive set of tools for managing Akka systems.
+Before delving into some best practices for writing actors, it will be helpful to preview the most commonly used Akka libraries. This will help you start thinking about the functionality you want to use in your system. All core Akka functionality is available as Open Source Software (OSS). Lightbend sponsors Akka development but can also help you with [commercial offerings ](https://www.lightbend.com/lightbend-subscription) such as training, consulting, support, and [Enterprise capabilities](https://www.lightbend.com/why-lightbend#enterprise-capabilities) &#8212; a comprehensive set of tools for managing Akka systems.
 
 The following capabilities are included with Akka OSS and are introduced later on this page:
 
@@ -14,20 +14,17 @@ The following capabilities are included with Akka OSS and are introduced later o
 * @ref:[Streams](#streams)
 * @ref:[HTTP](#http)
 
-With a [Lightbend Platform Subscription](https://www.lightbend.com/platform/subscription), you can use [Akka Enhancements](https://doc.akka.io/docs/akka-enhancements/current/) that includes:
+With a [Lightbend Platform Subscription](https://www.lightbend.com/lightbend-subscription), you can use [Akka Enhancements](https://doc.akka.io/docs/akka-enhancements/current/) that includes:
 
 [Akka Resilience Enhancements](https://doc.akka.io/docs/akka-enhancements/current/akka-resilience-enhancements.html):
 
-* [Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html) &#8212; Detects and recovers from network partitions, eliminating data inconsistencies and possible downtime.
 * [Configuration Checker](https://doc.akka.io/docs/akka-enhancements/current/config-checker.html) &#8212; Checks for potential configuration issues and logs suggestions.
 * [Diagnostics Recorder](https://doc.akka.io/docs/akka-enhancements/current/diagnostics-recorder.html) &#8212; Captures configuration and system information in a format that makes it easy to troubleshoot issues during development and production.
 * [Thread Starvation Detector](https://doc.akka.io/docs/akka-enhancements/current/starvation-detector.html) &#8212; Monitors an Akka system dispatcher and logs warnings if it becomes unresponsive.
-* [Kubernetes Lease](https://doc.akka.io/docs/akka-enhancements/current/kubernetes-lease.html) &#8212; Monitors an Akka system dispatcher and logs warnings if it becomes unresponsive.
 * [Fast Failover](https://doc.akka.io/docs/akka-enhancements/current/fast-failover.html) &#8212; Fast failover for Cluster Sharding.
 
 [Akka Persistence Enhancements](https://doc.akka.io/docs/akka-enhancements/current/akka-persistence-enhancements.html):
 
-* [Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html) &#8212; For active-active persistent entities across multiple data centers.
 * [GDPR for Akka Persistence](https://doc.akka.io/docs/akka-enhancements/current/gdpr/index.html) &#8212; Data shredding can be used to forget information in events.
 
 This page does not list all available modules, but overviews the main functionality and gives you an idea of the level of sophistication you can reach when you start building systems on top of Akka.
@@ -35,9 +32,11 @@ This page does not list all available modules, but overviews the main functional
 ### Actor library
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-actor-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-actor-typed_$scala.binary.version$
+  version=AkkaVersion
 }
 
 The core Akka library is `akka-actor-typed`, but actors are used across Akka libraries, providing a consistent, integrated model that relieves you from individually
@@ -60,9 +59,11 @@ Challenges that actors solve include the following:
 ### Remoting
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-remote_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-remote_$scala.binary.version$
+  version=AkkaVersion
 }
 
 Remoting enables actors that live on different computers to seamlessly exchange messages.
@@ -83,9 +84,11 @@ Challenges Remoting solves include the following:
 ### Cluster
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-cluster-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-cluster-typed_$scala.binary.version$
+  version=AkkaVersion
 }
 
 If you have a set of actor systems that cooperate to solve some business problem, then you likely want to manage these set of
@@ -106,9 +109,11 @@ Challenges the Cluster module solves include the following:
 ### Cluster Sharding
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-cluster-sharding-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-cluster-sharding-typed_$scala.binary.version$
+  version=AkkaVersion
 }
 
 Sharding helps to solve the problem of distributing a set of actors among members of an Akka cluster.
@@ -125,9 +130,11 @@ Challenges that Sharding solves include the following:
 ### Cluster Singleton
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-cluster-singleton_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-cluster-singleton_$scala.binary.version$
+  version=AkkaVersion
 }
 
 A common (in fact, a bit too common) use case in distributed systems is to have a single entity responsible
@@ -146,9 +153,11 @@ The Singleton module can be used to solve these challenges:
 ### Persistence
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-persistence-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-persistence-typed_$scala.binary.version$
+  version=AkkaVersion
 }
 
 Just like objects in OOP, actors keep their state in volatile memory. Once the system is shut down, gracefully or
@@ -160,7 +169,7 @@ cluster for example) or alternate views (like reports).
 Persistence tackles the following challenges:
 
 * How to restore the state of an entity/actor when system restarts or crashes.
-* How to implement a [CQRS system](https://msdn.microsoft.com/en-us/library/jj591573.aspx).
+* How to implement a [CQRS system](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj591573%28v=pandp.10%29).
 * How to ensure reliable delivery of messages in face of network errors and system crashes.
 * How to introspect domain events that have led an entity to its current state.
 * How to leverage [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) in your application to support long-running processes while the project continues to evolve.
@@ -168,9 +177,11 @@ Persistence tackles the following challenges:
 ### Distributed Data
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-cluster-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-cluster-typed_$scala.binary.version$
+  version=AkkaVersion
 }
 
 In situations where eventual consistency is acceptable, it is possible to share data between nodes in
@@ -187,9 +198,11 @@ Distributed Data is intended to solve the following challenges:
 ### Streams
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-stream-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-stream-typed_$scala.binary.version$
+  version=AkkaVersion
 }
 
 Actors are a fundamental model for concurrency, but there are common patterns where their use requires the user
@@ -198,7 +211,7 @@ process a potentially large, or infinite, stream of sequential events and proper
 faster processing stages do not overwhelm slower ones in the chain or graph. Streams provide a higher-level
 abstraction on top of actors that simplifies writing such processing networks, handling all the fine details in the
 background and providing a safe, typed, composable programming model. Streams is also an implementation
-of the [Reactive Streams standard](http://www.reactive-streams.org) which enables integration with all third
+of the [Reactive Streams standard](https://www.reactive-streams.org) which enables integration with all third
 party implementations of that standard.
 
 Streams solve the following challenges:
@@ -210,7 +223,7 @@ Streams solve the following challenges:
 
 ### HTTP
 
-[Akka HTTP](https://doc.akka.io/docs/akka-http/current) is a separate module from Akka.
+[Akka HTTP](https://doc.akka.io/docs/akka-http/current/) is a separate module from Akka.
 
 The de facto standard for providing APIs remotely, internal or external, is [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol). Akka provides a library to construct or consume such HTTP services by giving a set of tools to create HTTP services (and serve them) and a client that can be
 used to consume other services. These tools are particularly suited to streaming in and out a large set of data or real-time events by leveraging the underlying model of Akka Streams.

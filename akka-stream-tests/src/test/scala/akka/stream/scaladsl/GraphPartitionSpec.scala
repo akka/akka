@@ -4,16 +4,16 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.ActorAttributes
-import akka.stream.Supervision
-import akka.stream.testkit.Utils.TE
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.ClosedShape
-import akka.stream.OverflowStrategy
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.stream.ActorAttributes
+import akka.stream.ClosedShape
+import akka.stream.OverflowStrategy
+import akka.stream.Supervision
+import akka.stream.testkit._
+import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class GraphPartitionSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

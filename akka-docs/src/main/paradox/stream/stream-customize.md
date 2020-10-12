@@ -5,9 +5,11 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -35,7 +37,7 @@ smaller ones, and allows state to be maintained inside it in a safe way.
 
 As a first motivating example, we will build a new `Source` that will emit numbers from 1 until it is
 cancelled. To start, we need to define the "interface" of our operator, which is called *shape* in Akka Streams terminology
-(this is explained in more detail in the section @ref:[Modularity, Composition and Hierarchy](stream-composition.md)). This is how this looks like:
+(this is explained in more detail in the section @ref:[Modularity, Composition and Hierarchy](stream-composition.md)). This is how it looks:
 
 Scala
 :   @@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #boilerplate-example }
@@ -516,7 +518,7 @@ allow nicer syntax. The short answer is that Scala 2 does not support this in a 
 that it is impossible to abstract over the kind of stream that is being extended because `Source`, `Flow`
 and `SubFlow` differ in the number and kind of their type parameters. While it would be possible to write
 an implicit class that enriches them generically, this class would require explicit instantiation with all type
-parameters due to [SI-2712](https://issues.scala-lang.org/browse/SI-2712). For a partial workaround that unifies
+parameters due to [SI-2712](https://github.com/scala/bug/issues/2712). For a partial workaround that unifies
 extensions to `Source` and `Flow` see [this sketch by R. Kuhn](https://gist.github.com/rkuhn/2870fcee4937dda2cad5).
 
 A lot simpler is the task of adding an extension method to `Source` as shown below:

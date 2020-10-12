@@ -54,8 +54,8 @@ public class StreamPartialGraphDSLDocTest extends AbstractJavaTest {
 
               builder.from(zip1.out()).toInlet(zip2.in0());
               // return the shape, which has three inputs and one output
-              return new UniformFanInShape<Integer, Integer>(
-                  zip2.out(), new Inlet[] {zip1.in0(), zip1.in1(), zip2.in1()});
+              return UniformFanInShape.<Integer, Integer>create(
+                  zip2.out(), Arrays.asList(zip1.in0(), zip1.in1(), zip2.in1()));
             });
 
     final Sink<Integer, CompletionStage<Integer>> resultSink = Sink.<Integer>head();

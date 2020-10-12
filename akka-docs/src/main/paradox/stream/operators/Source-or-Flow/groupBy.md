@@ -4,13 +4,11 @@ Demultiplex the incoming stream into separate output streams.
 
 @ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #groupBy }
+@apidoc[Source.groupBy](Source) { scala="#groupBy[K](maxSubstreams:Int,f:Out=&gt;K):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#groupBy(int,akka.japi.function.Function,boolean)" }
+@apidoc[Flow.groupBy](Flow) { scala="#groupBy[K](maxSubstreams:Int,f:Out=&gt;K):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#groupBy(int,akka.japi.function.Function,boolean)" }
 
-@@@
 
 ## Description
 

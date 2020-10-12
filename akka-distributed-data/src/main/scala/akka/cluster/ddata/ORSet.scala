@@ -6,10 +6,11 @@ package akka.cluster.ddata
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+
+import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import akka.util.{ unused, HashCode }
-import akka.annotation.InternalApi
 
 object ORSet {
   private val _empty: ORSet[Any] = new ORSet(Map.empty, VersionVector.empty)
@@ -187,7 +188,7 @@ object ORSet {
             }
           case (ManyVersionVector(lhsVs), ManyVersionVector(rhsVs)) =>
             val commonDots = lhsVs.filter {
-              case (thisDotNode, v) => rhsVs.get(thisDotNode).exists(_ == v)
+              case (thisDotNode, v) => rhsVs.get(thisDotNode).contains(v)
             }
             val commonDotsKeys = commonDots.keys
             val lhsUniqueDots = lhsVs -- commonDotsKeys

@@ -4,7 +4,6 @@
 
 package akka.persistence.query.journal.leveldb
 
-import akka.NotUsed
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
 import akka.persistence.Persistence
@@ -22,7 +21,7 @@ import akka.stream.stage.TimerGraphStageLogicWithLogging
  * INTERNAL API
  */
 @InternalApi
-final private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJournalPluginId: String)
+final private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJournalPluginId: String, mat: Materializer)
     extends GraphStage[SourceShape[String]] {
 
   val out: Outlet[String] = Outlet("AllPersistenceIds.out")
@@ -30,14 +29,9 @@ final private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJourna
   override def shape: SourceShape[String] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    throw new UnsupportedOperationException("Not used")
-
-  override private[akka] def createLogicAndMaterializedValue(
-      inheritedAttributes: Attributes,
-      eagerMaterializer: Materializer): (GraphStageLogic, NotUsed) = {
-    val logic = new TimerGraphStageLogicWithLogging(shape) with OutHandler with Buffer[String] {
+    new TimerGraphStageLogicWithLogging(shape) with OutHandler with Buffer[String] {
       setHandler(out, this)
-      val journal: ActorRef = Persistence(eagerMaterializer.system).journalFor(writeJournalPluginId)
+      val journal: ActorRef = Persistence(mat.system).journalFor(writeJournalPluginId)
       var initialResponseReceived = false
 
       override protected def logSource: Class[_] = classOf[AllPersistenceIdsStage]
@@ -71,7 +65,4 @@ final private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJourna
       }
 
     }
-
-    (logic, NotUsed)
-  }
 }

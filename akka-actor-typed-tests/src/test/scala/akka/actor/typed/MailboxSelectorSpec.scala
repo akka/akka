@@ -7,10 +7,12 @@ package akka.actor.typed
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.ActorCell
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.internal.adapter.ActorContextAdapter
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
@@ -18,7 +20,6 @@ import akka.dispatch.BoundedMessageQueueSemantics
 import akka.dispatch.BoundedNodeMessageQueue
 import akka.dispatch.MessageQueue
 import akka.dispatch.UnboundedMessageQueueSemantics
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
     specific-mailbox {

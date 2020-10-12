@@ -4,11 +4,12 @@
 
 package akka.cluster.ddata
 
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.Address
 import akka.cluster.UniqueAddress
 import akka.cluster.ddata.Replicator.Internal.DataEnvelope
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class DataEnvelopeSpec extends AnyWordSpec with Matchers {
   import PruningState._

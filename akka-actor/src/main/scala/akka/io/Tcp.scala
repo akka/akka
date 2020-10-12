@@ -4,24 +4,24 @@
 
 package akka.io
 
+import java.lang.{ Iterable => JIterable }
 import java.net.InetSocketAddress
 import java.net.Socket
+import java.nio.file.{ Path, Paths }
 
-import akka.io.Inet._
+import scala.collection.immutable
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
-import scala.concurrent.duration._
-import scala.collection.immutable
-import akka.util.ccompat.JavaConverters._
+import akka.actor._
+import akka.annotation.InternalApi
+import akka.io.Inet._
 import akka.util.{ ByteString, Helpers }
 import akka.util.Helpers.Requiring
 import akka.util.JavaDurationConverters._
-import akka.actor._
-import java.lang.{ Iterable => JIterable }
-import java.nio.file.{ Path, Paths }
-
-import akka.annotation.InternalApi
-import com.github.ghik.silencer.silent
+import akka.util.ccompat.JavaConverters._
 
 /**
  * TCP Extension for Akka’s IO layer.
@@ -597,8 +597,9 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
 
   val Settings = new Settings(system.settings.config.getConfig("akka.io.tcp"))
   class Settings private[TcpExt] (_config: Config) extends SelectionHandlerSettings(_config) {
-    import akka.util.Helpers.ConfigOps
     import _config._
+
+    import akka.util.Helpers.ConfigOps
 
     val NrOfSelectors: Int = getInt("nr-of-selectors").requiring(_ > 0, "nr-of-selectors must be > 0")
 
@@ -690,8 +691,8 @@ object TcpSO extends SoJavaFactories {
 }
 
 object TcpMessage {
-  import language.implicitConversions
   import Tcp._
+  import language.implicitConversions
 
   /**
    * The Connect message is sent to the TCP manager actor, which is obtained via

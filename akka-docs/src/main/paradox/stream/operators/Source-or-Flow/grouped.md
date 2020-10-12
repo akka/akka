@@ -4,13 +4,11 @@ Accumulate incoming events until the specified number of elements have been accu
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #grouped }
+@apidoc[Source.grouped](Source) { scala="#grouped(n:Int):FlowOps.this.Repr[scala.collection.immutable.Seq[Out]]" java="#grouped(int)" }
+@apidoc[Flow.grouped](Flow) { scala="#grouped(n:Int):FlowOps.this.Repr[scala.collection.immutable.Seq[Out]]" java="#grouped(int)" }
 
-@@@
 
 ## Description
 

@@ -34,7 +34,7 @@ object ReplicatorDocSpec {
   // #sample
   object Counter {
     sealed trait Command
-    final case object Increment extends Command
+    case object Increment extends Command
     final case class GetValue(replyTo: ActorRef[Int]) extends Command
     final case class GetCachedValue(replyTo: ActorRef[Int]) extends Command
     case object Unsubscribe extends Command

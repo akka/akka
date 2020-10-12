@@ -4,8 +4,12 @@
 
 package akka.remote
 
+import java.util.concurrent.ConcurrentHashMap
+
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.util.control.NonFatal
+
 import akka.actor.{
   Actor,
   ActorPath,
@@ -19,22 +23,19 @@ import akka.actor.{
   Props,
   VirtualPathContainer
 }
-import akka.event.{ AddressTerminatedTopic, LogMarker, MarkerLoggingAdapter }
-import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Watch }
-import akka.actor.ActorRefWithCell
+import akka.actor.ActorIdentity
 import akka.actor.ActorRefScope
-import akka.util.Switch
+import akka.actor.ActorRefWithCell
 import akka.actor.ActorSelectionMessage
-import akka.actor.SelectParent
+import akka.actor.EmptyLocalActorRef
+import akka.actor.Identify
 import akka.actor.SelectChildName
 import akka.actor.SelectChildPattern
-import akka.actor.Identify
-import akka.actor.ActorIdentity
-import akka.actor.EmptyLocalActorRef
-import java.util.concurrent.ConcurrentHashMap
-
-import scala.collection.immutable
+import akka.actor.SelectParent
+import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Watch }
 import akka.dispatch.sysmsg.Unwatch
+import akka.event.{ AddressTerminatedTopic, LogMarker, MarkerLoggingAdapter }
+import akka.util.Switch
 
 /**
  * INTERNAL API
@@ -72,10 +73,11 @@ private[akka] class RemoteSystemDaemon(
 
   private val parent2children = new ConcurrentHashMap[ActorRef, Set[ActorRef]]
 
-  private val whitelistEnabled = system.settings.config.getBoolean("akka.remote.deployment.enable-whitelist")
-  private val remoteDeploymentWhitelist: immutable.Set[String] = {
+  private val allowListEnabled = system.settings.config.getBoolean("akka.remote.deployment.enable-allow-list")
+  private val remoteDeploymentAllowList: immutable.Set[String] = {
     import akka.util.ccompat.JavaConverters._
-    if (whitelistEnabled) system.settings.config.getStringList("akka.remote.deployment.whitelist").asScala.toSet
+    if (allowListEnabled)
+      system.settings.config.getStringList("akka.remote.deployment.allowed-actor-classes").asScala.toSet
     else Set.empty
   }
 
@@ -163,19 +165,19 @@ private[akka] class RemoteSystemDaemon(
           case DaemonMsgCreate(_, _, path, _) if untrustedMode =>
             log.debug("does not accept deployments (untrusted) for [{}]", path) // TODO add security marker?
 
-          case DaemonMsgCreate(props, deploy, path, supervisor) if whitelistEnabled =>
+          case DaemonMsgCreate(props, deploy, path, supervisor) if allowListEnabled =>
             val name = props.clazz.getCanonicalName
-            if (remoteDeploymentWhitelist.contains(name))
+            if (remoteDeploymentAllowList.contains(name))
               doCreateActor(message, props, deploy, path, supervisor)
             else {
               val ex =
-                new NotWhitelistedClassRemoteDeploymentAttemptException(props.actorClass, remoteDeploymentWhitelist)
+                new NotAllowedClassRemoteDeploymentAttemptException(props.actorClass(), remoteDeploymentAllowList)
               log.error(
                 LogMarker.Security,
                 ex,
                 "Received command to create remote Actor, but class [{}] is not white-listed! " +
                 "Target path: [{}]",
-                props.actorClass,
+                props.actorClass(),
                 path)
             }
           case DaemonMsgCreate(props, deploy, path, supervisor) =>
@@ -272,8 +274,8 @@ private[akka] class RemoteSystemDaemon(
 }
 
 /** INTERNAL API */
-final class NotWhitelistedClassRemoteDeploymentAttemptException(illegal: Class[_], whitelist: immutable.Set[String])
+final class NotAllowedClassRemoteDeploymentAttemptException(illegal: Class[_], allowedClassNames: immutable.Set[String])
     extends RuntimeException(
-      s"Attempted to deploy not whitelisted Actor class: " +
+      s"Attempted to deploy Actor class: " +
       s"[$illegal], " +
-      s"whitelisted classes: [${whitelist.mkString(", ")}]")
+      s"which is not allowed, allowed classes: [${allowedClassNames.mkString(", ")}]")

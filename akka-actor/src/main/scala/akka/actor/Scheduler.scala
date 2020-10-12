@@ -7,15 +7,14 @@ package akka.actor
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
-
-import akka.util.JavaDurationConverters
-import com.github.ghik.silencer.silent
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import akka.annotation.InternalApi
 import com.github.ghik.silencer.silent
+
+import akka.annotation.InternalApi
+import akka.util.JavaDurationConverters
 
 /**
  * This exception is thrown by Scheduler.schedule* when scheduling is not

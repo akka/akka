@@ -4,10 +4,10 @@
 
 package akka.persistence.typed.scaladsl
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.persistence.fsm.PersistentFSM.PersistentFSMSnapshot
 import akka.persistence.typed.SnapshotAdapter
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * Helper functions for migration from PersistentFSM to Persistence Typed

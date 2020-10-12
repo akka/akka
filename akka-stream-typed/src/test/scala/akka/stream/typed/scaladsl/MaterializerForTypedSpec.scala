@@ -4,6 +4,11 @@
 
 package akka.stream.typed.scaladsl
 
+import scala.concurrent.Future
+import scala.util.Success
+
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.scaladsl.Behaviors
@@ -11,10 +16,6 @@ import akka.stream.AbruptStageTerminationException
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-
-import scala.concurrent.Future
-import scala.util.Success
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class MaterializerForTypedSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
 

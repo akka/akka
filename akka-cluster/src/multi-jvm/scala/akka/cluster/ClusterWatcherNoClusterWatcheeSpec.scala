@@ -6,6 +6,9 @@ package akka.cluster
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.ScalaFutures
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
@@ -20,8 +23,6 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
 
 class ClusterWatcherNoClusterWatcheeConfig(val useUnsafe: Boolean, artery: Boolean) extends MultiNodeConfig {
 
@@ -32,7 +33,6 @@ class ClusterWatcherNoClusterWatcheeConfig(val useUnsafe: Boolean, artery: Boole
       akka.remote.use-unsafe-remote-features-outside-cluster = $useUnsafe
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.artery.enabled = $artery
-      akka.remote.artery.advanced.flight-recorder.enabled = off
       akka.log-dead-letters = off
       akka.loggers =["akka.testkit.TestEventListener"]
       akka.actor.allow-java-serialization = on

@@ -4,14 +4,14 @@
 
 package akka.remote.artery
 
-import akka.actor.{ Actor, ActorRef, ActorSelection, Props, RootActorPath }
-import akka.remote.{ RARP, RemoteActorRef }
-import akka.testkit.TestProbe
-import akka.util.ByteString
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.actor.{ Actor, ActorRef, ActorSelection, Props, RootActorPath }
+import akka.remote.{ RARP, RemoteActorRef }
 import akka.testkit.JavaSerializable
+import akka.testkit.TestProbe
+import akka.util.ByteString
 
 object LargeMessagesStreamSpec {
   case class Ping(payload: ByteString = ByteString.empty) extends JavaSerializable

@@ -8,9 +8,11 @@ For the new API see @ref[testing](typed/testing.md).
 To use Akka Testkit, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-testkit_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-testkit_$scala.binary.version$"
+  version=AkkaVersion
   scope="test"
 }
 
@@ -758,7 +760,7 @@ akka {
 
 ## Different Testing Frameworks
 
-Akka’s own test suite is written using [ScalaTest](http://scalatest.org),
+Akka’s own test suite is written using [ScalaTest](http://www.scalatest.org),
 which also shines through in documentation examples. However, the TestKit and
 its facilities do not depend on that framework, you can essentially use
 whichever suits your development style best.
@@ -783,7 +785,7 @@ backwards compatibility in the future, use at own risk.
 
 ### Specs2
 
-Some [Specs2](http://specs2.org) users have contributed examples of how to work around some clashes which may arise:
+Some [Specs2](https://etorreborre.github.io/specs2/) users have contributed examples of how to work around some clashes which may arise:
 
  * Mixing TestKit into `org.specs2.mutable.Specification` results in a
 name clash involving the `end` method (which is a private variable in

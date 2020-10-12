@@ -4,13 +4,14 @@
 
 package akka.actor.testkit.typed
 
-import scala.compat.java8.OptionConverters._
-import akka.util.ccompat.JavaConverters._
-
 import java.util.Optional
+
+import scala.compat.java8.OptionConverters._
 
 import org.slf4j.Marker
 import org.slf4j.event.Level
+
+import akka.util.ccompat.JavaConverters._
 
 object LoggingEvent {
 

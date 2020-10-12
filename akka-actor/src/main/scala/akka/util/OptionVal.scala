@@ -4,9 +4,12 @@
 
 package akka.util
 
+import akka.annotation.InternalStableApi
+
 /**
  * INTERNAL API
  */
+@InternalStableApi
 private[akka] object OptionVal {
 
   def apply[A](x: A): OptionVal[A] = new OptionVal(x)
@@ -33,6 +36,7 @@ private[akka] object OptionVal {
  * because it has name based extractor using methods `isEmpty` and `get`.
  * See https://hseeberger.wordpress.com/2013/10/04/name-based-extractors-in-scala-2-11/
  */
+@InternalStableApi
 private[akka] final class OptionVal[+A](val x: A) extends AnyVal {
 
   /**

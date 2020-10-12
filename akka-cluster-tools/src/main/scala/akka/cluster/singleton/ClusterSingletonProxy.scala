@@ -4,25 +4,25 @@
 
 package akka.cluster.singleton
 
-import akka.actor._
-import akka.cluster.{ Cluster, Member, MemberStatus }
-
 import scala.collection.immutable
-import akka.cluster.ClusterEvent._
-import akka.cluster.ClusterEvent.MemberRemoved
-import akka.cluster.ClusterEvent.MemberUp
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+
+import akka.actor._
+import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.RootActorPath
+import akka.cluster.{ Cluster, Member, MemberStatus }
+import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberExited
-
-import scala.concurrent.duration._
-import com.typesafe.config.Config
-import akka.actor.NoSerializationVerificationNeeded
-import akka.event.Logging
-import akka.util.MessageBuffer
+import akka.cluster.ClusterEvent.MemberRemoved
+import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 import akka.dispatch.Dispatchers
+import akka.event.Logging
+import akka.util.MessageBuffer
 
 object ClusterSingletonProxySettings {
 
@@ -66,8 +66,11 @@ object ClusterSingletonProxySettings {
 
 /**
  * @param singletonName The actor name of the singleton actor that is started by the [[ClusterSingletonManager]].
- * @param role The role of the cluster nodes where the singleton can be deployed. If None, then any node will do.
- * @param dataCenter The data center of the cluster nodes where the singleton is running. If None then the same data center as current node.
+ * @param role          The role of the cluster nodes where the singleton can be deployed. Corresponding to the `role`
+ *                      used by the `ClusterSingletonManager`. If the role is not specified it's a singleton among all
+ *                      nodes in the cluster, and the `ClusterSingletonManager` must then also be configured in
+ *                      same way.
+ * @param dataCenter    The data center of the cluster nodes where the singleton is running. If None then the same data center as current node.
  * @param singletonIdentificationInterval Interval at which the proxy will try to resolve the singleton instance.
  * @param bufferSize If the location of the singleton is unknown the proxy will buffer this number of messages
  *   and deliver them when the singleton is identified. When the buffer is full old messages will be dropped

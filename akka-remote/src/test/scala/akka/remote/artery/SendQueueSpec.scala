@@ -6,6 +6,10 @@ package akka.remote.artery
 
 import java.util.Queue
 
+import scala.concurrent.duration._
+
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
+
 import akka.actor.Actor
 import akka.actor.Props
 import akka.stream.scaladsl.Keep
@@ -14,9 +18,6 @@ import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
-
-import scala.concurrent.duration._
 
 object SendQueueSpec {
 

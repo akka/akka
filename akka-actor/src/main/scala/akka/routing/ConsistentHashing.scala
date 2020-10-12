@@ -4,23 +4,23 @@
 
 package akka.routing
 
-import scala.collection.immutable
-
-import akka.dispatch.Dispatchers
-import com.typesafe.config.Config
-import akka.actor.SupervisorStrategy
-import akka.japi.Util.immutableSeq
-import akka.actor.Address
-import akka.actor.ExtendedActorSystem
-import akka.actor.ActorSystem
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.serialization.SerializationExtension
+import scala.collection.immutable
 import scala.util.control.NonFatal
 
-import akka.event.Logging
+import com.typesafe.config.Config
+
 import akka.actor.ActorPath
+import akka.actor.ActorSystem
+import akka.actor.Address
+import akka.actor.ExtendedActorSystem
+import akka.actor.SupervisorStrategy
 import akka.actor.WrappedMessage
+import akka.dispatch.Dispatchers
+import akka.event.Logging
+import akka.japi.Util.immutableSeq
+import akka.serialization.SerializationExtension
 
 object ConsistentHashingRouter {
 

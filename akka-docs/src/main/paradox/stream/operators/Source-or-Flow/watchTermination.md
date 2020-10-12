@@ -4,13 +4,11 @@ Materializes to a @scala[`Future`] @java[`CompletionStage`] that will be complet
 
 @ref[Watching status operators](../index.md#watching-status-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #watchTermination }
+@apidoc[Source.watchTermination](Source) { scala="#watchTermination[Mat2]()(matF:(Mat,scala.concurrent.Future[akka.Done])=&gt;Mat2):FlowOpsMat.this.ReprMat[Out,Mat2]" java="#watchTermination(akka.japi.function.Function2)" }
+@apidoc[Flow.watchTermination](Flow) { scala="#watchTermination[Mat2]()(matF:(Mat,scala.concurrent.Future[akka.Done])=&gt;Mat2):FlowOpsMat.this.ReprMat[Out,Mat2]" java="#watchTermination(akka.japi.function.Function2)" }
 
-@@@
 
 ## Description
 

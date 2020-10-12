@@ -56,7 +56,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
     //#when-syntax
     when(Idle) {
       case Event(SetTarget(ref), Uninitialized) =>
-        stay.using(Todo(ref, Vector.empty))
+        stay().using(Todo(ref, Vector.empty))
     }
     //#when-syntax
 
@@ -85,7 +85,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
 
       case Event(e, s) =>
         log.warning("received unhandled request {} in state {}/{}", e, stateName, s)
-        stay
+        stay()
     }
     //#unhandled-elided
     //#fsm-body
@@ -140,7 +140,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
 
       //#transform-syntax
       when(SomeState)(transform {
-        case Event(bytes: ByteString, read) => stay.using(read + bytes.length)
+        case Event(bytes: ByteString, read) => stay().using(read + bytes.length)
       }.using {
         case s @ FSM.State(state, read, timeout, stopReason, replies) if read > 1000 =>
           goto(Processing)
@@ -154,7 +154,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
       }
 
       when(SomeState)(transform {
-        case Event(bytes: ByteString, read) => stay.using(read + bytes.length)
+        case Event(bytes: ByteString, read) => stay().using(read + bytes.length)
       }.using(processingTrigger))
       //#alt-transform-syntax
 
@@ -170,7 +170,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
       whenUnhandled {
         case Event(x: X, data) =>
           log.info("Received unhandled event: " + x)
-          stay
+          stay()
         case Event(msg, _) =>
           log.warning("Received unknown event: " + msg)
           goto(Error)
@@ -226,7 +226,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
     "not batch if uninitialized" in {
       val buncher = system.actorOf(Props(classOf[Buncher], this))
       buncher ! Queue(42)
-      expectNoMsg
+      expectNoMessage()
     }
   }
 }

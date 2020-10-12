@@ -4,8 +4,10 @@
 
 package akka.util
 import java.util.Arrays
-import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

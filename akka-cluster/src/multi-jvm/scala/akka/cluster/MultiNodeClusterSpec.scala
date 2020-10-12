@@ -4,8 +4,16 @@
 
 package akka.cluster
 
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.language.implicitConversions
+
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.{ Canceled, Outcome, Suite }
+import org.scalatest.exceptions.TestCanceledException
 
 import akka.actor.{ Actor, ActorRef, ActorSystem, Address, Deploy, PoisonPill, Props, RootActorPath }
 import akka.cluster.ClusterEvent.{ MemberEvent, MemberRemoved }
@@ -14,17 +22,9 @@ import akka.remote.DefaultFailureDetectorRegistry
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeSpec, STMultiNodeSpec }
 import akka.serialization.jackson.CborSerializable
-import akka.testkit.TestEvent._
 import akka.testkit._
+import akka.testkit.TestEvent._
 import akka.util.ccompat._
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.exceptions.TestCanceledException
-import org.scalatest.{ Canceled, Outcome, Suite }
-
-import scala.collection.immutable
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.language.implicitConversions
 
 @ccompatUsedUntil213
 object MultiNodeClusterSpec {
@@ -60,10 +60,6 @@ object MultiNodeClusterSpec {
     akka.log-dead-letters-during-shutdown = off
     akka.remote {
       log-remote-lifecycle-events = off
-      artery.advanced.flight-recorder {
-        enabled=on
-        destination=target/flight-recorder-${UUID.randomUUID().toString}.afr
-      }
     }
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.test {
@@ -98,7 +94,7 @@ object MultiNodeClusterSpec {
 trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner {
   self: MultiNodeSpec =>
 
-  override def initialParticipants = roles.size
+  override def initialParticipants: Int = roles.size
 
   private val cachedAddresses = new ConcurrentHashMap[RoleName, Address]
 

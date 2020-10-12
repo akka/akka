@@ -4,29 +4,30 @@
 
 package akka.io
 
+import java.net.{ InetAddress, UnknownHostException }
 import java.net.Inet4Address
 import java.net.Inet6Address
-import java.net.{ InetAddress, UnknownHostException }
 import java.security.Security
 import java.util.concurrent.TimeUnit
 
-import akka.actor.Status
-import akka.io.dns.CachePolicy._
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.util.{ Failure, Success, Try }
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+
 import akka.actor.{ Actor, ActorLogging }
+import akka.actor.Status
 import akka.annotation.InternalApi
 import akka.io.dns.AAAARecord
 import akka.io.dns.ARecord
+import akka.io.dns.CachePolicy._
 import akka.io.dns.DnsProtocol
 import akka.io.dns.DnsProtocol.Ip
 import akka.io.dns.DnsProtocol.Srv
 import akka.io.dns.ResourceRecord
 import akka.util.Helpers.Requiring
-import com.github.ghik.silencer.silent
-import com.typesafe.config.Config
-
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.util.{ Failure, Success, Try }
 
 /**
  * INTERNAL API

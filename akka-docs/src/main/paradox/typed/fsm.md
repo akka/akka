@@ -3,7 +3,7 @@ project.description: Finite State Machines (FSM) with Akka Actors.
 ---
 # Behaviors as finite state machines
 
-For the Akka Classic documentation of this feature see @ref:[Classic FSM](../fsm.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic FSM](../fsm.md).
 
 An actor can be used to model a Finite State Machine (FSM).
 

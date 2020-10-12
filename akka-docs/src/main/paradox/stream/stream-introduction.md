@@ -19,9 +19,7 @@ measures in order to achieve stable streaming between actors, since in addition
 to sending and receiving we also need to take care to not overflow any buffers
 or mailboxes in the process. Another pitfall is that Actor messages can be lost
 and must be retransmitted in that case. Failure to do so would lead to holes at
-the receiving side. When dealing with streams of elements of a fixed given type,
-Actors also do not currently offer good static guarantees that no wiring errors
-are made: type-safety could be improved in this case.
+the receiving side.
 
 For these reasons we decided to bundle up a solution to these problems as an
 Akka Streams API. The purpose is to offer an intuitive and safe way to
@@ -30,7 +28,7 @@ efficiently and with bounded resource usage—no more OutOfMemoryErrors. In orde
 to achieve this our streams need to be able to limit the buffering that they
 employ, they need to be able to slow down producers if the consumers cannot
 keep up. This feature is called back-pressure and is at the core of the
-[Reactive Streams](http://reactive-streams.org/) initiative of which Akka is a
+[Reactive Streams](https://www.reactive-streams.org/) initiative of which Akka is a
 founding member. For you this means that the hard problem of propagating and
 reacting to back-pressure has been incorporated in the design of Akka Streams
 already, so you have one less thing to worry about; it also means that Akka

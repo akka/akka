@@ -4,14 +4,15 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.{ BaseTwoStreamsSetup, TestPublisher, TestSubscriber }
+import scala.concurrent.{ Await, Promise }
+import scala.concurrent.duration._
+
 import org.reactivestreams.Publisher
 
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Promise }
 import akka.NotUsed
+import akka.stream.testkit.{ BaseTwoStreamsSetup, TestPublisher, TestSubscriber }
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
 
 class FlowConcatSpec extends BaseTwoStreamsSetup {
 
@@ -195,8 +196,8 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
 
     "work in example" in {
       //#concat
-      import akka.stream.scaladsl.Source
       import akka.stream.scaladsl.Sink
+      import akka.stream.scaladsl.Source
 
       val sourceA = Source(List(1, 2, 3, 4))
       val sourceB = Source(List(10, 20, 30, 40))

@@ -5,6 +5,7 @@
 package akka.persistence
 
 import java.io.File
+
 import org.apache.commons.io.FileUtils
 import org.scalatest.BeforeAndAfterAll
 

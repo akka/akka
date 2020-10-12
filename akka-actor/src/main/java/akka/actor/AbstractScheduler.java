@@ -8,7 +8,6 @@ import akka.util.JavaDurationConverters;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.duration.FiniteDuration;
 
-// #scheduler
 /**
  * An Akka scheduler service. This one needs one special behavior: if Closeable, it MUST execute all
  * outstanding tasks upon .close() in order to properly shutdown all dispatchers.
@@ -30,6 +29,7 @@ public abstract class AbstractScheduler extends AbstractSchedulerBase {
    * would like the function to be run after 2 seconds and thereafter every 100ms you would set
    * delay = Duration(2, TimeUnit.SECONDS) and interval = Duration(100, TimeUnit.MILLISECONDS)
    */
+  @Deprecated
   @Override
   public abstract Cancellable schedule(
       FiniteDuration initialDelay,
@@ -42,6 +42,7 @@ public abstract class AbstractScheduler extends AbstractSchedulerBase {
    * would like the function to be run after 2 seconds and thereafter every 100ms you would set
    * delay = Duration(2, TimeUnit.SECONDS) and interval = Duration.ofMillis(100)
    */
+  @Deprecated
   public Cancellable schedule(
       final java.time.Duration initialDelay,
       final java.time.Duration interval,
@@ -78,4 +79,3 @@ public abstract class AbstractScheduler extends AbstractSchedulerBase {
   @Override
   public abstract double maxFrequency();
 }
-// #scheduler

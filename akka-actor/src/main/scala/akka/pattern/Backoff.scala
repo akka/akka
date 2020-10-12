@@ -4,13 +4,14 @@
 
 package akka.pattern
 
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+
+import com.github.ghik.silencer.silent
+
 import akka.actor.{ OneForOneStrategy, Props, SupervisorStrategy }
 import akka.annotation.DoNotInherit
 import akka.pattern.internal.{ BackoffOnRestartSupervisor, BackoffOnStopSupervisor }
 import akka.util.JavaDurationConverters._
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
  * @deprecated This API is superseded by the [[BackoffOpts]] object.
@@ -616,7 +617,7 @@ private final case class BackoffOptionsImpl(
             backoffReset,
             randomFactor,
             supervisorStrategy,
-            replyWhileStopped))
+            replyWhileStopped.map(msg => ReplyWith(msg)).getOrElse(ForwardDeathLetters)))
       //onStop method in companion object
       case StopImpliesFailure =>
         Props(
@@ -628,12 +629,12 @@ private final case class BackoffOptionsImpl(
             backoffReset,
             randomFactor,
             supervisorStrategy,
-            replyWhileStopped,
+            replyWhileStopped.map(msg => ReplyWith(msg)).getOrElse(ForwardDeathLetters),
             finalStopMessage))
     }
   }
 }
 
 private sealed trait BackoffType
-private final case object StopImpliesFailure extends BackoffType
-private final case object RestartImpliesFailure extends BackoffType
+private case object StopImpliesFailure extends BackoffType
+private case object RestartImpliesFailure extends BackoffType

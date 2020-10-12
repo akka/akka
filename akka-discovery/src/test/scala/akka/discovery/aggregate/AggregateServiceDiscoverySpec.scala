@@ -4,20 +4,21 @@
 
 package akka.discovery.aggregate
 
-import akka.actor.{ ActorSystem, ExtendedActorSystem }
-import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
-import akka.discovery.{ Discovery, Lookup, ServiceDiscovery }
-import akka.testkit.TestKit
-import akka.util.unused
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.BeforeAndAfterAll
-
+import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.collection.immutable
+
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.{ ActorSystem, ExtendedActorSystem }
+import akka.discovery.{ Discovery, Lookup, ServiceDiscovery }
+import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
+import akka.testkit.TestKit
+import akka.util.unused
 
 class StubbedServiceDiscovery(@unused system: ExtendedActorSystem) extends ServiceDiscovery {
 

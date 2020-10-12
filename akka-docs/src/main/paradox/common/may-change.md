@@ -29,5 +29,8 @@ that the module or API wasn't useful.
 These are the current complete modules marked as **may change**:
 
 * @ref:[Multi Node Testing](../multi-node-testing.md)
+* @ref:[Reliable Delivery](../typed/reliable-delivery.md)
+* @ref:[Sharded Daemon Process](../typed/cluster-sharded-daemon-process.md)
+* @ref:[Replicated Event Sourcing](../typed/replicated-eventsourcing.md)
 
 

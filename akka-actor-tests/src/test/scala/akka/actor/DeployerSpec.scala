@@ -4,13 +4,14 @@
 
 package akka.actor
 
-import language.postfixOps
+import scala.concurrent.duration._
 
-import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigParseOptions
+import language.postfixOps
+
 import akka.routing._
-import scala.concurrent.duration._
+import akka.testkit.AkkaSpec
 
 object DeployerSpec {
   val deployerConf = ConfigFactory.parseString(

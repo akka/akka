@@ -4,10 +4,10 @@
 
 package akka.cluster.routing
 
-import akka.testkit._
 import akka.actor._
-import akka.routing.RoundRobinPool
 import akka.actor.OneForOneStrategy
+import akka.routing.RoundRobinPool
+import akka.testkit._
 
 object ClusterRouterSupervisorSpec {
 

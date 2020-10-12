@@ -15,9 +15,10 @@ import akka.annotation.InternalApi
 @DoNotInherit
 trait ClassicActorSystemProvider {
 
-  /** INTERNAL API */
-  @InternalApi
-  private[akka] def classicSystem: ActorSystem
+  /**
+   * Allows access to the classic `akka.actor.ActorSystem` even for `akka.actor.typed.ActorSystem[_]`s.
+   */
+  def classicSystem: ActorSystem
 }
 
 /**

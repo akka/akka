@@ -4,14 +4,15 @@
 
 package akka.cluster
 
-import akka.testkit._
-import akka.actor._
-import akka.routing._
 import com.typesafe.config._
-import akka.cluster.routing.ClusterRouterPool
+
+import akka.actor._
 import akka.cluster.routing.ClusterRouterGroup
-import akka.cluster.routing.ClusterRouterPoolSettings
 import akka.cluster.routing.ClusterRouterGroupSettings
+import akka.cluster.routing.ClusterRouterPool
+import akka.cluster.routing.ClusterRouterPoolSettings
+import akka.routing._
+import akka.testkit._
 
 object ClusterDeployerSpec {
   val deployerConf = ConfigFactory.parseString(

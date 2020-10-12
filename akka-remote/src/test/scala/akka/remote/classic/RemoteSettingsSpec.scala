@@ -4,11 +4,12 @@
 
 package akka.remote.classic
 
-import akka.remote.RemoteSettings
 import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.remote.RemoteSettings
 
 @silent("deprecated")
 class RemoteSettingsSpec extends AnyWordSpec with Matchers {

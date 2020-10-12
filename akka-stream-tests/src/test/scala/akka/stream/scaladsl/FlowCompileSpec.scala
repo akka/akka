@@ -4,13 +4,14 @@
 
 package akka.stream.scaladsl
 
-import akka.NotUsed
-import akka.stream.testkit.StreamSpec
+import scala.collection.immutable.Seq
+import scala.concurrent.Future
+
 import com.github.ghik.silencer.silent
 import org.reactivestreams.Publisher
 
-import scala.collection.immutable.Seq
-import scala.concurrent.Future
+import akka.NotUsed
+import akka.stream.testkit.StreamSpec
 
 @silent // unused vars are used in shouldNot compile tests
 class FlowCompileSpec extends StreamSpec {
@@ -39,8 +40,6 @@ class FlowCompileSpec extends StreamSpec {
       "open3.run()" shouldNot compile
 
       val closedSource: Source[Int, _] = intSeq.via(open3)
-      "closedSource.run()" shouldNot compile
-
       val closedSink: Sink[Int, _] = open3.to(Sink.asPublisher[Int](false))
       "closedSink.run()" shouldNot compile
 
@@ -53,15 +52,14 @@ class FlowCompileSpec extends StreamSpec {
       val appended: Sink[Int, _] = open.to(closedSink)
       "appended.run()" shouldNot compile
       "appended.to(Sink.head[Int])" shouldNot compile
-      intSeq.to(appended).run
+      intSeq.to(appended).run()
     }
     "be appended to Source" in {
       val open: Flow[Int, String, _] = Flow[Int].map(_.toString)
       val closedSource: Source[Int, _] = strSeq.via(Flow[String].map(_.hashCode))
       val closedSource2: Source[String, _] = closedSource.via(open)
-      "closedSource2.run()" shouldNot compile
       "strSeq.to(closedSource2)" shouldNot compile
-      closedSource2.to(Sink.asPublisher[String](false)).run
+      closedSource2.to(Sink.asPublisher[String](false)).run()
     }
   }
 
@@ -87,9 +85,6 @@ class FlowCompileSpec extends StreamSpec {
     }
     "not be accepted by Source" in {
       "openSource.to(intSeq)" shouldNot compile
-    }
-    "not run()" in {
-      "openSource.run()" shouldNot compile
     }
   }
 

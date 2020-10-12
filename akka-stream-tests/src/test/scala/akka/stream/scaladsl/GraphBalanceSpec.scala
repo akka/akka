@@ -4,14 +4,14 @@
 
 package akka.stream.scaladsl
 
-import akka.stream._
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.scaladsl._
-
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
+import akka.stream._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class GraphBalanceSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

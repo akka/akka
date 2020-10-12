@@ -4,14 +4,14 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
+
 import akka.stream.FlowMonitorState
 import akka.stream.FlowMonitorState._
 import akka.stream.Materializer
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
-
-import scala.concurrent.duration._
 
 class FlowMonitorSpec extends StreamSpec {
 

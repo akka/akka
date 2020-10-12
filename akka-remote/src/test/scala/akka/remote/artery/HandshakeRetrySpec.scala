@@ -6,10 +6,11 @@ package akka.remote.artery
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
-import com.typesafe.config.ConfigFactory
 
 object HandshakeRetrySpec {
   val commonConfig = ConfigFactory.parseString(s"""

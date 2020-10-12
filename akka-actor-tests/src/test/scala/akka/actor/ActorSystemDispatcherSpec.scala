@@ -4,14 +4,15 @@
 
 package akka.actor
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.ConfigurationException
 import akka.actor.setup.ActorSystemSetup
 import akka.dispatch.{ Dispatchers, ExecutionContexts }
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestActors, TestProbe }
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
 
 object ActorSystemDispatchersSpec {
 

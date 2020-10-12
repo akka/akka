@@ -6,14 +6,14 @@ package akka.stream.impl.io
 
 import java.io.OutputStream
 
-import akka.annotation.InternalApi
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.stage.{ GraphStageLogic, GraphStageLogicWithLogging, GraphStageWithMaterializedValue, InHandler }
-import akka.stream.{ Attributes, IOOperationIncompleteException, IOResult, Inlet, SinkShape }
-import akka.util.ByteString
-
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
+
+import akka.annotation.InternalApi
+import akka.stream.{ Attributes, IOOperationIncompleteException, IOResult, Inlet, SinkShape }
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.stage.{ GraphStageLogic, GraphStageLogicWithLogging, GraphStageWithMaterializedValue, InHandler }
+import akka.util.ByteString
 
 /**
  * INTERNAL API
@@ -29,7 +29,7 @@ private[akka] final class OutputStreamGraphStage(factory: () => OutputStream, au
   override protected def initialAttributes: Attributes = DefaultAttributes.outputStreamSink
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[IOResult]) = {
-    val mat = Promise[IOResult]
+    val mat = Promise[IOResult]()
     val logic = new GraphStageLogicWithLogging(shape) with InHandler {
       var outputStream: OutputStream = _
       var bytesWritten: Long = 0L

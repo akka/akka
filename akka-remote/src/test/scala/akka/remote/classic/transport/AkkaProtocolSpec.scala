@@ -6,9 +6,17 @@ package akka.remote.classic.transport
 
 import java.util.concurrent.TimeoutException
 
+import scala.concurrent.{ Await, Promise }
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Address
 import akka.protobufv3.internal.{ ByteString => PByteString }
+import akka.remote.{ FailureDetector, WireFormats }
 import akka.remote.classic.transport.AkkaProtocolSpec.TestFailureDetector
+import akka.remote.transport.{ AssociationRegistry => _, _ }
 import akka.remote.transport.AkkaPduCodec.{ Associate, Disassociate, Heartbeat }
 import akka.remote.transport.AssociationHandle.{
   ActorHandleEventListener,
@@ -19,15 +27,8 @@ import akka.remote.transport.AssociationHandle.{
 import akka.remote.transport.ProtocolStateActor
 import akka.remote.transport.TestTransport._
 import akka.remote.transport.Transport._
-import akka.remote.transport.{ AssociationRegistry => _, _ }
-import akka.remote.{ FailureDetector, WireFormats }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.util.{ ByteString, OptionVal }
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Promise }
-
-import com.github.ghik.silencer.silent
 
 object AkkaProtocolSpec {
 

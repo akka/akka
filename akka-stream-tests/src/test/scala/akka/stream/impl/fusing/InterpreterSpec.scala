@@ -4,13 +4,14 @@
 
 package akka.stream.impl.fusing
 
+import com.github.ghik.silencer.silent
+
+import akka.stream._
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
 import akka.stream.testkit.StreamSpec
 import akka.testkit.EventFilter
-import akka.stream._
-import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.util.ConstantFun
-import com.github.ghik.silencer.silent
 
 class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 

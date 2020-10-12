@@ -19,7 +19,7 @@ object LeveldbPersistenceQueryDocSpec {
     val colors = Set("green", "black", "blue")
     override def toJournal(event: Any): Any = event match {
       case s: String =>
-        var tags = colors.foldLeft(Set.empty[String]) { (acc, c) =>
+        val tags = colors.foldLeft(Set.empty[String]) { (acc, c) =>
           if (s.contains(c)) acc + c else acc
         }
         if (tags.isEmpty) event
@@ -32,9 +32,8 @@ object LeveldbPersistenceQueryDocSpec {
   //#tagger
 }
 
-class LeveldbPersistenceQueryDocSpec(config: String) extends AkkaSpec(config) {
-
-  def this() = this("")
+class LeveldbPersistenceQueryDocSpec
+    extends AkkaSpec("akka.persistence.journal.plugin = akka.persistence.journal.leveldb") {
 
   "LeveldbPersistentQuery" must {
     "demonstrate how get ReadJournal" in {

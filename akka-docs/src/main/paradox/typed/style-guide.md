@@ -271,6 +271,9 @@ Scala
 Java
 :  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #message-protocol }
 
+Note that the response message hierarchy in this case could be completely avoided by using the @apiDoc[StatusReply] API 
+instead (see @ref[Generic Response Wrapper](interaction-patterns.md#generic-response-wrapper)).
+
 ## Public versus private messages
 
 Often an actor has some messages that are only for its internal implementation and not part of the public
@@ -446,8 +449,8 @@ be good to know that it's optional in case you would prefer a different approach
 * direct processing because there is only one message type
 * if or switch statements
 * annotation processor
-* [Vavr Pattern Matching DSL](http://www.vavr.io/vavr-docs/#_pattern_matching)
-* future pattern matching in Java ([JEP 305](http://openjdk.java.net/jeps/305))
+* [Vavr Pattern Matching DSL](https://www.vavr.io/vavr-docs/#_pattern_matching)
+* pattern matching since JDK 14 ([JEP 305](https://openjdk.java.net/jeps/305))
 
 In `Behaviors` there are `receive`, `receiveMessage` and `receiveSignal` factory methods that takes functions
 instead of using the `ReceiveBuilder`, which is the `receive` with the class parameter.
@@ -456,6 +459,29 @@ In `AbstractBehavior` you can return your own `akka.actor.typed.javadsl.Receive`
 of using `newReceiveBuilder`. Implement the `receiveMessage` and `receiveSignal` in the `Receive` subclass.
 
 @@@
+
+## Nesting setup
+
+When an actor behavior needs more than one of `setup`, `withTimers` and `withStash` the methods can be nested to access
+the needed dependencies:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #nesting }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #nesting }
+
+The order of the nesting does not change the behavior as long as there is no additional logic in any other function than the innermost one. 
+It can be nice to default to put `setup` outermost as that is the least likely block that will be removed if the actor logic changes. 
+
+Note that adding `supervise` to the mix is different as it will restart the behavior it wraps, but not the behavior around itself:   
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #nesting-supervise }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #nesting-supervise }
+
 
 ## Additional naming conventions
 

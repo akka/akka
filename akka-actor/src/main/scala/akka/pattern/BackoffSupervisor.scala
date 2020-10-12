@@ -7,13 +7,13 @@ package akka.pattern
 import java.util.Optional
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.util.Try
+
 import akka.actor.{ ActorRef, DeadLetterSuppression, OneForOneStrategy, Props, SupervisorStrategy }
 import akka.annotation.InternalApi
 import akka.pattern.internal.BackoffOnStopSupervisor
 import akka.util.JavaDurationConverters._
-
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.util.Try
 
 object BackoffSupervisor {
 
@@ -184,7 +184,7 @@ object BackoffSupervisor {
         AutoReset(minBackoff),
         randomFactor,
         strategy,
-        None,
+        ForwardDeathLetters,
         None))
   }
 
@@ -246,7 +246,7 @@ object BackoffSupervisor {
    * Send this message to the `BackoffSupervisor` and it will reply with
    * [[BackoffSupervisor.CurrentChild]] containing the `ActorRef` of the current child, if any.
    */
-  final case object GetCurrentChild
+  case object GetCurrentChild
 
   /**
    * Java API: Send this message to the `BackoffSupervisor` and it will reply with
@@ -270,7 +270,7 @@ object BackoffSupervisor {
    * Send this message to the `BackoffSupervisor` and it will reset the back-off.
    * This should be used in conjunction with `withManualReset` in [[BackoffOptions]].
    */
-  final case object Reset
+  case object Reset
 
   /**
    * Java API: Send this message to the `BackoffSupervisor` and it will reset the back-off.
@@ -282,7 +282,7 @@ object BackoffSupervisor {
    * Send this message to the `BackoffSupervisor` and it will reply with
    * [[BackoffSupervisor.RestartCount]] containing the current restart count.
    */
-  final case object GetRestartCount
+  case object GetRestartCount
 
   /**
    * Java API: Send this message to the `BackoffSupervisor` and it will reply with
@@ -341,7 +341,7 @@ final class BackoffSupervisor @deprecated("Use `BackoffSupervisor.props` method 
       reset,
       randomFactor,
       strategy,
-      replyWhileStopped,
+      replyWhileStopped.map(msg => ReplyWith(msg)).getOrElse(ForwardDeathLetters),
       finalStopMessage) {
 
   // for binary compatibility with 2.5.18

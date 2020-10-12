@@ -35,7 +35,7 @@ object PartitionDocExample {
       val partition = builder.add(Partition[Int](2, element => if (element % 2 == 0) 0 else 1))
       source ~> partition.in
       partition.out(0) ~> even
-      partition.out(0) ~> odd
+      partition.out(1) ~> odd
       ClosedShape
     })
     .run()

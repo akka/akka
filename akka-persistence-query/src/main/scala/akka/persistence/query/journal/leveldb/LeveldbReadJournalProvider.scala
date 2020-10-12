@@ -4,9 +4,10 @@
 
 package akka.persistence.query.journal.leveldb
 
+import com.typesafe.config.Config
+
 import akka.actor.ExtendedActorSystem
 import akka.persistence.query.ReadJournalProvider
-import com.typesafe.config.Config
 
 class LeveldbReadJournalProvider(system: ExtendedActorSystem, config: Config) extends ReadJournalProvider {
 

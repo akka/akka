@@ -5,6 +5,7 @@
 package akka.dispatch
 
 import java.util.concurrent.{ ExecutorService, ForkJoinPool, ForkJoinTask, ThreadFactory }
+
 import com.typesafe.config.Config
 
 object ForkJoinExecutorConfigurator {

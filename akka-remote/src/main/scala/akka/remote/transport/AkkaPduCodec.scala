@@ -4,15 +4,16 @@
 
 package akka.remote.transport
 
+import com.github.ghik.silencer.silent
+
 import akka.AkkaException
 import akka.actor.{ ActorRef, Address, AddressFromURIString, InternalActorRef }
-import akka.remote.WireFormats._
-import akka.remote._
-import akka.util.ByteString
-import akka.protobufv3.internal.InvalidProtocolBufferException
 import akka.protobufv3.internal.{ ByteString => PByteString }
+import akka.protobufv3.internal.InvalidProtocolBufferException
+import akka.remote._
+import akka.remote.WireFormats._
+import akka.util.ByteString
 import akka.util.OptionVal
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API

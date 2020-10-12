@@ -5,8 +5,8 @@
 package akka.persistence.typed.internal
 
 import akka.annotation.InternalApi
-import akka.persistence.typed.scaladsl
 import akka.persistence.typed.javadsl
+import akka.persistence.typed.scaladsl
 
 /**
  * INTERNAL API

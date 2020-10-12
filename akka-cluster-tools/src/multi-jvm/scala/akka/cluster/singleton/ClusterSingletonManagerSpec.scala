@@ -4,13 +4,17 @@
 
 package akka.cluster.singleton
 
-import language.postfixOps
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.actor.Actor
+import akka.actor.ActorIdentity
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
+import akka.actor.ActorSelection
+import akka.actor.Identify
 import akka.actor.Props
 import akka.actor.RootActorPath
 import akka.cluster.Cluster
@@ -19,12 +23,9 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
+import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 import akka.testkit.TestEvent._
-import akka.actor.Identify
-import akka.actor.ActorIdentity
-import akka.actor.ActorSelection
-import akka.serialization.jackson.CborSerializable
 
 object ClusterSingletonManagerSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -172,8 +173,8 @@ class ClusterSingletonManagerSpec
     with ImplicitSender {
 
   import ClusterSingletonManagerSpec._
-  import ClusterSingletonManagerSpec.PointToPointChannel._
   import ClusterSingletonManagerSpec.Consumer._
+  import ClusterSingletonManagerSpec.PointToPointChannel._
 
   override def initialParticipants = roles.size
 
@@ -333,7 +334,7 @@ class ClusterSingletonManagerSpec
 
       runOn(controller) {
         // watch that it is not terminated, which would indicate misbehavior
-        watch(system.actorOf(Props[PointToPointChannel], "queue"))
+        watch(system.actorOf(Props[PointToPointChannel](), "queue"))
       }
       enterBarrier("queue-started")
 

@@ -6,13 +6,13 @@ package akka.cluster.sharding
 
 import java.io.File
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill, Props }
-import akka.cluster.ClusterEvent.CurrentClusterState
-import akka.cluster.{ Cluster, MemberStatus }
-import akka.testkit.TestEvent.Mute
-import akka.testkit.{ AkkaSpec, DeadLettersFilter, TestProbe }
 import com.typesafe.config.ConfigFactory
 import org.apache.commons.io.FileUtils
+import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill, Props }
+import akka.cluster.{ Cluster, MemberStatus }
+import akka.cluster.ClusterEvent.CurrentClusterState
+import akka.testkit.{ AkkaSpec, DeadLettersFilter, TestProbe, WithLogCapturing }
+import akka.testkit.TestEvent.Mute
 
 object ShardRegionSpec {
   val host = "127.0.0.1"
@@ -24,7 +24,8 @@ object ShardRegionSpec {
 
   val config =
     ConfigFactory.parseString(tempConfig).withFallback(ConfigFactory.parseString(s"""
-        akka.loglevel = INFO
+        akka.loglevel = DEBUG
+        akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
         akka.actor.provider = "cluster"
         akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
@@ -36,6 +37,8 @@ object ShardRegionSpec {
         }
         akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
         akka.cluster.jmx.enabled = off
+        akka.cluster.sharding.verbose-debug-logging = on
+        akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
         """))
 
   val shardTypeName = "Caat"
@@ -57,10 +60,11 @@ object ShardRegionSpec {
     }
   }
 }
-class ShardRegionSpec extends AkkaSpec(ShardRegionSpec.config) {
+class ShardRegionSpec extends AkkaSpec(ShardRegionSpec.config) with WithLogCapturing {
+
+  import scala.concurrent.duration._
 
   import ShardRegionSpec._
-  import scala.concurrent.duration._
 
   val storageLocation = List(
     new File(system.settings.config.getString("akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
@@ -92,7 +96,7 @@ class ShardRegionSpec extends AkkaSpec(ShardRegionSpec.config) {
   def startShard(sys: ActorSystem): ActorRef =
     ClusterSharding(sys).start(
       shardTypeName,
-      Props[EntityActor],
+      Props[EntityActor](),
       ClusterShardingSettings(system).withRememberEntities(true),
       extractEntityId,
       extractShardId)
@@ -135,6 +139,7 @@ class ShardRegionSpec extends AkkaSpec(ShardRegionSpec.config) {
         probe
           .receiveWhile(messages = expect) {
             case e: ShardRegion.CurrentShardRegionState =>
+              e.failed.isEmpty shouldEqual true
               e.shards.map(_.shardId)
           }
           .flatten

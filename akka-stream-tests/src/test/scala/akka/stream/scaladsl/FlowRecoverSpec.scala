@@ -4,12 +4,12 @@
 
 package akka.stream.scaladsl
 
+import scala.util.control.NoStackTrace
+
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.EventFilter
-
-import scala.util.control.NoStackTrace
 
 class FlowRecoverSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 1
@@ -56,12 +56,7 @@ class FlowRecoverSpec extends StreamSpec("""
     }
 
     "finish stream if it's empty" in assertAllStagesStopped {
-      Source.empty
-        .map(identity)
-        .recover { case _: Throwable => 0 }
-        .runWith(TestSink.probe[Int])
-        .request(1)
-        .expectComplete()
+      Source.empty.recover { case _: Throwable => 0 }.runWith(TestSink.probe[Int]).request(1).expectComplete()
     }
 
     "not log error when exception is thrown from recover block" in assertAllStagesStopped {

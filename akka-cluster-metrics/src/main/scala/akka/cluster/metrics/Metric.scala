@@ -4,12 +4,13 @@
 
 package akka.cluster.metrics
 
-import akka.actor.Address
-import scala.util.Success
 import scala.util.Failure
+import scala.util.Success
 import scala.util.Try
 
 import com.github.ghik.silencer.silent
+
+import akka.actor.Address
 
 /**
  * Metrics key/value.

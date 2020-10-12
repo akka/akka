@@ -4,9 +4,10 @@
 
 package akka.remote
 
-import akka.testkit.AkkaSpec
 import scala.concurrent.duration._
+
 import akka.remote.FailureDetector.Clock
+import akka.testkit.AkkaSpec
 
 class DeadlineFailureDetectorSpec extends AkkaSpec {
 

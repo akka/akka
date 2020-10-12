@@ -4,8 +4,8 @@
 
 package akka.stream.impl.streamref
 
-import akka.actor.ClassicActorSystemProvider
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.ClassicActorSystemProvider
 import akka.annotation.InternalApi
 import akka.stream.impl.SeqActorName
 
@@ -16,7 +16,7 @@ private[stream] object StreamRefsMaster extends ExtensionId[StreamRefsMaster] wi
   override def createExtension(system: ExtendedActorSystem): StreamRefsMaster =
     new StreamRefsMaster
 
-  override def lookup(): StreamRefsMaster.type = this
+  override def lookup: StreamRefsMaster.type = this
 
   override def get(system: ActorSystem): StreamRefsMaster = super.get(system)
   override def get(system: ClassicActorSystemProvider): StreamRefsMaster = super.get(system)

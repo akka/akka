@@ -1,16 +1,12 @@
-# future
+# Source.future
 
 Send the single value of the `Future` when it completes and there is demand.
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #future }
-
-@@@
+@apidoc[Source.future](Source$) { scala="#future[T](futureElement:scala.concurrent.Future[T]):akka.stream.scaladsl.Source[T,akka.NotUsed]" }
 
 ## Description
 

@@ -4,7 +4,7 @@
 
 package akka.cluster.sharding.typed
 
-import akka.actor.WrappedMessage
+import akka.actor.{ InvalidMessageException, WrappedMessage }
 import akka.util.unused
 
 object ShardingMessageExtractor {
@@ -105,5 +105,11 @@ abstract class HashCodeNoEnvelopeMessageExtractor[M](val numberOfShards: Int) ex
  *
  * The alternative way of routing messages through sharding is to not use envelopes,
  * and have the message types themselves carry identifiers.
+ *
+ * @param entityId The business domain identifier of the entity.
+ * @param message The message to be send to the entity.
+ * @throws `InvalidMessageException` if message is null.
  */
-final case class ShardingEnvelope[M](entityId: String, message: M) extends WrappedMessage
+final case class ShardingEnvelope[M](entityId: String, message: M) extends WrappedMessage {
+  if (message == null) throw InvalidMessageException("[null] is not an allowed message")
+}

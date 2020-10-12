@@ -4,12 +4,13 @@
 
 package akka.actor.typed
 
-import akka.annotation.InternalApi
-
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration.Duration
-import akka.util.JavaDurationConverters._
+import scala.concurrent.duration.FiniteDuration
+
 import org.slf4j.event.Level
+
+import akka.annotation.InternalApi
+import akka.util.JavaDurationConverters._
 
 object SupervisorStrategy {
 

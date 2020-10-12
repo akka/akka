@@ -9,8 +9,8 @@ import java.net.InetSocketAddress
 import akka.AkkaException
 import akka.actor.{ Actor, ActorLogging, ActorRef, Stash }
 import akka.annotation.InternalApi
-import akka.io.dns.internal.DnsClient.Answer
 import akka.io.Tcp
+import akka.io.dns.internal.DnsClient.Answer
 import akka.util.ByteString
 
 /**
@@ -63,7 +63,7 @@ import akka.util.ByteString
           context.become(ready(connection, data))
         else {
           answerRecipient ! parseResponse(data.drop(prefixSize))
-          context.become(ready(connection))
+          context.become(ready(connection, ByteString.empty))
           if (data.length > prefixSize + expectedPayloadLength) {
             self ! Tcp.Received(data.drop(prefixSize + expectedPayloadLength))
           }

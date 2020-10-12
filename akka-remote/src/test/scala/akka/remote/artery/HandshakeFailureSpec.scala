@@ -6,10 +6,11 @@ package akka.remote.artery
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ ActorIdentity, Identify }
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
-import com.typesafe.config.ConfigFactory
 import akka.testkit.TestProbe
 
 object HandshakeFailureSpec {

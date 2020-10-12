@@ -4,13 +4,13 @@
 
 package akka.remote.classic.transport
 
-import akka.AkkaException
-import akka.remote.transport.TestTransport.SwitchableLoggedBehavior
-import akka.testkit.{ AkkaSpec, DefaultTimeout }
-
 import scala.concurrent.{ Await, Future, Promise }
 import scala.util.Failure
 import scala.util.control.NoStackTrace
+
+import akka.AkkaException
+import akka.remote.transport.TestTransport.SwitchableLoggedBehavior
+import akka.testkit.{ AkkaSpec, DefaultTimeout }
 
 object SwitchableLoggedBehaviorSpec {
   object TestException extends AkkaException("Test exception") with NoStackTrace

@@ -4,8 +4,9 @@
 
 package akka.actor.typed.internal
 
-import akka.annotation.InternalApi
 import org.slf4j.MDC
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

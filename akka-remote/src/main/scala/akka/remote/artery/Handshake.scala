@@ -295,7 +295,7 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
             // periodically.
             thenInside()
           case None =>
-            first.onComplete(_ => runInStage.invoke(thenInside))(ExecutionContexts.sameThreadExecutionContext)
+            first.onComplete(_ => runInStage.invoke(thenInside))(ExecutionContexts.parasitic)
         }
 
       }

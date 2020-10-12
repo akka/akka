@@ -7,6 +7,12 @@ package akka.stream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations._
+
 import akka.NotUsed
 import akka.actor.Actor
 import akka.actor.ActorRef
@@ -17,11 +23,6 @@ import akka.remote.artery.LatchSink
 import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.StreamTestKit
 import akka.util.Timeout
-import com.typesafe.config.ConfigFactory
-import org.openjdk.jmh.annotations._
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 object AskBenchmark {
   final val OperationsPerInvocation = 100000
@@ -42,14 +43,14 @@ class AskBenchmark {
     }
     """)
 
-  implicit val system = ActorSystem("MapAsyncBenchmark", config)
+  implicit val system: ActorSystem = ActorSystem("MapAsyncBenchmark", config)
   import system.dispatcher
 
   var testSource: Source[java.lang.Integer, NotUsed] = _
 
   var actor: ActorRef = _
 
-  implicit val timeout = Timeout(10.seconds)
+  implicit val timeout: Timeout = Timeout(10.seconds)
 
   @Param(Array("1", "4"))
   var parallelism = 0

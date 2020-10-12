@@ -4,11 +4,13 @@
 
 package akka.remote
 
-import akka.testkit.AkkaSpec
-import scala.annotation.tailrec
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.annotation.tailrec
+
 import com.github.ghik.silencer.silent
+
+import akka.testkit.AkkaSpec
 
 @silent("deprecated")
 object AckedDeliverySpec {

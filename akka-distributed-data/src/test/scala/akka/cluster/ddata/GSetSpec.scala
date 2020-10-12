@@ -4,9 +4,10 @@
 
 package akka.cluster.ddata
 
-import akka.cluster.ddata.Replicator.Changed
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.cluster.ddata.Replicator.Changed
 
 class GSetSpec extends AnyWordSpec with Matchers {
 

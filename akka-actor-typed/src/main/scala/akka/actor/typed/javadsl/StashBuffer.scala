@@ -43,6 +43,13 @@ import akka.japi.function.Procedure
   def size: Int
 
   /**
+   * What is the capacity of this buffer.
+   *
+   * @return the capacity of this buffer
+   */
+  def capacity: Int
+
+  /**
    * @return `true` if no more messages can be added, i.e. size equals the capacity of the stash buffer
    */
   def isFull: Boolean
@@ -73,6 +80,11 @@ import akka.japi.function.Procedure
    * @param f the function to apply to each element
    */
   def forEach(f: Procedure[T]): Unit
+
+  /**
+   * Removes all messages from the buffer.
+   */
+  def clear(): Unit
 
   /**
    * Process all stashed messages with the `behavior` and the returned

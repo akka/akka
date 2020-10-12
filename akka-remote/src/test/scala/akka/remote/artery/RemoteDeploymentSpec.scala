@@ -4,10 +4,11 @@
 
 package akka.remote.artery
 
-import akka.testkit._
-import akka.actor._
 import com.typesafe.config._
+
+import akka.actor._
 import akka.remote.RARP
+import akka.testkit._
 
 object RemoteDeploymentSpec {
   class Echo1 extends Actor {
@@ -59,7 +60,9 @@ object RemoteDeploymentSpec {
   }
 
   class DeadOnArrival extends Actor {
-    throw new Exception("init-crash")
+    if ("confuse IntellIJ dead code checker".length > 2) {
+      throw new Exception("init-crash")
+    }
 
     def receive = Actor.emptyBehavior
   }
@@ -93,7 +96,7 @@ class RemoteDeploymentSpec
 
     "create and supervise children on remote node" in {
       val senderProbe = TestProbe()(masterSystem)
-      val r = masterSystem.actorOf(Props[Echo1], "blub")
+      val r = masterSystem.actorOf(Props[Echo1](), "blub")
       r.path.toString should ===(
         s"akka://${system.name}@localhost:${port}/remote/akka/${masterSystem.name}@localhost:${masterPort}/user/blub")
 
@@ -111,7 +114,7 @@ class RemoteDeploymentSpec
 
     "create and supervise children on remote node for unknown exception" in {
       val senderProbe = TestProbe()(masterSystem)
-      val r = masterSystem.actorOf(Props[Echo1], "blub2")
+      val r = masterSystem.actorOf(Props[Echo1](), "blub2")
       r.path.toString should ===(
         s"akka://${system.name}@localhost:${port}/remote/akka/${masterSystem.name}@localhost:${masterPort}/user/blub2")
 
@@ -130,7 +133,7 @@ class RemoteDeploymentSpec
     "notice immediate death" in {
       val parent = masterSystem.actorOf(parentProps(testActor), "parent")
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
-        parent.tell(Props[DeadOnArrival], testActor)
+        parent.tell(Props[DeadOnArrival](), testActor)
         val child = expectMsgType[ActorRef]
         expectMsgType[ActorInitializationException]
 
@@ -149,7 +152,7 @@ class RemoteDeploymentSpec
       }.toVector
 
       val probes = Vector.fill(numParents, numChildren)(TestProbe()(masterSystem))
-      val childProps = Props[Echo1]
+      val childProps = Props[Echo1]()
       for (p <- (0 until numParents); c <- (0 until numChildren)) {
         parents(p).tell((childProps, numMessages), probes(p)(c).ref)
       }

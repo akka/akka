@@ -6,12 +6,13 @@ package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
 
+import scala.annotation.varargs
+
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.internal.adapter.SchedulerAdapter
-import com.typesafe.config.Config
 import akka.util.JavaDurationConverters._
-
-import scala.annotation.varargs
 
 /**
  * Manual time allows you to do async tests while controlling the scheduler of the system.

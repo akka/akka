@@ -5,10 +5,10 @@
     
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%date{ISO8601} %-5level %logger %marker - %msg {%mdc}%n</pattern>
+            <pattern>%date{ISO8601} %-5level %logger %marker - %msg MDC: {%mdc}%n</pattern>
         </encoder>
     </appender>
-
+    
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
     </root>

@@ -1,4 +1,4 @@
-# maybe
+# Source.maybe
 
 Create a source that emits once the materialized @scala[`Promise`] @java[`CompletableFuture`] is completed with a value.
 
@@ -6,11 +6,8 @@ Create a source that emits once the materialized @scala[`Promise`] @java[`Comple
 
 ## Signature
 
-Scala
- :   @@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #maybe }
+@apidoc[Source.maybe](Source$) { scala="#maybe[T]:akka.stream.scaladsl.Source[T,scala.concurrent.Promise[Option[T]]]" java="#maybe()" }
 
-Java
-:   @@snip [SourceDocExamples.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceDocExamples.java) { #maybe-signature }
 
 ## Description
 

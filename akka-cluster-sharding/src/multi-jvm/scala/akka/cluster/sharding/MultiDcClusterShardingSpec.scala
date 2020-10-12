@@ -6,20 +6,14 @@ package akka.cluster.sharding
 
 import scala.concurrent.duration._
 
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Address
-import akka.actor.Props
-import akka.cluster.{ Cluster, MemberStatus, MultiNodeClusterSpec }
-import akka.cluster.sharding.ShardRegion.CurrentRegions
-import akka.cluster.sharding.ShardRegion.GetCurrentRegions
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.{ Actor, ActorRef, Address, Props }
+import akka.cluster.{ Cluster, MemberStatus }
+import akka.cluster.sharding.ShardRegion.{ CurrentRegions, GetCurrentRegions }
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
@@ -50,25 +44,22 @@ object MultiDcClusterShardingSpec {
   }
 }
 
-object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
+object MultiDcClusterShardingSpecConfig
+    extends MultiNodeClusterShardingConfig(
+      loglevel = "DEBUG", //issue #23741
+      additionalConfig = s"""
+    akka.cluster {
+      debug.verbose-heartbeat-logging = on
+      debug.verbose-gossip-logging = on
+      sharding.retry-interval = 200ms
+    }
+    akka.remote.log-remote-lifecycle-events = on
+    """) {
+
   val first = role("first")
   val second = role("second")
   val third = role("third")
   val fourth = role("fourth")
-
-  commonConfig(ConfigFactory.parseString(s"""
-    akka.loglevel = DEBUG # issue #23741
-    akka.cluster {
-      debug.verbose-heartbeat-logging = on
-      debug.verbose-gossip-logging = on
-      downing-provider-class = akka.cluster.testkit.AutoDowning
-      testkit.auto-down-unreachable-after = 0s
-      sharding {
-        retry-interval = 200ms
-      }
-    }
-    akka.remote.log-remote-lifecycle-events = on
-    """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second) {
     ConfigFactory.parseString("akka.cluster.multi-data-center.self-data-center = DC1")
@@ -85,34 +76,32 @@ class MultiDcClusterShardingSpecMultiJvmNode3 extends MultiDcClusterShardingSpec
 class MultiDcClusterShardingSpecMultiJvmNode4 extends MultiDcClusterShardingSpec
 
 abstract class MultiDcClusterShardingSpec
-    extends MultiNodeSpec(MultiDcClusterShardingSpecConfig)
-    with MultiNodeClusterSpec
-    with STMultiNodeSpec
+    extends MultiNodeClusterShardingSpec(MultiDcClusterShardingSpecConfig)
     with ImplicitSender {
   import MultiDcClusterShardingSpec._
   import MultiDcClusterShardingSpecConfig._
 
   def join(from: RoleName, to: RoleName): Unit = {
-    runOn(from) {
-      cluster.join(node(to).address)
-      startSharding()
-      withClue(
-        s"Failed waiting for ${cluster.selfUniqueAddress} to be up. Current state: ${cluster.state}" + cluster.state) {
-        within(15.seconds) {
-          awaitAssert(cluster.state.members.exists { m =>
-            m.uniqueAddress == cluster.selfUniqueAddress && m.status == MemberStatus.Up
-          } should be(true))
+    join(
+      from,
+      to, {
+        startSharding()
+        withClue(
+          s"Failed waiting for ${cluster.selfUniqueAddress} to be up. Current state: ${cluster.state}" + cluster.state) {
+          within(15.seconds) {
+            awaitAssert(cluster.state.members.exists { m =>
+              m.uniqueAddress == cluster.selfUniqueAddress && m.status == MemberStatus.Up
+            } should be(true))
+          }
         }
-      }
-    }
-    enterBarrier(from.name + "-joined")
+      })
   }
 
   def startSharding(): Unit = {
-    ClusterSharding(system).start(
+    startSharding(
+      system,
       typeName = "Entity",
       entityProps = Props[Entity](),
-      settings = ClusterShardingSettings(system),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId)
   }

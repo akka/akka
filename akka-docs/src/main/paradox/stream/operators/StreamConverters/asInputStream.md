@@ -4,11 +4,10 @@ Create a sink which materializes into an `InputStream` that can be read to trigg
 
 @ref[Additional Sink and Source converters](../index.md#additional-sink-and-source-converters)
 
-@@@ div { .group-scala }
 ## Signature
 
-@@signature [StreamConverters.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #asInputStream }
-@@@
+@apidoc[StreamConverters.asInputStream](StreamConverters$) { scala="#asInputStream(readTimeout:scala.concurrent.duration.FiniteDuration):akka.stream.scaladsl.Sink[akka.util.ByteString,java.io.InputStream]" java="#asInputStream()" }
+
 
 ## Description
 

@@ -5,6 +5,7 @@
 package akka.util
 
 import scala.collection.immutable
+
 import akka.util.ccompat._
 
 /**

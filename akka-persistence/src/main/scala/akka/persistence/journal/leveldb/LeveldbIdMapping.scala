@@ -5,6 +5,7 @@
 package akka.persistence.journal.leveldb
 
 import org.iq80.leveldb.DBIterator
+
 import akka.actor.Actor
 import akka.util.ByteString.UTF_8
 import akka.util.unused

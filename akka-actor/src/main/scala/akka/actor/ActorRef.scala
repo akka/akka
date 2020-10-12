@@ -6,12 +6,12 @@ package akka.actor
 
 import java.util.concurrent.ConcurrentHashMap
 
-import akka.annotation.InternalApi
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
 
 import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import akka.event.AddressTerminatedTopic
@@ -103,7 +103,7 @@ object ActorRef {
  * the unique id of the actor is not taken into account when comparing actor paths.
  */
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
-  scalaRef: InternalActorRef =>
+  scalaRef: InternalActorRef with ActorRefScope =>
 
   /**
    * Returns the path for this actor (from this actor up to the root actor).
@@ -166,7 +166,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
  * There are implicit conversions in package.scala
  * from ActorRef -&gt; ScalaActorRef and back
  */
-trait ScalaActorRef { ref: ActorRef =>
+trait ScalaActorRef { ref: ActorRef with InternalActorRef with ActorRefScope =>
 
   /**
    * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
@@ -477,6 +477,53 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
 }
 
 /**
+ * An ActorRef that ignores any incoming messages.
+ *
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class IgnoreActorRef(override val provider: ActorRefProvider) extends MinimalActorRef {
+
+  override val path: ActorPath = IgnoreActorRef.path
+
+  @throws(classOf[java.io.ObjectStreamException])
+  override protected def writeReplace(): AnyRef = SerializedIgnore
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object IgnoreActorRef {
+
+  private val fakeSystemName = "local"
+
+  val path: ActorPath =
+    RootActorPath(Address("akka", IgnoreActorRef.fakeSystemName)) / "ignore"
+
+  private val pathString = path.toString
+
+  /**
+   * Check if the passed `otherPath` is the same as IgnoreActorRef.path
+   */
+  def isIgnoreRefPath(otherPath: String): Boolean =
+    pathString == otherPath
+
+  /**
+   * Check if the passed `otherPath` is the same as IgnoreActorRef.path
+   */
+  def isIgnoreRefPath(otherPath: ActorPath): Boolean =
+    path == otherPath
+
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi @SerialVersionUID(1L) private[akka] object SerializedIgnore extends Serializable {
+  @throws(classOf[java.io.ObjectStreamException])
+  private def readResolve(): AnyRef = IgnoreActorRef
+}
+
+/**
  * Subscribe to this class to be notified about all [[DeadLetter]] (also the suppressed ones)
  * and [[Dropped]].
  *
@@ -764,6 +811,15 @@ private[akka] class VirtualPathContainer(
 
 /**
  * INTERNAL API
+ */
+@InternalApi private[akka] object FunctionRef {
+  def deadLetterMessageHandler(system: ActorSystem): (ActorRef, Any) => Unit = { (sender, msg) =>
+    system.deadLetters.tell(msg, sender)
+  }
+}
+
+/**
+ * INTERNAL API
  *
  * This kind of ActorRef passes all received messages to the given function for
  * performing a non-blocking side-effect. The intended use is to transform the
@@ -779,17 +835,20 @@ private[akka] class VirtualPathContainer(
  * [[FunctionRef#unwatch]] must be called to avoid a resource leak, which is different
  * from an ordinary actor.
  */
-private[akka] final class FunctionRef(
+@InternalApi private[akka] final class FunctionRef(
     override val path: ActorPath,
     override val provider: ActorRefProvider,
     system: ActorSystem,
     f: (ActorRef, Any) => Unit)
     extends MinimalActorRef {
 
+  // var because it's replaced in `stop`
+  private var messageHandler: (ActorRef, Any) => Unit = f
+
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = {
     message match {
       case AddressTerminated(address) => addressTerminated(address)
-      case _                          => f(sender, message)
+      case _                          => messageHandler(sender, message)
     }
   }
 
@@ -875,7 +934,13 @@ private[akka] final class FunctionRef(
     }
   }
 
-  override def stop(): Unit = sendTerminated()
+  override def stop(): Unit = {
+    sendTerminated()
+    // The messageHandler function may close over a large object graph (such as an Akka Stream)
+    // so we replace the messageHandler function to make that available for garbage collection.
+    // Doesn't matter if the change isn't visible immediately, volatile not needed.
+    messageHandler = FunctionRef.deadLetterMessageHandler(system)
+  }
 
   private def addWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
     val selfTerminated = this.synchronized {

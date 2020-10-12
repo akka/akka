@@ -5,15 +5,16 @@
 package akka.cluster
 
 import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
 import akka.actor.Identify
+import akka.actor.PoisonPill
 import akka.actor.Props
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
-import akka.actor.PoisonPill
 
 object AttemptSysMsgRedeliveryMultiJvmSpec extends MultiNodeConfig {
 
@@ -27,7 +28,7 @@ object AttemptSysMsgRedeliveryMultiJvmSpec extends MultiNodeConfig {
 
   class Echo extends Actor {
     def receive = {
-      case m => sender ! m
+      case m => sender() ! m
     }
   }
 }
@@ -51,7 +52,7 @@ class AttemptSysMsgRedeliverySpec
     }
 
     "redeliver system message after inactivity" taggedAs LongRunningTest in {
-      system.actorOf(Props[Echo], "echo")
+      system.actorOf(Props[Echo](), "echo")
       enterBarrier("echo-started")
 
       system.actorSelection(node(first) / "user" / "echo") ! Identify(None)

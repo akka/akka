@@ -4,11 +4,11 @@
 
 package akka.pattern
 
-import akka.actor._
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
-
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+
+import akka.actor._
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 
 object PromiseRefSpec {
   case class Request(replyTo: ActorRef)
@@ -20,6 +20,7 @@ object PromiseRefSpec {
 
 class PromiseRefSpec extends AkkaSpec with ImplicitSender {
   import PromiseRefSpec._
+
   import akka.pattern._
 
   "The PromiseRef" must {

@@ -4,8 +4,9 @@
 
 package akka.stream.tck
 
-import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import org.reactivestreams.Publisher
+
+import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 
 class FlatMapPrefixTest extends AkkaPublisherVerification[Int] {
   override def createPublisher(elements: Long): Publisher[Int] = {

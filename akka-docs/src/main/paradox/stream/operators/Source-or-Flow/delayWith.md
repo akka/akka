@@ -4,13 +4,11 @@ Delay every element passed through with a duration that can be controlled dynami
 
 @ref[Timer driven operators](../index.md#timer-driven-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #delayWith }
+@apidoc[Source.delayWith](Source) { scala="#delayWith(delayStrategySupplier:()=&gt;akka.stream.scaladsl.DelayStrategy[Out],overFlowStrategy:akka.stream.DelayOverflowStrategy):FlowOps.this.Repr[Out]" java="#delayWith(java.util.function.Supplier,akka.stream.DelayOverflowStrategy)" }
+@apidoc[Flow.delayWith](Flow) { scala="#delayWith(delayStrategySupplier:()=&gt;akka.stream.scaladsl.DelayStrategy[Out],overFlowStrategy:akka.stream.DelayOverflowStrategy):FlowOps.this.Repr[Out]" java="#delayWith(java.util.function.Supplier,akka.stream.DelayOverflowStrategy)" }
 
-@@@
 
 ## Description
 

@@ -12,6 +12,7 @@ import sbtunidoc.GenJavadocPlugin.autoImport._
 import sbt.Keys._
 import sbt.File
 import scala.annotation.tailrec
+import com.lightbend.sbt.publishrsync.PublishRsyncPlugin.autoImport.publishRsyncArtifacts
 
 import sbt.ScopeFilter.ProjectFilter
 
@@ -132,10 +133,18 @@ object UnidocRoot extends AutoPlugin {
       .getOrElse(sbtunidoc.ScalaUnidocPlugin)
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled
-    .ifTrue(Seq(javacOptions in (JavaUnidoc, unidoc) := {
-      if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
-      else Seq("-Xdoclint:none", "--ignore-source-errors", "--no-module-directories")
-    }))
+    .ifTrue(Seq(
+      javacOptions in (JavaUnidoc, unidoc) := {
+        if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
+        else Seq("-Xdoclint:none", "--ignore-source-errors", "--no-module-directories")
+      },
+      publishRsyncArtifacts ++= {
+        val releaseVersion = if (isSnapshot.value) "snapshot" else version.value
+        (Compile / unidoc).value match {
+          case Seq(japi, api) =>
+            Seq((japi -> s"www/japi/akka/$releaseVersion"), (api -> s"www/api/akka/$releaseVersion"))
+        }
+      }))
     .getOrElse(Nil)
 
   override lazy val projectSettings = {
@@ -176,7 +185,7 @@ object BootstrapGenjavadoc extends AutoPlugin {
 
   override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled
     .ifTrue(Seq(
-      unidocGenjavadocVersion := "0.15",
-      scalacOptions in Compile ++= Seq("-P:genjavadoc:fabricateParams=true", "-P:genjavadoc:suppressSynthetic=false")))
+      unidocGenjavadocVersion := "0.16",
+      scalacOptions in Compile ++= Seq("-P:genjavadoc:fabricateParams=false", "-P:genjavadoc:suppressSynthetic=false")))
     .getOrElse(Nil)
 }

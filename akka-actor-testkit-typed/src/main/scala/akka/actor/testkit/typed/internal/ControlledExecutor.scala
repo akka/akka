@@ -6,9 +6,9 @@ package akka.actor.testkit.typed.internal
 
 import java.util.LinkedList
 
-import akka.annotation.InternalApi
-
 import scala.concurrent.ExecutionContextExecutor
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

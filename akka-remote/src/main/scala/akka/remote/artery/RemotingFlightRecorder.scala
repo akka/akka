@@ -13,10 +13,7 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalApi
 import akka.remote.UniqueAddress
-import akka.util.JavaVersion
-
-import scala.util.Failure
-import scala.util.Success
+import akka.util.FlightRecorderLoader
 
 /**
  * INTERNAL API
@@ -25,21 +22,12 @@ import scala.util.Success
 object RemotingFlightRecorder extends ExtensionId[RemotingFlightRecorder] with ExtensionIdProvider {
 
   override def createExtension(system: ExtendedActorSystem): RemotingFlightRecorder =
-    if (JavaVersion.majorVersion >= 11 && system.settings.config.getBoolean("akka.java-flight-recorder.enabled")) {
-      // Dynamic instantiation to not trigger class load on earlier JDKs
-      system.dynamicAccess.createInstanceFor[RemotingFlightRecorder](
-        "akka.remote.artery.jfr.JFRRemotingFlightRecorder",
-        (classOf[ExtendedActorSystem], system) :: Nil) match {
-        case Success(jfr) => jfr
-        case Failure(ex) =>
-          system.log.warning("Failed to load JFR remoting flight recorder, falling back to noop. Exception: {}", ex)
-          NoOpRemotingFlightRecorder
-      } // fallback if not possible to dynamically load for some reason
-    } else
-      // JFR not available on Java 8
-      NoOpRemotingFlightRecorder
+    FlightRecorderLoader.load[RemotingFlightRecorder](
+      system,
+      "akka.remote.artery.jfr.JFRRemotingFlightRecorder",
+      NoOpRemotingFlightRecorder)
 
-  override def lookup(): ExtensionId[_ <: Extension] = this
+  override def lookup: ExtensionId[_ <: Extension] = this
 }
 
 /**

@@ -4,9 +4,9 @@
 
 package akka.stream.serialization
 
-import akka.protobufv3.internal.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
+import akka.protobufv3.internal.ByteString
 import akka.serialization._
 import akka.stream.StreamRefMessages
 import akka.stream.impl.streamref._

@@ -8,19 +8,35 @@ import sbt._
 import Keys.{ scalacOptions, _ }
 import sbt.plugins.JvmPlugin
 
-object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
-
-  import scalafix.sbt.ScalafixPlugin
+object AkkaDisciplinePlugin extends AutoPlugin {
 
   override def trigger: PluginTrigger = allRequirements
-  override def requires: Plugins = JvmPlugin && ScalafixPlugin
+  override def requires: Plugins = JvmPlugin
   override lazy val projectSettings = disciplineSettings
 
   // allow toggling for pocs/exploration of ideas without discpline
   val enabled = !sys.props.contains("akka.no.discipline")
 
   // We allow warnings in docs to get the 'snippets' right
-  val nonFatalWarningsFor = Set("akka-docs")
+  val nonFatalJavaWarningsFor = Set(
+    // for sun.misc.Unsafe and AbstractScheduler
+    "akka-actor",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-actor-typed-tests",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-cluster-typed",
+    // use of deprecated akka.protobuf.GeneratedMessage
+    "akka-protobuf",
+    "akka-protobuf-v3",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-remote",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-distributed-data",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-cluster-sharding-typed",
+    // references to deprecated PARSER fields in generated message formats?
+    "akka-persistence-typed",
+    "akka-docs")
 
   val looseProjects = Set(
     "akka-actor",
@@ -32,7 +48,9 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-cluster",
     "akka-cluster-metrics",
     "akka-cluster-sharding",
+    "akka-cluster-sharding-typed",
     "akka-distributed-data",
+    "akka-docs",
     "akka-persistence",
     "akka-persistence-tck",
     "akka-persistence-typed",
@@ -45,10 +63,8 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-stream-tests-tck",
     "akka-testkit")
 
-  lazy val scalaFixSettings = Seq(Compile / scalacOptions += "-Yrangepos")
-
   lazy val silencerSettings = {
-    val silencerVersion = "1.5.0"
+    val silencerVersion = "1.7.1"
     Seq(
       libraryDependencies ++= Seq(
           compilerPlugin(("com.github.ghik" %% "silencer-plugin" % silencerVersion).cross(CrossVersion.patch)),
@@ -57,13 +73,14 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
 
   lazy val disciplineSettings =
     if (enabled) {
-      scalaFixSettings ++
       silencerSettings ++ Seq(
-        Compile / scalacOptions ++= (
-            if (!nonFatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
+        Compile / scalacOptions ++= Seq("-Xfatal-warnings"),
+        Test / scalacOptions --= testUndicipline,
+        Compile / javacOptions ++= (
+            if (!nonFatalJavaWarningsFor(name.value)) Seq("-Werror", "-Xlint:deprecation", "-Xlint:unchecked")
             else Seq.empty
           ),
-        Test / scalacOptions --= testUndicipline,
+        Compile / javacOptions in doc := Seq("-Xdoclint:none"),
         Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
             case Some((2, 13)) =>
               disciplineScalacOptions -- Set(
@@ -116,4 +133,23 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "-Ypartial-unification",
     "-Ywarn-extra-implicit")
 
+  /**
+   * We are a little less strict in docs
+   */
+  val docs = Seq(
+    scalacOptions ++= Seq(
+      // In docs, 'unused' variables can be useful for naming and showing the type
+      "-P:silencer:globalFilters=is never used",
+      // Import statements are often duplicated across multiple snippets in one file
+      "-P:silencer:globalFilters=Unused import",
+      // We keep documentation for this old API around for a while:
+      "-P:silencer:globalFilters=in object Dns is deprecated",
+      "-P:silencer:globalFilters=in class Dns is deprecated",
+      // Because we sometimes wrap things in a class:
+      "-P:silencer:globalFilters=The outer reference in this type test cannot be checked at run time",
+      // Because we show some things that are deprecated in
+      // 2.13 but don't have a replacement that was in 2.12:
+      "-P:silencer:globalFilters=deprecated \\(since 2.13.0\\)"
+    )
+  )
 }

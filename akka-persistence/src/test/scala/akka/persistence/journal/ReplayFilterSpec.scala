@@ -5,9 +5,9 @@
 package akka.persistence.journal
 
 import akka.actor._
-import akka.testkit._
 import akka.persistence.JournalProtocol
 import akka.persistence.PersistentRepr
+import akka.testkit._
 
 class ReplayFilterSpec extends AkkaSpec with ImplicitSender {
   import JournalProtocol._

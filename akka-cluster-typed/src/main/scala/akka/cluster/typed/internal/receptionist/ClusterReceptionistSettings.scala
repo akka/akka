@@ -4,16 +4,16 @@
 
 package akka.cluster.typed.internal.receptionist
 
-import akka.actor.typed.ActorSystem
-import akka.annotation.InternalApi
-import akka.cluster.ddata.Replicator
-import akka.cluster.ddata.Replicator.WriteConsistency
-import akka.util.Helpers.toRootLowerCase
-import com.typesafe.config.Config
 import scala.concurrent.duration._
 import scala.concurrent.duration.{ FiniteDuration, MILLISECONDS }
-
+import com.typesafe.config.Config
+import akka.actor.typed.ActorSystem
+import akka.annotation.InternalApi
+import akka.cluster.ddata.Key.KeyId
+import akka.cluster.ddata.Replicator
+import akka.cluster.ddata.Replicator.WriteConsistency
 import akka.cluster.ddata.ReplicatorSettings
+import akka.util.Helpers.toRootLowerCase
 
 /**
  * Internal API
@@ -37,11 +37,16 @@ private[akka] object ClusterReceptionistSettings {
 
     val replicatorSettings = ReplicatorSettings(config.getConfig("distributed-data"))
 
+    // Having durable store of entries does not make sense for receptionist, as registered
+    // services does not survive a full cluster stop, make sure that it is disabled
+    val replicatorSettingsWithoutDurableStore = replicatorSettings.withDurableKeys(Set.empty[KeyId])
+
     ClusterReceptionistSettings(
       writeConsistency,
       pruningInterval = config.getDuration("pruning-interval", MILLISECONDS).millis,
+      pruneRemovedOlderThan = config.getDuration("prune-removed-older-than", MILLISECONDS).millis,
       config.getInt("distributed-key-count"),
-      replicatorSettings)
+      replicatorSettingsWithoutDurableStore)
   }
 }
 
@@ -52,5 +57,6 @@ private[akka] object ClusterReceptionistSettings {
 private[akka] case class ClusterReceptionistSettings(
     writeConsistency: WriteConsistency,
     pruningInterval: FiniteDuration,
+    pruneRemovedOlderThan: FiniteDuration,
     distributedKeyCount: Int,
     replicatorSettings: ReplicatorSettings)

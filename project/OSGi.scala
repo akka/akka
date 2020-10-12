@@ -6,7 +6,6 @@ package akka
 
 import com.typesafe.sbt.osgi.OsgiKeys
 import com.typesafe.sbt.osgi.SbtOsgi._
-import com.typesafe.sbt.osgi.SbtOsgi.autoImport._
 import sbt._
 import sbt.Keys._
 import net.bzzt.reproduciblebuilds.ReproducibleBuildsPlugin
@@ -64,6 +63,16 @@ object OSGi {
   val osgi = exports(Seq("akka.osgi.*"))
 
   val protobuf = exports(Seq("akka.protobuf.*"))
+
+  val protobufV3 = osgiSettings ++ Seq(
+      OsgiKeys.importPackage := Seq(
+          "!sun.misc",
+          scalaJava8CompatImport(),
+          scalaVersion(scalaImport).value,
+          configImport(),
+          "*"),
+      OsgiKeys.exportPackage := Seq("akka.protobufv3.internal.*"),
+      OsgiKeys.privatePackage := Seq("google.protobuf.*"))
 
   val jackson = exports(Seq("akka.serialization.jackson.*"))
 

@@ -21,6 +21,8 @@ import scala.concurrent.duration.FiniteDuration;
 import java.util.Arrays;
 import java.util.concurrent.*;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static akka.pattern.Patterns.ask;
 import static akka.pattern.Patterns.pipe;
@@ -238,6 +240,43 @@ public class PatternsTest extends JUnitSuite {
     f.complete("hi!");
     Patterns.pipe(f, ec).to(selection);
     probe.expectMsg("hi!");
+  }
+
+  @Test
+  public void testRetryCompletionStageNoDelay() throws Exception {
+    final String expected = "hello";
+
+    CompletionStage<String> retriedFuture =
+        Patterns.retry(() -> CompletableFuture.completedFuture(expected), 3, ec);
+
+    String actual = retriedFuture.toCompletableFuture().get(3, SECONDS);
+    assertEquals(expected, actual);
+  }
+
+  @Test
+  public void testRetryCompletionStageRandomDelay() throws Exception {
+    final String expected = "hello";
+    final AtomicInteger counter = new AtomicInteger(0);
+    CompletionStage<String> retriedFuture =
+        Patterns.retry(
+            () -> {
+              if (counter.incrementAndGet() <= 3) {
+                final CompletableFuture<String> empty = new CompletableFuture<>();
+                empty.completeExceptionally(new RuntimeException("failed by purpose."));
+                return empty;
+              } else {
+                return CompletableFuture.completedFuture(expected);
+              }
+            },
+            3,
+            Duration.ofMillis(100),
+            Duration.ofMillis(200),
+            0.2d,
+            system.scheduler(),
+            ec);
+
+    String actual = retriedFuture.toCompletableFuture().get(3, SECONDS);
+    assertEquals(expected, actual);
   }
 
   @Test

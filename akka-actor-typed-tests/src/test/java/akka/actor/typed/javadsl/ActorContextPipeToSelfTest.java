@@ -5,16 +5,20 @@
 package akka.actor.typed.javadsl;
 
 import akka.actor.testkit.typed.javadsl.LogCapturing;
+import akka.actor.testkit.typed.javadsl.LoggingTestKit;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
+import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
+import akka.actor.typed.Signal;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
@@ -52,6 +56,53 @@ public final class ActorContextPipeToSelfTest extends JUnitSuite {
   @Test
   public void handlesFailure() {
     assertEquals("ko: boom", responseFrom(failedFuture(new RuntimeException("boom"))));
+  }
+
+  @Test
+  public void handleAdaptedNull() {
+    final TestProbe<String> probe = testKit.createTestProbe();
+    ActorRef<String> actor =
+        testKit.spawn(
+            Behaviors.setup(
+                context -> {
+                  CompletableFuture<String> future = new CompletableFuture<>();
+                  context.pipeToSelf(
+                      future,
+                      (ok, ko) -> {
+                        // should happen even if ok is null
+                        probe.ref().tell("adapting");
+                        if (ko == null) // but we pass it on if there is no exception rather than
+                          // non-null ok val
+                          return ok;
+                        // is not allowed
+                        else throw new RuntimeException(ko);
+                      });
+
+                  return Behaviors.receive(String.class)
+                      .onMessageEquals(
+                          "complete-with-null",
+                          () -> {
+                            future.complete(null);
+                            return Behaviors.same();
+                          })
+                      .onAnyMessage(
+                          msg -> {
+                            probe.ref().tell(msg);
+                            return Behaviors.same();
+                          })
+                      .build();
+                }));
+
+    LoggingTestKit.warn(
+            "Adapter function returned null which is not valid as an actor message, ignoring")
+        .expect(
+            testKit.system(),
+            () -> {
+              actor.tell("complete-with-null");
+              probe.expectMessage("adapting");
+              probe.expectNoMessage(Duration.ofMillis(200));
+              return null;
+            });
   }
 
   private CompletableFuture<String> failedFuture(final Throwable ex) {

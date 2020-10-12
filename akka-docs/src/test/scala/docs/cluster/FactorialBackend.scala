@@ -48,8 +48,8 @@ object FactorialBackend {
       .withFallback(ConfigFactory.load("factorial"))
 
     val system = ActorSystem("ClusterSystem", config)
-    system.actorOf(Props[FactorialBackend], name = "factorialBackend")
+    system.actorOf(Props[FactorialBackend](), name = "factorialBackend")
 
-    system.actorOf(Props[MetricsListener], name = "metricsListener")
+    system.actorOf(Props[MetricsListener](), name = "metricsListener")
   }
 }

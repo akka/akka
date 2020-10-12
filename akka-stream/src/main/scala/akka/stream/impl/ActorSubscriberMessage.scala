@@ -4,10 +4,11 @@
 
 package akka.stream.impl
 
+import org.reactivestreams.Subscription
+
 import akka.actor.DeadLetterSuppression
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
-import org.reactivestreams.Subscription
 
 /**
  * INTERNAL API

@@ -7,16 +7,16 @@ package akka.stream.impl.io
 import java.io.{ IOException, OutputStream }
 import java.util.concurrent.{ Semaphore, TimeUnit }
 
+import scala.concurrent.Await
+import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
+
+import akka.stream.{ Attributes, Outlet, SourceShape }
 import akka.stream.Attributes.InputBuffer
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.OutputStreamSourceStage._
 import akka.stream.stage._
-import akka.stream.{ Attributes, Outlet, SourceShape }
 import akka.util.ByteString
-
-import scala.concurrent.Await
-import scala.concurrent.duration.FiniteDuration
-import scala.util.control.NonFatal
 
 private[stream] object OutputStreamSourceStage {
   sealed trait AdapterToStageMessage

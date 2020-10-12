@@ -13,6 +13,7 @@ object TakeWhile {
 
     // #take-while
     Source(1 to 10).takeWhile(_ < 3).runForeach(println)
+    // prints
     // 1
     // 2
     // #take-while

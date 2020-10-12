@@ -6,8 +6,10 @@ package akka.stream.impl.io
 
 import java.io.InputStream
 
+import scala.concurrent.{ Future, Promise }
+import scala.util.control.NonFatal
+
 import akka.annotation.InternalApi
-import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.{
   AbruptStageTerminationException,
   Attributes,
@@ -17,11 +19,9 @@ import akka.stream.{
   SourceShape,
   SubscriptionWithCancelException
 }
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.{ GraphStageLogic, GraphStageLogicWithLogging, GraphStageWithMaterializedValue, OutHandler }
 import akka.util.ByteString
-
-import scala.concurrent.{ Future, Promise }
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -39,7 +39,7 @@ private[akka] final class InputStreamSource(factory: () => InputStream, chunkSiz
   override protected def initialAttributes: Attributes = DefaultAttributes.inputStreamSource
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[IOResult]) = {
-    val mat = Promise[IOResult]
+    val mat = Promise[IOResult]()
     val logic = new GraphStageLogicWithLogging(shape) with OutHandler {
       private val buffer = new Array[Byte](chunkSize)
       private var readBytesTotal = 0L

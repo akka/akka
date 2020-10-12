@@ -4,13 +4,14 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import org.reactivestreams.Publisher
+
 import akka.stream._
 import akka.stream.testkit._
 import akka.testkit.EventFilter
-import org.reactivestreams.Publisher
-
-import scala.concurrent.duration._
-import scala.language.postfixOps
 
 class GraphZipLatestWithSpec extends TwoStreamsSetup {
   import GraphDSL.Implicits._

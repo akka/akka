@@ -4,23 +4,24 @@
 
 package akka.persistence.serialization
 
-import akka.actor.{ ActorPath, ExtendedActorSystem }
-import akka.persistence.AtLeastOnceDelivery._
-import akka.persistence._
-import akka.persistence.fsm.PersistentFSM.{ PersistentFSMSnapshot, StateChangeEvent }
-import akka.persistence.serialization.{ MessageFormats => mf }
-import akka.serialization._
-import akka.protobufv3.internal.ByteString
+import java.io.NotSerializableException
+
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration
-import akka.actor.Actor
-import akka.util.ccompat._
-
 import scala.concurrent.duration.Duration
-import java.io.NotSerializableException
 
 import com.github.ghik.silencer.silent
+
+import akka.actor.{ ActorPath, ExtendedActorSystem }
+import akka.actor.Actor
+import akka.persistence._
+import akka.persistence.AtLeastOnceDelivery._
+import akka.persistence.fsm.PersistentFSM.{ PersistentFSMSnapshot, StateChangeEvent }
+import akka.persistence.serialization.{ MessageFormats => mf }
+import akka.protobufv3.internal.ByteString
+import akka.serialization._
+import akka.util.ccompat._
 
 /**
  * Marker trait for all protobuf-serializable messages in `akka.persistence`.
@@ -165,6 +166,12 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     if (persistent.manifest != PersistentRepr.Undefined) builder.setManifest(persistent.manifest)
 
     builder.setPayload(persistentPayloadBuilder(persistent.payload.asInstanceOf[AnyRef]))
+    persistent.metadata match {
+      case Some(meta) =>
+        builder.setMetadata(persistentPayloadBuilder(meta.asInstanceOf[AnyRef]))
+      case _ =>
+    }
+
     builder.setSequenceNr(persistent.sequenceNr)
     // deleted is not used in new records from 2.4
     if (persistent.writerUuid != Undefined) builder.setWriterUuid(persistent.writerUuid)
@@ -198,7 +205,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
   //
 
   private def persistent(persistentMessage: mf.PersistentMessage): PersistentRepr = {
-    val repr = PersistentRepr(
+    var repr = PersistentRepr(
       payload(persistentMessage.getPayload),
       persistentMessage.getSequenceNr,
       if (persistentMessage.hasPersistenceId) persistentMessage.getPersistenceId else Undefined,
@@ -208,7 +215,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       else Actor.noSender,
       if (persistentMessage.hasWriterUuid) persistentMessage.getWriterUuid else Undefined)
 
-    if (persistentMessage.hasTimestamp) repr.withTimestamp(persistentMessage.getTimestamp) else repr
+    repr = if (persistentMessage.hasTimestamp) repr.withTimestamp(persistentMessage.getTimestamp) else repr
+    if (persistentMessage.hasMetadata) repr.withMetadata(payload(persistentMessage.getMetadata)) else repr
   }
 
   private def atomicWrite(atomicWrite: mf.AtomicWrite): AtomicWrite = {

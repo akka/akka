@@ -10,13 +10,10 @@ The `toFile` operator has been deprecated, use @ref:[toPath](./toPath.md) instea
 
 @@@
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [FileIO.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/FileIO.scala) { #toFile }
+@apidoc[FileIO.toFile](FileIO$) { scala="#toFile(f:java.io.File,options:Set[java.nio.file.OpenOption]):akka.stream.scaladsl.Sink[akka.util.ByteString,scala.concurrent.Future[akka.stream.IOResult]]" java="#toFile(java.io.File,java.util.Set)" }
 
-@@@
 
 ## Description
 

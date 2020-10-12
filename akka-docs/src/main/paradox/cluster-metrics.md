@@ -5,9 +5,11 @@
 To use Cluster Metrics Extension, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-cluster-metrics_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-cluster-metrics_$scala.binary.version$
+  version=AkkaVersion
 }
 
 and add the following configuration stanza to your `application.conf`
@@ -112,7 +114,7 @@ To enable usage of Sigar you can add the following dependency to the user projec
   version="$sigar_loader.version$"
 }
 
-You can download Kamon sigar-loader from [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Csigar-loader)
+You can download Kamon sigar-loader from [Maven Central](https://search.maven.org/search?q=sigar-loader)
 
 ## Adaptive Load Balancing
 
@@ -126,7 +128,7 @@ It can be configured to use a specific MetricsSelector to produce the probabilit
  * `mix` / `MixMetricsSelector` - Combines heap, cpu and load. Weights based on mean of remaining capacity of the combined selectors.
  * Any custom implementation of `akka.cluster.metrics.MetricsSelector`
 
-The collected metrics values are smoothed with [exponential weighted moving average](http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average). In the @ref:[Cluster configuration](cluster-usage.md#cluster-configuration) you can adjust how quickly past data is decayed compared to new data.
+The collected metrics values are smoothed with [exponential weighted moving average](https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average). In the @ref:[Cluster configuration](cluster-usage.md#cluster-configuration) you can adjust how quickly past data is decayed compared to new data.
 
 Let's take a look at this router in action. What can be more demanding than calculating factorials?
 

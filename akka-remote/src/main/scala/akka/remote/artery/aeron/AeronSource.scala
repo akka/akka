@@ -6,24 +6,24 @@ package akka.remote.artery
 package aeron
 
 import scala.annotation.tailrec
+import scala.concurrent.{ Future, Promise }
+import scala.util.control.NonFatal
+
+import io.aeron.{ Aeron, FragmentAssembler, Subscription }
+import io.aeron.exceptions.DriverTimeoutException
+import io.aeron.logbuffer.FragmentHandler
+import io.aeron.logbuffer.Header
+import org.agrona.DirectBuffer
+import org.agrona.hints.ThreadHints
+
 import akka.stream.Attributes
 import akka.stream.Outlet
 import akka.stream.SourceShape
 import akka.stream.stage.AsyncCallback
 import akka.stream.stage.GraphStageLogic
-import akka.stream.stage.OutHandler
-import io.aeron.{ Aeron, FragmentAssembler, Subscription }
-import io.aeron.logbuffer.FragmentHandler
-import io.aeron.logbuffer.Header
-import org.agrona.DirectBuffer
-import org.agrona.hints.ThreadHints
 import akka.stream.stage.GraphStageWithMaterializedValue
-
-import scala.util.control.NonFatal
+import akka.stream.stage.OutHandler
 import akka.stream.stage.StageLogging
-import io.aeron.exceptions.DriverTimeoutException
-
-import scala.concurrent.{ Future, Promise }
 
 /**
  * INTERNAL API
@@ -35,7 +35,7 @@ private[remote] object AeronSource {
       handler: MessageHandler,
       onMessage: AsyncCallback[EnvelopeBuffer]): () => Boolean = { () =>
     {
-      handler.reset
+      handler.reset()
       sub.poll(handler.fragmentsHandler, 1)
       val msg = handler.messageReceived
       handler.reset() // for GC
@@ -167,7 +167,7 @@ private[remote] class AeronSource(
       }
 
       override def channelEndpointStatus(): Future[Long] = {
-        val promise = Promise[Long]
+        val promise = Promise[Long]()
         getStatusCb.invoke(promise)
         promise.future
       }

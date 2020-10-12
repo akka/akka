@@ -8,20 +8,21 @@ import java.util
 import java.util.concurrent._
 import java.util.concurrent.locks.{ Condition, LockSupport, ReentrantLock }
 
-import akka.util.DefaultExecutionContext._
+import scala.collection.mutable
+import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Future }
+import scala.util.control.Exception
+
 import org.scalactic.source.Position
 import org.scalatest.concurrent.{ Signaler, ThreadSignaler }
 import org.scalatest.exceptions.TestFailedDueToTimeoutException
 import org.scalatest.matchers.{ MatchResult, Matcher }
+import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.Span
 import org.scalatest.time.SpanSugar._
-import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import akka.util.DefaultExecutionContext._
 import akka.util.ccompat.JavaConverters._
-import scala.collection.mutable
-import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Future }
-import scala.util.control.Exception
 
 class BoundedBlockingQueueSpec
     extends AnyWordSpec

@@ -4,13 +4,13 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.Utils._
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class FlowForeachSpec extends StreamSpec {
 

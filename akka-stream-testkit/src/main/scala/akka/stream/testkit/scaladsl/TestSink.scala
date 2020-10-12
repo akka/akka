@@ -5,12 +5,12 @@
 package akka.stream.testkit.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.Attributes.none
 import akka.stream._
+import akka.stream.Attributes.none
 import akka.stream.scaladsl._
-import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit._
 import akka.stream.testkit.StreamTestKit.ProbeSink
+import akka.stream.testkit.TestSubscriber.Probe
 
 /**
  * Factory methods for test sinks.

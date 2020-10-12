@@ -124,7 +124,6 @@ object PersistenceId {
    */
   def ofUniqueId(id: String): PersistenceId =
     new PersistenceId(id)
-
 }
 
 /**

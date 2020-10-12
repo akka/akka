@@ -4,16 +4,16 @@
 
 package akka.remote
 
-import language.postfixOps
-
-import akka.testkit.AkkaSpec
 import scala.concurrent.duration._
 
+import com.github.ghik.silencer.silent
+import language.postfixOps
+
 import akka.remote.transport.AkkaProtocolSettings
+import akka.remote.transport.netty.{ NettyTransportSettings, SSLSettings }
+import akka.testkit.AkkaSpec
 import akka.util.Helpers
 import akka.util.Helpers.ConfigOps
-import akka.remote.transport.netty.{ NettyTransportSettings, SSLSettings }
-import com.github.ghik.silencer.silent
 
 @silent // classic deprecated
 class RemoteConfigSpec extends AkkaSpec("""
@@ -130,7 +130,8 @@ class RemoteConfigSpec extends AkkaSpec("""
       sslSettings.SSLTrustStore should ===("truststore")
       sslSettings.SSLTrustStorePassword should ===("changeme")
       sslSettings.SSLProtocol should ===("TLSv1.2")
-      sslSettings.SSLEnabledAlgorithms should ===(Set("TLS_RSA_WITH_AES_128_CBC_SHA"))
+      sslSettings.SSLEnabledAlgorithms should ===(
+        Set("TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"))
       sslSettings.SSLRandomNumberGenerator should ===("")
     }
 

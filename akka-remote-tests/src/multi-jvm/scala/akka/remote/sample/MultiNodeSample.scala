@@ -55,7 +55,7 @@ class MultiNodeSample extends MultiNodeSpec(MultiNodeSampleConfig) with STMultiN
       }
 
       runOn(node2) {
-        system.actorOf(Props[Ponger], "ponger")
+        system.actorOf(Props[Ponger](), "ponger")
         enterBarrier("deployed")
       }
 

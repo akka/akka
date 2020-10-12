@@ -8,9 +8,10 @@ import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InetAddress
 
+import com.github.ghik.silencer.silent
+
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testkit.MultiNodeConfig
-import com.github.ghik.silencer.silent
 
 object DnsSpec extends MultiNodeConfig {
   val first = role("first")

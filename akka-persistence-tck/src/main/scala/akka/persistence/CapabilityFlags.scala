@@ -52,6 +52,12 @@ trait JournalCapabilityFlags extends CapabilityFlags {
    */
   protected def supportsSerialization: CapabilityFlag
 
+  /**
+   * When `true` enables tests which check if the Journal stores and returns
+   * metadata for an event
+   */
+  protected def supportsMetadata: CapabilityFlag
+
 }
 //#journal-flags
 
@@ -63,5 +69,11 @@ trait SnapshotStoreCapabilityFlags extends CapabilityFlags {
    * deserialize snapshots.
    */
   protected def supportsSerialization: CapabilityFlag
+
+  /**
+   * When `true` enables tests which check if the snapshot store properly stores and
+   * loads metadata (needed for replication) along with the snapshots
+   */
+  protected def supportsMetadata: CapabilityFlag
 }
 //#snapshot-store-flags

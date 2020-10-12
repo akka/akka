@@ -4,7 +4,7 @@
 
 package akka.cluster.sharding
 
-import akka.cluster.sharding.Shard.ShardStats
+import akka.cluster.sharding.Shard.{ CurrentShardState, ShardStats }
 import akka.cluster.sharding.ShardRegion.ShardState
 import akka.cluster.sharding.ShardingQueries.ShardsQueryResult
 import akka.testkit.AkkaSpec
@@ -35,23 +35,31 @@ class ShardingQueriesSpec extends AkkaSpec {
     }
 
     "partition failures and responses by type and by convention (failed Left, T Right)" in {
-      val responses = Seq(ShardStats("a", 1), ShardStats("b", 1))
-      val results = responses.map(Right(_)) ++ failures.map(Left(_))
-      val qr = ShardsQueryResult[ShardStats](results, shards.size, timeout)
-      qr.failed shouldEqual failures
-      qr.responses shouldEqual responses
-      isTotalFailed(qr) shouldBe false
-      isAllSubsetFailed(qr) shouldBe false
-      qr.toString shouldEqual s"Queried [3] shards: [2] responsive, [1] failed after $timeout."
+      def assert[T](responses: Seq[T]) = {
+        val results = responses.map(Right(_)) ++ failures.map(Left(_))
+        val qr = ShardsQueryResult[T](results, shards.size, timeout)
+        qr.failed shouldEqual failures
+        qr.responses shouldEqual responses
+        isTotalFailed(qr) shouldBe false
+        isAllSubsetFailed(qr) shouldBe false
+        qr.toString shouldEqual s"Queried [3] shards: [2] responsive, [1] failed after $timeout."
+      }
+
+      assert[ShardStats](Seq(ShardStats("a", 1), ShardStats("b", 1)))
+      assert[CurrentShardState](Seq(CurrentShardState("a", Set("a1")), CurrentShardState("b", Set("b1"))))
     }
 
     "detect a subset query - not all queried" in {
-      val responses = Seq(ShardStats("a", 1), ShardStats("b", 1))
-      val results = responses.map(Right(_)) ++ failures.map(Left(_))
-      val qr = ShardsQueryResult[ShardStats](results, shards.size + 1, timeout)
-      qr.total > qr.queried shouldBe true
-      qr.queried < shards.size
-      qr.toString shouldEqual s"Queried [3] shards of [4]: [2] responsive, [1] failed after $timeout."
+      def assert[T](responses: Seq[T]) = {
+        val results = responses.map(Right(_)) ++ failures.map(Left(_))
+        val qr = ShardsQueryResult[T](results, shards.size + 1, timeout)
+        qr.total > qr.queried shouldBe true
+        qr.queried < shards.size
+        qr.toString shouldEqual s"Queried [3] shards of [4]: [2] responsive, [1] failed after $timeout."
+      }
+
+      assert[ShardStats](Seq(ShardStats("a", 1), ShardStats("b", 1)))
+      assert[CurrentShardState](Seq(CurrentShardState("a", Set("a1")), CurrentShardState("b", Set("b1"))))
     }
 
     "partition when all failed" in {

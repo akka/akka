@@ -6,9 +6,12 @@ package akka.remote.artery
 
 import java.net.InetAddress
 
-import akka.util.ccompat.JavaConverters._
-
 import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.NotUsed
 import akka.japi.Util.immutableSeq
 import akka.stream.ActorMaterializerSettings
@@ -16,9 +19,7 @@ import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
 import akka.util.Helpers.toRootLowerCase
 import akka.util.WildcardIndex
-import com.github.ghik.silencer.silent
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+import akka.util.ccompat.JavaConverters._
 
 /** INTERNAL API */
 private[akka] final class ArterySettings private (config: Config) {
@@ -27,8 +28,8 @@ private[akka] final class ArterySettings private (config: Config) {
 
   def withDisabledCompression(): ArterySettings =
     ArterySettings(ConfigFactory.parseString("""|akka.remote.artery.advanced.compression {
-         |  actor-refs.max = 0
-         |  manifests.max = 0
+         |  actor-refs.max = off
+         |  manifests.max = off
          |}""".stripMargin).withFallback(config))
 
   val Enabled: Boolean = getBoolean("enabled")
@@ -71,6 +72,11 @@ private[akka] final class ArterySettings private (config: Config) {
 
   val LogReceive: Boolean = getBoolean("log-received-messages")
   val LogSend: Boolean = getBoolean("log-sent-messages")
+
+  val LogFrameSizeExceeding: Option[Int] = {
+    if (toRootLowerCase(getString("log-frame-size-exceeding")) == "off") None
+    else Some(getBytes("log-frame-size-exceeding").toInt)
+  }
 
   val Transport: Transport = toRootLowerCase(getString("transport")) match {
     case AeronUpd.configName => AeronUpd
@@ -151,7 +157,18 @@ private[akka] final class ArterySettings private (config: Config) {
     val ShutdownFlushTimeout: FiniteDuration =
       config
         .getMillisDuration("shutdown-flush-timeout")
-        .requiring(interval => interval > Duration.Zero, "shutdown-flush-timeout must be more than zero")
+        .requiring(timeout => timeout > Duration.Zero, "shutdown-flush-timeout must be more than zero")
+    val DeathWatchNotificationFlushTimeout: FiniteDuration = {
+      toRootLowerCase(config.getString("death-watch-notification-flush-timeout")) match {
+        case "off" => Duration.Zero
+        case _ =>
+          config
+            .getMillisDuration("death-watch-notification-flush-timeout")
+            .requiring(
+              interval => interval > Duration.Zero,
+              "death-watch-notification-flush-timeout must be more than zero, or off")
+      }
+    }
     val InboundRestartTimeout: FiniteDuration =
       config
         .getMillisDuration("inbound-restart-timeout")
@@ -242,21 +259,29 @@ private[akka] object ArterySettings {
   private[remote] final class Compression private[ArterySettings] (config: Config) {
     import config._
 
-    private[akka] final val Enabled = ActorRefs.Max > 0 || Manifests.Max > 0
+    private[akka] final val Enabled = ActorRefs.Enabled || Manifests.Enabled
 
     object ActorRefs {
       val config: Config = getConfig("actor-refs")
       import config._
 
       val AdvertisementInterval: FiniteDuration = config.getMillisDuration("advertisement-interval")
-      val Max: Int = getInt("max")
+      val Max: Int = toRootLowerCase(getString("max")) match {
+        case "off" => 0
+        case _     => getInt("max")
+      }
+      final val Enabled = Max > 0
     }
     object Manifests {
       val config: Config = getConfig("manifests")
       import config._
 
       val AdvertisementInterval: FiniteDuration = config.getMillisDuration("advertisement-interval")
-      val Max: Int = getInt("max")
+      val Max: Int = toRootLowerCase(getString("max")) match {
+        case "off" => 0
+        case _     => getInt("max")
+      }
+      final val Enabled = Max > 0
     }
   }
   object Compression {

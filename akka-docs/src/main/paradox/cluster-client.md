@@ -14,9 +14,11 @@ It is not advised to build new applications with Cluster Client, and existing us
 To use Cluster Client, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-cluster-tools_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-cluster-tools_$scala.binary.version$
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-cluster-tools" }
@@ -231,7 +233,7 @@ contacts can be fetched and a new cluster client started.
 ## Migration to Akka gRPC
 
 Cluster Client is deprecated and it is not advised to build new applications with it.
-As a replacement we recommend using [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html)
+As a replacement we recommend using [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/)
 with an application-specific protocol. The benefits of this approach are:
 
 * Improved security by using TLS for gRPC (HTTP/2) versus exposing Akka Remoting outside the Akka Cluster
@@ -244,7 +246,7 @@ with an application-specific protocol. The benefits of this approach are:
 ### Migrating directly
 
 Existing users of Cluster Client may migrate directly to Akka gRPC and use it
-as documented in [its documentation](https://doc.akka.io/docs/akka-grpc/current).
+as documented in [its documentation](https://doc.akka.io/docs/akka-grpc/current/).
 
 ### Migrating gradually
 

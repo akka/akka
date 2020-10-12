@@ -4,6 +4,8 @@
 
 package akka.routing
 
+import com.github.ghik.silencer.silent
+
 import akka.ConfigurationException
 import akka.actor.ActorPath
 import akka.actor.ActorSystemImpl
@@ -15,7 +17,6 @@ import akka.actor.UnstartedCell
 import akka.dispatch.BalancingDispatcher
 import akka.dispatch.MailboxType
 import akka.dispatch.MessageDispatcher
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API

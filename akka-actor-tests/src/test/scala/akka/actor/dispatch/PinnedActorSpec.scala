@@ -6,12 +6,14 @@ package akka.actor.dispatch
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
-import akka.testkit._
-import akka.actor.{ Actor, Props }
-import akka.testkit.AkkaSpec
-import org.scalatest.BeforeAndAfterEach
 import scala.concurrent.Await
+
+import org.scalatest.BeforeAndAfterEach
+
+import akka.actor.{ Actor, Props }
 import akka.pattern.ask
+import akka.testkit._
+import akka.testkit.AkkaSpec
 
 object PinnedActorSpec {
   val config = """
@@ -44,7 +46,7 @@ class PinnedActorSpec extends AkkaSpec(PinnedActorSpec.config) with BeforeAndAft
     }
 
     "support ask/reply" in {
-      val actor = system.actorOf(Props[TestActor].withDispatcher("pinned-dispatcher"))
+      val actor = system.actorOf(Props[TestActor]().withDispatcher("pinned-dispatcher"))
       assert("World" === Await.result(actor ? "Hello", timeout.duration))
       system.stop(actor)
     }

@@ -6,13 +6,13 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom.{ current => random }
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import akka.stream.impl.ActorSubscriberMessage.OnComplete
 import akka.stream.impl.ActorSubscriberMessage.OnNext
 import akka.stream.impl.RequestMore
 import akka.stream.testkit._
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class FlowTakeSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

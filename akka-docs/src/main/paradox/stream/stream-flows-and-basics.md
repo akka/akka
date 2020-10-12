@@ -5,9 +5,11 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -77,7 +79,7 @@ RunnableGraph
 
 
 It is possible to attach a `Flow` to a `Source` resulting in a composite source, and it is also possible to prepend
-a `Flow` to a `Sink` to get a new sink. After a stream is properly terminated by having both a source and a sink,
+a `Flow` to a `Sink` to get a new sink. After a stream is properly constructed by having both a source and a sink,
 it will be represented by the `RunnableGraph` type, indicating that it is ready to be executed.
 
 It is important to remember that even after constructing the `RunnableGraph` by connecting all the source, sink and
@@ -190,7 +192,7 @@ of absence of a value we recommend using @scala[`scala.Option` or `scala.util.Ei
 
 ## Back-pressure explained
 
-Akka Streams implement an asynchronous non-blocking back-pressure protocol standardised by the [Reactive Streams](http://reactive-streams.org/)
+Akka Streams implement an asynchronous non-blocking back-pressure protocol standardised by the [Reactive Streams](https://www.reactive-streams.org/)
 specification, which Akka is a founding member of.
 
 The user of the library does not have to write any explicit back-pressure handling code — it is built in
@@ -381,7 +383,7 @@ and emitting the "materialized value". An `ActorSystem` wide `Materializer` is p
 `SystemMaterializer` by @scala[having an implicit `ActorSystem` in scope]@java[passing the `ActorSystem` to the 
 various `run` methods] this way there is no need to worry about the `Materializer` unless there are special requirements.
 
-The use case that may require a custom instance of `Materializer` is when all streams materialized in an actor should be tied to the Actor lifecycle and stop if the Actor stops or crashes 
+The use case that may require a custom instance of `Materializer` is when all streams materialized in an actor should be tied to the Actor lifecycle and stop if the Actor stops or crashes. 
 
 An important aspect of working with streams and actors is understanding a `Materializer`'s life-cycle.
 The materializer is bound to the lifecycle of the `ActorRefFactory` it is created from, which in practice will

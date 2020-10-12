@@ -8,6 +8,9 @@ package internal
 import java.time.Duration
 
 import scala.concurrent.duration.FiniteDuration
+
+import org.slf4j.Logger
+
 import akka.actor.Cancellable
 import akka.actor.NotInfluenceReceiveTimeout
 import akka.actor.typed.scaladsl.ActorContext
@@ -16,7 +19,6 @@ import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
-import org.slf4j.Logger
 
 /**
  * INTERNAL API
@@ -103,14 +105,13 @@ import org.slf4j.Logger
 
     val task = mode match {
       case SingleMode =>
-        ctx.system.scheduler
-          .scheduleOnce(delay, () => ctx.self.unsafeUpcast ! timerMsg)(ExecutionContexts.sameThreadExecutionContext)
+        ctx.system.scheduler.scheduleOnce(delay, () => ctx.self.unsafeUpcast ! timerMsg)(ExecutionContexts.parasitic)
       case FixedDelayMode =>
         ctx.system.scheduler.scheduleWithFixedDelay(delay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
-          ExecutionContexts.sameThreadExecutionContext)
+          ExecutionContexts.parasitic)
       case FixedRateMode =>
         ctx.system.scheduler.scheduleAtFixedRate(delay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
-          ExecutionContexts.sameThreadExecutionContext)
+          ExecutionContexts.parasitic)
     }
 
     val nextTimer = Timer(key, msg, mode.repeat, nextGen, task)

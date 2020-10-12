@@ -1,0 +1,6 @@
+#Add writeCount field to WriteMessagesFailed, safe to exclude since the message is internal
+ProblemFilters.exclude[MissingTypesProblem]("akka.persistence.JournalProtocol$WriteMessagesFailed$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.JournalProtocol#WriteMessagesFailed.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.JournalProtocol#WriteMessagesFailed.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.JournalProtocol#WriteMessagesFailed.this")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.JournalProtocol#WriteMessagesFailed.unapply")

@@ -5,10 +5,10 @@
 package akka.cluster.metrics.protobuf
 
 import akka.actor.{ Address, ExtendedActorSystem }
-import akka.testkit.AkkaSpec
 import akka.cluster.MemberStatus
-import akka.cluster.metrics._
 import akka.cluster.TestMember
+import akka.cluster.metrics._
+import akka.testkit.AkkaSpec
 
 class MessageSerializerSpec extends AkkaSpec("""
      akka.actor.provider = cluster

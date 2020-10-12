@@ -4,11 +4,11 @@ Allow for a slower downstream by passing incoming elements and a summary into an
 
 @ref[Backpressure aware operators](../index.md#backpressure-aware-operators)
 
-@@@ div { .group-scala }
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #batch }
-@@@
+@apidoc[Source.batch](Source) { scala="#batch[S](max:Long,seed:Out=&gt;S)(aggregate:(S,Out)=&gt;S):FlowOps.this.Repr[S]" java="#batch(long,akka.japi.function.Function,akka.japi.function.Function2)" }
+@apidoc[Flow.batch](Flow) { scala="#batch[S](max:Long,seed:Out=&gt;S)(aggregate:(S,Out)=&gt;S):FlowOps.this.Repr[S]" java="#batch(long,akka.japi.function.Function,akka.japi.function.Function2)" }
+
 
 
 ## Description

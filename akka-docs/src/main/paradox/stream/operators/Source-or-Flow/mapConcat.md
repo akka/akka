@@ -4,13 +4,11 @@ Transform each element into zero or more elements that are individually passed d
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #mapConcat }
+@apidoc[Source.mapConcat](Source) { scala="#mapConcat[T](f:Out=&gt;scala.collection.immutable.Iterable[T]):FlowOps.this.Repr[T]" java="#mapConcat(akka.japi.function.Function)" }
+@apidoc[Flow.mapConcat](Flow) { scala="#mapConcat[T](f:Out=&gt;scala.collection.immutable.Iterable[T]):FlowOps.this.Repr[T]" java="#mapConcat(akka.japi.function.Function)" }
 
-@@@
 
 ## Description
 
@@ -18,6 +16,8 @@ Transform each element into zero or more elements that are individually passed d
 This can be used to flatten collections into individual stream elements.
 Returning an empty iterable results in zero elements being passed downstream
 rather than the stream being cancelled.
+
+See also @ref:[statefulMapConcat](statefulMapConcat.md)
 
 ## Example
 

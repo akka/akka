@@ -4,12 +4,14 @@
 
 package akka.testkit.metrics
 
-import java.util
-import akka.util.ccompat.JavaConverters._
 import java.lang.management.{ ManagementFactory, OperatingSystemMXBean }
+import java.util
+
 import com.codahale.metrics.{ Gauge, Metric, MetricSet }
 import com.codahale.metrics.MetricRegistry._
 import com.codahale.metrics.jvm.FileDescriptorRatioGauge
+
+import akka.util.ccompat.JavaConverters._
 
 /**
  * MetricSet exposing number of open and maximum file descriptors used by the JVM process.

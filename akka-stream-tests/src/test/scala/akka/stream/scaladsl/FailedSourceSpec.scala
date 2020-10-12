@@ -4,11 +4,11 @@
 
 package akka.stream.scaladsl
 
+import scala.util.control.NoStackTrace
+
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestSubscriber
 import akka.testkit.DefaultTimeout
-
-import scala.util.control.NoStackTrace
 
 class FailedSourceSpec extends StreamSpec with DefaultTimeout {
 

@@ -4,9 +4,9 @@
 
 package akka.util
 
-import akka.testkit.AkkaSpec
-
 import scala.util.Random
+
+import akka.testkit.AkkaSpec
 
 class TokenBucketSpec extends AkkaSpec {
 

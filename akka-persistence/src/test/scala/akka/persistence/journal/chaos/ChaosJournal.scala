@@ -4,14 +4,16 @@
 
 package akka.persistence.journal.chaos
 
+import java.util.concurrent.ThreadLocalRandom
+
 import scala.collection.immutable
 import scala.concurrent.Future
-import java.util.concurrent.ThreadLocalRandom
+import scala.util.Try
+import scala.util.control.NonFatal
+
 import akka.persistence._
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.journal.inmem.InmemMessages
-import scala.util.Try
-import scala.util.control.NonFatal
 
 class WriteFailedException(ps: Seq[PersistentRepr])
     extends TestException(s"write failed for payloads = [${ps.map(_.payload)}]")
@@ -64,11 +66,11 @@ class ChaosJournal extends AsyncWriteJournal {
       replayCallback: (PersistentRepr) => Unit): Future[Unit] =
     if (shouldFail(replayFailureRate)) {
       val rm = read(persistenceId, fromSequenceNr, toSequenceNr, max)
-      val sm = rm.take(random.nextInt(rm.length + 1))
+      val sm = rm.take(random.nextInt(rm.length + 1)).map(_._1)
       sm.foreach(replayCallback)
       Future.failed(new ReplayFailedException(sm))
     } else {
-      read(persistenceId, fromSequenceNr, toSequenceNr, max).foreach(replayCallback)
+      read(persistenceId, fromSequenceNr, toSequenceNr, max).map(_._1).foreach(replayCallback)
       Future.successful(())
     }
 

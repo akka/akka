@@ -8,8 +8,9 @@ import java.nio.ByteBuffer
 import java.util.Random
 import java.util.concurrent.TimeUnit
 
-import akka.io.DirectByteBufferPool
 import org.openjdk.jmh.annotations._
+
+import akka.io.DirectByteBufferPool
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))

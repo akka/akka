@@ -10,6 +10,8 @@ import java.util.concurrent.ThreadLocalRandom
 
 import scala.concurrent.Future
 
+import com.typesafe.config.ConfigFactory
+
 import akka.Done
 import akka.actor.ActorRef
 import akka.actor.Address
@@ -18,7 +20,6 @@ import akka.remote.UniqueAddress
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
 import akka.remote.artery.InboundControlJunction.ControlMessageSubject
 import akka.util.OptionVal
-import com.typesafe.config.ConfigFactory
 
 private[remote] class TestInboundContext(
     override val localAddress: UniqueAddress,
@@ -54,7 +55,7 @@ private[remote] class TestInboundContext(
     val done = a.completeHandshake(peer)
     done.foreach { _ =>
       associationsByUid.put(peer.uid, a)
-    }(ExecutionContexts.sameThreadExecutionContext)
+    }(ExecutionContexts.parasitic)
     done
   }
 

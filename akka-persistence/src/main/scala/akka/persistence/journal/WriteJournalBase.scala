@@ -4,9 +4,10 @@
 
 package akka.persistence.journal
 
+import scala.collection.immutable
+
 import akka.actor.Actor
 import akka.persistence.{ Persistence, PersistentEnvelope, PersistentRepr }
-import scala.collection.immutable
 import akka.persistence.AtomicWrite
 
 private[akka] trait WriteJournalBase {

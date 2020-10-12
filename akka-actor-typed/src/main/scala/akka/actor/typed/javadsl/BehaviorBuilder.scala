@@ -6,15 +6,16 @@ package akka.actor.typed.javadsl
 
 import scala.annotation.tailrec
 
-import akka.japi.function.{ Function => JFunction }
-import akka.japi.function.Creator
-import akka.japi.function.{ Predicate => JPredicate }
-import akka.annotation.InternalApi
+import BehaviorBuilder._
+
 import akka.actor.typed.Behavior
 import akka.actor.typed.ExtensibleBehavior
 import akka.actor.typed.Signal
 import akka.actor.typed.TypedActorContext
-import BehaviorBuilder._
+import akka.annotation.InternalApi
+import akka.japi.function.{ Function => JFunction }
+import akka.japi.function.{ Predicate => JPredicate }
+import akka.japi.function.Creator
 import akka.util.OptionVal
 
 /**

@@ -1,0 +1,3 @@
+# removed prng constants related to issue #29188 and pr #29246
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.tcp.SecureRandomFactory.GeneratorSha1Prng")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.tcp.SecureRandomFactory.GeneratorNativePrng")

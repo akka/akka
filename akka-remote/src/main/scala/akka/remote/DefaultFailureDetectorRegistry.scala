@@ -5,9 +5,10 @@
 package akka.remote
 
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.{ Lock, ReentrantLock }
+
 import scala.annotation.tailrec
 import scala.collection.immutable.Map
-import java.util.concurrent.locks.{ Lock, ReentrantLock }
 
 /**
  * A lock-less thread-safe implementation of [[akka.remote.FailureDetectorRegistry]].

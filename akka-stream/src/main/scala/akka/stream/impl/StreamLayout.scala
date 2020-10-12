@@ -6,17 +6,18 @@ package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.annotation.InternalApi
-import akka.stream._
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.util.OptionVal
+import scala.annotation.tailrec
+import scala.util.control.NonFatal
+
 import org.reactivestreams.Processor
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 
-import scala.annotation.tailrec
-import scala.util.control.NonFatal
+import akka.annotation.InternalApi
+import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.util.OptionVal
 
 /**
  * INTERNAL API

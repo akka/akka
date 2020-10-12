@@ -6,9 +6,9 @@ package akka.serialization
 
 import java.nio.{ ByteBuffer, ByteOrder }
 
-import akka.actor.ExtendedActorSystem
-
 import scala.concurrent.duration._
+
+import akka.actor.ExtendedActorSystem
 import akka.testkit._
 
 object DisabledJavaSerializerWarningSpec {

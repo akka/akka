@@ -7,6 +7,7 @@ package akka.event
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
+
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.AddressTerminated

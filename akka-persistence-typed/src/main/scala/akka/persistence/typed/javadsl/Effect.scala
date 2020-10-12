@@ -4,13 +4,13 @@
 
 package akka.persistence.typed.javadsl
 
-import akka.util.ccompat.JavaConverters._
+import akka.actor.typed.ActorRef
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.japi.function
-import akka.persistence.typed.internal.SideEffect
 import akka.persistence.typed.internal._
-import akka.actor.typed.ActorRef
+import akka.persistence.typed.internal.SideEffect
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API: see `class EffectFactories`

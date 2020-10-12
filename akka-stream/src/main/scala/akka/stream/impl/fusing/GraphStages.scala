@@ -6,23 +6,23 @@ package akka.stream.impl.fusing
 
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 
+import scala.annotation.unchecked.uncheckedVariance
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration.FiniteDuration
+import scala.util.Try
+
 import akka.Done
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
+import akka.stream.{ Shape, _ }
 import akka.stream.FlowMonitorState._
+import akka.stream.impl.{ LinearTraversalBuilder, ReactiveStreamsCompliance }
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout._
-import akka.stream.impl.{ LinearTraversalBuilder, ReactiveStreamsCompliance }
 import akka.stream.scaladsl._
 import akka.stream.stage._
-import akka.stream.{ Shape, _ }
-
-import scala.annotation.unchecked.uncheckedVariance
-import scala.util.Try
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Future, Promise }
 
 /**
  * INTERNAL API
@@ -303,7 +303,7 @@ import scala.concurrent.{ Future, Promise }
               onFutureSourceCompleted(it)
             case _ =>
               val cb = getAsyncCallback[Try[Graph[SourceShape[T], M]]](onFutureSourceCompleted).invoke _
-              futureSource.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext) // could be optimised FastFuture-like
+              futureSource.onComplete(cb)(ExecutionContexts.parasitic) // could be optimised FastFuture-like
           }
 
         // initial handler (until future completes)
@@ -387,7 +387,7 @@ import scala.concurrent.{ Future, Promise }
               onFutureCompleted(completed)
             case None =>
               val cb = getAsyncCallback[Try[T]](onFutureCompleted).invoke _
-              future.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext)
+              future.onComplete(cb)(ExecutionContexts.parasitic)
           }
 
           def onFutureCompleted(result: Try[T]): Unit = {

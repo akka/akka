@@ -4,11 +4,12 @@
 
 package akka.stream.tck
 
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
+import scala.concurrent.Promise
+
 import org.reactivestreams._
 
-import scala.concurrent.Promise
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 
 class FuturePublisherTest extends AkkaPublisherVerification[Int] {
 

@@ -4,15 +4,16 @@
 
 package akka.actor.typed
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.{ AnyWordSpec, AnyWordSpecLike }
+
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
-
-import scala.concurrent.Future
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.{ AnyWordSpec, AnyWordSpecLike }
 
 object SpawnProtocolSpec {
   sealed trait Message
@@ -30,7 +31,7 @@ object SpawnProtocolSpec {
 class SpawnProtocolSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   import SpawnProtocolSpec._
-  implicit val testSettings = TestKitSettings(system)
+  implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
   "Spawn behavior" must {
     "spawn child actor" in {
@@ -48,7 +49,7 @@ class SpawnProtocolSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike w
     "have nice API for ask" in {
       val parent = spawn(SpawnProtocol(), "parent2")
       import akka.actor.typed.scaladsl.AskPattern._
-      implicit val timeout = Timeout(5.seconds)
+      implicit val timeout: Timeout = Timeout(5.seconds)
       val parentReply: Future[ActorRef[Ping]] =
         parent.ask(SpawnProtocol.Spawn(target, "child", Props.empty, _))
       val child = parentReply.futureValue

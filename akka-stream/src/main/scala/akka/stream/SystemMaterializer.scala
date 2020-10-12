@@ -4,6 +4,11 @@
 
 package akka.stream
 
+import scala.concurrent.Await
+import scala.concurrent.Promise
+
+import com.github.ghik.silencer.silent
+
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
 import akka.actor.Deploy
@@ -13,14 +18,10 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalApi
 import akka.dispatch.Dispatchers
-import akka.stream.impl.MaterializerGuardian
-
-import scala.concurrent.Await
-import scala.concurrent.Promise
-import akka.util.JavaDurationConverters._
 import akka.pattern.ask
+import akka.stream.impl.MaterializerGuardian
+import akka.util.JavaDurationConverters._
 import akka.util.Timeout
-import com.github.ghik.silencer.silent
 
 /**
  * The system materializer is a default materializer to use for most cases running streams, it is a single instance

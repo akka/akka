@@ -8,6 +8,11 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicLongArray
 import java.util.concurrent.locks.LockSupport
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.HdrHistogram.Histogram
+
 import akka.actor._
 import akka.dispatch.Dispatchers
 import akka.remote.RemotingMultiNodeSpec
@@ -17,10 +22,6 @@ import akka.serialization.jackson.CborSerializable
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Source
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import org.HdrHistogram.Histogram
-
-import scala.concurrent.duration._
 
 object LatencySpec extends MultiNodeConfig {
   val first = role("first")
@@ -63,7 +64,7 @@ object LatencySpec extends MultiNodeConfig {
        }
        """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
-  final case object Reset extends CborSerializable
+  case object Reset extends CborSerializable
 
   def echoProps(): Props =
     Props(new Echo).withDispatcher(Dispatchers.InternalDispatcherId)
@@ -341,7 +342,7 @@ abstract class LatencySpec extends RemotingMultiNodeSpec(LatencySpec) {
     "start echo" in {
       runOn(second) {
         // just echo back
-        system.actorOf(echoProps, "echo")
+        system.actorOf(echoProps(), "echo")
       }
       enterBarrier("echo-started")
     }

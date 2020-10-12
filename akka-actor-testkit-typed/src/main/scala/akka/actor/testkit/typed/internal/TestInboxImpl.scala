@@ -6,12 +6,12 @@ package akka.actor.testkit.typed.internal
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
-import akka.actor.typed.ActorRef
-import akka.actor.ActorPath
-import akka.annotation.InternalApi
-
 import scala.annotation.tailrec
 import scala.collection.immutable
+
+import akka.actor.ActorPath
+import akka.actor.typed.ActorRef
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

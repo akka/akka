@@ -146,17 +146,17 @@ class LoggingDocSpec extends AkkaSpec {
   import LoggingDocSpec.{ MdcActor, MdcActorMixin, MyActor, Req }
 
   "use a logging actor" in {
-    val myActor = system.actorOf(Props[MyActor])
+    val myActor = system.actorOf(Props[MyActor]())
     myActor ! "test"
   }
 
   "use a MDC logging actor" in {
-    val mdcActor = system.actorOf(Props[MdcActor])
+    val mdcActor = system.actorOf(Props[MdcActor]())
     mdcActor ! "some request"
   }
 
   "use a MDC logging actor by mixin" in {
-    val mdcActor = system.actorOf(Props[MdcActorMixin])
+    val mdcActor = system.actorOf(Props[MdcActorMixin]())
     mdcActor ! Req("some request", 5678)
   }
 
@@ -164,7 +164,7 @@ class LoggingDocSpec extends AkkaSpec {
     import LoggingDocSpec.Listeners._
     //#deadletters
 
-    val listener = system.actorOf(Props[DeadLetterListener])
+    val listener = system.actorOf(Props[DeadLetterListener]())
     system.eventStream.subscribe(listener, classOf[DeadLetter])
     //#deadletters
   }
@@ -173,8 +173,8 @@ class LoggingDocSpec extends AkkaSpec {
     import LoggingDocSpec.Listeners._
     //#superclass-subscription-eventstream
 
-    val jazzListener = system.actorOf(Props[Listener])
-    val musicListener = system.actorOf(Props[Listener])
+    val jazzListener = system.actorOf(Props[Listener]())
+    val musicListener = system.actorOf(Props[Listener]())
     system.eventStream.subscribe(jazzListener, classOf[Jazz])
     system.eventStream.subscribe(musicListener, classOf[AllKindsOfMusic])
 
@@ -188,7 +188,7 @@ class LoggingDocSpec extends AkkaSpec {
 
   "allow registration to suppressed dead letters" in {
     import akka.actor.Props
-    val listener = system.actorOf(Props[MyActor])
+    val listener = system.actorOf(Props[MyActor]())
 
     //#suppressed-deadletters
     import akka.actor.SuppressedDeadLetter

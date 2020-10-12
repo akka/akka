@@ -6,18 +6,30 @@ package akka.cluster.typed
 
 import java.util.concurrent.ConcurrentHashMap
 
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.{ Address, Scheduler }
-import akka.cluster.{ ClusterEvent, MemberStatus }
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{ MultiNodeSpec, STMultiNodeSpec }
-import akka.testkit.WatchedByCoroner
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.language.implicitConversions
+
 import org.scalatest.Suite
 import org.scalatest.matchers.should.Matchers
 
-import scala.concurrent.duration._
-import scala.language.implicitConversions
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.Props
+import akka.actor.typed.SpawnProtocol
+import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.adapter._
+import akka.actor.Address
+import akka.actor.Scheduler
+import akka.cluster.ClusterEvent
+import akka.cluster.MemberStatus
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.STMultiNodeSpec
+import akka.testkit.WatchedByCoroner
+import akka.util.Timeout
 
 trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner with Matchers {
   self: MultiNodeSpec =>
@@ -73,6 +85,15 @@ trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedB
       }
     }
     enterBarrier("all-joined")
+  }
+
+  private lazy val spawnActor =
+    system.actorOf(PropsAdapter(SpawnProtocol()), "testSpawn").toTyped[SpawnProtocol.Command]
+  def spawn[T](behavior: Behavior[T], name: String): ActorRef[T] = {
+    implicit val timeout: Timeout = testKitSettings.DefaultTimeout
+    val f: Future[ActorRef[T]] = spawnActor.ask(SpawnProtocol.Spawn(behavior, name, Props.empty, _))
+
+    Await.result(f, timeout.duration * 2)
   }
 
 }

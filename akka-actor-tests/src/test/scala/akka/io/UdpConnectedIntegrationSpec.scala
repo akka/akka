@@ -6,15 +6,15 @@ package akka.io
 
 import java.net.InetSocketAddress
 
+import scala.concurrent.duration._
+
 import akka.actor.ActorRef
-import akka.testkit.SocketUtil.temporaryServerAddresses
-import akka.testkit.WithLogCapturing
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
+import akka.testkit.SocketUtil.temporaryServerAddresses
 import akka.testkit.TestProbe
+import akka.testkit.WithLogCapturing
 import akka.util.ByteString
-
-import scala.concurrent.duration._
 
 class UdpConnectedIntegrationSpec extends AkkaSpec("""
     akka.loglevel = DEBUG

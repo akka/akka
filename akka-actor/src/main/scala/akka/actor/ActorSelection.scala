@@ -4,26 +4,25 @@
 
 package akka.actor
 
-import scala.language.implicitConversions
 import java.util.concurrent.CompletionStage
+import java.util.regex.Pattern
 
-import scala.language.implicitConversions
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.compat.java8.FutureConverters
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+import scala.language.implicitConversions
 import scala.util.Success
-import java.util.regex.Pattern
 
+import com.github.ghik.silencer.silent
+
+import akka.dispatch.ExecutionContexts
 import akka.pattern.ask
 import akka.routing.MurmurHash
 import akka.util.{ Helpers, JavaDurationConverters, Timeout }
-import akka.dispatch.ExecutionContexts
-
-import scala.compat.java8.FutureConverters
 import akka.util.ccompat._
-import com.github.ghik.silencer.silent
 
 /**
  * An ActorSelection is a logical view of a section of an ActorSystem's tree of Actors,
@@ -68,7 +67,7 @@ abstract class ActorSelection extends Serializable {
    * [[ActorRef]].
    */
   def resolveOne()(implicit timeout: Timeout): Future[ActorRef] = {
-    implicit val ec = ExecutionContexts.sameThreadExecutionContext
+    implicit val ec = ExecutionContexts.parasitic
     val p = Promise[ActorRef]()
     this.ask(Identify(None)).onComplete {
       case Success(ActorIdentity(_, Some(ref))) => p.success(ref)

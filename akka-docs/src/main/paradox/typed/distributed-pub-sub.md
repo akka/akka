@@ -1,91 +1,68 @@
 # Distributed Publish Subscribe in Cluster
 
-For the Akka Classic documentation of this feature see @ref:[Classic Distributed Publish Subscribe](../distributed-pub-sub.md).
-Classic Pub Sub can be used by leveraging the `.toClassic` adapters until @github[#26338](#26338).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Distributed Publish Subscribe](../distributed-pub-sub.md).
 
 ## Module info
 
-Until the new Distributed Publish Subscribe API, see @github[#26338](#26338), 
-you can use Classic Distributed Publish Subscribe 
-@ref:[coexisting](coexisting.md) with new Cluster and actors. To do this, add following dependency in your project:
+The distributed publish subscribe topic API is available and usable with the core `akka-actor-typed` module, however it will only be distributed
+when used in a clustered application:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-cluster-tools_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-cluster-typed_$scala.binary.version$"
+  version=AkkaVersion
 }
 
-Add the new Cluster API if you don't already have it in an existing Cluster application:
+## The Topic Actor
 
-@@dependency[sbt,Maven,Gradle] {
-  group=com.typesafe.akka
-  artifact=akka-cluster-typed_$scala.binary_version$
-  version=$akka.version$
-}
+Distributed publish subscribe is achieved by representing each pub sub topic with an actor, `akka.actor.typed.pubsub.Topic`. 
 
-@@project-info{ projectId="akka-cluster-typed" }
-
-## Sample project
-
-Until @github[#26338](#26338), [this simple example]($github.base_url$/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/DistributedPubSubExample.scala) shows how to use 
-@ref:[Classic Distributed Publish Subscribe](../distributed-pub-sub.md) with the new Cluster API.
-
-### The DistributedPubSub extension
-
-The mediator can either be started and accessed with the `akka.cluster.pubsub.DistributedPubSub` extension as shown below,
-or started as an ordinary actor, see the full Akka Classic documentation @ref:[Classic Distributed PubSub Extension](../distributed-pub-sub.md#distributedpubsub-extension).
-
-Scala
-:  @@snip [DistributedPubSubExample.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/DistributedPubSubExample.scala) { #mediator }
+The topic actor needs to run on each node where subscribers will live or that wants to publish messages to the topic.
  
-Actors register to a topic for Pub-Sub mode, or register to a path for point-to-point mode. 
-
-## Publish
-
-Pub-Sub mode. For the full Akka Classic documentation of this feature see @ref:[Classic Distributed PubSub Publish](../distributed-pub-sub.md#publish).
-
-### Subscribers
-
-Subscriber actors can be started on several nodes in the cluster, and all will receive
-messages published to the "content" topic. 
-
-An actor that subscribes to a topic:
+The identity of the topic is a tuple of the type of messages that can be published and a string topic name but it is recommended
+to not define multiple topics with different types and the same topic name.
 
 Scala
-:  @@snip [DistributedPubSubExample.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/DistributedPubSubExample.scala) { #subscriber }
+:  @@snip [PubSubExample.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/pubsub/PubSubExample.scala) { #start-topic }
 
+Java
+:  @@snip [PubSubExample.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/pubsub/PubSubExample.java) { #start-topic }
 
-Actors may also be subscribed to a named topic with a `group` id. 
-For the full feature description see @ref:[topic groups](../distributed-pub-sub.md#topic-groups).
-
-### Publishers
-
-Publishers publish messages to the topic from anywhere in the cluster.
-Messages are published by sending `DistributedPubSubMediator.Publish` message to the
-local mediator.
-
-An actor that publishes to a topic:
+Local actors can then subscribe to the topic (and unsubscribe from it):
 
 Scala
-:  @@snip [DistributedPubSubExample.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/DistributedPubSubExample.scala) { #publisher }
+:  @@snip [PubSubExample.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/pubsub/PubSubExample.scala) { #subscribe }
 
-## Send
+Java
+:  @@snip [PubSubExample.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/pubsub/PubSubExample.java) { #subscribe }
 
-Messages can be sent in point-to-point or broadcast mode. For the full Akka Classic documentation of this feature see @ref:[Classic Distributed PubSub Send](../distributed-pub-sub.md#send). 
-
-First, an actor must register a destination to send to:
-
-Scala
-:  @@snip [DistributedPubSubExample.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/DistributedPubSubExample.scala) { #destination }
-
-An actor that sends to a registered path:
+And publish messages to the topic:
 
 Scala
-:  @@snip [DistributedPubSubExample.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/DistributedPubSubExample.scala) { #send }
+:  @@snip [PubSubExample.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/pubsub/PubSubExample.scala) { #publish }
 
-Actors are automatically removed from the registry when they are terminated, or you
-can explicitly remove entries with `DistributedPubSubMediator.Remove`.
- 
+Java
+:  @@snip [PubSubExample.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/pubsub/PubSubExample.java) { #publish }
+
+## Pub Sub Scalability
+
+Each topic is represented by one @ref[Receptionist](actor-discovery.md) service key meaning that the number of topics 
+will scale to thousands or tens of thousands but for higher numbers of topics will require custom solutions. It also means
+that a very high turnaround of unique topics will not work well and for such use cases a custom solution is advised.
+
+The topic actor acts as a proxy and delegates to the local subscribers handling deduplication so that a published message
+is only sent once to a node regardless of how many subscribers there are to the topic on that node.
+
+When a topic actor has no subscribers for a topic it will deregister itself from the receptionist meaning published messages
+for the topic will not be sent to it.
+
 ## Delivery Guarantee
 
-For the full Akka Classic documentation of this see @ref:[Classic Distributed PubSub Delivery Guarantee](../distributed-pub-sub.md#delivery-guarantee).
+As in @ref:[Message Delivery Reliability](../general/message-delivery-reliability.md) of Akka, message delivery guarantee in distributed pub sub modes is **at-most-once delivery**. In other words, messages can be lost over the wire. In addition to that the registry of nodes which have subscribers is eventually consistent
+meaning that subscribing an actor on one node will have a short delay before it is known on other nodes and published to.
+
+If you are looking for at-least-once delivery guarantee, we recommend [Alpakka Kafka](https://doc.akka.io/docs/alpakka-kafka/current/).
+
+

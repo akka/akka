@@ -4,21 +4,24 @@
 
 package akka.dispatch
 
-import scala.runtime.{ AbstractPartialFunction, BoxedUnit }
-import akka.japi.{ Procedure, Function => JFunc, Option => JOption }
-
-import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService, Future, Promise }
 import java.lang.{ Iterable => JIterable }
 import java.util.{ LinkedList => JLinkedList }
 import java.util.concurrent.{ Callable, Executor, ExecutorService }
-
-import scala.util.{ Failure, Success, Try }
-import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
 
-import akka.compat
-import akka.util.unused
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService, Future, Promise }
+import scala.runtime.{ AbstractPartialFunction, BoxedUnit }
+import scala.util.{ Failure, Success, Try }
+
 import com.github.ghik.silencer.silent
+
+import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
+import akka.compat
+import akka.dispatch.internal.SameThreadExecutionContext
+import akka.japi.{ Procedure, Function => JFunc, Option => JOption }
+import akka.util.unused
 
 /**
  * ExecutionContexts is the Java API for ExecutionContexts
@@ -75,18 +78,31 @@ object ExecutionContexts {
   def global(): ExecutionContextExecutor = ExecutionContext.global
 
   /**
+   * INTERNAL API
+   *
    * WARNING: Not A General Purpose ExecutionContext!
    *
    * This is an execution context which runs everything on the calling thread.
    * It is very useful for actions which are known to be non-blocking and
    * non-throwing in order to save a round-trip to the thread pool.
+   *
+   * Once Scala 2.12 is no longer supported this can be dropped in favour of directly using `ExecutionContext.parasitic`
    */
+  @InternalStableApi
+  private[akka] val parasitic: ExecutionContext = SameThreadExecutionContext()
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  @deprecated("Use ExecutionContexts.parasitic instead", "2.6.4")
   private[akka] object sameThreadExecutionContext extends ExecutionContext with BatchingExecutor {
-    override protected def unbatchedExecute(runnable: Runnable): Unit = runnable.run()
+    override protected def unbatchedExecute(runnable: Runnable): Unit = parasitic.execute(runnable)
     override protected def resubmitOnBlock: Boolean = false // No point since we execute on same thread
     override def reportFailure(t: Throwable): Unit =
-      throw new IllegalStateException("exception in sameThreadExecutionContext", t)
+      parasitic.reportFailure(t)
   }
+
 }
 
 /**

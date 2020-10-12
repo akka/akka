@@ -4,10 +4,11 @@
 
 package akka.actor
 
-import akka.testkit._
-import scala.concurrent.duration._
 import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import akka.pattern.ask
+import akka.testkit._
 
 object ActorSelectionSpec {
 
@@ -19,7 +20,7 @@ object ActorSelectionSpec {
   final case class GetSender(to: ActorRef) extends Query
   final case class Forward(path: String, msg: Any) extends Query
 
-  val p = Props[Node]
+  val p = Props[Node]()
 
   class Node extends Actor {
     def receive = {
@@ -355,7 +356,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
 
     "identify actors with wildcard selection correctly" in {
       val creator = TestProbe()
-      implicit def self = creator.ref
+      implicit def self: ActorRef = creator.ref
       val top = system.actorOf(p, "a")
       val b1 = Await.result((top ? Create("b1")).mapTo[ActorRef], timeout.duration)
       val b2 = Await.result((top ? Create("b2")).mapTo[ActorRef], timeout.duration)

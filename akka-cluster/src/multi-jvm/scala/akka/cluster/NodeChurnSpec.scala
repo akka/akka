@@ -4,16 +4,17 @@
 
 package akka.cluster
 
+import scala.collection.immutable
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.event.Logging.Info
 import akka.remote.RARP
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.testkit._
 import akka.testkit.TestKit
-import com.typesafe.config.ConfigFactory
-
-import scala.collection.immutable
-import scala.concurrent.duration._
 
 object NodeChurnMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -27,6 +28,7 @@ object NodeChurnMultiJvmSpec extends MultiNodeConfig {
       akka.cluster.testkit.auto-down-unreachable-after = 1s
       akka.cluster.prune-gossip-tombstones-after = 1s
       akka.remote.classic.log-frame-size-exceeding = 1200b
+      akka.remote.artery.log-frame-size-exceeding = 1200b
       akka.remote.artery.advanced.aeron {
         idle-cpu-level = 1
         embedded-media-driver = off

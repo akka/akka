@@ -7,6 +7,7 @@ package akka.cluster
 import akka.actor.Address
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
+import akka.cluster.sbr.DowningStrategy
 import akka.event.LogMarker
 
 /**
@@ -22,6 +23,7 @@ object ClusterLogMarker {
    */
   @InternalApi private[akka] object Properties {
     val MemberStatus = "akkaMemberStatus"
+    val SbrDecision = "akkaSbrDecision"
   }
 
   /**
@@ -90,5 +92,54 @@ object ClusterLogMarker {
    */
   val singletonTerminated: LogMarker =
     LogMarker("akkaClusterSingletonTerminated")
+
+  /**
+   * Marker "akkaSbrDowning" of log event when Split Brain Resolver has made a downing decision. Followed
+   * by [[ClusterLogMarker.sbrDowningNode]] for each node that is downed.
+   * @param decision The downing decision. Included as property "akkaSbrDecision".
+   */
+  def sbrDowning(decision: DowningStrategy.Decision): LogMarker =
+    LogMarker("akkaSbrDowning", Map(Properties.SbrDecision -> decision))
+
+  /**
+   * Marker "akkaSbrDowningNode" of log event when a member is downed by Split Brain Resolver.
+   * @param node The address of the node that is downed. Included as property "akkaRemoteAddress"
+   *             and "akkaRemoteAddressUid".
+   * @param decision The downing decision. Included as property "akkaSbrDecision".
+   */
+  def sbrDowningNode(node: UniqueAddress, decision: DowningStrategy.Decision): LogMarker =
+    LogMarker(
+      "akkaSbrDowningNode",
+      Map(
+        LogMarker.Properties.RemoteAddress -> node.address,
+        LogMarker.Properties.RemoteAddressUid -> node.longUid,
+        Properties.SbrDecision -> decision))
+
+  /**
+   * Marker "akkaSbrInstability" of log event when Split Brain Resolver has detected too much instability
+   * and will down all nodes.
+   */
+  val sbrInstability: LogMarker =
+    LogMarker("akkaSbrInstability")
+
+  /**
+   * Marker "akkaSbrLeaseAcquired" of log event when Split Brain Resolver has acquired the lease.
+   * @param decision The downing decision. Included as property "akkaSbrDecision".
+   */
+  def sbrLeaseAcquired(decision: DowningStrategy.Decision): LogMarker =
+    LogMarker("akkaSbrLeaseAcquired", Map(Properties.SbrDecision -> decision))
+
+  /**
+   * Marker "akkaSbrLeaseDenied" of log event when Split Brain Resolver has acquired the lease.
+   * @param reverseDecision The (reverse) downing decision. Included as property "akkaSbrDecision".
+   */
+  def sbrLeaseDenied(reverseDecision: DowningStrategy.Decision): LogMarker =
+    LogMarker("akkaSbrLeaseDenied", Map(Properties.SbrDecision -> reverseDecision))
+
+  /**
+   * Marker "akkaSbrLeaseReleased" of log event when Split Brain Resolver has released the lease.
+   */
+  val sbrLeaseReleased: LogMarker =
+    LogMarker("akkaSbrLeaseReleased")
 
 }

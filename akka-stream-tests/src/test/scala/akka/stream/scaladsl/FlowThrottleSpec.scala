@@ -7,19 +7,19 @@ package akka.stream.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
-import akka.stream.ThrottleMode.{ Enforcing, Shaping }
-import akka.stream._
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.util.ByteString
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NoStackTrace
 
 import akka.Done
+import akka.stream._
+import akka.stream.ThrottleMode.{ Enforcing, Shaping }
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TimingTest
+import akka.util.ByteString
 
 class FlowThrottleSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

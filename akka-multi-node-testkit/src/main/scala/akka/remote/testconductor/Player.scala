@@ -4,15 +4,16 @@
 
 package akka.remote.testconductor
 
+import java.net.{ ConnectException, InetSocketAddress }
 import java.util.concurrent.TimeoutException
-import akka.actor._
-import akka.remote.testconductor.RemoteConnection.getAddrString
+
 import scala.collection.immutable
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 import scala.reflect.classTag
-import akka.util.Timeout
+import scala.util.control.NoStackTrace
+import scala.util.control.NonFatal
+
 import org.jboss.netty.channel.{
   Channel,
   ChannelHandlerContext,
@@ -22,11 +23,14 @@ import org.jboss.netty.channel.{
   SimpleChannelUpstreamHandler,
   WriteCompletionEvent
 }
-import akka.pattern.{ ask, AskTimeoutException }
-import akka.event.{ Logging, LoggingAdapter }
-import java.net.{ ConnectException, InetSocketAddress }
-import akka.remote.transport.ThrottlerTransportAdapter.{ Blackhole, SetThrottle, TokenBucket, Unthrottled }
+
+import akka.actor._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.event.{ Logging, LoggingAdapter }
+import akka.pattern.{ ask, AskTimeoutException }
+import akka.remote.testconductor.RemoteConnection.getAddrString
+import akka.remote.transport.ThrottlerTransportAdapter.{ Blackhole, SetThrottle, TokenBucket, Unthrottled }
+import akka.util.Timeout
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
@@ -34,8 +38,8 @@ object Player {
 
   final class Waiter extends Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
-    import FSM._
     import ClientFSM._
+    import FSM._
 
     var waiting: ActorRef = _
 
@@ -55,7 +59,7 @@ object Player {
 
   }
 
-  def waiterProps = Props[Waiter]
+  def waiterProps = Props[Waiter]()
 }
 
 /**
@@ -186,7 +190,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
 
   when(Connecting, stateTimeout = settings.ConnectTimeout) {
     case Event(_: ClientOp, _) =>
-      stay.replying(Status.Failure(new IllegalStateException("not connected yet")))
+      stay().replying(Status.Failure(new IllegalStateException("not connected yet")))
     case Event(Connected(channel), _) =>
       channel.write(Hello(name.name, TestConductor().address))
       goto(AwaitDone).using(Data(Some(channel), None))
@@ -206,7 +210,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
       log.error("received {} instead of Done", msg)
       goto(Failed)
     case Event(_: ServerOp, _) =>
-      stay.replying(Status.Failure(new IllegalStateException("not connected yet")))
+      stay().replying(Status.Failure(new IllegalStateException("not connected yet")))
     case Event(StateTimeout, _) =>
       log.error("connect timeout to TestConductor")
       goto(Failed)
@@ -218,7 +222,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
       throw new ConnectionFailure("disconnect")
     case Event(ToServer(_: Done), Data(Some(channel), _)) =>
       channel.write(Done)
-      stay
+      stay()
     case Event(ToServer(msg), d @ Data(Some(channel), None)) =>
       channel.write(msg)
       val token = msg match {
@@ -226,10 +230,10 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
         case GetAddress(node)         => Some(node.name -> sender())
         case _                        => None
       }
-      stay.using(d.copy(runningOp = token))
+      stay().using(d.copy(runningOp = token))
     case Event(ToServer(op), Data(_, Some((token, _)))) =>
       log.error("cannot write {} while waiting for {}", op, token)
-      stay
+      stay()
     case Event(op: ClientOp, d @ Data(Some(channel @ _), runningOp)) =>
       op match {
         case BarrierResult(b, success) =>
@@ -244,13 +248,13 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
             case None =>
               log.warning("did not expect {}", op)
           }
-          stay.using(d.copy(runningOp = None))
+          stay().using(d.copy(runningOp = None))
         case AddressReply(_, address) =>
           runningOp match {
             case Some((_, requester)) => requester ! address
             case None                 => log.warning("did not expect {}", op)
           }
-          stay.using(d.copy(runningOp = None))
+          stay().using(d.copy(runningOp = None))
         case t: ThrottleMsg =>
           import context.dispatcher // FIXME is this the right EC for the future below?
           val mode =
@@ -273,10 +277,10 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
               throw new RuntimeException("Throttle was requested from the TestConductor, but no transport " +
               "adapters available that support throttling. Specify `testTransport(on = true)` in your MultiNodeConfig")
           }
-          stay
+          stay()
         case _: DisconnectMsg =>
           // FIXME: Currently ignoring, needs support from Remoting
-          stay
+          stay()
         case TerminateMsg(Left(false)) =>
           context.system.terminate()
           stop()
@@ -285,22 +289,28 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
           stop()
         case TerminateMsg(Right(exitValue)) =>
           System.exit(exitValue)
-          stay // needed because Java doesn’t have Nothing
-        case _: Done => stay //FIXME what should happen?
+          stay() // needed because Java doesn’t have Nothing
+        case _: Done => stay() //FIXME what should happen?
       }
   }
 
   when(Failed) {
     case Event(msg: ClientOp, _) =>
-      stay.replying(Status.Failure(new RuntimeException("cannot do " + msg + " while Failed")))
+      stay().replying(Status.Failure(new RuntimeException("cannot do " + msg + " while Failed")))
     case Event(msg: NetworkOp, _) =>
       log.warning("ignoring network message {} while Failed", msg)
-      stay
+      stay()
   }
 
   onTermination {
     case StopEvent(_, _, Data(Some(channel), _)) =>
-      channel.close()
+      try {
+        channel.close()
+      } catch {
+        case NonFatal(ex) =>
+          // silence this one to not make tests look like they failed, it's not really critical
+          log.debug(s"Failed closing channel with ${ex.getClass.getName} ${ex.getMessage}")
+      }
   }
 
   initialize()

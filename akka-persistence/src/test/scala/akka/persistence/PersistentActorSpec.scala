@@ -6,17 +6,18 @@ package akka.persistence
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor._
-import akka.persistence.PersistentActorSpec._
-import akka.testkit.{ EventFilter, ImplicitSender, TestLatch, TestProbe }
-import com.github.ghik.silencer.silent
-import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.collection.immutable.Seq
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NoStackTrace
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import akka.actor._
+import akka.persistence.PersistentActorSpec._
+import akka.testkit.{ EventFilter, ImplicitSender, TestLatch, TestProbe }
 
 object PersistentActorSpec {
 

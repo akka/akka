@@ -4,9 +4,10 @@
 
 package akka.stream.tck
 
+import org.reactivestreams.Processor
+
 import akka.stream.impl.VirtualProcessor
 import akka.stream.scaladsl.Flow
-import org.reactivestreams.Processor
 
 class VirtualProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 

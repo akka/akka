@@ -4,11 +4,11 @@
 
 package akka.stream.impl.streamref
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream.StreamRefSettings
-
-import scala.concurrent.duration.FiniteDuration
 
 /** INTERNAL API */
 @InternalApi

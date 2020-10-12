@@ -147,7 +147,7 @@ trait SharedLeveldbPluginDocSpec {
     //#shared-store-creation
     import akka.persistence.journal.leveldb.SharedLeveldbStore
 
-    val store = system.actorOf(Props[SharedLeveldbStore], "store")
+    val store = system.actorOf(Props[SharedLeveldbStore](), "store")
     //#shared-store-creation
   }
 }

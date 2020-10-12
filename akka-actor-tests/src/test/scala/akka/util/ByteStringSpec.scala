@@ -10,20 +10,22 @@ import java.lang.Float.floatToRawIntBits
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.nio.ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
 
-import akka.util.ByteString.{ ByteString1, ByteString1C, ByteStrings }
+import scala.collection.mutable.Builder
+
 import com.github.ghik.silencer.silent
 import org.apache.commons.codec.binary.Hex.encodeHex
-import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.{ Arbitrary, Gen }
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.Checkers
 
-import scala.collection.mutable.Builder
+import akka.util.ByteString.{ ByteString1, ByteString1C, ByteStrings }
 
 class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
 
-  implicit val betterGeneratorDrivenConfig = PropertyCheckConfiguration().copy(minSuccessful = 1000)
+  implicit val betterGeneratorDrivenConfig: PropertyCheckConfiguration =
+    PropertyCheckConfiguration().copy(minSuccessful = 1000)
 
   def genSimpleByteString(min: Int, max: Int) =
     for {
@@ -57,7 +59,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
 
   case class ByteStringGrouped(bs: ByteString, size: Int)
 
-  implicit val arbitraryByteStringGrouped = Arbitrary {
+  implicit val arbitraryByteStringGrouped: Arbitrary[ByteStringGrouped] = Arbitrary {
     for {
       xs <- arbitraryByteString.arbitrary
       size <- Gen.choose(1, 1 max xs.length)
@@ -190,7 +192,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     body(bsBuilder)
     body(vecBuilder)
 
-    bsBuilder.result == vecBuilder.result
+    bsBuilder.result() == vecBuilder.result()
   }
 
   def testShortDecoding(slice: ByteStringSlice, byteOrder: ByteOrder): Boolean = {
@@ -274,7 +276,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     for (i <- 0 until from) builder.putShort(data(i))(byteOrder)
     builder.putShorts(data, from, to - from)(byteOrder)
     for (i <- to until data.length) builder.putShort(data(i))(byteOrder)
-    reference.toSeq == builder.result
+    reference.toSeq == builder.result()
   }
 
   def testIntEncoding(slice: ArraySlice[Int], byteOrder: ByteOrder): Boolean = {
@@ -286,7 +288,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     for (i <- 0 until from) builder.putInt(data(i))(byteOrder)
     builder.putInts(data, from, to - from)(byteOrder)
     for (i <- to until data.length) builder.putInt(data(i))(byteOrder)
-    reference.toSeq == builder.result
+    reference.toSeq == builder.result()
   }
 
   def testLongEncoding(slice: ArraySlice[Long], byteOrder: ByteOrder): Boolean = {
@@ -298,7 +300,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     for (i <- 0 until from) builder.putLong(data(i))(byteOrder)
     builder.putLongs(data, from, to - from)(byteOrder)
     for (i <- to until data.length) builder.putLong(data(i))(byteOrder)
-    reference.toSeq == builder.result
+    reference.toSeq == builder.result()
   }
 
   def testLongPartEncoding(anb: ArrayNumBytes[Long], byteOrder: ByteOrder): Boolean = {
@@ -315,7 +317,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
         case (r, i) if byteOrder == ByteOrder.LITTLE_ENDIAN && i % elemSize < nBytes            => r
         case (r, i) if byteOrder == ByteOrder.BIG_ENDIAN && i % elemSize >= (elemSize - nBytes) => r
       })
-      .toSeq == builder.result
+      .toSeq == builder.result()
   }
 
   def testFloatEncoding(slice: ArraySlice[Float], byteOrder: ByteOrder): Boolean = {
@@ -327,7 +329,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     for (i <- 0 until from) builder.putFloat(data(i))(byteOrder)
     builder.putFloats(data, from, to - from)(byteOrder)
     for (i <- to until data.length) builder.putFloat(data(i))(byteOrder)
-    reference.toSeq == builder.result
+    reference.toSeq == builder.result()
   }
 
   def testDoubleEncoding(slice: ArraySlice[Double], byteOrder: ByteOrder): Boolean = {
@@ -339,7 +341,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     for (i <- 0 until from) builder.putDouble(data(i))(byteOrder)
     builder.putDoubles(data, from, to - from)(byteOrder)
     for (i <- to until data.length) builder.putDouble(data(i))(byteOrder)
-    reference.toSeq == builder.result
+    reference.toSeq == builder.result()
   }
 
   "ByteString1" must {
@@ -747,7 +749,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
 
     "be equal to the original" when {
       "compacting" in {
-        check { xs: ByteString =>
+        check { (xs: ByteString) =>
           val ys = xs.compact; (xs == ys) && ys.isCompact
         }
       }
@@ -783,13 +785,27 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
 
     "behave as expected" when {
       "created from and decoding to String" in {
-        check { s: String =>
+        check { (s: String) =>
           ByteString(s, "UTF-8").decodeString("UTF-8") == s
         }
       }
 
+      "taking its own length" in {
+        check { (b: ByteString) =>
+          b.take(b.length) eq b
+        }
+      }
+
+      "created from and decoding to Base64" in {
+        check { (a: ByteString) =>
+          val encoded = a.encodeBase64
+          encoded == ByteString(java.util.Base64.getEncoder.encode(a.toArray)) &&
+          encoded.decodeBase64 == a
+        }
+      }
+
       "compacting" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           val wasCompact = a.isCompact
           val b = a.compact
           ((!wasCompact) || (b eq a)) &&
@@ -832,7 +848,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       }
 
       "calling apply" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           slice match {
             case (xs, i1, i2) =>
               likeVector(xs) { seq =>
@@ -843,27 +859,27 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       }
 
       "calling head" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           a.isEmpty || likeVector(a) { _.head }
         }
       }
       "calling tail" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           a.isEmpty || likeVector(a) { _.tail }
         }
       }
       "calling last" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           a.isEmpty || likeVector(a) { _.last }
         }
       }
       "calling init" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           a.isEmpty || likeVector(a) { _.init }
         }
       }
       "calling length" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           likeVector(a) { _.length }
         }
       }
@@ -903,25 +919,25 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       }
 
       "calling foreach" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           likeVector(a) { it =>
             var acc = 0; it.foreach { acc += _ }; acc
           }
         }
       }
       "calling foldLeft" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           likeVector(a) { _.foldLeft(0) { _ + _ } }
         }
       }
       "calling toArray" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           likeVector(a) { _.toArray.toSeq }
         }
       }
 
       "calling slice" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           slice match {
             case (xs, from, until) =>
               likeVector(xs)({
@@ -932,7 +948,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       }
 
       "calling take and drop" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           slice match {
             case (xs, from, until) =>
               likeVector(xs)({
@@ -943,7 +959,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       }
 
       "calling grouped" in {
-        check { grouped: ByteStringGrouped =>
+        check { (grouped: ByteStringGrouped) =>
           likeVector(grouped.bs) {
             _.grouped(grouped.size).toIndexedSeq
           }
@@ -951,7 +967,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       }
 
       "calling copyToArray" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           slice match {
             case (xs, from, until) =>
               likeVector(xs)({ it =>
@@ -979,7 +995,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       }
 
       "given all types of ByteString" in {
-        check { bs: ByteString =>
+        check { (bs: ByteString) =>
           testSer(bs)
         }
       }
@@ -1004,27 +1020,27 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       }
 
       "calling head" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           a.isEmpty || likeVecIt(a) { _.head }
         }
       }
       "calling next" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           a.isEmpty || likeVecIt(a) { _.next() }
         }
       }
       "calling hasNext" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           likeVecIt(a) { _.hasNext }
         }
       }
       "calling length" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           likeVecIt(a)(_.length, strict = false)
         }
       }
       "calling duplicate" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           likeVecIt(a)({ _.duplicate match { case (a, b) => (a.toSeq, b.toSeq) } }, strict = false)
         }
       }
@@ -1059,30 +1075,30 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
         }
       }
       "calling toSeq" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           likeVecIt(a) { _.toSeq }
         }
       }
       "calling foreach" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           likeVecIt(a) { it =>
             var acc = 0; it.foreach { acc += _ }; acc
           }
         }
       }
       "calling foldLeft" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           likeVecIt(a) { _.foldLeft(0) { _ + _ } }
         }
       }
       "calling toArray" in {
-        check { a: ByteString =>
+        check { (a: ByteString) =>
           likeVecIt(a) { _.toArray.toSeq }
         }
       }
 
       "calling slice" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           slice match {
             case (xs, from, until) =>
               likeVecIt(xs)({
@@ -1093,7 +1109,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       }
 
       "calling take and drop" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           slice match {
             case (xs, from, until) =>
               likeVecIt(xs)({
@@ -1104,7 +1120,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       }
 
       "calling copyToArray" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           slice match {
             case (xs, from, until) =>
               likeVecIt(xs)({ it =>
@@ -1120,7 +1136,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     "function as expected" when {
       "getting Bytes, using getByte and getBytes" in {
         // mixing getByte and getBytes here for more rigorous testing
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           val (bytes, from, to) = slice
           val input = bytes.iterator
           val output = new Array[Byte](bytes.length)
@@ -1132,7 +1148,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       }
 
       "getting Bytes with a given length" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           val (bytes, _, _) = slice
           val input = bytes.iterator
           (input.getBytes(bytes.length).toSeq == bytes) && input.isEmpty
@@ -1140,7 +1156,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       }
 
       "getting ByteString with a given length" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           val (bytes, _, _) = slice
           val input = bytes.iterator
           (input.getByteString(bytes.length) == bytes) && input.isEmpty
@@ -1149,7 +1165,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
 
       "getting Bytes, using the InputStream wrapper" in {
         // combining skip and both read methods here for more rigorous testing
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           val (bytes, from, to) = slice
           val a = (0 max from) min bytes.length
           val b = (a max to) min bytes.length
@@ -1176,7 +1192,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       }
 
       "calling copyToBuffer" in {
-        check { bytes: ByteString =>
+        check { (bytes: ByteString) =>
           import java.nio.ByteBuffer
           val buffer = ByteBuffer.allocate(bytes.size)
           bytes.copyToBuffer(buffer)
@@ -1207,52 +1223,52 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
 
     "decode data correctly" when {
       "decoding Short in big-endian" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           testShortDecoding(slice, BIG_ENDIAN)
         }
       }
       "decoding Short in little-endian" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           testShortDecoding(slice, LITTLE_ENDIAN)
         }
       }
       "decoding Int in big-endian" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           testIntDecoding(slice, BIG_ENDIAN)
         }
       }
       "decoding Int in little-endian" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           testIntDecoding(slice, LITTLE_ENDIAN)
         }
       }
       "decoding Long in big-endian" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           testLongDecoding(slice, BIG_ENDIAN)
         }
       }
       "decoding Long in little-endian" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           testLongDecoding(slice, LITTLE_ENDIAN)
         }
       }
       "decoding Float in big-endian" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           testFloatDecoding(slice, BIG_ENDIAN)
         }
       }
       "decoding Float in little-endian" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           testFloatDecoding(slice, LITTLE_ENDIAN)
         }
       }
       "decoding Double in big-endian" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           testDoubleDecoding(slice, BIG_ENDIAN)
         }
       }
       "decoding Double in little-endian" in {
-        check { slice: ByteStringSlice =>
+        check { (slice: ByteStringSlice) =>
           testDoubleDecoding(slice, LITTLE_ENDIAN)
         }
       }
@@ -1280,87 +1296,87 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     "function as expected" when {
       "putting Bytes, using putByte and putBytes" in {
         // mixing putByte and putBytes here for more rigorous testing
-        check { slice: ArraySlice[Byte] =>
+        check { (slice: ArraySlice[Byte]) =>
           val (data, from, to) = slice
           val builder = ByteString.newBuilder
           for (i <- 0 until from) builder.putByte(data(i))
           builder.putBytes(data, from, to - from)
           for (i <- to until data.length) builder.putByte(data(i))
-          data.toSeq == builder.result
+          data.toSeq == builder.result()
         }
       }
 
       "putting Bytes, using the OutputStream wrapper" in {
         // mixing the write methods here for more rigorous testing
-        check { slice: ArraySlice[Byte] =>
+        check { (slice: ArraySlice[Byte]) =>
           val (data, from, to) = slice
           val builder = ByteString.newBuilder
           for (i <- 0 until from) builder.asOutputStream.write(data(i).toInt)
           builder.asOutputStream.write(data, from, to - from)
           for (i <- to until data.length) builder.asOutputStream.write(data(i).toInt)
-          data.toSeq == builder.result
+          data.toSeq == builder.result()
         }
       }
     }
 
     "encode data correctly" when {
       "encoding Short in big-endian" in {
-        check { slice: ArraySlice[Short] =>
+        check { (slice: ArraySlice[Short]) =>
           testShortEncoding(slice, BIG_ENDIAN)
         }
       }
       "encoding Short in little-endian" in {
-        check { slice: ArraySlice[Short] =>
+        check { (slice: ArraySlice[Short]) =>
           testShortEncoding(slice, LITTLE_ENDIAN)
         }
       }
       "encoding Int in big-endian" in {
-        check { slice: ArraySlice[Int] =>
+        check { (slice: ArraySlice[Int]) =>
           testIntEncoding(slice, BIG_ENDIAN)
         }
       }
       "encoding Int in little-endian" in {
-        check { slice: ArraySlice[Int] =>
+        check { (slice: ArraySlice[Int]) =>
           testIntEncoding(slice, LITTLE_ENDIAN)
         }
       }
       "encoding Long in big-endian" in {
-        check { slice: ArraySlice[Long] =>
+        check { (slice: ArraySlice[Long]) =>
           testLongEncoding(slice, BIG_ENDIAN)
         }
       }
       "encoding Long in little-endian" in {
-        check { slice: ArraySlice[Long] =>
+        check { (slice: ArraySlice[Long]) =>
           testLongEncoding(slice, LITTLE_ENDIAN)
         }
       }
       "encoding LongPart in big-endian" in {
-        check { slice: ArrayNumBytes[Long] =>
+        check { (slice: ArrayNumBytes[Long]) =>
           testLongPartEncoding(slice, BIG_ENDIAN)
         }
       }
       "encoding LongPart in little-endian" in {
-        check { slice: ArrayNumBytes[Long] =>
+        check { (slice: ArrayNumBytes[Long]) =>
           testLongPartEncoding(slice, LITTLE_ENDIAN)
         }
       }
       "encoding Float in big-endian" in {
-        check { slice: ArraySlice[Float] =>
+        check { (slice: ArraySlice[Float]) =>
           testFloatEncoding(slice, BIG_ENDIAN)
         }
       }
       "encoding Float in little-endian" in {
-        check { slice: ArraySlice[Float] =>
+        check { (slice: ArraySlice[Float]) =>
           testFloatEncoding(slice, LITTLE_ENDIAN)
         }
       }
       "encoding Double in big-endian" in {
-        check { slice: ArraySlice[Double] =>
+        check { (slice: ArraySlice[Double]) =>
           testDoubleEncoding(slice, BIG_ENDIAN)
         }
       }
       "encoding Double in little-endian" in {
-        check { slice: ArraySlice[Double] =>
+        check { (slice: ArraySlice[Double]) =>
           testDoubleEncoding(slice, LITTLE_ENDIAN)
         }
       }
@@ -1368,12 +1384,12 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
 
     "have correct empty info" when {
       "is empty" in {
-        check { a: ByteStringBuilder =>
+        check { (a: ByteStringBuilder) =>
           a.isEmpty
         }
       }
       "is nonEmpty" in {
-        check { a: ByteStringBuilder =>
+        check { (a: ByteStringBuilder) =>
           a.putByte(1.toByte)
           a.nonEmpty
         }

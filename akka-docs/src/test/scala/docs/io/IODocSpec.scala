@@ -45,7 +45,7 @@ class Server extends Actor {
       //#server
       context.parent ! c
       //#server
-      val handler = context.actorOf(Props[SimplisticHandler])
+      val handler = context.actorOf(Props[SimplisticHandler]())
       val connection = sender()
       connection ! Register(handler)
   }
@@ -106,7 +106,7 @@ class Client(remote: InetSocketAddress, listener: ActorRef) extends Actor {
 class IODocSpec extends AkkaSpec {
 
   class Parent extends Actor {
-    context.actorOf(Props[Server], "server")
+    context.actorOf(Props[Server](), "server")
     def receive = {
       case msg => testActor.forward(msg)
     }

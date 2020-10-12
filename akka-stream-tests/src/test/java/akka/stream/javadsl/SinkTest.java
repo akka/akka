@@ -9,11 +9,10 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.japi.Pair;
 import akka.japi.function.Function;
@@ -152,5 +151,21 @@ public class SinkTest extends StreamTest {
     final akka.stream.scaladsl.Sink<Integer, NotUsed> scalaSink =
         akka.stream.scaladsl.Sink.cancelled();
     Sink<Integer, NotUsed> javaSink = scalaSink.asJava();
+  }
+
+  @Test
+  public void sinkForeachMustBeDocumented()
+      throws InterruptedException, ExecutionException, TimeoutException {
+    // #foreach
+    Sink<Integer, CompletionStage<Done>> printlnSink = Sink.foreach(System.out::println);
+    CompletionStage<Done> cs = Source.from(Arrays.asList(1, 2, 3, 4)).runWith(printlnSink, system);
+    Done done = cs.toCompletableFuture().get(100, TimeUnit.MILLISECONDS);
+    // will print
+    // 1
+    // 2
+    // 3
+    // 4
+    // #foreach
+    assertEquals(Done.done(), done);
   }
 }

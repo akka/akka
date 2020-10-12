@@ -4,14 +4,15 @@
 
 package akka.remote
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
-import akka.remote.testconductor.RoleName
-import scala.concurrent.Await
 
 class RemoteQuarantinePiercingConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -49,8 +50,8 @@ object RemoteQuarantinePiercingSpec {
 
 abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePiercingConfig)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
-  import multiNodeConfig._
   import RemoteQuarantinePiercingSpec._
+  import multiNodeConfig._
 
   override def initialParticipants = roles.size
 
@@ -104,7 +105,7 @@ abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePie
 
       runOn(second) {
         val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-        system.actorOf(Props[Subject], "subject")
+        system.actorOf(Props[Subject](), "subject")
         enterBarrier("actors-started")
 
         enterBarrier("actor-identified")
@@ -117,7 +118,7 @@ abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePie
           akka.remote.classic.netty.tcp.port = ${address.port.get}
           akka.remote.artery.canonical.port = ${address.port.get}
           """).withFallback(system.settings.config))
-        freshSystem.actorOf(Props[Subject], "subject")
+        freshSystem.actorOf(Props[Subject](), "subject")
 
         Await.ready(freshSystem.whenTerminated, 30.seconds)
       }

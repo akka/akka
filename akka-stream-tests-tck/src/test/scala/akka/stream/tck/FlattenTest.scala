@@ -4,10 +4,11 @@
 
 package akka.stream.tck
 
+import org.reactivestreams.Publisher
+
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ConstantFun
-import org.reactivestreams.Publisher
 
 class FlattenTest extends AkkaPublisherVerification[Int] {
 

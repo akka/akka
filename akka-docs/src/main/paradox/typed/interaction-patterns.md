@@ -1,15 +1,17 @@
 # Interaction Patterns
 
-For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Actors](../actors.md).
 
 ## Dependency
 
 To use Akka Actor Typed, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-actor-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-actor-typed_$scala.binary.version$
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -76,7 +78,7 @@ Java
 :  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #request-response-protocol }
 
 
-The sender would use its own @scala[`ActorRef[Response]`]@java[`ActorRef<Response>`], which it can access through @scala[`ActorContext.self`]@java[`ActorContext.getSelf()`], for the `respondTo`. 
+The sender would use its own @scala[`ActorRef[Response]`]@java[`ActorRef<Response>`], which it can access through @scala[`ActorContext.self`]@java[`ActorContext.getSelf()`], for the `replyTo`. 
 
 Scala
 :  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #request-response-send }
@@ -158,7 +160,9 @@ The adapter function is running in the receiving actor and can safely access its
  
 In an interaction where there is a 1:1 mapping between a request and a response we can use `ask` on the `ActorContext` to interact with another actor.
 
-The interaction has two steps, first we need to construct the outgoing message, to do that we need an @scala[`ActorRef[Response]`]@java[`ActorRef<Response>`] to put as recipient in the outgoing message. The second step is to transform the successful `Response` or failure into a message that is part of the protocol of the sending actor.
+The interaction has two steps, first we need to construct the outgoing message, to do that we need an @scala[`ActorRef[Response]`]@java[`ActorRef<Response>`] to put as recipient in the outgoing message. 
+The second step is to transform the successful `Response` or failure into a message that is part of the protocol of the sending actor.
+See also the [Generic response wrapper](#generic-response-wrapper) for replies that are either a success or an error.
 
 **Example:**
 
@@ -192,7 +196,10 @@ The response adapting function is running in the receiving actor and can safely 
 
 Sometimes you need to interact with actors from the outside of the actor system, this can be done with fire-and-forget as described above or through another version of `ask` that returns a @scala[`Future[Response]`]@java[`CompletionStage<Response>`] that is either completed with a successful response or failed with a `TimeoutException` if there was no response within the specified timeout.
  
-To do this we use @scala[`ActorRef.ask` (or the symbolic `ActorRef.?`) implicitly provided by `akka.actor.typed.scaladsl.AskPattern`]@java[`akka.actor.typed.javadsl.AskPattern.ask`] to send a message to an actor and get a @scala[`Future[Response]`]@java[`CompletionState[Response]`] back.
+@scala[To do this we use `ask` (or the symbolic `?`) implicitly added to `ActorRef` by `akka.actor.typed.scaladsl.AskPattern._`
+to send a message to an actor and get a `Future[Response]` back. `ask` takes implicit `Timeout` and `ActorSystem` parameters.]
+@java[To do this we use `akka.actor.typed.javadsl.AskPattern.ask` to send a message to an actor and get a 
+`CompletionState[Response]` back.]
 
 **Example:**
 
@@ -207,7 +214,7 @@ Java
 Note that validation errors are also explicit in the message protocol. The `GiveMeCookies` request can reply
 with `Cookies` or `InvalidRequest`. The requestor has to decide how to handle an `InvalidRequest` reply. Sometimes
 it should be treated as a failed @scala[`Future`]@java[`Future`] and for that the reply can be mapped on the
-requestor side.
+requestor side. See also the [Generic response wrapper](#generic-response-wrapper) for replies that are either a success or an error.
 
 Scala
 :  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #standalone-ask-fail-future }
@@ -224,6 +231,76 @@ Java
  * It is easy to accidentally close over and unsafely mutable state with the callbacks on the returned @scala[`Future`]@java[`CompletionStage`] as those will be executed on a different thread
  * There can only be a single response to one `ask` (see @ref:[per session child Actor](#per-session-child-actor))
  * When `ask` times out, the receiving actor does not know and may still process it to completion, or even start processing it after the fact
+
+## Generic response wrapper
+
+In many cases the response can either be a successful result or an error (a validation error that the command was invalid for example).
+Having to define two response classes and a shared supertype for every request type can be repetitive, especially in a cluster context 
+where you also have to make sure the messages can be serialized to be sent over the network.
+
+To help with this a generic status-response type is included in Akka: @apidoc[StatusReply], everywhere where `ask` can be used
+there is also a second method `askWithStatus` which, given that the response is a `StatusReply` will unwrap successful responses
+and help with handling validation errors. Akka includes pre-built serializers for the type, so in the normal use case a clustered 
+application only needs to provide a serializer for the successful result.
+
+For the case where the successful reply does not contain an actual value but is more of an acknowledgment there is a pre defined
+@scala[`StatusReply.Ack`]@java[`StatusReply.ack()`] of type @scala[`StatusReply[Done]`]@java[`StatusReply<Done>`].
+
+Errors are preferably sent as a text describing what is wrong, but using exceptions to attach a type is also possible.
+
+**Example actor to actor ask:**
+
+Scala
+:  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #actor-ask-with-status }
+
+Java
+:  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsAskWithStatusTest.java) { #actor-ask-with-status }
+
+A validation error is turned into a `Failure` for the message adapter. In this case we are explicitly handling the valdation error separately from
+other ask failures.
+
+**Example ask from the outside:**
+
+Scala
+:  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #standalone-ask-with-status }
+
+Java
+:  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsAskWithStatusTest.java) { #standalone-ask-with-status }
+
+Note that validation errors are also explicit in the message protocol, but encoded as the wrapper type, constructed using @scala[`StatusReply.Error(text)`]@java[`StatusReply.error(text)`]:
+
+Scala
+:  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #standalone-ask-with-status-fail-future }
+
+Java
+:  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsAskWithStatusTest.java) { #standalone-ask-with-status-fail-future }
+
+
+## Ignoring replies
+
+In some situations an actor has a response for a particular request message but you are not interested in the response. In this case you can pass @scala[`system.ignoreRef`]@java[`system.ignoreRef()`] turning the request-response into a fire-and-forget.
+
+@scala[`system.ignoreRef`]@java[`system.ignoreRef()`], as the name indicates, returns an `ActorRef` that ignores any message sent to it.
+
+With the same protocol as the @ref[request response](#request-response) above, if the sender would prefer to ignore the reply it could pass @scala[`system.ignoreRef`]@java[`system.ignoreRef()`] for the `replyTo`, which it can access through @scala[`ActorContext.system.ignoreRef`]@java[`ActorContext.getSystem().ignoreRef()`]. 
+
+Scala
+:  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #ignore-reply }
+
+Java
+:  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #ignore-reply }
+
+**Useful when:**
+
+  * Sending a message for which the protocol defines a reply, but you are not interested in getting the reply
+
+**Problems:**
+
+The returned `ActorRef` ignores all messages sent to it, therefore it should be used carefully.
+ 
+ * Passing it around inadvertently as if it was a normal `ActorRef` may result in broken actor-to-actor interactions.
+ * Using it when performing an `ask` from outside the Actor System will cause the @scala[`Future`]@java[`CompletionStage`] returned by the `ask` to timeout since it will never complete.
+ * Finally, it's legal to `watch` it, but since it's of a special kind, it never terminates and therefore you will never receive a `Terminated` signal from it.
 
 ## Send Future result to self
 

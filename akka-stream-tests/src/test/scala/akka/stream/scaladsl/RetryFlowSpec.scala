@@ -4,14 +4,15 @@
 
 package akka.stream.scaladsl
 
-import akka.NotUsed
-import akka.stream.OverflowStrategy
-import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import org.scalatest.matchers.{ MatchResult, Matcher }
-
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
+
+import org.scalatest.matchers.{ MatchResult, Matcher }
+
+import akka.NotUsed
+import akka.stream.OverflowStrategy
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
+import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 
 class RetryFlowSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 1

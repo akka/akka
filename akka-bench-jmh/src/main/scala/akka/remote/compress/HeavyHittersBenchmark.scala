@@ -6,9 +6,10 @@ package akka.remote.compress
 
 import java.util.Random
 
-import akka.remote.artery.compress.TopHeavyHitters
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra.Blackhole
+
+import akka.remote.artery.compress.TopHeavyHitters
 
 /**
  * On Macbook pro:

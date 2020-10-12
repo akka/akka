@@ -71,7 +71,7 @@ public class MyEventsByTagSource extends GraphStage<SourceShape<EventEnvelope>> 
 
       @Override
       public void preStart() {
-        schedulePeriodically(Continue.INSTANCE, refreshInterval);
+        scheduleWithFixedDelay(Continue.INSTANCE, refreshInterval, refreshInterval);
       }
 
       @Override
@@ -109,7 +109,8 @@ public class MyEventsByTagSource extends GraphStage<SourceShape<EventEnvelope>> 
                         Offset.sequence(currentOffset),
                         rs.getString("persistence_id"),
                         rs.getLong("seq_nr"),
-                        deserialized));
+                        deserialized,
+                        System.currentTimeMillis()));
               }
               buf = res;
             }

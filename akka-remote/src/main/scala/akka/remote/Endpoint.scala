@@ -4,16 +4,30 @@
 
 package akka.remote
 
+import java.io.NotSerializableException
+import java.util.concurrent.{ ConcurrentHashMap, TimeoutException }
+import java.util.concurrent.locks.LockSupport
+
+import scala.annotation.tailrec
+import scala.concurrent.Future
+import scala.concurrent.duration.Deadline
+import scala.concurrent.duration.Duration
+import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+
+import akka.{ AkkaException, OnlyCauseStackTrace }
+import akka.actor._
 import akka.actor.OneForOneStrategy
 import akka.actor.SupervisorStrategy._
 import akka.actor.Terminated
-import akka.actor._
 import akka.dispatch.sysmsg.SystemMessage
 import akka.event.{ LogMarker, Logging, MarkerLoggingAdapter }
 import akka.pattern.pipe
 import akka.remote.EndpointManager.{ Link, ResendState, Send }
 import akka.remote.EndpointWriter.{ FlushAndStop, StoppedReading }
 import akka.remote.WireFormats.SerializedMessage
+import akka.remote.transport._
 import akka.remote.transport.AkkaPduCodec.Message
 import akka.remote.transport.AssociationHandle.{
   ActorHandleEventListener,
@@ -22,23 +36,9 @@ import akka.remote.transport.AssociationHandle.{
   InboundPayload
 }
 import akka.remote.transport.Transport.InvalidAssociationException
-import akka.remote.transport._
 import akka.serialization.Serialization
 import akka.util.ByteString
-import akka.{ AkkaException, OnlyCauseStackTrace }
-import java.io.NotSerializableException
-import java.util.concurrent.{ ConcurrentHashMap, TimeoutException }
-
-import scala.annotation.tailrec
-import scala.concurrent.duration.Deadline
-import scala.util.control.NonFatal
-import java.util.concurrent.locks.LockSupport
-
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
-
 import akka.util.OptionVal
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -899,9 +899,15 @@ private[remote] class EndpointWriter(
           remoteMetrics.logPayloadBytes(s.message, pduSize)
 
           if (pduSize > transport.maximumPayloadBytes) {
-            val reason = new OversizedPayloadException(
-              s"Discarding oversized payload sent to ${s.recipient}: max allowed size ${transport.maximumPayloadBytes} bytes, actual size of encoded ${s.message.getClass} was ${pdu.size} bytes.")
-            log.error(reason, "Transient association error (association remains live)")
+            val reasonText =
+              s"Discarding oversized payload sent to ${s.recipient}: max allowed size ${transport.maximumPayloadBytes} bytes, actual size of encoded ${s.message.getClass} was ${pdu.size} bytes."
+            log.error(
+              new OversizedPayloadException(reasonText),
+              "Transient association error (association remains live)")
+            extendedSystem.eventStream.publish(s.senderOption match {
+              case OptionVal.Some(msgSender) => Dropped(s.message, reasonText, msgSender, s.recipient)
+              case OptionVal.None            => Dropped(s.message, reasonText, s.recipient)
+            })
             true
           } else {
             val ok = h.write(pdu)

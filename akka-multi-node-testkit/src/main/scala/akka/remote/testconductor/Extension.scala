@@ -4,12 +4,13 @@
 
 package akka.remote.testconductor
 
-import akka.actor.ClassicActorSystemProvider
+import com.typesafe.config.Config
+
 import akka.actor.{ ActorContext, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.ClassicActorSystemProvider
+import akka.dispatch.ThreadPoolConfig
 import akka.remote.RemoteActorRefProvider
 import akka.util.Timeout
-import com.typesafe.config.Config
-import akka.dispatch.ThreadPoolConfig
 
 /**
  * Access to the [[akka.remote.testconductor.TestConductorExt]] extension:
@@ -62,8 +63,8 @@ class TestConductorExt(val system: ExtendedActorSystem) extends Extension with C
     val ClientReconnects = config.getInt("client-reconnects")
     val ReconnectBackoff = config.getMillisDuration("reconnect-backoff")
 
-    implicit val BarrierTimeout = Timeout(config.getMillisDuration("barrier-timeout"))
-    implicit val QueryTimeout = Timeout(config.getMillisDuration("query-timeout"))
+    implicit val BarrierTimeout: Timeout = Timeout(config.getMillisDuration("barrier-timeout"))
+    implicit val QueryTimeout: Timeout = Timeout(config.getMillisDuration("query-timeout"))
     val PacketSplitThreshold = config.getMillisDuration("packet-split-threshold")
 
     private def computeWPS(config: Config): Int =

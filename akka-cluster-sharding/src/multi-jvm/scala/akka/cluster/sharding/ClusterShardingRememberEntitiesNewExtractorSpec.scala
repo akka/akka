@@ -4,19 +4,14 @@
 
 package akka.cluster.sharding
 
-import java.io.File
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor._
-import akka.cluster.{ Cluster, MemberStatus, MultiNodeClusterSpec }
-import akka.persistence.Persistence
-import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
+import akka.cluster.{ Cluster, MemberStatus }
+import akka.persistence.journal.leveldb.SharedLeveldbJournal
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import org.apache.commons.io.FileUtils
-
-import scala.concurrent.duration._
 
 object ClusterShardingRememberEntitiesNewExtractorSpec {
 
@@ -52,36 +47,13 @@ object ClusterShardingRememberEntitiesNewExtractorSpec {
 
 }
 
-abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(val mode: String) extends MultiNodeConfig {
+abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(mode: String)
+    extends MultiNodeClusterShardingConfig(
+      mode,
+      additionalConfig = "akka.persistence.journal.leveldb-shared.store.native = off") {
   val first = role("first")
   val second = role("second")
   val third = role("third")
-
-  commonConfig(
-    ConfigFactory
-      .parseString(s"""
-    akka.actor.provider = "cluster"
-    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
-    akka.cluster.testkit.auto-down-unreachable-after = 0s
-    akka.remote.classic.log-remote-lifecycle-events = off
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
-    akka.persistence.journal.leveldb-shared {
-      timeout = 5s
-      store {
-        native = off
-        dir = "target/ShardingRememberEntitiesNewExtractorSpec/journal"
-      }
-    }
-    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-    akka.persistence.snapshot-store.local.dir = "target/ShardingRememberEntitiesNewExtractorSpec/snapshots"
-    akka.cluster.sharding.state-store-mode = "$mode"
-    akka.cluster.sharding.distributed-data.durable.lmdb {
-      dir = target/ShardingRememberEntitiesNewExtractorSpec/sharding-ddata
-      map-size = 10 MiB
-    }
-    """)
-      .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
-      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   val roleConfig = ConfigFactory.parseString("""
       akka.cluster.roles = [sharding]
@@ -132,82 +104,41 @@ class DDataClusterShardingRememberEntitiesNewExtractorMultiJvmNode3
     extends DDataClusterShardingRememberEntitiesNewExtractorSpec
 
 abstract class ClusterShardingRememberEntitiesNewExtractorSpec(
-    config: ClusterShardingRememberEntitiesNewExtractorSpecConfig)
-    extends MultiNodeSpec(config)
-    with STMultiNodeSpec
+    multiNodeConfig: ClusterShardingRememberEntitiesNewExtractorSpecConfig)
+    extends MultiNodeClusterShardingSpec(multiNodeConfig)
     with ImplicitSender {
   import ClusterShardingRememberEntitiesNewExtractorSpec._
-  import config._
+  import multiNodeConfig._
 
   val typeName = "Entity"
 
-  override def initialParticipants = roles.size
-
-  val storageLocations = List(
-    new File(system.settings.config.getString("akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
-
-  override protected def atStartup(): Unit = {
-    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
-    enterBarrier("startup")
-  }
-
-  override protected def afterTermination(): Unit = {
-    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
-  }
-
-  def join(from: RoleName, to: RoleName): Unit = {
-    runOn(from) {
-      Cluster(system).join(node(to).address)
-    }
-    enterBarrier(from.name + "-joined")
-  }
-
-  val cluster = Cluster(system)
-
   def startShardingWithExtractor1(): Unit = {
-    ClusterSharding(system).start(
+    startSharding(
+      system,
       typeName = typeName,
       entityProps = ClusterShardingRememberEntitiesNewExtractorSpec.props(None),
-      settings = ClusterShardingSettings(system).withRememberEntities(true).withRole("sharding"),
+      settings = settings.withRole("sharding"),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId1)
   }
 
   def startShardingWithExtractor2(sys: ActorSystem, probe: ActorRef): Unit = {
-    ClusterSharding(sys).start(
+    startSharding(
+      sys,
       typeName = typeName,
       entityProps = ClusterShardingRememberEntitiesNewExtractorSpec.props(Some(probe)),
-      settings = ClusterShardingSettings(system).withRememberEntities(true).withRole("sharding"),
+      settings = ClusterShardingSettings(sys).withRememberEntities(config.rememberEntities).withRole("sharding"),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId2)
   }
 
   def region(sys: ActorSystem = system) = ClusterSharding(sys).shardRegion(typeName)
 
-  def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
-
   s"Cluster with min-nr-of-members using sharding ($mode)" must {
 
-    if (!isDdataMode) {
-      "setup shared journal" in {
-        // start the Persistence extension
-        Persistence(system)
-        runOn(first) {
-          system.actorOf(Props[SharedLeveldbStore], "store")
-        }
-        enterBarrier("persistence-started")
-
-        runOn(second, third) {
-          system.actorSelection(node(first) / "user" / "store") ! Identify(None)
-          val sharedStore = expectMsgType[ActorIdentity](10.seconds).ref.get
-          SharedLeveldbJournal.setStore(sharedStore, system)
-        }
-
-        enterBarrier("after-1")
-      }
-    }
-
     "start up first cluster and sharding" in within(15.seconds) {
+      startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(second, third))
+
       join(first, first)
       join(second, first)
       join(third, first)
@@ -269,7 +200,7 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(
         val sys2 = ActorSystem(system.name, system.settings.config)
         val probe2 = TestProbe()(sys2)
 
-        if (!isDdataMode) {
+        if (persistenceIsNeeded) {
           sys2.actorSelection(node(first) / "user" / "store").tell(Identify(None), probe2.ref)
           val sharedStore = probe2.expectMsgType[ActorIdentity](10.seconds).ref.get
           SharedLeveldbJournal.setStore(sharedStore, sys2)

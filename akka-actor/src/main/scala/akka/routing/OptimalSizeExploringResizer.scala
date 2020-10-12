@@ -5,16 +5,17 @@
 package akka.routing
 
 import java.time.LocalDateTime
-
-import scala.collection.immutable
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.collection.immutable
 import scala.concurrent.duration._
-import com.typesafe.config.Config
-import akka.actor._
-import akka.util.JavaDurationConverters._
+
 import OptimalSizeExploringResizer._
+import com.typesafe.config.Config
+
+import akka.actor._
 import akka.annotation.InternalApi
+import akka.util.JavaDurationConverters._
 
 trait OptimalSizeExploringResizer extends Resizer {
 

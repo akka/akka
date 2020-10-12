@@ -4,7 +4,7 @@
 
 package akka.persistence.query.journal.leveldb
 
-import akka.NotUsed
+import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
 import akka.persistence.JournalProtocol.RecoverySuccess
@@ -25,8 +25,6 @@ import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogicWithLogging
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API
@@ -53,14 +51,8 @@ final private[akka] class EventsByPersistenceIdStage(
   override def shape: SourceShape[EventEnvelope] = SourceShape(out)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
-    throw new UnsupportedOperationException("Not used")
-
-  override private[akka] def createLogicAndMaterializedValue(
-      inheritedAttributes: Attributes,
-      materializer: Materializer): (GraphStageLogic, NotUsed) = {
-    val logic = new TimerGraphStageLogicWithLogging(shape) with OutHandler with Buffer[EventEnvelope] {
+    new TimerGraphStageLogicWithLogging(shape) with OutHandler with Buffer[EventEnvelope] {
       val journal: ActorRef = Persistence(mat.system).journalFor(writeJournalPluginId)
-      var currSeqNo = fromSequenceNr
       var stageActorRef: ActorRef = null
       var replayInProgress = false
       var outstandingReplay = false
@@ -161,7 +153,4 @@ final private[akka] class EventsByPersistenceIdStage(
 
       setHandler(out, this)
     }
-    (logic, NotUsed)
-  }
-
 }

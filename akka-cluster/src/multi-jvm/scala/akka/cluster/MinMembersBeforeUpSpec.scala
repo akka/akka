@@ -5,11 +5,12 @@
 package akka.cluster
 
 import com.typesafe.config.ConfigFactory
+
+import akka.cluster.MemberStatus._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.cluster.MemberStatus._
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
@@ -33,7 +34,7 @@ object MinMembersBeforeUpWithWeaklyUpMultiJvmSpec extends MultiNodeConfig {
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
       akka.cluster.min-nr-of-members = 3
-      akka.cluster.allow-weakly-up-members = on"""))
+      akka.cluster.allow-weakly-up-members = 3 s"""))
       .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 

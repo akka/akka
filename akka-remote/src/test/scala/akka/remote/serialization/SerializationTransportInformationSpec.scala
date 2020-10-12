@@ -6,21 +6,22 @@ package akka.remote.serialization
 
 import java.nio.charset.StandardCharsets
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorIdentity
-import akka.serialization.Serialization
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.actor.RootActorPath
 import akka.remote.RARP
+import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.JavaSerializable
 import akka.testkit.TestActors
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 
 object SerializationTransportInformationSpec {
 

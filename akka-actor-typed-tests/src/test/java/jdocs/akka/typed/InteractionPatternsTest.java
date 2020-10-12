@@ -99,6 +99,11 @@ public class InteractionPatternsTest extends JUnitSuite {
         // #request-response-send
         cookieFabric.tell(new CookieFabric.Request("give me cookies", context.getSelf()));
         // #request-response-send
+
+        // #ignore-reply
+        cookieFabric.tell(
+            new CookieFabric.Request("don't send cookies back", context.getSystem().ignoreRef()));
+        // #ignore-reply
       }
     }
 
@@ -336,7 +341,7 @@ public class InteractionPatternsTest extends JUnitSuite {
     // #actor-ask
     public class Hal extends AbstractBehavior<Hal.Command> {
 
-      public Behavior<Hal.Command> create() {
+      public static Behavior<Hal.Command> create() {
         return Behaviors.setup(Hal::new);
       }
 
@@ -919,5 +924,21 @@ public class InteractionPatternsTest extends JUnitSuite {
     assertEquals(
         "123",
         probe.expectMessageClass(PipeToSelfSample.CustomerRepository.UpdateSuccess.class).id);
+  }
+
+  @Test
+  public void askWithStatusExample() {
+    // no assert but should at least throw if completely broken
+    ActorRef<StandaloneAskSample.CookieFabric.Command> cookieFabric =
+        testKit.spawn(StandaloneAskSample.CookieFabric.create());
+    StandaloneAskSample.NotShown notShown = new StandaloneAskSample.NotShown();
+    notShown.askAndPrint(testKit.system(), cookieFabric);
+  }
+
+  @Test
+  public void askInActorWithStatusExample() {
+    // no assert but should at least throw if completely broken
+    ActorRef<Samples.Hal.Command> hal = testKit.spawn(Samples.Hal.create());
+    ActorRef<Samples.Dave.Command> dave = testKit.spawn(Samples.Dave.create(hal));
   }
 }

@@ -4,9 +4,21 @@
 
 package akka.stream.scaladsl
 
-import akka.event.LoggingAdapter
-import akka.stream._
+import scala.annotation.implicitNotFound
+import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
+
+import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+
 import akka.Done
+import akka.NotUsed
+import akka.actor.ActorRef
+import akka.annotation.DoNotInherit
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
+import akka.stream._
 import akka.stream.impl.{
   fusing,
   LinearTraversalBuilder,
@@ -18,21 +30,9 @@ import akka.stream.impl.{
   TraversalBuilder
 }
 import akka.stream.impl.fusing._
+import akka.stream.impl.fusing.FlattenMerge
 import akka.stream.stage._
 import akka.util.{ ConstantFun, Timeout }
-import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
-
-import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
-import akka.stream.impl.fusing.FlattenMerge
-import akka.NotUsed
-import akka.actor.ActorRef
-import akka.annotation.DoNotInherit
-
-import scala.annotation.implicitNotFound
-import scala.reflect.ClassTag
 
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
@@ -578,13 +578,22 @@ object Flow {
    *
    * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
    *
-   * '''Cancels when''' downstream cancels
+   * '''Cancels when''' downstream cancels (see below)
+   *
+   * The operator's default behaviour in case of downstream cancellation before nested flow materialization (future completion) is to cancel immediately.
+   *  This behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy.PropagateToNested]] attribute,
+   * this will delay downstream cancellation until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
    */
   @deprecated(
     "Use 'Flow.futureFlow' in combination with prefixAndTail(1) instead, see `futureFlow` operator docs for details",
     "2.6.0")
   def lazyInit[I, O, M](flowFactory: I => Future[Flow[I, O, M]], fallback: () => M): Flow[I, O, M] =
-    Flow.fromGraph(new LazyFlow[I, O, M](flowFactory)).mapMaterializedValue(_ => fallback())
+    Flow[I]
+      .flatMapPrefix(1) {
+        case Seq(a) => futureFlow(flowFactory(a)).mapMaterializedValue(_ => NotUsed)
+        case Nil    => Flow[I].asInstanceOf[Flow[I, O, NotUsed]]
+      }
+      .mapMaterializedValue(_ => fallback())
 
   /**
    * Creates a real `Flow` upon receiving the first element. Internal `Flow` will not be created
@@ -600,13 +609,17 @@ object Flow {
    *
    * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
    *
-   * '''Cancels when''' downstream cancels
+   * '''Cancels when''' downstream cancels (see below)
+   *
+   * The operator's default behaviour in case of downstream cancellation before nested flow materialization (future completion) is to cancel immediately.
+   *  This behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy.PropagateToNested]] attribute,
+   * this will delay downstream cancellation until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
    */
   @deprecated("Use 'Flow.lazyFutureFlow' instead", "2.6.0")
   def lazyInitAsync[I, O, M](flowFactory: () => Future[Flow[I, O, M]]): Flow[I, O, Future[Option[M]]] =
-    Flow.fromGraph(new LazyFlow[I, O, M](_ => flowFactory())).mapMaterializedValue { v =>
-      implicit val ec = akka.dispatch.ExecutionContexts.sameThreadExecutionContext
-      v.map[Option[M]](Some.apply _).recover { case _: NeverMaterializedException => None }
+    Flow.lazyFutureFlow(flowFactory).mapMaterializedValue {
+      implicit val ec = akka.dispatch.ExecutionContexts.parasitic
+      _.map(Some.apply).recover { case _: NeverMaterializedException => None }
     }
 
   /**
@@ -615,9 +628,13 @@ object Flow {
    *
    * The materialized future value is completed with the materialized value of the future flow or failed with a
    * [[NeverMaterializedException]] if upstream fails or downstream cancels before the future has completed.
+   *
+   * The operator's default behaviour in case of downstream cancellation before nested flow materialization (future completion) is to cancel immediately.
+   *  This behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy.PropagateToNested]] attribute,
+   * this will delay downstream cancellation until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
    */
   def futureFlow[I, O, M](flow: Future[Flow[I, O, M]]): Flow[I, O, Future[M]] =
-    lazyFutureFlow(() => flow)
+    Flow.fromGraph(new FutureFlow(flow))
 
   /**
    * Defers invoking the `create` function to create a future flow until there is downstream demand and passing
@@ -638,7 +655,11 @@ object Flow {
    *
    * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
    *
-   * '''Cancels when''' downstream cancels
+   * '''Cancels when''' downstream cancels (see below)
+   *
+   * The operator's default behaviour in case of downstream cancellation before nested flow materialization (future completion) is to cancel immediately.
+   *  This behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy.PropagateToNested]] attribute,
+   * this will delay downstream cancellation until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
    */
   def lazyFlow[I, O, M](create: () => Flow[I, O, M]): Flow[I, O, Future[M]] =
     lazyFutureFlow(() => Future.successful(create()))
@@ -662,10 +683,27 @@ object Flow {
    *
    * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
    *
-   * '''Cancels when''' downstream cancels
+   * '''Cancels when''' downstream cancels (see below)
+   *
+   * The operator's default behaviour in case of downstream cancellation before nested flow materialization (future completion) is to cancel immediately.
+   *  This behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy.PropagateToNested]] attribute,
+   * this will delay downstream cancellation until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
    */
   def lazyFutureFlow[I, O, M](create: () => Future[Flow[I, O, M]]): Flow[I, O, Future[M]] =
-    Flow.fromGraph(new LazyFlow(_ => create()))
+    Flow[I]
+      .flatMapPrefixMat(1) {
+        case Seq(a) =>
+          val f: Flow[I, O, Future[M]] =
+            futureFlow(create()
+              .map(Flow[I].prepend(Source.single(a)).viaMat(_)(Keep.right))(akka.dispatch.ExecutionContexts.parasitic))
+          f
+        case Nil =>
+          val f: Flow[I, O, Future[M]] = Flow[I]
+            .asInstanceOf[Flow[I, O, NotUsed]]
+            .mapMaterializedValue(_ => Future.failed[M](new NeverMaterializedException()))
+          f
+      }(Keep.right)
+      .mapMaterializedValue(_.flatten)
 
 }
 
@@ -743,8 +781,9 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
  */
 @DoNotInherit
 trait FlowOps[+Out, +Mat] {
-  import akka.stream.impl.Stages._
   import GraphDSL.Implicits._
+
+  import akka.stream.impl.Stages._
 
   type Repr[+O] <: FlowOps[O, Mat] {
     type Repr[+OO] = FlowOps.this.Repr[OO]
@@ -1944,7 +1983,9 @@ trait FlowOps[+Out, +Mat] {
    *  the resulting flow will be materialized and signalled for upstream completion, it can then complete or continue to emit elements at its own discretion.
    *
    * '''Cancels when''' the materialized flow cancels.
-   *  Notice that when downstream cancels prior to prefix completion, the cancellation cause is stashed until prefix completion (or upstream completion) and then handed to the materialized flow.
+   *  When downstream cancels before materialization of the nested flow, the operator's default behaviour is to cancel immediately,
+   *  this behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy]] attribute on the flow.
+   *  When this attribute is configured to true, downstream cancellation is delayed until the nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
    *
    *  @param n the number of elements to accumulate before materializing the downstream flow.
    *  @param f a function that produces the downstream flow based on the upstream's prefix.
@@ -2527,6 +2568,29 @@ trait FlowOps[+Out, +Mat] {
   def log(name: String, extract: Out => Any = ConstantFun.scalaIdentityFunction)(
       implicit log: LoggingAdapter = null): Repr[Out] =
     via(Log(name, extract.asInstanceOf[Any => Any], Option(log)))
+
+  /**
+   * Logs elements flowing through the stream as well as completion and erroring.
+   *
+   * By default element and completion signals are logged on debug level, and errors are logged on Error level.
+   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] attribute on the given Flow:
+   *
+   * Uses implicit [[MarkerLoggingAdapter]] if available, otherwise uses an internally created one,
+   * which uses `akka.stream.Log` as it's source (use this class to configure slf4j loggers).
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the mapping function returns an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def logWithMarker(name: String, marker: Out => LogMarker, extract: Out => Any = ConstantFun.scalaIdentityFunction)(
+      implicit log: MarkerLoggingAdapter = null): Repr[Out] =
+    via(LogWithMarker(name, marker, extract.asInstanceOf[Any => Any], Option(log)))
 
   /**
    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.

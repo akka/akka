@@ -18,7 +18,7 @@ import akka.stream.javadsl.Source
  *   PersistenceQuery.get(system).getReadJournalFor(LeveldbReadJournal.class, LeveldbReadJournal.Identifier());
  * }}}
  *
- * Corresponding Scala API is in [[akka.persistence.query.journal.leveldb.javadsl.LeveldbReadJournal]].
+ * Corresponding Scala API is in [[akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal]].
  *
  * Configuration settings can be defined in the configuration section with the
  * absolute path corresponding to the identifier, which is `"akka.persistence.query.journal.leveldb"`

@@ -6,20 +6,25 @@ package akka.cluster.sharding
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.cluster.Cluster
 import akka.cluster.sharding.InactiveEntityPassivationSpec.Entity.GotIt
+import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, TestProbe }
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.Config
 
 object InactiveEntityPassivationSpec {
 
   val config = ConfigFactory.parseString("""
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.actor.provider = "cluster"
     akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
+    akka.cluster.sharding.verbose-debug-logging = on
+    akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
     """)
 
   val enabledConfig = ConfigFactory.parseString("""
@@ -54,7 +59,7 @@ object InactiveEntityPassivationSpec {
   }
 }
 
-abstract class AbstractInactiveEntityPassivationSpec(c: Config) extends AkkaSpec(c) {
+abstract class AbstractInactiveEntityPassivationSpec(c: Config) extends AkkaSpec(c) with WithLogCapturing {
   import InactiveEntityPassivationSpec._
 
   private val smallTolerance = 300.millis

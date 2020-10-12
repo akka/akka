@@ -8,15 +8,18 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.function.{ Function => JFunction }
 
 import scala.collection.immutable
+import scala.reflect.ClassTag
 import scala.util.{ Failure, Success, Try }
+
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.event.Logging
 import akka.coordination.lease.LeaseSettings
+import akka.coordination.lease.internal.LeaseAdapterToScala
+import akka.event.Logging
 
 object LeaseProvider extends ExtensionId[LeaseProvider] with ExtensionIdProvider {
   override def get(system: ActorSystem): LeaseProvider = super.get(system)
@@ -29,7 +32,7 @@ object LeaseProvider extends ExtensionId[LeaseProvider] with ExtensionIdProvider
   private final case class LeaseKey(leaseName: String, configPath: String, clientName: String)
 }
 
-class LeaseProvider(system: ExtendedActorSystem) extends Extension {
+final class LeaseProvider(system: ExtendedActorSystem) extends Extension {
   import LeaseProvider.LeaseKey
 
   private val log = Logging(system, getClass)
@@ -46,6 +49,10 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
    * @param ownerName the owner that will `acquire` the lease, e.g. hostname and port of the ActorSystem
    */
   def getLease(leaseName: String, configPath: String, ownerName: String): Lease = {
+    internalGetLease(leaseName, configPath, ownerName)
+  }
+
+  private[akka] def internalGetLease(leaseName: String, configPath: String, ownerName: String): Lease = {
     val leaseKey = LeaseKey(leaseName, configPath, ownerName)
     leases.computeIfAbsent(
       leaseKey,
@@ -54,39 +61,54 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
           val leaseConfig = system.settings.config
             .getConfig(configPath)
             .withFallback(system.settings.config.getConfig("akka.coordination.lease"))
-          loadLease(LeaseSettings(leaseConfig, leaseName, ownerName), configPath)
+
+          val settings = LeaseSettings(leaseConfig, leaseName, ownerName)
+
+          // Try and load a scala implementation
+          val lease: Try[Lease] =
+            loadLease[Lease](settings).recoverWith {
+              case _: ClassCastException =>
+                // Try and load a java implementation
+                loadLease[akka.coordination.lease.javadsl.Lease](settings).map(javaLease =>
+                  new LeaseAdapterToScala(javaLease)(system.dispatchers.internalDispatcher))
+            }
+
+          lease match {
+            case Success(value) => value
+            case Failure(e) =>
+              log.error(
+                e,
+                "Invalid lease configuration for leaseName [{}], configPath [{}] lease-class [{}]. " +
+                "The class must implement scaladsl.Lease or javadsl.Lease and have constructor with LeaseSettings parameter and " +
+                "optionally ActorSystem parameter.",
+                settings.leaseName,
+                configPath,
+                settings.leaseConfig.getString("lease-class"))
+              throw e
+          }
         }
       })
   }
 
-  private def loadLease(leaseSettings: LeaseSettings, configPath: String): Lease = {
+  /**
+   * The Lease types are separate for Java and Scala and A java lease needs to be loadable
+   * from Scala and vice versa as leases can be in libraries and user should not care what
+   * language it is implemented in.
+   */
+  private def loadLease[T: ClassTag](leaseSettings: LeaseSettings): Try[T] = {
     val fqcn = leaseSettings.leaseConfig.getString("lease-class")
     require(fqcn.nonEmpty, "lease-class must not be empty")
     val dynamicAccess = system.dynamicAccess
-    val instance: Try[Lease] = dynamicAccess.createInstanceFor[Lease](
+    dynamicAccess.createInstanceFor[T](
       fqcn,
       immutable.Seq((classOf[LeaseSettings], leaseSettings), (classOf[ExtendedActorSystem], system))) match {
-      case s: Success[Lease] =>
+      case s: Success[T] =>
         s
       case Failure(_: NoSuchMethodException) =>
-        dynamicAccess.createInstanceFor[Lease](fqcn, immutable.Seq((classOf[LeaseSettings], leaseSettings)))
+        dynamicAccess.createInstanceFor[T](fqcn, immutable.Seq((classOf[LeaseSettings], leaseSettings)))
       case f: Failure[_] =>
         f
     }
-    instance match {
-      case Success(value) => value
-      case Failure(e) =>
-        log.error(
-          e,
-          "Invalid lease configuration for leaseName [{}], configPath [{}] lease-class [{}]. " +
-          "The class must implement Lease and have constructor with LeaseSettings parameter and " +
-          "optionally ActorSystem parameter.",
-          leaseSettings.leaseName,
-          configPath,
-          fqcn)
-        throw e
-    }
-  }
 
-  // TODO how to clean up a lease? Not important for this use case as we'll only have one lease
+  }
 }

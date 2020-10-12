@@ -8,9 +8,11 @@ project.description: Query side to Akka Persistence allowing for building CQRS a
 To use Persistence Query, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-persistence-query_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-persistence-query_$scala.binary.version$
+  version=AkkaVersion
 }
 
 This will also add dependency on the @ref[Akka Persistence](persistence.md) module.
@@ -197,7 +199,7 @@ Java
 
 ## Performance and denormalization
 
-When building systems using @ref:[Event sourcing](typed/persistence.md#event-sourcing-concepts) and CQRS ([Command & Query Responsibility Segregation](https://msdn.microsoft.com/en-us/library/jj554200.aspx)) techniques
+When building systems using @ref:[Event sourcing](typed/persistence.md#event-sourcing-concepts) and CQRS ([Command & Query Responsibility Segregation](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj554200%28v=pandp.10%29)) techniques
 it is tremendously important to realise that the write-side has completely different needs from the read-side,
 and separating those concerns into datastores that are optimised for either side makes it possible to offer the best
 experience for the write and read sides independently.
@@ -221,7 +223,7 @@ it may be more efficient or interesting to query it (instead of the source event
 
 ### Materialize view to Reactive Streams compatible datastore
 
-If the read datastore exposes a [Reactive Streams](http://reactive-streams.org) interface then implementing a simple projection
+If the read datastore exposes a [Reactive Streams](https://www.reactive-streams.org) interface then implementing a simple projection
 is as simple as, using the read-journal and feeding it into the databases driver interface, for example like so:
 
 Scala

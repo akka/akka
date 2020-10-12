@@ -4,9 +4,9 @@
 
 package akka.util
 
+import java.util.{ AbstractQueue, Comparator, Iterator, PriorityQueue }
 import java.util.concurrent.PriorityBlockingQueue
 import java.util.concurrent.atomic.AtomicLong
-import java.util.{ AbstractQueue, Comparator, Iterator, PriorityQueue }
 
 /**
  * PriorityQueueStabilizer wraps a priority queue so that it respects FIFO for elements of equal priority.

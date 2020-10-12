@@ -4,9 +4,9 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.typed.{ ActorRef, Behavior, Props }
-
 import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.typed.{ ActorRef, Behavior, Props }
 
 /**
  * Factories for behavior effects for [[BehaviorTestKit]], each effect has a suitable equals and can be used to compare

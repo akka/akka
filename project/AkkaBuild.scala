@@ -30,7 +30,6 @@ object AkkaBuild {
     Dependencies.Versions)
 
   lazy val rootSettings = Def.settings(
-    Release.settings,
     UnidocRoot.akkaSettings,
     Protobuf.settings,
     parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
@@ -109,24 +108,16 @@ object AkkaBuild {
     scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
     scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
       opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
-    javacOptions in compile ++= DefaultJavacOptions ++
+    javacOptions in Compile ++= {
+      DefaultJavacOptions ++
+        JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value)
+    },
+    javacOptions in Test ++= DefaultJavacOptions ++
       JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
-    javacOptions in test ++= DefaultJavacOptions ++
-      JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
-    javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
-    javacOptions in doc ++= Seq(),
+    javacOptions in Compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
+    javacOptions in doc := Seq(),
 
     crossVersion := CrossVersion.binary,
-
-    // Adds a `src/main/scala-2.13+` source directory for Scala 2.13 and newer
-    // and a `src/main/scala-2.13-` source directory for Scala version older than 2.13
-    unmanagedSourceDirectories in Compile += {
-      val sourceDir = (sourceDirectory in Compile).value
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, n)) if n >= 13 => sourceDir / "scala-2.13+"
-        case _                       => sourceDir / "scala-2.13-"
-      }
-    },
 
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
@@ -153,7 +144,7 @@ object AkkaBuild {
          |implicit def _system = system
          |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.terminate()!") }
          |implicit def ec = system.dispatcher
-         |implicit val timeout = Timeout(5 seconds)
+         |implicit val timeout: Timeout = Timeout(5 seconds)
          |""".stripMargin,
 
     /**

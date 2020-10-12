@@ -16,20 +16,7 @@ import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import akka.Done
-import akka.actor.Address
-import akka.actor.Cancellable
-import akka.actor.ExtendedActorSystem
-import akka.event.Logging
-import akka.remote.RemoteActorRefProvider
-import akka.remote.RemoteTransportException
-import akka.remote.artery.compress._
-import akka.stream.KillSwitches
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
-import akka.util.ccompat._
+
 import io.aeron.Aeron
 import io.aeron.AvailableImageHandler
 import io.aeron.CncFileDescriptor
@@ -46,6 +33,21 @@ import org.agrona.ErrorHandler
 import org.agrona.IoUtil
 import org.agrona.concurrent.BackoffIdleStrategy
 import org.agrona.concurrent.status.CountersReader.MetaData
+
+import akka.Done
+import akka.actor.Address
+import akka.actor.Cancellable
+import akka.actor.ExtendedActorSystem
+import akka.event.Logging
+import akka.remote.RemoteActorRefProvider
+import akka.remote.RemoteTransportException
+import akka.remote.artery.compress._
+import akka.stream.KillSwitches
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -464,8 +466,8 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
   }
 
   def autoSelectPort(hostname: String): Int = {
-    import java.nio.channels.DatagramChannel
     import java.net.InetSocketAddress
+    import java.nio.channels.DatagramChannel
 
     val socket = DatagramChannel.open().socket()
     socket.bind(new InetSocketAddress(hostname, 0))

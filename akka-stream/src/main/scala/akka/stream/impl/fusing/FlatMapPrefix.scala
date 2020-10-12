@@ -4,16 +4,16 @@
 
 package akka.stream.impl.fusing
 
-import akka.annotation.InternalApi
-import akka.stream.scaladsl.{ Flow, Keep, Source }
-import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
-import akka.stream._
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.util.OptionVal
-
 import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
+
+import akka.annotation.InternalApi
+import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.scaladsl.{ Flow, Keep, Source }
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
+import akka.util.OptionVal
 
 @InternalApi private[akka] final class FlatMapPrefix[In, Out, M](n: Int, f: immutable.Seq[In] => Flow[In, Out, M])
     extends GraphStageWithMaterializedValue[FlowShape[In, Out], Future[M]] {
@@ -27,7 +27,11 @@ import scala.util.control.NonFatal
   override def initialAttributes: Attributes = DefaultAttributes.flatMapPrefix
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
-    val matPromise = Promise[M]
+    val propagateToNestedMaterialization =
+      inheritedAttributes
+        .mandatoryAttribute[Attributes.NestedMaterializationCancellationPolicy]
+        .propagateToNestedMaterialization
+    val matPromise = Promise[M]()
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
       val accumulated = collection.mutable.Buffer.empty[In]
 
@@ -90,7 +94,10 @@ import scala.util.control.NonFatal
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
         subSink match {
-          case OptionVal.None    => downstreamCause = OptionVal.Some(cause)
+          case OptionVal.None if propagateToNestedMaterialization => downstreamCause = OptionVal.Some(cause)
+          case OptionVal.None =>
+            matPromise.failure(new NeverMaterializedException(cause))
+            cancelStage(cause)
           case OptionVal.Some(s) => s.cancel(cause)
         }
       }

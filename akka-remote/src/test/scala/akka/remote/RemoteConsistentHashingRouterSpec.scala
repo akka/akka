@@ -4,11 +4,11 @@
 
 package akka.remote
 
-import akka.testkit.AkkaSpec
 import akka.actor.Address
 import akka.routing.ActorSelectionRoutee
-import akka.routing.ConsistentRoutee
 import akka.routing.ConsistentHash
+import akka.routing.ConsistentRoutee
+import akka.testkit.AkkaSpec
 
 class RemoteConsistentHashingRouterSpec
     extends AkkaSpec("""

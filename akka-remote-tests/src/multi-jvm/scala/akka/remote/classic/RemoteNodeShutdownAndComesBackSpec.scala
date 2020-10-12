@@ -4,17 +4,18 @@
 
 package akka.remote.classic
 
-import akka.actor.{ ActorIdentity, Identify, _ }
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter.{ Direction, ForceDisassociate }
-import akka.remote.{ RARP, RemotingMultiNodeSpec }
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.language.postfixOps
+
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.{ ActorIdentity, Identify, _ }
+import akka.remote.{ RARP, RemotingMultiNodeSpec }
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.transport.ThrottlerTransportAdapter.{ Direction, ForceDisassociate }
+import akka.testkit._
 
 object RemoteNodeShutdownAndComesBackSpec extends MultiNodeConfig {
   val first = role("first")
@@ -63,7 +64,7 @@ abstract class RemoteNodeShutdownAndComesBackSpec extends RemotingMultiNodeSpec(
     "properly reset system message buffer state when new system with same Address comes up" taggedAs LongRunningTest in {
       runOn(first) {
         val secondAddress = node(second).address
-        system.actorOf(Props[Subject], "subject1")
+        system.actorOf(Props[Subject](), "subject1")
         enterBarrier("actors-started")
 
         val subject = identify(second, "subject")
@@ -127,8 +128,8 @@ abstract class RemoteNodeShutdownAndComesBackSpec extends RemotingMultiNodeSpec(
 
       runOn(second) {
         val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-        system.actorOf(Props[Subject], "subject")
-        system.actorOf(Props[Subject], "sysmsgBarrier")
+        system.actorOf(Props[Subject](), "subject")
+        system.actorOf(Props[Subject](), "sysmsgBarrier")
         enterBarrier("actors-started")
 
         enterBarrier("watch-established")
@@ -141,7 +142,7 @@ abstract class RemoteNodeShutdownAndComesBackSpec extends RemotingMultiNodeSpec(
           akka.remote.classic.netty.tcp.port = ${address.port.get}
           akka.remote.artery.canonical.port = ${address.port.get}
           """).withFallback(system.settings.config))
-        freshSystem.actorOf(Props[Subject], "subject")
+        freshSystem.actorOf(Props[Subject](), "subject")
 
         Await.ready(freshSystem.whenTerminated, 30.seconds)
       }

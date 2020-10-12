@@ -35,6 +35,7 @@ import akka.stream.Attributes.LogLevels
 import akka.stream.IgnoreComplete
 import akka.stream.KillSwitches
 import akka.stream.Materializer
+import akka.stream.RestartSettings
 import akka.stream.SharedKillSwitch
 import akka.stream.SinkShape
 import akka.stream.scaladsl.Flow
@@ -72,8 +73,8 @@ private[remote] class ArteryTcpTransport(
     _provider: RemoteActorRefProvider,
     tlsEnabled: Boolean)
     extends ArteryTransport(_system, _provider) {
-  import ArteryTransport._
   import ArteryTcpTransport._
+  import ArteryTransport._
 
   override type LifeCycle = NotUsed
 
@@ -208,10 +209,8 @@ private[remote] class ArteryTcpTransport(
       // stream. For message stream it's best effort retry a few times.
       RestartFlow
         .withBackoff[ByteString, ByteString](
-          settings.Advanced.OutboundRestartBackoff,
-          settings.Advanced.OutboundRestartBackoff * 5,
-          0.1,
-          maxRestarts)(flowFactory)
+          RestartSettings(settings.Advanced.OutboundRestartBackoff, settings.Advanced.OutboundRestartBackoff * 5, 0.1)
+            .withMaxRestarts(maxRestarts, settings.Advanced.OutboundRestartBackoff))(flowFactory)
         // silence "Restarting graph due to failure" logging by RestartFlow
         .addAttributes(Attributes.logLevels(onFailure = LogLevels.Off))
 
@@ -273,7 +272,7 @@ private[remote] class ArteryTcpTransport(
                   s"Failed to bind TCP to [$bindHost:$bindPort] due to: " +
                   e.getMessage,
                   e))
-          }(ExecutionContexts.sameThreadExecutionContext)
+          }(ExecutionContexts.parasitic)
 
         // only on initial startup, when ActorSystem is starting
         val b = Await.result(binding, settings.Bind.BindTimeout)

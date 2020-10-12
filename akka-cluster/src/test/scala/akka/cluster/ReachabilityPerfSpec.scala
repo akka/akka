@@ -4,10 +4,11 @@
 
 package akka.cluster
 
-import akka.actor.Address
 import com.github.ghik.silencer.silent
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.Address
 
 class ReachabilityPerfSpec extends AnyWordSpec with Matchers {
 

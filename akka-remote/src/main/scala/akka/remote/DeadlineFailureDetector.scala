@@ -4,10 +4,11 @@
 
 package akka.remote
 
-import scala.concurrent.duration._
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
+
 import com.typesafe.config.Config
+
 import akka.event.EventStream
 import akka.remote.FailureDetector.Clock
 import akka.util.Helpers.ConfigOps

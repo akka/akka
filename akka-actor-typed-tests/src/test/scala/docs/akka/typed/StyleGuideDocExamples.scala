@@ -6,13 +6,13 @@ package docs.akka.typed
 
 import scala.concurrent.duration._
 import scala.concurrent.Future
-
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.TimerScheduler
-import scala.concurrent.duration.FiniteDuration
+import akka.actor.typed.SupervisorStrategy
 
+import scala.concurrent.duration.FiniteDuration
 import akka.Done
 import com.github.ghik.silencer.silent
 
@@ -322,7 +322,7 @@ object StyleGuideDocExamples {
 
       sealed trait OperationResult
       case object Confirmed extends OperationResult
-      final case class Rejected(reason: String)
+      final case class Rejected(reason: String) extends OperationResult
     }
     //#message-protocol
   }
@@ -428,7 +428,7 @@ object StyleGuideDocExamples {
     import akka.actor.typed.scaladsl.AskPattern._
     import akka.util.Timeout
 
-    implicit val timeout = Timeout(3.seconds)
+    implicit val timeout: Timeout = Timeout(3.seconds)
     val counter: ActorRef[Command] = ???
 
     val result: Future[OperationResult] = counter.ask(replyTo => Increment(delta = 2, replyTo))
@@ -520,5 +520,49 @@ object StyleGuideDocExamples {
       }
 
     }
+  }
+
+  object NestingSample1 {
+    sealed trait Command
+
+    //#nesting
+    def apply(): Behavior[Command] =
+      Behaviors.setup[Command](context =>
+        Behaviors.withStash(100)(stash =>
+          Behaviors.withTimers { timers =>
+            context.log.debug("Starting up")
+
+            // behavior using context, stash and timers ...
+            //#nesting
+            timers.isTimerActive("aa")
+            stash.isEmpty
+            Behaviors.empty
+          //#nesting
+          }))
+    //#nesting
+  }
+
+  object NestingSample2 {
+    sealed trait Command
+
+    //#nesting-supervise
+    def apply(): Behavior[Command] =
+      Behaviors.setup { context =>
+        // only run on initial actor start, not on crash-restart
+        context.log.info("Starting")
+
+        Behaviors
+          .supervise(Behaviors.withStash[Command](100) { stash =>
+            // every time the actor crashes and restarts a new stash is created (previous stash is lost)
+            context.log.debug("Starting up with stash")
+            // Behaviors.receiveMessage { ... }
+            //#nesting-supervise
+            stash.isEmpty
+            Behaviors.empty
+            //#nesting-supervise
+          })
+          .onFailure[RuntimeException](SupervisorStrategy.restart)
+      }
+    //#nesting-supervise
   }
 }

@@ -4,24 +4,24 @@
 
 package akka.serialization
 
-import com.typesafe.config.Config
-import akka.actor._
-import akka.event.{ LogMarker, Logging, LoggingAdapter }
-import java.util.concurrent.ConcurrentHashMap
-
-import scala.collection.mutable.ArrayBuffer
 import java.io.NotSerializableException
-
-import scala.util.{ DynamicVariable, Failure, Try }
-import scala.collection.immutable
-import scala.util.control.NonFatal
-import scala.util.Success
 import java.nio.ByteBuffer
+import java.util.NoSuchElementException
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
-import java.util.NoSuchElementException
+import scala.collection.immutable
+import scala.collection.mutable.ArrayBuffer
+import scala.util.{ DynamicVariable, Failure, Try }
+import scala.util.Success
+import scala.util.control.NonFatal
+
+import com.typesafe.config.Config
+
+import akka.actor._
 import akka.annotation.InternalApi
+import akka.event.{ LogMarker, Logging, LoggingAdapter }
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
@@ -503,8 +503,21 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   /**
    * Maps from a Serializer Identity (Int) to a Serializer instance (optimization)
    */
-  val serializerByIdentity: Map[Int, Serializer] =
-    Map(NullSerializer.identifier -> NullSerializer) ++ serializers.map { case (_, v) => (v.identifier, v) }
+  val serializerByIdentity: Map[Int, Serializer] = {
+    val zero: Map[Int, Serializer] = Map(NullSerializer.identifier -> NullSerializer)
+    serializers.foldLeft(zero) {
+      case (acc, (_, ser)) =>
+        val id = ser.identifier
+        acc.get(id) match {
+          case Some(existing) if existing != ser =>
+            throw new IllegalArgumentException(
+              s"Serializer identifier [$id] of [${ser.getClass.getName}] " +
+              s"is not unique. It is also used by [${acc(id).getClass.getName}].")
+          case _ =>
+            acc.updated(id, ser)
+        }
+    }
+  }
 
   /**
    * Serializers with id 0 - 1023 are stored in an array for quick allocation free access

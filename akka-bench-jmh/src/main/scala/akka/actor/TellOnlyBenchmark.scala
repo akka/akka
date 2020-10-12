@@ -4,14 +4,17 @@
 
 package akka.actor
 
+import java.util.concurrent.TimeUnit
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.openjdk.jmh.annotations._
+
 import akka.dispatch._
 import akka.testkit.TestProbe
 import akka.util.Helpers.ConfigOps
-import com.typesafe.config.{ Config, ConfigFactory }
-import java.util.concurrent.TimeUnit
-import org.openjdk.jmh.annotations._
-import scala.concurrent.duration._
-import scala.concurrent.Await
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.SingleShotTime))
@@ -61,7 +64,7 @@ class TellOnlyBenchmark {
 
   @Setup(Level.Iteration)
   def setupIteration(): Unit = {
-    actor = system.actorOf(Props[TellOnlyBenchmark.Echo].withDispatcher("dropping-dispatcher"))
+    actor = system.actorOf(Props[TellOnlyBenchmark.Echo]().withDispatcher("dropping-dispatcher"))
     probe = TestProbe()
     probe.watch(actor)
     probe.send(actor, message)
@@ -97,9 +100,9 @@ object TellOnlyBenchmark {
 
   class Echo extends Actor {
     def receive = {
-      case s @ `stop` =>
+      case `stop` =>
         context.stop(self)
-      case m => sender ! m
+      case m => sender() ! m
     }
   }
 

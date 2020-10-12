@@ -17,6 +17,8 @@ import akka.stream.javadsl.JavaFlowSupport;
 import org.apache.commons.lang.NotImplementedException;
 
 public interface AsSubscriber {
+    // We are 'faking' the JavaFlowSupport API here so we can include the signature as a snippet in the API,
+    // because we're not publishing those (jdk9+) classes in our API docs yet.
     static class JavaFlowSupport {
         public static final class Source {
             public

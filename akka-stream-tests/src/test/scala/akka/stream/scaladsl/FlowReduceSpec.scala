@@ -4,14 +4,14 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import akka.stream.ActorAttributes
+import akka.stream.Supervision
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.ActorAttributes
-import akka.stream.Supervision
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class FlowReduceSpec extends StreamSpec {
 

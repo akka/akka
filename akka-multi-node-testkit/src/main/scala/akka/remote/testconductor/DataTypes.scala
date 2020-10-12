@@ -4,15 +4,16 @@
 
 package akka.remote.testconductor
 
-import language.implicitConversions
-
-import org.jboss.netty.handler.codec.oneone.OneToOneEncoder
-import org.jboss.netty.channel.ChannelHandlerContext
-import org.jboss.netty.channel.Channel
-import akka.remote.testconductor.{ TestConductorProtocol => TCP }
-import akka.actor.Address
-import org.jboss.netty.handler.codec.oneone.OneToOneDecoder
 import scala.concurrent.duration._
+
+import language.implicitConversions
+import org.jboss.netty.channel.Channel
+import org.jboss.netty.channel.ChannelHandlerContext
+import org.jboss.netty.handler.codec.oneone.OneToOneDecoder
+import org.jboss.netty.handler.codec.oneone.OneToOneEncoder
+
+import akka.actor.Address
+import akka.remote.testconductor.{ TestConductorProtocol => TCP }
 import akka.remote.testconductor.TestConductorProtocol.BarrierOp
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 

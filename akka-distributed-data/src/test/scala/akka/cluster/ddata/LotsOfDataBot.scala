@@ -8,11 +8,12 @@ import java.util.concurrent.ThreadLocalRandom
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorSystem
 import akka.actor.Props
-import com.typesafe.config.ConfigFactory
 
 /**
  * This "sample" simulates lots of data entries, and can be used for
@@ -57,7 +58,7 @@ object LotsOfDataBot {
       // Create an Akka system
       val system = ActorSystem("ClusterSystem", config)
       // Create an actor that handles cluster domain events
-      system.actorOf(Props[LotsOfDataBot], name = "dataBot")
+      system.actorOf(Props[LotsOfDataBot](), name = "dataBot")
     }
   }
 
@@ -69,7 +70,7 @@ class LotsOfDataBot extends Actor with ActorLogging {
   import LotsOfDataBot._
   import Replicator._
 
-  implicit val selfUniqueAddress = DistributedData(context.system).selfUniqueAddress
+  implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
   val replicator = DistributedData(context.system).replicator
 
   import context.dispatcher

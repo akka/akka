@@ -4,13 +4,13 @@
 
 package akka.actor
 
+import scala.concurrent.duration._
+
 import akka.event.Logging
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
-
-import scala.concurrent.duration._
 
 object DeadLetterSupressionSpec {
 

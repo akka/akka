@@ -4,14 +4,15 @@
 
 package akka.event
 
-import akka.actor.{ ActorRef, ActorSystem }
-import akka.event.Logging.simpleName
-import akka.util.Subclassification
 import java.util.concurrent.atomic.AtomicReference
+
+import scala.annotation.tailrec
 
 import com.github.ghik.silencer.silent
 
-import scala.annotation.tailrec
+import akka.actor.{ ActorRef, ActorSystem }
+import akka.event.Logging.simpleName
+import akka.util.Subclassification
 
 /**
  * An Akka EventStream is a pub-sub stream of events both system and user generated,
@@ -32,7 +33,7 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
   /** Either the list of subscribed actors, or a ref to an [[akka.event.EventStreamUnsubscriber]] */
   private val initiallySubscribedOrUnsubscriber = new AtomicReference[Either[Set[ActorRef], ActorRef]](Left(Set.empty))
 
-  protected implicit val subclassification = new Subclassification[Class[_]] {
+  protected implicit val subclassification: Subclassification[Classifier] = new Subclassification[Class[_]] {
     def isEqual(x: Class[_], y: Class[_]) = x == y
     def isSubclass(x: Class[_], y: Class[_]) = y.isAssignableFrom(x)
   }

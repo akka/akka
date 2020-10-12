@@ -9,42 +9,17 @@ import scala.concurrent.duration._
 
 import akka.Done
 import akka.actor._
-import akka.cluster.Cluster
 import akka.cluster.MemberStatus
-import akka.cluster.MultiNodeClusterSpec
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
+import akka.testkit.{ ImplicitSender, TestProbe }
 
 /**
  * Test for issue #28416
  */
-object ClusterShardingRegistrationCoordinatedShutdownSpec extends MultiNodeConfig {
+object ClusterShardingRegistrationCoordinatedShutdownSpec extends MultiNodeClusterShardingConfig {
+
   val first = role("first")
   val second = role("second")
   val third = role("third")
-
-  commonConfig(ConfigFactory.parseString(s"""
-    akka.loglevel = DEBUG # FIXME
-    """).withFallback(MultiNodeClusterSpec.clusterConfig))
-
-  class Entity extends Actor {
-    def receive = {
-      case id: Int => sender() ! id
-    }
-  }
-
-  val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int => (id.toString, id)
-  }
-
-  val extractShardId: ShardRegion.ExtractShardId = msg =>
-    msg match {
-      case id: Int => id.toString
-    }
 
 }
 
@@ -56,34 +31,13 @@ class ClusterShardingRegistrationCoordinatedShutdownMultiJvmNode3
     extends ClusterShardingRegistrationCoordinatedShutdownSpec
 
 abstract class ClusterShardingRegistrationCoordinatedShutdownSpec
-    extends MultiNodeSpec(ClusterShardingRegistrationCoordinatedShutdownSpec)
-    with STMultiNodeSpec
+    extends MultiNodeClusterShardingSpec(ClusterShardingRegistrationCoordinatedShutdownSpec)
     with ImplicitSender {
+
   import ClusterShardingRegistrationCoordinatedShutdownSpec._
+  import MultiNodeClusterShardingSpec.ShardedEntity
 
-  override def initialParticipants: Int = roles.size
-
-  private val cluster = Cluster(system)
   private lazy val region = ClusterSharding(system).shardRegion("Entity")
-
-  def join(from: RoleName, to: RoleName): Unit = {
-    runOn(from) {
-      cluster.join(node(to).address)
-    }
-    runOn(from) {
-      cluster.state.members.exists(m => m.uniqueAddress == cluster.selfUniqueAddress && m.status == MemberStatus.Up)
-    }
-    enterBarrier(from.name + "-joined")
-  }
-
-  def startSharding(): Unit = {
-    ClusterSharding(system).start(
-      typeName = "Entity",
-      entityProps = Props[Entity],
-      settings = ClusterShardingSettings(system),
-      extractEntityId = extractEntityId,
-      extractShardId = extractShardId)
-  }
 
   s"Region registration during CoordinatedShutdown" must {
 
@@ -109,7 +63,12 @@ abstract class ClusterShardingRegistrationCoordinatedShutdownSpec
 
       }
 
-      startSharding()
+      startSharding(
+        system,
+        typeName = "Entity",
+        entityProps = Props[ShardedEntity](),
+        extractEntityId = MultiNodeClusterShardingSpec.intExtractEntityId,
+        extractShardId = MultiNodeClusterShardingSpec.intExtractShardId)
 
       enterBarrier("before-shutdown")
 

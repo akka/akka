@@ -4,14 +4,15 @@
 
 package akka.stream
 
-import akka.event._
-import akka.stream.impl.fusing.{ GraphInterpreterSpecKit, GraphStages }
-import akka.stream.impl.fusing.GraphStages
-import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
-import akka.stream.stage._
+import java.util.concurrent.TimeUnit
+
 import org.openjdk.jmh.annotations._
 
-import java.util.concurrent.TimeUnit
+import akka.event._
+import akka.stream.impl.fusing.GraphInterpreterSpecKit
+import akka.stream.impl.fusing.GraphInterpreter.{ DownstreamBoundaryStageLogic, UpstreamBoundaryStageLogic }
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.stage._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)

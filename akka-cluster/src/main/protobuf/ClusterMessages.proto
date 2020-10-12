@@ -31,6 +31,7 @@ option optimize_for = SPEED;
 message Join {
   required UniqueAddress node = 1;
   repeated string roles = 2;
+  optional string appVersion = 3;
 }
 
 /**
@@ -119,6 +120,7 @@ message GossipStatus {
   required UniqueAddress from = 1;
   repeated string allHashes = 2;
   required VectorClock version = 3;
+  optional bytes seenDigest = 4;
 }
 
 /**
@@ -132,6 +134,7 @@ message Gossip {
   required GossipOverview overview = 5;
   required VectorClock version = 6;
   repeated Tombstone tombstones = 7;
+  repeated string allAppVersions = 8;
 }
 
 /**
@@ -181,6 +184,7 @@ message Member {
   required int32 upNumber = 2;
   required MemberStatus status = 3;
   repeated int32 rolesIndexes = 4 [packed = true];
+  optional int32 appVersionIndex = 5;
 }
 
 /**

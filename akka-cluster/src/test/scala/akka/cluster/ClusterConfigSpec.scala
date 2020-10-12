@@ -4,16 +4,18 @@
 
 package akka.cluster
 
-import language.postfixOps
 import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
-import akka.testkit.AkkaSpec
-import akka.dispatch.Dispatchers
-import akka.remote.PhiAccrualFailureDetector
-import akka.util.Helpers.ConfigOps
-import akka.actor.Address
 
 import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
+import akka.actor.Address
+import akka.dispatch.Dispatchers
+import akka.remote.PhiAccrualFailureDetector
+import akka.testkit.AkkaSpec
+import akka.util.Helpers.ConfigOps
+import akka.util.Version
 
 @silent
 class ClusterConfigSpec extends AkkaSpec {
@@ -47,6 +49,7 @@ class ClusterConfigSpec extends AkkaSpec {
       MinNrOfMembersOfRole should ===(Map.empty[String, Int])
       SelfDataCenter should ===("default")
       Roles should ===(Set(ClusterSettings.DcRolePrefix + "default"))
+      AppVersion should ===(Version.Zero)
       JmxEnabled should ===(true)
       UseDispatcher should ===(Dispatchers.InternalDispatcherId)
       GossipDifferentViewProbability should ===(0.8 +- 0.0001)

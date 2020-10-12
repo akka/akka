@@ -3,6 +3,7 @@
  */
 
 package akka.persistence
+import scala.runtime.AbstractFunction3
 
 /**
  * Snapshot metadata.
@@ -10,12 +11,58 @@ package akka.persistence
  * @param persistenceId id of persistent actor from which the snapshot was taken.
  * @param sequenceNr sequence number at which the snapshot was taken.
  * @param timestamp time at which the snapshot was saved, defaults to 0 when unknown.
+ * @param metadata a journal can optionally support persisting metadata separate to the domain state, used for Replicated Event Sourcing support
  */
-@SerialVersionUID(1L) //#snapshot-metadata
-final case class SnapshotMetadata(persistenceId: String, sequenceNr: Long, timestamp: Long = 0L)
-//#snapshot-metadata
+@SerialVersionUID(1L)
+final class SnapshotMetadata(
+    val persistenceId: String,
+    val sequenceNr: Long,
+    val timestamp: Long,
+    val metadata: Option[Any])
+    extends Product3[String, Long, Long]
+    with Serializable {
 
-object SnapshotMetadata {
+  def this(persistenceId: String, sequenceNr: Long, timestamp: Long) = {
+    this(persistenceId, sequenceNr, timestamp, None)
+  }
+
+  private[akka] def this(persistenceId: String, sequenceNr: Long, meta: Option[Any]) = {
+    this(persistenceId, sequenceNr, 0L, meta)
+  }
+
+  def withMetadata(metadata: Any): SnapshotMetadata =
+    new SnapshotMetadata(persistenceId, sequenceNr, timestamp, Some(metadata))
+
+  // for bincompat, used to be a case class
+  def copy(
+      persistenceId: String = this.persistenceId,
+      sequenceNr: Long = this.sequenceNr,
+      timestamp: Long = this.timestamp): SnapshotMetadata =
+    SnapshotMetadata(persistenceId, sequenceNr, timestamp, metadata)
+
+  override def toString = s"SnapshotMetadata($persistenceId, $sequenceNr, $timestamp, $metadata)"
+
+  // Product 3
+  override def productPrefix = "SnapshotMetadata"
+  override def _1: String = persistenceId
+  override def _2: Long = sequenceNr
+  override def _3: Long = timestamp
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[SnapshotMetadata]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: SnapshotMetadata =>
+      persistenceId == that.persistenceId &&
+      sequenceNr == that.sequenceNr &&
+      timestamp == that.timestamp
+    case _ => false
+  }
+  override def hashCode(): Int = {
+    val state = Seq[Any](persistenceId, sequenceNr, timestamp)
+    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+  }
+}
+
+object SnapshotMetadata extends AbstractFunction3[String, Long, Long, SnapshotMetadata] {
   implicit val ordering: Ordering[SnapshotMetadata] = Ordering.fromLessThan[SnapshotMetadata] { (a, b) =>
     if (a eq b) false
     else if (a.persistenceId != b.persistenceId) a.persistenceId.compareTo(b.persistenceId) < 0
@@ -23,6 +70,22 @@ object SnapshotMetadata {
     else if (a.timestamp != b.timestamp) a.timestamp < b.timestamp
     else false
   }
+
+  def apply(persistenceId: String, sequenceNr: Long, timestamp: Long, meta: Option[Any]): SnapshotMetadata =
+    new SnapshotMetadata(persistenceId, sequenceNr, timestamp, meta)
+
+  def apply(persistenceId: String, sequenceNr: Long, timestamp: Long): SnapshotMetadata =
+    new SnapshotMetadata(persistenceId, sequenceNr, timestamp, None)
+
+  def apply(persistenceId: String, sequenceNr: Long): SnapshotMetadata =
+    new SnapshotMetadata(persistenceId, sequenceNr, 0, None)
+
+  def unapply(sm: SnapshotMetadata): Option[(String, Long, Long)] =
+    Some((sm.persistenceId, sm.sequenceNr, sm.timestamp))
+
+  def apply$default$3(): Long = 0L
+
+  def `<init>$default$3`: Long = 0L
 }
 
 /**

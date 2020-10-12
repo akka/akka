@@ -7,24 +7,24 @@ package scaladsl
 
 import scala.concurrent.Future
 import scala.reflect.ClassTag
-
-import akka.util.Timeout
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.actor.typed.ExtensionSetup
-import akka.actor.typed.RecipientRef
 import akka.actor.typed.Props
+import akka.actor.typed.RecipientRef
 import akka.actor.typed.internal.InternalRecipientRef
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
+import akka.cluster.sharding.ShardRegion.{ StartEntity => ClassicStartEntity }
 import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
-import akka.cluster.sharding.ShardRegion.{ StartEntity => ClassicStartEntity }
+import akka.pattern.StatusReply
+import akka.util.Timeout
 
 object ClusterSharding extends ExtensionId[ClusterSharding] {
 
@@ -185,6 +185,9 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding =
    * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
    * here provided `entityId`.
    *
+   * This can only be used if the default [[ShardingEnvelope]] is used, when using custom envelopes or in message
+   * entity ids you will need to use the `ActorRef[E]` returned by sharding init for messaging with the sharded actors.
+   *
    * For in-depth documentation of its semantics, see [[EntityRef]].
    */
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String): EntityRef[M]
@@ -197,6 +200,9 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding =
    * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
    * here provided `entityId`.
    *
+   * This can only be used if the default [[ShardingEnvelope]] is used, when using custom envelopes or in message
+   * entity ids you will need to use the `ActorRef[E]` returned by sharding init for messaging with the sharded actors.
+   *
    * For in-depth documentation of its semantics, see [[EntityRef]].
    */
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String, dataCenter: DataCenter): EntityRef[M]
@@ -207,8 +213,7 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding =
   def shardState: ActorRef[ClusterShardingQuery]
 
   /**
-   * The default is currently [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] with the
-   * given `settings`. This could be changed in the future.
+   * The default `ShardAllocationStrategy` is configured by `least-shard-allocation-strategy` properties.
    */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy
 
@@ -348,7 +353,18 @@ final class Entity[M, E] private[akka] (
 final class EntityContext[M](
     val entityTypeKey: EntityTypeKey[M],
     val entityId: String,
-    val shard: ActorRef[ClusterSharding.ShardCommand])
+    val shard: ActorRef[ClusterSharding.ShardCommand]) {
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def toJava: akka.cluster.sharding.typed.javadsl.EntityContext[M] =
+    new akka.cluster.sharding.typed.javadsl.EntityContext[M](
+      entityTypeKey.asInstanceOf[EntityTypeKeyImpl[M]],
+      entityId,
+      shard)
+}
 
 /** Allows starting a specific Sharded Entity by its entity identifier */
 object StartEntity {
@@ -449,6 +465,14 @@ object EntityTypeKey {
   def ask[Res](f: ActorRef[Res] => M)(implicit timeout: Timeout): Future[Res]
 
   /**
+   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+   * If the response is a [[akka.pattern.StatusReply.Success]] the returned future is completed successfully with the wrapped response.
+   * If the status response is a [[akka.pattern.StatusReply.Error]] the returned future will be failed with the
+   * exception in the error (normally a [[akka.pattern.StatusReply.ErrorMessage]]).
+   */
+  def askWithStatus[Res](f: ActorRef[StatusReply[Res]] => M)(implicit timeout: Timeout): Future[Res]
+
+  /**
    * Allows to "ask" the [[EntityRef]] for a reply.
    * See [[akka.actor.typed.scaladsl.AskPattern]] for a complete write-up of this pattern
    *
@@ -474,6 +498,11 @@ object EntityTypeKey {
    */
   def ?[Res](message: ActorRef[Res] => M)(implicit timeout: Timeout): Future[Res] =
     this.ask(message)(timeout)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def asJava: javadsl.EntityRef[M]
 
 }
 

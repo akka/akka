@@ -4,10 +4,10 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
+
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-
-import scala.concurrent.duration._
 
 class FlowTakeWithinSpec extends StreamSpec {
 

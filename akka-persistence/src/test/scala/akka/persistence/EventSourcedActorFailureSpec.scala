@@ -4,16 +4,15 @@
 
 package akka.persistence
 
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.util.{ Failure, Try }
+import scala.util.control.NoStackTrace
+
 import akka.actor.{ OneForOneStrategy, _ }
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.journal.inmem.InmemJournal
 import akka.testkit.{ EventFilter, ImplicitSender, TestEvent, TestProbe }
-
-import scala.collection.immutable
-import scala.util.control.NoStackTrace
-import scala.util.{ Failure, Try }
-
-import scala.concurrent.Future
 
 object EventSourcedActorFailureSpec {
   import PersistentActorSpec.{ Cmd, Evt, ExamplePersistentActor }
@@ -40,10 +39,10 @@ object EventSourcedActorFailureSpec {
       val readFromStore = read(persistenceId, fromSequenceNr, toSequenceNr, max)
       if (readFromStore.isEmpty)
         Future.successful(())
-      else if (isCorrupt(readFromStore))
+      else if (isCorrupt(readFromStore.map(_._1)))
         Future.failed(new SimulatedException(s"blahonga $fromSequenceNr $toSequenceNr"))
       else {
-        readFromStore.foreach(recoveryCallback)
+        readFromStore.map(_._1).foreach(recoveryCallback)
         Future.successful(())
       }
     }

@@ -4,16 +4,16 @@
 
 package akka.remote.artery
 
+import akka.actor.ActorSelectionMessage
+import akka.event.Logging
+import akka.remote.HeartbeatMessage
+import akka.remote.UniqueAddress
 import akka.stream.Attributes
 import akka.stream.FlowShape
 import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.stage._
-import akka.remote.UniqueAddress
 import akka.util.OptionVal
-import akka.event.Logging
-import akka.remote.HeartbeatMessage
-import akka.actor.ActorSelectionMessage
 
 /**
  * INTERNAL API

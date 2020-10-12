@@ -4,11 +4,12 @@
 
 package akka.cluster.ddata
 
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.Address
 import akka.cluster.UniqueAddress
 import akka.cluster.ddata.Replicator.Changed
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class PNCounterSpec extends AnyWordSpec with Matchers {
   val node1 = UniqueAddress(Address("akka", "Sys", "localhost", 2551), 1L)

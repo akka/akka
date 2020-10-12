@@ -4,24 +4,25 @@
 
 package akka.stream.scaladsl
 
-import akka.Done
-import akka.stream.Attributes._
-import akka.stream.OverflowStrategies.EmitEarly
-import akka.stream._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.TestPublisher
-import akka.stream.testkit.TestSubscriber
-import akka.testkit.TimingTest
-import akka.testkit.TestDuration
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.time.Milliseconds
 import org.scalatest.time.Span
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
+import akka.Done
+import akka.stream._
+import akka.stream.Attributes._
+import akka.stream.OverflowStrategies.EmitEarly
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.TestDuration
+import akka.testkit.TimingTest
 
 class FlowDelaySpec extends StreamSpec {
 
@@ -172,8 +173,9 @@ class FlowDelaySpec extends StreamSpec {
     }
 
     "properly delay according to buffer size" taggedAs TimingTest in {
-      import akka.pattern.pipe
       import system.dispatcher
+
+      import akka.pattern.pipe
 
       // With a buffer size of 1, delays add up
       Source(1 to 5)

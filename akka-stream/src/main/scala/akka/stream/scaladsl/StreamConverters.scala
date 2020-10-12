@@ -8,16 +8,16 @@ import java.io.{ InputStream, OutputStream }
 import java.util.Spliterators
 import java.util.stream.{ Collector, StreamSupport }
 
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+import scala.concurrent.duration.Duration._
+
+import akka.NotUsed
 import akka.stream.{ Attributes, IOResult, SinkShape }
 import akka.stream.impl._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io.{ InputStreamSinkStage, InputStreamSource, OutputStreamGraphStage, OutputStreamSourceStage }
 import akka.util.ByteString
-
-import scala.concurrent.duration.Duration._
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
-import akka.NotUsed
 
 /**
  * Converters for interacting with the blocking `java.io` streams APIs and Java 8 Streams
@@ -27,7 +27,7 @@ object StreamConverters {
   /**
    * Creates a Source from an [[InputStream]] created by the given function.
    * Emitted elements are up to `chunkSize` sized [[akka.util.ByteString]] elements.
-   * The actual size of emitted elements depends how much data the underlying
+   * The actual size of the emitted elements depends on how much data the underlying
    * [[java.io.InputStream]] returns on each read invocation. Such chunks will
    * never be larger than chunkSize though.
    *
@@ -170,7 +170,7 @@ object StreamConverters {
    * The Java 8 ``Stream`` will be ended when the stream flowing into this ``Sink`` completes, and closing the Java
    * ``Stream`` will cancel the inflow of this ``Sink``.
    *
-   * Java 8 ``Stream`` throws exception in case reactive stream failed.
+   * If the Java 8 ``Stream`` throws exception the Akka stream is cancelled.
    *
    * Be aware that Java ``Stream`` blocks current thread while waiting on next element from downstream.
    * As it is interacting wit blocking API the implementation runs on a separate dispatcher
@@ -210,7 +210,7 @@ object StreamConverters {
    * Creates a source that wraps a Java 8 ``Stream``. ``Source`` uses a stream iterator to get all its
    * elements and send them downstream on demand.
    *
-   * Example usage: `Source.fromJavaStream(() => IntStream.rangeClosed(1, 10))`
+   * Example usage: `StreamConverters.fromJavaStream(() => IntStream.rangeClosed(1, 10))`
    *
    * You can use [[Source.async]] to create asynchronous boundaries between synchronous Java ``Stream``
    * and the rest of flow.

@@ -4,17 +4,17 @@
 
 package akka.stream.impl
 
-import akka.Done
-import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
-import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream._
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.stage._
-
 import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
+
+import akka.Done
+import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts.parasitic
+import akka.stream._
+import akka.stream.ActorAttributes.SupervisionStrategy
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.stage._
 
 /**
  * INTERNAL API
@@ -83,7 +83,7 @@ import scala.util.control.NonFatal
       state match {
         case Some(resource) =>
           try {
-            readData(resource).onComplete(readCallback)(sameThreadExecutionContext)
+            readData(resource).onComplete(readCallback)(parasitic)
           } catch errorHandler
         case None =>
         // we got a pull but there is no open resource, we are either

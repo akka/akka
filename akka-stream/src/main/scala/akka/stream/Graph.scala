@@ -4,11 +4,11 @@
 
 package akka.stream
 
+import scala.annotation.unchecked.uncheckedVariance
+
 import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
 import akka.stream.scaladsl.GenericGraph
-
-import scala.annotation.unchecked.uncheckedVariance
 
 /**
  * Not intended to be directly extended by user classes

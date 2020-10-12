@@ -4,23 +4,23 @@
 
 package akka.actor
 
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ ConcurrentLinkedQueue, RejectedExecutionException }
+import java.util.concurrent.atomic.AtomicInteger
+
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.actor.setup.ActorSystemSetup
 import akka.dispatch._
 import akka.japi.Util.immutableSeq
 import akka.pattern.ask
 import akka.testkit.{ TestKit, _ }
-import akka.util.Helpers.ConfigOps
 import akka.util.{ Switch, Timeout }
-import com.github.ghik.silencer.silent
-import com.typesafe.config.{ Config, ConfigFactory }
-
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
-import scala.language.postfixOps
-import scala.util.Properties
+import akka.util.Helpers.ConfigOps
 
 object ActorSystemSpec {
 
@@ -32,7 +32,7 @@ object ActorSystemSpec {
       case n: Int =>
         master = sender()
         terminaters = Set() ++ (for (_ <- 1 to n) yield {
-            val man = context.watch(context.system.actorOf(Props[Terminater]))
+            val man = context.watch(context.system.actorOf(Props[Terminater]()))
             man ! "run"
             man
           })
@@ -120,15 +120,6 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
   "An ActorSystem" must {
 
-    "use scala.concurrent InternalCallbackExecutor/parasitic" in {
-      val ec = system.asInstanceOf[ActorSystemImpl].internalCallingThreadExecutionContext
-      val scalaVersion = Properties.versionNumberString
-      if (scalaVersion.startsWith("2.13") && scalaVersion != "2.13.0-M5")
-        ec.getClass.getName should ===("scala.concurrent.ExecutionContext$parasitic$")
-      else
-        ec.getClass.getName should ===("scala.concurrent.Future$InternalCallbackExecutor$")
-    }
-
     "reject invalid names" in {
       for (n <- Seq(
              "-hallowelt",
@@ -152,7 +143,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         ActorSystem("LogDeadLetters", ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf))
       try {
         val probe = TestProbe()(sys)
-        val a = sys.actorOf(Props[ActorSystemSpec.Terminater])
+        val a = sys.actorOf(Props[ActorSystemSpec.Terminater]())
         probe.watch(a)
         a.tell("run", probe.ref)
         probe.expectTerminated(a)
@@ -176,12 +167,12 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         ActorSystem("LogDeadLetters", ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf))
       try {
         val probe = TestProbe()(sys)
-        val a = sys.actorOf(Props[ActorSystemSpec.Terminater])
+        val a = sys.actorOf(Props[ActorSystemSpec.Terminater]())
         probe.watch(a)
         a.tell("run", probe.ref)
         probe.expectTerminated(a)
 
-        a.tell("boom", ActorRef.noSender)
+        // Expecting two log entries: one from the actor system at info level and one at warning level from the logging testkit
         EventFilter
           .info(pattern = ".*not delivered", occurrences = 1)
           .intercept {
@@ -273,8 +264,8 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
 
     "reliably create waves of actors" in {
       import system.dispatcher
-      implicit val timeout = Timeout((20 seconds).dilated)
-      val waves = for (_ <- 1 to 3) yield system.actorOf(Props[ActorSystemSpec.Waves]) ? 50000
+      implicit val timeout: Timeout = Timeout((20 seconds).dilated)
+      val waves = for (_ <- 1 to 3) yield system.actorOf(Props[ActorSystemSpec.Waves]()) ? 50000
       Await.result(Future.sequence(waves), timeout.duration + 5.seconds) should ===(Vector("done", "done", "done"))
     }
 
@@ -291,7 +282,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       var created = Vector.empty[ActorRef]
       while (!system.whenTerminated.isCompleted) {
         try {
-          val t = system.actorOf(Props[ActorSystemSpec.Terminater])
+          val t = system.actorOf(Props[ActorSystemSpec.Terminater]())
           failing should not be true // because once failing => always failing (it’s due to shutdown)
           created :+= t
           if (created.size % 1000 == 0) Thread.sleep(50) // in case of unfair thread scheduling

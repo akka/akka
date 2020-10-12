@@ -9,23 +9,26 @@ import java.util.function.BiConsumer
 import java.util.function.BinaryOperator
 import java.util.function.Supplier
 import java.util.function.ToIntFunction
-import java.util.stream.Collector.Characteristics
 import java.util.stream.BaseStream
 import java.util.stream.Collector
+import java.util.stream.Collector.Characteristics
 import java.util.stream.Collectors
-
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.Utils.TE
-import akka.testkit.DefaultTimeout
-import org.scalatest.time.Millis
-import org.scalatest.time.Span
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import org.scalatest.time.Millis
+import org.scalatest.time.Span
+
+import akka.stream.ActorAttributes
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.Utils.TE
+import akka.testkit.DefaultTimeout
+import akka.util.ByteString
+
 class StreamConvertersSpec extends StreamSpec with DefaultTimeout {
 
-  implicit val config = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
+  implicit val config: PatienceConfig = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
   "Java Stream source" must {
     import java.util.stream.IntStream
@@ -309,7 +312,33 @@ class StreamConvertersSpec extends StreamSpec with DefaultTimeout {
         Await.result(future, 300.millis)
       }
     }
-
   }
 
+  "InputStream Sink" must {
+    "produce a single value" in {
+      val source = Source.single(ByteString("ASDF"))
+      val sink =
+        StreamConverters.asInputStream().withAttributes(ActorAttributes.dispatcher("akka.test.stream-dispatcher"))
+
+      val is = source.runWith(sink)
+      is.read() should be('A')
+      val target = Array[Byte](0, 0, 0)
+      is.read(target, 1, 2)
+      target should be(Array[Byte](0, 'S', 'D'))
+      is.read() should be('F')
+      is.read() should be(-1)
+      is.close()
+    }
+    // As specified in the Closeable interface, #28664
+    "withstand being closed twice" in {
+      val source = Source.single(ByteString("ASDF"))
+      val sink =
+        StreamConverters.asInputStream().withAttributes(ActorAttributes.dispatcher("akka.test.stream-dispatcher"))
+
+      val is = source.runWith(sink)
+      is.read() should be('A')
+      is.close()
+      is.close()
+    }
+  }
 }

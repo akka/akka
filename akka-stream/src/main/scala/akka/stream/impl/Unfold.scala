@@ -4,13 +4,13 @@
 
 package akka.stream.impl
 
-import akka.annotation.InternalApi
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
-import akka.stream._
-
 import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
+
+import akka.annotation.InternalApi
+import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 
 /**
  * INTERNAL API
@@ -59,7 +59,7 @@ import scala.util.{ Failure, Success, Try }
         asyncHandler = ac.invoke
       }
 
-      def onPull(): Unit = f(state).onComplete(asyncHandler)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+      def onPull(): Unit = f(state).onComplete(asyncHandler)(akka.dispatch.ExecutionContexts.parasitic)
 
       setHandler(out, this)
     }

@@ -4,9 +4,10 @@
 
 package akka
 
-import akka.actor._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor._
 
 /**
  * A spec that verified that the AkkaException has at least a single argument constructor of type String.

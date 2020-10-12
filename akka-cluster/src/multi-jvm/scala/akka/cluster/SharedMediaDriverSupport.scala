@@ -10,17 +10,19 @@ import java.util.function.Consumer
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
+
+import com.typesafe.config.ConfigFactory
+import io.aeron.CommonContext
+import io.aeron.driver.MediaDriver
+import io.aeron.driver.ThreadingMode
+import org.agrona.IoUtil
+
 import akka.remote.RemoteSettings
 import akka.remote.artery.ArterySettings
 import akka.remote.artery.ArterySettings.AeronUpd
 import akka.remote.artery.aeron.TaskRunner
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import com.typesafe.config.ConfigFactory
-import io.aeron.driver.MediaDriver
-import io.aeron.driver.ThreadingMode
-import org.agrona.IoUtil
-import io.aeron.CommonContext
 
 object SharedMediaDriverSupport {
 

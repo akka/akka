@@ -4,11 +4,11 @@
 
 package akka.remote.artery
 
-import akka.actor.{ Actor, ActorIdentity, Identify, Props }
-import akka.testkit.TestProbe
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.actor.{ Actor, ActorIdentity, Identify, Props }
+import akka.testkit.TestProbe
 
 class FlushOnShutdownSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultConfig) {
 

@@ -6,18 +6,18 @@ package akka.stream.io
 
 import java.net.InetSocketAddress
 
+import scala.collection.immutable.Queue
+import scala.concurrent.duration._
+
 import akka.actor._
-import akka.io.Tcp.ConnectionClosed
-import akka.io.Tcp.ResumeReading
 import akka.io.IO
 import akka.io.Tcp
+import akka.io.Tcp.ConnectionClosed
+import akka.io.Tcp.ResumeReading
 import akka.stream.testkit._
 import akka.testkit.SocketUtil.temporaryServerAddress
 import akka.testkit.TestProbe
 import akka.util.ByteString
-
-import scala.collection.immutable.Queue
-import scala.concurrent.duration._
 
 object TcpHelper {
   case class ClientWrite(bytes: ByteString) extends NoSerializationVerificationNeeded

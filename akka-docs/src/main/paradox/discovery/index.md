@@ -34,9 +34,11 @@ See @ref:[Migration hints](#migrating-from-akka-management-discovery-before-1-0-
 ## Module info
 
 @@dependency[sbt,Gradle,Maven] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-discovery_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-discovery_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-discovery" }
@@ -73,6 +75,12 @@ Port can be used when a service opens multiple ports e.g. a HTTP port and an Akk
 
 ## Discovery Method: DNS
 
+@@@ note { title="Async DNS" }
+
+Akka Discovery with DNS does always use the @ref[Akka-native "async-dns" implementation](../io-dns.md) (it is independent of the `akka.io.dns.resolver` setting).
+
+@@@
+
 DNS discovery maps `Lookup` queries as follows:
 
 * `serviceName`, `portName` and `protocol` set: SRV query in the form: `_port._protocol.name` Where the `_`s are added.
@@ -86,27 +94,15 @@ The mapping between Akka service discovery terminology and SRV terminology:
 
 Configure `akka-dns` to be used as the discovery implementation in your `application.conf`:
 
-@@snip[application.conf](/akka-discovery/src/test/scala/akka/discovery/dns/DnsDiscoverySpec.scala){ #configure-dns }
+@@snip[application.conf](/akka-docs/src/test/scala/docs/discovery/DnsDiscoveryDocSpec.scala){ #configure-dns }
 
 From there on, you can use the generic API that hides the fact which discovery method is being used by calling:
 
 Scala
-:   ```scala
-    import akka.discovery.ServiceDiscovery
-    val system = ActorSystem("Example")
-    // ...
-    val discovery = ServiceDiscovery(system).discovery
-    val result: Future[Resolved] = discovery.lookup("service-name", resolveTimeout = 500 milliseconds)
-    ```
+:   @@snip[snip](/akka-docs/src/test/scala/docs/discovery/DnsDiscoveryDocSpec.scala){ #lookup-dns }
 
 Java
-:   ```java
-    import akka.discovery.ServiceDiscovery;
-    ActorSystem system = ActorSystem.create("Example");
-    // ...
-    SimpleServiceDiscovery discovery = ServiceDiscovery.get(system).discovery();
-    Future<SimpleServiceDiscovery.Resolved> result = discovery.lookup("service-name", Duration.create("500 millis"));
-    ```
+:   @@snip[snip](/akka-docs/src/test/java/jdocs/discovery/DnsDiscoveryDocTest.java){ #lookup-dns }
 
 ### DNS records used
 

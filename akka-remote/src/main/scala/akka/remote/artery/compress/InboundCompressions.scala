@@ -8,14 +8,14 @@ import java.util.function.LongFunction
 
 import scala.annotation.tailrec
 
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.Address
+import org.agrona.collections.Long2ObjectHashMap
+
+import akka.actor.{ ActorRef, ActorSystem, Address, InternalActorRef }
 import akka.event.Logging
 import akka.event.LoggingAdapter
+import akka.pattern.PromiseActorRef
 import akka.remote.artery._
 import akka.util.{ unused, OptionVal }
-import org.agrona.collections.Long2ObjectHashMap
 
 /**
  * INTERNAL API
@@ -191,6 +191,21 @@ private[remote] final class InboundActorRefCompression(
       originUid)
     outboundContext.sendControl(
       CompressionProtocol.ActorRefCompressionAdvertisement(inboundContext.localAddress, table))
+  }
+
+  override protected def buildTableForAdvertisement(elements: Iterator[ActorRef]): Map[ActorRef, Int] = {
+    val mb = Map.newBuilder[ActorRef, Int]
+    var idx = 0
+    elements.foreach {
+      case ref: InternalActorRef =>
+        val isTemporaryRef = (ref.isLocal && ref.isInstanceOf[PromiseActorRef]) ||
+          (!ref.isLocal && ref.path.elements.head == "temp")
+        if (!isTemporaryRef) {
+          mb += ref -> idx
+          idx += 1
+        }
+    }
+    mb.result()
   }
 }
 
@@ -493,13 +508,15 @@ private[remote] abstract class InboundCompression[T >: Null](
   protected def advertiseCompressionTable(association: OutboundContext, table: CompressionTable[T]): Unit
 
   private def prepareCompressionAdvertisement(nextTableVersion: Byte): CompressionTable[T] = {
-    // TODO optimised somewhat, check if still to heavy; could be encoded into simple array
-    val mappings: Map[T, Int] = {
-      val mb = Map.newBuilder[T, Int]
-      mb ++= heavyHitters.iterator.zipWithIndex
-      mb.result()
-    }
+    val mappings: Map[T, Int] = buildTableForAdvertisement(heavyHitters.iterator)
     CompressionTable(originUid, nextTableVersion, mappings)
+  }
+
+  protected def buildTableForAdvertisement(elements: Iterator[T]): Map[T, Int] = {
+    // TODO optimised somewhat, check if still to heavy; could be encoded into simple array
+    val mb = Map.newBuilder[T, Int]
+    mb ++= elements.zipWithIndex
+    mb.result()
   }
 
   override def toString =

@@ -7,6 +7,7 @@ package jdocs.akka.typed;
 // #oo-style
 // #fun-style
 import akka.actor.typed.Behavior;
+import akka.actor.typed.SupervisorStrategy;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 // #fun-style
@@ -731,5 +732,56 @@ interface StyleGuideDocExamples {
       }
     }
     // #public-private-messages-2
+  }
+
+  interface NestingSample1 {
+    interface Command {}
+
+    // #nesting
+    public static Behavior<Command> apply() {
+      return Behaviors.setup(
+          context ->
+              Behaviors.withStash(
+                  100,
+                  stash ->
+                      Behaviors.withTimers(
+                          timers -> {
+                            context.getLog().debug("Starting up");
+
+                            // behavior using context, stash and timers ...
+                            // #nesting
+                            return Behaviors.empty();
+                            // #nesting
+                          })));
+    }
+    // #nesting
+  }
+
+  interface NestingSample2 {
+    interface Command {}
+
+    // #nesting-supervise
+    public static Behavior<Command> create() {
+      return Behaviors.setup(
+          context -> {
+            // only run on initial actor start, not on crash-restart
+            context.getLog().info("Starting");
+
+            return Behaviors.<Command>supervise(
+                    Behaviors.withStash(
+                        100,
+                        stash -> {
+                          // every time the actor crashes and restarts a new stash is created
+                          // (previous stash is lost)
+                          context.getLog().debug("Starting up with stash");
+                          // Behaviors.receiveMessage { ... }
+                          // #nesting-supervise
+                          return Behaviors.empty();
+                          // #nesting-supervise
+                        }))
+                .onFailure(RuntimeException.class, SupervisorStrategy.restart());
+          });
+    }
+    // #nesting-supervise
   }
 }

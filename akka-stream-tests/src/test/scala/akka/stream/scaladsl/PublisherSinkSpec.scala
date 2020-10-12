@@ -4,12 +4,12 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import akka.stream.ClosedShape
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.StreamTestKit._
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class PublisherSinkSpec extends StreamSpec {
 

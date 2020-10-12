@@ -4,9 +4,10 @@
 
 package akka.persistence.journal
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ExtendedActorSystem
 import akka.testkit.AkkaSpec
-import com.typesafe.config.ConfigFactory
 
 class InmemEventAdaptersSpec extends AkkaSpec {
 

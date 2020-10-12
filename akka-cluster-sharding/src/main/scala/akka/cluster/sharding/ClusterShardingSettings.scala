@@ -4,8 +4,10 @@
 
 package akka.cluster.sharding
 
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
+
+import com.typesafe.config.Config
 
 import akka.actor.ActorSystem
 import akka.actor.NoSerializationVerificationNeeded
@@ -14,12 +16,30 @@ import akka.cluster.Cluster
 import akka.cluster.singleton.ClusterSingletonManagerSettings
 import akka.coordination.lease.LeaseUsageSettings
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
 
 object ClusterShardingSettings {
 
   val StateStoreModePersistence = "persistence"
   val StateStoreModeDData = "ddata"
+
+  /**
+   * Only for testing
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] val RememberEntitiesStoreCustom = "custom"
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] val RememberEntitiesStoreDData = "ddata"
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] val RememberEntitiesStoreEventsourced = "eventsourced"
 
   /**
    * Create settings from the default configuration
@@ -33,6 +53,15 @@ object ClusterShardingSettings {
    * the default configuration `akka.cluster.sharding`.
    */
   def apply(config: Config): ClusterShardingSettings = {
+
+    def configMajorityPlus(p: String): Int = {
+      import akka.util.Helpers.toRootLowerCase
+      toRootLowerCase(config.getString(p)) match {
+        case "all" => Int.MaxValue
+        case _     => config.getInt(p)
+      }
+    }
+
     val tuningParameters = new TuningParameters(
       coordinatorFailureBackoff = config.getDuration("coordinator-failure-backoff", MILLISECONDS).millis,
       retryInterval = config.getDuration("retry-interval", MILLISECONDS).millis,
@@ -53,7 +82,11 @@ object ClusterShardingSettings {
       entityRecoveryConstantRateStrategyFrequency =
         config.getDuration("entity-recovery-constant-rate-strategy.frequency", MILLISECONDS).millis,
       entityRecoveryConstantRateStrategyNumberOfEntities =
-        config.getInt("entity-recovery-constant-rate-strategy.number-of-entities"))
+        config.getInt("entity-recovery-constant-rate-strategy.number-of-entities"),
+      coordinatorStateWriteMajorityPlus = configMajorityPlus("coordinator-state.write-majority-plus"),
+      coordinatorStateReadMajorityPlus = configMajorityPlus("coordinator-state.read-majority-plus"),
+      leastShardAllocationAbsoluteLimit = config.getInt("least-shard-allocation-strategy.rebalance-absolute-limit"),
+      leastShardAllocationRelativeLimit = config.getDouble("least-shard-allocation-strategy.rebalance-relative-limit"))
 
     val coordinatorSingletonSettings = ClusterSingletonManagerSettings(config.getConfig("coordinator-singleton"))
 
@@ -72,6 +105,7 @@ object ClusterShardingSettings {
       journalPluginId = config.getString("journal-plugin-id"),
       snapshotPluginId = config.getString("snapshot-plugin-id"),
       stateStoreMode = config.getString("state-store-mode"),
+      rememberEntitiesStore = config.getString("remember-entities-store"),
       passivateIdleEntityAfter = passivateIdleAfter,
       shardRegionQueryTimeout = config.getDuration("shard-region-query-timeout", MILLISECONDS).millis,
       tuningParameters,
@@ -114,13 +148,110 @@ object ClusterShardingSettings {
       val updatingStateTimeout: FiniteDuration,
       val entityRecoveryStrategy: String,
       val entityRecoveryConstantRateStrategyFrequency: FiniteDuration,
-      val entityRecoveryConstantRateStrategyNumberOfEntities: Int) {
+      val entityRecoveryConstantRateStrategyNumberOfEntities: Int,
+      val coordinatorStateWriteMajorityPlus: Int,
+      val coordinatorStateReadMajorityPlus: Int,
+      val leastShardAllocationAbsoluteLimit: Int,
+      val leastShardAllocationRelativeLimit: Double) {
 
     require(
       entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
       s"Unknown 'entity-recovery-strategy' [$entityRecoveryStrategy], valid values are 'all' or 'constant'")
 
     // included for binary compatibility
+    @deprecated(
+      "Use the ClusterShardingSettings factory methods or the constructor including " +
+      "leastShardAllocationAbsoluteLimit and leastShardAllocationRelativeLimit instead",
+      since = "2.6.10")
+    def this(
+        coordinatorFailureBackoff: FiniteDuration,
+        retryInterval: FiniteDuration,
+        bufferSize: Int,
+        handOffTimeout: FiniteDuration,
+        shardStartTimeout: FiniteDuration,
+        shardFailureBackoff: FiniteDuration,
+        entityRestartBackoff: FiniteDuration,
+        rebalanceInterval: FiniteDuration,
+        snapshotAfter: Int,
+        keepNrOfBatches: Int,
+        leastShardAllocationRebalanceThreshold: Int,
+        leastShardAllocationMaxSimultaneousRebalance: Int,
+        waitingForStateTimeout: FiniteDuration,
+        updatingStateTimeout: FiniteDuration,
+        entityRecoveryStrategy: String,
+        entityRecoveryConstantRateStrategyFrequency: FiniteDuration,
+        entityRecoveryConstantRateStrategyNumberOfEntities: Int,
+        coordinatorStateWriteMajorityPlus: Int,
+        coordinatorStateReadMajorityPlus: Int) =
+      this(
+        coordinatorFailureBackoff,
+        retryInterval,
+        bufferSize,
+        handOffTimeout,
+        shardStartTimeout,
+        shardFailureBackoff,
+        entityRestartBackoff,
+        rebalanceInterval,
+        snapshotAfter,
+        keepNrOfBatches,
+        leastShardAllocationRebalanceThreshold,
+        leastShardAllocationMaxSimultaneousRebalance,
+        waitingForStateTimeout,
+        updatingStateTimeout,
+        entityRecoveryStrategy,
+        entityRecoveryConstantRateStrategyFrequency,
+        entityRecoveryConstantRateStrategyNumberOfEntities,
+        coordinatorStateWriteMajorityPlus,
+        coordinatorStateReadMajorityPlus,
+        leastShardAllocationAbsoluteLimit = 100,
+        leastShardAllocationRelativeLimit = 0.1)
+
+    // included for binary compatibility
+    @deprecated(
+      "Use the ClusterShardingSettings factory methods or the constructor including " +
+      "coordinatorStateWriteMajorityPlus and coordinatorStateReadMajorityPlus instead",
+      since = "2.6.5")
+    def this(
+        coordinatorFailureBackoff: FiniteDuration,
+        retryInterval: FiniteDuration,
+        bufferSize: Int,
+        handOffTimeout: FiniteDuration,
+        shardStartTimeout: FiniteDuration,
+        shardFailureBackoff: FiniteDuration,
+        entityRestartBackoff: FiniteDuration,
+        rebalanceInterval: FiniteDuration,
+        snapshotAfter: Int,
+        keepNrOfBatches: Int,
+        leastShardAllocationRebalanceThreshold: Int,
+        leastShardAllocationMaxSimultaneousRebalance: Int,
+        waitingForStateTimeout: FiniteDuration,
+        updatingStateTimeout: FiniteDuration,
+        entityRecoveryStrategy: String,
+        entityRecoveryConstantRateStrategyFrequency: FiniteDuration,
+        entityRecoveryConstantRateStrategyNumberOfEntities: Int) =
+      this(
+        coordinatorFailureBackoff,
+        retryInterval,
+        bufferSize,
+        handOffTimeout,
+        shardStartTimeout,
+        shardFailureBackoff,
+        entityRestartBackoff,
+        rebalanceInterval,
+        snapshotAfter,
+        keepNrOfBatches,
+        leastShardAllocationRebalanceThreshold,
+        leastShardAllocationMaxSimultaneousRebalance,
+        waitingForStateTimeout,
+        updatingStateTimeout,
+        entityRecoveryStrategy,
+        entityRecoveryConstantRateStrategyFrequency,
+        entityRecoveryConstantRateStrategyNumberOfEntities,
+        coordinatorStateWriteMajorityPlus = 5,
+        coordinatorStateReadMajorityPlus = 5)
+
+    // included for binary compatibility
+    @deprecated("Use the ClusterShardingSettings factory methods or the full constructor instead", since = "2.6.5")
     def this(
         coordinatorFailureBackoff: FiniteDuration,
         retryInterval: FiniteDuration,
@@ -159,6 +290,7 @@ object ClusterShardingSettings {
     }
 
     // included for binary compatibility
+    @deprecated("Use the ClusterShardingSettings factory methods or the full constructor instead", since = "2.6.5")
     def this(
         coordinatorFailureBackoff: FiniteDuration,
         retryInterval: FiniteDuration,
@@ -220,12 +352,40 @@ final class ClusterShardingSettings(
     val journalPluginId: String,
     val snapshotPluginId: String,
     val stateStoreMode: String,
+    val rememberEntitiesStore: String,
     val passivateIdleEntityAfter: FiniteDuration,
     val shardRegionQueryTimeout: FiniteDuration,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
     val leaseSettings: Option[LeaseUsageSettings])
     extends NoSerializationVerificationNeeded {
+
+  @deprecated(
+    "Use the ClusterShardingSettings factory methods or the constructor including rememberedEntitiesStore instead",
+    "2.6.7")
+  def this(
+      role: Option[String],
+      rememberEntities: Boolean,
+      journalPluginId: String,
+      snapshotPluginId: String,
+      stateStoreMode: String,
+      passivateIdleEntityAfter: FiniteDuration,
+      shardRegionQueryTimeout: FiniteDuration,
+      tuningParameters: ClusterShardingSettings.TuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings,
+      leaseSettings: Option[LeaseUsageSettings]) =
+    this(
+      role,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      stateStoreMode,
+      "ddata",
+      passivateIdleEntityAfter,
+      shardRegionQueryTimeout,
+      tuningParameters,
+      coordinatorSingletonSettings,
+      leaseSettings)
 
   // bin compat for 2.5.23
   @deprecated(
@@ -251,7 +411,7 @@ final class ClusterShardingSettings(
       3.seconds,
       tuningParameters,
       coordinatorSingletonSettings,
-      None)
+      leaseSettings)
 
   // bin compat for 2.5.21
   @deprecated(
@@ -300,10 +460,9 @@ final class ClusterShardingSettings(
       tuningParameters,
       coordinatorSingletonSettings)
 
-  import ClusterShardingSettings.StateStoreModeDData
-  import ClusterShardingSettings.StateStoreModePersistence
+  import ClusterShardingSettings.{ RememberEntitiesStoreCustom, StateStoreModeDData, StateStoreModePersistence }
   require(
-    stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData,
+    stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData || stateStoreMode == RememberEntitiesStoreCustom,
     s"Unknown 'state-store-mode' [$stateStoreMode], valid values are '$StateStoreModeDData' or '$StateStoreModePersistence'")
 
   /** If true, this node should run the shard region, otherwise just a shard proxy should started on this node. */
@@ -375,6 +534,7 @@ final class ClusterShardingSettings(
       journalPluginId,
       snapshotPluginId,
       stateStoreMode,
+      rememberEntitiesStore,
       passivateIdleAfter,
       shardRegionQueryTimeout,
       tuningParameters,

@@ -4,8 +4,9 @@
 
 package akka.cluster
 
-import akka.testkit.AkkaSpec
 import scala.collection.immutable.TreeMap
+
+import akka.testkit.AkkaSpec
 
 class VectorClockSpec extends AkkaSpec {
   import VectorClock._

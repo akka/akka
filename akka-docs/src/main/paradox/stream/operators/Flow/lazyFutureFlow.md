@@ -4,13 +4,10 @@ Defers creation and materialization of a `Flow` until there is a first element.
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #lazyFlow }
+@apidoc[Flow.lazyFutureFlow](Flow$) { scala="#lazyFutureFlow[I,O,M](create:()=&gt;scala.concurrent.Future[akka.stream.scaladsl.Flow[I,O,M]]):akka.stream.scaladsl.Flow[I,O,scala.concurrent.Future[M]]" }
 
-@@@
 
 ## Description
 
@@ -38,5 +35,9 @@ See @ref:[lazyFlow](lazyFlow.md) for sample.
 
 **completes** when upstream completes and all futures have been completed and all elements have been emitted
 
+**cancels** when downstream cancels (keep reading)
+    The operator's default behaviour in case of downstream cancellation before nested flow materialization (future completion) is to cancel immediately.
+     This behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy.PropagateToNested]] attribute,
+    this will delay downstream cancellation until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
 @@@
 

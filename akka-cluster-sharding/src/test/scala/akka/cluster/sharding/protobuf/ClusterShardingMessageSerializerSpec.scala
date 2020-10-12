@@ -5,7 +5,6 @@
 package akka.cluster.sharding.protobuf
 
 import scala.concurrent.duration._
-
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.actor.Props
@@ -13,6 +12,8 @@ import akka.cluster.sharding.Shard
 import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.ShardId
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesShardStore
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesShardStore.EntitiesStarted
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 
@@ -70,12 +71,19 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
     }
 
     "be able to serialize PersistentShard snapshot state" in {
-      checkSerialization(Shard.State(Set("e1", "e2", "e3")))
+      checkSerialization(EventSourcedRememberEntitiesShardStore.State(Set("e1", "e2", "e3")))
     }
 
     "be able to serialize PersistentShard domain events" in {
-      checkSerialization(Shard.EntityStarted("e1"))
-      checkSerialization(Shard.EntityStopped("e1"))
+      checkSerialization(EventSourcedRememberEntitiesShardStore.EntitiesStarted(Set("e1", "e2")))
+      checkSerialization(EventSourcedRememberEntitiesShardStore.EntitiesStopped(Set("e1", "e2")))
+    }
+
+    "be able to deserialize old entity started event into entities started" in {
+      import akka.cluster.sharding.protobuf.msg.{ ClusterShardingMessages => sm }
+
+      val asBytes = sm.EntityStarted.newBuilder().setEntityId("e1").build().toByteArray
+      SerializationExtension(system).deserialize(asBytes, 13, "CB").get shouldEqual EntitiesStarted(Set("e1"))
     }
 
     "be able to serialize GetShardStats" in {

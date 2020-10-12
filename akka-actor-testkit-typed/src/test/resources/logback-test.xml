@@ -8,7 +8,7 @@
             <level>INFO</level>
         </filter>
         <encoder>
-            <pattern>%date{ISO8601} %-5level %logger %marker - %msg {%mdc}%n</pattern>
+            <pattern>%date{ISO8601} %-5level %logger %marker - %msg MDC: {%mdc}%n</pattern>
         </encoder>
     </appender>
 

@@ -6,14 +6,14 @@ package akka.actor.testkit.typed.internal
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
-import akka.actor.typed.ActorRef
-import akka.actor.typed.internal.{ ActorRefImpl, SystemMessage }
-import akka.annotation.InternalApi
-import akka.{ actor => classic }
 import scala.annotation.tailrec
 
+import akka.{ actor => classic }
 import akka.actor.ActorRefProvider
+import akka.actor.typed.ActorRef
+import akka.actor.typed.internal.{ ActorRefImpl, SystemMessage }
 import akka.actor.typed.internal.InternalRecipientRef
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

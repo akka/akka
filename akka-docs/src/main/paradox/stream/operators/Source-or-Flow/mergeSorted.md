@@ -4,13 +4,11 @@ Merge multiple sources.
 
 @ref[Fan-in operators](../index.md#fan-in-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #mergeSorted }
+@apidoc[Source.mergeSorted](Source) { scala="#mergeSorted[U&gt;:Out,M](that:akka.stream.Graph[akka.stream.SourceShape[U],M])(implicitord:Ordering[U]):FlowOps.this.Repr[U]" java="#mergeSorted(akka.stream.Graph,java.util.Comparator)" }
+@apidoc[Flow.mergeSorted](Flow) { scala="#mergeSorted[U&gt;:Out,M](that:akka.stream.Graph[akka.stream.SourceShape[U],M])(implicitord:Ordering[U]):FlowOps.this.Repr[U]" java="#mergeSorted(akka.stream.Graph,java.util.Comparator)" }
 
-@@@
 
 ## Description
 

@@ -4,6 +4,14 @@
 
 package akka.stream.scaladsl
 
+import scala.collection.immutable
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
+import com.typesafe.config._
+
 import akka.{ Done, NotUsed }
 import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, ActorSystem, ActorSystemImpl, Identify, Props }
 import akka.actor.Status.Failure
@@ -15,13 +23,6 @@ import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl._
 import akka.testkit.{ AkkaSpec, TestKit, TestProbe }
 import akka.util.ByteString
-import com.typesafe.config._
-
-import scala.collection.immutable
-import scala.concurrent.Promise
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 object StreamRefsSpec {
 
@@ -33,8 +34,8 @@ object StreamRefsSpec {
 
   class DataSourceActor() extends Actor with ActorLogging {
 
-    import context.system
     import context.dispatcher
+    import context.system
 
     def receive = {
       case "give" =>
@@ -430,6 +431,41 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) {
         case Failure(_) =>
         case _          => fail()
       }
+    }
+
+    "not die to a slow and eager subscriber" in {
+      import akka.stream.impl.streamref.StreamRefsProtocol._
+
+      // GIVEN: remoteActor delivers 2 elements "hello", "world"
+      val remoteProbe = TestProbe()(remoteSystem)
+      remoteActor.tell("give", remoteProbe.ref)
+      val sourceRefImpl = remoteProbe.expectMsgType[SourceRefImpl[String]]
+
+      val sourceRefStageProbe = TestProbe("sourceRefStageProbe")
+
+      // WHEN: SourceRefStage sends a first CumulativeDemand with enough demand to consume the whole stream
+      sourceRefStageProbe.send(sourceRefImpl.initialPartnerRef, CumulativeDemand(10))
+
+      // THEN: stream established with OnSubscribeHandshake
+      val onSubscribeHandshake = sourceRefStageProbe.expectMsgType[OnSubscribeHandshake]
+      val sinkRefStageActorRef = watch(onSubscribeHandshake.targetRef)
+
+      // THEN: all elements are streamed to SourceRefStage
+      sourceRefStageProbe.expectMsg(SequencedOnNext(0, "hello"))
+      sourceRefStageProbe.expectMsg(SequencedOnNext(1, "world"))
+      sourceRefStageProbe.expectMsg(RemoteStreamCompleted(2))
+
+      // WHEN: SinkRefStage receives another CumulativeDemand, due to latency in network or slowness of sourceRefStage
+      sourceRefStageProbe.send(sinkRefStageActorRef, CumulativeDemand(10))
+
+      // THEN: SinkRefStage should not terminate
+      expectNoMessage()
+
+      // WHEN: SourceRefStage terminates
+      system.stop(sourceRefStageProbe.ref)
+
+      // THEN: SinkRefStage should terminate
+      expectTerminated(sinkRefStageActorRef)
     }
 
   }

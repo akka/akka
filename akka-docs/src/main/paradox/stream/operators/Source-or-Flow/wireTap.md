@@ -4,13 +4,11 @@ Attaches the given `Sink` to this `Flow` as a wire tap, meaning that elements th
 
 @ref[Fan-out operators](../index.md#fan-out-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #wireTap }
+@apidoc[Source.wireTap](Source) { scala="#wireTap(f:Out=&gt;Unit):FlowOps.this.Repr[Out]" java="#wireTap(akka.japi.function.Procedure)" }
+@apidoc[Flow.wireTap](Flow) { scala="#wireTap(f:Out=&gt;Unit):FlowOps.this.Repr[Out]" java="#wireTap(akka.japi.function.Procedure)" }
 
-@@@
 
 ## Description
 

@@ -4,12 +4,13 @@
 
 package akka.stream.scaladsl
 
-import akka.stream._
-import akka.stream.testkit.TwoStreamsSetup
 import com.github.ghik.silencer.silent
 import org.scalacheck.Gen
 import org.scalacheck.Shrink
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+
+import akka.stream._
+import akka.stream.testkit.TwoStreamsSetup
 
 @silent // tests deprecated apis
 class GraphMergeSortedSpec extends TwoStreamsSetup with ScalaCheckPropertyChecks {
@@ -24,7 +25,8 @@ class GraphMergeSortedSpec extends TwoStreamsSetup with ScalaCheckPropertyChecks
     override def out: Outlet[Outputs] = merge.out
   }
 
-  implicit def noShrink[T] = Shrink[T](_ => Stream.empty) // do not shrink failures, it only destroys evidence
+  implicit def noShrink[T]: Shrink[T] =
+    Shrink[T](_ => Stream.empty) // do not shrink failures, it only destroys evidence
 
   "MergeSorted" must {
 

@@ -4,11 +4,11 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
+
 import akka.stream.StreamLimitReachedException
 import akka.stream.testkit.StreamSpec
 import akka.util.unused
-
-import scala.concurrent.Await
 
 class FlowLimitWeightedSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

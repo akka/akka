@@ -8,8 +8,10 @@ import java.io._
 import java.lang.management.ManagementFactory
 import java.util.concurrent.Semaphore
 import java.util.concurrent.locks.ReentrantLock
-import scala.concurrent.duration._
+
 import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

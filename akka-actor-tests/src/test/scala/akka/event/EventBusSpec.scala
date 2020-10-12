@@ -4,15 +4,15 @@
 
 package akka.event
 
-import language.postfixOps
-
-import org.scalatest.BeforeAndAfterEach
-import akka.testkit._
 import scala.concurrent.duration._
 
-import akka.actor.{ Actor, ActorRef, ActorSystem, PoisonPill, Props }
-import akka.japi.{ Procedure }
 import com.typesafe.config.{ Config, ConfigFactory }
+import language.postfixOps
+import org.scalatest.BeforeAndAfterEach
+
+import akka.actor.{ Actor, ActorRef, ActorSystem, PoisonPill, Props }
+import akka.japi.Procedure
+import akka.testkit._
 
 object EventBusSpec {
   class TestActorWrapperActor(testActor: ActorRef) extends Actor {
@@ -169,12 +169,12 @@ object ActorEventBusSpec {
 }
 
 class ActorEventBusSpec(conf: Config) extends EventBusSpec("ActorEventBus", conf) {
-  import akka.event.ActorEventBusSpec._
   import EventBusSpec.TestActorWrapperActor
 
-  def this() {
+  import akka.event.ActorEventBusSpec._
+
+  def this() =
     this(ConfigFactory.parseString("akka.actor.debug.event-stream = on").withFallback(AkkaSpec.testConf))
-  }
 
   type BusType = MyActorEventBus
   def createNewEventBus(): BusType = new MyActorEventBus(system)
@@ -329,7 +329,7 @@ object LookupEventBusSpec {
     override protected def classify(event: Int): String = event.toString
     override protected def compareSubscribers(a: Procedure[Int], b: Procedure[Int]): Int =
       akka.util.Helpers.compareIdentityHash(a, b)
-    override protected def mapSize = 32
+    override protected def mapSize() = 32
     override protected def publish(event: Int, subscriber: Procedure[Int]): Unit =
       subscriber(event)
   }

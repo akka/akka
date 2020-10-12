@@ -24,7 +24,7 @@ distributions of any type of application, including Akka applications.
 Define sbt version in `project/build.properties` file:
 
 ```none
-sbt.version=0.13.13
+sbt.version=1.3.12
 ```
 
 Add [sbt-native-packager](https://github.com/sbt/sbt-native-packager) in `project/plugins.sbt` file:
@@ -33,17 +33,17 @@ Add [sbt-native-packager](https://github.com/sbt/sbt-native-packager) in `projec
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.1.5")
 ```
 
-Follow the instructions for the `JavaAppPackaging` in the [sbt-native-packager plugin documentation](http://sbt-native-packager.readthedocs.io/en/latest/archetypes/java_app/index.html).
+Follow the instructions for the `JavaAppPackaging` in the [sbt-native-packager plugin documentation](https://sbt-native-packager.readthedocs.io/en/latest/archetypes/java_app/index.html).
 
 ## Maven: jarjar, onejar or assembly
 
-You can use the [Apache Maven Shade Plugin](http://maven.apache.org/plugins/maven-shade-plugin)
-support for [Resource Transformers](http://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#AppendingTransformer)
+You can use the [Apache Maven Shade Plugin](https://maven.apache.org/plugins/maven-shade-plugin/)
+support for [Resource Transformers](https://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#AppendingTransformer)
 to merge all the reference.confs on the build classpath into one.
 
 The plugin configuration might look like this:
 
-```
+```xml
 <plugin>
  <groupId>org.apache.maven.plugins</groupId>
  <artifactId>maven-shade-plugin</artifactId>
@@ -92,7 +92,7 @@ To make sure the `reference.conf` resources are correctly merged, you might
 use the [Shadow plugin](https://imperceptiblethoughts.com/shadow/), which might
 look something like this:
 
-```
+```groovy
 import com.github.jengelman.gradle.plugins.shadow.transformers.AppendingTransformer
 
 plugins {
@@ -105,5 +105,15 @@ shadowJar {
         resource = 'reference.conf'
     }
     with jar
+}
+```
+
+Or when you use the Kotlin DSL:
+
+```kotlin
+tasks.withType<ShadowJar> {
+    val newTransformer = AppendingTransformer()
+    newTransformer.resource = "reference.conf"
+    transformers.add(newTransformer)
 }
 ```

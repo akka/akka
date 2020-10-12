@@ -19,7 +19,7 @@ to ensure that a fix can be provided without delay.
 ## Security Related Documentation
 
  * @ref:[Java Serialization](../serialization.md#java-serialization)
- * @ref:[Remote deployment whitelist](../remoting.md#remote-deployment-whitelist)
+ * @ref:[Remote deployment allow list](../remoting.md#remote-deployment-allow-list)
  * @ref:[Remote Security](../remoting-artery.md#remote-security)
 
 ## Fixed Security Vulnerabilities

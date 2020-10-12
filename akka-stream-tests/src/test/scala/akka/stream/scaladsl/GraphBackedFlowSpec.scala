@@ -4,12 +4,13 @@
 
 package akka.stream.scaladsl
 
+import com.github.ghik.silencer.silent
+import org.reactivestreams.Subscriber
+
+import akka.stream._
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
-import akka.stream._
-import com.github.ghik.silencer.silent
-import org.reactivestreams.Subscriber
 
 object GraphFlowSpec {
   val source1 = Source(0 to 3)
@@ -44,7 +45,7 @@ class GraphFlowSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   def validateProbe(probe: TestSubscriber.ManualProbe[Int], requests: Int, result: Set[Int]): Unit = {
     val subscription = probe.expectSubscription()

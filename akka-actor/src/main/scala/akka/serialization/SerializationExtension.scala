@@ -4,8 +4,8 @@
 
 package akka.serialization
 
-import akka.actor.ClassicActorSystemProvider
 import akka.actor.{ ActorSystem, ExtendedActorSystem, ExtensionId, ExtensionIdProvider }
+import akka.actor.ClassicActorSystemProvider
 
 /**
  * SerializationExtension is an Akka Extension to interact with the Serialization

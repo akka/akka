@@ -4,8 +4,9 @@
 
 package akka.stream.tck
 
-import akka.stream.scaladsl._
 import org.reactivestreams.Subscriber
+
+import akka.stream.scaladsl._
 
 class ForeachSinkSubscriberTest extends AkkaSubscriberBlackboxVerification[Int] {
 

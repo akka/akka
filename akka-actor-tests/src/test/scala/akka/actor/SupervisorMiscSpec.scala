@@ -4,19 +4,19 @@
 
 package akka.actor
 
-import language.postfixOps
-import akka.testkit.{ filterEvents, EventFilter }
-
-import scala.concurrent.Await
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
-import akka.testkit.AkkaSpec
-import akka.testkit.DefaultTimeout
-import akka.pattern.ask
-import com.github.ghik.silencer.silent
-
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+import language.postfixOps
+
+import akka.pattern.ask
+import akka.testkit.{ filterEvents, EventFilter }
+import akka.testkit.AkkaSpec
+import akka.testkit.DefaultTimeout
 
 object SupervisorMiscSpec {
   val config = """

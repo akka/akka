@@ -6,10 +6,11 @@ package akka.actor
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
-import akka.actor.BenchmarkActors._
-import akka.actor.ForkJoinActorBenchmark.cores
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
+
+import akka.actor.BenchmarkActors._
+import akka.actor.ForkJoinActorBenchmark.cores
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))

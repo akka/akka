@@ -4,12 +4,12 @@
 
 package akka.stream.scaladsl
 
+import scala.util.control.NoStackTrace
+
 import akka.NotUsed
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.util.ConstantFun
-
-import scala.util.control.NoStackTrace
 
 class FlowConcatAllSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

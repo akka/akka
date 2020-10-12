@@ -7,9 +7,11 @@ package akka.remote.classic
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
+import akka.actor.ActorSelection
 import akka.actor.ActorSystem
 import akka.actor.Deploy
 import akka.actor.ExtendedActorSystem
@@ -18,14 +20,13 @@ import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.actor.RootActorPath
 import akka.actor.Terminated
-import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
-import akka.testkit.TestProbe
-import akka.actor.ActorSelection
-import akka.testkit.TestEvent
 import akka.event.Logging
+import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
+import akka.testkit.ImplicitSender
 import akka.testkit.JavaSerializable
+import akka.testkit.TestEvent
+import akka.testkit.TestProbe
 
 object UntrustedSpec {
   final case class IdentifyReq(path: String) extends JavaSerializable
@@ -122,7 +123,7 @@ akka.actor.serialization-bindings {
 
   "UntrustedMode" must {
 
-    "allow actor selection to configured white list" in {
+    "allow actor selection to configured allow list" in {
       val sel = client.actorSelection(RootActorPath(address) / receptionist.path.elements)
       sel ! "hello"
       expectMsg("hello")
@@ -180,7 +181,7 @@ akka.actor.serialization-bindings {
       expectNoMessage(1.second)
     }
 
-    "discard actor selection to child of matching white list" in {
+    "discard actor selection to child of matching allow list" in {
       val sel = client.actorSelection(RootActorPath(address) / receptionist.path.elements / "child1")
       sel ! "hello"
       expectNoMessage(1.second)

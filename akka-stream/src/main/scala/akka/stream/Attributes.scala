@@ -4,26 +4,23 @@
 
 package akka.stream
 
-import java.util.Optional
-
-import akka.event.Logging
-
-import scala.annotation.tailrec
-import scala.reflect.{ classTag, ClassTag }
-import akka.japi.function
 import java.net.URLEncoder
 import java.time.Duration
+import java.util.Optional
+
+import scala.annotation.tailrec
+import scala.compat.java8.OptionConverters._
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.{ classTag, ClassTag }
 
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.event.Logging
+import akka.japi.function
 import akka.stream.impl.TraversalBuilder
-import akka.util.JavaDurationConverters._
-
-import scala.compat.java8.OptionConverters._
 import akka.util.{ ByteString, OptionVal }
-
-import scala.concurrent.duration.FiniteDuration
+import akka.util.JavaDurationConverters._
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
@@ -178,13 +175,21 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
   /**
    * INTERNAL API
    */
-  @InternalApi def nameOrDefault(default: String = "unnamed"): String = {
-    @tailrec def find(attrs: List[Attribute]): String = attrs match {
-      case Attributes.Name(name) :: _ => name
+  @InternalApi private def getName(): Option[String] = {
+    @tailrec def find(attrs: List[Attribute]): Option[String] = attrs match {
+      case Attributes.Name(name) :: _ => Some(name)
       case _ :: tail                  => find(tail)
-      case Nil                        => default
+      case Nil                        => None
     }
     find(attributeList)
+  }
+
+  @InternalApi def nameOrDefault(default: String = "unnamed"): String = {
+    getName().getOrElse(default)
+  }
+
+  @InternalApi private[akka] def nameForActorRef(default: String = "unnamed"): String = {
+    getName().map(name => URLEncoder.encode(name, ByteString.UTF_8)).getOrElse(default)
   }
 
   /**
@@ -310,7 +315,7 @@ object Attributes {
 
   final case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel)
       extends Attribute
-  final case object AsyncBoundary extends Attribute
+  case object AsyncBoundary extends Attribute
 
   /**
    * Cancellation strategies provide a way to configure the behavior of a stage when `cancelStage` is called.
@@ -442,6 +447,78 @@ object Attributes {
       strategy: CancellationStrategy.Strategy): CancellationStrategy.Strategy =
     CancellationStrategy.AfterDelay(delay, strategy)
 
+  /**
+   * Nested materialization cancellation strategy provides a way to configure the cancellation behavior of stages that materialize a nested flow.
+   *
+   * When cancelled before materializing their nested flows, these stages can either immediately cancel (default behaviour) without materializing the nested flow
+   * or wait for the nested flow to materialize and then propagate the cancellation signal through it.
+   *
+   * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] (and derivations such as [[akka.stream.scaladsl.Flow.lazyFutureFlow]]).
+   * These operators either delay the nested flow's materialization or wait for a future to complete before doing so,
+   * in this period of time they may receive a downstream cancellation signal. When this happens these operators will behave according to
+   * this [[Attribute]]: when set to true they will 'stash' the signal and later deliver it to the materialized nested flow
+   * , otherwise these stages will immediately cancel without materializing the nested flow.
+   */
+  @ApiMayChange
+  class NestedMaterializationCancellationPolicy private[NestedMaterializationCancellationPolicy] (
+      val propagateToNestedMaterialization: Boolean)
+      extends MandatoryAttribute
+
+  @ApiMayChange
+  object NestedMaterializationCancellationPolicy {
+
+    /**
+     * A [[NestedMaterializationCancellationPolicy]] that configures graph stages
+     * delaying nested flow materialization to cancel immediately when downstream cancels before
+     * nested flow materialization.
+     * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
+     */
+    val EagerCancellation = new NestedMaterializationCancellationPolicy(false)
+
+    /**
+     * A [[NestedMaterializationCancellationPolicy]] that configures graph stages
+     * delaying nested flow materialization to delay cancellation when downstream cancels before
+     * nested flow materialization. Once the nested flow is materialized it will be cancelled immediately.
+     * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
+     */
+    val PropagateToNested = new NestedMaterializationCancellationPolicy(true)
+
+    /**
+     * Default [[NestedMaterializationCancellationPolicy]],
+     * please see [[akka.stream.Attributes.NestedMaterializationCancellationPolicy.EagerCancellation()]] for details.
+     */
+    val Default = EagerCancellation
+  }
+
+  /**
+   * JAVA API
+   * A [[NestedMaterializationCancellationPolicy]] that configures graph stages
+   * delaying nested flow materialization to cancel immediately when downstream cancels before
+   * nested flow materialization.
+   * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
+   */
+  @ApiMayChange
+  def nestedMaterializationCancellationPolicyEagerCancellation(): NestedMaterializationCancellationPolicy =
+    NestedMaterializationCancellationPolicy.EagerCancellation
+
+  /**
+   * JAVA API
+   * A [[NestedMaterializationCancellationPolicy]] that configures graph stages
+   * delaying nested flow materialization to delay cancellation when downstream cancels before
+   * nested flow materialization. Once the nested flow is materialized it will be cancelled immediately.
+   * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] and derived operators.
+   */
+  @ApiMayChange
+  def nestedMaterializationCancellationPolicyPropagateToNested(): NestedMaterializationCancellationPolicy =
+    NestedMaterializationCancellationPolicy.PropagateToNested
+
+  /**
+   * Default [[NestedMaterializationCancellationPolicy]],
+   * please see [[akka.stream.Attributes#nestedMaterializationCancellationPolicyEagerCancellation()]] for details.
+   */
+  def nestedMaterializationCancellationPolicyDefault(): NestedMaterializationCancellationPolicy =
+    NestedMaterializationCancellationPolicy.Default
+
   object LogLevels {
 
     /** Use to disable logging on certain operations when configuring [[Attributes#logLevels]] */
@@ -488,14 +565,10 @@ object Attributes {
   /**
    * Specifies the name of the operation.
    * If the name is null or empty the name is ignored, i.e. [[#none]] is returned.
-   *
-   * When using this method the name is encoded with URLEncoder with UTF-8 because
-   * the name is sometimes used as part of actor name. If that is not desired
-   * the name can be added in it's raw format using `.addAttributes(Attributes(Name(name)))`.
    */
   def name(name: String): Attributes =
     if (name == null || name.isEmpty) none
-    else Attributes(Name(URLEncoder.encode(name, ByteString.UTF_8)))
+    else Attributes(Name(name))
 
   /**
    * Each asynchronous piece of a materialized stream topology is executed by one Actor

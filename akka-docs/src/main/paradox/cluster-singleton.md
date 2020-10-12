@@ -8,9 +8,11 @@ For the full documentation of this feature and for new projects see @ref:[Cluste
 To use Cluster Singleton, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-cluster-tools_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-cluster-tools_$scala.binary.version$
+  version=AkkaVersion
 }
 
 @@project-info{ projectId="akka-cluster-tools" }
@@ -107,7 +109,7 @@ There are two actors that could potentially be supervised. For the `consumer` si
 The Cluster singleton manager actor should not have its supervision strategy changed as it should always be running.
 However it is sometimes useful to add supervision for the user actor. 
 To accomplish this add a parent supervisor actor which will be used to create the 'real' singleton instance. 
-Below is an example implementation (credit to [this StackOverflow answer](https://stackoverflow.com/a/36716708/779513))
+Below is an example implementation (credit to [this StackOverflow answer](https://stackoverflow.com/questions/36701898/how-to-supervise-cluster-singleton-in-akka/36716708#36716708))
 
 Scala
 :  @@snip [ClusterSingletonSupervision.scala](/akka-docs/src/test/scala/docs/cluster/singleton/ClusterSingletonSupervision.scala) { #singleton-supervisor-actor }

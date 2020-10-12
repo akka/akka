@@ -4,10 +4,11 @@
 
 package akka.osgi.test
 
-import akka.osgi.ActorSystemActivator
-import akka.actor.{ ActorSystem, Props }
 import PingPong._
 import org.osgi.framework.BundleContext
+
+import akka.actor.{ ActorSystem, Props }
+import akka.osgi.ActorSystemActivator
 
 /**
  * A set of [[akka.osgi.ActorSystemActivator]]s for testing purposes
@@ -24,7 +25,7 @@ object TestActivators {
 class PingPongActorSystemActivator extends ActorSystemActivator {
 
   def configure(context: BundleContext, system: ActorSystem): Unit = {
-    system.actorOf(Props[PongActor], name = "pong")
+    system.actorOf(Props[PongActor](), name = "pong")
     registerService(context, system)
   }
 

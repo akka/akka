@@ -6,11 +6,12 @@ package akka.actor.testkit.typed.javadsl
 
 import java.util.function.Supplier
 
+import org.slf4j.event.Level
+
 import akka.actor.testkit.typed.LoggingEvent
 import akka.actor.testkit.typed.internal.LoggingTestKitImpl
 import akka.actor.typed.ActorSystem
 import akka.annotation.DoNotInherit
-import org.slf4j.event.Level
 
 /**
  * Facilities for verifying logs.

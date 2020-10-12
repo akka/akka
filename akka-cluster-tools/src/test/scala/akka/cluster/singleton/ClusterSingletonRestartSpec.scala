@@ -5,6 +5,9 @@
 package akka.cluster.singleton
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorSystem
 import akka.actor.PoisonPill
 import akka.cluster.Cluster
@@ -12,7 +15,6 @@ import akka.cluster.MemberStatus
 import akka.testkit.AkkaSpec
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
 
 class ClusterSingletonRestartSpec
     extends AkkaSpec("""

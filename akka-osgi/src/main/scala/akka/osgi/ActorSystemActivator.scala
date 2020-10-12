@@ -4,13 +4,14 @@
 
 package akka.osgi
 
-import akka.actor.ActorSystem
 import java.util.{ Dictionary, Properties }
 
-import akka.util.unused
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.osgi.framework._
 import org.osgi.service.log.LogService
-import com.typesafe.config.{ Config, ConfigFactory }
+
+import akka.actor.{ ActorRefFactory, ActorSystem }
+import akka.util.unused
 
 /**
  * Abstract bundle activator implementation to bootstrap and configure an actor system in an
@@ -104,7 +105,10 @@ abstract class ActorSystemActivator extends BundleActivator {
     val properties = new Properties()
     properties.put("name", system.name)
     registration = Some(
-      context.registerService(classOf[ActorSystem].getName, system, properties.asInstanceOf[Dictionary[String, Any]]))
+      context.registerService(
+        Array(classOf[ActorSystem].getName, classOf[ActorRefFactory].getName),
+        system,
+        properties.asInstanceOf[Dictionary[String, Any]]))
   }
 
   /**

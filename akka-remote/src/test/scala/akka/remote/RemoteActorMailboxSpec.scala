@@ -4,8 +4,9 @@
 
 package akka.remote
 
-import akka.actor.ActorMailboxSpec
 import com.typesafe.config.ConfigFactory
+
+import akka.actor.ActorMailboxSpec
 
 class RemoteActorMailboxSpec
     extends ActorMailboxSpec(

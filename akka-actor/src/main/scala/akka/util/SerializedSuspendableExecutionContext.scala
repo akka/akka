@@ -5,9 +5,11 @@
 package akka.util
 
 import java.util.concurrent.atomic.AtomicInteger
+
+import scala.annotation.{ switch, tailrec }
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
-import scala.annotation.{ switch, tailrec }
+
 import akka.dispatch.AbstractNodeQueue
 
 private[akka] object SerializedSuspendableExecutionContext {

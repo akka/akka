@@ -7,14 +7,16 @@ package akka.cluster.ddata
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.cluster.Cluster
 import akka.cluster.ddata.Replicator._
+import akka.event.Logging.Error
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import akka.event.Logging.Error
 
 object ReplicatorMapDeltaSpec extends MultiNodeConfig {
   val first = role("first")
@@ -186,7 +188,7 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
   override def initialParticipants = roles.size
 
   val cluster = Cluster(system)
-  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
+  implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
   val fullStateReplicator = system.actorOf(
     Replicator.props(ReplicatorSettings(system).withGossipInterval(1.second).withDeltaCrdtEnabled(false)),
     "fullStateReplicator")

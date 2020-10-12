@@ -19,7 +19,9 @@ reading this migration guide and testing your application thoroughly is recommen
 
 Rolling updates are possible without shutting down all nodes of the Akka Cluster, but will require
 configuration adjustments as described in the @ref:[Remoting](#remoting) section of this migration
-guide.
+guide. Due to the @ref:[changed serialization of the Cluster messages in Akka 2.6.2](rolling-update.md#2-6-2-clustermessageserializer-manifests-change)
+a rolling update from 2.5.x must first be made to Akka 2.6.2 and then a second rolling update can change to Akka 2.6.3
+or later.
 
 ## Scala 2.11 no longer supported
 
@@ -133,7 +135,7 @@ To summarize the fallacy of transparent remoting:
 * Was used in CORBA, RMI, and DCOM, and all of them failed. Those problems were noted by [Waldo et al already in 1994](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.41.7628)
 * Partial failure is a major problem. Remote calls introduce uncertainty whether the function was invoked or not.
   Typically handled by using timeouts but the client can't always know the result of the call.
-* Latency of calls over a network are several order of magnitudes longer than latency of local calls,
+* Latency of calls over a network are several orders of magnitudes longer than latency of local calls,
   which can be more than surprising if encoded as an innocent looking local method call.
 * Remote invocations have much lower throughput due to the need of serializing the
   data and you can't just pass huge datasets in the same way.
@@ -280,7 +282,7 @@ Explicitly disable Artery by setting property `akka.remote.artery.enabled` to `f
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
 are specific to classic search for them in: @ref:[`akka-remote/reference.conf`](../general/configuration-reference.md#config-akka-remote).
 
-If you have a [Lightbend Platform Subscription](https://www.lightbend.com/lightbend-platform-subscription) you can use our [Config Checker](https://doc.akka.io/docs/akka-enhancements/current/config-checker.html) enhancement to flag any settings that have not been properly migrated.
+If you have a [Lightbend Subscription](https://www.lightbend.com/lightbend-subscription) you can use our [Config Checker](https://doc.akka.io/docs/akka-enhancements/current/config-checker.html) enhancement to flag any settings that have not been properly migrated.
 
 ### Persistent mode for Cluster Sharding
 
@@ -374,7 +376,7 @@ The @ref:[Scheduler](../scheduler.md#schedule-periodically) documentation descri
 `startTimerWithFixedDelay`.
 
 The deprecated `schedule` method had the same semantics as `scheduleAtFixedRate`, but since that can result in
-bursts of scheduled tasks or messages after long garbage collection pauses and in worst case cause undesired
+bursts of scheduled tasks or messages after long garbage collection pauses and in the worst case cause undesired
 load on the system `scheduleWithFixedDelay` is often preferred.
 
 For the same reason the following methods have also been deprecated:
@@ -602,7 +604,7 @@ In 2.5.x the Cluster Receptionist was using the shared Distributed Data extensio
 undesired configuration changes if the application was also using that and changed for example the `role`
 configuration.
 
-In 2.6.x the Cluster Receptionist is using it's own independent instance of Distributed Data.
+In 2.6.x the Cluster Receptionist is using its own independent instance of Distributed Data.
 
 This means that the receptionist information will not be disseminated between 2.5.x and 2.6.x nodes during a
 rolling update from 2.5.x to 2.6.x if you use Akka Typed. See @ref:[rolling updates with typed Cluster Receptionist](../additional/rolling-updates.md#akka-typed-with-receptionist-or-cluster-receptionist)

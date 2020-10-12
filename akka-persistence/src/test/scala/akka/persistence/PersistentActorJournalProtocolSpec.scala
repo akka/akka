@@ -4,11 +4,13 @@
 
 package akka.persistence
 
-import akka.actor._
-import akka.testkit._
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+
+import akka.actor._
 import akka.persistence.JournalProtocol._
+import akka.testkit._
 
 object PersistentActorJournalProtocolSpec {
 
@@ -76,7 +78,7 @@ akka.persistence.snapshot-store.plugin = "akka.persistence.no-snapshot-store"
 }
 
 object JournalPuppet extends ExtensionId[JournalProbe] with ExtensionIdProvider {
-  override def lookup() = JournalPuppet
+  override def lookup = JournalPuppet
 
   override def createExtension(system: ExtendedActorSystem): JournalProbe =
     new JournalProbe()(system)

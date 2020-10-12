@@ -8,6 +8,12 @@ import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 
+import scala.collection.immutable
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+
+import com.github.ghik.silencer.silent
+
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.InternalApi
@@ -18,16 +24,11 @@ import akka.io.Tcp._
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.impl.fusing.GraphStages.detacher
+import akka.stream.scaladsl.{ BidiFlow, Flow, TcpIdleTimeoutException, Tcp => StreamTcp }
 import akka.stream.scaladsl.Tcp.{ OutgoingConnection, ServerBinding }
 import akka.stream.scaladsl.TcpAttributes
-import akka.stream.scaladsl.{ BidiFlow, Flow, TcpIdleTimeoutException, Tcp => StreamTcp }
 import akka.stream.stage._
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
-
-import scala.collection.immutable
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.concurrent.{ Future, Promise }
 
 /**
  * INTERNAL API
@@ -53,7 +54,7 @@ import scala.concurrent.{ Future, Promise }
 
   // TODO: Timeout on bind
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes, eagerMaterialzer: Materializer) = {
-    val bindingPromise = Promise[ServerBinding]
+    val bindingPromise = Promise[ServerBinding]()
 
     val logic = new TimerGraphStageLogic(shape) with StageLogging {
       implicit def self: ActorRef = stageActor.ref
@@ -86,7 +87,7 @@ import scala.concurrent.{ Future, Promise }
                 thisStage.tell(Unbind, thisStage)
               }
               unbindPromise.future
-            }, unbindPromise.future.map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)))
+            }, unbindPromise.future.map(_ => Done)(ExecutionContexts.parasitic)))
           case f: CommandFailed =>
             val ex = new BindFailedException {
               // cannot modify the actual exception class for compatibility reasons
@@ -521,7 +522,7 @@ private[stream] object ConnectionSourceStage {
       case _                 => None
     }
 
-    val localAddressPromise = Promise[InetSocketAddress]
+    val localAddressPromise = Promise[InetSocketAddress]()
     val logic = new TcpStreamLogic(
       shape,
       Outbound(
@@ -533,10 +534,7 @@ private[stream] object ConnectionSourceStage {
       remoteAddress,
       eagerMaterializer)
 
-    (
-      logic,
-      localAddressPromise.future.map(OutgoingConnection(remoteAddress, _))(
-        ExecutionContexts.sameThreadExecutionContext))
+    (logic, localAddressPromise.future.map(OutgoingConnection(remoteAddress, _))(ExecutionContexts.parasitic))
   }
 
   override def toString = s"TCP-to($remoteAddress)"

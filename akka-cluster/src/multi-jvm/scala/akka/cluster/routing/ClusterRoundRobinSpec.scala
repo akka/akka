@@ -4,10 +4,12 @@
 
 package akka.cluster.routing
 
-import language.postfixOps
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Address
@@ -17,15 +19,15 @@ import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.testkit._
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
-import akka.routing.FromConfig
-import akka.routing.RoundRobinPool
 import akka.routing.ActorRefRoutee
 import akka.routing.ActorSelectionRoutee
-import akka.routing.RoutedActorRef
+import akka.routing.FromConfig
 import akka.routing.GetRoutees
+import akka.routing.RoundRobinPool
+import akka.routing.RoutedActorRef
 import akka.routing.Routees
+import akka.testkit._
 
 object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
 
@@ -109,16 +111,16 @@ abstract class ClusterRoundRobinSpec
     with DefaultTimeout {
   import ClusterRoundRobinMultiJvmSpec._
 
-  lazy val router1 = system.actorOf(FromConfig.props(Props[SomeActor]), "router1")
+  lazy val router1 = system.actorOf(FromConfig.props(Props[SomeActor]()), "router1")
   lazy val router2 = system.actorOf(
     ClusterRouterPool(
       RoundRobinPool(nrOfInstances = 0),
       ClusterRouterPoolSettings(totalInstances = 3, maxInstancesPerNode = 1, allowLocalRoutees = true))
-      .props(Props[SomeActor]),
+      .props(Props[SomeActor]()),
     "router2")
-  lazy val router3 = system.actorOf(FromConfig.props(Props[SomeActor]), "router3")
+  lazy val router3 = system.actorOf(FromConfig.props(Props[SomeActor]()), "router3")
   lazy val router4 = system.actorOf(FromConfig.props(), "router4")
-  lazy val router5 = system.actorOf(RoundRobinPool(nrOfInstances = 0).props(Props[SomeActor]), "router5")
+  lazy val router5 = system.actorOf(RoundRobinPool(nrOfInstances = 0).props(Props[SomeActor]()), "router5")
 
   def receiveReplies(routeeType: RouteeType, expectedReplies: Int): Map[Address, Int] = {
     val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)

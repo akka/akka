@@ -7,6 +7,10 @@ package akka.persistence.journal
 import java.net.URISyntaxException
 import java.util.concurrent.TimeoutException
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+
 import akka.actor._
 import akka.persistence.{
   AtomicWrite,
@@ -20,9 +24,6 @@ import akka.persistence.{
   SnapshotProtocol
 }
 import akka.util.Helpers.Requiring
-import com.typesafe.config.Config
-
-import scala.concurrent.duration._
 
 object PersistencePluginProxy {
   final case class TargetLocation(address: Address)
@@ -66,14 +67,14 @@ object PersistencePluginProxyExtension
     with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): PersistencePluginProxyExtensionImpl =
     new PersistencePluginProxyExtensionImpl(system)
-  override def lookup(): ExtensionId[_ <: Extension] = PersistencePluginProxyExtension
+  override def lookup: ExtensionId[_ <: Extension] = PersistencePluginProxyExtension
   override def get(system: ActorSystem): PersistencePluginProxyExtensionImpl = super.get(system)
   override def get(system: ClassicActorSystemProvider): PersistencePluginProxyExtensionImpl = super.get(system)
 }
 
 final class PersistencePluginProxy(config: Config) extends Actor with Stash with ActorLogging {
-  import PersistencePluginProxy._
   import JournalProtocol._
+  import PersistencePluginProxy._
   import SnapshotProtocol._
 
   private val pluginId = self.path.name
@@ -189,31 +190,32 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
     case req: JournalProtocol.Request =>
       req match { // exhaustive match
         case WriteMessages(messages, persistentActor, actorInstanceId) =>
-          persistentActor ! WriteMessagesFailed(timeoutException)
+          val atomicWriteCount = messages.count(_.isInstanceOf[AtomicWrite])
+          persistentActor ! WriteMessagesFailed(timeoutException(), atomicWriteCount)
           messages.foreach {
             case a: AtomicWrite =>
               a.payload.foreach { p =>
-                persistentActor ! WriteMessageFailure(p, timeoutException, actorInstanceId)
+                persistentActor ! WriteMessageFailure(p, timeoutException(), actorInstanceId)
               }
             case r: NonPersistentRepr =>
               persistentActor ! LoopMessageSuccess(r.payload, actorInstanceId)
           }
         case ReplayMessages(_, _, _, _, persistentActor) =>
-          persistentActor ! ReplayMessagesFailure(timeoutException)
+          persistentActor ! ReplayMessagesFailure(timeoutException())
         case DeleteMessagesTo(_, toSequenceNr, persistentActor) =>
-          persistentActor ! DeleteMessagesFailure(timeoutException, toSequenceNr)
+          persistentActor ! DeleteMessagesFailure(timeoutException(), toSequenceNr)
       }
 
     case req: SnapshotProtocol.Request =>
       req match { // exhaustive match
         case _: LoadSnapshot =>
-          sender() ! LoadSnapshotFailed(timeoutException)
+          sender() ! LoadSnapshotFailed(timeoutException())
         case SaveSnapshot(metadata, _) =>
-          sender() ! SaveSnapshotFailure(metadata, timeoutException)
+          sender() ! SaveSnapshotFailure(metadata, timeoutException())
         case DeleteSnapshot(metadata) =>
-          sender() ! DeleteSnapshotFailure(metadata, timeoutException)
+          sender() ! DeleteSnapshotFailure(metadata, timeoutException())
         case DeleteSnapshots(_, criteria) =>
-          sender() ! DeleteSnapshotsFailure(criteria, timeoutException)
+          sender() ! DeleteSnapshotsFailure(criteria, timeoutException())
       }
 
     case TargetLocation(address) =>
