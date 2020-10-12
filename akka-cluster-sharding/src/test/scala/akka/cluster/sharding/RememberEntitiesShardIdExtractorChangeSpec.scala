@@ -10,6 +10,7 @@ import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.cluster.Cluster
+import akka.cluster.sharding.ShardRegion.CurrentRegions
 import akka.persistence.PersistentActor
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
@@ -85,6 +86,7 @@ class RememberEntitiesShardIdExtractorChangeSpec
     "allow a change to the shard id extractor" in {
 
       withSystem("FirstShardIdExtractor", firstExtractShardId) { (_, region) =>
+        assertRegionRegistrationComplete(region)
         region ! Message(1)
         expectMsg("ack")
         region ! Message(11)
@@ -132,5 +134,13 @@ class RememberEntitiesShardIdExtractorChangeSpec
         Await.ready(system.terminate(), 20.seconds)
       }
     }
+
+    def assertRegionRegistrationComplete(region: ActorRef): Unit = {
+      awaitAssert {
+        region ! ShardRegion.GetCurrentRegions
+        expectMsgType[CurrentRegions].regions should have size (1)
+      }
+    }
   }
+
 }

@@ -231,9 +231,13 @@ object ShardRegion {
   @SerialVersionUID(1L) case object GetCurrentRegions extends ShardRegionQuery with ClusterShardingSerializable
 
   /**
-   * Java API:
+   * Java API: Send this message to the `ShardRegion` actor to request for [[CurrentRegions]],
+   * which contains the addresses of all registered regions.
+   *
+   * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
+   * the state of the shard regions.
    */
-  def getCurrentRegionsInstance = GetCurrentRegions
+  def getCurrentRegionsInstance: GetCurrentRegions.type = GetCurrentRegions
 
   /**
    * Reply to `GetCurrentRegions`
