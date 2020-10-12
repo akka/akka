@@ -114,6 +114,15 @@ public class SinkDocExamples {
     // #fold
   }
 
+  static void headOptionExample() {
+    // #headoption
+    Source<Integer, NotUsed> source = Source.empty();
+    CompletionStage<Optional<Integer>> result = source.runWith(Sink.headOption(), system);
+    result.thenAccept(System.out::println);
+    // Optional.empty
+    // #headoption
+  }
+
   static void ignoreExample() {
     // #ignore
     Source<String, NotUsed> lines = readLinesFromFile();
