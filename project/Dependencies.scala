@@ -13,7 +13,7 @@ object Dependencies {
 
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
 
-  val junitVersion = "4.13"
+  val junitVersion = "4.13.1"
   val slf4jVersion = "1.7.30"
   // check agrona version when updating this
   val aeronVersion = "1.30.0"
