@@ -6,8 +6,10 @@ package docs.javadsl;
 
 import akka.NotUsed;
 // #ask-actor
+import akka.actor.Status;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
+import akka.pattern.StatusReply;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -32,6 +34,16 @@ public class ActorFlowCompileTest {
     }
   }
 
+  static class AskingWithStatus {
+    final String payload;
+    final ActorRef<StatusReply<String>> replyTo;
+
+    public AskingWithStatus(String payload, ActorRef<StatusReply<String>> replyTo) {
+      this.payload = payload;
+      this.replyTo = replyTo;
+    }
+  }
+
   // #ask-actor
   static
   // #ask-actor
@@ -51,6 +63,10 @@ public class ActorFlowCompileTest {
         // #ask
         null;
 
+    final ActorRef<AskingWithStatus> actorWithStatusRef = // ???
+        // #ask
+        null;
+
     // #ask
     Duration timeout = Duration.ofSeconds(1);
 
@@ -60,6 +76,10 @@ public class ActorFlowCompileTest {
     // explicit creation of the sent message
     Flow<String, Reply, NotUsed> askFlowExplicit =
         ActorFlow.ask(actorRef, timeout, (msg, replyTo) -> new Asking(msg, replyTo));
+
+    Flow<String, StatusReply<String>, NotUsed> askFlowExplicitWithStatus =
+        ActorFlow.askWithStatus(
+            actorWithStatusRef, timeout, (msg, replyTo) -> new AskingWithStatus(msg, replyTo));
 
     Source.repeat("hello").via(askFlow).map(reply -> reply.msg).runWith(Sink.seq(), system);
     // #ask

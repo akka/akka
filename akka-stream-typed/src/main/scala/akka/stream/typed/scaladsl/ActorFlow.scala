@@ -6,10 +6,9 @@ package akka.stream.typed.scaladsl
 
 import scala.annotation.implicitNotFound
 import scala.concurrent.Future
-
 import akka.NotUsed
 import akka.actor.typed.ActorRef
-import akka.pattern.AskTimeoutException
+import akka.pattern.{AskTimeoutException, StatusReply}
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.Timeout
@@ -144,32 +143,11 @@ object ActorFlow {
    */
   def askWithStatus[I, Q, A](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
       implicit timeout: Timeout): Flow[I, A, NotUsed] = {
-    import akka.actor.typed.scaladsl.adapter._
-    val classicRef = ref.toClassic
+    ActorFlow.ask(parallelism)(ref)(makeMessage).map {
+      case StatusReply.Success(a) => a.asInstanceOf[A]
+      case StatusReply.Error(err) => throw err
+    }
 
-    val askFlow = Flow[I]
-      .watch(classicRef)
-      .mapAsync(parallelism) { el =>
-        val res =
-          akka.pattern.extended.askWithStatus(classicRef, (replyTo: akka.actor.ActorRef) => makeMessage(el, replyTo))
-        // we need to cast manually (yet safely, by construction!) since otherwise we need a ClassTag,
-        // which in Scala is fine, but then we would force JavaDSL to create one, which is a hassle in the Akka Typed DSL,
-        // since one may say "but I already specified the type!", and that we have to go via the classic ask is an implementation detail
-        res.asInstanceOf[Future[A]]
-      }
-      .mapError {
-        case ex: AskTimeoutException =>
-          // in Akka Typed we use the `TimeoutException` everywhere
-          new java.util.concurrent.TimeoutException(ex.getMessage)
-
-        // the purpose of this recovery is to change the name of the stage in that exception
-        // we do so in order to help users find which stage caused the failure -- "the ask stage"
-        case ex: WatchedActorTerminatedException =>
-          new WatchedActorTerminatedException("askWithStatus()", ex.ref)
-      }
-      .named("askWithStatus")
-
-    askFlow
   }
 
 }
