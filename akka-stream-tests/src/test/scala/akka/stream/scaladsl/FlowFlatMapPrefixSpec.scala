@@ -610,7 +610,6 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         closeSink = () => qOut.cancel()
 
         println("closer assigned, waiting for completion")
-        //Thread.sleep(10000000)
         fNotUsed.futureValue should be(NotUsed)
       }
     }
