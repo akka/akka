@@ -9,7 +9,7 @@ corresponding overview of the new APIs see @ref:[supervision](general/supervisio
 Supervision describes a dependency relationship between actors: the supervisor delegates tasks to subordinates and
 therefore must respond to their failures.  When a subordinate detects a failure
 (i.e. throws an exception), it suspends itself and all its subordinates and
-sends a message to its supervisor, signalling failure.  Depending on the nature
+sends a message to its supervisor, signaling failure.  Depending on the nature
 of the work to be supervised and the nature of the failure, the supervisor has
 a choice of the following four options:
 
@@ -123,7 +123,7 @@ to all siblings as well. Normally, you should use the
 explicitly.
 
 The `AllForOneStrategy` is applicable in cases where the ensemble of
-children have such tight dependencies among them, that a failure of one child
+children has such tight dependencies among them, that a failure of one child
 affects the function of the others, i.e. they are inextricably linked. Since a
 restart does not clear out the mailbox, it often is best to terminate the children
 upon failure and re-create them explicitly from the supervisor (by watching the
