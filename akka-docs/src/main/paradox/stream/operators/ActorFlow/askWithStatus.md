@@ -1,6 +1,6 @@
 # ActorFlow.askWithStatus
 
-Use the "Ask Pattern" to send each stream element as an `ask` to the target actor (of the new actors API),  and expect a reply of Type StatusReply[T] where the T will be unwrapped and emitted downstream.
+Use the "Ask Pattern" to send each stream element as an `ask` to the target actor (of the new actors API),  and expect a reply of Type @scala[`StatusReply[T]`]@java[`StatusReply<T>`] where the T will be unwrapped and emitted downstream.
 
 @ref[Actor interop operators](../index.md#actor-interop-operators)
 
@@ -22,7 +22,7 @@ This operator is included in:
 
 ## Description
 
-Use the @ref[Ask pattern](../../../typed/interaction-patterns.md#request-response-with-ask-from-outside-an-actor) to send a request-reply message to the target `ref` actor when you expect the reply to be akka.pattern.StatusReply.
+Use the @ref[Ask pattern](../../../typed/interaction-patterns.md#request-response-with-ask-from-outside-an-actor) to send a request-reply message to the target `ref` actor when you expect the reply to be `akka.pattern.StatusReply`.
 If any of the asks times out it will fail the stream with an @apidoc[AskTimeoutException].
 
 The `askWithStatus` operator requires
@@ -34,7 +34,7 @@ The `askWithStatus` operator requires
 
 ## Examples
 
-The `ActorFlow.askWithStatus` sends a message to the actor. The actor expects `AskingWithStatus` messages which contain the actor ref for replies of type `StatusReply[String]`. When the actor for replies receives a reply, the `ActorFlow.askWihStatus` stream stage emits the reply and the `map` extracts the message `String`.
+The `ActorFlow.askWithStatus` sends a message to the actor. The actor expects `AskingWithStatus` messages which contain the actor ref for replies of type @scala[`StatusReply[String]`]@java[`StatusReply<String>`]. When the actor for replies receives a reply, the `ActorFlow.askWihStatus` stream stage emits the reply and the `map` extracts the message `String`.
 
 Scala
 :  @@snip [ask.scala](/akka-stream-typed/src/test/scala/docs/scaladsl/ActorFlowSpec.scala) { #imports #ask-actor #ask }
