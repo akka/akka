@@ -50,7 +50,7 @@ clean shutdown procedure for (sub-trees of) actor applications.
 
 @@@ warning
 
-Supervision related to parent-child communication happens by special system
+Supervision-related communication happens by special system
 messages that have their mailboxes separate from user messages. This
 implies that supervision related events are not deterministically
 ordered relative to ordinary messages. In general, the user cannot influence
