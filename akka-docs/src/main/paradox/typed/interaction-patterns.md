@@ -256,7 +256,7 @@ Scala
 Java
 :  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsAskWithStatusTest.java) { #actor-ask-with-status }
 
-A validation error is turned into a `Failure` for the message adapter. In this case we are explicitly handling the valdation error separately from
+A validation error is turned into a `Failure` for the message adapter. In this case we are explicitly handling the validation error separately from
 other ask failures.
 
 **Example ask from the outside:**
