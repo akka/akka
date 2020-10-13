@@ -62,7 +62,7 @@ is a whole set of examination methods, e.g. receiving all consecutive messages
 matching certain criteria, receiving a whole sequence of fixed messages or
 classes, receiving nothing for some time, etc.
 
-The ActorSystem passed into the constructor of TestKit is accessible via the
+The ActorSystem passed to the constructor of TestKit is accessible via the
 @scala[`system` member]@java[`getSystem()` method].
 
 @@@ note
@@ -217,7 +217,7 @@ to ignore regular messages and are only interested in your specific ones.]
 
 ### Expecting Log Messages
 
-Since an integration test does not allow the internal processing of the
+Since an integration test does not allow observing the internal processing of the
 participating actors, verifying expected exceptions cannot be done directly.
 Instead, use the logging system for this purpose: replacing the normal event
 handler with the `TestEventListener` and using an `EventFilter`
@@ -230,7 +230,7 @@ Scala
 Java
 :   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-event-filter }
 
-If several occurrences are specific—as demonstrated above—then `intercept`
+If the number of occurrences is specific—as demonstrated above—then `intercept`
 will block until that number of matching messages have been received or the
 timeout configured in `akka.test.filter-leeway` is used up (time starts
 counting after the passed-in block of code returns). In case of a timeout the
@@ -397,7 +397,7 @@ above; just use the power!
 Any message sent from a `TestProbe` to another actor which runs on the
 CallingThreadDispatcher runs the risk of dead-lock if that other actor might
 also send to this probe. The implementation of `TestProbe.watch` and
-`TestProbe.unwatch` will also send a message to the watcher, which
+`TestProbe.unwatch` will also send a message to the actor being watched, which
 means that it is dangerous to try watching e.g. `TestActorRef` from a
 `TestProbe`.
 
@@ -429,7 +429,7 @@ Java
 
 #### Forwarding Messages Received by Probes
 
-@scala[Given a destination actor `dest` which in the nominal actor-network would
+@scala[Given a destination actor `dest` which in the nominal actor network would
 receive a message from actor `source`. If you arrange for the message to be
 sent to a `TestProbe` `probe` instead, you can make assertions
 concerning volume and timing of the message flow while still keeping the
@@ -462,7 +462,7 @@ Java
 :   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-auto-pilot }
 
 The `run` method must return the auto-pilot for the next message, @scala[which
-maybe `KeepRunning` to retain the current one or `NoAutoPilot`
+can be `KeepRunning` to retain the current one or `NoAutoPilot`
 to switch it off]@java[wrapped
 in an `Option`; setting it to `None` terminates the auto-pilot].
 
@@ -580,7 +580,7 @@ The `CallingThreadDispatcher` runs invocations on the current thread only. This
 dispatcher does not create any new threads.
 
 It is possible to use the `CallingThreadDispatcher` in unit testing, as
-described above, but originally it was conceived to allow contiguously
+described above, but originally it was conceived to allow uninterrupted
 stack traces to be generated in case of an error. As this special dispatcher
 runs everything which would normally be queued directly on the current thread,
 the full history of a message's processing chain is recorded on the call stack,
@@ -680,7 +680,7 @@ thread’s interrupted flag will be set and processing continues normally.
 
 @@@ note
 
-These two paragraphs summarise that if the current thread is
+In summary, if the current thread is
 interrupted while doing work under the CallingThreadDispatcher, then that
 will result in the `isInterrupted` flag to be `true` when the message
 send returns and no `InterruptedException` will be thrown.
@@ -764,7 +764,7 @@ which also shines through in documentation examples. However, the TestKit and
 its facilities do not depend on that framework, so you can essentially use
 whichever suits your development style best.
 
-This section contains a collection of known problems with some other frameworks,
+This section contains a collection of known gotchas with some other frameworks,
 which is by no means exhaustive and does not imply an endorsement or special
 support.
 
