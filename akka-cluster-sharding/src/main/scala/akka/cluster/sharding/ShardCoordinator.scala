@@ -740,7 +740,9 @@ abstract class ShardCoordinator(
           }
         }
       case GetShardHome(shard) =>
-        if (!handleGetShardHome(shard)) {
+        if (handleGetShardHome(shard)) {
+          unstashGetShardHomeRequests() // continue unstashing
+        } else {
           // location not know, yet
           val activeRegions = (state.regions -- gracefulShutdownInProgress) -- regionTerminationInProgress
           if (activeRegions.nonEmpty) {
@@ -1124,6 +1126,8 @@ abstract class ShardCoordinator(
       }
     }
 
+  protected def unstashGetShardHomeRequests(): Unit
+
   private def regionAddress(region: ActorRef): Address = {
     if (region.path.address.host.isEmpty) cluster.selfAddress
     else region.path.address
@@ -1310,6 +1314,8 @@ class PersistentShardCoordinator(
       saveSnapshot(state)
     }
   }
+
+  override protected def unstashGetShardHomeRequests(): Unit = ()
 }
 
 /**
@@ -1553,7 +1559,9 @@ private[akka] class DDataShardCoordinator(
       }
 
     case g @ GetShardHome(shard) =>
-      if (!handleGetShardHome(shard))
+      if (handleGetShardHome(shard))
+        unstashGetShardHomeRequests() // continue unstashing
+      else
         stashGetShardHomeRequest(sender(), g) // must wait for update that is in progress
 
     case ShardCoordinator.Internal.Terminate =>
@@ -1639,16 +1647,20 @@ private[akka] class DDataShardCoordinator(
     getShardHomeRequests += (sender -> request)
   }
 
-  private def unstashGetShardHomeRequests(): Unit = {
-    getShardHomeRequests.foreach {
-      case (originalSender, request) => self.tell(request, sender = originalSender)
+  override protected def unstashGetShardHomeRequests(): Unit = {
+    if (getShardHomeRequests.nonEmpty) {
+      // unstash one, will continue unstash of next after receive GetShardHome or update completed
+      val (originalSender, request) = getShardHomeRequests.head
+      self.tell(request, sender = originalSender)
+      getShardHomeRequests -= (originalSender -> request)
     }
-    getShardHomeRequests = Set.empty
   }
 
-  def activate() = {
+  def activate(): Unit = {
     context.become(active.orElse(receiveLateRememberedEntities))
-    log.info("{}: ShardCoordinator was moved to the active state {}", typeName, state)
+    log.info("{}: ShardCoordinator was moved to the active state with [{}] shards", typeName, state.shards.size)
+    if (verboseDebug)
+      log.debug("{}: Full ShardCoordinator initial state {}", typeName, state)
   }
 
   // only used once the coordinator is initialized
