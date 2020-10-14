@@ -1364,13 +1364,13 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     roles.subsetOf(cluster.selfRoles),
     s"This cluster member [${selfAddress}] doesn't have all the roles [${roles.mkString(", ")}]")
 
-  private val logPayload = settings.logDataSizeExceeding.map { sizeExceeding =>
+  private val payloadSizeAggregator = settings.logDataSizeExceeding.map { sizeExceeding =>
     val remoteProvider = RARP(context.system).provider
     val remoteSettings = remoteProvider.remoteSettings
     val maxFrameSize =
       if (remoteSettings.Artery.Enabled) remoteSettings.Artery.Advanced.MaximumFrameSize
       else context.system.settings.config.getBytes("akka.remote.classic.netty.tcp.maximum-frame-size").toInt
-    new LogPayloadSize(log, sizeExceeding, maxFrameSize * 3 / 4)
+    new PayloadSizeAggregator(log, sizeExceeding, maxFrameSize * 3 / 4)
   }
 
   //Start periodic gossip to random nodes in cluster
@@ -1885,7 +1885,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         replyTo ! DataDeleted(key, req)
       case _ =>
         setData(key.id, DeletedEnvelope)
-        logPayload.foreach(_.remove(key.id))
+        payloadSizeAggregator.foreach(_.remove(key.id))
         val durable = isDurable(key.id)
         if (isLocalUpdate(consistency)) {
           if (durable)
@@ -1938,7 +1938,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       if (subscribers.contains(key) && !changed.contains(key)) {
         val oldDigest = getDigest(key)
         val (dig, payloadSize) = digest(newEnvelope)
-        logPayload.foreach(_.logPayloadBytes(key, payloadSize))
+        payloadSizeAggregator.foreach(_.updatePayloadSize(key, payloadSize))
         if (dig != oldDigest)
           changed += key // notify subscribers, later
         dig
@@ -1955,7 +1955,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     dataEntries.get(key) match {
       case Some((envelope, LazyDigest)) =>
         val (d, size) = digest(envelope)
-        logPayload.foreach(_.logPayloadBytes(key, size))
+        payloadSizeAggregator.foreach(_.updatePayloadSize(key, size))
         dataEntries = dataEntries.updated(key, (envelope, d))
         d
       case Some((_, digest)) => digest
