@@ -420,9 +420,9 @@ private[akka] class Shard(
   import ShardCoordinator.Internal.HandOff
   import ShardCoordinator.Internal.ShardStopped
   import ShardRegion.EntityId
+  import ShardRegion.HandOffStopper
   import ShardRegion.Passivate
   import ShardRegion.ShardInitialized
-  import ShardRegion.handOffStopperProps
 
   import akka.cluster.sharding.ShardCoordinator.Internal.CoordinatorMessage
 
@@ -844,10 +844,9 @@ private[akka] class Shard(
           activeEntities.size)
         activeEntities.foreach(context.unwatch)
         handOffStopper = Some(
-          context.watch(
-            context.actorOf(
-              handOffStopperProps(shardId, replyTo, activeEntities, handOffStopMessage, entityHandOffTimeout),
-              "HandOffStopper")))
+          context.watch(context.actorOf(
+            HandOffStopper.props(typeName, shardId, replyTo, activeEntities, handOffStopMessage, entityHandOffTimeout),
+            "HandOffStopper")))
 
         //During hand off we only care about watching for termination of the hand off stopper
         context.become {
