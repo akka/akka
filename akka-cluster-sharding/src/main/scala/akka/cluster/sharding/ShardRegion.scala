@@ -892,7 +892,6 @@ private[akka] class ShardRegion(
         // use a shorter timeout than the coordinated shutdown phase to be able to log better reason for the timeout
         val timeout = coordShutdown.timeout(CoordinatedShutdown.PhaseClusterShardingShutdownRegion) - 1.second
         if (timeout > Duration.Zero) {
-          println(s"# GracefulShutdownTimeout in ${timeout.toCoarsest}") // FIXME
           timers.startSingleTimer(GracefulShutdownTimeout, GracefulShutdownTimeout, timeout)
         }
       }
