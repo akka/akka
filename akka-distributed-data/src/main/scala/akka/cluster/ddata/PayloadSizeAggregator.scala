@@ -16,11 +16,12 @@ import akka.event.LoggingAdapter
 @InternalApi private[akka] class PayloadSizeAggregator(
     log: LoggingAdapter,
     logSizeExceeding: Int,
-    warnSizeExceeding: Int) {
+    val maxFrameSize: Int) {
+  private val warnSizeExceeding = maxFrameSize * 3 / 4
   private var maxPayloadBytes: Map[String, Int] = Map.empty
 
   def updatePayloadSize(key: KeyId, size: Int): Unit = {
-    if (size >= logSizeExceeding) {
+    if (size > 0) { // deleted has size 0
       // 10% threshold until next log
       def newMax = (size * 1.1).toInt
 
@@ -38,13 +39,19 @@ import akka.event.LoggingAdapter
         case Some(max) =>
           if (size > max) {
             maxPayloadBytes = maxPayloadBytes.updated(key, newMax)
-            logSize()
+            if (size >= logSizeExceeding)
+              logSize()
           }
         case None =>
           maxPayloadBytes = maxPayloadBytes.updated(key, newMax)
-          logSize()
+          if (size >= logSizeExceeding)
+            logSize()
       }
     }
+  }
+
+  def getMaxSize(key: KeyId): Int = {
+    maxPayloadBytes.getOrElse(key, 0)
   }
 
   def remove(key: KeyId): Unit =
