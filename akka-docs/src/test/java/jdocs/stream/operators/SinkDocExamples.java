@@ -114,6 +114,14 @@ public class SinkDocExamples {
     // #fold
   }
 
+  static NotUsed cancelledExample() {
+    // #cancelled
+    Source<Integer, NotUsed> source = Source.range(1, 5);
+    NotUsed sum = source.runWith(Sink.cancelled(), system);
+    return sum;
+    // #cancelled
+  }
+
   static void headOptionExample() {
     // #headoption
     Source<Integer, NotUsed> source = Source.empty();
