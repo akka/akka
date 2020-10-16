@@ -740,9 +740,7 @@ abstract class ShardCoordinator(
           }
         }
       case GetShardHome(shard) =>
-        if (handleGetShardHome(shard)) {
-          unstashOneGetShardHomeRequest() // continue unstashing
-        } else {
+        if (!handleGetShardHome(shard)) {
           // location not know, yet
           val activeRegions = (state.regions -- gracefulShutdownInProgress) -- regionTerminationInProgress
           if (activeRegions.nonEmpty) {
@@ -953,6 +951,7 @@ abstract class ShardCoordinator(
   def handleGetShardHome(shard: ShardId): Boolean = {
     if (rebalanceInProgress.contains(shard)) {
       deferGetShardHomeRequest(shard, sender())
+      unstashOneGetShardHomeRequest() // continue unstashing
       true
     } else if (!hasAllRegionsRegistered()) {
       log.debug(
@@ -972,6 +971,8 @@ abstract class ShardCoordinator(
               shardRegionRef)
           else
             sender() ! ShardHome(shard, shardRegionRef)
+
+          unstashOneGetShardHomeRequest() // continue unstashing
           true
         case None =>
           false // location not known, yet, caller will handle allocation
@@ -1559,9 +1560,7 @@ private[akka] class DDataShardCoordinator(
       }
 
     case g @ GetShardHome(shard) =>
-      if (handleGetShardHome(shard))
-        unstashOneGetShardHomeRequest() // continue unstashing
-      else
+      if (!handleGetShardHome(shard))
         stashGetShardHomeRequest(sender(), g) // must wait for update that is in progress
 
     case ShardCoordinator.Internal.Terminate =>
