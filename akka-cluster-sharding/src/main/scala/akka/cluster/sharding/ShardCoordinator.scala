@@ -1650,9 +1650,10 @@ private[akka] class DDataShardCoordinator(
   override protected def unstashOneGetShardHomeRequest(): Unit = {
     if (getShardHomeRequests.nonEmpty) {
       // unstash one, will continue unstash of next after receive GetShardHome or update completed
-      val (originalSender, request) = getShardHomeRequests.head
+      val requestTuple = getShardHomeRequests.head
+      val (originalSender, request) = requestTuple
       self.tell(request, sender = originalSender)
-      getShardHomeRequests -= (originalSender -> request)
+      getShardHomeRequests -= requestTuple
     }
   }
 
