@@ -741,7 +741,7 @@ abstract class ShardCoordinator(
         }
       case GetShardHome(shard) =>
         if (handleGetShardHome(shard)) {
-          unstashGetShardHomeRequests() // continue unstashing
+          unstashOneGetShardHomeRequest() // continue unstashing
         } else {
           // location not know, yet
           val activeRegions = (state.regions -- gracefulShutdownInProgress) -- regionTerminationInProgress
@@ -1126,7 +1126,7 @@ abstract class ShardCoordinator(
       }
     }
 
-  protected def unstashGetShardHomeRequests(): Unit
+  protected def unstashOneGetShardHomeRequest(): Unit
 
   private def regionAddress(region: ActorRef): Address = {
     if (region.path.address.host.isEmpty) cluster.selfAddress
@@ -1315,7 +1315,7 @@ class PersistentShardCoordinator(
     }
   }
 
-  override protected def unstashGetShardHomeRequests(): Unit = ()
+  override protected def unstashOneGetShardHomeRequest(): Unit = ()
 }
 
 /**
@@ -1469,7 +1469,7 @@ private[akka] class DDataShardCoordinator(
   // which was scheduled by previous watchStateActors
   def waitingForStateInitialized: Receive = {
     case StateInitialized =>
-      unstashGetShardHomeRequests()
+      unstashOneGetShardHomeRequest()
       unstashAll()
       stateInitialized()
       activate()
@@ -1560,7 +1560,7 @@ private[akka] class DDataShardCoordinator(
 
     case g @ GetShardHome(shard) =>
       if (handleGetShardHome(shard))
-        unstashGetShardHomeRequests() // continue unstashing
+        unstashOneGetShardHomeRequest() // continue unstashing
       else
         stashGetShardHomeRequest(sender(), g) // must wait for update that is in progress
 
@@ -1633,7 +1633,7 @@ private[akka] class DDataShardCoordinator(
     afterUpdateCallback(evt)
     if (verboseDebug)
       log.debug("{}: New coordinator state after [{}]: [{}]", typeName, evt, state)
-    unstashGetShardHomeRequests()
+    unstashOneGetShardHomeRequest()
     unstashAll()
   }
 
@@ -1647,7 +1647,7 @@ private[akka] class DDataShardCoordinator(
     getShardHomeRequests += (sender -> request)
   }
 
-  override protected def unstashGetShardHomeRequests(): Unit = {
+  override protected def unstashOneGetShardHomeRequest(): Unit = {
     if (getShardHomeRequests.nonEmpty) {
       // unstash one, will continue unstash of next after receive GetShardHome or update completed
       val (originalSender, request) = getShardHomeRequests.head
