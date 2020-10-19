@@ -25,6 +25,7 @@ import scala.concurrent.duration._
 
 object BasicClusterExampleSpec {
   val configSystem1 = ConfigFactory.parseString(s"""
+akka.loglevel = DEBUG
 #config-seeds
 akka {
   actor {
@@ -139,6 +140,8 @@ class BasicClusterConfigSpec extends AnyWordSpec with ScalaFutures with Eventual
 
 object BasicClusterManualSpec {
   val clusterConfig = ConfigFactory.parseString(s"""
+akka.loglevel = DEBUG
+akka.cluster.jmx.multi-mbeans-in-same-jvm = on
 #config
 akka {
   actor.provider = "cluster"
