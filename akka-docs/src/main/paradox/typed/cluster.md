@@ -270,7 +270,7 @@ be necessary to set the node’s status to `Down` in order to complete the remov
 In many cases a member can gracefully exit from the cluster, as described in @ref:[Leaving](#leaving), but
 there are scenarios when an explicit downing decision is needed before it can be removed. For example in case
 of abrupt termination of the the JVM process, system overload that doesn't recover, or network partitions
-that don't heal. I such cases the node(s) will be detected as unreachable by other nodes, but they must also
+that don't heal. In such cases, the node(s) will be detected as unreachable by other nodes, but they must also
 be marked as `Down` before they are removed.
 
 When a member is considered by the failure detector to be `unreachable` the
