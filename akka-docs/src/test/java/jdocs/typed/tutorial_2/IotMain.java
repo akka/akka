@@ -4,6 +4,13 @@
 
 package jdocs.typed.tutorial_2;
 
+/*
+//#iot-app
+package com.example;
+
+//#iot-app
+*/
+
 // #iot-app
 import akka.actor.typed.ActorSystem;
 

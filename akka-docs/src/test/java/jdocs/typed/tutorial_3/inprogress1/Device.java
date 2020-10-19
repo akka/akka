@@ -4,11 +4,17 @@
 
 package jdocs.typed.tutorial_3.inprogress1;
 
-import akka.actor.typed.ActorRef;
+/*
+//#read-protocol-1
+package com.example;
 
-import java.util.Optional;
+//#read-protocol-1
+*/
 
 // #read-protocol-1
+import akka.actor.typed.ActorRef;
+import java.util.Optional;
+
 public class Device {
 
   public interface Command {}

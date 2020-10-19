@@ -4,6 +4,13 @@
 
 package typed.tutorial_1
 
+/*
+//#print-refs
+package com.example
+
+//#print-refs
+ */
+
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.wordspec.AnyWordSpecLike
 import akka.actor.typed.PostStop

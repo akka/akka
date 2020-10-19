@@ -4,13 +4,15 @@
 
 package jdocs.typed.tutorial_1;
 
+/*
+//#print-refs
+package com.example
+
+//#print-refs
+*/
+
 import akka.actor.typed.PreRestart;
 import akka.actor.typed.SupervisorStrategy;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.scalatestplus.junit.JUnitSuite;
-
-import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.typed.PostStop;
 
 // #print-refs
