@@ -666,6 +666,12 @@ private[remote] class Association(
             // If idle longer than quarantine-idle-outbound-after and the low frequency HandshakeReq
             // doesn't get through it will be quarantined to cleanup lingering associations to crashed systems.
             quarantine(s"Idle longer than quarantine-idle-outbound-after [${QuarantineIdleOutboundAfter.pretty}]")
+            val newLastUsedDurationNanos = System.nanoTime() - associationState.lastUsedTimestamp.get
+            if (!associationState.isQuarantined() && !associationState
+                  .isHandshakeCompleted() && newLastUsedDurationNanos >= QuarantineIdleOutboundAfter.toNanos) {
+              // quarantine ignored due to unknown UID, have to stop this task anyway
+              abortQuarantined()
+            }
           } else if (lastUsedDurationNanos >= StopIdleOutboundAfter.toNanos) {
             streamMatValues.get.foreach {
               case (queueIndex, OutboundStreamMatValues(streamKillSwitch, _, stopping)) =>
@@ -1166,7 +1172,8 @@ private[remote] class AssociationRegistry(createAssociation: Address => Associat
     val remove = currentMap.foldLeft(Map.empty[Address, Association]) {
       case (acc, (address, association)) =>
         val state = association.associationState
-        if (state.isQuarantined() && ((now - state.lastUsedTimestamp.get) >= afterNanos))
+        if ((state.isQuarantined() || !state
+              .isHandshakeCompleted()) && ((now - state.lastUsedTimestamp.get) >= afterNanos))
           acc.updated(address, association)
         else
           acc
@@ -1188,7 +1195,8 @@ private[remote] class AssociationRegistry(createAssociation: Address => Associat
     currentMap.keysIterator.foreach { uid =>
       val association = currentMap.get(uid).get
       val state = association.associationState
-      if (state.isQuarantined() && ((now - state.lastUsedTimestamp.get) >= afterNanos))
+      if ((state.isQuarantined() || !state
+            .isHandshakeCompleted()) && ((now - state.lastUsedTimestamp.get) >= afterNanos))
         remove = remove.updated(uid, association)
     }
     if (remove.nonEmpty) {

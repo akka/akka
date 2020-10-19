@@ -185,6 +185,9 @@ private[remote] final class AssociationState(
 
   def isQuarantined(uid: Long): Boolean = quarantined.contains(uid)
 
+  def isHandshakeCompleted(): Boolean =
+    uniqueRemoteAddress().isDefined
+
   def withControlIdleKillSwitch(killSwitch: OptionVal[SharedKillSwitch]): AssociationState =
     new AssociationState(
       incarnation,
