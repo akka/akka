@@ -176,7 +176,7 @@ object Effect {
   final case class WatchedWith[U, T](other: ActorRef[U], message: T) extends Effect
 
   /**
-   * The behavior started watching `other`, through `context.unwatch(other)`
+   * The behavior stopped watching `other`, through `context.unwatch(other)`
    */
   final case class Unwatched[T](other: ActorRef[T]) extends Effect
 
