@@ -15,7 +15,7 @@ Immediately cancel the stream
 
 ## Example
 
-In this example, we have a source that generates numbers from 1 to 5 but as we have used cancelled we get NotUsed as materialized value and stream cancels.
+In this example, we have a source that generates numbers from 1 to 5 but as we have used cancelled we get `NotUsed` as materialized value and stream cancels.
 
 Scala
 :   @@snip [Cancelled.scala](/akka-docs/src/test/scala/docs/stream/operators/sink/Cancelled.scala) { #cancelled }
@@ -30,4 +30,3 @@ Java
 **cancels** immediately
 
 @@@
-
