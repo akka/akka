@@ -12,7 +12,7 @@ Streams the elements through the given future flow once it successfully complete
 ## Description
 
 Streams the elements through the given flow once the `CompletionStage` successfully completes. 
-If the future fails the stream is failed.
+If the future fails the stream fails.
 
 ## Examples
 
