@@ -1,72 +1,48 @@
 /*
- * Copyright (C) 2020-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.dispatch.AbstractBoundedNodeQueue
-import akka.stream.scaladsl.Source
-import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, OutHandler }
-import akka.stream.{ Attributes, Outlet, SourceShape }
-
 import scala.annotation.tailrec
 
-trait FastDroppingQueue[T] {
+import akka.annotation.InternalApi
+import akka.dispatch.AbstractBoundedNodeQueue
+import akka.stream._
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, OutHandler, StageLogging }
 
-  /**
-   * Returns true if element could be enqueued and false if not.
-   *
-   * Even if it returns true it does not guarantee that an element also has been or will be processed by the downstream.
-   */
-  def offer(elem: T): FastDroppingQueue.OfferResult
-
-  def complete(): Unit
-  def fail(ex: Throwable): Unit
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object BoundedSourceQueueStage {
+  sealed trait State
+  case object NeedsActivation extends State
+  case object Running extends State
+  case class Done(result: QueueCompletionResult) extends State
 }
 
-object FastDroppingQueue {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class BoundedSourceQueueStage[T](bufferSize: Int)
+    extends GraphStageWithMaterializedValue[SourceShape[T], BoundedSourceQueue[T]] {
+  import BoundedSourceQueueStage._
 
-  /**
-   * A queue of the given size that gives immediate feedback whether an element could be enqueued or not.
-   * @param size
-   * @tparam T
-   * @return
-   */
-  def apply[T](size: Int): Source[T, FastDroppingQueue[T]] =
-    Source.fromGraph(new FastDroppingQueueStage[T](size))
+  require(bufferSize > 0, "BoundedSourceQueueStage.bufferSize must be > 0")
 
-  sealed trait OfferResult
-  object OfferResult {
-    case object Enqueued extends OfferResult
-    case object Dropped extends OfferResult
-
-    sealed trait CompletionResult extends OfferResult
-    case object Completed extends CompletionResult
-    case object Cancelled extends CompletionResult
-    case class Failed(cause: Throwable) extends CompletionResult
-  }
-}
-class FastDroppingQueueStage[T](bufferSize: Int)
-    extends GraphStageWithMaterializedValue[SourceShape[T], FastDroppingQueue[T]] {
-  val out = Outlet[T]("FastDroppingQueueStage.out")
+  val out = Outlet[T]("BoundedSourceQueueStage.out")
   val shape = SourceShape(out)
 
   override def createLogicAndMaterializedValue(
-      inheritedAttributes: Attributes): (GraphStageLogic, FastDroppingQueue[T]) = {
-    import FastDroppingQueue._
-
-    sealed trait State
-    case object NeedsActivation extends State
-    case object Running extends State
-    case class Done(result: OfferResult.CompletionResult) extends State
+      inheritedAttributes: Attributes): (GraphStageLogic, BoundedSourceQueue[T]) = {
 
     val state = new AtomicReference[State](Running)
-
     val queue = new AbstractBoundedNodeQueue[T](bufferSize) {}
 
-    object Logic extends GraphStageLogic(shape) with OutHandler {
+    object Logic extends GraphStageLogic(shape) with OutHandler with StageLogging {
+
       setHandler(out, this)
       val callback = getAsyncCallback[Unit] { _ =>
         clearNeedsActivation()
@@ -75,15 +51,17 @@ class FastDroppingQueueStage[T](bufferSize: Int)
 
       override def onPull(): Unit = run()
 
-      override def onDownstreamFinish(): Unit = {
-        setDone(Done(OfferResult.Cancelled))
-
-        super.onDownstreamFinish()
+      override def onDownstreamFinish(cause: Throwable): Unit = {
+        setDone(Done(QueueOfferResult.Failure(cause)))
+        super.onDownstreamFinish(cause)
       }
 
-      override def postStop(): Unit =
+      override def postStop(): Unit = {
         // drain queue
         while (!queue.isEmpty) queue.poll()
+        val exception = new StreamDetachedException()
+        setDone(Done(QueueOfferResult.Failure(exception)))
+      }
 
       /**
        * Main loop of the queue. We do two volatile reads for the fast path of pushing elements
@@ -112,21 +90,21 @@ class FastDroppingQueueStage[T](bufferSize: Int)
                 push(out, next) // and then: wait for pull
             } // else: wait for pull
 
-          case Done(OfferResult.Completed) =>
-            if (queue.isEmpty) completeStage()
+          case Done(QueueOfferResult.QueueClosed) =>
+            if (queue.isEmpty)
+              completeStage()
             else if (isAvailable(out)) {
               push(out, queue.poll())
               run() // another round, might be empty now
             }
           // else !Queue.isEmpty: wait for pull to drain remaining elements
-          case Done(OfferResult.Failed(ex)) => failStage(ex)
-          case Done(OfferResult.Cancelled)  => throw new IllegalStateException // should not happen
-          case NeedsActivation              => throw new IllegalStateException // needs to be cleared before
+          case Done(QueueOfferResult.Failure(ex)) => failStage(ex)
+          case NeedsActivation                    => throw new IllegalStateException // needs to be cleared before
         }
     }
 
-    object Mat extends FastDroppingQueue[T] {
-      override def offer(elem: T): OfferResult = state.get() match {
+    object Mat extends BoundedSourceQueue[T] {
+      override def offer(elem: T): QueueOfferResult = state.get() match {
         case Running | NeedsActivation =>
           if (queue.add(elem)) {
             // need to query state again because stage might have switched from Running -> NeedsActivation only after
@@ -136,18 +114,25 @@ class FastDroppingQueueStage[T](bufferSize: Int)
               if (clearNeedsActivation())
                 Logic.callback.invoke(())
 
-            OfferResult.Enqueued
+            QueueOfferResult.Enqueued
           } else
-            OfferResult.Dropped
+            QueueOfferResult.Dropped
         case Done(result) => result
       }
 
-      override def complete(): Unit = // FIXME: should we fail here in some way if it was already completed?
-        if (setDone(Done(OfferResult.Completed)))
+      override def complete(): Unit = {
+        if (state.get().isInstanceOf[Done])
+          throw new IllegalStateException("The queue has already been completed.")
+        if (setDone(Done(QueueOfferResult.QueueClosed)))
           Logic.callback.invoke(()) // if this thread won the completion race also schedule an async callback
-      override def fail(ex: Throwable): Unit = // FIXME: should we fail here in some way if it was already completed?
-        if (setDone(Done(OfferResult.Failed(ex))))
+      }
+
+      override def fail(ex: Throwable): Unit = {
+        if (state.get().isInstanceOf[Done])
+          throw new IllegalStateException("The queue has already been completed.")
+        if (setDone(Done(QueueOfferResult.Failure(ex))))
           Logic.callback.invoke(()) // if this thread won the completion race also schedule an async callback
+      }
     }
 
     // some state transition helpers

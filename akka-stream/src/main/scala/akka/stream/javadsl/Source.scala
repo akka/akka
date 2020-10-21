@@ -19,7 +19,6 @@ import scala.reflect.ClassTag
 
 import com.github.ghik.silencer.silent
 import org.reactivestreams.{ Publisher, Subscriber }
-
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, ClassicActorSystemProvider }
 import akka.dispatch.ExecutionContexts
@@ -692,6 +691,33 @@ object Source {
   }
 
   /**
+   * Creates a `Source` that is materialized as an [[akka.stream.BoundedSourceQueue]].
+   * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
+   * otherwise they will be buffered until request for demand is received. The buffer size is passed in as a parameter.
+   * Elements in the buffer will be discarded if downstream is terminated.
+   *
+   * Pushed elements may be dropped if there is no space available in the buffer. Elements will also be dropped if the
+   * queue is failed through the materialized `BoundedQueueSource` or the `Source` is cancelled by the downstream.
+   * An element that was reported to be `enqueued` is not guaranteed to be processed by the rest of the stream. If the
+   * queue is failed by calling `BoundedQueueSource.fail` or the downstream cancels the stream, elements in the buffer
+   * are discarded.
+   *
+   * Acknowledgement of pushed elements is immediate.
+   * [[akka.stream.BoundedSourceQueue.offer]] returns [[akka.stream.QueueOfferResult]] which is implemented as:
+   *
+   * `QueueOfferResult.enqueued()`     element was added to buffer, but may still be discarded later when the queue is
+   *                                   failed or cancelled
+   * `QueueOfferResult.dropped()`      element was dropped
+   * `QueueOfferResult.QueueClosed`    the queue was completed with [[akka.stream.BoundedSourceQueue.complete]]
+   * `QueueOfferResult.Failure`        the queue was failed with [[akka.stream.BoundedSourceQueue.fail]] or if the
+   *                                   stream failed
+   *
+   * @param bufferSize size of the buffer in number of elements
+   */
+  def queue[T](bufferSize: Int): Source[T, BoundedSourceQueue[T]] =
+    scaladsl.Source.queue(bufferSize).asJava
+
+  /**
    * Creates a `Source` that is materialized as an [[akka.stream.javadsl.SourceQueueWithComplete]].
    * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
    * otherwise they will be buffered until request for demand is received. Elements in the buffer will be discarded
@@ -702,12 +728,15 @@ object Source {
    *
    * Acknowledgement mechanism is available.
    * [[akka.stream.javadsl.SourceQueueWithComplete.offer]] returns `CompletionStage<QueueOfferResult>` which completes with
-   * `QueueOfferResult.enqueued` if element was added to buffer or sent downstream. It completes with
-   * `QueueOfferResult.dropped` if element was dropped. Can also complete with `QueueOfferResult.Failure` -
+   * `QueueOfferResult.enqueued()` if element was added to buffer or sent downstream. It completes with
+   * `QueueOfferResult.dropped()` if element was dropped. Can also complete with `QueueOfferResult.Failure` -
    * when stream failed or `QueueOfferResult.QueueClosed` when downstream is completed.
    *
    * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete last `offer():CompletionStage`
    * call when buffer is full.
+   *
+   * Instead of using the strategy [[akka.stream.OverflowStrategy.dropNew]] it's recommended to use
+   * `Source.queue(bufferSize)` instead which returns a [[QueueOfferResult]] synchronously.
    *
    * You can watch accessibility of stream with [[akka.stream.javadsl.SourceQueueWithComplete.watchCompletion]].
    * It returns a future that completes with success when this operator is completed or fails when stream is failed.
@@ -736,12 +765,15 @@ object Source {
    *
    * Acknowledgement mechanism is available.
    * [[akka.stream.javadsl.SourceQueueWithComplete.offer]] returns `CompletionStage<QueueOfferResult>` which completes with
-   * `QueueOfferResult.enqueued` if element was added to buffer or sent downstream. It completes with
-   * `QueueOfferResult.dropped` if element was dropped. Can also complete with `QueueOfferResult.Failure` -
+   * `QueueOfferResult.enqueued()` if element was added to buffer or sent downstream. It completes with
+   * `QueueOfferResult.dropped()` if element was dropped. Can also complete with `QueueOfferResult.Failure` -
    * when stream failed or `QueueOfferResult.QueueClosed` when downstream is completed.
    *
    * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete `maxConcurrentOffers` number of
    * `offer():CompletionStage` call when buffer is full.
+   *
+   * Instead of using the strategy [[akka.stream.OverflowStrategy.dropNew]] it's recommended to use
+   * `Source.queue(bufferSize)` instead which returns a [[QueueOfferResult]] synchronously.
    *
    * You can watch accessibility of stream with [[akka.stream.javadsl.SourceQueueWithComplete.watchCompletion]].
    * It returns a future that completes with success when this operator is completed or fails when stream is failed.
@@ -754,7 +786,8 @@ object Source {
    *
    * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
-   * @param maxConcurrentOffers maximum number of pending offers when buffer is full, should be greater than 0
+   * @param maxConcurrentOffers maximum number of pending offers when buffer is full, should be greater than 0, not
+   *                            applicable when `OverflowStrategy.dropNew` is used
    */
   def queue[T](
       bufferSize: Int,
