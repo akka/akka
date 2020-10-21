@@ -45,8 +45,8 @@ other remaining nodes in the cluster when messages are sent to those shards.
 
 To make rolling updates as smooth as possible there is a configuration property that defines the version of the
 application. This is used by rolling update features to distinguish between old and new nodes. For example,
-the default `LeasShardAllocationStrategy` avoids allocating shards to old nodes during a rolling update.
-The `LeasShardAllocationStrategy` sees that there is rolling update in progress when there are members with
+the default `LeastShardAllocationStrategy` avoids allocating shards to old nodes during a rolling update.
+The `LeastShardAllocationStrategy` sees that there is rolling update in progress when there are members with
 different configured `app-version`.
 
 To make use of this feature you need to define the `app-version` and increase it for each rolling update.
