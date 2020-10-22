@@ -6,13 +6,11 @@ package akka.cluster.sharding
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
-
 import com.typesafe.config.ConfigFactory
-
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ddata.{ Replicator, ReplicatorSettings }
-import akka.cluster.sharding.ShardCoordinator.Internal.{ HandOff, ShardStopped }
+import akka.cluster.sharding.ShardCoordinator.Internal.{ BeginHandOff, HandOff, ShardStopped }
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.{ CurrentRegions, GetCurrentRegions, Passivate }
 import akka.cluster.sharding.internal.{ DDataRememberEntitiesProvider, EventSourcedRememberEntitiesProvider }
@@ -776,8 +774,8 @@ abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
         val shard = system.actorSelection(lastSender.path.parent)
         val region = system.actorSelection(lastSender.path.parent.parent)
 
-        //Stop the shard cleanly
-        region ! HandOff("1")
+        //Stop the shard cleanly (also clear cache in all nodes)
+        region ! BeginHandOff("1")
         expectMsg(10 seconds, "ShardStopped not received", ShardStopped("1"))
 
         val probe = TestProbe()
@@ -787,8 +785,10 @@ abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
         }, 5 seconds, 500 millis)
 
         //Get the path to where the shard now resides
-        persistentEntitiesRegion ! Get(13)
-        expectMsg(0)
+        awaitAssert({
+          persistentEntitiesRegion ! Get(13)
+          expectMsg(0)
+        }, 5 seconds, 500 millis)
 
         //Check that counter 1 is now alive again, even though we have
         // not sent a message to it via the ShardRegion
