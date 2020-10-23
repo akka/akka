@@ -4,14 +4,16 @@
 
 package akka.persistence.testkit.internal
 
+import java.util
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
-import scala.collection.immutable
-import akka.util.ccompat.JavaConverters._
-
 import akka.annotation.InternalApi
 import akka.persistence.testkit.ProcessingPolicy
+import akka.util.ccompat.JavaConverters._
+
+import scala.collection.immutable
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -35,6 +37,8 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
 
   import scala.math._
 
+  final val eventsLog: ConcurrentHashMap[K, util.Queue[InternalRepr]] =
+    new ConcurrentHashMap()
   private final val eventsMap: ConcurrentHashMap[K, (Long, Vector[InternalRepr])] =
     new ConcurrentHashMap()
 
@@ -47,6 +51,12 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
           Some(value.drop(fromInclusive).take(maxNum))
         else None)
 
+  def removeFirst(key: K): Unit = Try(eventsLog.get(key)).foreach(_.poll())
+
+  def first(key: K): Option[R] = Try(eventsLog.get(key)).toOption.flatMap { item =>
+    Try(item.element()).toOption.map(toRepr)
+  }
+
   def findOneByIndex(key: K, index: Int): Option[R] =
     Option(eventsMap.get(key))
       .flatMap {
@@ -54,8 +64,13 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
       }
       .map(toRepr)
 
-  def add(key: K, p: R): Unit =
+  def add(key: K, p: R): Unit = {
+    if (!Try(eventsLog.containsKey(key)).getOrElse(false)) {
+      eventsLog.put(key, new util.LinkedList[InternalRepr]())
+    }
+    eventsLog.get(key).add(toInternal(p))
     add(key, List(p))
+  }
 
   /**
    * Adds elements ordered by seqnum, sets new seqnum as max(old, max(newElemsSeqNums)))

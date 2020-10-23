@@ -134,14 +134,18 @@ private[testkit] trait ExpectOps[U] {
   def expectNextPersisted[A](persistenceId: String, event: A): A =
     expectNextPersisted(persistenceId, event, maxTimeout)
 
+  def getItem(persistenceId: String, nextInd: Int): Option[Any] =
+    storage.findOneByIndex(persistenceId, nextInd).map(reprToAny)
+
   /**
    * Check for `max` time that next persisted in storage for particular persistence id event/snapshot was `event`.
    */
   def expectNextPersisted[A](persistenceId: String, event: A, max: FiniteDuration): A = {
     val nextInd = nextIndex(persistenceId)
+
     val expected = Some(event)
     val res = awaitAssert({
-      val actual = storage.findOneByIndex(persistenceId, nextInd).map(reprToAny)
+      val actual = getItem(persistenceId, nextInd)
       assert(actual == expected, s"Failed to persist $event, got $actual instead")
       actual
     }, max = max.dilated, interval = pollInterval)
