@@ -593,9 +593,9 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           .flatMapPrefixMat(1) { seq =>
             println("waiting for closer to be set")
             while (null == closeSink) Thread.sleep(50)
-            println("closing sink")
+            log.debug("closing sink")
             closeSink()
-            println("sink closed")
+            log.debug("sink closed")
             //closing the sink before returning means that it's higly probably
             //for the flatMapPrefix stage to receive the downstream cancellation before the actor graph interpreter
             //gets a chance to complete the new interpreter shell's registration.
@@ -606,10 +606,10 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           .toMat(Sink.queue(10))(Keep.both)
           .run()
 
-        println("assigning closer")
+        log.debug("assigning closer")
         closeSink = () => qOut.cancel()
 
-        println("closer assigned, waiting for completion")
+        log.debug("closer assigned, waiting for completion")
         fNotUsed.futureValue should be(NotUsed)
       }
     }
