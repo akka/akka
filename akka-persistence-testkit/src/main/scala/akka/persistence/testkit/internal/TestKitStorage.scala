@@ -65,9 +65,7 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
       .map(toRepr)
 
   def add(key: K, p: R): Unit = {
-    if (!Try(eventsLog.containsKey(key)).getOrElse(false)) {
-      eventsLog.put(key, new util.LinkedList[InternalRepr]())
-    }
+    eventsLog.putIfAbsent(key, new util.LinkedList[InternalRepr]())
     eventsLog.get(key).add(toInternal(p))
     add(key, List(p))
   }
