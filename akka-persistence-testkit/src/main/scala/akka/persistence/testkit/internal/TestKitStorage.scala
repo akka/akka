@@ -51,9 +51,9 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
           Some(value.drop(fromInclusive).take(maxNum))
         else None)
 
-  def removeFirst(key: K): Unit = Try(eventsLog.get(key)).foreach(_.poll())
+  def removeFirst(key: K): Unit = Option(eventsLog.get(key)).foreach(_.poll())
 
-  def first(key: K): Option[R] = Try(eventsLog.get(key)).toOption.flatMap { item =>
+  def first(key: K): Option[R] = Option(eventsLog.get(key)).flatMap { item =>
     Try(item.element()).toOption.map(toRepr)
   }
 
