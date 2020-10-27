@@ -13,7 +13,6 @@ import akka.actor.typed.{ ActorSystem, PostStop }
 
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
-import org.slf4j.Logger
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -30,9 +29,6 @@ object GracefulStopDocSpec {
     final case class SpawnJob(name: String) extends Command
     case object GracefulShutdown extends Command
 
-    // Predefined cleanup operation
-    def cleanup(log: Logger): Unit = log.info("Cleaning up!")
-
     def apply(): Behavior[Command] = {
       Behaviors
         .receive[Command] { (context, message) =>
@@ -43,11 +39,9 @@ object GracefulStopDocSpec {
               Behaviors.same
             case GracefulShutdown =>
               context.log.info("Initiating graceful shutdown...")
-              // perform graceful stop, executing cleanup before final system termination
-              // behavior executing cleanup is passed as a parameter to Actor.stopped
-              Behaviors.stopped { () =>
-                cleanup(context.system.log)
-              }
+              // Here it can perform graceful stop (possibly asynchronous) and when completed
+              // return `Behaviors.stopped` here or after receiving another message.
+              Behaviors.stopped
           }
         }
         .receiveSignal {
@@ -158,8 +152,6 @@ class GracefulStopDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
     }
 
     "gracefully stop workers and master" in {
-      //#graceful-shutdown
-
       import MasterControlProgram._
 
       val system: ActorSystem[Command] = ActorSystem(MasterControlProgram(), "B7700")
@@ -175,7 +167,6 @@ class GracefulStopDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
       Thread.sleep(100)
 
       Await.result(system.whenTerminated, 3.seconds)
-      //#graceful-shutdown
     }
   }
 }
