@@ -584,6 +584,34 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         subscriber.expectNext("a", "b", "c")
         subscriber.expectComplete()
       }
+
+      "complete newShells registration when all active interpreters are done" in assertAllStagesStopped {
+        @volatile var closeSink: () => Unit = null
+
+        val (fNotUsed, qOut) = Source
+          .empty[Int]
+          .flatMapPrefixMat(1) { seq =>
+            log.debug("waiting for closer to be set")
+            while (null == closeSink) Thread.sleep(50)
+            log.debug("closing sink")
+            closeSink()
+            log.debug("sink closed")
+            //closing the sink before returning means that it's higly probably
+            //for the flatMapPrefix stage to receive the downstream cancellation before the actor graph interpreter
+            //gets a chance to complete the new interpreter shell's registration.
+            //this in turn exposes a bug in the actor graph interpreter when all active flows complete
+            //but there are pending new interpreter shells to be registered.
+            Flow[Int].prepend(Source(seq))
+          }(Keep.right)
+          .toMat(Sink.queue(10))(Keep.both)
+          .run()
+
+        log.debug("assigning closer")
+        closeSink = () => qOut.cancel()
+
+        log.debug("closer assigned, waiting for completion")
+        fNotUsed.futureValue should be(NotUsed)
+      }
     }
   }
 }
