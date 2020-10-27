@@ -591,7 +591,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         val (fNotUsed, qOut) = Source
           .empty[Int]
           .flatMapPrefixMat(1) { seq =>
-            println("waiting for closer to be set")
+            log.debug("waiting for closer to be set")
             while (null == closeSink) Thread.sleep(50)
             log.debug("closing sink")
             closeSink()
