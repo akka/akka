@@ -538,7 +538,7 @@ private[akka] class Shard(
           settings.tuningParameters.waitingForStateTimeout)
         context.become(awaitingRememberedEntities())
       case None =>
-        onEntitiesRemembered(Set.empty)
+        shardInitialized()
     }
   }
 
@@ -568,7 +568,6 @@ private[akka] class Shard(
   }
 
   def onEntitiesRemembered(ids: Set[EntityId]): Unit = {
-    log.debug("{}: Shard initialized", typeName)
     if (ids.nonEmpty) {
       entities.alreadyRemembered(ids)
       log.debug("{}: Restarting set of [{}] entities", typeName, ids.size)
@@ -576,6 +575,11 @@ private[akka] class Shard(
         RememberEntityStarter.props(context.parent, self, shardId, ids, settings),
         "RememberEntitiesStarter")
     }
+    shardInitialized()
+  }
+
+  private def shardInitialized(): Unit = {
+    log.debug("{}: Shard initialized", typeName)
     context.parent ! ShardInitialized(shardId)
     context.become(idle)
     unstashAll()
