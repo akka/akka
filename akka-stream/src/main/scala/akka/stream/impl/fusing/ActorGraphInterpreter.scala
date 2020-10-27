@@ -754,7 +754,19 @@ import akka.util.OptionVal
   }
 
   private def shortCircuitBatch(): Unit = {
-    while (!shortCircuitBuffer.isEmpty && currentLimit > 0) shortCircuitBuffer.poll() match {
+    @tailrec private def shortCircuitBatch(): Unit = {
+    if(shortCircuitBuffer.isEmpty) ()
+    else if (currentLimit == 0) {
+      self ! Resume
+    }
+    else {
+      shortCircuitBuffer.poll() match {
+        case b: BoundaryEvent => processEvent(b)
+        case Resume           => finishShellRegistration()
+      }
+      shortCircuitBatch()
+    }
+  }
       case b: BoundaryEvent => processEvent(b)
       case Resume           => finishShellRegistration()
     }
