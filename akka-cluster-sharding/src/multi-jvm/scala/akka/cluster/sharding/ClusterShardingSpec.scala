@@ -10,7 +10,7 @@ import com.typesafe.config.ConfigFactory
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ddata.{ Replicator, ReplicatorSettings }
-import akka.cluster.sharding.ShardCoordinator.Internal.{ BeginHandOff, HandOff, ShardStopped }
+import akka.cluster.sharding.ShardCoordinator.Internal.{ BeginHandOff, BeginHandOffAck, HandOff, ShardStopped }
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.{ CurrentRegions, GetCurrentRegions, Passivate }
 import akka.cluster.sharding.internal.{ DDataRememberEntitiesProvider, EventSourcedRememberEntitiesProvider }
@@ -764,18 +764,30 @@ abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
       }
       enterBarrier("persistent-started")
 
+      // watch-out, these two var are only init on 3rd node
+      var shard: ActorSelection = null
+      var region: ActorSelection = null
       runOn(third) {
         //Create an increment counter 1
         persistentEntitiesRegion ! EntityEnvelope(1, Increment)
         persistentEntitiesRegion ! Get(1)
         expectMsg(1)
 
-        //Shut down the shard and confirm it's dead
-        val shard = system.actorSelection(lastSender.path.parent)
-        val region = system.actorSelection(lastSender.path.parent.parent)
+        shard = system.actorSelection(lastSender.path.parent)
+        region = system.actorSelection(lastSender.path.parent.parent)
+      }
+      enterBarrier("counter-incremented")
 
-        //Stop the shard cleanly (also clear cache in all nodes)
-        region ! BeginHandOff("1")
+      // clean up shard cache everywhere
+      runOn(third, fourth, fifth) {
+        persistentEntitiesRegion ! BeginHandOff("1")
+        expectMsg(10 seconds, "ShardStopped not received", BeginHandOffAck("1"))
+      }
+      enterBarrier("everybody-hand-off-ack")
+
+      runOn(third) {
+        //Stop the shard cleanly
+        region ! HandOff("1")
         expectMsg(10 seconds, "ShardStopped not received", ShardStopped("1"))
 
         val probe = TestProbe()
@@ -804,7 +816,6 @@ abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
         counter1 ! Get(1)
         expectMsg(1)
       }
-
       enterBarrier("after-shard-restart")
 
       runOn(fourth) {
