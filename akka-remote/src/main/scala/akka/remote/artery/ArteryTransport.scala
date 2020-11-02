@@ -108,9 +108,9 @@ private[remote] object AssociationState {
       listeners: List[UniqueAddress => Unit])
 
   sealed trait UniqueRemoteAddressState
-  final case class UidKnown(uniqueAddress: UniqueAddress) extends UniqueRemoteAddressState
+  case object UidKnown extends UniqueRemoteAddressState
   case object UidUnknown extends UniqueRemoteAddressState
-  final case class UidQuarantined(uniqueAddress: UniqueAddress) extends UniqueRemoteAddressState
+  case object UidQuarantined extends UniqueRemoteAddressState
 
 }
 
@@ -134,8 +134,8 @@ private[remote] final class AssociationState(
 
   def uniqueRemoteAddressState(): UniqueRemoteAddressState = {
     uniqueRemoteAddress() match {
-      case Some(a) if isQuarantined(a.uid) => UidQuarantined(a)
-      case Some(a)                         => UidKnown(a)
+      case Some(a) if isQuarantined(a.uid) => UidQuarantined
+      case Some(_)                         => UidKnown
       case None                            => UidUnknown // handshake not completed yet
     }
   }

@@ -667,8 +667,8 @@ private[remote] class Association(
             // doesn't get through it will be quarantined to cleanup lingering associations to crashed systems.
             quarantine(s"Idle longer than quarantine-idle-outbound-after [${QuarantineIdleOutboundAfter.pretty}]")
             associationState.uniqueRemoteAddressState() match {
-              case AssociationState.UidQuarantined(_) => // quarantined as expected
-              case AssociationState.UidKnown(_)       => // must be new uid, keep as is
+              case AssociationState.UidQuarantined => // quarantined as expected
+              case AssociationState.UidKnown       => // must be new uid, keep as is
               case AssociationState.UidUnknown =>
                 val newLastUsedDurationNanos = System.nanoTime() - associationState.lastUsedTimestamp.get
                 // quarantine ignored due to unknown UID, have to stop this task anyway
@@ -1177,9 +1177,8 @@ private[remote] class AssociationRegistry(createAssociation: Address => Associat
         val state = association.associationState
         if ((now - state.lastUsedTimestamp.get) >= afterNanos) {
           state.uniqueRemoteAddressState() match {
-            case AssociationState.UidQuarantined(_) => acc.updated(address, association)
-            case AssociationState.UidUnknown        => acc.updated(address, association)
-            case AssociationState.UidKnown(_)       => acc
+            case AssociationState.UidQuarantined | AssociationState.UidUnknown => acc.updated(address, association)
+            case AssociationState.UidKnown                                     => acc
           }
         } else {
           acc
@@ -1204,9 +1203,8 @@ private[remote] class AssociationRegistry(createAssociation: Address => Associat
         val state = association.associationState
         if ((now - state.lastUsedTimestamp.get) >= afterNanos) {
           state.uniqueRemoteAddressState() match {
-            case AssociationState.UidQuarantined(_) => acc.updated(uid, association)
-            case AssociationState.UidUnknown        => acc.updated(uid, association)
-            case AssociationState.UidKnown(_)       => acc
+            case AssociationState.UidQuarantined | AssociationState.UidUnknown => acc.updated(uid, association)
+            case AssociationState.UidKnown                                     => acc
           }
         } else {
           acc
