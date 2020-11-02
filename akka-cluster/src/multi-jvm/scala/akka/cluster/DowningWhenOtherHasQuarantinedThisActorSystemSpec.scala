@@ -4,6 +4,10 @@
 
 package akka.cluster
 
+import akka.actor.ActorRef
+import akka.actor.Identify
+import akka.actor.RootActorPath
+
 import scala.concurrent.duration._
 import akka.remote.artery.ArterySettings
 import akka.remote.artery.ThisActorSystemQuarantinedEvent
@@ -112,7 +116,11 @@ abstract class DowningWhenOtherHasQuarantinedThisActorSystemSpec
       }
 
       runOn(first) {
-        expectNoMessage(5.seconds)
+        val sel = system.actorSelection(RootActorPath(third) / "user")
+        (1 to 25).foreach { _ =>
+          sel.tell(Identify(None), ActorRef.noSender) // try to ping third
+          expectNoMessage(200.millis) // no ThisActorSystemQuarantinedEvent
+        }
       }
 
       enterBarrier("after-2")
