@@ -108,10 +108,6 @@ abstract class DowningWhenOtherHasQuarantinedThisActorSystemSpec
       enterBarrier("subscribing")
 
       runOn(third) {
-        // The ActorSystem continues running and will reply with Quarantined when receiving heartbeats from first,
-        // which result in that first is downing itself, which is undesired.
-        // Normally the ActorSystem will be terminated (or exit JVM) but there could be race conditions during
-        // shutdown that would result in same issue.
         cluster.shutdown()
       }
 
