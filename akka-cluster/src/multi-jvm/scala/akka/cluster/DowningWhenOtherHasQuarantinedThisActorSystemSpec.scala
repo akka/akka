@@ -94,8 +94,8 @@ abstract class DowningWhenOtherHasQuarantinedThisActorSystemSpec
       enterBarrier("pass-through")
 
       runOn(second) {
-        // shutting down itself
-        awaitCond(cluster.isTerminated)
+        // shutting down itself triggered by ThisActorSystemQuarantinedEvent
+        awaitCond(cluster.isTerminated, 3.seconds)
       }
 
       enterBarrier("after-2")
@@ -116,7 +116,7 @@ abstract class DowningWhenOtherHasQuarantinedThisActorSystemSpec
       }
 
       runOn(first) {
-        expectNoMessage(10.seconds)
+        expectNoMessage(5.seconds)
       }
 
       enterBarrier("after-2")
