@@ -62,6 +62,7 @@ private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDurati
   override def postStop(): Unit = {
     timeoutTask.cancel()
     done.trySuccess(Done)
+    log.debug("FlushOnShutdown stopped")
   }
 
   def receive: Receive = {
@@ -75,8 +76,10 @@ private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDurati
         remaining = remaining.updated(from, acksRemaining - 1)
       }
 
-      if (remaining.isEmpty)
+      if (remaining.isEmpty) {
+        log.debug("Flushing completed")
         context.stop(self)
+      }
     case FlushOnShutdown.Timeout =>
       log.debug(
         "Flush of remote transport timed out after [{}]. Remaining [{}] associations.",
