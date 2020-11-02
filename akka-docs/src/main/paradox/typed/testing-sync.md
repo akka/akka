@@ -15,6 +15,7 @@ limitations:
 * `EventSourcedBehavior` can't be tested.
 * Interactions with other actors must be stubbed.
 * Blackbox testing style.
+* Supervision is not supported.
 
 The `BehaviorTestKit` will be improved and some of these problems will be removed but it will always have limitations.
 
