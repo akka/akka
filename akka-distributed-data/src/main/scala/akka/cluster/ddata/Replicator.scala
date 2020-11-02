@@ -2196,11 +2196,13 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val maxMessageSize = payloadSizeAggregator.maxFrameSize - 128
 
     var messages = Vector.empty[Gossip]
-    var collectedEntries = Vector.empty[(KeyId, DataEnvelope)]
+    val collectedEntries = Vector.newBuilder[(KeyId, DataEnvelope)]
     var sum = 0
 
     def addGossip(): Unit = {
-      messages :+= Gossip(collectedEntries.toMap, sendBack, fromSystemUid, selfFromSystemUid)
+      val entries = collectedEntries.result().toMap
+      if (entries.nonEmpty)
+        messages :+= Gossip(entries, sendBack, fromSystemUid, selfFromSystemUid)
     }
 
     keys.foreach { key =>
@@ -2217,17 +2219,18 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
       val entrySize = keySize + dataSize + envelopeSize
       if (sum + entrySize <= maxMessageSize) {
-        collectedEntries :+= (key -> dataEnvelope)
+        collectedEntries += (key -> dataEnvelope)
         sum += entrySize
       } else {
         addGossip()
-        collectedEntries = Vector(key -> dataEnvelope)
+        collectedEntries.clear()
+        collectedEntries += (key -> dataEnvelope)
         sum = entrySize
       }
     }
 
-    if (collectedEntries.nonEmpty)
-      addGossip()
+    // add remaining, if any
+    addGossip()
 
     log.debug("Created [{}] Gossip messages from [{}] data entries.", messages.size, keys.size)
 
