@@ -7,26 +7,26 @@ package akka.stream.impl.fusing
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
 import scala.annotation.tailrec
-import scala.collection.{TraversableOnce, immutable}
+import scala.collection.{ immutable, TraversableOnce }
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.Future
-import scala.concurrent.duration.{FiniteDuration, _}
-import scala.util.{Failure, Success, Try}
-import scala.util.control.{NoStackTrace, NonFatal}
+import scala.concurrent.duration.{ FiniteDuration, _ }
+import scala.util.{ Failure, Success, Try }
+import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.control.Exception.Catcher
 import com.github.ghik.silencer.silent
-import akka.actor.{ActorRef, Terminated}
-import akka.annotation.{DoNotInherit, InternalApi}
-import akka.event.{LogMarker, LogSource, Logging, LoggingAdapter, MarkerLoggingAdapter}
+import akka.actor.{ ActorRef, Terminated }
+import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.event.{ LogMarker, LogSource, Logging, LoggingAdapter, MarkerLoggingAdapter }
 import akka.event.Logging.LogLevel
-import akka.stream.{Supervision, _}
+import akka.stream.{ Supervision, _ }
 import akka.stream.ActorAttributes.SupervisionStrategy
-import akka.stream.Attributes.{InputBuffer, LogLevels}
+import akka.stream.Attributes.{ InputBuffer, LogLevels }
 import akka.stream.OverflowStrategies._
-import akka.stream.impl.{ReactiveStreamsCompliance, Buffer => BufferImpl}
+import akka.stream.impl.{ ReactiveStreamsCompliance, Buffer => BufferImpl }
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.scaladsl.{DelayStrategy, Source}
+import akka.stream.scaladsl.{ DelayStrategy, Source }
 import akka.stream.stage._
 import akka.util.OptionVal
 import akka.util.unused
@@ -2157,7 +2157,8 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class StatefulMapConcat[In, Out](val f: () => In => akka.util.ccompat.IterableOnce[Out])
+@InternalApi private[akka] final class StatefulMapConcat[In, Out](
+    val f: () => In => akka.util.ccompat.IterableOnce[Out])
     extends GraphStage[FlowShape[In, Out]] {
   val in = Inlet[In]("StatefulMapConcat.in")
   val out = Outlet[Out]("StatefulMapConcat.out")

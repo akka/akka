@@ -6,18 +6,27 @@ package akka.stream.scaladsl
 
 import scala.annotation.implicitNotFound
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.{TraversableOnce, immutable}
+import scala.collection.{ immutable, TraversableOnce }
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-import org.reactivestreams.{Processor, Publisher, Subscriber, Subscription}
+import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.annotation.DoNotInherit
-import akka.event.{LogMarker, LoggingAdapter, MarkerLoggingAdapter}
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream._
-import akka.stream.impl.{LinearTraversalBuilder, ProcessorModule, SetupFlowStage, SubFlowImpl, Throttle, Timers, TraversalBuilder, fusing}
+import akka.stream.impl.{
+  fusing,
+  LinearTraversalBuilder,
+  ProcessorModule,
+  SetupFlowStage,
+  SubFlowImpl,
+  Throttle,
+  Timers,
+  TraversalBuilder
+}
 import akka.stream.impl.fusing._
 import akka.stream.impl.fusing.FlattenMerge
 import akka.stream.stage._
