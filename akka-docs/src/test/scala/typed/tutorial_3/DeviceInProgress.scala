@@ -4,6 +4,13 @@
 
 package typed.tutorial_3
 
+/*
+//#read-protocol-1
+package com.example
+
+//#read-protocol-1
+ */
+
 import akka.actor.typed.PostStop
 import akka.actor.typed.Signal
 

@@ -82,15 +82,16 @@ class ClusterShardingInternalsSpec extends AkkaSpec("""
 
     "stop entities from HandOffStopper even if the entity doesn't handle handOffStopMessage" in {
       val probe = TestProbe()
-      val shardName = "test"
+      val typeName = "typeName"
+      val shard = "7"
       val emptyHandlerActor = system.actorOf(Props(new EmptyHandlerActor))
       val handOffStopper = system.actorOf(
-        Props(new HandOffStopper(shardName, probe.ref, Set(emptyHandlerActor), HandOffStopMessage, 10.millis)))
+        Props(new HandOffStopper(typeName, shard, probe.ref, Set(emptyHandlerActor), HandOffStopMessage, 10.millis)))
 
       watch(emptyHandlerActor)
       expectTerminated(emptyHandlerActor, 1.seconds)
 
-      probe.expectMsg(1.seconds, ShardStopped(shardName))
+      probe.expectMsg(1.seconds, ShardStopped(shard))
       probe.lastSender shouldEqual handOffStopper
 
       watch(handOffStopper)

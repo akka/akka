@@ -207,17 +207,20 @@ object ShardRegion {
   @SerialVersionUID(1L) case object GracefulShutdown extends ShardRegionCommand
 
   /**
-   * We must be sure that a shard is initialized before to start send messages to it.
-   * Shard could be terminated during initialization.
-   */
-  final case class ShardInitialized(shardId: ShardId)
-
-  /**
    * Java API: Send this message to the `ShardRegion` actor to handoff all shards that are hosted by
    * the `ShardRegion` and then the `ShardRegion` actor will be stopped. You can `watch`
    * it to know when it is completed.
    */
   def gracefulShutdownInstance = GracefulShutdown
+
+  /** INTERNAL API */
+  @InternalApi private case object GracefulShutdownTimeout extends ShardRegionCommand
+
+  /**
+   * We must be sure that a shard is initialized before to start send messages to it.
+   * Shard could be terminated during initialization.
+   */
+  final case class ShardInitialized(shardId: ShardId)
 
   sealed trait ShardRegionQuery
 
@@ -231,9 +234,13 @@ object ShardRegion {
   @SerialVersionUID(1L) case object GetCurrentRegions extends ShardRegionQuery with ClusterShardingSerializable
 
   /**
-   * Java API:
+   * Java API: Send this message to the `ShardRegion` actor to request for [[CurrentRegions]],
+   * which contains the addresses of all registered regions.
+   *
+   * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
+   * the state of the shard regions.
    */
-  def getCurrentRegionsInstance = GetCurrentRegions
+  def getCurrentRegionsInstance: GetCurrentRegions.type = GetCurrentRegions
 
   /**
    * Reply to `GetCurrentRegions`
@@ -486,17 +493,21 @@ object ShardRegion {
    * them have terminated it replies with `ShardStopped`.
    * If the entities don't terminate after `handoffTimeout` it will try stopping them forcefully.
    */
-  private[akka] class HandOffStopper(
+  @InternalApi private[akka] class HandOffStopper(
+      typeName: String,
       shard: String,
       replyTo: ActorRef,
       entities: Set[ActorRef],
       stopMessage: Any,
       handoffTimeout: FiniteDuration)
       extends Actor
-      with ActorLogging {
+      with ActorLogging
+      with Timers {
+    import HandOffStopper._
     import ShardCoordinator.Internal.ShardStopped
 
-    context.setReceiveTimeout(handoffTimeout)
+    timers.startSingleTimer(StopTimeoutWarning, StopTimeoutWarning, StopTimeoutWarningAfter)
+    timers.startSingleTimer(StopTimeout, StopTimeout, handoffTimeout)
 
     entities.foreach { a =>
       context.watch(a)
@@ -506,9 +517,28 @@ object ShardRegion {
     var remaining = entities
 
     def receive: Receive = {
-      case ReceiveTimeout =>
+      case Terminated(ref) =>
+        remaining -= ref
+        if (remaining.isEmpty) {
+          replyTo ! ShardStopped(shard)
+          context.stop(self)
+        }
+
+      case StopTimeoutWarning =>
         log.warning(
-          "HandOffStopMessage[{}] is not handled by some of the entities of the [{}] shard after [{}], " +
+          s"$typeName: [${remaining.size}] of the entities in shard [{}] not stopped after [{}]. " +
+          "Maybe the handOffStopMessage [{}] is not handled? {}",
+          shard,
+          StopTimeoutWarningAfter.toCoarsest,
+          stopMessage.getClass.getName,
+          if (CoordinatedShutdown(context.system).getShutdownReason().isPresent)
+            "" // the region will be shutdown earlier so would be confusing to say more
+          else
+            s"Waiting additional [${handoffTimeout.toCoarsest}] before stopping the remaining entities.")
+
+      case StopTimeout =>
+        log.warning(
+          s"$typeName: HandOffStopMessage [{}] is not handled by some of the entities in shard [{}] after [{}], " +
           "stopping the remaining [{}] entities.",
           stopMessage.getClass.getName,
           shard,
@@ -519,22 +549,28 @@ object ShardRegion {
           context.stop(ref)
         }
 
-      case Terminated(ref) =>
-        remaining -= ref
-        if (remaining.isEmpty) {
-          replyTo ! ShardStopped(shard)
-          context.stop(self)
-        }
     }
   }
 
-  private[akka] def handOffStopperProps(
-      shard: String,
-      replyTo: ActorRef,
-      entities: Set[ActorRef],
-      stopMessage: Any,
-      handoffTimeout: FiniteDuration): Props =
-    Props(new HandOffStopper(shard, replyTo, entities, stopMessage, handoffTimeout)).withDeploy(Deploy.local)
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] object HandOffStopper {
+    private case object StopTimeout
+    private case object StopTimeoutWarning
+
+    private val StopTimeoutWarningAfter: FiniteDuration = 5.seconds
+
+    def props(
+        typeName: String,
+        shard: String,
+        replyTo: ActorRef,
+        entities: Set[ActorRef],
+        stopMessage: Any,
+        handoffTimeout: FiniteDuration): Props =
+      Props(new HandOffStopper(typeName, shard, replyTo, entities, stopMessage, handoffTimeout))
+        .withDeploy(Deploy.local)
+  }
 
 }
 
@@ -850,9 +886,28 @@ private[akka] class ShardRegion(
 
     case GracefulShutdown =>
       log.debug("{}: Starting graceful shutdown of region and all its shards", typeName)
+
+      val coordShutdown = CoordinatedShutdown(context.system)
+      if (coordShutdown.getShutdownReason().isPresent) {
+        // use a shorter timeout than the coordinated shutdown phase to be able to log better reason for the timeout
+        val timeout = coordShutdown.timeout(CoordinatedShutdown.PhaseClusterShardingShutdownRegion) - 1.second
+        if (timeout > Duration.Zero) {
+          timers.startSingleTimer(GracefulShutdownTimeout, GracefulShutdownTimeout, timeout)
+        }
+      }
+
       gracefulShutdownInProgress = true
       sendGracefulShutdownToCoordinatorIfInProgress()
       tryCompleteGracefulShutdownIfInProgress()
+
+    case GracefulShutdownTimeout =>
+      log.warning(
+        "{}: Graceful shutdown of shard region timed out, region will be stopped. Remaining shards [{}], " +
+        "remaining buffered messages [{}].",
+        typeName,
+        shards.keysIterator.mkString(","),
+        shardBuffers.totalSize)
+      context.stop(self)
 
     case _ => unhandled(cmd)
   }
@@ -968,6 +1023,7 @@ private[akka] class ShardRegion(
 
   private def tryCompleteGracefulShutdownIfInProgress(): Unit =
     if (gracefulShutdownInProgress && shards.isEmpty && shardBuffers.isEmpty) {
+      log.debug("{}: Completed graceful shutdown of region.", typeName)
       context.stop(self) // all shards have been rebalanced, complete graceful shutdown
     }
 

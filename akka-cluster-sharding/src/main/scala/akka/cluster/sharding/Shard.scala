@@ -420,9 +420,9 @@ private[akka] class Shard(
   import ShardCoordinator.Internal.HandOff
   import ShardCoordinator.Internal.ShardStopped
   import ShardRegion.EntityId
+  import ShardRegion.HandOffStopper
   import ShardRegion.Passivate
   import ShardRegion.ShardInitialized
-  import ShardRegion.handOffStopperProps
 
   import akka.cluster.sharding.ShardCoordinator.Internal.CoordinatorMessage
 
@@ -538,7 +538,7 @@ private[akka] class Shard(
           settings.tuningParameters.waitingForStateTimeout)
         context.become(awaitingRememberedEntities())
       case None =>
-        onEntitiesRemembered(Set.empty)
+        shardInitialized()
     }
   }
 
@@ -568,7 +568,6 @@ private[akka] class Shard(
   }
 
   def onEntitiesRemembered(ids: Set[EntityId]): Unit = {
-    log.debug("{}: Shard initialized", typeName)
     if (ids.nonEmpty) {
       entities.alreadyRemembered(ids)
       log.debug("{}: Restarting set of [{}] entities", typeName, ids.size)
@@ -576,6 +575,11 @@ private[akka] class Shard(
         RememberEntityStarter.props(context.parent, self, shardId, ids, settings),
         "RememberEntitiesStarter")
     }
+    shardInitialized()
+  }
+
+  private def shardInitialized(): Unit = {
+    log.debug("{}: Shard initialized", typeName)
     context.parent ! ShardInitialized(shardId)
     context.become(idle)
     unstashAll()
@@ -844,10 +848,9 @@ private[akka] class Shard(
           activeEntities.size)
         activeEntities.foreach(context.unwatch)
         handOffStopper = Some(
-          context.watch(
-            context.actorOf(
-              handOffStopperProps(shardId, replyTo, activeEntities, handOffStopMessage, entityHandOffTimeout),
-              "HandOffStopper")))
+          context.watch(context.actorOf(
+            HandOffStopper.props(typeName, shardId, replyTo, activeEntities, handOffStopMessage, entityHandOffTimeout),
+            "HandOffStopper")))
 
         //During hand off we only care about watching for termination of the hand off stopper
         context.become {

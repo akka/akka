@@ -4,6 +4,13 @@
 
 package jdocs.typed.tutorial_2;
 
+/*
+//#iot-supervisor
+package com.example;
+
+//#iot-supervisor
+*/
+
 // #iot-supervisor
 import akka.actor.typed.Behavior;
 import akka.actor.typed.PostStop;

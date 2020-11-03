@@ -71,3 +71,10 @@ akka.loglevel = DEBUG
 ```
 
 Read more about it in the docs for @ref:[Logging](../typed/logging.md).
+
+# Other questions?
+
+Do you have a question not covered here? Find out how to
+[get involved in the community](https://akka.io/get-involved) or
+[set up a time](https://lightbend.com/contact) to discuss enterprise-grade
+expert support from [Lightbend](https://www.lightbend.com/).

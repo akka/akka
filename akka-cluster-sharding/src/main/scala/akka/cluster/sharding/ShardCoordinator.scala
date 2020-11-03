@@ -951,6 +951,7 @@ abstract class ShardCoordinator(
   def handleGetShardHome(shard: ShardId): Boolean = {
     if (rebalanceInProgress.contains(shard)) {
       deferGetShardHomeRequest(shard, sender())
+      unstashOneGetShardHomeRequest() // continue unstashing
       true
     } else if (!hasAllRegionsRegistered()) {
       log.debug(
@@ -970,6 +971,8 @@ abstract class ShardCoordinator(
               shardRegionRef)
           else
             sender() ! ShardHome(shard, shardRegionRef)
+
+          unstashOneGetShardHomeRequest() // continue unstashing
           true
         case None =>
           false // location not known, yet, caller will handle allocation
@@ -1124,6 +1127,8 @@ abstract class ShardCoordinator(
       }
     }
 
+  protected def unstashOneGetShardHomeRequest(): Unit
+
   private def regionAddress(region: ActorRef): Address = {
     if (region.path.address.host.isEmpty) cluster.selfAddress
     else region.path.address
@@ -1268,7 +1273,12 @@ class PersistentShardCoordinator(
 
       case StateInitialized =>
         stateInitialized()
+        log.debug("{}: Coordinator initialization completed", typeName)
         context.become(active.orElse[Any, Unit](receiveSnapshotResult))
+
+      case Register(region) =>
+        // region will retry so ok to ignore
+        log.debug("{}: Ignoring registration from region [{}] while initializing", typeName, region)
 
     }: Receive).orElse[Any, Unit](receiveTerminated).orElse[Any, Unit](receiveSnapshotResult)
 
@@ -1305,6 +1315,8 @@ class PersistentShardCoordinator(
       saveSnapshot(state)
     }
   }
+
+  override protected def unstashOneGetShardHomeRequest(): Unit = ()
 }
 
 /**
@@ -1458,7 +1470,7 @@ private[akka] class DDataShardCoordinator(
   // which was scheduled by previous watchStateActors
   def waitingForStateInitialized: Receive = {
     case StateInitialized =>
-      unstashGetShardHomeRequests()
+      unstashOneGetShardHomeRequest()
       unstashAll()
       stateInitialized()
       activate()
@@ -1620,7 +1632,7 @@ private[akka] class DDataShardCoordinator(
     afterUpdateCallback(evt)
     if (verboseDebug)
       log.debug("{}: New coordinator state after [{}]: [{}]", typeName, evt, state)
-    unstashGetShardHomeRequests()
+    unstashOneGetShardHomeRequest()
     unstashAll()
   }
 
@@ -1634,16 +1646,21 @@ private[akka] class DDataShardCoordinator(
     getShardHomeRequests += (sender -> request)
   }
 
-  private def unstashGetShardHomeRequests(): Unit = {
-    getShardHomeRequests.foreach {
-      case (originalSender, request) => self.tell(request, sender = originalSender)
+  override protected def unstashOneGetShardHomeRequest(): Unit = {
+    if (getShardHomeRequests.nonEmpty) {
+      // unstash one, will continue unstash of next after receive GetShardHome or update completed
+      val requestTuple = getShardHomeRequests.head
+      val (originalSender, request) = requestTuple
+      self.tell(request, sender = originalSender)
+      getShardHomeRequests -= requestTuple
     }
-    getShardHomeRequests = Set.empty
   }
 
-  def activate() = {
+  def activate(): Unit = {
     context.become(active.orElse(receiveLateRememberedEntities))
-    log.info("{}: ShardCoordinator was moved to the active state {}", typeName, state)
+    log.info("{}: ShardCoordinator was moved to the active state with [{}] shards", typeName, state.shards.size)
+    if (verboseDebug)
+      log.debug("{}: Full ShardCoordinator initial state {}", typeName, state)
   }
 
   // only used once the coordinator is initialized

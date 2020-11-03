@@ -89,6 +89,9 @@ object Behaviors {
    * The `PostStop` signal that results from stopping this actor will first be passed to the
    * current behavior and then the provided `postStop` callback will be invoked.
    * All other messages and signals will effectively be ignored.
+   *
+   * An example of when the callback can be useful compared to the `PostStop` signal
+   * if you want to send a reply to the message that initiated a graceful stop.
    */
   def stopped[T](postStop: Effect): Behavior[T] = BehaviorImpl.stopped(postStop.apply _)
 

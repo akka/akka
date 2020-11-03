@@ -145,9 +145,13 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
 
   override def signal(signal: Signal): Unit = {
     try {
+      context.setCurrentActorThread()
       currentUncanonical = Behavior.interpretSignal(current, context, signal)
       current = Behavior.canonicalize(currentUncanonical, current, context)
     } catch handleException
+    finally {
+      context.clearCurrentActorThread()
+    }
   }
 
   override def hasEffects(): Boolean = !context.effectQueue.isEmpty

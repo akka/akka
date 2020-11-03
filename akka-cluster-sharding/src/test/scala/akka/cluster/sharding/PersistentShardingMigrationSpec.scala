@@ -6,6 +6,7 @@ package akka.cluster.sharding
 import java.util.UUID
 
 import akka.actor.{ ActorRef, ActorSystem, Props }
+import akka.cluster.sharding.ShardRegion.CurrentRegions
 import akka.cluster.{ Cluster, MemberStatus }
 import akka.persistence.PersistentActor
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
@@ -106,10 +107,11 @@ class PersistentShardingMigrationSpec extends AkkaSpec(PersistentShardingMigrati
   import PersistentShardingMigrationSpec._
 
   "Migration" should {
-    "allow migration of remembered shards and now allow going back" in {
+    "allow migration of remembered shards and not allow going back" in {
       val typeName = "Migration"
 
       withSystem(config, typeName, "OldMode") { (_, region, _) =>
+        assertRegionRegistrationComplete(region)
         region ! Message(1)
         expectMsg("ack")
         region ! Message(2)
@@ -119,6 +121,7 @@ class PersistentShardingMigrationSpec extends AkkaSpec(PersistentShardingMigrati
       }
 
       withSystem(configForNewMode, typeName, "NewMode") { (system, region, rememberedEntitiesProbe) =>
+        assertRegionRegistrationComplete(region)
         val probe = TestProbe()(system)
         region.tell(Message(1), probe.ref)
         probe.expectMsg("ack")
@@ -172,5 +175,13 @@ class PersistentShardingMigrationSpec extends AkkaSpec(PersistentShardingMigrati
         Await.ready(system.terminate(), 20.seconds)
       }
     }
+
+    def assertRegionRegistrationComplete(region: ActorRef): Unit = {
+      awaitAssert {
+        region ! ShardRegion.GetCurrentRegions
+        expectMsgType[CurrentRegions].regions should have size (1)
+      }
+    }
   }
+
 }
