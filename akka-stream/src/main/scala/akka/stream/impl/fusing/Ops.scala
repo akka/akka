@@ -2160,8 +2160,7 @@ private[stream] object Collect {
  */
 @InternalApi
 @ccompatUsedUntil213
-private[akka] final class StatefulMapConcat[In, Out](
-    val f: () => In => IterableOnce[Out])
+private[akka] final class StatefulMapConcat[In, Out](val f: () => In => IterableOnce[Out])
     extends GraphStage[FlowShape[In, Out]] {
   val in = Inlet[In]("StatefulMapConcat.in")
   val out = Outlet[Out]("StatefulMapConcat.out")
