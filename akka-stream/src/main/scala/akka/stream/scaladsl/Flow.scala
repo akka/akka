@@ -6,29 +6,18 @@ package akka.stream.scaladsl
 
 import scala.annotation.implicitNotFound
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.immutable
+import scala.collection.{TraversableOnce, immutable}
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-
-import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
-
+import org.reactivestreams.{Processor, Publisher, Subscriber, Subscription}
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.annotation.DoNotInherit
-import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
+import akka.event.{LogMarker, LoggingAdapter, MarkerLoggingAdapter}
 import akka.stream._
-import akka.stream.impl.{
-  fusing,
-  LinearTraversalBuilder,
-  ProcessorModule,
-  SetupFlowStage,
-  SubFlowImpl,
-  Throttle,
-  Timers,
-  TraversalBuilder
-}
+import akka.stream.impl.{LinearTraversalBuilder, ProcessorModule, SetupFlowStage, SubFlowImpl, Throttle, Timers, TraversalBuilder, fusing}
 import akka.stream.impl.fusing._
 import akka.stream.impl.fusing.FlattenMerge
 import akka.stream.stage._
@@ -969,7 +958,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def mapConcat[T](f: Out => immutable.Iterable[T]): Repr[T] = statefulMapConcat(() => f)
+  def mapConcat[T](f: Out => akka.util.ccompat.IterableOnce[T]): Repr[T] = statefulMapConcat(() => f)
 
   /**
    * Transform each input element into an `Iterable` of output elements that is
@@ -995,7 +984,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.mapConcat]]
    */
-  def statefulMapConcat[T](f: () => Out => immutable.Iterable[T]): Repr[T] =
+  def statefulMapConcat[T](f: () => Out => akka.util.ccompat.IterableOnce[T]): Repr[T] =
     via(new StatefulMapConcat(f))
 
   /**
