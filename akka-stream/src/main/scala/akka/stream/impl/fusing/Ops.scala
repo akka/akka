@@ -30,6 +30,7 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.util.control.Exception.Catcher
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.{ Failure, Success, Try }
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -2157,8 +2158,10 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class StatefulMapConcat[In, Out](
-    val f: () => In => akka.util.ccompat.IterableOnce[Out])
+@InternalApi
+@ccompatUsedUntil213
+private[akka] final class StatefulMapConcat[In, Out](
+    val f: () => In => IterableOnce[Out])
     extends GraphStage[FlowShape[In, Out]] {
   val in = Inlet[In]("StatefulMapConcat.in")
   val out = Outlet[Out]("StatefulMapConcat.out")
@@ -2187,7 +2190,7 @@ private[stream] object Collect {
 
     override def onPush(): Unit =
       try {
-        currentIterator = plainFun(grab(in)).toIterator
+        currentIterator = plainFun(grab(in)).iterator
         pushPull()
       } catch handleException
 
