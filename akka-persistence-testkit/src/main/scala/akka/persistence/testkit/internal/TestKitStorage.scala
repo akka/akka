@@ -5,14 +5,13 @@
 package akka.persistence.testkit.internal
 
 import java.util
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.annotation.InternalApi
 import akka.persistence.testkit.ProcessingPolicy
 import akka.util.ccompat.JavaConverters._
 
-import scala.collection.{ immutable, mutable }
+import scala.collection.{immutable, mutable}
 import scala.util.Try
 
 /**
