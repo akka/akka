@@ -51,10 +51,9 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
 
   def removeFirstInExpectNextQueue(key: K): Unit = synchronized(expectNextQueue.get(key).foreach(_.poll()))
 
-  def firstInExpectNextQueue(key: K): Option[R] =
-    synchronized(expectNextQueue.get(key).flatMap { item =>
-      Try(item.element()).toOption.map(toRepr)
-    })
+  def firstInExpectNextQueue(key: K): Option[R] = expectNextQueue.get(key).flatMap { item =>
+    Try(item.element()).toOption.map(toRepr)
+  }
 
   def findOneByIndex(key: K, index: Int): Option[R] =
     eventsMap
