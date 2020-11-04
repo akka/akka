@@ -142,7 +142,6 @@ private[testkit] trait ExpectOps[U] {
    */
   def expectNextPersisted[A](persistenceId: String, event: A, max: FiniteDuration): A = {
     val nextInd = nextIndex(persistenceId)
-
     val expected = Some(event)
     val res = awaitAssert({
       val actual = getItem(persistenceId, nextInd)
