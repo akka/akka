@@ -107,14 +107,9 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
       }
 
     val oldValue = eventsMap.getOrElse(key, (0L, Vector.empty))
-    (Option(remappingFunction(key, oldValue)) match {
-      case Some(newValue) =>
-        eventsMap = eventsMap.updated(key, newValue)
-        newValue
-      case None =>
-        eventsMap = eventsMap - key
-        oldValue
-    })._2.map(toRepr)
+    val newValue = remappingFunction(key, oldValue)
+    eventsMap = eventsMap.updated(key, newValue)
+    newValue._2.map(toRepr)
   }
 
   def read(key: K): Option[Vector[R]] = lock.synchronized {

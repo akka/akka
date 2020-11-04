@@ -493,7 +493,7 @@ trait CommonSnapshotTests extends ScalaDslUtils {
 
     }
 
-    "work with typed actors on after deleting snapshots" in {
+    "test snapshot events with RetentionCriteria" in {
 
       lazy val tk = new SnapshotTestKit(system)
 
@@ -527,7 +527,7 @@ trait CommonSnapshotTests extends ScalaDslUtils {
 
     }
 
-    "testing snapshots at the end" in {
+    "test snapshot events with RetentionCriteria after sending commands" in {
 
       lazy val tk = new SnapshotTestKit(system)
 
