@@ -176,7 +176,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    */
   def mapConcat[Out2](f: Out => IterableOnce[Out2]): Repr[Out2, Ctx] =
     via(flow.mapConcat {
-      case (e, ctx) => f(e).map(_ -> ctx)
+      case (e, ctx) => f(e).iterator.map(_ -> ctx)
     })
 
   /**
