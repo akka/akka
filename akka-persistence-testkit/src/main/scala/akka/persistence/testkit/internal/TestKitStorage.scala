@@ -47,14 +47,16 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
           Some(value.drop(fromInclusive).take(maxNum))
         else None)
 
-  def removeFirstInExpectNextQueue(key: K): Unit =
-    lock.synchronized(expectNextQueue.get(key).foreach { item =>
-      expectNextQueue = expectNextQueue - key
-      expectNextQueue = expectNextQueue + (key -> item.tail)
-    })
+  def removeFirstInExpectNextQueue(key: K): Unit = lock.synchronized {
+    expectNextQueue.get(key).foreach { item =>
+      expectNextQueue = expectNextQueue.updated(key, item.tail)
+    }
+  }
 
-  def firstInExpectNextQueue(key: K): Option[R] = expectNextQueue.get(key).flatMap { item =>
-    item.headOption.map(toRepr)
+  def firstInExpectNextQueue(key: K): Option[R] = lock.synchronized {
+    expectNextQueue.get(key).flatMap { item =>
+      item.headOption.map(toRepr)
+    }
   }
 
   def findOneByIndex(key: K, index: Int): Option[R] = lock.synchronized {
@@ -105,20 +107,19 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
       }
 
     val oldValue = eventsMap.getOrElse(key, (0L, Vector.empty))
-    val rrr = Option(remappingFunction(key, oldValue)) match {
+    (Option(remappingFunction(key, oldValue)) match {
       case Some(newValue) =>
         eventsMap = eventsMap.updated(key, newValue)
         newValue
       case None =>
         eventsMap = eventsMap - key
         oldValue
-    }
-
-    rrr._2.map(toRepr)
-
+    })._2.map(toRepr)
   }
-  def read(key: K): Option[Vector[R]] =
+
+  def read(key: K): Option[Vector[R]] = lock.synchronized {
     eventsMap.get(key).map(_._2.map(toRepr))
+  }
 
   def readAll(): Iterable[R] = lock.synchronized {
     eventsMap.values.flatMap { case (_, events) => events }.map(toRepr)
@@ -161,8 +162,9 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
       value.dropWhile(reprToSeqNum(_) <= toSeqNumberInclusive)
     })
 
-  def clearAllPreservingSeqNumbers(): Unit =
+  def clearAllPreservingSeqNumbers(): Unit = lock.synchronized {
     eventsMap.keys.foreach(removePreservingSeqNumber)
+  }
 
   private def getLastSeqNumber(elems: immutable.Seq[R]): Long =
     elems.lastOption.map(reprToSeqNum).getOrElse(0L)
