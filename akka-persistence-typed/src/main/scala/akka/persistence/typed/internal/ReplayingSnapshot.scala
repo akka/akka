@@ -173,7 +173,8 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
             receivedPoisonPill,
             System.nanoTime(),
             version,
-            seenPerReplica))
+            seenPerReplica,
+            eventsReplayed = 0))
 
       case LoadSnapshotFailed(cause) =>
         onRecoveryFailure(cause)

@@ -20,12 +20,16 @@ import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.RecoveryFailed
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.SingleEventSeq
+import akka.persistence.typed.internal.BehaviorSetup.SnapshotWithoutRetention
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.{ GetSeenSequenceNr, GetState }
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
+import akka.persistence.typed.internal.Running.startReplicationStream
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.unused
+
+import scala.collection.immutable
 
 /***
  * INTERNAL API
@@ -53,7 +57,8 @@ private[akka] object ReplayingEvents {
       receivedPoisonPill: Boolean,
       recoveryStartTime: Long,
       version: VersionVector,
-      seenSeqNrPerReplica: Map[ReplicaId, Long])
+      seenSeqNrPerReplica: Map[ReplicaId, Long],
+      eventsReplayed: Long)
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: ReplayingState[S]): Behavior[InternalProtocol] =
     Behaviors.setup { _ =>
@@ -121,7 +126,7 @@ private[akka] final class ReplayingEvents[C, E, S](
 
             def handleEvent(event: E): Unit = {
               eventForErrorReporting = OptionVal.Some(event)
-              state = state.copy(seqNr = repr.sequenceNr)
+              state = state.copy(seqNr = repr.sequenceNr, eventsReplayed = state.eventsReplayed + 1)
 
               val replicatedMetaAndSelfReplica: Option[(ReplicatedEventMetadata, ReplicaId, ReplicationSetup)] =
                 setup.replication match {
@@ -279,18 +284,25 @@ private[akka] final class ReplayingEvents[C, E, S](
       if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)
         Behaviors.stopped
       else {
-        val running =
-          Running[C, E, S](
-            setup,
-            Running.RunningState[S](
-              seqNr = state.seqNr,
-              state = state.state,
-              receivedPoisonPill = state.receivedPoisonPill,
-              state.version,
-              seenPerReplica = state.seenSeqNrPerReplica,
-              replicationControl = Map.empty))
-
-        tryUnstashOne(running)
+        val runningState = Running.RunningState[S](
+          seqNr = state.seqNr,
+          state = state.state,
+          receivedPoisonPill = state.receivedPoisonPill,
+          state.version,
+          seenPerReplica = state.seenSeqNrPerReplica,
+          replicationControl = Map.empty)
+        val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
+        val initialRunningState = setup.replication match {
+          case Some(replication) => startReplicationStream(setup, runningState, replication)
+          case None              => runningState
+        }
+        setup.retention match {
+          case criteria: SnapshotCountRetentionCriteriaImpl if criteria.snapshotEveryNEvents <= state.eventsReplayed =>
+            internalSaveSnapshot(initialRunningState)
+            new running.StoringSnapshot(initialRunningState, immutable.Seq.empty, SnapshotWithoutRetention)
+          case _ =>
+            tryUnstashOne(new running.HandlingCommands(initialRunningState))
+        }
       }
     } finally {
       setup.cancelRecoveryTimer()

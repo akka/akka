@@ -108,15 +108,6 @@ private[akka] object Running {
     }
   }
 
-  def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] = {
-    val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
-    val initialState = setup.replication match {
-      case Some(replication) => startReplicationStream(setup, state, replication)
-      case None              => state
-    }
-    new running.HandlingCommands(initialState)
-  }
-
   def startReplicationStream[C, E, S](
       setup: BehaviorSetup[C, E, S],
       state: RunningState[S],
