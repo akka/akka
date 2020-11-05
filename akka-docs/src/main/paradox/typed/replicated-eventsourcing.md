@@ -396,7 +396,7 @@ poll the database less often since most events will arrive at the replicas throu
 The direct replication of events feature is enabled by default when using Cluster Sharding. 
 To disable this feature you first need to:
  
-1. disable event publishing on the @scala[`EventSourcedBehavior`]@java[`ReplicatedEventSourcedBehavior`] with `withEventPublishing(false)`, and then 
+1. disable event publishing @scala[on the `EventSourcedBehavior` with `withEventPublishing(false)`]@java[overwriting `withEventPublishing` from `ReplicatedEventSourcedBehavior` to return `false`] , and then 
 2. disable direct replication through `withDirectReplication(false)` on @apidoc[ReplicatedEntityProvider] 
 
 The "event publishing" feature publishes each event to the local system event bus as a side effect after it has been written. 
