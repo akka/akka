@@ -41,17 +41,14 @@ object DowningWhenOtherHasQuarantinedThisActorSystemSpec extends MultiNodeConfig
   testTransport(on = true)
 }
 
-class DowningWhenOtherHasQuarantinedThisActorSystemMultiJvmNode1
-    extends DowningWhenOtherHasQuarantinedThisActorSystemSpec
-class DowningWhenOtherHasQuarantinedThisActorSystemMultiJvmNode2
-    extends DowningWhenOtherHasQuarantinedThisActorSystemSpec
-class DowningWhenOtherHasQuarantinedThisActorSystemMultiJvmNode3
-    extends DowningWhenOtherHasQuarantinedThisActorSystemSpec
+class DowningWhenOtherHasQuarantinedThisActorSystemMultiJvmNode1 extends SplitBrainQuarantineSpec
+class DowningWhenOtherHasQuarantinedThisActorSystemMultiJvmNode2 extends SplitBrainQuarantineSpec
+class DowningWhenOtherHasQuarantinedThisActorSystemMultiJvmNode3 extends SplitBrainQuarantineSpec
 
 abstract class DowningWhenOtherHasQuarantinedThisActorSystemSpec
-    extends MultiNodeSpec(DowningWhenOtherHasQuarantinedThisActorSystemSpec)
+    extends MultiNodeSpec(SplitBrainQuarantineSpec)
     with MultiNodeClusterSpec {
-  import DowningWhenOtherHasQuarantinedThisActorSystemSpec._
+  import SplitBrainQuarantineSpec._
 
   "Cluster node downed by other" must {
 
