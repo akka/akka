@@ -35,8 +35,8 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
 
   import scala.math._
 
-  private final var expectNextQueue: Map[K, Vector[InternalRepr]] = Map.empty
-  private final var eventsMap: Map[K, (Long, Vector[InternalRepr])] = Map.empty
+  private var expectNextQueue: Map[K, Vector[InternalRepr]] = Map.empty
+  private var eventsMap: Map[K, (Long, Vector[InternalRepr])] = Map.empty
 
   def reprToSeqNum(repr: R): Long
 
@@ -78,8 +78,8 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
         val newItems = items :+ toInternal(p)
         expectNextQueue = expectNextQueue + (key -> newItems)
       }
+      add(key, Vector(p))
     }
-    add(key, Vector(p))
   }
 
   /**
@@ -98,16 +98,12 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
    * Sets new elements returned by updater ordered by seqnum. Sets new seqnum as max(old, max(newElemsFromUpdaterSeqNums))
    */
   def updateOrSetNew(key: K, updater: Vector[R] => Vector[R]): Vector[R] = lock.synchronized {
+    val (oldSn, oldElems) = eventsMap.getOrElse(key, (0L, Vector.empty))
+    val newValue = {
+      val upd = updater(oldElems.map(toRepr)).sortBy(reprToSeqNum)
+      (max(getLastSeqNumber(upd), oldSn), upd.map(toInternal))
+    }
 
-    def remappingFunction: (K, (Long, Vector[InternalRepr])) => (Long, Vector[InternalRepr]) =
-      (_: K, value: (Long, Vector[InternalRepr])) => {
-        val (sn, elems) = if (value != null) value else (0L, Vector.empty)
-        val upd = updater(elems.map(toRepr)).sortBy(reprToSeqNum)
-        (max(getLastSeqNumber(upd), sn), upd.map(toInternal))
-      }
-
-    val oldValue = eventsMap.getOrElse(key, (0L, Vector.empty))
-    val newValue = remappingFunction(key, oldValue)
     eventsMap = eventsMap.updated(key, newValue)
     newValue._2.map(toRepr)
   }
