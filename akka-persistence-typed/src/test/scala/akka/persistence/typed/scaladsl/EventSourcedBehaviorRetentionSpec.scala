@@ -43,6 +43,7 @@ object EventSourcedBehaviorRetentionSpec extends Matchers {
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
     akka.persistence.snapshot-store.local.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
+    akka.actor.testkit.typed.single-expect-default = 10s # increased for slow disk on Jenkins servers
     """)
 
   sealed trait Command extends CborSerializable
