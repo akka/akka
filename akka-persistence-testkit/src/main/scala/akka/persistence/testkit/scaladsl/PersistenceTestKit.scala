@@ -328,6 +328,16 @@ class SnapshotTestKit(system: ActorSystem)
 
   override protected val storage: SnapshotStorage = SnapshotStorageEmulatorExtension(system)
 
+  override def getItem(persistenceId: String, nextInd: Int): Option[Any] = {
+    storage.firstInExpectNextQueue(persistenceId).map(reprToAny)
+  }
+
+  override def expectNextPersisted[A](persistenceId: String, event: A): A = {
+    val item = super.expectNextPersisted(persistenceId, event)
+    storage.removeFirstInExpectNextQueue(persistenceId)
+    item
+  }
+
   private val settings = Settings(system)
 
   override private[testkit] val probe = TestProbe()(system)

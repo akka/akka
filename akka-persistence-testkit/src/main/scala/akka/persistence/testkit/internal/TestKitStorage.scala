@@ -4,14 +4,12 @@
 
 package akka.persistence.testkit.internal
 
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
-
-import scala.collection.immutable
-import akka.util.ccompat.JavaConverters._
 
 import akka.annotation.InternalApi
 import akka.persistence.testkit.ProcessingPolicy
+
+import scala.collection.immutable
 
 /**
  * INTERNAL API
@@ -33,10 +31,12 @@ sealed trait InternalReprSupport[R] {
 @InternalApi
 sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
 
+  private val lock = new Object
+
   import scala.math._
 
-  private final val eventsMap: ConcurrentHashMap[K, (Long, Vector[InternalRepr])] =
-    new ConcurrentHashMap()
+  private var expectNextQueue: Map[K, Vector[InternalRepr]] = Map.empty
+  private var eventsMap: Map[K, (Long, Vector[InternalRepr])] = Map.empty
 
   def reprToSeqNum(repr: R): Long
 
@@ -47,15 +47,40 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
           Some(value.drop(fromInclusive).take(maxNum))
         else None)
 
-  def findOneByIndex(key: K, index: Int): Option[R] =
-    Option(eventsMap.get(key))
+  def removeFirstInExpectNextQueue(key: K): Unit = lock.synchronized {
+    expectNextQueue.get(key).foreach { item =>
+      expectNextQueue = expectNextQueue.updated(key, item.tail)
+    }
+  }
+
+  def firstInExpectNextQueue(key: K): Option[R] = lock.synchronized {
+    expectNextQueue.get(key).flatMap { item =>
+      item.headOption.map(toRepr)
+    }
+  }
+
+  def findOneByIndex(key: K, index: Int): Option[R] = lock.synchronized {
+    eventsMap
+      .get(key)
       .flatMap {
         case (_, value) => if (value.size > index) Some(value(index)) else None
       }
       .map(toRepr)
+  }
 
-  def add(key: K, p: R): Unit =
-    add(key, List(p))
+  def add(key: K, p: R): Unit = {
+    lock.synchronized {
+      if (!expectNextQueue.contains(key)) {
+        expectNextQueue = expectNextQueue + (key -> Vector.empty)
+      }
+      expectNextQueue.get(key).foreach { items =>
+        expectNextQueue = expectNextQueue - key
+        val newItems = items :+ toInternal(p)
+        expectNextQueue = expectNextQueue + (key -> newItems)
+      }
+      add(key, Vector(p))
+    }
+  }
 
   /**
    * Adds elements ordered by seqnum, sets new seqnum as max(old, max(newElemsSeqNums)))
@@ -72,58 +97,65 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
   /**
    * Sets new elements returned by updater ordered by seqnum. Sets new seqnum as max(old, max(newElemsFromUpdaterSeqNums))
    */
-  def updateOrSetNew(key: K, updater: Vector[R] => Vector[R]): Vector[R] =
-    eventsMap
-      .compute(
-        key,
-        (_: K, value: (Long, Vector[InternalRepr])) => {
-          val (sn, elems) = if (value != null) value else (0L, Vector.empty)
-          val upd = updater(elems.map(toRepr)).sortBy(reprToSeqNum)
-          (max(getLastSeqNumber(upd), sn), upd.map(toInternal))
-        })
-      ._2
-      .map(toRepr)
+  def updateOrSetNew(key: K, updater: Vector[R] => Vector[R]): Vector[R] = lock.synchronized {
+    val (oldSn, oldElems) = eventsMap.getOrElse(key, (0L, Vector.empty))
+    val newValue = {
+      val upd = updater(oldElems.map(toRepr)).sortBy(reprToSeqNum)
+      (max(getLastSeqNumber(upd), oldSn), upd.map(toInternal))
+    }
 
-  def read(key: K): Option[Vector[R]] =
-    Option(eventsMap.get(key)).map(_._2.map(toRepr))
-
-  def readAll(): Iterable[R] = {
-    eventsMap.values().asScala.flatMap { case (_, events) => events }.map(toRepr)
+    eventsMap = eventsMap.updated(key, newValue)
+    newValue._2.map(toRepr)
   }
 
-  def clearAll(): Unit =
-    eventsMap.clear()
+  def read(key: K): Option[Vector[R]] = lock.synchronized {
+    eventsMap.get(key).map(_._2.map(toRepr))
+  }
+
+  def readAll(): Iterable[R] = lock.synchronized {
+    eventsMap.values.flatMap { case (_, events) => events }.map(toRepr)
+  }
+
+  def clearAll(): Unit = lock.synchronized {
+    eventsMap = Map.empty
+  }
 
   /**
    * Removes key and the whole value including seqnum.
    */
-  def removeKey(key: K): Vector[R] =
-    Option(eventsMap.remove(key)).map(_._2).getOrElse(Vector.empty).map(toRepr)
+  def removeKey(key: K): Vector[R] = lock.synchronized {
+    val ret = eventsMap.get(key)
+    eventsMap = eventsMap - key
+    ret.map(_._2).getOrElse(Vector.empty).map(toRepr)
+  }
 
   /**
    * Reads elems within the range of seqnums.
    */
-  def read(key: K, fromInclusive: Long, toInclusive: Long, maxNumber: Long): immutable.Seq[R] =
+  def read(key: K, fromInclusive: Long, toInclusive: Long, maxNumber: Long): immutable.Seq[R] = lock.synchronized {
     read(key)
       .getOrElse(Vector.empty)
       .dropWhile(reprToSeqNum(_) < fromInclusive)
       // we dont need to read highestSeqNumber because it will in any case stop at it if toInclusive > highestSeqNumber
       .takeWhile(reprToSeqNum(_) <= toInclusive)
       .take(if (maxNumber > Int.MaxValue) Int.MaxValue else maxNumber.toInt)
+  }
 
   def removePreservingSeqNumber(key: K): Unit =
     updateOrSetNew(key, _ => Vector.empty)
 
-  def getHighestSeqNumber(key: K): Long =
-    Option(eventsMap.get(key)).map(_._1).getOrElse(0L)
+  def getHighestSeqNumber(key: K): Long = lock.synchronized {
+    eventsMap.get(key).map(_._1).getOrElse(0L)
+  }
 
   def deleteToSeqNumber(key: K, toSeqNumberInclusive: Long): Unit =
     updateOrSetNew(key, value => {
       value.dropWhile(reprToSeqNum(_) <= toSeqNumberInclusive)
     })
 
-  def clearAllPreservingSeqNumbers(): Unit =
-    eventsMap.forEachKey(1, removePreservingSeqNumber)
+  def clearAllPreservingSeqNumbers(): Unit = lock.synchronized {
+    eventsMap.keys.foreach(removePreservingSeqNumber)
+  }
 
   private def getLastSeqNumber(elems: immutable.Seq[R]): Long =
     elems.lastOption.map(reprToSeqNum).getOrElse(0L)
