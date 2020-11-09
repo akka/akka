@@ -451,7 +451,6 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       }
     }
 
-
   }
 
   "JacksonJsonSerializer with Scala message classes" must {
