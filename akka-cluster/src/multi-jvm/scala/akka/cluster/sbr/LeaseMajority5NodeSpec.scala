@@ -29,10 +29,15 @@ object LeaseMajority5NodeSpec extends MultiNodeConfig {
     akka {
       loglevel = INFO
       cluster {
+        gossip-interval                     = 200 ms
+        leader-actions-interval             = 200 ms
+        periodic-tasks-initial-delay        = 300 ms
+        failure-detector.heartbeat-interval = 500 ms
+      
         downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
         split-brain-resolver {
           active-strategy = lease-majority
-          stable-after = 6s
+          stable-after = 1.5s
           lease-majority {
             lease-implementation = test-lease
             acquire-lease-delay-for-minority = 1s
