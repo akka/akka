@@ -1089,7 +1089,7 @@ object Replicator {
       }
 
       def estimatedSizeWithoutData: Int = {
-        deltaVersions.estimatedSize + pruning.valuesIterator.map(_.estimatedSize + 58).sum
+        deltaVersions.estimatedSize + pruning.valuesIterator.map(_.estimatedSize + EstimatedSize.UniqueAddress).sum
       }
     }
 

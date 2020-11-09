@@ -327,7 +327,7 @@ final case class OneVersionVector private[akka] (node: UniqueAddress, version: L
 
   /** INTERNAL API */
   @InternalApi override private[akka] def estimatedSize: Int =
-    58
+    EstimatedSize.UniqueAddress + EstimatedSize.LongValue
 
 }
 
@@ -399,5 +399,5 @@ final case class ManyVersionVector(versions: TreeMap[UniqueAddress, Long]) exten
 
   /** INTERNAL API */
   @InternalApi override private[akka] def estimatedSize: Int =
-    versions.size * (58 + 8)
+    versions.size * (EstimatedSize.UniqueAddress + EstimatedSize.LongValue)
 }
