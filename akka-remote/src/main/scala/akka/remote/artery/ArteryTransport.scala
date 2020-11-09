@@ -106,6 +106,12 @@ private[remote] object AssociationState {
   private final case class UniqueRemoteAddressValue(
       uniqueRemoteAddress: Option[UniqueAddress],
       listeners: List[UniqueAddress => Unit])
+
+  sealed trait UniqueRemoteAddressState
+  case object UidKnown extends UniqueRemoteAddressState
+  case object UidUnknown extends UniqueRemoteAddressState
+  case object UidQuarantined extends UniqueRemoteAddressState
+
 }
 
 /**
@@ -118,14 +124,30 @@ private[remote] final class AssociationState(
     val quarantined: ImmutableLongMap[AssociationState.QuarantinedTimestamp],
     _uniqueRemoteAddress: AtomicReference[AssociationState.UniqueRemoteAddressValue]) {
 
-  import AssociationState.QuarantinedTimestamp
-  import AssociationState.UniqueRemoteAddressValue
+  import AssociationState._
 
   /**
    * Full outbound address with UID for this association.
    * Completed by the handshake.
    */
   def uniqueRemoteAddress(): Option[UniqueAddress] = _uniqueRemoteAddress.get().uniqueRemoteAddress
+
+  def uniqueRemoteAddressState(): UniqueRemoteAddressState = {
+    uniqueRemoteAddress() match {
+      case Some(a) if isQuarantined(a.uid) => UidQuarantined
+      case Some(_)                         => UidKnown
+      case None                            => UidUnknown // handshake not completed yet
+    }
+  }
+
+  def isQuarantined(): Boolean = {
+    uniqueRemoteAddress() match {
+      case Some(a) => isQuarantined(a.uid)
+      case None    => false // handshake not completed yet
+    }
+  }
+
+  def isQuarantined(uid: Long): Boolean = quarantined.contains(uid)
 
   @tailrec def completeUniqueRemoteAddress(peer: UniqueAddress): Unit = {
     val current = _uniqueRemoteAddress.get()
@@ -175,15 +197,6 @@ private[remote] final class AssociationState(
           _uniqueRemoteAddress)
       case None => this
     }
-
-  def isQuarantined(): Boolean = {
-    uniqueRemoteAddress() match {
-      case Some(a) => isQuarantined(a.uid)
-      case None    => false // handshake not completed yet
-    }
-  }
-
-  def isQuarantined(uid: Long): Boolean = quarantined.contains(uid)
 
   def withControlIdleKillSwitch(killSwitch: OptionVal[SharedKillSwitch]): AssociationState =
     new AssociationState(
