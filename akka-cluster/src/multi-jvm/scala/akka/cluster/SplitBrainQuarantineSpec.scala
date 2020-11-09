@@ -21,7 +21,7 @@ object SplitBrainQuarantineSpec extends MultiNodeConfig {
 
   testTransport(on = true)
   commonConfig(
-    debugConfig(on = true)
+    debugConfig(on = false)
       .withFallback(MultiNodeClusterSpec.clusterConfig)
       .withFallback(
         ConfigFactory.parseString("""
@@ -41,6 +41,10 @@ class SplitBrainQuarantineMultiJvmNode4 extends SplitBrainQuarantineSpec
 
 abstract class SplitBrainQuarantineSpec extends MultiNodeSpec(SplitBrainQuarantineSpec) with MultiNodeClusterSpec {
   import SplitBrainQuarantineSpec._
+
+  // reproduces the scenario where cluster is partitioned and each side downs the other, and after that the
+  // partition is resolved and the two split brain halves reconnects
+  // Not intended to be a part of the final PR
 
   "Cluster node downed by other" must {
 
@@ -63,6 +67,7 @@ abstract class SplitBrainQuarantineSpec extends MultiNodeSpec(SplitBrainQuaranti
         testConductor.blackhole(second, fourth, ThrottlerTransportAdapter.Direction.Both).await
       }
       enterBarrier("blackhole")
+      system.log.info("cluster split into [JVM-1, JVM-2] and [JVM-3, JVM-4] with blackhole")
 
       within(15.seconds) {
         runOn(first) {
@@ -74,6 +79,7 @@ abstract class SplitBrainQuarantineSpec extends MultiNodeSpec(SplitBrainQuaranti
             cluster.state.members.collect { case m if m.status == MemberStatus.Up => m.address } should ===(
               Set(address(first), address(second)))
           }
+          system.log.info("JVM-3 and JVM-4 downed from JVM-1")
         }
 
         runOn(third) {
@@ -85,6 +91,7 @@ abstract class SplitBrainQuarantineSpec extends MultiNodeSpec(SplitBrainQuaranti
             cluster.state.members.collect { case m if m.status == MemberStatus.Up => m.address } should ===(
               Set(address(third), address(fourth)))
           }
+          system.log.info("JVM-1 and JVM-2 downed from JVM-3")
         }
       }
       enterBarrier("brain-split")
@@ -98,10 +105,10 @@ abstract class SplitBrainQuarantineSpec extends MultiNodeSpec(SplitBrainQuaranti
         testConductor.passThrough(second, third, ThrottlerTransportAdapter.Direction.Both).await
         testConductor.passThrough(second, fourth, ThrottlerTransportAdapter.Direction.Both).await
       }
-      // FIXME what happens now?
+      enterBarrier("unblackholed")
+      // FIXME give it some time so we see what happens now before test infra killing systems
       Thread.sleep(30000)
-      enterBarrier("pass-through")
-
+      enterBarrier("after-pass-through")
     }
 
   }
