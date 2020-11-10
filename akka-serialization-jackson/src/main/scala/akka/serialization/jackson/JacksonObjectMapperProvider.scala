@@ -179,6 +179,25 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     }
   }
 
+  private def configureObjectVisibility(
+      bindingName: String,
+      objectMapper: ObjectMapper,
+      objectMapperFactory: JacksonObjectMapperFactory,
+      config: Config): Unit = {
+
+    val configuredVisibility: immutable.Seq[(PropertyAccessor, JsonAutoDetect.Visibility)] =
+      configPairs(config, "visibility").map {
+        case (property, visibility) =>
+          PropertyAccessor.valueOf(property) -> JsonAutoDetect.Visibility.valueOf(visibility)
+      }
+    val visibility =
+      objectMapperFactory.overrideConfiguredVisibility(bindingName, configuredVisibility)
+    visibility.foreach {
+      case (property, visibility) => objectMapper.setVisibility(property, visibility)
+    }
+
+  }
+
   private def configureObjectMapperModules(
       bindingName: String,
       objectMapper: ObjectMapper,
@@ -244,8 +263,9 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
 
     configureObjectMapperFeatures(bindingName, mapper, objectMapperFactory, config)
     configureObjectMapperModules(bindingName, mapper, objectMapperFactory, config, dynamicAccess, log)
+    configureObjectVisibility(bindingName, mapper, objectMapperFactory, config)
 
-    mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+    mapper
   }
 
   private def isModuleEnabled(fqcn: String, dynamicAccess: DynamicAccess): Boolean =
@@ -263,6 +283,12 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     import akka.util.ccompat.JavaConverters._
     val cfg = config.getConfig(section)
     cfg.root.keySet().asScala.map(key => key -> cfg.getBoolean(key)).toList
+  }
+
+  private def configPairs(config: Config, section: String): immutable.Seq[(String, String)] = {
+    import akka.util.ccompat.JavaConverters._
+    val cfg = config.getConfig(section)
+    cfg.root.keySet().asScala.map(key => key -> cfg.getString(key)).toList
   }
 }
 
@@ -534,4 +560,20 @@ class JacksonObjectMapperFactory {
       @unused bindingName: String,
       configuredFeatures: immutable.Seq[(JsonWriteFeature, Boolean)]): immutable.Seq[(JsonWriteFeature, Boolean)] =
     configuredFeatures
+
+  /**
+   * Visibility settings used to configure the `JsonFactoryBuilder` that, if provided, will later be used to create
+   * an `ObjectMapper`. These settings can be amended programmatically by overriding this method and return the values
+   * that are to be applied to the `JsonFactoryBuilder`.
+   *
+   * @param bindingName bindingName name of this `ObjectMapper`
+   * @param configuredFeatures the list of `PropertyAccessor`/`JsonAutoDetect.Visibility` that were configured in
+   *                           `akka.serialization.jackson.visibility`
+   */
+  def overrideConfiguredVisibility(
+      @unused bindingName: String,
+      configuredFeatures: immutable.Seq[(PropertyAccessor, JsonAutoDetect.Visibility)])
+      : immutable.Seq[(PropertyAccessor, JsonAutoDetect.Visibility)] =
+    configuredFeatures
+
 }

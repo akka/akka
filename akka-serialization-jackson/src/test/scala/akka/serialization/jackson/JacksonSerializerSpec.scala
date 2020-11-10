@@ -411,6 +411,46 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
     "be possible to create custom ObjectMapper" in {
       pending
     }
+
+    "be possible to tune the visibility at ObjectMapper level (FIELD, PUBLIC_ONLY)" in {
+      withSystem("""
+        akka.actor {
+          serialization-bindings {
+            "akka.serialization.jackson.JavaTestMessages$ClassWithVisibility" = jackson-json
+          }
+        }
+        akka.serialization.jackson.visibility {
+          FIELD = PUBLIC_ONLY
+        }
+        """) { sys =>
+        val msg = new ClassWithVisibility();
+        val json = serializeToJsonString(msg, sys)
+        val expected = """{"publicField":"1234"}"""
+        json should ===(expected)
+      }
+    }
+
+    // This test ensures the default behavior in Akka 2.6 series
+    // (that is "FIELD = ANY") stays consistent
+    "be possible to tune the visibility at ObjectMapper level (Akka default)" in {
+      withSystem("""
+        akka.actor {
+          serialization-bindings {
+            "akka.serialization.jackson.JavaTestMessages$ClassWithVisibility" = jackson-json
+          }
+        }
+        akka.serialization.jackson.visibility {
+          ## No overrides
+        }
+        """) { sys =>
+        val msg = new ClassWithVisibility();
+        val json = serializeToJsonString(msg, sys)
+        val expected =
+          """{"publicField":"1234","defaultField":"abcd","protectedField":"vwxyz","privateField":"ABCD"}""".stripMargin
+        json should ===(expected)
+      }
+    }
+
   }
 
   "JacksonJsonSerializer with Scala message classes" must {
