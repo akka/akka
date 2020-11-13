@@ -4,7 +4,8 @@
 
 package akka.stream.testkit.javadsl
 
-import akka.stream.Materializer
+import akka.actor.ClassicActorSystemProvider
+import akka.stream.{ Materializer, SystemMaterializer }
 import akka.stream.impl.PhasedFusingActorMaterializer
 import akka.stream.testkit.scaladsl
 
@@ -21,4 +22,13 @@ object StreamTestKit {
         scaladsl.StreamTestKit.assertNoChildren(impl.system, impl.supervisor)
       case _ =>
     }
+
+  /**
+   * Assert that there are no stages running under a given system's materializer.
+   * Usually this assertion is run after a test-case to check that all of the
+   * stages have terminated successfully.
+   */
+  def assertAllStagesStopped(system: ClassicActorSystemProvider): Unit = {
+    assertAllStagesStopped(SystemMaterializer(system).materializer)
+  }
 }
