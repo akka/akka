@@ -209,7 +209,7 @@ object ActorSelection {
   def apply(anchorRef: ActorRef, elements: Iterable[String]): ActorSelection = {
     val compiled: immutable.IndexedSeq[SelectionPathElement] = elements.iterator
       .collect {
-        case x if !x.isEmpty =>
+        case x if x.nonEmpty =>
           if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) SelectChildPattern(x)
           else if (x == "..") SelectParent
           else SelectChildName(x)
