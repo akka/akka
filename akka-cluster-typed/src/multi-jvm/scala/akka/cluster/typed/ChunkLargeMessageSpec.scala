@@ -10,8 +10,6 @@ import scala.util.Random
 import com.typesafe.config.ConfigFactory
 import org.HdrHistogram.Histogram
 
-import akka.actor.ActorIdentity
-import akka.actor.Identify
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
@@ -20,7 +18,6 @@ import akka.actor.typed.delivery.ConsumerController
 import akka.actor.typed.delivery.ProducerController
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.MultiNodeClusterSpec
-import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.jackson.CborSerializable
@@ -143,14 +140,6 @@ class ChunkLargeMessageMultiJvmNode2 extends ChunkLargeMessageSpec
 
 abstract class ChunkLargeMessageSpec extends MultiNodeSpec(ChunkLargeMessageSpec) with MultiNodeTypedClusterSpec {
   import ChunkLargeMessageSpec._
-
-  // TODO move this to MultiNodeTypedClusterSpec
-  def identify[A](name: String, r: RoleName): ActorRef[A] = {
-    import akka.actor.typed.scaladsl.adapter._
-    val sel = system.actorSelection(node(r) / "user" / "testSpawn" / name)
-    sel.tell(Identify(None), testActor)
-    expectMsgType[ActorIdentity](10.seconds).ref.get.toTyped
-  }
 
   private def test(n: Int, numberOfMessages: Int, includeLarge: Boolean): Unit = {
     runOn(first) {

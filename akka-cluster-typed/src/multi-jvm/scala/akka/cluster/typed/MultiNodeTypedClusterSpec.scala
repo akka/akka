@@ -14,6 +14,7 @@ import scala.language.implicitConversions
 import org.scalatest.Suite
 import org.scalatest.matchers.should.Matchers
 
+import akka.actor.ActorIdentity
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -22,6 +23,7 @@ import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.Address
+import akka.actor.Identify
 import akka.actor.Scheduler
 import akka.cluster.ClusterEvent
 import akka.cluster.MemberStatus
@@ -94,6 +96,13 @@ trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedB
     val f: Future[ActorRef[T]] = spawnActor.ask(SpawnProtocol.Spawn(behavior, name, Props.empty, _))
 
     Await.result(f, timeout.duration * 2)
+  }
+
+  def identify[A](name: String, r: RoleName): ActorRef[A] = {
+    import akka.actor.typed.scaladsl.adapter._
+    val sel = system.actorSelection(node(r) / "user" / "testSpawn" / name)
+    sel.tell(Identify(None), testActor)
+    expectMsgType[ActorIdentity].ref.get.toTyped
   }
 
 }
