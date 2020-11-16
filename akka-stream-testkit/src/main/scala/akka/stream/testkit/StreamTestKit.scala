@@ -13,15 +13,20 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-import org.reactivestreams.{ Publisher, Subscriber, Subscription }
-
-import akka.actor.{ ActorRef, ActorSystem, DeadLetterSuppression, NoSerializationVerificationNeeded }
+import akka.actor.ActorRef
+import akka.actor.ClassicActorSystemProvider
+import akka.actor.DeadLetterSuppression
+import akka.actor.NoSerializationVerificationNeeded
 import akka.stream._
 import akka.stream.impl._
-import akka.testkit.{ TestActor, TestProbe }
 import akka.testkit.TestActor.AutoPilot
+import akka.testkit.TestActor
+import akka.testkit.TestProbe
 import akka.util.JavaDurationConverters
 import akka.util.ccompat._
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
 
 /**
  * Provides factory methods for various Publishers.
@@ -66,13 +71,13 @@ object TestPublisher {
   /**
    * Probe that implements [[org.reactivestreams.Publisher]] interface.
    */
-  def manualProbe[T](autoOnSubscribe: Boolean = true)(implicit system: ActorSystem): ManualProbe[T] =
+  def manualProbe[T](autoOnSubscribe: Boolean = true)(implicit system: ClassicActorSystemProvider): ManualProbe[T] =
     new ManualProbe(autoOnSubscribe)
 
   /**
    * Probe that implements [[org.reactivestreams.Publisher]] interface and tracks demand.
    */
-  def probe[T](initialPendingRequests: Long = 0)(implicit system: ActorSystem): Probe[T] =
+  def probe[T](initialPendingRequests: Long = 0)(implicit system: ClassicActorSystemProvider): Probe[T] =
     new Probe(initialPendingRequests)
 
   /**
@@ -80,13 +85,14 @@ object TestPublisher {
    * This probe does not track demand. Therefore you need to expect demand before sending
    * elements downstream.
    */
-  class ManualProbe[I] private[TestPublisher] (autoOnSubscribe: Boolean = true)(implicit system: ActorSystem)
+  class ManualProbe[I] private[TestPublisher] (autoOnSubscribe: Boolean = true)(
+      implicit system: ClassicActorSystemProvider)
       extends Publisher[I] {
 
     type Self <: ManualProbe[I]
 
     @ccompatUsedUntil213
-    private val probe: TestProbe = TestProbe()
+    private val probe: TestProbe = TestProbe()(system.classicSystem)
 
     //this is a way to pause receiving message from probe until subscription is done
     private val subscribed = new CountDownLatch(1)
@@ -212,7 +218,7 @@ object TestPublisher {
   /**
    * Single subscription and demand tracking for [[TestPublisher.ManualProbe]].
    */
-  class Probe[T] private[TestPublisher] (initialPendingRequests: Long)(implicit system: ActorSystem)
+  class Probe[T] private[TestPublisher] (initialPendingRequests: Long)(implicit system: ClassicActorSystemProvider)
       extends ManualProbe[T] {
 
     type Self = Probe[T]
@@ -302,21 +308,21 @@ object TestSubscriber {
   /**
    * Probe that implements [[org.reactivestreams.Subscriber]] interface.
    */
-  def manualProbe[T]()(implicit system: ActorSystem): ManualProbe[T] = new ManualProbe()
+  def manualProbe[T]()(implicit system: ClassicActorSystemProvider): ManualProbe[T] = new ManualProbe()
 
-  def probe[T]()(implicit system: ActorSystem): Probe[T] = new Probe()
+  def probe[T]()(implicit system: ClassicActorSystemProvider): Probe[T] = new Probe()
 
   /**
    * Implementation of [[org.reactivestreams.Subscriber]] that allows various assertions.
    *
    * All timeouts are dilated automatically, for more details about time dilation refer to [[akka.testkit.TestKit]].
    */
-  class ManualProbe[I] private[TestSubscriber] ()(implicit system: ActorSystem) extends Subscriber[I] {
+  class ManualProbe[I] private[TestSubscriber] ()(implicit system: ClassicActorSystemProvider) extends Subscriber[I] {
     import akka.testkit._
 
     type Self <: ManualProbe[I]
 
-    private val probe = TestProbe()
+    private val probe = TestProbe()(system.classicSystem)
 
     @volatile private var _subscription: Subscription = _
 
@@ -356,7 +362,7 @@ object TestSubscriber {
      * Expect and return a stream element.
      */
     def expectNext(): I = {
-      expectNext(probe.testKitSettings.SingleExpectDefaultTimeout.dilated)
+      expectNext(probe.testKitSettings.SingleExpectDefaultTimeout.dilated(system.classicSystem))
     }
 
     /**
@@ -788,7 +794,7 @@ object TestSubscriber {
   /**
    * Single subscription tracking for [[ManualProbe]].
    */
-  class Probe[T] private[TestSubscriber] ()(implicit system: ActorSystem) extends ManualProbe[T] {
+  class Probe[T] private[TestSubscriber] ()(implicit system: ClassicActorSystemProvider) extends ManualProbe[T] {
 
     override type Self = Probe[T]
 
@@ -885,7 +891,8 @@ private[testkit] object StreamTestKit {
     def sendOnSubscribe(): Unit = subscriber.onSubscribe(this)
   }
 
-  final class ProbeSource[T](val attributes: Attributes, shape: SourceShape[T])(implicit system: ActorSystem)
+  final class ProbeSource[T](val attributes: Attributes, shape: SourceShape[T])(
+      implicit system: ClassicActorSystemProvider)
       extends SourceModule[T, TestPublisher.Probe[T]](shape) {
     override def create(context: MaterializationContext) = {
       val probe = TestPublisher.probe[T]()
@@ -897,7 +904,7 @@ private[testkit] object StreamTestKit {
       new ProbeSource[T](attr, amendShape(attr))
   }
 
-  final class ProbeSink[T](val attributes: Attributes, shape: SinkShape[T])(implicit system: ActorSystem)
+  final class ProbeSink[T](val attributes: Attributes, shape: SinkShape[T])(implicit system: ClassicActorSystemProvider)
       extends SinkModule[T, TestSubscriber.Probe[T]](shape) {
     override def create(context: MaterializationContext) = {
       val probe = TestSubscriber.probe[T]()
