@@ -33,7 +33,7 @@ object Dependencies {
   val sslConfigVersion = "0.4.2"
 
   val scalaTestVersion = "3.1.4"
-  val scalaCheckVersion = "1.14.3"
+  val scalaCheckVersion = "1.15.1"
 
   val Versions =
     Seq(
