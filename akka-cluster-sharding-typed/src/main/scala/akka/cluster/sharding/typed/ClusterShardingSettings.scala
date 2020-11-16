@@ -16,6 +16,7 @@ import akka.cluster.sharding.{ ClusterShardingSettings => ClassicShardingSetting
 import akka.cluster.singleton.{ ClusterSingletonManagerSettings => ClassicClusterSingletonManagerSettings }
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.ClusterSingletonManagerSettings
+import akka.coordination.lease.LeaseUsageSettings
 import akka.util.JavaDurationConverters._
 
 object ClusterShardingSettings {
@@ -54,7 +55,8 @@ object ClusterShardingSettings {
         classicSettings.coordinatorSingletonSettings.singletonName,
         classicSettings.coordinatorSingletonSettings.role,
         classicSettings.coordinatorSingletonSettings.removalMargin,
-        classicSettings.coordinatorSingletonSettings.handOverRetryInterval))
+        classicSettings.coordinatorSingletonSettings.handOverRetryInterval),
+      leaseSettings = classicSettings.leaseSettings)
   }
 
   /** INTERNAL API: Intended only for internal use, it is not recommended to keep converting between the setting types */
@@ -98,7 +100,7 @@ object ClusterShardingSettings {
         settings.coordinatorSingletonSettings.role,
         settings.coordinatorSingletonSettings.removalMargin,
         settings.coordinatorSingletonSettings.handOverRetryInterval),
-      leaseSettings = None)
+      leaseSettings = settings.leaseSettings)
 
   }
 
@@ -339,8 +341,37 @@ final class ClusterShardingSettings(
     val stateStoreMode: ClusterShardingSettings.StateStoreMode,
     val rememberEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
-    val coordinatorSingletonSettings: ClusterSingletonManagerSettings) {
+    val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
+    val leaseSettings: Option[LeaseUsageSettings]) {
 
+  @deprecated("Use constructor with leaseSettings", "2.6.10")
+  def this(
+      numberOfShards: Int,
+      role: Option[String],
+      dataCenter: Option[DataCenter],
+      rememberEntities: Boolean,
+      journalPluginId: String,
+      snapshotPluginId: String,
+      passivateIdleEntityAfter: FiniteDuration,
+      shardRegionQueryTimeout: FiniteDuration,
+      stateStoreMode: ClusterShardingSettings.StateStoreMode,
+      rememberEntitiesStoreMode: ClusterShardingSettings.RememberEntitiesStoreMode,
+      tuningParameters: ClusterShardingSettings.TuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings) =
+    this(
+      numberOfShards,
+      role,
+      dataCenter,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      passivateIdleEntityAfter,
+      shardRegionQueryTimeout,
+      stateStoreMode,
+      rememberEntitiesStoreMode,
+      tuningParameters,
+      coordinatorSingletonSettings,
+      None)
   @deprecated("Use constructor with rememberEntitiesStoreMode", "2.6.6") // FIXME update version once merged
   def this(
       numberOfShards: Int,
@@ -366,7 +397,8 @@ final class ClusterShardingSettings(
       stateStoreMode,
       RememberEntitiesStoreModeDData,
       tuningParameters,
-      coordinatorSingletonSettings)
+      coordinatorSingletonSettings,
+      None)
 
   /**
    * INTERNAL API
@@ -436,7 +468,8 @@ final class ClusterShardingSettings(
       tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
       coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
       passivateIdleEntityAfter: FiniteDuration = passivateIdleEntityAfter,
-      shardRegionQueryTimeout: FiniteDuration = shardRegionQueryTimeout): ClusterShardingSettings =
+      shardRegionQueryTimeout: FiniteDuration = shardRegionQueryTimeout,
+      leaseSettings: Option[LeaseUsageSettings] = leaseSettings): ClusterShardingSettings =
     new ClusterShardingSettings(
       numberOfShards,
       role,
@@ -449,5 +482,6 @@ final class ClusterShardingSettings(
       stateStoreMode,
       rememberEntitiesStoreMode,
       tuningParameters,
-      coordinatorSingletonSettings)
+      coordinatorSingletonSettings,
+      leaseSettings)
 }

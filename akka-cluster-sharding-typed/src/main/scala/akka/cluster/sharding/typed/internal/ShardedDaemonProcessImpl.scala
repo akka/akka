@@ -140,7 +140,8 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
         StateStoreModeDData,
         RememberEntitiesStoreModeDData, // not used as remembered entities is off
         shardingBaseSettings.tuningParameters,
-        shardingBaseSettings.coordinatorSingletonSettings)
+        shardingBaseSettings.coordinatorSingletonSettings,
+        shardingBaseSettings.leaseSettings)
     }
 
     val nodeRoles = Cluster(system).selfMember.roles
