@@ -79,7 +79,8 @@ public class Restart {
         Source.tick(Duration.ofSeconds(1), Duration.ofSeconds(1), "tick").take(3);
     Source<String, NotUsed> forever =
         RestartSource.onFailuresWithBackoff(
-            Duration.ofSeconds(1), Duration.ofSeconds(10), 0.1, () -> finiteSource);
+            RestartSettings.create(Duration.ofSeconds(1), Duration.ofSeconds(10), 0.1),
+            () -> finiteSource);
     forever.runWith(Sink.foreach(System.out::println), system);
     // prints
     // tick
