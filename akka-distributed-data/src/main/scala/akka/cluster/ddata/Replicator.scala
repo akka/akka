@@ -1087,6 +1087,10 @@ object Replicator {
         if (changed) copy(pruning = newRemovedNodePruning)
         else this
       }
+
+      def estimatedSizeWithoutData: Int = {
+        deltaVersions.estimatedSize + pruning.valuesIterator.map(_.estimatedSize + EstimatedSize.UniqueAddress).sum
+      }
     }
 
     val DeletedEnvelope = DataEnvelope(DeletedData)
@@ -1364,13 +1368,14 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     roles.subsetOf(cluster.selfRoles),
     s"This cluster member [${selfAddress}] doesn't have all the roles [${roles.mkString(", ")}]")
 
-  private val payloadSizeAggregator = settings.logDataSizeExceeding.map { sizeExceeding =>
+  private val payloadSizeAggregator = {
+    val sizeExceeding = settings.logDataSizeExceeding.getOrElse(Int.MaxValue)
     val remoteProvider = RARP(context.system).provider
     val remoteSettings = remoteProvider.remoteSettings
     val maxFrameSize =
       if (remoteSettings.Artery.Enabled) remoteSettings.Artery.Advanced.MaximumFrameSize
       else context.system.settings.config.getBytes("akka.remote.classic.netty.tcp.maximum-frame-size").toInt
-    new PayloadSizeAggregator(log, sizeExceeding, maxFrameSize * 3 / 4)
+    new PayloadSizeAggregator(log, sizeExceeding, maxFrameSize)
   }
 
   //Start periodic gossip to random nodes in cluster
@@ -1885,7 +1890,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         replyTo ! DataDeleted(key, req)
       case _ =>
         setData(key.id, DeletedEnvelope)
-        payloadSizeAggregator.foreach(_.remove(key.id))
+        payloadSizeAggregator.remove(key.id)
         val durable = isDurable(key.id)
         if (isLocalUpdate(consistency)) {
           if (durable)
@@ -1938,7 +1943,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       if (subscribers.contains(key) && !changed.contains(key)) {
         val oldDigest = getDigest(key)
         val (dig, payloadSize) = digest(newEnvelope)
-        payloadSizeAggregator.foreach(_.updatePayloadSize(key, payloadSize))
+        payloadSizeAggregator.updatePayloadSize(key, payloadSize)
         if (dig != oldDigest)
           changed += key // notify subscribers, later
         dig
@@ -1955,7 +1960,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     dataEntries.get(key) match {
       case Some((envelope, LazyDigest)) =>
         val (d, size) = digest(envelope)
-        payloadSizeAggregator.foreach(_.updatePayloadSize(key, size))
+        payloadSizeAggregator.updatePayloadSize(key, size)
         dataEntries = dataEntries.updated(key, (envelope, d))
         d
       case Some((_, digest)) => digest
@@ -2160,12 +2165,10 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     if (keys.nonEmpty) {
       if (log.isDebugEnabled)
         log.debug("Sending gossip to [{}], containing [{}]", replyTo.path.address, keys.mkString(", "))
-      val g = Gossip(
-        keys.iterator.map(k => k -> getData(k).get).toMap,
-        sendBack = otherDifferentKeys.nonEmpty,
-        fromSystemUid,
-        selfFromSystemUid)
-      replyTo ! g
+      val sendBack = otherDifferentKeys.nonEmpty
+      createGossipMessages(keys, sendBack, fromSystemUid).foreach { g =>
+        replyTo ! g
+      }
     }
     val myMissingKeys = otherKeys.diff(myKeys)
     if (myMissingKeys.nonEmpty) {
@@ -2184,10 +2187,60 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     }
   }
 
+  private def createGossipMessages(
+      keys: immutable.Iterable[KeyId],
+      sendBack: Boolean,
+      fromSystemUid: Option[Long]): Vector[Gossip] = {
+    // The sizes doesn't have to be exact, rather error on too small messages. The serializer is also
+    // compressing the Gossip message.
+    val maxMessageSize = payloadSizeAggregator.maxFrameSize - 128
+
+    var messages = Vector.empty[Gossip]
+    val collectedEntries = Vector.newBuilder[(KeyId, DataEnvelope)]
+    var sum = 0
+
+    def addGossip(): Unit = {
+      val entries = collectedEntries.result().toMap
+      if (entries.nonEmpty)
+        messages :+= Gossip(entries, sendBack, fromSystemUid, selfFromSystemUid)
+    }
+
+    keys.foreach { key =>
+      val keySize = key.length + 4
+      val dataSize = payloadSizeAggregator.getMaxSize(key) match {
+        case 0 =>
+          // trigger payloadSizeAggregator update (LazyDigest)
+          getDigest(key)
+          payloadSizeAggregator.getMaxSize(key)
+        case size => size
+      }
+      val dataEnvelope = getData(key).get
+      val envelopeSize = 100 + dataEnvelope.estimatedSizeWithoutData
+
+      val entrySize = keySize + dataSize + envelopeSize
+      if (sum + entrySize <= maxMessageSize) {
+        collectedEntries += (key -> dataEnvelope)
+        sum += entrySize
+      } else {
+        addGossip()
+        collectedEntries.clear()
+        collectedEntries += (key -> dataEnvelope)
+        sum = entrySize
+      }
+    }
+
+    // add remaining, if any
+    addGossip()
+
+    log.debug("Created [{}] Gossip messages from [{}] data entries.", messages.size, keys.size)
+
+    messages
+  }
+
   def receiveGossip(updatedData: Map[KeyId, DataEnvelope], sendBack: Boolean, fromSystemUid: Option[Long]): Unit = {
     if (log.isDebugEnabled)
       log.debug("Received gossip from [{}], containing [{}].", replyTo.path.address, updatedData.keys.mkString(", "))
-    var replyData = Map.empty[KeyId, DataEnvelope]
+    var replyKeys = Set.empty[KeyId]
     updatedData.foreach {
       case (key, envelope) =>
         val hadData = dataEntries.contains(key)
@@ -2195,12 +2248,15 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         if (sendBack) getData(key) match {
           case Some(d) =>
             if (hadData || d.pruning.nonEmpty)
-              replyData = replyData.updated(key, d)
+              replyKeys += key
           case None =>
         }
     }
-    if (sendBack && replyData.nonEmpty)
-      replyTo ! Gossip(replyData, sendBack = false, fromSystemUid, selfFromSystemUid)
+    if (sendBack && replyKeys.nonEmpty) {
+      createGossipMessages(replyKeys, sendBack = false, fromSystemUid).foreach { g =>
+        replyTo ! g
+      }
+    }
   }
 
   def receiveSubscribe(key: KeyR, subscriber: ActorRef): Unit = {

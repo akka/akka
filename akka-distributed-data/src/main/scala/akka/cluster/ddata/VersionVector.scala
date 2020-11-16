@@ -263,6 +263,9 @@ sealed abstract class VersionVector extends ReplicatedData with ReplicatedDataSe
 
   override def pruningCleanup(removedNode: UniqueAddress): VersionVector
 
+  /** INTERNAL API */
+  @InternalApi private[akka] def estimatedSize: Int
+
 }
 
 final case class OneVersionVector private[akka] (node: UniqueAddress, version: Long) extends VersionVector {
@@ -321,6 +324,10 @@ final case class OneVersionVector private[akka] (node: UniqueAddress, version: L
 
   override def toString: String =
     s"VersionVector($node -> $version)"
+
+  /** INTERNAL API */
+  @InternalApi override private[akka] def estimatedSize: Int =
+    EstimatedSize.UniqueAddress + EstimatedSize.LongValue
 
 }
 
@@ -389,4 +396,8 @@ final case class ManyVersionVector(versions: TreeMap[UniqueAddress, Long]) exten
 
   override def toString: String =
     versions.map { case ((n, v)) => n.toString + " -> " + v }.mkString("VersionVector(", ", ", ")")
+
+  /** INTERNAL API */
+  @InternalApi override private[akka] def estimatedSize: Int =
+    versions.size * (EstimatedSize.UniqueAddress + EstimatedSize.LongValue)
 }
