@@ -69,3 +69,4 @@ final class ManualTime(delegate: akka.testkit.ExplicitlyTriggeredScheduler) {
   }
 
 }
+UpDATE
