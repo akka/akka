@@ -1,6 +1,6 @@
 # Source.asSourceWithContext
 
-Turns a `Source` into a `SourceWithContext` which can propagate a context per element along a stream.
+Extracts context data from the elements of a `Source` so that it can be turned into a `SourceWithContext` which can propagate that context per element along a stream.
 
 @ref[Source operators](../index.md#source-operators)
 
@@ -12,7 +12,7 @@ Turns a `Source` into a `SourceWithContext` which can propagate a context per el
 
 See @ref[Context Propagation](../../stream-context.md) for a general overview of context propagation.
 
-Turns a @apidoc[Source] into a @apidoc[SourceWithContext] which can propagate a context per element along a stream.
+Extracts context data from the elements of a @apidoc[Source] so that it can be turned into a @apidoc[SourceWithContext] which can propagate that context per element along a stream.
 The function passed into `asSourceWithContext` must turn elements into contexts, one context for every element.
 
 See also:
