@@ -725,6 +725,32 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         }
       i += 1
     }
+    if (_subInletsAndOutlets.nonEmpty) {
+      // automatic completion to not leak SubSinkInlets or SubSourceOutlets on stage completion
+      def completeSubInletsAndOutlets(left: List[AnyRef]): Unit = left match {
+        case sub :: tail =>
+          sub match {
+            case inlet: SubSinkInlet[_] =>
+              val subSink = inlet.sink.asInstanceOf[SubSink[_]]
+              optionalFailureCause match {
+                case OptionVal.Some(cause) => subSink.cancelSubstream(cause)
+                case _                     => subSink.cancelSubstream()
+              }
+            case outlet: SubSourceOutlet[_] =>
+              val subSource = outlet.source.asInstanceOf[SubSource[_]]
+              optionalFailureCause match {
+                case OptionVal.Some(cause) => subSource.failSubstream(cause)
+                case _                     => subSource.completeSubstream()
+              }
+            case wat =>
+              throw new IllegalStateException(
+                s"Stage _subInletsAndOutlets contained unexpected element of type ${wat.getClass.toString}")
+          }
+          completeSubInletsAndOutlets(tail)
+        case Nil => // done
+      }
+      completeSubInletsAndOutlets(_subInletsAndOutlets)
+    }
     setKeepGoing(false)
   }
 
@@ -1253,6 +1279,22 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     case ref  => ref
   }
 
+  // keep track of created SubSinkInlets and SubSourceOutlets to make sure we do not leak them
+  // when this stage completes/fails, not threadsafe only accessed from stream machinery callbacks etc.
+  private var _subInletsAndOutlets: List[AnyRef] = Nil
+
+  private def created(inlet: SubSinkInlet[_]): Unit =
+    _subInletsAndOutlets = inlet :: _subInletsAndOutlets
+
+  private def completedOrFailed(inlet: SubSinkInlet[_]): Unit =
+    _subInletsAndOutlets = _subInletsAndOutlets.filterNot(_ eq inlet)
+
+  private def created(outlet: SubSourceOutlet[_]): Unit =
+    _subInletsAndOutlets = outlet :: _subInletsAndOutlets
+
+  private def completedOrFailed(outlet: SubSourceOutlet[_]): Unit =
+    _subInletsAndOutlets = _subInletsAndOutlets.filterNot(_ eq outlet)
+
   /**
    * Initialize a [[StageActorRef]] which can be used to interact with from the outside world "as-if" an [[Actor]].
    * The messages are looped through the [[getAsyncCallback]] mechanism of [[GraphStage]] so they are safe to modify
@@ -1404,6 +1446,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       }
     }.invoke _)
 
+    GraphStageLogic.this.created(this)
+
     def sink: Graph[SinkShape[T], NotUsed] = _sink
 
     def setHandler(handler: InHandler): Unit = this.handler = handler
@@ -1429,10 +1473,14 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       _sink.pullSubstream()
     }
 
-    def cancel(): Unit = cancel(SubscriptionWithCancelException.NoMoreElementsNeeded)
+    def cancel(): Unit = {
+      cancel(SubscriptionWithCancelException.NoMoreElementsNeeded)
+      GraphStageLogic.this.completedOrFailed(this)
+    }
     def cancel(cause: Throwable): Unit = {
       closed = true
       _sink.cancelSubstream(cause)
+      GraphStageLogic.this.completedOrFailed(this)
     }
 
     override def toString = s"SubSinkInlet($name)"
@@ -1473,6 +1521,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     }
 
     private val _source = new SubSource[T](name, callback)
+    GraphStageLogic.this.created(this)
 
     /**
      * Set the source into timed-out mode if it has not yet been materialized.
@@ -1520,6 +1569,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       available = false
       closed = true
       _source.completeSubstream()
+      GraphStageLogic.this.completedOrFailed(this)
     }
 
     /**
@@ -1529,6 +1579,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       available = false
       closed = true
       _source.failSubstream(ex)
+      GraphStageLogic.this.completedOrFailed(this)
     }
 
     override def toString = s"SubSourceOutlet($name)"
