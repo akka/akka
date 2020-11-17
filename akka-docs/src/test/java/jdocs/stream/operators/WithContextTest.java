@@ -57,13 +57,13 @@ public class WithContextTest extends AbstractJavaTest {
             .asSourceWithContext(Pair::second) // pick the second pair element as context
             .map(Pair::first); // keep the first pair element as stream element
 
-    SourceWithContext<String, Integer, NotUsed> mapped = sourceWithContext
+    SourceWithContext<String, Integer, NotUsed> mapped =
+        sourceWithContext
             // regular operators apply to the element without seeing the context
             .map(s -> s.replace('e', 'y'));
     // #asSourceWithContext
 
-    CompletionStage<List<Pair<String, Integer>>> result =
-        mapped.runWith(Sink.seq(), system);
+    CompletionStage<List<Pair<String, Integer>>> result = mapped.runWith(Sink.seq(), system);
     List<Pair<String, Integer>> list = result.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertThat(
         list, hasItems(Pair.create("yins", 1), Pair.create("zwyi", 2), Pair.create("dryi", 3)));
