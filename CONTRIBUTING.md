@@ -574,7 +574,7 @@ Akka currently uses a combination of Jenkins and Travis for Continuous Integrati
 
 * Jenkins [runs the tests for each PR](https://jenkins.akka.io:8498/job/pr-validator-per-commit-jenkins/)
 * Jenkins [runs a nightly test suite](https://jenkins.akka.io:8498/view/Nightly%20Jobs/job/akka-nightly/)
-* Travis [checks dependency licenses for all PR's](https://travis-ci.org/akka/akka)
+* Travis [checks dependency licenses for all PR's](https://travis-ci.com/github/akka/akka)
 
 The [Jenkins server farm](https://jenkins.akka.io/), sometimes referred to as "the Lausanne cluster", is sponsored by Lightbend.
 

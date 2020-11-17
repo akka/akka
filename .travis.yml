@@ -1,3 +1,5 @@
+version: ~> 1.0
+
 language: scala
 
 sudo: false
@@ -43,8 +45,8 @@ stages:
 env:
   global:
     - TRAVIS_JDK=8
-    # encrypt with: travis encrypt WHITESOURCE_PASSWORD=...
-    - secure: "BCWtUqKG7trI7n5OZE2ReCGXQE/f5P8kXpfcpa5DXJeautBnpH/jettY5ermB5JLl12CisG6S4nS3BSKP4Uf8WPpPeSq402CZYTCbUxMWCvS+9N+kEQrHU7iwYqHQBL/RMy6eIyWPRD+JqxKuvlgfNuSEry9pMagwW7mNQrZgYU="
+    # encrypt with: travis encrypt --pro WHITESOURCE_PASSWORD=...
+    - secure: "hY52m7mKMUO8Lm4WS2IMIEXyMpHVBC2wt6zGaQg0w3/kTotteQmeUW5PZnbepepUZaOTxrWXMBvnyzLAnGRW6VfmViuTaaT86jsZFqlc1y4hTmG5oB6VWSDHvbXpupUd54l4Ks8IrWNsJ1nQI+rlxYYz8oRAdVSsi59K+KKEFX6Ucff9UK9pgOA6fVftxQsxFPTJaseqb80UVhM37Y582CpH5T31MEpGUPA7URBe486saURRs3OmAeiPgwinY/f2Fr8BwCPrEfaJHv2Ks+yxj7iWFuCKkGbOmd+TJjK3AbFqYmV+uYbSsI9p5wkb0ciW708jbeV7qk5V/OSohxucHF5ivI0yMS8RWscL0TpMRHlZPkvzpPhUCdYBMaiztmaFrYdlkjicNVXnV+4Mk0zAc3sdg3WoV9eRg1JmRxgSGVRJeIKUXy3rWjdVoGjgeG9J4cm7Ge+k3cEgbT11+gY6PhcmMYXwGwXvAtWD4/iGeZOE7JXsSeFdlA+vYIscz4N/mcm27K7BLPpv5+SRJaAp3sAj1hS/ePJWPcbCRdRuxGMfk3X4BxesbR6AL9TinrH6R3L7DkRhH524eE0Ph50Wmc1+oBts3wLvPyNYv6fDN7JyUFnArp2mh+ByAzaf0wX+2FPNoL1C3MC0jtcbbzAhZlQMZ6NbbcGgL1XiRKb0Eks="
 
 # safelist
 branches:
