@@ -725,6 +725,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         }
       i += 1
     }
+    cleanUpSubstreams(optionalFailureCause)
+    setKeepGoing(false)
+  }
+
+  private def cleanUpSubstreams(optionalFailureCause: OptionVal[Throwable]): Unit = {
     if (_subInletsAndOutlets.nonEmpty) {
       // automatic completion to not leak SubSinkInlets or SubSourceOutlets on stage completion
       def completeSubInletsAndOutlets(left: List[AnyRef]): Unit = left match {
@@ -749,9 +754,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
           completeSubInletsAndOutlets(tail)
         case Nil => // done
       }
+
       completeSubInletsAndOutlets(_subInletsAndOutlets)
+      _subInletsAndOutlets = Nil
     }
-    setKeepGoing(false)
   }
 
   /**
@@ -1371,6 +1377,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       val exception = streamDetachedException
       inProgress.foreach(_.tryFailure(exception))
     }
+    cleanUpSubstreams(OptionVal.None)
   }
 
   private[this] var asyncCleanupCounter = 0L
@@ -1417,8 +1424,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    *
    * This allows the dynamic creation of an Inlet for a GraphStage which is
    * connected to a Sink that is available for materialization (e.g. using
-   * the `subFusingMaterializer`). Care needs to be taken to cancel this Inlet
-   * when the operator shuts down lest the corresponding Sink be left hanging.
+   * the `subFusingMaterializer`). Completion, cancellation and failure of the
+   * parent operator is automatically delegated to instances of `SubSinkInlet` to avoid resource leaks.
    *
    * To be thread safe this method must only be called from either the constructor of the graph operator during
    * materialization or one of the methods invoked by the graph operator machinery, such as `onPush` and `onPull`.
@@ -1491,9 +1498,12 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    *
    * This allows the dynamic creation of an Outlet for a GraphStage which is
    * connected to a Source that is available for materialization (e.g. using
-   * the `subFusingMaterializer`). Care needs to be taken to complete this
-   * Outlet when the operator shuts down lest the corresponding Sink be left
-   * hanging. It is good practice to use the `timeout` method to cancel this
+   * the `subFusingMaterializer`). Completion, cancellation and failure of the
+   * parent operator is automatically delegated to instances of `SubSourceOutlet`
+   * to avoid resource leaks.
+   *
+   * FIXME: is this advice still needed:
+   * It is good practice to use the `timeout` method to cancel this
    * Outlet in case the corresponding Source is not materialized within a
    * given time limit, see e.g. ActorMaterializerSettings.
    *

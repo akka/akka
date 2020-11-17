@@ -69,7 +69,10 @@ class SubInletOutletSpec extends StreamSpec {
                 case "completeStage" => completeStage()
                 case "cancelStage"   => cancelStage(NoMoreElementsNeeded)
                 case "failStage"     => failStage(TE("boom"))
-                case _               => // ignore
+                case "closeAll" =>
+                  cancel(in)
+                  complete(out)
+                case _ => // ignore
               }
               if (isAvailable(in))
                 pull(in)
@@ -85,7 +88,7 @@ class SubInletOutletSpec extends StreamSpec {
       }
     }
 
-    "complete automatically when parent stage compltes" in {
+    class TestSetup {
       val upstream = TestPublisher.probe[String]()
       val sidechannel = TestPublisher.probe[String]()
       val downstream = TestSubscriber.probe[String]()
@@ -93,6 +96,9 @@ class SubInletOutletSpec extends StreamSpec {
       val passAlong = new PassAlongSubInStage(Source.fromPublisher(sidechannel))
       Source.fromPublisher(upstream).via(passAlong).runWith(Sink.fromSubscriber(downstream))
 
+    }
+
+    "complete automatically when parent stage completes" in new TestSetup {
       downstream.request(1L)
       sidechannel.expectRequest()
       upstream.expectRequest()
@@ -102,14 +108,7 @@ class SubInletOutletSpec extends StreamSpec {
       awaitAssert(passAlong.subCompletion should equal(Success(Done)))
     }
 
-    "complete automatically when parent stage cancels" in {
-      val upstream = TestPublisher.probe[String]()
-      val sidechannel = TestPublisher.probe[String]()
-      val downstream = TestSubscriber.probe[String]()
-
-      val passAlong = new PassAlongSubInStage(Source.fromPublisher(sidechannel))
-      Source.fromPublisher(upstream).via(passAlong).runWith(Sink.fromSubscriber(downstream))
-
+    "complete automatically when parent stage cancels" in new TestSetup {
       downstream.request(1L)
       sidechannel.expectRequest()
       upstream.expectRequest()
@@ -119,14 +118,7 @@ class SubInletOutletSpec extends StreamSpec {
       awaitAssert(passAlong.subCompletion should equal(Success(Done)))
     }
 
-    "fail automatically when parent stage fails" in {
-      val upstream = TestPublisher.probe[String]()
-      val sidechannel = TestPublisher.probe[String]()
-      val downstream = TestSubscriber.probe[String]()
-
-      val passAlong = new PassAlongSubInStage(Source.fromPublisher(sidechannel))
-      Source.fromPublisher(upstream).via(passAlong).runWith(Sink.fromSubscriber(downstream))
-
+    "fail automatically when parent stage fails" in new TestSetup {
       downstream.request(1L)
       sidechannel.expectRequest()
       upstream.expectRequest()
@@ -134,6 +126,16 @@ class SubInletOutletSpec extends StreamSpec {
       downstream.expectNext("a one")
       upstream.sendNext("failStage")
       awaitAssert(passAlong.subCompletion should equal(Failure(TE("boom"))))
+    }
+
+    "complete automatically when all parent ins and outs are closed" in new TestSetup {
+      downstream.request(1L)
+      sidechannel.expectRequest()
+      upstream.expectRequest()
+      sidechannel.sendNext("a one")
+      downstream.expectNext("a one")
+      upstream.sendNext("closeAll")
+      awaitAssert(passAlong.subCompletion should equal(Success(Done)))
     }
 
   }
@@ -169,6 +171,7 @@ class SubInletOutletSpec extends StreamSpec {
               case "completeStage" => completeStage()
               case "cancelStage"   => cancelStage(NoMoreElementsNeeded)
               case "failStage"     => failStage(TE("boom"))
+              case "completeAll"   => cancel(in)
               case other           => subOut.push(other)
             }
           }
@@ -190,6 +193,11 @@ class SubInletOutletSpec extends StreamSpec {
       val stage = new ContrivedSubSourceStage
       Source("element" :: "failStage" :: Nil).runWith(Sink.fromGraph(stage))
       awaitAssert(stage.subCompletion should equal(Failure(TE("boom"))))
+    }
+    "cancel automatically when all parent ins and outs are closed" in {
+      val stage = new ContrivedSubSourceStage
+      Source("element" :: "completeAll" :: Nil).runWith(Sink.fromGraph(stage))
+      awaitAssert(stage.subCompletion should equal(Success(Done)))
     }
   }
 
