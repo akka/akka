@@ -327,7 +327,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
       } else {
         terminations.takeFirst
       }
-    assert(message != null, s"timeout ($max) during expectStop waiting for actor [${actorRef.path}] to stop")
+    assert(message != null, s"timeout ($max) during expectTerminated waiting for actor [${actorRef.path}] to stop")
     assert(message.ref == actorRef, s"expected [${actorRef.path}] to stop, but saw [${message.ref.path}] stop")
   }
 
