@@ -4,7 +4,7 @@
 
 package akka.stream.testkit.scaladsl
 
-import akka.actor.ClassicActorSystemProvider
+import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.Attributes.none
 import akka.stream.scaladsl._
@@ -19,7 +19,7 @@ object TestSource {
   /**
    * A Source that materializes to a [[akka.stream.testkit.TestPublisher.Probe]].
    */
-  def probe[T](implicit system: ClassicActorSystemProvider) =
+  def probe[T](implicit system: ActorSystem) =
     Source.fromGraph[T, TestPublisher.Probe[T]](new ProbeSource(none, SourceShape(Outlet("ProbeSource.out"))))
 
 }
