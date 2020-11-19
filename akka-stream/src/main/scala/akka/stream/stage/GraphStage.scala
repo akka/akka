@@ -730,34 +730,24 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   }
 
   private def cleanUpSubstreams(optionalFailureCause: OptionVal[Throwable]): Unit = {
-    if (_subInletsAndOutlets.nonEmpty) {
-      // automatic completion to not leak SubSinkInlets or SubSourceOutlets on stage completion
-      def completeSubInletsAndOutlets(left: List[AnyRef]): Unit = left match {
-        case sub :: tail =>
-          sub match {
-            case inlet: SubSinkInlet[_] =>
-              val subSink = inlet.sink.asInstanceOf[SubSink[_]]
-              optionalFailureCause match {
-                case OptionVal.Some(cause) => subSink.cancelSubstream(cause)
-                case _                     => subSink.cancelSubstream()
-              }
-            case outlet: SubSourceOutlet[_] =>
-              val subSource = outlet.source.asInstanceOf[SubSource[_]]
-              optionalFailureCause match {
-                case OptionVal.Some(cause) => subSource.failSubstream(cause)
-                case _                     => subSource.completeSubstream()
-              }
-            case wat =>
-              throw new IllegalStateException(
-                s"Stage _subInletsAndOutlets contained unexpected element of type ${wat.getClass.toString}")
-          }
-          completeSubInletsAndOutlets(tail)
-        case Nil => // done
-      }
-
-      completeSubInletsAndOutlets(_subInletsAndOutlets)
-      _subInletsAndOutlets = Nil
+    _subInletsAndOutlets.foreach {
+      case inlet: SubSinkInlet[_] =>
+        val subSink = inlet.sink.asInstanceOf[SubSink[_]]
+        optionalFailureCause match {
+          case OptionVal.Some(cause) => subSink.cancelSubstream(cause)
+          case _                     => subSink.cancelSubstream()
+        }
+      case outlet: SubSourceOutlet[_] =>
+        val subSource = outlet.source.asInstanceOf[SubSource[_]]
+        optionalFailureCause match {
+          case OptionVal.Some(cause) => subSource.failSubstream(cause)
+          case _                     => subSource.completeSubstream()
+        }
+      case wat =>
+        throw new IllegalStateException(
+          s"Stage _subInletsAndOutlets contained unexpected element of type ${wat.getClass.toString}")
     }
+    _subInletsAndOutlets = Set.empty
   }
 
   /**
@@ -1287,19 +1277,19 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   // keep track of created SubSinkInlets and SubSourceOutlets to make sure we do not leak them
   // when this stage completes/fails, not threadsafe only accessed from stream machinery callbacks etc.
-  private var _subInletsAndOutlets: List[AnyRef] = Nil
+  private var _subInletsAndOutlets: Set[AnyRef] = Set.empty
 
   private def created(inlet: SubSinkInlet[_]): Unit =
-    _subInletsAndOutlets = inlet :: _subInletsAndOutlets
+    _subInletsAndOutlets += inlet
 
   private def completedOrFailed(inlet: SubSinkInlet[_]): Unit =
-    _subInletsAndOutlets = _subInletsAndOutlets.filterNot(_ eq inlet)
+    _subInletsAndOutlets -= inlet
 
   private def created(outlet: SubSourceOutlet[_]): Unit =
-    _subInletsAndOutlets = outlet :: _subInletsAndOutlets
+    _subInletsAndOutlets += outlet
 
   private def completedOrFailed(outlet: SubSourceOutlet[_]): Unit =
-    _subInletsAndOutlets = _subInletsAndOutlets.filterNot(_ eq outlet)
+    _subInletsAndOutlets -= outlet
 
   /**
    * Initialize a [[StageActorRef]] which can be used to interact with from the outside world "as-if" an [[Actor]].
@@ -1482,7 +1472,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
     def cancel(): Unit = {
       cancel(SubscriptionWithCancelException.NoMoreElementsNeeded)
-      GraphStageLogic.this.completedOrFailed(this)
     }
     def cancel(cause: Throwable): Unit = {
       closed = true
@@ -1502,8 +1491,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * parent operator is automatically delegated to instances of `SubSourceOutlet`
    * to avoid resource leaks.
    *
-   * FIXME: is this advice still needed:
-   * It is good practice to use the `timeout` method to cancel this
+   * Even so it is good practice to use the `timeout` method to cancel this
    * Outlet in case the corresponding Source is not materialized within a
    * given time limit, see e.g. ActorMaterializerSettings.
    *
