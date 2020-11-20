@@ -30,11 +30,12 @@ class WithContextSpec extends AkkaSpec {
     val mapped: SourceWithContext[String, Int, NotUsed] = sourceWithContext
     // regular operators apply to the element without seeing the context
       .map(s => s.reverse)
-    // #asSourceWithContext
 
+    // running the source and asserting the outcome
     import akka.stream.scaladsl.Sink
     val result = mapped.runWith(Sink.seq)
     result.futureValue should contain theSameElementsInOrderAs immutable.Seq("snie" -> 1, "iewz" -> 2, "ierd" -> 3)
+    // #asSourceWithContext
   }
 
   "use asFlowWithContext" in {
@@ -64,14 +65,17 @@ class WithContextSpec extends AkkaSpec {
     val mapped = flowWithContext
     // regular operators apply to the element without seeing the context
       .map(_.reverse)
-    // #asFlowWithContext
 
+    // running the flow with some sample data and asserting the outcome
     import akka.stream.scaladsl.Source
     import akka.stream.scaladsl.Sink
     import scala.collection.immutable
+
     val values: immutable.Seq[(String, Int)] = immutable.Seq("eins" -> 1, "zwei" -> 2, "drei" -> 3)
     val source = Source(values).asSourceWithContext(_._2).map(_._1)
+
     val result = source.via(mapped).runWith(Sink.seq)
     result.futureValue should contain theSameElementsInOrderAs immutable.Seq("snie" -> 1, "iewz" -> 2, "ierd" -> 3)
+    // #asFlowWithContext
   }
 }
