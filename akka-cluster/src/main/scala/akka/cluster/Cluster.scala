@@ -320,6 +320,13 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     clusterCore ! ClusterUserAction.JoinTo(fillLocal(address))
   }
 
+  /**
+   * Change the state of every member in preparation for a full cluster shutdown.
+   */
+  def prepareForFullClusterShutdown(): Unit = {
+    clusterCore ! ClusterUserAction.PrepareForShutdown(selfAddress)
+  }
+
   private def fillLocal(address: Address): Address = {
     // local address might be used if grabbed from actorRef.path.address
     if (address.hasLocalScope && address.system == selfAddress.system) selfAddress

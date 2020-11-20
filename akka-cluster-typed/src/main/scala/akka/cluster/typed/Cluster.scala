@@ -151,6 +151,17 @@ object Leave {
 final case class Down(address: Address) extends ClusterCommand
 
 /**
+ * FIXME implement
+ *
+ * Initiate a full cluster shutdown. This stops:
+ * - New members joining the cluster
+ * - New rebalances in Cluster Sharding
+ *
+ * However, it does not stop the nodes. That is expected to be signalled externally.
+ */
+final case class FullClusterShutdown() extends ClusterCommand
+
+/**
  * Akka Typed Cluster API entry point
  */
 object Cluster extends ExtensionId[Cluster] {

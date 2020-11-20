@@ -61,6 +61,15 @@ private[cluster] object ClusterUserAction {
   @SerialVersionUID(1L)
   final case class Down(address: Address) extends ClusterMessage
 
+  /**
+   * Command to mark all nodes as shutting down
+   *
+   * FIXME Maybe we shouldn't include an address and either just do the local node
+   * or all nodes
+   */
+  @SerialVersionUID(1L)
+  final case class PrepareForShutdown(address: Address) extends ClusterMessage
+
 }
 
 /**
@@ -482,6 +491,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           joinSeedNodesWasUnsuccessful()
     }: Actor.Receive).orElse(receiveExitingCompleted)
 
+  // FIXME, what happens if we try to join a node that is Shutting down, just timeout?
   def tryingToJoin(joinWith: Address, deadline: Option[Deadline]): Actor.Receive =
     ({
       case Welcome(from, gossip) =>
@@ -558,13 +568,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       case InitJoin(joiningNodeConfig) =>
         logInfo("Received InitJoin message from [{}] to [{}]", sender(), selfAddress)
         initJoin(joiningNodeConfig)
-      case Join(node, roles, appVersion)         => joining(node, roles, appVersion)
-      case ClusterUserAction.Down(address)       => downing(address)
-      case ClusterUserAction.Leave(address)      => leaving(address)
-      case SendGossipTo(address)                 => sendGossipTo(address)
-      case msg: SubscriptionMessage              => publisher.forward(msg)
-      case QuarantinedEvent(ua)                  => quarantined(UniqueAddress(ua))
-      case ClassicQuarantinedEvent(address, uid) => quarantined(UniqueAddress(address, uid))
+      case Join(node, roles, appVersion)                 => joining(node, roles, appVersion)
+      case ClusterUserAction.Down(address)               => downing(address)
+      case ClusterUserAction.Leave(address)              => leaving(address)
+      case ClusterUserAction.PrepareForShutdown(address) => startShutdown(address)
+      case SendGossipTo(address)                         => sendGossipTo(address)
+      case msg: SubscriptionMessage                      => publisher.forward(msg)
+      case QuarantinedEvent(ua)                          => quarantined(UniqueAddress(ua))
+      case ClassicQuarantinedEvent(address, uid)         => quarantined(UniqueAddress(address, uid))
       case ClusterUserAction.JoinTo(address) =>
         logInfo("Trying to join [{}] when already part of a cluster, ignoring", address)
       case JoinSeedNodes(nodes) =>
@@ -734,6 +745,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
    * current gossip state, including the new joining member.
    */
   def joining(joiningNode: UniqueAddress, roles: Set[String], appVersion: Version): Unit = {
+    // FIXME don't allow if shutdown in progress
     val selfStatus = latestGossip.member(selfUniqueAddress).status
     if (joiningNode.address.protocol != selfAddress.protocol)
       logWarning(
@@ -833,11 +845,37 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   }
 
   /**
+   * State transition to ShuttingDown. The current node sets its self as ShuttingDown
+   * Every other node, as soon as it sees any node as shutting down, sets its self to
+   * shutting down.
+   */
+  def startShutdown(address: Address): Unit = {
+    val memberToShutdown: Option[Member] = latestGossip.members.find(_.address == address)
+    memberToShutdown match {
+      case None =>
+        logWarning("Address {} does not exist. Shutdown not happening.", address)
+      case Some(member) =>
+        val newMembers = latestGossip.members - member + member.copy(status = PreparingForShutdown)
+        val newGossip = latestGossip.copy(members = newMembers)
+        updateLatestGossip(newGossip)
+        logInfo(
+          ClusterLogMarker.memberChanged(member.uniqueAddress, MemberStatus.PreparingForShutdown),
+          "Shutting down [{}] as [{}]",
+          address,
+          PreparingForShutdown)
+        publishMembershipState()
+        gossip()
+    }
+
+  }
+
+  /**
    * State transition to LEAVING.
    * The node will eventually be removed by the leader, after hand-off in EXITING, and only after
    * removal a new node with same address can join the cluster through the normal joining procedure.
    */
   def leaving(address: Address): Unit = {
+    // FIXME should we allow this if shutdown in progress? Seems like more work
     // only try to update if the node is available (in the member ring)
     latestGossip.members.find(_.address == address).foreach { existingMember =>
       if (existingMember.status == Joining || existingMember.status == WeaklyUp || existingMember.status == Up) {
@@ -1132,6 +1170,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         shutdownSelfWhenDown()
       }
 
+      if (latestGossip.members.exists(m => MembershipState.shuttingDownStatus(m.status)) && (!MembershipState
+            .shuttingDownStatus(selfStatus))) {
+        logInfo("Detected full cluster shutdown")
+        self ! ClusterUserAction.PrepareForShutdown(selfAddress)
+      }
+
       if (talkback) {
         // send back gossip to sender() when sender() had different view, i.e. merge, or sender() had
         // older or sender() had newer
@@ -1290,7 +1334,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     val removedOtherDc =
       if (latestGossip.isMultiDc) {
         latestGossip.members.filter { m =>
-          (m.dataCenter != selfDc && removeUnreachableWithMemberStatus(m.status))
+          m.dataCenter != selfDc && removeUnreachableWithMemberStatus(m.status)
         }
       } else
         Set.empty[Member]
@@ -1319,6 +1363,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           case m if m.dataCenter == selfDc && m.status == Leaving =>
             // Move LEAVING => EXITING (once we have a convergence on LEAVING)
             m.copy(status = Exiting)
+
+          case m if m.dataCenter == selfDc & m.status == PreparingForShutdown =>
+            // Move PreparingForShutdown => ReadingForShutdown (once we have a convergence on PreparingForShutdown)
+            m.copy(status = ReadyForShutdown)
         }
       }
     }

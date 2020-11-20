@@ -129,6 +129,7 @@ object Member {
    * INTERNAL API
    * Orders the members by their address except that members with status
    * Joining, Exiting and Down are ordered last (in that order).
+   * FIXME include shutting down
    */
   private[cluster] val leaderStatusOrdering: Ordering[Member] = Ordering.fromLessThan[Member] { (a, b) =>
     (a.status, b.status) match {
@@ -195,6 +196,8 @@ object Member {
 
   /**
    * Picks the Member with the highest "priority" MemberStatus.
+   * Where highest priority is furthest along the membership state machine
+   * FIXME - include shutting down
    */
   def highestPriorityOf(m1: Member, m2: Member): Member = {
     if (m1.status == m2.status)
@@ -202,19 +205,24 @@ object Member {
       if (m1.isOlderThan(m2)) m1 else m2
     else
       (m1.status, m2.status) match {
-        case (Removed, _)  => m1
-        case (_, Removed)  => m2
-        case (Down, _)     => m1
-        case (_, Down)     => m2
-        case (Exiting, _)  => m1
-        case (_, Exiting)  => m2
-        case (Leaving, _)  => m1
-        case (_, Leaving)  => m2
-        case (Joining, _)  => m2
-        case (_, Joining)  => m1
-        case (WeaklyUp, _) => m2
-        case (_, WeaklyUp) => m1
-        case (Up, Up)      => m1
+        case (Removed, _) => m1
+        case (_, Removed) => m2
+        case (PreparingForShutdown, _) =>
+          m1 // FIXME Consider moving these after down and exiting. Should we allow a node to still leave?
+        case (_, PreparingForShutdown) => m2
+        case (ReadyForShutdown, _)     => m1
+        case (_, ReadyForShutdown)     => m2
+        case (Down, _)                 => m1
+        case (_, Down)                 => m2
+        case (Exiting, _)              => m1
+        case (_, Exiting)              => m2
+        case (Leaving, _)              => m1
+        case (_, Leaving)              => m2
+        case (Joining, _)              => m2
+        case (_, Joining)              => m1
+        case (WeaklyUp, _)             => m2
+        case (_, WeaklyUp)             => m1
+        case (Up, Up)                  => m1
       }
   }
 
@@ -235,6 +243,8 @@ object MemberStatus {
   @SerialVersionUID(1L) case object Exiting extends MemberStatus
   @SerialVersionUID(1L) case object Down extends MemberStatus
   @SerialVersionUID(1L) case object Removed extends MemberStatus
+  @SerialVersionUID(1L) case object PreparingForShutdown extends MemberStatus
+  @SerialVersionUID(1L) case object ReadyForShutdown extends MemberStatus
 
   /**
    * Java API: retrieve the `Joining` status singleton
@@ -272,16 +282,28 @@ object MemberStatus {
   def removed: MemberStatus = Removed
 
   /**
+   * Java API: retrieve the `ShuttingDown` status singleton
+   */
+  def shuttingDown: MemberStatus = PreparingForShutdown
+
+  /**
+   * Java API: retrieve the `ShutDown` status singleton
+   */
+  def shutDown: MemberStatus = ReadyForShutdown
+
+  /**
    * INTERNAL API
    */
   private[cluster] val allowedTransitions: Map[MemberStatus, Set[MemberStatus]] =
     Map(
       Joining -> Set(WeaklyUp, Up, Leaving, Down, Removed),
       WeaklyUp -> Set(Up, Leaving, Down, Removed),
-      Up -> Set(Leaving, Down, Removed),
-      Leaving -> Set(Exiting, Down, Removed),
-      Down -> Set(Removed),
-      Exiting -> Set(Removed, Down),
+      Up -> Set(Leaving, Down, Removed, PreparingForShutdown),
+      Leaving -> Set(Exiting, Down, Removed, PreparingForShutdown),
+      Down -> Set(Removed, PreparingForShutdown),
+      Exiting -> Set(Removed, Down, PreparingForShutdown),
+      PreparingForShutdown -> Set(ReadyForShutdown, Removed),
+      ReadyForShutdown -> Set(Removed),
       Removed -> Set.empty[MemberStatus])
 }
 

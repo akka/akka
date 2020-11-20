@@ -54,6 +54,7 @@ private[akka] object ClusterMessageSerializer {
   val WelcomeManifest = "W"
   val LeaveManifest = "L"
   val DownManifest = "D"
+  val PrepareForShutdownManifest = "PS"
   val InitJoinManifest = "IJ"
   val InitJoinAckManifest = "IJA"
   val InitJoinNackManifest = "IJN"
@@ -80,19 +81,20 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
   private lazy val GossipTimeToLive = Cluster(system).settings.GossipTimeToLive
 
   def manifest(o: AnyRef): String = o match {
-    case _: InternalClusterAction.Join          => JoinManifest
-    case _: InternalClusterAction.Welcome       => WelcomeManifest
-    case _: ClusterUserAction.Leave             => LeaveManifest
-    case _: ClusterUserAction.Down              => DownManifest
-    case _: InternalClusterAction.InitJoin      => InitJoinManifest
-    case _: InternalClusterAction.InitJoinAck   => InitJoinAckManifest
-    case _: InternalClusterAction.InitJoinNack  => InitJoinNackManifest
-    case _: ClusterHeartbeatSender.Heartbeat    => HeartbeatManifest
-    case _: ClusterHeartbeatSender.HeartbeatRsp => HeartbeatRspManifest
-    case _: ExitingConfirmed                    => ExitingConfirmedManifest
-    case _: GossipStatus                        => GossipStatusManifest
-    case _: GossipEnvelope                      => GossipEnvelopeManifest
-    case _: ClusterRouterPool                   => ClusterRouterPoolManifest
+    case _: InternalClusterAction.Join           => JoinManifest
+    case _: InternalClusterAction.Welcome        => WelcomeManifest
+    case _: ClusterUserAction.Leave              => LeaveManifest
+    case _: ClusterUserAction.Down               => DownManifest
+    case _: ClusterUserAction.PrepareForShutdown => PrepareForShutdownManifest
+    case _: InternalClusterAction.InitJoin       => InitJoinManifest
+    case _: InternalClusterAction.InitJoinAck    => InitJoinAckManifest
+    case _: InternalClusterAction.InitJoinNack   => InitJoinNackManifest
+    case _: ClusterHeartbeatSender.Heartbeat     => HeartbeatManifest
+    case _: ClusterHeartbeatSender.HeartbeatRsp  => HeartbeatRspManifest
+    case _: ExitingConfirmed                     => ExitingConfirmedManifest
+    case _: GossipStatus                         => GossipStatusManifest
+    case _: GossipEnvelope                       => GossipEnvelopeManifest
+    case _: ClusterRouterPool                    => ClusterRouterPoolManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
@@ -372,7 +374,9 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
     MemberStatus.Exiting -> cm.MemberStatus.Exiting_VALUE,
     MemberStatus.Down -> cm.MemberStatus.Down_VALUE,
     MemberStatus.Removed -> cm.MemberStatus.Removed_VALUE,
-    MemberStatus.WeaklyUp -> cm.MemberStatus.WeaklyUp_VALUE)
+    MemberStatus.WeaklyUp -> cm.MemberStatus.WeaklyUp_VALUE,
+    MemberStatus.PreparingForShutdown -> cm.MemberStatus.PreparingForShutdown_VALUE,
+    MemberStatus.ReadyForShutdown -> cm.MemberStatus.ReadyForShutdown_VALUE)
 
   private val memberStatusFromInt = memberStatusToInt.map { case (a, b) => (b, a) }
 
