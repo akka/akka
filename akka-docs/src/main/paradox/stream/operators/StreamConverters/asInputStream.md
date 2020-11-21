@@ -25,3 +25,10 @@ The `InputStream` will be ended when the stream flowing into this `Sink` complet
 **backpressures** when no read is pending on the `InputStream`
 @@@
 
+## Example
+
+Scala
+:   @@snip [ToFromJavaIOStreams.scala](/akka-docs/src/test/scala/docs/stream/operators/converters/ToFromJavaIOStreams.scala) { #asJavaInputStream }
+
+Java
+:   @@snip [ToFromJavaIOStreams.java](/akka-docs/src/test/java/jdocs/stream/operators/converters/ToFromJavaIOStreams.java) { #asJavaInputStream }

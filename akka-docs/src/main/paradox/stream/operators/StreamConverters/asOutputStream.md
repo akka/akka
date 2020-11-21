@@ -24,3 +24,10 @@ closing the `OutputStream` will complete the `Source`.
 **completes** when the `OutputStream` is closed
 @@@
 
+## Example
+
+Scala
+:   @@snip [ToFromJavaIOStreams.scala](/akka-docs/src/test/scala/docs/stream/operators/converters/ToFromJavaIOStreams.scala) { #asJavaOutputStream }
+
+Java
+:   @@snip [ToFromJavaIOStreams.java](/akka-docs/src/test/java/jdocs/stream/operators/converters/ToFromJavaIOStreams.java) { #asJavaOutputStream }
