@@ -1,4 +1,4 @@
-import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
+import akka.{AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin}
 
 enablePlugins(
   UnidocRoot,
@@ -57,13 +57,10 @@ resolverSettings
 def isScala213: Boolean = System.getProperty("akka.build.scalaVersion", "").startsWith("2.13")
 
 // When this is updated the set of modules in ActorSystem.allModules should also be updated
-lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
+lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
   actor,
-  actorTests,
   actorTestkitTyped,
   actorTyped,
-  actorTypedTests,
-  benchJmh,
   cluster,
   clusterMetrics,
   clusterSharding,
@@ -73,29 +70,36 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   coordination,
   discovery,
   distributedData,
-  docs,
   jackson,
   multiNodeTestkit,
   osgi,
   persistence,
   persistenceQuery,
-  persistenceShared,
-  persistenceTck,
   persistenceTyped,
-  persistenceTypedTests,
   persistenceTestkit,
   protobuf,
   protobufV3,
   pki,
   remote,
-  remoteTests,
   slf4j,
   stream,
   streamTestkit,
-  streamTests,
-  streamTestsTck,
   streamTyped,
   testkit)
+
+lazy val aggregatedProjects: Seq[ProjectReference] = userProjects ++ List[ProjectReference](
+  actorTests,
+  actorTypedTests,
+  benchJmh,
+  docs,
+  `maven-dependencies`,
+  persistenceShared,
+  persistenceTck,
+  persistenceTypedTests,
+  remoteTests,
+  streamTests,
+  streamTestsTck)
+
 
 lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
@@ -554,6 +558,55 @@ lazy val coordination = akkaModule("akka-coordination")
   .settings(Dependencies.coordination)
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)
+
+lazy val `maven-dependencies` = akkaModule("maven-dependencies")
+  .enablePlugins(HeaderPlugin)
+  .settings(
+    name := "akka-maven-dependencies",
+    autoScalaLibrary := false,
+    // publish Maven Style
+    publishMavenStyle := true,
+    crossPaths := false,
+    // no MiMa
+    mimaPreviousArtifacts := Set.empty,
+
+    pomExtra := pomExtra.value :+ {
+      val akkaDeps = Def.settingDyn {
+        // all Akka artifacts are cross compiled
+        // FIXME: ^^^^ is that true? Even for akka-OSGi?
+        (userProjects).map {
+          project =>
+            Def.setting {
+              val artifactName = (artifact in project).value.name
+
+              Dependencies.scalaVersions.map {
+                supportedVersion =>
+                  // we are sure this won't be a None
+                  val crossFunc =
+                    CrossVersion(Binary(), supportedVersion, CrossVersion.binaryScalaVersion(supportedVersion)).get
+                  // convert artifactName to match the desired scala version
+                  val artifactId = crossFunc(artifactName)
+
+                  <dependency>
+                    <groupId>{(organization in project).value}</groupId>
+                    <artifactId>{artifactId}</artifactId>
+                    <version>{(version in project).value}</version>
+                  </dependency>
+              }
+            }
+        }.join
+      }.value
+
+      <dependencyManagement>
+        <dependencies>
+          {akkaDeps}
+        </dependencies>
+      </dependencyManagement>
+    },
+    // This disables creating jar, source jar and javadocs, and will cause the packaging type to be "pom" when the
+    // pom is created
+    Classpaths.defaultPackageKeys.map(key => publishArtifact in key := false),
+  )
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))

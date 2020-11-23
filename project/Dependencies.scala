@@ -8,6 +8,8 @@ import sbt._
 import Keys._
 import scala.language.implicitConversions
 
+import sbt.Def
+
 object Dependencies {
   import DependencyHelpers._
 
@@ -27,6 +29,7 @@ object Dependencies {
 
   val scala212Version = "2.12.11"
   val scala213Version = "2.13.3"
+  val scalaVersions = Seq(scala212Version, scala213Version)
 
   val reactiveStreamsVersion = "1.0.3"
 
@@ -37,7 +40,7 @@ object Dependencies {
 
   val Versions =
     Seq(
-      crossScalaVersions := Seq(scala212Version, scala213Version),
+      crossScalaVersions := scalaVersions,
       scalaVersion := {
         // don't allow full override to keep compatible with the version of silencer
         // don't mandate patch not specified to allow builds to migrate
