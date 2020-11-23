@@ -774,7 +774,8 @@ import akka.util.ccompat.JavaConverters._
     case null =>
       if (!status.compareAndSet(null, ActorSubscriberMessage.OnComplete))
         status.get.asInstanceOf[AsyncCallback[Any]].invoke(ActorSubscriberMessage.OnComplete)
-    case OnError(_: SubscriptionTimeoutException) => // already timed out, keep the timeout as that happened first
+    case OnError(_)                        => // already failed out, keep the exception as that happened first
+    case ActorSubscriberMessage.OnComplete => // it was already completed
   }
 
   def failSubstream(ex: Throwable): Unit = status.get match {
@@ -783,7 +784,8 @@ import akka.util.ccompat.JavaConverters._
       val failure = ActorSubscriberMessage.OnError(ex)
       if (!status.compareAndSet(null, failure))
         status.get.asInstanceOf[AsyncCallback[Any]].invoke(failure)
-    case OnError(_: SubscriptionTimeoutException) => // already timed out, keep the timeout as that happened first
+    case ActorSubscriberMessage.OnComplete => // it was already completed, ignore failure as completion happened first
+    case OnError(_)                        => // already failed out, keep the exception as that happened first
   }
 
   def timeout(d: FiniteDuration): Boolean =
