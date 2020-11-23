@@ -4,6 +4,9 @@
 
 package akka.cluster
 
+import akka.actor.ActorRef
+import akka.actor.Identify
+import akka.actor.RootActorPath
 import akka.remote.artery.ArterySettings
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -23,28 +26,26 @@ object SplitBrainQuarantineSpec extends MultiNodeConfig {
   commonConfig(
     debugConfig(on = false)
       .withFallback(MultiNodeClusterSpec.clusterConfig)
-      .withFallback(
-        ConfigFactory.parseString("""
+      .withFallback(ConfigFactory.parseString(
+        """
         akka.remote.artery.enabled = on
         akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
-        akka.cluster.split-brain-resolver.stable-after = 30s # we dont really want this to hit
+        # we dont really want this to hit, but we need the sbr enabled to know the quarantining
+        # downing does not trigger
+        akka.cluster.split-brain-resolver.stable-after = 5 minutes 
         """)))
 }
 
 class SplitBrainQuarantineMultiJvmNode1 extends SplitBrainQuarantineSpec
-
 class SplitBrainQuarantineMultiJvmNode2 extends SplitBrainQuarantineSpec
-
 class SplitBrainQuarantineMultiJvmNode3 extends SplitBrainQuarantineSpec
-
 class SplitBrainQuarantineMultiJvmNode4 extends SplitBrainQuarantineSpec
 
 abstract class SplitBrainQuarantineSpec extends MultiNodeSpec(SplitBrainQuarantineSpec) with MultiNodeClusterSpec {
   import SplitBrainQuarantineSpec._
 
-  // reproduces the scenario where cluster is partitioned and each side downs the other, and after that the
-  // partition is resolved and the two split brain halves reconnects
-  // Not intended to be a part of the final PR
+  // reproduces the scenario where cluster is partitioned and each side (incorrectly) downs the other,
+  // and after that the partition is resolved and the two split brain halves reconnects
 
   "Cluster node downed by other" must {
 
@@ -78,6 +79,7 @@ abstract class SplitBrainQuarantineSpec extends MultiNodeSpec(SplitBrainQuaranti
           awaitAssert {
             cluster.state.members.collect { case m if m.status == MemberStatus.Up => m.address } should ===(
               Set(address(first), address(second)))
+            cluster.state.members.size should ===(2)
           }
           system.log.info("JVM-3 and JVM-4 downed from JVM-1")
         }
@@ -90,13 +92,12 @@ abstract class SplitBrainQuarantineSpec extends MultiNodeSpec(SplitBrainQuaranti
           awaitAssert {
             cluster.state.members.collect { case m if m.status == MemberStatus.Up => m.address } should ===(
               Set(address(third), address(fourth)))
+            cluster.state.members.size should ===(2)
           }
           system.log.info("JVM-1 and JVM-2 downed from JVM-3")
         }
       }
       enterBarrier("brain-split")
-      system.log.info("Brain split, waiting 15s")
-      Thread.sleep(15000)
 
       runOn(first) {
         system.log.info("unblackholing cluster")
@@ -106,10 +107,33 @@ abstract class SplitBrainQuarantineSpec extends MultiNodeSpec(SplitBrainQuaranti
         testConductor.passThrough(second, fourth, ThrottlerTransportAdapter.Direction.Both).await
       }
       enterBarrier("unblackholed")
-      // FIXME give it some time so we see what happens now before test infra killing systems
-      Thread.sleep(30000)
+
+      // must send some actual messages that would trigger Quarantine to be sure it does in fact not happen
+      runOn(first, second) {
+        system.actorSelection(RootActorPath(third) / "user").tell(Identify(None), ActorRef.noSender)
+        system.actorSelection(RootActorPath(fourth) / "user").tell(Identify(None), ActorRef.noSender)
+      }
+      runOn(third, fourth) {
+        system.actorSelection(RootActorPath(first) / "user").tell(Identify(None), ActorRef.noSender)
+        system.actorSelection(RootActorPath(second) / "user").tell(Identify(None), ActorRef.noSender)
+      }
+      Thread.sleep(3000)
+      runOn(first) {
+        system.actorSelection(RootActorPath(third) / "user").tell(Identify(None), ActorRef.noSender)
+        system.actorSelection(RootActorPath(fourth) / "user").tell(Identify(None), ActorRef.noSender)
+      }
+      runOn(third, fourth) {
+        system.actorSelection(RootActorPath(first) / "user").tell(Identify(None), ActorRef.noSender)
+        system.actorSelection(RootActorPath(second) / "user").tell(Identify(None), ActorRef.noSender)
+      }
+      Thread.sleep(5000)
       enterBarrier("after-pass-through")
-      cluster.isTerminated should ===(true) // all nodes should have shut down?
+
+      // as the side that would quarantine each node is now not a part of the cluster it is the same as
+      // a random node connecting and claiming a node is quarantined and therefore it cannot be trusted
+      // enough to trigger a ThisActorSystemQuarantinedEvent-termination
+      cluster.isTerminated should ===(false)
+      enterBarrier("verify-alive")
     }
 
   }

@@ -51,7 +51,7 @@ class DowningWhenOtherHasQuarantinedThisActorSystemMultiJvmNode3
 abstract class DowningWhenOtherHasQuarantinedThisActorSystemSpec
     extends MultiNodeSpec(DowningWhenOtherHasQuarantinedThisActorSystemSpec)
     with MultiNodeClusterSpec {
-  import SplitBrainQuarantineSpec._
+  import DowningWhenOtherHasQuarantinedThisActorSystemSpec._
 
   "Cluster node downed by other" must {
 
@@ -98,8 +98,14 @@ abstract class DowningWhenOtherHasQuarantinedThisActorSystemSpec
       enterBarrier("pass-through")
 
       runOn(second) {
-        // shutting down itself triggered by ThisActorSystemQuarantinedEvent
-        awaitCond(cluster.isTerminated, 10.seconds)
+        within(10.seconds) {
+          awaitAssert {
+            // try to ping first (Cluster Heartbeat messages will not trigger the Quarantine message)
+            system.actorSelection(RootActorPath(first) / "user").tell(Identify(None), ActorRef.noSender)
+            // shutting down itself triggered by ThisActorSystemQuarantinedEvent
+            cluster.isTerminated should ===(true)
+          }
+        }
       }
 
       enterBarrier("after-2")
