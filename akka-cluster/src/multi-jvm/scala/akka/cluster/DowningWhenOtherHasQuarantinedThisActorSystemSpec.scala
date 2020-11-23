@@ -41,12 +41,15 @@ object DowningWhenOtherHasQuarantinedThisActorSystemSpec extends MultiNodeConfig
   testTransport(on = true)
 }
 
-class DowningWhenOtherHasQuarantinedThisActorSystemMultiJvmNode1 extends SplitBrainQuarantineSpec
-class DowningWhenOtherHasQuarantinedThisActorSystemMultiJvmNode2 extends SplitBrainQuarantineSpec
-class DowningWhenOtherHasQuarantinedThisActorSystemMultiJvmNode3 extends SplitBrainQuarantineSpec
+class DowningWhenOtherHasQuarantinedThisActorSystemMultiJvmNode1
+    extends DowningWhenOtherHasQuarantinedThisActorSystemSpec
+class DowningWhenOtherHasQuarantinedThisActorSystemMultiJvmNode2
+    extends DowningWhenOtherHasQuarantinedThisActorSystemSpec
+class DowningWhenOtherHasQuarantinedThisActorSystemMultiJvmNode3
+    extends DowningWhenOtherHasQuarantinedThisActorSystemSpec
 
 abstract class DowningWhenOtherHasQuarantinedThisActorSystemSpec
-    extends MultiNodeSpec(SplitBrainQuarantineSpec)
+    extends MultiNodeSpec(DowningWhenOtherHasQuarantinedThisActorSystemSpec)
     with MultiNodeClusterSpec {
   import SplitBrainQuarantineSpec._
 
@@ -96,7 +99,7 @@ abstract class DowningWhenOtherHasQuarantinedThisActorSystemSpec
 
       runOn(second) {
         // shutting down itself triggered by ThisActorSystemQuarantinedEvent
-        awaitCond(cluster.isTerminated, 3.seconds)
+        awaitCond(cluster.isTerminated, 10.seconds)
       }
 
       enterBarrier("after-2")

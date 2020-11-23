@@ -109,6 +109,7 @@ abstract class SplitBrainQuarantineSpec extends MultiNodeSpec(SplitBrainQuaranti
       // FIXME give it some time so we see what happens now before test infra killing systems
       Thread.sleep(30000)
       enterBarrier("after-pass-through")
+      cluster.isTerminated should ===(true) // all nodes should have shut down?
     }
 
   }
