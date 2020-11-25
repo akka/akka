@@ -63,13 +63,9 @@ private[cluster] object ClusterUserAction {
 
   /**
    * Command to mark all nodes as shutting down
-   *
-   * FIXME Maybe we shouldn't include an address and either just do the local node
-   * or all nodes
    */
   @SerialVersionUID(1L)
-  final case class PrepareForShutdown(address: Address) extends ClusterMessage
-
+  case object PrepareForShutdown extends ClusterMessage
 }
 
 /**
@@ -569,14 +565,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       case InitJoin(joiningNodeConfig) =>
         logInfo("Received InitJoin message from [{}] to [{}]", sender(), selfAddress)
         initJoin(joiningNodeConfig)
-      case Join(node, roles, appVersion)                 => joining(node, roles, appVersion)
-      case ClusterUserAction.Down(address)               => downing(address)
-      case ClusterUserAction.Leave(address)              => leaving(address)
-      case ClusterUserAction.PrepareForShutdown(address) => startShutdown(address)
-      case SendGossipTo(address)                         => sendGossipTo(address)
-      case msg: SubscriptionMessage                      => publisher.forward(msg)
-      case QuarantinedEvent(ua)                          => quarantined(UniqueAddress(ua))
-      case ClassicQuarantinedEvent(address, uid)         => quarantined(UniqueAddress(address, uid))
+      case Join(node, roles, appVersion)         => joining(node, roles, appVersion)
+      case ClusterUserAction.Down(address)       => downing(address)
+      case ClusterUserAction.Leave(address)      => leaving(address)
+      case ClusterUserAction.PrepareForShutdown  => startShutdown()
+      case SendGossipTo(address)                 => sendGossipTo(address)
+      case msg: SubscriptionMessage              => publisher.forward(msg)
+      case QuarantinedEvent(ua)                  => quarantined(UniqueAddress(ua))
+      case ClassicQuarantinedEvent(address, uid) => quarantined(UniqueAddress(address, uid))
       case ClusterUserAction.JoinTo(address) =>
         logInfo("Trying to join [{}] when already part of a cluster, ignoring", address)
       case JoinSeedNodes(nodes) =>
@@ -845,29 +841,24 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
   }
 
-  /**
-   * State transition to ShuttingDown. The current node sets its self as ShuttingDown
-   * Every other node, as soon as it sees any node as shutting down, sets its self to
-   * shutting down.
-   */
-  def startShutdown(address: Address): Unit = {
-    val memberToShutdown: Option[Member] = latestGossip.members.find(_.address == address)
-    memberToShutdown match {
-      case None =>
-        logWarning("Address {} does not exist. Shutdown not happening.", address)
-      case Some(member) =>
-        val newMembers = latestGossip.members - member + member.copy(status = PreparingForShutdown)
-        val newGossip = latestGossip.copy(members = newMembers)
-        updateLatestGossip(newGossip)
-        logInfo(
-          ClusterLogMarker.memberChanged(member.uniqueAddress, MemberStatus.PreparingForShutdown),
-          "Shutting down [{}] as [{}]",
-          address,
-          PreparingForShutdown)
-        publishMembershipState()
-        gossip()
+  def startShutdown(): Unit = {
+    val membersToPrepare =
+      latestGossip.members.filter(member => MembershipState.allowedToPrepareToShutdown(member.status))
+    val newMembers = membersToPrepare.foldLeft(latestGossip.members) {
+      case (acc, next) =>
+        acc - next + next.copy(status = PreparingForShutdown)
     }
-
+    val newGossip = latestGossip.copy(members = newMembers)
+    updateLatestGossip(newGossip)
+    membersToPrepare.foreach { member =>
+      logInfo(
+        ClusterLogMarker.memberChanged(member.uniqueAddress, MemberStatus.PreparingForShutdown),
+        "Shutting down [{}] as [{}]",
+        member.address,
+        PreparingForShutdown)
+    }
+    publishMembershipState()
+    gossip()
   }
 
   /**
@@ -1173,8 +1164,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
       if (latestGossip.members.exists(m => MembershipState.shutdownStates(m.status)) && (MembershipState
             .allowedToPrepareToShutdown(selfStatus))) {
+        // TODO switch to debug
         logInfo("Detected full cluster shutdown")
-        self ! ClusterUserAction.PrepareForShutdown(selfAddress)
+        self ! ClusterUserAction.PrepareForShutdown
       }
 
       if (talkback) {

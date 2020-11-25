@@ -324,7 +324,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * Change the state of every member in preparation for a full cluster shutdown.
    */
   def prepareForFullClusterShutdown(): Unit = {
-    clusterCore ! ClusterUserAction.PrepareForShutdown(selfAddress)
+    clusterCore ! ClusterUserAction.PrepareForShutdown
   }
 
   private def fillLocal(address: Address): Address = {
