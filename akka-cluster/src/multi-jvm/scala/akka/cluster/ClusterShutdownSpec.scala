@@ -4,6 +4,7 @@
 
 package akka.cluster
 
+import akka.cluster.MemberStatus.Removed
 import akka.cluster.NodeDowningAndBeingRemovedMultiJvmSpec.first
 import akka.cluster.NodeDowningAndBeingRemovedMultiJvmSpec.second
 import akka.cluster.NodeDowningAndBeingRemovedMultiJvmSpec.third
@@ -38,6 +39,7 @@ abstract class ClusterShutdownSpec
     "form cluster" in {
       awaitClusterUp(first, second, third)
     }
+    enterBarrier("cluster-up")
     "shutdown" in {
       runOn(first) {
         Cluster(system).prepareForFullClusterShutdown()
@@ -53,6 +55,32 @@ abstract class ClusterShutdownSpec
         Cluster(system).readView.members.map(_.status) shouldEqual Set(MemberStatus.ReadyForShutdown)
       }
       enterBarrier("done")
+    }
+    "be allowed to leave" in {
+      runOn(first) {
+        Cluster(system).leave(address(first))
+      }
+      awaitAssert({
+        withClue("members: " + Cluster(system).readView.members) {
+          runOn(second, third) {
+            Cluster(system).readView.members.size shouldEqual 2
+          }
+          runOn(first) {
+            Cluster(system).selfMember.status shouldEqual Removed
+          }
+        }
+      }, 10.seconds)
+      enterBarrier("first-gone")
+      runOn(second) {
+        Cluster(system).leave(address(second))
+        Cluster(system).leave(address(third))
+      }
+      awaitAssert({
+        withClue("self member: " + Cluster(system).selfMember) {
+          Cluster(system).selfMember.status shouldEqual Removed
+        }
+      }, 10.seconds)
+      enterBarrier("all-gone")
     }
   }
 }

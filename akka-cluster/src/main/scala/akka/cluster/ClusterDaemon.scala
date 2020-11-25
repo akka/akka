@@ -372,8 +372,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExiting, "wait-exiting") { () =>
     if (latestGossip.members.isEmpty)
       Future.successful(Done) // not joined yet
-    else
+    else {
       selfExiting.future
+    }
   }
   coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExitingDone, "exiting-completed") {
     val sys = context.system
@@ -875,10 +876,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
    * removal a new node with same address can join the cluster through the normal joining procedure.
    */
   def leaving(address: Address): Unit = {
-    // FIXME should we allow this if shutdown in progress? Seems like more work
+    logInfo("Member leaving {}", address) // FIXME remove
     // only try to update if the node is available (in the member ring)
     latestGossip.members.find(_.address == address).foreach { existingMember =>
-      if (existingMember.status == Joining || existingMember.status == WeaklyUp || existingMember.status == Up) {
+      if (existingMember.status == Joining || existingMember.status == WeaklyUp || existingMember.status == Up || existingMember.status == PreparingForShutdown || existingMember.status == ReadyForShutdown) {
         // mark node as LEAVING
         val newMembers = latestGossip.members - existingMember + existingMember.copy(status = Leaving)
         val newGossip = latestGossip.copy(members = newMembers)
@@ -1170,8 +1171,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         shutdownSelfWhenDown()
       }
 
-      if (latestGossip.members.exists(m => MembershipState.shuttingDownStatus(m.status)) && (!MembershipState
-            .shuttingDownStatus(selfStatus))) {
+      if (latestGossip.members.exists(m => MembershipState.shutdownStates(m.status)) && (MembershipState
+            .allowedToPrepareToShutdown(selfStatus))) {
         logInfo("Detected full cluster shutdown")
         self ! ClusterUserAction.PrepareForShutdown(selfAddress)
       }

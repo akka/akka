@@ -22,12 +22,14 @@ import akka.util.ccompat._
 @ccompatUsedUntil213
 @InternalApi private[akka] object MembershipState {
   import MemberStatus._
-  // FIXME can we allow PreparingForShutdown? Probably only if we don't allow WeeklyUp and Joining to become PreparingForShutdown
-  private val leaderMemberStatus = Set[MemberStatus](Up, Leaving, PreparingForShutdown)
+  private val leaderMemberStatus = Set[MemberStatus](Up, Leaving, PreparingForShutdown, ReadyForShutdown)
+  // FIXME should shutting down be added to these?
   private val convergenceMemberStatus = Set[MemberStatus](Up, Leaving)
   val convergenceSkipUnreachableWithMemberStatus = Set[MemberStatus](Down, Exiting)
   val removeUnreachableWithMemberStatus = Set[MemberStatus](Down, Exiting)
-  val shuttingDownStatus = Set[MemberStatus](PreparingForShutdown, ReadyForShutdown)
+  // If a member hasn't join yet or has already started leaving don't mark it as shutting down
+  val allowedToPrepareToShutdown = Set[MemberStatus](Up, WeaklyUp)
+  val shutdownStates = Set[MemberStatus](PreparingForShutdown, ReadyForShutdown)
 }
 
 /**
