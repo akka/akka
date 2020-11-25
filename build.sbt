@@ -559,16 +559,20 @@ lazy val coordination = akkaModule("akka-coordination")
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)
 
-lazy val `maven-dependencies` = akkaModule("maven-dependencies")
+lazy val `maven-dependencies` = Project(id="maven-dependencies",base= file("maven-dependencies"))
   .enablePlugins(HeaderPlugin)
   .settings(
     name := "akka-maven-dependencies",
-    autoScalaLibrary := false,
     // publish Maven Style
-    publishMavenStyle := true,
-    crossPaths := false,
     // no MiMa
     mimaPreviousArtifacts := Set.empty,
+    publishMavenStyle := true,
+    // Produce a single BOM with all the artifacts
+    crossScalaVersions := Seq(Dependencies.scalaVersions.head),
+    scalaVersion := Dependencies.scalaVersions.head,
+    crossPaths := false,
+    crossVersion := CrossVersion.disabled,
+    autoScalaLibrary := false,
 
     pomExtra := pomExtra.value :+ {
       val akkaDeps = Def.settingDyn {
