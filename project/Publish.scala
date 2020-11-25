@@ -17,29 +17,23 @@ object Publish extends AutoPlugin {
   override def trigger = allRequirements
 
   override lazy val projectSettings = Seq(
-    pomExtra := akkaPomExtra,
     publishTo := Some(akkaPublishTo.value),
     publishRsyncHost := "akkarepo@gustav.akka.io",
     credentials ++= akkaCredentials,
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("https://www.lightbend.com")),
+    startYear := Some(2009),
+    developers := List(
+        Developer(
+          "akka-contributors",
+          "Akka Contributors",
+          "akka.official@gmail.com",
+          url("https://github.com/akka/akka/graphs/contributors"))),
     publishMavenStyle := true,
     pomIncludeRepository := { x =>
       false
     },
     defaultPublishTo := target.value / "repository")
-
-  def akkaPomExtra = {
-    <inceptionYear>2009</inceptionYear>
-    <developers>
-      <developer>
-        <id>akka-contributors</id>
-        <name>Akka Contributors</name>
-        <email>akka.official@gmail.com</email>
-        <url>https://github.com/akka/akka/graphs/contributors</url>
-      </developer>
-    </developers>
-  }
 
   private def akkaPublishTo = Def.setting {
     val key = new java.io.File(

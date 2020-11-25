@@ -1,4 +1,4 @@
-import akka.{AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin}
+import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
 
 enablePlugins(
   UnidocRoot,
@@ -88,18 +88,17 @@ lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
   testkit)
 
 lazy val aggregatedProjects: Seq[ProjectReference] = userProjects ++ List[ProjectReference](
-  actorTests,
-  actorTypedTests,
-  benchJmh,
-  docs,
-  `maven-dependencies`,
-  persistenceShared,
-  persistenceTck,
-  persistenceTypedTests,
-  remoteTests,
-  streamTests,
-  streamTestsTck)
-
+    actorTests,
+    actorTypedTests,
+    benchJmh,
+    docs,
+    billOfMaterials,
+    persistenceShared,
+    persistenceTck,
+    persistenceTypedTests,
+    remoteTests,
+    streamTests,
+    streamTestsTck)
 
 lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
@@ -354,8 +353,7 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
         .withConfigurations(Vector(Compile)), // prevent original dependency to be added to pom as runtime dep
     packagedArtifact in (Compile, packageBin) := Scoped.mkTuple2(
         (artifact in (Compile, packageBin)).value,
-        ReproducibleBuildsPlugin.postProcessJar(OsgiKeys.bundle.value)
-    ),
+        ReproducibleBuildsPlugin.postProcessJar(OsgiKeys.bundle.value)),
     packageBin in Compile := ReproducibleBuildsPlugin
         .postProcessJar((assembly in Compile).value), // package by running assembly
     // Prevent cyclic task dependencies, see https://github.com/sbt/sbt-assembly/issues/365
@@ -559,61 +557,13 @@ lazy val coordination = akkaModule("akka-coordination")
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)
 
-lazy val `maven-dependencies` = Project(id="maven-dependencies",base= file("maven-dependencies"))
-  .enablePlugins(HeaderPlugin)
+lazy val billOfMaterials = Project(id = "akka-bill-of-materials", base = file("akka-bill-of-materials"))
+  .enablePlugins(BillOfMaterialsPlugin)
+  .disablePlugins(MimaPlugin, AkkaDisciplinePlugin)
   // buildSettings and defaultSettings configure organization name, licenses, etc...
   .settings(AkkaBuild.buildSettings)
   .settings(AkkaBuild.defaultSettings)
-  .settings(
-    name := "akka-maven-dependencies",
-    // no MiMa
-    mimaPreviousArtifacts := Set.empty,
-    // publish Maven Style
-    publishMavenStyle := true,
-    // Produce a single BOM with all the artifacts
-    crossVersion := CrossVersion.disabled, // this setting removes the scala bin version from the artifact name
-    crossScalaVersions := Seq(Dependencies.scalaVersions.head),
-    scalaVersion := Dependencies.scalaVersions.head,
-    crossPaths := false,
-    autoScalaLibrary := false,
-
-    pomExtra := pomExtra.value :+ {
-      val akkaDeps = Def.settingDyn {
-        // all Akka artifacts are cross compiled
-        // FIXME: ^^^^ is that true? Even for akka-OSGi?
-        (userProjects).map {
-          project =>
-            Def.setting {
-              val artifactName = (artifact in project).value.name
-
-              Dependencies.scalaVersions.map {
-                supportedVersion =>
-                  // we are sure this won't be a None
-                  val crossFunc =
-                    CrossVersion(Binary(), supportedVersion, CrossVersion.binaryScalaVersion(supportedVersion)).get
-                  // convert artifactName to match the desired scala version
-                  val artifactId = crossFunc(artifactName)
-
-                  <dependency>
-                    <groupId>{(organization in project).value}</groupId>
-                    <artifactId>{artifactId}</artifactId>
-                    <version>{(version in project).value}</version>
-                  </dependency>
-              }
-            }
-        }.join
-      }.value
-
-      <dependencyManagement>
-        <dependencies>
-          {akkaDeps}
-        </dependencies>
-      </dependencyManagement>
-    },
-    // This disables creating jar, source jar and javadocs, and will cause the packaging type to be "pom" when the
-    // pom is created
-    Classpaths.defaultPackageKeys.map(key => publishArtifact in key := false),
-  )
+  .settings(name := "akka-bom", includedProjects := userProjects, crossVersion := CrossVersion.disabled)
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
