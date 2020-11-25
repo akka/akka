@@ -578,15 +578,16 @@ class ActorDocSpec extends AkkaSpec("""
 
         def receive = {
           case "kill" =>
-            context.stop(child); lastSender = sender()
-          case Terminated(`child`) => lastSender ! "finished"
+            context.stop(child)
+            lastSender = sender()
+          case Terminated(`child`) =>
+            lastSender ! "finished"
         }
       }
       //#watch
 
       val victim = system.actorOf(Props(classOf[WatchActor], this))
-      implicit val sender: ActorRef = testActor
-      victim ! "kill"
+      victim.tell("kill", testActor)
       expectMsg("finished")
     }
   }
