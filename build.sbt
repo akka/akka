@@ -561,6 +561,9 @@ lazy val coordination = akkaModule("akka-coordination")
 
 lazy val `maven-dependencies` = Project(id="maven-dependencies",base= file("maven-dependencies"))
   .enablePlugins(HeaderPlugin)
+  // buildSettings and defaultSettings configure organization name, licenses, etc...
+  .settings(AkkaBuild.buildSettings)
+  .settings(AkkaBuild.defaultSettings)
   .settings(
     name := "akka-maven-dependencies",
     // no MiMa
