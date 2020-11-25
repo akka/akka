@@ -83,4 +83,6 @@ abstract class ClusterShutdownSpec
       enterBarrier("all-gone")
     }
   }
+
+  // TODO add a test where all the nodes shutdown at the same time
 }

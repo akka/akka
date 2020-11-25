@@ -20,6 +20,10 @@ import akka.actor.Terminated
 import akka.actor.Timers
 import akka.annotation.InternalStableApi
 import akka.cluster.Cluster
+import akka.cluster.ClusterEvent.InitialStateAsEvents
+import akka.cluster.ClusterEvent.MemberEvent
+import akka.cluster.ClusterEvent.MemberPreparingForShutdown
+import akka.cluster.ClusterEvent.MemberReadyForShutdown
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore.GetEntities
 import akka.cluster.sharding.internal.RememberEntitiesProvider
@@ -453,6 +457,7 @@ private[akka] class Shard(
   private val messageBuffers = new MessageBufferMap[EntityId]
 
   private var handOffStopper: Option[ActorRef] = None
+  private var preparingForShutdown = false
 
   import context.dispatcher
   private val passivateIdleTask = if (settings.shouldPassivateIdleEntities) {
@@ -479,6 +484,11 @@ private[akka] class Shard(
   }
 
   override def preStart(): Unit = {
+    Cluster(context.system).subscribe(
+      self,
+      InitialStateAsEvents,
+      classOf[MemberPreparingForShutdown],
+      classOf[MemberReadyForShutdown])
     acquireLeaseIfNeeded()
   }
 
@@ -509,6 +519,8 @@ private[akka] class Shard(
       tryGetLease(lease.get)
     case ll: LeaseLost =>
       receiveLeaseLost(ll)
+    case me: MemberEvent =>
+      receiveMemberEvent(me)
     case msg =>
       if (verboseDebug)
         log.debug(
@@ -517,6 +529,16 @@ private[akka] class Shard(
           msg.getClass.getName,
           sender())
       stash()
+  }
+
+  private def receiveMemberEvent(event: MemberEvent): Unit = event match {
+    case MemberPreparingForShutdown(m) if m.uniqueAddress == Cluster(context.system).selfUniqueAddress =>
+      log.info("{}. Preparing for shutdown. No new entities will be created.", typeName)
+      preparingForShutdown = true
+    case MemberReadyForShutdown(m) if m.uniqueAddress == Cluster(context.system).selfUniqueAddress =>
+      log.info("{}. Ready for shutdown. No new entities will be created.", typeName)
+      preparingForShutdown = true
+    case _ =>
   }
 
   private def tryGetLease(l: Lease): Unit = {
@@ -548,6 +570,8 @@ private[akka] class Shard(
       onEntitiesRemembered(entityIds)
     case RememberEntityTimeout(GetEntities) =>
       loadingEntityIdsFailed()
+    case me: MemberEvent =>
+      receiveMemberEvent(me)
     case msg =>
       if (verboseDebug)
         log.debug(
@@ -590,6 +614,7 @@ private[akka] class Shard(
   // when not remembering entities, we stay in this state all the time
   def idle: Receive = {
     case Terminated(ref)                         => receiveTerminated(ref)
+    case me: MemberEvent                         => receiveMemberEvent(me)
     case EntityTerminated(ref)                   => entityTerminated(ref)
     case msg: CoordinatorMessage                 => receiveCoordinatorMessage(msg)
     case msg: RememberEntityCommand              => receiveRememberEntityCommand(msg)
@@ -659,6 +684,7 @@ private[akka] class Shard(
       throw new RuntimeException(
         s"Async write timed out after ${settings.tuningParameters.updatingStateTimeout.pretty}")
     case ShardRegion.StartEntity(entityId) => startEntity(entityId, Some(sender()))
+    case me: MemberEvent                   => receiveMemberEvent(me)
     case Terminated(ref)                   => receiveTerminated(ref)
     case EntityTerminated(ref)             => entityTerminated(ref)
     case _: CoordinatorMessage             => stash()
@@ -1002,6 +1028,8 @@ private[akka] class Shard(
     if (entityId == null || entityId == "") {
       log.warning("{}: Id must not be empty, dropping message [{}]", typeName, msg.getClass.getName)
       context.system.deadLetters ! Dropped(msg, "No recipient entity id", snd, self)
+    } else if (preparingForShutdown && !entities.entityIdExists(entityId)) {
+      log.debug("{}: Not creating entity [{}] as preparing for shutdown [{}]", typeName, entityId, msg.getClass.getName)
     } else {
       payload match {
         case start: ShardRegion.StartEntity =>

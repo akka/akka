@@ -32,7 +32,6 @@ import akka.coordination.lease.LeaseUsageSettings
 import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
 import akka.dispatch.Dispatchers
-import akka.dispatch.ExecutionContexts
 import akka.event.LogMarker
 import akka.event.Logging
 import akka.pattern.ask
@@ -691,9 +690,6 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       scheduleDelayedMemberRemoved(m)
       stay()
 
-    case Event(event: MemberEvent, _) if event.member.uniqueAddress == cluster.selfUniqueAddress =>
-      handleSelfMemberEvent(event)
-
     case Event(DelayedMemberRemoved(m), YoungerData(previousOldest)) =>
       if (!selfExited)
         logInfo("Member removed [{}]", m.address)
@@ -1171,6 +1167,8 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
           "Failed to release lease. Singleton may not be able to run on another node until lease timeout occurs")
       }
       stay()
+    case Event(_: MemberEvent, _) =>
+      stay() // silence
   }
 
   def doIfNotPreparingForShutdown[T](f: () => T, otherwise: T): T = {

@@ -675,7 +675,12 @@ abstract class ShardCoordinator(
   val rebalanceTask =
     context.system.scheduler.scheduleWithFixedDelay(rebalanceInterval, rebalanceInterval, self, RebalanceTick)
 
-  cluster.subscribe(self, initialStateMode = InitialStateAsEvents, ClusterShuttingDown.getClass)
+  cluster.subscribe(
+    self,
+    initialStateMode = InitialStateAsEvents,
+    ClusterShuttingDown.getClass,
+    classOf[MemberReadyForShutdown],
+    classOf[MemberPreparingForShutdown])
 
   protected def typeName: String
 
@@ -894,6 +899,10 @@ abstract class ShardCoordinator(
         log.debug("{}: Shutting down ShardCoordinator", typeName)
         // can't stop because supervisor will start it again,
         // it will soon be stopped when singleton is stopped
+        context.become(shuttingDown)
+
+      case _: MemberPreparingForShutdown | _: MemberReadyForShutdown =>
+        log.info("{}: Shard coordinator detected full cluster shutdown. Ceasing any actions.")
         context.become(shuttingDown)
 
       case ShardRegion.GetCurrentRegions =>

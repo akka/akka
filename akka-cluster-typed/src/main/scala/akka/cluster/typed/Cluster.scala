@@ -159,7 +159,7 @@ final case class Down(address: Address) extends ClusterCommand
  *
  * However, it does not stop the nodes. That is expected to be signalled externally.
  */
-final case class FullClusterShutdown() extends ClusterCommand
+case object PrepareForFullClusterShutdown extends ClusterCommand
 
 /**
  * Akka Typed Cluster API entry point
