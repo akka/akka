@@ -563,15 +563,15 @@ lazy val `maven-dependencies` = Project(id="maven-dependencies",base= file("mave
   .enablePlugins(HeaderPlugin)
   .settings(
     name := "akka-maven-dependencies",
-    // publish Maven Style
     // no MiMa
     mimaPreviousArtifacts := Set.empty,
+    // publish Maven Style
     publishMavenStyle := true,
     // Produce a single BOM with all the artifacts
+    crossVersion := CrossVersion.disabled, // this setting removes the scala bin version from the artifact name
     crossScalaVersions := Seq(Dependencies.scalaVersions.head),
     scalaVersion := Dependencies.scalaVersions.head,
     crossPaths := false,
-    crossVersion := CrossVersion.disabled,
     autoScalaLibrary := false,
 
     pomExtra := pomExtra.value :+ {
