@@ -1256,7 +1256,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       } else {
         leaderActionCounter += 1
         import cluster.settings.{ AllowWeaklyUpMembers, LeaderActionsInterval, WeaklyUpAfter }
-        if (AllowWeaklyUpMembers && LeaderActionsInterval * leaderActionCounter >= WeaklyUpAfter)
+        if (AllowWeaklyUpMembers && LeaderActionsInterval * leaderActionCounter >= WeaklyUpAfter && !prepareForShutdown)
           moveJoiningToWeaklyUp()
 
         if (leaderActionCounter == firstNotice || leaderActionCounter % periodicNotice == 0)
@@ -1348,9 +1348,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         var upNumber = 0
 
         {
-          case m if m.dataCenter == selfDc && isJoiningToUp(m) =>
+          case m if m.dataCenter == selfDc && isJoiningToUp(m) && !prepareForShutdown =>
             // Move JOINING => UP (once all nodes have seen that this node is JOINING, i.e. we have a convergence)
             // and minimum number of nodes have joined the cluster
+            // don't move members to up when preparing for shutdown
             if (upNumber == 0) {
               // It is alright to use same upNumber as already used by a removed member, since the upNumber
               // is only used for comparing age of current cluster members (Member.isOlderThan)
