@@ -37,38 +37,38 @@ object BillOfMaterialsPlugin extends AutoPlugin {
       crossVersion := CrossVersion.disabled,
       autoScalaLibrary := false,
       bomDependenciesListing := {
-          val dependencies =
-            Def.settingDyn {
-              (bomIncludeProjects.value).map {
-                project =>
-                  Def.setting {
-                    val artifactName = (project / artifact).value.name
-                    val crossBuild = (project / crossVersion).value
-                    if (crossBuild == CrossVersion.disabled) {
-                      toXml(artifactName, (project / organization).value, (project / version).value)
-                    } else if (crossBuild == CrossVersion.binary) {
-                      (project / crossScalaVersions).value.map { scalaVersion =>
-                        val crossFunc =
-                          CrossVersion(Binary(), scalaVersion, CrossVersion.binaryScalaVersion(scalaVersion)).get
-                        // convert artifactName to match the desired scala version
-                        val artifactId = crossFunc(artifactName);
-                        toXml(artifactId, (project / organization).value, (project / version).value)
-                      }
-                    } else {
-                      throw new RuntimeException(s"Support for `crossVersion := $crossBuild` is not implemented")
+        val dependencies =
+          Def.settingDyn {
+            (bomIncludeProjects.value).map {
+              project =>
+                Def.setting {
+                  val artifactName = (project / artifact).value.name
+                  val crossBuild = (project / crossVersion).value
+                  if (crossBuild == CrossVersion.disabled) {
+                    toXml(artifactName, (project / organization).value, (project / version).value)
+                  } else if (crossBuild == CrossVersion.binary) {
+                    (project / crossScalaVersions).value.map { scalaVersion =>
+                      val crossFunc =
+                        CrossVersion(Binary(), scalaVersion, CrossVersion.binaryScalaVersion(scalaVersion)).get
+                      // convert artifactName to match the desired scala version
+                      val artifactId = crossFunc(artifactName);
+                      toXml(artifactId, (project / organization).value, (project / version).value)
                     }
+                  } else {
+                    throw new RuntimeException(s"Support for `crossVersion := $crossBuild` is not implemented")
                   }
-              }.join
-            }.value
+                }
+            }.join
+          }.value
 
-          // format: off
-          <dependencyManagement>
-            <dependencies>
-              {dependencies}
-            </dependencies>
-          </dependencyManagement>
-          // format:on
-        },
+        // format: off
+        <dependencyManagement>
+          <dependencies>
+            {dependencies}
+          </dependencies>
+        </dependencyManagement>
+        // format:on
+      },
       pomExtra := (pomExtra.value) :+ bomDependenciesListing.value
     ) ++
       // This disables creating jar, source jar and javadocs, and will cause the packaging type to be "pom" when the pom is created
