@@ -557,13 +557,13 @@ lazy val coordination = akkaModule("akka-coordination")
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)
 
-lazy val billOfMaterials = Project(id = "akka-bill-of-materials", base = file("akka-bill-of-materials"))
-  .enablePlugins(BillOfMaterialsPlugin)
+lazy val billOfMaterials = Project("akka-bill-of-materials", file("akka-bill-of-materials"))
+  .enablePlugins(akka.BillOfMaterialsPlugin)
   .disablePlugins(MimaPlugin, AkkaDisciplinePlugin)
   // buildSettings and defaultSettings configure organization name, licenses, etc...
   .settings(AkkaBuild.buildSettings)
   .settings(AkkaBuild.defaultSettings)
-  .settings(name := "akka-bom", includedProjects := userProjects, crossVersion := CrossVersion.disabled)
+  .settings(name := "akka-bom", bomIncludeProjects := userProjects, crossVersion := CrossVersion.disabled)
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))

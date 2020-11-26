@@ -1,55 +1,61 @@
 /*
  * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
+package akka
 
 import scala.xml.Elem
 
 import sbt.AutoPlugin
 import sbt.PluginTrigger
 import sbt.ProjectReference
+import sbt.Keys._
 import sbt._
 
+/**
+ * Plugin to create a Maven Bill of Materials (BOM) pom.xml
+ *
+ * - https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#bill-of-materials-bom-poms
+ * - https://howtodoinjava.com/maven/maven-bom-bill-of-materials-dependency/
+ */
 object BillOfMaterialsPlugin extends AutoPlugin {
 
   override def trigger = PluginTrigger.NoTrigger
 
   object autoImport {
-    val includedProjects = settingKey[Seq[ProjectReference]]("")
-//    val fixedScalaVersion = settingKey[String]("")
+    val bomIncludeProjects =
+      settingKey[Seq[ProjectReference]]("the list of projects to include in the Bill of Materials pom.xml")
+    val bomDependenciesListing =
+      settingKey[Elem]("the generated `<dependencyManagement>` section to be added to `sbt.pomExtra`")
   }
   import autoImport._
-  import sbt.Keys._
-  import sbt._
 
   override def projectSettings: Seq[Def.Setting[_]] =
     Seq(
       // publish Maven Style
       publishMavenStyle := true,
-      // Produce a single BOM with all the artifacts
-      crossVersion := CrossVersion.disabled, // this setting removes the scala bin version from the artifact name
-//      fixedScalaVersion := crossScalaVersions.value.head,
-//      crossScalaVersions := Seq(fixedScalaVersion.value),
-//      scalaVersion := fixedScalaVersion.value,
-      crossPaths := false,
+      // this setting removes the scala bin version from the artifact name (make sure it is not overwritten)
+      crossVersion := CrossVersion.disabled,
       autoScalaLibrary := false,
-      pomExtra := (pomExtra.value) :+ {
+      bomDependenciesListing := {
           val dependencies =
             Def.settingDyn {
-              (includedProjects.value).map {
+              (bomIncludeProjects.value).map {
                 project =>
                   Def.setting {
                     val artifactName = (project / artifact).value.name
-                    if ((project / crossPaths).value) {
-                      (crossScalaVersions in project).value.map { supportedVersion =>
-                        // we are sure this won't be a None
+                    val crossBuild = (project / crossVersion).value
+                    if (crossBuild == CrossVersion.disabled) {
+                      toXml(artifactName, (project / organization).value, (project / version).value)
+                    } else if (crossBuild == CrossVersion.binary) {
+                      (project / crossScalaVersions).value.map { scalaVersion =>
                         val crossFunc =
-                          CrossVersion(Binary(), supportedVersion, CrossVersion.binaryScalaVersion(supportedVersion)).get
+                          CrossVersion(Binary(), scalaVersion, CrossVersion.binaryScalaVersion(scalaVersion)).get
                         // convert artifactName to match the desired scala version
                         val artifactId = crossFunc(artifactName);
                         toXml(artifactId, (project / organization).value, (project / version).value)
                       }
                     } else {
-                      toXml(artifactName, (project / organization).value, (project / version).value)
+                      throw new RuntimeException(s"Support for `crossVersion := $crossBuild` is not implemented")
                     }
                   }
               }.join
@@ -62,10 +68,11 @@ object BillOfMaterialsPlugin extends AutoPlugin {
             </dependencies>
           </dependencyManagement>
           // format:on
-        }
-    // This disables creating jar, source jar and javadocs, and will cause the packaging type to be "pom" when the
-    // pom is created
-    ) ++ Classpaths.defaultPackageKeys.map(key => publishArtifact in key := false)
+        },
+      pomExtra := (pomExtra.value) :+ bomDependenciesListing.value
+    ) ++
+      // This disables creating jar, source jar and javadocs, and will cause the packaging type to be "pom" when the pom is created
+      Classpaths.defaultPackageKeys.map(_ / publishArtifact := false)
 
   private def toXml(artifactId: String, organization: String, version: String): Elem = {
     <dependency>
