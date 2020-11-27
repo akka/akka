@@ -42,7 +42,7 @@ object BillOfMaterialsPlugin extends AutoPlugin {
       bomDependenciesListing := {
         val dependencies =
           Def.settingDyn {
-            val mutipleScalaVersionsInBom = crossVersion.value == CrossVersion.disabled
+            val multipleScalaVersionsInBom = crossVersion.value == CrossVersion.disabled
             val desiredScalaVersion = scalaVersion.value
             (bomIncludeProjects.value).map {
               project =>
@@ -54,7 +54,7 @@ object BillOfMaterialsPlugin extends AutoPlugin {
                   if (crossBuild == CrossVersion.disabled) {
                     toXml(artifactName, org, ver)
                   } else if (crossBuild == CrossVersion.binary) {
-                    if (mutipleScalaVersionsInBom) {
+                    if (multipleScalaVersionsInBom) {
                       (project / crossScalaVersions).value.map { scalaV =>
                         toXmlScalaBinary(artifactName, org, ver, scalaV, desiredScalaVersion)
                       }
