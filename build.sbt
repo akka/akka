@@ -563,7 +563,10 @@ lazy val billOfMaterials = Project("akka-bill-of-materials", file("akka-bill-of-
   // buildSettings and defaultSettings configure organization name, licenses, etc...
   .settings(AkkaBuild.buildSettings)
   .settings(AkkaBuild.defaultSettings)
-  .settings(name := "akka-bom", bomIncludeProjects := userProjects, crossVersion := CrossVersion.disabled)
+  .settings(
+    name := "akka-bom",
+    bomIncludeProjects := userProjects,
+    description := s"${description.value} (depending on Scala ${CrossVersion.binaryScalaVersion(scalaVersion.value)})")
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
