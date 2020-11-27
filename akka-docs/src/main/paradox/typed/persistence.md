@@ -345,7 +345,7 @@ Scala
 Java
 :  @@snip [BlogPostEntity.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntity.java) { #commands }
 
-@java[The commandler handler to process each command is decided by the state class (or state predicate) that is
+@java[The command handler to process each command is decided by the state class (or state predicate) that is
 given to the `forStateType` of the `CommandHandlerBuilder` and the match cases in the builders.]
 @scala[The command handler to process each command is decided by first looking at the state and then the command.
 It typically becomes two levels of pattern matching, first on the state and then on the command.]
