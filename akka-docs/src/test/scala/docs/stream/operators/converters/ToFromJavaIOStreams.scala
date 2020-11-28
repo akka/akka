@@ -45,12 +45,13 @@ class ToFromJavaIOStreams extends AkkaSpec with Futures {
 
   "demonstrate usage as java.io.InputStream" in {
     //#asJavaInputStream
-    val source: Source[ByteString, NotUsed] = Source.single(ByteString("ASDF"))
+    val toUpperCase: Flow[ByteString, ByteString, NotUsed] = Flow[ByteString].map(_.map(_.toChar.toUpper.toByte))
+    val source: Source[ByteString, NotUsed] = Source.single(ByteString("some random input"))
     val sink: Sink[ByteString, InputStream] = StreamConverters.asInputStream()
 
-    val inputStream: InputStream = source.runWith(sink)
+    val inputStream: InputStream = source.via(toUpperCase).runWith(sink)
     //#asJavaInputStream
-    inputStream.read() should be('A')
+    inputStream.read() should be('S')
     inputStream.close()
   }
 

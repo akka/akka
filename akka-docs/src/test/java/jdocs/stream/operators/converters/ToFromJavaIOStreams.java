@@ -25,8 +25,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -91,15 +89,25 @@ public class ToFromJavaIOStreams extends AbstractJavaTest {
   public void demonstrateAsJavaInputStream() throws Exception {
 
     // #asJavaInputStream
+    Charset charset = Charset.defaultCharset();
+    Flow<ByteString, ByteString, NotUsed> toUpperCase =
+        Flow.<ByteString>create()
+            .map(
+                bs -> {
+                  String str = bs.decodeString(charset).toUpperCase();
+                  return ByteString.fromString(str, charset);
+                });
+
     final Sink<ByteString, InputStream> sink = StreamConverters.asInputStream();
-    final List<ByteString> list =
-        Collections.singletonList(ByteString.fromString("Some random input"));
-    final InputStream stream = Source.from(list).runWith(sink, system);
+    final InputStream stream =
+        Source.single(ByteString.fromString("Some random input"))
+            .via(toUpperCase)
+            .runWith(sink, system);
 
     // #asJavaInputStream
     byte[] a = new byte[17];
     stream.read(a);
-    assertArrayEquals("Some random input".getBytes(), a);
+    assertArrayEquals("SOME RANDOM INPUT".getBytes(), a);
   }
 
   @Test

@@ -26,6 +26,7 @@ The `InputStream` will be ended when the stream flowing into this `Sink` complet
 @@@
 
 ## Example
+Here is an example of a @apidoc[Sink] that reads the contents from the source, converts it into uppercase and materializes into a @javadoc[java.io.InputStream](java.io.InputStream)
 
 Scala
 :   @@snip [ToFromJavaIOStreams.scala](/akka-docs/src/test/scala/docs/stream/operators/converters/ToFromJavaIOStreams.scala) { #asJavaInputStream }

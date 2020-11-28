@@ -25,6 +25,7 @@ closing the `OutputStream` will complete the `Source`.
 @@@
 
 ## Example
+Here is an example of a @apidoc[Source] that materializes into a @javadoc[java.io.OutputStream](java.io.OutputStream), and is connected to a Sink which concatenates the incoming @apidoc[akka.util.ByteString]s
 
 Scala
 :   @@snip [ToFromJavaIOStreams.scala](/akka-docs/src/test/scala/docs/stream/operators/converters/ToFromJavaIOStreams.scala) { #asJavaOutputStream }
