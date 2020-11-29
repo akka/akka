@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static akka.util.ByteString.emptyByteString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -116,7 +117,7 @@ public class ToFromJavaIOStreams extends AbstractJavaTest {
     // #asJavaOutputStream
     final Source<ByteString, OutputStream> source = StreamConverters.asOutputStream();
     final Sink<ByteString, CompletionStage<ByteString>> sink =
-        Sink.fold(ByteString.empty(), (ByteString arg1, ByteString arg2) -> arg1.concat(arg2));
+        Sink.fold(emptyByteString(), (ByteString arg1, ByteString arg2) -> arg1.concat(arg2));
 
     final Pair<OutputStream, CompletionStage<ByteString>> output =
         source.toMat(sink, Keep.both()).run(system);
