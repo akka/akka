@@ -44,7 +44,7 @@ class ActorRefResolveCacheQuarantineSpec
       // wait for it to be removed fully, remove-quarantined-association-after
       Thread.sleep(4000)
 
-      val port1 = RARP(clientSystem1).provider.getDefaultAddress.getPort.get
+      val port1 = RARP(clientSystem1).provider.getDefaultAddress.getPort().get
       val clientSystem2 =
         newRemoteSystem(
           name = Some(clientSystem1.name),
