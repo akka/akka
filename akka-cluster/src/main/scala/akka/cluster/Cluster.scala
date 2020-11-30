@@ -13,10 +13,8 @@ import scala.collection.immutable
 import scala.concurrent.{ Await, ExecutionContext }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-
 import com.github.ghik.silencer.silent
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import akka.ConfigurationException
 import akka.actor._
 import akka.annotation.InternalApi
@@ -26,6 +24,7 @@ import akka.event.{ Logging, LoggingAdapter }
 import akka.event.LogMarker
 import akka.event.Logging.LogLevel
 import akka.event.MarkerLoggingAdapter
+import akka.event.NoMarkerLogging
 import akka.japi.Util
 import akka.pattern._
 import akka.remote.{ UniqueAddress => _, _ }
@@ -468,6 +467,11 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * INTERNAL API
    */
   private[cluster] object ClusterLogger extends ClusterLogger(log)
+
+  /**
+   * INTERNAL API
+   */
+  private[cluster] object NoOpClusterLogger extends ClusterLogger(NoMarkerLogging)
 
   /**
    * INTERNAL API

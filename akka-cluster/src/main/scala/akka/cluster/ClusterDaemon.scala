@@ -324,7 +324,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
   val selfDc = cluster.selfDataCenter
 
-  private val gossipLogger =
+  private val gossipLogger: cluster.ClusterLogger =
     new cluster.ClusterLogger(
       Logging.withMarker(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterGossip)))
 
@@ -1017,7 +1017,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   def receiveGossip(envelope: GossipEnvelope): ReceiveGossipType = {
 
     val from = envelope.from
-    val remoteGossip = envelope.gossip
+    val remoteGossip =
+      envelope.gossip(t =>
+        gossipLogger.logError(t, "Invalid Gossip. This should only happen during a rolling upgrade."))
     val localGossip = latestGossip
 
     if (remoteGossip eq Gossip.empty) {
