@@ -558,7 +558,7 @@ lazy val coordination = akkaModule("akka-coordination")
   .settings(OSGi.coordination)
 
 lazy val billOfMaterials = Project("akka-bill-of-materials", file("akka-bill-of-materials"))
-  .enablePlugins(akka.BillOfMaterialsPlugin)
+  .enablePlugins(BillOfMaterialsPlugin)
   .disablePlugins(MimaPlugin, AkkaDisciplinePlugin)
   // buildSettings and defaultSettings configure organization name, licenses, etc...
   .settings(AkkaBuild.buildSettings)
