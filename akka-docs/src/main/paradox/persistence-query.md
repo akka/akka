@@ -29,7 +29,7 @@ side of an application, however it can help to migrate data from the write side 
 simple scenarios Persistence Query may be powerful enough to fulfill the query needs of your app, however we highly
 recommend (in the spirit of CQRS) of splitting up the write/read sides into separate datastores as the need arises.
 
-The @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/index.html) explains how to
+The @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) explains how to
 implement an Event Sourced CQRS application with Akka Persistence and Akka Projections.
 
 ## Design overview
@@ -344,6 +344,6 @@ shard events over a cluster.
 
 ## Example project
 
-The @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/index.html) explains how to
+The @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) explains how to
 use Event Sourcing and Projections together. The events are tagged to be consumed by even processors to build
 other representations from the events, or publish the events to other services.

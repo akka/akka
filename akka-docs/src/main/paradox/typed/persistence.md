@@ -33,7 +33,7 @@ events to the actor, allowing it to rebuild its state. This can be either the fu
 or starting from a checkpoint in a snapshot which can dramatically reduce recovery times.
 
 The [Event Sourcing with Akka 2.6 video](https://akka.io/blog/news/2020/01/07/akka-event-sourcing-video)
-is a good starting point for learning Event Sourcing, together with the @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/index.html) 
+is a good starting point for learning Event Sourcing, together with the @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) 
 that illustrates how to implement an Event Sourced CQRS application with Akka Persistence and Akka Projections.
 
 @@@ note
@@ -676,7 +676,7 @@ reference documentation of the chosen plugin.
 is an example project that can be downloaded, and with instructions of how to run.
 This project contains a Shopping Cart sample illustrating how to use Akka Persistence.
 
-The Shopping Cart sample is expanded further in the @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/index.html).
+The Shopping Cart sample is expanded further in the @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/).
 In that sample the events are tagged to be consumed by even processors to build other representations
 from the events, or publish the events to other services.
 
