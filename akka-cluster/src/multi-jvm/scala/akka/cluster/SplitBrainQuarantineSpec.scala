@@ -118,7 +118,7 @@ abstract class SplitBrainQuarantineSpec extends MultiNodeSpec(SplitBrainQuaranti
         system.actorSelection(RootActorPath(second) / "user").tell(Identify(None), ActorRef.noSender)
       }
       Thread.sleep(3000)
-      runOn(first) {
+      runOn(first, second) {
         system.actorSelection(RootActorPath(third) / "user").tell(Identify(None), ActorRef.noSender)
         system.actorSelection(RootActorPath(fourth) / "user").tell(Identify(None), ActorRef.noSender)
       }
