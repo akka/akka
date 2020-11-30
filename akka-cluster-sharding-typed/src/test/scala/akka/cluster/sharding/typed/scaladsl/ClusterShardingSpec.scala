@@ -7,14 +7,9 @@ package akka.cluster.sharding.typed.scaladsl
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
-
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
-
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.{ActorTestKit, LogCapturing, LoggingTestKit, ScalaTestWithActorTestKit, TestProbe}
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.PostStop
@@ -335,6 +330,27 @@ class ClusterShardingSpec
       exc.getMessage should include(ref.toString)
       exc.getMessage should include(s"[${classOf[WhoAreYou].getName}]") // message class
       exc.getMessage should include("[10 ms]") // timeout
+    }
+
+    "EntityRef - logs extra context if ask Future fails with exception" in {
+      val ignorantKey = EntityTypeKey[TestProtocol]("ignorant")
+
+      sharding.init(Entity(ignorantKey)(_ => Behaviors.ignore[TestProtocol]).withStopMessage(StopPlz()))
+
+      val ref = sharding.entityRefFor(ignorantKey, "sloppy")
+
+      val exc =
+        LoggingTestKit
+        .error("akka.pattern.AskTimeoutException when sending")
+        .withMessageContains("to entity identified by [slopp]")
+        .withLoggerName("akka.cluster.sharding.typed.internal.EntityRefImpl")
+        .expect {
+          val reply = ref.ask(WhoAreYou)(Timeout(10.millis))
+          reply.failed.futureValue
+        }
+
+      exc.getClass should ===(classOf[AskTimeoutException])
+
     }
 
     "handle classic StartEntity message" in {

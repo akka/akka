@@ -12,7 +12,6 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.Future
-
 import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InternalActorRef
@@ -43,6 +42,8 @@ import akka.pattern.PromiseActorRef
 import akka.pattern.StatusReply
 import akka.util.{ unused, ByteString, Timeout }
 import akka.util.JavaDurationConverters._
+
+import scala.util.Failure
 
 /**
  * INTERNAL API
@@ -243,7 +244,8 @@ import akka.util.JavaDurationConverters._
     new EntityRefImpl[M](
       classicSharding.shardRegion(typeKey.name),
       entityId,
-      typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
+      typeKey.asInstanceOf[EntityTypeKeyImpl[M]],
+      system)
   }
 
   override def entityRefFor[M](
@@ -256,14 +258,16 @@ import akka.util.JavaDurationConverters._
       new EntityRefImpl[M](
         classicSharding.shardRegionProxy(typeKey.name, dataCenter),
         entityId,
-        typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
+        typeKey.asInstanceOf[EntityTypeKeyImpl[M]],
+        system)
   }
 
   override def entityRefFor[M](typeKey: javadsl.EntityTypeKey[M], entityId: String): javadsl.EntityRef[M] = {
     new EntityRefImpl[M](
       classicSharding.shardRegion(typeKey.name),
       entityId,
-      typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
+      typeKey.asInstanceOf[EntityTypeKeyImpl[M]],
+      system)
   }
 
   override def entityRefFor[M](
@@ -276,7 +280,8 @@ import akka.util.JavaDurationConverters._
       new EntityRefImpl[M](
         classicSharding.shardRegionProxy(typeKey.name, dataCenter),
         entityId,
-        typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
+        typeKey.asInstanceOf[EntityTypeKeyImpl[M]],
+        system)
   }
 
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
@@ -307,10 +312,13 @@ import akka.util.JavaDurationConverters._
 @InternalApi private[akka] final class EntityRefImpl[M](
     shardRegion: akka.actor.ActorRef,
     entityId: String,
-    typeKey: EntityTypeKeyImpl[M])
+    typeKey: EntityTypeKeyImpl[M],
+    actorSystem: ActorSystem[_])
     extends javadsl.EntityRef[M]
     with scaladsl.EntityRef[M]
     with InternalRecipientRef[M] {
+
+  private val logger = Logging(actorSystem.classicSystem, getClass)
 
   override val refPrefix = URLEncoder.encode(s"${typeKey.name}-$entityId", ByteString.UTF_8)
 
@@ -377,6 +385,17 @@ import akka.util.JavaDurationConverters._
         message: T,
         @unused timeout: Timeout): Future[U] = {
       shardRegion ! ShardingEnvelope(entityId, message)
+
+      future.onComplete {
+        case Failure(ex) =>
+          logger.error(
+            "{} when sending [{}] to entity identified by [{}]",
+            ex.getClass.getName,
+            message.getClass.getName,
+            entityId)
+        case _ =>
+      }(actorSystem.executionContext)
+
       future
     }
   }
