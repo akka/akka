@@ -112,7 +112,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
     //#test-sink-probe
     val sourceUnderTest = Source(1 to 4).filter(_ % 2 == 0).map(_ * 2)
 
-    sourceUnderTest.runWith(TestSink.probe[Int]).request(2).expectNext(4, 8).expectComplete()
+    sourceUnderTest.runWith(TestSink[Int]()).request(2).expectNext(4, 8).expectComplete()
     //#test-sink-probe
   }
 
@@ -142,7 +142,7 @@ class StreamTestKitDocSpec extends AkkaSpec {
       pattern.after(10.millis * sleep, using = system.scheduler)(Future.successful(sleep))
     }
 
-    val (pub, sub) = TestSource.probe[Int].via(flowUnderTest).toMat(TestSink.probe[Int])(Keep.both).run()
+    val (pub, sub) = TestSource.probe[Int].via(flowUnderTest).toMat(TestSink[Int]())(Keep.both).run()
 
     sub.request(n = 3)
     pub.sendNext(3)

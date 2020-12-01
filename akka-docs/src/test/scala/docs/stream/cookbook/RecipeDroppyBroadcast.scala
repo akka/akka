@@ -12,12 +12,12 @@ class RecipeDroppyBroadcast extends RecipeSpec {
 
   "Recipe for a droppy broadcast" must {
     "work" in {
-      val pub = TestPublisher.probe[Int]()
+      val pub = TestPublisher.Probe[Int]()
       val myElements = Source.fromPublisher(pub)
 
-      val sub1 = TestSubscriber.manualProbe[Int]()
-      val sub2 = TestSubscriber.manualProbe[Int]()
-      val sub3 = TestSubscriber.probe[Int]()
+      val sub1 = TestSubscriber.ManualProbe[Int]()
+      val sub2 = TestSubscriber.ManualProbe[Int]()
+      val sub3 = TestSubscriber.Probe[Int]()
       val futureSink = Sink.head[Seq[Int]]
       val mySink1 = Sink.fromSubscriber(sub1)
       val mySink2 = Sink.fromSubscriber(sub2)

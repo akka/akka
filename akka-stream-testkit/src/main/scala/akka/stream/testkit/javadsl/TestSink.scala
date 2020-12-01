@@ -5,6 +5,7 @@
 package akka.stream.testkit.javadsl
 
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.stream.javadsl.Sink
 import akka.stream.testkit._
 
@@ -16,5 +17,11 @@ object TestSink {
    */
   def probe[T](system: ActorSystem): Sink[T, TestSubscriber.Probe[T]] =
     new Sink(scaladsl.TestSink.probe[T](system))
+
+  /**
+   * A Sink that materialized to a [[akka.stream.testkit.TestSubscriber.Probe]].
+   */
+  def create[T](system: ClassicActorSystemProvider): Sink[T, TestSubscriber.Probe[T]] =
+    probe(system.classicSystem)
 
 }
