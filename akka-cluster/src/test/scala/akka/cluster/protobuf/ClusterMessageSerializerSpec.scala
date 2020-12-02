@@ -33,7 +33,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       case (env: GossipEnvelope, env2: GossipEnvelope) =>
         env2.from should ===(env.from)
         env2.to should ===(env.to)
-        env.gossip() should ===(env.gossip())
+        env2.gossip should ===(env.gossip)
       case (_, ref) =>
         ref should ===(obj)
     }
@@ -49,9 +49,9 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       case (env: GossipEnvelope, env2: GossipEnvelope) =>
         env2.from should ===(env.from)
         env2.to should ===(env.to)
-        env.gossip() should ===(env.gossip())
-        env.gossip().members.foreach { m1 =>
-          val m2 = env.gossip().members.find(_.uniqueAddress == m1.uniqueAddress).get
+        env2.gossip should ===(env.gossip)
+        env.gossip.members.foreach { m1 =>
+          val m2 = env.gossip.members.find(_.uniqueAddress == m1.uniqueAddress).get
           checkSameMember(m1, m2)
         }
       case (_, ref) =>
@@ -169,8 +169,8 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
 
     "add a default data center role to gossip if none is present" in {
       val env = roundtrip(GossipEnvelope(a1.uniqueAddress, d1.uniqueAddress, Gossip(SortedSet(a1, d1))))
-      env.gossip().members.head.roles should be(Set(ClusterSettings.DcRolePrefix + "default"))
-      env.gossip().members.tail.head.roles should be(Set("r1", ClusterSettings.DcRolePrefix + "foo"))
+      env.gossip.members.head.roles should be(Set(ClusterSettings.DcRolePrefix + "default"))
+      env.gossip.members.tail.head.roles should be(Set("r1", ClusterSettings.DcRolePrefix + "foo"))
     }
 
     "add a default data center role to internal join action if none is present" in {

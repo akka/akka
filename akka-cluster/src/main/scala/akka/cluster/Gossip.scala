@@ -9,12 +9,10 @@ import java.security.MessageDigest
 
 import scala.collection.immutable
 import scala.concurrent.duration.Deadline
+
 import ClusterSettings.DataCenter
 import MemberStatus._
 import akka.annotation.InternalApi
-import akka.util.ConstantFun
-
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -321,24 +319,17 @@ private[cluster] class GossipEnvelope private (
     @transient @volatile var ser: () => Gossip)
     extends ClusterMessage {
 
-  def gossip(invalid: Throwable => Unit = ConstantFun.scalaAnyToUnit[Throwable]): Gossip = {
-    deserialize(invalid)
+  def gossip: Gossip = {
+    deserialize()
     g
   }
 
-  private def deserialize(invalid: Throwable => Unit): Unit = {
+  private def deserialize(): Unit = {
     if ((g eq null) && (ser ne null)) {
-      if (serDeadline.hasTimeLeft()) {
-        try {
-          g = ser()
-        } catch {
-          case NonFatal(t) =>
-            invalid(t)
-            g = Gossip.empty
-        }
-      } else {
+      if (serDeadline.hasTimeLeft())
+        g = ser()
+      else
         g = Gossip.empty
-      }
       ser = null
     }
   }

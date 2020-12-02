@@ -1015,11 +1015,15 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
    * Receive new gossip.
    */
   def receiveGossip(envelope: GossipEnvelope): ReceiveGossipType = {
-
     val from = envelope.from
-    val remoteGossip =
-      envelope.gossip(t =>
-        gossipLogger.logError(t, "Invalid Gossip. This should only happen during a rolling upgrade."))
+    val remoteGossip = try {
+      envelope.gossip
+    } catch {
+      case NonFatal(t) =>
+        gossipLogger.logWarning("Invalid Gossip. This should only happen during a rolling upgrade. {}", t.getMessage)
+        Gossip.empty
+
+    }
     val localGossip = latestGossip
 
     if (remoteGossip eq Gossip.empty) {

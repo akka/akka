@@ -515,7 +515,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
       .newBuilder()
       .setFrom(uniqueAddressToProto(envelope.from))
       .setTo(uniqueAddressToProto(envelope.to))
-      .setSerializedGossip(ByteString.copyFrom(compress(gossipToProto(envelope.gossip()).build)))
+      .setSerializedGossip(ByteString.copyFrom(compress(gossipToProto(envelope.gossip).build)))
       .build
 
   private def gossipStatusToProto(status: GossipStatus): cm.GossipStatus = {
