@@ -412,6 +412,62 @@ Scala
 
 @@@ div {.group-scala}
 
+## How to compose Partial Behaviors
+
+Following up from previous section, there are times when one might want to use `Behaviors.receivePartial` or `Behaviors.receiveMessagePartial` instead of their total counterparts.
+
+A good use case for composing Partial Behaviors is when there is a bit of behavior that repeats across different states of the Actor. Below, you can find a simplified example for this use case.
+
+The Command definition is still highly recommended be kept within a `sealed` Trait:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #messages-sealed-composition }
+
+In this particular case, the Behavior that is repeating over is the one in charge to handle
+the `GetValue` Command, as it behaves the same regardless of the Actor's internal state.
+Notice that the behavior is created using `Behaviors.receiveMessagePartial` instead of the known `Behaviors.receiveMessage`:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #get-handler }
+
+After this, we can continue defining the differing behaviors independently, also using `Behaviors.receiveMessagePartial` or `Behaviors.receivePartial` accordingly:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #set-handler-non-zero #set-handler-zero }
+
+The next step is to define a method that goes over a sequence of `Behavior` objects until the first one that can handle the given `Command` is found:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #handle }
+
+Now, we can go on defining the two different behaviors for this specific actor:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #top-level-behaviors }
+
+### Using PartialFunction
+
+Instead of defining the specific handlers as partial Behaviors, we can define them as a `PartialFunction`:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #get-handler-partial #set-handler-non-zero-partial }
+
+For this particular case, and to keep the example simple, we will leave `Down` messages unhandled when the actor's internal counter is already at 0.
+
+Once we have all this, the next step is to write a function that given a `Command` and a sequence of `PartialFunction`, finds and executes the first one where the function is defined for the given `Command`:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #handle-partial }
+
+Finally, we can define the two different behaviors for this specific actor:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #top-level-behaviors-partial }
+
+@@@
+
+@@@ div {.group-scala}
+
 ## ask versus ?
 
 When using the `AskPattern` it's recommended to use the `ask` method rather than the infix `?` operator, like so:

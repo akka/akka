@@ -13,6 +13,7 @@ import akka.actor.typed.scaladsl.TimerScheduler
 import akka.actor.typed.SupervisorStrategy
 
 import scala.concurrent.duration.FiniteDuration
+import scala.annotation.tailrec
 import akka.Done
 import com.github.ghik.silencer.silent
 
@@ -520,6 +521,113 @@ object StyleGuideDocExamples {
       }
 
     }
+  }
+
+  object BehaviorCompositionWithPartialFunction {
+
+    sealed trait Command
+    case object Down extends Command
+    final case class GetValue(replyTo: ActorRef[Value]) extends Command
+    final case class Value(n: Int)
+
+    //#get-handler-partial
+    def getHandler(value: Int): PartialFunction[Command, Behavior[Command]] = {
+      case GetValue(replyTo) =>
+        replyTo ! Value(value)
+        Behaviors.same
+    }
+    //#get-handler-partial
+
+    //#set-handler-non-zero-partial
+    def setHandlerNotZero(value: Int): PartialFunction[Command, Behavior[Command]] = {
+      case Down =>
+        if (value == 1)
+          zero
+        else
+          nonZero(value - 1)
+    }
+    //#set-handler-non-zero-partial
+
+    //#handle-partial
+    def handle(command: Command, handlers: List[PartialFunction[Command, Behavior[Command]]]): Behavior[Command] = {
+      handlers match {
+        case Nil          => Behaviors.unhandled
+        case head :: tail => head.applyOrElse(command, handle(_, tail))
+      }
+    }
+    //#handle-partial
+
+    //#top-level-behaviors-partial
+    val zero: Behavior[Command] = Behaviors.receiveMessage { command =>
+      handle(command, List(getHandler(0)))
+    }
+
+    def nonZero(initialCapacity: Int): Behavior[Command] = Behaviors.receiveMessage { command =>
+      handle(command, List(getHandler(initialCapacity), setHandlerNotZero(initialCapacity)))
+    }
+    //#top-level-behaviors-partial
+  }
+
+  object BehaviorCompositionWithReceivePartial {
+
+    //#messages-sealed-composition
+    sealed trait Command
+    case object Down extends Command
+    final case class GetValue(replyTo: ActorRef[Value]) extends Command
+    final case class Value(n: Int)
+    //#messages-sealed-composition
+
+    //#get-handler
+    def getHandler(value: Int): Behavior[Command] = Behaviors.receiveMessagePartial {
+      case GetValue(replyTo) =>
+        replyTo ! Value(value)
+        Behaviors.same
+    }
+    //#get-handler
+
+    //#set-handler-non-zero
+    def setHandlerNotZero(value: Int): Behavior[Command] = Behaviors.receiveMessagePartial {
+      case Down =>
+        if (value == 1)
+          zero
+        else
+          nonZero(value - 1)
+    }
+    //#set-handler-non-zero
+
+    //#set-handler-zero
+    val setHandlerZero: Behavior[Command] = Behaviors.receivePartial {
+      case (context, Down) =>
+        context.log.error("Counter is already at zero!")
+        Behaviors.same
+    }
+    //#set-handler-zero
+
+    //#handle
+    @tailrec def handle(
+        command: Command,
+        handlers: List[Behavior[Command]],
+        ctx: ActorContext[Command]): Behavior[Command] = {
+      handlers match {
+        case Nil          => Behaviors.unhandled
+        case head :: tail =>
+          //Process the given message with the next Behavior in the list
+          val next = Behavior.interpretMessage(head, ctx, command)
+          if (Behavior.isUnhandled(next)) handle(command, tail, ctx)
+          else next
+      }
+    }
+    //#handle
+
+    //#top-level-behaviors
+    val zero: Behavior[Command] = Behaviors.receive { (context, command) =>
+      handle(command, List(getHandler(0), setHandlerZero), context)
+    }
+
+    def nonZero(initialCapacity: Int): Behavior[Command] = Behaviors.receive { (context, command) =>
+      handle(command, List(getHandler(initialCapacity), setHandlerNotZero(initialCapacity)), context)
+    }
+    //#top-level-behaviors
   }
 
   object NestingSample1 {
