@@ -60,22 +60,36 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
    */
   def atopMat[OO1, II2, Mat2, M](bidi: Graph[BidiShape[O1, OO1, II2, I2], Mat2])(
       combine: (Mat, Mat2) => M): BidiFlow[I1, OO1, II2, O2, M] = {
-    val newBidi1Shape = shape.deepCopy()
-    val newBidi2Shape = bidi.shape.deepCopy()
+    if (this eq BidiFlow.identity) {
+      // optimization by returning bidi if possible since we know M == Mat
+      if (combine eq Keep.right) BidiFlow.fromGraph(bidi).asInstanceOf[BidiFlow[I1, OO1, II2, O2, M]]
+      else {
+        // Keep.none is optimized and we know left means Mat2 == NotUsed
+        val useCombine =
+          if (combine == Keep.left) Keep.none
+          else combine
+        BidiFlow.fromGraph(bidi).mapMaterializedValue(useCombine)
+      }
+    } else if (bidi eq BidiFlow.identity) {
+      this
+    } else {
+      val newBidi1Shape = shape.deepCopy()
+      val newBidi2Shape = bidi.shape.deepCopy()
 
-    // We MUST add the current module as an explicit submodule. The composite builder otherwise *grows* the
-    // existing module, which is not good if there are islands present (the new module will "join" the island).
-    val newTraversalBuilder =
-      TraversalBuilder
-        .empty()
-        .add(traversalBuilder, newBidi1Shape, Keep.right)
-        .add(bidi.traversalBuilder, newBidi2Shape, combine)
-        .wire(newBidi1Shape.out1, newBidi2Shape.in1)
-        .wire(newBidi2Shape.out2, newBidi1Shape.in2)
+      // We MUST add the current module as an explicit submodule. The composite builder otherwise *grows* the
+      // existing module, which is not good if there are islands present (the new module will "join" the island).
+      val newTraversalBuilder =
+        TraversalBuilder
+          .empty()
+          .add(traversalBuilder, newBidi1Shape, Keep.right)
+          .add(bidi.traversalBuilder, newBidi2Shape, combine)
+          .wire(newBidi1Shape.out1, newBidi2Shape.in1)
+          .wire(newBidi2Shape.out2, newBidi1Shape.in2)
 
-    new BidiFlow(
-      newTraversalBuilder,
-      BidiShape(newBidi1Shape.in1, newBidi2Shape.out1, newBidi2Shape.in2, newBidi1Shape.out2))
+      new BidiFlow(
+        newTraversalBuilder,
+        BidiShape(newBidi1Shape.in1, newBidi2Shape.out1, newBidi2Shape.in2, newBidi1Shape.out2))
+    }
   }
 
   /**
