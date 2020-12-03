@@ -532,12 +532,11 @@ private[akka] class Shard(
   }
 
   private def receiveMemberEvent(event: MemberEvent): Unit = event match {
-    case MemberPreparingForShutdown(m) if m.uniqueAddress == Cluster(context.system).selfUniqueAddress =>
-      log.info("{}. Preparing for shutdown. No new entities will be created.", typeName)
-      preparingForShutdown = true
-    case MemberReadyForShutdown(m) if m.uniqueAddress == Cluster(context.system).selfUniqueAddress =>
-      log.info("{}. Ready for shutdown. No new entities will be created.", typeName)
-      preparingForShutdown = true
+    case _: MemberReadyForShutdown | _: MemberPreparingForShutdown =>
+      if (!preparingForShutdown) {
+        log.info("{}. Preparing for shutdown", typeName)
+        preparingForShutdown = true
+      }
     case _ =>
   }
 
@@ -840,7 +839,8 @@ private[akka] class Shard(
   }
 
   private def receiveCoordinatorMessage(msg: CoordinatorMessage): Unit = msg match {
-    case HandOff(`shardId`) => handOff(sender())
+    case HandOff(`shardId`) =>
+      handOff(sender())
     case HandOff(shard) =>
       log.warning("{}: Shard [{}] can not hand off for another Shard [{}]", typeName, shardId, shard)
     case _ => unhandled(msg)
@@ -865,7 +865,12 @@ private[akka] class Shard(
 
       // does conversion so only do once
       val activeEntities = entities.activeEntities()
-      if (activeEntities.nonEmpty) {
+      if (preparingForShutdown) {
+        log.info("{} HandOff shard [{}] while preparing for shutdown. Stopping right away.", typeName, shardId)
+        activeEntities.foreach { _ ! handOffStopMessage }
+        replyTo ! ShardStopped(shardId)
+        context.stop(self)
+      } else if (activeEntities.nonEmpty && !preparingForShutdown) {
         val entityHandOffTimeout = (settings.tuningParameters.handOffTimeout - 5.seconds).max(1.seconds)
         log.debug(
           "{}: Starting HandOffStopper for shard [{}] to terminate [{}] entities.",
@@ -1028,8 +1033,6 @@ private[akka] class Shard(
     if (entityId == null || entityId == "") {
       log.warning("{}: Id must not be empty, dropping message [{}]", typeName, msg.getClass.getName)
       context.system.deadLetters ! Dropped(msg, "No recipient entity id", snd, self)
-    } else if (preparingForShutdown && !entities.entityIdExists(entityId)) {
-      log.debug("{}: Not creating entity [{}] as preparing for shutdown [{}]", typeName, entityId, msg.getClass.getName)
     } else {
       payload match {
         case start: ShardRegion.StartEntity =>

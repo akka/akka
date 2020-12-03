@@ -639,7 +639,8 @@ object ShardCoordinator {
 abstract class ShardCoordinator(
     settings: ClusterShardingSettings,
     allocationStrategy: ShardCoordinator.ShardAllocationStrategy)
-    extends Actor {
+    extends Actor
+    with Timers {
 
   import ShardCoordinator._
   import ShardCoordinator.Internal._
@@ -661,6 +662,7 @@ abstract class ShardCoordinator(
   var allRegionsRegistered = false
 
   var state = State.empty.withRememberEntities(settings.rememberEntities)
+  var preparingForShutdown = false
   // rebalanceInProgress for the ShardId keys, pending GetShardHome requests by the ActorRef values
   var rebalanceInProgress = Map.empty[ShardId, Set[ActorRef]]
   var rebalanceWorkers: Set[ActorRef] = Set.empty
@@ -672,9 +674,6 @@ abstract class ShardCoordinator(
 
   import context.dispatcher
 
-  val rebalanceTask =
-    context.system.scheduler.scheduleWithFixedDelay(rebalanceInterval, rebalanceInterval, self, RebalanceTick)
-
   cluster.subscribe(
     self,
     initialStateMode = InitialStateAsEvents,
@@ -685,6 +684,7 @@ abstract class ShardCoordinator(
   protected def typeName: String
 
   override def preStart(): Unit = {
+    timers.startTimerWithFixedDelay(RebalanceTick, RebalanceTick, rebalanceInterval)
     allocationStrategy match {
       case strategy: StartableAllocationStrategy =>
         strategy.start()
@@ -696,7 +696,6 @@ abstract class ShardCoordinator(
 
   override def postStop(): Unit = {
     super.postStop()
-    rebalanceTask.cancel()
     cluster.unsubscribe(self)
   }
 
@@ -791,7 +790,7 @@ abstract class ShardCoordinator(
         }
 
       case RebalanceTick =>
-        if (state.regions.nonEmpty) {
+        if (state.regions.nonEmpty && !preparingForShutdown) {
           val shardsFuture = allocationStrategy.rebalance(state.regions, rebalanceInProgress.keySet)
           shardsFuture.value match {
             case Some(Success(shards)) =>
@@ -902,8 +901,12 @@ abstract class ShardCoordinator(
         context.become(shuttingDown)
 
       case _: MemberPreparingForShutdown | _: MemberReadyForShutdown =>
-        log.info("{}: Shard coordinator detected full cluster shutdown. Ceasing any actions.")
-        context.become(shuttingDown)
+        if (!preparingForShutdown) {
+          log.info(
+            "{}: Shard coordinator detected prepare for full cluster shutdown. No new rebalances will take place.")
+          timers.cancel(RebalanceTick)
+          preparingForShutdown = true
+        }
 
       case ShardRegion.GetCurrentRegions =>
         val reply = ShardRegion.CurrentRegions(state.regions.keySet.map { ref =>

@@ -1260,15 +1260,11 @@ private[akka] class ShardRegion(
             log.warning("{}: Shard must not be empty, dropping message [{}]", typeName, msg.getClass.getName)
             context.system.deadLetters ! msg
           case None =>
-            if (!preparingForShutdown) {
-              if (!shardBuffers.contains(shardId)) {
-                log.debug("{}: Request shard [{}] home. Coordinator [{}]", typeName, shardId, coordinator)
-                coordinator.foreach(_ ! GetShardHome(shardId))
-              }
-              bufferMessage(shardId, msg, snd)
-            } else {
-              log.debug("{}: Ignoring message for unknown shard [{}] as preparing for shutdown", typeName, shardId)
+            if (!shardBuffers.contains(shardId)) {
+              log.debug("{}: Request shard [{}] home. Coordinator [{}]", typeName, shardId, coordinator)
+              coordinator.foreach(_ ! GetShardHome(shardId))
             }
+            bufferMessage(shardId, msg, snd)
         }
     }
 
@@ -1280,32 +1276,25 @@ private[akka] class ShardRegion(
         .get(id)
         .orElse(entityProps match {
           case Some(props) if !shardsByRef.values.exists(_ == id) =>
-            if (!preparingForShutdown) {
-              // FIXME
-              log.info(ShardingLogMarker.shardStarted(typeName, id), "{}: Starting shard [{}] in region", typeName, id)
-
-              val name = URLEncoder.encode(id, "utf-8")
-
-              val shard = context.watch(
-                context.actorOf(
-                  Shard
-                    .props(
-                      typeName,
-                      id,
-                      props,
-                      settings,
-                      extractEntityId,
-                      extractShardId,
-                      handOffStopMessage,
-                      rememberEntitiesProvider)
-                    .withDispatcher(context.props.dispatcher),
-                  name))
-              shardsByRef = shardsByRef.updated(shard, id)
-              shards = shards.updated(id, shard)
-              startingShards += id
-            } else {
-              log.info("{}: Not starting shard [{}] in region as preparing to shutdown", typeName, id)
-            }
+            log.debug(ShardingLogMarker.shardStarted(typeName, id), "{}: Starting shard [{}] in region", typeName, id)
+            val name = URLEncoder.encode(id, "utf-8")
+            val shard = context.watch(
+              context.actorOf(
+                Shard
+                  .props(
+                    typeName,
+                    id,
+                    props,
+                    settings,
+                    extractEntityId,
+                    extractShardId,
+                    handOffStopMessage,
+                    rememberEntitiesProvider)
+                  .withDispatcher(context.props.dispatcher),
+                name))
+            shardsByRef = shardsByRef.updated(shard, id)
+            shards = shards.updated(id, shard)
+            startingShards += id
             None
           case Some(_) =>
             None

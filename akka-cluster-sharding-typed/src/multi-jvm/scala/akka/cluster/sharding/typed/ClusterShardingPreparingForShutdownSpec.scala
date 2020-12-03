@@ -31,7 +31,7 @@ object ClusterShardingPreparingForShutdownSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(ConfigFactory.parseString("""
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG 
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
@@ -78,7 +78,7 @@ class ClusterShardingPreparingForShutdownSpec
       formCluster(first, second, third)
     }
 
-    "not start new shards or rebalances when ready for shutdown" in {
+    "not rebalance but should still work preparing for shutdown" in {
 
       val shardRegion: ActorRef[ShardingEnvelope[Command]] =
         sharding.init(Entity(typeKey)(_ => Pinger()))
@@ -87,7 +87,7 @@ class ClusterShardingPreparingForShutdownSpec
       shardRegion ! ShardingEnvelope("id1", Pinger.Ping(1, probe.ref))
       probe.expectMessage(Pong(1))
 
-      runOn(first) {
+      runOn(second) {
         cluster.manager ! PrepareForFullClusterShutdown
 
       }
@@ -100,29 +100,32 @@ class ClusterShardingPreparingForShutdownSpec
       enterBarrier("preparation-complete")
 
       shardRegion ! ShardingEnvelope("id2", Pinger.Ping(2, probe.ref))
-      probe.expectNoMessage(3.seconds)
+      probe.expectMessage(Pong(2))
 
-      runOn(first) {
-        cluster.manager ! Leave(address(first))
+      runOn(second) {
+        cluster.manager ! Leave(address(second))
       }
       awaitAssert({
-        runOn(second, third) {
+        runOn(first, third) {
           withClue("members: " + cluster.state.members) {
             cluster.state.members.size shouldEqual 2
           }
         }
-        runOn(first) {
+        runOn(second) {
           withClue("self member: " + cluster.selfMember) {
             cluster.selfMember.status shouldEqual MemberStatus.Removed
           }
         }
       }, 5.seconds) // keep this lower than coordinated shutdown timeout
-      shardRegion ! ShardingEnvelope("id3", Pinger.Ping(3, probe.ref))
-      probe.expectNoMessage(3.seconds)
+
+      runOn(first, third) {
+        shardRegion ! ShardingEnvelope("id3", Pinger.Ping(3, probe.ref))
+        probe.expectMessage(Pong(3))
+      }
       enterBarrier("new-shards-verified")
 
-      runOn(second) {
-        cluster.manager ! Leave(address(second))
+      runOn(third) {
+        cluster.manager ! Leave(address(first))
         cluster.manager ! Leave(address(third))
       }
       awaitAssert({
