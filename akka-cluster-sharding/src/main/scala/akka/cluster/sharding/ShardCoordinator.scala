@@ -1191,7 +1191,7 @@ abstract class ShardCoordinator(
 /**
  * Singleton coordinator that decides where to allocate shards.
  *
- * Users can migrate to using DData to store state then either event sourcing or ddata to store
+ * Users can migrate to using DData to store state then either Event Sourcing or ddata to store
  * the remembered entities.
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]

@@ -26,7 +26,7 @@ import akka.util.JavaDurationConverters._
 
 /**
  * [[DurableProducerQueue]] that can be used with [[akka.actor.typed.delivery.ProducerController]]
- * for reliable delivery of messages. It is implemented with event sourcing and stores one
+ * for reliable delivery of messages. It is implemented with Event Sourcing and stores one
  * event before sending the message to the destination and one event for the confirmation
  * that the message has been delivered and processed.
  *

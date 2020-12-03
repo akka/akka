@@ -288,7 +288,7 @@ idempotent on the level of the business logic.
 
 ### Event Sourcing
 
-Event sourcing (and sharding) is what makes large websites scale to
+Event Sourcing (and sharding) is what makes large websites scale to
 billions of users, and the idea is quite simple: when a component (think actor)
 processes a command it will generate a list of events representing the effect
 of the command. These events are stored in addition to being applied to the
@@ -299,7 +299,7 @@ components may consume the event stream as a means to replicate the component’
 state on a different continent or to react to changes). If the component’s
 state is lost—due to a machine failure or by being pushed out of a cache—it can
 be reconstructed by replaying the event stream (usually employing
-snapshots to speed up the process). @ref:[Event sourcing](../typed/persistence.md#event-sourcing-concepts) is supported by
+snapshots to speed up the process). @ref:[Event Sourcing](../typed/persistence.md#event-sourcing-concepts) is supported by
 Akka Persistence.
 
 ### Mailbox with Explicit Acknowledgement

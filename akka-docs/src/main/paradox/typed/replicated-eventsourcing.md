@@ -8,7 +8,7 @@ warning or deprecation period. It is also not recommended to use this module in 
 
 @@@
 
-@ref[Event sourcing](./persistence.md) with `EventSourcedBehavior`s is based on the single writer principle, which means that there can only be one active instance of a `EventSourcedBehavior` 
+@ref[Event Sourcing](./persistence.md) with `EventSourcedBehavior`s is based on the single writer principle, which means that there can only be one active instance of a `EventSourcedBehavior` 
 with a given `persistenceId`. Otherwise, multiple instances would store interleaving events based on different states, and when these events would later be replayed it would not be possible to reconstruct the correct state.
 
 This restriction means that in the event of network partitions, and for a short time during rolling re-deploys, some
@@ -421,7 +421,7 @@ For a snapshot plugin to support replication it needs to store and read metadata
 To attach the metadata when reading the snapshot the `akka.persistence.SnapshotMetadata.apply` factory overload taking a `metadata` parameter is used.
 The @apidoc[SnapshotStoreSpec] in the Persistence TCK provides a capability flag `supportsMetadata` to toggle verification that metadata is handled correctly.
 
-The following plugins support replicated event sourcing:
+The following plugins support replicated Event Sourcing:
 
 * [Akka Persistence Cassandra](https://doc.akka.io/docs/akka-persistence-cassandra/current/index.html) versions 1.0.3+
 * [Akka Persistence Spanner](https://doc.akka.io/docs/akka-persistence-spanner/current/overview.html) versions 1.0.0-RC4+
