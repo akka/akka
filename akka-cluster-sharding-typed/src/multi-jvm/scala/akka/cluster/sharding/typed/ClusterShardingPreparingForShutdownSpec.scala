@@ -7,15 +7,17 @@ package akka.cluster.sharding.typed
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.util.ccompat._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.cluster.MemberStatus.Removed
 import akka.cluster.sharding.typed.ClusterShardingPreparingForShutdownSpec.Pinger.Command
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+import akka.cluster.typed.Leave
 import akka.cluster.typed.MultiNodeTypedClusterSpec
+import akka.cluster.typed.PrepareForFullClusterShutdown
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.jackson.CborSerializable
@@ -59,6 +61,7 @@ class ClusterShardingPreparingForShutdownMultiJvmNode1 extends ClusterShardingPr
 class ClusterShardingPreparingForShutdownMultiJvmNode2 extends ClusterShardingPreparingForShutdownSpec
 class ClusterShardingPreparingForShutdownMultiJvmNode3 extends ClusterShardingPreparingForShutdownSpec
 
+@ccompatUsedUntil213
 class ClusterShardingPreparingForShutdownSpec
     extends MultiNodeSpec(ClusterShardingPreparingForShutdownSpec)
     with MultiNodeTypedClusterSpec {
@@ -85,13 +88,13 @@ class ClusterShardingPreparingForShutdownSpec
       probe.expectMessage(Pong(1))
 
       runOn(first) {
-        // FIXME change to typed API
-        Cluster(system).prepareForFullClusterShutdown()
+        cluster.manager ! PrepareForFullClusterShutdown
+
       }
       awaitAssert({
-        withClue("members: " + Cluster(system).readView.members) {
-          Cluster(system).selfMember.status shouldEqual MemberStatus.ReadyForShutdown
-          Cluster(system).readView.members.map(_.status) shouldEqual Set(MemberStatus.ReadyForShutdown)
+        withClue("members: " + cluster.state.members) {
+          cluster.selfMember.status shouldEqual MemberStatus.ReadyForShutdown
+          cluster.state.members.unsorted.map(_.status) shouldEqual Set(MemberStatus.ReadyForShutdown)
         }
       }, 10.seconds)
       enterBarrier("preparation-complete")
@@ -100,17 +103,17 @@ class ClusterShardingPreparingForShutdownSpec
       probe.expectNoMessage(3.seconds)
 
       runOn(first) {
-        Cluster(system).leave(address(first))
+        cluster.manager ! Leave(address(first))
       }
       awaitAssert({
         runOn(second, third) {
-          withClue("members: " + Cluster(system).readView.members) {
-            Cluster(system).readView.members.size shouldEqual 2
+          withClue("members: " + cluster.state.members) {
+            cluster.state.members.size shouldEqual 2
           }
         }
         runOn(first) {
-          withClue("self member: " + Cluster(system).selfMember) {
-            Cluster(system).selfMember.status shouldEqual MemberStatus.Removed
+          withClue("self member: " + cluster.selfMember) {
+            cluster.selfMember.status shouldEqual MemberStatus.Removed
           }
         }
       }, 5.seconds) // keep this lower than coordinated shutdown timeout
@@ -119,12 +122,12 @@ class ClusterShardingPreparingForShutdownSpec
       enterBarrier("new-shards-verified")
 
       runOn(second) {
-        Cluster(system).leave(address(second))
-        Cluster(system).leave(address(third))
+        cluster.manager ! Leave(address(second))
+        cluster.manager ! Leave(address(third))
       }
       awaitAssert({
-        withClue("self member: " + Cluster(system).selfMember) {
-          Cluster(system).selfMember.status shouldEqual Removed
+        withClue("self member: " + cluster.selfMember) {
+          cluster.selfMember.status shouldEqual Removed
         }
       }, 15.seconds)
       enterBarrier("done")

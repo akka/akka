@@ -7,6 +7,7 @@ package akka.cluster
 import akka.cluster.MemberStatus.Removed
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
+import akka.util.ccompat._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 
@@ -28,6 +29,7 @@ class ClusterShutdownSpecMultiJvmNode2 extends ClusterShutdownSpec
 class ClusterShutdownSpecMultiJvmNode3 extends ClusterShutdownSpec
 class ClusterShutdownSpecMultiJvmNode4 extends ClusterShutdownSpec
 
+@ccompatUsedUntil213
 abstract class ClusterShutdownSpec
     extends MultiNodeSpec(ClusterShutdownSpec)
     with MultiNodeClusterSpec
@@ -56,7 +58,7 @@ abstract class ClusterShutdownSpec
     "spread around the cluster" in {
       runOn(first, second, third) {
         awaitAssert {
-          Cluster(system).readView.members.map(_.status) shouldEqual Set(MemberStatus.ReadyForShutdown)
+          Cluster(system).readView.members.unsorted.map(_.status) shouldEqual Set(MemberStatus.ReadyForShutdown)
         }
       }
       enterBarrier("propagation finished")

@@ -369,9 +369,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExiting, "wait-exiting") { () =>
     if (latestGossip.members.isEmpty)
       Future.successful(Done) // not joined yet
-    else {
+    else
       selfExiting.future
-    }
   }
   coordShutdown.addTask(CoordinatedShutdown.PhaseClusterExitingDone, "exiting-completed") {
     val sys = context.system
@@ -861,7 +860,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     membersToPrepare.foreach { member =>
       logInfo(
         ClusterLogMarker.memberChanged(member.uniqueAddress, MemberStatus.PreparingForShutdown),
-        "Shutting down [{}] as [{}]",
+        "Preparing for shutdown [{}] as [{}]",
         member.address,
         PreparingForShutdown)
     }
