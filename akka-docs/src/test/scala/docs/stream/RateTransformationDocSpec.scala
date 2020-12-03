@@ -88,7 +88,7 @@ class RateTransformationDocSpec extends AkkaSpec {
       case (d, _) => latch.countDown(); Iterator.from(1).map(d -> _)
     }
 
-    val (pub, sub) = TestSource.probe[Double].via(realDriftFlow).toMat(TestSink.probe[(Double, Int)])(Keep.both).run()
+    val (pub, sub) = TestSource.probe[Double].via(realDriftFlow).toMat(TestSink[(Double, Int)]())(Keep.both).run()
 
     sub.request(1)
     pub.sendNext(1.0)
@@ -109,7 +109,7 @@ class RateTransformationDocSpec extends AkkaSpec {
     val latch = TestLatch(2)
     val realDriftFlow = Flow[Double].expand(d => { latch.countDown(); Iterator.from(0).map(d -> _) })
 
-    val (pub, sub) = TestSource.probe[Double].via(realDriftFlow).toMat(TestSink.probe[(Double, Int)])(Keep.both).run()
+    val (pub, sub) = TestSource.probe[Double].via(realDriftFlow).toMat(TestSink[(Double, Int)]())(Keep.both).run()
 
     sub.request(1)
     pub.sendNext(1.0)

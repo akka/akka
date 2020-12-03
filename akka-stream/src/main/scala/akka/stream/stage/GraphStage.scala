@@ -725,7 +725,29 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         }
       i += 1
     }
+    cleanUpSubstreams(optionalFailureCause)
     setKeepGoing(false)
+  }
+
+  private def cleanUpSubstreams(optionalFailureCause: OptionVal[Throwable]): Unit = {
+    _subInletsAndOutlets.foreach {
+      case inlet: SubSinkInlet[_] =>
+        val subSink = inlet.sink.asInstanceOf[SubSink[_]]
+        optionalFailureCause match {
+          case OptionVal.Some(cause) => subSink.cancelSubstream(cause)
+          case _                     => subSink.cancelSubstream()
+        }
+      case outlet: SubSourceOutlet[_] =>
+        val subSource = outlet.source.asInstanceOf[SubSource[_]]
+        optionalFailureCause match {
+          case OptionVal.Some(cause) => subSource.failSubstream(cause)
+          case _                     => subSource.completeSubstream()
+        }
+      case wat =>
+        throw new IllegalStateException(
+          s"Stage _subInletsAndOutlets contained unexpected element of type ${wat.getClass.toString}")
+    }
+    _subInletsAndOutlets = Set.empty
   }
 
   /**
@@ -1253,6 +1275,22 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     case ref  => ref
   }
 
+  // keep track of created SubSinkInlets and SubSourceOutlets to make sure we do not leak them
+  // when this stage completes/fails, not threadsafe only accessed from stream machinery callbacks etc.
+  private var _subInletsAndOutlets: Set[AnyRef] = Set.empty
+
+  private def created(inlet: SubSinkInlet[_]): Unit =
+    _subInletsAndOutlets += inlet
+
+  private def completedOrFailed(inlet: SubSinkInlet[_]): Unit =
+    _subInletsAndOutlets -= inlet
+
+  private def created(outlet: SubSourceOutlet[_]): Unit =
+    _subInletsAndOutlets += outlet
+
+  private def completedOrFailed(outlet: SubSourceOutlet[_]): Unit =
+    _subInletsAndOutlets -= outlet
+
   /**
    * Initialize a [[StageActorRef]] which can be used to interact with from the outside world "as-if" an [[Actor]].
    * The messages are looped through the [[getAsyncCallback]] mechanism of [[GraphStage]] so they are safe to modify
@@ -1329,6 +1367,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       val exception = streamDetachedException
       inProgress.foreach(_.tryFailure(exception))
     }
+    cleanUpSubstreams(OptionVal.None)
   }
 
   private[this] var asyncCleanupCounter = 0L
@@ -1375,8 +1414,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    *
    * This allows the dynamic creation of an Inlet for a GraphStage which is
    * connected to a Sink that is available for materialization (e.g. using
-   * the `subFusingMaterializer`). Care needs to be taken to cancel this Inlet
-   * when the operator shuts down lest the corresponding Sink be left hanging.
+   * the `subFusingMaterializer`). Completion, cancellation and failure of the
+   * parent operator is automatically delegated to instances of `SubSinkInlet` to avoid resource leaks.
    *
    * To be thread safe this method must only be called from either the constructor of the graph operator during
    * materialization or one of the methods invoked by the graph operator machinery, such as `onPush` and `onPull`.
@@ -1404,6 +1443,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       }
     }.invoke _)
 
+    GraphStageLogic.this.created(this)
+
     def sink: Graph[SinkShape[T], NotUsed] = _sink
 
     def setHandler(handler: InHandler): Unit = this.handler = handler
@@ -1429,10 +1470,13 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       _sink.pullSubstream()
     }
 
-    def cancel(): Unit = cancel(SubscriptionWithCancelException.NoMoreElementsNeeded)
+    def cancel(): Unit = {
+      cancel(SubscriptionWithCancelException.NoMoreElementsNeeded)
+    }
     def cancel(cause: Throwable): Unit = {
       closed = true
       _sink.cancelSubstream(cause)
+      GraphStageLogic.this.completedOrFailed(this)
     }
 
     override def toString = s"SubSinkInlet($name)"
@@ -1443,9 +1487,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    *
    * This allows the dynamic creation of an Outlet for a GraphStage which is
    * connected to a Source that is available for materialization (e.g. using
-   * the `subFusingMaterializer`). Care needs to be taken to complete this
-   * Outlet when the operator shuts down lest the corresponding Sink be left
-   * hanging. It is good practice to use the `timeout` method to cancel this
+   * the `subFusingMaterializer`). Completion, cancellation and failure of the
+   * parent operator is automatically delegated to instances of `SubSourceOutlet`
+   * to avoid resource leaks.
+   *
+   * Even so it is good practice to use the `timeout` method to cancel this
    * Outlet in case the corresponding Source is not materialized within a
    * given time limit, see e.g. ActorMaterializerSettings.
    *
@@ -1473,6 +1519,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     }
 
     private val _source = new SubSource[T](name, callback)
+    GraphStageLogic.this.created(this)
 
     /**
      * Set the source into timed-out mode if it has not yet been materialized.
@@ -1520,6 +1567,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       available = false
       closed = true
       _source.completeSubstream()
+      GraphStageLogic.this.completedOrFailed(this)
     }
 
     /**
@@ -1529,6 +1577,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
       available = false
       closed = true
       _source.failSubstream(ex)
+      GraphStageLogic.this.completedOrFailed(this)
     }
 
     override def toString = s"SubSourceOutlet($name)"

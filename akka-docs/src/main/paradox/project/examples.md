@@ -52,12 +52,10 @@ This project contains a Shopping Cart sample illustrating how to use Akka Persis
 
 ## CQRS
 
-@java[@extref[CQRS example project](samples:akka-samples-cqrs-java)]
-@scala[@extref[CQRS example project](samples:akka-samples-cqrs-scala)]
-
-This project contains a Shopping Cart sample illustrating how to use Akka Persistence.
-The events are tagged to be consumed by even processors to build other representations
-from the events, or publish the events to other services.
+The @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) contains a
+Shopping Cart sample illustrating how to use Event Sourcing and Projections together. The events are
+tagged to be consumed by even processors to build other representations from the events, or publish the events
+to other services.
 
 ## Replicated Event Sourcing
 

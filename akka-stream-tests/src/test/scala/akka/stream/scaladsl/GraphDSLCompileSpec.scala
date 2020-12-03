@@ -317,10 +317,10 @@ class GraphDSLCompileSpec extends StreamSpec {
 
     "build with implicits and variance" in {
       RunnableGraph.fromGraph(GraphDSL.create() { implicit b =>
-        def appleSource = b.add(Source.fromPublisher(TestPublisher.manualProbe[Apple]()))
-        def fruitSource = b.add(Source.fromPublisher(TestPublisher.manualProbe[Fruit]()))
-        val outA = b.add(Sink.fromSubscriber(TestSubscriber.manualProbe[Fruit]()))
-        val outB = b.add(Sink.fromSubscriber(TestSubscriber.manualProbe[Fruit]()))
+        def appleSource = b.add(Source.fromPublisher(TestPublisher.ManualProbe[Apple]()))
+        def fruitSource = b.add(Source.fromPublisher(TestPublisher.ManualProbe[Fruit]()))
+        val outA = b.add(Sink.fromSubscriber(TestSubscriber.ManualProbe[Fruit]()))
+        val outB = b.add(Sink.fromSubscriber(TestSubscriber.ManualProbe[Fruit]()))
         val merge = b.add(Merge[Fruit](11))
         val unzip = b.add(Unzip[Int, String]())
         val whatever = b.add(Sink.asPublisher[Any](false))

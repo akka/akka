@@ -33,8 +33,8 @@ events to the actor, allowing it to rebuild its state. This can be either the fu
 or starting from a checkpoint in a snapshot which can dramatically reduce recovery times.
 
 The [Event Sourcing with Akka 2.6 video](https://akka.io/blog/news/2020/01/07/akka-event-sourcing-video)
-is a good starting point for learning Event Sourcing, and then followed by the
-[CQRS with Akka 2.6 video](https://akka.io/blog/news/2020/02/05/akka-cqrs-video).
+is a good starting point for learning Event Sourcing, together with the @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) 
+that illustrates how to implement an Event Sourced CQRS application with Akka Persistence and Akka Projections.
 
 @@@ note
 
@@ -345,7 +345,7 @@ Scala
 Java
 :  @@snip [BlogPostEntity.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntity.java) { #commands }
 
-@java[The commandler handler to process each command is decided by the state class (or state predicate) that is
+@java[The command handler to process each command is decided by the state class (or state predicate) that is
 given to the `forStateType` of the `CommandHandlerBuilder` and the match cases in the builders.]
 @scala[The command handler to process each command is decided by first looking at the state and then the command.
 It typically becomes two levels of pattern matching, first on the state and then on the command.]
@@ -676,10 +676,8 @@ reference documentation of the chosen plugin.
 is an example project that can be downloaded, and with instructions of how to run.
 This project contains a Shopping Cart sample illustrating how to use Akka Persistence.
 
-The Shopping Cart sample is expanded further in the
-@java[@extref[CQRS example project](samples:akka-samples-cqrs-java)]
-@scala[@extref[CQRS example project](samples:akka-samples-cqrs-scala)]
-sample. In that sample the events are tagged to be consumed by even processors to build other representations
+The Shopping Cart sample is expanded further in the @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/).
+In that sample the events are tagged to be consumed by even processors to build other representations
 from the events, or publish the events to other services.
 
 @java[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-java)]

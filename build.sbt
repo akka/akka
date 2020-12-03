@@ -57,13 +57,10 @@ resolverSettings
 def isScala213: Boolean = System.getProperty("akka.build.scalaVersion", "").startsWith("2.13")
 
 // When this is updated the set of modules in ActorSystem.allModules should also be updated
-lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
+lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
   actor,
-  actorTests,
   actorTestkitTyped,
   actorTyped,
-  actorTypedTests,
-  benchJmh,
   cluster,
   clusterMetrics,
   clusterSharding,
@@ -73,29 +70,35 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   coordination,
   discovery,
   distributedData,
-  docs,
   jackson,
   multiNodeTestkit,
   osgi,
   persistence,
   persistenceQuery,
-  persistenceShared,
-  persistenceTck,
   persistenceTyped,
-  persistenceTypedTests,
   persistenceTestkit,
   protobuf,
   protobufV3,
   pki,
   remote,
-  remoteTests,
   slf4j,
   stream,
   streamTestkit,
-  streamTests,
-  streamTestsTck,
   streamTyped,
   testkit)
+
+lazy val aggregatedProjects: Seq[ProjectReference] = userProjects ++ List[ProjectReference](
+    actorTests,
+    actorTypedTests,
+    benchJmh,
+    docs,
+    billOfMaterials,
+    persistenceShared,
+    persistenceTck,
+    persistenceTypedTests,
+    remoteTests,
+    streamTests,
+    streamTestsTck)
 
 lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
@@ -350,8 +353,7 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
         .withConfigurations(Vector(Compile)), // prevent original dependency to be added to pom as runtime dep
     packagedArtifact in (Compile, packageBin) := Scoped.mkTuple2(
         (artifact in (Compile, packageBin)).value,
-        ReproducibleBuildsPlugin.postProcessJar(OsgiKeys.bundle.value)
-    ),
+        ReproducibleBuildsPlugin.postProcessJar(OsgiKeys.bundle.value)),
     packageBin in Compile := ReproducibleBuildsPlugin
         .postProcessJar((assembly in Compile).value), // package by running assembly
     // Prevent cyclic task dependencies, see https://github.com/sbt/sbt-assembly/issues/365
@@ -418,7 +420,6 @@ lazy val streamTestkit = akkaModule("akka-stream-testkit")
   .settings(Dependencies.streamTestkit)
   .settings(AutomaticModuleName.settings("akka.stream.testkit"))
   .settings(OSGi.streamTestkit)
-  .disablePlugins(MimaPlugin)
 
 lazy val streamTests = akkaModule("akka-stream-tests")
   .configs(akka.Jdk9.TestJdk9)
@@ -554,6 +555,17 @@ lazy val coordination = akkaModule("akka-coordination")
   .settings(Dependencies.coordination)
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)
+
+lazy val billOfMaterials = Project("akka-bill-of-materials", file("akka-bill-of-materials"))
+  .enablePlugins(BillOfMaterialsPlugin)
+  .disablePlugins(MimaPlugin, AkkaDisciplinePlugin)
+  // buildSettings and defaultSettings configure organization name, licenses, etc...
+  .settings(AkkaBuild.buildSettings)
+  .settings(AkkaBuild.defaultSettings)
+  .settings(
+    name := "akka-bom",
+    bomIncludeProjects := userProjects,
+    description := s"${description.value} (depending on Scala ${CrossVersion.binaryScalaVersion(scalaVersion.value)})")
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))
