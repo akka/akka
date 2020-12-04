@@ -33,12 +33,12 @@ object RouterSpec {
 
   // #routee
   // This code is extra indented for visualization purposes
-  //format: OFF
+  // format: OFF
   // #group
         val serviceKey = ServiceKey[Worker.Command]("log-worker")
 
   // #group
-  //format: ON
+  // format: ON
 }
 
 class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with AnyWordSpecLike with LogCapturing {
