@@ -25,9 +25,10 @@ import akka.actor.typed.receptionist.ServiceKey;
 
 public class RouterTest {
 
-  static // #pool
+  static // #routee
   class Worker {
-    interface Command {}
+    interface Command {
+    }
 
     static class DoLog implements Command {
       public final String text;
@@ -38,14 +39,11 @@ public class RouterTest {
     }
 
     static final Behavior<Command> create() {
-      return Behaviors.setup(
-          context -> {
-            context.getLog().info("Starting worker");
+      return Behaviors.setup(context -> {
+        context.getLog().info("Starting worker");
 
-            return Behaviors.receive(Command.class)
-                .onMessage(DoLog.class, doLog -> onDoLog(context, doLog))
-                .build();
-          });
+        return Behaviors.receive(Command.class).onMessage(DoLog.class, doLog -> onDoLog(context, doLog)).build();
+      });
     }
 
     private static Behavior<Command> onDoLog(ActorContext<Command> context, DoLog doLog) {
@@ -54,40 +52,41 @@ public class RouterTest {
     }
   }
 
-  // #pool
+  // #routee
 
   static Behavior<Void> showPoolRouting() {
-    return Behaviors.setup(
-        context -> {
-          // #pool
-          int poolSize = 4;
-          PoolRouter<Worker.Command> pool =
-              Routers.pool(
-                  poolSize,
-                  // make sure the workers are restarted if they fail
-                  Behaviors.supervise(Worker.create()).onFailure(SupervisorStrategy.restart()));
-          ActorRef<Worker.Command> router = context.spawn(pool, "worker-pool");
+    return
+    // #pool
+    // This would be defined within your actor class
+    Behaviors.setup(context -> {
+      int poolSize = 4;
+      PoolRouter<Worker.Command> pool = Routers.pool(poolSize,
+          // make sure the workers are restarted if they fail
+          Behaviors.supervise(Worker.create()).onFailure(SupervisorStrategy.restart()));
+      ActorRef<Worker.Command> router = context.spawn(pool, "worker-pool");
 
-          for (int i = 0; i < 10; i++) {
-            router.tell(new Worker.DoLog("msg " + i));
-          }
-          // #pool
+      for (int i = 0; i < 10; i++) {
+        router.tell(new Worker.DoLog("msg " + i));
+      }
+      // #pool
 
-          // #pool-dispatcher
-          // make sure workers use the default blocking IO dispatcher
-          PoolRouter<Worker.Command> blockingPool =
-              pool.withRouteeProps(DispatcherSelector.blocking());
-          // spawn head router using the same executor as the parent
-          ActorRef<Worker.Command> blockingRouter =
-              context.spawn(blockingPool, "blocking-pool", DispatcherSelector.sameAsParent());
-          // #pool-dispatcher
+      // #pool-dispatcher
+      // make sure workers use the default blocking IO dispatcher
+      PoolRouter<Worker.Command> blockingPool = pool.withRouteeProps(DispatcherSelector.blocking());
+      // spawn head router using the same executor as the parent
+      ActorRef<Worker.Command> blockingRouter = context.spawn(blockingPool, "blocking-pool",
+          DispatcherSelector.sameAsParent());
+      // #pool-dispatcher
 
-          // #strategy
-          PoolRouter<Worker.Command> alternativePool = pool.withPoolSize(2).withRoundRobinRouting();
-          // #strategy
+      // #strategy
+      PoolRouter<Worker.Command> alternativePool = pool.withPoolSize(2).withRoundRobinRouting();
+      // #strategy
 
-          return Behaviors.empty();
-        });
+      return Behaviors.empty();
+      // #pool
+    });
+    // #pool
+
   }
 
   static Behavior<Void> showGroupRouting() {
@@ -95,38 +94,36 @@ public class RouterTest {
     ServiceKey<Worker.Command> serviceKey = ServiceKey.create(Worker.Command.class, "log-worker");
 
     // #group
-    return Behaviors.setup(
-        context -> {
-          // #group
-          // this would likely happen elsewhere - if we create it locally we
-          // can just as well use a pool
-          ActorRef<Worker.Command> worker = context.spawn(Worker.create(), "worker");
-          context.getSystem().receptionist().tell(Receptionist.register(serviceKey, worker));
+    return
+    // #group
+    Behaviors.setup(context -> {
 
-          GroupRouter<Worker.Command> group = Routers.group(serviceKey);
-          ActorRef<Worker.Command> router = context.spawn(group, "worker-group");
+      // this would likely happen elsewhere - if we create it locally we
+      // can just as well use a pool
+      ActorRef<Worker.Command> worker = context.spawn(Worker.create(), "worker");
+      context.getSystem().receptionist().tell(Receptionist.register(serviceKey, worker));
 
-          // the group router will stash messages until it sees the first listing of registered
-          // services from the receptionist, so it is safe to send messages right away
-          for (int i = 0; i < 10; i++) {
-            router.tell(new Worker.DoLog("msg " + i));
-          }
-          // #group
+      GroupRouter<Worker.Command> group = Routers.group(serviceKey);
+      ActorRef<Worker.Command> router = context.spawn(group, "worker-group");
 
-          return Behaviors.empty();
-        });
+      // the group router will stash messages until it sees the first listing of
+      // registered
+      // services from the receptionist, so it is safe to send messages right away
+      for (int i = 0; i < 10; i++) {
+        router.tell(new Worker.DoLog("msg " + i));
+      }
+
+      return Behaviors.empty();
+    });
+    // #group
   }
 
   public static void main(String[] args) {
-    ActorSystem<Void> system =
-        ActorSystem.create(
-            Behaviors.setup(
-                context -> {
-                  context.spawn(showPoolRouting(), "pool-router-setup");
-                  context.spawn(showGroupRouting(), "group-router-setup");
+    ActorSystem<Void> system = ActorSystem.create(Behaviors.setup(context -> {
+      context.spawn(showPoolRouting(), "pool-router-setup");
+      context.spawn(showGroupRouting(), "group-router-setup");
 
-                  return Behaviors.empty();
-                }),
-            "RouterTest");
+      return Behaviors.empty();
+    }), "RouterTest");
   }
 }
