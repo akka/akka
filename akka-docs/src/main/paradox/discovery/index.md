@@ -34,6 +34,7 @@ See @ref:[Migration hints](#migrating-from-akka-management-discovery-before-1-0-
 ## Module info
 
 @@dependency[sbt,Gradle,Maven] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group="com.typesafe.akka"

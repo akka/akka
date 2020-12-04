@@ -10,11 +10,16 @@ You are viewing the documentation for the new actor APIs, to view the Akka Class
 To use Akka Persistence, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group=com.typesafe.akka
   artifact=akka-persistence-typed_$scala.binary.version$
   version=AkkaVersion
+  group2=com.typesafe.akka
+  artifact2=akka-persistence-testkit_$scala.binary.version$
+  version2=AkkaVersion
+  scope2=test
 }
 
 You also have to select journal plugin and optionally snapshot store plugin, see 
