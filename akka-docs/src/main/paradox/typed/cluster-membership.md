@@ -145,6 +145,12 @@ Won't happen. That way the shutdown will be as quick as possible and a new versi
 
 If a cluster isn't to be restarted right away then there is no need to prepare it for shutdown.
 
+To use this feature use `Cluster(system).prepareForFullClusterShutdown()` in classic or @apidoc[PrepareForFullClusterShutdown] in typed.
+
+Wait for all `Up` members to become `ReadyForShutdown` and then all nodes can be shutdown and restarted.
+Members that aren't `Up` yet will remain in the `Joining` or `WeaklyUp` states. Any node that is already leaving 
+the cluster i.e. in the `Leaving` or `Exiting` states will continue to leave the cluster via the normal path.
+
 ## State Diagrams
 
 ### State Diagram for the Member States 
