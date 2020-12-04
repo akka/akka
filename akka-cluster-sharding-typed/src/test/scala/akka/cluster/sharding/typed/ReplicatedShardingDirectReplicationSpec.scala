@@ -75,7 +75,7 @@ class ReplicatedShardingDirectReplicationSpec extends ScalaTestWithActorTestKit 
       replicaAProbe.expectNoMessage()
     }
 
-    "ignore messages not from replicated Event Sourcing" in {
+    "ignore messages not from Replicated Event Sourcing" in {
       val replicaAProbe = createTestProbe[ShardingEnvelope[PublishedEvent]]()
 
       val replicationActor = spawn(

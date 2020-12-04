@@ -56,7 +56,7 @@ trait ReplicatedShardingExtension extends Extension {
 }
 
 /**
- * Represents the sharding instances for the replicas of one replicated Event Sourcing entity type
+ * Represents the sharding instances for the replicas of one Replicated Event Sourcing entity type
  *
  * Not for user extension.
  */

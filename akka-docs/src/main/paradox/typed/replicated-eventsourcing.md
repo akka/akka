@@ -421,7 +421,7 @@ For a snapshot plugin to support replication it needs to store and read metadata
 To attach the metadata when reading the snapshot the `akka.persistence.SnapshotMetadata.apply` factory overload taking a `metadata` parameter is used.
 The @apidoc[SnapshotStoreSpec] in the Persistence TCK provides a capability flag `supportsMetadata` to toggle verification that metadata is handled correctly.
 
-The following plugins support replicated Event Sourcing:
+The following plugins support Replicated Event Sourcing:
 
 * [Akka Persistence Cassandra](https://doc.akka.io/docs/akka-persistence-cassandra/current/index.html) versions 1.0.3+
 * [Akka Persistence Spanner](https://doc.akka.io/docs/akka-persistence-spanner/current/overview.html) versions 1.0.0-RC4+
