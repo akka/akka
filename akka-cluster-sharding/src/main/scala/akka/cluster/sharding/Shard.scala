@@ -866,7 +866,7 @@ private[akka] class Shard(
       // does conversion so only do once
       val activeEntities = entities.activeEntities()
       if (preparingForShutdown) {
-        log.info("{} HandOff shard [{}] while preparing for shutdown. Stopping right away.", typeName, shardId)
+        log.info("{}: HandOff shard [{}] while preparing for shutdown. Stopping right away.", typeName, shardId)
         activeEntities.foreach { _ ! handOffStopMessage }
         replyTo ! ShardStopped(shardId)
         context.stop(self)

@@ -903,7 +903,8 @@ abstract class ShardCoordinator(
       case _: MemberPreparingForShutdown | _: MemberReadyForShutdown =>
         if (!preparingForShutdown) {
           log.info(
-            "{}: Shard coordinator detected prepare for full cluster shutdown. No new rebalances will take place.")
+            "{}: Shard coordinator detected prepare for full cluster shutdown. No new rebalances will take place.",
+            typeName)
           timers.cancel(RebalanceTick)
           preparingForShutdown = true
         }

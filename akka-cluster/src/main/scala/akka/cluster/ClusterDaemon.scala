@@ -568,7 +568,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       case Join(node, roles, appVersion)         => joining(node, roles, appVersion)
       case ClusterUserAction.Down(address)       => downing(address)
       case ClusterUserAction.Leave(address)      => leaving(address)
-      case ClusterUserAction.PrepareForShutdown  => startShutdown()
+      case ClusterUserAction.PrepareForShutdown  => startPrepareForShutdown()
       case SendGossipTo(address)                 => sendGossipTo(address)
       case msg: SubscriptionMessage              => publisher.forward(msg)
       case QuarantinedEvent(ua)                  => quarantined(UniqueAddress(ua))
@@ -825,7 +825,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         }
       }
     } else {
-      logInfo("Ignoring join request from {} as preparing for shutdown", joiningNode)
+      logInfo("Ignoring join request from [{}] as preparing for shutdown", joiningNode)
     }
   }
 
@@ -847,17 +847,15 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
   }
 
-  def startShutdown(): Unit = {
+  def startPrepareForShutdown(): Unit = {
     prepareForShutdown = true
-    val membersToPrepare =
-      latestGossip.members.filter(member => MembershipState.allowedToPrepareToShutdown(member.status))
-    val newMembers = membersToPrepare.foldLeft(latestGossip.members) {
-      case (acc, next) =>
-        acc - next + next.copy(status = PreparingForShutdown)
+    val changedMembers = latestGossip.members.collect {
+      case m if MembershipState.allowedToPrepareToShutdown(m.status) =>
+        m.copy(status = PreparingForShutdown)
     }
-    val newGossip = latestGossip.copy(members = newMembers)
+    val newGossip = latestGossip.update(changedMembers)
     updateLatestGossip(newGossip)
-    membersToPrepare.foreach { member =>
+    changedMembers.foreach { member =>
       logInfo(
         ClusterLogMarker.memberChanged(member.uniqueAddress, MemberStatus.PreparingForShutdown),
         "Preparing for shutdown [{}] as [{}]",
@@ -1175,13 +1173,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         shutdownSelfWhenDown()
       }
 
-      if (latestGossip.members.exists(m => MembershipState.shutdownStates(m.status)) && (MembershipState
-            .allowedToPrepareToShutdown(selfStatus))) {
-        // TODO switch to debug
-        logInfo("Detected full cluster shutdown")
-        self ! ClusterUserAction.PrepareForShutdown
-      }
-
       if (talkback) {
         // send back gossip to sender() when sender() had different view, i.e. merge, or sender() had
         // older or sender() had newer
@@ -1281,7 +1272,16 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       isCurrentlyLeader = false
     }
     cleanupExitingConfirmed()
+    checkForPrepareForShutdown()
     shutdownSelfWhenDown()
+  }
+
+  def checkForPrepareForShutdown(): Unit = {
+    if (MembershipState.allowedToPrepareToShutdown(latestGossip.member(selfUniqueAddress).status) && latestGossip.members
+          .exists(m => MembershipState.prepareForShutdownStates(m.status))) {
+      logDebug("Detected full cluster shutdown")
+      self ! ClusterUserAction.PrepareForShutdown
+    }
   }
 
   def shutdownSelfWhenDown(): Unit = {

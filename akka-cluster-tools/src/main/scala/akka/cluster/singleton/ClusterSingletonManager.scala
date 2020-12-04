@@ -667,7 +667,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
         if (previousOldest.forall(removed.contains))
           tryGotoOldest()
         else {
-          ifNotPreparingForShutdown { () =>
+          if (!preparingForFullShutdown) {
             peer(previousOldest.head.address) ! HandOverToMe
           }
           goto(BecomingOldest).using(BecomingOldestData(previousOldest))
@@ -706,7 +706,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       else {
         // this node was probably quickly restarted with same hostname:port,
         // confirm that the old singleton instance has been stopped
-        ifNotPreparingForShutdown { () =>
+        if (!preparingForFullShutdown) {
           sender() ! HandOverDone
         }
       }
@@ -772,7 +772,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
           previousOldest.headOption match {
             case Some(oldest) =>
               if (oldest == senderUniqueAddress) {
-                ifNotPreparingForShutdown { () =>
+                if (!preparingForFullShutdown) {
                   sender() ! HandOverToMe
                 }
               } else
@@ -782,7 +782,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
                   oldest.address)
               stay()
             case None =>
-              ifNotPreparingForShutdown { () =>
+              if (!preparingForFullShutdown) {
                 sender() ! HandOverToMe
               }
               stay().using(BecomingOldestData(senderUniqueAddress :: previousOldest))
@@ -791,7 +791,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
 
     case Event(HandOverRetry(count), BecomingOldestData(previousOldest)) =>
       if (count <= maxHandOverRetries) {
-        ifNotPreparingForShutdown { () =>
+        if (!preparingForFullShutdown) {
           logInfo("Retry [{}], sending HandOverToMe to [{}]", count, previousOldest.headOption.map(_.address))
           previousOldest.headOption.foreach(node => peer(node.address) ! HandOverToMe)
           startSingleTimer(HandOverRetryTimer, HandOverRetry(count + 1), handOverRetryInterval)
@@ -819,7 +819,8 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
 
   def tryAcquireLease() = {
     import context.dispatcher
-    ifNotPreparingForShutdown { () =>
+
+    if (!preparingForFullShutdown) {
       pipe(lease.get.acquire(reason => self ! LeaseLost(reason)).map[Any](AcquireLeaseResult).recover {
         case NonFatal(t) => AcquireLeaseFailure(t)
       }).to(self)
@@ -915,14 +916,14 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
         gotoHandingOver(singleton, None)
       case Some(a) =>
         // send TakeOver request in case the new oldest doesn't know previous oldest
-        ifNotPreparingForShutdown { () =>
+        if (!preparingForFullShutdown) {
           peer(a.address) ! TakeOverFromMe
           startSingleTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval)
         }
         goto(WasOldest).using(WasOldestData(singleton, newOldestOption = Some(a)))
       case None =>
         // new oldest will initiate the hand-over
-        ifNotPreparingForShutdown { () =>
+        if (!preparingForFullShutdown) {
           startSingleTimer(TakeOverRetryTimer, TakeOverRetry(1), handOverRetryInterval)
         }
         goto(WasOldest).using(WasOldestData(singleton, newOldestOption = None))
@@ -987,7 +988,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
         else
           log.debug("Retry [{}], sending TakeOverFromMe to [{}]", count, newOldestOption.map(_.address))
 
-        ifNotPreparingForShutdown { () =>
+        if (!preparingForFullShutdown) {
           newOldestOption.foreach(node => peer(node.address) ! TakeOverFromMe)
           startSingleTimer(TakeOverRetryTimer, TakeOverRetry(count + 1), handOverRetryInterval)
         }
@@ -1050,7 +1051,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
 
     case Event(HandOverToMe, HandingOverData(_, handOverTo)) if handOverTo.contains(sender()) =>
       // retry
-      ifNotPreparingForShutdown { () =>
+      if (!preparingForFullShutdown) {
         sender() ! HandOverInProgress
       }
       stay()
@@ -1171,18 +1172,6 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       stay()
     case Event(_: MemberEvent, _) =>
       stay() // silence
-  }
-
-  def doIfNotPreparingForShutdown[T](f: () => T, otherwise: T): T = {
-    if (preparingForFullShutdown) {
-      otherwise
-    } else {
-      f()
-    }
-  }
-
-  def ifNotPreparingForShutdown(f: () => Unit): Unit = {
-    doIfNotPreparingForShutdown[Unit](f, ())
   }
 
   onTransition {

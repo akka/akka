@@ -23,13 +23,12 @@ import akka.util.ccompat._
 @InternalApi private[akka] object MembershipState {
   import MemberStatus._
   private val leaderMemberStatus = Set[MemberStatus](Up, Leaving, PreparingForShutdown, ReadyForShutdown)
-  // FIXME should shutting down be added to these?
-  private val convergenceMemberStatus = Set[MemberStatus](Up, Leaving)
+  private val convergenceMemberStatus = Set[MemberStatus](Up, Leaving, PreparingForShutdown, ReadyForShutdown)
   val convergenceSkipUnreachableWithMemberStatus = Set[MemberStatus](Down, Exiting)
   val removeUnreachableWithMemberStatus = Set[MemberStatus](Down, Exiting)
   // If a member hasn't join yet or has already started leaving don't mark it as shutting down
-  val allowedToPrepareToShutdown = Set[MemberStatus](Up, WeaklyUp)
-  val shutdownStates = Set[MemberStatus](PreparingForShutdown, ReadyForShutdown)
+  val allowedToPrepareToShutdown = Set[MemberStatus](Up)
+  val prepareForShutdownStates = Set[MemberStatus](PreparingForShutdown, ReadyForShutdown)
 }
 
 /**

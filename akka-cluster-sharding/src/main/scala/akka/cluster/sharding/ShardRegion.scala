@@ -760,11 +760,10 @@ private[akka] class ShardRegion(
         context.stop(self)
       }
 
-    case MemberPreparingForShutdown(m) if m.uniqueAddress == Cluster(context.system).selfUniqueAddress =>
-      log.info("{}. Preparing for shutdown. No new shards will be created.", typeName)
-      preparingForShutdown = true
-    case MemberReadyForShutdown(m) if m.uniqueAddress == Cluster(context.system).selfUniqueAddress =>
-      log.info("{}. Ready for shutdown. No new shards will be created.", typeName)
+    case _: MemberReadyForShutdown | _: MemberPreparingForShutdown =>
+      if (!preparingForShutdown) {
+        log.info("{}. preparing for shutdown", typeName)
+      }
       preparingForShutdown = true
 
     case _: MemberEvent => // these are expected, no need to warn about them
@@ -902,6 +901,7 @@ private[akka] class ShardRegion(
           "{}: Skipping graceful shutdown of region and all its shards as cluster is preparing for shutdown",
           typeName)
         gracefulShutdownProgress.trySuccess(Done)
+        context.stop(self)
       } else {
         log.debug("{}: Starting graceful shutdown of region and all its shards", typeName)
 

@@ -129,7 +129,6 @@ object Member {
    * INTERNAL API
    * Orders the members by their address except that members with status
    * Joining, Exiting and Down are ordered last (in that order).
-   * FIXME include shutting down
    */
   private[cluster] val leaderStatusOrdering: Ordering[Member] = Ordering.fromLessThan[Member] { (a, b) =>
     (a.status, b.status) match {
@@ -197,7 +196,6 @@ object Member {
   /**
    * Picks the Member with the highest "priority" MemberStatus.
    * Where highest priority is furthest along the membership state machine
-   * FIXME - include shutting down
    */
   def highestPriorityOf(m1: Member, m2: Member): Member = {
     if (m1.status == m2.status)
@@ -205,11 +203,8 @@ object Member {
       if (m1.isOlderThan(m2)) m1 else m2
     else
       (m1.status, m2.status) match {
-        case (Removed, _) => m1
-        case (_, Removed) => m2
-        case (PreparingForShutdown, _) =>
-          m1 // FIXME Consider moving these after down and exiting. Should we allow a node to still leave?
-        case (_, PreparingForShutdown) => m2
+        case (Removed, _)              => m1
+        case (_, Removed)              => m2
         case (ReadyForShutdown, _)     => m1
         case (_, ReadyForShutdown)     => m2
         case (Down, _)                 => m1
@@ -222,6 +217,8 @@ object Member {
         case (_, Joining)              => m1
         case (WeaklyUp, _)             => m2
         case (_, WeaklyUp)             => m1
+        case (PreparingForShutdown, _) => m1
+        case (_, PreparingForShutdown) => m2
         case (Up, Up)                  => m1
       }
   }
@@ -302,8 +299,8 @@ object MemberStatus {
       Leaving -> Set(Exiting, Down, Removed),
       Down -> Set(Removed),
       Exiting -> Set(Removed, Down),
-      PreparingForShutdown -> Set(ReadyForShutdown, Removed, Leaving),
-      ReadyForShutdown -> Set(Removed, Leaving),
+      PreparingForShutdown -> Set(ReadyForShutdown, Removed, Leaving, Down),
+      ReadyForShutdown -> Set(Removed, Leaving, Down),
       Removed -> Set.empty[MemberStatus])
 }
 
