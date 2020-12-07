@@ -85,7 +85,7 @@ import java.util.function.{Function => JFunction}
    * Tests whether this [[StashBuffer]] contains a given message.
    *
    * @param message the message to test
-   * @return true if the buffer contains the element, false otherwise.
+   * @return true if the buffer contains the message, false otherwise.
    */
   def contains[U >: T](message:U): Boolean
 
@@ -93,7 +93,7 @@ import java.util.function.{Function => JFunction}
    * Tests whether a predicate holds for at least one element of this [[StashBuffer]].
    *
    * @param predicate the predicate used to test
-   * @return true if the predicate holds for at least one element, false otherwise.
+   * @return true if the predicate holds for at least one message, false otherwise.
    */
   def anyMatch(predicate:Predicate[T]): Boolean
 
