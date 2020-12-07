@@ -181,6 +181,54 @@ Akka, like most Scala projects, compiles faster with the Graal JIT enabled. The 
 * Use a JDK > 10
 * Use the following JVM options for SBT e.g. by adding them to the `SBT_OPTS` environment variable: `-XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseJVMCICompiler`
 
+### Compiling with IntelliJ IDEA
+
+#### not found: value Version
+
+```
+not found: value Version
+    require(libraryName, requiredVersion, Version.current)
+```
+
+`Version` is a generated file, if it is missing
+`sbt compile` should build it.
+
+#### package sun.misc does not exist
+
+```
+java: package sun.misc does not exist
+```
+
+This error can occur when compiling code with Java 9 or later. To avoid it,
+either build this file with `sbt compile` or uncheck 'Use --release option for
+cross-compilation' under 'File' > 'Settings' > 'Build, Execution, Deployment' >
+'Compiler' > 'Java Compiler'.
+
+#### object protobufv3 is not a member of package akka
+
+```
+object protobufv3 is not a member of package akka
+import akka.protobufv3.internal.ByteString
+```
+
+This error means our shaded version of protobuf has not been generated for the
+version you are testing yet. A 'sbt compile' on the console should
+fix this.
+
+#### akka.protobuf.GeneratedMessage in akka.protobuf has been deprecated
+
+```
+java: warnings found and -Werror specified
+akka.protobuf.GeneratedMessage in akka.protobuf has been deprecated
+```
+
+Remove `-Werror` from 'File' > 'Settings' > 'Build, Execution, Deployment' >
+'Compiler' > 'Java Compiler'.
+
+#### FanInShape2 is already defined as class FanInShape2
+
+...?
+
 ## The `validatePullRequest` task
 
 The Akka build includes a special task called `validatePullRequest` which investigates the changes made as well as dirty
