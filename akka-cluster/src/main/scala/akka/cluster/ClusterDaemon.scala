@@ -428,8 +428,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
 
     if (seedNodes.isEmpty) {
-      if (isClusterBootstrapUsed)
-        logDebug("Cluster Bootstrap is used for joining")
+      if (isClusterBootstrapAvailable)
+        logInfo("No seed nodes found in configuration, relying on Cluster Bootstrap for joining")
       else
         logInfo(
           "No seed-nodes configured, manual cluster join required, see " +
@@ -445,14 +445,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     context.system.eventStream.subscribe(self, classOf[ClassicQuarantinedEvent])
   }
 
-  private def isClusterBootstrapUsed: Boolean = {
-    val conf = context.system.settings.config
-    conf.hasPath("akka.management.cluster.bootstrap") &&
-    conf.hasPath("akka.management.http.route-providers") &&
-    conf
-      .getStringList("akka.management.http.route-providers")
-      .contains("akka.management.cluster.bootstrap.ClusterBootstrap$")
-  }
+  private def isClusterBootstrapAvailable: Boolean =
+    context.system.settings.config.hasPath("akka.management.cluster.bootstrap")
 
   override def postStop(): Unit = {
     context.system.eventStream.unsubscribe(self)
