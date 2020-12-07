@@ -13,7 +13,6 @@ import akka.actor.typed.scaladsl.TimerScheduler
 import akka.actor.typed.SupervisorStrategy
 
 import scala.concurrent.duration.FiniteDuration
-import scala.annotation.tailrec
 import akka.Done
 import com.github.ghik.silencer.silent
 
