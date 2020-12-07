@@ -559,13 +559,12 @@ object StyleGuideDocExamples {
     //#set-handler-zero-partial
 
     //#top-level-behaviors-partial
-    val zero: Behavior[Command] = Behaviors.receive { (context, command) =>
-      getHandler(0).orElse(setHandlerZero(context.log))(command)
+    val zero: Behavior[Command] = Behaviors.setup { context =>
+      Behaviors.receiveMessagePartial(getHandler(0).orElse(setHandlerZero(context.log)))
     }
 
-    def nonZero(capacity: Int): Behavior[Command] = Behaviors.receiveMessage { command =>
-      getHandler(capacity).orElse(setHandlerNotZero(capacity))(command)
-    }
+    def nonZero(capacity: Int): Behavior[Command] =
+      Behaviors.receiveMessagePartial(getHandler(capacity).orElse(setHandlerNotZero(capacity)))
 
     // Default Initial Behavior for this actor
     def apply(initialCapacity: Int): Behavior[Command] = nonZero(initialCapacity)

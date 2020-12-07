@@ -435,6 +435,8 @@ Finally, we can go on defining the two different behaviors for this specific act
 Scala
 :  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #top-level-behaviors-partial }
 
+Even though in this particular example we could use `receiveMessage` as we cover all cases, we use `receiveMessagePartial` instead to cover potential future unhandled message cases.
+
 @@@
 
 @@@ div {.group-scala}
