@@ -10,13 +10,12 @@ import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestK
 import akka.actor.typed.{ Behavior, SupervisorStrategy }
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.{ Behaviors, Routers }
-import org.scalatest.wordspec.AnyWordSpecLike
 
 // #pool
-
+import org.scalatest.wordspec.AnyWordSpecLike
 object RouterSpec {
 
-  // #pool
+  // #routee
   object Worker {
     sealed trait Command
     case class DoLog(text: String) extends Command
@@ -32,11 +31,14 @@ object RouterSpec {
     }
   }
 
-  // #pool
+  // #routee
+  // This code is extra indented for visualization purposes
+  // format: OFF
   // #group
-  val serviceKey = ServiceKey[Worker.Command]("log-worker")
+        val serviceKey = ServiceKey[Worker.Command]("log-worker")
 
   // #group
+  // format: ON
 }
 
 class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with AnyWordSpecLike with LogCapturing {
@@ -54,36 +56,42 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
         def DoLog(text: String) = RouterSpec.Worker.DoLog(text)
       }
 
-      spawn(Behaviors.setup[Unit] { ctx =>
+      spawn(
         // #pool
-        val pool = Routers.pool(poolSize = 4)(
-          // make sure the workers are restarted if they fail
-          Behaviors.supervise(Worker()).onFailure[Exception](SupervisorStrategy.restart))
-        val router = ctx.spawn(pool, "worker-pool")
+        // This would be defined within your actor object
+        Behaviors.setup[Unit] { ctx =>
+          val pool = Routers.pool(poolSize = 4) {
+            // make sure the workers are restarted if they fail
+            Behaviors.supervise(Worker()).onFailure[Exception](SupervisorStrategy.restart)
+          }
+          val router = ctx.spawn(pool, "worker-pool")
 
-        (0 to 10).foreach { n =>
-          router ! Worker.DoLog(s"msg $n")
+          (0 to 10).foreach { n =>
+            router ! Worker.DoLog(s"msg $n")
+          }
+          // #pool
+
+          // #pool-dispatcher
+          // make sure workers use the default blocking IO dispatcher
+          val blockingPool = pool.withRouteeProps(routeeProps = DispatcherSelector.blocking())
+          // spawn head router using the same executor as the parent
+          val blockingRouter = ctx.spawn(blockingPool, "blocking-pool", DispatcherSelector.sameAsParent())
+          // #pool-dispatcher
+
+          blockingRouter ! Worker.DoLog("msg")
+
+          // #strategy
+          val alternativePool = pool.withPoolSize(2).withRoundRobinRouting()
+          // #strategy
+
+          val alternativeRouter = ctx.spawn(alternativePool, "alternative-pool")
+          alternativeRouter ! Worker.DoLog("msg")
+          //#pool
+          Behaviors.empty
+
         }
-        // #pool
-
-        // #pool-dispatcher
-        // make sure workers use the default blocking IO dispatcher
-        val blockingPool = pool.withRouteeProps(routeeProps = DispatcherSelector.blocking())
-        // spawn head router using the same executor as the parent
-        val blockingRouter = ctx.spawn(blockingPool, "blocking-pool", DispatcherSelector.sameAsParent())
-        // #pool-dispatcher
-
-        blockingRouter ! Worker.DoLog("msg")
-
-        // #strategy
-        val alternativePool = pool.withPoolSize(2).withRoundRobinRouting()
-        // #strategy
-
-        val alternativeRouter = ctx.spawn(alternativePool, "alternative-pool")
-        alternativeRouter ! Worker.DoLog("msg")
-
-        Behaviors.empty
-      })
+        //#pool
+      )
 
       probe.receiveMessages(11)
     }
@@ -98,25 +106,27 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
         def DoLog(text: String) = RouterSpec.Worker.DoLog(text)
       }
 
-      spawn(Behaviors.setup[Unit] { ctx =>
+      spawn(
         // #group
-        // this would likely happen elsewhere - if we create it locally we
-        // can just as well use a pool
-        val worker = ctx.spawn(Worker(), "worker")
-        ctx.system.receptionist ! Receptionist.Register(serviceKey, worker)
+        Behaviors.setup[Unit] { ctx =>
+          // this would likely happen elsewhere - if we create it locally we
+          // can just as well use a pool
+          val worker = ctx.spawn(Worker(), "worker")
+          ctx.system.receptionist ! Receptionist.Register(serviceKey, worker)
 
-        val group = Routers.group(serviceKey)
-        val router = ctx.spawn(group, "worker-group")
+          val group = Routers.group(serviceKey)
+          val router = ctx.spawn(group, "worker-group")
 
-        // the group router will stash messages until it sees the first listing of registered
-        // services from the receptionist, so it is safe to send messages right away
-        (0 to 10).foreach { n =>
-          router ! Worker.DoLog(s"msg $n")
+          // the group router will stash messages until it sees the first listing of registered
+          // services from the receptionist, so it is safe to send messages right away
+          (0 to 10).foreach { n =>
+            router ! Worker.DoLog(s"msg $n")
+          }
+
+          Behaviors.empty
         }
         // #group
-
-        Behaviors.empty
-      })
+      )
 
       probe.receiveMessages(10)
     }
