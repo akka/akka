@@ -4,6 +4,7 @@
 
 package akka.persistence.typed.delivery
 
+import scala.concurrent.duration._
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -72,6 +73,8 @@ class WorkPullingWithEventSourcedProducerQueueSpec
       testKit.stop(consumerController)
       consumerProbe.expectTerminated(consumerController)
 
+      system.log.info("------------------ Start 2")
+
       val producerController2 = spawn(
         WorkPullingProducerController[String](
           producerId,
@@ -81,6 +84,13 @@ class WorkPullingWithEventSourcedProducerQueueSpec
 
       val consumerController2 = spawn(ConsumerController[String](serviceKey))
       consumerController2 ! ConsumerController.Start(consumerProbe.ref)
+
+      // start two consumers (same consumerProbe) to reproduce issue #29854
+      val consumerController3 = spawn(ConsumerController[String](serviceKey))
+      consumerController3 ! ConsumerController.Start(consumerProbe.ref)
+
+      val requestNext4 = producerProbe.receiveMessage()
+      producerProbe.expectNoMessage()
 
       val delivery1 = consumerProbe.receiveMessage()
       delivery1.message should ===("a")
@@ -94,7 +104,7 @@ class WorkPullingWithEventSourcedProducerQueueSpec
       delivery3.message should ===("c")
       delivery3.confirmTo ! ConsumerController.Confirmed
 
-      val requestNext4 = producerProbe.receiveMessage()
+      producerProbe.expectNoMessage()
       requestNext4.sendNextTo ! "d"
 
       val delivery4 = consumerProbe.receiveMessage()
@@ -153,6 +163,7 @@ class WorkPullingWithEventSourcedProducerQueueSpec
       delivery3.confirmTo ! ConsumerController.Confirmed
 
       val requestNext4 = producerProbe.receiveMessage()
+      producerProbe.expectNoMessage()
       requestNext4.sendNextTo ! "d"
 
       // TODO Should we try harder to deduplicate first?
@@ -208,7 +219,10 @@ class WorkPullingWithEventSourcedProducerQueueSpec
       val batch1 = 15
       val confirmed1 = 10
       (1 to batch1).foreach { n =>
-        producerProbe.receiveMessage().sendNextTo ! s"msg-$n"
+        val reqNext = producerProbe.receiveMessage()
+        if (n == 1 || n == 7 || n == 13) // not checking all because takes too much time
+          producerProbe.expectNoMessage(50.millis) // issue #29854
+        reqNext.sendNextTo ! s"msg-$n"
       }
 
       (1 to confirmed1).foreach { _ =>
@@ -229,6 +243,10 @@ class WorkPullingWithEventSourcedProducerQueueSpec
       val consumerController4 = spawn(ConsumerController[String](serviceKey))
       consumerController4 ! ConsumerController.Start(consumerProbe.ref)
 
+      // start two consumers (same consumerProbe) to reproduce issue #29854
+      val consumerController5 = spawn(ConsumerController[String](serviceKey))
+      consumerController5 ! ConsumerController.Start(consumerProbe.ref)
+
       val producerController2 = spawn(
         WorkPullingProducerController[String](
           producerId,
@@ -238,7 +256,10 @@ class WorkPullingWithEventSourcedProducerQueueSpec
 
       val batch2 = 5
       (batch1 + 1 to batch1 + batch2).foreach { n =>
-        producerProbe.receiveMessage().sendNextTo ! s"msg-$n"
+        val reqNext = producerProbe.receiveMessage()
+        if (n == batch1 + 1 || n == batch1 + 3) // not checking all because takes too much time
+          producerProbe.expectNoMessage(50.millis) // issue #29854
+        reqNext.sendNextTo ! s"msg-$n"
       }
 
       consumerProbe.fishForMessage(consumerProbe.remainingOrDefault) { delivery =>
