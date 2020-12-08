@@ -24,6 +24,7 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 //#fun-style
 import akka.actor.typed.scaladsl.AbstractBehavior
+import org.slf4j.Logger
 //#oo-style
 
 object StyleGuideDocExamples {
@@ -520,6 +521,54 @@ object StyleGuideDocExamples {
       }
 
     }
+  }
+
+  object BehaviorCompositionWithPartialFunction {
+
+    //#messages-sealed-composition
+    sealed trait Command
+    case object Down extends Command
+    final case class GetValue(replyTo: ActorRef[Value]) extends Command
+    final case class Value(n: Int)
+    //#messages-sealed-composition
+
+    //#get-handler-partial
+    def getHandler(value: Int): PartialFunction[Command, Behavior[Command]] = {
+      case GetValue(replyTo) =>
+        replyTo ! Value(value)
+        Behaviors.same
+    }
+    //#get-handler-partial
+
+    //#set-handler-non-zero-partial
+    def setHandlerNotZero(value: Int): PartialFunction[Command, Behavior[Command]] = {
+      case Down =>
+        if (value == 1)
+          zero
+        else
+          nonZero(value - 1)
+    }
+    //#set-handler-non-zero-partial
+
+    //#set-handler-zero-partial
+    def setHandlerZero(log: Logger): PartialFunction[Command, Behavior[Command]] = {
+      case Down =>
+        log.error("Counter is already at zero!")
+        Behaviors.same
+    }
+    //#set-handler-zero-partial
+
+    //#top-level-behaviors-partial
+    val zero: Behavior[Command] = Behaviors.setup { context =>
+      Behaviors.receiveMessagePartial(getHandler(0).orElse(setHandlerZero(context.log)))
+    }
+
+    def nonZero(capacity: Int): Behavior[Command] =
+      Behaviors.receiveMessagePartial(getHandler(capacity).orElse(setHandlerNotZero(capacity)))
+
+    // Default Initial Behavior for this actor
+    def apply(initialCapacity: Int): Behavior[Command] = nonZero(initialCapacity)
+    //#top-level-behaviors-partial
   }
 
   object NestingSample1 {

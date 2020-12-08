@@ -412,6 +412,35 @@ Scala
 
 @@@ div {.group-scala}
 
+## How to compose Partial Functions
+
+Following up from previous section, there are times when one might want to combine different `PartialFunction`s into one `Behavior`.
+
+A good use case for composing two or more `PartialFunction`s is when there is a bit of behavior that repeats across different states of the Actor. Below, you can find a simplified example for this use case.
+
+The Command definition is still highly recommended be kept within a `sealed` Trait:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #messages-sealed-composition }
+
+In this particular case, the Behavior that is repeating over is the one in charge to handle
+the `GetValue` Command, as it behaves the same regardless of the Actor's internal state.
+Instead of defining the specific handlers as a `Behavior`, we can define them as a `PartialFunction`:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #get-handler-partial #set-handler-non-zero-partial #set-handler-zero-partial }
+
+Finally, we can go on defining the two different behaviors for this specific actor. For each `Behavior` we would go and concatenate all needed `PartialFunction` instances with `orElse` to finally apply the command to the resulting one:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #top-level-behaviors-partial }
+
+Even though in this particular example we could use `receiveMessage` as we cover all cases, we use `receiveMessagePartial` instead to cover potential future unhandled message cases.
+
+@@@
+
+@@@ div {.group-scala}
+
 ## ask versus ?
 
 When using the `AskPattern` it's recommended to use the `ask` method rather than the infix `?` operator, like so:
