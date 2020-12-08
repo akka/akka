@@ -4,11 +4,11 @@
 
 package akka.actor.typed.javadsl
 
-import akka.actor.typed.{Behavior, scaladsl}
+import akka.actor.typed.{ scaladsl, Behavior }
 import akka.annotation.DoNotInherit
-import akka.japi.function.{Predicate, Procedure}
+import akka.japi.function.{ Predicate, Procedure }
 
-import java.util.function.{Function => JFunction}
+import java.util.function.{ Function => JFunction }
 
 /**
  * A non thread safe mutable message buffer that can be used to buffer messages inside actors
@@ -80,14 +80,13 @@ import java.util.function.{Function => JFunction}
    */
   def forEach(f: Procedure[T]): Unit
 
-
   /**
    * Tests whether this [[StashBuffer]] contains a given message.
    *
    * @param message the message to test
    * @return true if the buffer contains the message, false otherwise.
    */
-  def contains[U >: T](message:U): Boolean
+  def contains[U >: T](message: U): Boolean
 
   /**
    * Tests whether a predicate holds for at least one element of this [[StashBuffer]].
@@ -95,7 +94,7 @@ import java.util.function.{Function => JFunction}
    * @param predicate the predicate used to test
    * @return true if the predicate holds for at least one message, false otherwise.
    */
-  def anyMatch(predicate:Predicate[T]): Boolean
+  def anyMatch(predicate: Predicate[T]): Boolean
 
   /**
    * Removes all messages from the buffer.
