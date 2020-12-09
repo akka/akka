@@ -28,6 +28,14 @@ memory issues. Elements belonging to those keys are drained directly and not sen
 
 @@@
 
+## Example
+
+Scala
+:   @@snip [GroupBy.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/GroupBy.scala) { #groupBy }
+
+Java
+:   @@snip [GroupBy.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #groupBy }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
