@@ -7,7 +7,7 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
 
 object MergeLatest extends App {
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
 
   //#mergeLatest
   val prices = Source(List(100, 101, 99, 103))

@@ -80,7 +80,7 @@ object Worker {
 class Worker extends Actor with ActorLogging {
   import Worker._
   import CounterService._
-  implicit val askTimeout = Timeout(5 seconds)
+  implicit val askTimeout: Timeout = Timeout(5 seconds)
 
   // Stop the CounterService child if it throws ServiceUnavailable
   override val supervisorStrategy = OneForOneStrategy() {

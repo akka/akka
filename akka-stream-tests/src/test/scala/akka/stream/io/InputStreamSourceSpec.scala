@@ -42,7 +42,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       StreamConverters
         .fromInputStream(() => inputStreamFor(Array(1, 2, 3)))
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
         .futureValue shouldEqual IOResult(3, Success(Done))
     }
 
@@ -90,7 +90,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
         .fromInputStream(() => inputStreamFor(Array.fill(100)(1)), 1)
         .take(1) // stream is not completely read
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
         .futureValue
 
       f.status shouldEqual Success(Done)

@@ -9,10 +9,11 @@ import java.util.concurrent.ThreadLocalRandom
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.testkit.{ AkkaSpec, EventFilter }
+import scala.concurrent.ExecutionContext
 
 class GraphStageLoggingDocSpec extends AkkaSpec("akka.loglevel = DEBUG") {
 
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   //#operator-with-logging
   import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, StageLogging }

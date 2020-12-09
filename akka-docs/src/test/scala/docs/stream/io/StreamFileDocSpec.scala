@@ -13,10 +13,11 @@ import akka.util.ByteString
 import akka.testkit.AkkaSpec
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
 
 class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   // silence sysout
   def println(s: String) = ()
