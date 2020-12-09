@@ -8,6 +8,7 @@ import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.Attributes._
 import akka.util.LineNumbers
+import com.typesafe.config.ConfigFactory
 
 import java.util.concurrent.ConcurrentHashMap
 
@@ -152,19 +153,26 @@ import java.util.concurrent.ConcurrentHashMap
     val outputBoundary = name("output-boundary")
 
     private val cache = new ConcurrentHashMap[(String, Class[_]), String]
+    private val verboseOperatorNames =
+      // unfortunately this must be a static setting determined from the classpath instead of from the ActorSystem
+      // as there is no ActorSystem necessary to create operators.
+      ConfigFactory.load().getBoolean("akka.stream.verbose-operator-names")
+
     def nameForLambda(prefix: String, lambda: AnyRef): String =
-      cache.computeIfAbsent(
-        (prefix, lambda.getClass), {
-          case (prefix, clazz) =>
-            def locationName: String = LineNumbers(lambda) match {
-              case LineNumbers.NoSourceInfo           => "unknown"
-              case LineNumbers.UnknownSourceFormat(_) => "unknown"
-              case LineNumbers.SourceFile(filename)   => filename
-              case LineNumbers.SourceFileLines(filename, from, _) =>
-                s"$filename-line-$from"
-            }
-            s"$prefix-${clazz.getPackage.getName}-$locationName"
-        })
+      if (verboseOperatorNames)
+        cache.computeIfAbsent(
+          (prefix, lambda.getClass), {
+            case (prefix, clazz) =>
+              def locationName: String = LineNumbers(lambda) match {
+                case LineNumbers.NoSourceInfo           => "unknown"
+                case LineNumbers.UnknownSourceFormat(_) => "unknown"
+                case LineNumbers.SourceFile(filename)   => filename
+                case LineNumbers.SourceFileLines(filename, from, _) =>
+                  s"$filename-line-$from"
+              }
+              s"$prefix-${clazz.getPackage.getName}-$locationName"
+          })
+      else prefix
   }
 
 }
