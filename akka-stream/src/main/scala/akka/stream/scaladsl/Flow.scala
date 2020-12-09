@@ -1204,7 +1204,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def filterNot(p: Out => Boolean): Repr[Out] =
-    via(Flow[Out].filter(!p(_)).withAttributes(DefaultAttributes.filterNot))
+    via(Flow[Out].filter(!p(_)).withAttributes(DefaultAttributes.filterNot(p)))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate

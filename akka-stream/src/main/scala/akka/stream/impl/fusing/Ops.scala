@@ -5,7 +5,6 @@
 package akka.stream.impl.fusing
 
 import java.util.concurrent.TimeUnit.NANOSECONDS
-
 import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.event.Logging.LogLevel
@@ -40,7 +39,7 @@ import akka.util.ccompat._
   val out = Outlet[Out]("Map.out")
   override val shape = FlowShape(in, out)
 
-  override def initialAttributes: Attributes = DefaultAttributes.map
+  override def initialAttributes: Attributes = DefaultAttributes.map(f)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -69,7 +68,7 @@ import akka.util.ccompat._
  * INTERNAL API
  */
 @InternalApi private[akka] final case class Filter[T](p: T => Boolean) extends SimpleLinearGraphStage[T] {
-  override def initialAttributes: Attributes = DefaultAttributes.filter
+  override def initialAttributes: Attributes = DefaultAttributes.filter(p)
 
   override def toString: String = "Filter"
 
@@ -231,7 +230,7 @@ private[stream] object Collect {
   val out = Outlet[Out]("Collect.out")
   override val shape = FlowShape(in, out)
 
-  override def initialAttributes: Attributes = DefaultAttributes.collect
+  override def initialAttributes: Attributes = DefaultAttributes.collect(pf)
 
   def createLogic(inheritedAttributes: Attributes) =
     new SupervisedGraphStageLogic(inheritedAttributes, shape) with InHandler with OutHandler {
@@ -1253,7 +1252,7 @@ private[stream] object Collect {
   private val in = Inlet[In]("MapAsync.in")
   private val out = Outlet[Out]("MapAsync.out")
 
-  override def initialAttributes = DefaultAttributes.mapAsync
+  override def initialAttributes = DefaultAttributes.mapAsync(f)
 
   override val shape = FlowShape(in, out)
 
@@ -1353,7 +1352,7 @@ private[stream] object Collect {
   private val in = Inlet[In]("MapAsyncUnordered.in")
   private val out = Outlet[Out]("MapAsyncUnordered.out")
 
-  override def initialAttributes = DefaultAttributes.mapAsyncUnordered
+  override def initialAttributes = DefaultAttributes.mapAsyncUnordered(f)
 
   override val shape = FlowShape(in, out)
 

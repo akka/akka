@@ -7,6 +7,9 @@ package akka.stream.impl
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.Attributes._
+import akka.util.LineNumbers
+
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * INTERNAL API
@@ -21,14 +24,14 @@ import akka.stream.Attributes._
     // stage specific default attributes
     val fused = name("fused")
     val materializedValueSource = name("matValueSource")
-    val map = name("map")
+    def map(lambda: AnyRef) = name(nameForLambda("map", lambda))
     val log = name("log")
-    val filter = name("filter")
-    val filterNot = name("filterNot")
-    val collect = name("collect")
+    def filter(lambda: AnyRef) = name(nameForLambda("filter", lambda))
+    def filterNot(lambda: AnyRef) = name(nameForLambda("filterNot", lambda))
+    def collect(lambda: AnyRef) = name(nameForLambda("collect", lambda))
     val recover = name("recover")
-    val mapAsync = name("mapAsync")
-    val mapAsyncUnordered = name("mapAsyncUnordered")
+    def mapAsync(lambda: AnyRef) = name(nameForLambda("mapAsync", lambda))
+    def mapAsyncUnordered(lambda: AnyRef) = name(nameForLambda("mapAsyncUnordered", lambda))
     val ask = name("ask")
     val grouped = name("grouped")
     val groupedWithin = name("groupedWithin")
@@ -147,6 +150,21 @@ import akka.stream.Attributes._
 
     val inputBoundary = name("input-boundary")
     val outputBoundary = name("output-boundary")
+
+    private val cache = new ConcurrentHashMap[(String, Class[_]), String]
+    def nameForLambda(prefix: String, lambda: AnyRef): String =
+      cache.computeIfAbsent(
+        (prefix, lambda.getClass), {
+          case (prefix, clazz) =>
+            def locationName: String = LineNumbers(lambda) match {
+              case LineNumbers.NoSourceInfo           => "unknown"
+              case LineNumbers.UnknownSourceFormat(_) => "unknown"
+              case LineNumbers.SourceFile(filename)   => filename
+              case LineNumbers.SourceFileLines(filename, from, _) =>
+                s"$filename-line-$from"
+            }
+            s"$prefix-${clazz.getPackage.getName}-$locationName"
+        })
   }
 
 }
