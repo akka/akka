@@ -477,6 +477,18 @@ class SourceOrFlow {
     // #watch
   }
 
+  void groupByExample() {
+    // #groupBy
+    Source.range(1, 10)
+        .groupBy(2, i -> i % 2 == 0) // create two sub-streams with odd and even numbers
+        .reduce(Integer::sum) // for each sub-stream, sum its elements
+        .mergeSubstreams() // merge back into a stream
+        .runForeach(System.out::println, system);
+    // 25
+    // 30
+    // #groupBy
+  }
+
   static CompletionStage<Done> completionTimeoutExample() {
     // #completionTimeout
     Source<Integer, NotUsed> source = Source.range(1, 100000).map(number -> number * number);
