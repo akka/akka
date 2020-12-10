@@ -11,7 +11,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
 addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.6.0")
 addSbtPlugin("com.lightbend.sbt" % "sbt-bill-of-materials" % "1.0.0")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2")
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.23")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.24")
 // sbt-osgi 0.9.5 is available but breaks including jdk9-only classes
 // sbt-osgi 0.9.6 is available but breaks populating akka-protobuf-v3
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.4")
