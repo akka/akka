@@ -18,13 +18,14 @@ object WatchTermination {
 
     //#watchTermination
     Source(1 to 5)
-      .watchTermination()((prevMatValue, future) =>
-      // this function will be run when the stream terminates
-      // the Future provided as a second parameter indicates whether the stream completed successfully or failed
-        future.onComplete {
-          case Failure(exception) => println(exception.getMessage)
-          case Success(_)         => println(s"The stream materialized $prevMatValue")
-        })
+      .watchTermination()(
+        (prevMatValue, future) =>
+          // this function will be run when the stream terminates
+          // the Future provided as a second parameter indicates whether the stream completed successfully or failed
+          future.onComplete {
+            case Failure(exception) => println(exception.getMessage)
+            case Success(_)         => println(s"The stream materialized $prevMatValue")
+          })
       .runForeach(println)
     /*
     Prints:
