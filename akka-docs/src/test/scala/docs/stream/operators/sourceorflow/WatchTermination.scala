@@ -5,10 +5,10 @@
 package docs.stream.operators.sourceorflow
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Keep, Source}
+import akka.stream.scaladsl.{ Keep, Source }
 
 import scala.concurrent.ExecutionContext
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 object WatchTermination {
 
@@ -18,28 +18,29 @@ object WatchTermination {
 
     //#watchTermination
     Source(List(() => 1, () => 2, () => 3))
-      .watchTermination()(Keep.none) // discard the materialized value of the stream as we're not interested in it
-    // we can also use Keep.right, Keep.left, or Keep.both depending on our needs wrt the materialized value
+      .watchTermination()((prevMatValue, future) =>
+      // this function will be run when the stream terminates
+      // the Future provided as a second parameter indicates whether the stream completed successfully or failed
+        future.onComplete {
+          case Failure(exception) => println(exception.getMessage)
+          case Success(_)         => println(s"The stream materialized $prevMatValue")
+        })
       .runForeach(e => println(e()))
-      .onComplete {
-        case Failure(exception) => println(exception.getMessage)
-        case Success(_) => println("Done")
-      }
     /*
     Prints:
     1
     2
     3
-    Done
+    The stream materialized NotUsed
      */
 
     Source(List(() => 1, () => 2, () => throw new Exception("Boom"), () => 3))
-      .watchTermination()(Keep.none)
+      .watchTermination()((prevMatValue, future) =>
+        future.onComplete {
+          case Failure(exception) => println(exception.getMessage)
+          case Success(_)         => println(s"The stream materialized $prevMatValue")
+        })
       .runForeach(e => println(e()))
-      .onComplete {
-        case Failure(exception) => println(exception.getMessage)
-        case Success(value) => println(value)
-      }
     /*
     Prints:
     1

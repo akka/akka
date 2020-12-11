@@ -494,22 +494,24 @@ class SourceOrFlow {
     // #watchTermination
     List<IntSupplier> elements = Arrays.asList(() -> 1, () -> 2, () -> 3);
     Source.from(elements)
-        // discard the materialized value of the stream as we're not interested in it
-        .watchTermination(Keep.none())
-        // we can also use Keep.right, Keep.left, or Keep.both depending on our needs wrt the
-        // materialized value
-        .runForeach(element -> System.out.println(element.getAsInt()), system)
-        .whenComplete(
-            (done, exc) -> {
-              if (done != null) System.out.println("Done");
-              else System.out.println(exc.getMessage());
-            });
+        .watchTermination(
+            (prevMatValue, completionStage) -> {
+              completionStage.whenComplete(
+                  (done, exc) -> {
+                    if (done != null)
+                      System.out.println("The stream materialized " + prevMatValue.toString());
+                    else System.out.println(exc.getMessage());
+                  });
+              return prevMatValue;
+            })
+        .runForeach(element -> System.out.println(element.getAsInt()), system);
+
     /*
     Prints:
     1
     2
     3
-    Done
+    The stream materialized NotUsed
      */
 
     List<IntSupplier> elementsWithExc =
@@ -521,13 +523,20 @@ class SourceOrFlow {
             },
             () -> 3);
     Source.from(elementsWithExc)
-        .watchTermination(Keep.none())
-        .runForeach(element -> System.out.println(element.getAsInt()), system)
-        .whenComplete(
-            (done, exc) -> {
-              if (done != null) System.out.println("Done");
-              else System.out.println(exc.getMessage());
-            });
+        .watchTermination(
+            (prevMatValue, completionStage) -> {
+              // this function will be run when the stream terminates
+              // the CompletionStage provided as a second parameter indicates whether
+              // the stream completed successfully or failed
+              completionStage.whenComplete(
+                  (done, exc) -> {
+                    if (done != null)
+                      System.out.println("The stream materialized " + prevMatValue.toString());
+                    else System.out.println(exc.getMessage());
+                  });
+              return prevMatValue;
+            })
+        .runForeach(element -> System.out.println(element.getAsInt()), system);
     /*
     Prints:
     1
