@@ -23,7 +23,7 @@ Scala
 Java
 :   @@snip [WatchTermination.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #watchTermination } 
 
-The second parameter of this operator is a function that can be used to map the materialized value of the stream. Additionally, you could use it to clean up any resources used by the stream itself. 
+You can also use the lambda function expected by `watchTermination` to map the materialized value of the stream. Additionally, the completion of the @scala[`Future`]@java[`CompletionStage`] provided as a second parameter of the lambda can be used to perform cleanup operations of the resources used by the stream itself. 
 
 ## Reactive Streams semantics
 
