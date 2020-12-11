@@ -23,9 +23,11 @@ import akka.japi.function.Function2;
 // #interleave
 // #merge
 // #merge-sorted
+import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
-import java.util.Arrays;
+
+import java.util.*;
 
 // #merge-sorted
 // #merge
@@ -44,10 +46,9 @@ import akka.stream.Attributes;
 // #log
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.IntSupplier;
 
 class SourceOrFlow {
   private static ActorSystem system = null;
@@ -487,6 +488,53 @@ class SourceOrFlow {
     // 25
     // 30
     // #groupBy
+  }
+
+  void watchTerminationExample() {
+    // #watchTermination
+    List<IntSupplier> elements = Arrays.asList(() -> 1, () -> 2, () -> 3);
+    Source.from(elements)
+        // discard the materialized value of the stream as we're not interested in it
+        .watchTermination(Keep.none())
+        // we can also use Keep.right, Keep.left, or Keep.both depending on our needs wrt the
+        // materialized value
+        .runForeach(element -> System.out.println(element.getAsInt()), system)
+        .whenComplete(
+            (done, exc) -> {
+              if (done != null) System.out.println("Done");
+              else System.out.println(exc.getMessage());
+            });
+    /*
+    Prints:
+    1
+    2
+    3
+    Done
+     */
+
+    List<IntSupplier> elementsWithExc =
+        Arrays.asList(
+            () -> 1,
+            () -> 2,
+            () -> {
+              throw new RuntimeException("Boom");
+            },
+            () -> 3);
+    Source.from(elementsWithExc)
+        .watchTermination(Keep.none())
+        .runForeach(element -> System.out.println(element.getAsInt()), system)
+        .whenComplete(
+            (done, exc) -> {
+              if (done != null) System.out.println("Done");
+              else System.out.println(exc.getMessage());
+            });
+    /*
+    Prints:
+    1
+    2
+    Boom
+     */
+    // #watchTermination
   }
 
   static CompletionStage<Done> completionTimeoutExample() {
