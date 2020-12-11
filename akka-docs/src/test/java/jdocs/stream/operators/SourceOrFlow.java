@@ -492,8 +492,7 @@ class SourceOrFlow {
 
   void watchTerminationExample() {
     // #watchTermination
-    List<IntSupplier> elements = Arrays.asList(() -> 1, () -> 2, () -> 3);
-    Source.from(elements)
+    Source.range(1, 5)
         .watchTermination(
             (prevMatValue, completionStage) -> {
               completionStage.whenComplete(
@@ -504,25 +503,19 @@ class SourceOrFlow {
                   });
               return prevMatValue;
             })
-        .runForeach(element -> System.out.println(element.getAsInt()), system);
+        .runForeach(System.out::println, system);
 
     /*
     Prints:
     1
     2
     3
+    4
+    5
     The stream materialized NotUsed
      */
 
-    List<IntSupplier> elementsWithExc =
-        Arrays.asList(
-            () -> 1,
-            () -> 2,
-            () -> {
-              throw new RuntimeException("Boom");
-            },
-            () -> 3);
-    Source.from(elementsWithExc)
+    Source.range(1, 5)
         .watchTermination(
             (prevMatValue, completionStage) -> {
               // this function will be run when the stream terminates
@@ -536,7 +529,12 @@ class SourceOrFlow {
                   });
               return prevMatValue;
             })
-        .runForeach(element -> System.out.println(element.getAsInt()), system);
+        .runForeach(
+            element -> {
+              if (element == 3) throw new Exception("Boom");
+              else System.out.println(element);
+            },
+            system);
     /*
     Prints:
     1
