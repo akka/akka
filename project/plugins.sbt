@@ -16,7 +16,7 @@ addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.23")
 // sbt-osgi 0.9.6 is available but breaks populating akka-protobuf-v3
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.4")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.8.1")
-addSbtPlugin("com.jsuereth" % "sbt-pgp" % "2.0.1")
+addSbtPlugin("com.jsuereth" % "sbt-pgp" % "2.0.2")
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.3")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.0")
