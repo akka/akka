@@ -284,10 +284,10 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       testkit.selfInbox().hasMessages should be (true)
       testkit.runOne()
       testkit.expectEffectPF{
-        case Spawned(_, childName, _) => childName should equal ("child1")
+        case Spawned(_, childName, _) => childName should equal ("child0")
       }
       testkit.expectEffectPF{
-        case Spawned(_, childName, _) => childName should equal ("child2")
+        case Spawned(_, childName, _) => childName should equal ("child1")
       }
     }
   }

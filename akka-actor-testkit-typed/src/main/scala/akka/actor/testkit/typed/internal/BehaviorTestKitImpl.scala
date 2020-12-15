@@ -11,12 +11,13 @@ import scala.collection.immutable
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
-
 import akka.actor.ActorPath
-import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.testkit.typed.{CapturedLogEvent, Effect}
 import akka.actor.testkit.typed.Effect._
-import akka.actor.typed.{ ActorRef, Behavior, PostStop, Signal }
+import akka.actor.typed.internal.AdaptWithRegisteredMessageAdapter
+import akka.actor.typed.{ActorRef, Behavior, BehaviorInterceptor, PostStop, Signal, TypedActorContext}
 import akka.actor.typed.receptionist.Receptionist
+import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.util.ccompat.JavaConverters._
 
@@ -132,7 +133,36 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
     try {
       context.setCurrentActorThread()
       try {
-        currentUncanonical = Behavior.interpretMessage(current, context, message)
+        //we need this to handle message adapters related messages
+        val intercepted0 = Behaviors.intercept{ () =>
+          new BehaviorInterceptor[Any, T]() {
+            import BehaviorInterceptor._
+            /**
+             * Intercept a message sent to the running actor. Pass the message on to the next behavior
+             * in the stack by passing it to `target.apply`, return `Behaviors.same` without invoking `target`
+             * to filter out the message.
+             *
+             * @return The behavior for next message or signal
+             */
+            override def aroundReceive(ctx: TypedActorContext[Any], msg: Any, target: BehaviorInterceptor.ReceiveTarget[T]): Behavior[T] = {
+              msg match {
+                case AdaptWithRegisteredMessageAdapter(msgToAdapt) =>
+                  val fn = context
+                    .messageAdapters
+                    .find(_._1.isInstance(msgToAdapt))
+                    .getOrElse(sys error s"can't find a message adaptor for $msgToAdapt")
+                    ._2
+                  val adaptedMsg = fn(msgToAdapt)
+                  target.apply(ctx, adaptedMsg)
+                case t => target.apply(ctx, t.asInstanceOf[T @unchecked])
+              }
+            }
+          }
+        } (current)
+        val intercepted = Behavior.start(intercepted0, context.asInstanceOf[TypedActorContext[Any]])
+        currentUncanonical = Behavior.interpretMessage(intercepted, context.asInstanceOf[TypedActorContext[Any]], message).asInstanceOf[Behavior[T]]
+        //notice we pass current and not intercepted, this way Behaviors.same will be resolved to current which will be intercepted again on the next message
+        //otherwise we would have risked intercepting and already intercepted behaviour (or explicitly checking if the current behaviour is already intercepted by us)
         current = Behavior.canonicalize(currentUncanonical, current, context)
       } finally {
         context.clearCurrentActorThread()
