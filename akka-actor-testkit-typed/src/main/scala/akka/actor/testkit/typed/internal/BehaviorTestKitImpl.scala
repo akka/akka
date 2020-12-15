@@ -134,33 +134,8 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
       context.setCurrentActorThread()
       try {
         //we need this to handle message adapters related messages
-        val intercepted0 = Behaviors.intercept{ () =>
-          new BehaviorInterceptor[Any, T]() {
-            import BehaviorInterceptor._
-            /**
-             * Intercept a message sent to the running actor. Pass the message on to the next behavior
-             * in the stack by passing it to `target.apply`, return `Behaviors.same` without invoking `target`
-             * to filter out the message.
-             *
-             * @return The behavior for next message or signal
-             */
-            override def aroundReceive(ctx: TypedActorContext[Any], msg: Any, target: BehaviorInterceptor.ReceiveTarget[T]): Behavior[T] = {
-              msg match {
-                case AdaptWithRegisteredMessageAdapter(msgToAdapt) =>
-                  val fn = context
-                    .messageAdapters
-                    .find(_._1.isInstance(msgToAdapt))
-                    .getOrElse(sys error s"can't find a message adaptor for $msgToAdapt")
-                    ._2
-                  val adaptedMsg = fn(msgToAdapt)
-                  target.apply(ctx, adaptedMsg)
-                case t => target.apply(ctx, t.asInstanceOf[T @unchecked])
-              }
-            }
-          }
-        } (current)
-        val intercepted = Behavior.start(intercepted0, context.asInstanceOf[TypedActorContext[Any]])
-        currentUncanonical = Behavior.interpretMessage(intercepted, context.asInstanceOf[TypedActorContext[Any]], message).asInstanceOf[Behavior[T]]
+        val intercepted = BehaviorTestKitImpl.Interceptor.inteceptBehaviour(current, context)
+        currentUncanonical = Behavior.interpretMessage(intercepted, context, message)
         //notice we pass current and not intercepted, this way Behaviors.same will be resolved to current which will be intercepted again on the next message
         //otherwise we would have risked intercepting and already intercepted behaviour (or explicitly checking if the current behaviour is already intercepted by us)
         current = Behavior.canonicalize(currentUncanonical, current, context)
@@ -193,4 +168,39 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
   override def clearLog(): Unit = context.clearLog()
 
   override def receptionistInbox(): TestInboxImpl[Receptionist.Command] = context.system.receptionistInbox
+}
+
+object BehaviorTestKitImpl {
+  object Interceptor extends BehaviorInterceptor[Any, Any]() {
+    import BehaviorInterceptor._
+    /**
+     * Intercept a message sent to the running actor. Pass the message on to the next behavior
+     * in the stack by passing it to `target.apply`, return `Behaviors.same` without invoking `target`
+     * to filter out the message.
+     *
+     * @return The behavior for next message or signal
+     */
+    override def aroundReceive(ctx: TypedActorContext[Any], msg: Any, target: BehaviorInterceptor.ReceiveTarget[Any]): Behavior[Any] = {
+      msg match {
+        case AdaptWithRegisteredMessageAdapter(msgToAdapt) =>
+          val fn = ctx
+            .asInstanceOf[StubbedActorContext[Any]]
+            .messageAdapters
+            .collectFirst {
+              case (clazz, func) if clazz.isInstance(msgToAdapt) => func
+            }.getOrElse(sys error s"can't find a message adaptor for $msgToAdapt")
+
+          val adaptedMsg = fn(msgToAdapt)
+          target.apply(ctx, adaptedMsg)
+        case t => target.apply(ctx, t)
+      }
+    }
+
+    def inteceptBehaviour[T](behavior: Behavior[T], ctx: TypedActorContext[T]) : Behavior[T] = Behavior.start(
+      Behaviors.intercept {
+        () => this.asInstanceOf[BehaviorInterceptor[Any, T]]
+      } (behavior),
+      ctx.asInstanceOf[TypedActorContext[Any]]
+    ).unsafeCast[T]
+  }
 }
