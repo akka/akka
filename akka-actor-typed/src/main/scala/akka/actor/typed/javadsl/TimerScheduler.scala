@@ -181,7 +181,7 @@ trait TimerScheduler[T] {
           jSelf.startTimerAtFixedRate(key, msg, interval.asJava)
 
         override def startPeriodicTimer(key: Any, msg: T, interval: FiniteDuration): Unit =
-          startTimerWithFixedDelay(key, msg, interval)  //this follows the deprecation recommendation
+          startTimerWithFixedDelay(key, msg, interval) //this follows the deprecation recommendation
 
         override def startSingleTimer(key: Any, msg: T, delay: FiniteDuration): Unit =
           jSelf.startSingleTimer(key, msg, delay.asJava)
