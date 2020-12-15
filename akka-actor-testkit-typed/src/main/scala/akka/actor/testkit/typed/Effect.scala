@@ -203,6 +203,19 @@ object Effect {
     def duration(): java.time.Duration = delay.asJava
   }
 
+  final case class TimerScheduled[U](key: Any, msg: U, delay: FiniteDuration, mode: TimerScheduled.TimerMode) extends Effect {
+    def duration(): java.time.Duration = delay.asJava
+  }
+
+  object TimerScheduled{
+    sealed trait TimerMode
+    case object FixedRateMode extends TimerMode
+    case object FixedDelayMode extends TimerMode
+    case object SingleMode extends TimerMode
+  }
+
+  final case class TimerCancelled(key : Any)  extends Effect
+
   /**
    * Used to represent an empty list of effects - in other words, the behavior didn't do anything observable
    */
