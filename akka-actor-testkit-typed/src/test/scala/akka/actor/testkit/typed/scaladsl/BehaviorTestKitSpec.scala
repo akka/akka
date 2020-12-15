@@ -10,15 +10,15 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.slf4j.event.Level
 import akka.Done
 import akka.actor.Address
-import akka.actor.testkit.typed.{CapturedLogEvent, Effect}
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.testkit.typed.Effect._
-import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{Child, Parent}
+import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Parent }
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.Parent._
-import akka.actor.typed.{ActorRef, Behavior, Props, Terminated}
-import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
+import akka.actor.typed.{ ActorRef, Behavior, Props, Terminated }
+import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.Behaviors
 
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.concurrent.duration._
 
 object BehaviorTestKitSpec {
@@ -43,8 +43,9 @@ object BehaviorTestKitSpec {
     case class KillSession(session: ActorRef[String], replyTo: ActorRef[Done]) extends Command
     case class Log(what: String) extends Command
     case class RegisterWithReceptionist(name: String) extends Command
-    case class ScheduleCommand(key : Any, delay : FiniteDuration, mode : Effect.TimerScheduled.TimerMode, cmd : Command) extends Command
-    case class CancelScheduleCommand(key : Any) extends Command
+    case class ScheduleCommand(key: Any, delay: FiniteDuration, mode: Effect.TimerScheduled.TimerMode, cmd: Command)
+        extends Command
+    case class CancelScheduleCommand(key: Any) extends Command
 
     val init: Behavior[Command] = Behaviors.withTimers { timers =>
       Behaviors
@@ -91,7 +92,7 @@ object BehaviorTestKitSpec {
               context.watch(c)
               context.unwatch(c)
               Behaviors.same
-            case m@SpawnAndWatchWith(name) =>
+            case m @ SpawnAndWatchWith(name) =>
               val c = context.spawn(Child.initial, name)
               context.watchWith(c, m)
               Behaviors.same
@@ -117,9 +118,9 @@ object BehaviorTestKitSpec {
               Behaviors.same
             case ScheduleCommand(key, delay, mode, cmd) =>
               mode match {
-                case Effect.TimerScheduled.SingleMode => timers.startSingleTimer(key, cmd, delay)
+                case Effect.TimerScheduled.SingleMode     => timers.startSingleTimer(key, cmd, delay)
                 case Effect.TimerScheduled.FixedDelayMode => timers.startTimerWithFixedDelay(key, cmd, delay)
-                case Effect.TimerScheduled.FixedRateMode => timers.startTimerAtFixedRate(key, cmd, delay)
+                case Effect.TimerScheduled.FixedRateMode  => timers.startTimerAtFixedRate(key, cmd, delay)
               }
               Behaviors.same
             case CancelScheduleCommand(key) =>

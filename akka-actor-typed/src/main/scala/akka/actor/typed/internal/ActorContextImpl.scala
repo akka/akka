@@ -112,7 +112,7 @@ import scala.util.Success
       timer
   }
 
-  protected[this] def mkTimer() : scaladsl.TimerScheduler[T] = new TimerSchedulerImpl[T](this)
+  protected[this] def mkTimer(): scaladsl.TimerScheduler[T] = new TimerSchedulerImpl[T](this)
 
   override private[akka] def hasTimer: Boolean = _timer.isDefined
 

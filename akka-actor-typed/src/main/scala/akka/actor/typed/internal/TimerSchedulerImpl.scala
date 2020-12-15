@@ -11,7 +11,7 @@ import scala.concurrent.duration.FiniteDuration
 import org.slf4j.Logger
 import akka.actor.Cancellable
 import akka.actor.NotInfluenceReceiveTimeout
-import akka.actor.typed.scaladsl.{ActorContext, LoggerOps, TimerScheduler}
+import akka.actor.typed.scaladsl.{ ActorContext, LoggerOps, TimerScheduler }
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.util.JavaDurationConverters._
