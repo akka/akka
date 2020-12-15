@@ -7,9 +7,7 @@ package akka.stream.scaladsl
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import com.github.ghik.silencer.silent
-
 import akka.NotUsed
 import akka.stream._
 import akka.stream.testkit.StreamSpec
@@ -119,6 +117,43 @@ class BidiFlowSpec extends StreamSpec {
 
       b.traversalBuilder.attributes.getFirst[Name] shouldEqual Some(Name("name"))
       b.traversalBuilder.attributes.getFirst[AsyncBoundary.type] shouldEqual Some(AsyncBoundary)
+    }
+
+    "short circuit identity in atop" in {
+      val myBidi = BidiFlow.fromFlows(Flow[Long].map(_ + 1L), Flow[ByteString])
+      val identity = BidiFlow.identity[Long, ByteString]
+
+      // simple ones
+      myBidi.atop(identity) should ===(myBidi)
+      identity.atopMat(myBidi)(Keep.right) should ===(myBidi)
+
+      // trickier because implicit Keep.left means keep NotUsed matval from identity
+      // optimized but not the same instance
+      identity.atop(myBidi) should !==(myBidi)
+
+      // not currently (but potentially possible to) optimized
+      // optimized but not the same instance
+      myBidi.atopMat(identity)(Keep.right) should !==(myBidi)
+    }
+
+    "semi-shortcuted atop with identity should still work" in {
+      // atop when the NotUsed matval is kept from identity has a smaller optimization, so verify they still work
+      val myBidi = BidiFlow.fromFlows(Flow[Long].map(_ + 1L), Flow[Long].map(_ + 1L))
+      val identity = BidiFlow.identity[Long, Long]
+
+      {
+        val identityAtop = identity.atop(myBidi).join(Flow[Long])
+        val (bidiMatVal, seqSinkMatValF) = Source(1L :: 2L :: Nil).via(identityAtop).toMat(Sink.seq)(Keep.both).run()
+        seqSinkMatValF.futureValue should ===(Seq(3L, 4L))
+        bidiMatVal should ===(NotUsed)
+      }
+
+      {
+        val atopIdentity = myBidi.atopMat(identity)(Keep.right).join(Flow[Long])
+        val (bidiMatVal, seqSinkMatValF) = Source(1L :: 2L :: Nil).via(atopIdentity).toMat(Sink.seq)(Keep.both).run()
+        seqSinkMatValF.futureValue should ===(Seq(3L, 4L))
+        bidiMatVal should ===(NotUsed)
+      }
     }
 
   }
