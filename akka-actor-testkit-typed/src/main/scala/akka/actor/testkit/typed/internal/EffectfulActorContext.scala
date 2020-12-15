@@ -109,18 +109,16 @@ import akka.annotation.InternalApi
 
     override def cancelAll(): Unit = activeTimers.foreach(cancel)
 
-    private def sendAction(key : Any)() : Unit = {
-      activeTimers
-        .get(key)
-        .foreach{
-          case e @ Effect.TimerScheduled(_, msg, _, mode, _) =>
-            mode match {
-              case Effect.TimerScheduled.SingleMode =>
-                activeTimers -= key
-              case _ =>
-            }
-            self ! msg
-        }
+    private def sendAction(key: Any)(): Unit = {
+      activeTimers.get(key).foreach {
+        case e @ Effect.TimerScheduled(_, msg, _, mode, _) =>
+          mode match {
+            case Effect.TimerScheduled.SingleMode =>
+              activeTimers -= key
+            case _ =>
+          }
+          self ! msg
+      }
 
     }
 
