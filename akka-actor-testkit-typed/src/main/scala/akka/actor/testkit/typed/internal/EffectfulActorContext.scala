@@ -85,7 +85,8 @@ import akka.annotation.InternalApi
   }
 
   override def mkTimer(): TimerScheduler[T] = new TimerScheduler[T] {
-    var activeTimers: Set[Any] = Set.empty
+    var activeTimers: Map[Any, Effect.TimerScheduled[T]] = Map.empty
+
     override def startTimerWithFixedDelay(key: Any, msg: T, delay: FiniteDuration): Unit =
       startTimer(key, msg, delay, Effect.TimerScheduled.FixedDelayMode)
 
@@ -100,7 +101,7 @@ import akka.annotation.InternalApi
 
     override def isTimerActive(key: Any): Boolean = ???
 
-    override def cancel(key: Any): Unit = if (activeTimers(key)) {
+    override def cancel(key: Any): Unit = if (activeTimers.keySet(key)) {
       val effect = Effect.TimerCancelled(key)
       effectQueue.offer(effect)
       activeTimers -= key
@@ -108,9 +109,24 @@ import akka.annotation.InternalApi
 
     override def cancelAll(): Unit = activeTimers.foreach(cancel)
 
+    private def sendAction(key : Any)() : Unit = {
+      activeTimers
+        .get(key)
+        .foreach{
+          case e @ Effect.TimerScheduled(_, msg, _, mode, _) =>
+            mode match {
+              case Effect.TimerScheduled.SingleMode =>
+                activeTimers -= key
+              case _ =>
+            }
+            self ! msg
+        }
+
+    }
+
     def startTimer(key: Any, msg: T, delay: FiniteDuration, mode: Effect.TimerScheduled.TimerMode) = {
-      val effect = Effect.TimerScheduled(key, msg, delay, mode)
-      activeTimers += key
+      val effect = Effect.TimerScheduled(key, msg, delay, mode, activeTimers.keySet(key))(sendAction(key))
+      activeTimers += (key -> effect)
       effectQueue.offer(effect)
     }
   }

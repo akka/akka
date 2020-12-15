@@ -203,7 +203,11 @@ object Effect {
     def duration(): java.time.Duration = delay.asJava
   }
 
-  final case class TimerScheduled[U](key: Any, msg: U, delay: FiniteDuration, mode: TimerScheduled.TimerMode)
+  final case class TimerScheduled[U](key: Any,
+                                     msg: U,
+                                     delay: FiniteDuration,
+                                     mode: TimerScheduled.TimerMode,
+                                     overriding : Boolean)(val send : () => Unit)
       extends Effect {
     def duration(): java.time.Duration = delay.asJava
   }
