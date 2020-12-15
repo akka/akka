@@ -172,8 +172,7 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
 
 object BehaviorTestKitImpl {
   object Interceptor extends BehaviorInterceptor[Any, Any]() {
-    import BehaviorInterceptor._
-
+    
     /**
      * Intercept a message sent to the running actor. Pass the message on to the next behavior
      * in the stack by passing it to `target.apply`, return `Behaviors.same` without invoking `target`
