@@ -111,7 +111,7 @@ import akka.annotation.InternalApi
 
     private def sendAction(key: Any)(): Unit = {
       activeTimers.get(key).foreach {
-        case e @ Effect.TimerScheduled(_, msg, _, mode, _) =>
+        case Effect.TimerScheduled(_, msg, _, mode, _) =>
           mode match {
             case Effect.TimerScheduled.SingleMode =>
               activeTimers -= key
