@@ -182,7 +182,7 @@ trait TimerScheduler[T] {
           self.startTimerAtFixedRate(key, msg, interval.asScala)
 
         override def startPeriodicTimer(key: Any, msg: T, interval: Duration): Unit =
-          self.startPeriodicTimer(key, msg, interval.asScala)
+          startTimerWithFixedDelay(key, msg, interval)  //this follows the deprecation recommendation
 
         override def startSingleTimer(key: Any, msg: T, delay: Duration): Unit =
           self.startSingleTimer(key, msg, delay.asScala)

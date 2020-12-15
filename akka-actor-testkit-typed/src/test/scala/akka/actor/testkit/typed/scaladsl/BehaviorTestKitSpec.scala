@@ -431,7 +431,7 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
               "abc",
               SpawnChild,
               finiteDuration,
-              Effect.TimerScheduled.SingleMode,
+              Effect.TimerScheduled.FixedRateMode,
               false /*not overriding*/ ) =>
           finiteDuration should equal(42.seconds)
           e.send
