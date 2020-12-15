@@ -170,8 +170,8 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
   override def receptionistInbox(): TestInboxImpl[Receptionist.Command] = context.system.receptionistInbox
 }
 
-object BehaviorTestKitImpl {
-  private[akka] object Interceptor extends BehaviorInterceptor[Any, Any]() {
+private[akka] object BehaviorTestKitImpl {
+  object Interceptor extends BehaviorInterceptor[Any, Any]() {
 
     /**
      * Intercept a message sent to the running actor. Pass the message on to the next behavior
