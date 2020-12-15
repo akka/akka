@@ -187,7 +187,7 @@ trait TimerScheduler[T] {
         override def startSingleTimer(key: Any, msg: T, delay: Duration): Unit =
           self.startSingleTimer(key, msg, delay.asScala)
 
-        override def isTimerActive(key: Any): Boolean = self.isTimerActive()
+        override def isTimerActive(key: Any): Boolean = self.isTimerActive(key)
 
         override def cancel(key: Any): Unit = self.cancel(key)
 
