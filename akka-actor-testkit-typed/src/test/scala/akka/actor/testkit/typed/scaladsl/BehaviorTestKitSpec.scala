@@ -385,7 +385,7 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(ScheduleCommand("abc", 42.seconds, Effect.TimerScheduled.SingleMode, SpawnChild))
       testkit.expectEffectPF {
-        case Effect.TimerScheduled("abc", SpawnChild, finiteDuration, Effect.TimerScheduled.SingleMode) =>
+        case Effect.TimerScheduled("abc", SpawnChild, finiteDuration, Effect.TimerScheduled.SingleMode, false /*not overriding*/) =>
           finiteDuration should equal(42.seconds)
       }
       testkit.run(CancelScheduleCommand("abc"))
@@ -393,6 +393,53 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
         case Effect.TimerCancelled(key) =>
           key should equal("abc")
       }
+    }
+
+    "schedule and fire timers" in {
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
+      testkit.run(ScheduleCommand("abc", 42.seconds, Effect.TimerScheduled.SingleMode, SpawnChild))
+      val send =  testkit.expectEffectPF {
+        case e @ Effect.TimerScheduled("abc", SpawnChild, finiteDuration, Effect.TimerScheduled.SingleMode, false /*not overriding*/) =>
+          finiteDuration should equal(42.seconds)
+          e.send
+      }
+      send()
+      testkit.runOne()
+      testkit.expectEffectPF{
+        case Effect.Spawned(_, "child", _) =>
+      }
+      //no effect since the timer's mode was single, hence removed after fired
+      send()
+      testkit.selfInbox().hasMessages should be (false)
+    }
+
+    "schedule and fire timers multiple times" in {
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
+      testkit.run(ScheduleCommand("abc", 42.seconds, Effect.TimerScheduled.FixedRateMode, SpawnChild))
+      val send =  testkit.expectEffectPF {
+        case e @ Effect.TimerScheduled("abc", SpawnChild, finiteDuration, Effect.TimerScheduled.SingleMode, false /*not overriding*/) =>
+          finiteDuration should equal(42.seconds)
+          e.send
+      }
+      send()
+      testkit.runOne()
+      val child: ActorRef[String] = testkit.expectEffectPF{
+        case spawned @ Effect.Spawned(_, "child", _ ) => spawned.asInstanceOf[Effect.Spawned[String]].ref
+      }
+
+      testkit.run(StopChild(child))
+      testkit.expectEffect{
+        Effect.Stopped("child")
+      }
+      //when scheduling with fixed rate the timer remains scheduled
+      send()
+      testkit.runOne()
+      testkit.expectEffectPF{
+        case Effect.Spawned(_, "child", _ ) =>
+      }
+
+      testkit.run(CancelScheduleCommand("abc"))
+      testkit.expectEffect(Effect.TimerCancelled("abc"))
     }
   }
 }
