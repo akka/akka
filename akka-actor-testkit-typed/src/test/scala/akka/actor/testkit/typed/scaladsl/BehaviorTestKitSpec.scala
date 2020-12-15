@@ -35,7 +35,11 @@ object BehaviorTestKitSpec {
     case class StopChild(child: ActorRef[String]) extends Command
     case object SpawnAdapter extends Command
     case class SpawnAdapterWithName(name: String) extends Command
-    case class CreateMessageAdapter[U](messageClass: Class[U], f: U => Command, replyTo : Option[ActorRef[ActorRef[U]]] = None) extends Command
+    case class CreateMessageAdapter[U](
+        messageClass: Class[U],
+        f: U => Command,
+        replyTo: Option[ActorRef[ActorRef[U]]] = None)
+        extends Command
     case class SpawnAndWatchUnwatch(name: String) extends Command
     case class SpawnAndWatchWith(name: String) extends Command
     case class SpawnSession(replyTo: ActorRef[ActorRef[String]], sessionHandler: ActorRef[String]) extends Command
@@ -281,13 +285,13 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       testkit.expectEffectType[MessageAdapter[String, Command]]
       val adaptorRef = replyTo.receiveMessage()
       adaptorRef ! 2
-      testkit.selfInbox().hasMessages should be (true)
+      testkit.selfInbox().hasMessages should be(true)
       testkit.runOne()
-      testkit.expectEffectPF{
-        case Spawned(_, childName, _) => childName should equal ("child0")
+      testkit.expectEffectPF {
+        case Spawned(_, childName, _) => childName should equal("child0")
       }
-      testkit.expectEffectPF{
-        case Spawned(_, childName, _) => childName should equal ("child1")
+      testkit.expectEffectPF {
+        case Spawned(_, childName, _) => childName should equal("child1")
       }
     }
   }

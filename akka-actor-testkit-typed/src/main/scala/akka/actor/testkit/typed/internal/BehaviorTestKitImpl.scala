@@ -12,10 +12,10 @@ import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
 import akka.actor.ActorPath
-import akka.actor.testkit.typed.{CapturedLogEvent, Effect}
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.testkit.typed.Effect._
 import akka.actor.typed.internal.AdaptWithRegisteredMessageAdapter
-import akka.actor.typed.{ActorRef, Behavior, BehaviorInterceptor, PostStop, Signal, TypedActorContext}
+import akka.actor.typed.{ ActorRef, Behavior, BehaviorInterceptor, PostStop, Signal, TypedActorContext }
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
@@ -173,6 +173,7 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
 object BehaviorTestKitImpl {
   object Interceptor extends BehaviorInterceptor[Any, Any]() {
     import BehaviorInterceptor._
+
     /**
      * Intercept a message sent to the running actor. Pass the message on to the next behavior
      * in the stack by passing it to `target.apply`, return `Behaviors.same` without invoking `target`
@@ -180,7 +181,10 @@ object BehaviorTestKitImpl {
      *
      * @return The behavior for next message or signal
      */
-    override def aroundReceive(ctx: TypedActorContext[Any], msg: Any, target: BehaviorInterceptor.ReceiveTarget[Any]): Behavior[Any] = {
+    override def aroundReceive(
+        ctx: TypedActorContext[Any],
+        msg: Any,
+        target: BehaviorInterceptor.ReceiveTarget[Any]): Behavior[Any] = {
       msg match {
         case AdaptWithRegisteredMessageAdapter(msgToAdapt) =>
           val fn = ctx
@@ -188,7 +192,8 @@ object BehaviorTestKitImpl {
             .messageAdapters
             .collectFirst {
               case (clazz, func) if clazz.isInstance(msgToAdapt) => func
-            }.getOrElse(sys error s"can't find a message adaptor for $msgToAdapt")
+            }
+            .getOrElse(sys.error(s"can't find a message adaptor for $msgToAdapt"))
 
           val adaptedMsg = fn(msgToAdapt)
           target.apply(ctx, adaptedMsg)
@@ -196,11 +201,11 @@ object BehaviorTestKitImpl {
       }
     }
 
-    def inteceptBehaviour[T](behavior: Behavior[T], ctx: TypedActorContext[T]) : Behavior[T] = Behavior.start(
-      Behaviors.intercept {
-        () => this.asInstanceOf[BehaviorInterceptor[Any, T]]
-      } (behavior),
-      ctx.asInstanceOf[TypedActorContext[Any]]
-    ).unsafeCast[T]
+    def inteceptBehaviour[T](behavior: Behavior[T], ctx: TypedActorContext[T]): Behavior[T] =
+      Behavior
+        .start(Behaviors.intercept { () =>
+          this.asInstanceOf[BehaviorInterceptor[Any, T]]
+        }(behavior), ctx.asInstanceOf[TypedActorContext[Any]])
+        .unsafeCast[T]
   }
 }
