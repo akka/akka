@@ -8,13 +8,10 @@ package internal
 import java.time.Duration
 
 import scala.concurrent.duration.FiniteDuration
-
 import org.slf4j.Logger
-
 import akka.actor.Cancellable
 import akka.actor.NotInfluenceReceiveTimeout
-import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.scaladsl.LoggerOps
+import akka.actor.typed.scaladsl.{ActorContext, LoggerOps, TimerScheduler}
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.util.JavaDurationConverters._
@@ -29,11 +26,11 @@ import akka.util.OptionVal
     override def toString = s"TimerMsg(key=$key, generation=$generation, owner=$owner)"
   }
 
-  def withTimers[T](factory: TimerSchedulerImpl[T] => Behavior[T]): Behavior[T] = {
+  def withTimers[T](factory: TimerScheduler[T] => Behavior[T]): Behavior[T] = {
     scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
   }
 
-  def wrapWithTimers[T](factory: TimerSchedulerImpl[T] => Behavior[T])(ctx: ActorContext[T]): Behavior[T] =
+  def wrapWithTimers[T](factory: TimerScheduler[T] => Behavior[T])(ctx: ActorContext[T]): Behavior[T] =
     ctx match {
       case ctxImpl: ActorContextImpl[T] =>
         val timerScheduler = ctxImpl.timer

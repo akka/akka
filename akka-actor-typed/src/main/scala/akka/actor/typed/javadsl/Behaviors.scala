@@ -315,7 +315,7 @@ object Behaviors {
    * @see [[TimerScheduler]]
    */
   def withTimers[T](factory: akka.japi.function.Function[TimerScheduler[T], Behavior[T]]): Behavior[T] =
-    TimerSchedulerImpl.withTimers(timers => factory.apply(timers))
+    TimerSchedulerImpl.withTimers(timers => factory.apply(timers.asJava))
 
   /**
    * Per message MDC (Mapped Diagnostic Context) logging.

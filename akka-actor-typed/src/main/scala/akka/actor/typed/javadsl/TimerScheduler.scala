@@ -6,6 +6,10 @@ package akka.actor.typed.javadsl
 
 import java.time.Duration
 
+import akka.actor.typed.scaladsl
+
+import scala.concurrent.duration.FiniteDuration
+
 /**
  * Support for scheduled `self` messages in an actor.
  * It is used with `Behaviors.withTimers`, which also takes care of the
@@ -164,5 +168,25 @@ trait TimerScheduler[T] {
    * Cancel all timers.
    */
   def cancelAll(): Unit
+
+  final def asScala : scaladsl.TimerScheduler[T] = this match {
+    case scalaThis : scaladsl.TimerScheduler[T @unchecked] => scalaThis
+    case jSelf => new scaladsl.TimerScheduler[T] {
+      import akka.util.JavaDurationConverters._
+      override def startTimerWithFixedDelay(key: Any, msg: T, delay: FiniteDuration): Unit = jSelf.startTimerWithFixedDelay(key, msg, delay.asJava)
+
+      override def startTimerAtFixedRate(key: Any, msg: T, interval: FiniteDuration): Unit = jSelf.startTimerAtFixedRate(key, msg, interval.asJava)
+
+      override def startPeriodicTimer(key: Any, msg: T, interval: FiniteDuration): Unit = jSelf.startPeriodicTimer(key, msg, interval.asJava)
+
+      override def startSingleTimer(key: Any, msg: T, delay: FiniteDuration): Unit = jSelf.startSingleTimer(key, msg, delay.asJava)
+
+      override def isTimerActive(key: Any): Boolean = jSelf.isTimerActive(key)
+
+      override def cancel(key: Any): Unit = jSelf.cancel(key)
+
+      override def cancelAll(): Unit = jSelf.cancelAll()
+    }
+  }
 
 }
