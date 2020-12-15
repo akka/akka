@@ -8,11 +8,11 @@ import java.util.concurrent.ConcurrentLinkedQueue
 
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-
-import akka.actor.{ ActorPath, Cancellable }
+import akka.actor.{ActorPath, Cancellable}
 import akka.actor.testkit.typed.Effect
 import akka.actor.testkit.typed.Effect._
-import akka.actor.typed.{ ActorRef, Behavior, Props }
+import akka.actor.typed.scaladsl.TimerScheduler
+import akka.actor.typed.{ActorRef, Behavior, Props}
 import akka.annotation.InternalApi
 
 /**
@@ -82,5 +82,32 @@ import akka.annotation.InternalApi
   override def scheduleOnce[U](delay: FiniteDuration, target: ActorRef[U], message: U): Cancellable = {
     effectQueue.offer(Scheduled(delay, target, message))
     super.scheduleOnce(delay, target, message)
+  }
+
+  override def mkTimer(): TimerScheduler[T] = new TimerScheduler[T] {
+    var activeTimers : Set[Any] = Set.empty
+    override def startTimerWithFixedDelay(key: Any, msg: T, delay: FiniteDuration): Unit = startTimer(key, msg, delay, Effect.TimerScheduled.FixedDelayMode)
+
+    override def startTimerAtFixedRate(key: Any, msg: T, interval: FiniteDuration): Unit = startTimer(key, msg, interval, Effect.TimerScheduled.FixedRateMode)
+
+    override def startPeriodicTimer(key: Any, msg: T, interval: FiniteDuration): Unit =  startTimer(key, msg, interval, Effect.TimerScheduled.FixedRateMode)
+
+    override def startSingleTimer(key: Any, msg: T, delay: FiniteDuration): Unit = startTimer(key, msg, delay, Effect.TimerScheduled.SingleMode)
+
+    override def isTimerActive(key: Any): Boolean = ???
+
+    override def cancel(key: Any): Unit = if(activeTimers(key)) {
+      val effect = Effect.TimerCancelled(key)
+      effectQueue.offer(effect)
+      activeTimers -= key
+    }
+
+    override def cancelAll(): Unit = activeTimers.foreach(cancel)
+
+    def startTimer(key: Any, msg: T, delay: FiniteDuration, mode : Effect.TimerScheduled.TimerMode) = {
+      val effect = Effect.TimerScheduled(key, msg, delay, mode)
+      activeTimers += key
+      effectQueue.offer(effect)
+    }
   }
 }
