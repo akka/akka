@@ -6,10 +6,8 @@ package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
 
-import akka.actor.typed.{ ActorRef, Behavior, Props }
+import akka.actor.typed.{ActorRef, Behavior, Props}
 import akka.util.JavaDurationConverters._
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * Factories for behavior effects for [[BehaviorTestKit]], each effect has a suitable equals and can be used to compare
