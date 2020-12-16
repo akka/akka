@@ -6,7 +6,7 @@ package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
 
-import akka.actor.typed.{ActorRef, Behavior, Props}
+import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.util.JavaDurationConverters._
 
 /**
