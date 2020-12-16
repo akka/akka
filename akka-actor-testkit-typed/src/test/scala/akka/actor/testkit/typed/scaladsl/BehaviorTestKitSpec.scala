@@ -8,16 +8,16 @@ import akka.Done
 import akka.actor.Address
 import akka.actor.testkit.typed.Effect._
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.Parent._
-import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{Child, Parent}
-import akka.actor.testkit.typed.{CapturedLogEvent, Effect}
-import akka.actor.typed.receptionist.{Receptionist, ServiceKey}
+import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Parent }
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorRef, Behavior, Props, Terminated}
+import akka.actor.typed.{ ActorRef, Behavior, Props, Terminated }
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.slf4j.event.Level
 
-import scala.concurrent.duration.{FiniteDuration, _}
+import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.reflect.ClassTag
 
 object BehaviorTestKitSpec {
