@@ -38,7 +38,7 @@ jobs:
 
 stages:
   - name: whitesource
-    if: repo = akka/akka AND ((branch = master AND type != pull_request) OR tag =~ ^v) AND env(TRAVIS_SCALA_VERSION) =~ ^2.12
+    if: repo = akka/akka AND ((branch = master AND type != pull_request) OR tag =~ ^v)
   - name: test
     if: type == pull_request OR NOT tag =~ ^v
 
