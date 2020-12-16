@@ -175,7 +175,7 @@ import akka.stream.scaladsl.Sink
     if (serializationSettings.enabled && serializationSettings.verifyCommands)
       verifySerializationAndThrow(command, "Command")
 
-    if (serializationSettings.enabled && !emptyStateVerified) {
+    if (serializationSettings.verifyState && !emptyStateVerified) {
       val emptyState = getState()
       verifySerializationAndThrow(emptyState, "Empty State")
       emptyStateVerified = true
