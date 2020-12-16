@@ -218,7 +218,15 @@ object Effect {
     case object FixedRateMode extends TimerMode
     case object FixedDelayMode extends TimerMode
     case object SingleMode extends TimerMode
+
+    /*Java API*/
+    def fixedRateMode = FixedRateMode
+    def fixedDelayMode = FixedDelayMode
+    def singleMode = SingleMode
   }
+
+  /*Java API*/
+  def timerScheduled = TimerScheduled
 
   final case class TimerCancelled(key: Any) extends Effect
 

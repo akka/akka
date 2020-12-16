@@ -9,6 +9,8 @@ import java.time.Duration
 import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.util.JavaDurationConverters._
 
+import scala.concurrent.duration.FiniteDuration
+
 /**
  * Factories for behavior effects for [[BehaviorTestKit]], each effect has a suitable equals and can be used to compare
  * actual effects to expected ones.
@@ -92,6 +94,14 @@ object Effects {
    */
   def scheduled[U](delay: Duration, target: ActorRef[U], message: U): Scheduled[U] =
     Scheduled(delay.asScala, target, message)
+
+  def timerScheduled[U](
+      key: Any,
+      msg: U,
+      delay: Duration,
+      mode: TimerScheduled.TimerMode,
+      overriding: Boolean,
+      send: akka.japi.function.Effect) = TimerScheduled(key, msg, delay.asScala, mode, overriding)(send.apply)
 
   /**
    * Used to represent an empty list of effects - in other words, the behavior didn't do anything observable
