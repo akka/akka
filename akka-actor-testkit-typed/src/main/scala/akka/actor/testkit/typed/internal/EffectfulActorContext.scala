@@ -9,8 +9,8 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import akka.actor.testkit.typed.Effect
 import akka.actor.testkit.typed.Effect._
 import akka.actor.typed.internal.TimerSchedulerCrossDslSupport
-import akka.actor.typed.{ActorRef, Behavior, Props}
-import akka.actor.{ActorPath, Cancellable}
+import akka.actor.typed.{ ActorRef, Behavior, Props }
+import akka.actor.{ ActorPath, Cancellable }
 import akka.annotation.InternalApi
 
 import scala.concurrent.duration.FiniteDuration
