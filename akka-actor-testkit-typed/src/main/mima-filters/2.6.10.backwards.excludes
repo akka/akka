@@ -1,0 +1,2 @@
+ # #29903 changes to package private and internal implementation classes
+ ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.testkit.typed.internal.StubbedActorContext.timer")
