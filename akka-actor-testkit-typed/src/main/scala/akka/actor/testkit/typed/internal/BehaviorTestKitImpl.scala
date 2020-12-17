@@ -137,7 +137,7 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
         val intercepted = BehaviorTestKitImpl.Interceptor.inteceptBehaviour(current, context)
         currentUncanonical = Behavior.interpretMessage(intercepted, context, message)
         //notice we pass current and not intercepted, this way Behaviors.same will be resolved to current which will be intercepted again on the next message
-        //otherwise we would have risked intercepting and already intercepted behaviour (or explicitly checking if the current behaviour is already intercepted by us)
+        //otherwise we would have risked intercepting an already intercepted behavior (or would have had to explicitly check if the current behavior is already intercepted by us)
         current = Behavior.canonicalize(currentUncanonical, current, context)
       } finally {
         context.clearCurrentActorThread()
