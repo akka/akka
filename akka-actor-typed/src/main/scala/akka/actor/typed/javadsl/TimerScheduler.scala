@@ -166,6 +166,4 @@ trait TimerScheduler[T] {
    * Cancel all timers.
    */
   def cancelAll(): Unit
-
-  def asScala: scaladsl.TimerScheduler[T]
 }

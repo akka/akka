@@ -85,7 +85,7 @@ import akka.annotation.InternalApi
     super.scheduleOnce(delay, target, message)
   }
 
-  override def mkTimer(): TimerScheduler[T] = new TimerScheduler[T] with TimerSchedulerCrossDslSupport[T] {
+  override def mkTimer(): TimerSchedulerCrossDslSupport[T] = new TimerSchedulerCrossDslSupport[T] {
     var activeTimers: Map[Any, Effect.TimerScheduled[T]] = Map.empty
 
     override def startTimerWithFixedDelay(key: Any, msg: T, delay: FiniteDuration): Unit =

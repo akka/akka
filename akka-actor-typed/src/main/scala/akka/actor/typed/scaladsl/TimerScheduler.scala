@@ -167,6 +167,4 @@ trait TimerScheduler[T] {
    */
   def cancelAll(): Unit
 
-  def asJava: javadsl.TimerScheduler[T]
-
 }

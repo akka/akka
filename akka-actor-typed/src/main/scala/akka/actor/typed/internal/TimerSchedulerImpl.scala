@@ -25,11 +25,11 @@ import akka.util.OptionVal
     override def toString = s"TimerMsg(key=$key, generation=$generation, owner=$owner)"
   }
 
-  def withTimers[T](factory: TimerScheduler[T] => Behavior[T]): Behavior[T] = {
+  def withTimers[T](factory: TimerSchedulerCrossDslSupport[T] => Behavior[T]): Behavior[T] = {
     scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
   }
 
-  def wrapWithTimers[T](factory: TimerScheduler[T] => Behavior[T])(ctx: ActorContext[T]): Behavior[T] =
+  def wrapWithTimers[T](factory: TimerSchedulerCrossDslSupport[T] => Behavior[T])(ctx: ActorContext[T]): Behavior[T] =
     ctx match {
       case ctxImpl: ActorContextImpl[T] =>
         val timerScheduler = ctxImpl.timer
@@ -51,8 +51,9 @@ import akka.util.OptionVal
   }
 }
 
-@InternalApi private[akka] trait TimerSchedulerCrossDslSupport[T] extends javadsl.TimerScheduler[T] {
-  this: scaladsl.TimerScheduler[T] =>
+@InternalApi private[akka] trait TimerSchedulerCrossDslSupport[T]
+    extends scaladsl.TimerScheduler[T]
+    with javadsl.TimerScheduler[T] {
   import akka.util.JavaDurationConverters._
 
   override final def startTimerWithFixedDelay(key: Any, msg: T, delay: Duration): Unit =
@@ -68,10 +69,6 @@ import akka.util.OptionVal
 
   override final def startSingleTimer(key: Any, msg: T, delay: Duration): Unit =
     startSingleTimer(key, msg, delay.asScala)
-
-  override final def asScala: TimerScheduler[T] = this
-
-  final def asJava: javadsl.TimerScheduler[T] = this
 }
 
 /**

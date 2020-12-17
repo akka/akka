@@ -95,7 +95,7 @@ import scala.util.Success
 
   private var messageAdapterRef: OptionVal[ActorRef[Any]] = OptionVal.None
   private var _messageAdapters: List[(Class[_], Any => T)] = Nil
-  private var _timer: OptionVal[scaladsl.TimerScheduler[T]] = OptionVal.None
+  private var _timer: OptionVal[TimerSchedulerCrossDslSupport[T]] = OptionVal.None
 
   // _currentActorThread is on purpose not volatile. Used from `checkCurrentActorThread`.
   // It will always see the right value when accessed from the right thread.
@@ -103,7 +103,7 @@ import scala.util.Success
   private var _currentActorThread: OptionVal[Thread] = OptionVal.None
 
   // context-shared timer needed to allow for nested timer usage
-  def timer: scaladsl.TimerScheduler[T] = _timer match {
+  def timer: TimerSchedulerCrossDslSupport[T] = _timer match {
     case OptionVal.Some(timer) => timer
     case OptionVal.None =>
       checkCurrentActorThread()
@@ -112,7 +112,7 @@ import scala.util.Success
       timer
   }
 
-  protected[this] def mkTimer(): scaladsl.TimerScheduler[T] = new TimerSchedulerImpl[T](this)
+  protected[this] def mkTimer(): TimerSchedulerCrossDslSupport[T] = new TimerSchedulerImpl[T](this)
 
   override private[akka] def hasTimer: Boolean = _timer.isDefined
 
