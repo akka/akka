@@ -14,7 +14,6 @@ import akka.actor.NotInfluenceReceiveTimeout
 import akka.actor.typed.scaladsl.{ ActorContext, LoggerOps, TimerScheduler }
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
-import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
 
 /**
