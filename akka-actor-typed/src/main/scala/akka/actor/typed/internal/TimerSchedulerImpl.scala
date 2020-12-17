@@ -7,8 +7,8 @@ package internal
 
 import java.time.Duration
 
-import akka.actor.{Cancellable, NotInfluenceReceiveTimeout}
-import akka.actor.typed.scaladsl.{ActorContext, LoggerOps}
+import akka.actor.{ Cancellable, NotInfluenceReceiveTimeout }
+import akka.actor.typed.scaladsl.{ ActorContext, LoggerOps }
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.util.OptionVal
