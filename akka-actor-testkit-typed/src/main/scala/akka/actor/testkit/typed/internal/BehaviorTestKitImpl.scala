@@ -173,13 +173,7 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
 private[akka] object BehaviorTestKitImpl {
   object Interceptor extends BehaviorInterceptor[Any, Any]() {
 
-    /**
-     * Intercept a message sent to the running actor. Pass the message on to the next behavior
-     * in the stack by passing it to `target.apply`, return `Behaviors.same` without invoking `target`
-     * to filter out the message.
-     *
-     * @return The behavior for next message or signal
-     */
+    // Intercept a internal message adaptors related messages, forward the rest
     override def aroundReceive(
         ctx: TypedActorContext[Any],
         msg: Any,
