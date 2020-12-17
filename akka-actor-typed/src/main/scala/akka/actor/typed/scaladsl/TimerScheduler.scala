@@ -4,8 +4,6 @@
 
 package akka.actor.typed.scaladsl
 
-import java.time.Duration
-
 import akka.actor.typed.javadsl
 
 import scala.concurrent.duration.FiniteDuration

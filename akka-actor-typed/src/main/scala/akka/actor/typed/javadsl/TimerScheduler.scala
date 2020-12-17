@@ -8,8 +8,6 @@ import java.time.Duration
 
 import akka.actor.typed.scaladsl
 
-import scala.concurrent.duration.FiniteDuration
-
 /**
  * Support for scheduled `self` messages in an actor.
  * It is used with `Behaviors.withTimers`, which also takes care of the
