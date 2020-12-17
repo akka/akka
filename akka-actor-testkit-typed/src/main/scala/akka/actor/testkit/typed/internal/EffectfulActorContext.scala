@@ -110,7 +110,7 @@ import scala.reflect.ClassTag
 
     override def cancelAll(): Unit = activeTimers.foreach(cancel)
 
-    private def sendAction(key: Any)(): Unit = {
+    private def sendAction(key: Any): () => Unit = () => {
       activeTimers.get(key).foreach {
         case Effect.TimerScheduled(_, msg, _, mode, _) =>
           mode match {
