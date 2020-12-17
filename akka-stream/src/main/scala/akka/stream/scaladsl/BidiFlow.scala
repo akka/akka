@@ -58,9 +58,31 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
    * flow into the materialized value of the resulting BidiFlow.
    */
   def atopMat[OO1, II2, Mat2, M](bidi: Graph[BidiShape[O1, OO1, II2, I2], Mat2])(
-      combine: (Mat, Mat2) => M): BidiFlow[I1, OO1, II2, O2, M] = {
-
-    def actualAtop() = {
+      combine: (Mat, Mat2) => M): BidiFlow[I1, OO1, II2, O2, M] =
+    if (this eq BidiFlow.identity) {
+      // optimizations possible since we know that identity matval is NotUsed
+      if (combine eq Keep.right)
+        BidiFlow.fromGraph(bidi).asInstanceOf[BidiFlow[I1, OO1, II2, O2, M]]
+      else if ((combine eq Keep.left) || (combine eq Keep.none))
+        BidiFlow.fromGraph(bidi).mapMaterializedValue(_ => NotUsed).asInstanceOf[BidiFlow[I1, OO1, II2, O2, M]]
+      else {
+        BidiFlow
+          .fromGraph(bidi)
+          .mapMaterializedValue(mat2 => combine(NotUsed.asInstanceOf[Mat], mat2))
+          .asInstanceOf[BidiFlow[I1, OO1, II2, O2, M]]
+      }
+    } else if (bidi eq BidiFlow.identity) {
+      // optimizations possible since we know that identity matval is NotUsed
+      if (combine eq Keep.left)
+        this.asInstanceOf[BidiFlow[I1, OO1, II2, O2, M]]
+      else if ((combine eq Keep.right) || (combine eq Keep.none))
+        this.mapMaterializedValue(_ => NotUsed).asInstanceOf[BidiFlow[I1, OO1, II2, O2, M]]
+      else {
+        this
+          .mapMaterializedValue(mat => combine(mat, NotUsed.asInstanceOf[Mat2]))
+          .asInstanceOf[BidiFlow[I1, OO1, II2, O2, M]]
+      }
+    } else {
       val newBidi1Shape = shape.deepCopy()
       val newBidi2Shape = bidi.shape.deepCopy()
 
@@ -78,24 +100,6 @@ final class BidiFlow[-I1, +O1, -I2, +O2, +Mat](
         newTraversalBuilder,
         BidiShape(newBidi1Shape.in1, newBidi2Shape.out1, newBidi2Shape.in2, newBidi1Shape.out2))
     }
-
-    if (this eq BidiFlow.identity) {
-      if (combine eq Keep.right) // optimization by returning bidi if possible since we know M == Mat2
-        BidiFlow.fromGraph(bidi).asInstanceOf[BidiFlow[I1, OO1, II2, O2, M]]
-      else if (combine eq Keep.left)
-        BidiFlow.fromGraph(bidi).mapMaterializedValue(_ => NotUsed).asInstanceOf[BidiFlow[I1, OO1, II2, O2, M]]
-      else actualAtop()
-    } else if (bidi eq BidiFlow.identity) {
-      if (combine eq Keep.left)
-        // optimization by returning bidi if possible since we know M == Mat
-        this.asInstanceOf[BidiFlow[I1, OO1, II2, O2, M]]
-      else if (combine eq Keep.right)
-        this.mapMaterializedValue(_ => NotUsed).asInstanceOf[BidiFlow[I1, OO1, II2, O2, M]]
-      else actualAtop()
-    } else {
-      actualAtop()
-    }
-  }
 
   /**
    * Add the given Flow as the final step in a bidirectional transformation
