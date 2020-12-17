@@ -169,29 +169,5 @@ trait TimerScheduler[T] {
    */
   def cancelAll(): Unit
 
-  final def asScala: scaladsl.TimerScheduler[T] = this match {
-    case scalaThis: scaladsl.TimerScheduler[T @unchecked] => scalaThis
-    case jSelf =>
-      new scaladsl.TimerScheduler[T] {
-        import akka.util.JavaDurationConverters._
-        override def startTimerWithFixedDelay(key: Any, msg: T, delay: FiniteDuration): Unit =
-          jSelf.startTimerWithFixedDelay(key, msg, delay.asJava)
-
-        override def startTimerAtFixedRate(key: Any, msg: T, interval: FiniteDuration): Unit =
-          jSelf.startTimerAtFixedRate(key, msg, interval.asJava)
-
-        override def startPeriodicTimer(key: Any, msg: T, interval: FiniteDuration): Unit =
-          startTimerWithFixedDelay(key, msg, interval) //this follows the deprecation recommendation
-
-        override def startSingleTimer(key: Any, msg: T, delay: FiniteDuration): Unit =
-          jSelf.startSingleTimer(key, msg, delay.asJava)
-
-        override def isTimerActive(key: Any): Boolean = jSelf.isTimerActive(key)
-
-        override def cancel(key: Any): Unit = jSelf.cancel(key)
-
-        override def cancelAll(): Unit = jSelf.cancelAll()
-      }
-  }
-
+  def asScala: scaladsl.TimerScheduler[T]
 }

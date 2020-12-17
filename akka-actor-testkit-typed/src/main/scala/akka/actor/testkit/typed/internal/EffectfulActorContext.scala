@@ -11,6 +11,7 @@ import scala.reflect.ClassTag
 import akka.actor.{ ActorPath, Cancellable }
 import akka.actor.testkit.typed.Effect
 import akka.actor.testkit.typed.Effect._
+import akka.actor.typed.internal.TimerSchedulerCrossDslSupport
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.annotation.InternalApi
@@ -84,7 +85,7 @@ import akka.annotation.InternalApi
     super.scheduleOnce(delay, target, message)
   }
 
-  override def mkTimer(): TimerScheduler[T] = new TimerScheduler[T] {
+  override def mkTimer(): TimerScheduler[T] = new TimerScheduler[T] with TimerSchedulerCrossDslSupport[T] {
     var activeTimers: Map[Any, Effect.TimerScheduled[T]] = Map.empty
 
     override def startTimerWithFixedDelay(key: Any, msg: T, delay: FiniteDuration): Unit =
