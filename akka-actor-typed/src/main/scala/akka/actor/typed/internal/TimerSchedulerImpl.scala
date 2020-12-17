@@ -62,11 +62,10 @@ import akka.util.OptionVal
   override final def startTimerAtFixedRate(key: Any, msg: T, interval: Duration): Unit =
     startTimerAtFixedRate(key, msg, interval.asScala)
 
-  /**
-   * Deprecated API: See [[TimerScheduler#startTimerWithFixedDelay]] or [[TimerScheduler#startTimerAtFixedRate]].
-   */
-  override final def startPeriodicTimer(key: Any, msg: T, interval: Duration): Unit =
-    startPeriodicTimer(key, msg, interval.asScala)
+  override final def startPeriodicTimer(key: Any, msg: T, interval: Duration): Unit = {
+    //this follows the deprecation note in the super class
+    startTimerWithFixedDelay(key, msg, interval.asScala)
+  }
 
   override final def startSingleTimer(key: Any, msg: T, delay: Duration): Unit =
     startSingleTimer(key, msg, delay.asScala)
