@@ -11,7 +11,7 @@ limitations:
 
 * Spawning of @scala[`Future`]@java[`CompletionStage`] or other asynchronous task and you rely on a callback to
   complete before observing the effect you want to test.
-* Usage of scheduler or timers not supported.
+* Usage of scheduler is not supported.
 * `EventSourcedBehavior` can't be tested.
 * Interactions with other actors must be stubbed.
 * Blackbox testing style.
@@ -112,6 +112,8 @@ The @apidoc[BehaviorTestKit] keeps track other effects you can verify, look at t
  * WatchedWith
  * Unwatched
  * Scheduled
+ * TimerScheduled
+ * TimerCancelled
 
 ### Checking for Log Messages
 
