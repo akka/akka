@@ -99,7 +99,7 @@ object Effects {
       delay: Duration,
       mode: TimerScheduled.TimerMode,
       overriding: Boolean,
-      send: akka.japi.function.Effect) = TimerScheduled(key, msg, delay.asScala, mode, overriding)(send.apply)
+      send: akka.japi.function.Effect): TimerScheduled[U] = TimerScheduled(key, msg, delay.asScala, mode, overriding)(send.apply)
 
   /**
    * Used to represent an empty list of effects - in other words, the behavior didn't do anything observable
