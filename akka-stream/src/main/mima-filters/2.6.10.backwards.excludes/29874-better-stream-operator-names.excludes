@@ -1,0 +1,2 @@
+# Internal classes
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.Stages*")
