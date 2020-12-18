@@ -12,6 +12,7 @@ enablePlugins(
   JavaFormatterPlugin)
 disablePlugins(MimaPlugin)
 
+
 // check format and headers
 TaskKey[Unit]("verifyCodeFmt") := {
   javafmtCheckAll.all(ScopeFilter(inAnyProject)).result.value.toEither.left.foreach { _ =>
