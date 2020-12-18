@@ -262,7 +262,7 @@ object Sink {
   /**
    * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
    * First element is always `onInitMessage`, then stream is waiting for acknowledgement message
-   * `ackMessage` from the given actor which means that it is ready to process
+   * from the given actor which means that it is ready to process
    * elements. It also requires an ack message after each stream element
    * to make backpressure work. This variant will consider any message as ack message.
    *
