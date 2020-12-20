@@ -21,6 +21,17 @@ This operators can recover the failure signal, but not the skipped elements, whi
 
 Similarly to `recover` throwing an exception inside `mapError` _will_ be logged on ERROR level automatically.
 
+## Example
+
+The following example demonstrates a stream which throws `ArithmeticException` when the element `0` goes through 
+the `map` operator. The`mapError` is used to transform this exception to `UnsupportedOperationException`.
+
+Scala
+:  @@snip [MapError.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/MapError.scala) { #map-error }
+
+Java
+:  @@snip [MapError.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/MapError.java) { #map-error }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
