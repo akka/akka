@@ -4,6 +4,8 @@
 
 package akka.actor.typed.scaladsl
 
+import akka.annotation.DoNotInherit
+
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -14,7 +16,10 @@ import scala.concurrent.duration.FiniteDuration
  *
  * `TimerScheduler` is not thread-safe, i.e. it must only be used within
  * the actor that owns it.
+ *
+ * Not for user extension.
  */
+@DoNotInherit
 trait TimerScheduler[T] {
 
   /**
