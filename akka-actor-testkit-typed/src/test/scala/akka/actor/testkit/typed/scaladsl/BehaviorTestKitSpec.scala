@@ -35,7 +35,11 @@ object BehaviorTestKitSpec {
     case class StopChild(child: ActorRef[String]) extends Command
     case object SpawnAdapter extends Command
     case class SpawnAdapterWithName(name: String) extends Command
-    case class CreateMessageAdapter[U](messageClass: Class[U], f: U => Command) extends Command
+    case class CreateMessageAdapter[U](
+        messageClass: Class[U],
+        f: U => Command,
+        replyTo: Option[ActorRef[ActorRef[U]]] = None)
+        extends Command
     case class SpawnAndWatchUnwatch(name: String) extends Command
     case class SpawnAndWatchWith(name: String) extends Command
     case class SpawnSession(replyTo: ActorRef[ActorRef[String]], sessionHandler: ActorRef[String]) extends Command
@@ -102,8 +106,9 @@ object BehaviorTestKitSpec {
             context.stop(session)
             replyTo ! Done
             Behaviors.same
-          case CreateMessageAdapter(messageClass, f) =>
-            context.messageAdapter(f)(ClassTag(messageClass))
+          case CreateMessageAdapter(messageClass, f, replyTo) =>
+            val adaptor = context.messageAdapter(f)(ClassTag(messageClass))
+            replyTo.foreach(_ ! adaptor.unsafeUpcast)
             Behaviors.same
           case Log(what) =>
             context.log.info(what)
@@ -271,6 +276,23 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(CreateMessageAdapter(classOf[String], (_: String) => SpawnChildren(1)))
       testkit.expectEffectType[MessageAdapter[String, Command]]
+    }
+
+    "create message adapter and receive messages via the newly created adapter" in {
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
+      val replyTo = TestInbox[ActorRef[Int]]("replyTo")
+      testkit.run(CreateMessageAdapter(classOf[Int], SpawnChildren.apply, Some(replyTo.ref)))
+      testkit.expectEffectType[MessageAdapter[String, Command]]
+      val adaptorRef = replyTo.receiveMessage()
+      adaptorRef ! 2
+      testkit.selfInbox().hasMessages should be(true)
+      testkit.runOne()
+      testkit.expectEffectPF {
+        case Spawned(_, childName, _) => childName should equal("child0")
+      }
+      testkit.expectEffectPF {
+        case Spawned(_, childName, _) => childName should equal("child1")
+      }
     }
   }
 
