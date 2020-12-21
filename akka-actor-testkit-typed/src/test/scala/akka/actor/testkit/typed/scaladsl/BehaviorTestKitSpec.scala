@@ -35,7 +35,11 @@ object BehaviorTestKitSpec {
     case class StopChild(child: ActorRef[String]) extends Command
     case object SpawnAdapter extends Command
     case class SpawnAdapterWithName(name: String) extends Command
-    case class CreateMessageAdapter[U](messageClass: Class[U], f: U => Command) extends Command
+    case class CreateMessageAdapter[U](
+        messageClass: Class[U],
+        f: U => Command,
+        replyTo: Option[ActorRef[ActorRef[U]]] = None)
+        extends Command
     case class SpawnAndWatchUnwatch(name: String) extends Command
     case class SpawnAndWatchWith(name: String) extends Command
     case class SpawnSession(replyTo: ActorRef[ActorRef[String]], sessionHandler: ActorRef[String]) extends Command
@@ -48,91 +52,92 @@ object BehaviorTestKitSpec {
 
     val init: Behavior[Command] = Behaviors.withTimers { timers =>
       Behaviors
-        .receive[Command] { (context, message) =>
-          message match {
-            case SpawnChild =>
-              context.spawn(Child.initial, "child")
+      .receive[Command] { (context, message) =>
+        message match {
+          case SpawnChild =>
+            context.spawn(Child.initial, "child")
+            Behaviors.same
+          case SpawnChildren(numberOfChildren) if numberOfChildren > 0 =>
+            0.until(numberOfChildren).foreach { i =>
+              context.spawn(Child.initial, s"child$i")
+            }
+            Behaviors.same
+          case SpawnChildrenWithProps(numberOfChildren, props) if numberOfChildren > 0 =>
+            0.until(numberOfChildren).foreach { i =>
+              context.spawn(Child.initial, s"child$i", props)
+            }
+            Behaviors.same
+          case SpawnAnonymous(numberOfChildren) if numberOfChildren > 0 =>
+            0.until(numberOfChildren).foreach { _ =>
+              context.spawnAnonymous(Child.initial)
+            }
+            Behaviors.same
+          case SpawnAnonymousWithProps(numberOfChildren, props) if numberOfChildren > 0 =>
+            0.until(numberOfChildren).foreach { _ =>
+              context.spawnAnonymous(Child.initial, props)
+            }
+            Behaviors.same
+          case StopChild(child) =>
+            context.stop(child)
+            Behaviors.same
+          case SpawnAdapter =>
+            context.spawnMessageAdapter { (r: Reproduce) =>
+              SpawnAnonymous(r.times)
+            }
+            Behaviors.same
+          case SpawnAdapterWithName(name) =>
+            context.spawnMessageAdapter({ (r: Reproduce) =>
+              SpawnAnonymous(r.times)
+            }, name)
+            Behaviors.same
+          case SpawnAndWatchUnwatch(name) =>
+            val c = context.spawn(Child.initial, name)
+            context.watch(c)
+            context.unwatch(c)
+            Behaviors.same
+          case m @ SpawnAndWatchWith(name) =>
+            val c = context.spawn(Child.initial, name)
+            context.watchWith(c, m)
+            Behaviors.same
+          case SpawnSession(replyTo, sessionHandler) =>
+            val session = context.spawnAnonymous[String](Behaviors.receiveMessage { message =>
+              sessionHandler ! message
               Behaviors.same
-            case SpawnChildren(numberOfChildren) if numberOfChildren > 0 =>
-              0.until(numberOfChildren).foreach { i =>
-                context.spawn(Child.initial, s"child$i")
-              }
-              Behaviors.same
-            case SpawnChildrenWithProps(numberOfChildren, props) if numberOfChildren > 0 =>
-              0.until(numberOfChildren).foreach { i =>
-                context.spawn(Child.initial, s"child$i", props)
-              }
-              Behaviors.same
-            case SpawnAnonymous(numberOfChildren) if numberOfChildren > 0 =>
-              0.until(numberOfChildren).foreach { _ =>
-                context.spawnAnonymous(Child.initial)
-              }
-              Behaviors.same
-            case SpawnAnonymousWithProps(numberOfChildren, props) if numberOfChildren > 0 =>
-              0.until(numberOfChildren).foreach { _ =>
-                context.spawnAnonymous(Child.initial, props)
-              }
-              Behaviors.same
-            case StopChild(child) =>
-              context.stop(child)
-              Behaviors.same
-            case SpawnAdapter =>
-              context.spawnMessageAdapter { (r: Reproduce) =>
-                SpawnAnonymous(r.times)
-              }
-              Behaviors.same
-            case SpawnAdapterWithName(name) =>
-              context.spawnMessageAdapter({ (r: Reproduce) =>
-                SpawnAnonymous(r.times)
-              }, name)
-              Behaviors.same
-            case SpawnAndWatchUnwatch(name) =>
-              val c = context.spawn(Child.initial, name)
-              context.watch(c)
-              context.unwatch(c)
-              Behaviors.same
-            case m @ SpawnAndWatchWith(name) =>
-              val c = context.spawn(Child.initial, name)
-              context.watchWith(c, m)
-              Behaviors.same
-            case SpawnSession(replyTo, sessionHandler) =>
-              val session = context.spawnAnonymous[String](Behaviors.receiveMessage { message =>
-                sessionHandler ! message
-                Behaviors.same
-              })
-              replyTo ! session
-              Behaviors.same
-            case KillSession(session, replyTo) =>
-              context.stop(session)
-              replyTo ! Done
-              Behaviors.same
-            case CreateMessageAdapter(messageClass, f) =>
-              context.messageAdapter(f)(ClassTag(messageClass))
-              Behaviors.same
-            case Log(what) =>
-              context.log.info(what)
-              Behaviors.same
-            case RegisterWithReceptionist(name: String) =>
-              context.system.receptionist ! Receptionist.Register(ServiceKey[Command](name), context.self)
-              Behaviors.same
+            })
+            replyTo ! session
+            Behaviors.same
+          case KillSession(session, replyTo) =>
+            context.stop(session)
+            replyTo ! Done
+            Behaviors.same
+          case CreateMessageAdapter(messageClass, f, replyTo) =>
+            val adaptor = context.messageAdapter(f)(ClassTag(messageClass))
+            replyTo.foreach(_ ! adaptor.unsafeUpcast)
+            Behaviors.same
+          case Log(what) =>
+            context.log.info(what)
+            Behaviors.same
+          case RegisterWithReceptionist(name: String) =>
+            context.system.receptionist ! Receptionist.Register(ServiceKey[Command](name), context.self)
+            Behaviors.same
             case ScheduleCommand(key, delay, mode, cmd) =>
               mode match {
                 case Effect.TimerScheduled.SingleMode     => timers.startSingleTimer(key, cmd, delay)
                 case Effect.TimerScheduled.FixedDelayMode => timers.startTimerWithFixedDelay(key, cmd, delay)
                 case Effect.TimerScheduled.FixedRateMode  => timers.startTimerAtFixedRate(key, cmd, delay)
-              }
+        }
               Behaviors.same
             case CancelScheduleCommand(key) =>
               timers.cancel(key)
               Behaviors.same
-          }
+      }
         }
-        .receiveSignal {
-          case (context, Terminated(_)) =>
-            context.log.debug("Terminated")
-            Behaviors.same
-        }
-    }
+      .receiveSignal {
+        case (context, Terminated(_)) =>
+          context.log.debug("Terminated")
+          Behaviors.same
+      }
+  }
   }
 
   object Child {
@@ -286,6 +291,23 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(CreateMessageAdapter(classOf[String], (_: String) => SpawnChildren(1)))
       testkit.expectEffectType[MessageAdapter[String, Command]]
+    }
+
+    "create message adapter and receive messages via the newly created adapter" in {
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
+      val replyTo = TestInbox[ActorRef[Int]]("replyTo")
+      testkit.run(CreateMessageAdapter(classOf[Int], SpawnChildren.apply, Some(replyTo.ref)))
+      testkit.expectEffectType[MessageAdapter[String, Command]]
+      val adaptorRef = replyTo.receiveMessage()
+      adaptorRef ! 2
+      testkit.selfInbox().hasMessages should be(true)
+      testkit.runOne()
+      testkit.expectEffectPF {
+        case Spawned(_, childName, _) => childName should equal("child0")
+      }
+      testkit.expectEffectPF {
+        case Spawned(_, childName, _) => childName should equal("child1")
+      }
     }
   }
 
