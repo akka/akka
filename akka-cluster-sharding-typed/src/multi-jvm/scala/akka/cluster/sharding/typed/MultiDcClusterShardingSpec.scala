@@ -58,6 +58,8 @@ abstract class MultiDcClusterShardingSpec
   import MultiDcClusterShardingSpecConfig._
   import MultiDcPinger._
 
+  override implicit def patienceConfig: PatienceConfig = PatienceConfig(testKitSettings.DefaultTimeout.duration)
+
   val typeKey = EntityTypeKey[Command]("ping")
   val entityId = "ping-1"
 
