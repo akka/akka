@@ -23,6 +23,7 @@ This operator is included in:
 ## Description
 
 Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`] with backpressure, to be able to signal demand when the actor is ready to receive more elements.
+There is also a variant without a concrete acknowledge message accepting any message as such.
 
 See also:
 
