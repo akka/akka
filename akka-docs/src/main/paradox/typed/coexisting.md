@@ -84,10 +84,17 @@ Scala
 Java
 :  @@snip [ClassicWatchingTypedTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/ClassicWatchingTypedTest.java) { #adapter-import }
 
-
 @scala[That adds some implicit extension methods that are added to classic and typed `ActorSystem`, `ActorContext` and `ActorRef` in both directions.]
 @java[To convert between typed and classic `ActorSystem`, `ActorContext` and `ActorRef` in both directions there are adapter methods in `akka.actor.typed.javadsl.Adapter`.]
-Note the inline comments in the example above.
+Note the inline comments in the example above. Additionally, note that the above method of using a top level classic actor is the suggested path for this type of co-existence. However, if you prefer to start with a typed top level actor then you can use the implicits and then call `spawn` directly from the typed system:
+
+Scala
+:  @@snip [TypedWatchingClassicSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/TypedWatchingClassicSpec.scala) { #create }
+
+Java
+:  @@snip [TypedWatchingClassicTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/TypedWatchingClassicTest.java) { #create }
+
+Once migrated to a fully typed system the concept is to provide the root actor in the `ActorSystem` constructor, and then spawn actors from the `ActorContext` of the actor itself. The rationale for this is partly about consistency. In a typed system you can’t create children to an arbitrary actor from anywhere in your app without messaging it, so this will also hold true for the User guardian actor. Whereas in a classic system it was mostly not noticed that the guardian was an actor. That noted, in cases where you do need to spawn outside of this guardian then you can use the @ref:[`SpawnProtocol`](../actor-lifecycle.md#spawnprotocol) to spawn as needed.
 
 ## Typed to classic
 
