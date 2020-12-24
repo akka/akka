@@ -23,7 +23,8 @@ when running the stream more than once.
 
 ## Example
 
-`fold` is typically used to 'fold up' the incoming values into an aggregate asynchronously. For example, you might want to summarize the incoming values into a histogram:
+`foldAsync` is typically used to 'fold up' the incoming values into an aggregate asynchronously. 
+For example, you might want to summarize the incoming values into a histogram:
 
 Scala
 :   @@snip [FoldAsync.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/FoldAsync.scala) { #imports #foldAsync }
