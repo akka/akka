@@ -7,17 +7,8 @@ package akka.routing
 import scala.collection.immutable
 import scala.concurrent.duration._
 
-import akka.actor.Actor
-import akka.actor.ActorCell
-import akka.actor.ActorInitializationException
-import akka.actor.ActorRef
-import akka.actor.ActorSystemImpl
-import akka.actor.IndirectActorProducer
-import akka.actor.InternalActorRef
-import akka.actor.PoisonPill
-import akka.actor.Props
-import akka.actor.SupervisorStrategy
-import akka.actor.Terminated
+// TODO DOTTY -> wildcard import to import bang
+import akka.actor._
 import akka.dispatch.Envelope
 import akka.dispatch.MessageDispatcher
 import akka.util.ccompat._

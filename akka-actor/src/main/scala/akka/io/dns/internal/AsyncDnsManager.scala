@@ -13,7 +13,8 @@ import scala.concurrent.duration.Duration
 import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
-import akka.actor.{ Actor, ActorLogging, ActorRefFactory, Deploy, ExtendedActorSystem, Props, Timers }
+// TODO DOTTY -> wildcard import to import bang
+import akka.actor._
 import akka.annotation.InternalApi
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.{ Dns, DnsExt, DnsProvider }

@@ -4,7 +4,8 @@
 
 package akka.pattern
 
-import akka.actor.{ Actor, ActorRef, Props }
+// TODO DOTTY -> wildcard import to import bang
+import akka.actor._
 import akka.annotation.InternalApi
 
 /**

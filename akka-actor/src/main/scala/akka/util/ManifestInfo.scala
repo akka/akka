@@ -137,7 +137,8 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
       }
     } catch {
       case ioe: IOException =>
-        Logging(system, getClass).warning("Could not read manifest information. {}", ioe)
+        // TODO DOTTY
+        Logging(system, Logging.simpleName(this)).warning("Could not read manifest information. {}", ioe)
     }
     manifests
   }
@@ -170,7 +171,8 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
     ManifestInfo.checkSameVersion(productName, dependencies, versions) match {
       case Some(message) =>
         if (logWarning)
-          Logging(system, getClass).warning(message)
+          // TODO DOTTY
+          Logging(system, Logging.simpleName(this)).warning(message)
 
         if (throwException)
           throw new IllegalStateException(message)

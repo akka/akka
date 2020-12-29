@@ -44,12 +44,14 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
     }.recover { case i: InvocationTargetException if i.getTargetException ne null => throw i.getTargetException }
 
   override def createInstanceFor[T: ClassTag](fqcn: String, args: immutable.Seq[(Class[_], AnyRef)]): Try[T] =
-    getClassFor(fqcn).flatMap { c =>
+    // TODO DOTTY
+    getClassFor[Any](fqcn).flatMap { c =>
       createInstanceFor(c, args)
     }
 
   override def classIsOnClasspath(fqcn: String): Boolean =
-    getClassFor(fqcn) match {
+    // RODO DOTTY
+    getClassFor[Any](fqcn) match {
       case Failure(_: ClassNotFoundException | _: NoClassDefFoundError) =>
         false
       case _ =>

@@ -148,9 +148,14 @@ private[dns] object ResourceRecord {
     val recType = it.getShort
     val recClass = it.getShort
     // According to https://www.ietf.org/rfc/rfc1035.txt: "TTL: positive values of a signed 32 bit number."
-    val ttl = (it.getInt: @switch) match {
-      case 0       => Ttl.never
-      case nonZero => Ttl.fromPositive(nonZero.seconds)
+    // TODO DOTTY
+    val ttl = {
+      val _it = it.getInt
+      if (_it == 0) {
+        Ttl.never
+      } else {
+        Ttl.fromPositive(_it.seconds)
+      }
     }
     val rdLength = it.getShort
     val data = it.clone().take(rdLength)

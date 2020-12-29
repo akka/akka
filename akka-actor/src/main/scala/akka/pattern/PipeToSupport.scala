@@ -12,7 +12,8 @@ import scala.util.{ Failure, Success }
 
 import language.implicitConversions
 
-import akka.actor.{ Actor, ActorRef, Status }
+// TODO DOTTY -> wildcard import to import bang
+import akka.actor._
 import akka.actor.ActorSelection
 import akka.util.unused
 

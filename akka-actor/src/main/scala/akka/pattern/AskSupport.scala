@@ -530,11 +530,13 @@ private[akka] final class PromiseActorRef private (
    */
   @volatile
   @silent("never used")
-  private[this] var _stateDoNotCallMeDirectly: AnyRef = _
+  // TODO DOTTY
+  protected var _stateDoNotCallMeDirectly: AnyRef = _
 
   @volatile
   @silent("never used")
-  private[this] var _watchedByDoNotCallMeDirectly: Set[ActorRef] = ActorCell.emptyActorRefSet
+  // TODO DOTTY
+  protected var _watchedByDoNotCallMeDirectly: Set[ActorRef] = ActorCell.emptyActorRefSet
 
   @inline
   private[this] def watchedBy: Set[ActorRef] =

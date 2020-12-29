@@ -78,7 +78,8 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
       parsed match {
         case Success(value) => Some(value)
         case Failure(exception) =>
-          val log = Logging(system, getClass)
+          // TODO DOTTY
+          val log = Logging(system, Logging.simpleName(this))
           if (log.isWarningEnabled) {
             log.error(exception, "Error parsing /etc/resolv.conf, ignoring.")
           }
@@ -192,7 +193,8 @@ object DnsSettings {
     // this method is used as a fallback in case JNDI results in an empty list
     // this method will not work when running modularised of course since it needs access to internal sun classes
     def getNameserversUsingReflection: Try[List[InetSocketAddress]] = {
-      system.dynamicAccess.getClassFor("sun.net.dns.ResolverConfiguration").flatMap { c =>
+      // TODO DOTTY
+      system.dynamicAccess.getClassFor[Any]("sun.net.dns.ResolverConfiguration").flatMap { c =>
         Try {
           val open = c.getMethod("open")
           val nameservers = c.getMethod("nameservers")

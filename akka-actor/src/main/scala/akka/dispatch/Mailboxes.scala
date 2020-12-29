@@ -15,7 +15,8 @@ import scala.util.control.NonFatal
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.ConfigurationException
-import akka.actor.{ Actor, ActorRef, ActorSystem, DeadLetter, Deploy, DynamicAccess, Props }
+// TODO DOTTY -> wildcard import import the ! bang operand as well
+import akka.actor._
 import akka.dispatch.sysmsg.{
   EarliestFirstSystemMessageList,
   LatestFirstSystemMessageList,

@@ -85,7 +85,9 @@ object Pair {
  * This class is kept for compatibility, but for future API's please prefer [[akka.japi.function.Creator]].
  */
 @silent("@SerialVersionUID has no effect")
-@SerialVersionUID(1L)
+// TODO DOTTY
+// @SerialVersionUID does nothing on a trait
+// @SerialVersionUID(1L)
 trait Creator[T] extends Serializable {
 
   /**

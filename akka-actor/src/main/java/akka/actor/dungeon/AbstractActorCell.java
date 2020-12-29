@@ -17,20 +17,24 @@ final class AbstractActorCell {
     try {
       mailboxOffset =
           Unsafe.instance.objectFieldOffset(
-              ActorCell.class.getDeclaredField(
-                  "akka$actor$dungeon$Dispatch$$_mailboxDoNotCallMeDirectly"));
+              // TODO DOTTY
+              ActorCell.class.getDeclaredField("_mailboxDoNotCallMeDirectly"));
+      // "akka$actor$dungeon$Dispatch$$_mailboxDoNotCallMeDirectly"));
       childrenOffset =
           Unsafe.instance.objectFieldOffset(
-              ActorCell.class.getDeclaredField(
-                  "akka$actor$dungeon$Children$$_childrenRefsDoNotCallMeDirectly"));
+              // TODO DOTTY
+              ActorCell.class.getDeclaredField("_childrenRefsDoNotCallMeDirectly"));
+      // "akka$actor$dungeon$Children$$_childrenRefsDoNotCallMeDirectly"));
       nextNameOffset =
           Unsafe.instance.objectFieldOffset(
-              ActorCell.class.getDeclaredField(
-                  "akka$actor$dungeon$Children$$_nextNameDoNotCallMeDirectly"));
+              // TODO DOTTY
+              ActorCell.class.getDeclaredField("_nextNameDoNotCallMeDirectly"));
+      // "akka$actor$dungeon$Children$$_nextNameDoNotCallMeDirectly"));
       functionRefsOffset =
           Unsafe.instance.objectFieldOffset(
-              ActorCell.class.getDeclaredField(
-                  "akka$actor$dungeon$Children$$_functionRefsDoNotCallMeDirectly"));
+              // TODO DOTTY
+              ActorCell.class.getDeclaredField("_functionRefsDoNotCallMeDirectly"));
+      //    "akka$actor$dungeon$Children$$_functionRefsDoNotCallMeDirectly"));
     } catch (Throwable t) {
       throw new ExceptionInInitializerError(t);
     }

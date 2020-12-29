@@ -19,18 +19,21 @@ import akka.pattern.ask
 
 @silent
 class AkkaSpecSpec extends AnyWordSpec with Matchers {
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
 
   "An AkkaSpec" must {
 
     "warn about unhandled messages" in {
-      implicit val system = ActorSystem("AkkaSpec0", AkkaSpec.testConf)
+      implicit val localSystem = ActorSystem("AkkaSpec0", AkkaSpec.testConf)
       try {
-        val a = system.actorOf(Props.empty)
+        val a = localSystem.actorOf(Props.empty)
         EventFilter.warning(start = "unhandled message", occurrences = 1).intercept {
           a ! 42
         }
       } finally {
-        TestKit.shutdownActorSystem(system)
+        TestKit.shutdownActorSystem(localSystem)
       }
     }
 
@@ -42,31 +45,31 @@ class AkkaSpecSpec extends AnyWordSpec with Matchers {
         "akka.actor.debug.event-stream" -> true,
         "akka.loglevel" -> "DEBUG",
         "akka.stdout-loglevel" -> "DEBUG")
-      val system = ActorSystem("AkkaSpec1", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
+      val localSystem = ActorSystem("AkkaSpec1", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
       var refs = Seq.empty[ActorRef]
-      val spec = new AkkaSpec(system) { refs = Seq(testActor, system.actorOf(Props.empty, "name")) }
+      val spec = new AkkaSpec(localSystem) { refs = Seq(testActor, localSystem.actorOf(Props.empty, "name")) }
       refs.foreach(_.isTerminated should not be true)
-      TestKit.shutdownActorSystem(system)
+      TestKit.shutdownActorSystem(localSystem)
       spec.awaitCond(refs.forall(_.isTerminated), 2 seconds)
     }
 
     "stop correctly when sending PoisonPill to rootGuardian" in {
-      val system = ActorSystem("AkkaSpec2", AkkaSpec.testConf)
-      new AkkaSpec(system) {}
-      val latch = new TestLatch(1)(system)
-      system.registerOnTermination(latch.countDown())
+      val localSystem = ActorSystem("AkkaSpec2", AkkaSpec.testConf)
+      new AkkaSpec(localSystem) {}
+      val latch = new TestLatch(1)(localSystem)
+      localSystem.registerOnTermination(latch.countDown())
 
-      system.actorSelection("/") ! PoisonPill
+      localSystem.actorSelection("/") ! PoisonPill
 
       Await.ready(latch, 2 seconds)
     }
 
     "enqueue unread messages from testActor to deadLetters" in {
-      val system, otherSystem = ActorSystem("AkkaSpec3", AkkaSpec.testConf)
+      val localSystem, otherSystem = ActorSystem("AkkaSpec3", AkkaSpec.testConf)
 
       try {
         var locker = Seq.empty[DeadLetter]
-        implicit val timeout = TestKitExtension(system).DefaultTimeout
+        implicit val timeout = TestKitExtension(localSystem).DefaultTimeout
         val davyJones = otherSystem.actorOf(Props(new Actor {
           def receive = {
             case m: DeadLetter => locker :+= m
@@ -74,9 +77,9 @@ class AkkaSpecSpec extends AnyWordSpec with Matchers {
           }
         }), "davyJones")
 
-        system.eventStream.subscribe(davyJones, classOf[DeadLetter])
+        localSystem.eventStream.subscribe(davyJones, classOf[DeadLetter])
 
-        val probe = new TestProbe(system)
+        val probe = new TestProbe(localSystem)
         probe.ref.tell(42, davyJones)
         /*
          * this will ensure that the message is actually received, otherwise it
@@ -87,16 +90,16 @@ class AkkaSpecSpec extends AnyWordSpec with Matchers {
           case null =>
         }
 
-        val latch = new TestLatch(1)(system)
-        system.registerOnTermination(latch.countDown())
-        TestKit.shutdownActorSystem(system)
+        val latch = new TestLatch(1)(localSystem)
+        localSystem.registerOnTermination(latch.countDown())
+        TestKit.shutdownActorSystem(localSystem)
         Await.ready(latch, 2 seconds)
         Await.result(davyJones ? "Die!", timeout.duration) should ===("finally gone")
 
         // this will typically also contain log messages which were sent after the logger shutdown
         locker should contain(DeadLetter(42, davyJones, probe.ref))
       } finally {
-        TestKit.shutdownActorSystem(system)
+        TestKit.shutdownActorSystem(localSystem)
         TestKit.shutdownActorSystem(otherSystem)
       }
     }

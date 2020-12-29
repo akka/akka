@@ -266,9 +266,13 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       createInstance: => T,
       interfaces: immutable.Seq[Class[_]])
       extends Actor {
+    // TODO DOTTY
+    self =>
     // if we were remote deployed we need to create a local proxy
-    if (!context.parent.asInstanceOf[InternalActorRef].isLocal)
-      TypedActor.get(context.system).createActorRefProxy(TypedProps(interfaces, createInstance), proxyVar, context.self)
+    // TODO DOTTY
+    if (!self.context.parent.asInstanceOf[InternalActorRef].isLocal)
+      // TODO DOTTY
+      akka.actor.TypedActor.get(self.context.system).createActorRefProxy(TypedProps(interfaces, createInstance), proxyVar, self.context.self)
 
     private val me = withContext[T](createInstance)
 
@@ -294,10 +298,12 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           }
         }
       } finally {
-        TypedActor(context.system).invocationHandlerFor(proxyVar.get) match {
+        // TODO DOTTY
+        akka.actor.TypedActor(self.context.system).invocationHandlerFor(proxyVar.get) match {
           case null =>
           case some =>
-            some.actorVar.set(context.system.deadLetters) //Point it to the DLQ
+            // TODO DOTTY
+            some.actorVar.set(self.context.system.deadLetters) //Point it to the DLQ
             proxyVar.set(null.asInstanceOf[R])
         }
       }
@@ -306,8 +312,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       me match {
         case l: PreRestart => l.preRestart(reason, message)
         case _ =>
-          context.children
-            .foreach(context.stop) //Can't be super.preRestart(reason, message) since that would invoke postStop which would set the actorVar to DL and proxyVar to null
+          // TODO DOTTY
+          self.context.children
+            .foreach(self.context.stop) //Can't be super.preRestart(reason, message) since that would invoke postStop which would set the actorVar to DL and proxyVar to null
       }
     }
 
@@ -319,12 +326,13 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     }
 
     protected def withContext[U](unitOfWork: => U): U = {
-      TypedActor.selfReference.set(proxyVar.get)
-      TypedActor.currentContext.set(context)
+      // TODO DOTTY
+      akka.actor.TypedActor.selfReference.set(proxyVar.get)
+      akka.actor.TypedActor.currentContext.set(self.context)
       try unitOfWork
       finally {
-        TypedActor.selfReference.set(null)
-        TypedActor.currentContext.set(null)
+        akka.actor.TypedActor.selfReference.set(null)
+        akka.actor.TypedActor.currentContext.set(null)
       }
     }
 
@@ -337,10 +345,16 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
               val s = sender()
               m(me) match {
                 case f: Future[_] if m.returnsFuture =>
-                  implicit val dispatcher = context.dispatcher
+                  // TODO DOTTY
+                  implicit val dispatcher = self.context.dispatcher
                   f.onComplete {
-                    case Success(null)   => s ! NullResponse
-                    case Success(result) => s ! result
+                    // TODO DOTTY
+                    case Success(result) =>
+                      if (result == null) {
+                        s ! NullResponse
+                      } else {
+                        s ! result
+                      }
                     case Failure(f)      => s ! Status.Failure(f)
                   }
                 case null   => s ! NullResponse
@@ -501,7 +515,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
 
     @silent("deprecated")
     def toTypedActorInvocationHandler(system: ActorSystem): TypedActorInvocationHandler =
-      new TypedActorInvocationHandler(TypedActor(system), new AtomVar[ActorRef](actor), new Timeout(timeout))
+      // TODO DOTTY
+      new TypedActorInvocationHandler(akka.actor.TypedActor(system), new AtomVar[ActorRef](actor), new Timeout(timeout))
   }
 }
 

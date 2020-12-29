@@ -12,7 +12,8 @@ import scala.concurrent.Future
 import scala.util.Try
 import scala.util.control.NonFatal
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory }
+// TODO DOTTY -> wildcard import to import bang
+import akka.actor._
 import akka.annotation.InternalApi
 import akka.io.SimpleDnsCache
 import akka.io.dns._

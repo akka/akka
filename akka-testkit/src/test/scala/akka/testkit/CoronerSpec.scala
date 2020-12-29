@@ -16,6 +16,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class CoronerSpec extends AnyWordSpec with Matchers {
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
 
   private def captureOutput[A](f: PrintStream => A): (A, String) = {
     val bytes = new ByteArrayOutputStream()

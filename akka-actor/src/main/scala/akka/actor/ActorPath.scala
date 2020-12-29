@@ -87,14 +87,26 @@ object ActorPath {
   final def validatePathElement(element: String, fullPath: String): Unit = {
     def fullPathMsg = if (fullPath ne null) s""" (in path [$fullPath])""" else ""
 
-    (findInvalidPathElementCharPosition(element): @switch) match {
-      case ValidPathCode =>
-      // valid
-      case EmptyPathCode =>
-        throw InvalidActorNameException(s"Actor path element must not be empty $fullPathMsg")
-      case invalidAt =>
-        throw InvalidActorNameException(s"""Invalid actor path element [$element]$fullPathMsg, illegal character [${element(
-          invalidAt)}] at position: $invalidAt. """ +
+    // TODO DOTTY:
+    // ould not emit switch for @switch annotated match since there are not enough cases
+    // (findInvalidPathElementCharPosition(element): @switch) match {
+    //   case ValidPathCode =>
+    //   // valid
+    //   case EmptyPathCode =>
+    //     throw InvalidActorNameException(s"Actor path element must not be empty $fullPathMsg")
+    //   case invalidAt =>
+    //     throw InvalidActorNameException(s"""Invalid actor path element [$element]$fullPathMsg, illegal character [${element(
+    //       invalidAt)}] at position: $invalidAt. """ +
+    //     """Actor paths MUST: """ +
+    //     """not start with `$`, """ +
+    //     s"""include only ASCII letters and can only contain these special characters: ${ActorPath.ValidSymbols}.""")
+    // }
+    val res = findInvalidPathElementCharPosition(element)
+    if (res == EmptyPathCode) {
+      throw InvalidActorNameException(s"Actor path element must not be empty $fullPathMsg")
+    } else if (res != ValidPathCode) {
+          throw InvalidActorNameException(s"""Invalid actor path element [$element]$fullPathMsg, illegal character [${element(
+          res)}] at position: $res. """ +
         """Actor paths MUST: """ +
         """not start with `$`, """ +
         s"""include only ASCII letters and can only contain these special characters: ${ActorPath.ValidSymbols}.""")
@@ -155,7 +167,9 @@ object ActorPath {
  */
 @silent("@SerialVersionUID has no effect on traits")
 @silent("deprecated")
-@SerialVersionUID(1L)
+// TODO DOTTY
+// @SerialVersionUID does nothing on a trait
+// @SerialVersionUID(1L)
 sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
 
   /**

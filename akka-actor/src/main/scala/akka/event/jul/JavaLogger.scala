@@ -6,8 +6,8 @@ package akka.event.jul
 
 import java.util.logging
 
-import akka.actor.Actor
-import akka.actor.ActorSystem
+// TODO DOTTY -> wildcard import to import bang
+import akka.actor._
 import akka.dispatch.RequiresMessageQueue
 import akka.event.DummyClassForStringSources
 import akka.event.EventStream

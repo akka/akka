@@ -91,7 +91,8 @@ object AkkaBuild {
     "-encoding", "UTF-8",
     "-feature",
     "-unchecked",
-    "-Xlog-reflective-calls",
+    // TODO: FIXME
+    // "-Xlog-reflective-calls",
     // 'blessed' since 2.13.1
     "-language:higherKinds")
 

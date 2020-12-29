@@ -9,7 +9,8 @@ import java.nio.channels.{ DatagramChannel, SelectionKey }
 
 import scala.util.control.NonFatal
 
-import akka.actor.{ Actor, ActorLogging, ActorRef }
+// TODO DOTTY -> wildcard import to import bang
+import akka.actor._
 import akka.io.SelectionHandler._
 import akka.io.Udp.{ CommandFailed, Send }
 import akka.io.dns.DnsProtocol

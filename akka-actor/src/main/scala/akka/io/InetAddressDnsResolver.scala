@@ -17,8 +17,8 @@ import scala.util.{ Failure, Success, Try }
 import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
-import akka.actor.{ Actor, ActorLogging }
-import akka.actor.Status
+// TODO DOTTY -> wildcard import to import bang
+import akka.actor._
 import akka.annotation.InternalApi
 import akka.io.dns.AAAARecord
 import akka.io.dns.ARecord
@@ -105,10 +105,11 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
   val negativeTtl: Long = toLongTtl(negativeCachePolicy)
 
   private def toLongTtl(cp: CachePolicy): Long = {
+    // TODO DOTTY
     cp match {
       case Forever  => Long.MaxValue
       case Never    => 0
-      case Ttl(ttl) => ttl.toMillis
+      case ttl: Ttl => ttl.value.toMillis
     }
   }
 

@@ -7,7 +7,8 @@ package akka.io.dns.internal
 import java.net.InetSocketAddress
 
 import akka.AkkaException
-import akka.actor.{ Actor, ActorLogging, ActorRef, Stash }
+// TODO DOTTY -> wildcard import to import bang
+import akka.actor._
 import akka.annotation.InternalApi
 import akka.io.Tcp
 import akka.io.dns.internal.DnsClient.Answer

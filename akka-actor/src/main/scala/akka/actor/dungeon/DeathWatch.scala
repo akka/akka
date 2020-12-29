@@ -66,7 +66,8 @@ private[akka] trait DeathWatch { this: ActorCell =>
       optionalMessage match {
         case Some(customTermination) =>
           // needed for stashing of custom watch messages to work (or stash will stash the Terminated message instead)
-          currentMessage = currentMessage.copy(message = customTermination)
+          // TODO DOTTY
+          currentMessage = currentMessage.copy(message = customTermination, sender = self)
           receiveMessage(customTermination)
 
         case None =>

@@ -98,7 +98,10 @@ trait Scheduler {
         }
       }
 
-      @tailrec final def cancel(): Boolean = {
+      // TODO DOTTY
+      // @tailrec final
+      // Cannot rewrite recursive call: it targets a supertype
+      def cancel(): Boolean = {
         get match {
           case null => false
           case c =>

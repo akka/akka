@@ -1,12 +1,13 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern.internal
 
 import scala.concurrent.duration.FiniteDuration
 
-import akka.actor.{ Actor, ActorLogging, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
+// TODO DOTTY -> wildcard import to import bang
+import akka.actor._
 import akka.actor.SupervisorStrategy.{ Directive, Escalate }
 import akka.annotation.InternalApi
 import akka.pattern.{
@@ -43,16 +44,20 @@ import akka.pattern.{
   import BackoffSupervisor._
   import context.dispatcher
 
-  override val supervisorStrategy: SupervisorStrategy = strategy match {
-    case oneForOne: OneForOneStrategy =>
-      OneForOneStrategy(oneForOne.maxNrOfRetries, oneForOne.withinTimeRange, oneForOne.loggingEnabled) {
-        case ex =>
-          val defaultDirective: Directive =
-            super.supervisorStrategy.decider.applyOrElse(ex, (_: Any) => Escalate)
+  override val supervisorStrategy: SupervisorStrategy = {
+    // TODO DOTTY
+    val sup = super.supervisorStrategy.decider
+    strategy match {
+      case oneForOne: OneForOneStrategy =>
+        OneForOneStrategy(oneForOne.maxNrOfRetries, oneForOne.withinTimeRange, oneForOne.loggingEnabled) {
+          case ex =>
+            val defaultDirective: Directive =
+              sup.applyOrElse(ex, (_: Any) => Escalate)
 
-          strategy.decider.applyOrElse(ex, (_: Any) => defaultDirective)
-      }
-    case s => s
+            strategy.decider.applyOrElse(ex, (_: Any) => defaultDirective)
+        }
+      case s => s
+    }
   }
 
   def onTerminated: Receive = {

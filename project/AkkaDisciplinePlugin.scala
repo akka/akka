@@ -64,10 +64,14 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-testkit")
 
   lazy val silencerSettings = {
-    val silencerVersion = "1.7.1"
+    val silencerVersion = "1.5-SNAPSHOT"
+    // TODO: FIXME
+    // val silencerVersion = "1.7.1"
     val libs = Seq(
-      compilerPlugin(("com.github.ghik" %% "silencer-plugin" % silencerVersion).cross(CrossVersion.patch)),
-      ("com.github.ghik" %% "silencer-lib" % silencerVersion % Provided).cross(CrossVersion.patch))
+      //TODO: FIXME
+      // compilerPlugin(("com.github.ghik" %% "silencer-plugin" % silencerVersion).cross(CrossVersion.patch)),
+      ("com.github.ghik" %% "silencer-lib" % silencerVersion % Provided).cross(CrossVersion.patch)
+      )
     Seq(libraryDependencies ++= (if (autoScalaLibrary.value) libs else Nil))
   }
 

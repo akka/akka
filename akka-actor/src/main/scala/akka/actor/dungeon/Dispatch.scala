@@ -24,7 +24,8 @@ import akka.serialization.Serialization
 import akka.util.Unsafe
 
 @SerialVersionUID(1L)
-final case class SerializationCheckFailedException private (msg: Object, cause: Throwable)
+// TODO DOTTY
+final case class SerializationCheckFailedException private[dungeon] (msg: Object, cause: Throwable)
     extends AkkaException(
       s"Failed to serialize and deserialize message of type ${msg.getClass.getName} for testing. " +
       "To avoid this error, either disable 'akka.actor.serialize-messages', mark the message with 'akka.actor.NoSerializationVerificationNeeded', or configure serialization to support this message",
@@ -36,8 +37,8 @@ final case class SerializationCheckFailedException private (msg: Object, cause: 
 @InternalApi
 private[akka] trait Dispatch { this: ActorCell =>
 
-  @silent @volatile private var _mailboxDoNotCallMeDirectly
-      : Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
+  // TODO DOTTY
+  @silent @volatile var _mailboxDoNotCallMeDirectly: Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
 
   @inline final def mailbox: Mailbox =
     Unsafe.instance.getObjectVolatile(this, AbstractActorCell.mailboxOffset).asInstanceOf[Mailbox]
@@ -179,8 +180,9 @@ private[akka] trait Dispatch { this: ActorCell =>
             case NonFatal(e) => throw SerializationCheckFailedException(msg, e)
           }
           envelope.message match {
-            case dl: DeadLetter => envelope.copy(message = dl.copy(message = deserializedMsg))
-            case _              => envelope.copy(message = deserializedMsg)
+            // TODO DOTTY
+            case dl: DeadLetter => envelope.copy(message = dl.copy(message = deserializedMsg), sender = self)
+            case _              => envelope.copy(message = deserializedMsg, sender = self)
           }
         }
     }

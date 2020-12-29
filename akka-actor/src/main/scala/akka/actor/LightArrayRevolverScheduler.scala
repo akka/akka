@@ -128,7 +128,10 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
         }
       }
 
-      @tailrec final def cancel(): Boolean = {
+      // TODO DOTTY
+      // Cannot rewrite recursive call: it targets a supertype
+      // @tailrec
+      final def cancel(): Boolean = {
         get match {
           case null => false
           case c =>

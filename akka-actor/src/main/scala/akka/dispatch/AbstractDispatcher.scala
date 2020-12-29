@@ -23,7 +23,10 @@ import akka.event.EventStream
 import akka.event.Logging.{ Debug, Error, LogEventException }
 import akka.util.{ unused, Index, Unsafe }
 
-final case class Envelope private (message: Any, sender: ActorRef)
+final case class Envelope private (message: Any, sender: ActorRef) {
+  // TODO DOTTY -> bug? copy method becomes private with private constructor
+  def copy(message: Any, sender: ActorRef) = Envelope(message, sender)
+}
 
 object Envelope {
   def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope = {
@@ -104,8 +107,10 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   val mailboxes = prerequisites.mailboxes
   val eventStream = prerequisites.eventStream
 
-  @silent @volatile private[this] var _inhabitantsDoNotCallMeDirectly: Long = _ // DO NOT TOUCH!
-  @silent @volatile private[this] var _shutdownScheduleDoNotCallMeDirectly: Int = _ // DO NOT TOUCH!
+  // TODO DOTTY
+  @silent @volatile protected var _inhabitantsDoNotCallMeDirectly: Long = _ // DO NOT TOUCH!
+  // TODO DOTTY
+  @silent @volatile protected var _shutdownScheduleDoNotCallMeDirectly: Int = _ // DO NOT TOUCH!
 
   private final def addInhabitants(add: Long): Long = {
     val old = Unsafe.instance.getAndAddLong(this, inhabitantsOffset, add)

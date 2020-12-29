@@ -956,7 +956,9 @@ object BoundedControlAwareMailbox {
     override def numberOfMessages: Int = size.get()
     override def hasMessages: Boolean = numberOfMessages > 0
 
-    @tailrec
+    // TODO DOTTY
+    // @tailrec
+    // Cannot rewrite recursive call: it targets a supertype
     final override def dequeue(): Envelope = {
       val count = size.get()
 

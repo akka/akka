@@ -25,7 +25,8 @@ private[akka] trait Children { this: ActorCell =>
 
   @silent("never used")
   @volatile
-  private var _childrenRefsDoNotCallMeDirectly: ChildrenContainer = EmptyChildrenContainer
+  // TODO DOTTY
+  protected var _childrenRefsDoNotCallMeDirectly: ChildrenContainer = EmptyChildrenContainer
 
   def childrenRefs: ChildrenContainer =
     Unsafe.instance.getObjectVolatile(this, AbstractActorCell.childrenOffset).asInstanceOf[ChildrenContainer]
@@ -51,7 +52,8 @@ private[akka] trait Children { this: ActorCell =>
   private[akka] def attachChild(props: Props, name: String, systemService: Boolean): ActorRef =
     makeChild(this, props, checkName(name), async = true, systemService = systemService)
 
-  @silent @volatile private var _functionRefsDoNotCallMeDirectly = Map.empty[String, FunctionRef]
+  // TODO DOTTY
+  @silent @volatile protected var _functionRefsDoNotCallMeDirectly = Map.empty[String, FunctionRef]
   private def functionRefs: Map[String, FunctionRef] =
     Unsafe.instance.getObjectVolatile(this, AbstractActorCell.functionRefsOffset).asInstanceOf[Map[String, FunctionRef]]
 
@@ -104,7 +106,8 @@ private[akka] trait Children { this: ActorCell =>
     refs.valuesIterator.foreach(_.stop())
   }
 
-  @silent @volatile private var _nextNameDoNotCallMeDirectly = 0L
+  // TODO DOTTY
+  @silent @volatile protected var _nextNameDoNotCallMeDirectly = 0L
   final protected def randomName(sb: java.lang.StringBuilder): String = {
     val num = Unsafe.instance.getAndAddLong(this, AbstractActorCell.nextNameOffset, 1)
     Helpers.base64(num, sb)

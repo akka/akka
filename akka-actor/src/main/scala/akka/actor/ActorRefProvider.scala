@@ -320,7 +320,8 @@ private[akka] object LocalActorRefProvider {
   private class SystemGuardian(override val supervisorStrategy: SupervisorStrategy, val guardian: ActorRef)
       extends Actor
       with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
-    import SystemGuardian._
+    // TODO DOTTY
+    import akka.actor.SystemGuardian._
 
     var terminationHooks = Set.empty[ActorRef]
 
@@ -330,7 +331,9 @@ private[akka] object LocalActorRefProvider {
         // termination hooks, they will reply with TerminationHookDone
         // and when all are done the systemGuardian is stopped
         context.become(terminating)
-        terminationHooks.foreach { _ ! TerminationHook }
+        // TODO DOTTY
+        terminationHooks.foreach { _ ! 
+        TerminationHook }
         stopWhenAllTerminationHooksDone()
       case Terminated(a) =>
         // a registered, and watched termination hook terminated before
@@ -391,7 +394,8 @@ private[akka] class LocalActorRefProvider private[akka] (
   override val rootPath: ActorPath = RootActorPath(Address("akka", _systemName))
 
   private[akka] val log: MarkerLoggingAdapter =
-    Logging.withMarker(eventStream, getClass)
+    // TODO DOTTY cc. patrick suggestion
+    Logging.withMarker(eventStream, Logging.simpleName(this))
 
   /*
    * This dedicated logger is used whenever a deserialization failure occurs
@@ -584,7 +588,8 @@ private[akka] class LocalActorRefProvider private[akka] (
     ref
   }
 
-  lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
+  // DOTTY TODO
+  lazy val tempContainer: VirtualPathContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
 
   def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit = {
     assert(path.parent eq tempNode, "cannot registerTempActor() with anything not obtained from tempPath()")

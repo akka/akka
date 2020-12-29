@@ -182,7 +182,8 @@ object RetrySupport extends RetrySupport {
                   }
               case None =>
                 retry(attempt, maxAttempts, delayFunction, nextAttempt)
-              case _ =>
+              // TODO DOTTY
+              case null =>
                 Future.failed(new IllegalArgumentException("The delayFunction of retry should not return null."))
             }
 

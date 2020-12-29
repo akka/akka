@@ -12,6 +12,12 @@ import akka.actor.ActorSystem
 
 class DefaultTimeoutSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with TestKitBase with DefaultTimeout {
 
+  // TODO DOTTY
+  override def run(testName: Option[String], args: org.scalatest.Args): org.scalatest.Status = ScalatestRunTest.scalatestRun(testName, args)
+
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
   implicit lazy val system: ActorSystem = ActorSystem("AkkaCustomSpec")
 
   override def afterAll() = system.terminate()

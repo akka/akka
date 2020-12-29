@@ -23,7 +23,22 @@ import akka.pattern.ask
  * @since 1.1
  */
 @silent // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
-class TestActorRef[T <: Actor](_system: ActorSystem, _props: Props, _supervisor: ActorRef, name: String) extends {
+// TODO DOTTY -> I know is ugly ...
+class TestActorRef[T <: Actor](_system: ActorSystem, _props: Props, _supervisor: ActorRef, name: String) extends LocalActorRef(
+  _system.asInstanceOf[ActorSystemImpl],
+  _props.withDispatcher(
+      if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
+      else _props.dispatcher),
+  _system.dispatchers.lookup(_props.withDispatcher(
+      if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
+      else _props.dispatcher).dispatcher),
+  _system.mailboxes.getMailboxType(_props.withDispatcher(
+      if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
+      else _props.dispatcher), _system.dispatchers.lookup(_props.withDispatcher(
+      if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
+      else _props.dispatcher).dispatcher).configurator.config),
+  _supervisor.asInstanceOf[InternalActorRef],
+  _supervisor.path / name) {
   val props =
     _props.withDispatcher(
       if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
@@ -49,13 +64,6 @@ class TestActorRef[T <: Actor](_system: ActorSystem, _props: Props, _supervisor:
         name,
         s.getClass)
   }
-} with LocalActorRef(
-  _system.asInstanceOf[ActorSystemImpl],
-  props,
-  dispatcher,
-  _system.mailboxes.getMailboxType(props, dispatcher.configurator.config),
-  _supervisor.asInstanceOf[InternalActorRef],
-  _supervisor.path / name) {
 
   // we need to start ourselves since the creation of an actor has been split into initialization and starting
   underlying.start()

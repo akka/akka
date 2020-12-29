@@ -39,8 +39,9 @@ import akka.util.unused
  * someone tries sending a message to that reference before the constructor of
  * RoutedActorRef has returned, there will be a `NullPointerException`!
  */
-@silent("@SerialVersionUID has no effect")
-@SerialVersionUID(1L)
+// TODO DOTTY
+// @silent("@SerialVersionUID has no effect")
+// @SerialVersionUID(1L)
 trait RouterConfig extends Serializable {
 
   /**
@@ -376,8 +377,9 @@ case object NoRouter extends NoRouter {
 /**
  * INTERNAL API
  */
-@silent("@SerialVersionUID has no effect")
-@SerialVersionUID(1L)
+// TODO DOTTY
+// @silent("@SerialVersionUID has no effect")
+// @SerialVersionUID(1L)
 private[akka] trait RouterManagementMesssage
 
 /**

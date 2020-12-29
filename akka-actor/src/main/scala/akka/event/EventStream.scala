@@ -10,7 +10,8 @@ import scala.annotation.tailrec
 
 import com.github.ghik.silencer.silent
 
-import akka.actor.{ ActorRef, ActorSystem }
+// TODO DOTTY -> wildcard import to import bang
+import akka.actor._
 import akka.event.Logging.simpleName
 import akka.util.Subclassification
 

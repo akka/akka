@@ -11,9 +11,8 @@ import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import scala.util.matching.Regex
 
-import akka.actor.{ ActorSystem, DeadLetter, UnhandledMessage }
-import akka.actor.Dropped
-import akka.actor.NoSerializationVerificationNeeded
+// TODO DOTTY
+import akka.actor._
 import akka.dispatch.sysmsg.{ SystemMessage, Terminate }
 import akka.event.Logging
 import akka.event.Logging.{ Debug, Error, Info, InitializeLogger, LogEvent, LoggerInitialized, Warning }

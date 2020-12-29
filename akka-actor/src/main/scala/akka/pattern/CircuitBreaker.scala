@@ -250,15 +250,18 @@ class CircuitBreaker(
    * Holds reference to current state of CircuitBreaker - *access only via helper methods*
    */
   @volatile
-  @silent("never used")
-  private[this] var _currentStateDoNotCallMeDirectly: State = Closed
+  // @silent("never used")
+  private var _currentStateDoNotCallMeDirectly: State = Closed
+  // TODO DOTTY
+  _currentStateDoNotCallMeDirectly = Closed
 
   /**
    * Holds reference to current resetTimeout of CircuitBreaker - *access only via helper methods*
    */
   @volatile
   @silent("never used")
-  private[this] var _currentResetTimeoutDoNotCallMeDirectly: FiniteDuration = resetTimeout
+  // TODO DOTTY
+  protected var _currentResetTimeoutDoNotCallMeDirectly: FiniteDuration = resetTimeout
 
   /**
    * Helper method for access to underlying state via Unsafe

@@ -250,7 +250,8 @@ private[remote] class Association(
    */
   @volatile
   @silent("never used")
-  private[this] var _sharedStateDoNotCallMeDirectly: AssociationState = AssociationState()
+  // TODO DOTTY
+  protected var _sharedStateDoNotCallMeDirectly: AssociationState = AssociationState()
 
   /**
    * Helper method for access to underlying state via Unsafe

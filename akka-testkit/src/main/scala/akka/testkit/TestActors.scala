@@ -4,7 +4,8 @@
 
 package akka.testkit
 
-import akka.actor.{ Actor, ActorRef, Props }
+// TODO DOTTY
+import akka.actor._
 
 /**
  * A collection of common actor patterns used in tests.

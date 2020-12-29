@@ -12,7 +12,8 @@ import java.nio.channels.SelectionKey._
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
-import akka.actor.{ Actor, ActorLogging, ActorRef }
+// TODO DOTTY -> wildcard import to import bang
+import akka.actor._
 import akka.actor.Status.Failure
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.SelectionHandler._

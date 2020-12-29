@@ -4,6 +4,9 @@
 
 package akka.testkit
 
+// TODO DOTTY
+import akka.actor._
+
 class TestActorsSpec extends AkkaSpec with ImplicitSender {
 
   import TestActors.{ echoActorProps, forwardActorProps }

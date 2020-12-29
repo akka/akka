@@ -60,6 +60,14 @@ abstract class AkkaSpec(_system: ActorSystem)
     with TypeCheckedTripleEquals
     with ScalaFutures {
 
+  // TODO DOTTY
+  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = ScalatestRunTest.scalatestRunTest(testName, args)
+  override def run(testName: Option[String], args: org.scalatest.Args): org.scalatest.Status = ScalatestRunTest.scalatestRun(testName, args)
+
+  // TODO DOTTY, yes I know it's wrong
+  // but for now it saves me time and diff
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
   implicit val patience: PatienceConfig = PatienceConfig(testKitSettings.DefaultTimeout.duration, Span(100, Millis))
 
   def this(config: Config) =
@@ -74,7 +82,8 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   def this() = this(ActorSystem(TestKitUtils.testNameFromCallStack(classOf[AkkaSpec], "".r), AkkaSpec.testConf))
 
-  val log: LoggingAdapter = Logging(system, this.getClass)
+  // TODO DOTTY
+  val log: LoggingAdapter = Logging(system, akka.event.Logging.simpleName(this))
 
   override val invokeBeforeAllAndAfterAllEvenIfNoTestsAreExpected = true
 

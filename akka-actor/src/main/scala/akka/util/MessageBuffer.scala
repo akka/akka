@@ -4,7 +4,8 @@
 
 package akka.util
 
-import akka.actor.{ ActorRef, Dropped }
+// TODO DOTTY -> wildcard import to import bang
+import akka.actor._
 import akka.annotation.InternalApi
 import akka.japi.function.Procedure2
 

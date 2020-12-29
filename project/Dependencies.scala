@@ -27,6 +27,7 @@ object Dependencies {
 
   val scala212Version = "2.12.11"
   val scala213Version = "2.13.3"
+  val dottyVersion = "3.0.0-M3"
 
   val reactiveStreamsVersion = "1.0.3"
 
@@ -35,27 +36,39 @@ object Dependencies {
   val scalaTestVersion = "3.1.4"
   val scalaCheckVersion = "1.15.1"
 
+  import dotty.tools.sbtplugin.DottyPlugin.autoImport.DottyCompatModuleID
+
+  private def getVersion() = {
+    // don't allow full override to keep compatible with the version of silencer
+    // don't mandate patch not specified to allow builds to migrate
+    System.getProperty("akka.build.scalaVersion", "default") match {
+      case twoThirteen if twoThirteen.startsWith("2.13") => scala213Version
+      case twoTwelve if twoTwelve.startsWith("2.12")     => scala212Version
+      case dotty if dotty.startsWith("3.0")              => dottyVersion
+      case "default"                                     => scala212Version
+      case other                                         => throw new IllegalArgumentException(s"Unsupported scala version [$other]. Must be 2.12, 2.13 or 3.0.")
+    }    
+  }
+
   val Versions =
     Seq(
-      crossScalaVersions := Seq(scala212Version, scala213Version),
-      scalaVersion := {
-        // don't allow full override to keep compatible with the version of silencer
-        // don't mandate patch not specified to allow builds to migrate
-        System.getProperty("akka.build.scalaVersion", "default") match {
-          case twoThirteen if twoThirteen.startsWith("2.13") => scala213Version
-          case twoTwelve if twoTwelve.startsWith("2.12")     => scala212Version
-          case "default"                                     => crossScalaVersions.value.head
-          case other                                         => throw new IllegalArgumentException(s"Unsupported scala version [$other]. Must be 2.12 or 2.13.")
-        }
-      },
+      crossScalaVersions := Seq(scala212Version, scala213Version, dottyVersion),
+      scalaVersion := getVersion(),
       java8CompatVersion := {
         CrossVersion.partialVersion(scalaVersion.value) match {
           // java8-compat is only used in a couple of places for 2.13,
           // it is probably possible to remove the dependency if needed.
+          // TODO: FIXME this only works if the scala version is set through java properties
+          case Some((3, _))            => "0.9.0"
           case Some((2, n)) if n >= 13 => "0.9.0"
-          case _                       => "0.8.0"
+          case x                       => "0.8.0"
         }
-      })
+      },
+      // ensure Dotty compatibility
+      // https://github.com/lampepfl/dotty/issues/2409#issuecomment-300716970
+      // trying to directly cross-compile dotty compat should be in another repo ...possibly
+      // projectDependencies ~= (_.map(DottyCompatModuleID(_).withDottyCompat(getVersion())))
+    )
 
   object Compile {
     // Compile
@@ -86,7 +99,9 @@ object Dependencies {
     val junit = "junit" % "junit" % junitVersion // Common Public License 1.0
 
     // For Java 8 Conversions
-    val java8Compat = Def.setting { "org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value } // Scala License
+    // val java8Compat = Def.setting { "org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value } // Scala License
+    // TODO FIXME
+    val java8Compat = Def.setting { "org.scala-lang.modules" % "scala-java8-compat_2.13" % java8CompatVersion.value } // Scala License
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
@@ -119,7 +134,8 @@ object Dependencies {
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
       val logback = Compile.logback % "test" // EPL 1.0
 
-      val scalatest = "org.scalatest" %% "scalatest" % scalaTestVersion % "test" // ApacheV2
+      // TODO DOTTY
+      val scalatest = "org.scalatest" % "scalatest_2.13" % scalaTestVersion % "test" // ApacheV2
       val scalacheck = "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test" // New BSD
 
       // The 'scalaTestPlus' projects are independently versioned,

@@ -6,7 +6,8 @@ package akka.routing
 
 import java.util.{ Set, TreeSet }
 
-import akka.actor.{ Actor, ActorRef }
+// TODO DOTTY -> wildcard import to import bang
+import akka.actor._
 
 sealed trait ListenerMessage
 final case class Listen(listener: ActorRef) extends ListenerMessage

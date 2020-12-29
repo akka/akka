@@ -46,7 +46,8 @@ private[io] class TcpOutgoingConnection(
   timeout.foreach(context.setReceiveTimeout) //Initiate connection timeout if supplied
 
   private def stop(cause: Throwable): Unit =
-    stopWith(CloseInformation(Set(commander), connect.failureMessage.withCause(cause)), shouldAbort = true)
+    // TODO DOTTY
+    stopWith(CloseInformation(Set(commander), CommandFailed(connect).withCause(cause)), shouldAbort = true)
 
   private def reportConnectFailure(thunk: => Unit): Unit = {
     try {
