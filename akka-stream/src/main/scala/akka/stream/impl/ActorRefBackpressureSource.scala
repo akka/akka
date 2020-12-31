@@ -4,7 +4,8 @@
 
 package akka.stream.impl
 
-import akka.actor.ActorRef
+// TODO DOTTY
+import akka.actor._
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes

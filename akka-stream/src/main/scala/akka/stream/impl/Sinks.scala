@@ -20,6 +20,7 @@ import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 
 import akka.NotUsed
+import akka.actor._
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts

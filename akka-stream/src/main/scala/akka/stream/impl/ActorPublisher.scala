@@ -13,7 +13,8 @@ import scala.util.control.NoStackTrace
 import org.reactivestreams.{ Publisher, Subscriber }
 import org.reactivestreams.Subscription
 
-import akka.actor.{ Actor, ActorRef, Terminated }
+// TODO DOTTY
+import akka.actor._
 import akka.annotation.InternalApi
 
 /**

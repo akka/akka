@@ -8,8 +8,8 @@ import scala.concurrent.Promise
 
 import com.github.ghik.silencer.silent
 
-import akka.actor.Actor
-import akka.actor.Props
+// TODO DOTTY
+import akka.actor._
 import akka.annotation.InternalApi
 import akka.stream.ActorMaterializerSettings
 import akka.stream.Materializer

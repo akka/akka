@@ -24,6 +24,8 @@ import akka.dispatch.ExecutionContexts
 import akka.japi.function
 import akka.japi.function.Creator
 import akka.stream.{ javadsl, scaladsl, _ }
+// TODO DOTTY
+import akka.stream.scaladsl._
 import akka.stream.impl.LinearTraversalBuilder
 
 /** Java API */

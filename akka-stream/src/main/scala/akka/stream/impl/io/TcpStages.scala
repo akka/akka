@@ -15,7 +15,8 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 import com.github.ghik.silencer.silent
 
 import akka.{ Done, NotUsed }
-import akka.actor.{ ActorRef, Terminated }
+// TODO DOTTY
+import akka.actor._
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.io.Inet.SocketOption

@@ -80,7 +80,8 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[F
         ]
       }
 
-      private class ZipLatestInlet[T](in: Inlet[T]) extends InHandler {
+      // TODO DOTTY
+      private[scaladsl] class ZipLatestInlet[T](in: Inlet[T]) extends InHandler {
          var value: T = _
          var hasValue = false
 

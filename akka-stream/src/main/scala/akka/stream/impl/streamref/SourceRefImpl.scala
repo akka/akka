@@ -7,7 +7,8 @@ package akka.stream.impl.streamref
 import com.github.ghik.silencer.silent
 
 import akka.NotUsed
-import akka.actor.{ ActorRef, Terminated }
+// TODO DOTTY
+import akka.actor._
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream._

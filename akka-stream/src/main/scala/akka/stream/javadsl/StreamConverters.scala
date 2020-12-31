@@ -16,6 +16,9 @@ import akka.NotUsed
 import akka.japi.function
 import akka.stream.{ javadsl, scaladsl }
 import akka.stream.IOResult
+// TODO DOTTY
+import akka.stream.scaladsl.SinkToCompletionStage
+import akka.stream.scaladsl.SourceToCompletionStage
 import akka.util.ByteString
 
 /**
