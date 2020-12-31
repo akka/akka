@@ -91,7 +91,8 @@ object Dependencies {
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
 
     // ssl-config
-    val sslConfigCore = "com.typesafe" %% "ssl-config-core" % sslConfigVersion // ApacheV2
+    // TODO DOTTY
+    val sslConfigCore = DottyCompatModuleID("com.typesafe" %% "ssl-config-core" % sslConfigVersion).withDottyCompat(getVersion()) // ApacheV2
 
     val lmdb = "org.lmdbjava" % "lmdbjava" % "0.7.0" // ApacheV2, OpenLDAP Public License
 
