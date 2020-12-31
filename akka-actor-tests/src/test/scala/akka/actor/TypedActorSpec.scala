@@ -255,6 +255,9 @@ class TypedActorSpec
     with BeforeAndAfterAll
     with DefaultTimeout {
 
+  // TODO DOTTY
+  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = akka.testkit.ScalatestRunTest.scalatestRunTest(testName, args)
+
   import akka.actor.TypedActorSpec._
 
   def newFooBar: Foo = newFooBar(timeout.duration)
@@ -578,6 +581,9 @@ class TypedActorRouterSpec
     with BeforeAndAfterEach
     with BeforeAndAfterAll
     with DefaultTimeout {
+
+  // TODO DOTTY
+  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = akka.testkit.ScalatestRunTest.scalatestRunTest(testName, args)
 
   import akka.actor.TypedActorSpec._
 

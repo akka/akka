@@ -9,9 +9,11 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem.Settings
 import akka.actor.ActorSystem.findClassLoader
 import akka.actor.setup.ActorSystemSetup
-import akka.testkit.AbstractSpec
+// TODO DOTTY AbstractSpec doesn't work? strange errors
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ProviderSelectionSpec extends AbstractSpec {
+class ProviderSelectionSpec extends AnyWordSpec with Matchers {
   import ProviderSelection.{ ClusterActorRefProvider, RemoteActorRefProvider }
 
   // TODO DOTTY, yes I know it's wrong

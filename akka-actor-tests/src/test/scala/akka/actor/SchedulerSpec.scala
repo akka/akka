@@ -415,6 +415,9 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
 
 class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRevolver) with SchedulerSpec {
 
+  // TODO DOTTY
+  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = akka.testkit.ScalatestRunTest.scalatestRunTest(testName, args)
+
   def collectCancellable(c: Cancellable): Cancellable = c
 
   def tickDuration = system.scheduler.asInstanceOf[LightArrayRevolverScheduler].TickDuration
@@ -707,7 +710,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
           prb.ref ! ns
           try time += (lbq.get match {
               case q: LinkedBlockingQueue[Long] => q.take()
-              case _                            => 0L
+              case null                            => 0L
             })
           catch {
             case _: InterruptedException => Thread.currentThread.interrupt()
@@ -719,14 +722,14 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     val driver = new Driver {
       def wakeUp(d: FiniteDuration) = lbq.get match {
         case q: LinkedBlockingQueue[Long] => q.offer(d.toNanos)
-        case _                            =>
+        case null                            =>
       }
       def expectWait(): FiniteDuration = probe.expectMsgType[Long].nanos
       def probe = prb
       def step = sched.TickDuration
       def close() = lbq.getAndSet(null) match {
         case q: LinkedBlockingQueue[Long] => q.offer(0L)
-        case _                            =>
+        case null                            =>
       }
     }
     driver.expectWait()

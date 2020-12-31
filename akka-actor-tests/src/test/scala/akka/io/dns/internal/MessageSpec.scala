@@ -11,6 +11,10 @@ import akka.io.dns.{ RecordClass, RecordType }
 import akka.util.ByteString
 
 class MessageSpec extends AnyWordSpec with Matchers {
+
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
   "The Message" should {
     "parse a response that is truncated mid-message" in {
       val bytes = ByteString(0, 4, -125, -128, 0, 1, 0, 48, 0, 0, 0, 0, 4, 109, 97, 110, 121, 4, 98, 122, 122, 116, 3,

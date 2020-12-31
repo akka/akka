@@ -251,7 +251,7 @@ class CircuitBreaker(
    */
   @volatile
   // @silent("never used")
-  private var _currentStateDoNotCallMeDirectly: State = Closed
+  var _currentStateDoNotCallMeDirectly: State = Closed
   // TODO DOTTY
   _currentStateDoNotCallMeDirectly = Closed
 
@@ -745,7 +745,8 @@ class CircuitBreaker(
   /**
    * Internal state abstraction
    */
-  private sealed trait State {
+  // TODO DOTTY
+  sealed trait State {
     private val listeners = new CopyOnWriteArrayList[Runnable]
 
     /**

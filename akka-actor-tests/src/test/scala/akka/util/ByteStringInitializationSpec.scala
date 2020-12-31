@@ -13,6 +13,10 @@ import scala.collection.mutable
 import scala.collection.mutable.ArrayBuilder
 
 class ByteStringInitializationSpec extends AnyWordSpec with Matchers {
+
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+  
   "ByteString intialization" should {
     "not get confused by initializing CompactByteString before ByteString" in {
       // a classloader that creates a new universe of classes for everything beneath akka

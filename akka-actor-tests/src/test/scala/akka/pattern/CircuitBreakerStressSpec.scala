@@ -10,9 +10,7 @@ import java.util.concurrent.TimeoutException
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 
-import akka.actor.Actor
-import akka.actor.ActorLogging
-import akka.actor.Props
+import akka.actor._
 import akka.actor.Status.Failure
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender

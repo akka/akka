@@ -97,6 +97,9 @@ class ActorWithBoundedStashSpec
     with ImplicitSender {
   import ActorWithBoundedStashSpec._
 
+    // TODO DOTTY
+  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = akka.testkit.ScalatestRunTest.scalatestRunTest(testName, args)
+
   override def atStartup(): Unit = {
     system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*hello.*")))
   }

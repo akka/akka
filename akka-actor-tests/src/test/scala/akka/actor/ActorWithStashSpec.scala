@@ -101,6 +101,9 @@ object ActorWithStashSpec {
 class ActorWithStashSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfterEach {
   import ActorWithStashSpec._
 
+    // TODO DOTTY
+  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = akka.testkit.ScalatestRunTest.scalatestRunTest(testName, args)
+
   override def atStartup(): Unit = {
     system.eventStream.publish(Mute(EventFilter[Exception]("Crashing...")))
   }

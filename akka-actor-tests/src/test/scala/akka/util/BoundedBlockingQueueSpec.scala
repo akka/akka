@@ -10,6 +10,7 @@ import java.util.concurrent.locks.{ Condition, LockSupport, ReentrantLock }
 
 import scala.collection.mutable
 import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Future }
+import scala.language.postfixOps
 import scala.util.control.Exception
 
 import org.scalactic.source.Position
@@ -30,6 +31,9 @@ class BoundedBlockingQueueSpec
     with QueueSetupHelper
     with CustomContainsMatcher
     with BlockingHelpers {
+
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
 
   import QueueTestEvents._
 

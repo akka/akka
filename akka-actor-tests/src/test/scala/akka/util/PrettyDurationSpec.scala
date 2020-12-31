@@ -9,6 +9,9 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class PrettyDurationSpec extends AnyWordSpec with Matchers {
 
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
   import scala.concurrent.duration._
 
   import akka.util.PrettyDuration._

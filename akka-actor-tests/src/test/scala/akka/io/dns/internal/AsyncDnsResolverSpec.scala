@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 
 import com.typesafe.config.{ Config, ConfigFactory, ConfigValueFactory }
 
-import akka.actor.{ ActorRef, ExtendedActorSystem, Props }
+import akka.actor._
 import akka.actor.Status.Failure
 import akka.io.SimpleDnsCache
 import akka.io.dns.{ AAAARecord, ARecord, DnsSettings, SRVRecord }

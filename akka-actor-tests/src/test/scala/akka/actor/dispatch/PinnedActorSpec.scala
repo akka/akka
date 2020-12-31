@@ -32,6 +32,10 @@ object PinnedActorSpec {
 }
 
 class PinnedActorSpec extends AkkaSpec(PinnedActorSpec.config) with BeforeAndAfterEach with DefaultTimeout {
+
+  // TODO DOTTY
+  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = akka.testkit.ScalatestRunTest.scalatestRunTest(testName, args)
+
   import PinnedActorSpec._
 
   "A PinnedActor" must {

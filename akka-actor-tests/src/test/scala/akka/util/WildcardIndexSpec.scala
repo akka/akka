@@ -9,11 +9,14 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class WildcardIndexSpec extends AnyWordSpec with Matchers {
 
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
   "wildcard index" must {
     "allow to insert elements using Arrays of strings" in {
-      emptyIndex.insert(Array("a", "b"), 1) shouldBe a[WildcardIndex[_]]
-      emptyIndex.insert(Array("a"), 1) shouldBe a[WildcardIndex[_]]
-      emptyIndex.insert(Array.empty[String], 1) shouldBe a[WildcardIndex[_]]
+      emptyIndex.insert(Array("a", "b"), 1).getClass shouldBe classOf[WildcardIndex[_]]
+      emptyIndex.insert(Array("a"), 1).getClass shouldBe classOf[WildcardIndex[_]]
+      emptyIndex.insert(Array.empty[String], 1).getClass shouldBe classOf[WildcardIndex[_]]
     }
 
     "allow to find inserted elements" in {

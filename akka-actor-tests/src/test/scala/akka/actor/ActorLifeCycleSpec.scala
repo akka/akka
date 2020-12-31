@@ -30,6 +30,9 @@ object ActorLifeCycleSpec {
 class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender with DefaultTimeout {
   import ActorLifeCycleSpec._
 
+  // TODO DOTTY
+  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = akka.testkit.ScalatestRunTest.scalatestRunTest(testName, args)
+
   "An Actor" must {
 
     "invoke preRestart, preStart, postRestart when using OneForOneStrategy" in {

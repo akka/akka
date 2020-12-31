@@ -6,10 +6,7 @@ package akka.routing
 
 import scala.concurrent.duration._
 
-import akka.actor.Actor
-import akka.actor.ActorIdentity
-import akka.actor.Identify
-import akka.actor.Props
+import akka.actor._
 import akka.testkit.AkkaSpec
 
 class RouteeCreationSpec extends AkkaSpec {

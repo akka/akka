@@ -19,6 +19,6 @@ object ScalatestRunTest extends AnyWordSpecLike {
 }
 abstract class AbstractSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterEach {
 
-  protected override def runTest(testName: String, args: Args): Status = ScalatestRunTest.scalatestRunTest(testName, args)
+  protected override def runTest(testName: String, args: Args): Status = akka.testkit.ScalatestRunTest.scalatestRunTest(testName, args)
 
 }

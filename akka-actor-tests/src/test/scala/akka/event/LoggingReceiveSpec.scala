@@ -29,6 +29,10 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
   // TODO DOTTY, yes I know it's wrong
   implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
 
+  // TODO DOTTY
+  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = akka.testkit.ScalatestRunTest.scalatestRunTest(testName, args)
+  override def run(testName: Option[String], args: org.scalatest.Args): org.scalatest.Status = ScalatestRunTest.scalatestRun(testName, args)
+
   import LoggingReceiveSpec._
   val config = ConfigFactory.parseString("""
     akka.loglevel=DEBUG # test verifies debug

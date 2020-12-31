@@ -7,9 +7,7 @@ package akka.routing
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContextExecutor
 
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Props
+import akka.actor._
 import akka.pattern.ask
 import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.routing.ConsistentHashingRouter.ConsistentHashable

@@ -24,6 +24,9 @@ object ReflectSpec {
 
 class ReflectSpec extends AnyWordSpec with Matchers {
 
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
   import akka.util.ReflectSpec._
 
   "Reflect#findConstructor" must {

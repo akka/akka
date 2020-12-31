@@ -81,8 +81,10 @@ object AkkaDisciplinePlugin extends AutoPlugin {
         Compile / scalacOptions ++= Seq("-Xfatal-warnings"),
         Test / scalacOptions --= testUndicipline,
         Compile / javacOptions ++= (
-            if (!nonFatalJavaWarningsFor(name.value)) Seq("-Werror", "-Xlint:deprecation", "-Xlint:unchecked")
-            else Seq.empty
+            // TODO DOTTY getting rid of -Werror in tests
+            // if (!nonFatalJavaWarningsFor(name.value)) Seq("-Werror", "-Xlint:deprecation", "-Xlint:unchecked")
+            // else Seq.empty
+            Seq.empty
           ),
         Compile / javacOptions in doc := Seq("-Xdoclint:none"),
         Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {

@@ -18,6 +18,10 @@ import akka.testkit.{ AkkaSpec, EventFilter }
 import akka.util.unused
 
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
+
+  // TODO DOTTY
+  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = akka.testkit.ScalatestRunTest.scalatestRunTest(testName, args)
+
   def name: String
 
   def factory: MailboxType => MessageQueue

@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.{ Config, ConfigFactory }
 import language.postfixOps
 
-import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
+import akka.actor._
 import akka.pattern.ask
 import akka.testkit._
 import akka.testkit.TestEvent._
@@ -61,7 +61,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
           enabled = on
         }
         """)
-      Resizer.fromConfig(cfg).get shouldBe a[DefaultResizer]
+      Resizer.fromConfig(cfg).get.getClass shouldBe "DefaultResizer"
     }
 
     "load MetricsBasedResizer from config when optimal-size-exploring-resizer is enabled" in {
@@ -70,7 +70,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
           enabled = on
         }
         """)
-      Resizer.fromConfig(cfg).get shouldBe a[DefaultOptimalSizeExploringResizer]
+      Resizer.fromConfig(cfg).get.getClass shouldBe "DefaultOptimalSizeExploringResizer"
     }
 
     "throws exception when both resizer and optimal-size-exploring-resizer is enabled" in {

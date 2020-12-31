@@ -61,7 +61,7 @@ abstract class AkkaSpec(_system: ActorSystem)
     with ScalaFutures {
 
   // TODO DOTTY
-  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = ScalatestRunTest.scalatestRunTest(testName, args)
+  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = akka.testkit.ScalatestRunTest.scalatestRunTest(testName, args)
   override def run(testName: Option[String], args: org.scalatest.Args): org.scalatest.Status = ScalatestRunTest.scalatestRun(testName, args)
 
   // TODO DOTTY, yes I know it's wrong

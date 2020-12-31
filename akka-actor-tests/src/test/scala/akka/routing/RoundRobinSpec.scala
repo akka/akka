@@ -11,10 +11,7 @@ import scala.concurrent.duration._
 
 import language.postfixOps
 
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.actor.Terminated
+import akka.actor._
 import akka.pattern.ask
 import akka.testkit._
 

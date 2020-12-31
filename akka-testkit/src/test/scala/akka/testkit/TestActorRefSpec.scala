@@ -111,7 +111,7 @@ object TestActorRefSpec {
 class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndAfterEach with DefaultTimeout {
 
   // TODO DOTTY
-  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = ScalatestRunTest.scalatestRunTest(testName, args)
+  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = akka.testkit.ScalatestRunTest.scalatestRunTest(testName, args)
 
   import TestActorRefSpec._
 

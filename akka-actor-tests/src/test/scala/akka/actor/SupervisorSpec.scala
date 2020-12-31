@@ -110,6 +110,9 @@ class SupervisorSpec
     with ImplicitSender
     with DefaultTimeout {
 
+  // TODO DOTTY
+  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = akka.testkit.ScalatestRunTest.scalatestRunTest(testName, args)
+
   import SupervisorSpec._
 
   val DilatedTimeout = Timeout.dilated

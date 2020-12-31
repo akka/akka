@@ -24,8 +24,12 @@ import akka.util.ByteString.{ ByteString1, ByteString1C, ByteStrings }
 
 class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
 
-  implicit val betterGeneratorDrivenConfig: PropertyCheckConfiguration =
-    PropertyCheckConfiguration().copy(minSuccessful = 1000)
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
+  // TODO DOTTy this is macro based
+  // implicit val betterGeneratorDrivenConfig: PropertyCheckConfiguration =
+  //   PropertyCheckConfiguration().copy(minSuccessful = org.scalactic.anyvals.PosInt(1000))
 
   def genSimpleByteString(min: Int, max: Int) =
     for {

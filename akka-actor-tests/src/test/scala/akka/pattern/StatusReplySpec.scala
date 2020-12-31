@@ -5,6 +5,7 @@
 package akka.pattern
 
 import akka.Done
+import akka.actor._
 import akka.testkit.AkkaSpec
 import akka.testkit.TestException
 import akka.testkit.TestProbe

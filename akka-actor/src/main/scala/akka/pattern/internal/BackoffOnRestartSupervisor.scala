@@ -43,6 +43,7 @@ import akka.pattern.{
   import context._
 
   override val supervisorStrategy: OneForOneStrategy = {
+    // TODO DOTTY
     val sup = super.supervisorStrategy.decider
     OneForOneStrategy(strategy.maxNrOfRetries, strategy.withinTimeRange, strategy.loggingEnabled) {
       case ex =>

@@ -12,8 +12,7 @@ import scala.concurrent.duration._
 
 import org.scalatest.BeforeAndAfterEach
 
-import akka.actor.{ Actor, Props }
-import akka.actor.ActorRef
+import akka.actor._
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestLatch }
 
 object BalancingSpec {
@@ -63,6 +62,9 @@ class BalancingSpec extends AkkaSpec("""
     }
     """) with ImplicitSender with BeforeAndAfterEach {
   import BalancingSpec._
+
+  // TODO DOTTY
+  protected override def runTest(testName: String, args: org.scalatest.Args): org.scalatest.Status = akka.testkit.ScalatestRunTest.scalatestRunTest(testName, args)
 
   val poolSize = 5 // must be less than fork-join parallelism-min, which is 8 in AkkaSpec
 
