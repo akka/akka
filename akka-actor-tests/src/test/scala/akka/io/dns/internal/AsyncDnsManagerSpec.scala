@@ -10,6 +10,7 @@ import scala.collection.immutable.Seq
 
 import com.github.ghik.silencer.silent
 
+import akka.actor._
 import akka.io.Dns
 import akka.io.dns.AAAARecord
 import akka.io.dns.CachePolicy.Ttl

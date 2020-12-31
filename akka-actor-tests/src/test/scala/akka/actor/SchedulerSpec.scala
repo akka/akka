@@ -87,11 +87,11 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
         collectCancellable(system.scheduler.scheduleOnce(300.millis)(countDownLatch.countDown()))
 
         // should not be run immediately
-        assert(countDownLatch.await(100, TimeUnit.MILLISECONDS) == false)
+        require(countDownLatch.await(100, TimeUnit.MILLISECONDS) == false)
         countDownLatch.getCount should ===(3L)
 
         // after 1 second the wait should fail
-        assert(countDownLatch.await(2, TimeUnit.SECONDS) == false)
+        require(countDownLatch.await(2, TimeUnit.SECONDS) == false)
         // should still be 1 left
         countDownLatch.getCount should ===(1L)
       }
@@ -692,7 +692,9 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     val prb = TestProbe()
     val tf = system.asInstanceOf[ActorSystemImpl].threadFactory
     val sched =
-      new { @volatile var time = start } with LARS(config.withFallback(system.settings.config), log, tf) {
+      // TODO DOTTY
+      new LARS(config.withFallback(system.settings.config), log, tf) {
+        @volatile var time = start
         override protected def clock(): Long = {
           // println(s"clock=$time")
           time

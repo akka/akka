@@ -143,12 +143,12 @@ object ActorModelSpec {
     }
 
     protected[akka] abstract override def register(actor: ActorCell): Unit = {
-      assert(getStats(actor.self).registers.incrementAndGet() == 1)
+      require(getStats(actor.self).registers.incrementAndGet() == 1)
       super.register(actor)
     }
 
     protected[akka] abstract override def unregister(actor: ActorCell): Unit = {
-      assert(getStats(actor.self).unregisters.incrementAndGet() == 1)
+      require(getStats(actor.self).unregisters.incrementAndGet() == 1)
       super.unregister(actor)
     }
 
@@ -181,6 +181,9 @@ object ActorModelSpec {
         throw e
     }
   }
+
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
 
   def assertCountDown(latch: CountDownLatch, wait: Long, hint: String): Unit = {
     if (!latch.await(wait, TimeUnit.MILLISECONDS))
@@ -460,12 +463,12 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
               stack.foreach(s => println(s"\t$s"))
           }
         }
-        assert(Await.result(f1, timeout.duration) === "foo")
-        assert(Await.result(f2, timeout.duration) === "bar")
-        assert(Await.result(f4, timeout.duration) === "foo2")
-        assert(intercept[ActorInterruptedException](Await.result(f3, timeout.duration)).getCause.getMessage === "Ping!")
-        assert(Await.result(f6, timeout.duration) === "bar2")
-        assert(intercept[ActorInterruptedException](Await.result(f5, timeout.duration)).getCause.getMessage === "Ping!")
+        require(Await.result(f1, timeout.duration) === "foo")
+        require(Await.result(f2, timeout.duration) === "bar")
+        require(Await.result(f4, timeout.duration) === "foo2")
+        require(intercept[ActorInterruptedException](Await.result(f3, timeout.duration)).getCause.getMessage === "Ping!")
+        require(Await.result(f6, timeout.duration) === "bar2")
+        require(intercept[ActorInterruptedException](Await.result(f5, timeout.duration)).getCause.getMessage === "Ping!")
         c.cancel()
         Thread.sleep(300) // give the EventFilters a chance of catching all messages
       }
@@ -482,12 +485,12 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val f5 = a ? InterruptNicely("baz2")
         val f6 = a ? Reply("bar2")
 
-        assert(Await.result(f1, timeout.duration) === "foo")
-        assert(Await.result(f2, timeout.duration) === "bar")
-        assert(Await.result(f3, timeout.duration) === "baz")
-        assert(Await.result(f4, timeout.duration) === "foo2")
-        assert(Await.result(f5, timeout.duration) === "baz2")
-        assert(Await.result(f6, timeout.duration) === "bar2")
+        require(Await.result(f1, timeout.duration) === "foo")
+        require(Await.result(f2, timeout.duration) === "bar")
+        require(Await.result(f3, timeout.duration) === "baz")
+        require(Await.result(f4, timeout.duration) === "foo2")
+        require(Await.result(f5, timeout.duration) === "baz2")
+        require(Await.result(f6, timeout.duration) === "bar2")
         // clear the interrupted flag (only needed for the CallingThreadDispatcher) so the next test can continue normally
         Thread.interrupted()
       }
@@ -504,12 +507,12 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val f5 = a ? ThrowException(new RemoteException("RemoteException"))
         val f6 = a ? Reply("bar2")
 
-        assert(Await.result(f1, timeout.duration) === "foo")
-        assert(Await.result(f2, timeout.duration) === "bar")
-        assert(Await.result(f4, timeout.duration) === "foo2")
-        assert(Await.result(f6, timeout.duration) === "bar2")
-        assert(f3.value.isEmpty)
-        assert(f5.value.isEmpty)
+        require(Await.result(f1, timeout.duration) === "foo")
+        require(Await.result(f2, timeout.duration) === "bar")
+        require(Await.result(f4, timeout.duration) === "foo2")
+        require(Await.result(f6, timeout.duration) === "bar2")
+        require(f3.value.isEmpty)
+        require(f5.value.isEmpty)
       }
     }
 

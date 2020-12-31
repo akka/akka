@@ -9,8 +9,7 @@ import scala.collection.immutable
 
 import Tcp._
 
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
+import akka.actor._
 import akka.dispatch.ExecutionContexts
 import akka.io.Inet.SocketOption
 import akka.testkit.{ AkkaSpec, TestProbe }

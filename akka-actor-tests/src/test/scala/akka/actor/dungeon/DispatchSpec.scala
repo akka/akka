@@ -4,7 +4,7 @@
 
 package akka.actor.dungeon
 
-import akka.actor.Actor
+import akka.actor._
 import akka.actor.Props
 import akka.testkit._
 

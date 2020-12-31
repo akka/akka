@@ -142,6 +142,9 @@ object LoggerSpec {
 
 class LoggerSpec extends AnyWordSpec with Matchers {
 
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
   import LoggerSpec._
 
   private def createSystemAndLogToBuffer(name: String, config: Config, shouldLog: Boolean) = {

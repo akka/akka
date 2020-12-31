@@ -7,7 +7,7 @@ package akka.io
 import java.net.DatagramSocket
 import java.net.InetSocketAddress
 
-import akka.actor.ActorRef
+import akka.actor._
 import akka.io.Inet._
 import akka.io.Udp._
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
@@ -99,7 +99,7 @@ class UdpIntegrationSpec extends AkkaSpec("""
       val assertOption = AssertBeforeBind()
       commander.send(IO(Udp), Bind(testActor, new InetSocketAddress("127.0.0.1", 0), options = List(assertOption)))
       commander.expectMsgType[Bound]
-      assert(assertOption.beforeCalled === 1)
+      require(assertOption.beforeCalled === 1)
     }
 
     "call SocketOption.afterConnect method after binding." in {
@@ -107,7 +107,7 @@ class UdpIntegrationSpec extends AkkaSpec("""
       val assertOption = AssertAfterChannelBind()
       commander.send(IO(Udp), Bind(testActor, new InetSocketAddress("127.0.0.1", 0), options = List(assertOption)))
       commander.expectMsgType[Bound]
-      assert(assertOption.afterCalled === 1)
+      require(assertOption.afterCalled === 1)
     }
 
     "call DatagramChannelCreator.create method when opening channel" in {
@@ -115,7 +115,7 @@ class UdpIntegrationSpec extends AkkaSpec("""
       val assertOption = AssertOpenDatagramChannel()
       commander.send(IO(Udp), Bind(testActor, new InetSocketAddress("127.0.0.1", 0), options = List(assertOption)))
       commander.expectMsgType[Bound]
-      assert(assertOption.openCalled === 1)
+      require(assertOption.openCalled === 1)
     }
   }
 
@@ -126,7 +126,7 @@ private case class AssertBeforeBind() extends SocketOption {
   var beforeCalled = 0
 
   override def beforeDatagramBind(ds: DatagramSocket): Unit = {
-    assert(!ds.isBound)
+    require(!ds.isBound)
     beforeCalled += 1
   }
 }
@@ -136,7 +136,7 @@ private case class AssertAfterChannelBind() extends SocketOptionV2 {
   var afterCalled = 0
 
   override def afterBind(s: DatagramSocket) = {
-    assert(s.isBound)
+    require(s.isBound)
     afterCalled += 1
   }
 }

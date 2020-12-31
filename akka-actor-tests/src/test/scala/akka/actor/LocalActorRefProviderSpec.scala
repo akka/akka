@@ -140,7 +140,11 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
               case Some(Failure(_: InvalidActorNameException)) => 2
               case x                                           => x
             })
-        set should ===(Set[Any](1, 2))
+        // TODO DOTTY
+        // set should ===(Set[Any](1, 2))
+        set.getClass shouldBe classOf[Set[Any]]
+        set(0) shouldBe(1)
+        set(1) shouldBe(2)
       }
     }
 

@@ -17,6 +17,9 @@ import akka.testkit.TestKit
 
 class DispatcherShutdownSpec extends AnyWordSpec with Matchers {
 
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
   "akka dispatcher" should {
 
     "eventually shutdown when used after system terminate" in {

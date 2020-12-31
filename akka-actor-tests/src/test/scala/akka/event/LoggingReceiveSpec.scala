@@ -26,6 +26,9 @@ object LoggingReceiveSpec {
 
 class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
 
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
   import LoggingReceiveSpec._
   val config = ConfigFactory.parseString("""
     akka.loglevel=DEBUG # test verifies debug
@@ -287,7 +290,7 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
             else if (gotMatching.size == messages) gotMatching
             else {
               val msg = receiveOne(remainingOrDefault)
-              assert(
+              require(
                 msg ne null,
                 s"timeout ($max) during expectMsgAllPF, got matching " +
                 s"[${gotMatching.mkString(", ")}], got unknown: [${unknown.mkString(", ")}]")
@@ -296,7 +299,7 @@ class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
             }
           }
           val set = receiveNMatching(Set.empty, Vector.empty)
-          assert(set == (0 until messages).toSet)
+          require(set == (0 until messages).toSet)
           set
         }
       }

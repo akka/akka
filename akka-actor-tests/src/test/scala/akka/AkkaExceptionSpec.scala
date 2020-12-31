@@ -16,6 +16,9 @@ import akka.actor._
  */
 class AkkaExceptionSpec extends AnyWordSpec with Matchers {
 
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
   "AkkaException" must {
     "have a AkkaException(String msg) constructor to be serialization friendly" in {
       //if the call to this method completes, we know what there is at least a single constructor which has

@@ -10,7 +10,7 @@ import scala.util.control.NoStackTrace
 
 import com.typesafe.config.ConfigFactory
 
-import akka.actor.{ Actor, ActorLogging, Props }
+import akka.actor._
 import akka.testkit.AkkaSpec
 
 @deprecated("Use SLF4J instead.", "2.6.0")

@@ -42,16 +42,16 @@ class DurationSpec extends AkkaSpec {
       (inf - minf) should ===(inf)
       (minf - inf) should ===(minf)
       (minf + minf) should ===(minf)
-      assert(inf == inf)
-      assert(minf == minf)
+      require(inf == inf)
+      require(minf == minf)
       inf.compareTo(inf) should ===(0)
       inf.compareTo(one) should ===(1)
       minf.compareTo(minf) should ===(0)
       minf.compareTo(one) should ===(-1)
-      assert(inf != minf)
-      assert(minf != inf)
-      assert(one != inf)
-      assert(minf != one)
+      require(inf != minf)
+      require(minf != inf)
+      require(one != inf)
+      require(minf != one)
     }
 
     /*"check its range" in {

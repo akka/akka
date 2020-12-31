@@ -25,6 +25,9 @@ class TestClassWithDefaultConstructor extends TestSuperclass {
 class DynamicAccessSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   val system = ActorSystem()
 
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
   "The DynamicAccess of a system" should {
     val dynamicAccess = system.asInstanceOf[ExtendedActorSystem].dynamicAccess
 
@@ -42,7 +45,8 @@ class DynamicAccessSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll
         case Success(instance) =>
           fail(s"Expected failure, found $instance")
         case Failure(e) =>
-          e shouldBe a[ClassNotFoundException]
+          // TODO DOTTY
+          e.getClass shouldBe classOf[ClassNotFoundException]
       }
     }
 
@@ -51,7 +55,7 @@ class DynamicAccessSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll
       instantiateWithDefaultOrStringCtor("akka.actor.TestClassWithDefaultConstructor").get.name shouldBe "default"
       instantiateWithDefaultOrStringCtor("akka.actor.foo.NonExistingClass") match {
         case Failure(t) =>
-          t shouldBe a[ClassNotFoundException]
+          t.getClass shouldBe classOf[ClassNotFoundException]
         case Success(instance) =>
           fail(s"unexpected instance $instance")
       }

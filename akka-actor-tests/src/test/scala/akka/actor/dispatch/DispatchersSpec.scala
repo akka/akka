@@ -176,7 +176,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
 
     "get the correct types of dispatchers" in {
       //All created/obtained dispatchers are of the expected type/instance
-      assert(typesAndValidators.forall(tuple => tuple._2(allDispatchers(tuple._1))))
+      require(typesAndValidators.forall(tuple => tuple._2(allDispatchers(tuple._1))))
     }
 
     "provide lookup of dispatchers by id" in {

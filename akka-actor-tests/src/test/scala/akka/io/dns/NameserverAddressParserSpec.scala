@@ -10,6 +10,10 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 class NameserverAddressParserSpec extends AnyWordSpec with Matchers {
+
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
   "Parser" should {
     "handle explicit port in IPv4 address" in {
       DnsSettings.parseNameserverAddress("8.8.8.8:153") shouldEqual new InetSocketAddress("8.8.8.8", 153)

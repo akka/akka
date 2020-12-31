@@ -278,7 +278,7 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
             randomFactor: Double,
             expectedResult: FiniteDuration) =>
           val calculatedValue = BackoffSupervisor.calculateDelay(restartCount, minBackoff, maxBackoff, randomFactor)
-          assert(calculatedValue === expectedResult)
+          require(calculatedValue === expectedResult)
       }
     }
 

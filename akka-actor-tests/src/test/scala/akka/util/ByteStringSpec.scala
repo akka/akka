@@ -1209,7 +1209,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
         iterator.copyToArray(array, 0, 2)
         iterator.copyToArray(array, 2, 2)
         iterator.copyToArray(array, 4, 2)
-        assert(new String(array) === "123456")
+        require(new String(array) === "123456")
       }
 
       "calling copyToArray with length passing end of destination" in {

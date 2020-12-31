@@ -11,11 +11,12 @@ import org.scalatest.wordspec.AnyWordSpec
 import akka.actor.ActorSystem
 
 class ImplicitSenderSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with TestKitBase with ImplicitSender {
-  // TODO DOTTY, yes I know it's wrong
-  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
 
   // TODO DOTTY
   override def run(testName: Option[String], args: org.scalatest.Args): org.scalatest.Status = ScalatestRunTest.scalatestRun(testName, args)
+
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
 
   override def afterAll() = system.terminate()
 

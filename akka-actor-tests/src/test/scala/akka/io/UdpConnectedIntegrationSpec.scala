@@ -8,7 +8,7 @@ import java.net.InetSocketAddress
 
 import scala.concurrent.duration._
 
-import akka.actor.ActorRef
+import akka.actor._
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.SocketUtil.temporaryServerAddresses

@@ -106,15 +106,17 @@ object ActorSystemSpec {
     override def dispatcher(): MessageDispatcher = instance
   }
 
-  val config = s"""
+  // TODO DOTTY
+  val configStr = s"""
       slow {
         type="${classOf[SlowDispatcher].getName}"
       }"""
 
 }
 
+// TODO DOTTY
 @silent
-class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSender {
+class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.configStr) with ImplicitSender {
 
   import ActorSystemSpec.FastActor
 

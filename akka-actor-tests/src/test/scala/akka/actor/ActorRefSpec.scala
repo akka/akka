@@ -466,8 +466,8 @@ class ActorRefSpec extends AkkaSpec("""
         def receive = { case name: String => sender() ! context.child(name).isDefined }
       }), "parent")
 
-      assert(Await.result((parent ? "child"), timeout.duration) === true)
-      assert(Await.result((parent ? "whatnot"), timeout.duration) === false)
+      require(Await.result((parent ? "child"), timeout.duration) === true)
+      require(Await.result((parent ? "whatnot"), timeout.duration) === false)
     }
   }
 }

@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 
 import language.postfixOps
 
-import akka.actor.{ Actor, Props }
+import akka.actor._
 import akka.pattern.ask
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
@@ -63,13 +63,13 @@ class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with Defa
     "support tell" in {
       val actor = system.actorOf(Props[OneWayTestActor]().withDispatcher("test-dispatcher"))
       actor ! "OneWay"
-      assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
+      require(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
       system.stop(actor)
     }
 
     "support ask/reply" in {
       val actor = system.actorOf(Props[TestActor]().withDispatcher("test-dispatcher"))
-      assert("World" === Await.result(actor ? "Hello", timeout.duration))
+      require("World" === Await.result(actor ? "Hello", timeout.duration))
       system.stop(actor)
     }
 
@@ -89,7 +89,7 @@ class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with Defa
         }
       }).withDispatcher(throughputDispatcher))
 
-      assert(Await.result(slowOne ? "hogexecutor", timeout.duration) === "OK")
+      require(Await.result(slowOne ? "hogexecutor", timeout.duration) === "OK")
       (1 to 100).foreach { _ =>
         slowOne ! "ping"
       }
@@ -98,7 +98,7 @@ class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with Defa
       latch.await(10, TimeUnit.SECONDS)
       system.stop(fastOne)
       system.stop(slowOne)
-      assert(latch.getCount() === 0L)
+      require(latch.getCount() === 0L)
     }
 
     "respect throughput deadline" in {
@@ -126,10 +126,10 @@ class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with Defa
       slowOne ! "hogexecutor"
       slowOne ! "ping"
       fastOne ! "ping"
-      assert(ready.await(2, TimeUnit.SECONDS) === true)
+      require(ready.await(2, TimeUnit.SECONDS) === true)
       Thread.sleep(deadline.toMillis + 10) // wait just a bit more than the deadline
       start.countDown()
-      assert(latch.await(2, TimeUnit.SECONDS) === true)
+      require(latch.await(2, TimeUnit.SECONDS) === true)
     }
   }
 }

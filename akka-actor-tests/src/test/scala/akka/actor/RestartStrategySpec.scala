@@ -100,7 +100,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
         employee ! Crash
       }
       Await.ready(countDownLatch, 2 minutes)
-      assert(!employee.isTerminated)
+      require(!employee.isTerminated)
     }
 
     "ensure that employee restarts after number of crashes not within time range" in {
@@ -158,7 +158,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
       Await.ready(thirdRestartLatch, 1 second)
 
-      assert(!employee.isTerminated)
+      require(!employee.isTerminated)
     }
 
     "ensure that employee is not restarted after max retries" in {
@@ -195,7 +195,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       // test restart and post restart ping
       Await.ready(restartLatch, 10 seconds)
 
-      assert(!employee.isTerminated)
+      require(!employee.isTerminated)
 
       // now crash again... should not restart
       employee ! Crash
@@ -209,7 +209,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       employee ! Crash
       Await.ready(stopLatch, 10 seconds)
       sleep(500L)
-      assert(employee.isTerminated)
+      require(employee.isTerminated)
     }
 
     "ensure that employee is not restarted within time range" in {
@@ -248,7 +248,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
       // test restart and post restart ping
       Await.ready(restartLatch, 10 seconds)
 
-      assert(!employee.isTerminated)
+      require(!employee.isTerminated)
 
       // now crash again... should not restart
       employee ! Crash
@@ -264,7 +264,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
       Await.ready(maxNoOfRestartsLatch, 10 seconds)
       sleep(500L)
-      assert(employee.isTerminated)
+      require(employee.isTerminated)
     }
   }
 }

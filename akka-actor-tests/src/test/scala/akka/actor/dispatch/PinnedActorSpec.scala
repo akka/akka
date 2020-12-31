@@ -10,7 +10,7 @@ import scala.concurrent.Await
 
 import org.scalatest.BeforeAndAfterEach
 
-import akka.actor.{ Actor, Props }
+import akka.actor._
 import akka.pattern.ask
 import akka.testkit._
 import akka.testkit.AkkaSpec
@@ -41,13 +41,13 @@ class PinnedActorSpec extends AkkaSpec(PinnedActorSpec.config) with BeforeAndAft
       val actor = system.actorOf(
         Props(new Actor { def receive = { case "OneWay" => oneWay.countDown() } }).withDispatcher("pinned-dispatcher"))
       actor ! "OneWay"
-      assert(oneWay.await(1, TimeUnit.SECONDS))
+      require(oneWay.await(1, TimeUnit.SECONDS))
       system.stop(actor)
     }
 
     "support ask/reply" in {
       val actor = system.actorOf(Props[TestActor]().withDispatcher("pinned-dispatcher"))
-      assert("World" === Await.result(actor ? "Hello", timeout.duration))
+      require("World" === Await.result(actor ? "Hello", timeout.duration))
       system.stop(actor)
     }
   }

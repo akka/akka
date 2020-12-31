@@ -19,6 +19,10 @@ import akka.io.dns.DnsProtocol
 import akka.io.dns.DnsProtocol.Ip
 
 class SimpleDnsCacheSpec extends AnyWordSpec with Matchers {
+  
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
   "Cache" should {
     "not reply with expired but not yet swept out entries" in {
       val localClock = new AtomicLong(0)

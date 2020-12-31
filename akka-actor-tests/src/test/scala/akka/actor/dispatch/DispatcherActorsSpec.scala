@@ -50,9 +50,9 @@ class DispatcherActorsSpec extends AkkaSpec {
 
       // now assert that f is finished while s is still busy
       fFinished.await()
-      assert(sFinished.getCount > 0)
+      require(sFinished.getCount > 0)
       sFinished.await()
-      assert(sFinished.getCount === 0L)
+      require(sFinished.getCount === 0L)
       system.stop(f)
       system.stop(s)
     }

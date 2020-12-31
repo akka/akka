@@ -65,7 +65,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
 
   lazy val silencerSettings = {
     val silencerVersion = "1.5-SNAPSHOT"
-    // TODO: FIXME
+    // TODO: FIXME DOTTY (using a locally published version of silencer...)
     // val silencerVersion = "1.7.1"
     val libs = Seq(
       //TODO: FIXME

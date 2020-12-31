@@ -168,12 +168,13 @@ class CoordinatedShutdownSpec
       val task2 = co.addCancellableTask("a", "copy2")(createTask("copy2"))
       val task3 = co.addCancellableTask("a", "copy3")(createTask("copy3"))
 
-      assert(!task1.isCancelled)
-      assert(!task2.isCancelled)
-      assert(!task3.isCancelled)
+      // TODO DOTTY
+      require(!task1.isCancelled)
+      require(!task2.isCancelled)
+      require(!task3.isCancelled)
 
       task2.cancel()
-      assert(task2.isCancelled)
+      require(task2.isCancelled)
 
       val messagesFut = Future {
         probe.receiveN(2, 3.seconds).map(_.toString)
@@ -205,11 +206,11 @@ class CoordinatedShutdownSpec
       val task3 = co.addCancellableTask("a", taskName)(task)
 
       List(task1, task2, task3).foreach { t =>
-        assert(!t.isCancelled)
+        require(!t.isCancelled)
       }
 
       task1.cancel()
-      assert(task1.isCancelled)
+      require(task1.isCancelled)
 
       val messagesFut = Future {
         testProbe.receiveN(2, 3.seconds).map(_.toString)

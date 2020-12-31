@@ -236,7 +236,12 @@ class ActorMailboxSpec(conf: Config) extends AkkaSpec(conf) with DefaultTimeout 
 
     actor ! "ping"
     val q = expectMsgType[MessageQueue]
-    types.foreach(t => assert(t.isInstance(q), s"Type [${q.getClass.getName}] is not assignable to [${t.getName}]"))
+    // TODO DOTTY
+    import scala.language.postfixOps
+    types.foreach(t =>
+      // require(t.isInstance(q), s"Type [${q.getClass.getName}] is not assignable to [${t.getName}]")
+      t.isInstance(q).shouldBe(true)
+    )
     q
   }
 

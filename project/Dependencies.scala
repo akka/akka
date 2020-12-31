@@ -7,6 +7,7 @@ package akka
 import sbt._
 import Keys._
 import scala.language.implicitConversions
+import dotty.tools.sbtplugin.DottyPlugin.autoImport.DottyCompatModuleID
 
 object Dependencies {
   import DependencyHelpers._
@@ -36,9 +37,7 @@ object Dependencies {
   val scalaTestVersion = "3.1.4"
   val scalaCheckVersion = "1.15.1"
 
-  import dotty.tools.sbtplugin.DottyPlugin.autoImport.DottyCompatModuleID
-
-  private def getVersion() = {
+  def getVersion() = {
     // don't allow full override to keep compatible with the version of silencer
     // don't mandate patch not specified to allow builds to migrate
     System.getProperty("akka.build.scalaVersion", "default") match {
@@ -99,9 +98,8 @@ object Dependencies {
     val junit = "junit" % "junit" % junitVersion // Common Public License 1.0
 
     // For Java 8 Conversions
-    // val java8Compat = Def.setting { "org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value } // Scala License
-    // TODO FIXME
-    val java8Compat = Def.setting { "org.scala-lang.modules" % "scala-java8-compat_2.13" % java8CompatVersion.value } // Scala License
+    // TODO DOTTY
+    val java8Compat = Def.setting { DottyCompatModuleID("org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value).withDottyCompat(getVersion()) } // Scala License
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
@@ -135,16 +133,16 @@ object Dependencies {
       val logback = Compile.logback % "test" // EPL 1.0
 
       // TODO DOTTY
-      val scalatest = "org.scalatest" % "scalatest_2.13" % scalaTestVersion % "test" // ApacheV2
-      val scalacheck = "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test" // New BSD
+      val scalatest = DottyCompatModuleID("org.scalatest" %% "scalatest" % scalaTestVersion % "test").withDottyCompat(getVersion()) // ApacheV2
+      val scalacheck = DottyCompatModuleID("org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test").withDottyCompat(getVersion()) // New BSD
 
       // The 'scalaTestPlus' projects are independently versioned,
       // but the version of each module starts with the scalatest
       // version it was intended to work with
-      val scalatestJUnit = "org.scalatestplus" %% "junit-4-13" % (scalaTestVersion + ".0") % "test" // ApacheV2
-      val scalatestTestNG = "org.scalatestplus" %% "testng-6-7" % (scalaTestVersion + ".0") % "test" // ApacheV2
-      val scalatestScalaCheck = "org.scalatestplus" %% "scalacheck-1-14" % (scalaTestVersion + ".0") % "test" // ApacheV2
-      val scalatestMockito = "org.scalatestplus" %% "mockito-3-3" % (scalaTestVersion + ".0") % "test" // ApacheV2
+      val scalatestJUnit = DottyCompatModuleID("org.scalatestplus" %% "junit-4-13" % (scalaTestVersion + ".0") % "test").withDottyCompat(getVersion()) // ApacheV2
+      val scalatestTestNG = DottyCompatModuleID("org.scalatestplus" %% "testng-6-7" % (scalaTestVersion + ".0") % "test").withDottyCompat(getVersion()) // ApacheV2
+      val scalatestScalaCheck = DottyCompatModuleID("org.scalatestplus" %% "scalacheck-1-14" % (scalaTestVersion + ".0") % "test").withDottyCompat(getVersion()) // ApacheV2
+      val scalatestMockito = DottyCompatModuleID("org.scalatestplus" %% "mockito-3-3" % (scalaTestVersion + ".0") % "test").withDottyCompat(getVersion()) // ApacheV2
 
       val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % "test" // ApacheV2
       val tinybundles = "org.ops4j.pax.tinybundles" % "tinybundles" % "3.0.0" % "test" // ApacheV2

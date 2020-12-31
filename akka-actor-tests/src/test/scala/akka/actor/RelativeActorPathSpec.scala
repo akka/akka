@@ -13,6 +13,9 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class RelativeActorPathSpec extends AnyWordSpec with Matchers {
 
+  // TODO DOTTY, yes I know it's wrong
+  implicit val pos: org.scalactic.source.Position = new org.scalactic.source.Position(fileName = "", filePathname = "", lineNumber = 1)
+
   def elements(path: String): immutable.Seq[String] = RelativeActorPath.unapply(path).getOrElse(Nil)
 
   "RelativeActorPath" must {

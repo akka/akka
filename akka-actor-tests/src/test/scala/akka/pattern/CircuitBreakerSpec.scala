@@ -159,7 +159,7 @@ class CircuitBreakerSpec extends AkkaSpec {
       val breaker = shortResetTimeoutCb()
       intercept[TestException] { breaker().withSyncCircuitBreaker(throwException) }
       checkLatch(breaker.halfOpenLatch)
-      assert("hi" == breaker().withSyncCircuitBreaker(sayHi))
+      require("hi" == breaker().withSyncCircuitBreaker(sayHi))
       checkLatch(breaker.closedLatch)
     }
 

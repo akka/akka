@@ -11,8 +11,7 @@ import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionC
 import scala.concurrent.{ blocking, Await, Future, Promise }
 import scala.concurrent.duration._
 
-import akka.actor.Actor
-import akka.actor.Props
+import akka.actor._
 import akka.testkit.{ AkkaSpec, DefaultTimeout, TestLatch }
 import akka.testkit.CallingThreadDispatcher
 import akka.testkit.TestActorRef

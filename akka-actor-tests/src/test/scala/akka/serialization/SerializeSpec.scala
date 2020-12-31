@@ -454,16 +454,16 @@ class AllowJavaSerializationSpec extends AkkaSpec(SerializationTests.allowJavaSe
     }
 
     "serialize Address" in {
-      assert(ser.deserialize(ser.serialize(address).get, classOf[SerializationTests.Address]).get === address)
+      require(ser.deserialize(ser.serialize(address).get, classOf[SerializationTests.Address]).get === address)
     }
 
     "serialize Person" in {
-      assert(ser.deserialize(ser.serialize(person).get, classOf[Person]).get === person)
+      require(ser.deserialize(ser.serialize(person).get, classOf[Person]).get === person)
     }
 
     "serialize record with Java serializer" in {
       val r = Record(100, person)
-      assert(ser.deserialize(ser.serialize(r).get, classOf[Record]).get === r)
+      require(ser.deserialize(ser.serialize(r).get, classOf[Record]).get === r)
     }
 
     "not serialize ActorCell" in {
