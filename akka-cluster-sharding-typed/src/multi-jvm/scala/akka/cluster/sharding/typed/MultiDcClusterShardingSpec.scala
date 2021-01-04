@@ -5,10 +5,8 @@
 package akka.cluster.sharding.typed
 
 import scala.concurrent.duration._
-
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
-
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.cluster.MultiNodeClusterSpec
@@ -57,6 +55,9 @@ abstract class MultiDcClusterShardingSpec
 
   import MultiDcClusterShardingSpecConfig._
   import MultiDcPinger._
+
+  override implicit def patienceConfig: PatienceConfig =
+    PatienceConfig(testKitSettings.DefaultTimeout.duration, 100.millis)
 
   val typeKey = EntityTypeKey[Command]("ping")
   val entityId = "ping-1"
