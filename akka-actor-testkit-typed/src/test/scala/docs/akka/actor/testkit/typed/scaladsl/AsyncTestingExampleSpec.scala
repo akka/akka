@@ -29,7 +29,7 @@ import scala.util.Try
 object AsyncTestingExampleSpec {
   //#under-test
   object Echo {
-    case class Ping(message: String, response: ActorRef[Pong])
+    case class Ping(message: String, response: RecipientRef[Pong])
     case class Pong(message: String)
 
     def apply(): Behavior[Ping] = Behaviors.receiveMessage {
@@ -78,6 +78,9 @@ class AsyncTestingExampleSpec
       val probe = testKit.createTestProbe[Echo.Pong]()
       pinger ! Echo.Ping("hello", probe.ref)
       probe.expectMessage(Echo.Pong("hello"))
+      // One can also use a TestProbe directly as a RecipientRef
+      pinger ! Echo.Ping("hello again", probe)
+      probe.expectMessage(Echo.Pong("hello again"))
       //#test-spawn
     }
 
@@ -86,7 +89,7 @@ class AsyncTestingExampleSpec
       val pinger = testKit.spawn(Echo())
       //#test-spawn-anonymous
       val probe = testKit.createTestProbe[Echo.Pong]()
-      pinger ! Echo.Ping("hello", probe.ref)
+      pinger ! Echo.Ping("hello", probe)
       probe.expectMessage(Echo.Pong("hello"))
     }
 
@@ -95,13 +98,13 @@ class AsyncTestingExampleSpec
       val probe = testKit.createTestProbe[Echo.Pong]()
       //#test-stop-actors
       val pinger1 = testKit.spawn(Echo(), "pinger")
-      pinger1 ! Echo.Ping("hello", probe.ref)
+      pinger1 ! Echo.Ping("hello", probe)
       probe.expectMessage(Echo.Pong("hello"))
       testKit.stop(pinger1) // Uses default timeout
 
       // Immediately creating an actor with the same name
       val pinger2 = testKit.spawn(Echo(), "pinger")
-      pinger2 ! Echo.Ping("hello", probe.ref)
+      pinger2 ! Echo.Ping("hello", probe)
       probe.expectMessage(Echo.Pong("hello"))
       testKit.stop(pinger2, 10.seconds) // Custom timeout
       //#test-stop-actors
