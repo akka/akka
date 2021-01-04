@@ -171,4 +171,6 @@ trait PoolRouter[T] extends Behavior[T] {
    * Set the props used to spawn the pool's routees
    */
   def withRouteeProps(routeeProps: Props): PoolRouter[T]
+
+  def withBroadcastPredicate(pred: T => Boolean): PoolRouter[T]
 }

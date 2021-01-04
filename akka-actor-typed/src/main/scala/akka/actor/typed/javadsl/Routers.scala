@@ -181,4 +181,6 @@ abstract class PoolRouter[T] extends DeferredBehavior[T] {
    * Set the props used to spawn the pool's routees
    */
   def withRouteeProps(routeeProps: Props): PoolRouter[T]
+
+  def withBroadcastPredicate(pred: akka.japi.Predicate[T]): PoolRouter[T]
 }

@@ -118,32 +118,34 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
     "supports broadcast" in {
       trait Cmd
       case object ReplyWithAck extends Cmd
-      case class BCast(cmd : Cmd) extends Cmd
+      case class BCast(cmd: Cmd) extends Cmd
 
       val atomicInt = new AtomicInteger(0)
       val probe = testKit.createTestProbe[AnyRef]()
 
-      val behavior = Behaviors
-        .receiveMessage[Cmd]{
-          case ReplyWithAck =>
-            val reply = Integer.valueOf(atomicInt.incrementAndGet())
-            probe.ref ! reply
-            Behaviors.same
-          case BCast(cmd) =>
-            fail("totally unacceptable")
-        }
-      val router = testKit
-        .spawn(Routers.pool(4)(behavior))
-      router ! ReplyWithAck
+      val behavior = Behaviors.receiveMessage[Cmd] {
+        case ReplyWithAck =>
+          val reply = Integer.valueOf(atomicInt.incrementAndGet())
+          probe.ref ! reply
+          Behaviors.same
+        case BCast(BCast(_)) =>
+          fail("totally unacceptable")
+        case BCast(ReplyWithAck) =>
+          val reply = Integer.valueOf(atomicInt.incrementAndGet())
+          probe.ref ! reply
+          Behaviors.same
+      }
+      val router = testKit.spawn(Routers.pool(4)(behavior).withBroadcastPredicate(_.isInstanceOf[BCast]))
+      router ! BCast(ReplyWithAck)
 
       val expected = (1 to 4).map(Integer.valueOf).toSet
       val actual = probe
         .receiveMessages(4)
-        .map{
-          case i : Integer => i
+        .map {
+          case i: Integer => i
         }
         .toSet
-      actual should equal (expected)
+      actual should equal(expected)
 
       probe.expectNoMessage()
     }

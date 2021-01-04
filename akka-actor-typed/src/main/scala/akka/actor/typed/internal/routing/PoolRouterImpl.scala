@@ -5,11 +5,11 @@
 package akka.actor.typed.internal.routing
 
 import java.util.function
-
 import akka.actor.typed._
 import akka.actor.typed.javadsl.PoolRouter
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
 import akka.annotation.InternalApi
+import akka.japi.Predicate
 
 /**
  * INTERNAL API
@@ -19,6 +19,7 @@ private[akka] final case class PoolRouterBuilder[T](
     poolSize: Int,
     behavior: Behavior[T],
     logicFactory: ActorSystem[_] => RoutingLogic[T] = (_: ActorSystem[_]) => new RoutingLogics.RoundRobinLogic[T],
+    broadcastPredicate: T => Boolean = (_: T) => false,
     routeeProps: Props = Props.empty)
     extends javadsl.PoolRouter[T]
     with scaladsl.PoolRouter[T] {
@@ -26,7 +27,13 @@ private[akka] final case class PoolRouterBuilder[T](
 
   // deferred creation of the actual router
   def apply(ctx: TypedActorContext[T]): Behavior[T] =
-    new PoolRouterImpl[T](ctx.asScala, poolSize, behavior, logicFactory(ctx.asScala.system), routeeProps)
+    new PoolRouterImpl[T](
+      ctx.asScala,
+      poolSize,
+      behavior,
+      logicFactory(ctx.asScala.system),
+      broadcastPredicate,
+      routeeProps)
 
   def withRandomRouting(): PoolRouterBuilder[T] = copy(logicFactory = _ => new RoutingLogics.RandomLogic[T]())
 
@@ -43,6 +50,10 @@ private[akka] final case class PoolRouterBuilder[T](
   def withPoolSize(poolSize: Int): PoolRouterBuilder[T] = copy(poolSize = poolSize)
 
   def withRouteeProps(routeeProps: Props): PoolRouterBuilder[T] = copy(routeeProps = routeeProps)
+
+  override def withBroadcastPredicate(pred: Predicate[T]): PoolRouter[T] = withBroadcastPredicate(pred.test _)
+
+  override def withBroadcastPredicate(pred: T => Boolean): scaladsl.PoolRouter[T] = copy(broadcastPredicate = pred)
 }
 
 /**
@@ -54,6 +65,7 @@ private final class PoolRouterImpl[T](
     poolSize: Int,
     behavior: Behavior[T],
     logic: RoutingLogic[T],
+    broadcastPredicate: T => Boolean,
     routeeProps: Props)
     extends AbstractBehavior[T](ctx) {
 
@@ -70,7 +82,11 @@ private final class PoolRouterImpl[T](
   }
 
   def onMessage(msg: T): Behavior[T] = {
-    logic.selectRoutee(msg) ! msg
+    if (broadcastPredicate(msg)) {
+      ctx.children.foreach(_.unsafeUpcast ! msg)
+    } else {
+      logic.selectRoutee(msg) ! msg
+    }
     this
   }
 
