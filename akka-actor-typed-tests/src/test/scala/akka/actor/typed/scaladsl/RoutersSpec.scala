@@ -6,7 +6,7 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-import akka.actor.{ActorPath, ActorSystem}
+import akka.actor.{ ActorPath, ActorSystem }
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -113,14 +113,12 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       }
     }
 
-
-
     "support broadcast" must {
       trait Cmd
       case object ReplyWithAck extends Cmd
       case class BCast(cmd: Cmd) extends Cmd
 
-      def behavior(replyTo : ActorRef[AnyRef]) = Behaviors.setup[Cmd] { ctx =>
+      def behavior(replyTo: ActorRef[AnyRef]) = Behaviors.setup[Cmd] { ctx =>
         Behaviors.receiveMessage[Cmd] {
           case ReplyWithAck =>
             val reply = ctx.self.path
@@ -145,17 +143,13 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
 
       "when enabled" in {
         val probe = testKit.createTestProbe[AnyRef]()
-        val pool = testKit.spawn(Routers
-          .pool(4)(behavior(probe.ref))
-          .withBroadcastPredicate(_.isInstanceOf[BCast]))
+        val pool = testKit.spawn(Routers.pool(4)(behavior(probe.ref)).withBroadcastPredicate(_.isInstanceOf[BCast]))
         pool ! BCast(ReplyWithAck)
-        val msgs = probe
-          .receiveMessages(4)
-          .map{m =>
-            m should be (an[ActorPath])
-            m.asInstanceOf[ActorPath]
-          }
-        msgs should equal (msgs.distinct)
+        val msgs = probe.receiveMessages(4).map { m =>
+          m should be(an[ActorPath])
+          m.asInstanceOf[ActorPath]
+        }
+        msgs should equal(msgs.distinct)
         probe.expectNoMessage()
       }
 

@@ -7,7 +7,7 @@ package akka.actor.typed.internal.routing
 import java.util.function
 import akka.actor.typed._
 import akka.actor.typed.javadsl.PoolRouter
-import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
 import akka.annotation.InternalApi
 import akka.util.ConstantFun
 
