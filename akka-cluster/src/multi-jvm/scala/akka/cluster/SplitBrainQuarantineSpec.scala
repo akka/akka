@@ -24,7 +24,7 @@ object SplitBrainQuarantineSpec extends MultiNodeConfig {
 
   testTransport(on = true)
   commonConfig(
-    debugConfig(on = false)
+    debugConfig(on = true)
       .withFallback(MultiNodeClusterSpec.clusterConfig)
       .withFallback(ConfigFactory.parseString(
         """
@@ -32,7 +32,8 @@ object SplitBrainQuarantineSpec extends MultiNodeConfig {
         akka.cluster.downing-provider-class = "akka.cluster.sbr.SplitBrainResolverProvider"
         # we dont really want this to hit, but we need the sbr enabled to know the quarantining
         # downing does not trigger
-        akka.cluster.split-brain-resolver.stable-after = 5 minutes 
+        akka.cluster.split-brain-resolver.stable-after = 5 minutes
+        akka.cluster.debug.verbose-gossip-logging = on
         """)))
 }
 
