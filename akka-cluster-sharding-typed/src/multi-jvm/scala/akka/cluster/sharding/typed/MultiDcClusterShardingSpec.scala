@@ -16,7 +16,6 @@ import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.typed.{ MultiDcPinger, MultiNodeTypedClusterSpec }
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.util.Timeout
-import org.scalatest.time.Span
 
 object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
   val first = role("first")
