@@ -7,9 +7,11 @@ package akka.actor.typed.internal.routing
 import java.util.function
 import akka.actor.typed._
 import akka.actor.typed.javadsl.PoolRouter
-import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
+import akka.actor.typed.scaladsl.{AbstractBehavior, ActorContext, Behaviors}
 import akka.annotation.InternalApi
-import akka.japi.Predicate
+import akka.util.ConstantFun
+
+import java.util.function.Predicate
 
 /**
  * INTERNAL API
@@ -19,7 +21,7 @@ private[akka] final case class PoolRouterBuilder[T](
     poolSize: Int,
     behavior: Behavior[T],
     logicFactory: ActorSystem[_] => RoutingLogic[T] = (_: ActorSystem[_]) => new RoutingLogics.RoundRobinLogic[T],
-    broadcastPredicate: T => Boolean = (_: T) => false,
+    broadcastPredicate: T => Boolean = ConstantFun.anyToFalse,
     routeeProps: Props = Props.empty)
     extends javadsl.PoolRouter[T]
     with scaladsl.PoolRouter[T] {
@@ -82,7 +84,7 @@ private final class PoolRouterImpl[T](
   }
 
   def onMessage(msg: T): Behavior[T] = {
-    if (broadcastPredicate(msg)) {
+    if ((broadcastPredicate ne ConstantFun.anyToFalse) && broadcastPredicate(msg)) {
       ctx.children.foreach(_.unsafeUpcast ! msg)
     } else {
       logic.selectRoutee(msg) ! msg

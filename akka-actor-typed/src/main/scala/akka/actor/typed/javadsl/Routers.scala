@@ -10,6 +10,8 @@ import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder
 import akka.actor.typed.receptionist.ServiceKey
 import akka.annotation.DoNotInherit
 
+import java.util.function.Predicate
+
 object Routers {
 
   /**
@@ -186,5 +188,5 @@ abstract class PoolRouter[T] extends DeferredBehavior[T] {
    * install a predicate that identifies messages intended to be broadcasted to all routees.
    * @param pred paredicate used to determine if a message is to be broadcasted or not.
    */
-  def withBroadcastPredicate(pred: akka.japi.Predicate[T]): PoolRouter[T]
+  def withBroadcastPredicate(pred: Predicate[T]): PoolRouter[T]
 }

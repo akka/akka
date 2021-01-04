@@ -4,11 +4,9 @@
 
 package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
-
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
-
-import akka.actor.ActorSystem
+import akka.actor.{ActorPath, ActorSystem}
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -115,39 +113,52 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       }
     }
 
-    "supports broadcast" in {
+
+
+    "support broadcast" must {
       trait Cmd
       case object ReplyWithAck extends Cmd
       case class BCast(cmd: Cmd) extends Cmd
 
-      val atomicInt = new AtomicInteger(0)
-      val probe = testKit.createTestProbe[AnyRef]()
-
-      val behavior = Behaviors.receiveMessage[Cmd] {
-        case ReplyWithAck =>
-          val reply = Integer.valueOf(atomicInt.incrementAndGet())
-          probe.ref ! reply
-          Behaviors.same
-        case BCast(BCast(_)) =>
-          fail("totally unacceptable")
-        case BCast(ReplyWithAck) =>
-          val reply = Integer.valueOf(atomicInt.incrementAndGet())
-          probe.ref ! reply
-          Behaviors.same
-      }
-      val router = testKit.spawn(Routers.pool(4)(behavior).withBroadcastPredicate(_.isInstanceOf[BCast]))
-      router ! BCast(ReplyWithAck)
-
-      val expected = (1 to 4).map(Integer.valueOf).toSet
-      val actual = probe
-        .receiveMessages(4)
-        .map {
-          case i: Integer => i
+      def behavior(replyTo : ActorRef[AnyRef]) = Behaviors.setup[Cmd] { ctx =>
+        Behaviors.receiveMessage[Cmd] {
+          case ReplyWithAck =>
+            val reply = ctx.self.path
+            replyTo ! reply
+            Behaviors.same
+          case BCast(BCast(_)) =>
+            fail("totally unacceptable")
+          case BCast(ReplyWithAck) =>
+            val reply = ctx.self.path
+            replyTo ! reply
+            Behaviors.same
         }
-        .toSet
-      actual should equal(expected)
+      }
 
-      probe.expectNoMessage()
+      "when disabled" in {
+        val probe = testKit.createTestProbe[AnyRef]()
+        val pool = testKit.spawn(Routers.pool(4)(behavior(probe.ref)))
+        pool ! BCast(ReplyWithAck)
+        probe.expectMessageType[ActorPath]
+        probe.expectNoMessage()
+      }
+
+      "when enabled" in {
+        val probe = testKit.createTestProbe[AnyRef]()
+        val pool = testKit.spawn(Routers
+          .pool(4)(behavior(probe.ref))
+          .withBroadcastPredicate(_.isInstanceOf[BCast]))
+        pool ! BCast(ReplyWithAck)
+        val msgs = probe
+          .receiveMessages(4)
+          .map{m =>
+            m should be (an[ActorPath])
+            m.asInstanceOf[ActorPath]
+          }
+        msgs should equal (msgs.distinct)
+        probe.expectNoMessage()
+      }
+
     }
 
   }
