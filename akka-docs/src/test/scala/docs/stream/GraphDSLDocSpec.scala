@@ -12,10 +12,11 @@ import akka.testkit.AkkaSpec
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
+import scala.concurrent.ExecutionContext
 
 class GraphDSLDocSpec extends AkkaSpec {
 
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   "build simple graph" in {
     //format: OFF

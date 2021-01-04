@@ -124,6 +124,30 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       expectMsg(completeMessage)
     }
 
+    "send message only when backpressure received with any ack message" in assertAllStagesStopped {
+      val fw = createActor(classOf[Fw2])
+      val publisher = TestSource
+        .probe[Int]
+        .to(Sink.actorRefWithBackpressure(fw, initMessage, completeMessage, _ => failMessage))
+        .run()
+      expectMsg(initMessage)
+
+      publisher.sendNext(1)
+      expectNoMessage(200.millis)
+      fw ! TriggerAckMessage
+      expectMsg(1)
+
+      publisher.sendNext(2)
+      publisher.sendNext(3)
+      publisher.sendComplete()
+      fw ! TriggerAckMessage
+      expectMsg(2)
+      fw ! TriggerAckMessage
+      expectMsg(3)
+
+      expectMsg(completeMessage)
+    }
+
     "keep on sending even after the buffer has been full" in assertAllStagesStopped {
       val bufferSize = 16
       val streamElementCount = bufferSize + 4

@@ -9,7 +9,7 @@ import scalafix.sbt.ScalafixPlugin
 object ScalaFixForJdk9Plugin extends AutoPlugin with ScalafixSupport {
   override def trigger: PluginTrigger = allRequirements
   import Jdk9._
-  override def requires: Plugins = Jdk9
+  override def requires: Plugins = Jdk9 && ScalafixPlugin
 
   import ScalafixPlugin.autoImport.scalafixConfigSettings
   import sbt._
@@ -23,9 +23,9 @@ object ScalaFixForJdk9Plugin extends AutoPlugin with ScalafixSupport {
       scalafixIgnoredSetting ++ Seq(
       updateProjectCommands(
         alias = "fixall",
-        value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;scalafmtAll;test:compile;multi-jvm:compile;reload"),
+        value = ";scalafixEnable;scalafixAll;scalafmtAll;test:compile;multi-jvm:compile;reload"),
       updateProjectCommands(
         alias = "sortImports",
-        value = ";scalafixEnable;compile:scalafix SortImports;test:scalafix SortImports;CompileJdk9:scalafix SortImports;TestJdk9:scalafix SortImports;scalafmtAll")
+        value = ";scalafixEnable;scalafixAll SortImports;scalafmtAll")
     )
 }

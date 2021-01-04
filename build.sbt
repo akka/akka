@@ -1,5 +1,7 @@
 import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
 
+ThisBuild / scalafixScalaBinaryVersion := scalaBinaryVersion.value
+
 enablePlugins(
   UnidocRoot,
   UnidocWithPrValidation,
@@ -9,6 +11,7 @@ enablePlugins(
   ScalafixIgnoreFilePlugin,
   JavaFormatterPlugin)
 disablePlugins(MimaPlugin)
+
 
 // check format and headers
 TaskKey[Unit]("verifyCodeFmt") := {
@@ -29,11 +32,11 @@ addCommandAlias("applyCodeStyle", "headerCreateAll; javafmtAll; scalafmtAll")
 addCommandAlias(
   name = "fixall",
   value =
-    ";scalafixEnable; compile:scalafix; test:scalafix; multi-jvm:scalafix; scalafmtAll; test:compile; multi-jvm:compile; reload")
+    ";scalafixEnable; scalafixAll; scalafmtAll; test:compile; multi-jvm:compile; reload")
 
 addCommandAlias(
   name = "sortImports",
-  value = ";scalafixEnable; compile:scalafix SortImports; test:scalafix SortImports; scalafmtAll")
+  value = ";scalafixEnable; scalafixAll SortImports; scalafmtAll")
 
 import akka.AkkaBuild._
 import akka.{ AkkaBuild, Dependencies, OSGi, Protobuf, SigarLoader, VersionGenerator }
@@ -248,7 +251,7 @@ lazy val docs = akkaModule("akka-docs")
     StreamOperatorsIndexGenerator,
     Jdk9)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
-  .disablePlugins(ScalafixPlugin)
+  .disablePlugins((if (ScalafixSupport.fixTestScope) Nil else Seq(ScalafixPlugin)): _*)
 
 lazy val jackson = akkaModule("akka-serialization-jackson")
   .dependsOn(
@@ -332,6 +335,7 @@ lazy val protobuf = akkaModule("akka-protobuf")
   .settings(AutomaticModuleName.settings("akka.protobuf"))
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
+  .settings(autoScalaLibrary := false) // Pure java project
 
 lazy val protobufV3 = akkaModule("akka-protobuf-v3")
   .settings(OSGi.protobufV3)

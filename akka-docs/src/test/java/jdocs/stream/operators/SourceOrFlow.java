@@ -23,9 +23,11 @@ import akka.japi.function.Function2;
 // #interleave
 // #merge
 // #merge-sorted
+import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Source;
 import akka.stream.javadsl.Sink;
-import java.util.Arrays;
+
+import java.util.*;
 
 // #merge-sorted
 // #merge
@@ -44,10 +46,9 @@ import akka.stream.Attributes;
 // #log
 
 import java.time.Duration;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.IntSupplier;
 
 class SourceOrFlow {
   private static ActorSystem system = null;
@@ -475,6 +476,72 @@ class SourceOrFlow {
             .watch(ref)
             .recover(akka.stream.WatchedActorTerminatedException.class, () -> ref + " terminated");
     // #watch
+  }
+
+  void groupByExample() {
+    // #groupBy
+    Source.range(1, 10)
+        .groupBy(2, i -> i % 2 == 0) // create two sub-streams with odd and even numbers
+        .reduce(Integer::sum) // for each sub-stream, sum its elements
+        .mergeSubstreams() // merge back into a stream
+        .runForeach(System.out::println, system);
+    // 25
+    // 30
+    // #groupBy
+  }
+
+  void watchTerminationExample() {
+    // #watchTermination
+    Source.range(1, 5)
+        .watchTermination(
+            (prevMatValue, completionStage) -> {
+              completionStage.whenComplete(
+                  (done, exc) -> {
+                    if (done != null)
+                      System.out.println("The stream materialized " + prevMatValue.toString());
+                    else System.out.println(exc.getMessage());
+                  });
+              return prevMatValue;
+            })
+        .runForeach(System.out::println, system);
+
+    /*
+    Prints:
+    1
+    2
+    3
+    4
+    5
+    The stream materialized NotUsed
+     */
+
+    Source.range(1, 5)
+        .watchTermination(
+            (prevMatValue, completionStage) -> {
+              // this function will be run when the stream terminates
+              // the CompletionStage provided as a second parameter indicates whether
+              // the stream completed successfully or failed
+              completionStage.whenComplete(
+                  (done, exc) -> {
+                    if (done != null)
+                      System.out.println("The stream materialized " + prevMatValue.toString());
+                    else System.out.println(exc.getMessage());
+                  });
+              return prevMatValue;
+            })
+        .runForeach(
+            element -> {
+              if (element == 3) throw new Exception("Boom");
+              else System.out.println(element);
+            },
+            system);
+    /*
+    Prints:
+    1
+    2
+    Boom
+     */
+    // #watchTermination
   }
 
   static CompletionStage<Done> completionTimeoutExample() {

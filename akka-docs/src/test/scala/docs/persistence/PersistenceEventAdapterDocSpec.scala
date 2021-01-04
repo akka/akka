@@ -14,7 +14,7 @@ import scala.collection.immutable
 
 class PersistenceEventAdapterDocSpec(config: String) extends AkkaSpec(config) {
 
-  def this() = {
+  def this() =
     this("""
       akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
 
@@ -65,7 +65,6 @@ class PersistenceEventAdapterDocSpec(config: String) extends AkkaSpec(config) {
         }
       }
     """)
-  }
 
   "MyAutomaticJsonEventAdapter" must {
     "demonstrate how to implement a JSON adapter" in {

@@ -5,7 +5,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, Materializer }
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import com.github.ghik.silencer.silent
 
@@ -19,7 +19,7 @@ class FlowZipWithIndexSpec extends StreamSpec {
 //#zip-with-index
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: Materializer = ActorMaterializer(settings)
 
   "A ZipWithIndex for Flow " must {
 

@@ -1583,6 +1583,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     override def toString = s"SubSourceOutlet($name)"
   }
 
+  override def toString: String =
+    attributes.get[Attributes.Name].map(attr => s"${getClass.toString}-${attr.n}").getOrElse(getClass.toString)
+
 }
 
 /**

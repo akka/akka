@@ -108,7 +108,7 @@ object Dependencies {
     val logback = "ch.qos.logback" % "logback-classic" % logbackVersion // EPL 1.0
 
     object Docs {
-      val sprayJson = "io.spray" %% "spray-json" % "1.3.5" % "test"
+      val sprayJson = "io.spray" %% "spray-json" % "1.3.6" % "test"
       val gson = "com.google.code.gson" % "gson" % "2.8.6" % "test"
     }
 

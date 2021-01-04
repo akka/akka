@@ -12,6 +12,7 @@ import akka.actor.Props
 import akka.cluster.ddata.DistributedData
 import akka.cluster.ddata.LWWMap
 import akka.cluster.ddata.LWWMapKey
+import akka.cluster.ddata.SelfUniqueAddress
 
 object ShoppingCart {
   import akka.cluster.ddata.Replicator._
@@ -38,7 +39,7 @@ class ShoppingCart(userId: String) extends Actor {
   import akka.cluster.ddata.Replicator._
 
   val replicator = DistributedData(context.system).replicator
-  implicit val node = DistributedData(context.system).selfUniqueAddress
+  implicit val node: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
 
   val DataKey = LWWMapKey[String, LineItem]("cart-" + userId)
 

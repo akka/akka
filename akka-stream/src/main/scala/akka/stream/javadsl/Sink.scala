@@ -262,6 +262,27 @@ object Sink {
   /**
    * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
    * First element is always `onInitMessage`, then stream is waiting for acknowledgement message
+   * from the given actor which means that it is ready to process
+   * elements. It also requires an ack message after each stream element
+   * to make backpressure work. This variant will consider any message as ack message.
+   *
+   * If the target actor terminates the stream will be canceled.
+   * When the stream is completed successfully the given `onCompleteMessage`
+   * will be sent to the destination actor.
+   * When the stream is completed with failure - result of `onFailureMessage(throwable)`
+   * message will be sent to the destination actor.
+   */
+  def actorRefWithBackpressure[In](
+      ref: ActorRef,
+      onInitMessage: Any,
+      onCompleteMessage: Any,
+      onFailureMessage: function.Function[Throwable, Any]): Sink[In, NotUsed] =
+    new Sink(
+      scaladsl.Sink.actorRefWithBackpressure[In](ref, onInitMessage, onCompleteMessage, t => onFailureMessage(t)))
+
+  /**
+   * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
+   * First element is always `onInitMessage`, then stream is waiting for acknowledgement message
    * `ackMessage` from the given actor which means that it is ready to process
    * elements. It also requires `ackMessage` message after each stream element
    * to make backpressure work.
