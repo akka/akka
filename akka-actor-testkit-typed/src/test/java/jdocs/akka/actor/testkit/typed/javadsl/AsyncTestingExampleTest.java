@@ -132,6 +132,8 @@ public class AsyncTestingExampleTest
     TestProbe<Echo.Pong> probe = testKit.createTestProbe();
     pinger.tell(new Echo.Ping("hello", probe.ref()));
     probe.expectMessage(new Echo.Pong("hello"));
+    // For situations where one can use any RecipientRef, a TestProbe can be
+    // used directly
     pinger.tell(new Echo.Ping("hello again", probe));
     probe.expectMessage(new Echo.Pong("hello again"));
     // #test-spawn
