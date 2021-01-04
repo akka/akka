@@ -28,6 +28,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
 import akka.actor.typed.Terminated
 import akka.actor.typed.internal.InternalRecipientRef
+import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.japi.function.Creator
@@ -395,10 +396,11 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
 
   def tell(m: M) = testActor.tell(m)
 
-  // impl InternalRecipientRef, ask isn't supported
-  def provider: ActorRefProvider = throw new UnsupportedOperationException("ask pattern not supported")
+  // impl InternalRecipientRef
+  def provider: ActorRefProvider =
+    ActorSystemAdapter(system.classicSystem).asInstanceOf[ActorSystemAdapter[Nothing]].provider
 
-  // impl InternalRecipientRef, only used by ask pattern
+  // impl InternalRecipientRef
   def isTerminated: Boolean = false
 
   override private[akka] def asJava: JavaTestProbe[M] = this
