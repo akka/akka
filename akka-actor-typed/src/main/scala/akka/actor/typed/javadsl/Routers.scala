@@ -182,5 +182,9 @@ abstract class PoolRouter[T] extends DeferredBehavior[T] {
    */
   def withRouteeProps(routeeProps: Props): PoolRouter[T]
 
+  /**
+   * install a predicate that identifies messages intended to be broadcasted to all routees.
+   * @param pred paredicate used to determine if a message is to be broadcasted or not.
+   */
   def withBroadcastPredicate(pred: akka.japi.Predicate[T]): PoolRouter[T]
 }

@@ -172,5 +172,9 @@ trait PoolRouter[T] extends Behavior[T] {
    */
   def withRouteeProps(routeeProps: Props): PoolRouter[T]
 
+  /**
+   * install a predicate that identifies messages intended to be broadcasted to all routees.
+   * @param pred paredicate used to determine if a message is to be broadcasted or not.
+   */
   def withBroadcastPredicate(pred: T => Boolean): PoolRouter[T]
 }
