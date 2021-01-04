@@ -534,7 +534,7 @@ private[akka] class Shard(
   private def receiveMemberEvent(event: MemberEvent): Unit = event match {
     case _: MemberReadyForShutdown | _: MemberPreparingForShutdown =>
       if (!preparingForShutdown) {
-        log.info("{}. Preparing for shutdown", typeName)
+        log.info("{}: Preparing for shutdown", typeName)
         preparingForShutdown = true
       }
     case _ =>
