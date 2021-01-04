@@ -6,6 +6,7 @@ package jdocs.akka.actor.testkit.typed.javadsl;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.RecipientRef;
 import akka.actor.typed.Scheduler;
 import akka.actor.typed.javadsl.AskPattern;
 import akka.actor.typed.javadsl.Behaviors;
@@ -39,9 +40,9 @@ public class AsyncTestingExampleTest
   public static class Echo {
     public static class Ping {
       public final String message;
-      public final ActorRef<Pong> replyTo;
+      public final RecipientRef<Pong> replyTo;
 
-      public Ping(String message, ActorRef<Pong> replyTo) {
+      public Ping(String message, RecipientRef<Pong> replyTo) {
         this.message = message;
         this.replyTo = replyTo;
       }
@@ -131,6 +132,8 @@ public class AsyncTestingExampleTest
     TestProbe<Echo.Pong> probe = testKit.createTestProbe();
     pinger.tell(new Echo.Ping("hello", probe.ref()));
     probe.expectMessage(new Echo.Pong("hello"));
+    pinger.tell(new Echo.Ping("hello again", probe));
+    probe.expectMessage(new Echo.Pong("hello again"));
     // #test-spawn
   }
 
