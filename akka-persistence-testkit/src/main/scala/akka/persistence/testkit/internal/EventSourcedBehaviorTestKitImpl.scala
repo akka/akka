@@ -172,13 +172,15 @@ import akka.stream.scaladsl.Sink
   }
 
   private def preCommandCheck(command: Command): Unit = {
-    if (serializationSettings.enabled && serializationSettings.verifyCommands)
-      verifySerializationAndThrow(command, "Command")
+    if (serializationSettings.enabled) {
+      if (serializationSettings.verifyCommands)
+        verifySerializationAndThrow(command, "Command")
 
-    if (serializationSettings.enabled && !emptyStateVerified) {
-      val emptyState = getState()
-      verifySerializationAndThrow(emptyState, "Empty State")
-      emptyStateVerified = true
+      if (serializationSettings.verifyState && !emptyStateVerified) {
+        val emptyState = getState()
+        verifySerializationAndThrow(emptyState, "Empty State")
+        emptyStateVerified = true
+      }
     }
   }
 
