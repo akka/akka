@@ -349,7 +349,8 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         // not counting for example "akkaSource", but it shouldn't have any other entries
         .withCustom(logEvent =>
           logEvent.mdc.keysIterator.forall(entry =>
-            entry.startsWith("akka") || entry == "sourceActorSystem" || entry == "static"))
+            entry.startsWith("akka") || entry == "sourceActorSystem" || entry == "static") &&
+          logEvent.mdc("static") == "1")
         .expect {
           spawn(behaviors)
         }
