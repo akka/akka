@@ -151,6 +151,10 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
         }
         msgs should equal(msgs.distinct)
         probe.expectNoMessage()
+
+        pool ! ReplyWithAck
+        probe.expectMessageType[ActorPath]
+        probe.expectNoMessage()
       }
 
     }
