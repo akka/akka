@@ -37,14 +37,6 @@ public class RouterTest {
       }
     }
 
-    static class DoBroadcastLog implements Command {
-      public final String text;
-
-      public DoBroadcastLog(String text) {
-        this.text = text;
-      }
-    }
-
     static final Behavior<Command> create() {
       return Behaviors.setup(
           context -> {
@@ -52,7 +44,6 @@ public class RouterTest {
 
             return Behaviors.receive(Command.class)
                 .onMessage(DoLog.class, doLog -> onDoLog(context, doLog))
-                .onMessage(DoBroadcastLog.class, doBCast -> onDoBroadcast(context, doBCast))
                 .build();
           });
     }
@@ -61,15 +52,17 @@ public class RouterTest {
       context.getLog().info("Got message {}", doLog.text);
       return Behaviors.same();
     }
-
-    private static Behavior<Command> onDoBroadcast(
-        ActorContext<Command> context, DoBroadcastLog doBCast) {
-      context.getLog().info("Got broadcast message {}", doBCast.text);
-      return Behaviors.same();
-    }
   }
 
   // #routee
+
+  // intentionally outside the routee scope
+  static class DoBroadcastLog extends Worker.DoLog {
+
+    public DoBroadcastLog(String text) {
+      super(text);
+    }
+  }
 
   static Behavior<Void> showPoolRouting() {
     return
@@ -105,7 +98,7 @@ public class RouterTest {
 
           // #broadcast
           PoolRouter<Worker.Command> broadcastingPool =
-              pool.withBroadcastPredicate(msg -> msg instanceof Worker.DoBroadcastLog);
+              pool.withBroadcastPredicate(msg -> msg instanceof DoBroadcastLog);
           // #broadcast
 
           return Behaviors.empty();
