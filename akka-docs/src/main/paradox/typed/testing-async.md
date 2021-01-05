@@ -49,6 +49,9 @@ The following demonstrates:
 * Creating a `TestProbe`
 * Verifying that the actor under test responds via the `TestProbe`
 
+Note that it is possible to use a `TestProbe` directly as a @apidoc[akka.actor.typed.RecipientRef] (a common supertype of `ActorRef` and @ref:[Cluster Sharding](cluster-sharding.md)
+`EntityRef`), in cases where a message protocol uses `RecipientRef` instead of specifying `ActorRef` or `EntityRef`.
+
 Scala
 :  @@snip [AsyncTestingExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/AsyncTestingExampleSpec.scala) { #test-spawn }
 

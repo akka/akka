@@ -17,6 +17,7 @@ import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
 import akka.actor.ActorRefProvider
+import akka.actor.ExtendedActorSystem
 import akka.actor.testkit.typed.FishingOutcome
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.javadsl.{ TestProbe => JavaTestProbe }
@@ -28,7 +29,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
 import akka.actor.typed.Terminated
 import akka.actor.typed.internal.InternalRecipientRef
-import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.japi.function.Creator
@@ -398,7 +398,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
 
   // impl InternalRecipientRef
   def provider: ActorRefProvider =
-    ActorSystemAdapter(system.classicSystem).asInstanceOf[ActorSystemAdapter[Nothing]].provider
+    system.classicSystem.asInstanceOf[ExtendedActorSystem].provider
 
   // impl InternalRecipientRef
   def isTerminated: Boolean = false
