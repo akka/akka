@@ -5,6 +5,7 @@
 package docs.akka.typed
 
 import akka.actor.typed.DispatcherSelector
+import docs.akka.typed.RouterSpec.Worker.DoBroadcastLog
 // #pool
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.{ Behavior, SupervisorStrategy }
@@ -19,6 +20,7 @@ object RouterSpec {
   object Worker {
     sealed trait Command
     case class DoLog(text: String) extends Command
+    case class DoBroadcastLog(text: String) extends Command
 
     def apply(): Behavior[Command] = Behaviors.setup { context =>
       context.log.info("Starting worker")
@@ -26,6 +28,9 @@ object RouterSpec {
       Behaviors.receiveMessage {
         case DoLog(text) =>
           context.log.info("Got message {}", text)
+          Behaviors.same
+        case DoBroadcastLog(text) =>
+          context.log.info("Got broadcast message {}", text)
           Behaviors.same
       }
     }
@@ -87,13 +92,19 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
           val alternativeRouter = ctx.spawn(alternativePool, "alternative-pool")
           alternativeRouter ! Worker.DoLog("msg")
           //#pool
-          Behaviors.empty
 
+          // #broadcast
+          val poolWithBroadcast = pool.withBroadcastPredicate(_.isInstanceOf[DoBroadcastLog])
+          val routerWithBroadcast = ctx.spawn(poolWithBroadcast, "pool-with-broadcast")
+          //this will be sent to all 4 routees
+          routerWithBroadcast ! DoBroadcastLog("msg")
+          Behaviors.empty
+        // #broadcast
         }
         //#pool
       )
 
-      probe.receiveMessages(11)
+      probe.receiveMessages(15)
     }
 
     "show group routing" in {
