@@ -67,7 +67,7 @@ object TestProbe {
  * Not for user extension
  */
 @DoNotInherit
-abstract class TestProbe[M] extends RecipientRef[M] { self: InternalRecipientRef[M] =>
+abstract class TestProbe[M] extends RecipientRef[M] { this: InternalRecipientRef[M] =>
 
   implicit protected def settings: TestKitSettings
 
