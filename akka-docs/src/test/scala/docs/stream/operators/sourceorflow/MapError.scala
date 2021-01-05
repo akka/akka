@@ -21,7 +21,7 @@ object MapError extends App {
     .map(1 / _)
     .mapError {
       case _: ArithmeticException =>
-        throw new UnsupportedOperationException("Divide by Zero Operation is not supported.") with NoStackTrace
+        new UnsupportedOperationException("Divide by Zero Operation is not supported.") with NoStackTrace
     }
     .runWith(Sink.seq)
     .onComplete {
