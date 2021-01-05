@@ -38,11 +38,11 @@ public class RouterTest {
     }
 
     static class DoBroadcastLog implements Command {
-        public final String text;
+      public final String text;
 
-        public DoBroadcastLog(String text) {
-            this.text = text;
-        }
+      public DoBroadcastLog(String text) {
+        this.text = text;
+      }
     }
 
     static final Behavior<Command> create() {
@@ -62,10 +62,11 @@ public class RouterTest {
       return Behaviors.same();
     }
 
-      private static Behavior<Command> onDoBroadcast(ActorContext<Command> context, DoBroadcastLog doBCast) {
-          context.getLog().info("Got broadcast message {}", doBCast.text);
-          return Behaviors.same();
-      }
+    private static Behavior<Command> onDoBroadcast(
+        ActorContext<Command> context, DoBroadcastLog doBCast) {
+      context.getLog().info("Got broadcast message {}", doBCast.text);
+      return Behaviors.same();
+    }
   }
 
   // #routee
@@ -103,7 +104,8 @@ public class RouterTest {
           // #strategy
 
           // #broadcast
-            PoolRouter<Worker.Command> broadcastingPool = pool.withBroadcastPredicate(msg -> msg instanceof Worker.DoBroadcastLog);
+          PoolRouter<Worker.Command> broadcastingPool =
+              pool.withBroadcastPredicate(msg -> msg instanceof Worker.DoBroadcastLog);
           // #broadcast
 
           return Behaviors.empty();

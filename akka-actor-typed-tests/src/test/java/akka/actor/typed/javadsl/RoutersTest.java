@@ -19,10 +19,8 @@ public class RoutersTest {
   }
 
   public void poolBroadcastCompileOnlyApiTest() {
-    Behavior<String> b = Behaviors
-            .receiveMessage( (String str) -> Behaviors.same() );
-    Behavior<String> poolBehavior = Routers
-            .pool(5, b)
-            .withBroadcastPredicate( str -> str.startsWith("bc-"));
+    Behavior<String> b = Behaviors.receiveMessage((String str) -> Behaviors.same());
+    Behavior<String> poolBehavior =
+        Routers.pool(5, b).withBroadcastPredicate(str -> str.startsWith("bc-"));
   }
 }
