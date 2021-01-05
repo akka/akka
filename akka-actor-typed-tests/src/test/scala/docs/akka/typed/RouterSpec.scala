@@ -5,7 +5,6 @@
 package docs.akka.typed
 
 import akka.actor.typed.DispatcherSelector
-import docs.akka.typed.RouterSpec.Worker.DoBroadcastLog
 // #pool
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.{ Behavior, SupervisorStrategy }
@@ -20,7 +19,6 @@ object RouterSpec {
   object Worker {
     sealed trait Command
     case class DoLog(text: String) extends Command
-    case class DoBroadcastLog(text: String) extends Command
 
     def apply(): Behavior[Command] = Behaviors.setup { context =>
       context.log.info("Starting worker")
@@ -29,14 +27,18 @@ object RouterSpec {
         case DoLog(text) =>
           context.log.info("Got message {}", text)
           Behaviors.same
-        case DoBroadcastLog(text) =>
-          context.log.info("Got broadcast message {}", text)
-          Behaviors.same
       }
     }
   }
 
   // #routee
+
+  //intentionally out of the routee section
+  class DoBroadcastLog(text: String) extends Worker.DoLog(text)
+  object DoBroadcastLog {
+    def apply(text: String) = new DoBroadcastLog(text)
+  }
+
   // This code is extra indented for visualization purposes
   // format: OFF
   // #group

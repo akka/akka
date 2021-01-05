@@ -57,15 +57,21 @@ The routees, however, are spawned by the router.
 Therefore, the `PoolRouter` has a property to configure the `Props` of its routees:
 
 Scala
-:  @@snip [RouterSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/RouterSpec.scala) { #broadcast }
+:  @@snip [RouterSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/RouterSpec.scala) { #pool-dispatcher }
 
 Java
-:  @@snip [RouterTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/RouterTest.java) { #broadcast }
+:  @@snip [RouterTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/RouterTest.java) { #pool-dispatcher }
 
 ### Broadcasting a message to all routees
 
 Pool routers can be configured to identify messages intended to be broad-casted to all routees.
-Therefore, the `PoolRouter` has a property to configure its `broadcastPredicate`: 
+Therefore, the `PoolRouter` has a property to configure its `broadcastPredicate`:
+
+Scala
+:  @@snip [RouterSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/RouterSpec.scala) { #broadcast }
+
+Java
+:  @@snip [RouterTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/RouterTest.java) { #broadcast }
 
 ## Group Router
 
