@@ -264,6 +264,7 @@ class CircuitBreaker(
     _currentStateDoNotCallMeDirectly
     _currentResetTimeoutDoNotCallMeDirectly
   }
+
   /**
    * Helper method for access to underlying state via Unsafe
    *

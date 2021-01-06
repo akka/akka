@@ -262,12 +262,14 @@ class TypedActorSpec
     akka.actor.TypedActor(system).typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)))
 
   def newFooBar(dispatcher: String, d: FiniteDuration): Foo =
-    akka.actor.TypedActor(system).typedActorOf(
-      TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)).withDispatcher(dispatcher))
+    akka.actor
+      .TypedActor(system)
+      .typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)).withDispatcher(dispatcher))
 
   def newStacked(): Stacked =
-    akka.actor.TypedActor(system).typedActorOf(
-      TypedProps[StackedImpl](classOf[Stacked], classOf[StackedImpl]).withTimeout(timeout))
+    akka.actor
+      .TypedActor(system)
+      .typedActorOf(TypedProps[StackedImpl](classOf[Stacked], classOf[StackedImpl]).withTimeout(timeout))
 
   def mustStop(typedActor: AnyRef) = akka.actor.TypedActor(system).stop(typedActor) should ===(true)
 

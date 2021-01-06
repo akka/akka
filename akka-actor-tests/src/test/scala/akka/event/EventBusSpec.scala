@@ -38,7 +38,7 @@ abstract class EventBusSpec(busName: String, conf: Config = ConfigFactory.empty(
   def classifierFor(event: bus.Event): bus.Classifier
 
   def disposeSubscriber(system: ActorSystem, subscriber: bus.Subscriber): Unit
-  
+
   busName must {
     def createNewSubscriber() = createSubscriber(testActor).asInstanceOf[bus.Subscriber]
     def getClassifierFor(event: bus.Event) = classifierFor(event).asInstanceOf[bus.Classifier]

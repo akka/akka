@@ -42,7 +42,7 @@ private[akka] trait Dispatch { this: ActorCell =>
   @silent private def _preventPrivateUnusedErasure = {
     _mailboxDoNotCallMeDirectly
   }
-  
+
   @inline final def mailbox: Mailbox =
     Unsafe.instance.getObjectVolatile(this, AbstractActorCell.mailboxOffset).asInstanceOf[Mailbox]
 
