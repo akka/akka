@@ -4,7 +4,7 @@
 
 package akka.pattern;
 
-import akka.actor.Actor;
+import akka.actor.ActorRef;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import akka.testkit.TestException;
@@ -81,7 +81,7 @@ public class StatusReplyTest extends JUnitSuite {
 
     CompletionStage<Object> response = askWithStatus(probe.ref(), "request", Duration.ofSeconds(3));
     probe.expectMsg("request");
-    probe.lastSender().tell(StatusReply.success("woho"), Actor.noSender());
+    probe.lastSender().tell(StatusReply.success("woho"), ActorRef.noSender());
 
     Object result = response.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals("woho", result);
@@ -93,7 +93,7 @@ public class StatusReplyTest extends JUnitSuite {
 
     CompletionStage<Object> response = askWithStatus(probe.ref(), "request", Duration.ofSeconds(3));
     probe.expectMsg("request");
-    probe.lastSender().tell(StatusReply.error("boho"), Actor.noSender());
+    probe.lastSender().tell(StatusReply.error("boho"), ActorRef.noSender());
 
     try {
       Object result = response.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -110,7 +110,7 @@ public class StatusReplyTest extends JUnitSuite {
 
     CompletionStage<Object> response = askWithStatus(probe.ref(), "request", Duration.ofSeconds(3));
     probe.expectMsg("request");
-    probe.lastSender().tell(StatusReply.error(new TestException("boho")), Actor.noSender());
+    probe.lastSender().tell(StatusReply.error(new TestException("boho")), ActorRef.noSender());
 
     try {
       Object result = response.toCompletableFuture().get(3, TimeUnit.SECONDS);
