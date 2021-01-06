@@ -6,7 +6,7 @@ package akka.actor
 import java.lang.{ StringBuilder => JStringBuilder }
 import java.net.MalformedURLException
 
-import scala.annotation.{ switch, tailrec }
+import scala.annotation.tailrec
 import scala.collection.immutable
 
 import com.github.ghik.silencer.silent
@@ -87,7 +87,7 @@ object ActorPath {
   final def validatePathElement(element: String, fullPath: String): Unit = {
     def fullPathMsg = if (fullPath ne null) s""" (in path [$fullPath])""" else ""
 
-    (findInvalidPathElementCharPosition(element): @switch) match {
+    (findInvalidPathElementCharPosition(element)) match {
       case ValidPathCode =>
       // valid
       case EmptyPathCode =>
