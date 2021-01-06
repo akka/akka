@@ -129,6 +129,12 @@ private[akka] trait Children { this: ActorCell =>
     actor.asInstanceOf[InternalActorRef].stop()
   }
 
+  @silent private def _preventPrivateUnusedErasure = {
+    _childrenRefsDoNotCallMeDirectly
+    _functionRefsDoNotCallMeDirectly
+    _nextNameDoNotCallMeDirectly
+  }
+
   /*
    * low level CAS helpers
    */
