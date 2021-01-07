@@ -6,7 +6,7 @@ package akka.cluster.client.protobuf
 
 import java.io.NotSerializableException
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.ExtendedActorSystem
 import akka.cluster.client.ClusterReceptionist
@@ -18,7 +18,7 @@ import akka.util.ccompat.JavaConverters._
 /**
  * INTERNAL API: Serializer of ClusterClient messages.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[akka] class ClusterClientMessageSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest
     with BaseSerializer {

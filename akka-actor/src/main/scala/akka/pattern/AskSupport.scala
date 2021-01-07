@@ -11,7 +11,7 @@ import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import scala.language.implicitConversions
 import scala.util.{ Failure, Success }
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import akka.actor._
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.ExecutionContexts
@@ -529,11 +529,11 @@ private[akka] final class PromiseActorRef private (
    * Stopped               => stopped, path not yet created
    */
   @volatile
-  @silent("never used")
+  @nowarn("msg=never used")
   private[this] var _stateDoNotCallMeDirectly: AnyRef = _
 
   @volatile
-  @silent("never used")
+  @nowarn("msg=never used")
   private[this] var _watchedByDoNotCallMeDirectly: Set[ActorRef] = ActorCell.emptyActorRefSet
 
   @inline

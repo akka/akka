@@ -8,7 +8,7 @@ import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.immutable
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
@@ -96,7 +96,7 @@ trait ClusterMetricsEvent
 final case class ClusterMetricsChanged(nodeMetrics: Set[NodeMetrics]) extends ClusterMetricsEvent {
 
   /** Java API */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def getNodeMetrics: java.lang.Iterable[NodeMetrics] =
     scala.collection.JavaConverters.asJavaIterableConverter(nodeMetrics).asJava
 }

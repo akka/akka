@@ -9,9 +9,9 @@ import org.reactivestreams.Publisher
 
 import scala.concurrent.duration._
 import akka.testkit.EventFilter
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent // keep unused imports
+@nowarn // keep unused imports
 class FlowZipWithSpec extends BaseTwoStreamsSetup {
 
 //#zip-with

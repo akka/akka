@@ -9,7 +9,7 @@ import java.util.concurrent.ThreadLocalRandom
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.reactivestreams.Publisher
 import org.scalatest.matchers.should.Matchers
 
@@ -235,7 +235,7 @@ trait ScriptedTest extends Matchers {
 
   }
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def runScript[In, Out, M](script: Script[In, Out])(op: Flow[In, In, NotUsed] => Flow[In, Out, M])(
       implicit system: ActorSystem): Unit =
     runScript(script, SystemMaterializer(system).materializer.settings)(op)(system)

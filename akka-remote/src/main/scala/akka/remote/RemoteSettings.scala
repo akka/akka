@@ -7,7 +7,7 @@ package akka.remote
 import scala.collection.immutable
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.ConfigurationException
@@ -47,7 +47,7 @@ final class RemoteSettings(val config: Config) {
   /**
    * INTERNAL API
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   @InternalApi private[akka] def untrustedMode: Boolean =
     if (Artery.Enabled) Artery.UntrustedMode else UntrustedMode
   @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
@@ -69,7 +69,7 @@ final class RemoteSettings(val config: Config) {
   @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val Dispatcher: String = getString("akka.remote.classic.use-dispatcher")
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def configureDispatcher(props: Props): Props =
     if (Artery.Enabled) {
       if (Artery.Advanced.Dispatcher.isEmpty) props else props.withDispatcher(Artery.Advanced.Dispatcher)

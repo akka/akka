@@ -12,9 +12,9 @@ import scala.util.Success
 
 import akka.Done
 import akka.actor.typed.ActorRef
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent("never used")
+@nowarn("msg=never used")
 object WorkPullingDocExample {
 
   //#imports

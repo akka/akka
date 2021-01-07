@@ -16,7 +16,7 @@ import scala.util.Random
 import scala.util.control.NoStackTrace
 
 import SupervisorStrategy.{ Directive, Restart, Resume, Stop }
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory }
 import language.postfixOps
 
@@ -598,7 +598,7 @@ object SupervisorHierarchySpec {
     when(Stopping, stateTimeout = 5.seconds.dilated) {
       case Event(PongOfDeath, _) => stay()
       case Event(Terminated(r), _) if r == hierarchy =>
-        @silent
+        @nowarn
         val undead = children.filterNot(_.isTerminated)
         if (undead.nonEmpty) {
           log.info("undead:\n" + undead.mkString("\n"))

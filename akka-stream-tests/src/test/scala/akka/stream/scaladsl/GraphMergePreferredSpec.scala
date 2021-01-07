@@ -7,12 +7,12 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.stream._
 import akka.stream.testkit.TwoStreamsSetup
 
-@silent // stream usage
+@nowarn // stream usage
 class GraphMergePreferredSpec extends TwoStreamsSetup {
   import GraphDSL.Implicits._
 

@@ -20,7 +20,7 @@ import akka.stream.scaladsl.{ DelayStrategy, Source }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
 import akka.util.{ unused, OptionVal }
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -2066,7 +2066,7 @@ private[stream] object Collect {
         })
       }
 
-      @silent // compiler complaining about aggregator = _: T
+      @nowarn // compiler complaining about aggregator = _: T
       override def onPush(): Unit = {
         val elem = grab(in)
         try {

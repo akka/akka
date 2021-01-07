@@ -9,7 +9,7 @@ import java.util.concurrent.CountDownLatch
 
 import scala.util.Success
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.Done
 import akka.stream.{ AbruptStageTerminationException, ActorMaterializer, ActorMaterializerSettings, IOResult }
@@ -20,7 +20,7 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 
-@silent
+@nowarn
 class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")

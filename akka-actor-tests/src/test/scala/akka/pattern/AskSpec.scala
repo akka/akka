@@ -7,7 +7,7 @@ package akka.pattern
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Failure
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import language.postfixOps
 import akka.actor._
@@ -15,7 +15,7 @@ import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.util.Timeout
 
-@silent
+@nowarn
 class AskSpec extends AkkaSpec("""
      akka.loglevel = DEBUG
      akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]

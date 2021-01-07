@@ -4,7 +4,7 @@
 
 package akka.remote.transport.netty
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 import org.jboss.netty.handler.ssl.SslHandler
 
@@ -44,7 +44,7 @@ private[akka] class SSLSettings(config: Config) {
  * The `SSLEngine` is created via the configured [[SSLEngineProvider]].
  */
 @ccompatUsedUntil213
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[akka] object NettySSLSupport {
 
   /**

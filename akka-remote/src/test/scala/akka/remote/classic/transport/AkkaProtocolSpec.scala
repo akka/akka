@@ -9,7 +9,7 @@ import java.util.concurrent.TimeoutException
 import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 
 import akka.actor.Address
@@ -44,7 +44,7 @@ object AkkaProtocolSpec {
 
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) with ImplicitSender {
 
   val conf = ConfigFactory.parseString("""

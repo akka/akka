@@ -16,7 +16,7 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.control.{ NoStackTrace, NonFatal }
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
@@ -207,7 +207,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   // AUXILIARIES and IMPLEMENTATION
 
   /** used in subclasses to start the common machinery above once a channel is connected */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def completeConnect(
       registration: ChannelRegistration,
       commander: ActorRef,

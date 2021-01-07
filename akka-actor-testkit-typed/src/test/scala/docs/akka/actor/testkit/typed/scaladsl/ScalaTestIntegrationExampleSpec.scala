@@ -4,7 +4,7 @@
 
 package docs.akka.actor.testkit.typed.scaladsl
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import docs.akka.actor.testkit.typed.scaladsl.AsyncTestingExampleSpec.Echo
 
 //#log-capturing
@@ -16,7 +16,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 //#scalatest-integration
 //#log-capturing
 
-@silent
+@nowarn
 //#scalatest-integration
 class ScalaTestIntegrationExampleSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
 

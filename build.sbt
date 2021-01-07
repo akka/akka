@@ -12,7 +12,6 @@ enablePlugins(
   JavaFormatterPlugin)
 disablePlugins(MimaPlugin)
 
-
 // check format and headers
 TaskKey[Unit]("verifyCodeFmt") := {
   javafmtCheckAll.all(ScopeFilter(inAnyProject)).result.value.toEither.left.foreach { _ =>
@@ -31,12 +30,9 @@ addCommandAlias("applyCodeStyle", "headerCreateAll; javafmtAll; scalafmtAll")
 
 addCommandAlias(
   name = "fixall",
-  value =
-    ";scalafixEnable; scalafixAll; scalafmtAll; test:compile; multi-jvm:compile; reload")
+  value = ";scalafixEnable; scalafixAll; scalafmtAll; test:compile; multi-jvm:compile; reload")
 
-addCommandAlias(
-  name = "sortImports",
-  value = ";scalafixEnable; scalafixAll SortImports; scalafmtAll")
+addCommandAlias(name = "sortImports", value = ";scalafixEnable; scalafixAll SortImports; scalafmtAll")
 
 import akka.AkkaBuild._
 import akka.{ AkkaBuild, Dependencies, OSGi, Protobuf, SigarLoader, VersionGenerator }

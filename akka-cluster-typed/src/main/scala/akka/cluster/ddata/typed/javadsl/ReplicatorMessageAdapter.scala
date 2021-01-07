@@ -10,7 +10,7 @@ import java.util.function.{ Function => JFunction }
 import scala.util.Failure
 import scala.util.Success
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.javadsl.ActorContext
@@ -115,7 +115,7 @@ class ReplicatorMessageAdapter[A, B <: ReplicatedData](
    * `ActorRef[GetResponse]` that the the replicator will send the response message back through.
    * Use that `ActorRef[GetResponse]` as the `replyTo` parameter in the `Get` message.
    */
-  @silent
+  @nowarn
   def askGet(
       createRequest: JFunction[ActorRef[Replicator.GetResponse[B]], Replicator.Get[B]],
       responseAdapter: JFunction[Replicator.GetResponse[B], A]): Unit = {

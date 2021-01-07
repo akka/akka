@@ -8,7 +8,7 @@ import scala.collection.{ Map => SMap }
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.ActorSystem
 import akka.actor.Cancellable
@@ -79,7 +79,7 @@ private[akka] object NoMaterializer extends Materializer {
     throw new UnsupportedOperationException("NoMaterializer does not have settings")
 }
 
-@silent
+@nowarn
 object GraphInterpreterSpecKit {
 
   /**
@@ -101,7 +101,7 @@ object GraphInterpreterSpecKit {
     if (attributes.nonEmpty && attributes.length != stages.length)
       throw new IllegalArgumentException("Attributes must be either empty or one per stage")
 
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     val defaultAttributes = ActorMaterializerSettings(system).toAttributes
 
     var inOwners = SMap.empty[Inlet[_], GraphStageLogic]
@@ -251,7 +251,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
   import GraphInterpreterSpecKit._
   val logger = Logging(system, "InterpreterSpecKit")
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   val defaultAttributes = ActorMaterializerSettings(system).toAttributes
 
   abstract class Builder {

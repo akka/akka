@@ -17,7 +17,7 @@ import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.reactivestreams.{ Publisher, Subscriber }
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Cancellable, ClassicActorSystemProvider }
@@ -237,7 +237,7 @@ object Source {
    * element is produced it will not receive that tick element later. It will
    * receive new tick elements as soon as it has requested more elements.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def tick[O](initialDelay: java.time.Duration, interval: java.time.Duration, tick: O): javadsl.Source[O, Cancellable] =
     Source.tick(initialDelay.asScala, interval.asScala, tick)
 
@@ -2001,7 +2001,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   @Deprecated
   @deprecated("Use recoverWithRetries instead.", "2.6.6")
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def recoverWith(pf: PartialFunction[Throwable, _ <: Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
     new Source(delegate.recoverWith(pf))
 
@@ -2028,7 +2028,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   @Deprecated
   @deprecated("Use recoverWithRetries instead.", "2.6.6")
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def recoverWith(
       clazz: Class[_ <: Throwable],
       supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
@@ -2680,7 +2680,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def groupedWithin(n: Int, d: java.time.Duration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
     groupedWithin(n, d.asScala)
 
@@ -2728,7 +2728,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def groupedWeightedWithin(
       maxWeight: Long,
       costFn: function.Function[Out, java.lang.Long],
@@ -2790,7 +2790,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * @param of time to shift all messages
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def delay(of: java.time.Duration, strategy: DelayOverflowStrategy): Source[Out, Mat] =
     delay(of.asScala, strategy)
 
@@ -2872,7 +2872,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def dropWithin(d: java.time.Duration): javadsl.Source[Out, Mat] =
     dropWithin(d.asScala)
 
@@ -2998,7 +2998,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels or timer fires
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def takeWithin(d: java.time.Duration): javadsl.Source[Out, Mat] =
     takeWithin(d.asScala)
 
@@ -3588,7 +3588,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def initialTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] =
     initialTimeout(timeout.asScala)
 
@@ -3621,7 +3621,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def completionTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] =
     completionTimeout(timeout.asScala)
 
@@ -3656,7 +3656,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def idleTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] =
     idleTimeout(timeout.asScala)
 
@@ -3691,7 +3691,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def backpressureTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] =
     backpressureTimeout(timeout.asScala)
 
@@ -3734,7 +3734,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def keepAlive(maxIdle: java.time.Duration, injectedElem: function.Creator[Out]): javadsl.Source[Out, Mat] =
     keepAlive(maxIdle.asScala, injectedElem)
 
@@ -4140,7 +4140,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def initialDelay(delay: java.time.Duration): javadsl.Source[Out, Mat] =
     initialDelay(delay.asScala)
 

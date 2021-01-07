@@ -9,12 +9,12 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 
-@silent("deprecated") // testing deprecated API
+@nowarn("msg=deprecated") // testing deprecated API
 class FlowFromFutureSpec extends StreamSpec {
 
   "A Flow based on a Future" must {

@@ -4,14 +4,14 @@
 
 package akka.io
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 @InternalApi
 class InetAddressDnsProvider extends DnsProvider {
   override def cache: Dns = new SimpleDnsCache()

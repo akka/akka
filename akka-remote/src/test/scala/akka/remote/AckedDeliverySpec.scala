@@ -8,11 +8,11 @@ import java.util.concurrent.ThreadLocalRandom
 
 import scala.annotation.tailrec
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.testkit.AkkaSpec
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 object AckedDeliverySpec {
 
   final case class Sequenced(seq: SeqNo, body: String) extends HasSequenceNumber {
@@ -21,7 +21,7 @@ object AckedDeliverySpec {
 
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class AckedDeliverySpec extends AkkaSpec {
   import AckedDeliverySpec._
 

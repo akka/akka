@@ -9,7 +9,7 @@ import java.net.InetSocketAddress
 
 import scala.collection.immutable
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor._
 import akka.io.Inet.SocketOption
@@ -94,7 +94,7 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
    * which is restricted to sending to and receiving from the given `remoteAddress`.
    * All received datagrams will be sent to the designated `handler` actor.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   final case class Connect(
       handler: ActorRef,
       remoteAddress: InetSocketAddress,

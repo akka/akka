@@ -14,7 +14,7 @@ import scala.concurrent.{ Await, ExecutionContext }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.ConfigurationException
@@ -100,7 +100,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * Java API: roles that this member has
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def getSelfRoles: java.util.Set[String] =
     scala.collection.JavaConverters.setAsJavaSetConverter(selfRoles).asJava
 
@@ -179,7 +179,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
         override def maxFrequency: Double = systemScheduler.maxFrequency
 
-        @silent("deprecated")
+        @nowarn("msg=deprecated")
         override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
             implicit executor: ExecutionContext): Cancellable =
           systemScheduler.schedule(initialDelay, interval, runnable)

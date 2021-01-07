@@ -18,7 +18,7 @@ import scala.util.{ Failure, Success, Try }
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import akka.AkkaException
 import akka.actor.Scheduler
 import akka.dispatch.ExecutionContexts.parasitic
@@ -250,14 +250,14 @@ class CircuitBreaker(
    * Holds reference to current state of CircuitBreaker - *access only via helper methods*
    */
   @volatile
-  @silent("never used")
+  @nowarn("msg=never used")
   private[this] var _currentStateDoNotCallMeDirectly: State = Closed
 
   /**
    * Holds reference to current resetTimeout of CircuitBreaker - *access only via helper methods*
    */
   @volatile
-  @silent("never used")
+  @nowarn("msg=never used")
   private[this] var _currentResetTimeoutDoNotCallMeDirectly: FiniteDuration = resetTimeout
 
   /**

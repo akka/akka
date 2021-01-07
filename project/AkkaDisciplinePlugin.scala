@@ -63,17 +63,24 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-stream-tests-tck",
     "akka-testkit")
 
-  lazy val silencerSettings = {
-    val silencerVersion = "1.7.1"
-    val libs = Seq(
-      compilerPlugin(("com.github.ghik" %% "silencer-plugin" % silencerVersion).cross(CrossVersion.patch)),
-      ("com.github.ghik" %% "silencer-lib" % silencerVersion % Provided).cross(CrossVersion.patch))
-    Seq(libraryDependencies ++= (if (autoScalaLibrary.value) libs else Nil))
+  lazy val nowarnSettings = {
+    Dependencies.getScalaVersion() match {
+      // TODO: remove this when upgrading to Scala 2.12.13
+      // https://github.com/scala/scala/pull/9248
+      case twoTwelve if twoTwelve.startsWith("2.12") =>
+        val silencerVersion = "1.7.1"
+        val libs = Seq(
+          compilerPlugin(("com.github.ghik" %% "silencer-plugin" % silencerVersion).cross(CrossVersion.patch)),
+          ("com.github.ghik" %% "silencer-lib" % silencerVersion % Provided).cross(CrossVersion.patch))
+        Seq(libraryDependencies ++= (if (autoScalaLibrary.value) libs else Nil))
+      case _ =>
+        Seq(scalacOptions += "-Wconf:any:s")
+    }
   }
 
   lazy val disciplineSettings =
     if (enabled) {
-      silencerSettings ++ Seq(
+      nowarnSettings ++ Seq(
         Compile / scalacOptions ++= Seq("-Xfatal-warnings"),
         Test / scalacOptions --= testUndicipline,
         Compile / javacOptions ++= (
@@ -107,7 +114,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
         Compile / console / scalacOptions --= disciplineScalacOptions.toSeq)
     } else {
       // we still need these in opt-out since the annotations are present
-      silencerSettings ++ Seq(Compile / scalacOptions += "-deprecation")
+      nowarnSettings ++ Seq(Compile / scalacOptions += "-deprecation")
     }
 
   val testUndicipline = Seq("-Ywarn-dead-code" // '???' used in compile only specs
@@ -138,18 +145,16 @@ object AkkaDisciplinePlugin extends AutoPlugin {
    */
   val docs = Seq(
     scalacOptions ++= Seq(
-      // In docs, 'unused' variables can be useful for naming and showing the type
-      "-P:silencer:globalFilters=is never used",
-      // Import statements are often duplicated across multiple snippets in one file
-      "-P:silencer:globalFilters=Unused import",
-      // We keep documentation for this old API around for a while:
-      "-P:silencer:globalFilters=in object Dns is deprecated",
-      "-P:silencer:globalFilters=in class Dns is deprecated",
-      // Because we sometimes wrap things in a class:
-      "-P:silencer:globalFilters=The outer reference in this type test cannot be checked at run time",
-      // Because we show some things that are deprecated in
-      // 2.13 but don't have a replacement that was in 2.12:
-      "-P:silencer:globalFilters=deprecated \\(since 2.13.0\\)"
-    )
-  )
+        // In docs, 'unused' variables can be useful for naming and showing the type
+        "-P:silencer:globalFilters=is never used",
+        // Import statements are often duplicated across multiple snippets in one file
+        "-P:silencer:globalFilters=Unused import",
+        // We keep documentation for this old API around for a while:
+        "-P:silencer:globalFilters=in object Dns is deprecated",
+        "-P:silencer:globalFilters=in class Dns is deprecated",
+        // Because we sometimes wrap things in a class:
+        "-P:silencer:globalFilters=The outer reference in this type test cannot be checked at run time",
+        // Because we show some things that are deprecated in
+        // 2.13 but don't have a replacement that was in 2.12:
+        "-P:silencer:globalFilters=deprecated \\(since 2.13.0\\)"))
 }

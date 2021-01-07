@@ -7,7 +7,7 @@ package akka.stream
 import scala.concurrent.Await
 import scala.concurrent.Promise
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
@@ -46,13 +46,13 @@ final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
   /**
    * INTERNAL API
    */
-  @InternalApi @silent("deprecated")
+  @InternalApi @nowarn("msg=deprecated")
   private[akka] val materializerSettings = ActorMaterializerSettings(system)
 
   private implicit val materializerTimeout: Timeout =
     system.settings.config.getDuration("akka.stream.materializer.creation-timeout").asScala
 
-  @InternalApi @silent("deprecated")
+  @InternalApi @nowarn("msg=deprecated")
   private val materializerGuardian = system.systemActorOf(
     MaterializerGuardian
       .props(systemMaterializerPromise, materializerSettings)
@@ -75,7 +75,7 @@ final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
    * INTERNAL API
    */
   @InternalApi
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private[akka] def createAdditionalLegacySystemMaterializer(
       namePrefix: String,
       settings: ActorMaterializerSettings): Materializer = {

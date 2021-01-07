@@ -7,7 +7,7 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.TimeoutException
 
 import scala.concurrent.Future
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.RecipientRef
@@ -103,7 +103,7 @@ object AskPattern {
      *
      * @tparam Res The response protocol, what the other actor sends back
      */
-    @silent("never used")
+    @nowarn("msg=never used")
     def ask[Res](replyTo: ActorRef[Res] => Req)(implicit timeout: Timeout, scheduler: Scheduler): Future[Res] = {
       // We do not currently use the implicit sched, but want to require it
       // because it might be needed when we move to a 'native' typed runtime, see #24219

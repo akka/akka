@@ -7,13 +7,13 @@ package akka.stream.scaladsl
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.reactivestreams.Publisher
 
 import akka.NotUsed
 import akka.stream.testkit.StreamSpec
 
-@silent // unused vars are used in shouldNot compile tests
+@nowarn // unused vars are used in shouldNot compile tests
 class FlowCompileSpec extends StreamSpec {
 
   val intSeq = Source(Seq(1, 2, 3))

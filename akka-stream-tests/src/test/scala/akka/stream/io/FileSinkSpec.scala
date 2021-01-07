@@ -12,7 +12,7 @@ import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.Success
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.google.common.jimfs.{ Configuration, Jimfs }
 import org.scalatest.concurrent.ScalaFutures
 
@@ -26,7 +26,7 @@ import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.util.ByteString
 
-@silent
+@nowarn
 class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")

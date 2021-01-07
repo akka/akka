@@ -4,7 +4,7 @@
 
 package akka.stream.impl.fusing
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
@@ -536,7 +536,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
   }
 
-  @silent
+  @nowarn
   private[akka] final case class Doubler[T]() extends SimpleLinearGraphStage[T] {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -568,7 +568,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
   }
 
-  @silent
+  @nowarn
   private[akka] final case class KeepGoing[T]() extends SimpleLinearGraphStage[T] {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =

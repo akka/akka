@@ -6,7 +6,7 @@ package akka.remote
 
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import language.postfixOps
 
 import akka.remote.transport.AkkaProtocolSettings
@@ -15,7 +15,7 @@ import akka.testkit.AkkaSpec
 import akka.util.Helpers
 import akka.util.Helpers.ConfigOps
 
-@silent // classic deprecated
+@nowarn // classic deprecated
 class RemoteConfigSpec extends AkkaSpec("""
     akka.actor.provider = remote
     akka.remote.classic.netty.tcp.port = 0

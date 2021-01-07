@@ -9,7 +9,7 @@ import akka.actor.typed.PostStop
 import akka.actor.typed.PreRestart
 import akka.actor.typed.{ Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import scala.concurrent.duration._
 
@@ -112,7 +112,7 @@ object SupervisionCompileOnly {
   }
   def claimResource(): Resource = ???
 
-  @silent("never used")
+  @nowarn("msg=never used")
   //#restart-PreRestart-signal
   def withPreRestart: Behavior[String] = {
     Behaviors

@@ -9,7 +9,7 @@ import scala.util.Failure
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.ConfigurationException
 import akka.Done
@@ -676,7 +676,7 @@ private[akka] class RemoteActorRef private[akka] (
   // used by artery to direct messages to separate specialized streams
   @volatile private[remote] var cachedSendQueueIndex: Int = -1
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def getChild(name: Iterator[String]): InternalActorRef = {
     val s = name.toStream
     s.headOption match {

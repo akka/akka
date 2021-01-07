@@ -4,14 +4,14 @@
 
 package akka.remote.classic
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import akka.remote.RemoteSettings
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class RemoteSettingsSpec extends AnyWordSpec with Matchers {
 
   "Remote settings" must {

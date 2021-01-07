@@ -4,7 +4,7 @@
 
 package akka.io.dns.internal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.annotation.InternalApi
 import akka.io._
@@ -13,7 +13,7 @@ import akka.io._
  * INTERNAL API
  */
 @InternalApi
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[akka] class AsyncDnsProvider extends DnsProvider {
   override def cache: Dns = new SimpleDnsCache()
   override def actorClass = classOf[AsyncDnsResolver]
