@@ -57,8 +57,8 @@ object TestExtras {
           List(
             "The java JavaExtension.java" -> "akka-actor-tests/target/test-reports/TEST-akka.actor.JavaExtension.xml",
             "The jdk9-only FlowPublisherSinkSpec.scala" -> "akka-stream-tests/target/test-reports/TEST-akka.stream.scaladsl.FlowPublisherSinkSpec.xml",
-            "The jdk9-only JavaFlowSupportCompileTest.java" -> "akka-stream-tests/target/test-reports/TEST-akka.stream.javadsl.JavaFlowSupportCompileTest.xml"
-          ).foreach((shouldExist _).tupled)
+            "The jdk9-only JavaFlowSupportCompileTest.java" -> "akka-stream-tests/target/test-reports/TEST-akka.stream.javadsl.JavaFlowSupportCompileTest.xml")
+            .foreach((shouldExist _).tupled)
         })
     }
 

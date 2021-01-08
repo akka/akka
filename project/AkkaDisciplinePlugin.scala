@@ -74,7 +74,37 @@ object AkkaDisciplinePlugin extends AutoPlugin {
           ("com.github.ghik" %% "silencer-lib" % silencerVersion % Provided).cross(CrossVersion.patch))
         Seq(libraryDependencies ++= (if (autoScalaLibrary.value) libs else Nil))
       case _ =>
-        Seq(scalacOptions += "-Wconf:any:s")
+        Seq(scalacOptions += "-Wconf:any:e")
+    }
+  }
+
+  /**
+   * We are a little less strict in docs
+   */
+  val docs = {
+    Dependencies.getScalaVersion() match {
+      // TODO: remove this when upgrading to Scala 2.12.13
+      // https://github.com/scala/scala/pull/9248
+      case twoTwelve if twoTwelve.startsWith("2.12") =>
+        val patterns = Seq(
+          // In docs, 'unused' variables can be useful for naming and showing the type
+          "is never used",
+          // Import statements are often duplicated across multiple snippets in one file
+          "Unused import",
+          // We keep documentation for this old API around for a while:
+          "in object Dns is deprecated",
+          "in class Dns is deprecated",
+          // Because we sometimes wrap things in a class:
+          "The outer reference in this type test cannot be checked at run time",
+          // Because we show some things that are deprecated in
+          // 2.13 but don't have a replacement that was in 2.12:
+          "deprecated \\(since 2.13.0\\)"
+        )
+        Seq(scalacOptions ++= patterns.map(msg => s"-P:silencer:globalFilters=$msg"))
+      case _ =>
+        Seq(
+          scalacOptions --= Seq("-Wconf:any:e"),
+          scalacOptions += "-Wconf:cat=unused:s,any:e")
     }
   }
 
@@ -140,21 +170,4 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "-Ypartial-unification",
     "-Ywarn-extra-implicit")
 
-  /**
-   * We are a little less strict in docs
-   */
-  val docs = Seq(
-    scalacOptions ++= Seq(
-        // In docs, 'unused' variables can be useful for naming and showing the type
-        "-P:silencer:globalFilters=is never used",
-        // Import statements are often duplicated across multiple snippets in one file
-        "-P:silencer:globalFilters=Unused import",
-        // We keep documentation for this old API around for a while:
-        "-P:silencer:globalFilters=in object Dns is deprecated",
-        "-P:silencer:globalFilters=in class Dns is deprecated",
-        // Because we sometimes wrap things in a class:
-        "-P:silencer:globalFilters=The outer reference in this type test cannot be checked at run time",
-        // Because we show some things that are deprecated in
-        // 2.13 but don't have a replacement that was in 2.12:
-        "-P:silencer:globalFilters=deprecated \\(since 2.13.0\\)"))
 }
