@@ -7,12 +7,10 @@ package akka.stream
 import java.net.URLEncoder
 import java.time.Duration
 import java.util.Optional
-
 import scala.annotation.tailrec
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.{ classTag, ClassTag }
-
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -21,6 +19,9 @@ import akka.japi.function
 import akka.stream.impl.TraversalBuilder
 import akka.util.{ ByteString, OptionVal }
 import akka.util.JavaDurationConverters._
+import akka.util.LineNumbers
+
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
@@ -303,6 +304,29 @@ object Attributes {
   sealed trait MandatoryAttribute extends Attribute
 
   final case class Name(n: String) extends Attribute
+
+  /**
+   * Attribute that contains the source location of for example a lambda passed to an operator, useful for example
+   * for debugging. Included in the default toString of GraphStageLogic if present
+   */
+  final case class SourceLocation(locationName: String) extends Attribute
+
+  object SourceLocation {
+    private val cache = new ConcurrentHashMap[Class[_], SourceLocation]
+    def forLambda(lambda: AnyRef): SourceLocation =
+      cache.computeIfAbsent(lambda.getClass, { clazz =>
+        def locationName: String = LineNumbers(lambda) match {
+          case LineNumbers.NoSourceInfo           => "unknown"
+          case LineNumbers.UnknownSourceFormat(_) => "unknown"
+          case LineNumbers.SourceFile(filename)   => filename
+          case LineNumbers.SourceFileLines(filename, from, _) =>
+            s"$filename:$from"
+        }
+        SourceLocation(s"${clazz.getPackage.getName}-$locationName")
+      })
+    def stringFrom(attributes: Attributes): String =
+      attributes.get[SourceLocation].map(_.locationName).getOrElse("unknown")
+  }
 
   /**
    * Each asynchronous piece of a materialized stream topology is executed by one Actor

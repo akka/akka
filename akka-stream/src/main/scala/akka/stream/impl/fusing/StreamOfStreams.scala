@@ -6,7 +6,6 @@ package akka.stream.impl.fusing
 
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
@@ -16,6 +15,7 @@ import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.ActorAttributes.SupervisionStrategy
+import akka.stream.Attributes.SourceLocation
 import akka.stream.impl.{ Buffer => BufferImpl }
 import akka.stream.impl.ActorSubscriberMessage
 import akka.stream.impl.ActorSubscriberMessage.OnError
@@ -473,14 +473,18 @@ import akka.util.ccompat.JavaConverters._
     val p: T => Boolean,
     val substreamCancelStrategy: SubstreamCancelStrategy)
     extends GraphStage[FlowShape[T, Source[T, NotUsed]]] {
+
   val in: Inlet[T] = Inlet("Split.in")
   val out: Outlet[Source[T, NotUsed]] = Outlet("Split.out")
+
   override val shape: FlowShape[T, Source[T, NotUsed]] = FlowShape(in, out)
 
   private val propagateSubstreamCancel = substreamCancelStrategy match {
     case SubstreamCancelStrategies.Propagate => true
     case SubstreamCancelStrategies.Drain     => false
   }
+
+  override protected def initialAttributes: Attributes = DefaultAttributes.split and SourceLocation.forLambda(p)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     import Split._
