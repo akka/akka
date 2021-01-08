@@ -74,7 +74,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
           ("com.github.ghik" %% "silencer-lib" % silencerVersion % Provided).cross(CrossVersion.patch))
         Seq(libraryDependencies ++= (if (autoScalaLibrary.value) libs else Nil))
       case _ =>
-        Seq(scalacOptions += "-Wconf:any:e")
+        Seq(scalacOptions ++= Seq("-nowarn", "-Wconf:any:e"))
     }
   }
 
@@ -101,10 +101,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
           "deprecated \\(since 2.13.0\\)"
         )
         Seq(scalacOptions ++= patterns.map(msg => s"-P:silencer:globalFilters=$msg"))
-      case _ =>
-        Seq(
-          scalacOptions --= Seq("-Wconf:any:e"),
-          scalacOptions += "-Wconf:cat=unused:s,any:e")
+      case _ => Seq()
     }
   }
 
