@@ -74,7 +74,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
           ("com.github.ghik" %% "silencer-lib" % silencerVersion % Provided).cross(CrossVersion.patch))
         Seq(libraryDependencies ++= (if (autoScalaLibrary.value) libs else Nil))
       case _ =>
-        Seq(scalacOptions ++= Seq("-nowarn", "-Wconf:any:e"))
+        Seq(scalacOptions += "-Wconf:cat=unused-nowarn:s,any:e")
     }
   }
 
@@ -98,10 +98,13 @@ object AkkaDisciplinePlugin extends AutoPlugin {
           "The outer reference in this type test cannot be checked at run time",
           // Because we show some things that are deprecated in
           // 2.13 but don't have a replacement that was in 2.12:
-          "deprecated \\(since 2.13.0\\)"
-        )
+          "deprecated \\(since 2.13.0\\)")
         Seq(scalacOptions ++= patterns.map(msg => s"-P:silencer:globalFilters=$msg"))
-      case _ => Seq()
+      case _ =>
+        Seq(
+          Test / scalacOptions --= Seq("-Xlint", "-unchecked", "-deprecation"),
+          scalacOptions -= "-Wconf:cat=unused-nowarn:s,any:e",
+          scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e")
     }
   }
 
