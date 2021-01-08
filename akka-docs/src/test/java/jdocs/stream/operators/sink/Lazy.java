@@ -1,11 +1,8 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream.operators.sink;
-/*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
- */
 
 import akka.actor.ActorSystem;
 import akka.stream.javadsl.Keep;
