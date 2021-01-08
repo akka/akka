@@ -113,7 +113,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       }
     }
 
-    "support broadcast" must {
+    "support broadcast" in {
       trait Cmd
       case object ReplyWithAck extends Cmd
       case class BCast(cmd: Cmd) extends Cmd
@@ -125,7 +125,8 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
             replyTo ! reply
             Behaviors.same
           case BCast(BCast(_)) =>
-            fail("totally unacceptable")
+            replyTo ! new RuntimeException("totally unacceptable")
+            Behaviors.same
           case BCast(ReplyWithAck) =>
             val reply = ctx.self.path
             replyTo ! reply
@@ -133,30 +134,19 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
         }
       }
 
-      "when disabled" in {
-        val probe = testKit.createTestProbe[AnyRef]()
-        val pool = testKit.spawn(Routers.pool(4)(behavior(probe.ref)))
-        pool ! BCast(ReplyWithAck)
-        probe.expectMessageType[ActorPath]
-        probe.expectNoMessage()
+      val probe = testKit.createTestProbe[AnyRef]()
+      val pool = testKit.spawn(Routers.pool(4)(behavior(probe.ref)).withBroadcastPredicate(_.isInstanceOf[BCast]))
+      pool ! BCast(ReplyWithAck)
+      val msgs = probe.receiveMessages(4).map { m =>
+        m should be(an[ActorPath])
+        m.asInstanceOf[ActorPath]
       }
+      msgs should equal(msgs.distinct)
+      probe.expectNoMessage()
 
-      "when enabled" in {
-        val probe = testKit.createTestProbe[AnyRef]()
-        val pool = testKit.spawn(Routers.pool(4)(behavior(probe.ref)).withBroadcastPredicate(_.isInstanceOf[BCast]))
-        pool ! BCast(ReplyWithAck)
-        val msgs = probe.receiveMessages(4).map { m =>
-          m should be(an[ActorPath])
-          m.asInstanceOf[ActorPath]
-        }
-        msgs should equal(msgs.distinct)
-        probe.expectNoMessage()
-
-        pool ! ReplyWithAck
-        probe.expectMessageType[ActorPath]
-        probe.expectNoMessage()
-      }
-
+      pool ! ReplyWithAck
+      probe.expectMessageType[ActorPath]
+      probe.expectNoMessage()
     }
 
   }
