@@ -7,8 +7,8 @@ package akka.stream.impl
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.util.control.NonFatal
-
 import akka.annotation.InternalApi
+import akka.stream.Attributes.SourceLocation
 import akka.stream._
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Keep
@@ -25,6 +25,8 @@ import akka.stream.stage.OutHandler
 
   private val in = Inlet[T]("SetupSinkStage.in")
   override val shape = SinkShape(in)
+
+  override protected def initialAttributes: Attributes = Attributes.name("setup") and SourceLocation.forLambda(factory)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
     val matPromise = Promise[M]()
@@ -61,6 +63,8 @@ import akka.stream.stage.OutHandler
   private val in = Inlet[T]("SetupFlowStage.in")
   private val out = Outlet[U]("SetupFlowStage.out")
   override val shape = FlowShape(in, out)
+
+  override protected def initialAttributes: Attributes = Attributes.name("setup") and SourceLocation.forLambda(factory)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
     val matPromise = Promise[M]()
@@ -104,6 +108,8 @@ import akka.stream.stage.OutHandler
 
   private val out = Outlet[T]("SetupSourceStage.out")
   override val shape = SourceShape(out)
+
+  override protected def initialAttributes: Attributes = Attributes.name("setup") and SourceLocation.forLambda(factory)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
     val matPromise = Promise[M]()

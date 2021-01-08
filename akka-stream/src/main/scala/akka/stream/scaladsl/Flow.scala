@@ -17,6 +17,7 @@ import akka.actor.ActorRef
 import akka.annotation.DoNotInherit
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream.Attributes.SourceLocation
+import akka.stream.Attributes.SourceLocation
 import akka.stream._
 import akka.stream.impl.{
   fusing,
@@ -662,7 +663,7 @@ object Flow {
    * this will delay downstream cancellation until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
    */
   def lazyFlow[I, O, M](create: () => Flow[I, O, M]): Flow[I, O, Future[M]] =
-    lazyFutureFlow(() => Future.successful(create()))
+    lazyFutureFlow(() => Future.successful(create())).addAttributes(Attributes(SourceLocation.forLambda(create)))
 
   /**
    * Defers invoking the `create` function to create a future flow until there downstream demand has caused upstream
@@ -703,6 +704,7 @@ object Flow {
             .mapMaterializedValue(_ => Future.failed[M](new NeverMaterializedException()))
           f
       }(Keep.right)
+      .addAttributes(Attributes(SourceLocation.forLambda(create)))
       .mapMaterializedValue(_.flatten)
 
 }

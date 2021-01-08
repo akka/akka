@@ -316,7 +316,7 @@ private[stream] object Collect {
 @InternalApi private[akka] final case class MapError[T](f: PartialFunction[Throwable, Throwable])
     extends SimpleLinearGraphStage[T] {
 
-  override protected def initialAttributes: Attributes = DefaultAttributes.mapError and SourceLocation.forLambda(f)
+  override protected def initialAttributes: Attributes = DefaultAttributes.mapError
 
   override def createLogic(attr: Attributes) =
     new GraphStageLogic(shape) with InHandler with OutHandler {

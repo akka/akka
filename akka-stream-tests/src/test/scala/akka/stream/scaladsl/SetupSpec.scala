@@ -49,7 +49,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      source.runWith(Sink.head).futureValue shouldBe Some("my-name")
+      source.runWith(Sink.head).futureValue shouldBe Some("setup-my-name")
     }
 
     "propagate attributes when nested" in {
@@ -61,7 +61,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      source.runWith(Sink.head).futureValue shouldBe Some("my-name")
+      source.runWith(Sink.head).futureValue shouldBe Some("setup-my-name")
     }
 
     "handle factory failure" in {
@@ -123,7 +123,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("my-name")
+      Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("setup-my-name")
     }
 
     "propagate attributes when nested" in {
@@ -135,7 +135,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("my-name")
+      Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("setup-my-name")
     }
 
     "handle factory failure" in {
@@ -195,7 +195,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      Source.empty.runWith(sink).flatMap(identity).futureValue shouldBe Some("my-name")
+      Source.empty.runWith(sink).flatMap(identity).futureValue shouldBe Some("setup-my-name")
     }
 
     "propagate attributes when nested" in {
@@ -207,7 +207,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      Source.empty.runWith(sink).flatMap(identity).flatMap(identity).futureValue shouldBe Some("my-name")
+      Source.empty.runWith(sink).flatMap(identity).flatMap(identity).futureValue shouldBe Some("setup-my-name")
     }
 
     "handle factory failure" in {

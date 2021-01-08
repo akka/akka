@@ -6,8 +6,8 @@ package akka.stream.impl
 
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
-
 import akka.annotation.InternalApi
+import akka.stream.Attributes.SourceLocation
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.scaladsl.{ Keep, Source }
@@ -28,7 +28,7 @@ import akka.stream.stage._
   val out = Outlet[T]("LazySource.out")
   override val shape = SourceShape(out)
 
-  override protected def initialAttributes = DefaultAttributes.lazySource
+  override protected def initialAttributes = DefaultAttributes.lazySource and SourceLocation.forLambda(sourceFactory)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
     val matPromise = Promise[M]()
