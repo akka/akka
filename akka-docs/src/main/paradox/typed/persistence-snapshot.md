@@ -103,9 +103,9 @@ Java
 
 ## Event deletion
 
-Deleting events in event sourcing based applications is typically either not used at all, or used in conjunction with snapshotting.
+Deleting events in Event Sourcing based applications is typically either not used at all, or used in conjunction with snapshotting.
 By deleting events you will lose the history of how the system changed before it reached current state, which is
-one of the main reasons for using event sourcing in the first place.
+one of the main reasons for using Event Sourcing in the first place.
 
 If snapshot-based retention is enabled, after a snapshot has been successfully stored, a delete of the events
 (journaled by a single event sourced actor) up until the sequence number of the data held by that snapshot can be issued.

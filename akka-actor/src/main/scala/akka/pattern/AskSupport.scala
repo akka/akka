@@ -4,28 +4,30 @@
 
 package akka.pattern
 
+import java.net.URLEncoder
 import java.util.concurrent.TimeoutException
 
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import scala.language.implicitConversions
 import scala.util.{ Failure, Success }
-
 import com.github.ghik.silencer.silent
-
 import akka.actor._
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.ExecutionContexts
 import akka.dispatch.sysmsg._
+import akka.util.ByteString
 import akka.util.{ Timeout, Unsafe }
 import akka.util.unused
+
+import scala.util.control.NoStackTrace
 
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,
  * when it times out. A typical reason for `AskTimeoutException` is that the recipient
  * actor didn't send a reply.
  */
-class AskTimeoutException(message: String, cause: Throwable) extends TimeoutException(message) {
+class AskTimeoutException(message: String, cause: Throwable) extends TimeoutException(message) with NoStackTrace {
   def this(message: String) = this(message, null: Throwable)
   override def getCause(): Throwable = cause
 }
@@ -85,6 +87,22 @@ trait AskSupport {
     actorRef.internalAsk(message, timeout, ActorRef.noSender)
   def ask(actorRef: ActorRef, message: Any, sender: ActorRef)(implicit timeout: Timeout): Future[Any] =
     actorRef.internalAsk(message, timeout, sender)
+
+  /**
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply.Success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply.Error]] arrives the future is instead
+   * failed.
+   */
+  def askWithStatus(actorRef: ActorRef, message: Any)(implicit timeout: Timeout): Future[Any] =
+    actorRef.internalAskWithStatus(message)(timeout, Actor.noSender)
+
+  /**
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply.Success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply.Error]] arrives the future is instead
+   * failed.
+   */
+  def askWithStatus(actorRef: ActorRef, message: Any, sender: ActorRef)(implicit timeout: Timeout): Future[Any] =
+    actorRef.internalAskWithStatus(message)(timeout, sender)
 
   /**
    * Import this implicit conversion to gain `?` and `ask` methods on
@@ -320,6 +338,17 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
   def ask(message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
     internalAsk(message, timeout, sender)
 
+  def askWithStatus(message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
+    internalAskWithStatus(message)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[pattern] def internalAskWithStatus(
+      message: Any)(implicit timeout: Timeout, sender: ActorRef = Actor.noSender): Future[Any] =
+    StatusReply.flattenStatusFuture[Any](internalAsk(message, timeout, sender).mapTo[StatusReply[Any]])
+
   /**
    * INTERNAL API: for binary compatibility
    */
@@ -340,7 +369,7 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
       if (timeout.duration.length <= 0)
         Future.failed[Any](AskableActorRef.negativeTimeoutException(actorRef, message, sender))
       else {
-        PromiseActorRef(ref.provider, timeout, targetName = actorRef, message.getClass.getName, sender)
+        PromiseActorRef(ref.provider, timeout, targetName = actorRef, message.getClass.getName, ref.path.name, sender)
           .ask(actorRef, message, timeout)
       }
     case _ => Future.failed[Any](AskableActorRef.unsupportedRecipientType(actorRef, message, sender))
@@ -373,7 +402,7 @@ final class ExplicitlyAskableActorRef(val actorRef: ActorRef) extends AnyVal {
           val message = messageFactory(ref.provider.deadLetters)
           Future.failed[Any](AskableActorRef.negativeTimeoutException(actorRef, message, sender))
         } else {
-          val a = PromiseActorRef(ref.provider, timeout, targetName = actorRef, "unknown", sender)
+          val a = PromiseActorRef(ref.provider, timeout, targetName = actorRef, "unknown", ref.path.name, sender)
           val message = messageFactory(a)
           a.messageClassName = message.getClass.getName
           a.ask(actorRef, message, timeout)
@@ -422,7 +451,8 @@ final class AskableActorSelection(val actorSel: ActorSelection) extends AnyVal {
         if (timeout.duration.length <= 0)
           Future.failed[Any](AskableActorRef.negativeTimeoutException(actorSel, message, sender))
         else {
-          PromiseActorRef(ref.provider, timeout, targetName = actorSel, message.getClass.getName, sender)
+          val refPrefix = URLEncoder.encode(actorSel.pathString.replace("/", "_"), ByteString.UTF_8)
+          PromiseActorRef(ref.provider, timeout, targetName = actorSel, message.getClass.getName, refPrefix, sender)
             .ask(actorSel, message, timeout)
         }
       case _ => Future.failed[Any](AskableActorRef.unsupportedRecipientType(actorSel, message, sender))
@@ -450,7 +480,8 @@ final class ExplicitlyAskableActorSelection(val actorSel: ActorSelection) extend
           val message = messageFactory(ref.provider.deadLetters)
           Future.failed[Any](AskableActorRef.negativeTimeoutException(actorSel, message, sender))
         } else {
-          val a = PromiseActorRef(ref.provider, timeout, targetName = actorSel, "unknown", sender)
+          val refPrefix = URLEncoder.encode(actorSel.pathString.replace("/", "_"), ByteString.UTF_8)
+          val a = PromiseActorRef(ref.provider, timeout, targetName = actorSel, "unknown", refPrefix, sender)
           val message = messageFactory(a)
           a.messageClassName = message.getClass.getName
           a.ask(actorSel, message, timeout)
@@ -476,7 +507,8 @@ final class ExplicitlyAskableActorSelection(val actorSel: ActorSelection) extend
 private[akka] final class PromiseActorRef private (
     val provider: ActorRefProvider,
     val result: Promise[Any],
-    _mcn: String)
+    _mcn: String,
+    refPathPrefix: String)
     extends MinimalActorRef {
   import AbstractPromiseActorRef.{ stateOffset, watchedByOffset }
   import PromiseActorRef._
@@ -553,7 +585,7 @@ private[akka] final class PromiseActorRef private (
       if (updateState(null, Registering)) {
         var p: ActorPath = null
         try {
-          p = provider.tempPath()
+          p = provider.tempPath(refPathPrefix)
           provider.registerTempActor(this, p)
           p
         } finally {
@@ -670,11 +702,14 @@ private[akka] object PromiseActorRef {
       timeout: Timeout,
       targetName: Any,
       messageClassName: String,
+      refPathPrefix: String,
       sender: ActorRef = Actor.noSender,
       onTimeout: String => Throwable = defaultOnTimeout): PromiseActorRef = {
+    if (refPathPrefix.indexOf('/') > -1)
+      throw new IllegalArgumentException(s"refPathPrefix must not contain slash, was: $refPathPrefix")
     val result = Promise[Any]()
     val scheduler = provider.guardian.underlying.system.scheduler
-    val a = new PromiseActorRef(provider, result, messageClassName)
+    val a = new PromiseActorRef(provider, result, messageClassName, refPathPrefix)
     implicit val ec = ExecutionContexts.parasitic
     val f = scheduler.scheduleOnce(timeout.duration) {
       val timedOut = result.tryComplete {

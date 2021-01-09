@@ -101,7 +101,7 @@ abstract class FactorialFrontend3 extends Actor {
         totalInstances = 100,
         maxInstancesPerNode = 3,
         allowLocalRoutees = false,
-        useRoles = Set("backend"))).props(Props[FactorialBackend]),
+        useRoles = Set("backend"))).props(Props[FactorialBackend]()),
     name = "factorialBackendRouter3")
   //#router-deploy-in-code
 }

@@ -8,19 +8,20 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-
 import akka.NotUsed
 import akka.dispatch.ExecutionContexts
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream._
 import akka.stream.impl.Throttle
-import akka.util.ConstantFun
+import akka.util.{ ccompat, ConstantFun }
+import ccompat._
 
 /**
  * Shared stream operations for [[FlowWithContext]] and [[SourceWithContext]] that automatically propagate a context
  * element with each data element.
  *
  */
+@ccompatUsedUntil213
 trait FlowWithContextOps[+Out, +Ctx, +Mat] {
   type ReprMat[+O, +C, +M] <: FlowWithContextOps[O, C, M] {
     type ReprMat[+OO, +CC, +MatMat] = FlowWithContextOps.this.ReprMat[OO, CC, MatMat]
@@ -173,9 +174,9 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.mapConcat]]
    */
-  def mapConcat[Out2](f: Out => immutable.Iterable[Out2]): Repr[Out2, Ctx] =
+  def mapConcat[Out2](f: Out => IterableOnce[Out2]): Repr[Out2, Ctx] =
     via(flow.mapConcat {
-      case (e, ctx) => f(e).map(_ -> ctx)
+      case (e, ctx) => f(e).iterator.map(_ -> ctx)
     })
 
   /**

@@ -67,9 +67,9 @@ interface GracefulStopDocTest {
     private Behavior<Command> onGracefulShutdown() {
       getContext().getSystem().log().info("Initiating graceful shutdown...");
 
-      // perform graceful stop, executing cleanup before final system termination
-      // behavior executing cleanup is passed as a parameter to Actor.stopped
-      return Behaviors.stopped(() -> getContext().getSystem().log().info("Cleanup!"));
+      // Here it can perform graceful stop (possibly asynchronous) and when completed
+      // return `Behaviors.stopped()` here or after receiving another message.
+      return Behaviors.stopped();
     }
 
     private Behavior<Command> onPostStop() {
@@ -80,8 +80,6 @@ interface GracefulStopDocTest {
   // #master-actor
 
   public static void main(String[] args) throws Exception {
-    // #graceful-shutdown
-
     final ActorSystem<MasterControlProgram.Command> system =
         ActorSystem.create(MasterControlProgram.create(), "B6700");
 
@@ -94,7 +92,6 @@ interface GracefulStopDocTest {
     system.tell(MasterControlProgram.GracefulShutdown.INSTANCE);
 
     system.getWhenTerminated().toCompletableFuture().get(3, TimeUnit.SECONDS);
-    // #graceful-shutdown
   }
 
   // #worker-actor

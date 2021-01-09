@@ -31,6 +31,7 @@ class ArteryUpdSendConsistencyWithOneLaneSpec
 
 class ArteryUpdSendConsistencyWithThreeLanesSpec
     extends AbstractRemoteSendConsistencySpec(ConfigFactory.parseString("""
+      akka.loglevel = DEBUG
       akka.remote.artery.transport = aeron-udp
       akka.remote.artery.advanced.outbound-lanes = 3
       akka.remote.artery.advanced.inbound-lanes = 3

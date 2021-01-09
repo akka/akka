@@ -7,10 +7,8 @@ package akka.remote.artery
 import scala.concurrent.Promise
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
-
 import akka.Done
-import akka.actor.Actor
-import akka.actor.Props
+import akka.actor.{ Actor, ActorLogging, Props }
 import akka.annotation.InternalApi
 import akka.remote.UniqueAddress
 
@@ -32,7 +30,8 @@ private[remote] object FlushOnShutdown {
  */
 @InternalApi
 private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDuration, associations: Set[Association])
-    extends Actor {
+    extends Actor
+    with ActorLogging {
 
   var remaining = Map.empty[UniqueAddress, Int]
 
@@ -63,10 +62,12 @@ private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDurati
   override def postStop(): Unit = {
     timeoutTask.cancel()
     done.trySuccess(Done)
+    log.debug("FlushOnShutdown stopped")
   }
 
   def receive: Receive = {
     case ActorSystemTerminatingAck(from) =>
+      log.debug("ActorSystemTerminatingAck from [{}]", from)
       // Just treat unexpected acks as systems from which zero acks are expected
       val acksRemaining = remaining.getOrElse(from, 0)
       if (acksRemaining <= 1) {
@@ -75,9 +76,15 @@ private[remote] class FlushOnShutdown(done: Promise[Done], timeout: FiniteDurati
         remaining = remaining.updated(from, acksRemaining - 1)
       }
 
-      if (remaining.isEmpty)
+      if (remaining.isEmpty) {
+        log.debug("Flushing completed")
         context.stop(self)
+      }
     case FlushOnShutdown.Timeout =>
+      log.debug(
+        "Flush of remote transport timed out after [{}]. Remaining [{}] associations.",
+        timeout.toCoarsest,
+        remaining.size)
       context.stop(self)
   }
 }

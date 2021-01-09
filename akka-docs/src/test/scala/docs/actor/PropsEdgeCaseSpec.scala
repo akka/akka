@@ -38,7 +38,7 @@ class PropsEdgeCaseSpec extends AnyWordSpec with CompileOnlySpec {
         case x: Int => sender() ! (x * b)
       }
     }
-    val defaultValueProp2 = Props[DefaultValueActor2] // Unsupported
+    val defaultValueProp2 = Props[DefaultValueActor2]() // Unsupported
     val defaultValueProp3 = Props(classOf[DefaultValueActor2]) // Unsupported
     //#props-edge-cases-default-values
   }

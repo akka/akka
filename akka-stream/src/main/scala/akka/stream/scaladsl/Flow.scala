@@ -33,6 +33,7 @@ import akka.stream.impl.fusing._
 import akka.stream.impl.fusing.FlattenMerge
 import akka.stream.stage._
 import akka.util.{ ConstantFun, Timeout }
+import akka.util.ccompat._
 
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
@@ -780,9 +781,9 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
  * Binary compatibility is only maintained for callers of this trait’s interface.
  */
 @DoNotInherit
+@ccompatUsedUntil213
 trait FlowOps[+Out, +Mat] {
   import GraphDSL.Implicits._
-
   import akka.stream.impl.Stages._
 
   type Repr[+O] <: FlowOps[O, Mat] {
@@ -969,7 +970,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    *
    */
-  def mapConcat[T](f: Out => immutable.Iterable[T]): Repr[T] = statefulMapConcat(() => f)
+  def mapConcat[T](f: Out => IterableOnce[T]): Repr[T] = statefulMapConcat(() => f)
 
   /**
    * Transform each input element into an `Iterable` of output elements that is
@@ -995,7 +996,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.mapConcat]]
    */
-  def statefulMapConcat[T](f: () => Out => immutable.Iterable[T]): Repr[T] =
+  def statefulMapConcat[T](f: () => Out => IterableOnce[T]): Repr[T] =
     via(new StatefulMapConcat(f))
 
   /**

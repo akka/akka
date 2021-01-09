@@ -10,6 +10,7 @@ import akka.actor.Props
 import akka.actor.typed.scaladsl.adapter._
 import akka.persistence._
 import akka.persistence.testkit._
+import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.testkit.EventFilter
 
 trait CommonSnapshotTests extends ScalaDslUtils {
@@ -489,6 +490,70 @@ trait CommonSnapshotTests extends ScalaDslUtils {
       system.actorOf(Props(classOf[A], pid, Some(testActor)))
 
       expectMsg((List.empty, 3))
+
+    }
+
+    "test snapshot events with RetentionCriteria" in {
+
+      lazy val tk = new SnapshotTestKit(system)
+
+      val pid = randomPid()
+      val act = system.spawn(
+        eventSourcedBehaviorWithState(pid).withRetention(
+          RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 2)),
+        pid)
+
+      act ! Cmd("a")
+      act ! Cmd("b")
+      tk.expectNextPersisted(pid, NonEmptyState("ab"))
+
+      act ! Cmd("c")
+      act ! Cmd("d")
+      tk.expectNextPersisted(pid, NonEmptyState("abcd"))
+
+      act ! Cmd("e")
+      act ! Cmd("f")
+      tk.expectNextPersisted(pid, NonEmptyState("abcdef"))
+
+      act ! Cmd("g")
+      act ! Cmd("h")
+      tk.expectNextPersisted(pid, NonEmptyState("abcdefgh"))
+
+      act ! Cmd("i")
+      act ! Cmd("j")
+      act ! Cmd("k")
+
+      tk.expectNextPersisted(pid, NonEmptyState("abcdefghij"))
+
+    }
+
+    "test snapshot events with RetentionCriteria after sending commands" in {
+
+      lazy val tk = new SnapshotTestKit(system)
+
+      val pid = randomPid()
+      val act = system.spawn(
+        eventSourcedBehaviorWithState(pid).withRetention(
+          RetentionCriteria.snapshotEvery(numberOfEvents = 2, keepNSnapshots = 2)),
+        pid)
+
+      act ! Cmd("a")
+      act ! Cmd("b")
+      act ! Cmd("c")
+      act ! Cmd("d")
+      act ! Cmd("e")
+      act ! Cmd("f")
+      act ! Cmd("g")
+      act ! Cmd("h")
+      act ! Cmd("i")
+      act ! Cmd("j")
+      act ! Cmd("k")
+
+      tk.expectNextPersisted(pid, NonEmptyState("ab"))
+      tk.expectNextPersisted(pid, NonEmptyState("abcd"))
+      tk.expectNextPersisted(pid, NonEmptyState("abcdef"))
+      tk.expectNextPersisted(pid, NonEmptyState("abcdefgh"))
+      tk.expectNextPersisted(pid, NonEmptyState("abcdefghij"))
 
     }
 

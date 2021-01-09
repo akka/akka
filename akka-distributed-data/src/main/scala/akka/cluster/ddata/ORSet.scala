@@ -188,7 +188,7 @@ object ORSet {
             }
           case (ManyVersionVector(lhsVs), ManyVersionVector(rhsVs)) =>
             val commonDots = lhsVs.filter {
-              case (thisDotNode, v) => rhsVs.get(thisDotNode).exists(_ == v)
+              case (thisDotNode, v) => rhsVs.get(thisDotNode).contains(v)
             }
             val commonDotsKeys = commonDots.keys
             val lhsUniqueDots = lhsVs -- commonDotsKeys

@@ -298,11 +298,11 @@ abstract class MultiNodeSpec(
     def await: T = Await.result(w, remainingOr(testConductor.Settings.QueryTimeout.duration))
   }
 
-  final override def multiNodeSpecBeforeAll: Unit = {
+  final override def multiNodeSpecBeforeAll(): Unit = {
     atStartup()
   }
 
-  final override def multiNodeSpecAfterAll: Unit = {
+  final override def multiNodeSpecAfterAll(): Unit = {
     // wait for all nodes to remove themselves before we shut the conductor down
     if (selfIndex == 0) {
       testConductor.removeNode(myself)

@@ -56,7 +56,10 @@ object MaterializerState {
       implicit ec: ExecutionContext): Future[immutable.Seq[StreamSnapshot]] = {
     // Arbitrary timeout: operation should always be quick, when it times out it will be because the materializer stopped
     implicit val timeout: Timeout = 10.seconds
-    (supervisor ? StreamSupervisor.GetChildrenSnapshots).mapTo[StreamSupervisor.ChildrenSnapshots].map(_.seq)
+    supervisor
+      .askWithStatus(StreamSupervisor.GetChildrenSnapshots(timeout.duration))
+      .mapTo[StreamSupervisor.ChildrenSnapshots]
+      .map(_.seq)
   }
 
   /** INTERNAL API */

@@ -99,11 +99,11 @@ import akka.pattern.pipe
   private val cluster = Cluster(context.system)
 
   log.info(
-    "SBR started. Config: stableAfter: {} ms, strategy: {}, selfUniqueAddress: {}, selfDc: {}",
-    stableAfter.toMillis,
+    s"SBR started. Config: strategy [{}], stable-after [{}], down-all-when-unstable [{}], selfUniqueAddress [{}], selfDc [$selfDc].",
     Logging.simpleName(strategy.getClass),
-    selfUniqueAddress,
-    selfDc)
+    stableAfter.toCoarsest,
+    if (downAllWhenUnstable == Duration.Zero) "off" else downAllWhenUnstable.toCoarsest,
+    s"${selfUniqueAddress.address}#${selfUniqueAddress.longUid}")
 
   override def selfUniqueAddress: UniqueAddress = cluster.selfUniqueAddress
   override def selfDc: DataCenter = cluster.selfDataCenter
@@ -294,16 +294,17 @@ import akka.pattern.pipe
       val durationSinceLatestChange = (now - reachabilityChangedStats.latestChangeTimestamp).nanos
       val durationSinceFirstChange = (now - reachabilityChangedStats.firstChangeTimestamp).nanos
 
-      if (durationSinceLatestChange > (stableAfter * 2)) {
-        log.debug("SBR no reachability changes within {} ms, resetting stats", (stableAfter * 2).toMillis)
-        resetReachabilityChangedStats()
-      } else if (downAllWhenUnstable > Duration.Zero &&
-                 durationSinceFirstChange > (stableAfter + downAllWhenUnstable)) {
+      val downAllWhenUnstableEnabled = downAllWhenUnstable > Duration.Zero
+      if (downAllWhenUnstableEnabled && durationSinceFirstChange > (stableAfter + downAllWhenUnstable)) {
         log.warning(
           ClusterLogMarker.sbrInstability,
           "SBR detected instability and will down all nodes: {}",
           reachabilityChangedStats)
         actOnDecision(DownAll)
+      } else if (!downAllWhenUnstableEnabled && durationSinceLatestChange > (stableAfter * 2)) {
+        // downAllWhenUnstable is disabled but reset for meaningful logging
+        log.debug("SBR no reachability changes within {} ms, resetting stats", (stableAfter * 2).toMillis)
+        resetReachabilityChangedStats()
       }
     }
 
@@ -470,7 +471,10 @@ import akka.pattern.pipe
       log.debug("SBR unreachableMember [{}]", m)
       mutateMemberInfo(resetStable = true) { () =>
         strategy.addUnreachable(m)
+        updateReachabilityChangedStats()
         resetReachabilityChangedStatsIfAllUnreachableDowned()
+        if (!reachabilityChangedStats.isEmpty)
+          log.debug("SBR noticed {}", reachabilityChangedStats)
       }
     }
   }
@@ -480,19 +484,16 @@ import akka.pattern.pipe
       log.debug("SBR reachableMember [{}]", m)
       mutateMemberInfo(resetStable = true) { () =>
         strategy.addReachable(m)
+        updateReachabilityChangedStats()
         resetReachabilityChangedStatsIfAllUnreachableDowned()
+        if (!reachabilityChangedStats.isEmpty)
+          log.debug("SBR noticed {}", reachabilityChangedStats)
       }
     }
   }
 
   private[sbr] def reachabilityChanged(r: Reachability): Unit = {
-    if (strategy.setReachability(r)) {
-      // resetStableDeadline is done from unreachableMember/reachableMember
-      updateReachabilityChangedStats()
-      // it may also change when members are removed and therefore the reset may be needed
-      resetReachabilityChangedStatsIfAllUnreachableDowned()
-      log.debug("SBR noticed {}", reachabilityChangedStats)
-    }
+    strategy.setReachability(r)
   }
 
   private def updateReachabilityChangedStats(): Unit = {

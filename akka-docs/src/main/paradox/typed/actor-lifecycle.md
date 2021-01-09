@@ -102,7 +102,7 @@ is a tool that mimics the old style of starting up actors.
 Child actors are created and started with @apidoc[typed.*.ActorContext]'s `spawn`.
 In the example below, when the root actor
 is started, it spawns a child actor described by the `HelloWorld` behavior. Additionally, when the root actor receives a
-`Start` message, it creates a child actor defined by the behavior `HelloWorldBot`:
+`SayHello` message, it creates a child actor defined by the behavior `HelloWorldBot`:
 
 Scala
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-main }
@@ -165,8 +165,6 @@ A child actor can be forced to stop after it finishes processing its current mes
 All child actors will be stopped when their parent is stopped.
 
 When an actor is stopped, it receives the `PostStop` signal that can be used for cleaning up resources.
-A callback function may be specified as parameter to `Behaviors.stopped` to handle the `PostStop` signal 
-when stopping gracefully. This allows to apply different actions when it is stopped abruptly.
 
 Here is an illustrating example:
 
@@ -175,7 +173,6 @@ Scala
     #imports
     #master-actor
     #worker-actor
-    #graceful-shutdown
   }
 
 Java
@@ -183,7 +180,6 @@ Java
    #imports
    #master-actor
    #worker-actor
-   #graceful-shutdown
  }
 
 When cleaning up resources from `PostStop` you should also consider doing the same for the `PreRestart` signal,

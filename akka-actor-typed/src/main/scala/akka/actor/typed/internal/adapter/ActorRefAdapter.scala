@@ -38,6 +38,8 @@ import akka.dispatch.sysmsg
   // impl InternalRecipientRef
   def isTerminated: Boolean = classicRef.isTerminated
 
+  override def refPrefix: String = path.name
+
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = SerializedActorRef[T](this)
 }

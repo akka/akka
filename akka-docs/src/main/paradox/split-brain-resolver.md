@@ -106,9 +106,9 @@ handling network partition, unresponsive nodes and crashed nodes.
 ## Strategies
 
 By default the @ref:[Keep Majority](#keep-majority) strategy will be used because it works well for
-most systems. However, it's wort considering the other available strategies and pick a strategy that fits
+most systems. However, it's worth considering the other available strategies and pick a strategy that fits
 the characteristics of your system. For example, in a Kubernetes environment the @ref:[Lease](#lease) strategy
-can be a good choice. 
+can be a good choice.
 
 Every strategy has a failure scenario where it makes a "wrong" decision. This section describes the different
 strategies and guidelines of when to use what.
@@ -351,7 +351,7 @@ This strategy is very safe since coordination is added by an external arbiter. T
 strategies is that it requires additional infrastructure for implementing the lease and it reduces the availability
 of a decision to that of the system backing the lease store.
 
-Similar to other strategies it is important that decisions are not deferred for too because the nodes that couldn't
+Similar to other strategies it is important that decisions are not deferred for too long because the nodes that couldn't
 acquire the lease must decide to down themselves, see @ref[Down all when unstable](#down-all-when-unstable).
 
 In some cases the lease will be unavailable when needed for a decision from all SBR instances, e.g. because it is
@@ -366,7 +366,7 @@ akka {
     split-brain-resolver {
       active-strategy = "lease-majority"
       lease-majority {
-        lease-implementation = "akka.lease.kubernetes"
+        lease-implementation = "akka.coordination.lease.kubernetes"
       }
     }
   }

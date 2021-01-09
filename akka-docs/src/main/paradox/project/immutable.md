@@ -3,7 +3,7 @@ project.description: Data immutability using Project Lombok
 ---
 # Immutability using Lombok
 
-A preferred best practise in Akka is to have immutable messages. Scala provides case class which makes it extremely easy
+A preferred best practice in Akka is to have immutable messages. Scala provides case class which makes it extremely easy
 to have short and clean classes for creating immutable objects, but no such facility is easily available in Java. We can make use
 of several third party libraries which help is achieving this. One good example is Lombok.
 
@@ -17,29 +17,17 @@ Lombok handles the following details for you. It:
 * creates correct `equals`, `hashCode` and a human-friendly `toString`
 * creates a constructor requiring all fields.
 
-
 ### Adding Lombok to your project
+
 To add Lombok to a Maven project, declare it as a simple dependency:
 
-Maven
-: @@dependency {
-    <dependency>
-        <groupId>org.projectlombok</groupId>
-        <artifactId>lombok</artifactId>
-        <version>1.18.10</version>
-    </dependency>
+@@dependency[Maven,Gradle] {
+  group="org.projectlombok"
+  artifact="lombok"
+  version=1.18.10
 }
 
-Gradle
-: @@dependency {
-    dependencies {
-    	compileOnly 'org.projectlombok:lombok:1.18.10'
-    	annotationProcessor 'org.projectlombok:lombok:1.18.10'
-    }
-} 
-    
-    
-# Using lombok    
+# Using lombok
 
     @Value
     public class LombokUser {
@@ -48,15 +36,15 @@ Gradle
     
       String email;
     }
-    
-The example does not demonstrate other useful Lombok features like `@Builder` or `@Wither` which will help 
-you create builder and copy methods. Be aware that Lombok is not an immutability library but a 
-code generation library which means some setups might not create immutable objects. 
-For example, Lombok’s @Data is equivalent to Lombok’s @Value but will also synthesize mutable methods. 
+
+The example does not demonstrate other useful Lombok features like `@Builder` or `@Wither` which will help
+you create builder and copy methods. Be aware that Lombok is not an immutability library but a
+code generation library which means some setups might not create immutable objects.
+For example, Lombok’s @Data is equivalent to Lombok’s @Value but will also synthesize mutable methods.
 Don’t use Lombok’s @Data when creating immutable classes.
 
-Using Lombok for creating a message class for actors is quite simple. In following example, Message class 
-just defines the member variable and Lombok annotation '@Value' takes care of creating methods like 
+Using Lombok for creating a message class for actors is quite simple. In following example, Message class
+just defines the member variable and Lombok annotation '@Value' takes care of creating methods like
 getter, toString, hashCode, equals.
 
     public class MyActor extends AbstractActor {
@@ -82,6 +70,8 @@ getter, toString, hashCode, equals.
     }
 
 ### Integrating Lombok with an IDE
+
 Lombok integrates with popular IDEs:
+
 * To use Lombok in IntelliJ IDEA you'll need the [Lombok Plugin for IntelliJ IDEA](https://plugins.jetbrains.com/plugin/6317-lombok) and you'll also need to enable Annotation Processing (`Settings / Build,Execution,Deployment / Compiler / Annotation Processors` and tick `Enable annotation processing`)
 * To Use Lombok in Eclipse, run `java -jar lombok.jar` (see the video at [Project Lombok](https://projectlombok.org/)).

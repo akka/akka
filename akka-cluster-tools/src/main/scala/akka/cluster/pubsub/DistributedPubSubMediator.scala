@@ -674,7 +674,7 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
       forwardMessages(key, sender())
 
     case GetTopics =>
-      sender ! CurrentTopics(getCurrentTopics())
+      sender() ! CurrentTopics(getCurrentTopics())
 
     case Subscribed(ack, ref) =>
       ref ! ack

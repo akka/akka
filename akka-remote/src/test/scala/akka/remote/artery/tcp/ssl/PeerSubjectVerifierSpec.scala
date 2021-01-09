@@ -52,8 +52,7 @@ class PeerSubjectVerifierSpec extends AnyWordSpec with Matchers {
       override def removeValue(name: String): Unit = throw new UnsupportedOperationException()
       override def getValueNames: Array[String] = throw new UnsupportedOperationException()
       override def getLocalCertificates: Array[Certificate] = throw new UnsupportedOperationException()
-      override def getPeerCertificateChain: Array[javax.security.cert.X509Certificate] =
-        throw new UnsupportedOperationException()
+      override def getPeerCertificateChain = throw new UnsupportedOperationException()
       override def getPeerPrincipal: Principal = throw new UnsupportedOperationException()
       override def getLocalPrincipal: Principal = throw new UnsupportedOperationException()
       override def getCipherSuite: String = throw new UnsupportedOperationException()

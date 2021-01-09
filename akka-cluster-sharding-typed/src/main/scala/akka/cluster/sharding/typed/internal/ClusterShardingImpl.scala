@@ -29,7 +29,7 @@ import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.cluster.ClusterSettings.DataCenter
-import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
+import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.{ StartEntity => ClassicStartEntity }
@@ -40,6 +40,7 @@ import akka.event.LoggingAdapter
 import akka.japi.function.{ Function => JFunction }
 import akka.pattern.AskTimeoutException
 import akka.pattern.PromiseActorRef
+import akka.pattern.StatusReply
 import akka.util.{ unused, ByteString, Timeout }
 import akka.util.JavaDurationConverters._
 
@@ -279,9 +280,17 @@ import akka.util.JavaDurationConverters._
   }
 
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
-    val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
-    val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
-    new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+    if (settings.tuningParameters.leastShardAllocationAbsoluteLimit > 0) {
+      // new algorithm
+      val absoluteLimit = settings.tuningParameters.leastShardAllocationAbsoluteLimit
+      val relativeLimit = settings.tuningParameters.leastShardAllocationRelativeLimit
+      ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit, relativeLimit)
+    } else {
+      // old algorithm
+      val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
+      val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
+      new ShardCoordinator.LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+    }
   }
 
   override lazy val shardState: ActorRef[ClusterShardingQuery] = {
@@ -303,22 +312,30 @@ import akka.util.JavaDurationConverters._
     with scaladsl.EntityRef[M]
     with InternalRecipientRef[M] {
 
+  override val refPrefix = URLEncoder.encode(s"${typeKey.name}-$entityId", ByteString.UTF_8)
+
   override def tell(msg: M): Unit =
     shardRegion ! ShardingEnvelope(entityId, msg)
 
   override def ask[U](message: ActorRef[U] => M)(implicit timeout: Timeout): Future[U] = {
-    val replyTo = new EntityPromiseRef[U](shardRegion.asInstanceOf[InternalActorRef], timeout)
+    val replyTo = new EntityPromiseRef[U](shardRegion.asInstanceOf[InternalActorRef], timeout, refPrefix)
     val m = message(replyTo.ref)
     if (replyTo.promiseRef ne null) replyTo.promiseRef.messageClassName = m.getClass.getName
     replyTo.ask(shardRegion, entityId, m, timeout)
   }
 
-  def ask[U](message: JFunction[ActorRef[U], M], timeout: Duration): CompletionStage[U] =
+  override def ask[U](message: JFunction[ActorRef[U], M], timeout: Duration): CompletionStage[U] =
     ask[U](replyTo => message.apply(replyTo))(timeout.asScala).toJava
+
+  override def askWithStatus[Res](f: ActorRef[StatusReply[Res]] => M)(implicit timeout: Timeout): Future[Res] =
+    StatusReply.flattenStatusFuture(ask[StatusReply[Res]](f))
+
+  override def askWithStatus[Res](f: ActorRef[StatusReply[Res]] => M, timeout: Duration): CompletionStage[Res] =
+    askWithStatus(f.apply)(timeout.asScala).toJava
 
   /** Similar to [[akka.actor.typed.scaladsl.AskPattern.PromiseRef]] but for an `EntityRef` target. */
   @InternalApi
-  private final class EntityPromiseRef[U](classic: InternalActorRef, timeout: Timeout) {
+  private final class EntityPromiseRef[U](classic: InternalActorRef, timeout: Timeout, refPathPrefix: String) {
     import akka.actor.typed.internal.{ adapter => adapt }
 
     // Note: _promiseRef mustn't have a type pattern, since it can be null
@@ -339,7 +356,12 @@ import akka.util.JavaDurationConverters._
       else {
         // note that the real messageClassName will be set afterwards, replyTo pattern
         val a =
-          PromiseActorRef(classic.provider, timeout, targetName = EntityRefImpl.this, messageClassName = "unknown")
+          PromiseActorRef(
+            classic.provider,
+            timeout,
+            targetName = EntityRefImpl.this,
+            messageClassName = "unknown",
+            refPathPrefix)
         val b = adapt.ActorRefAdapter[U](a)
         (b, a.result.future.asInstanceOf[Future[U]], a)
       }
@@ -373,6 +395,10 @@ import akka.util.JavaDurationConverters._
 
   override def toString: String = s"EntityRef($typeKey, $entityId)"
 
+  /**
+   * INTERNAL API
+   */
+  override private[akka] def asJava: javadsl.EntityRef[M] = this
 }
 
 /**

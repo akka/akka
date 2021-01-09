@@ -29,19 +29,19 @@ public class JavaFlowSupportCompileTest extends JUnitSuite {
     };
 
 
-    final Source<String, Flow.Subscriber<String>> stringSubscriberSource = 
+    final Source<String, Flow.Subscriber<String>> stringSubscriberSource =
       JavaFlowSupport.Source.asSubscriber();
-    final Source<String, NotUsed> stringNotUsedSource = 
+    final Source<String, NotUsed> stringNotUsedSource =
       JavaFlowSupport.Source.fromPublisher(processor);
 
-    final akka.stream.javadsl.Flow<String, String, NotUsed> stringStringNotUsedFlow = 
+    final akka.stream.javadsl.Flow<String, String, NotUsed> stringStringNotUsedFlow =
       JavaFlowSupport.Flow.fromProcessor(() -> processor);
-    final akka.stream.javadsl.Flow<String, String, NotUsed> stringStringNotUsedFlow1 = 
+    final akka.stream.javadsl.Flow<String, String, NotUsed> stringStringNotUsedFlow1 =
       JavaFlowSupport.Flow.fromProcessorMat(() -> Pair.apply(processor, NotUsed.getInstance()));
 
-    final Sink<String, Flow.Publisher<String>> stringPublisherSink = 
+    final Sink<String, Flow.Publisher<String>> stringPublisherSink =
       JavaFlowSupport.Sink.asPublisher(AsPublisher.WITH_FANOUT);
-    final Sink<String, NotUsed> stringNotUsedSink = 
+    final Sink<String, NotUsed> stringNotUsedSink =
       JavaFlowSupport.Sink.fromSubscriber(processor);
   }
 }

@@ -8,11 +8,13 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import akka.Done;
 import akka.NotUsed;
 import jdocs.AbstractJavaTest;
 import akka.testkit.javadsl.TestKit;
@@ -128,7 +130,16 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
             .toMat(Sink.fold("", (agg, next) -> agg + next), Keep.right());
 
     final Pair<ActorRef, CompletionStage<String>> refAndCompletionStage =
-        Source.<Integer>actorRef(8, OverflowStrategy.fail())
+        Source.<Integer>actorRef(
+                elem -> {
+                  // complete stream immediately if we send it Done
+                  if (elem == Done.done()) return Optional.of(CompletionStrategy.immediately());
+                  else return Optional.empty();
+                },
+                // never fail the stream because of a message
+                elem -> Optional.empty(),
+                8,
+                OverflowStrategy.fail())
             .toMat(sinkUnderTest, Keep.both())
             .run(system);
     final ActorRef ref = refAndCompletionStage.first();
@@ -137,7 +148,7 @@ public class StreamTestKitDocTest extends AbstractJavaTest {
     ref.tell(1, ActorRef.noSender());
     ref.tell(2, ActorRef.noSender());
     ref.tell(3, ActorRef.noSender());
-    ref.tell(new akka.actor.Status.Success("done"), ActorRef.noSender());
+    ref.tell(Done.getInstance(), ActorRef.noSender());
 
     final String result = future.toCompletableFuture().get(1, TimeUnit.SECONDS);
     assertEquals(result, "123");

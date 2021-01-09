@@ -44,6 +44,7 @@ import static akka.stream.testkit.StreamTestKit.PublisherProbeSubscription;
 import static akka.stream.testkit.TestPublisher.ManualProbe;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 @SuppressWarnings("serial")
 public class SourceTest extends StreamTest {
@@ -327,7 +328,7 @@ public class SourceTest extends StreamTest {
 
     List<Object> output = probe.receiveN(5);
     assertEquals(Arrays.asList(4, 3, 2, 1, 0), output);
-    probe.expectNoMessage(FiniteDuration.create(500, TimeUnit.MILLISECONDS));
+    probe.expectNoMessage(Duration.ofMillis(500));
   }
 
   @Test
@@ -581,7 +582,7 @@ public class SourceTest extends StreamTest {
     final Iterable<String> input = Arrays.asList("A", "B", "C");
     CompletionStage<String> future1 = Source.from(input).runWith(Sink.<String>head(), system);
     CompletionStage<String> future2 =
-        Source.fromCompletionStage(future1).runWith(Sink.<String>head(), system);
+        Source.completionStage(future1).runWith(Sink.<String>head(), system);
     String result = future2.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals("A", result);
   }
@@ -590,7 +591,7 @@ public class SourceTest extends StreamTest {
   public void mustWorkFromFutureVoid() throws Exception {
     CompletionStage<Void> future = CompletableFuture.completedFuture(null);
     CompletionStage<List<Void>> future2 =
-        Source.fromCompletionStage(future).runWith(Sink.seq(), system);
+        Source.completionStage(future).runWith(Sink.seq(), system);
     List<Void> result = future2.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(0, result.size());
   }
@@ -657,7 +658,12 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustBeAbleToUseActorRefSource() throws Exception {
     final TestKit probe = new TestKit(system);
-    final Source<Integer, ActorRef> actorRefSource = Source.actorRef(10, OverflowStrategy.fail());
+    final Source<Integer, ActorRef> actorRefSource =
+        Source.<Integer>actorRef(
+            msg -> Optional.<CompletionStrategy>empty(),
+            msg -> Optional.<Throwable>empty(),
+            10,
+            OverflowStrategy.fail());
     final ActorRef ref =
         actorRefSource
             .to(
@@ -799,7 +805,11 @@ public class SourceTest extends StreamTest {
                   if (elem == 1) throw new RuntimeException("ex");
                   else return elem;
                 })
-            .recover(new PFBuilder<Throwable, Integer>().matchAny(ex -> 0).build());
+            .recoverWithRetries(
+                1,
+                new PFBuilder<Throwable, Source<Integer, NotUsed>>()
+                    .matchAny(ex -> Source.single(0))
+                    .build());
 
     final CompletionStage<Done> future =
         source.runWith(
@@ -867,6 +877,7 @@ public class SourceTest extends StreamTest {
     probe.expectMsgAllOf(0, 1, 2, 3);
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void mustBeAbleToZipN() throws Exception {
     final TestKit probe = new TestKit(system);
@@ -895,7 +906,7 @@ public class SourceTest extends StreamTest {
     final List<Source<Integer, ?>> sources = Arrays.asList(source1, source2);
 
     final Source<Boolean, ?> source =
-        Source.zipWithN(list -> new Boolean(list.contains(0)), sources);
+        Source.zipWithN(list -> Boolean.valueOf(list.contains(0)), sources);
 
     final CompletionStage<Done> future =
         source.runWith(

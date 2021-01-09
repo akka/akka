@@ -5,15 +5,16 @@
 package akka.cluster
 
 import scala.concurrent.duration.FiniteDuration
-
 import akka.actor._
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.cluster.ClusterEvent.MemberJoined
 import akka.cluster.ClusterEvent.MemberRemoved
+import akka.cluster.ClusterEvent.MemberTombstonesChanged
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberWeaklyUp
 import akka.dispatch.Dispatchers
+import akka.dispatch.sysmsg.DeathWatchNotification
 import akka.event.ActorWithLogClass
 import akka.event.Logging
 import akka.remote.FailureDetectorRegistry
@@ -60,7 +61,8 @@ private[cluster] class ClusterRemoteWatcher(
     heartbeatInterval: FiniteDuration,
     unreachableReaperInterval: FiniteDuration,
     heartbeatExpectedResponseAfter: FiniteDuration)
-    extends RemoteWatcher(failureDetector, heartbeatInterval, unreachableReaperInterval, heartbeatExpectedResponseAfter) {
+    extends RemoteWatcher(failureDetector, heartbeatInterval, unreachableReaperInterval, heartbeatExpectedResponseAfter)
+    with Timers {
 
   import ClusterRemoteWatcher.DelayedQuarantine
 
@@ -76,10 +78,11 @@ private[cluster] class ClusterRemoteWatcher(
   private var pendingDelayedQuarantine: Set[UniqueAddress] = Set.empty
 
   var clusterNodes: Set[Address] = Set.empty
+  var memberTombstones: Set[UniqueAddress] = Set.empty
 
   override def preStart(): Unit = {
     super.preStart()
-    cluster.subscribe(self, classOf[MemberEvent])
+    cluster.subscribe(self, classOf[MemberEvent], classOf[MemberTombstonesChanged])
   }
 
   override def postStop(): Unit = {
@@ -94,10 +97,12 @@ private[cluster] class ClusterRemoteWatcher(
       clusterNodes = state.members.collect { case m if m.address != selfAddress => m.address }
       clusterNodes.foreach(takeOverResponsibility)
       unreachable = unreachable.diff(clusterNodes)
+      memberTombstones = state.memberTombstones
     case MemberJoined(m)                      => memberJoined(m)
     case MemberUp(m)                          => memberUp(m)
     case MemberWeaklyUp(m)                    => memberUp(m)
     case MemberRemoved(m, previousStatus)     => memberRemoved(m, previousStatus)
+    case MemberTombstonesChanged(tombstones)  => memberTombstones = tombstones
     case _: MemberEvent                       => // not interesting
     case DelayedQuarantine(m, previousStatus) => delayedQuarantine(m, previousStatus)
   }
@@ -160,6 +165,17 @@ private[cluster] class ClusterRemoteWatcher(
         Some(m.uniqueAddress.longUid),
         s"Cluster member removed, previous status [$previousStatus]",
         harmless = true)
+    }
+  }
+
+  override def addWatch(watchee: InternalActorRef, watcher: InternalActorRef): Unit = {
+    val watcheeNode = watchee.path.address
+    if (!clusterNodes.contains(watcheeNode) && memberTombstones.exists(_.address == watcheeNode)) {
+      // node is not currently, but was previously part of cluster, trigger death watch notification immediately
+      log.debug("Death watch for [{}] triggered immediately because member was removed from cluster", watchee)
+      watcher.sendSystemMessage(DeathWatchNotification(watchee, existenceConfirmed = false, addressTerminated = true))
+    } else {
+      super.addWatch(watchee, watcher)
     }
   }
 

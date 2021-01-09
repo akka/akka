@@ -10,8 +10,6 @@ import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
 import scala.annotation.tailrec
-import scala.concurrent.duration._
-import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.duration._
 
@@ -34,7 +32,6 @@ import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
 import akka.util.ccompat._
-
 import akka.util.ccompat.JavaConverters._
 
 /**

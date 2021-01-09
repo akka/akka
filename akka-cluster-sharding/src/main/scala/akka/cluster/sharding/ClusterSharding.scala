@@ -113,11 +113,10 @@ import akka.util.ccompat.JavaConverters._
  *
  * '''Shard Allocation''':
  * The logic deciding which shards to rebalance is defined in a plugable shard allocation
- * strategy. The default implementation [[ShardCoordinator.LeastShardAllocationStrategy]]
+ * strategy. The default implementation `LeastShardAllocationStrategy`
  * picks shards for handoff from the `ShardRegion` with highest number of previously allocated shards.
  * They will then be allocated to the `ShardRegion` with lowest number of previously allocated shards,
- * i.e. new members in the cluster. There is a configurable `rebalance-threshold` of how large
- * the difference must be to begin the rebalancing. This strategy can be replaced by an application
+ * i.e. new members in the cluster. This strategy can be replaced by an application
  * specific implementation.
  *
  * '''Recovery''':
@@ -172,7 +171,6 @@ object ClusterSharding extends ExtensionId[ClusterSharding] with ExtensionIdProv
  */
 class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   import ClusterShardingGuardian._
-  import ShardCoordinator.LeastShardAllocationStrategy
   import ShardCoordinator.ShardAllocationStrategy
 
   private val log = Logging(system, this.getClass)
@@ -632,7 +630,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       case null =>
         proxies.get(proxyName(typeName, None)) match {
           case null =>
-            throw new IllegalStateException(s"Shard type [$typeName] must be started first")
+            throw new IllegalStateException(
+              s"Shard type [$typeName] must be started first. Started ${regions.keySet()} proxies ${proxies.keySet()}")
           case ref => ref
         }
       case ref => ref
@@ -655,13 +654,20 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   }
 
   /**
-   * The default is currently [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] with the
-   * given `settings`. This could be changed in the future.
+   * The default `ShardAllocationStrategy` is configured by `least-shard-allocation-strategy` properties.
    */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
-    val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
-    val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
-    new LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+    if (settings.tuningParameters.leastShardAllocationAbsoluteLimit > 0) {
+      // new algorithm
+      val absoluteLimit = settings.tuningParameters.leastShardAllocationAbsoluteLimit
+      val relativeLimit = settings.tuningParameters.leastShardAllocationRelativeLimit
+      ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit, relativeLimit)
+    } else {
+      // old algorithm
+      val threshold = settings.tuningParameters.leastShardAllocationRebalanceThreshold
+      val maxSimultaneousRebalance = settings.tuningParameters.leastShardAllocationMaxSimultaneousRebalance
+      new ShardCoordinator.LeastShardAllocationStrategy(threshold, maxSimultaneousRebalance)
+    }
   }
 }
 

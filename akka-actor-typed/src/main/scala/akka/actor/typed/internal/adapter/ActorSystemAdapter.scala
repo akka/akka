@@ -121,6 +121,8 @@ import akka.annotation.InternalApi
     ActorRefAdapter(ref)
   }
 
+  override def refPrefix: String = "user"
+
   override def address: Address = system.provider.getDefaultAddress
 
 }
@@ -135,7 +137,7 @@ private[akka] object ActorSystemAdapter {
 
   object AdapterExtension extends classic.ExtensionId[AdapterExtension] with classic.ExtensionIdProvider {
     override def get(system: classic.ActorSystem): AdapterExtension = super.get(system)
-    override def lookup() = AdapterExtension
+    override def lookup = AdapterExtension
     override def createExtension(system: classic.ExtendedActorSystem): AdapterExtension =
       new AdapterExtension(system)
   }
@@ -152,7 +154,7 @@ private[akka] object ActorSystemAdapter {
   }
 
   object LoadTypedExtensions extends classic.ExtensionId[LoadTypedExtensions] with classic.ExtensionIdProvider {
-    override def lookup(): actor.ExtensionId[_ <: actor.Extension] = this
+    override def lookup: actor.ExtensionId[_ <: actor.Extension] = this
     override def createExtension(system: ExtendedActorSystem): LoadTypedExtensions =
       new LoadTypedExtensions(system)
   }

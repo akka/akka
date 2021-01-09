@@ -81,6 +81,18 @@ class StashBufferSpec extends AnyWordSpec with Matchers with LogCapturing {
       sb2.toString() should ===("m2m3")
     }
 
+    "answer 'exists' and 'contains' correctly" in {
+      val buffer = StashBuffer[String](context, 10)
+      buffer.stash("m1")
+      buffer.stash("m2")
+
+      buffer.contains("m1") shouldBe true
+      buffer.exists(_ == "m2") shouldBe true
+
+      buffer.contains("m3") shouldBe false
+      buffer.exists(_ == "m4") shouldBe false
+    }
+
     "unstash to returned behaviors" in {
       val buffer = StashBuffer[String](context, 10)
       buffer.stash("m1")

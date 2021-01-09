@@ -117,7 +117,7 @@ class CustomRouterDocSpec extends AkkaSpec(CustomRouterDocSpec.config) with Impl
 
   "demonstrate usage of custom router" in {
     //#usage-1
-    for (n <- 1 to 10) system.actorOf(Props[Storage], "s" + n)
+    for (n <- 1 to 10) system.actorOf(Props[Storage](), "s" + n)
 
     val paths = for (n <- 1 to 10) yield ("/user/s" + n)
     val redundancy1: ActorRef =

@@ -63,6 +63,8 @@ object ActorWithBoundedStashSpec {
 
   val dispatcherId1 = "my-dispatcher-1"
   val dispatcherId2 = "my-dispatcher-2"
+  val aliasedDispatcherId1 = "my-aliased-dispatcher-1"
+  val aliasedDispatcherId2 = "my-aliased-dispatcher-2"
   val mailboxId1 = "my-mailbox-1"
   val mailboxId2 = "my-mailbox-2"
 
@@ -75,6 +77,8 @@ object ActorWithBoundedStashSpec {
       mailbox-type = "${classOf[Bounded100].getName}"
       stash-capacity = 20
     }
+    $aliasedDispatcherId1 = $dispatcherId1
+    $aliasedDispatcherId2 = $aliasedDispatcherId1
     $mailboxId1 {
       mailbox-type = "${classOf[Bounded10].getName}"
       stash-capacity = 20
@@ -93,7 +97,7 @@ class ActorWithBoundedStashSpec
     with ImplicitSender {
   import ActorWithBoundedStashSpec._
 
-  override def atStartup: Unit = {
+  override def atStartup(): Unit = {
     system.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter from.*hello.*")))
   }
 
@@ -153,6 +157,11 @@ class ActorWithBoundedStashSpec
     "throw a StashOverflowException in case of a stash capacity violation when configured via mailbox" in {
       val stasher = system.actorOf(Props[StashingActorWithOverflow]().withMailbox(mailboxId2))
       testStashOverflowException(stasher)
+    }
+
+    "get stash capacity from aliased dispatchers" in {
+      val stasher = system.actorOf(Props[StashingActor]().withDispatcher(aliasedDispatcherId2))
+      testDeadLetters(stasher)
     }
   }
 }

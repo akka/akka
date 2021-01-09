@@ -47,7 +47,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           }(Keep.right)
           .toMat(Sink.seq)(Keep.both)
           .withAttributes(attributes)
-          .run
+          .run()
 
         prefixF.futureValue should ===(0 until 2)
         suffixF.futureValue should ===(2 until 10)
@@ -60,7 +60,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           }(Keep.right)
           .toMat(Sink.seq)(Keep.both)
           .withAttributes(attributes)
-          .run
+          .run()
 
         prefixF.futureValue should ===(0 until 10)
         suffixF.futureValue should be(empty)
@@ -73,7 +73,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           }(Keep.right)
           .toMat(Sink.seq)(Keep.both)
           .withAttributes(attributes)
-          .run
+          .run()
 
         prefixF.futureValue should ===(0 until 10)
         suffixF.futureValue should be(empty)
@@ -87,7 +87,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           .take(10)
           .toMat(Sink.seq)(Keep.both)
           .withAttributes(attributes)
-          .run
+          .run()
 
         prefixF.futureValue should ===(0 until 10)
         suffixF.futureValue should ===(10 until 20)
@@ -100,7 +100,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           }(Keep.right)
           .to(Sink.ignore)
           .withAttributes(attributes)
-          .run
+          .run()
 
         val ex = suffixF.failed.futureValue
         ex.getCause should not be null
@@ -117,7 +117,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           }(Keep.right)
           .toMat(Sink.ignore)(Keep.both)
           .withAttributes(attributes)
-          .run
+          .run()
         prefixF.futureValue should ===(0 until 10)
         val ex = suffixF.failed.futureValue
         ex should ===(TE("don't like 15 either!"))
@@ -203,7 +203,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           }(Keep.right)
           .toMat(Sink.seq)(Keep.both)
           .withAttributes(attributes)
-          .run
+          .run()
 
         prefixF.futureValue should ===(0 until 4)
         suffixF.futureValue should be(empty)
@@ -221,7 +221,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           .toMat(Sink.seq)(Keep.both)
           .withAttributes(attributes)
           .withAttributes(attributes)
-          .run
+          .run()
 
         prefixF.futureValue should ===(0 until 4)
         suffixF.futureValue should be(empty)
@@ -234,7 +234,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           }(Keep.right)
           .toMat(Sink.seq)(Keep.both)
           .withAttributes(attributes)
-          .run
+          .run()
 
         prefixF.futureValue should ===(0 until 4)
         suffixF.futureValue should ===(11 :: 12 :: Nil)
@@ -247,7 +247,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           }(Keep.right)
           .toMat(Sink.seq)(Keep.both)
           .withAttributes(attributes)
-          .run
+          .run()
 
         prefixF.failed.futureValue should be(a[NeverMaterializedException])
         prefixF.failed.futureValue.getCause should ===(TE("boom-bada-bang (4)"))
@@ -265,7 +265,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           }(Keep.right)
           .toMat(Sink.seq)(Keep.both)
           .withAttributes(attributes)
-          .run
+          .run()
 
         suffixF.futureValue should be(empty)
         val (prefix, suffix) = prefixAndTailF.futureValue
@@ -583,6 +583,34 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         sinkSubscription.request(10)
         subscriber.expectNext("a", "b", "c")
         subscriber.expectComplete()
+      }
+
+      "complete newShells registration when all active interpreters are done" in assertAllStagesStopped {
+        @volatile var closeSink: () => Unit = null
+
+        val (fNotUsed, qOut) = Source
+          .empty[Int]
+          .flatMapPrefixMat(1) { seq =>
+            log.debug("waiting for closer to be set")
+            while (null == closeSink) Thread.sleep(50)
+            log.debug("closing sink")
+            closeSink()
+            log.debug("sink closed")
+            //closing the sink before returning means that it's higly probably
+            //for the flatMapPrefix stage to receive the downstream cancellation before the actor graph interpreter
+            //gets a chance to complete the new interpreter shell's registration.
+            //this in turn exposes a bug in the actor graph interpreter when all active flows complete
+            //but there are pending new interpreter shells to be registered.
+            Flow[Int].prepend(Source(seq))
+          }(Keep.right)
+          .toMat(Sink.queue(10))(Keep.both)
+          .run()
+
+        log.debug("assigning closer")
+        closeSink = () => qOut.cancel()
+
+        log.debug("closer assigned, waiting for completion")
+        fNotUsed.futureValue should be(NotUsed)
       }
     }
   }

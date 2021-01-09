@@ -62,8 +62,12 @@ import akka.annotation.InternalApi
         case b => b
       }
     }
-
-    loop(target.start(ctx))
+    try {
+      setMdcValues(Map.empty)
+      loop(target.start(ctx))
+    } finally {
+      MDC.clear()
+    }
   }
 
   // in the normal case, a new withMDC replaces the previous one

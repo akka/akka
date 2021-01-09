@@ -12,9 +12,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
-
 import org.slf4j.event.Level
-
 import akka.actor.DeadLetterSuppression
 import akka.actor.Dropped
 import akka.actor.typed.BehaviorInterceptor.PreStartTarget
@@ -27,6 +25,8 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.util.OptionVal
 import akka.util.unused
+
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -171,13 +171,11 @@ private object RestartSupervisor {
       maxBackoff: FiniteDuration,
       randomFactor: Double): FiniteDuration = {
     val rnd = 1.0 + ThreadLocalRandom.current().nextDouble() * randomFactor
-    if (restartCount >= 30) // Duration overflow protection (> 100 years)
-      maxBackoff
-    else
-      maxBackoff.min(minBackoff * math.pow(2, restartCount)) * rnd match {
-        case f: FiniteDuration => f
-        case _                 => maxBackoff
-      }
+    val calculatedDuration = Try(maxBackoff.min(minBackoff * math.pow(2, restartCount)) * rnd).getOrElse(maxBackoff)
+    calculatedDuration match {
+      case f: FiniteDuration => f
+      case _                 => maxBackoff
+    }
   }
 
   final case class ScheduledRestart(owner: RestartSupervisor[_, _ <: Throwable]) extends DeadLetterSuppression

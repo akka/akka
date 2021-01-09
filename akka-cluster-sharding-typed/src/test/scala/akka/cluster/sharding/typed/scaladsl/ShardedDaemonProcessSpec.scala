@@ -15,7 +15,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.MemberStatus
-import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
@@ -96,8 +95,7 @@ class ShardedDaemonProcessSpec
 
     "not run if the role does not match node role" in {
       val probe = createTestProbe[Any]()
-      val settings =
-        ShardedDaemonProcessSettings(system).withShardingSettings(ClusterShardingSettings(system).withRole("workers"))
+      val settings = ShardedDaemonProcessSettings(system).withRole("workers")
       ShardedDaemonProcess(system).init("roles", 3, id => MyActor(id, probe.ref), settings, None)
 
       probe.expectNoMessage()

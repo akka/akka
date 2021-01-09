@@ -42,7 +42,7 @@ object EventBusDocSpec {
 
     // determines the initial size of the index data structure
     // used internally (i.e. the expected number of different classifiers)
-    override protected def mapSize: Int = 128
+    override protected def mapSize(): Int = 128
 
   }
 
@@ -199,7 +199,7 @@ class EventBusDocSpec extends AkkaSpec {
     probe2.expectMsg(Notification(observer1, 100))
     actorBus.publish(Notification(observer2, 101))
     probe2.expectMsg(Notification(observer2, 101))
-    probe1.expectNoMsg(500.millis)
+    probe1.expectNoMessage(500.millis)
     //#actor-bus-test
   }
 }

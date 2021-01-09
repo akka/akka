@@ -61,11 +61,12 @@ trait SnapshotStore extends Actor with ActorLogging {
           }
           .recover {
             case e => SaveSnapshotFailure(metadata, e)
-          } to (self, senderPersistentActor())
+          }
+          .to(self, senderPersistentActor())
 
       case evt: SaveSnapshotSuccess =>
         try tryReceivePluginInternal(evt)
-        finally senderPersistentActor ! evt // sender is persistentActor
+        finally senderPersistentActor() ! evt // sender is persistentActor
       case evt @ SaveSnapshotFailure(metadata, _) =>
         try {
           tryReceivePluginInternal(evt)

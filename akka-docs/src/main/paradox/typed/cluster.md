@@ -4,7 +4,7 @@ project.description: Build distributed applications that scale across the networ
 # Cluster Usage
   
 This document describes how to use Akka Cluster and the Cluster APIs. 
-The [stateful or stateless applications: to Akka Cluster or not](https://akka.io/blog/news/2020/06/01/akka-cluster-motivation) video is a good starting point to understand the motivation to use Akka Cluster.
+The [Stateful or Stateless Applications: To Akka Cluster or not](https://akka.io/blog/news/2020/06/01/akka-cluster-motivation) video is a good starting point to understand the motivation to use Akka Cluster.
 
 For specific documentation topics see: 
 
@@ -149,7 +149,7 @@ Please refer to its documentation for more details.
 
 When a new node is started it sends a message to all seed nodes and then sends join command to the one that
 answers first. If no one of the seed nodes replied (might not be started yet)
-it retries this procedure until successful or shutdown.
+it retries this procedure until success or shutdown.
 
 You can define the seed nodes in the @ref:[configuration](#configuration) file (application.conf):
 
@@ -228,7 +228,7 @@ and a restart with new seed-nodes should be tried after unsuccessful attempts.
 
 ```
 akka.cluster.shutdown-after-unsuccessful-join-seed-nodes = 20s
-akka.coordinated-shutdown.terminate-actor-system = on
+akka.coordinated-shutdown.exit-jvm = on
 ```
 
 If you don't configure seed nodes or use one of the join seed node functions, you need to join the cluster manually
@@ -270,7 +270,7 @@ be necessary to set the node’s status to `Down` in order to complete the remov
 In many cases a member can gracefully exit from the cluster, as described in @ref:[Leaving](#leaving), but
 there are scenarios when an explicit downing decision is needed before it can be removed. For example in case
 of abrupt termination of the the JVM process, system overload that doesn't recover, or network partitions
-that don't heal. I such cases the node(s) will be detected as unreachable by other nodes, but they must also
+that don't heal. In such cases, the node(s) will be detected as unreachable by other nodes, but they must also
 be marked as `Down` before they are removed.
 
 When a member is considered by the failure detector to be `unreachable` the
@@ -316,7 +316,7 @@ The node roles are defined in the configuration property named `akka.cluster.rol
 and typically defined in the start script as a system property or environment variable.
 
 The roles are part of the membership information in `MemberEvent` that you can subscribe to. The roles
-of the own node are available from the `selfMember` and that can be used for conditionally start certain
+of the own node are available from the `selfMember` and that can be used for conditionally starting certain
 actors:
 
 Scala

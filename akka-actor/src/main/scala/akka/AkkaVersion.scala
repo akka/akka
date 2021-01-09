@@ -44,7 +44,7 @@ object AkkaVersion {
                   (requiredMinorStr == currentMinorStr && requiredPatchStr.toInt > currentPatch))
                 throw new UnsupportedAkkaVersion(
                   s"Current version of Akka is [$currentVersion], but $libraryName requires version [$requiredVersion]")
-            case _ => throw new IllegalArgumentException(s"Required version string is invalid: [$requiredVersion]")
+            case _ => // SNAPSHOT or unknown - you're on your own
           }
 
         case _ => // SNAPSHOT or unknown - you're on your own

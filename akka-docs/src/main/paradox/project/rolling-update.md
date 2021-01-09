@@ -92,7 +92,7 @@ This means that a rolling update will have to go through at least one of 2.6.2, 
 Issue: [#28918](https://github.com/akka/akka/issues/28918). JacksonCborSerializer was using plain JSON format
 instead of CBOR.
 
-If you have `jackson-cbor` in your `serialization-bindings` a rolling upgrade will have to go through 2.6.5 when
+If you have `jackson-cbor` in your `serialization-bindings` a rolling update will have to go through 2.6.5 when
 upgrading to 2.6.5 or higher.
 
 In Akka 2.6.5 the `jackson-cbor` binding will still serialize to JSON format to support rolling update from 2.6.4.

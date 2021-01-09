@@ -7,16 +7,19 @@ package akka.pattern
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Failure
-
 import com.github.ghik.silencer.silent
-import language.postfixOps
 
+import language.postfixOps
 import akka.actor._
+import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.util.Timeout
 
 @silent
-class AskSpec extends AkkaSpec {
+class AskSpec extends AkkaSpec("""
+     akka.loglevel = DEBUG
+     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+    """) with WithLogCapturing {
 
   "The “ask” pattern" must {
     "send request to actor and wrap the answer in Future" in {
@@ -231,6 +234,26 @@ class AskSpec extends AkkaSpec {
       val completed = f.futureValue
       completed should ===("complete")
       expectTerminated(promiseActorRef, 1.second)
+    }
+
+    "encode target name in temporary actor name" in {
+      implicit val timeout: Timeout = Timeout(300 millis)
+      val p = TestProbe()
+
+      val act = system.actorOf(Props(new Actor {
+        def receive = {
+          case msg => p.ref ! sender() -> msg
+        }
+      }), "myName")
+
+      (act ? "ask").mapTo[String]
+      val (promiseActorRef, "ask") = p.expectMsgType[(ActorRef, String)]
+
+      promiseActorRef.path.name should startWith("myName")
+
+      (system.actorSelection("/user/myName") ? "ask").mapTo[String]
+      val (promiseActorRefForSelection, "ask") = p.expectMsgType[(ActorRef, String)]
+      promiseActorRefForSelection.path.name should startWith("_user_myName")
     }
   }
 

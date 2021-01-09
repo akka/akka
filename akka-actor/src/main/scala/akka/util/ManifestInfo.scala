@@ -5,7 +5,6 @@
 package akka.util
 
 import java.io.IOException
-import java.util.Arrays
 import java.util.jar.Attributes
 import java.util.jar.Manifest
 
@@ -45,7 +44,7 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
   override def get(system: ActorSystem): ManifestInfo = super.get(system)
   override def get(system: ClassicActorSystemProvider): ManifestInfo = super.get(system)
 
-  override def lookup(): ManifestInfo.type = ManifestInfo
+  override def lookup: ManifestInfo.type = ManifestInfo
 
   override def createExtension(system: ExtendedActorSystem): ManifestInfo = new ManifestInfo(system)
 
@@ -53,61 +52,21 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
    * Comparable version information
    */
   final class Version(val version: String) extends Comparable[Version] {
-    private val (numbers: Array[Int], rest: String) = {
-      val numbers = new Array[Int](3)
-      val segments: Array[String] = version.split("[.-]")
-      var segmentPos = 0
-      var numbersPos = 0
-      while (numbersPos < 3) {
-        if (segmentPos < segments.length) try {
-          numbers(numbersPos) = segments(segmentPos).toInt
-          segmentPos += 1
-        } catch {
-          case _: NumberFormatException =>
-            // This means that we have a trailing part on the version string and
-            // less than 3 numbers, so we assume that this is a "newer" version
-            numbers(numbersPos) = Integer.MAX_VALUE
-        }
-        numbersPos += 1
-      }
+    private val impl = new akka.util.Version(version)
 
-      val rest: String =
-        if (segmentPos >= segments.length) ""
-        else String.join("-", Arrays.asList(Arrays.copyOfRange(segments, segmentPos, segments.length): _*))
-
-      (numbers, rest)
-    }
-
-    override def compareTo(other: Version): Int = {
-      var diff = 0
-      diff = numbers(0) - other.numbers(0)
-      if (diff == 0) {
-        diff = numbers(1) - other.numbers(1)
-        if (diff == 0) {
-          diff = numbers(2) - other.numbers(2)
-          if (diff == 0) {
-            diff = rest.compareTo(other.rest)
-          }
-        }
-      }
-      diff
-    }
+    override def compareTo(other: Version): Int =
+      impl.compareTo(other.impl)
 
     override def equals(o: Any): Boolean = o match {
-      case v: Version => compareTo(v) == 0
+      case v: Version => impl.equals(v.impl)
       case _          => false
     }
 
-    override def hashCode(): Int = {
-      var result = HashCode.SEED
-      result = HashCode.hash(result, numbers(0))
-      result = HashCode.hash(result, numbers(1))
-      result = HashCode.hash(result, numbers(2))
-      result = HashCode.hash(result, rest)
-      result
-    }
+    override def hashCode(): Int =
+      impl.hashCode()
 
-    override def toString: String = version
+    override def toString: String =
+      impl.toString
   }
 
   /** INTERNAL API */

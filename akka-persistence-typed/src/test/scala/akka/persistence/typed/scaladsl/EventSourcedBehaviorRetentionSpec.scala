@@ -43,6 +43,7 @@ object EventSourcedBehaviorRetentionSpec extends Matchers {
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
     akka.persistence.snapshot-store.local.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
+    akka.actor.testkit.typed.single-expect-default = 10s # increased for slow disk on Jenkins servers
     """)
 
   sealed trait Command extends CborSerializable
@@ -557,5 +558,48 @@ class EventSourcedBehaviorRetentionSpec
       snapshotSignalProbe.expectDeleteSnapshotCompleted(6, 3)
     }
 
+    "snapshot on recovery if expected snapshot is missing" in {
+      val pid = nextPid()
+      val snapshotSignalProbe = TestProbe[WrappedSignal]()
+
+      {
+        val persistentActor =
+          spawn(Behaviors.setup[Command](ctx => counter(ctx, pid, snapshotSignalProbe = Some(snapshotSignalProbe.ref))))
+        (1 to 5).foreach(_ => persistentActor ! Increment)
+        snapshotSignalProbe.expectNoMessage()
+
+        persistentActor ! StopIt
+        val watchProbe = TestProbe()
+        watchProbe.expectTerminated(persistentActor)
+      }
+
+      {
+        val persistentActor = spawn(
+          Behaviors.setup[Command](ctx =>
+            counter(ctx, pid, snapshotSignalProbe = Some(snapshotSignalProbe.ref))
+              .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 5, keepNSnapshots = 1))))
+
+        val replyProbe = TestProbe[State]()
+        persistentActor ! GetValue(replyProbe.ref)
+        snapshotSignalProbe.expectSnapshotCompleted(5)
+        replyProbe.expectMessage(State(5, Vector(0, 1, 2, 3, 4)))
+
+        persistentActor ! StopIt
+        val watchProbe = TestProbe()
+        watchProbe.expectTerminated(persistentActor)
+      }
+
+      {
+        val persistentActor = spawn(
+          Behaviors.setup[Command](ctx =>
+            counter(ctx, pid, snapshotSignalProbe = Some(snapshotSignalProbe.ref))
+              .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 5, keepNSnapshots = 1))))
+
+        val replyProbe = TestProbe[State]()
+        persistentActor ! GetValue(replyProbe.ref)
+        snapshotSignalProbe.expectNoMessage()
+        replyProbe.expectMessage(State(5, Vector(0, 1, 2, 3, 4)))
+      }
+    }
   }
 }

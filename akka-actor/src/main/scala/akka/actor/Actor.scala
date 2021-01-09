@@ -293,6 +293,8 @@ final case class UnhandledMessage(
     with AllDeadLetters
 
 /**
+ * Superseeded by [[akka.pattern.StatusReply]], prefer that when possible.
+ *
  * Classes for passing status back to the sender.
  * Used for internal ACKing protocol. But exposed as utility class for user-specific ACKing protocols as well.
  */

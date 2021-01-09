@@ -37,7 +37,7 @@ class SampleLease(settings: LeaseSettings) extends Lease(settings) {
 
 object LeaseDocSpec {
 
-  def config() =
+  def config =
     ConfigFactory.parseString("""
       jdocs-lease.lease-class = "jdocs.coordination.LeaseDocTest$SampleLease"
       #lease-config

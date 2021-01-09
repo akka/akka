@@ -1,0 +1,3 @@
+# #29828 internal changes to ActorRefResolveCache
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.artery.ActorRefResolveCacheWithAddress.isCacheable")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.remote.serialization.ActorRefResolveCache.isCacheable")

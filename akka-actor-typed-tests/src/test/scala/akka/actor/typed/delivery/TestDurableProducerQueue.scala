@@ -28,7 +28,7 @@ object TestDurableProducerQueue {
       .supervise {
         Behaviors.setup[Command[A]] { context =>
           context.setLoggerName("TestDurableProducerQueue")
-          val state = stateHolder.get()
+          val state = stateHolder.get().cleanupPartialChunkedMessages()
           context.log.info("Starting with seqNr [{}], confirmedSeqNr [{}]", state.currentSeqNr, state.confirmedSeqNr)
           new TestDurableProducerQueue[A](context, delay, stateHolder, failWhen).active(state)
         }
@@ -70,12 +70,9 @@ class TestDurableProducerQueue[A](
           maybeFail(cmd)
           val reply = StoreMessageSentAck(cmd.sent.seqNr)
           if (delay == Duration.Zero) cmd.replyTo ! reply else context.scheduleOnce(delay, cmd.replyTo, reply)
-          active(
-            state.copy(
-              currentSeqNr = cmd.sent.seqNr + 1,
-              unconfirmed = state.unconfirmed :+ cmd.sent.copy(timestampMillis = TestTimestamp)))
+          active(state.addMessageSent(cmd.sent.withTimestampMillis(TestTimestamp)))
         } else if (cmd.sent.seqNr == state.currentSeqNr - 1) {
-          // already stored, could be a retry after timout
+          // already stored, could be a retry after timeout
           context.log.info("Duplicate seqNr [{}], currentSeqNr [{}]", cmd.sent.seqNr, state.currentSeqNr)
           val reply = StoreMessageSentAck(cmd.sent.seqNr)
           if (delay == Duration.Zero) cmd.replyTo ! reply else context.scheduleOnce(delay, cmd.replyTo, reply)
@@ -92,15 +89,7 @@ class TestDurableProducerQueue[A](
           cmd.seqNr,
           cmd.confirmationQualifier)
         maybeFail(cmd)
-        val newUnconfirmed = state.unconfirmed.filterNot { u =>
-          u.confirmationQualifier == cmd.confirmationQualifier && u.seqNr <= cmd.seqNr
-        }
-        val newHighestConfirmed = math.max(state.highestConfirmedSeqNr, cmd.seqNr)
-        active(
-          state.copy(
-            highestConfirmedSeqNr = newHighestConfirmed,
-            confirmedSeqNr = state.confirmedSeqNr.updated(cmd.confirmationQualifier, (cmd.seqNr, TestTimestamp)),
-            unconfirmed = newUnconfirmed))
+        active(state.confirmed(cmd.seqNr, cmd.confirmationQualifier, TestTimestamp))
     }
   }
 

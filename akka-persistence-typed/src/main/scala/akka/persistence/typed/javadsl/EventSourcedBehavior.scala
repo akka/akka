@@ -176,9 +176,16 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
   def snapshotAdapter(): SnapshotAdapter[State] = NoOpSnapshotAdapter.instance[State]
 
   /**
-   * INTERNAL API: DeferredBehavior init
+   * INTERNAL API: DeferredBehavior init, not for user extension
    */
-  @InternalApi override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
+  @InternalApi override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] =
+    createEventSourcedBehavior()
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] final def createEventSourcedBehavior()
+      : scaladsl.EventSourcedBehavior[Command, Event, State] = {
     val snapshotWhen: (State, Event, Long) => Boolean = (state, event, seqNr) => shouldSnapshot(state, event, seqNr)
 
     val tagger: Event => Set[String] = { event =>

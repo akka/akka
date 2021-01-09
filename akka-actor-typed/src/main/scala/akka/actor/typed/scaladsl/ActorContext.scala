@@ -8,13 +8,12 @@ import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
-
 import org.slf4j.Logger
-
 import akka.actor.ClassicActorContextProvider
 import akka.actor.typed._
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.pattern.StatusReply
 import akka.util.Timeout
 
 /**
@@ -296,6 +295,15 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
    * @tparam Res The response protocol, what the other actor sends back
    */
   def ask[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[Res] => Req)(
+      mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
+
+  /**
+   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+   * If the response is a [[akka.pattern.StatusReply.Success]] the returned future is completed successfully with the wrapped response.
+   * If the status response is a [[akka.pattern.StatusReply.Error]] the returned future will be failed with the
+   * exception in the error (normally a [[akka.pattern.StatusReply.ErrorMessage]]).
+   */
+  def askWithStatus[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[StatusReply[Res]] => Req)(
       mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
 
   /**

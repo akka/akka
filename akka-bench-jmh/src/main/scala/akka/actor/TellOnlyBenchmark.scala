@@ -102,7 +102,7 @@ object TellOnlyBenchmark {
     def receive = {
       case `stop` =>
         context.stop(self)
-      case m => sender ! m
+      case m => sender() ! m
     }
   }
 

@@ -4,21 +4,25 @@
 
 package akka.persistence.journal.inmem
 
+import akka.actor.ActorRef
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Try
 import scala.util.control.NonFatal
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
+import akka.event.Logging
 import akka.persistence.AtomicWrite
+import akka.persistence.JournalProtocol.RecoverySuccess
 import akka.persistence.PersistentRepr
+import akka.persistence.journal.inmem.InmemJournal.{ MessageWithMeta, ReplayWithMeta }
 import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
 import akka.serialization.SerializationExtension
 import akka.serialization.Serializers
+import akka.util.OptionVal
 
 /**
  * The InmemJournal publishes writes and deletes to the `eventStream`, which tests may use to
@@ -32,8 +36,17 @@ object InmemJournal {
   sealed trait Operation
 
   final case class Write(event: Any, persistenceId: String, sequenceNr: Long) extends Operation
-
   final case class Delete(persistenceId: String, toSequenceNr: Long) extends Operation
+
+  @InternalApi
+  private[persistence] case class ReplayWithMeta(
+      from: Long,
+      to: Long,
+      limit: Long,
+      persistenceId: String,
+      replyTo: ActorRef)
+  @InternalApi
+  private[persistence] case class MessageWithMeta(pr: PersistentRepr, meta: OptionVal[Any])
 }
 
 /**
@@ -44,6 +57,8 @@ object InmemJournal {
 @InternalApi private[persistence] class InmemJournal(cfg: Config) extends AsyncWriteJournal with InmemMessages {
 
   def this() = this(ConfigFactory.empty())
+
+  private val log = Logging(context.system, classOf[InmemJournal])
 
   private val testSerialization = {
     val key = "test-serialization"
@@ -78,7 +93,9 @@ object InmemJournal {
       recoveryCallback: PersistentRepr => Unit): Future[Unit] = {
     val highest = highestSequenceNr(persistenceId)
     if (highest != 0L && max != 0L)
-      read(persistenceId, fromSequenceNr, math.min(toSequenceNr, highest), max).foreach(recoveryCallback)
+      read(persistenceId, fromSequenceNr, math.min(toSequenceNr, highest), max).foreach {
+        case (pr, _) => recoveryCallback(pr)
+      }
     Future.successful(())
   }
 
@@ -91,6 +108,19 @@ object InmemJournal {
     }
     eventStream.publish(InmemJournal.Delete(persistenceId, toSeqNr))
     Future.successful(())
+  }
+
+  override def receivePluginInternal: Receive = {
+    case ReplayWithMeta(fromSequenceNr, toSequenceNr, max, persistenceId, replyTo) =>
+      log.debug("ReplayWithMeta {} {} {} {}", fromSequenceNr, toSequenceNr, max, persistenceId)
+      val highest = highestSequenceNr(persistenceId)
+      if (highest != 0L && max != 0L) {
+        read(persistenceId, fromSequenceNr, math.min(toSequenceNr, highest), max).foreach {
+          case (pr, meta) => replyTo ! MessageWithMeta(pr, meta)
+        }
+      }
+      replyTo ! RecoverySuccess(highest)
+
   }
 
   private def verifySerialization(event: Any): Unit = {
@@ -109,31 +139,32 @@ object InmemJournal {
  */
 @InternalApi private[persistence] trait InmemMessages {
   // persistenceId -> persistent message
-  var messages = Map.empty[String, Vector[PersistentRepr]]
+  var messages = Map.empty[String, Vector[(PersistentRepr, OptionVal[Any])]]
   // persistenceId -> highest used sequence number
   private var highestSequenceNumbers = Map.empty[String, Long]
 
   def add(p: PersistentRepr): Unit = {
     val pr = p.payload match {
-      case Tagged(payload, _) => p.withPayload(payload)
-      case _                  => p
+      case Tagged(payload, _) => (p.withPayload(payload).withTimestamp(System.currentTimeMillis()), OptionVal.None)
+      case _                  => (p.withTimestamp(System.currentTimeMillis()), OptionVal.None)
     }
-    messages = messages + (messages.get(pr.persistenceId) match {
-        case Some(ms) => pr.persistenceId -> (ms :+ pr)
-        case None     => pr.persistenceId -> Vector(pr)
+
+    messages = messages + (messages.get(p.persistenceId) match {
+        case Some(ms) => p.persistenceId -> (ms :+ pr)
+        case None     => p.persistenceId -> Vector(pr)
       })
     highestSequenceNumbers =
-      highestSequenceNumbers.updated(pr.persistenceId, math.max(highestSequenceNr(pr.persistenceId), pr.sequenceNr))
+      highestSequenceNumbers.updated(p.persistenceId, math.max(highestSequenceNr(p.persistenceId), p.sequenceNr))
   }
 
   def delete(pid: String, snr: Long): Unit = messages = messages.get(pid) match {
-    case Some(ms) => messages + (pid -> ms.filterNot(_.sequenceNr == snr))
+    case Some(ms) => messages + (pid -> ms.filterNot(_._1.sequenceNr == snr))
     case None     => messages
   }
 
-  def read(pid: String, fromSnr: Long, toSnr: Long, max: Long): immutable.Seq[PersistentRepr] =
+  def read(pid: String, fromSnr: Long, toSnr: Long, max: Long): immutable.Seq[(PersistentRepr, OptionVal[Any])] =
     messages.get(pid) match {
-      case Some(ms) => ms.filter(m => m.sequenceNr >= fromSnr && m.sequenceNr <= toSnr).take(safeLongToInt(max))
+      case Some(ms) => ms.filter(m => m._1.sequenceNr >= fromSnr && m._1.sequenceNr <= toSnr).take(safeLongToInt(max))
       case None     => Nil
     }
 

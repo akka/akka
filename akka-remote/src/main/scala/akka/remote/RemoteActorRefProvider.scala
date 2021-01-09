@@ -199,6 +199,7 @@ private[akka] class RemoteActorRefProvider(
     local.registerTempActor(actorRef, path)
   override def unregisterTempActor(path: ActorPath): Unit = local.unregisterTempActor(path)
   override def tempPath(): ActorPath = local.tempPath()
+  override def tempPath(prefix: String): ActorPath = local.tempPath(prefix)
   override def tempContainer: VirtualPathContainer = local.tempContainer
 
   @volatile private var _internals: Internals = _
@@ -513,8 +514,10 @@ private[akka] class RemoteActorRefProvider(
     // using thread local LRU cache, which will call internalResolveActorRef
     // if the value is not cached
     actorRefResolveThreadLocalCache match {
-      case null => internalResolveActorRef(path) // not initialized yet
-      case c    => c.threadLocalCache(this).getOrCompute(path)
+      case null =>
+        internalResolveActorRef(path) // not initialized yet
+      case c =>
+        c.threadLocalCache(this).resolve(path)
     }
   }
 

@@ -54,6 +54,8 @@ abstract class JournalSpec(config: Config)
 
   override protected def supportsSerialization: CapabilityFlag = true
 
+  override protected def supportsMetadata: CapabilityFlag = false
+
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     senderProbe = TestProbe()
@@ -79,7 +81,7 @@ abstract class JournalSpec(config: Config)
     extension.journalFor(null)
 
   def replayedMessage(snr: Long, deleted: Boolean = false): ReplayedMessage =
-    ReplayedMessage(PersistentImpl(s"a-${snr}", snr, pid, "", deleted, Actor.noSender, writerUuid, 0L))
+    ReplayedMessage(PersistentImpl(s"a-${snr}", snr, pid, "", deleted, Actor.noSender, writerUuid, 0L, None))
 
   def writeMessages(fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef, writerUuid: String): Unit = {
 
@@ -112,7 +114,7 @@ abstract class JournalSpec(config: Config)
     probe.expectMsg(WriteMessagesSuccessful)
     (fromSnr to toSnr).foreach { i =>
       probe.expectMsgPF() {
-        case WriteMessageSuccess(PersistentImpl(payload, `i`, `pid`, _, _, `sender`, `writerUuid`, _), _) =>
+        case WriteMessageSuccess(PersistentImpl(payload, `i`, `pid`, _, _, `sender`, `writerUuid`, _, _), _) =>
           payload should be(s"a-${i}")
       }
     }
@@ -263,15 +265,15 @@ abstract class JournalSpec(config: Config)
         val Pid = pid
         val WriterUuid = writerUuid
         probe.expectMsgPF() {
-          case WriteMessageSuccess(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _), _) =>
+          case WriteMessageSuccess(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _, _), _) =>
             payload should be(s"b-6")
         }
         probe.expectMsgPF() {
-          case WriteMessageRejected(PersistentImpl(payload, 7L, Pid, _, _, Actor.noSender, WriterUuid, _), _, _) =>
+          case WriteMessageRejected(PersistentImpl(payload, 7L, Pid, _, _, Actor.noSender, WriterUuid, _, _), _, _) =>
             payload should be(notSerializableEvent)
         }
         probe.expectMsgPF() {
-          case WriteMessageSuccess(PersistentImpl(payload, 8L, Pid, _, _, Actor.noSender, WriterUuid, _), _) =>
+          case WriteMessageSuccess(PersistentImpl(payload, 8L, Pid, _, _, Actor.noSender, WriterUuid, _, _), _) =>
             payload should be(s"b-8")
         }
       }
@@ -296,18 +298,55 @@ abstract class JournalSpec(config: Config)
         val Pid = pid
         val WriterUuid = writerUuid
         probe.expectMsgPF() {
-          case WriteMessageSuccess(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _), _) =>
+          case WriteMessageSuccess(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _, _), _) =>
             payload should be(event)
         }
 
         journal ! ReplayMessages(6, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
         receiverProbe.expectMsgPF() {
-          case ReplayedMessage(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _)) =>
+          case ReplayedMessage(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _, _)) =>
             payload should be(event)
         }
         receiverProbe.expectMsgPF() {
           case RecoverySuccess(highestSequenceNr) => highestSequenceNr should be >= 6L
         }
+      }
+    }
+
+    optional(flag = supportsMetadata) {
+
+      "return metadata" in {
+        val probe = TestProbe()
+        val event = TestPayload(probe.ref)
+        val meta = "meta-data"
+        val aw =
+          AtomicWrite(
+            PersistentRepr(
+              payload = event,
+              sequenceNr = 6L,
+              persistenceId = pid,
+              sender = Actor.noSender,
+              writerUuid = writerUuid).withMetadata(meta))
+
+        journal ! WriteMessages(List(aw), probe.ref, actorInstanceId)
+        probe.expectMsg(WriteMessagesSuccessful)
+
+        val Pid = pid
+        val WriterUuid = writerUuid
+        probe.expectMsgPF() {
+          case WriteMessageSuccess(
+              PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _, Some(`meta`)),
+              _) =>
+            payload should be(event)
+        }
+
+        journal ! ReplayMessages(6, 6, 1, Pid, receiverProbe.ref)
+        receiverProbe.expectMsgPF() {
+          case ReplayedMessage(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _, Some(`meta`))) =>
+            payload should be(event)
+        }
+        receiverProbe.expectMsg(RecoverySuccess(6L))
+
       }
     }
   }

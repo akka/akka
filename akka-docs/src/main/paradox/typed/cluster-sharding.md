@@ -164,15 +164,40 @@ The `number-of-shards` configuration value must be the same for all nodes in the
 configuration check when joining. Changing the value requires stopping all nodes in the cluster.
 
 The shards are allocated to the nodes in the cluster. The decision of where to allocate a shard is done
-by a shard allocation strategy. The default implementation @apidoc[ShardCoordinator.LeastShardAllocationStrategy]
-allocates new shards to the `ShardRegion` (node) with least number of previously allocated shards.
-This strategy can be replaced by an application specific implementation.
+by a shard allocation strategy. 
+
+The default implementation `LeastShardAllocationStrategy` allocates new shards to the `ShardRegion` (node) with least
+number of previously allocated shards. This strategy can be replaced by an application specific implementation.
+
+When a node is added to the cluster the shards on the existing nodes will be rebalanced to the new node.
+The `LeastShardAllocationStrategy` picks shards for rebalancing from the `ShardRegion`s with most number
+of previously allocated shards. They will then be allocated to the `ShardRegion` with least number of
+previously allocated shards, i.e. new members in the cluster. The amount of shards to rebalance in each
+round can be limited to make it progress slower since rebalancing too many shards at the same time could
+result in additional load on the system. For example, causing many Event Sourced entites to be started
+at the same time.
+
+A new rebalance algorithm was included in Akka 2.6.10. It can reach optimal balance in a few rebalance rounds
+(typically 1 or 2 rounds). For backwards compatibility the new algorithm is not enabled by default.
+The new algorithm is recommended and will become the default in future versions of Akka.
+You enable the new algorithm by setting `rebalance-absolute-limit` > 0, for example:
+
+```
+akka.cluster.sharding.least-shard-allocation-strategy.rebalance-absolute-limit = 20
+``` 
+
+The `rebalance-absolute-limit` is the maximum number of shards that will be rebalanced in one rebalance round.
+
+You may also want to tune the `akka.cluster.sharding.least-shard-allocation-strategy.rebalance-relative-limit`.
+The `rebalance-relative-limit` is a fraction (< 1.0) of total number of (known) shards that will be rebalanced
+in one rebalance round. The lower result of `rebalance-relative-limit` and `rebalance-absolute-limit` will be used.
 
 ### External shard allocation
 
 An alternative allocation strategy is the @apidoc[ExternalShardAllocationStrategy] which allows
 explicit control over where shards are allocated via the @apidoc[ExternalShardAllocation] extension.
-This can be used, for example, to match up Kafka Partition consumption with shard locations.
+
+This can be used, for example, to match up Kafka Partition consumption with shard locations. The video [How to co-locate Kafka Partitions with Akka Cluster Shards](https://akka.io/blog/news/2020/03/18/akka-sharding-kafka-video) explains a setup for it. Alpakka Kafka provides [an extension for Akka Cluster Sharding](https://doc.akka.io/docs/alpakka-kafka/current/cluster-sharding.html).
 
 To use it set it as the allocation strategy on your `Entity`:
 
@@ -293,7 +318,7 @@ Cluster Sharding uses its own Distributed Data `Replicator` per node.
 If using roles with sharding there is one `Replicator` per role, which enables a subset of
 all nodes for some entity types and another subset for other entity types. Each replicator has a name
 that contains the node role and therefore the role configuration must be the same on all nodes in the
-cluster, for example you can't change the roles when performing a rolling upgrade.
+cluster, for example you can't change the roles when performing a rolling update.
 Changing roles requires @ref:[a full cluster restart](../additional/rolling-updates.md#cluster-sharding-configuration-change).
 
 The `akka.cluster.sharding.distributed-data` config section configures the settings for Distributed Data. 
@@ -321,7 +346,7 @@ used for new projects and existing projects should migrate as soon as possible.
 Remembering entities automatically restarts entities after a rebalance or entity crash. 
 Without remembered entities restarts happen on the arrival of a message.
 
-Enabling remembered entities disables @ref:[Automtic Passivation](#passivation).
+Enabling remembered entities disables @ref:[Automatic Passivation](#passivation).
 
 The state of the entities themselves is not restored unless they have been made persistent,
 for example with @ref:[Event Sourcing](persistence.md).
@@ -413,7 +438,7 @@ akka.persistence.cassandra.journal {
 }
 ```
 
-Once you have migrated you cannot go back to the old persistence store, a rolling upgrade is therefore not possible.
+Once you have migrated you cannot go back to the old persistence store, a rolling update is therefore not possible.
 
 When @ref:[Distributed Data mode](#distributed-data-mode) is used the identifiers of the entities are
 stored in @ref:[Durable Storage](distributed-data.md#durable-storage) of Distributed Data. You may want to change the
@@ -439,6 +464,30 @@ rebalanced to other nodes.
 
 See @ref:[How To Startup when Cluster Size Reached](cluster.md#how-to-startup-when-a-cluster-size-is-reached)
 for more information about `min-nr-of-members`.
+
+## Health check
+
+An [Akka Management compatible health check](https://doc.akka.io/docs/akka-management/current/healthchecks.html) is included that returns healthy once the local shard region
+has registered with the coordinator. This health check should be used in cases where you don't want to receive production traffic until the local shard region is ready to retrieve locations
+for shards. For shard regions that aren't critical and therefore should not block this node becoming ready do not include them.
+
+The health check does not fail after an initial successful check. Once a shard region is registered and is operational it stays available for incoming message. 
+
+Cluster sharding enables the health check automatically. To disable:
+
+```ruby
+akka.management.health-checks.readiness-checks {
+  sharding = ""
+}
+```
+
+Monitoring of each shard region is off by default. Add them by defining the entity type names (`EntityTypeKey.name`):
+
+```ruby
+akka.cluster.sharding.healthcheck.names = ["counter-1", "HelloWorld"]
+```
+
+See also additional information about how to make @ref:[smooth rolling updates](../additional/rolling-updates.md#cluster-sharding).
 
 ## Inspecting cluster sharding state
 
@@ -538,7 +587,10 @@ properties are read by the `ClusterShardingSettings` when created with an ActorS
 It is also possible to amend the `ClusterShardingSettings` or create it from another config section
 with the same layout as below. 
 
-One important configuration property is `number-of-shards` as described in @ref:[Shard allocation](#shard-allocation)
+One important configuration property is `number-of-shards` as described in @ref:[Shard allocation](#shard-allocation).
+
+You may also need to tune the configuration properties is `rebalance-absolute-limit` and `rebalance-relative-limit`
+as described in @ref:[Shard allocation](#shard-allocation).
 
 @@snip [reference.conf](/akka-cluster-sharding/src/main/resources/reference.conf) { #sharding-ext-config }
 

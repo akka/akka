@@ -102,5 +102,6 @@ case class Cmd(data: String) extends TestCommand
 case object Passivate extends TestCommand
 case class Evt(data: String)
 case class EmptyState()
+case class NonEmptyState(data: String)
 case object Recovered
 case object Stopped

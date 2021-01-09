@@ -6,12 +6,13 @@ package akka.cluster
 
 import scala.runtime.AbstractFunction2
 
-import MemberStatus._
 import com.github.ghik.silencer.silent
 
 import akka.actor.Address
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.MemberStatus._
+import akka.util.Version
 
 /**
  * Represents the address, current status, and roles of a cluster member node.
@@ -24,7 +25,8 @@ class Member private[cluster] (
     val uniqueAddress: UniqueAddress,
     private[cluster] val upNumber: Int, // INTERNAL API
     val status: MemberStatus,
-    val roles: Set[String])
+    val roles: Set[String],
+    private[akka] val appVersion: Version) // INTERNAL API
     extends Serializable {
 
   lazy val dataCenter: DataCenter = roles
@@ -34,16 +36,15 @@ class Member private[cluster] (
 
   def address: Address = uniqueAddress.address
 
-  override def hashCode = uniqueAddress.##
-  override def equals(other: Any) = other match {
+  override def hashCode: Int = uniqueAddress.##
+  override def equals(other: Any): Boolean = other match {
     case m: Member => uniqueAddress == m.uniqueAddress
     case _         => false
   }
-  override def toString =
-    if (dataCenter == ClusterSettings.DefaultDataCenter)
-      s"Member(address = $address, status = $status)"
-    else
-      s"Member(address = $address, dataCenter = $dataCenter, status = $status)"
+  override def toString: String = {
+    s"Member($address, $status${if (dataCenter == ClusterSettings.DefaultDataCenter) "" else s", $dataCenter"}${if (appVersion == Version.Zero) ""
+    else s", $appVersion"})"
+  }
 
   def hasRole(role: String): Boolean = roles.contains(role)
 
@@ -83,12 +84,12 @@ class Member private[cluster] (
     if (status == oldStatus) this
     else {
       require(allowedTransitions(oldStatus)(status), s"Invalid member status transition [ ${this} -> ${status}]")
-      new Member(uniqueAddress, upNumber, status, roles)
+      new Member(uniqueAddress, upNumber, status, roles, appVersion)
     }
   }
 
   def copyUp(upNumber: Int): Member = {
-    new Member(uniqueAddress, upNumber, status, roles).copy(Up)
+    new Member(uniqueAddress, upNumber, status, roles, appVersion).copy(Up)
   }
 }
 
@@ -103,14 +104,15 @@ object Member {
    * INTERNAL API
    * Create a new member with status Joining.
    */
-  private[akka] def apply(uniqueAddress: UniqueAddress, roles: Set[String]): Member =
-    new Member(uniqueAddress, Int.MaxValue, Joining, roles)
+  @InternalApi
+  private[akka] def apply(uniqueAddress: UniqueAddress, roles: Set[String], appVersion: Version): Member =
+    new Member(uniqueAddress, Int.MaxValue, Joining, roles, appVersion)
 
   /**
    * INTERNAL API
    */
   private[cluster] def removed(node: UniqueAddress): Member =
-    new Member(node, Int.MaxValue, Removed, Set(ClusterSettings.DcRolePrefix + "-N/A"))
+    new Member(node, Int.MaxValue, Removed, Set(ClusterSettings.DcRolePrefix + "-N/A"), Version.Zero)
 
   /**
    * `Address` ordering type class, sorts addresses by host and port.
@@ -235,37 +237,37 @@ object MemberStatus {
   @SerialVersionUID(1L) case object Removed extends MemberStatus
 
   /**
-   * Java API: retrieve the “joining” status singleton
+   * Java API: retrieve the `Joining` status singleton
    */
   def joining: MemberStatus = Joining
 
   /**
-   * Java API: retrieve the “weaklyUp” status singleton.
+   * Java API: retrieve the `WeaklyUp` status singleton.
    */
   def weaklyUp: MemberStatus = WeaklyUp
 
   /**
-   * Java API: retrieve the “up” status singleton
+   * Java API: retrieve the `Up` status singleton
    */
   def up: MemberStatus = Up
 
   /**
-   * Java API: retrieve the “leaving” status singleton
+   * Java API: retrieve the `Leaving` status singleton
    */
   def leaving: MemberStatus = Leaving
 
   /**
-   * Java API: retrieve the “exiting” status singleton
+   * Java API: retrieve the `Exiting` status singleton
    */
   def exiting: MemberStatus = Exiting
 
   /**
-   * Java API: retrieve the “down” status singleton
+   * Java API: retrieve the `Down` status singleton
    */
   def down: MemberStatus = Down
 
   /**
-   * Java API: retrieve the “removed” status singleton
+   * Java API: retrieve the `Removed` status singleton
    */
   def removed: MemberStatus = Removed
 

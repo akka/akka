@@ -24,7 +24,6 @@ import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.serialization.DisabledJavaSerializer
 import akka.serialization.jackson.CborSerializable
-import akka.util.unused
 
 object EventSourcedBehaviorTestKitSpec {
 
@@ -32,8 +31,12 @@ object EventSourcedBehaviorTestKitSpec {
     sealed trait Command
     case object Increment extends Command with CborSerializable
     final case class IncrementWithConfirmation(replyTo: ActorRef[Done]) extends Command with CborSerializable
+    final case class IncrementWithNoReply(replyTo: ActorRef[Done]) extends Command with CborSerializable
+    final case class IncrementWithAsyncReply(replyTo: ActorRef[Done]) extends Command with CborSerializable
     case class IncrementSeveral(n: Int) extends Command with CborSerializable
     final case class GetValue(replyTo: ActorRef[State]) extends Command with CborSerializable
+
+    private case class AsyncReply(replyTo: ActorRef[Done]) extends Command with CborSerializable
 
     sealed trait Event
     final case class Incremented(delta: Int) extends Event with CborSerializable
@@ -62,7 +65,7 @@ object EventSourcedBehaviorTestKitSpec {
       Behaviors.setup(ctx => counter(ctx, persistenceId, emptyState))
 
     private def counter(
-        @unused ctx: ActorContext[Command],
+        ctx: ActorContext[Command],
         persistenceId: PersistenceId,
         emptyState: State): EventSourcedBehavior[Command, Event, State] = {
       EventSourcedBehavior.withEnforcedReplies[Command, Event, State](
@@ -75,6 +78,16 @@ object EventSourcedBehaviorTestKitSpec {
 
             case IncrementWithConfirmation(replyTo) =>
               Effect.persist(Incremented(1)).thenReply(replyTo)(_ => Done)
+
+            case IncrementWithAsyncReply(replyTo) =>
+              ctx.self ! AsyncReply(replyTo)
+              Effect.noReply
+
+            case AsyncReply(replyTo) =>
+              Effect.persist(Incremented(1)).thenReply(replyTo)(_ => Done)
+
+            case IncrementWithNoReply(_) =>
+              Effect.persist(Incremented(1)).thenNoReply()
 
             case IncrementSeveral(n: Int) =>
               val events = (1 to n).map(_ => Incremented(1))
@@ -187,6 +200,36 @@ class EventSourcedBehaviorTestKitSpec
       result.state should ===(TestCounter.RealState(1, Vector(0)))
     }
 
+    "run command with async reply" in {
+      val eventSourcedTestKit = createTestKit()
+      val result = eventSourcedTestKit.runCommand[Done](replyTo => TestCounter.IncrementWithAsyncReply(replyTo))
+      result.event should ===(TestCounter.Incremented(1))
+      result.reply should ===(Done)
+      result.state should ===(TestCounter.RealState(1, Vector(0)))
+    }
+
+    "run command with no reply" in {
+      // This is a fictive usage scenario. If the command has a replyTo the Behavior should (eventually) reply,
+      // but here we verify that it doesn't reply.
+      val eventSourcedTestKit = createTestKit()
+      val replyToProbe = createTestProbe[Done]()
+      val result = eventSourcedTestKit.runCommand(TestCounter.IncrementWithNoReply(replyToProbe.ref))
+      result.event should ===(TestCounter.Incremented(1))
+      result.state should ===(TestCounter.RealState(1, Vector(0)))
+      replyToProbe.expectNoMessage()
+    }
+
+    "give access to current state" in {
+      val eventSourcedTestKit = createTestKit()
+
+      // initial state
+      eventSourcedTestKit.getState() should ===(TestCounter.RealState(0, Vector.empty))
+
+      // state after command
+      eventSourcedTestKit.runCommand(TestCounter.Increment)
+      eventSourcedTestKit.getState() should ===(TestCounter.RealState(1, Vector(0)))
+    }
+
     "detect non-serializable events" in {
       val eventSourcedTestKit = createTestKit()
 
@@ -234,7 +277,7 @@ class EventSourcedBehaviorTestKitSpec
       val eventSourcedTestKit = createTestKit()
 
       val exc = intercept[IllegalArgumentException] {
-        eventSourcedTestKit.runCommand(TestCounter.IncrementWithNotSerializableReply(_))
+        eventSourcedTestKit.runCommand(TestCounter.IncrementWithNotSerializableReply)
       }
       (exc.getMessage should include).regex("Reply.*isn't serializable")
       exc.getCause.getClass should ===(classOf[NotSerializableException])

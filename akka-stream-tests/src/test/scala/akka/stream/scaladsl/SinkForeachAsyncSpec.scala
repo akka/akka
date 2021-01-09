@@ -40,7 +40,7 @@ class SinkForeachAsyncSpec extends StreamSpec {
       val latch = (1 to 4).map(_ -> TestLatch(1)).toMap
 
       val sink: Sink[Int, Future[Done]] = {
-        Sink.foreachAsync(4) { n: Int =>
+        Sink.foreachAsync(4) { (n: Int) =>
           Future {
             Await.result(latch(n), remainingOrDefault)
             probe.ref ! n
@@ -103,7 +103,7 @@ class SinkForeachAsyncSpec extends StreamSpec {
       }
 
       val p =
-        Source(List(one _, two _, three _, four _)).runWith(sink)
+        Source(List(() => one, () => two, () => three, () => four)).runWith(sink)
 
       latch(1).countDown()
       probe.expectMsg(1)

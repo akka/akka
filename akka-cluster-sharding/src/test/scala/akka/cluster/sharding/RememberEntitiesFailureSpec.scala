@@ -19,8 +19,10 @@ import akka.testkit.WithLogCapturing
 import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
+
+import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 
 object RememberEntitiesFailureSpec {
   val config = ConfigFactory.parseString(s"""
@@ -41,6 +43,7 @@ object RememberEntitiesFailureSpec {
       akka.cluster.sharding.coordinator-failure-backoff = 1s
       akka.cluster.sharding.updating-state-timeout = 1s
       akka.cluster.sharding.verbose-debug-logging = on
+      akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
     """)
 
   class EntityActor extends Actor with ActorLogging {
@@ -96,7 +99,7 @@ object RememberEntitiesFailureSpec {
   class FakeShardStoreActor(shardId: ShardId) extends Actor with ActorLogging with Timers {
     import FakeShardStoreActor._
 
-    implicit val ec = context.system.dispatcher
+    implicit val ec: ExecutionContext = context.system.dispatcher
     private var failUpdate: Option[Fail] = None
 
     context.system.eventStream.publish(ShardStoreCreated(self, shardId))
@@ -104,7 +107,7 @@ object RememberEntitiesFailureSpec {
     override def receive: Receive = {
       case RememberEntitiesShardStore.GetEntities =>
         failShardGetEntities.get(shardId) match {
-          case None             => sender ! RememberEntitiesShardStore.RememberedEntities(Set.empty)
+          case None             => sender() ! RememberEntitiesShardStore.RememberedEntities(Set.empty)
           case Some(NoResponse) => log.debug("Sending no response for GetEntities")
           case Some(CrashStore) => throw TestException("store crash on GetEntities")
           case Some(StopStore)  => context.stop(self)
@@ -114,7 +117,7 @@ object RememberEntitiesFailureSpec {
         }
       case RememberEntitiesShardStore.Update(started, stopped) =>
         failUpdate match {
-          case None             => sender ! RememberEntitiesShardStore.UpdateDone(started, stopped)
+          case None             => sender() ! RememberEntitiesShardStore.UpdateDone(started, stopped)
           case Some(NoResponse) => log.debug("Sending no response for AddEntity")
           case Some(CrashStore) => throw TestException("store crash on AddEntity")
           case Some(StopStore)  => context.stop(self)
@@ -199,7 +202,7 @@ class RememberEntitiesFailureSpec
 
   "Remember entities handling in sharding" must {
 
-    List(NoResponse, CrashStore, StopStore, Delay(500.millis), Delay(1.second)).foreach { wayToFail: Fail =>
+    List(NoResponse, CrashStore, StopStore, Delay(500.millis), Delay(1.second)).foreach { (wayToFail: Fail) =>
       s"recover when initial remember entities load fails $wayToFail" in {
         log.debug("Getting entities for shard 1 will fail")
         failShardGetEntities = Map("1" -> wayToFail)
@@ -208,7 +211,7 @@ class RememberEntitiesFailureSpec
           val probe = TestProbe()
           val sharding = ClusterSharding(system).start(
             s"initial-$wayToFail",
-            Props[EntityActor],
+            Props[EntityActor](),
             ClusterShardingSettings(system).withRememberEntities(true),
             extractEntityId,
             extractShardId)
@@ -237,7 +240,7 @@ class RememberEntitiesFailureSpec
 
         val sharding = ClusterSharding(system).start(
           s"shardStoreStart-$wayToFail",
-          Props[EntityActor],
+          Props[EntityActor](),
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
           extractShardId)
@@ -279,7 +282,7 @@ class RememberEntitiesFailureSpec
 
         val sharding = ClusterSharding(system).start(
           s"shardStoreStopAbrupt-$wayToFail",
-          Props[EntityActor],
+          Props[EntityActor](),
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
           extractShardId)
@@ -315,11 +318,11 @@ class RememberEntitiesFailureSpec
 
         val sharding = ClusterSharding(system).start(
           s"shardStoreStopGraceful-$wayToFail",
-          Props[EntityActor],
+          Props[EntityActor](),
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
           extractShardId,
-          new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 1, maxSimultaneousRebalance = 3),
+          ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 1, relativeLimit = 0.1),
           "graceful-stop")
 
         val probe = TestProbe()
@@ -356,11 +359,11 @@ class RememberEntitiesFailureSpec
 
         val sharding = ClusterSharding(system).start(
           s"coordinatorStoreStopGraceful-$wayToFail",
-          Props[EntityActor],
+          Props[EntityActor](),
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
           extractShardId,
-          new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 1, maxSimultaneousRebalance = 3),
+          ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 1, relativeLimit = 0.1),
           "graceful-stop")
 
         val probe = TestProbe()

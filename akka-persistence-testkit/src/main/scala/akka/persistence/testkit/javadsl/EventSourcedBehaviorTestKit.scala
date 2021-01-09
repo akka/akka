@@ -224,6 +224,12 @@ final class EventSourcedBehaviorTestKit[Command, Event, State](
     new CommandResultWithReply(delegate.runCommand(replyTo => creator.apply(replyTo)))
 
   /**
+   * Retrieve the current state of the Behavior.
+   */
+  def getState(): State =
+    delegate.getState()
+
+  /**
    * Restart the behavior, which will then recover from stored snapshot and events. Can be used for testing
    * that the recovery is correct.
    */

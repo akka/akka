@@ -4,8 +4,8 @@
 
 package akka.actor.typed.delivery
 
-import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 
@@ -43,12 +43,17 @@ object TestProducerWithAsk {
   }
 
   private def idle(n: Int, replyProbe: ActorRef[Long]): Behavior[Command] = {
-    Behaviors.receiveMessage {
-      case Tick                => Behaviors.same
-      case RequestNext(sendTo) => active(n + 1, replyProbe, sendTo)
-      case Confirmed(seqNr) =>
-        replyProbe ! seqNr
-        Behaviors.same
+    Behaviors.receive { (ctx, msg) =>
+      msg match {
+        case Tick                => Behaviors.same
+        case RequestNext(sendTo) => active(n + 1, replyProbe, sendTo)
+        case Confirmed(seqNr) =>
+          replyProbe ! seqNr
+          Behaviors.same
+        case AskTimeout =>
+          ctx.log.warn("Timeout")
+          Behaviors.same
+      }
     }
   }
 

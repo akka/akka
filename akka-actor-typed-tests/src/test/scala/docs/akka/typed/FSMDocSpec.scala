@@ -80,7 +80,7 @@ class FSMDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with Log
   "FSMDocSpec" must {
     "work" in {
       val buncher = spawn(Buncher())
-      val probe = TestProbe[Buncher.Batch]
+      val probe = TestProbe[Buncher.Batch]()
       buncher ! Buncher.SetTarget(probe.ref)
       buncher ! Buncher.Queue(42)
       buncher ! Buncher.Queue(43)

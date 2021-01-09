@@ -149,7 +149,7 @@ object Persistence extends ExtensionId[Persistence] with ExtensionIdProvider {
 
   def createExtension(system: ExtendedActorSystem): Persistence = new Persistence(system)
 
-  def lookup() = Persistence
+  def lookup = Persistence
 
   /** INTERNAL API. */
   private[persistence] case class PluginHolder(actorFactory: () => ActorRef, adapters: EventAdapters, config: Config)

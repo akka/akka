@@ -14,7 +14,7 @@ class DefaultTimeoutSpec extends AnyWordSpec with Matchers with BeforeAndAfterAl
 
   implicit lazy val system: ActorSystem = ActorSystem("AkkaCustomSpec")
 
-  override def afterAll = system.terminate()
+  override def afterAll() = system.terminate()
 
   "A spec with DefaultTimeout" should {
     "use timeout from settings" in {

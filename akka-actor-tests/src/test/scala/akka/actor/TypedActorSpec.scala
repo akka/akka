@@ -48,9 +48,9 @@ object TypedActorSpec {
 
     def hasNext = items != Nil
 
-    def next: T = {
+    def next(): T = {
       @tailrec
-      def findNext: T = {
+      def findNext(): T = {
         val currentItems = current.get
         val newItems = currentItems match {
           case Nil => items
@@ -58,10 +58,10 @@ object TypedActorSpec {
         }
 
         if (current.compareAndSet(currentItems, newItems.tail)) newItems.head
-        else findNext
+        else findNext()
       }
 
-      findNext
+      findNext()
     }
 
     override def exists(f: T => Boolean): Boolean = items.exists(f)
@@ -122,7 +122,7 @@ object TypedActorSpec {
 
     import akka.actor.TypedActor.dispatcher
 
-    def pigdog = "Pigdog"
+    def pigdog() = "Pigdog"
 
     def futurePigdog(): Future[String] = Future.successful(pigdog())
 
@@ -133,7 +133,7 @@ object TypedActorSpec {
 
     def futurePigdog(delay: FiniteDuration, numbered: Int): Future[String] = {
       Thread.sleep(delay.toMillis)
-      Future.successful(pigdog + numbered)
+      Future.successful(pigdog() + numbered)
     }
 
     @silent

@@ -140,7 +140,7 @@ The reason for only using a limited number of nodes is to keep the number of con
 centers low. The same nodes are also used for the gossip protocol when disseminating the membership
 information across data centers. Within a data center all nodes are involved in gossip and failure detection.
 
-This influences how rolling upgrades should be performed. Don't stop all of the oldest that are used for gossip
+This influences how rolling updates should be performed. Don't stop all of the oldest that are used for gossip
 at the same time. Stop one or a few at a time so that new nodes can take over the responsibility.
 It's best to leave the oldest nodes until last.
 
@@ -192,8 +192,8 @@ other data centers.
 Especially when used together with Akka Persistence that is based on the single-writer principle
 it is important to avoid running the same entity at multiple locations at the same time with a
 shared data store. That would result in corrupt data since the events stored by different instances
-may be interleaved and would be interpreted differently in a later replay. For active active persistent
-entities see Lightbend's [Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
+may be interleaved and would be interpreted differently in a later replay. For replicated persistent
+entities see @ref[Replicated Event Sourcing](replicated-eventsourcing.md).
 
 If you need global entities you have to pick one data center to host that entity type and only start
 `ClusterSharding` on nodes of that data center. If the data center is unreachable from another data center the

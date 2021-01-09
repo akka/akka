@@ -43,7 +43,7 @@ private[cluster] class CrossDcHeartbeatSender extends Actor {
 
   val verboseHeartbeat = cluster.settings.Debug.VerboseHeartbeatLogging
   import cluster.{ scheduler, selfAddress, selfDataCenter, selfUniqueAddress }
-  import cluster.settings._
+  import cluster.settings.PeriodicTasksInitialDelay
   import context.dispatcher
 
   private val clusterLogger =
@@ -77,8 +77,8 @@ private[cluster] class CrossDcHeartbeatSender extends Actor {
 
   // start periodic heartbeat to other nodes in cluster
   val heartbeatTask = scheduler.scheduleWithFixedDelay(
-    PeriodicTasksInitialDelay max HeartbeatInterval,
-    HeartbeatInterval,
+    PeriodicTasksInitialDelay max crossDcSettings.HeartbeatInterval,
+    crossDcSettings.HeartbeatInterval,
     self,
     ClusterHeartbeatSender.HeartbeatTick)
 
@@ -173,7 +173,10 @@ private[cluster] class CrossDcHeartbeatSender extends Actor {
         if (verboseHeartbeat) logDebug("First (Cross) Heartbeat to [{}]", to.address)
         // schedule the expected first heartbeat for later, which will give the
         // other side a chance to reply, and also trigger some resends if needed
-        scheduler.scheduleOnce(HeartbeatExpectedResponseAfter, self, ClusterHeartbeatSender.ExpectedFirstHeartbeat(to))
+        scheduler.scheduleOnce(
+          crossDcSettings.HeartbeatExpectedResponseAfter,
+          self,
+          ClusterHeartbeatSender.ExpectedFirstHeartbeat(to))
       }
       heartbeatReceiver(to.address) ! nextHB
     }
