@@ -17,6 +17,7 @@ import akka.actor.Props
 import akka.actor.Terminated
 import akka.pattern.ask
 import akka.testkit._
+import akka.actor.actorRef2Scala
 
 class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 

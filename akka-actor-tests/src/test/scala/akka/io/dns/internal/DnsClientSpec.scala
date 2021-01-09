@@ -14,6 +14,7 @@ import akka.io.Udp
 import akka.io.dns.{ RecordClass, RecordType }
 import akka.io.dns.internal.DnsClient.{ Answer, Question4 }
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
+import akka.actor.actorRef2Scala
 
 class DnsClientSpec extends AkkaSpec with ImplicitSender {
   "The async DNS client" should {

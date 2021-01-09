@@ -16,6 +16,7 @@ import akka.actor.Props
 import akka.actor.Status.Failure
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
+import akka.actor.actorRef2Scala
 
 object CircuitBreakerStressSpec {
   case object JobDone

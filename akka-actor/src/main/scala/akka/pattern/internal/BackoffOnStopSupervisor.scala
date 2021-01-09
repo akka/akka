@@ -6,7 +6,7 @@ package akka.pattern.internal
 
 import scala.concurrent.duration.FiniteDuration
 
-import akka.actor.{ Actor, ActorLogging, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
+import akka.actor.{ Actor, ActorLogging, OneForOneStrategy, Props, SupervisorStrategy, Terminated, actorRef2Scala }
 import akka.actor.SupervisorStrategy.{ Directive, Escalate }
 import akka.annotation.InternalApi
 import akka.pattern.{

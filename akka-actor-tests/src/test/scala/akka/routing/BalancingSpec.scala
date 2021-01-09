@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 
 import org.scalatest.BeforeAndAfterEach
 
-import akka.actor.{ Actor, Props }
+import akka.actor.{ Actor, Props, actorRef2Scala }
 import akka.actor.ActorRef
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestLatch }
 

@@ -13,7 +13,7 @@ import com.typesafe.config.Config
 import language.postfixOps
 
 import akka.ConfigurationException
-import akka.actor.{ Actor, ActorRef, Deploy, Props }
+import akka.actor.{ Actor, ActorRef, Deploy, Props, actorRef2Scala }
 import akka.actor.ActorPath
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem

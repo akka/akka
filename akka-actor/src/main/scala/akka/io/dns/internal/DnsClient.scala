@@ -12,7 +12,7 @@ import scala.util.Try
 
 import com.github.ghik.silencer.silent
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, NoSerializationVerificationNeeded, Props, Stash }
+import akka.actor.{ Actor, ActorLogging, ActorRef, NoSerializationVerificationNeeded, Props, Stash, actorRef2Scala }
 import akka.actor.Status.Failure
 import akka.annotation.InternalApi
 import akka.io.{ IO, Tcp, Udp }

@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.immutable
 
-import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.{ ActorRef, ActorSystem, actorRef2Scala }
 import akka.util.{ Subclassification, SubclassifiedIndex }
 import akka.util.Index
 

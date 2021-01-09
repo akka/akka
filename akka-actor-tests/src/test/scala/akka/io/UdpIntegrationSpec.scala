@@ -13,6 +13,7 @@ import akka.io.Udp._
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import akka.testkit.SocketUtil.temporaryServerAddresses
 import akka.util.ByteString
+import akka.actor.actorRef2Scala
 
 class UdpIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO

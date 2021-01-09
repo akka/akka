@@ -18,6 +18,7 @@ import akka.testkit.CallingThreadDispatcher
 import akka.testkit.TestActorRef
 import akka.testkit.TestProbe
 import akka.util.SerializedSuspendableExecutionContext
+import akka.actor.actorRef2Scala
 
 class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
 

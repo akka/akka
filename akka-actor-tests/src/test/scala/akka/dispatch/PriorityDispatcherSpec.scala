@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.Config
 import language.postfixOps
 
-import akka.actor.{ Actor, ActorSystem, Props }
+import akka.actor.{ Actor, ActorSystem, Props, actorRef2Scala }
 import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.util.unused
 

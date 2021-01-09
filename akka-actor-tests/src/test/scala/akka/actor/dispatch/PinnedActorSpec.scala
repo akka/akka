@@ -10,7 +10,7 @@ import scala.concurrent.Await
 
 import org.scalatest.BeforeAndAfterEach
 
-import akka.actor.{ Actor, Props }
+import akka.actor.{ Actor, Props, actorRef2Scala }
 import akka.pattern.ask
 import akka.testkit._
 import akka.testkit.AkkaSpec

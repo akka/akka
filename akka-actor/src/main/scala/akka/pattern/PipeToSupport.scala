@@ -12,7 +12,7 @@ import scala.util.{ Failure, Success }
 
 import language.implicitConversions
 
-import akka.actor.{ Actor, ActorRef, Status }
+import akka.actor.{ Actor, ActorRef, Status, actorRef2Scala }
 import akka.actor.ActorSelection
 import akka.util.unused
 

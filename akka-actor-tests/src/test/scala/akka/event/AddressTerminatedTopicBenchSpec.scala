@@ -11,6 +11,7 @@ import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.testkit._
+import akka.actor.actorRef2Scala
 
 object AddressTerminatedTopicBenchSpec {
 

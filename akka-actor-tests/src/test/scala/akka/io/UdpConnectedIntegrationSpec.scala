@@ -15,6 +15,7 @@ import akka.testkit.SocketUtil.temporaryServerAddresses
 import akka.testkit.TestProbe
 import akka.testkit.WithLogCapturing
 import akka.util.ByteString
+import akka.actor.actorRef2Scala
 
 class UdpConnectedIntegrationSpec extends AkkaSpec("""
     akka.loglevel = DEBUG

@@ -10,7 +10,7 @@ import scala.annotation.tailrec
 
 import com.github.ghik.silencer.silent
 
-import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.{ ActorRef, ActorSystem, actorRef2Scala }
 import akka.event.Logging.simpleName
 import akka.util.Subclassification
 

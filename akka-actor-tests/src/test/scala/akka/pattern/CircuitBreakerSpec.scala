@@ -17,6 +17,7 @@ import scala.util.Try
 
 import akka.actor.ActorSystem
 import akka.testkit._
+import akka.actor.actorRef2Scala
 
 object CircuitBreakerSpec {
 

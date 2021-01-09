@@ -4,7 +4,7 @@
 
 package akka.util
 
-import akka.actor.{ ActorRef, Dropped }
+import akka.actor.{ ActorRef, Dropped, actorRef2Scala }
 import akka.annotation.InternalApi
 import akka.japi.function.Procedure2
 

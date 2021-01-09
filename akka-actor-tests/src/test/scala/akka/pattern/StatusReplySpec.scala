@@ -13,6 +13,7 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+import akka.actor.actorRef2Scala
 
 class StatusReplySpec extends AkkaSpec with ScalaFutures {
 

@@ -10,7 +10,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 import language.postfixOps
 import org.scalatest.BeforeAndAfterEach
 
-import akka.actor.{ Actor, ActorRef, ActorSystem, PoisonPill, Props }
+import akka.actor.{ Actor, ActorRef, ActorSystem, PoisonPill, Props, actorRef2Scala }
 import akka.japi.Procedure
 import akka.testkit._
 

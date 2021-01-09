@@ -17,7 +17,7 @@ import scala.util.{ Failure, Success, Try }
 import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
-import akka.actor.{ Actor, ActorLogging }
+import akka.actor.{ Actor, ActorLogging, actorRef2Scala }
 import akka.actor.Status
 import akka.annotation.InternalApi
 import akka.io.dns.AAAARecord

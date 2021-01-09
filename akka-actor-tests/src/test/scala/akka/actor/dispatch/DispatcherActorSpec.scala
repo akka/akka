@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 
 import language.postfixOps
 
-import akka.actor.{ Actor, Props }
+import akka.actor.{ Actor, Props, actorRef2Scala }
 import akka.pattern.ask
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout

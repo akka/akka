@@ -16,6 +16,7 @@ import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
 import akka.testkit._
 import akka.testkit.AkkaSpec
+import akka.actor.actorRef2Scala
 
 object ConsistentHashingRouterSpec {
 

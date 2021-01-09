@@ -15,6 +15,7 @@ import akka.event.LoggerMessageQueueSemantics
 import akka.event.Logging._
 import akka.event.LoggingFilter
 import akka.util.unused
+import akka.actor.actorRef2Scala
 
 /**
  * `java.util.logging` logger.
