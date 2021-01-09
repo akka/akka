@@ -8,6 +8,7 @@ import java.util.logging
 
 import akka.actor.Actor
 import akka.actor.ActorSystem
+import akka.actor.actorRef2Scala
 import akka.dispatch.RequiresMessageQueue
 import akka.event.DummyClassForStringSources
 import akka.event.EventStream
@@ -15,7 +16,6 @@ import akka.event.LoggerMessageQueueSemantics
 import akka.event.Logging._
 import akka.event.LoggingFilter
 import akka.util.unused
-import akka.actor.actorRef2Scala
 
 /**
  * `java.util.logging` logger.

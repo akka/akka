@@ -11,16 +11,17 @@ import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import scala.language.implicitConversions
 import scala.util.{ Failure, Success }
+import scala.util.control.NoStackTrace
+
 import com.github.ghik.silencer.silent
+
 import akka.actor._
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.ExecutionContexts
 import akka.dispatch.sysmsg._
-import akka.util.ByteString
 import akka.util.{ Timeout, Unsafe }
+import akka.util.ByteString
 import akka.util.unused
-
-import scala.util.control.NoStackTrace
 
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,

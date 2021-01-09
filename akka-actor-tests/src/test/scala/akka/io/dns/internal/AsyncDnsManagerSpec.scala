@@ -10,13 +10,13 @@ import scala.collection.immutable.Seq
 
 import com.github.ghik.silencer.silent
 
+import akka.actor.actorRef2Scala
 import akka.io.Dns
 import akka.io.dns.AAAARecord
 import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.DnsProtocol.{ Resolve, Resolved }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.testkit.WithLogCapturing
-import akka.actor.actorRef2Scala
 
 // tests deprecated DNS API
 @silent("deprecated")

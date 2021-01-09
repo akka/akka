@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.annotation.implicitNotFound
 import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 import scala.util.control.NonFatal
+
 import akka.ConfigurationException
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi

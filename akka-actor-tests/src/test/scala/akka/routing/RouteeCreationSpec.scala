@@ -10,8 +10,8 @@ import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.Identify
 import akka.actor.Props
-import akka.testkit.AkkaSpec
 import akka.actor.actorRef2Scala
+import akka.testkit.AkkaSpec
 
 class RouteeCreationSpec extends AkkaSpec {
 

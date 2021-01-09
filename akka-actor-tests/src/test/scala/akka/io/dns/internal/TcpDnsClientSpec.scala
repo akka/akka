@@ -9,12 +9,12 @@ import java.net.InetSocketAddress
 import scala.collection.immutable.Seq
 
 import akka.actor.Props
+import akka.actor.actorRef2Scala
 import akka.io.Tcp
 import akka.io.Tcp.{ Connected, PeerClosed, Register }
 import akka.io.dns.{ RecordClass, RecordType }
 import akka.io.dns.internal.DnsClient.Answer
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
-import akka.actor.actorRef2Scala
 
 class TcpDnsClientSpec extends AkkaSpec with ImplicitSender {
   import TcpDnsClient._

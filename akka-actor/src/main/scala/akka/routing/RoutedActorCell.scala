@@ -18,10 +18,10 @@ import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.actor.Terminated
+import akka.actor.actorRef2Scala
 import akka.dispatch.Envelope
 import akka.dispatch.MessageDispatcher
 import akka.util.ccompat._
-import akka.actor.actorRef2Scala
 
 /**
  * INTERNAL API

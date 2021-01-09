@@ -19,6 +19,7 @@ import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 
 import com.github.ghik.silencer.silent
+
 import akka.AkkaException
 import akka.actor.Scheduler
 import akka.dispatch.ExecutionContexts.parasitic

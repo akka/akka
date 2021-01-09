@@ -7,12 +7,13 @@ package akka.pattern
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Failure
-import com.github.ghik.silencer.silent
 
+import com.github.ghik.silencer.silent
 import language.postfixOps
+
 import akka.actor._
-import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.testkit.WithLogCapturing
 import akka.util.Timeout
 
 @silent

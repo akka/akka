@@ -10,13 +10,13 @@ import scala.concurrent.ExecutionContextExecutor
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
+import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
 import akka.testkit._
 import akka.testkit.AkkaSpec
-import akka.actor.actorRef2Scala
 
 object ConsistentHashingRouterSpec {
 

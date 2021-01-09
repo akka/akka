@@ -4,10 +4,10 @@
 
 package akka.util
 
-import akka.annotation.ApiMayChange
 import java.util.concurrent.atomic.AtomicLong
 import java.util.function.LongUnaryOperator
 
+import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 
 /**

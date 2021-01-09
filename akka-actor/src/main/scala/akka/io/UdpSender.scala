@@ -4,14 +4,15 @@
 
 package akka.io
 
+import scala.collection.immutable
+import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+
 import akka.actor._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.Inet.{ DatagramChannelCreator, SocketOption }
 import akka.io.Udp._
-import com.github.ghik.silencer.silent
-
-import scala.collection.immutable
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API

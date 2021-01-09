@@ -6,8 +6,8 @@ package akka.actor.dungeon
 
 import akka.actor.Actor
 import akka.actor.Props
-import akka.testkit._
 import akka.actor.actorRef2Scala
+import akka.testkit._
 
 object DispatchSpec {
   class UnserializableMessageClass
