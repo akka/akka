@@ -956,28 +956,28 @@ object BoundedControlAwareMailbox {
     override def numberOfMessages: Int = size.get()
     override def hasMessages: Boolean = numberOfMessages > 0
 
-    @tailrec private final def tailrecDequeue(): Envelope = {
-      val count = size.get()
-
-      // if both queues are empty return null
-      if (count > 0) {
-        // if there are messages try to fetch the current head
-        // or retry if other consumer dequeued in the mean time
-        if (size.compareAndSet(count, count - 1)) {
-          val item = super.dequeue()
-
-          if (size.get < capacity) signalNotFull()
-
-          item
-        } else {
-          tailrecDequeue()
-        }
-      } else {
-        null
-      }
-    }
-
     final override def dequeue(): Envelope = {
+      @tailrec def tailrecDequeue(): Envelope = {
+        val count = size.get()
+
+        // if both queues are empty return null
+        if (count > 0) {
+          // if there are messages try to fetch the current head
+          // or retry if other consumer dequeued in the mean time
+          if (size.compareAndSet(count, count - 1)) {
+            val item = super.dequeue()
+
+            if (size.get < capacity) signalNotFull()
+
+            item
+          } else {
+            tailrecDequeue()
+          }
+        } else {
+          null
+        }
+      }
+
       tailrecDequeue()
     }
 

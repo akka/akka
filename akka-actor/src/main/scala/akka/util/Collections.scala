@@ -28,18 +28,19 @@ private[akka] object Collections {
         private[this] var _next: To = _
         private[this] var _hasNext = false
 
-        @tailrec private final def tailrecHasNext: Boolean =
-          if (!_hasNext && superIterator.hasNext) { // If we need and are able to look for the next value
-            val potentiallyNext = superIterator.next()
-            if (isDefinedAt(potentiallyNext)) {
-              _next = apply(potentiallyNext)
-              _hasNext = true
-              true
-            } else tailrecHasNext //Attempt to find the next
-          } else _hasNext // Return if we found one
-
         override final def hasNext: Boolean = {
-          tailrecHasNext
+          @tailrec def tailrecHasNext(): Boolean = {
+            if (!_hasNext && superIterator.hasNext) { // If we need and are able to look for the next value
+              val potentiallyNext = superIterator.next()
+              if (isDefinedAt(potentiallyNext)) {
+                _next = apply(potentiallyNext)
+                _hasNext = true
+                true
+              } else tailrecHasNext //Attempt to find the next
+            } else _hasNext // Return if we found one
+          }
+
+          tailrecHasNext()
         }
 
         override final def next(): To =

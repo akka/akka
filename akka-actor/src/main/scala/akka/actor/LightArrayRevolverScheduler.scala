@@ -128,16 +128,16 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
         }
       }
 
-      @tailrec private final def tailrecCancel(): Boolean = {
-        get match {
-          case null => false
-          case c =>
-            if (c.cancel()) compareAndSet(c, null)
-            else compareAndSet(c, null) || tailrecCancel()
-        }
-      }
-
       final def cancel(): Boolean = {
+        @tailrec def tailrecCancel(): Boolean = {
+          get match {
+            case null => false
+            case c =>
+              if (c.cancel()) compareAndSet(c, null)
+              else compareAndSet(c, null) || tailrecCancel()
+          }
+        }
+
         tailrecCancel()
       }
 
