@@ -98,13 +98,17 @@ trait Scheduler {
         }
       }
 
-      @tailrec final def cancel(): Boolean = {
+      @tailrec private def tailrecCancel(): Boolean = {
         get match {
           case null => false
           case c =>
             if (c.cancel()) compareAndSet(c, null)
-            else compareAndSet(c, null) || cancel()
+            else compareAndSet(c, null) || tailrecCancel()
         }
+      }
+
+      final def cancel(): Boolean = {
+        tailrecCancel()
       }
 
       override def isCancelled: Boolean = get == null

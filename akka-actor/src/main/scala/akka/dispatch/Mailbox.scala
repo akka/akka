@@ -956,8 +956,7 @@ object BoundedControlAwareMailbox {
     override def numberOfMessages: Int = size.get()
     override def hasMessages: Boolean = numberOfMessages > 0
 
-    @tailrec
-    final override def dequeue(): Envelope = {
+    @tailrec private final def tailrecDequeue(): Envelope = {
       val count = size.get()
 
       // if both queues are empty return null
@@ -971,11 +970,15 @@ object BoundedControlAwareMailbox {
 
           item
         } else {
-          dequeue()
+          tailrecDequeue()
         }
       } else {
         null
       }
+    }
+
+    final override def dequeue(): Envelope = {
+      tailrecDequeue()
     }
 
     private def signalNotFull(): Unit = {
