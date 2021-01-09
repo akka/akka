@@ -87,6 +87,8 @@ object ActorPath {
   final def validatePathElement(element: String, fullPath: String): Unit = {
     def fullPathMsg = if (fullPath ne null) s""" (in path [$fullPath])""" else ""
 
+    // If the number of cases increase remember to add a `@switch` annotation e.g.:
+    // (findInvalidPathElementCharPosition(element): @switch) match {
     (findInvalidPathElementCharPosition(element)) match {
       case ValidPathCode =>
       // valid
