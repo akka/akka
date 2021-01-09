@@ -4,17 +4,22 @@
 
 package akka.actor.typed.delivery
 
-import scala.concurrent.duration._
+import java.nio.charset.StandardCharsets
+
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
-import ConsumerController.SequencedMessage
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.delivery.ConsumerController.SequencedMessage
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
+import akka.serialization.SerializerWithStringManifest
 
 object TestConsumer {
 
@@ -33,7 +38,7 @@ object TestConsumer {
       seqNr: Long)
       extends Command
 
-  final case class CollectedProducerIds(producerIds: Set[String])
+  final case class Collected(producerIds: Set[String], messageCount: Int)
 
   val defaultConsumerDelay: FiniteDuration = 10.millis
 
@@ -53,17 +58,17 @@ object TestConsumer {
   def apply(
       delay: FiniteDuration,
       endSeqNr: Long,
-      endReplyTo: ActorRef[CollectedProducerIds],
+      endReplyTo: ActorRef[Collected],
       controller: ActorRef[ConsumerController.Start[TestConsumer.Job]]): Behavior[Command] =
     apply(delay, consumerEndCondition(endSeqNr), endReplyTo, controller)
 
   def apply(
       delay: FiniteDuration,
       endCondition: SomeAsyncJob => Boolean,
-      endReplyTo: ActorRef[CollectedProducerIds],
+      endReplyTo: ActorRef[Collected],
       controller: ActorRef[ConsumerController.Start[TestConsumer.Job]]): Behavior[Command] =
     Behaviors.setup[Command] { ctx =>
-      new TestConsumer(ctx, delay, endCondition, endReplyTo, controller).active(Set.empty)
+      new TestConsumer(ctx, delay, endCondition, endReplyTo, controller).active(Set.empty, 0)
     }
 
 }
@@ -72,7 +77,7 @@ class TestConsumer(
     ctx: ActorContext[TestConsumer.Command],
     delay: FiniteDuration,
     endCondition: TestConsumer.SomeAsyncJob => Boolean,
-    endReplyTo: ActorRef[TestConsumer.CollectedProducerIds],
+    endReplyTo: ActorRef[TestConsumer.Collected],
     controller: ActorRef[ConsumerController.Start[TestConsumer.Job]]) {
   import TestConsumer._
 
@@ -83,10 +88,11 @@ class TestConsumer(
 
   controller ! ConsumerController.Start(deliverTo)
 
-  private def active(processed: Set[(String, Long)]): Behavior[Command] = {
+  private def active(processed: Set[(String, Long)], messageCount: Int): Behavior[Command] = {
     Behaviors.receive { (ctx, m) =>
       m match {
         case JobDelivery(msg, confirmTo, producerId, seqNr) =>
+          ctx.log.trace("SeqNr [{}] was delivered to consumer.", seqNr)
           // confirmation can be later, asynchronously
           if (delay == Duration.Zero)
             ctx.self ! SomeAsyncJob(msg, confirmTo, producerId, seqNr)
@@ -106,12 +112,36 @@ class TestConsumer(
           confirmTo ! ConsumerController.Confirmed
 
           if (endCondition(job)) {
-            endReplyTo ! CollectedProducerIds(processed.map(_._1))
+            ctx.log.debug("End at [{}]", seqNr)
+            endReplyTo ! Collected(processed.map(_._1), messageCount + 1)
             Behaviors.stopped
           } else
-            active(cleanProcessed + (producerId -> seqNr))
+            active(cleanProcessed + (producerId -> seqNr), messageCount + 1)
       }
     }
   }
 
+}
+
+object TestSerializer {
+  val config: Config = ConfigFactory.parseString(s"""
+    akka.actor.serializers.delivery-test = ${classOf[TestSerializer].getName}
+    akka.actor.serialization-bindings {
+      "${classOf[TestConsumer.Job].getName}" = delivery-test
+    }
+    """)
+}
+
+class TestSerializer extends SerializerWithStringManifest {
+  override def identifier: Int = 787878
+
+  override def manifest(o: AnyRef): String = ""
+
+  override def toBinary(o: AnyRef): Array[Byte] =
+    o match {
+      case TestConsumer.Job(payload) => payload.getBytes(StandardCharsets.UTF_8)
+    }
+
+  override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
+    TestConsumer.Job(new String(bytes, StandardCharsets.UTF_8))
 }

@@ -28,6 +28,7 @@ class GossipSpec extends AnyWordSpec with Matchers {
   val e1 = TestMember(Address("akka", "sys", "e", 2552), Joining)
   val e2 = TestMember(e1.address, Up)
   val e3 = TestMember(e1.address, Down)
+  val f1 = TestMember(Address("akka", "sys", "f", 2552), Joining)
 
   val dc1a1 = TestMember(Address("akka", "sys", "a", 2552), Up, Set.empty, dataCenter = "dc1")
   val dc1b1 = TestMember(Address("akka", "sys", "b", 2552), Up, Set.empty, dataCenter = "dc1")
@@ -254,6 +255,40 @@ class GossipSpec extends AnyWordSpec with Matchers {
       // but dc2 cannot
       state(g, dc2c1).leader should ===(Some(dc2c1.uniqueAddress))
       state(g, dc2c1).convergence(Set.empty) should ===(false)
+    }
+
+    "not reach convergence for first member of other data center until all have seen the gossip" in {
+      val dc2e1 = TestMember(e1.address, status = Joining, roles = Set.empty, dataCenter = "dc2")
+      val g = Gossip(members = SortedSet(dc1a1, dc1b1, dc2e1)).seen(dc1a1.uniqueAddress).seen(dc2e1.uniqueAddress)
+      // dc1b1 has not seen the gossip
+
+      // dc1 hasn't reached convergence because dc1b1 hasn't marked it as seen
+      state(g, dc1a1).convergence(Set.empty) should ===(false)
+
+      // and not dc2 because dc2e1 is only Joining
+      state(g, dc2e1).convergence(Set.empty) should ===(false)
+
+      // until all have seen it
+      val g2 = g.seen(dc1b1.uniqueAddress)
+      state(g2, dc2e1).convergence(Set.empty) should ===(true)
+    }
+
+    "not reach convergence for first member of other data center until all have seen the gossip 2" in {
+      // reproducer test for issue #29486
+      val dc2e1 = TestMember(e1.address, status = Joining, roles = Set.empty, dataCenter = "dc2")
+      val dc2f1 = TestMember(f1.address, status = Joining, roles = Set.empty, dataCenter = "dc2")
+      val g =
+        Gossip(members = SortedSet(dc1a1, dc1b1, dc2e1, dc2f1))
+          .seen(dc1a1.uniqueAddress)
+          .seen(dc1b1.uniqueAddress)
+          .seen(dc2f1.uniqueAddress)
+
+      // dc2 hasn't reached convergence because dc2e1 has not seen it (and that matters even though it is only Joining)
+      state(g, dc2f1).convergence(Set.empty) should ===(false)
+
+      // until all have seen it
+      val g2 = g.seen(dc2e1.uniqueAddress)
+      state(g2, dc2f1).convergence(Set.empty) should ===(true)
     }
 
     "reach convergence per data center even if another data center contains unreachable" in {

@@ -956,7 +956,7 @@ class TcpConnectionSpec extends AkkaSpec("""
 
     override def run(body: => Unit): Unit = super.run {
       registerCallReceiver.expectMsg(Registration(clientSideChannel, 0))
-      registerCallReceiver.sender should ===(connectionActor)
+      registerCallReceiver.sender() should ===(connectionActor)
       body
     }
   }

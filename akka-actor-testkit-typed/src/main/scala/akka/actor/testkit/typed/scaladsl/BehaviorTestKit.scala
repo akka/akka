@@ -12,6 +12,7 @@ import scala.reflect.ClassTag
 import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
 import akka.actor.typed.{ ActorRef, Behavior, Signal, TypedActorContext }
+import akka.actor.typed.receptionist.Receptionist
 import akka.annotation.{ ApiMayChange, DoNotInherit }
 
 @ApiMayChange
@@ -144,4 +145,9 @@ trait BehaviorTestKit[T] {
    * Clear the log entries
    */
   def clearLog(): Unit
+
+  /**
+   * The receptionist inbox contains messages sent to `system.receptionist`
+   */
+  def receptionistInbox(): TestInbox[Receptionist.Command]
 }

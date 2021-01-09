@@ -48,7 +48,7 @@ object ExternalShardAllocation extends ExtensionId[ExternalShardAllocation] with
   override def createExtension(system: ExtendedActorSystem): ExternalShardAllocation =
     new ExternalShardAllocation(system)
 
-  override def lookup(): ExternalShardAllocation.type = ExternalShardAllocation
+  override def lookup: ExternalShardAllocation.type = ExternalShardAllocation
 
   override def get(system: ClassicActorSystemProvider): ExternalShardAllocation = super.get(system)
 }

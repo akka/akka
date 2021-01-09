@@ -4,17 +4,19 @@
 
 package akka.persistence.testkit
 
+import akka.actor.ActorLogging
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Try
-
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import akka.annotation.InternalApi
 import akka.persistence._
-import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
+import akka.persistence.journal.AsyncWriteJournal
+import akka.persistence.journal.Tagged
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.testkit.internal.{ InMemStorageExtension, SnapshotStorageEmulatorExtension }
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -22,26 +24,49 @@ import akka.persistence.testkit.internal.{ InMemStorageExtension, SnapshotStorag
  * Persistence testkit plugin for events.
  */
 @InternalApi
-class PersistenceTestKitPlugin extends AsyncWriteJournal {
+class PersistenceTestKitPlugin(@unused cfg: Config, cfgPath: String) extends AsyncWriteJournal with ActorLogging {
 
-  private final val storage = InMemStorageExtension(context.system)
+  private final val storage = {
+    log.debug("Using in memory storage [{}] for test kit journal", cfgPath)
+    InMemStorageExtension(context.system).storageFor(cfgPath)
+  }
+  private val eventStream = context.system.eventStream
 
-  override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
+  override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
     Future.fromTry(Try(messages.map(aw => {
       val data = aw.payload.map(pl =>
         pl.payload match {
-          case Tagged(p, _) => pl.withPayload(p)
-          case _            => pl
+          case _ => pl.withTimestamp(System.currentTimeMillis())
         })
-      storage.tryAdd(data)
+
+      val result: Try[Unit] = storage.tryAdd(data)
+      result.foreach { _ =>
+        messages.foreach { aw =>
+          eventStream.publish(PersistenceTestKitPlugin.Write(aw.persistenceId, aw.highestSequenceNr))
+        }
+      }
+      result
     })))
+  }
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
     Future.fromTry(Try(storage.tryDelete(persistenceId, toSequenceNr)))
 
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
       recoveryCallback: PersistentRepr => Unit): Future[Unit] =
-    Future.fromTry(Try(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, max).foreach(recoveryCallback)))
+    Future.fromTry(
+      Try(
+        storage
+          .tryRead(persistenceId, fromSequenceNr, toSequenceNr, max)
+          .map { repr =>
+            // we keep the tags in the repr, so remove those here
+            repr.payload match {
+              case Tagged(payload, _) => repr.withPayload(payload)
+              case _                  => repr
+            }
+
+          }
+          .foreach(recoveryCallback)))
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
     Future.fromTry(Try {
@@ -53,7 +78,7 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
 
 object PersistenceTestKitPlugin {
 
-  val PluginId = "akka.persistence.testkit.journal.pluginid"
+  val PluginId = "akka.persistence.testkit.journal"
 
   import akka.util.ccompat.JavaConverters._
 
@@ -63,6 +88,8 @@ object PersistenceTestKitPlugin {
     Map(
       "akka.persistence.journal.plugin" -> PluginId,
       s"$PluginId.class" -> s"${classOf[PersistenceTestKitPlugin].getName}").asJava)
+
+  private[testkit] case class Write(persistenceId: String, toSequenceNr: Long)
 
 }
 

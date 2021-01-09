@@ -29,6 +29,7 @@ object ClusterShardingLeaseSpec {
         keys = []
        }
        verbose-debug-logging = on
+       fail-on-invalid-entity-state-transition = on
      }
     """).withFallback(TestLease.config)
 

@@ -73,6 +73,9 @@ abstract class ClusterDeathWatchSpec
     expectMsgType[ActorIdentity].ref.get
   }
 
+  // only assigned on node 1
+  private var subject6: ActorRef = _
+
   "An actor watching a remote actor in the cluster" must {
 
     "receive Terminated when watched node becomes Down/Removed" in within(20 seconds) {
@@ -188,7 +191,7 @@ abstract class ClusterDeathWatchSpec
       runOn(first) {
         // fifth is member, so the node is handled by the ClusterRemoteWatcher.
         system.actorSelection(RootActorPath(fifth) / "user" / "subject6") ! Identify("subject6")
-        val subject6 = expectMsgType[ActorIdentity].ref.get
+        subject6 = expectMsgType[ActorIdentity].ref.get
         watch(subject6)
 
         system.actorSelection(RootActorPath(fifth) / "user" / "subject5") ! Identify("subject5")
@@ -231,6 +234,15 @@ abstract class ClusterDeathWatchSpec
       }
       enterBarrier("terminated-subject6")
       enterBarrier("after-3")
+    }
+
+    "get a terminated when trying to watch actor after node was downed" in within(max = 20.seconds) {
+      runOn(first) {
+        // node 5 is long gone (downed)
+        watch(subject6)
+        expectTerminated(subject6, 10.seconds)
+      }
+      enterBarrier("after-4")
     }
 
     "be able to shutdown system when using remote deployed actor on node that crash" in within(20 seconds) {
@@ -295,7 +307,7 @@ abstract class ClusterDeathWatchSpec
           expectMsg(EndActor.End)
         }
 
-        enterBarrier("after-4")
+        enterBarrier("after-5")
       }
 
     }

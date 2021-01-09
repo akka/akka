@@ -4,12 +4,14 @@
 
 package akka.cluster
 
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+
 import scala.collection.immutable
 import scala.concurrent.duration.Deadline
 
 import ClusterSettings.DataCenter
 import MemberStatus._
-
 import akka.annotation.InternalApi
 
 /**
@@ -20,7 +22,7 @@ private[cluster] object Gossip {
   val emptyMembers: immutable.SortedSet[Member] = immutable.SortedSet.empty
   val empty: Gossip = new Gossip(Gossip.emptyMembers)
 
-  def apply(members: immutable.SortedSet[Member]) =
+  def apply(members: immutable.SortedSet[Member]): Gossip =
     if (members.isEmpty) empty else empty.copy(members = members)
 
   def vclockName(node: UniqueAddress): String = s"${node.address}-${node.longUid}"
@@ -173,15 +175,15 @@ private[cluster] final case class Gossip(
       vclock.prune(VectorClock.Node(Gossip.vclockName(node)))
     }
 
-    // 2. merge members by selecting the single Member with highest MemberStatus out of the Member groups
+    // 3. merge members by selecting the single Member with highest MemberStatus out of the Member groups
     val mergedMembers =
       Gossip.emptyMembers.union(Member.pickHighestPriority(this.members, that.members, mergedTombstones))
 
-    // 3. merge reachability table by picking records with highest version
+    // 4. merge reachability table by picking records with highest version
     val mergedReachability =
       this.overview.reachability.merge(mergedMembers.map(_.uniqueAddress), that.overview.reachability)
 
-    // 4. Nobody can have seen this new gossip yet
+    // 5. Nobody can have seen this new gossip yet
     val mergedSeen = Set.empty[UniqueAddress]
 
     Gossip(mergedMembers, GossipOverview(mergedSeen, mergedReachability), mergedVClock, mergedTombstones)
@@ -267,6 +269,9 @@ private[cluster] final case class Gossip(
     else copy(tombstones = newTombstones)
   }
 
+  def seenDigest: Array[Byte] =
+    overview.seenDigest
+
   override def toString =
     s"Gossip(members = [${members.mkString(", ")}], overview = $overview, version = $version, tombstones = $tombstones)"
 }
@@ -279,6 +284,11 @@ private[cluster] final case class Gossip(
 private[cluster] final case class GossipOverview(
     seen: Set[UniqueAddress] = Set.empty,
     reachability: Reachability = Reachability.empty) {
+
+  lazy val seenDigest: Array[Byte] = {
+    val bytes = seen.toVector.sorted.map(node => node.address).mkString(",").getBytes(StandardCharsets.UTF_8)
+    MessageDigest.getInstance("SHA-1").digest(bytes)
+  }
 
   override def toString =
     s"GossipOverview(reachability = [$reachability], seen = [${seen.mkString(", ")}])"
@@ -323,13 +333,6 @@ private[cluster] class GossipEnvelope private (
       ser = null
     }
   }
-
-  @throws(classOf[java.io.ObjectStreamException])
-  private def writeReplace(): AnyRef = {
-    deserialize()
-    this
-  }
-
 }
 
 /**
@@ -340,4 +343,16 @@ private[cluster] class GossipEnvelope private (
  * it replies with its `GossipStatus`. Same versions ends the chat immediately.
  */
 @SerialVersionUID(1L)
-private[cluster] final case class GossipStatus(from: UniqueAddress, version: VectorClock) extends ClusterMessage
+private[cluster] final case class GossipStatus(from: UniqueAddress, version: VectorClock, seenDigest: Array[Byte])
+    extends ClusterMessage {
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case other: GossipStatus =>
+        from == other.from && version == other.version && java.util.Arrays.equals(seenDigest, other.seenDigest)
+      case _ => false
+    }
+  }
+
+  override def toString: DataCenter =
+    f"GossipStatus($from,$version,${seenDigest.map(byte => f"$byte%02x").mkString("")})"
+}

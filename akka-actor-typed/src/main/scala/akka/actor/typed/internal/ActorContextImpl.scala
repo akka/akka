@@ -13,19 +13,21 @@ import java.util.concurrent.CompletionStage
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
 import scala.util.Try
-
 import com.github.ghik.silencer.silent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import akka.actor.Address
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
-import akka.util.{ BoxedType, Timeout }
+import akka.pattern.StatusReply
+import akka.util.BoxedType
 import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
 import akka.util.Timeout
+
+import scala.util.Failure
+import scala.util.Success
 
 /**
  * INTERNAL API
@@ -93,7 +95,7 @@ import akka.util.Timeout
 
   private var messageAdapterRef: OptionVal[ActorRef[Any]] = OptionVal.None
   private var _messageAdapters: List[(Class[_], Any => T)] = Nil
-  private var _timer: OptionVal[TimerSchedulerImpl[T]] = OptionVal.None
+  private var _timer: OptionVal[TimerSchedulerCrossDslSupport[T]] = OptionVal.None
 
   // _currentActorThread is on purpose not volatile. Used from `checkCurrentActorThread`.
   // It will always see the right value when accessed from the right thread.
@@ -101,14 +103,16 @@ import akka.util.Timeout
   private var _currentActorThread: OptionVal[Thread] = OptionVal.None
 
   // context-shared timer needed to allow for nested timer usage
-  def timer: TimerSchedulerImpl[T] = _timer match {
+  def timer: TimerSchedulerCrossDslSupport[T] = _timer match {
     case OptionVal.Some(timer) => timer
     case OptionVal.None =>
       checkCurrentActorThread()
-      val timer = new TimerSchedulerImpl[T](this)
+      val timer = mkTimer()
       _timer = OptionVal.Some(timer)
       timer
   }
+
+  protected[this] def mkTimer(): TimerSchedulerCrossDslSupport[T] = new TimerSchedulerImpl[T](this)
 
   override private[akka] def hasTimer: Boolean = _timer.isDefined
 
@@ -206,6 +210,14 @@ import akka.util.Timeout
     pipeToSelf((target.ask(createRequest))(responseTimeout, system.scheduler))(mapResponse)
   }
 
+  override def askWithStatus[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[StatusReply[Res]] => Req)(
+      mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit =
+    ask(target, createRequest) {
+      case Success(StatusReply.Success(t: Res)) => mapResponse(Success(t))
+      case Success(StatusReply.Error(why))      => mapResponse(Failure(why))
+      case fail: Failure[_]                     => mapResponse(fail.asInstanceOf[Failure[Res]])
+    }
+
   // Java API impl
   @silent("never used") // resClass is just a pretend param
   override def ask[Req, Res](
@@ -216,6 +228,26 @@ import akka.util.Timeout
       applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit = {
     import akka.actor.typed.javadsl.AskPattern
     pipeToSelf(AskPattern.ask(target, (ref) => createRequest(ref), responseTimeout, system.scheduler), applyToResponse)
+  }
+
+  override def askWithStatus[Req, Res](
+      resClass: Class[Res],
+      target: RecipientRef[Req],
+      responseTimeout: Duration,
+      createRequest: akka.japi.function.Function[ActorRef[StatusReply[Res]], Req],
+      applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit = {
+    implicit val classTag: ClassTag[Res] = ClassTag(resClass)
+    ask[Req, StatusReply[Res]](
+      classOf[StatusReply[Res]],
+      target,
+      responseTimeout,
+      createRequest,
+      (ok: StatusReply[Res], failure: Throwable) =>
+        ok match {
+          case StatusReply.Success(value: Res) => applyToResponse(value, null)
+          case StatusReply.Error(why)          => applyToResponse(null.asInstanceOf[Res], why)
+          case null                            => applyToResponse(null.asInstanceOf[Res], failure)
+        })
   }
 
   // Scala API impl
@@ -288,7 +320,7 @@ import akka.util.Timeout
       case OptionVal.Some(t) =>
         throw new IllegalStateException(
           s"Invalid access by thread from the outside of $self. " +
-          s"Current message is processed by $t, but also accessed from from ${Thread.currentThread()}.")
+          s"Current message is processed by $t, but also accessed from ${Thread.currentThread()}.")
     }
   }
 

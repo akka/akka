@@ -8,9 +8,7 @@ Never emit any elements, never complete and never fail.
 
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #never }
-
-@@@
+@apidoc[Source.never](Source$) { scala="#never[T]:akka.stream.scaladsl.Source[T,akka.NotUsed]" java="#never()" }
 
 ## Description
 

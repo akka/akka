@@ -83,7 +83,7 @@ error situations differently. There are two kinds of errors we need to consider:
 
  * The first case is when the delegated task on the target actor failed due to an error in the task (typically some
    validation issue, like a non-existent user ID). In this case, the service encapsulated by the target actor is intact,
-   it is only the task that itself is erroneous.
+   it is only the task itself that is erroneous.
    The service actor should reply to the sender with a message, presenting the error case. There is nothing special here, errors are part of the domain and hence become ordinary messages.
  * The second case is when a service itself encounters an internal fault. Akka enforces that all actors are organized
    into a tree-like hierarchy, i.e. an actor that creates another actor becomes the parent of that new actor. This is very similar how operating systems organize processes into a tree. Just like with processes, when an actor fails,

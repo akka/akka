@@ -29,10 +29,8 @@ side of an application, however it can help to migrate data from the write side 
 simple scenarios Persistence Query may be powerful enough to fulfill the query needs of your app, however we highly
 recommend (in the spirit of CQRS) of splitting up the write/read sides into separate datastores as the need arises.
 
-
-The [CQRS with Akka 2.6 video](https://akka.io/blog/news/2020/02/05/akka-cqrs-video) is a good starting point for
-learning how to use `eventsByTag` to implement CQRS with Akka. Also, watch the introduction to 
-[Event Sourcing with Akka 2.6 video](https://akka.io/blog/news/2020/01/07/akka-event-sourcing-video).
+The @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) explains how to
+implement an Event Sourced CQRS application with Akka Persistence and Akka Projections.
 
 ## Design overview
 
@@ -199,7 +197,7 @@ Java
 
 ## Performance and denormalization
 
-When building systems using @ref:[Event sourcing](typed/persistence.md#event-sourcing-concepts) and CQRS ([Command & Query Responsibility Segregation](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj554200(v=pandp.10)?redirectedfrom=MSDN)) techniques
+When building systems using @ref:[Event Sourcing](typed/persistence.md#event-sourcing-concepts) and CQRS ([Command & Query Responsibility Segregation](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj554200%28v=pandp.10%29)) techniques
 it is tremendously important to realise that the write-side has completely different needs from the read-side,
 and separating those concerns into datastores that are optimised for either side makes it possible to offer the best
 experience for the write and read sides independently.
@@ -344,23 +342,8 @@ resilience is important so that if a node crashes the persistent queries are qui
 resume operations @ref:[Cluster Sharding](cluster-sharding.md) together with event tagging is an excellent fit to 
 shard events over a cluster.
 
-The [Lagom framework](https://www.lagomframework.com), which is built on top of Akka encodes many of the best practices
-around this. For more details see @java[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/java/ES_CQRS.html)]
-@scala[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/scala/ES_CQRS.html)] and 
-@java[[Persistent Entity](https://www.lagomframework.com/documentation/current/java/PersistentEntity.html)] 
-@scala[[Persistent Entity](https://www.lagomframework.com/documentation/current/scala/PersistentEntity.html)] in the Lagom documentation.
-
-
-### Plugin TCK
-
-TODO, not available yet.
-
 ## Example project
 
-@java[@extref[CQRS example project](samples:akka-samples-cqrs-java)]
-@scala[@extref[CQRS example project](samples:akka-samples-cqrs-scala)]
-is an example project that can be downloaded, and with instructions of how to run.
-
-This project contains a Shopping Cart sample illustrating how to use Akka Persistence.
-The events are tagged to be consumed by even processors to build other representations
-from the events, or publish the events to other services.
+The @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) explains how to
+use Event Sourcing and Projections together. The events are tagged to be consumed by even processors to build
+other representations from the events, or publish the events to other services.

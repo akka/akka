@@ -747,13 +747,15 @@ sealed abstract class ByteString
 
   override protected def fromSpecific(coll: IterableOnce[Byte]): ByteString = ByteString(coll)
   override protected def newSpecificBuilder: mutable.Builder[Byte, ByteString] = ByteString.newBuilder
-  override val empty: ByteString = ByteString.empty
+  override def empty: ByteString = ByteString.empty
 
   def apply(idx: Int): Byte
   private[akka] def byteStringCompanion: ByteString.Companion
   // override so that toString will also be `ByteString(...)` for the concrete subclasses
   // of ByteString which changed for Scala 2.12, see https://github.com/akka/akka/issues/21774
   override final def className: String = "ByteString"
+
+  override def isEmpty: Boolean = length == 0
 
   // override protected[this] def newBuilder: ByteStringBuilder = ByteString.newBuilder
 
@@ -1102,6 +1104,10 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     }
   }
 
+  // We'd really like to have this overload to prevent boxing, but it's forbidden because sc.mutable.Growable makes
+  // it final. I guess it assumes to prevent the boxing overhead by using @inline but that doesn't seem to be true.
+  // def +=(elem: Byte): this.type = addOne(elem)
+
   override def addOne(elem: Byte): this.type = {
     ensureTempSize(_tempLength + 1)
     _temp(_tempLength) = elem
@@ -1110,35 +1116,45 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     this
   }
 
+  def ++=(bytes: ByteString): this.type = addAll(bytes)
+  def addAll(bytes: ByteString): this.type = {
+    if (bytes.nonEmpty) {
+      clearTemp()
+      bytes match {
+        case b: ByteString1C =>
+          _builder += b.toByteString1
+          _length += b.length
+        case b: ByteString1 =>
+          _builder += b
+          _length += b.length
+        case bs: ByteStrings =>
+          _builder ++= bs.bytestrings
+          _length += bs.length
+      }
+    }
+    this
+  }
+
   override def addAll(xs: IterableOnce[Byte]): this.type = {
     xs match {
-      case _ if xs.iterator.isEmpty =>
-      // do nothing
-      case b: ByteString1C =>
-        clearTemp()
-        _builder += b.toByteString1
-        _length += b.length
-      case b: ByteString1 =>
-        clearTemp()
-        _builder += b
-        _length += b.length
-      case bs: ByteStrings =>
-        clearTemp()
-        _builder ++= bs.bytestrings
-        _length += bs.length
+      case bs: ByteString => addAll(bs)
       case xs: WrappedArray.ofByte =>
-        putByteArrayUnsafe(xs.array.clone)
+        if (xs.nonEmpty) putByteArrayUnsafe(xs.array.clone)
       case seq: collection.IndexedSeq[Byte] if shouldResizeTempFor(seq.length) =>
-        val copied = Array.from(xs)
+        if (seq.nonEmpty) {
+          val copied = Array.from(xs)
 
-        clearTemp()
-        _builder += ByteString.ByteString1(copied)
-        _length += seq.length
+          clearTemp()
+          _builder += ByteString.ByteString1(copied)
+          _length += seq.length
+        }
       case seq: collection.IndexedSeq[Byte] =>
-        ensureTempSize(_tempLength + seq.size)
-        seq.copyToArray(_temp, _tempLength)
-        _tempLength += seq.length
-        _length += seq.length
+        if (seq.nonEmpty) {
+          ensureTempSize(_tempLength + seq.size)
+          seq.copyToArray(_temp, _tempLength)
+          _tempLength += seq.length
+          _length += seq.length
+        }
       case _ =>
         super.++=(xs)
     }
@@ -1331,7 +1347,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     _tempLength = 0
   }
 
-  def result: ByteString =
+  def result(): ByteString =
     if (_length == 0) ByteString.empty
     else {
       clearTemp()

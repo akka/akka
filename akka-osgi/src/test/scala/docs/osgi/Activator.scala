@@ -21,7 +21,7 @@ class Activator extends ActorSystemActivator {
     // optionally register the ActorSystem in the OSGi Service Registry
     registerService(context, system)
 
-    val someActor = system.actorOf(Props[SomeActor], name = "someName")
+    val someActor = system.actorOf(Props[SomeActor](), name = "someName")
     someActor ! SomeMessage
   }
 

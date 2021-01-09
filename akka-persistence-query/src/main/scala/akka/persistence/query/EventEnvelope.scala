@@ -4,14 +4,26 @@
 
 package akka.persistence.query
 
-import scala.runtime.AbstractFunction4
+import java.util.Optional
 
+import akka.annotation.InternalApi
+
+import scala.runtime.AbstractFunction4
 import akka.util.HashCode
 
 // for binary compatibility (used to be a case class)
 object EventEnvelope extends AbstractFunction4[Offset, String, Long, Any, EventEnvelope] {
   def apply(offset: Offset, persistenceId: String, sequenceNr: Long, event: Any, timestamp: Long): EventEnvelope =
-    new EventEnvelope(offset, persistenceId, sequenceNr, event, timestamp)
+    new EventEnvelope(offset, persistenceId, sequenceNr, event, timestamp, None)
+
+  def apply(
+      offset: Offset,
+      persistenceId: String,
+      sequenceNr: Long,
+      event: Any,
+      timestamp: Long,
+      meta: Option[Any]): EventEnvelope =
+    new EventEnvelope(offset, persistenceId, sequenceNr, event, timestamp, meta)
 
   @deprecated("for binary compatibility", "2.6.2")
   override def apply(offset: Offset, persistenceId: String, sequenceNr: Long, event: Any): EventEnvelope =
@@ -34,13 +46,26 @@ final class EventEnvelope(
     val persistenceId: String,
     val sequenceNr: Long,
     val event: Any,
-    val timestamp: Long)
+    val timestamp: Long,
+    val eventMetadata: Option[Any])
     extends Product4[Offset, String, Long, Any]
     with Serializable {
 
   @deprecated("for binary compatibility", "2.6.2")
   def this(offset: Offset, persistenceId: String, sequenceNr: Long, event: Any) =
-    this(offset, persistenceId, sequenceNr, event, 0L)
+    this(offset, persistenceId, sequenceNr, event, 0L, None)
+
+  // bin compat 2.6.7
+  def this(offset: Offset, persistenceId: String, sequenceNr: Long, event: Any, timestamp: Long) =
+    this(offset, persistenceId, sequenceNr, event, timestamp, None)
+
+  /**
+   * Java API
+   */
+  def getEventMetaData(): Optional[Any] = {
+    import scala.compat.java8.OptionConverters._
+    eventMetadata.asJava
+  }
 
   override def hashCode(): Int = {
     var result = HashCode.SEED
@@ -54,12 +79,12 @@ final class EventEnvelope(
   override def equals(obj: Any): Boolean = obj match {
     case other: EventEnvelope =>
       offset == other.offset && persistenceId == other.persistenceId && sequenceNr == other.sequenceNr &&
-      event == other.event // timestamp not included in equals for backwards compatibility
+      event == other.event // timestamp && metadata not included in equals for backwards compatibility
     case _ => false
   }
 
   override def toString: String =
-    s"EventEnvelope($offset,$persistenceId,$sequenceNr,$event,$timestamp)"
+    s"EventEnvelope($offset,$persistenceId,$sequenceNr,$event,$timestamp,$eventMetadata)"
 
   // for binary compatibility (used to be a case class)
   def copy(
@@ -67,7 +92,11 @@ final class EventEnvelope(
       persistenceId: String = this.persistenceId,
       sequenceNr: Long = this.sequenceNr,
       event: Any = this.event): EventEnvelope =
-    new EventEnvelope(offset, persistenceId, sequenceNr, event, timestamp)
+    new EventEnvelope(offset, persistenceId, sequenceNr, event, timestamp, this.eventMetadata)
+
+  @InternalApi
+  private[akka] def withMetadata(metadata: Any): EventEnvelope =
+    new EventEnvelope(offset, persistenceId, sequenceNr, event, timestamp, Some(metadata))
 
   // Product4, for binary compatibility (used to be a case class)
   override def productPrefix = "EventEnvelope"

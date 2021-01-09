@@ -5,6 +5,7 @@
 package akka.cluster.protobuf
 
 import collection.immutable.SortedSet
+
 import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 
@@ -14,6 +15,7 @@ import akka.cluster.InternalClusterAction.CompatibleConfig
 import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
 import akka.routing.RoundRobinPool
 import akka.testkit.AkkaSpec
+import akka.util.Version
 
 @silent
 class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = cluster") {
@@ -48,16 +50,31 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
         env2.from should ===(env.from)
         env2.to should ===(env.to)
         env2.gossip should ===(env.gossip)
+        env.gossip.members.foreach { m1 =>
+          val m2 = env.gossip.members.find(_.uniqueAddress == m1.uniqueAddress).get
+          checkSameMember(m1, m2)
+        }
       case (_, ref) =>
         ref should ===(obj)
     }
   }
 
+  private def checkSameMember(m1: Member, m2: Member): Unit = {
+    m1.uniqueAddress should ===(m2.uniqueAddress)
+    m1.status should ===(m2.status)
+    m1.appVersion should ===(m2.appVersion)
+    m1.dataCenter should ===(m2.dataCenter)
+    m1.roles should ===(m2.roles)
+    m1.upNumber should ===(m2.upNumber)
+  }
+
   import MemberStatus._
 
-  val a1 = TestMember(Address("akka", "sys", "a", 2552), Joining, Set.empty[String])
-  val b1 = TestMember(Address("akka", "sys", "b", 2552), Up, Set("r1"))
-  val c1 = TestMember(Address("akka", "sys", "c", 2552), Leaving, Set.empty[String], "foo")
+  val a1 =
+    TestMember(Address("akka", "sys", "a", 2552), Joining, Set.empty[String], appVersion = Version("1.0.0"))
+  val b1 = TestMember(Address("akka", "sys", "b", 2552), Up, Set("r1"), appVersion = Version("1.1.0"))
+  val c1 =
+    TestMember(Address("akka", "sys", "c", 2552), Leaving, Set.empty[String], "foo", appVersion = Version("1.1.0"))
   val d1 = TestMember(Address("akka", "sys", "d", 2552), Exiting, Set("r1"), "foo")
   val e1 = TestMember(Address("akka", "sys", "e", 2552), Down, Set("r3"))
   val f1 = TestMember(Address("akka", "sys", "f", 2552), Removed, Set("r3"), "foo")
@@ -69,7 +86,8 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       val uniqueAddress = UniqueAddress(address, 17L)
       val address2 = Address("akka", "system", "other.host.org", 4711)
       val uniqueAddress2 = UniqueAddress(address2, 18L)
-      checkSerialization(InternalClusterAction.Join(uniqueAddress, Set("foo", "bar", "dc-A")))
+      checkSerialization(InternalClusterAction.Join(uniqueAddress, Set("foo", "bar", "dc-A"), Version.Zero))
+      checkSerialization(InternalClusterAction.Join(uniqueAddress, Set("dc-A"), Version("1.2.3")))
       checkSerialization(ClusterUserAction.Leave(address))
       checkSerialization(ClusterUserAction.Down(address))
       checkSerialization(InternalClusterAction.InitJoin(ConfigFactory.empty))
@@ -96,9 +114,9 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g3))
       checkSerialization(GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g4))
 
-      checkSerialization(GossipStatus(a1.uniqueAddress, g1.version))
-      checkSerialization(GossipStatus(a1.uniqueAddress, g2.version))
-      checkSerialization(GossipStatus(a1.uniqueAddress, g3.version))
+      checkSerialization(GossipStatus(a1.uniqueAddress, g1.version, g1.seenDigest))
+      checkSerialization(GossipStatus(a1.uniqueAddress, g2.version, g2.seenDigest))
+      checkSerialization(GossipStatus(a1.uniqueAddress, g3.version, g3.seenDigest))
 
       checkSerialization(InternalClusterAction.Welcome(uniqueAddress, g2))
     }
@@ -110,7 +128,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       val address2 = Address("akka", "system", "other.host.org", 4711)
       val uniqueAddress2 = UniqueAddress(address2, 18L)
       checkDeserializationWithManifest(
-        InternalClusterAction.Join(uniqueAddress, Set("foo", "bar", "dc-A")),
+        InternalClusterAction.Join(uniqueAddress, Set("foo", "bar", "dc-A"), Version.Zero),
         ClusterMessageSerializer.OldJoinManifest)
       checkDeserializationWithManifest(ClusterUserAction.Leave(address), ClusterMessageSerializer.LeaveManifest)
       checkDeserializationWithManifest(ClusterUserAction.Down(address), ClusterMessageSerializer.DownManifest)
@@ -141,7 +159,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
         ClusterMessageSerializer.OldGossipEnvelopeManifest)
 
       checkDeserializationWithManifest(
-        GossipStatus(a1.uniqueAddress, g1.version),
+        GossipStatus(a1.uniqueAddress, g1.version, g1.seenDigest),
         ClusterMessageSerializer.OldGossipStatusManifest)
 
       checkDeserializationWithManifest(
@@ -156,7 +174,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
     }
 
     "add a default data center role to internal join action if none is present" in {
-      val join = roundtrip(InternalClusterAction.Join(a1.uniqueAddress, Set()))
+      val join = roundtrip(InternalClusterAction.Join(a1.uniqueAddress, Set(), Version.Zero))
       join.roles should be(Set(ClusterSettings.DcRolePrefix + "default"))
     }
   }

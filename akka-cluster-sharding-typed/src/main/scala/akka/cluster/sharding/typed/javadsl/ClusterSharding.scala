@@ -10,7 +10,6 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 
 import com.github.ghik.silencer.silent
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -22,7 +21,8 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.japi.function.{ Function => JFunction }
-
+import akka.pattern.StatusReply
+import scala.compat.java8.OptionConverters._
 @FunctionalInterface
 trait EntityFactory[M] {
   def apply(shardRegion: ActorRef[ClusterSharding.ShardCommand], entityId: String): Behavior[M]
@@ -119,11 +119,10 @@ object ClusterSharding {
  * location.
  *
  * The logic that decides which shards to rebalance is defined in a plugable shard
- * allocation strategy. The default implementation [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]]
- * picks shards for handoff from the `ShardRegion` with most number of previously allocated shards.
+ * allocation strategy. The default implementation `LeastShardAllocationStrategy`
+ * picks shards for handoff from the ShardRegion` with most number of previously allocated shards.
  * They will then be allocated to the `ShardRegion` with least number of previously allocated shards,
- * i.e. new members in the cluster. There is a configurable threshold of how large the difference
- * must be to begin the rebalancing. This strategy can be replaced by an application specific
+ * i.e. new members in the cluster. This strategy can be replaced by an application specific
  * implementation.
  *
  * The state of shard locations in the `ShardCoordinator` is stored with `akka-distributed-data` or
@@ -185,6 +184,9 @@ abstract class ClusterSharding {
    * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
    * here provided `entityId`.
    *
+   * This can only be used if the default [[ShardingEnvelope]] is used, when using custom envelopes or in message
+   * entity ids you will need to use the `ActorRef&lt;E>` returned by sharding init for messaging with the sharded actors.
+   *
    * For in-depth documentation of its semantics, see [[EntityRef]].
    */
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String): EntityRef[M]
@@ -197,6 +199,9 @@ abstract class ClusterSharding {
    * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
    * provided `entityId`.
    *
+   * This can only be used if the default [[ShardingEnvelope]] is used, when using custom envelopes or in message
+   * entity ids you will need to use the `ActorRef[E]` returned by sharding init for messaging with the sharded actors.
+   *
    * For in-depth documentation of its semantics, see [[EntityRef]].
    */
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String, dataCenter: String): EntityRef[M]
@@ -207,8 +212,7 @@ abstract class ClusterSharding {
   def shardState: ActorRef[ClusterShardingQuery]
 
   /**
-   * The default is currently [[akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy]] with the
-   * given `settings`. This could be changed in the future.
+   * The default `ShardAllocationStrategy` is configured by `least-shard-allocation-strategy` properties.
    */
   def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy
 }
@@ -337,6 +341,22 @@ final class Entity[M, E] private (
       dataCenter)
   }
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def toScala: akka.cluster.sharding.typed.scaladsl.Entity[M, E] =
+    new akka.cluster.sharding.typed.scaladsl.Entity(
+      eCtx => createBehavior(eCtx.toJava),
+      typeKey.asScala,
+      stopMessage.asScala,
+      entityProps,
+      settings.asScala,
+      messageExtractor.asScala,
+      allocationStrategy.asScala,
+      role.asScala,
+      dataCenter.asScala)
+
 }
 
 /**
@@ -419,7 +439,7 @@ object EntityTypeKey {
  *
  * Not for user extension.
  */
-@DoNotInherit abstract class EntityRef[M] extends RecipientRef[M] {
+@DoNotInherit abstract class EntityRef[-M] extends RecipientRef[M] {
   scaladslSelf: scaladsl.EntityRef[M] with InternalRecipientRef[M] =>
 
   /**
@@ -438,6 +458,14 @@ object EntityTypeKey {
    * @tparam Res The response protocol, what the other actor sends back
    */
   def ask[Res](message: JFunction[ActorRef[Res], M], timeout: Duration): CompletionStage[Res]
+
+  /**
+   * The same as [[ask]] but only for requests that result in a response of type [[akka.pattern.StatusReply]].
+   * If the response is a [[akka.pattern.StatusReply#success]] the returned future is completed successfully with the wrapped response.
+   * If the status response is a [[akka.pattern.StatusReply#error]] the returned future will be failed with the
+   * exception in the error (normally a [[akka.pattern.StatusReply.ErrorMessage]]).
+   */
+  def askWithStatus[Res](f: ActorRef[StatusReply[Res]] => M, timeout: Duration): CompletionStage[Res]
 
   /**
    * INTERNAL API

@@ -137,6 +137,7 @@ Example: configuring `internal-dispatcher` to be an alias for `default-dispatche
 akka.actor.internal-dispatcher = akka.actor.default-dispatcher
 ```
 
+<a id="blocking-management"></a>
 ## Blocking Needs Careful Management
 
 In some cases it is unavoidable to do blocking operations, i.e. to put a thread
@@ -173,7 +174,7 @@ avoid blocking APIs. The following solution explains how to handle blocking
 operations properly.
 
 Note that the same hints apply to managing blocking operations anywhere in Akka,
-including Streams, Http and other reactive libraries built on top of it.
+including Streams, HTTP and other reactive libraries built on top of it.
 
 @@@
 

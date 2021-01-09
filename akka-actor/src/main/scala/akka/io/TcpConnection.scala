@@ -415,9 +415,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     throw new IllegalStateException("Restarting not supported for connection actors.")
 
   def PendingWrite(commander: ActorRef, write: WriteCommand): PendingWrite = {
-    @tailrec def create(head: WriteCommand, tail: WriteCommand = Write.empty): PendingWrite =
+    @tailrec def create(head: WriteCommand, tail: WriteCommand): PendingWrite =
       head match {
-        case Write.empty                       => if (tail eq Write.empty) EmptyPendingWrite else create(tail)
+        case Write.empty                       => if (tail eq Write.empty) EmptyPendingWrite else create(tail, Write.empty)
         case Write(data, ack) if data.nonEmpty => PendingBufferWrite(commander, data, ack, tail)
         case WriteFile(path, offset, count, ack) =>
           PendingWriteFile(commander, Paths.get(path), offset, count, ack, tail)
@@ -426,9 +426,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
         case CompoundWrite(h, t) => create(h, t)
         case x @ Write(_, ack) => // empty write with either an ACK or a non-standard NoACK
           if (x.wantsAck) commander ! ack
-          create(tail)
+          create(tail, Write.empty)
       }
-    create(write)
+    create(write, Write.empty)
   }
 
   def PendingBufferWrite(commander: ActorRef, data: ByteString, ack: Event, tail: WriteCommand): PendingBufferWrite = {

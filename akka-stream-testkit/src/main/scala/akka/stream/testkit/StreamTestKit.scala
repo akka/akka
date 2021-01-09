@@ -13,8 +13,8 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
+import akka.actor.ClassicActorSystemProvider
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
-
 import akka.actor.{ ActorRef, ActorSystem, DeadLetterSuppression, NoSerializationVerificationNeeded }
 import akka.stream._
 import akka.stream.impl._
@@ -74,6 +74,15 @@ object TestPublisher {
    */
   def probe[T](initialPendingRequests: Long = 0)(implicit system: ActorSystem): Probe[T] =
     new Probe(initialPendingRequests)
+
+  object ManualProbe {
+
+    /**
+     * Probe that implements [[org.reactivestreams.Publisher]] interface.
+     */
+    def apply[T](autoOnSubscribe: Boolean = true)(implicit system: ClassicActorSystemProvider): ManualProbe[T] =
+      new ManualProbe(autoOnSubscribe)(system.classicSystem)
+  }
 
   /**
    * Implementation of [[org.reactivestreams.Publisher]] that allows various assertions.
@@ -209,6 +218,11 @@ object TestPublisher {
     def within[T](max: FiniteDuration)(f: => T): T = executeAfterSubscription { probe.within(max)(f) }
   }
 
+  object Probe {
+    def apply[T](initialPendingRequests: Long = 0)(implicit system: ClassicActorSystemProvider): Probe[T] =
+      new Probe(initialPendingRequests)(system.classicSystem)
+  }
+
   /**
    * Single subscription and demand tracking for [[TestPublisher.ManualProbe]].
    */
@@ -305,6 +319,11 @@ object TestSubscriber {
   def manualProbe[T]()(implicit system: ActorSystem): ManualProbe[T] = new ManualProbe()
 
   def probe[T]()(implicit system: ActorSystem): Probe[T] = new Probe()
+
+  object ManualProbe {
+    def apply[T]()(implicit system: ClassicActorSystemProvider): ManualProbe[T] =
+      new ManualProbe()(system.classicSystem)
+  }
 
   /**
    * Implementation of [[org.reactivestreams.Subscriber]] that allows various assertions.
@@ -783,6 +802,10 @@ object TestSubscriber {
     def onNext(element: I): Unit = probe.ref ! OnNext(element)
     def onComplete(): Unit = probe.ref ! OnComplete
     def onError(cause: Throwable): Unit = probe.ref ! OnError(cause)
+  }
+
+  object Probe {
+    def apply[T]()(implicit system: ClassicActorSystemProvider): Probe[T] = new Probe()(system.classicSystem)
   }
 
   /**

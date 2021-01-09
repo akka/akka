@@ -82,3 +82,9 @@ message StackTraceElement {
   required string fileName = 3;
   required int32 lineNumber = 4;
 }
+
+
+// ReplyWith pattern message(s)
+message StatusReplyErrorMessage {
+  required string errorMessage = 1;
+}

@@ -91,6 +91,7 @@ public class TailChopping<Reply> extends AbstractBehavior<TailChopping.Command> 
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public Receive<Command> createReceive() {
     return newReceiveBuilder()
         .onMessage(WrappedReply.class, this::onReply)

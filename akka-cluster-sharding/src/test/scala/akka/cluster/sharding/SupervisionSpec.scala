@@ -5,13 +5,12 @@
 package akka.cluster.sharding
 
 import scala.concurrent.duration._
-
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.{ Actor, ActorLogging, ActorRef, PoisonPill, Props }
 import akka.cluster.Cluster
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.pattern.{ BackoffOpts, BackoffSupervisor }
+import akka.testkit.EventFilter
 import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 
@@ -24,6 +23,7 @@ object SupervisionSpec {
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.loglevel = DEBUG
     akka.cluster.sharding.verbose-debug-logging = on
+    akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
     """)
 
   case class Msg(id: Long, msg: Any)
@@ -59,6 +59,7 @@ object SupervisionSpec {
       case "hello" =>
         sender() ! Response(self)
       case StopMessage =>
+        // note that we never see this because we stop early
         log.info("Received stop from region")
         context.parent ! PoisonPill
     }
@@ -71,7 +72,7 @@ class DeprecatedSupervisionSpec extends AkkaSpec(SupervisionSpec.config) with Im
 
   "Supervision for a sharded actor (deprecated)" must {
 
-    "allow passivation" in {
+    "allow passivation and early stop" in {
 
       val supervisedProps =
         BackoffOpts
@@ -96,8 +97,12 @@ class DeprecatedSupervisionSpec extends AkkaSpec(SupervisionSpec.config) with Im
       val response = expectMsgType[Response](5.seconds)
       watch(response.self)
 
-      region ! Msg(10, "passivate")
-      expectTerminated(response.self)
+      // We need the shard to have observed the passivation for this test but
+      // we don't know that this means the passivation reached the shard yet unless we observe it
+      EventFilter.debug("passy: Passivation started for [10]", occurrences = 1).intercept {
+        region ! Msg(10, "passivate")
+        expectTerminated(response.self)
+      }
 
       // This would fail before as sharded actor would be stuck passivating
       region ! Msg(10, "hello")
@@ -112,7 +117,7 @@ class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSend
 
   "Supervision for a sharded actor" must {
 
-    "allow passivation" in {
+    "allow passivation and early stop" in {
 
       val supervisedProps = BackoffSupervisor.props(
         BackoffOpts

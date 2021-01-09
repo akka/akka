@@ -44,6 +44,7 @@ trait ClusterNodeMBean {
    *     {
    *       "address": "akka://system@host1:2552",
    *       "status": "Up",
+   *       "app-version": "1.0.0",
    *       "roles": [
    *         "frontend"
    *       ]
@@ -51,6 +52,7 @@ trait ClusterNodeMBean {
    *     {
    *       "address": "akka://system@host2:2552",
    *       "status": "Up",
+   *       "app-version": "1.0.0",
    *       "roles": [
    *         "frontend"
    *       ]
@@ -58,6 +60,7 @@ trait ClusterNodeMBean {
    *     {
    *       "address": "akka://system@host3:2552",
    *       "status": "Down",
+   *       "app-version": "1.0.0",
    *       "roles": [
    *         "backend"
    *       ]
@@ -65,6 +68,7 @@ trait ClusterNodeMBean {
    *     {
    *       "address": "akka://system@host4:2552",
    *       "status": "Joining",
+   *       "app-version": "1.1.0",
    *       "roles": [
    *         "backend"
    *       ]
@@ -159,7 +163,8 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
               |      "address": "${m.address}",
               |      "roles": [${if (m.roles.isEmpty) ""
                else m.roles.toList.sorted.map("\"" + _ + "\"").mkString("\n        ", ",\n        ", "\n      ")}],
-              |      "status": "${m.status}"
+              |      "status": "${m.status}",
+              |      "app-version": "${m.appVersion}"
               |    }""".stripMargin
           }
           .mkString(",\n    ")

@@ -178,6 +178,9 @@ object WorkPullingProducerController {
       val internalAskTimeout: FiniteDuration,
       val producerControllerSettings: ProducerController.Settings) {
 
+    if (producerControllerSettings.chunkLargeMessagesBytes > 0)
+      throw new IllegalArgumentException("Chunked messages not implemented for work-pulling yet.")
+
     def withBufferSize(newBufferSize: Int): Settings =
       copy(bufferSize = newBufferSize)
 

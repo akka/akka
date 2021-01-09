@@ -14,7 +14,6 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.language.implicitConversions
-import scala.language.implicitConversions
 import scala.util.Success
 
 import com.github.ghik.silencer.silent
@@ -210,7 +209,7 @@ object ActorSelection {
   def apply(anchorRef: ActorRef, elements: Iterable[String]): ActorSelection = {
     val compiled: immutable.IndexedSeq[SelectionPathElement] = elements.iterator
       .collect {
-        case x if !x.isEmpty =>
+        case x if x.nonEmpty =>
           if ((x.indexOf('?') != -1) || (x.indexOf('*') != -1)) SelectChildPattern(x)
           else if (x == "..") SelectParent
           else SelectChildName(x)

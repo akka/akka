@@ -113,7 +113,7 @@ final case class VectorClock(versions: TreeMap[VectorClock.Node, Long] = TreeMap
    *
    * If you send in the ordering FullOrder, you will get a full comparison.
    */
-  private final def compareOnlyTo(that: VectorClock, order: Ordering): Ordering = {
+  private def compareOnlyTo(that: VectorClock, order: Ordering): Ordering = {
     def nextOrElse[T](iter: Iterator[T], default: T): T = if (iter.hasNext) iter.next() else default
 
     def compare(i1: Iterator[(Node, Long)], i2: Iterator[(Node, Long)], requestedOrder: Ordering): Ordering = {
@@ -195,5 +195,5 @@ final case class VectorClock(versions: TreeMap[VectorClock.Node, Long] = TreeMap
     else
       this
 
-  override def toString = versions.map { case ((n, t)) => n + " -> " + t }.mkString("VectorClock(", ", ", ")")
+  override def toString = versions.map { case (n, t) => n + " -> " + t }.mkString("VectorClock(", ", ", ")")
 }

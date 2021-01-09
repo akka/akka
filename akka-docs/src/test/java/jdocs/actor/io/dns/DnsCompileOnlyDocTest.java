@@ -24,14 +24,27 @@ public class DnsCompileOnlyDocTest {
     final Duration timeout = Duration.ofMillis(1000L);
 
     // #resolve
-    Option<Dns.Resolved> initial = Dns.get(system).cache().resolve("google.com", system, actorRef);
-    Option<Dns.Resolved> cached = Dns.get(system).cache().cached("google.com");
+    Option<DnsProtocol.Resolved> initial =
+        Dns.get(system)
+            .cache()
+            .resolve(
+                new DnsProtocol.Resolve("google.com", DnsProtocol.ipRequestType()),
+                system,
+                actorRef);
+    Option<DnsProtocol.Resolved> cached =
+        Dns.get(system)
+            .cache()
+            .cached(new DnsProtocol.Resolve("google.com", DnsProtocol.ipRequestType()));
     // #resolve
 
     {
       // #actor-api-inet-address
       final ActorRef dnsManager = Dns.get(system).manager();
-      CompletionStage<Object> resolved = ask(dnsManager, new Dns.Resolve("google.com"), timeout);
+      CompletionStage<Object> resolved =
+          ask(
+              dnsManager,
+              new DnsProtocol.Resolve("google.com", DnsProtocol.ipRequestType()),
+              timeout);
       // #actor-api-inet-address
 
     }

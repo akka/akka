@@ -38,6 +38,7 @@ public class ClusterClientTest extends JUnitSuite {
   // #initialContacts
 
   @Test
+  @Deprecated
   public void demonstrateUsage() {
     // #server
     ActorRef serviceA = system.actorOf(Props.create(Service.class), "serviceA");

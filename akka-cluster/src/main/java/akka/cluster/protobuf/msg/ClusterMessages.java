@@ -317,6 +317,23 @@ public final class ClusterMessages {
      */
     akka.protobufv3.internal.ByteString
         getRolesBytes(int index);
+
+    /**
+     * <code>optional string appVersion = 3;</code>
+     * @return Whether the appVersion field is set.
+     */
+    boolean hasAppVersion();
+    /**
+     * <code>optional string appVersion = 3;</code>
+     * @return The appVersion.
+     */
+    java.lang.String getAppVersion();
+    /**
+     * <code>optional string appVersion = 3;</code>
+     * @return The bytes for appVersion.
+     */
+    akka.protobufv3.internal.ByteString
+        getAppVersionBytes();
   }
   /**
    * <pre>
@@ -337,6 +354,7 @@ public final class ClusterMessages {
     }
     private Join() {
       roles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      appVersion_ = "";
     }
 
     @java.lang.Override
@@ -390,6 +408,12 @@ public final class ClusterMessages {
                 mutable_bitField0_ |= 0x00000002;
               }
               roles_.add(bs);
+              break;
+            }
+            case 26: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
+              bitField0_ |= 0x00000002;
+              appVersion_ = bs;
               break;
             }
             default: {
@@ -486,6 +510,51 @@ public final class ClusterMessages {
       return roles_.getByteString(index);
     }
 
+    public static final int APPVERSION_FIELD_NUMBER = 3;
+    private volatile java.lang.Object appVersion_;
+    /**
+     * <code>optional string appVersion = 3;</code>
+     * @return Whether the appVersion field is set.
+     */
+    public boolean hasAppVersion() {
+      return ((bitField0_ & 0x00000002) != 0);
+    }
+    /**
+     * <code>optional string appVersion = 3;</code>
+     * @return The appVersion.
+     */
+    public java.lang.String getAppVersion() {
+      java.lang.Object ref = appVersion_;
+      if (ref instanceof java.lang.String) {
+        return (java.lang.String) ref;
+      } else {
+        akka.protobufv3.internal.ByteString bs = 
+            (akka.protobufv3.internal.ByteString) ref;
+        java.lang.String s = bs.toStringUtf8();
+        if (bs.isValidUtf8()) {
+          appVersion_ = s;
+        }
+        return s;
+      }
+    }
+    /**
+     * <code>optional string appVersion = 3;</code>
+     * @return The bytes for appVersion.
+     */
+    public akka.protobufv3.internal.ByteString
+        getAppVersionBytes() {
+      java.lang.Object ref = appVersion_;
+      if (ref instanceof java.lang.String) {
+        akka.protobufv3.internal.ByteString b = 
+            akka.protobufv3.internal.ByteString.copyFromUtf8(
+                (java.lang.String) ref);
+        appVersion_ = b;
+        return b;
+      } else {
+        return (akka.protobufv3.internal.ByteString) ref;
+      }
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -514,6 +583,9 @@ public final class ClusterMessages {
       for (int i = 0; i < roles_.size(); i++) {
         akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 2, roles_.getRaw(i));
       }
+      if (((bitField0_ & 0x00000002) != 0)) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 3, appVersion_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -534,6 +606,9 @@ public final class ClusterMessages {
         }
         size += dataSize;
         size += 1 * getRolesList().size();
+      }
+      if (((bitField0_ & 0x00000002) != 0)) {
+        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(3, appVersion_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -557,6 +632,11 @@ public final class ClusterMessages {
       }
       if (!getRolesList()
           .equals(other.getRolesList())) return false;
+      if (hasAppVersion() != other.hasAppVersion()) return false;
+      if (hasAppVersion()) {
+        if (!getAppVersion()
+            .equals(other.getAppVersion())) return false;
+      }
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -575,6 +655,10 @@ public final class ClusterMessages {
       if (getRolesCount() > 0) {
         hash = (37 * hash) + ROLES_FIELD_NUMBER;
         hash = (53 * hash) + getRolesList().hashCode();
+      }
+      if (hasAppVersion()) {
+        hash = (37 * hash) + APPVERSION_FIELD_NUMBER;
+        hash = (53 * hash) + getAppVersion().hashCode();
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -723,6 +807,8 @@ public final class ClusterMessages {
         bitField0_ = (bitField0_ & ~0x00000001);
         roles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000002);
+        appVersion_ = "";
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -764,6 +850,10 @@ public final class ClusterMessages {
           bitField0_ = (bitField0_ & ~0x00000002);
         }
         result.roles_ = roles_;
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.appVersion_ = appVersion_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -824,6 +914,11 @@ public final class ClusterMessages {
             ensureRolesIsMutable();
             roles_.addAll(other.roles_);
           }
+          onChanged();
+        }
+        if (other.hasAppVersion()) {
+          bitField0_ |= 0x00000004;
+          appVersion_ = other.appVersion_;
           onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
@@ -1087,6 +1182,90 @@ public final class ClusterMessages {
   }
   ensureRolesIsMutable();
         roles_.add(value);
+        onChanged();
+        return this;
+      }
+
+      private java.lang.Object appVersion_ = "";
+      /**
+       * <code>optional string appVersion = 3;</code>
+       * @return Whether the appVersion field is set.
+       */
+      public boolean hasAppVersion() {
+        return ((bitField0_ & 0x00000004) != 0);
+      }
+      /**
+       * <code>optional string appVersion = 3;</code>
+       * @return The appVersion.
+       */
+      public java.lang.String getAppVersion() {
+        java.lang.Object ref = appVersion_;
+        if (!(ref instanceof java.lang.String)) {
+          akka.protobufv3.internal.ByteString bs =
+              (akka.protobufv3.internal.ByteString) ref;
+          java.lang.String s = bs.toStringUtf8();
+          if (bs.isValidUtf8()) {
+            appVersion_ = s;
+          }
+          return s;
+        } else {
+          return (java.lang.String) ref;
+        }
+      }
+      /**
+       * <code>optional string appVersion = 3;</code>
+       * @return The bytes for appVersion.
+       */
+      public akka.protobufv3.internal.ByteString
+          getAppVersionBytes() {
+        java.lang.Object ref = appVersion_;
+        if (ref instanceof String) {
+          akka.protobufv3.internal.ByteString b = 
+              akka.protobufv3.internal.ByteString.copyFromUtf8(
+                  (java.lang.String) ref);
+          appVersion_ = b;
+          return b;
+        } else {
+          return (akka.protobufv3.internal.ByteString) ref;
+        }
+      }
+      /**
+       * <code>optional string appVersion = 3;</code>
+       * @param value The appVersion to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAppVersion(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        appVersion_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string appVersion = 3;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAppVersion() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        appVersion_ = getDefaultInstance().getAppVersion();
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional string appVersion = 3;</code>
+       * @param value The bytes for appVersion to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAppVersionBytes(
+          akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        appVersion_ = value;
         onChanged();
         return this;
       }
@@ -7058,6 +7237,17 @@ public final class ClusterMessages {
      * <code>required .VectorClock version = 3;</code>
      */
     akka.cluster.protobuf.msg.ClusterMessages.VectorClockOrBuilder getVersionOrBuilder();
+
+    /**
+     * <code>optional bytes seenDigest = 4;</code>
+     * @return Whether the seenDigest field is set.
+     */
+    boolean hasSeenDigest();
+    /**
+     * <code>optional bytes seenDigest = 4;</code>
+     * @return The seenDigest.
+     */
+    akka.protobufv3.internal.ByteString getSeenDigest();
   }
   /**
    * <pre>
@@ -7078,6 +7268,7 @@ public final class ClusterMessages {
     }
     private GossipStatus() {
       allHashes_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      seenDigest_ = akka.protobufv3.internal.ByteString.EMPTY;
     }
 
     @java.lang.Override
@@ -7144,6 +7335,11 @@ public final class ClusterMessages {
                 version_ = subBuilder.buildPartial();
               }
               bitField0_ |= 0x00000002;
+              break;
+            }
+            case 34: {
+              bitField0_ |= 0x00000004;
+              seenDigest_ = input.readBytes();
               break;
             }
             default: {
@@ -7263,6 +7459,23 @@ public final class ClusterMessages {
       return version_ == null ? akka.cluster.protobuf.msg.ClusterMessages.VectorClock.getDefaultInstance() : version_;
     }
 
+    public static final int SEENDIGEST_FIELD_NUMBER = 4;
+    private akka.protobufv3.internal.ByteString seenDigest_;
+    /**
+     * <code>optional bytes seenDigest = 4;</code>
+     * @return Whether the seenDigest field is set.
+     */
+    public boolean hasSeenDigest() {
+      return ((bitField0_ & 0x00000004) != 0);
+    }
+    /**
+     * <code>optional bytes seenDigest = 4;</code>
+     * @return The seenDigest.
+     */
+    public akka.protobufv3.internal.ByteString getSeenDigest() {
+      return seenDigest_;
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -7302,6 +7515,9 @@ public final class ClusterMessages {
       if (((bitField0_ & 0x00000002) != 0)) {
         output.writeMessage(3, getVersion());
       }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        output.writeBytes(4, seenDigest_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -7326,6 +7542,10 @@ public final class ClusterMessages {
       if (((bitField0_ & 0x00000002) != 0)) {
         size += akka.protobufv3.internal.CodedOutputStream
           .computeMessageSize(3, getVersion());
+      }
+      if (((bitField0_ & 0x00000004) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeBytesSize(4, seenDigest_);
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -7354,6 +7574,11 @@ public final class ClusterMessages {
         if (!getVersion()
             .equals(other.getVersion())) return false;
       }
+      if (hasSeenDigest() != other.hasSeenDigest()) return false;
+      if (hasSeenDigest()) {
+        if (!getSeenDigest()
+            .equals(other.getSeenDigest())) return false;
+      }
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -7376,6 +7601,10 @@ public final class ClusterMessages {
       if (hasVersion()) {
         hash = (37 * hash) + VERSION_FIELD_NUMBER;
         hash = (53 * hash) + getVersion().hashCode();
+      }
+      if (hasSeenDigest()) {
+        hash = (37 * hash) + SEENDIGEST_FIELD_NUMBER;
+        hash = (53 * hash) + getSeenDigest().hashCode();
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -7531,6 +7760,8 @@ public final class ClusterMessages {
           versionBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000004);
+        seenDigest_ = akka.protobufv3.internal.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
 
@@ -7580,6 +7811,10 @@ public final class ClusterMessages {
           }
           to_bitField0_ |= 0x00000002;
         }
+        if (((from_bitField0_ & 0x00000008) != 0)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.seenDigest_ = seenDigest_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -7644,6 +7879,9 @@ public final class ClusterMessages {
         }
         if (other.hasVersion()) {
           mergeVersion(other.getVersion());
+        }
+        if (other.hasSeenDigest()) {
+          setSeenDigest(other.getSeenDigest());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -8035,6 +8273,46 @@ public final class ClusterMessages {
         }
         return versionBuilder_;
       }
+
+      private akka.protobufv3.internal.ByteString seenDigest_ = akka.protobufv3.internal.ByteString.EMPTY;
+      /**
+       * <code>optional bytes seenDigest = 4;</code>
+       * @return Whether the seenDigest field is set.
+       */
+      public boolean hasSeenDigest() {
+        return ((bitField0_ & 0x00000008) != 0);
+      }
+      /**
+       * <code>optional bytes seenDigest = 4;</code>
+       * @return The seenDigest.
+       */
+      public akka.protobufv3.internal.ByteString getSeenDigest() {
+        return seenDigest_;
+      }
+      /**
+       * <code>optional bytes seenDigest = 4;</code>
+       * @param value The seenDigest to set.
+       * @return This builder for chaining.
+       */
+      public Builder setSeenDigest(akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000008;
+        seenDigest_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bytes seenDigest = 4;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearSeenDigest() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        seenDigest_ = getDefaultInstance().getSeenDigest();
+        onChanged();
+        return this;
+      }
       @java.lang.Override
       public final Builder setUnknownFields(
           final akka.protobufv3.internal.UnknownFieldSet unknownFields) {
@@ -8243,6 +8521,31 @@ public final class ClusterMessages {
      */
     akka.cluster.protobuf.msg.ClusterMessages.TombstoneOrBuilder getTombstonesOrBuilder(
         int index);
+
+    /**
+     * <code>repeated string allAppVersions = 8;</code>
+     * @return A list containing the allAppVersions.
+     */
+    java.util.List<java.lang.String>
+        getAllAppVersionsList();
+    /**
+     * <code>repeated string allAppVersions = 8;</code>
+     * @return The count of allAppVersions.
+     */
+    int getAllAppVersionsCount();
+    /**
+     * <code>repeated string allAppVersions = 8;</code>
+     * @param index The index of the element to return.
+     * @return The allAppVersions at the given index.
+     */
+    java.lang.String getAllAppVersions(int index);
+    /**
+     * <code>repeated string allAppVersions = 8;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the allAppVersions at the given index.
+     */
+    akka.protobufv3.internal.ByteString
+        getAllAppVersionsBytes(int index);
   }
   /**
    * <pre>
@@ -8267,6 +8570,7 @@ public final class ClusterMessages {
       allHashes_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
       members_ = java.util.Collections.emptyList();
       tombstones_ = java.util.Collections.emptyList();
+      allAppVersions_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
     }
 
     @java.lang.Override
@@ -8371,6 +8675,15 @@ public final class ClusterMessages {
                   input.readMessage(akka.cluster.protobuf.msg.ClusterMessages.Tombstone.PARSER, extensionRegistry));
               break;
             }
+            case 66: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
+              if (!((mutable_bitField0_ & 0x00000080) != 0)) {
+                allAppVersions_ = new akka.protobufv3.internal.LazyStringArrayList();
+                mutable_bitField0_ |= 0x00000080;
+              }
+              allAppVersions_.add(bs);
+              break;
+            }
             default: {
               if (!parseUnknownField(
                   input, unknownFields, extensionRegistry, tag)) {
@@ -8400,6 +8713,9 @@ public final class ClusterMessages {
         }
         if (((mutable_bitField0_ & 0x00000040) != 0)) {
           tombstones_ = java.util.Collections.unmodifiableList(tombstones_);
+        }
+        if (((mutable_bitField0_ & 0x00000080) != 0)) {
+          allAppVersions_ = allAppVersions_.getUnmodifiableView();
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -8640,6 +8956,41 @@ public final class ClusterMessages {
       return tombstones_.get(index);
     }
 
+    public static final int ALLAPPVERSIONS_FIELD_NUMBER = 8;
+    private akka.protobufv3.internal.LazyStringList allAppVersions_;
+    /**
+     * <code>repeated string allAppVersions = 8;</code>
+     * @return A list containing the allAppVersions.
+     */
+    public akka.protobufv3.internal.ProtocolStringList
+        getAllAppVersionsList() {
+      return allAppVersions_;
+    }
+    /**
+     * <code>repeated string allAppVersions = 8;</code>
+     * @return The count of allAppVersions.
+     */
+    public int getAllAppVersionsCount() {
+      return allAppVersions_.size();
+    }
+    /**
+     * <code>repeated string allAppVersions = 8;</code>
+     * @param index The index of the element to return.
+     * @return The allAppVersions at the given index.
+     */
+    public java.lang.String getAllAppVersions(int index) {
+      return allAppVersions_.get(index);
+    }
+    /**
+     * <code>repeated string allAppVersions = 8;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the allAppVersions at the given index.
+     */
+    public akka.protobufv3.internal.ByteString
+        getAllAppVersionsBytes(int index) {
+      return allAppVersions_.getByteString(index);
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -8709,6 +9060,9 @@ public final class ClusterMessages {
       for (int i = 0; i < tombstones_.size(); i++) {
         output.writeMessage(7, tombstones_.get(i));
       }
+      for (int i = 0; i < allAppVersions_.size(); i++) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 8, allAppVersions_.getRaw(i));
+      }
       unknownFields.writeTo(output);
     }
 
@@ -8754,6 +9108,14 @@ public final class ClusterMessages {
         size += akka.protobufv3.internal.CodedOutputStream
           .computeMessageSize(7, tombstones_.get(i));
       }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < allAppVersions_.size(); i++) {
+          dataSize += computeStringSizeNoTag(allAppVersions_.getRaw(i));
+        }
+        size += dataSize;
+        size += 1 * getAllAppVersionsList().size();
+      }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
       return size;
@@ -8789,6 +9151,8 @@ public final class ClusterMessages {
       }
       if (!getTombstonesList()
           .equals(other.getTombstonesList())) return false;
+      if (!getAllAppVersionsList()
+          .equals(other.getAllAppVersionsList())) return false;
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -8827,6 +9191,10 @@ public final class ClusterMessages {
       if (getTombstonesCount() > 0) {
         hash = (37 * hash) + TOMBSTONES_FIELD_NUMBER;
         hash = (53 * hash) + getTombstonesList().hashCode();
+      }
+      if (getAllAppVersionsCount() > 0) {
+        hash = (37 * hash) + ALLAPPVERSIONS_FIELD_NUMBER;
+        hash = (53 * hash) + getAllAppVersionsList().hashCode();
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -9005,6 +9373,8 @@ public final class ClusterMessages {
         } else {
           tombstonesBuilder_.clear();
         }
+        allAppVersions_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000080);
         return this;
       }
 
@@ -9086,6 +9456,11 @@ public final class ClusterMessages {
         } else {
           result.tombstones_ = tombstonesBuilder_.build();
         }
+        if (((bitField0_ & 0x00000080) != 0)) {
+          allAppVersions_ = allAppVersions_.getUnmodifiableView();
+          bitField0_ = (bitField0_ & ~0x00000080);
+        }
+        result.allAppVersions_ = allAppVersions_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -9238,6 +9613,16 @@ public final class ClusterMessages {
               tombstonesBuilder_.addAllMessages(other.tombstones_);
             }
           }
+        }
+        if (!other.allAppVersions_.isEmpty()) {
+          if (allAppVersions_.isEmpty()) {
+            allAppVersions_ = other.allAppVersions_;
+            bitField0_ = (bitField0_ & ~0x00000080);
+          } else {
+            ensureAllAppVersionsIsMutable();
+            allAppVersions_.addAll(other.allAppVersions_);
+          }
+          onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -10472,6 +10857,115 @@ public final class ClusterMessages {
           tombstones_ = null;
         }
         return tombstonesBuilder_;
+      }
+
+      private akka.protobufv3.internal.LazyStringList allAppVersions_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private void ensureAllAppVersionsIsMutable() {
+        if (!((bitField0_ & 0x00000080) != 0)) {
+          allAppVersions_ = new akka.protobufv3.internal.LazyStringArrayList(allAppVersions_);
+          bitField0_ |= 0x00000080;
+         }
+      }
+      /**
+       * <code>repeated string allAppVersions = 8;</code>
+       * @return A list containing the allAppVersions.
+       */
+      public akka.protobufv3.internal.ProtocolStringList
+          getAllAppVersionsList() {
+        return allAppVersions_.getUnmodifiableView();
+      }
+      /**
+       * <code>repeated string allAppVersions = 8;</code>
+       * @return The count of allAppVersions.
+       */
+      public int getAllAppVersionsCount() {
+        return allAppVersions_.size();
+      }
+      /**
+       * <code>repeated string allAppVersions = 8;</code>
+       * @param index The index of the element to return.
+       * @return The allAppVersions at the given index.
+       */
+      public java.lang.String getAllAppVersions(int index) {
+        return allAppVersions_.get(index);
+      }
+      /**
+       * <code>repeated string allAppVersions = 8;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the allAppVersions at the given index.
+       */
+      public akka.protobufv3.internal.ByteString
+          getAllAppVersionsBytes(int index) {
+        return allAppVersions_.getByteString(index);
+      }
+      /**
+       * <code>repeated string allAppVersions = 8;</code>
+       * @param index The index to set the value at.
+       * @param value The allAppVersions to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAllAppVersions(
+          int index, java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureAllAppVersionsIsMutable();
+        allAppVersions_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string allAppVersions = 8;</code>
+       * @param value The allAppVersions to add.
+       * @return This builder for chaining.
+       */
+      public Builder addAllAppVersions(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureAllAppVersionsIsMutable();
+        allAppVersions_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string allAppVersions = 8;</code>
+       * @param values The allAppVersions to add.
+       * @return This builder for chaining.
+       */
+      public Builder addAllAllAppVersions(
+          java.lang.Iterable<java.lang.String> values) {
+        ensureAllAppVersionsIsMutable();
+        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
+            values, allAppVersions_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string allAppVersions = 8;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAllAppVersions() {
+        allAppVersions_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000080);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string allAppVersions = 8;</code>
+       * @param value The bytes of the allAppVersions to add.
+       * @return This builder for chaining.
+       */
+      public Builder addAllAppVersionsBytes(
+          akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureAllAppVersionsIsMutable();
+        allAppVersions_.add(value);
+        onChanged();
+        return this;
       }
       @java.lang.Override
       public final Builder setUnknownFields(
@@ -14013,6 +14507,17 @@ public final class ClusterMessages {
      * @return The rolesIndexes at the given index.
      */
     int getRolesIndexes(int index);
+
+    /**
+     * <code>optional int32 appVersionIndex = 5;</code>
+     * @return Whether the appVersionIndex field is set.
+     */
+    boolean hasAppVersionIndex();
+    /**
+     * <code>optional int32 appVersionIndex = 5;</code>
+     * @return The appVersionIndex.
+     */
+    int getAppVersionIndex();
   }
   /**
    * <pre>
@@ -14108,6 +14613,11 @@ public final class ClusterMessages {
                 rolesIndexes_.addInt(input.readInt32());
               }
               input.popLimit(limit);
+              break;
+            }
+            case 40: {
+              bitField0_ |= 0x00000008;
+              appVersionIndex_ = input.readInt32();
               break;
             }
             default: {
@@ -14226,6 +14736,23 @@ public final class ClusterMessages {
     }
     private int rolesIndexesMemoizedSerializedSize = -1;
 
+    public static final int APPVERSIONINDEX_FIELD_NUMBER = 5;
+    private int appVersionIndex_;
+    /**
+     * <code>optional int32 appVersionIndex = 5;</code>
+     * @return Whether the appVersionIndex field is set.
+     */
+    public boolean hasAppVersionIndex() {
+      return ((bitField0_ & 0x00000008) != 0);
+    }
+    /**
+     * <code>optional int32 appVersionIndex = 5;</code>
+     * @return The appVersionIndex.
+     */
+    public int getAppVersionIndex() {
+      return appVersionIndex_;
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -14269,6 +14796,9 @@ public final class ClusterMessages {
       for (int i = 0; i < rolesIndexes_.size(); i++) {
         output.writeInt32NoTag(rolesIndexes_.getInt(i));
       }
+      if (((bitField0_ & 0x00000008) != 0)) {
+        output.writeInt32(5, appVersionIndex_);
+      }
       unknownFields.writeTo(output);
     }
 
@@ -14304,6 +14834,10 @@ public final class ClusterMessages {
         }
         rolesIndexesMemoizedSerializedSize = dataSize;
       }
+      if (((bitField0_ & 0x00000008) != 0)) {
+        size += akka.protobufv3.internal.CodedOutputStream
+          .computeInt32Size(5, appVersionIndex_);
+      }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
       return size;
@@ -14335,6 +14869,11 @@ public final class ClusterMessages {
       }
       if (!getRolesIndexesList()
           .equals(other.getRolesIndexesList())) return false;
+      if (hasAppVersionIndex() != other.hasAppVersionIndex()) return false;
+      if (hasAppVersionIndex()) {
+        if (getAppVersionIndex()
+            != other.getAppVersionIndex()) return false;
+      }
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -14361,6 +14900,10 @@ public final class ClusterMessages {
       if (getRolesIndexesCount() > 0) {
         hash = (37 * hash) + ROLESINDEXES_FIELD_NUMBER;
         hash = (53 * hash) + getRolesIndexesList().hashCode();
+      }
+      if (hasAppVersionIndex()) {
+        hash = (37 * hash) + APPVERSIONINDEX_FIELD_NUMBER;
+        hash = (53 * hash) + getAppVersionIndex();
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -14508,6 +15051,8 @@ public final class ClusterMessages {
         bitField0_ = (bitField0_ & ~0x00000004);
         rolesIndexes_ = emptyIntList();
         bitField0_ = (bitField0_ & ~0x00000008);
+        appVersionIndex_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -14553,6 +15098,10 @@ public final class ClusterMessages {
           bitField0_ = (bitField0_ & ~0x00000008);
         }
         result.rolesIndexes_ = rolesIndexes_;
+        if (((from_bitField0_ & 0x00000010) != 0)) {
+          result.appVersionIndex_ = appVersionIndex_;
+          to_bitField0_ |= 0x00000008;
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -14620,6 +15169,9 @@ public final class ClusterMessages {
             rolesIndexes_.addAll(other.rolesIndexes_);
           }
           onChanged();
+        }
+        if (other.hasAppVersionIndex()) {
+          setAppVersionIndex(other.getAppVersionIndex());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -14851,6 +15403,43 @@ public final class ClusterMessages {
       public Builder clearRolesIndexes() {
         rolesIndexes_ = emptyIntList();
         bitField0_ = (bitField0_ & ~0x00000008);
+        onChanged();
+        return this;
+      }
+
+      private int appVersionIndex_ ;
+      /**
+       * <code>optional int32 appVersionIndex = 5;</code>
+       * @return Whether the appVersionIndex field is set.
+       */
+      public boolean hasAppVersionIndex() {
+        return ((bitField0_ & 0x00000010) != 0);
+      }
+      /**
+       * <code>optional int32 appVersionIndex = 5;</code>
+       * @return The appVersionIndex.
+       */
+      public int getAppVersionIndex() {
+        return appVersionIndex_;
+      }
+      /**
+       * <code>optional int32 appVersionIndex = 5;</code>
+       * @param value The appVersionIndex to set.
+       * @return This builder for chaining.
+       */
+      public Builder setAppVersionIndex(int value) {
+        bitField0_ |= 0x00000010;
+        appVersionIndex_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional int32 appVersionIndex = 5;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearAppVersionIndex() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        appVersionIndex_ = 0;
         onChanged();
         return this;
       }
@@ -21803,62 +22392,64 @@ public final class ClusterMessages {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\025ClusterMessages.proto\"3\n\004Join\022\034\n\004node\030" +
-      "\001 \002(\0132\016.UniqueAddress\022\r\n\005roles\030\002 \003(\t\"@\n\007" +
-      "Welcome\022\034\n\004from\030\001 \002(\0132\016.UniqueAddress\022\027\n" +
-      "\006gossip\030\002 \002(\0132\007.Gossip\"!\n\010InitJoin\022\025\n\rcu" +
-      "rrentConfig\030\001 \001(\t\"K\n\013InitJoinAck\022\031\n\007addr" +
-      "ess\030\001 \002(\0132\010.Address\022!\n\013configCheck\030\002 \002(\013" +
-      "2\014.ConfigCheck\"\220\001\n\013ConfigCheck\022\037\n\004type\030\001" +
-      " \002(\0162\021.ConfigCheck.Type\022\025\n\rclusterConfig" +
-      "\030\002 \001(\t\"I\n\004Type\022\023\n\017UncheckedConfig\020\001\022\026\n\022I" +
-      "ncompatibleConfig\020\002\022\024\n\020CompatibleConfig\020" +
-      "\003\"M\n\tHeartbeat\022\026\n\004from\030\001 \002(\0132\010.Address\022\022" +
-      "\n\nsequenceNr\030\002 \001(\003\022\024\n\014creationTime\030\003 \001(\022" +
-      "\"[\n\021HeartBeatResponse\022\034\n\004from\030\001 \002(\0132\016.Un" +
-      "iqueAddress\022\022\n\nsequenceNr\030\002 \001(\003\022\024\n\014creat" +
-      "ionTime\030\003 \001(\003\"d\n\016GossipEnvelope\022\034\n\004from\030" +
-      "\001 \002(\0132\016.UniqueAddress\022\032\n\002to\030\002 \002(\0132\016.Uniq" +
-      "ueAddress\022\030\n\020serializedGossip\030\003 \002(\014\"^\n\014G" +
-      "ossipStatus\022\034\n\004from\030\001 \002(\0132\016.UniqueAddres" +
-      "s\022\021\n\tallHashes\030\002 \003(\t\022\035\n\007version\030\003 \002(\0132\014." +
-      "VectorClock\"\317\001\n\006Gossip\022$\n\014allAddresses\030\001" +
+      "\n\025ClusterMessages.proto\"G\n\004Join\022\034\n\004node\030" +
+      "\001 \002(\0132\016.UniqueAddress\022\r\n\005roles\030\002 \003(\t\022\022\n\n" +
+      "appVersion\030\003 \001(\t\"@\n\007Welcome\022\034\n\004from\030\001 \002(" +
+      "\0132\016.UniqueAddress\022\027\n\006gossip\030\002 \002(\0132\007.Goss" +
+      "ip\"!\n\010InitJoin\022\025\n\rcurrentConfig\030\001 \001(\t\"K\n" +
+      "\013InitJoinAck\022\031\n\007address\030\001 \002(\0132\010.Address\022" +
+      "!\n\013configCheck\030\002 \002(\0132\014.ConfigCheck\"\220\001\n\013C" +
+      "onfigCheck\022\037\n\004type\030\001 \002(\0162\021.ConfigCheck.T" +
+      "ype\022\025\n\rclusterConfig\030\002 \001(\t\"I\n\004Type\022\023\n\017Un" +
+      "checkedConfig\020\001\022\026\n\022IncompatibleConfig\020\002\022" +
+      "\024\n\020CompatibleConfig\020\003\"M\n\tHeartbeat\022\026\n\004fr" +
+      "om\030\001 \002(\0132\010.Address\022\022\n\nsequenceNr\030\002 \001(\003\022\024" +
+      "\n\014creationTime\030\003 \001(\022\"[\n\021HeartBeatRespons" +
+      "e\022\034\n\004from\030\001 \002(\0132\016.UniqueAddress\022\022\n\nseque" +
+      "nceNr\030\002 \001(\003\022\024\n\014creationTime\030\003 \001(\003\"d\n\016Gos" +
+      "sipEnvelope\022\034\n\004from\030\001 \002(\0132\016.UniqueAddres" +
+      "s\022\032\n\002to\030\002 \002(\0132\016.UniqueAddress\022\030\n\020seriali" +
+      "zedGossip\030\003 \002(\014\"r\n\014GossipStatus\022\034\n\004from\030" +
+      "\001 \002(\0132\016.UniqueAddress\022\021\n\tallHashes\030\002 \003(\t" +
+      "\022\035\n\007version\030\003 \002(\0132\014.VectorClock\022\022\n\nseenD" +
+      "igest\030\004 \001(\014\"\347\001\n\006Gossip\022$\n\014allAddresses\030\001" +
       " \003(\0132\016.UniqueAddress\022\020\n\010allRoles\030\002 \003(\t\022\021" +
       "\n\tallHashes\030\003 \003(\t\022\030\n\007members\030\004 \003(\0132\007.Mem" +
       "ber\022!\n\010overview\030\005 \002(\0132\017.GossipOverview\022\035" +
       "\n\007version\030\006 \002(\0132\014.VectorClock\022\036\n\ntombsto" +
-      "nes\030\007 \003(\0132\n.Tombstone\"S\n\016GossipOverview\022" +
-      "\014\n\004seen\030\001 \003(\005\0223\n\024observerReachability\030\002 " +
-      "\003(\0132\025.ObserverReachability\"p\n\024ObserverRe" +
-      "achability\022\024\n\014addressIndex\030\001 \002(\005\022\017\n\007vers" +
-      "ion\030\004 \002(\003\0221\n\023subjectReachability\030\002 \003(\0132\024" +
-      ".SubjectReachability\"a\n\023SubjectReachabil" +
-      "ity\022\024\n\014addressIndex\030\001 \002(\005\022#\n\006status\030\003 \002(" +
-      "\0162\023.ReachabilityStatus\022\017\n\007version\030\004 \002(\003\"" +
-      "4\n\tTombstone\022\024\n\014addressIndex\030\001 \002(\005\022\021\n\tti" +
-      "mestamp\030\002 \002(\003\"i\n\006Member\022\024\n\014addressIndex\030" +
-      "\001 \002(\005\022\020\n\010upNumber\030\002 \002(\005\022\035\n\006status\030\003 \002(\0162" +
-      "\r.MemberStatus\022\030\n\014rolesIndexes\030\004 \003(\005B\002\020\001" +
-      "\"y\n\013VectorClock\022\021\n\ttimestamp\030\001 \001(\003\022&\n\010ve" +
-      "rsions\030\002 \003(\0132\024.VectorClock.Version\032/\n\007Ve" +
-      "rsion\022\021\n\thashIndex\030\001 \002(\005\022\021\n\ttimestamp\030\002 " +
-      "\002(\003\"\007\n\005Empty\"K\n\007Address\022\016\n\006system\030\001 \002(\t\022" +
-      "\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n\010proto" +
-      "col\030\004 \001(\t\"E\n\rUniqueAddress\022\031\n\007address\030\001 " +
-      "\002(\0132\010.Address\022\013\n\003uid\030\002 \002(\r\022\014\n\004uid2\030\003 \001(\r" +
-      "\"V\n\021ClusterRouterPool\022\023\n\004pool\030\001 \002(\0132\005.Po" +
-      "ol\022,\n\010settings\030\002 \002(\0132\032.ClusterRouterPool" +
-      "Settings\"<\n\004Pool\022\024\n\014serializerId\030\001 \002(\r\022\020" +
-      "\n\010manifest\030\002 \002(\t\022\014\n\004data\030\003 \002(\014\"\216\001\n\031Clust" +
-      "erRouterPoolSettings\022\026\n\016totalInstances\030\001" +
-      " \002(\r\022\033\n\023maxInstancesPerNode\030\002 \002(\r\022\031\n\021all" +
-      "owLocalRoutees\030\003 \002(\010\022\017\n\007useRole\030\004 \001(\t\022\020\n" +
-      "\010useRoles\030\005 \003(\t*D\n\022ReachabilityStatus\022\r\n" +
-      "\tReachable\020\000\022\017\n\013Unreachable\020\001\022\016\n\nTermina" +
-      "ted\020\002*b\n\014MemberStatus\022\013\n\007Joining\020\000\022\006\n\002Up" +
-      "\020\001\022\013\n\007Leaving\020\002\022\013\n\007Exiting\020\003\022\010\n\004Down\020\004\022\013" +
-      "\n\007Removed\020\005\022\014\n\010WeaklyUp\020\006B\035\n\031akka.cluste" +
-      "r.protobuf.msgH\001"
+      "nes\030\007 \003(\0132\n.Tombstone\022\026\n\016allAppVersions\030" +
+      "\010 \003(\t\"S\n\016GossipOverview\022\014\n\004seen\030\001 \003(\005\0223\n" +
+      "\024observerReachability\030\002 \003(\0132\025.ObserverRe" +
+      "achability\"p\n\024ObserverReachability\022\024\n\014ad" +
+      "dressIndex\030\001 \002(\005\022\017\n\007version\030\004 \002(\003\0221\n\023sub" +
+      "jectReachability\030\002 \003(\0132\024.SubjectReachabi" +
+      "lity\"a\n\023SubjectReachability\022\024\n\014addressIn" +
+      "dex\030\001 \002(\005\022#\n\006status\030\003 \002(\0162\023.Reachability" +
+      "Status\022\017\n\007version\030\004 \002(\003\"4\n\tTombstone\022\024\n\014" +
+      "addressIndex\030\001 \002(\005\022\021\n\ttimestamp\030\002 \002(\003\"\202\001" +
+      "\n\006Member\022\024\n\014addressIndex\030\001 \002(\005\022\020\n\010upNumb" +
+      "er\030\002 \002(\005\022\035\n\006status\030\003 \002(\0162\r.MemberStatus\022" +
+      "\030\n\014rolesIndexes\030\004 \003(\005B\002\020\001\022\027\n\017appVersionI" +
+      "ndex\030\005 \001(\005\"y\n\013VectorClock\022\021\n\ttimestamp\030\001" +
+      " \001(\003\022&\n\010versions\030\002 \003(\0132\024.VectorClock.Ver" +
+      "sion\032/\n\007Version\022\021\n\thashIndex\030\001 \002(\005\022\021\n\tti" +
+      "mestamp\030\002 \002(\003\"\007\n\005Empty\"K\n\007Address\022\016\n\006sys" +
+      "tem\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(" +
+      "\r\022\020\n\010protocol\030\004 \001(\t\"E\n\rUniqueAddress\022\031\n\007" +
+      "address\030\001 \002(\0132\010.Address\022\013\n\003uid\030\002 \002(\r\022\014\n\004" +
+      "uid2\030\003 \001(\r\"V\n\021ClusterRouterPool\022\023\n\004pool\030" +
+      "\001 \002(\0132\005.Pool\022,\n\010settings\030\002 \002(\0132\032.Cluster" +
+      "RouterPoolSettings\"<\n\004Pool\022\024\n\014serializer" +
+      "Id\030\001 \002(\r\022\020\n\010manifest\030\002 \002(\t\022\014\n\004data\030\003 \002(\014" +
+      "\"\216\001\n\031ClusterRouterPoolSettings\022\026\n\016totalI" +
+      "nstances\030\001 \002(\r\022\033\n\023maxInstancesPerNode\030\002 " +
+      "\002(\r\022\031\n\021allowLocalRoutees\030\003 \002(\010\022\017\n\007useRol" +
+      "e\030\004 \001(\t\022\020\n\010useRoles\030\005 \003(\t*D\n\022Reachabilit" +
+      "yStatus\022\r\n\tReachable\020\000\022\017\n\013Unreachable\020\001\022" +
+      "\016\n\nTerminated\020\002*b\n\014MemberStatus\022\013\n\007Joini" +
+      "ng\020\000\022\006\n\002Up\020\001\022\013\n\007Leaving\020\002\022\013\n\007Exiting\020\003\022\010" +
+      "\n\004Down\020\004\022\013\n\007Removed\020\005\022\014\n\010WeaklyUp\020\006B\035\n\031a" +
+      "kka.cluster.protobuf.msgH\001"
     };
     descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -21869,7 +22460,7 @@ public final class ClusterMessages {
     internal_static_Join_fieldAccessorTable = new
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_Join_descriptor,
-        new java.lang.String[] { "Node", "Roles", });
+        new java.lang.String[] { "Node", "Roles", "AppVersion", });
     internal_static_Welcome_descriptor =
       getDescriptor().getMessageTypes().get(1);
     internal_static_Welcome_fieldAccessorTable = new
@@ -21917,13 +22508,13 @@ public final class ClusterMessages {
     internal_static_GossipStatus_fieldAccessorTable = new
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_GossipStatus_descriptor,
-        new java.lang.String[] { "From", "AllHashes", "Version", });
+        new java.lang.String[] { "From", "AllHashes", "Version", "SeenDigest", });
     internal_static_Gossip_descriptor =
       getDescriptor().getMessageTypes().get(9);
     internal_static_Gossip_fieldAccessorTable = new
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_Gossip_descriptor,
-        new java.lang.String[] { "AllAddresses", "AllRoles", "AllHashes", "Members", "Overview", "Version", "Tombstones", });
+        new java.lang.String[] { "AllAddresses", "AllRoles", "AllHashes", "Members", "Overview", "Version", "Tombstones", "AllAppVersions", });
     internal_static_GossipOverview_descriptor =
       getDescriptor().getMessageTypes().get(10);
     internal_static_GossipOverview_fieldAccessorTable = new
@@ -21953,7 +22544,7 @@ public final class ClusterMessages {
     internal_static_Member_fieldAccessorTable = new
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_Member_descriptor,
-        new java.lang.String[] { "AddressIndex", "UpNumber", "Status", "RolesIndexes", });
+        new java.lang.String[] { "AddressIndex", "UpNumber", "Status", "RolesIndexes", "AppVersionIndex", });
     internal_static_VectorClock_descriptor =
       getDescriptor().getMessageTypes().get(15);
     internal_static_VectorClock_fieldAccessorTable = new

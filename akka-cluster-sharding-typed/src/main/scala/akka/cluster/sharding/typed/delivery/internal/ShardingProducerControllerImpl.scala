@@ -279,7 +279,8 @@ private class ShardingProducerControllerImpl[A: ClassTag](
   import ShardingProducerController.Start
   import ShardingProducerControllerImpl._
 
-  private val durableQueueAskTimeout: Timeout = settings.producerControllerSettings.durableQueueRequestTimeout
+  private val producerControllerSettings = settings.producerControllerSettings
+  private val durableQueueAskTimeout: Timeout = producerControllerSettings.durableQueueRequestTimeout
   private val entityAskTimeout: Timeout = settings.internalAskTimeout
   private val traceEnabled = context.log.isTraceEnabled
 
@@ -333,7 +334,7 @@ private class ShardingProducerControllerImpl[A: ClassTag](
               region ! ShardingEnvelope(entityId, seqMsg)
             }
             val p = context.spawn(
-              ProducerController[A](outKey, durableQueueBehavior = None, settings.producerControllerSettings, send),
+              ProducerController[A](outKey, durableQueueBehavior = None, producerControllerSettings, send),
               entityId,
               DispatcherSelector.sameAsParent())
             p ! ProducerController.Start(requestNextAdapter)
@@ -389,7 +390,7 @@ private class ShardingProducerControllerImpl[A: ClassTag](
     }
 
     def receiveStoreMessageSentFailed(f: StoreMessageSentFailed[A]): Behavior[InternalCommand] = {
-      if (f.attempt >= settings.producerControllerSettings.durableQueueRetryAttempts) {
+      if (f.attempt >= producerControllerSettings.durableQueueRetryAttempts) {
         val errorMessage =
           s"StoreMessageSentFailed seqNr [${f.messageSent.seqNr}] failed after [${f.attempt}] attempts, giving up."
         context.log.error(errorMessage)

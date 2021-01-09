@@ -84,8 +84,7 @@ It is possible to release a revised documentation to the already existing releas
 ## Release steps
 
 * Tag the release: `git tag -am "Version 2.6.x" v2.6.x`
-* Do a `project/scripts/release` dry run
-* If all goes well, `project/scripts/release --real-run`
+* Do a `project/scripts/release` to build and release to sonatype
 * Log into sonatype, 'close' the staging repo.
 * Test the artifacts by adding `resolvers += "Staging Repo" at "https://oss.sonatype.org/content/repositories/comtypesafe-xxxx"` to a test project
 * If all is well, 'release' the staging repo.
@@ -117,6 +116,7 @@ Now wait until all artifacts have been properly propagated. Then:
   * Tweet about it
   * Post about it on Discuss
   * Post about it on Gitter
+  * Create a GitHub 'release' for the tag via https://github.com/akka/akka/releases with a link to the release notes
 
 ## Update references
 

@@ -1,0 +1,16 @@
+# Changes to internal/private
+
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.journal.inmem.InmemMessages.*")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.journal.inmem.InmemJournal.*")
+
+# marked as do not inherit
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.PersistentRepr.metadata")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.PersistentRepr.withMetadata")
+
+# changes to internal class
+ProblemFilters.exclude[Problem]("akka.persistence.PersistentImpl*")
+
+# protobuf
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.serialization.MessageFormats#PersistentMessageOrBuilder.hasMetadata")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.serialization.MessageFormats#PersistentMessageOrBuilder.getMetadata")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.serialization.MessageFormats#PersistentMessageOrBuilder.getMetadataOrBuilder")

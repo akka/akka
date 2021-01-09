@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.annotation.implicitNotFound
 import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 import scala.util.control.NonFatal
-
 import akka.ConfigurationException
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -88,6 +87,11 @@ import akka.util.OptionVal
    * Generates and returns a unique actor path below “/temp”.
    */
   def tempPath(): ActorPath
+
+  /**
+   * Generates and returns a unique actor path starting with `prefix` below “/temp”.
+   */
+  def tempPath(prefix: String): ActorPath
 
   /**
    * Returns the actor reference representing the “/temp” path.
@@ -414,7 +418,17 @@ private[akka] class LocalActorRefProvider private[akka] (
 
   private val tempNode = rootPath / "temp"
 
-  override def tempPath(): ActorPath = tempNode / Helpers.base64(tempNumber.getAndIncrement())
+  override def tempPath(): ActorPath = tempPath("")
+
+  override def tempPath(prefix: String): ActorPath = {
+    val builder = new java.lang.StringBuilder()
+    if (prefix.nonEmpty) {
+      builder.append(prefix)
+    }
+    builder.append("$")
+    Helpers.base64(tempNumber.getAndIncrement(), builder)
+    tempNode / builder.toString
+  }
 
   /**
    * Top-level anchor for the supervision hierarchy of this actor system. Will

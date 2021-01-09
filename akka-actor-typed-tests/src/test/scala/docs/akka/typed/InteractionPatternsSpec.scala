@@ -20,6 +20,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.TimerScheduler
+import akka.pattern.StatusReply
 import org.scalatest.wordspec.AnyWordSpecLike
 
 class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
@@ -292,6 +293,61 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
     monitor.expectMessageType[Hal.OpenThePodBayDoorsPlease]
   }
 
+  "contain a sample for outside ask with status" in {
+    import akka.util.Timeout
+
+    // #actor-ask-with-status
+    object Hal {
+      sealed trait Command
+      case class OpenThePodBayDoorsPlease(replyTo: ActorRef[StatusReply[String]]) extends Command
+
+      def apply(): Behaviors.Receive[Hal.Command] =
+        Behaviors.receiveMessage[Command] {
+          case OpenThePodBayDoorsPlease(replyTo) =>
+            // reply with a validation error description
+            replyTo ! StatusReply.Error("I'm sorry, Dave. I'm afraid I can't do that.")
+            Behaviors.same
+        }
+    }
+
+    object Dave {
+
+      sealed trait Command
+      // this is a part of the protocol that is internal to the actor itself
+      private case class AdaptedResponse(message: String) extends Command
+
+      def apply(hal: ActorRef[Hal.Command]): Behavior[Dave.Command] =
+        Behaviors.setup[Command] { context =>
+          // asking someone requires a timeout, if the timeout hits without response
+          // the ask is failed with a TimeoutException
+          implicit val timeout: Timeout = 3.seconds
+
+          // A StatusReply.Success(m) ends up as a Success(m) here, while a
+          // StatusReply.Error(text) becomes a Failure(ErrorMessage(text))
+          context.askWithStatus(hal, Hal.OpenThePodBayDoorsPlease) {
+            case Success(message)                        => AdaptedResponse(message)
+            case Failure(StatusReply.ErrorMessage(text)) => AdaptedResponse(s"Request denied: $text")
+            case Failure(_)                              => AdaptedResponse("Request failed")
+          }
+
+          Behaviors.receiveMessage {
+            // the adapted message ends up being processed like any other
+            // message sent to the actor
+            case AdaptedResponse(message) =>
+              context.log.info("Got response from hal: {}", message)
+              Behaviors.same
+          }
+        }
+    }
+    // #actor-ask-with-status
+
+    // somewhat modified behavior to let us know we saw the two requests
+    val monitor = createTestProbe[Hal.Command]()
+    val hal = spawn(Behaviors.monitor(monitor.ref, Hal()))
+    spawn(Dave(hal))
+    monitor.expectMessageType[Hal.OpenThePodBayDoorsPlease]
+  }
+
   "contain a sample for per session child" in {
     // #per-session-child
     // dummy data types just for this sample
@@ -397,7 +453,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
   "contain a sample for ask from outside the actor system" in {
     // #standalone-ask
     object CookieFabric {
-      sealed trait Command {}
+      sealed trait Command
       case class GiveMeCookies(count: Int, replyTo: ActorRef[Reply]) extends Command
 
       sealed trait Reply
@@ -457,6 +513,69 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
       case Failure(ex)                          => println(s"Boo! didn't get cookies: ${ex.getMessage}")
     }
     // #standalone-ask-fail-future
+
+    cookies.futureValue shouldEqual CookieFabric.Cookies(3)
+  }
+
+  "contain a sample for ask with status from outside the actor system" in {
+    // #standalone-ask-with-status
+    object CookieFabric {
+      sealed trait Command
+      case class GiveMeCookies(count: Int, replyTo: ActorRef[StatusReply[Cookies]]) extends Command
+      case class Cookies(count: Int)
+
+      def apply(): Behaviors.Receive[CookieFabric.GiveMeCookies] =
+        Behaviors.receiveMessage { message =>
+          if (message.count >= 5)
+            message.replyTo ! StatusReply.Error("Too many cookies.")
+          else
+            message.replyTo ! StatusReply.Success(Cookies(message.count))
+          Behaviors.same
+        }
+    }
+    // #standalone-ask-with-status
+
+    // keep this out of the sample as it uses the testkit spawn
+    val cookieFabric = spawn(CookieFabric())
+
+    val theSystem = testKit.system
+
+    // #standalone-ask-with-status
+
+    import akka.actor.typed.scaladsl.AskPattern._
+    import akka.util.Timeout
+
+    // asking someone requires a timeout if the timeout hits without response
+    // the ask is failed with a TimeoutException
+    implicit val timeout: Timeout = 3.seconds
+    // implicit ActorSystem in scope
+    implicit val system: ActorSystem[_] = theSystem
+
+    val result: Future[CookieFabric.Cookies] = cookieFabric.askWithStatus(ref => CookieFabric.GiveMeCookies(3, ref))
+
+    // the response callback will be executed on this execution context
+    implicit val ec = system.executionContext
+
+    result.onComplete {
+      case Success(CookieFabric.Cookies(count))      => println(s"Yay, $count cookies!")
+      case Failure(StatusReply.ErrorMessage(reason)) => println(s"No cookies for me. $reason")
+      case Failure(ex)                               => println(s"Boo! didn't get cookies: ${ex.getMessage}")
+    }
+    // #standalone-ask-with-status
+
+    result.futureValue shouldEqual CookieFabric.Cookies(3)
+
+    // #standalone-ask-with-status-fail-future
+    val cookies: Future[CookieFabric.Cookies] =
+      cookieFabric.askWithStatus[CookieFabric.Cookies](ref => CookieFabric.GiveMeCookies(3, ref)).flatMap {
+        case c: CookieFabric.Cookies => Future.successful(c)
+      }
+
+    cookies.onComplete {
+      case Success(CookieFabric.Cookies(count)) => println(s"Yay, $count cookies!")
+      case Failure(ex)                          => println(s"Boo! didn't get cookies: ${ex.getMessage}")
+    }
+    // #standalone-ask-with-status-fail-future
 
     cookies.futureValue shouldEqual CookieFabric.Cookies(3)
   }

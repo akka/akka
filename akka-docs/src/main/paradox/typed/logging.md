@@ -397,6 +397,14 @@ akka.remote.artery {
 }
 ```
 
+Logging of message types with payload size in bytes larger than the configured `log-frame-size-exceeding`.
+
+```
+akka.remote.artery {
+  log-frame-size-exceeding = 10000b
+}
+```
+
 ### MDC values from Akka internal logging
 
 Since the logging is done asynchronously, the thread in which the logging was performed is captured in

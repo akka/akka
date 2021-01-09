@@ -7,6 +7,7 @@ package akka.cluster.sharding
 import scala.concurrent.duration._
 
 import akka.actor._
+import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.GracefulShutdown
 import akka.remote.testconductor.RoleName
 import akka.testkit._
@@ -59,8 +60,7 @@ abstract class ClusterShardingGracefulShutdownSpec(multiNodeConfig: ClusterShard
       entityProps = Props[ShardedEntity](),
       extractEntityId = MultiNodeClusterShardingSpec.intExtractEntityId,
       extractShardId = MultiNodeClusterShardingSpec.intExtractShardId,
-      allocationStrategy =
-        new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1),
+      allocationStrategy = ShardAllocationStrategy.leastShardAllocationStrategy(absoluteLimit = 2, relativeLimit = 1.0),
       handOffStopMessage = ShardedEntity.Stop)
 
   lazy val region = ClusterSharding(system).shardRegion(typeName)

@@ -19,10 +19,12 @@ import akka.util.unused
       if (seen(node) || owner.address == node) this
       else copy(seen = seen + node)
     }
+    def estimatedSize: Int = EstimatedSize.UniqueAddress + EstimatedSize.Address * seen.size
   }
   final case class PruningPerformed(obsoleteTime: Long) extends PruningState {
     def isObsolete(currentTime: Long): Boolean = obsoleteTime <= currentTime
     def addSeen(@unused node: Address): PruningState = this
+    def estimatedSize: Int = EstimatedSize.LongValue
   }
 }
 
@@ -47,4 +49,6 @@ import akka.util.unused
     }
 
   def addSeen(node: Address): PruningState
+
+  def estimatedSize: Int
 }

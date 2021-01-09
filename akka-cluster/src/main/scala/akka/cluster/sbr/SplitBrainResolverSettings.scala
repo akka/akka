@@ -7,8 +7,7 @@ package akka.cluster.sbr
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 import com.typesafe.config.Config
 
@@ -58,7 +57,7 @@ import akka.util.Helpers.Requiring
     Helpers.toRootLowerCase(cc.getString("down-all-when-unstable")) match {
       case "on" =>
         // based on stable-after
-        DowningStableAfter * 3 / 4
+        4.seconds.max(DowningStableAfter * 3 / 4)
       case "off" =>
         // disabled
         Duration.Zero

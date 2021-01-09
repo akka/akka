@@ -1,0 +1,6 @@
+# target actor name in the temporary ask actor name #29205, changes to ask internals
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ActorRefProvider.tempPath")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PromiseActorRef.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PromiseActorRef.apply$default$5")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.pattern.PromiseActorRef.apply$default$6")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PromiseActorRef.this")

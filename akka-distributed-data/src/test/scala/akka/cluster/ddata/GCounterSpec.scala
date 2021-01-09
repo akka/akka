@@ -145,6 +145,25 @@ class GCounterSpec extends AnyWordSpec with Matchers {
       merged2.value should be(17)
     }
 
+    "be able to have its history correctly merged with another GCounter 3" in {
+      val c1 = GCounter()
+
+      val c2 = c1.increment(node1, 3)
+      val c3 = c2.increment(node1, 4)
+
+      // new empty counter for node2
+      val c4 = GCounter()
+      val c5 = c4.increment(node2, 5)
+      val c6 = c5.increment(node2)
+
+      val c7 = c6.merge(c3)
+
+      c7.state(node1) should be(7)
+      c7.state(node2) should be(6)
+
+      c7.value should be(13)
+    }
+
     "have support for pruning" in {
       val c1 = GCounter()
       val c2 = c1.increment(node1)

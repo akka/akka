@@ -117,7 +117,8 @@ import akka.util.OptionVal
       if (c.hasTimer) {
         msg match {
           case timerMsg: TimerMsg =>
-            c.timer.interceptTimerMsg(ctx.log, timerMsg) match {
+            //we can only get this kind of message if the timer is of this concrete class
+            c.timer.asInstanceOf[TimerSchedulerImpl[T]].interceptTimerMsg(ctx.log, timerMsg) match {
               case OptionVal.None => // means TimerMsg not applicable, discard
               case OptionVal.Some(m) =>
                 next(Behavior.interpretMessage(behavior, c, m), m)

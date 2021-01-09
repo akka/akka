@@ -85,7 +85,7 @@ class ExtensionDocSpec extends AkkaSpec(ExtensionDocSpec.config) {
 
   "demonstrate how to create an extension in Scala" in {
     //#extension-usage
-    CountExtension(system).increment
+    CountExtension(system).increment()
     //#extension-usage
   }
 

@@ -200,7 +200,7 @@ private[metrics] class ClusterMetricsCollector extends Actor with ActorLogging {
 
   }
 
-  override def postStop: Unit = {
+  override def postStop(): Unit = {
     cluster.unsubscribe(self)
     gossipTask.cancel()
     sampleTask.cancel()

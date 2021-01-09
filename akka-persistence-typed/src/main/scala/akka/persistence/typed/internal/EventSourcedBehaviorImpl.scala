@@ -4,6 +4,7 @@
 
 package akka.persistence.typed.internal
 
+import java.util.Optional
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -24,6 +25,7 @@ import akka.persistence.JournalProtocol
 import akka.persistence.Recovery
 import akka.persistence.RecoveryPermitter
 import akka.persistence.SnapshotProtocol
+import akka.persistence.journal.Tagged
 import akka.persistence.typed.DeleteEventsCompleted
 import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeleteSnapshotsCompleted
@@ -32,6 +34,8 @@ import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.NoOpEventAdapter
 import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.PublishedEvent
+import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
@@ -69,6 +73,11 @@ private[akka] object EventSourcedBehaviorImpl {
    */
   final case class GetState[State](replyTo: ActorRef[State]) extends InternalProtocol
 
+  /**
+   * Used to start the replication stream at the correct sequence number
+   */
+  final case class GetSeenSequenceNr(replica: ReplicaId, replyTo: ActorRef[Long]) extends InternalProtocol
+
 }
 
 @InternalApi
@@ -87,7 +96,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     recovery: Recovery = Recovery(),
     retention: RetentionCriteria = RetentionCriteria.disabled,
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
-    override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty)
+    override val signalHandler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty,
+    replication: Option[ReplicationSetup] = None,
+    publishEvents: Boolean = true)
     extends EventSourcedBehavior[Command, Event, State] {
 
   import EventSourcedBehaviorImpl.WriterIdentity
@@ -150,7 +161,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             retention,
             holdingRecoveryPermit = false,
             settings = settings,
-            stashState = stashState)
+            stashState = stashState,
+            replication = replication,
+            publishEvents = publishEvents)
 
           // needs to accept Any since we also can get messages from the journal
           // not part of the user facing Command protocol
@@ -237,6 +250,16 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   override def withRecovery(recovery: TypedRecovery): EventSourcedBehavior[Command, Event, State] = {
     copy(recovery = recovery.toClassic)
   }
+
+  override def withEventPublishing(enabled: Boolean): EventSourcedBehavior[Command, Event, State] = {
+    copy(publishEvents = enabled)
+  }
+
+  override private[akka] def withReplication(
+      context: ReplicationContextImpl): EventSourcedBehavior[Command, Event, State] = {
+    copy(
+      replication = Some(ReplicationSetup(context.replicationId.replicaId, context.replicasAndQueryPlugins, context)))
+  }
 }
 
 /** Protocol used internally by the eventsourced behaviors. */
@@ -247,4 +270,92 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   final case class SnapshotterResponse(msg: akka.persistence.SnapshotProtocol.Response) extends InternalProtocol
   final case class RecoveryTickEvent(snapshot: Boolean) extends InternalProtocol
   final case class IncomingCommand[C](c: C) extends InternalProtocol
+
+  final case class ReplicatedEventEnvelope[E](event: ReplicatedEvent[E], ack: ActorRef[ReplicatedEventAck.type])
+      extends InternalProtocol
+
+}
+
+object ReplicatedEventMetadata {
+
+  /**
+   * For a journal supporting Replicated Event Sourcing needing to add test coverage, use this instance as metadata and defer
+   * to the built in serializer for serialization format
+   */
+  @ApiMayChange
+  def instanceForJournalTest: Any = ReplicatedEventMetadata(ReplicaId("DC-A"), 1L, VersionVector.empty + "DC-A", true)
+}
+
+/**
+ * @param originReplica Where the event originally was created
+ * @param originSequenceNr The original sequenceNr in the origin DC
+ * @param version The version with which the event was persisted at the different DC. The same event will have different version vectors
+ *                at each location as they are received at different times
+ */
+@InternalApi
+private[akka] final case class ReplicatedEventMetadata(
+    originReplica: ReplicaId,
+    originSequenceNr: Long,
+    version: VersionVector,
+    concurrent: Boolean) // whether when the event handler was executed the event was concurrent
+
+object ReplicatedSnapshotMetadata {
+
+  /**
+   * For a snapshot store supporting Replicated Event Sourcing needing to add test coverage, use this instance as metadata and defer
+   * to the built in serializer for serialization format
+   */
+  @ApiMayChange
+  def instanceForSnapshotStoreTest: Any =
+    ReplicatedSnapshotMetadata(
+      VersionVector.empty + "DC-B" + "DC-A",
+      Map(ReplicaId("DC-A") -> 1L, ReplicaId("DC-B") -> 1L))
+
+}
+
+@InternalApi
+private[akka] final case class ReplicatedSnapshotMetadata(version: VersionVector, seenPerReplica: Map[ReplicaId, Long])
+
+/**
+ * An event replicated from a different replica.
+ *
+ * The version is for when it was persisted at the other replica. At the current replica it will be
+ * merged with the current local version.
+ */
+@InternalApi
+private[akka] final case class ReplicatedEvent[E](
+    event: E,
+    originReplica: ReplicaId,
+    originSequenceNr: Long,
+    originVersion: VersionVector)
+@InternalApi
+private[akka] case object ReplicatedEventAck
+
+final class ReplicatedPublishedEventMetaData(val replicaId: ReplicaId, private[akka] val version: VersionVector)
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] final case class PublishedEventImpl(
+    persistenceId: PersistenceId,
+    sequenceNumber: Long,
+    payload: Any,
+    timestamp: Long,
+    replicatedMetaData: Option[ReplicatedPublishedEventMetaData])
+    extends PublishedEvent
+    with InternalProtocol {
+  import scala.compat.java8.OptionConverters._
+
+  def tags: Set[String] = payload match {
+    case t: Tagged => t.tags
+    case _         => Set.empty
+  }
+
+  def event: Any = payload match {
+    case Tagged(event, _) => event
+    case _                => payload
+  }
+
+  override def getReplicatedMetaData: Optional[ReplicatedPublishedEventMetaData] = replicatedMetaData.asJava
 }

@@ -10,15 +10,19 @@ import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.delivery.ConsumerController
 import akka.actor.typed.delivery.DurableProducerQueue
 import akka.actor.typed.delivery.ProducerController
+import akka.actor.typed.delivery.internal.ChunkedMessage
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
 import akka.cluster.typed.internal.protobuf.ReliableDelivery
 import akka.cluster.typed.internal.protobuf.ReliableDelivery.Confirmed
+import akka.remote.ContainerFormats
+import akka.remote.ContainerFormats.Payload
 import akka.remote.serialization.WrappedPayloadSupport
 import akka.serialization.BaseSerializer
 import akka.serialization.SerializerWithStringManifest
 import akka.util.ccompat.JavaConverters._
+import akka.protobufv3.internal.ByteString
 
 /**
  * INTERNAL API
@@ -78,8 +82,25 @@ import akka.util.ccompat.JavaConverters._
     b.setFirst(m.first)
     b.setAck(m.ack)
     b.setProducerControllerRef(resolver.toSerializationFormat(m.producerController))
-    b.setMessage(payloadSupport.payloadBuilder(m.message))
+
+    m.message match {
+      case chunk: ChunkedMessage =>
+        b.setMessage(chunkedMessageToProto(chunk))
+        b.setFirstChunk(chunk.firstChunk)
+        b.setLastChunk(chunk.lastChunk)
+      case _ =>
+        b.setMessage(payloadSupport.payloadBuilder(m.message))
+    }
+
     b.build().toByteArray()
+  }
+
+  private def chunkedMessageToProto(chunk: ChunkedMessage): Payload.Builder = {
+    val payloadBuilder = ContainerFormats.Payload.newBuilder()
+    payloadBuilder.setEnclosedMessage(ByteString.copyFrom(chunk.serialized.toArray))
+    payloadBuilder.setMessageManifest(ByteString.copyFromUtf8(chunk.manifest))
+    payloadBuilder.setSerializerId(chunk.serializerId)
+    payloadBuilder
   }
 
   private def ackToBinary(m: ProducerControllerImpl.Ack): Array[Byte] = {
@@ -119,7 +140,16 @@ import akka.util.ccompat.JavaConverters._
     b.setQualifier(m.confirmationQualifier)
     b.setAck(m.ack)
     b.setTimestamp(m.timestampMillis)
-    b.setMessage(payloadSupport.payloadBuilder(m.message))
+
+    m.message match {
+      case chunk: ChunkedMessage =>
+        b.setMessage(chunkedMessageToProto(chunk))
+        b.setFirstChunk(chunk.firstChunk)
+        b.setLastChunk(chunk.lastChunk)
+      case _ =>
+        b.setMessage(payloadSupport.payloadBuilder(m.message))
+    }
+
     b.build()
   }
 
@@ -172,7 +202,19 @@ import akka.util.ccompat.JavaConverters._
 
   private def sequencedMessageFromBinary(bytes: Array[Byte]): AnyRef = {
     val seqMsg = ReliableDelivery.SequencedMessage.parseFrom(bytes)
-    val wrappedMsg = payloadSupport.deserializePayload(seqMsg.getMessage)
+    val wrappedMsg =
+      if (seqMsg.hasFirstChunk) {
+        val manifest =
+          if (seqMsg.getMessage.hasMessageManifest) seqMsg.getMessage.getMessageManifest.toStringUtf8 else ""
+        ChunkedMessage(
+          akka.util.ByteString(seqMsg.getMessage.getEnclosedMessage.toByteArray),
+          seqMsg.getFirstChunk,
+          seqMsg.getLastChunk,
+          seqMsg.getMessage.getSerializerId,
+          manifest)
+      } else {
+        payloadSupport.deserializePayload(seqMsg.getMessage)
+      }
     ConsumerController.SequencedMessage(
       seqMsg.getProducerId,
       seqMsg.getSeqNr,
@@ -213,7 +255,19 @@ import akka.util.ccompat.JavaConverters._
 
   private def durableQueueMessageSentFromProto(
       sent: ReliableDelivery.MessageSent): DurableProducerQueue.MessageSent[Any] = {
-    val wrappedMsg = payloadSupport.deserializePayload(sent.getMessage)
+    val wrappedMsg =
+      if (sent.hasFirstChunk) {
+        val manifest =
+          if (sent.getMessage.hasMessageManifest) sent.getMessage.getMessageManifest.toStringUtf8 else ""
+        ChunkedMessage(
+          akka.util.ByteString(sent.getMessage.getEnclosedMessage.toByteArray),
+          sent.getFirstChunk,
+          sent.getLastChunk,
+          sent.getMessage.getSerializerId,
+          manifest)
+      } else {
+        payloadSupport.deserializePayload(sent.getMessage)
+      }
     DurableProducerQueue.MessageSent(sent.getSeqNr, wrappedMsg, sent.getAck, sent.getQualifier, sent.getTimestamp)
   }
 

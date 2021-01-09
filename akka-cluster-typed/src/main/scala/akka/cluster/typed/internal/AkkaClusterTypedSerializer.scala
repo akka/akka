@@ -84,4 +84,5 @@ private[akka] final class AkkaClusterTypedSerializer(override val system: Extend
     val createdTimestamp = if (re.hasCreatedTimestamp) re.getCreatedTimestamp else 0L
     Entry(resolver.resolveActorRef(re.getActorRef), re.getSystemUid)(createdTimestamp)
   }
+
 }

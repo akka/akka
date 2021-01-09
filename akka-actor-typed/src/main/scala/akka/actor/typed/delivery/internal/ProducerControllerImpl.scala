@@ -6,6 +6,7 @@ package akka.actor.typed.delivery.internal
 
 import java.util.concurrent.TimeoutException
 
+import scala.collection.immutable
 import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
@@ -23,6 +24,10 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.TimerScheduler
+import akka.serialization.Serialization
+import akka.serialization.SerializationExtension
+import akka.serialization.Serializers
+import akka.util.ByteString
 import akka.util.Timeout
 
 /**
@@ -100,16 +105,16 @@ object ProducerControllerImpl {
   private case class Msg[A](msg: A) extends InternalCommand
   private case object ResendFirst extends InternalCommand
   case object ResendFirstUnconfirmed extends InternalCommand
+  private case object SendChunk extends InternalCommand
 
   private case class LoadStateReply[A](state: DurableProducerQueue.State[A]) extends InternalCommand
   private case class LoadStateFailed(attempt: Int) extends InternalCommand
   private case class StoreMessageSentReply(ack: DurableProducerQueue.StoreMessageSentAck)
   private case class StoreMessageSentFailed[A](messageSent: DurableProducerQueue.MessageSent[A], attempt: Int)
       extends InternalCommand
-  private case object DurableQueueTerminated extends InternalCommand
-
   private case class StoreMessageSentCompleted[A](messageSent: DurableProducerQueue.MessageSent[A])
       extends InternalCommand
+  private case object DurableQueueTerminated extends InternalCommand
 
   private final case class State[A](
       requested: Boolean,
@@ -119,6 +124,8 @@ object ProducerControllerImpl {
       replyAfterStore: Map[SeqNr, ActorRef[SeqNr]],
       supportResend: Boolean,
       unconfirmed: Vector[ConsumerController.SequencedMessage[A]],
+      remainingChunks: immutable.Seq[SequencedMessage[A]],
+      storeMessageSentInProgress: SeqNr,
       firstSeqNr: SeqNr,
       producer: ActorRef[ProducerController.RequestNext[A]],
       send: ConsumerController.SequencedMessage[A] => Unit)
@@ -236,6 +243,8 @@ object ProducerControllerImpl {
       replyAfterStore = Map.empty,
       supportResend = true,
       unconfirmed = unconfirmed,
+      remainingChunks = Nil,
+      storeMessageSentInProgress = 0,
       firstSeqNr = loadedState.highestConfirmedSeqNr + 1,
       producer,
       send)
@@ -329,6 +338,30 @@ object ProducerControllerImpl {
       throw new IllegalArgumentException(s"Consumer [$ref] should be local.")
   }
 
+  def createChunks[A](m: A, chunkSize: Int, serialization: Serialization): immutable.Seq[ChunkedMessage] = {
+    val mAnyRef = m.asInstanceOf[AnyRef]
+    // serialization exceptions are thrown
+    val bytes = serialization.serialize(mAnyRef).get
+    val ser = serialization.findSerializerFor(mAnyRef)
+    val manifest = Serializers.manifestFor(ser, mAnyRef)
+    val serializerId = ser.identifier
+    if (bytes.length <= chunkSize) {
+      ChunkedMessage(ByteString(bytes), firstChunk = true, lastChunk = true, serializerId, manifest) :: Nil
+    } else {
+      val builder = Vector.newBuilder[ChunkedMessage]
+      val chunksIter = ByteString(bytes).grouped(chunkSize)
+      var first = true
+      while (chunksIter.hasNext) {
+        val chunk = chunksIter.next()
+        val firstChunk = first
+        first = false
+        val lastChunk = !chunksIter.hasNext
+        builder += ChunkedMessage(chunk, firstChunk, lastChunk, serializerId, manifest)
+      }
+      builder.result()
+    }
+  }
+
 }
 
 private class ProducerControllerImpl[A: ClassTag](
@@ -356,13 +389,20 @@ private class ProducerControllerImpl[A: ClassTag](
   // for the durableQueue StoreMessageSent ask
   private implicit val askTimeout: Timeout = settings.durableQueueRequestTimeout
 
+  private lazy val serialization = SerializationExtension(context.system)
+
   private def active(s: State[A]): Behavior[InternalCommand] = {
 
-    def onMsg(m: A, newReplyAfterStore: Map[SeqNr, ActorRef[SeqNr]], ack: Boolean): Behavior[InternalCommand] = {
+    def onMsg(
+        seqMsg: SequencedMessage[A],
+        newReplyAfterStore: Map[SeqNr, ActorRef[SeqNr]],
+        newRemainingChunks: immutable.Seq[SequencedMessage[A]]): Behavior[InternalCommand] = {
       checkOnMsgRequestedState()
+      if (seqMsg.isLastChunk != newRemainingChunks.isEmpty)
+        throw new IllegalStateException(
+          s"seqMsg [${seqMsg.seqNr}] was lastChunk but remaining [${newRemainingChunks.size}] chunks.")
       if (traceEnabled)
-        context.log.trace("Sending [{}] with seqNr [{}].", m.getClass.getName, s.currentSeqNr)
-      val seqMsg = SequencedMessage(producerId, s.currentSeqNr, m, s.currentSeqNr == s.firstSeqNr, ack)(context.self)
+        context.log.trace("Sending [{}] with seqNr [{}].", seqMsg.message.getClass.getName, s.currentSeqNr)
       val newUnconfirmed =
         if (s.supportResend) s.unconfirmed :+ seqMsg
         else Vector.empty // no resending, no need to keep unconfirmed
@@ -375,18 +415,24 @@ private class ProducerControllerImpl[A: ClassTag](
       val newRequested =
         if (s.currentSeqNr == s.requestedSeqNr) {
           flightRecorder.producerWaitingForRequest(producerId, s.currentSeqNr)
-          false
-        } else {
+          newRemainingChunks.nonEmpty // keep it true until lastChunk
+        } else if (seqMsg.isLastChunk) {
           flightRecorder.producerRequestNext(producerId, s.currentSeqNr + 1, s.confirmedSeqNr)
           s.producer ! RequestNext(producerId, s.currentSeqNr + 1, s.confirmedSeqNr, msgAdapter, context.self)
           true
+        } else {
+          context.self ! SendChunk
+          true // keep it true until lastChunk
         }
+
       active(
         s.copy(
           requested = newRequested,
           currentSeqNr = s.currentSeqNr + 1,
           replyAfterStore = newReplyAfterStore,
-          unconfirmed = newUnconfirmed))
+          unconfirmed = newUnconfirmed,
+          remainingChunks = newRemainingChunks,
+          storeMessageSentInProgress = 0))
     }
 
     def checkOnMsgRequestedState(): Unit = {
@@ -395,6 +441,12 @@ private class ProducerControllerImpl[A: ClassTag](
           s"Unexpected Msg when no demand, requested ${s.requested}, " +
           s"requestedSeqNr ${s.requestedSeqNr}, currentSeqNr ${s.currentSeqNr}")
       }
+    }
+
+    def checkReceiveMessageRemainingChunksState(): Unit = {
+      if (s.remainingChunks.nonEmpty)
+        throw new IllegalStateException(
+          s"Received unexpected message before sending remaining [${s.remainingChunks.size}] chunks.")
     }
 
     def receiveRequest(
@@ -434,13 +486,23 @@ private class ProducerControllerImpl[A: ClassTag](
           stateAfterAck.currentSeqNr)
 
       if (newRequestedSeqNr2 > s.requestedSeqNr) {
-        if (!s.requested && (newRequestedSeqNr2 - s.currentSeqNr) > 0) {
-          flightRecorder.producerRequestNext(producerId, s.currentSeqNr, newConfirmedSeqNr)
-          s.producer ! RequestNext(producerId, s.currentSeqNr, newConfirmedSeqNr, msgAdapter, context.self)
-        }
+        val newRequested =
+          if (s.storeMessageSentInProgress != 0) {
+            s.requested
+          } else if (s.remainingChunks.nonEmpty) {
+            context.self ! SendChunk
+            s.requested
+          } else if (!s.requested && (newRequestedSeqNr2 - s.currentSeqNr) > 0) {
+            flightRecorder.producerRequestNext(producerId, s.currentSeqNr, newConfirmedSeqNr)
+            s.producer ! RequestNext(producerId, s.currentSeqNr, newConfirmedSeqNr, msgAdapter, context.self)
+            true
+          } else {
+            s.requested
+          }
+
         active(
           stateAfterAck.copy(
-            requested = true,
+            requested = newRequested,
             requestedSeqNr = newRequestedSeqNr2,
             supportResend = supportResend,
             unconfirmed = newUnconfirmed))
@@ -486,29 +548,97 @@ private class ProducerControllerImpl[A: ClassTag](
       s.copy(confirmedSeqNr = newMaxConfirmedSeqNr, replyAfterStore = newReplyAfterStore, unconfirmed = newUnconfirmed)
     }
 
-    def receiveStoreMessageSentCompleted(seqNr: SeqNr, m: A, ack: Boolean) = {
-      if (seqNr != s.currentSeqNr)
-        throw new IllegalStateException(s"currentSeqNr [${s.currentSeqNr}] not matching stored seqNr [$seqNr]")
+    def receiveStoreMessageSentCompleted(seqNr: SeqNr): Behavior[InternalCommand] = {
+      if (seqNr == s.storeMessageSentInProgress) {
+        if (seqNr != s.currentSeqNr)
+          throw new IllegalStateException(s"currentSeqNr [${s.currentSeqNr}] not matching stored seqNr [$seqNr]")
+        val seqMsg = s.remainingChunks.head
+        if (seqNr != seqMsg.seqNr)
+          throw new IllegalStateException(s"seqNr [${seqMsg.seqNr}] not matching stored seqNr [$seqNr]")
 
-      s.replyAfterStore.get(seqNr).foreach { replyTo =>
-        if (traceEnabled)
-          context.log.trace("Sending confirmation reply to [{}] after storage.", seqNr)
-        replyTo ! seqNr
+        s.replyAfterStore.get(seqNr).foreach { replyTo =>
+          if (traceEnabled)
+            context.log.trace("Sending confirmation reply to [{}] after storage.", seqNr)
+          replyTo ! seqNr
+        }
+        val newReplyAfterStore = s.replyAfterStore - seqNr
+
+        onMsg(seqMsg, newReplyAfterStore, s.remainingChunks.tail)
+      } else {
+        context.log.debug(
+          "Received StoreMessageSentCompleted for seqNr [{}] but waiting for [{}]. " +
+          "Probably due to retry.",
+          seqNr,
+          s.storeMessageSentInProgress)
+        Behaviors.same
       }
-      val newReplyAfterStore = s.replyAfterStore - seqNr
+    }
 
-      onMsg(m, newReplyAfterStore, ack)
+    def receiveStoreMessageSentFailed(f: StoreMessageSentFailed[A]): Behavior[InternalCommand] = {
+      if (f.messageSent.seqNr == s.storeMessageSentInProgress) {
+        if (f.attempt >= settings.durableQueueRetryAttempts) {
+          val errorMessage =
+            s"StoreMessageSentFailed seqNr [${f.messageSent.seqNr}] failed after [${f.attempt}] attempts, giving up."
+          context.log.error(errorMessage)
+          throw new TimeoutException(errorMessage)
+        } else {
+          context.log.warnN(
+            "StoreMessageSent seqNr [{}] failed, attempt [{}] of [{}], retrying.",
+            f.messageSent.seqNr,
+            f.attempt,
+            settings.durableQueueRetryAttempts)
+          // retry
+          if (f.messageSent.isFirstChunk) {
+            storeMessageSent(f.messageSent, attempt = f.attempt + 1)
+            Behaviors.same
+          } else {
+            // store all chunks again, because partially stored chunks are discarded by the DurableQueue
+            // when it's restarted
+            val unconfirmedReverse = s.unconfirmed.reverse
+            val xs = unconfirmedReverse.takeWhile(!_.isFirstChunk)
+            if (unconfirmedReverse.size == xs.size)
+              throw new IllegalStateException(s"First chunk not found in unconfirmed: ${s.unconfirmed}")
+            val firstChunk = unconfirmedReverse.drop(xs.size).head
+            val newRemainingChunks = (firstChunk +: xs.reverse) ++ s.remainingChunks
+            val newUnconfirmed = s.unconfirmed.dropRight(xs.size + 1)
+
+            context.log.debug(
+              "Store all [{}] chunks again, starting at seqNr [{}].",
+              newRemainingChunks.size,
+              firstChunk.seqNr)
+
+            if (!newRemainingChunks.head.isFirstChunk || !newRemainingChunks.last.isLastChunk)
+              throw new IllegalStateException(s"Wrong remainingChunks: $newRemainingChunks")
+
+            storeMessageSent(
+              MessageSent.fromMessageOrChunked(
+                firstChunk.seqNr,
+                firstChunk.message,
+                firstChunk.ack,
+                NoQualifier,
+                System.currentTimeMillis()),
+              attempt = f.attempt + 1)
+            active(
+              s.copy(
+                storeMessageSentInProgress = firstChunk.seqNr,
+                remainingChunks = newRemainingChunks,
+                unconfirmed = newUnconfirmed,
+                currentSeqNr = firstChunk.seqNr))
+          }
+        }
+      } else {
+        Behaviors.same
+      }
     }
 
     def receiveResend(fromSeqNr: SeqNr): Behavior[InternalCommand] = {
       flightRecorder.producerReceivedResend(producerId, fromSeqNr)
-      val newUnconfirmed =
-        if (fromSeqNr == 0 && s.unconfirmed.nonEmpty)
-          s.unconfirmed.head.asFirst +: s.unconfirmed.tail
-        else
-          s.unconfirmed.dropWhile(_.seqNr < fromSeqNr)
-      resendUnconfirmed(newUnconfirmed)
-      active(s.copy(unconfirmed = newUnconfirmed))
+      resendUnconfirmed(s.unconfirmed.dropWhile(_.seqNr < fromSeqNr))
+      if (fromSeqNr == 0 && s.unconfirmed.nonEmpty) {
+        val newUnconfirmed = s.unconfirmed.head.asFirst +: s.unconfirmed.tail
+        active(s.copy(unconfirmed = newUnconfirmed))
+      } else
+        Behaviors.same
     }
 
     def resendUnconfirmed(newUnconfirmed: Vector[SequencedMessage[A]]): Unit = {
@@ -545,7 +675,7 @@ private class ProducerControllerImpl[A: ClassTag](
     def receiveStart(start: Start[A]): Behavior[InternalCommand] = {
       ProducerControllerImpl.enforceLocalProducer(start.producer)
       context.log.debug("Register new Producer [{}], currentSeqNr [{}].", start.producer, s.currentSeqNr)
-      if (s.requested) {
+      if (s.requested && s.remainingChunks.isEmpty) {
         flightRecorder.producerRequestNext(producerId, s.currentSeqNr, s.confirmedSeqNr)
         start.producer ! RequestNext(producerId, s.currentSeqNr, s.confirmedSeqNr, msgAdapter, context.self)
       }
@@ -570,32 +700,101 @@ private class ProducerControllerImpl[A: ClassTag](
       active(s.copy(firstSeqNr = newFirstSeqNr, send = newSend))
     }
 
+    def receiveSendChunk(): Behavior[InternalCommand] = {
+      if (s.remainingChunks.nonEmpty && s.remainingChunks.head.seqNr <= s.requestedSeqNr && s.storeMessageSentInProgress == 0) {
+        if (traceEnabled)
+          context.log.trace("Send next chunk seqNr [{}].", s.remainingChunks.head.seqNr)
+        if (durableQueue.isEmpty) {
+          onMsg(s.remainingChunks.head, s.replyAfterStore, s.remainingChunks.tail)
+        } else {
+          val seqMsg = s.remainingChunks.head
+          storeMessageSent(
+            MessageSent
+              .fromMessageOrChunked(seqMsg.seqNr, seqMsg.message, seqMsg.ack, NoQualifier, System.currentTimeMillis()),
+            attempt = 1)
+          active(s.copy(storeMessageSentInProgress = seqMsg.seqNr)) // still same s.remainingChunks
+        }
+      } else {
+        Behaviors.same
+      }
+    }
+
+    def chunk(m: A, ack: Boolean): immutable.Seq[SequencedMessage[A]] = {
+      val chunkSize = settings.chunkLargeMessagesBytes
+      if (chunkSize > 0) {
+        val chunkedMessages = createChunks(m, chunkSize, serialization)
+
+        if (traceEnabled) {
+          if (chunkedMessages.size == 1)
+            context.log.trace(
+              "No chunking of seqNr [{}], size [{} bytes].",
+              s.currentSeqNr,
+              chunkedMessages.head.serialized.size)
+          else
+            context.log.traceN(
+              "Chunked seqNr [{}] into [{}] pieces, total size [{} bytes].",
+              s.currentSeqNr,
+              chunkedMessages.size,
+              chunkedMessages.map(_.serialized.size).sum)
+        }
+
+        var i = 0
+        chunkedMessages.map { chunkedMessage =>
+          val seqNr = s.currentSeqNr + i
+          i += 1
+          SequencedMessage.fromChunked[A](
+            producerId,
+            seqNr,
+            chunkedMessage,
+            seqNr == s.firstSeqNr,
+            ack && chunkedMessage.lastChunk, // only the last need ack = true
+            context.self)
+        }
+      } else {
+        val seqMsg =
+          SequencedMessage[A](producerId, s.currentSeqNr, m, s.currentSeqNr == s.firstSeqNr, ack)(context.self)
+        seqMsg :: Nil
+      }
+    }
+
     Behaviors.receiveMessage {
       case MessageWithConfirmation(m: A, replyTo) =>
+        checkReceiveMessageRemainingChunksState()
         flightRecorder.producerReceived(producerId, s.currentSeqNr)
-        val newReplyAfterStore = s.replyAfterStore.updated(s.currentSeqNr, replyTo)
+        val chunks = chunk(m, ack = true)
+        val newReplyAfterStore = s.replyAfterStore.updated(chunks.last.seqNr, replyTo)
         if (durableQueue.isEmpty) {
-          onMsg(m, newReplyAfterStore, ack = true)
+          onMsg(chunks.head, newReplyAfterStore, chunks.tail)
         } else {
+          val seqMsg = chunks.head
           storeMessageSent(
-            MessageSent(s.currentSeqNr, m, ack = true, NoQualifier, System.currentTimeMillis()),
+            MessageSent
+              .fromMessageOrChunked(seqMsg.seqNr, seqMsg.message, seqMsg.ack, NoQualifier, System.currentTimeMillis()),
             attempt = 1)
-          active(s.copy(replyAfterStore = newReplyAfterStore))
+          active(
+            s.copy(
+              replyAfterStore = newReplyAfterStore,
+              remainingChunks = chunks,
+              storeMessageSentInProgress = seqMsg.seqNr))
         }
 
       case Msg(m: A) =>
+        checkReceiveMessageRemainingChunksState()
         flightRecorder.producerReceived(producerId, s.currentSeqNr)
+        val chunks = chunk(m, ack = false)
         if (durableQueue.isEmpty) {
-          onMsg(m, s.replyAfterStore, ack = false)
+          onMsg(chunks.head, s.replyAfterStore, chunks.tail)
         } else {
+          val seqMsg = chunks.head
           storeMessageSent(
-            MessageSent(s.currentSeqNr, m, ack = false, NoQualifier, System.currentTimeMillis()),
+            MessageSent
+              .fromMessageOrChunked(seqMsg.seqNr, seqMsg.message, seqMsg.ack, NoQualifier, System.currentTimeMillis()),
             attempt = 1)
-          Behaviors.same
+          active(s.copy(remainingChunks = chunks, storeMessageSentInProgress = seqMsg.seqNr))
         }
 
-      case StoreMessageSentCompleted(MessageSent(seqNr, m: A, ack, NoQualifier, _)) =>
-        receiveStoreMessageSentCompleted(seqNr, m, ack)
+      case StoreMessageSentCompleted(sent: MessageSent[_]) =>
+        receiveStoreMessageSentCompleted(sent.seqNr)
 
       case f: StoreMessageSentFailed[A] =>
         receiveStoreMessageSentFailed(f)
@@ -605,6 +804,9 @@ private class ProducerControllerImpl[A: ClassTag](
 
       case Ack(newConfirmedSeqNr) =>
         receiveAck(newConfirmedSeqNr)
+
+      case SendChunk =>
+        receiveSendChunk()
 
       case Resend(fromSeqNr) =>
         receiveResend(fromSeqNr)
@@ -623,24 +825,6 @@ private class ProducerControllerImpl[A: ClassTag](
 
       case DurableQueueTerminated =>
         throw new IllegalStateException("DurableQueue was unexpectedly terminated.")
-    }
-  }
-
-  private def receiveStoreMessageSentFailed(f: StoreMessageSentFailed[A]): Behavior[InternalCommand] = {
-    if (f.attempt >= settings.durableQueueRetryAttempts) {
-      val errorMessage =
-        s"StoreMessageSentFailed seqNr [${f.messageSent.seqNr}] failed after [${f.attempt}] attempts, giving up."
-      context.log.error(errorMessage)
-      throw new TimeoutException(errorMessage)
-    } else {
-      context.log.warnN(
-        "StoreMessageSent seqNr [{}] failed, attempt [{}] of [{}], retrying.",
-        f.messageSent.seqNr,
-        f.attempt,
-        settings.durableQueueRetryAttempts)
-      // retry
-      storeMessageSent(f.messageSent, attempt = f.attempt + 1)
-      Behaviors.same
     }
   }
 

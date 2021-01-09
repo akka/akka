@@ -4,7 +4,7 @@
 An architectural choice you have to make is if you are going to use a microservices architecture or
 a traditional distributed application. This choice will influence how you should use Akka Cluster.
 
-The [stateful or stateless applications: to Akka Cluster or not](https://akka.io/blog/news/2020/06/01/akka-cluster-motivation)
+The [Stateful or Stateless applications: to Akka Cluster or not](https://akka.io/blog/news/2020/06/01/akka-cluster-motivation)
 video is a good starting point to understand the motivation to use Akka Cluster.
 
 ## Microservices
@@ -20,10 +20,7 @@ In a microservices architecture, you should consider communication within a serv
 In general we recommend against using Akka Cluster and actor messaging between _different_ services because that
 would result in a too tight code coupling between the services and difficulties deploying these independent of
 each other, which is one of the main reasons for using a microservices architecture.
-See the discussion on
-@scala[[Internal and External Communication](https://www.lagomframework.com/documentation/current/scala/InternalAndExternalCommunication.html)]
-@java[[Internal and External Communication](https://www.lagomframework.com/documentation/current/java/InternalAndExternalCommunication.html)]
-in the docs of the [Lagom Framework](https://www.lagomframework.com) (where each microservice is an Akka Cluster)
+See the discussion on @extref[Internal and External Communication](platform-guide:concepts/internal-and-external-communication.html)
 for some background on this.
 
 Nodes of a single service (collectively called a cluster) require less decoupling. They share the same code and

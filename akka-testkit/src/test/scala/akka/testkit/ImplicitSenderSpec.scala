@@ -14,7 +14,7 @@ class ImplicitSenderSpec extends AnyWordSpec with Matchers with BeforeAndAfterAl
 
   implicit lazy val system: ActorSystem = ActorSystem("AkkaCustomSpec")
 
-  override def afterAll = system.terminate()
+  override def afterAll() = system.terminate()
 
   "An ImplicitSender" should {
     "have testActor as its self" in {

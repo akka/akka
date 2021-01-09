@@ -84,6 +84,15 @@ public class TestProbeTest extends JUnitSuite {
     assertEquals("some result", awaitAssertResult);
   }
 
+  @Test(expected = Exception.class)
+  public void testAwaitAssertThrowingCheckedException() {
+    TestProbe<String> probe = TestProbe.create(testKit.system());
+    probe.awaitAssert(
+        () -> {
+          throw new Exception("checked exception");
+        });
+  }
+
   @Test
   public void testExpectMessage() {
     TestProbe<String> probe = TestProbe.create(testKit.system());

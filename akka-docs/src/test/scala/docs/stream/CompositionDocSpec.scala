@@ -12,10 +12,11 @@ import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
 import scala.concurrent.{ Future, Promise }
+import scala.concurrent.ExecutionContext
 
 class CompositionDocSpec extends AkkaSpec {
 
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   "nonnested flow" in {
     //#non-nested-flow

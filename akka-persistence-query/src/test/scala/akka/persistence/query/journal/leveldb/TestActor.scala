@@ -29,7 +29,7 @@ class TestActor(override val persistenceId: String) extends PersistentActor {
 
     case cmd: String =>
       persist(cmd) { evt =>
-        sender() ! evt + "-done"
+        sender() ! s"$evt-done"
       }
   }
 

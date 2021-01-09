@@ -4,8 +4,10 @@
 
 package jdocs.akka.cluster.sharding.typed;
 
+import akka.Done;
 import akka.actor.typed.ActorRef;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
+import akka.pattern.StatusReply;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandlerWithReply;
 import akka.persistence.typed.javadsl.CommandHandlerWithReplyBuilder;
@@ -38,19 +40,19 @@ public interface AccountExampleWithNullState {
     interface Command extends CborSerializable {}
 
     public static class CreateAccount implements Command {
-      public final ActorRef<OperationResult> replyTo;
+      public final ActorRef<StatusReply<Done>> replyTo;
 
       @JsonCreator
-      public CreateAccount(ActorRef<OperationResult> replyTo) {
+      public CreateAccount(ActorRef<StatusReply<Done>> replyTo) {
         this.replyTo = replyTo;
       }
     }
 
     public static class Deposit implements Command {
       public final BigDecimal amount;
-      public final ActorRef<OperationResult> replyTo;
+      public final ActorRef<StatusReply<Done>> replyTo;
 
-      public Deposit(BigDecimal amount, ActorRef<OperationResult> replyTo) {
+      public Deposit(BigDecimal amount, ActorRef<StatusReply<Done>> replyTo) {
         this.replyTo = replyTo;
         this.amount = amount;
       }
@@ -58,9 +60,9 @@ public interface AccountExampleWithNullState {
 
     public static class Withdraw implements Command {
       public final BigDecimal amount;
-      public final ActorRef<OperationResult> replyTo;
+      public final ActorRef<StatusReply<Done>> replyTo;
 
-      public Withdraw(BigDecimal amount, ActorRef<OperationResult> replyTo) {
+      public Withdraw(BigDecimal amount, ActorRef<StatusReply<Done>> replyTo) {
         this.amount = amount;
         this.replyTo = replyTo;
       }
@@ -76,33 +78,16 @@ public interface AccountExampleWithNullState {
     }
 
     public static class CloseAccount implements Command {
-      public final ActorRef<OperationResult> replyTo;
+      public final ActorRef<StatusReply<Done>> replyTo;
 
       @JsonCreator
-      public CloseAccount(ActorRef<OperationResult> replyTo) {
+      public CloseAccount(ActorRef<StatusReply<Done>> replyTo) {
         this.replyTo = replyTo;
       }
     }
 
     // Reply
-    interface CommandReply extends CborSerializable {}
-
-    interface OperationResult extends CommandReply {}
-
-    enum Confirmed implements OperationResult {
-      INSTANCE
-    }
-
-    public static class Rejected implements OperationResult {
-      public final String reason;
-
-      @JsonCreator
-      public Rejected(String reason) {
-        this.reason = reason;
-      }
-    }
-
-    public static class CurrentBalance implements CommandReply {
+    public static class CurrentBalance implements CborSerializable {
       public final BigDecimal balance;
 
       @JsonCreator
@@ -214,23 +199,25 @@ public interface AccountExampleWithNullState {
     private ReplyEffect<Event, Account> createAccount(CreateAccount command) {
       return Effect()
           .persist(AccountCreated.INSTANCE)
-          .thenReply(command.replyTo, account2 -> Confirmed.INSTANCE);
+          .thenReply(command.replyTo, account2 -> StatusReply.ack());
     }
 
     private ReplyEffect<Event, Account> deposit(OpenedAccount account, Deposit command) {
       return Effect()
           .persist(new Deposited(command.amount))
-          .thenReply(command.replyTo, account2 -> Confirmed.INSTANCE);
+          .thenReply(command.replyTo, account2 -> StatusReply.ack());
     }
 
     private ReplyEffect<Event, Account> withdraw(OpenedAccount account, Withdraw command) {
       if (!account.canWithdraw(command.amount)) {
         return Effect()
-            .reply(command.replyTo, new Rejected("not enough funds to withdraw " + command.amount));
+            .reply(
+                command.replyTo,
+                StatusReply.error("not enough funds to withdraw " + command.amount));
       } else {
         return Effect()
             .persist(new Withdrawn(command.amount))
-            .thenReply(command.replyTo, account2 -> Confirmed.INSTANCE);
+            .thenReply(command.replyTo, account2 -> StatusReply.ack());
       }
     }
 
@@ -242,10 +229,10 @@ public interface AccountExampleWithNullState {
       if (account.balance.equals(BigDecimal.ZERO)) {
         return Effect()
             .persist(new AccountClosed())
-            .thenReply(command.replyTo, account2 -> Confirmed.INSTANCE);
+            .thenReply(command.replyTo, account2 -> StatusReply.ack());
       } else {
         return Effect()
-            .reply(command.replyTo, new Rejected("balance must be zero for closing account"));
+            .reply(command.replyTo, StatusReply.error("balance must be zero for closing account"));
       }
     }
 

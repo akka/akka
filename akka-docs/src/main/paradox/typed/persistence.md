@@ -33,8 +33,8 @@ events to the actor, allowing it to rebuild its state. This can be either the fu
 or starting from a checkpoint in a snapshot which can dramatically reduce recovery times.
 
 The [Event Sourcing with Akka 2.6 video](https://akka.io/blog/news/2020/01/07/akka-event-sourcing-video)
-is a good starting point for learning Event Sourcing, and then followed by the
-[CQRS with Akka 2.6 video](https://akka.io/blog/news/2020/02/05/akka-cqrs-video).
+is a good starting point for learning Event Sourcing, together with the @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) 
+that illustrates how to implement an Event Sourced CQRS application with Akka Persistence and Akka Projections.
 
 @@@ note
 
@@ -47,9 +47,9 @@ provides tools to facilitate in building GDPR capable systems.
 
 @@@
 
-### Event sourcing concepts
+### Event Sourcing concepts
 
-See an [introduction to EventSourcing](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj591559(v=pandp.10)?redirectedfrom=MSDN) at MSDN.
+See an [introduction to Event Sourcing](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj591559%28v=pandp.10%29) at MSDN.
 
 Another excellent article about "thinking in Events" is [Events As First-Class Citizens](https://hackernoon.com/events-as-first-class-citizens-8633e8479493)
 by Randy Shoup. It is a short and recommended read if you're starting developing Events based applications.
@@ -345,7 +345,7 @@ Scala
 Java
 :  @@snip [BlogPostEntity.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntity.java) { #commands }
 
-@java[The commandler handler to process each command is decided by the state class (or state predicate) that is
+@java[The command handler to process each command is decided by the state class (or state predicate) that is
 given to the `forStateType` of the `CommandHandlerBuilder` and the match cases in the builders.]
 @scala[The command handler to process each command is decided by first looking at the state and then the command.
 It typically becomes two levels of pattern matching, first on the state and then on the command.]
@@ -386,8 +386,13 @@ The @ref:[Request-Response interaction pattern](interaction-patterns.md#request-
 persistent actors, because you typically want to know if the command was rejected due to validation errors and
 when accepted you want a confirmation when the events have been successfully stored.
 
-Therefore you typically include a @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`] in the
-commands. After validation errors or after persisting events, using a `thenRun` side effect, the reply message can
+Therefore you typically include a @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`]. If the 
+command can either have a successful response or a validation error returned, the generic response type @scala[`StatusReply[ReplyType]]`]
+@java[`StatusReply<ReplyType>`] can be used. If the successful reply does not contain a value but is more of an acknowledgement
+a pre defined @scala[`StatusReply.Ack`]@java[`StatusReply.ack()`] of type @scala[`StatusReply[Done]`]@java[`StatusReply<Done>`]
+can be used.
+
+After validation errors or after persisting events, using a `thenRun` side effect, the reply message can
 be sent to the `ActorRef`.
 
 Scala
@@ -652,9 +657,9 @@ cluster and address them by id.
 Akka Persistence is based on the single-writer principle. For a particular `PersistenceId` only one `EventSourcedBehavior`
 instance should be active at one time. If multiple instances were to persist events at the same time, the events would
 be interleaved and might not be interpreted correctly on replay. Cluster Sharding ensures that there is only one
-active entity (`EventSourcedBehavior`) for each id within a data center. Lightbend's
-[Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
-supports active-active persistent entities across data centers.
+active entity (`EventSourcedBehavior`) for each id within a data center.
+@ref:[Replicated Event Sourcing](replicated-eventsourcing.md) supports active-active persistent entities across
+data centers.
 
 ## Configuration
 
@@ -671,13 +676,11 @@ reference documentation of the chosen plugin.
 is an example project that can be downloaded, and with instructions of how to run.
 This project contains a Shopping Cart sample illustrating how to use Akka Persistence.
 
-The Shopping Cart sample is expanded further in the
-@java[@extref[CQRS example project](samples:akka-samples-cqrs-java)]
-@scala[@extref[CQRS example project](samples:akka-samples-cqrs-scala)]
-sample. In that sample the events are tagged to be consumed by even processors to build other representations
+The Shopping Cart sample is expanded further in the @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/).
+In that sample the events are tagged to be consumed by even processors to build other representations
 from the events, or publish the events to other services.
 
 @java[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-java)]
 @scala[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-scala)]
-illustrates how to use Lightbend's [Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
-with active-active persistent entities across data centers.
+illustrates how to use @ref:[Replicated Event Sourcing](replicated-eventsourcing.md) that supports
+active-active persistent entities across data centers.

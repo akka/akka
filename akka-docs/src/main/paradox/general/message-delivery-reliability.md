@@ -23,7 +23,7 @@ remote transport will place a limit on the message size.
 
 Writing your actors such that every interaction could possibly be remote is the
 safe, pessimistic bet. It means to only rely on those properties which are
-always guaranteed and which are discussed in detail below.  This has 
+always guaranteed and which are discussed in detail below.  This has
 some overhead in the actor’s implementation. If you are willing to sacrifice full
 location transparency—for example in case of a group of closely collaborating
 actors—you can place them always on the same JVM and enjoy stricter guarantees
@@ -38,8 +38,8 @@ role of the “Dead Letter Office”.
 These are the rules for message sends (i.e. the `tell` or `!` method, which
 also underlies the `ask` pattern):
 
- * **at-most-once delivery**, i.e. no guaranteed delivery
- * **message ordering per sender–receiver pair**
+* **at-most-once delivery**, i.e. no guaranteed delivery
+* **message ordering per sender–receiver pair**
 
 The first rule is typically found also in other actor implementations while the
 second is specific to Akka.
@@ -49,14 +49,14 @@ second is specific to Akka.
 When it comes to describing the semantics of a delivery mechanism, there are
 three basic categories:
 
- * **at-most-once** delivery means that for each message handed to the
+* **at-most-once** delivery means that for each message handed to the
 mechanism, that message is delivered once or not at all; in more casual terms
 it means that messages may be lost.
- * **at-least-once** delivery means that for each message handed to the
+* **at-least-once** delivery means that for each message handed to the
 mechanism potentially multiple attempts are made at delivering it, such that
 at least one succeeds; again, in more casual terms this means that messages
 may be duplicated but not lost.
- * **exactly-once** delivery means that for each message handed to the mechanism
+* **exactly-once** delivery means that for each message handed to the mechanism
 exactly one delivery is made to the recipient; the message can neither be
 lost nor duplicated.
 
@@ -121,14 +121,13 @@ The guarantee is illustrated in the following:
 > Actor `A3` sends messages `M4`, `M5`, `M6` to `A2`
 
 This means that:
- 
+
  1. If `M1` is delivered it must be delivered before `M2` and `M3`
  2. If `M2` is delivered it must be delivered before `M3`
  3. If `M4` is delivered it must be delivered before `M5` and `M6`
  4. If `M5` is delivered it must be delivered before `M6`
  5. `A2` can see messages from `A1` interleaved with messages from `A3`
  6. Since there is no guaranteed delivery, any of the messages may be dropped, i.e. not arrive at `A2`
-
 
 @@@ note
 
@@ -202,14 +201,14 @@ actually do apply the best effort to keep our tests stable. A local `tell`
 operation can however fail for the same reasons as a normal method call can on
 the JVM:
 
- * `StackOverflowError`
- * `OutOfMemoryError`
- * other `VirtualMachineError`
+* `StackOverflowError`
+* `OutOfMemoryError`
+* other `VirtualMachineError`
 
 In addition, local sends can fail in Akka-specific ways:
 
- * if the mailbox does not accept the message (e.g. full BoundedMailbox)
- * if the receiving actor fails while processing the message or is already
+* if the mailbox does not accept the message (e.g. full BoundedMailbox)
+* if the receiving actor fails while processing the message or is already
 terminated
 
 While the first is a matter of configuration the second deserves some
@@ -226,16 +225,16 @@ will note, these are quite subtle as it stands, and it is even possible that
 future performance optimizations will invalidate this whole paragraph. The
 possibly non-exhaustive list of counter-indications is:
 
- * Before receiving the first reply from a top-level actor, there is a lock
+* Before receiving the first reply from a top-level actor, there is a lock
 which protects an internal interim queue, and this lock is not fair; the
 implication is that enqueue requests from different senders which arrive
 during the actor’s construction (figuratively, the details are more involved)
 may be reordered depending on low-level thread scheduling. Since completely
 fair locks do not exist on the JVM this is unfixable.
- * The same mechanism is used during the construction of a Router, more
+* The same mechanism is used during the construction of a Router, more
 precisely the routed ActorRef, hence the same problem exists for actors
 deployed with Routers.
- * As mentioned above, the problem occurs anywhere a lock is involved during
+* As mentioned above, the problem occurs anywhere a lock is involved during
 enqueueing, which may also apply to custom mailboxes.
 
 This list has been compiled carefully, but other problematic scenarios may have
@@ -243,7 +242,7 @@ escaped our analysis.
 
 ### How does Local Ordering relate to Network Ordering
 
-The rule that *for a given pair of actors, messages sent directly from the first 
+The rule that *for a given pair of actors, messages sent directly from the first
 to the second will not be received out-of-order* holds for messages sent over the
 network with the TCP based Akka remote transport protocol.
 
@@ -272,23 +271,23 @@ powerful, higher-level abstractions on top of it.
 As discussed above a straight-forward answer to the requirement of reliable
 delivery is an explicit ACK–RETRY protocol. In its simplest form this requires
 
- * a way to identify individual messages to correlate message with
+* a way to identify individual messages to correlate message with
 acknowledgement
- * a retry mechanism which will resend messages if not acknowledged in time
- * a way for the receiver to detect and discard duplicates
+* a retry mechanism which will resend messages if not acknowledged in time
+* a way for the receiver to detect and discard duplicates
 
 The third becomes necessary by virtue of the acknowledgements not being guaranteed
-to arrive either. 
+to arrive either.
 
 An ACK-RETRY protocol with business-level acknowledgements and de-duplication using identifiers is
-supported by the @ref:[Reliable Delivery](../typed/reliable-delivery.md) feature. 
+supported by the @ref:[Reliable Delivery](../typed/reliable-delivery.md) feature.
 
 Another way of implementing the third part would be to make processing the messages
 idempotent on the level of the business logic.
 
 ### Event Sourcing
 
-Event sourcing (and sharding) is what makes large websites scale to
+Event Sourcing (and sharding) is what makes large websites scale to
 billions of users, and the idea is quite simple: when a component (think actor)
 processes a command it will generate a list of events representing the effect
 of the command. These events are stored in addition to being applied to the
@@ -299,7 +298,7 @@ components may consume the event stream as a means to replicate the component’
 state on a different continent or to react to changes). If the component’s
 state is lost—due to a machine failure or by being pushed out of a cache—it can
 be reconstructed by replaying the event stream (usually employing
-snapshots to speed up the process). @ref:[Event sourcing](../typed/persistence.md#event-sourcing-concepts) is supported by
+snapshots to speed up the process). @ref:[Event Sourcing](../typed/persistence.md#event-sourcing-concepts) is supported by
 Akka Persistence.
 
 ### Mailbox with Explicit Acknowledgement
@@ -335,7 +334,7 @@ sender’s code more than is gained in debug output clarity.
 
 The dead letter service follows the same rules with respect to delivery
 guarantees as all other message sends, hence it cannot be used to implement
-guaranteed delivery. 
+guaranteed delivery.
 
 ### How do I Receive Dead Letters?
 

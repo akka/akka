@@ -1,5 +1,7 @@
 import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
 
+ThisBuild / scalafixScalaBinaryVersion := scalaBinaryVersion.value
+
 enablePlugins(
   UnidocRoot,
   UnidocWithPrValidation,
@@ -9,14 +11,32 @@ enablePlugins(
   ScalafixIgnoreFilePlugin,
   JavaFormatterPlugin)
 disablePlugins(MimaPlugin)
+
+
+// check format and headers
+TaskKey[Unit]("verifyCodeFmt") := {
+  javafmtCheckAll.all(ScopeFilter(inAnyProject)).result.value.toEither.left.foreach { _ =>
+    throw new MessageOnlyException(
+      "Unformatted Java code found. Please run 'javafmtAll' (or use the 'applyCodeStyle' alias) and commit the reformatted code")
+  }
+
+  scalafmtCheckAll.all(ScopeFilter(inAnyProject)).result.value.toEither.left.foreach { _ =>
+    throw new MessageOnlyException(
+      "Unformatted Scala code found. Please run 'scalafmtAll' (or use the 'applyCodeStyle' alias) and commit the reformatted code")
+  }
+}
+
+addCommandAlias("verifyCodeStyle", "headerCheckAll; verifyCodeFmt")
+addCommandAlias("applyCodeStyle", "headerCreateAll; javafmtAll; scalafmtAll")
+
 addCommandAlias(
   name = "fixall",
   value =
-    ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;scalafmtAll;test:compile;multi-jvm:compile;reload")
+    ";scalafixEnable; scalafixAll; scalafmtAll; test:compile; multi-jvm:compile; reload")
 
 addCommandAlias(
   name = "sortImports",
-  value = ";scalafixEnable;compile:scalafix SortImports;test:scalafix SortImports;scalafmtAll")
+  value = ";scalafixEnable; scalafixAll SortImports; scalafmtAll")
 
 import akka.AkkaBuild._
 import akka.{ AkkaBuild, Dependencies, OSGi, Protobuf, SigarLoader, VersionGenerator }
@@ -40,13 +60,10 @@ resolverSettings
 def isScala213: Boolean = System.getProperty("akka.build.scalaVersion", "").startsWith("2.13")
 
 // When this is updated the set of modules in ActorSystem.allModules should also be updated
-lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
+lazy val userProjects: Seq[ProjectReference] = List[ProjectReference](
   actor,
-  actorTests,
   actorTestkitTyped,
   actorTyped,
-  actorTypedTests,
-  benchJmh,
   cluster,
   clusterMetrics,
   clusterSharding,
@@ -56,28 +73,35 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   coordination,
   discovery,
   distributedData,
-  docs,
   jackson,
   multiNodeTestkit,
   osgi,
   persistence,
   persistenceQuery,
-  persistenceShared,
-  persistenceTck,
   persistenceTyped,
   persistenceTestkit,
   protobuf,
   protobufV3,
   pki,
   remote,
-  remoteTests,
   slf4j,
   stream,
   streamTestkit,
-  streamTests,
-  streamTestsTck,
   streamTyped,
   testkit)
+
+lazy val aggregatedProjects: Seq[ProjectReference] = userProjects ++ List[ProjectReference](
+    actorTests,
+    actorTypedTests,
+    benchJmh,
+    docs,
+    billOfMaterials,
+    persistenceShared,
+    persistenceTck,
+    persistenceTypedTests,
+    remoteTests,
+    streamTests,
+    streamTestsTck)
 
 lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
@@ -215,6 +239,7 @@ lazy val docs = akkaModule("akka-docs")
     streamTestkit % "compile->compile;test->test",
     persistenceTestkit % "compile->compile;test->test")
   .settings(Dependencies.docs)
+  .settings(AkkaDisciplinePlugin.docs)
   .settings(Paradox.settings)
   .settings(javacOptions += "-parameters") // for Jackson
   .enablePlugins(
@@ -226,7 +251,7 @@ lazy val docs = akkaModule("akka-docs")
     StreamOperatorsIndexGenerator,
     Jdk9)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
-  .disablePlugins(ScalafixPlugin)
+  .disablePlugins((if (ScalafixSupport.fixTestScope) Nil else Seq(ScalafixPlugin)): _*)
 
 lazy val jackson = akkaModule("akka-serialization-jackson")
   .dependsOn(
@@ -297,11 +322,20 @@ lazy val persistenceTestkit = akkaModule("akka-persistence-testkit")
   .settings(AutomaticModuleName.settings("akka.persistence.testkit"))
   .disablePlugins(MimaPlugin)
 
+lazy val persistenceTypedTests = akkaModule("akka-persistence-typed-tests")
+  .dependsOn(persistenceTyped, persistenceTestkit % "test", actorTestkitTyped % "test", jackson % "test->test")
+  .settings(AkkaBuild.mayChangeSettings)
+  .settings(Dependencies.persistenceTypedTests)
+  .settings(javacOptions += "-parameters") // for Jackson
+  .disablePlugins(MimaPlugin)
+  .enablePlugins(NoPublish)
+
 lazy val protobuf = akkaModule("akka-protobuf")
   .settings(OSGi.protobuf)
   .settings(AutomaticModuleName.settings("akka.protobuf"))
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
+  .settings(autoScalaLibrary := false) // Pure java project
 
 lazy val protobufV3 = akkaModule("akka-protobuf-v3")
   .settings(OSGi.protobufV3)
@@ -321,7 +355,9 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
     exportJars := true, // in dependent projects, use assembled and shaded jar
     makePomConfiguration := makePomConfiguration.value
         .withConfigurations(Vector(Compile)), // prevent original dependency to be added to pom as runtime dep
-    packagedArtifact in (Compile, packageBin) := Scoped.mkTuple2((artifact in (Compile, packageBin)).value, OsgiKeys.bundle.value),
+    packagedArtifact in (Compile, packageBin) := Scoped.mkTuple2(
+        (artifact in (Compile, packageBin)).value,
+        ReproducibleBuildsPlugin.postProcessJar(OsgiKeys.bundle.value)),
     packageBin in Compile := ReproducibleBuildsPlugin
         .postProcessJar((assembly in Compile).value), // package by running assembly
     // Prevent cyclic task dependencies, see https://github.com/sbt/sbt-assembly/issues/365
@@ -388,7 +424,6 @@ lazy val streamTestkit = akkaModule("akka-stream-testkit")
   .settings(Dependencies.streamTestkit)
   .settings(AutomaticModuleName.settings("akka.stream.testkit"))
   .settings(OSGi.streamTestkit)
-  .disablePlugins(MimaPlugin)
 
 lazy val streamTests = akkaModule("akka-stream-tests")
   .configs(akka.Jdk9.TestJdk9)
@@ -435,8 +470,10 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
 lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .dependsOn(
     actorTyped,
+    streamTyped,
+    remote,
     persistence % "compile->compile;test->test",
-    persistenceQuery % "test",
+    persistenceQuery,
     actorTestkitTyped % "test->test",
     clusterTyped % "test->test",
     actorTestkitTyped % "test->test",
@@ -444,6 +481,9 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .settings(javacOptions += "-parameters") // for Jackson
   .settings(Dependencies.persistenceShared)
   .settings(AutomaticModuleName.settings("akka.persistence.typed"))
+  .settings(Protobuf.settings)
+  // To be able to import ContainerFormats.proto
+  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
   .settings(OSGi.persistenceTyped)
 
 lazy val clusterTyped = akkaModule("akka-cluster-typed")
@@ -473,7 +513,7 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     clusterSharding % "compile->compile;compile->CompileJdk9;multi-jvm->multi-jvm",
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
-    persistenceTyped % "test->test",
+    persistenceTyped % "optional->compile;test->test",
     persistenceTestkit % "test->test",
     remote % "compile->CompileJdk9;test->test",
     remoteTests % "test->test",
@@ -519,6 +559,17 @@ lazy val coordination = akkaModule("akka-coordination")
   .settings(Dependencies.coordination)
   .settings(AutomaticModuleName.settings("akka.coordination"))
   .settings(OSGi.coordination)
+
+lazy val billOfMaterials = Project("akka-bill-of-materials", file("akka-bill-of-materials"))
+  .enablePlugins(BillOfMaterialsPlugin)
+  .disablePlugins(MimaPlugin, AkkaDisciplinePlugin)
+  // buildSettings and defaultSettings configure organization name, licenses, etc...
+  .settings(AkkaBuild.buildSettings)
+  .settings(AkkaBuild.defaultSettings)
+  .settings(
+    name := "akka-bom",
+    bomIncludeProjects := userProjects,
+    description := s"${description.value} (depending on Scala ${CrossVersion.binaryScalaVersion(scalaVersion.value)})")
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))

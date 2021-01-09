@@ -18,9 +18,6 @@ import org.scalatestplus.junit.JUnitSuite;
 
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertFalse;
 
 @SuppressWarnings("unused")
 public class DnsDiscoveryDocTest extends JUnitSuite {
@@ -29,7 +26,7 @@ public class DnsDiscoveryDocTest extends JUnitSuite {
 
   @BeforeClass
   public static void setup() {
-    system = ActorSystem.create("LeaseDocTest", DnsDiscoveryDocSpec.config());
+    system = ActorSystem.create("DnsDiscoveryDocTest", DnsDiscoveryDocSpec.config());
   }
 
   @AfterClass
@@ -47,8 +44,5 @@ public class DnsDiscoveryDocTest extends JUnitSuite {
     CompletionStage<ServiceDiscovery.Resolved> result =
         discovery.lookup("akka.io", Duration.ofMillis(500));
     // #lookup-dns
-    ServiceDiscovery.Resolved resolved =
-        result.toCompletableFuture().get(500, TimeUnit.MILLISECONDS);
-    assertFalse(resolved.getAddresses().isEmpty());
   }
 }

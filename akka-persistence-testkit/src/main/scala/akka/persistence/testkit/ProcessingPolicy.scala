@@ -6,6 +6,8 @@ package akka.persistence.testkit
 
 import akka.annotation.{ ApiMayChange, InternalApi }
 
+import scala.util.control.NoStackTrace
+
 /**
  * Policies allow to emulate behavior of the storage (failures and rejections).
  *
@@ -150,7 +152,7 @@ object ExpectedRejection extends ExpectedRejection {
 
 }
 
-sealed abstract class ExpectedFailure extends Throwable
+sealed abstract class ExpectedFailure extends Throwable with NoStackTrace
 
 object ExpectedFailure extends ExpectedFailure {
 

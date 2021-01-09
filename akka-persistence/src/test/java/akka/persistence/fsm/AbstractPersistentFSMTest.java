@@ -19,11 +19,8 @@ import java.util.List;
 import java.util.UUID;
 import java.time.Duration;
 
-import akka.persistence.fsm.PersistentFSM.CurrentState;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
-
-import static akka.persistence.fsm.PersistentFSM.FSMState;
 
 import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.UserState;
 import static akka.persistence.fsm.AbstractPersistentFSMTest.WebStoreCustomerFSM.ShoppingCart;
@@ -43,6 +40,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+@Deprecated
 public class AbstractPersistentFSMTest extends JUnitSuite {
   private static Option<String> none = Option.none();
 
@@ -83,7 +81,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
         fsmRef.tell(GetCurrentCart.INSTANCE, getRef());
         fsmRef.tell(Leave.INSTANCE, getRef());
 
-        CurrentState currentState =
+        PersistentFSM.CurrentState currentState =
             expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
         assertEquals(currentState.state(), UserState.LOOKING_AROUND);
 
@@ -129,7 +127,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
 
         fsmRef.tell(new AddItem(shirt), getRef());
 
-        CurrentState currentState =
+        PersistentFSM.CurrentState currentState =
             expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
         assertEquals(currentState.state(), UserState.LOOKING_AROUND);
 
@@ -171,7 +169,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
         fsmRef.tell(new AddItem(shoes), getRef());
         fsmRef.tell(GetCurrentCart.INSTANCE, getRef());
 
-        CurrentState currentState =
+        PersistentFSM.CurrentState currentState =
             expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
         assertEquals(currentState.state(), UserState.LOOKING_AROUND);
 
@@ -247,7 +245,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
         fsmRef.tell(Buy.INSTANCE, getRef());
         fsmRef.tell(Leave.INSTANCE, getRef());
 
-        CurrentState currentState =
+        PersistentFSM.CurrentState currentState =
             expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
         assertEquals(currentState.state(), UserState.LOOKING_AROUND);
 
@@ -287,7 +285,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
         fsmRef.tell(new AddItem(coat), getRef());
         fsmRef.tell(Leave.INSTANCE, getRef());
 
-        CurrentState currentState =
+        PersistentFSM.CurrentState currentState =
             expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
         assertEquals(currentState.state(), UserState.LOOKING_AROUND);
 
@@ -316,7 +314,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
 
         fsmRef.tell(new AddItem(shirt), getRef());
 
-        CurrentState currentState =
+        PersistentFSM.CurrentState currentState =
             expectMsgClass(akka.persistence.fsm.PersistentFSM.CurrentState.class);
         assertEquals(currentState.state(), UserState.LOOKING_AROUND);
 
@@ -665,7 +663,7 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
     // #customer-apply-event
   }
 
-  enum PFSMState implements FSMState {
+  enum PFSMState implements PersistentFSM.FSMState {
     STARTED;
 
     @Override

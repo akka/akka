@@ -39,7 +39,7 @@ object RestartFlow {
    * messages. A termination signal from either end of the wrapped [[Flow]] will cause the other end to be terminated,
    * and any in transit messages will be lost. During backoff, this [[Flow]] will backpressure.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -49,16 +49,12 @@ object RestartFlow {
    *   In order to skip this additional delay pass in `0`.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
+  @Deprecated
+  @deprecated("Use the overloaded method which accepts akka.stream.RestartSettings instead.", since = "2.6.10")
   def withBackoff[In, Out](minBackoff: FiniteDuration, maxBackoff: FiniteDuration, randomFactor: Double)(
       flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
-    Flow.fromGraph(
-      new RestartWithBackoffFlow(
-        flowFactory,
-        minBackoff,
-        maxBackoff,
-        randomFactor,
-        onlyOnFailures = false,
-        Int.MaxValue))
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor)
+    withBackoff(settings)(flowFactory)
   }
 
   /**
@@ -74,7 +70,7 @@ object RestartFlow {
    * messages. A termination signal from either end of the wrapped [[Flow]] will cause the other end to be terminated,
    * and any in transit messages will be lost. During backoff, this [[Flow]] will backpressure.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated
@@ -86,19 +82,73 @@ object RestartFlow {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
+  @Deprecated
+  @deprecated("Use the overloaded method which accepts akka.stream.RestartSettings instead.", since = "2.6.10")
   def withBackoff[In, Out](
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
       randomFactor: Double,
       maxRestarts: Int)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
-    Flow.fromGraph(
-      new RestartWithBackoffFlow(
-        flowFactory,
-        minBackoff,
-        maxBackoff,
-        randomFactor,
-        onlyOnFailures = false,
-        maxRestarts))
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts, minBackoff)
+    withBackoff(settings)(flowFactory)
+  }
+
+  /**
+   * Wrap the given [[Flow]] with a [[Flow]] that will restart it when it fails or complete using an exponential
+   * backoff.
+   *
+   * This [[Flow]] will not cancel, complete or emit a failure, until the opposite end of it has been cancelled or
+   * completed. Any termination by the [[Flow]] before that time will be handled by restarting it as long as maxRestarts
+   * is not reached. Any termination signals sent to this [[Flow]] however will terminate the wrapped [[Flow]], if it's
+   * running, and then the [[Flow]] will be allowed to terminate without being restarted.
+   *
+   * The restart process is inherently lossy, since there is no coordination between cancelling and the sending of
+   * messages. A termination signal from either end of the wrapped [[Flow]] will cause the other end to be terminated,
+   * and any in transit messages will be lost. During backoff, this [[Flow]] will backpressure.
+   *
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
+   *
+   * @param settings [[RestartSettings]] defining restart configuration
+   * @param flowFactory A factory for producing the [[Flow]] to wrap.
+   */
+  def withBackoff[In, Out](settings: RestartSettings)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] =
+    Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, settings, onlyOnFailures = false))
+
+  /**
+   * Wrap the given [[Flow]] with a [[Flow]] that will restart it when it fails using an exponential
+   * backoff. Notice that this [[Flow]] will not restart on completion of the wrapped flow.
+   *
+   * This [[Flow]] will not emit any failure
+   * The failures by the wrapped [[Flow]] will be handled by
+   * restarting the wrapping [[Flow]] as long as maxRestarts is not reached.
+   * Any termination signals sent to this [[Flow]] however will terminate the wrapped [[Flow]], if it's
+   * running, and then the [[Flow]] will be allowed to terminate without being restarted.
+   *
+   * The restart process is inherently lossy, since there is no coordination between cancelling and the sending of
+   * messages. A termination signal from either end of the wrapped [[Flow]] will cause the other end to be terminated,
+   * and any in transit messages will be lost. During backoff, this [[Flow]] will backpressure.
+   *
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
+   *
+   * @param minBackoff minimum (initial) duration until the child actor will
+   *   started again, if it is terminated
+   * @param maxBackoff the exponential back-off is capped to this duration
+   * @param randomFactor after calculation of the exponential back-off an additional
+   *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
+   *   In order to skip this additional delay pass in `0`.
+   * @param maxRestarts the amount of restarts is capped to this amount within a time frame of minBackoff.
+   *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
+   * @param flowFactory A factory for producing the [[Flow]] to wrap.
+   */
+  @Deprecated
+  @deprecated("Use the overloaded method which accepts akka.stream.RestartSettings instead.", since = "2.6.10")
+  def onFailuresWithBackoff[In, Out](
+      minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration,
+      randomFactor: Double,
+      maxRestarts: Int)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
+    val settings = RestartSettings(minBackoff, maxBackoff, randomFactor).withMaxRestarts(maxRestarts, minBackoff)
+    onFailuresWithBackoff(settings)(flowFactory)
   }
 
   /**
@@ -115,36 +165,21 @@ object RestartFlow {
    * messages. A termination signal from either end of the wrapped [[Flow]] will cause the other end to be terminated,
    * and any in transit messages will be lost. During backoff, this [[Flow]] will backpressure.
    *
-   * This uses the same exponential backoff algorithm as [[akka.pattern.Backoff]].
+   * This uses the same exponential backoff algorithm as [[akka.pattern.BackoffOpts]].
    *
-   * @param minBackoff minimum (initial) duration until the child actor will
-   *   started again, if it is terminated
-   * @param maxBackoff the exponential back-off is capped to this duration
-   * @param randomFactor after calculation of the exponential back-off an additional
-   *   random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
-   *   In order to skip this additional delay pass in `0`.
-   * @param maxRestarts the amount of restarts is capped to this amount within a time frame of minBackoff.
-   *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
+   * @param settings [[RestartSettings]] defining restart configuration
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  def onFailuresWithBackoff[In, Out](
-      minBackoff: FiniteDuration,
-      maxBackoff: FiniteDuration,
-      randomFactor: Double,
-      maxRestarts: Int)(flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] = {
-    Flow.fromGraph(
-      new RestartWithBackoffFlow(flowFactory, minBackoff, maxBackoff, randomFactor, onlyOnFailures = true, maxRestarts))
-  }
+  def onFailuresWithBackoff[In, Out](settings: RestartSettings)(
+      flowFactory: () => Flow[In, Out, _]): Flow[In, Out, NotUsed] =
+    Flow.fromGraph(new RestartWithBackoffFlow(flowFactory, settings, onlyOnFailures = true))
 
 }
 
 private final class RestartWithBackoffFlow[In, Out](
     flowFactory: () => Flow[In, Out, _],
-    minBackoff: FiniteDuration,
-    maxBackoff: FiniteDuration,
-    randomFactor: Double,
-    onlyOnFailures: Boolean,
-    maxRestarts: Int)
+    settings: RestartSettings,
+    onlyOnFailures: Boolean)
     extends GraphStage[FlowShape[In, Out]] { self =>
 
   val in = Inlet[In]("RestartWithBackoffFlow.in")
@@ -153,15 +188,7 @@ private final class RestartWithBackoffFlow[In, Out](
   override def shape = FlowShape(in, out)
 
   override def createLogic(inheritedAttributes: Attributes) =
-    new RestartWithBackoffLogic(
-      "Flow",
-      shape,
-      inheritedAttributes,
-      minBackoff,
-      maxBackoff,
-      randomFactor,
-      onlyOnFailures,
-      maxRestarts) {
+    new RestartWithBackoffLogic("Flow", shape, inheritedAttributes, settings, onlyOnFailures) {
       val delay = inheritedAttributes.get[Delay](Delay(50.millis)).duration
 
       var activeOutIn: Option[(SubSourceOutlet[In], SubSinkInlet[Out])] = None
@@ -218,14 +245,12 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
     name: String,
     shape: S,
     inheritedAttributes: Attributes,
-    minBackoff: FiniteDuration,
-    maxBackoff: FiniteDuration,
-    randomFactor: Double,
-    onlyOnFailures: Boolean,
-    maxRestarts: Int)
+    settings: RestartSettings,
+    onlyOnFailures: Boolean)
     extends TimerGraphStageLogicWithLogging(shape) {
+  import settings._
   var restartCount = 0
-  var resetDeadline = minBackoff.fromNow
+  var resetDeadline = maxRestartsWithin.fromNow
 
   // This is effectively only used for flows, if either the main inlet or outlet of this stage finishes, then we
   // don't want to restart the sub inlet when it finishes, we just finish normally.
@@ -335,9 +360,9 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   }
 
   protected final def maxRestartsReached(): Boolean = {
-    // Check if the last start attempt was more than the minimum backoff
+    // Check if the last start attempt was more than the reset deadline
     if (resetDeadline.isOverdue()) {
-      log.debug("Last restart attempt was more than {} ago, resetting restart count", minBackoff)
+      log.debug("Last restart attempt was more than {} ago, resetting restart count", maxRestartsWithin)
       restartCount = 0
     }
     restartCount == maxRestarts
@@ -356,7 +381,7 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   // Invoked when the backoff timer ticks
   override protected def onTimer(timerKey: Any) = {
     startGraph()
-    resetDeadline = minBackoff.fromNow
+    resetDeadline = maxRestartsWithin.fromNow
   }
 
   // When the stage starts, start the source

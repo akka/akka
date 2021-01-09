@@ -164,11 +164,20 @@ when using polymorphic types.
 
 ### ADT with trait and case object
 
-In Scala it's common to use a sealed trait and case objects to represent enums. If the values are case classes
+It's common in Scala to use a sealed trait and case objects to represent enums. If the values are case classes
 the `@JsonSubTypes` annotation as described above works, but if the values are case objects it will not.
 The annotation requires a `Class` and there is no way to define that in an annotation for a `case object`.
 
-This can be solved by implementing a custom serialization for the enums. Annotate the `trait` with
+The easiest workaround is to define the case objects as case class without any field. 
+
+Alternatively, you can define an intermediate trait for the case object and a custom deserializer for it. The example below builds on the previous `Animal` sample by adding a fictitious, single instance, new animal, an `Unicorn`. 
+
+Scala
+:  @@snip [SerializationDocSpec.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #polymorphism-case-object }
+
+The case object `Unicorn` can't be used in a `@JsonSubTypes` annotation, but its trait can. When serializing the case object we need to know which type tag to use, hence the `@JsonTypeName` annotation on the object. When deserializing, Jackson will only know about the trait variant therefore we need a custom deserializer that returns the case object. 
+
+On the other hand, if the ADT only has case objects, you can solve it by implementing a custom serialization for the enums. Annotate the `trait` with
 `@JsonSerialize` and `@JsonDeserialize` and implement the serialization with `StdSerializer` and
 `StdDeserializer`.
 
@@ -205,7 +214,7 @@ We will look at a few scenarios of how the classes may be evolved.
 Removing a field can be done without any migration code. The Jackson serializer will ignore properties that does
 not exist in the class.
 
-### Add Field
+### Add Optional Field
 
 Adding an optional field can be done without any migration code. The default value will be @scala[None]@java[`Optional.empty`].
 
@@ -225,6 +234,8 @@ Scala
 
 Java
 :  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/ItemAdded.java) { #add-optional }
+
+### Add Mandatory Field
 
 Let's say we want to have a mandatory `discount` property without default value instead:
 
@@ -361,6 +372,63 @@ binding, but it should still be possible to deserialize old data with Jackson.
 
 It's a list of class names or prefixes of class names.
 
+## Rolling updates
+
+When doing a rolling update, for a period of time there are two different binaries running in production. If the schema
+has evolved requiring a new schema version, the data serialized by the new binary will be unreadable from the old 
+binary. This situation causes transient errors on the processes running the old binary. This service degradation is 
+usually fine since the rolling update will eventually complete and all old processes will be replaced with the new 
+binary. To avoid this service degradation you can also use forward-one support in your schema evolutions.
+
+To complete a no-degradation rolling update, you need to make two deployments. First, deploy a new binary which can read 
+the new schema but still uses the old schema. Then, deploy a second binary which serializes data using the new schema
+and drops the downcasting code from the migration.  
+
+Let's take, for example, the case above where we [renamed a field](#rename-field).
+
+The starting schema is:
+
+Scala
+:  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v1/ItemAdded.scala) { #add-optional }
+
+Java
+:  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v1/ItemAdded.java) { #add-optional }
+
+In a first deployment, we still don't make any change to the event class:
+
+Scala
+:  @@snip [ItemAdded.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v1/ItemAdded.scala) { #forward-one-rename }
+
+Java
+:  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v1/ItemAdded.java) { #forward-one-rename }
+
+but we introduce a migration that can read the newer schema which is versioned `2`:
+
+Scala
+:  @@snip [ItemAddedMigration.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v1withv2/ItemAddedMigration.scala) { #forward-one-rename }
+
+Java
+:  @@snip [ItemAddedMigration.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v1withv2/ItemAddedMigration.java) { #forward-one-rename }
+
+Once all running nodes have the new migration code which can read version `2` of `ItemAdded` we can proceed with the 
+second step. So, we deploy the updated event:
+
+Scala
+:  @@snip [ItemAdded.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2c/ItemAdded.scala) { #rename }
+
+Java
+:  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2c/ItemAdded.java) { #rename }
+
+and the final migration code which no longer needs forward-compatibility code:
+
+Scala
+:  @@snip [ItemAddedMigration.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2c/ItemAddedMigration.scala) { #rename }
+
+Java
+:  @@snip [ItemAddedMigration.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2c/ItemAddedMigration.java) { #rename }
+
+
+
 ## Jackson Modules
 
 The following Jackson modules are enabled by default:
@@ -389,6 +457,20 @@ payloads that were compressed when serialized, e.g. if this configuration is cha
 For the `jackson-cbor` and custom bindings other than `jackson-json` compression is by default disabled,
 but can be enabled in the same way as the configuration shown above but replacing `jackson-json` with
 the binding name (for example `jackson-cbor`).
+
+## Using Akka Serialization for embedded types
+
+For types that already have an Akka Serializer defined that are embedded in types serialized with Jackson the @apidoc[AkkaSerializationSerializer] and
+@apidoc[AkkaSerializationDeserializer] can be used to Akka Serialization for individual fields. 
+
+The serializer/deserializer are not enabled automatically. The `@JsonSerialize` and `@JsonDeserialize` annotation needs to be added
+to the fields containing the types to be serialized with Akka Serialization.
+
+The type will be embedded as an object with the fields:
+
+* serId - the serializer id
+* serManifest - the manifest for the type
+* payload - base64 encoded bytes 
 
 ## Additional configuration
 

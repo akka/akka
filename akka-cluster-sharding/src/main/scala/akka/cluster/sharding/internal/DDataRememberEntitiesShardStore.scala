@@ -95,7 +95,7 @@ private[akka] final class DDataRememberEntitiesShardStore(
 
   if (log.isDebugEnabled) {
     log.debug(
-      "Starting up DDataRememberEntitiesStore, write timeout: [{}], read timeout: [{}], majority min cap: [{}]",
+      "Starting up DDataRememberEntitiesStore, read timeout: [{}], write timeout: [{}], majority min cap: [{}]",
       settings.tuningParameters.waitingForStateTimeout.pretty,
       settings.tuningParameters.updatingStateTimeout.pretty,
       majorityMinCap)

@@ -160,7 +160,7 @@ object SupervisorHierarchySpec {
 
     def suspendCount = context.asInstanceOf[ActorCell].mailbox.suspendCount
 
-    override def preStart: Unit = {
+    override def preStart(): Unit = {
       log :+= Event("started", identityHashCode(this))
       listener ! Ready(self)
       val s = size - 1 // subtract myself
@@ -258,7 +258,7 @@ object SupervisorHierarchySpec {
       }
     }
 
-    override def postStop: Unit = {
+    override def postStop(): Unit = {
       if (failed || suspended) {
         listener ! ErrorLog("not resumed (" + failed + ", " + suspended + ")", log)
         val state = stateCache.get(self)
@@ -456,7 +456,7 @@ object SupervisorHierarchySpec {
       throw ActorKilledException("I said I wanted to DIE, dammit!")
     }
 
-    override def postStop: Unit = {
+    override def postStop(): Unit = {
       testActor ! "stressTestStopped"
     }
 

@@ -151,7 +151,7 @@ private[remote] class Association(
 
   override def settings = transport.settings
   private def advancedSettings = transport.settings.Advanced
-  private val deathWatchNotificationFlushEnabled = advancedSettings.DeathWatchNotificationFlushTimeout > Duration.Zero
+  private val deathWatchNotificationFlushEnabled = advancedSettings.DeathWatchNotificationFlushTimeout > Duration.Zero && transport.provider.settings.HasCluster
 
   private val restartCounter =
     new RestartCounter(advancedSettings.OutboundMaxRestarts, advancedSettings.OutboundRestartTimeout)
@@ -403,12 +403,14 @@ private[remote] class Association(
         message match {
           case d: DeathWatchNotification if deathWatchNotificationFlushEnabled && shouldSendDeathWatchNotification(d) =>
             val flushingPromise = Promise[Done]()
+            log.debug("Delaying death watch notification until flush has been sent. {}", d)
             transport.system.systemActorOf(
               FlushBeforeDeathWatchNotification
                 .props(flushingPromise, settings.Advanced.DeathWatchNotificationFlushTimeout, this)
                 .withDispatcher(Dispatchers.InternalDispatcherId),
               FlushBeforeDeathWatchNotification.nextName())
             flushingPromise.future.onComplete { _ =>
+              log.debug("Sending death watch notification as flush is complete. {}", d)
               sendSystemMessage(outboundEnvelope)
             }(materializer.executionContext)
           case _: SystemMessage =>
@@ -487,8 +489,10 @@ private[remote] class Association(
     }
   }
 
-  def sendTerminationHint(replyTo: ActorRef): Int =
+  def sendTerminationHint(replyTo: ActorRef): Int = {
+    log.debug("Sending ActorSystemTerminating to all queues")
     sendToAllQueues(ActorSystemTerminating(localAddress), replyTo, excludeControlQueue = false)
+  }
 
   def sendFlush(replyTo: ActorRef, excludeControlQueue: Boolean): Int =
     sendToAllQueues(Flush, replyTo, excludeControlQueue)
@@ -563,7 +567,7 @@ private[remote] class Association(
           case Some(peer) =>
             log.info(
               RemoteLogMarker.quarantine(remoteAddress, Some(u)),
-              "Quarantine of [{}] ignored due to non-matching UID, quarantine requested for [{}] but current is [{}]. {}",
+              "Quarantine of [{}] ignored due to non-matching UID, quarantine requested for [{}] but current is [{}]. Reason: {}",
               remoteAddress,
               u,
               peer.uid,
@@ -572,15 +576,16 @@ private[remote] class Association(
           case None =>
             log.info(
               RemoteLogMarker.quarantine(remoteAddress, Some(u)),
-              "Quarantine of [{}] ignored because handshake not completed, quarantine request was for old incarnation. {}",
+              "Quarantine of [{}] ignored because handshake not completed, quarantine request was for old incarnation. Reason: {}",
               remoteAddress,
               reason)
         }
       case None =>
         log.warning(
           RemoteLogMarker.quarantine(remoteAddress, None),
-          "Quarantine of [{}] ignored because unknown UID",
-          remoteAddress)
+          "Quarantine of [{}] ignored because unknown UID. Reason: {}",
+          remoteAddress,
+          reason)
     }
 
   }
@@ -661,6 +666,15 @@ private[remote] class Association(
             // If idle longer than quarantine-idle-outbound-after and the low frequency HandshakeReq
             // doesn't get through it will be quarantined to cleanup lingering associations to crashed systems.
             quarantine(s"Idle longer than quarantine-idle-outbound-after [${QuarantineIdleOutboundAfter.pretty}]")
+            associationState.uniqueRemoteAddressState() match {
+              case AssociationState.UidQuarantined => // quarantined as expected
+              case AssociationState.UidKnown       => // must be new uid, keep as is
+              case AssociationState.UidUnknown =>
+                val newLastUsedDurationNanos = System.nanoTime() - associationState.lastUsedTimestamp.get
+                // quarantine ignored due to unknown UID, have to stop this task anyway
+                if (newLastUsedDurationNanos >= QuarantineIdleOutboundAfter.toNanos)
+                  abortQuarantined() // quarantine ignored due to unknown UID, have to stop this task anyway
+            }
           } else if (lastUsedDurationNanos >= StopIdleOutboundAfter.toNanos) {
             streamMatValues.get.foreach {
               case (queueIndex, OutboundStreamMatValues(streamKillSwitch, _, stopping)) =>
@@ -1161,10 +1175,14 @@ private[remote] class AssociationRegistry(createAssociation: Address => Associat
     val remove = currentMap.foldLeft(Map.empty[Address, Association]) {
       case (acc, (address, association)) =>
         val state = association.associationState
-        if (state.isQuarantined() && ((now - state.lastUsedTimestamp.get) >= afterNanos))
-          acc.updated(address, association)
-        else
+        if ((now - state.lastUsedTimestamp.get) >= afterNanos) {
+          state.uniqueRemoteAddressState() match {
+            case AssociationState.UidQuarantined | AssociationState.UidUnknown => acc.updated(address, association)
+            case AssociationState.UidKnown                                     => acc
+          }
+        } else {
           acc
+        }
     }
     if (remove.nonEmpty) {
       val newMap = currentMap -- remove.keysIterator
@@ -1179,12 +1197,18 @@ private[remote] class AssociationRegistry(createAssociation: Address => Associat
     val now = System.nanoTime()
     val afterNanos = after.toNanos
     val currentMap = associationsByUid.get
-    var remove = Map.empty[Long, Association]
-    currentMap.keysIterator.foreach { uid =>
-      val association = currentMap.get(uid).get
-      val state = association.associationState
-      if (state.isQuarantined() && ((now - state.lastUsedTimestamp.get) >= afterNanos))
-        remove = remove.updated(uid, association)
+    val remove = currentMap.keysIterator.foldLeft(Map.empty[Long, Association]) {
+      case (acc, uid) =>
+        val association = currentMap.get(uid).get
+        val state = association.associationState
+        if ((now - state.lastUsedTimestamp.get) >= afterNanos) {
+          state.uniqueRemoteAddressState() match {
+            case AssociationState.UidQuarantined | AssociationState.UidUnknown => acc.updated(uid, association)
+            case AssociationState.UidKnown                                     => acc
+          }
+        } else {
+          acc
+        }
     }
     if (remove.nonEmpty) {
       val newMap = remove.keysIterator.foldLeft(currentMap)((acc, uid) => acc.remove(uid))

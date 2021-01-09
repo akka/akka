@@ -65,15 +65,14 @@ object OSGi {
   val protobuf = exports(Seq("akka.protobuf.*"))
 
   val protobufV3 = osgiSettings ++ Seq(
-    OsgiKeys.importPackage := Seq(
-      "!sun.misc",
-      scalaJava8CompatImport(),
-      scalaVersion(scalaImport).value,
-      configImport(),
-      "*"),
-    OsgiKeys.exportPackage := Seq("akka.protobufv3.internal.*"),
-    OsgiKeys.privatePackage := Seq("google.protobuf.*")
-  )
+      OsgiKeys.importPackage := Seq(
+          "!sun.misc",
+          scalaJava8CompatImport(),
+          scalaVersion(scalaImport).value,
+          configImport(),
+          "*"),
+      OsgiKeys.exportPackage := Seq("akka.protobufv3.internal.*"),
+      OsgiKeys.privatePackage := Seq("google.protobuf.*"))
 
   val jackson = exports(Seq("akka.serialization.jackson.*"))
 

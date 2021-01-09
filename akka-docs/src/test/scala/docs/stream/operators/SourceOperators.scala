@@ -4,7 +4,6 @@
 
 package docs.stream.operators
 
-import akka.Done
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 
@@ -12,7 +11,7 @@ object SourceOperators {
 
   implicit val system: ActorSystem = ???
 
-  def fromFuture = {
+  def fromFuture(): Unit = {
     //#sourceFromFuture
 
     import akka.actor.ActorSystem
@@ -35,7 +34,6 @@ object SourceOperators {
     import akka.stream.OverflowStrategy
     import akka.stream.CompletionStrategy
     import akka.stream.scaladsl._
-    import scala.util.Failure
 
     val source: Source[Any, ActorRef] = Source.actorRef(
       completionMatcher = {

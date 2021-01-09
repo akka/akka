@@ -24,7 +24,7 @@ object MemberWeaklyUpSpec extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
         akka.remote.retry-gate-closed-for = 3 s
-        akka.cluster.allow-weakly-up-members = on
+        akka.cluster.allow-weakly-up-members = 3 s
         """)).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)

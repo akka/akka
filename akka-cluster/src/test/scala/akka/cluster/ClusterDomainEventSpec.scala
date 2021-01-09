@@ -5,13 +5,12 @@
 package akka.cluster
 
 import scala.collection.immutable.SortedSet
-
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
 import akka.actor.Address
+import org.scalatest.BeforeAndAfterAll
 
-class ClusterDomainEventSpec extends AnyWordSpec with Matchers {
+class ClusterDomainEventSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   import ClusterEvent._
   import MemberStatus._
@@ -36,6 +35,15 @@ class ClusterDomainEventSpec extends AnyWordSpec with Matchers {
   val eUp = TestMember(Address("akka", "sys", "e", 2552), Up, eRoles)
   val eDown = TestMember(Address("akka", "sys", "e", 2552), Down, eRoles)
   val selfDummyAddress = UniqueAddress(Address("akka", "sys", "selfDummy", 2552), 17L)
+
+  private val originalClusterAssert = sys.props.get("akka.cluster.assert").getOrElse("false")
+  override protected def beforeAll(): Unit = {
+    System.setProperty("akka.cluster.assert", "on")
+  }
+
+  override protected def afterAll(): Unit = {
+    System.setProperty("akka.cluster.assert", originalClusterAssert)
+  }
 
   private[cluster] def converge(gossip: Gossip): (Gossip, Set[UniqueAddress]) =
     gossip.members.foldLeft((gossip, Set.empty[UniqueAddress])) {
@@ -298,6 +306,28 @@ class ClusterDomainEventSpec extends AnyWordSpec with Matchers {
       diffUnreachable(state(g1), state(g2)) should ===(Seq.empty)
       diffSeen(state(g1), state(g2)) should ===(Seq(SeenChanged(convergence = true, seenBy = s2.map(_.address))))
       diffLeader(state(g1), state(g2)) should ===(Seq(LeaderChanged(Some(bUp.address))))
+    }
+
+    "be produced for tombstone changes" in {
+      val s1 = state(Gossip(members = SortedSet(aUp)))
+      val s2 = state(
+        Gossip(members = SortedSet(aUp)).copy(tombstones = Map(eDown.uniqueAddress -> System.currentTimeMillis())))
+
+      diffTombstones(s1, s2) should ===(Seq(MemberTombstonesChanged(Set(eDown.uniqueAddress))))
+    }
+
+    "be produced for removed and rejoined members" in {
+      val up = TestMember(bUp.address, Up, bRoles)
+      val removed = TestMember(up.address, Removed, bRoles)
+      val restarted =
+        TestMember.withUniqueAddress(UniqueAddress(up.address, 2L), Up, bRoles, ClusterSettings.DefaultDataCenter)
+      val g1 = Gossip(members = SortedSet(aUp, up))
+      val g2 = g1
+        .remove(up.uniqueAddress, System.currentTimeMillis()) // adds tombstone
+        .copy(members = SortedSet(aUp, restarted))
+        .merge(g1)
+
+      diffMemberEvents(state(g1), state(g2)) should ===(Seq(MemberRemoved(removed, Up), MemberUp(restarted)))
     }
 
     "be produced for role leader changes in the same data center" in {

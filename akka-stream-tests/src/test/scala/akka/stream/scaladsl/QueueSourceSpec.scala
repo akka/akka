@@ -127,7 +127,7 @@ class QueueSourceSpec extends StreamSpec {
       val queue = Source.queue(0, OverflowStrategy.dropHead).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription()
 
-      queue.watchCompletion.pipeTo(testActor)
+      queue.watchCompletion().pipeTo(testActor)
       queue.offer(1).pipeTo(testActor)
       expectNoMessage(pause)
 
@@ -138,7 +138,7 @@ class QueueSourceSpec extends StreamSpec {
 
     "fail future immediately when stream is already cancelled" in assertAllStagesStopped {
       val queue = Source.queue[Int](0, OverflowStrategy.dropHead).to(Sink.cancelled).run()
-      queue.watchCompletion.futureValue
+      queue.watchCompletion().futureValue
       queue.offer(1).failed.futureValue shouldBe a[StreamDetachedException]
     }
 
@@ -282,7 +282,7 @@ class QueueSourceSpec extends StreamSpec {
       sourceQueue1.offer("hello")
       mat1subscriber.expectNext("hello")
       mat1subscriber.cancel()
-      sourceQueue1.watchCompletion.pipeTo(testActor)
+      sourceQueue1.watchCompletion().pipeTo(testActor)
       expectMsg(Done)
 
       sourceQueue2.watchCompletion().isCompleted should ===(false)

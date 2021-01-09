@@ -385,7 +385,7 @@ private[stream] object ConnectionSourceStage {
         cause match {
           case _: SubscriptionWithCancelException.NonFailureCancellation =>
             log.debug(
-              "Not aborting connection from {}:{} because downstream cancelled stream without failure",
+              "Closing connection from {}:{} because downstream cancelled stream without failure",
               remoteAddress.getHostString,
               remoteAddress.getPort)
             closeConnectionDownstreamFinished()

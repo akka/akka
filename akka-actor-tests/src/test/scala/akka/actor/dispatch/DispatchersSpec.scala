@@ -38,6 +38,8 @@ object DispatchersSpec {
       mymailbox {
          mailbox-type = "akka.actor.dispatch.DispatchersSpec$OneShotMailboxType"
       }
+      my-aliased-dispatcher = myapp.mydispatcher
+      missing-aliased-dispatcher = myapp.missing-dispatcher
     }
     akka.actor.deployment {
       /echo1 {
@@ -181,6 +183,38 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
       val d1 = lookup("myapp.mydispatcher")
       val d2 = lookup("myapp.mydispatcher")
       d1 should ===(d2)
+    }
+
+    "provide lookup of aliased dispatchers" in {
+      val d1 = lookup("myapp.mydispatcher")
+      val d2 = lookup("myapp.my-aliased-dispatcher")
+      d1 should ===(d2)
+    }
+
+    "complain about missing aliased dispatchers" in {
+      intercept[ConfigurationException] {
+        lookup("myapp.missing-aliased-dispatcher")
+      }
+    }
+
+    "get config for dispatcher" in {
+      val config = Dispatchers.getConfig(settings.config, "myapp.mydispatcher")
+      config.getInt("throughput") should ===(17)
+    }
+
+    "get config for aliased dispatcher" in {
+      val config = Dispatchers.getConfig(settings.config, "myapp.my-aliased-dispatcher")
+      config.getInt("throughput") should ===(17)
+    }
+
+    "return empty config for missing dispatcher" in {
+      val config = Dispatchers.getConfig(settings.config, "myapp.missing-dispatcher")
+      config shouldBe empty
+    }
+
+    "return empty config for missing aliased dispatcher" in {
+      val config = Dispatchers.getConfig(settings.config, "myapp.missing-aliased-dispatcher")
+      config shouldBe empty
     }
 
     "include system name and dispatcher id in thread names for fork-join-executor" in {

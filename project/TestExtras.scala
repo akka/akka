@@ -51,14 +51,14 @@ object TestExtras {
         },
 
         checkTestsHaveRun := {
-          require(
-            file("akka-stream-tests/target/test-reports/TEST-akka.stream.scaladsl.FlowPublisherSinkSpec.xml").exists,
-            "The jdk9-only FlowPublisherSinkSpec.scala should be run as part of the build"
-          )
-          require(
-            file("akka-stream-tests/target/test-reports/TEST-akka.stream.javadsl.JavaFlowSupportCompileTest.xml").exists,
-            "The jdk9-only JavaFlowSupportCompileTest.java should be run as part of the build"
-          )
+          def shouldExist(description: String, filename: String): Unit =
+            require(file(filename).exists, s"$description should be run as part of the build")
+
+          List(
+            "The java JavaExtension.java" -> "akka-actor-tests/target/test-reports/TEST-akka.actor.JavaExtension.xml",
+            "The jdk9-only FlowPublisherSinkSpec.scala" -> "akka-stream-tests/target/test-reports/TEST-akka.stream.scaladsl.FlowPublisherSinkSpec.xml",
+            "The jdk9-only JavaFlowSupportCompileTest.java" -> "akka-stream-tests/target/test-reports/TEST-akka.stream.javadsl.JavaFlowSupportCompileTest.xml",
+          ).foreach((shouldExist _).tupled)
         }
       )
     }

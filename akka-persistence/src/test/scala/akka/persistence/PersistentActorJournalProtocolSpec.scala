@@ -78,7 +78,7 @@ akka.persistence.snapshot-store.plugin = "akka.persistence.no-snapshot-store"
 }
 
 object JournalPuppet extends ExtensionId[JournalProbe] with ExtensionIdProvider {
-  override def lookup() = JournalPuppet
+  override def lookup = JournalPuppet
 
   override def createExtension(system: ExtendedActorSystem): JournalProbe =
     new JournalProbe()(system)

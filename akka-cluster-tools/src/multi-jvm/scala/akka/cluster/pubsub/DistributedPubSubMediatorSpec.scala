@@ -195,6 +195,7 @@ class DistributedPubSubMediatorSpec
         expectMsg("hello")
         lastSender should ===(u2)
       }
+      enterBarrier("2-registered")
 
       runOn(second) {
         val u3 = createChatUser("u3")

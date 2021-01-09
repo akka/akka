@@ -54,6 +54,7 @@ import akka.cluster.ddata.Key.KeyId
 import akka.cluster.ddata.Key.KeyR
 import akka.dispatch.Dispatchers
 import akka.event.Logging
+import akka.remote.RARP
 import akka.serialization.SerializationExtension
 import akka.util.ByteString
 import akka.util.Helpers.toRootLowerCase
@@ -82,6 +83,11 @@ object ReplicatorSettings {
       case _               => config.getDuration("pruning-interval", MILLISECONDS).millis
     }
 
+    val logDataSizeExceeding: Option[Int] = {
+      if (toRootLowerCase(config.getString("log-data-size-exceeding")) == "off") None
+      else Some(config.getBytes("log-data-size-exceeding").toInt)
+    }
+
     import akka.util.ccompat.JavaConverters._
     new ReplicatorSettings(
       roles = roleOption(config.getString("role")).toSet,
@@ -97,7 +103,8 @@ object ReplicatorSettings {
       durablePruningMarkerTimeToLive = config.getDuration("durable.pruning-marker-time-to-live", MILLISECONDS).millis,
       deltaCrdtEnabled = config.getBoolean("delta-crdt.enabled"),
       maxDeltaSize = config.getInt("delta-crdt.max-delta-size"),
-      preferOldest = config.getBoolean("prefer-oldest"))
+      preferOldest = config.getBoolean("prefer-oldest"),
+      logDataSizeExceeding = logDataSizeExceeding)
   }
 
   /**
@@ -142,6 +149,7 @@ object ReplicatorSettings {
  *        `*` at the end of a key. All entries can be made durable by including "*"
  *        in the `Set`.
  * @param preferOldest Update and Get operations are sent to oldest nodes first.
+ * @param logDataSizeExceeding Log data size.
  */
 final class ReplicatorSettings(
     val roles: Set[String],
@@ -157,9 +165,45 @@ final class ReplicatorSettings(
     val durablePruningMarkerTimeToLive: FiniteDuration,
     val deltaCrdtEnabled: Boolean,
     val maxDeltaSize: Int,
-    val preferOldest: Boolean) {
+    val preferOldest: Boolean,
+    val logDataSizeExceeding: Option[Int]) {
 
   // for backwards compatibility
+  @deprecated("use full constructor", "2.6.11")
+  def this(
+      roles: Set[String],
+      gossipInterval: FiniteDuration,
+      notifySubscribersInterval: FiniteDuration,
+      maxDeltaElements: Int,
+      dispatcher: String,
+      pruningInterval: FiniteDuration,
+      maxPruningDissemination: FiniteDuration,
+      durableStoreProps: Either[(String, Config), Props],
+      durableKeys: Set[KeyId],
+      pruningMarkerTimeToLive: FiniteDuration,
+      durablePruningMarkerTimeToLive: FiniteDuration,
+      deltaCrdtEnabled: Boolean,
+      maxDeltaSize: Int,
+      preferOldest: Boolean) =
+    this(
+      roles,
+      gossipInterval,
+      notifySubscribersInterval,
+      maxDeltaElements,
+      dispatcher,
+      pruningInterval,
+      maxPruningDissemination,
+      durableStoreProps,
+      durableKeys,
+      pruningMarkerTimeToLive,
+      durablePruningMarkerTimeToLive,
+      deltaCrdtEnabled,
+      maxDeltaSize,
+      preferOldest,
+      logDataSizeExceeding = Some(10 * 1024))
+
+  // for backwards compatibility
+  @deprecated("use full constructor", "2.6.11")
   def this(
       roles: Set[String],
       gossipInterval: FiniteDuration,
@@ -191,6 +235,7 @@ final class ReplicatorSettings(
       preferOldest = false)
 
   // for backwards compatibility
+  @deprecated("use full constructor", "2.6.11")
   def this(
       role: Option[String],
       gossipInterval: FiniteDuration,
@@ -221,6 +266,7 @@ final class ReplicatorSettings(
       maxDeltaSize)
 
   // For backwards compatibility
+  @deprecated("use full constructor", "2.6.11")
   def this(
       role: Option[String],
       gossipInterval: FiniteDuration,
@@ -245,6 +291,7 @@ final class ReplicatorSettings(
       200)
 
   // For backwards compatibility
+  @deprecated("use full constructor", "2.6.11")
   def this(
       role: Option[String],
       gossipInterval: FiniteDuration,
@@ -271,6 +318,7 @@ final class ReplicatorSettings(
       200)
 
   // For backwards compatibility
+  @deprecated("use full constructor", "2.6.11")
   def this(
       role: Option[String],
       gossipInterval: FiniteDuration,
@@ -367,6 +415,9 @@ final class ReplicatorSettings(
   def withPreferOldest(preferOldest: Boolean): ReplicatorSettings =
     copy(preferOldest = preferOldest)
 
+  def withLogDataSizeExceeding(logDataSizeExceeding: Int): ReplicatorSettings =
+    copy(logDataSizeExceeding = Some(logDataSizeExceeding))
+
   private def copy(
       roles: Set[String] = roles,
       gossipInterval: FiniteDuration = gossipInterval,
@@ -381,7 +432,8 @@ final class ReplicatorSettings(
       durablePruningMarkerTimeToLive: FiniteDuration = durablePruningMarkerTimeToLive,
       deltaCrdtEnabled: Boolean = deltaCrdtEnabled,
       maxDeltaSize: Int = maxDeltaSize,
-      preferOldest: Boolean = preferOldest): ReplicatorSettings =
+      preferOldest: Boolean = preferOldest,
+      logDataSizeExceeding: Option[Int] = logDataSizeExceeding): ReplicatorSettings =
     new ReplicatorSettings(
       roles,
       gossipInterval,
@@ -396,7 +448,8 @@ final class ReplicatorSettings(
       durablePruningMarkerTimeToLive,
       deltaCrdtEnabled,
       maxDeltaSize,
-      preferOldest)
+      preferOldest,
+      logDataSizeExceeding)
 }
 
 object Replicator {
@@ -1034,6 +1087,10 @@ object Replicator {
         if (changed) copy(pruning = newRemovedNodePruning)
         else this
       }
+
+      def estimatedSizeWithoutData: Int = {
+        deltaVersions.estimatedSize + pruning.valuesIterator.map(_.estimatedSize + EstimatedSize.UniqueAddress).sum
+      }
     }
 
     val DeletedEnvelope = DataEnvelope(DeletedData)
@@ -1310,6 +1367,16 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   require(
     roles.subsetOf(cluster.selfRoles),
     s"This cluster member [${selfAddress}] doesn't have all the roles [${roles.mkString(", ")}]")
+
+  private val payloadSizeAggregator = {
+    val sizeExceeding = settings.logDataSizeExceeding.getOrElse(Int.MaxValue)
+    val remoteProvider = RARP(context.system).provider
+    val remoteSettings = remoteProvider.remoteSettings
+    val maxFrameSize =
+      if (remoteSettings.Artery.Enabled) remoteSettings.Artery.Advanced.MaximumFrameSize
+      else context.system.settings.config.getBytes("akka.remote.classic.netty.tcp.maximum-frame-size").toInt
+    new PayloadSizeAggregator(log, sizeExceeding, maxFrameSize)
+  }
 
   //Start periodic gossip to random nodes in cluster
   import context.dispatcher
@@ -1823,6 +1890,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         replyTo ! DataDeleted(key, req)
       case _ =>
         setData(key.id, DeletedEnvelope)
+        payloadSizeAggregator.remove(key.id)
         val durable = isDurable(key.id)
         if (isLocalUpdate(consistency)) {
           if (durable)
@@ -1874,7 +1942,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val dig =
       if (subscribers.contains(key) && !changed.contains(key)) {
         val oldDigest = getDigest(key)
-        val dig = digest(newEnvelope)
+        val (dig, payloadSize) = digest(newEnvelope)
+        payloadSizeAggregator.updatePayloadSize(key, payloadSize)
         if (dig != oldDigest)
           changed += key // notify subscribers, later
         dig
@@ -1890,7 +1959,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   def getDigest(key: KeyId): Digest = {
     dataEntries.get(key) match {
       case Some((envelope, LazyDigest)) =>
-        val d = digest(envelope)
+        val (d, size) = digest(envelope)
+        payloadSizeAggregator.updatePayloadSize(key, size)
         dataEntries = dataEntries.updated(key, (envelope, d))
         d
       case Some((_, digest)) => digest
@@ -1898,11 +1968,15 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     }
   }
 
-  def digest(envelope: DataEnvelope): Digest =
-    if (envelope.data == DeletedData) DeletedDigest
+  /**
+   * @return SHA-1 digest of the serialized data, and the size of the serialized data
+   */
+  def digest(envelope: DataEnvelope): (Digest, Int) =
+    if (envelope.data == DeletedData) (DeletedDigest, 0)
     else {
       val bytes = serializer.toBinary(envelope.withoutDeltaVersions)
-      ByteString.fromArray(MessageDigest.getInstance("SHA-1").digest(bytes))
+      val dig = ByteString.fromArray(MessageDigest.getInstance("SHA-1").digest(bytes))
+      (dig, bytes.length)
     }
 
   def getData(key: KeyId): Option[DataEnvelope] = dataEntries.get(key).map { case (envelope, _) => envelope }
@@ -2091,12 +2165,10 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     if (keys.nonEmpty) {
       if (log.isDebugEnabled)
         log.debug("Sending gossip to [{}], containing [{}]", replyTo.path.address, keys.mkString(", "))
-      val g = Gossip(
-        keys.iterator.map(k => k -> getData(k).get).toMap,
-        sendBack = otherDifferentKeys.nonEmpty,
-        fromSystemUid,
-        selfFromSystemUid)
-      replyTo ! g
+      val sendBack = otherDifferentKeys.nonEmpty
+      createGossipMessages(keys, sendBack, fromSystemUid).foreach { g =>
+        replyTo ! g
+      }
     }
     val myMissingKeys = otherKeys.diff(myKeys)
     if (myMissingKeys.nonEmpty) {
@@ -2115,10 +2187,60 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     }
   }
 
+  private def createGossipMessages(
+      keys: immutable.Iterable[KeyId],
+      sendBack: Boolean,
+      fromSystemUid: Option[Long]): Vector[Gossip] = {
+    // The sizes doesn't have to be exact, rather error on too small messages. The serializer is also
+    // compressing the Gossip message.
+    val maxMessageSize = payloadSizeAggregator.maxFrameSize - 128
+
+    var messages = Vector.empty[Gossip]
+    val collectedEntries = Vector.newBuilder[(KeyId, DataEnvelope)]
+    var sum = 0
+
+    def addGossip(): Unit = {
+      val entries = collectedEntries.result().toMap
+      if (entries.nonEmpty)
+        messages :+= Gossip(entries, sendBack, fromSystemUid, selfFromSystemUid)
+    }
+
+    keys.foreach { key =>
+      val keySize = key.length + 4
+      val dataSize = payloadSizeAggregator.getMaxSize(key) match {
+        case 0 =>
+          // trigger payloadSizeAggregator update (LazyDigest)
+          getDigest(key)
+          payloadSizeAggregator.getMaxSize(key)
+        case size => size
+      }
+      val dataEnvelope = getData(key).get
+      val envelopeSize = 100 + dataEnvelope.estimatedSizeWithoutData
+
+      val entrySize = keySize + dataSize + envelopeSize
+      if (sum + entrySize <= maxMessageSize) {
+        collectedEntries += (key -> dataEnvelope)
+        sum += entrySize
+      } else {
+        addGossip()
+        collectedEntries.clear()
+        collectedEntries += (key -> dataEnvelope)
+        sum = entrySize
+      }
+    }
+
+    // add remaining, if any
+    addGossip()
+
+    log.debug("Created [{}] Gossip messages from [{}] data entries.", messages.size, keys.size)
+
+    messages
+  }
+
   def receiveGossip(updatedData: Map[KeyId, DataEnvelope], sendBack: Boolean, fromSystemUid: Option[Long]): Unit = {
     if (log.isDebugEnabled)
       log.debug("Received gossip from [{}], containing [{}].", replyTo.path.address, updatedData.keys.mkString(", "))
-    var replyData = Map.empty[KeyId, DataEnvelope]
+    var replyKeys = Set.empty[KeyId]
     updatedData.foreach {
       case (key, envelope) =>
         val hadData = dataEntries.contains(key)
@@ -2126,12 +2248,15 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         if (sendBack) getData(key) match {
           case Some(d) =>
             if (hadData || d.pruning.nonEmpty)
-              replyData = replyData.updated(key, d)
+              replyKeys += key
           case None =>
         }
     }
-    if (sendBack && replyData.nonEmpty)
-      replyTo ! Gossip(replyData, sendBack = false, fromSystemUid, selfFromSystemUid)
+    if (sendBack && replyKeys.nonEmpty) {
+      createGossipMessages(replyKeys, sendBack = false, fromSystemUid).foreach { g =>
+        replyTo ! g
+      }
+    }
   }
 
   def receiveSubscribe(key: KeyR, subscriber: ActorRef): Unit = {

@@ -12,6 +12,7 @@ Send the elements from the stream to an `ActorRef` (of the classic actors API) w
 
 Send the elements from the stream to an `ActorRef` which must then acknowledge reception after completing a message,
 to provide back pressure onto the sink.
+There is also a variant without a concrete acknowledge message accepting any message as such.
 
 See also:
 

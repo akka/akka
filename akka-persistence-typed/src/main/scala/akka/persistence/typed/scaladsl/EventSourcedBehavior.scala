@@ -4,8 +4,6 @@
 
 package akka.persistence.typed.scaladsl
 
-import scala.annotation.tailrec
-
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
@@ -13,12 +11,16 @@ import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.InterceptorImpl
 import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.scaladsl.ActorContext
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
+
+import scala.annotation.tailrec
 
 object EventSourcedBehavior {
 
@@ -215,4 +217,16 @@ object EventSourcedBehavior {
    * By default, snapshots and events are recovered.
    */
   def withRecovery(recovery: Recovery): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Publish events to the system event stream as [[akka.persistence.typed.PublishedEvent]] after they have been persisted
+   */
+  @ApiMayChange
+  def withEventPublishing(enabled: Boolean): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def withReplication(context: ReplicationContextImpl): EventSourcedBehavior[Command, Event, State]
 }

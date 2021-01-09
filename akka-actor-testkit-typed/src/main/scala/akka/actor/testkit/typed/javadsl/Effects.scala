@@ -77,7 +77,7 @@ object Effects {
   def watchedWith[U, T](other: ActorRef[U], message: T): WatchedWith[U, T] = WatchedWith(other, message)
 
   /**
-   * The behavior started watching `other`, through `context.unwatch(other)`
+   * The behavior stopped watching `other`, through `context.unwatch(other)`
    */
   def unwatched[T](other: ActorRef[T]): Unwatched[T] = Unwatched(other)
 
@@ -92,6 +92,15 @@ object Effects {
    */
   def scheduled[U](delay: Duration, target: ActorRef[U], message: U): Scheduled[U] =
     Scheduled(delay.asScala, target, message)
+
+  def timerScheduled[U](
+      key: Any,
+      msg: U,
+      delay: Duration,
+      mode: TimerScheduled.TimerMode,
+      overriding: Boolean,
+      send: akka.japi.function.Effect): TimerScheduled[U] =
+    TimerScheduled(key, msg, delay.asScala, mode, overriding)(send.apply _)
 
   /**
    * Used to represent an empty list of effects - in other words, the behavior didn't do anything observable
