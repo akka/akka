@@ -4,7 +4,7 @@
 An architectural choice you have to make is if you are going to use a microservices architecture or
 a traditional distributed application. This choice will influence how you should use Akka Cluster.
 
-The [stateful or stateful applications: to Akka Cluster or not](https://akka.io/blog/news/2020/06/01/akka-cluster-motivation)
+The [stateful or stateless applications: to Akka Cluster or not](https://akka.io/blog/news/2020/06/01/akka-cluster-motivation)
 video is a good starting point to understand the motivation to use Akka Cluster.
 
 ## Microservices
