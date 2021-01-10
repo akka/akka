@@ -36,7 +36,7 @@ private[akka] object Collections {
                 _next = apply(potentiallyNext)
                 _hasNext = true
                 true
-              } else tailrecHasNext //Attempt to find the next
+              } else tailrecHasNext() //Attempt to find the next
             } else _hasNext // Return if we found one
           }
 
