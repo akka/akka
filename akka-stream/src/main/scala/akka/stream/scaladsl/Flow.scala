@@ -17,7 +17,6 @@ import akka.actor.ActorRef
 import akka.annotation.DoNotInherit
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream.Attributes.SourceLocation
-import akka.stream.Attributes.SourceLocation
 import akka.stream._
 import akka.stream.impl.{
   fusing,
