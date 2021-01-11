@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import akka.actor.{ Actor, ActorRef, ActorSystem, Props, actorRef2Scala }
+import akka.actor.{ actorRef2Scala, Actor, ActorRef, ActorSystem, Props }
 import akka.actor.Status.Failure
 import akka.pattern.{ ask, AskTimeoutException }
 import akka.testkit._

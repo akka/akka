@@ -6,7 +6,7 @@ package akka.dispatch
 
 import com.typesafe.config.ConfigFactory
 
-import akka.actor.{ Actor, Props, actorRef2Scala }
+import akka.actor.{ actorRef2Scala, Actor, Props }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 
 object ForkJoinPoolStarvationSpec {

@@ -11,7 +11,7 @@ import java.nio.channels.SelectionKey._
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, actorRef2Scala }
+import akka.actor.{ actorRef2Scala, Actor, ActorLogging, ActorRef }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.Inet.DatagramChannelCreator
 import akka.io.SelectionHandler._
