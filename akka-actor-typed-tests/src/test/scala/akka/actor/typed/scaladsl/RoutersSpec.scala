@@ -116,18 +116,11 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
     "support broadcast" in {
       trait Cmd
       case object ReplyWithAck extends Cmd
-      case class BCast(cmd: Cmd) extends Cmd
+      case object BCast extends Cmd
 
       def behavior(replyTo: ActorRef[AnyRef]) = Behaviors.setup[Cmd] { ctx =>
         Behaviors.receiveMessage[Cmd] {
-          case ReplyWithAck =>
-            val reply = ctx.self.path
-            replyTo ! reply
-            Behaviors.same
-          case BCast(BCast(_)) =>
-            replyTo ! new RuntimeException("totally unacceptable")
-            Behaviors.same
-          case BCast(ReplyWithAck) =>
+          case ReplyWithAck | BCast =>
             val reply = ctx.self.path
             replyTo ! reply
             Behaviors.same
@@ -135,8 +128,8 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       }
 
       val probe = testKit.createTestProbe[AnyRef]()
-      val pool = testKit.spawn(Routers.pool(4)(behavior(probe.ref)).withBroadcastPredicate(_.isInstanceOf[BCast]))
-      pool ! BCast(ReplyWithAck)
+      val pool = testKit.spawn(Routers.pool(4)(behavior(probe.ref)).withBroadcastPredicate(_ eq BCast))
+      pool ! BCast
       val msgs = probe.receiveMessages(4).map { m =>
         m should be(an[ActorPath])
         m.asInstanceOf[ActorPath]
