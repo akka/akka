@@ -33,6 +33,8 @@ private[remote] class SharedTestState {
 
   private val state = new AtomicReference[TestState](TestState(Map.empty, None))
 
+  def anyBlackholePresent(): Boolean = state.get.blackholes.nonEmpty
+
   def isBlackhole(from: Address, to: Address): Boolean =
     state.get.blackholes.get(from) match {
       case Some(destinations) => destinations(to)
@@ -161,6 +163,10 @@ private[remote] class InboundTestStage(inboundContext: InboundContext, state: Sh
             env.association match {
               case OptionVal.None =>
                 // unknown, handshake not completed
+                if (state.anyBlackholePresent())
+                  log.debug(
+                    "inbound message [{}] before handshake completed, cannot check if remote is blackholed, letting through",
+                    Logging.messageClassName(env.message))
                 push(out, env)
               case OptionVal.Some(association) =>
                 if (state.isBlackhole(inboundContext.localAddress.address, association.remoteAddress)) {
