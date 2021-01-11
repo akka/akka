@@ -17,4 +17,10 @@ public class RoutersTest {
     Behavior<String> pool =
         Routers.pool(5, Behaviors.<String>empty()).withRandomRouting().withRoundRobinRouting();
   }
+
+  public void poolBroadcastCompileOnlyApiTest() {
+    Behavior<String> b = Behaviors.receiveMessage((String str) -> Behaviors.same());
+    Behavior<String> poolBehavior =
+        Routers.pool(5, b).withBroadcastPredicate(str -> str.startsWith("bc-"));
+  }
 }

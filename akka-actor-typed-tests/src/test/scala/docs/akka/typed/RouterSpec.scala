@@ -32,6 +32,13 @@ object RouterSpec {
   }
 
   // #routee
+
+  //intentionally out of the routee section
+  class DoBroadcastLog(text: String) extends Worker.DoLog(text)
+  object DoBroadcastLog {
+    def apply(text: String) = new DoBroadcastLog(text)
+  }
+
   // This code is extra indented for visualization purposes
   // format: OFF
   // #group
@@ -87,13 +94,19 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
           val alternativeRouter = ctx.spawn(alternativePool, "alternative-pool")
           alternativeRouter ! Worker.DoLog("msg")
           //#pool
-          Behaviors.empty
 
+          // #broadcast
+          val poolWithBroadcast = pool.withBroadcastPredicate(_.isInstanceOf[DoBroadcastLog])
+          val routerWithBroadcast = ctx.spawn(poolWithBroadcast, "pool-with-broadcast")
+          //this will be sent to all 4 routees
+          routerWithBroadcast ! DoBroadcastLog("msg")
+          Behaviors.empty
+        // #broadcast
         }
         //#pool
       )
 
-      probe.receiveMessages(11)
+      probe.receiveMessages(15)
     }
 
     "show group routing" in {
