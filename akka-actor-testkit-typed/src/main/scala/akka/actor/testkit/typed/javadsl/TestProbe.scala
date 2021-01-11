@@ -14,6 +14,8 @@ import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.TestProbeImpl
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
+import akka.actor.typed.RecipientRef
+import akka.actor.typed.internal.InternalRecipientRef
 import akka.annotation.DoNotInherit
 import akka.util.unused
 
@@ -65,7 +67,7 @@ object TestProbe {
  * Not for user extension
  */
 @DoNotInherit
-abstract class TestProbe[M] {
+abstract class TestProbe[M] extends RecipientRef[M] { this: InternalRecipientRef[M] =>
 
   implicit protected def settings: TestKitSettings
 

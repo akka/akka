@@ -16,6 +16,8 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
+import akka.actor.ActorRefProvider
+import akka.actor.ExtendedActorSystem
 import akka.actor.testkit.typed.FishingOutcome
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.javadsl.{ TestProbe => JavaTestProbe }
@@ -26,6 +28,7 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
 import akka.actor.typed.Terminated
+import akka.actor.typed.internal.InternalRecipientRef
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.japi.function.Creator
@@ -63,7 +66,8 @@ private[akka] object TestProbeImpl {
 @InternalApi
 private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     extends JavaTestProbe[M]
-    with ScalaTestProbe[M] {
+    with ScalaTestProbe[M]
+    with InternalRecipientRef[M] {
 
   import TestProbeImpl._
 
@@ -389,6 +393,15 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   override def stop(): Unit = {
     testActor.asInstanceOf[ActorRef[AnyRef]] ! Stop
   }
+
+  def tell(m: M) = testActor.tell(m)
+
+  // impl InternalRecipientRef
+  def provider: ActorRefProvider =
+    system.classicSystem.asInstanceOf[ExtendedActorSystem].provider
+
+  // impl InternalRecipientRef
+  def isTerminated: Boolean = false
 
   override private[akka] def asJava: JavaTestProbe[M] = this
 }
