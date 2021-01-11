@@ -32,7 +32,7 @@ object Dependencies {
 
   val sslConfigVersion = "0.4.2"
 
-  val scalaTestVersion = "3.2.3"
+  val scalaTestVersion = "3.1.4"
   val scalaCheckVersion = "1.15.1"
 
   val Versions =
@@ -127,7 +127,7 @@ object Dependencies {
       // version it was intended to work with
       val scalatestJUnit = "org.scalatestplus" %% "junit-4-13" % (scalaTestVersion + ".0") % "test" // ApacheV2
       val scalatestTestNG = "org.scalatestplus" %% "testng-6-7" % (scalaTestVersion + ".0") % "test" // ApacheV2
-      val scalatestScalaCheck = "org.scalatestplus" %% "scalacheck-1-15" % (scalaTestVersion + ".0") % "test" // ApacheV2
+      val scalatestScalaCheck = "org.scalatestplus" %% "scalacheck-1-14" % (scalaTestVersion + ".0") % "test" // ApacheV2
       val scalatestMockito = "org.scalatestplus" %% "mockito-3-4" % (scalaTestVersion + ".0") % "test" // ApacheV2
 
       val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % "test" // ApacheV2
