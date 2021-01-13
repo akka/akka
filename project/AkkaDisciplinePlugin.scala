@@ -66,7 +66,11 @@ object AkkaDisciplinePlugin extends AutoPlugin {
   lazy val nowarnSettings = {
     Dependencies.getScalaVersion() match {
       case _ =>
-        Seq(scalacOptions += "-Wconf:cat=unused-nowarn:s,any:e")
+        Seq(
+          Compile / scalacOptions += "-Wconf:cat=unused-nowarn:s,any:e",
+          Test / scalacOptions += "-Wconf:cat=unused-nowarn:s,any:e",
+          Compile / doc / scalacOptions := Seq()
+        )
     }
   }
 
@@ -77,9 +81,13 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     Dependencies.getScalaVersion() match {
       case _ =>
         Seq(
+          Compile / scalacOptions -= "-Wconf:cat=unused-nowarn:s,any:e",
+          Compile / scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e",
           Test / scalacOptions --= Seq("-Xlint", "-unchecked", "-deprecation"),
-          scalacOptions -= "-Wconf:cat=unused-nowarn:s,any:e",
-          scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e")
+          Test / scalacOptions -= "-Wconf:cat=unused-nowarn:s,any:e",
+          Test / scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e",
+          Compile / doc / scalacOptions := Seq()
+        )
     }
   }
 
