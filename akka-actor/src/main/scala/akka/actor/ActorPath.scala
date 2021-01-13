@@ -153,8 +153,7 @@ object ActorPath {
  * references are compared the unique id of the actor is not taken into account
  * when comparing actor paths.
  */
-@nowarn("msg=@SerialVersionUID has no effect on traits")
-@nowarn("msg=deprecated")
+@nowarn("msg=@SerialVersionUID has no effect on traits,msg=deprecated")
 @SerialVersionUID(1L)
 sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
 

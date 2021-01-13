@@ -102,7 +102,7 @@ object StreamTestKit {
         .append(logic.attributes.attributeList.mkString(", "))
         .append("],\n")
     }
-    builder.setLength(builder.length() - 2)
+    builder.setLength(builder.length - 2)
     shell match {
       case running: RunningInterpreter =>
         builder.append("\n  ],\n  connections: [\n")
@@ -119,7 +119,7 @@ object StreamTestKit {
             .append(connection.state)
             .append(")\n")
         }
-        builder.setLength(builder.length() - 2)
+        builder.setLength(builder.length - 2)
 
       case _ =>
     }
