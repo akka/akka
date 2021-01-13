@@ -385,6 +385,9 @@ trait MessageQueue {
    * is expected to transfer all remaining messages into the dead letter queue
    * which is passed in. The owner of this MessageQueue is passed in if
    * available (e.g. for creating DeadLetters()), “/deadletters” otherwise.
+   *
+   * Note that we implement the method in a recursive manner mainly for
+   * atomicity (not touching the queue twice).
    */
   def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit
 }
