@@ -11,6 +11,7 @@ To use Logging, you must at least use the Akka actors dependency in your project
 via the SLF4J backend, such as Logback configuration.
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group="com.typesafe.akka"
