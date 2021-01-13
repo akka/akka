@@ -84,6 +84,13 @@ import akka.stream.scaladsl.Sink
   import EventSourcedBehaviorTestKitImpl._
 
   private def system: ActorSystem[_] = actorTestKit.system
+  if (system.settings.config.getBoolean("akka.persistence.testkit.events.serialize") ||
+      system.settings.config.getBoolean("akka.persistence.testkit.snapshots.serialize")) {
+    system.log.warn(
+      "Persistence TestKit serialization enabled when using EventSourcedBehaviorTestKit, this is not intended. " +
+      "make sure you create the system used in the test with the config from EventSourcedBehaviorTestKit.config " +
+      "as described in the docs https://doc.akka.io/docs/akka/current/typed/persistence-testing.html#unit-testing")
+  }
 
   override val persistenceTestKit: PersistenceTestKit = PersistenceTestKit(system)
   persistenceTestKit.clearAll()
