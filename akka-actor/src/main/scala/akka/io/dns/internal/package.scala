@@ -30,7 +30,9 @@ package object internal {
         case (Never, Never)     => 0
         case (Ttl(v1), Ttl(v2)) => v1.compare(v2)
         case (Never, _)         => -1
+        case (_, Forever)       => -1
         case (Forever, _)       => 1
+        case (_, Never)         => 1
       }
   }
 
