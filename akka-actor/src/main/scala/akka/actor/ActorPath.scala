@@ -153,7 +153,7 @@ object ActorPath {
  * references are compared the unique id of the actor is not taken into account
  * when comparing actor paths.
  */
-@nowarn("msg=@SerialVersionUID has no effect on traits,msg=deprecated")
+@nowarn("msg=@SerialVersionUID has no effect on traits")
 @SerialVersionUID(1L)
 sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
 
@@ -202,6 +202,7 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
   /**
    * Java API: Sequence of names for this path from root to this. Performance implication: has to allocate a list.
    */
+  @nowarn("msg=deprecated")
   def getElements: java.lang.Iterable[String] =
     scala.collection.JavaConverters.asJavaIterableConverter(elements).asJava
 
