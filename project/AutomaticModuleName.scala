@@ -4,7 +4,7 @@
 
 package akka
 
-import sbt.{Def, _}
+import sbt.{ Def, _ }
 import sbt.Keys._
 
 /**
@@ -15,10 +15,9 @@ import sbt.Keys._
  * The names carry a lot of implications and DO NOT have to always align 1:1 with the group ids or package names,
  * though there should be of course a strong relationship between them.
  */
-object AutomaticModuleName  {
+object AutomaticModuleName {
   private val AutomaticModuleName = "Automatic-Module-Name"
 
   def settings(name: String): Seq[Def.Setting[Task[Seq[PackageOption]]]] = Seq(
-    packageOptions in (Compile, packageBin) += Package.ManifestAttributes(AutomaticModuleName -> name)
-  )
+    packageOptions in (Compile, packageBin) += Package.ManifestAttributes(AutomaticModuleName -> name))
 }

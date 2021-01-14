@@ -71,8 +71,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
         Seq(
           Compile / scalacOptions += defaultScalaOptions,
           Test / scalacOptions += defaultScalaOptions,
-          Compile / doc / scalacOptions := Seq()
-        )
+          Compile / doc / scalacOptions := Seq())
     }
   }
 
@@ -88,8 +87,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
           Test / scalacOptions --= Seq("-Xlint", "-unchecked", "-deprecation"),
           Test / scalacOptions -= defaultScalaOptions,
           Test / scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e",
-          Compile / doc / scalacOptions := Seq()
-        )
+          Compile / doc / scalacOptions := Seq())
     }
   }
 

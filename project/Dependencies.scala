@@ -37,15 +37,15 @@ object Dependencies {
   val scalaTestVersion = "3.1.4"
   val scalaCheckVersion = "1.15.1"
 
-    def getScalaVersion() = {
-    // don't allow full override to keep compatible with the version of silencer
+  def getScalaVersion() = {
     // don't mandate patch not specified to allow builds to migrate
     System.getProperty("akka.build.scalaVersion", "default") match {
       case twoThirteen if twoThirteen.startsWith("2.13") => scala213Version
       case twoTwelve if twoTwelve.startsWith("2.12")     => scala212Version
       case "default"                                     => scala212Version
-      case other                                         => throw new IllegalArgumentException(s"Unsupported scala version [$other]. Must be 2.12, 2.13 or 3.0.")
-    }    
+      case other =>
+        throw new IllegalArgumentException(s"Unsupported scala version [$other]. Must be 2.12, 2.13 or 3.0.")
+    }
   }
 
   val Versions =
