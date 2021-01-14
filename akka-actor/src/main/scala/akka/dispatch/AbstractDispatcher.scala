@@ -354,7 +354,23 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
         new ThreadPoolExecutorConfigurator(config.getConfig("thread-pool-executor"), prerequisites)
       case "affinity-pool-executor" =>
         new AffinityPoolConfigurator(config.getConfig("affinity-pool-executor"), prerequisites)
-
+      case "default-executor" =>
+        new DefaultExecutorServiceConfigurator(
+          config.getConfig("default-executor"),
+          prerequisites,
+          configurator(config.getString("default-executor.fallback")))
+      case "virtual-pool-executor" =>
+        val vpeConfig = config.getConfig("virtual-pool-executor")
+        new VirtualPoolConfigurator(
+          vpeConfig,
+          prerequisites,
+          vpeConfig.getString("underlying") match {
+            case "" => None
+            case "common-pool" => Some(new ConstantExecutorServiceFactoryProvider(ForkJoinPool.commonPool: Executor))
+            case "global" => Some(new ConstantExecutorServiceFactoryProvider(ExecutionContext.global: Executor))
+            case other => Option(configurator(other))
+          }
+        )
       case fqcn =>
         val args = List(classOf[Config] -> config, classOf[DispatcherPrerequisites] -> prerequisites)
         prerequisites.dynamicAccess
@@ -370,14 +386,7 @@ abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites:
           .get
     }
 
-    config.getString("executor") match {
-      case "default-executor" =>
-        new DefaultExecutorServiceConfigurator(
-          config.getConfig("default-executor"),
-          prerequisites,
-          configurator(config.getString("default-executor.fallback")))
-      case other => configurator(other)
-    }
+    configurator(config.getString("executor"))
   }
 }
 
@@ -427,6 +436,21 @@ class ThreadPoolExecutorConfigurator(config: Config, prerequisites: DispatcherPr
     threadPoolConfig.createExecutorServiceFactory(id, threadFactory)
 }
 
+final class ConstantExecutorServiceFactoryProvider(executor: Executor) extends AbstractExecutorService with ExecutorServiceFactoryProvider with ExecutorServiceFactory {
+  def this(ec: ExecutionContext) = this(ec match {
+    case e: Executor => e
+    case other => new Executor { override def execute(r: Runnable): Unit = other.execute(r) }
+  })
+  override final def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = this
+  override final def createExecutorService: ExecutorService = this
+  override final def shutdown(): Unit = ()
+  override final def isTerminated: Boolean = false
+  override final def awaitTermination(timeout: Long, unit: TimeUnit): Boolean = false
+  override final def shutdownNow(): ju.List[Runnable] = ju.Collections.emptyList()
+  override final def execute(command: Runnable): Unit = executor.execute(command)
+  override final def isShutdown: Boolean = false
+}
+
 class DefaultExecutorServiceConfigurator(
     config: Config,
     prerequisites: DispatcherPrerequisites,
@@ -441,16 +465,7 @@ class DefaultExecutorServiceConfigurator(
             this.getClass,
             s"Using passed in ExecutionContext as default executor for this ActorSystem. If you want to use a different executor, please specify one in akka.actor.default-dispatcher.default-executor."))
 
-        new AbstractExecutorService with ExecutorServiceFactory with ExecutorServiceFactoryProvider {
-          def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = this
-          def createExecutorService: ExecutorService = this
-          def shutdown(): Unit = ()
-          def isTerminated: Boolean = false
-          def awaitTermination(timeout: Long, unit: TimeUnit): Boolean = false
-          def shutdownNow(): ju.List[Runnable] = ju.Collections.emptyList()
-          def execute(command: Runnable): Unit = ec.execute(command)
-          def isShutdown: Boolean = false
-        }
+        new ConstantExecutorServiceFactoryProvider(ec)
       case None => fallback
     }
 
