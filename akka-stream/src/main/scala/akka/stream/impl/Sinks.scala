@@ -1,11 +1,10 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
 import java.util.function.BinaryOperator
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.collection.mutable
@@ -15,10 +14,8 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.NonFatal
-
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
-
 import akka.NotUsed
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -27,6 +24,7 @@ import akka.event.Logging
 import akka.stream._
 import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.Attributes.InputBuffer
+import akka.stream.Attributes.SourceLocation
 import akka.stream.impl.QueueSink.Output
 import akka.stream.impl.QueueSink.Pull
 import akka.stream.impl.Stages.DefaultAttributes
@@ -537,7 +535,7 @@ import akka.util.ccompat._
 @InternalApi final private[stream] class LazySink[T, M](sinkFactory: T => Future[Sink[T, M]])
     extends GraphStageWithMaterializedValue[SinkShape[T], Future[M]] {
   val in = Inlet[T]("lazySink.in")
-  override def initialAttributes = DefaultAttributes.lazySink
+  override def initialAttributes = DefaultAttributes.lazySink and SourceLocation.forLambda(sinkFactory)
   override val shape: SinkShape[T] = SinkShape.of(in)
 
   override def toString: String = "LazySink"

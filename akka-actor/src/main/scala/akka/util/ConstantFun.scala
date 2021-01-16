@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -48,6 +48,7 @@ import akka.japi.function.{ Function => JFun, Function2 => JFun2 }
   val unitToUnit = () => ()
 
   val anyToTrue: Any => Boolean = (_: Any) => true
+  val anyToFalse: Any => Boolean = (_: Any) => false
 
   private val _nullFun = (_: Any) => null
 

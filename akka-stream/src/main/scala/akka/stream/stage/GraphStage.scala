@@ -1,22 +1,20 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.stage
 
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
-
 import com.github.ghik.silencer.silent
-
 import akka.{ Done, NotUsed }
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.japi.function.{ Effect, Procedure }
+import akka.stream.Attributes.SourceLocation
 import akka.stream._
 import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
 import akka.stream.impl.ActorSubscriberMessage
@@ -1584,7 +1582,15 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   }
 
   override def toString: String =
-    attributes.get[Attributes.Name].map(attr => s"${getClass.toString}-${attr.n}").getOrElse(getClass.toString)
+    attributes.get[Attributes.Name] match {
+      case Some(name) =>
+        attributes.get[SourceLocation] match {
+          case Some(location) => s"${getClass.getName}-${name.n}(${location.locationName})"
+          case None           => s"${getClass.getName}-${name.n}"
+        }
+
+      case None => getClass.getName
+    }
 
 }
 

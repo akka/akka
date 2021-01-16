@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.delivery.internal
@@ -191,7 +191,7 @@ import akka.util.Timeout
           case Some(p) =>
             becomeActive(p, load.state)
           case None =>
-            // waiting for LoadStateReply
+            // waiting for Start
             waitingForStart(producerId, context, stashBuffer, durableQueue, settings, producer, Some(load.state))
         }
 
@@ -365,7 +365,7 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
               // wait until more demand
               false
             } else if (s.requested && wasStashed) {
-              // msg was unstashed, but pending request alread in progress
+              // msg was unstashed, but pending request already in progress
               true
             } else if (durableQueue.isDefined && !s.requested && !wasStashed) {
               // msg ResendDurableMsg, and stashed before storage
@@ -460,14 +460,18 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
         replyTo ! Done
       }
 
-      s.handOver.get(seqNr).foreach {
-        case HandOver(oldConfirmationQualifier, oldSeqNr) =>
-          durableQueue.foreach { d =>
-            d ! StoreMessageConfirmed(oldSeqNr, oldConfirmationQualifier, System.currentTimeMillis())
-          }
-      }
+      val wasHandOver =
+        s.handOver.get(seqNr) match {
+          case Some(HandOver(oldConfirmationQualifier, oldSeqNr)) =>
+            durableQueue.foreach { d =>
+              d ! StoreMessageConfirmed(oldSeqNr, oldConfirmationQualifier, System.currentTimeMillis())
+            }
+            true
+          case None =>
+            false
+        }
 
-      val newState = onMessage(m, wasStashed = false, replyTo = None, seqNr)
+      val newState = onMessage(m, wasStashed = wasHandOver, replyTo = None, seqNr)
       active(newState.copy(replyAfterStore = newState.replyAfterStore - seqNr, handOver = newState.handOver - seqNr))
     }
 

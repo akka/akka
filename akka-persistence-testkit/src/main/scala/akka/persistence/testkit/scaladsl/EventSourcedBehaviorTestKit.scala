@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.testkit.scaladsl
@@ -37,6 +37,7 @@ object EventSourcedBehaviorTestKit {
    */
   val config: Config = ConfigFactory.parseString("""
     akka.persistence.testkit.events.serialize = off
+    akka.persistence.testkit.snapshots.serialize = off
     """).withFallback(PersistenceTestKitPlugin.config)
 
   object SerializationSettings {

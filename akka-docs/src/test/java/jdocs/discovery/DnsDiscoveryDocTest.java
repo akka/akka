@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.discovery;
@@ -18,6 +18,7 @@ import org.scalatestplus.junit.JUnitSuite;
 
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("unused")
 public class DnsDiscoveryDocTest extends JUnitSuite {
@@ -42,7 +43,9 @@ public class DnsDiscoveryDocTest extends JUnitSuite {
     ServiceDiscovery discovery = Discovery.get(system).discovery();
     // ...
     CompletionStage<ServiceDiscovery.Resolved> result =
-        discovery.lookup("akka.io", Duration.ofMillis(500));
+        discovery.lookup("akka.io", Duration.ofSeconds(2));
     // #lookup-dns
+
+    result.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 }

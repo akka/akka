@@ -1,14 +1,14 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.javadsl
 
 import akka.actor.typed.{ scaladsl, Behavior }
 import akka.annotation.DoNotInherit
-import akka.japi.function.{ Predicate, Procedure }
+import akka.japi.function.Procedure
 
-import java.util.function.{ Function => JFunction }
+import java.util.function.{ Predicate, Function => JFunction }
 
 /**
  * A non thread safe mutable message buffer that can be used to buffer messages inside actors

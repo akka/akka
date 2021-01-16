@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -10,14 +10,13 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-
 import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
-
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.annotation.DoNotInherit
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
+import akka.stream.Attributes.SourceLocation
 import akka.stream._
 import akka.stream.impl.{
   fusing,
@@ -663,7 +662,7 @@ object Flow {
    * this will delay downstream cancellation until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
    */
   def lazyFlow[I, O, M](create: () => Flow[I, O, M]): Flow[I, O, Future[M]] =
-    lazyFutureFlow(() => Future.successful(create()))
+    lazyFutureFlow(() => Future.successful(create())).addAttributes(Attributes(SourceLocation.forLambda(create)))
 
   /**
    * Defers invoking the `create` function to create a future flow until there downstream demand has caused upstream
@@ -704,6 +703,7 @@ object Flow {
             .mapMaterializedValue(_ => Future.failed[M](new NeverMaterializedException()))
           f
       }(Keep.right)
+      .addAttributes(Attributes(SourceLocation.forLambda(create)))
       .mapMaterializedValue(_.flatten)
 
 }
@@ -1204,7 +1204,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def filterNot(p: Out => Boolean): Repr[Out] =
-    via(Flow[Out].filter(!p(_)).withAttributes(DefaultAttributes.filterNot))
+    via(Flow[Out].filter(!p(_)).withAttributes(DefaultAttributes.filterNot and SourceLocation.forLambda(p)))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
@@ -1776,7 +1776,9 @@ trait FlowOps[+Out, +Mat] {
    * See also [[FlowOps.conflate]], [[FlowOps.limit]], [[FlowOps.limitWeighted]] [[FlowOps.batch]] [[FlowOps.batchWeighted]]
    */
   def conflateWithSeed[S](seed: Out => S)(aggregate: (S, Out) => S): Repr[S] =
-    via(Batch(1L, ConstantFun.zeroLong, seed, aggregate).withAttributes(DefaultAttributes.conflate))
+    via(
+      Batch(1L, ConstantFun.zeroLong, seed, aggregate)
+        .withAttributes(DefaultAttributes.conflate and SourceLocation.forLambda(aggregate)))
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary
@@ -1831,7 +1833,9 @@ trait FlowOps[+Out, +Mat] {
    * @param aggregate Takes the currently batched value and the current pending element to produce a new aggregate
    */
   def batch[S](max: Long, seed: Out => S)(aggregate: (S, Out) => S): Repr[S] =
-    via(Batch(max, ConstantFun.oneLong, seed, aggregate).withAttributes(DefaultAttributes.batch))
+    via(
+      Batch(max, ConstantFun.oneLong, seed, aggregate)
+        .withAttributes(DefaultAttributes.batch and SourceLocation.forLambda(aggregate)))
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by aggregating elements into batches
@@ -1862,7 +1866,9 @@ trait FlowOps[+Out, +Mat] {
    * @param aggregate Takes the currently batched value and the current pending element to produce a new batch
    */
   def batchWeighted[S](max: Long, costFn: Out => Long, seed: Out => S)(aggregate: (S, Out) => S): Repr[S] =
-    via(Batch(max, costFn, seed, aggregate).withAttributes(DefaultAttributes.batchWeighted))
+    via(
+      Batch(max, costFn, seed, aggregate).withAttributes(
+        DefaultAttributes.batchWeighted and SourceLocation.forLambda(aggregate)))
 
   /**
    * Allows a faster downstream to progress independently of a slower upstream by extrapolating elements from an older

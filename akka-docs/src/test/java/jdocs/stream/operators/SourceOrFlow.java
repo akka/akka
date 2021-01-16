@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream.operators;
@@ -341,7 +341,7 @@ class SourceOrFlow {
   }
 
   static
-  // #fold
+  // #fold // #foldAsync
   class Histogram {
     final long low;
     final long high;
@@ -354,6 +354,8 @@ class SourceOrFlow {
     // Immutable start value
     public static Histogram INSTANCE = new Histogram(0L, 0L);
 
+    // #foldAsync
+
     public Histogram add(int number) {
       if (number < 100) {
         return new Histogram(low + 1L, high);
@@ -361,19 +363,42 @@ class SourceOrFlow {
         return new Histogram(low, high + 1L);
       }
     }
+    // #fold
+
+    // #foldAsync
+    public CompletionStage<Histogram> addAsync(Integer n) {
+      if (n < 100) {
+        return CompletableFuture.supplyAsync(() -> new Histogram(low + 1L, high));
+      } else {
+        return CompletableFuture.supplyAsync(() -> new Histogram(low, high + 1L));
+      }
+    }
+    // #fold
   }
-  // #fold
+  // #fold // #foldAsync
 
   void foldExample() {
     // #fold
 
     // Folding over the numbers from 1 to 150:
     Source.range(1, 150)
-        .fold(Histogram.INSTANCE, (acc, n) -> acc.add(n))
+        .fold(Histogram.INSTANCE, Histogram::add)
         .runForeach(h -> System.out.println("Histogram(" + h.low + ", " + h.high + ")"), system);
 
     // Prints: Histogram(99, 51)
     // #fold
+  }
+
+  void foldAsyncExample() {
+    // #foldAsync
+
+    // Folding over the numbers from 1 to 150:
+    Source.range(1, 150)
+        .foldAsync(Histogram.INSTANCE, Histogram::addAsync)
+        .runForeach(h -> System.out.println("Histogram(" + h.low + ", " + h.high + ")"), system);
+
+    // Prints: Histogram(99, 51)
+    // #foldAsync
   }
 
   void takeExample() {

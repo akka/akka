@@ -1,10 +1,9 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
 
-import java.util.function.{ Function => JFunction }
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor.DeadLetter
@@ -15,9 +14,12 @@ import akka.actor.typed.javadsl
 import akka.actor.typed.scaladsl
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.{ InternalApi, InternalStableApi }
-import akka.japi.function.{ Predicate, Procedure }
+import akka.japi.function.Procedure
 import akka.util.{ unused, ConstantFun }
 import akka.util.OptionVal
+
+import java.util.function.{ Function => JFunction }
+import java.util.function.Predicate
 
 /**
  * INTERNAL API

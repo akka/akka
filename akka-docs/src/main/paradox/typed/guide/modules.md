@@ -32,6 +32,7 @@ This page does not list all available modules, but overviews the main functional
 ### Actor library
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group=com.typesafe.akka
@@ -59,6 +60,7 @@ Challenges that actors solve include the following:
 ### Remoting
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group=com.typesafe.akka
@@ -84,6 +86,7 @@ Challenges Remoting solves include the following:
 ### Cluster
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group=com.typesafe.akka
@@ -109,6 +112,7 @@ Challenges the Cluster module solves include the following:
 ### Cluster Sharding
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group=com.typesafe.akka
@@ -130,6 +134,7 @@ Challenges that Sharding solves include the following:
 ### Cluster Singleton
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group=com.typesafe.akka
@@ -153,6 +158,7 @@ The Singleton module can be used to solve these challenges:
 ### Persistence
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group=com.typesafe.akka
@@ -177,6 +183,7 @@ Persistence tackles the following challenges:
 ### Distributed Data
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group=com.typesafe.akka
@@ -198,6 +205,7 @@ Distributed Data is intended to solve the following challenges:
 ### Streams
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group=com.typesafe.akka

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
@@ -834,9 +834,8 @@ private final case class SavedIslandData(
         if (isIn) s"in port id [$missingHandlerIdx]"
         else s"out port id [$missingHandlerIdx]"
     }
-    throw new IllegalStateException(
-      s"No handler defined in stage [${logic.originalStage.getOrElse(logic).toString}] for $portLabel." +
-      " All inlets and outlets must be assigned a handler with setHandler in the constructor of your graph stage logic.")
+    throw new IllegalStateException(s"No handler defined in stage [${logic.toString}] for $portLabel." +
+    " All inlets and outlets must be assigned a handler with setHandler in the constructor of your graph stage logic.")
   }
 
   override def toString: String = "GraphStagePhase"

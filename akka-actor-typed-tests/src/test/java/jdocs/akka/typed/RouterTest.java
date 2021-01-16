@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.typed;
@@ -56,6 +56,14 @@ public class RouterTest {
 
   // #routee
 
+  // intentionally outside the routee scope
+  static class DoBroadcastLog extends Worker.DoLog {
+
+    public DoBroadcastLog(String text) {
+      super(text);
+    }
+  }
+
   static Behavior<Void> showPoolRouting() {
     return
     // #pool
@@ -87,6 +95,11 @@ public class RouterTest {
           // #strategy
           PoolRouter<Worker.Command> alternativePool = pool.withPoolSize(2).withRoundRobinRouting();
           // #strategy
+
+          // #broadcast
+          PoolRouter<Worker.Command> broadcastingPool =
+              pool.withBroadcastPredicate(msg -> msg instanceof DoBroadcastLog);
+          // #broadcast
 
           return Behaviors.empty();
           // #pool

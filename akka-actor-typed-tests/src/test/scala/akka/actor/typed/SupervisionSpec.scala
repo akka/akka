@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -10,27 +10,26 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Success
-import scala.util.control.NoStackTrace
-
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.slf4j.event.Level
-
 import akka.actor.ActorInitializationException
 import akka.actor.Dropped
 import akka.actor.testkit.typed._
-import akka.actor.testkit.typed.scaladsl._
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
+import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.SupervisorStrategy.Resume
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.event.Level
+
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
+import scala.util.control.NoStackTrace
 
 object SupervisionSpec {
 
@@ -1361,6 +1360,33 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       probe.expectMessage("message")
     }
 
+    "apply the right nested supervision to adapted message failure" in {
+      val signalProbe = createTestProbe[String]()
+      val behavior =
+        Behaviors
+          .receivePartial[String] {
+            case (ctx, "adapt-fail") =>
+              val adapter = ctx.messageAdapter[String](_ => "throw-test-exception")
+              adapter ! "throw-test-exception"
+              Behaviors.same
+            case (_, "throw-test-exception") =>
+              throw TestException("boom")
+          }
+          .receiveSignal {
+            case (_, signal @ (PreRestart | PostStop)) =>
+              signalProbe.ref ! signal.toString
+              Behaviors.same
+          }
+
+      // restart on all exceptions, stop on specific exception subtype
+      val ref = testKit.spawn(
+        supervise(supervise(behavior).onFailure[TestException](SupervisorStrategy.stop))
+          .onFailure[Exception](SupervisorStrategy.restart))
+
+      ref ! "adapt-fail"
+      signalProbe.expectMessage("PostStop")
+      signalProbe.expectTerminated(ref)
+    }
   }
 
   val allStrategies = Seq(
