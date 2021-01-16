@@ -6,7 +6,7 @@ package akka.stream.javadsl
 
 import scala.concurrent.duration.FiniteDuration
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.NotUsed
 import akka.japi.function
@@ -110,7 +110,7 @@ object BidiFlow {
    * every second in one direction, but no elements are flowing in the other direction. I.e. this operator considers
    * the *joint* frequencies of the elements in both directions.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def bidirectionalIdleTimeout[I, O](timeout: java.time.Duration): BidiFlow[I, I, O, O, NotUsed] = {
     import akka.util.JavaDurationConverters._
     bidirectionalIdleTimeout(timeout.asScala)

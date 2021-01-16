@@ -13,7 +13,7 @@ import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.NotUsed
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
@@ -666,7 +666,7 @@ class SubSource[Out, Mat](
    * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def groupedWithin(n: Int, d: java.time.Duration): SubSource[java.util.List[Out @uncheckedVariance], Mat] =
     groupedWithin(n, d.asScala)
 
@@ -714,7 +714,7 @@ class SubSource[Out, Mat](
    * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def groupedWeightedWithin(
       maxWeight: Long,
       costFn: function.Function[Out, java.lang.Long],
@@ -763,7 +763,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def dropWithin(d: java.time.Duration): SubSource[Out, Mat] =
     dropWithin(d.asScala)
 
@@ -880,7 +880,7 @@ class SubSource[Out, Mat](
    * @param of time to shift all messages
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def delay(of: java.time.Duration, strategy: DelayOverflowStrategy): SubSource[Out, Mat] =
     delay(of.asScala, strategy)
 
@@ -1090,7 +1090,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels or timer fires
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def takeWithin(d: java.time.Duration): SubSource[Out, Mat] =
     takeWithin(d.asScala)
 
@@ -1766,7 +1766,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def initialTimeout(timeout: java.time.Duration): SubSource[Out, Mat] =
     initialTimeout(timeout.asScala)
 
@@ -1799,7 +1799,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def completionTimeout(timeout: java.time.Duration): SubSource[Out, Mat] =
     completionTimeout(timeout.asScala)
 
@@ -1834,7 +1834,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def idleTimeout(timeout: java.time.Duration): SubSource[Out, Mat] =
     idleTimeout(timeout.asScala)
 
@@ -1869,7 +1869,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def backpressureTimeout(timeout: java.time.Duration): SubSource[Out, Mat] =
     backpressureTimeout(timeout.asScala)
 
@@ -1912,7 +1912,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def keepAlive(maxIdle: java.time.Duration, injectedElem: function.Creator[Out]): SubSource[Out, Mat] =
     keepAlive(maxIdle.asScala, injectedElem)
 
@@ -2276,7 +2276,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def initialDelay(delay: java.time.Duration): SubSource[Out, Mat] =
     initialDelay(delay.asScala)
 

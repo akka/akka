@@ -8,7 +8,7 @@ import akka.actor._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.Inet.{ DatagramChannelCreator, SocketOption }
 import akka.io.Udp._
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import scala.collection.immutable
 import scala.util.control.NonFatal
@@ -16,7 +16,7 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[io] class UdpSender(
     val udp: UdpExt,
     channelRegistry: ChannelRegistry,

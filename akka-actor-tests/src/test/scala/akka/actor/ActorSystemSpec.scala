@@ -11,7 +11,7 @@ import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.actor.setup.ActorSystemSetup
@@ -64,7 +64,7 @@ object ActorSystemSpec {
     }
   }
 
-  @silent
+  @nowarn
   final case class FastActor(latch: TestLatch, testActor: ActorRef) extends Actor {
     val ref1 = context.actorOf(Props.empty)
     context.actorSelection(ref1.path.toString).tell(Identify(ref1), testActor)
@@ -113,7 +113,7 @@ object ActorSystemSpec {
 
 }
 
-@silent
+@nowarn
 class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSender {
 
   import ActorSystemSpec.FastActor

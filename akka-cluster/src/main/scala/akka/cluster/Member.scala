@@ -6,7 +6,7 @@ package akka.cluster
 
 import scala.runtime.AbstractFunction2
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.Address
 import akka.annotation.InternalApi
@@ -51,7 +51,7 @@ class Member private[cluster] (
   /**
    * Java API
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def getRoles: java.util.Set[String] =
     scala.collection.JavaConverters.setAsJavaSetConverter(roles).asJava
 
@@ -325,7 +325,7 @@ final case class UniqueAddress(address: Address, longUid: Long) extends Ordered[
    * Stops `copy(Address, Long)` copy from being generated, use `apply` instead.
    */
   @deprecated("Use Long UID constructor instead", since = "2.4.11")
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def copy(address: Address = address, uid: Int = uid) = new UniqueAddress(address, uid.toLong)
 
 }

@@ -16,7 +16,7 @@ import scala.language.postfixOps
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor._
 import akka.actor.DeadLetter
@@ -965,7 +965,7 @@ trait TestKitBase {
  *
  * @since 1.1
  */
-@silent // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
+@nowarn // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
 class TestKit(_system: ActorSystem) extends { implicit val system: ActorSystem = _system } with TestKitBase
 
 object TestKit {

@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import language.postfixOps
 
 import akka.testkit._
@@ -33,7 +33,7 @@ object LocalActorRefProviderSpec {
   """
 }
 
-@silent
+@nowarn
 class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.config) {
   "An LocalActorRefProvider" must {
 

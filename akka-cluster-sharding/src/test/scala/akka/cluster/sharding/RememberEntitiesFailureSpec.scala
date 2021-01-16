@@ -16,7 +16,7 @@ import akka.testkit.AkkaSpec
 import akka.testkit.TestException
 import akka.testkit.TestProbe
 import akka.testkit.WithLogCapturing
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.duration._
@@ -82,7 +82,7 @@ object RememberEntitiesFailureSpec {
   case class ShardStoreCreated(store: ActorRef, shardId: ShardId)
   case class CoordinatorStoreCreated(store: ActorRef)
 
-  @silent("never used")
+  @nowarn("msg=never used")
   class FakeStore(settings: ClusterShardingSettings, typeName: String) extends RememberEntitiesProvider {
     override def shardStoreProps(shardId: ShardId): Props = FakeShardStoreActor.props(shardId)
     override def coordinatorStoreProps(): Props = FakeCoordinatorStoreActor.props()

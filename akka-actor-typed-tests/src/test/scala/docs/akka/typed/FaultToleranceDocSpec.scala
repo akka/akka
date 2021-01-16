@@ -6,7 +6,7 @@ package docs.akka.typed
 
 import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.scalatest.wordspec.AnyWordSpecLike
 
 object FaultToleranceDocSpec {
@@ -77,7 +77,7 @@ object FaultToleranceDocSpec {
   // #bubbling-example
 }
 
-@silent("never used")
+@nowarn("msg=never used")
 class FaultToleranceDocSpec extends ScalaTestWithActorTestKit("""
       # silenced to not put noise in test logs
       akka.loglevel = off

@@ -13,7 +13,7 @@ import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
 import akka.actor.TypedActor._
@@ -26,7 +26,7 @@ import akka.util.Timeout
 
 object TypedActorSpec {
 
-  @silent
+  @nowarn
   val config = """
     pooled-dispatcher {
       type = "akka.dispatch.BalancingDispatcherConfigurator"
@@ -70,7 +70,7 @@ object TypedActorSpec {
   trait Foo {
     def pigdog(): String
 
-    @silent
+    @nowarn
     @throws(classOf[TimeoutException])
     def self = TypedActor.self[Foo]
 
@@ -136,7 +136,7 @@ object TypedActorSpec {
       Future.successful(pigdog() + numbered)
     }
 
-    @silent
+    @nowarn
     def futureComposePigdogFrom(foo: Foo): Future[String] = {
       foo.futurePigdog(500 millis).map(_.toUpperCase)
     }
@@ -192,7 +192,7 @@ object TypedActorSpec {
       with LifeCycles
       with Receiver {
 
-    @silent
+    @nowarn
     private def ensureContextAvailable[T](f: => T): T = TypedActor.context match {
       case null => throw new IllegalStateException("TypedActor.context is null!")
       case _    => f
@@ -247,7 +247,7 @@ object TypedActorSpec {
 
 }
 
-@silent
+@nowarn
 class TypedActorSpec
     extends AkkaSpec(TypedActorSpec.config)
     with BeforeAndAfterEach
@@ -571,7 +571,7 @@ class TypedActorSpec
   }
 }
 
-@silent
+@nowarn
 class TypedActorRouterSpec
     extends AkkaSpec(TypedActorSpec.config)
     with BeforeAndAfterEach

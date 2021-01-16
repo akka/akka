@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.control.Exception.Catcher
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.AkkaException
 import akka.actor._
@@ -36,7 +36,7 @@ final case class SerializationCheckFailedException private (msg: Object, cause: 
 @InternalApi
 private[akka] trait Dispatch { this: ActorCell =>
 
-  @silent @volatile private var _mailboxDoNotCallMeDirectly
+  @nowarn @volatile private var _mailboxDoNotCallMeDirectly
       : Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
 
   @inline final def mailbox: Mailbox =

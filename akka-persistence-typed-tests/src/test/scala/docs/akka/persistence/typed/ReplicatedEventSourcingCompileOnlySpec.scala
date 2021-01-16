@@ -7,9 +7,9 @@ package docs.akka.persistence.typed
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.scaladsl.{ EventSourcedBehavior, ReplicatedEventSourcing }
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent("never used")
+@nowarn("msg=never used")
 object ReplicatedEventSourcingCompileOnlySpec {
 
   //#replicas

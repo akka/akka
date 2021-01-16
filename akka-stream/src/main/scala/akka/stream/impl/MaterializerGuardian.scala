@@ -6,7 +6,7 @@ package akka.stream.impl
 
 import scala.concurrent.Promise
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.Actor
 import akka.actor.Props
@@ -37,7 +37,7 @@ private[akka] object MaterializerGuardian {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 @InternalApi
 private[akka] final class MaterializerGuardian(
     systemMaterializerPromise: Promise[Materializer],

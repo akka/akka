@@ -7,12 +7,12 @@ package akka.remote
 import scala.collection.immutable.TreeMap
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.remote.FailureDetector.Clock
 import akka.testkit.AkkaSpec
 
-@silent
+@nowarn
 class AccrualFailureDetectorSpec extends AkkaSpec("akka.loglevel = INFO") {
 
   "An AccrualFailureDetector" must {

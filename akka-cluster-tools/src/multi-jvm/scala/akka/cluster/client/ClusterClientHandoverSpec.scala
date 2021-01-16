@@ -6,7 +6,7 @@ package akka.cluster.client
 
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 
 import akka.actor.{ ActorPath, ActorRef }
@@ -38,7 +38,7 @@ class ClusterClientHandoverSpecMultiJvmNode1 extends ClusterClientHandoverSpec
 class ClusterClientHandoverSpecMultiJvmNode2 extends ClusterClientHandoverSpec
 class ClusterClientHandoverSpecMultiJvmNode3 extends ClusterClientHandoverSpec
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class ClusterClientHandoverSpec
     extends MultiNodeSpec(ClusterClientHandoverSpec)
     with STMultiNodeSpec

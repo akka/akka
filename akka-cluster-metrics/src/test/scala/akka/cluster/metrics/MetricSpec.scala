@@ -8,7 +8,7 @@ import java.lang.System.{ currentTimeMillis => newTimestamp }
 
 import scala.util.Failure
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -17,7 +17,7 @@ import akka.cluster.metrics.StandardMetrics._
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 
-@silent
+@nowarn
 class MetricNumericConverterSpec extends AnyWordSpec with Matchers with MetricNumericConverter {
 
   "MetricNumericConverter" must {
@@ -56,7 +56,7 @@ class MetricNumericConverterSpec extends AnyWordSpec with Matchers with MetricNu
   }
 }
 
-@silent
+@nowarn
 class NodeMetricsSpec extends AnyWordSpec with Matchers {
 
   val node1 = Address("akka", "sys", "a", 2554)
@@ -238,7 +238,7 @@ class MetricsGossipSpec
   }
 }
 
-@silent
+@nowarn
 class MetricValuesSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollectorFactory {
   import akka.cluster.metrics.StandardMetrics._
 

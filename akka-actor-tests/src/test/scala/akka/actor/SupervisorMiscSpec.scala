@@ -10,7 +10,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import language.postfixOps
 
 import akka.pattern.ask
@@ -29,7 +29,7 @@ object SupervisorMiscSpec {
     """
 }
 
-@silent
+@nowarn
 class SupervisorMiscSpec extends AkkaSpec(SupervisorMiscSpec.config) with DefaultTimeout {
 
   "A Supervisor" must {

@@ -4,14 +4,14 @@
 
 package akka.stream.scaladsl
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit.StreamSpec
 import akka.testkit.TestProbe
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class FlowDispatcherSpec extends StreamSpec(s"my-dispatcher = $${akka.test.stream-dispatcher}") {
 
   val defaultSettings = ActorMaterializerSettings(system)

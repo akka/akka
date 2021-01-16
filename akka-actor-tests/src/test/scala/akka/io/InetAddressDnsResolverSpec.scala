@@ -7,12 +7,12 @@ package akka.io
 import java.security.Security
 import java.util.concurrent.TimeUnit
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.Props
 import akka.testkit.{ AkkaSpec, TestActorRef }
 
-@silent
+@nowarn
 class InetAddressDnsResolverSpec extends AkkaSpec("""
     akka.io.dns.inet-address.positive-ttl = default
     akka.io.dns.inet-address.negative-ttl = default
@@ -120,7 +120,7 @@ class InetAddressDnsResolverSpec extends AkkaSpec("""
 
 }
 
-@silent
+@nowarn
 class InetAddressDnsResolverConfigSpec extends AkkaSpec("""
     akka.io.dns.inet-address.positive-ttl = forever
     akka.io.dns.inet-address.negative-ttl = never

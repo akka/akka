@@ -12,7 +12,7 @@ import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.actor._
@@ -104,8 +104,8 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   val mailboxes = prerequisites.mailboxes
   val eventStream = prerequisites.eventStream
 
-  @silent @volatile private[this] var _inhabitantsDoNotCallMeDirectly: Long = _ // DO NOT TOUCH!
-  @silent @volatile private[this] var _shutdownScheduleDoNotCallMeDirectly: Int = _ // DO NOT TOUCH!
+  @nowarn @volatile private[this] var _inhabitantsDoNotCallMeDirectly: Long = _ // DO NOT TOUCH!
+  @nowarn @volatile private[this] var _shutdownScheduleDoNotCallMeDirectly: Int = _ // DO NOT TOUCH!
 
   private final def addInhabitants(add: Long): Long = {
     val old = Unsafe.instance.getAndAddLong(this, inhabitantsOffset, add)

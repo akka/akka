@@ -7,7 +7,7 @@ package akka.testkit
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import language.postfixOps
 import org.scalatest.matchers.should.Matchers
@@ -17,7 +17,7 @@ import akka.actor._
 import akka.actor.DeadLetter
 import akka.pattern.ask
 
-@silent
+@nowarn
 class AkkaSpecSpec extends AnyWordSpec with Matchers {
 
   "An AkkaSpec" must {

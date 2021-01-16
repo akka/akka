@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters
@@ -158,7 +158,7 @@ trait Scheduler {
    *
    * Note: For scheduling within actors `with Timers` should be preferred.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   final def scheduleWithFixedDelay(
       initialDelay: FiniteDuration,
       delay: FiniteDuration,
@@ -233,7 +233,7 @@ trait Scheduler {
    *
    * Note: For scheduling within actors `with Timers` should be preferred.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   final def scheduleAtFixedRate(initialDelay: FiniteDuration, interval: FiniteDuration)(runnable: Runnable)(
       implicit executor: ExecutionContext): Cancellable =
     schedule(initialDelay, interval, runnable)(executor)
@@ -302,7 +302,7 @@ trait Scheduler {
    *
    * Note: For scheduling within actors `with Timers` should be preferred.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   final def scheduleAtFixedRate(
       initialDelay: FiniteDuration,
       interval: FiniteDuration,
@@ -355,7 +355,7 @@ trait Scheduler {
     "Use scheduleWithFixedDelay or scheduleAtFixedRate instead. This has the same semantics as " +
     "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
     since = "2.6.0")
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   final def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, receiver: ActorRef, message: Any)(
       implicit
       executor: ExecutionContext,

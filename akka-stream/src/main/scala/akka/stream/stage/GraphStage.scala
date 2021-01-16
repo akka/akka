@@ -9,7 +9,9 @@ import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
-import com.github.ghik.silencer.silent
+
+import scala.annotation.nowarn
+
 import akka.{ Done, NotUsed }
 import akka.actor._
 import akka.annotation.InternalApi
@@ -1920,7 +1922,7 @@ trait OutHandler {
       require(cause ne null, "Cancellation cause must not be null")
       require(thisStage.lastCancellationCause eq null, "onDownstreamFinish(cause) must not be called recursively")
       thisStage.lastCancellationCause = cause
-      (onDownstreamFinish(): @silent("deprecated")) // if not overridden, call old deprecated variant
+      (onDownstreamFinish(): @nowarn("msg=deprecated")) // if not overridden, call old deprecated variant
     } finally thisStage.lastCancellationCause = null
   }
 }

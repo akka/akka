@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.annotation.{ tailrec, varargs }
 import scala.collection.immutable
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -102,7 +102,7 @@ final case class ClusterRouterGroupSettings(
 
   // For binary compatibility
   @deprecated("Use constructor with useRoles instead", since = "2.5.4")
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def copy(
       totalInstances: Int = totalInstances,
       routeesPaths: immutable.Seq[String] = routeesPaths,
@@ -197,7 +197,7 @@ final case class ClusterRouterPoolSettings(
 
   // For binary compatibility
   @deprecated("Use copy with useRoles instead", since = "2.5.4")
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def copy(
       totalInstances: Int = totalInstances,
       maxInstancesPerNode: Int = maxInstancesPerNode,

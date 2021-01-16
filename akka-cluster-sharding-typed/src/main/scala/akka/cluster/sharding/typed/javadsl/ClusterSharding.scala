@@ -9,7 +9,7 @@ import java.time.Duration
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -385,7 +385,7 @@ final class EntityContext[M](
 
 }
 
-@silent // for unused msgClass to make class type explicit in the Java API. Not using @unused as the user is likely to see it
+@nowarn // for unused msgClass to make class type explicit in the Java API. Not using @unused as the user is likely to see it
 /** Allows starting a specific Sharded Entity by its entity identifier */
 object StartEntity {
 

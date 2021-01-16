@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.Await
 import scala.reflect.ClassTag
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor._
 import akka.dispatch._
@@ -22,7 +22,7 @@ import akka.pattern.ask
  *
  * @since 1.1
  */
-@silent // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
+@nowarn // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
 class TestActorRef[T <: Actor](_system: ActorSystem, _props: Props, _supervisor: ActorRef, name: String) extends {
   val props =
     _props.withDispatcher(

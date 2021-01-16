@@ -8,7 +8,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.ActorSystem
@@ -18,7 +18,7 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 
 // unused names in pattern match can be useful in the docs
-@silent
+@nowarn
 object PersistentActorCompileOnlyTest {
 
   import akka.persistence.typed.scaladsl.EventSourcedBehavior._

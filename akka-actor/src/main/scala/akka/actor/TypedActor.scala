@@ -17,7 +17,7 @@ import scala.reflect.ClassTag
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.dispatch._
 import akka.japi.{ Creator, Option => JOption }
@@ -128,7 +128,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
    *
    * Java API
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def get(context: ActorContext): TypedActorFactory = apply(context)
 
   /**
@@ -284,7 +284,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       }
     }
 
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     override def postStop(): Unit =
       try {
         withContext {
@@ -499,7 +499,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
         case some => toTypedActorInvocationHandler(some)
       }
 
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     def toTypedActorInvocationHandler(system: ActorSystem): TypedActorInvocationHandler =
       new TypedActorInvocationHandler(TypedActor(system), new AtomVar[ActorRef](actor), new Timeout(timeout))
   }
@@ -675,14 +675,14 @@ final case class TypedProps[T <: AnyRef] protected[TypedProps] (
  * ContextualTypedActorFactory allows TypedActors to create children, effectively forming the same Actor Supervision Hierarchies
  * as normal Actors can.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 final case class ContextualTypedActorFactory(typedActor: TypedActorExtension, actorFactory: ActorContext)
     extends TypedActorFactory {
   override def getActorRefFor(proxy: AnyRef): ActorRef = typedActor.getActorRefFor(proxy)
   override def isTypedActor(proxyOrNot: AnyRef): Boolean = typedActor.isTypedActor(proxyOrNot)
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFactory with Extension {
   import TypedActor._ //Import the goodies from the companion object
   protected def actorFactory: ActorRefFactory = system

@@ -18,7 +18,7 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 
 import akka.Done
@@ -249,7 +249,7 @@ private[remote] class Association(
    * Holds reference to shared state of Association - *access only via helper methods*
    */
   @volatile
-  @silent("never used")
+  @nowarn("msg=never used")
   private[this] var _sharedStateDoNotCallMeDirectly: AssociationState = AssociationState()
 
   /**
@@ -338,7 +338,7 @@ private[remote] class Association(
       outboundEnvelopePool.acquire().init(recipient, message.asInstanceOf[AnyRef], sender)
 
     // volatile read to see latest queue array
-    @silent("never used")
+    @nowarn("msg=never used")
     val unused = queuesVisibility
 
     def dropped(queueIndex: Int, qSize: Int, env: OutboundEnvelope): Unit = {
@@ -791,7 +791,7 @@ private[remote] class Association(
   }
 
   private def getOrCreateQueueWrapper(queueIndex: Int, capacity: Int): QueueWrapper = {
-    @silent("never used")
+    @nowarn("msg=never used")
     val unused = queuesVisibility // volatile read to see latest queues array
     queues(queueIndex) match {
       case existing: QueueWrapper => existing

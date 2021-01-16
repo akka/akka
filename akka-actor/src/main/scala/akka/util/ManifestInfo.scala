@@ -10,7 +10,7 @@ import java.util.jar.Manifest
 
 import scala.collection.immutable
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
@@ -74,7 +74,7 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
       productName: String,
       dependencies: immutable.Seq[String],
       versions: Map[String, Version]): Option[String] = {
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     val filteredVersions = versions.filterKeys(dependencies.toSet)
     val values = filteredVersions.values.toSet
     if (values.size > 1) {

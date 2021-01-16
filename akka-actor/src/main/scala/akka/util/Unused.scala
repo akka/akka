@@ -4,7 +4,7 @@
 
 package akka.util
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.annotation.InternalApi
 
@@ -24,5 +24,5 @@ import akka.annotation.InternalApi
  *
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 @InternalApi private[akka] class unused extends deprecated("unused", "")

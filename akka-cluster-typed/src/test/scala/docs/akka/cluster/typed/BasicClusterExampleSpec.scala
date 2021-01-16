@@ -7,7 +7,7 @@ package docs.akka.cluster.typed
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.testkit.SocketUtil
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
@@ -90,7 +90,7 @@ akka {
     //#hasRole
   }
 
-  @silent("never used")
+  @nowarn("msg=never used")
   def illustrateDcAccess(): Unit = {
     val system: ActorSystem[_] = ???
 

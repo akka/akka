@@ -25,10 +25,10 @@ import akka.persistence.typed.PersistenceId
 //#structure
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotFailed
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 // unused variables in pattern match are useful in the docs
-@silent
+@nowarn
 object BasicPersistentBehaviorCompileOnly {
 
   import akka.persistence.typed.scaladsl.RetentionCriteria

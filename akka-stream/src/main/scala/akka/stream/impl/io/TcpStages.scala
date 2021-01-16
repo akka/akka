@@ -12,7 +12,7 @@ import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Terminated }
@@ -246,7 +246,7 @@ private[stream] object ConnectionSourceStage {
     // After that remains immutable
     private var connection: ActorRef = _
 
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     private val writeBufferSize = inheritedAttributes
       .get[TcpAttributes.TcpWriteBufferSize](
         TcpAttributes.TcpWriteBufferSize(

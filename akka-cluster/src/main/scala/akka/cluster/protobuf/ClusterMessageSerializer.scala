@@ -11,7 +11,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.Deadline
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
 
 import akka.actor.{ Address, ExtendedActorSystem }
@@ -232,7 +232,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
     builder.build()
   }
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private def clusterRouterPoolSettingsToProto(settings: ClusterRouterPoolSettings): cm.ClusterRouterPoolSettings = {
     val builder = cm.ClusterRouterPoolSettings.newBuilder()
     builder

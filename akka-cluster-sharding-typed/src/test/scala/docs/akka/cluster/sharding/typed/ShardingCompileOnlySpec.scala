@@ -10,14 +10,14 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.persistence.typed.PersistenceId
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import docs.akka.persistence.typed.BlogPostEntity
 import docs.akka.persistence.typed.BlogPostEntity.Command
 
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 
-@silent
+@nowarn
 object ShardingCompileOnlySpec {
 
   val system = ActorSystem(Behaviors.empty, "Sharding")

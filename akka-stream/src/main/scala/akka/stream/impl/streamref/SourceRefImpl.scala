@@ -4,7 +4,7 @@
 
 package akka.stream.impl.streamref
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.NotUsed
 import akka.actor.{ ActorRef, Terminated }
@@ -124,24 +124,24 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
 
       // settings ---
       import StreamRefAttributes._
-      @silent("deprecated") // can't remove this settings access without breaking compat
+      @nowarn("msg=deprecated") // can't remove this settings access without breaking compat
       private[this] val settings = eagerMaterializer.settings.streamRefSettings
 
-      @silent("deprecated") // can't remove this settings access without breaking compat
+      @nowarn("msg=deprecated") // can't remove this settings access without breaking compat
       private[this] val subscriptionTimeout = inheritedAttributes.get[StreamRefAttributes.SubscriptionTimeout](
         SubscriptionTimeout(settings.subscriptionTimeout))
 
-      @silent("deprecated") // can't remove this settings access without breaking compat
+      @nowarn("msg=deprecated") // can't remove this settings access without breaking compat
       private[this] val bufferCapacity = inheritedAttributes
         .get[StreamRefAttributes.BufferCapacity](StreamRefAttributes.BufferCapacity(settings.bufferCapacity))
         .capacity
 
-      @silent("deprecated") // can't remove this settings access without breaking compat
+      @nowarn("msg=deprecated") // can't remove this settings access without breaking compat
       private[this] val demandRedeliveryInterval = inheritedAttributes
         .get[StreamRefAttributes.DemandRedeliveryInterval](DemandRedeliveryInterval(settings.demandRedeliveryInterval))
         .timeout
 
-      @silent("deprecated") // can't remove this settings access without breaking compat
+      @nowarn("msg=deprecated") // can't remove this settings access without breaking compat
       private[this] val finalTerminationSignalDeadline =
         inheritedAttributes
           .get[StreamRefAttributes.FinalTerminationSignalDeadline](

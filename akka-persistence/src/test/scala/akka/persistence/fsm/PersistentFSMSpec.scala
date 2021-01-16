@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.apache.commons.io.FileUtils
 
@@ -19,7 +19,7 @@ import akka.persistence._
 import akka.persistence.fsm.PersistentFSM._
 import akka.testkit._
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config) with ImplicitSender {
   import PersistentFSMSpec._
 
@@ -401,7 +401,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
   }
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 object PersistentFSMSpec {
   //#customer-states
   sealed trait UserState extends FSMState

@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.immutable
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
@@ -42,7 +42,7 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationV
    * This method is deprecated and involves a copy from the new protocol to
    * remain compatible
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   override def cached(name: String): Option[Dns.Resolved] = {
     // adapt response to the old protocol
     val ipv4 = cacheRef.get().get((name, Ip(ipv6 = false))).toList.flatMap(_.records)

@@ -14,9 +14,9 @@ import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent("never used")
+@nowarn("msg=never used")
 object ReplicatedShardingCompileOnlySpec {
 
   sealed trait Command

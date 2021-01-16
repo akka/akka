@@ -10,7 +10,7 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.Done
@@ -439,7 +439,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     }
   }
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private def subscribeQuarantinedEvent(): Unit = {
     context.system.eventStream.subscribe(self, classOf[QuarantinedEvent])
     context.system.eventStream.subscribe(self, classOf[ClassicQuarantinedEvent])

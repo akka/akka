@@ -15,7 +15,7 @@ import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 
 import atomic.{ AtomicInteger, AtomicReference }
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory }
 import language.postfixOps
 import org.scalatest.BeforeAndAfterEach
@@ -684,7 +684,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     def reportFailure(t: Throwable): Unit = { t.printStackTrace() }
   }
 
-  @silent
+  @nowarn
   def withScheduler(start: Long = 0L, _startTick: Int = 0, config: Config = ConfigFactory.empty)(
       thunk: (Scheduler with Closeable, Driver) => Unit): Unit = {
     import akka.actor.{ LightArrayRevolverScheduler => LARS }

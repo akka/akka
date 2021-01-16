@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.{ CompletionStage, TimeUnit }
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 
 import akka.{ Done, NotUsed }
@@ -104,7 +104,7 @@ object AttributesSpec {
   case class WhateverAttribute(label: String) extends Attribute
 }
 
-@silent // tests deprecated APIs
+@nowarn // tests deprecated APIs
 class AttributesSpec
     extends StreamSpec(
       ConfigFactory

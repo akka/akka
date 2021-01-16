@@ -11,7 +11,7 @@ import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config._
 
 import akka.actor._
@@ -134,7 +134,7 @@ object RemotingSpec {
   }
 }
 
-@silent
+@nowarn
 class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with DefaultTimeout {
 
   import RemotingSpec._

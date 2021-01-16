@@ -6,7 +6,7 @@ package akka.cluster
 
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import language.postfixOps
 
@@ -17,7 +17,7 @@ import akka.testkit.AkkaSpec
 import akka.util.Helpers.ConfigOps
 import akka.util.Version
 
-@silent
+@nowarn
 class ClusterConfigSpec extends AkkaSpec {
 
   "Clustering" must {

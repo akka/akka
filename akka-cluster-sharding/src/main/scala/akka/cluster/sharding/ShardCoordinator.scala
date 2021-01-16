@@ -8,7 +8,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import akka.actor._
 import akka.actor.DeadLetterSuppression
 import akka.annotation.DoNotInherit
@@ -47,7 +47,7 @@ object ShardCoordinator {
    * INTERNAL API
    * Factory method for the [[akka.actor.Props]] of the [[ShardCoordinator]] actor.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private[akka] def props(
       typeName: String,
       settings: ClusterShardingSettings,
