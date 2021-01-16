@@ -74,7 +74,7 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   def this() = this(ActorSystem(TestKitUtils.testNameFromCallStack(classOf[AkkaSpec], "".r), AkkaSpec.testConf))
 
-  val log: LoggingAdapter = Logging(system, this.getClass)
+  val log: LoggingAdapter = Logging(system, Logging.simpleName(this))
 
   override val invokeBeforeAllAndAfterAllEvenIfNoTestsAreExpected = true
 

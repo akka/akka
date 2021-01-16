@@ -160,8 +160,8 @@ trait TestKitBase {
 
   import TestActor.{ Message, NullMessage, RealMessage, Spawn }
 
-  implicit val system: ActorSystem
-  val testKitSettings = TestKitExtension(system)
+  implicit def system: ActorSystem
+  def testKitSettings = TestKitExtension(system)
 
   private val queue = new LinkedBlockingDeque[Message]()
   private[akka] var lastMessage: Message = NullMessage
@@ -177,7 +177,7 @@ trait TestKitBase {
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
-  val testActor: ActorRef = {
+  lazy val testActor: ActorRef = {
     val impl = system.asInstanceOf[ExtendedActorSystem]
     val ref = impl.systemActorOf(
       TestActor.props(queue).withDispatcher(CallingThreadDispatcher.Id),
@@ -261,12 +261,14 @@ trait TestKitBase {
     case x if x eq Duration.Undefined => duration
     case x if !x.isFinite             => throw new IllegalArgumentException("`end` cannot be infinite")
     case f: FiniteDuration            => f - now
+    case _                            => throw new IllegalArgumentException("`end` cannot be infinite")
   }
 
   private def remainingOrDilated(max: Duration): FiniteDuration = max match {
     case x if x eq Duration.Undefined => remainingOrDefault
     case x if !x.isFinite             => throw new IllegalArgumentException("max duration cannot be infinite")
     case f: FiniteDuration            => f.dilated
+    case _1                           => throw new IllegalArgumentException("max duration cannot be infinite")
   }
 
   /**
@@ -966,7 +968,9 @@ trait TestKitBase {
  * @since 1.1
  */
 @nowarn // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
-class TestKit(_system: ActorSystem) extends { implicit val system: ActorSystem = _system } with TestKitBase
+class TestKit(_system: ActorSystem) extends TestKitBase {
+  implicit val system: ActorSystem = _system
+}
 
 object TestKit {
 

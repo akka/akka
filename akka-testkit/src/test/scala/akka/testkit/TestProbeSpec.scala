@@ -141,8 +141,8 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
 
     "be able to expect primitive types" in {
       for (_ <- 1 to 7) testActor ! 42
-      expectMsgType[Int] should ===(42)
-      expectMsgAnyClassOf(classOf[Int]) should ===(42)
+      (expectMsgType[Int]: Int) should ===(42)
+      (expectMsgAnyClassOf(classOf[Int]): Int) should ===(42)
       expectMsgAllClassOf(classOf[Int]) should ===(Seq(42))
       expectMsgAllConformingOf(classOf[Int]) should ===(Seq(42))
       expectMsgAllConformingOf(5 seconds, classOf[Int]) should ===(Seq(42))
@@ -173,7 +173,7 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
       probe.ref ! "done"
 
       val msg: String = probe.fishForSpecificMessage() {
-        case msg @ "fishForMe" => msg
+        case msg: String if msg == "fishForMe" => msg
       }
 
       msg should be("fishForMe")

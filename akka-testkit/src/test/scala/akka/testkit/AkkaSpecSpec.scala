@@ -42,11 +42,11 @@ class AkkaSpecSpec extends AnyWordSpec with Matchers {
         "akka.actor.debug.event-stream" -> true,
         "akka.loglevel" -> "DEBUG",
         "akka.stdout-loglevel" -> "DEBUG")
-      val system = ActorSystem("AkkaSpec1", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
+      val localSystem = ActorSystem("AkkaSpec1", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
       var refs = Seq.empty[ActorRef]
-      val spec = new AkkaSpec(system) { refs = Seq(testActor, system.actorOf(Props.empty, "name")) }
+      val spec = new AkkaSpec(localSystem) { refs = Seq(testActor, localSystem.actorOf(Props.empty, "name")) }
       refs.foreach(_.isTerminated should not be true)
-      TestKit.shutdownActorSystem(system)
+      TestKit.shutdownActorSystem(localSystem)
       spec.awaitCond(refs.forall(_.isTerminated), 2 seconds)
     }
 
