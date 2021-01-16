@@ -329,7 +329,6 @@ private[akka] final case class ActorSelectionMessage(
  * INTERNAL API
  */
 @nowarn("msg=@SerialVersionUID has no effect on traits")
-@SerialVersionUID(1L)
 private[akka] sealed trait SelectionPathElement
 
 /**

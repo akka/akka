@@ -156,7 +156,6 @@ object ActorPath {
  * when comparing actor paths.
  */
 @nowarn("msg=@SerialVersionUID has no effect on traits")
-@SerialVersionUID(1L)
 sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
 
   /**

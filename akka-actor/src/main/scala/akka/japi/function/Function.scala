@@ -12,7 +12,6 @@ import scala.annotation.nowarn
  * Supports throwing `Exception` in the apply, which the `java.util.function.Function` counterpart does not.
  */
 @nowarn("msg=@SerialVersionUID has no effect")
-@SerialVersionUID(1L)
 trait Function[-T, +R] extends java.io.Serializable {
   @throws(classOf[Exception])
   def apply(param: T): R
@@ -24,7 +23,6 @@ trait Function[-T, +R] extends java.io.Serializable {
  * Supports throwing `Exception` in the apply, which the `java.util.function.BiFunction` counterpart does not.
  */
 @nowarn("msg=@SerialVersionUID has no effect")
-@SerialVersionUID(1L)
 trait Function2[-T1, -T2, +R] extends java.io.Serializable {
   @throws(classOf[Exception])
   def apply(arg1: T1, arg2: T2): R
@@ -36,7 +34,6 @@ trait Function2[-T1, -T2, +R] extends java.io.Serializable {
  * Supports throwing `Exception` in the apply, which the `java.util.function.Consumer` counterpart does not.
  */
 @nowarn("msg=@SerialVersionUID has no effect")
-@SerialVersionUID(1L)
 trait Procedure[-T] extends java.io.Serializable {
   @throws(classOf[Exception])
   def apply(param: T): Unit
@@ -48,7 +45,6 @@ trait Procedure[-T] extends java.io.Serializable {
  * Supports throwing `Exception` in the apply, which the `java.util.function.Effect` counterpart does not.
  */
 @nowarn("msg=@SerialVersionUID has no effect")
-@SerialVersionUID(1L)
 trait Effect extends java.io.Serializable {
 
   @throws(classOf[Exception])
@@ -61,7 +57,6 @@ trait Effect extends java.io.Serializable {
  * Supports throwing `Exception` in the apply, which the `java.util.function.Predicate` counterpart does not.
  */
 @nowarn("msg=@SerialVersionUID has no effect")
-@SerialVersionUID(1L)
 trait Predicate[-T] extends java.io.Serializable {
   def test(param: T): Boolean
 }
@@ -71,7 +66,6 @@ trait Predicate[-T] extends java.io.Serializable {
  * Supports throwing `Exception` in the apply, which the `java.util.function.Creator` counterpart does not.
  */
 @nowarn("msg=@SerialVersionUID has no effect")
-@SerialVersionUID(1L)
 trait Creator[+T] extends Serializable {
 
   /**
