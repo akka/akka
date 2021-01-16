@@ -128,7 +128,6 @@ object Dependencies {
       val logback = Compile.logback % "test" // EPL 1.0
 
       val scalatest = "org.scalatest" %% "scalatest" % scalaTestVersion % "test" // ApacheV2
-      val scalacheck = "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test" // New BSD
 
       // The 'scalaTestPlus' projects are independently versioned,
       // but the version of each module starts with the scalatest
@@ -208,7 +207,6 @@ object Dependencies {
         Test.scalatestScalaCheck,
         Test.commonsCodec,
         Test.commonsMath,
-        Test.scalacheck,
         Test.jimfs,
         Test.dockerClient,
         Provided.activation // dockerClient needs javax.activation.DataSource in JDK 11+
@@ -308,11 +306,10 @@ object Dependencies {
 
   lazy val stream = l ++= Seq[sbt.ModuleID](reactiveStreams, sslConfigCore, Test.scalatest)
 
-  lazy val streamTestkit = l ++= Seq(Test.scalatest, Test.scalacheck, Test.junit)
+  lazy val streamTestkit = l ++= Seq(Test.scalatest, Test.scalatestScalaCheck, Test.junit)
 
   lazy val streamTests = l ++= Seq(
         Test.scalatest,
-        Test.scalacheck,
         Test.scalatestScalaCheck,
         Test.junit,
         Test.commonsIo,
@@ -321,7 +318,7 @@ object Dependencies {
   lazy val streamTestsTck = l ++= Seq(
         Test.scalatest,
         Test.scalatestTestNG,
-        Test.scalacheck,
+        Test.scalatestScalaCheck,
         Test.junit,
         Test.reactiveStreamsTck)
 
