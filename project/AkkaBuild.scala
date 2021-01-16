@@ -87,14 +87,26 @@ object AkkaBuild {
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
-  final val DefaultScalacOptions = Seq(
-    "-encoding",
-    "UTF-8",
-    "-feature",
-    "-unchecked",
-    "-Xlog-reflective-calls",
-    // 'blessed' since 2.13.1
-    "-language:higherKinds")
+  final val DefaultScalacOptions = {
+    if (Dependencies.getScalaVersion().startsWith("3.0")) {
+      Seq(
+        "-encoding",
+        "UTF-8",
+        "-feature",
+        "-unchecked",
+        // 'blessed' since 2.13.1
+        "-language:higherKinds")  
+    } else {
+      Seq(
+        "-encoding",
+        "UTF-8",
+        "-feature",
+        "-unchecked",
+        "-Xlog-reflective-calls",
+        // 'blessed' since 2.13.1
+        "-language:higherKinds")
+    }
+  }
 
   // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
   final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")

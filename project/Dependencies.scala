@@ -7,6 +7,7 @@ package akka
 import sbt._
 import Keys._
 import scala.language.implicitConversions
+import dotty.tools.sbtplugin.DottyPlugin.autoImport.DottyCompatModuleID
 
 object Dependencies {
   import DependencyHelpers._
@@ -29,6 +30,7 @@ object Dependencies {
 
   val scala212Version = "2.12.13"
   val scala213Version = "2.13.3"
+  val scala3Version = "3.0.0-M3"
 
   val reactiveStreamsVersion = "1.0.3"
 
@@ -42,6 +44,7 @@ object Dependencies {
     System.getProperty("akka.build.scalaVersion", "default") match {
       case twoThirteen if twoThirteen.startsWith("2.13") => scala213Version
       case twoTwelve if twoTwelve.startsWith("2.12")     => scala212Version
+      case three if three.startsWith("3.0")              => scala3Version
       case "default"                                     => scala212Version
       case other =>
         throw new IllegalArgumentException(s"Unsupported scala version [$other]. Must be 2.12, 2.13 or 3.0.")
@@ -56,6 +59,7 @@ object Dependencies {
         CrossVersion.partialVersion(scalaVersion.value) match {
           // java8-compat is only used in a couple of places for 2.13,
           // it is probably possible to remove the dependency if needed.
+          case Some((3, _))            => "0.9.0"
           case Some((2, n)) if n >= 13 => "0.9.0"
           case _                       => "0.8.0"
         }
@@ -83,14 +87,14 @@ object Dependencies {
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
 
     // ssl-config
-    val sslConfigCore = "com.typesafe" %% "ssl-config-core" % sslConfigVersion // ApacheV2
+    val sslConfigCore = DottyCompatModuleID("com.typesafe" %% "ssl-config-core" % sslConfigVersion).withDottyCompat(getScalaVersion()) // ApacheV2
 
     val lmdb = "org.lmdbjava" % "lmdbjava" % "0.7.0" // ApacheV2, OpenLDAP Public License
 
     val junit = "junit" % "junit" % junitVersion // Common Public License 1.0
 
     // For Java 8 Conversions
-    val java8Compat = Def.setting { "org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value } // Scala License
+    val java8Compat = Def.setting { DottyCompatModuleID("org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value).withDottyCompat(getScalaVersion()) } // Scala License
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
