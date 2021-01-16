@@ -260,7 +260,7 @@ class CircuitBreaker(
   @nowarn("msg=never used")
   private[this] var _currentResetTimeoutDoNotCallMeDirectly: FiniteDuration = resetTimeout
 
-  @silent private def _preventPrivateUnusedErasure = {
+  @nowarn private def _preventPrivateUnusedErasure = {
     _currentStateDoNotCallMeDirectly
     _currentResetTimeoutDoNotCallMeDirectly
   }

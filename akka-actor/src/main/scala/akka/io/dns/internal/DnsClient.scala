@@ -12,7 +12,7 @@ import scala.util.Try
 
 import scala.annotation.nowarn
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, NoSerializationVerificationNeeded, Props, Stash }
+import akka.actor.{ actorRef2Scala, Actor, ActorLogging, ActorRef, NoSerializationVerificationNeeded, Props, Stash }
 import akka.actor.Status.Failure
 import akka.annotation.InternalApi
 import akka.io.{ IO, Tcp, Udp }

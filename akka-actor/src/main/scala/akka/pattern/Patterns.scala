@@ -9,6 +9,7 @@ import java.util.concurrent.{ Callable, CompletionStage, TimeUnit }
 
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext
+
 import akka.actor.{ ActorSelection, ClassicActorSystemProvider, Scheduler }
 import akka.util.JavaDurationConverters._
 

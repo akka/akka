@@ -4,15 +4,17 @@
 
 package akka.pattern
 
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
+import org.scalatest.concurrent.ScalaFutures
+
 import akka.Done
+import akka.actor.actorRef2Scala
 import akka.testkit.AkkaSpec
 import akka.testkit.TestException
 import akka.testkit.TestProbe
 import akka.util.Timeout
-import org.scalatest.concurrent.ScalaFutures
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
 
 class StatusReplySpec extends AkkaSpec with ScalaFutures {
 

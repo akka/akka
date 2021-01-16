@@ -4,15 +4,15 @@
 
 package akka.pattern
 
+import scala.concurrent.Future
+import scala.util.{ Failure => ScalaFailure }
+import scala.util.{ Success => ScalaSuccess }
+import scala.util.Try
+import scala.util.control.NoStackTrace
+
 import akka.Done
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
-
-import scala.concurrent.Future
-import scala.util.Try
-import scala.util.control.NoStackTrace
-import scala.util.{ Failure => ScalaFailure }
-import scala.util.{ Success => ScalaSuccess }
 
 /**
  * Generic top-level message type for replies that signal failure or success. Convenient to use together with the

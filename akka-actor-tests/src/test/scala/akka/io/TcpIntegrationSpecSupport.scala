@@ -11,6 +11,7 @@ import Tcp._
 
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
+import akka.actor.actorRef2Scala
 import akka.dispatch.ExecutionContexts
 import akka.io.Inet.SocketOption
 import akka.testkit.{ AkkaSpec, TestProbe }

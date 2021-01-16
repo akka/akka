@@ -8,11 +8,12 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.util.control.NoStackTrace
 
-import akka.testkit.EventFilter
-import akka.testkit.TestKit._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.testkit.EventFilter
+import akka.testkit.TestKit._
 
 object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider {
   def lookup = this

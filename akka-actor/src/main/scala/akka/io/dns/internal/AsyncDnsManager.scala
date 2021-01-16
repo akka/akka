@@ -13,7 +13,7 @@ import scala.concurrent.duration.Duration
 import scala.annotation.nowarn
 import com.typesafe.config.Config
 
-import akka.actor.{ Actor, ActorLogging, ActorRefFactory, Deploy, ExtendedActorSystem, Props, Timers }
+import akka.actor.{ actorRef2Scala, Actor, ActorLogging, ActorRefFactory, Deploy, ExtendedActorSystem, Props, Timers }
 import akka.annotation.InternalApi
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.{ Dns, DnsExt, DnsProvider }

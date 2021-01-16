@@ -10,9 +10,10 @@ import scala.util.Failure
 import scala.annotation.nowarn
 
 import language.postfixOps
+
 import akka.actor._
-import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.testkit.WithLogCapturing
 import akka.util.Timeout
 
 @nowarn

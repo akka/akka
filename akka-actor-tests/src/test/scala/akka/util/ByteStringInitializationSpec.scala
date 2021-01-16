@@ -6,11 +6,11 @@ package akka.util
 
 import java.io.InputStream
 
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuilder
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class ByteStringInitializationSpec extends AnyWordSpec with Matchers {
   "ByteString intialization" should {

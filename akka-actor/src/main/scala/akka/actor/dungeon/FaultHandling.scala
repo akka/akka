@@ -4,6 +4,11 @@
 
 package akka.actor.dungeon
 
+import scala.collection.immutable
+import scala.concurrent.duration.Duration
+import scala.util.control.Exception._
+import scala.util.control.NonFatal
+
 import akka.actor.{ ActorCell, ActorInterruptedException, ActorRef, InternalActorRef }
 import akka.actor.ActorRefScope
 import akka.actor.PostRestartException
@@ -15,11 +20,6 @@ import akka.dispatch.sysmsg._
 import akka.event.Logging
 import akka.event.Logging.Debug
 import akka.event.Logging.Error
-
-import scala.collection.immutable
-import scala.concurrent.duration.Duration
-import scala.util.control.Exception._
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
