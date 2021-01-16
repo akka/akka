@@ -166,26 +166,18 @@ object FSM {
    * Using a subclass for binary compatibility reasons
    */
   private[akka] class SilentState[S, D](
-      _stateName: S,
-      _stateData: D,
-      _timeout: Option[FiniteDuration],
-      _stopReason: Option[Reason],
-      _replies: List[Any])
-      extends State[S, D](_stateName, _stateData, _timeout, _stopReason, _replies) {
+      stateName: S,
+      stateData: D,
+      timeout: Option[FiniteDuration],
+      stopReason: Option[Reason],
+      replies: List[Any])
+      extends State[S, D](stateName, stateData, timeout, stopReason, replies) {
 
     /**
      * INTERNAL API
      */
     private[akka] override def notifies: Boolean = false
 
-    override def copy(
-        stateName: S = stateName,
-        stateData: D = stateData,
-        timeout: Option[FiniteDuration] = timeout,
-        stopReason: Option[Reason] = stopReason,
-        replies: List[Any] = replies): State[S, D] = {
-      new SilentState(stateName, stateData, timeout, stopReason, replies)
-    }
   }
 
   /**
@@ -204,16 +196,6 @@ object FSM {
      * INTERNAL API
      */
     private[akka] def notifies: Boolean = true
-
-    // defined here to be able to override it in SilentState
-    def copy(
-        stateName: S = stateName,
-        stateData: D = stateData,
-        timeout: Option[FiniteDuration] = timeout,
-        stopReason: Option[Reason] = stopReason,
-        replies: List[Any] = replies): State[S, D] = {
-      State(stateName, stateData, timeout, stopReason, replies)
-    }
 
     /**
      * Modify state transition descriptor to include a state timeout for the

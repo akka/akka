@@ -23,7 +23,12 @@ import akka.event.EventStream
 import akka.event.Logging.{ Debug, Error, LogEventException }
 import akka.util.{ unused, Index, Unsafe }
 
-final case class Envelope private (message: Any, sender: ActorRef)
+final case class Envelope private (message: Any, sender: ActorRef) {
+
+  def copy(message: Any = message, sender: ActorRef = sender) = {
+    Envelope(message, sender)
+  }
+}
 
 object Envelope {
   def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope = {

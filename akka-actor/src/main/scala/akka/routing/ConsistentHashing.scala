@@ -172,7 +172,7 @@ final case class ConsistentHashingRoutingLogic(
     if (virtualNodesFactor == 0) system.settings.DefaultVirtualNodesFactor
     else virtualNodesFactor
 
-  private lazy val log = Logging(system, getClass)
+  private lazy val log = Logging(system, Logging.simpleName(this))
 
   /**
    * Setting the number of virtual nodes per node, used in [[akka.routing.ConsistentHash]]

@@ -24,7 +24,7 @@ import akka.serialization.Serialization
 import akka.util.Unsafe
 
 @SerialVersionUID(1L)
-final case class SerializationCheckFailedException private (msg: Object, cause: Throwable)
+final case class SerializationCheckFailedException private[dungeon] (msg: Object, cause: Throwable)
     extends AkkaException(
       s"Failed to serialize and deserialize message of type ${msg.getClass.getName} for testing. " +
       "To avoid this error, either disable 'akka.actor.serialize-messages', mark the message with 'akka.actor.NoSerializationVerificationNeeded', or configure serialization to support this message",

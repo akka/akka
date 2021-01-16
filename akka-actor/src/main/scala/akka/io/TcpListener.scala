@@ -78,7 +78,7 @@ private[io] class TcpListener(
         } else {
           e
         }
-        bindCommander ! bind.failureMessage.withCause(exception)
+        bindCommander ! CommandFailed(bind).withCause(exception)
         log.error(exception, "Bind failed for TCP channel on endpoint [{}]", bind.localAddress)
         context.stop(self)
     }

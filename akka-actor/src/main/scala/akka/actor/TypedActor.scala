@@ -266,9 +266,10 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       createInstance: => T,
       interfaces: immutable.Seq[Class[_]])
       extends Actor {
+    self =>
     // if we were remote deployed we need to create a local proxy
-    if (!context.parent.asInstanceOf[InternalActorRef].isLocal)
-      TypedActor.get(context.system).createActorRefProxy(TypedProps(interfaces, createInstance), proxyVar, context.self)
+    if (!self.context.parent.asInstanceOf[InternalActorRef].isLocal)
+      akka.actor.TypedActor.get(self.context.system).createActorRefProxy(TypedProps(interfaces, createInstance), proxyVar, self.context.self)
 
     private val me = withContext[T](createInstance)
 
@@ -294,10 +295,10 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
           }
         }
       } finally {
-        TypedActor(context.system).invocationHandlerFor(proxyVar.get) match {
+        akka.actor.TypedActor(self.context.system).invocationHandlerFor(proxyVar.get) match {
           case null =>
           case some =>
-            some.actorVar.set(context.system.deadLetters) //Point it to the DLQ
+            some.actorVar.set(self.context.system.deadLetters) //Point it to the DLQ
             proxyVar.set(null.asInstanceOf[R])
         }
       }
@@ -306,8 +307,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       me match {
         case l: PreRestart => l.preRestart(reason, message)
         case _ =>
-          context.children
-            .foreach(context.stop) //Can't be super.preRestart(reason, message) since that would invoke postStop which would set the actorVar to DL and proxyVar to null
+          self.context.children
+            .foreach(self.context.stop) //Can't be super.preRestart(reason, message) since that would invoke postStop which would set the actorVar to DL and proxyVar to null
       }
     }
 
@@ -319,12 +320,12 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     }
 
     protected def withContext[U](unitOfWork: => U): U = {
-      TypedActor.selfReference.set(proxyVar.get)
-      TypedActor.currentContext.set(context)
+      akka.actor.TypedActor.selfReference.set(proxyVar.get)
+      akka.actor.TypedActor.currentContext.set(self.context)
       try unitOfWork
       finally {
-        TypedActor.selfReference.set(null)
-        TypedActor.currentContext.set(null)
+        akka.actor.TypedActor.selfReference.set(null)
+        akka.actor.TypedActor.currentContext.set(null)
       }
     }
 
@@ -337,7 +338,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
               val s = sender()
               m(me) match {
                 case f: Future[_] if m.returnsFuture =>
-                  implicit val dispatcher = context.dispatcher
+                  implicit val dispatcher = self.context.dispatcher
                   f.onComplete {
                     case Success(null)   => s ! NullResponse
                     case Success(result) => s ! result
@@ -501,7 +502,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
 
     @nowarn("msg=deprecated")
     def toTypedActorInvocationHandler(system: ActorSystem): TypedActorInvocationHandler =
-      new TypedActorInvocationHandler(TypedActor(system), new AtomVar[ActorRef](actor), new Timeout(timeout))
+      new TypedActorInvocationHandler(akka.actor.TypedActor(system), new AtomVar[ActorRef](actor), new Timeout(timeout))
   }
 }
 

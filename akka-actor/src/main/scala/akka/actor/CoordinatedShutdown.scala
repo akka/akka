@@ -355,7 +355,7 @@ final class CoordinatedShutdown private[akka] (
   import CoordinatedShutdown.{ Reason, UnknownReason }
 
   /** INTERNAL API */
-  private[akka] val log = Logging(system, getClass)
+  private[akka] val log = Logging(system, Logging.simpleName(this))
   private val knownPhases = phases.keySet ++ phases.values.flatMap(_.dependsOn)
 
   /** INTERNAL API */

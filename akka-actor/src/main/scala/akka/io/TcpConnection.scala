@@ -160,11 +160,11 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     case write: WriteCommand =>
       if (writingSuspended) {
         if (TraceLogging) log.debug("Dropping write because writing is suspended")
-        sender() ! write.failureMessage.withCause(DroppingWriteBecauseWritingIsSuspendedException)
+        sender() ! CommandFailed(write).withCause(DroppingWriteBecauseWritingIsSuspendedException)
 
       } else if (writePending) {
         if (TraceLogging) log.debug("Dropping write because queue is full")
-        sender() ! write.failureMessage.withCause(DroppingWriteBecauseQueueIsFullException)
+        sender() ! CommandFailed(write).withCause(DroppingWriteBecauseQueueIsFullException)
         if (info.useResumeWriting) writingSuspended = true
 
       } else {

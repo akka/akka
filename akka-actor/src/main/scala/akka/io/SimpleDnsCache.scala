@@ -131,7 +131,7 @@ object SimpleDnsCache {
     }
   }
 
-  private case class CacheEntry[T](answer: T, until: Long) {
+  private[io] case class CacheEntry[T](answer: T, until: Long) {
     def isValid(clock: Long): Boolean = clock < until
   }
 
