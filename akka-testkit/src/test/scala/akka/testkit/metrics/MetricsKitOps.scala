@@ -9,6 +9,7 @@ import java.util
 import com.codahale.metrics._
 import com.codahale.metrics.jvm
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet
+import org.scalatest.Notifying
 
 /**
  * User Land operations provided by the [[MetricsKit]].
@@ -16,7 +17,7 @@ import com.codahale.metrics.jvm.MemoryUsageGaugeSet
  * Extracted to give easy overview of user-API detached from MetricsKit internals.
  */
 private[akka] trait MetricsKitOps extends MetricKeyDSL {
-  this: MetricsKit =>
+  this: MetricsKit with Notifying =>
 
   type MetricKeyType = MetricKeyDSL#MetricKey
 
