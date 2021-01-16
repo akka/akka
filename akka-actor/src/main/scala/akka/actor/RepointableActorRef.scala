@@ -51,6 +51,10 @@ private[akka] class RepointableActorRef(
    */
   @nowarn @volatile private var _cellDoNotCallMeDirectly: Cell = _
   @nowarn @volatile private var _lookupDoNotCallMeDirectly: Cell = _
+  @nowarn private def _preventPrivateUnusedErasure = {
+    _cellDoNotCallMeDirectly
+    _lookupDoNotCallMeDirectly
+  }
 
   def underlying: Cell = Unsafe.instance.getObjectVolatile(this, cellOffset).asInstanceOf[Cell]
   def lookup = Unsafe.instance.getObjectVolatile(this, lookupOffset).asInstanceOf[Cell]

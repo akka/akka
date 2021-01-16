@@ -106,6 +106,10 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
 
   @nowarn @volatile private[this] var _inhabitantsDoNotCallMeDirectly: Long = _ // DO NOT TOUCH!
   @nowarn @volatile private[this] var _shutdownScheduleDoNotCallMeDirectly: Int = _ // DO NOT TOUCH!
+  @nowarn private def _preventPrivateUnusedErasure = {
+    _inhabitantsDoNotCallMeDirectly
+    _shutdownScheduleDoNotCallMeDirectly
+  }
 
   private final def addInhabitants(add: Long): Long = {
     val old = Unsafe.instance.getAndAddLong(this, inhabitantsOffset, add)

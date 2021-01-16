@@ -692,7 +692,8 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     val prb = TestProbe()
     val tf = system.asInstanceOf[ActorSystemImpl].threadFactory
     val sched =
-      new { @volatile var time = start } with LARS(config.withFallback(system.settings.config), log, tf) {
+      new LARS(config.withFallback(system.settings.config), log, tf) {
+        @volatile var time = start
         override protected def clock(): Long = {
           // println(s"clock=$time")
           time
@@ -705,7 +706,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
           prb.ref ! ns
           try time += (lbq.get match {
               case q: LinkedBlockingQueue[Long] => q.take()
-              case _                            => 0L
+              case null                         => 0L
             })
           catch {
             case _: InterruptedException => Thread.currentThread.interrupt()
@@ -717,14 +718,14 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     val driver = new Driver {
       def wakeUp(d: FiniteDuration) = lbq.get match {
         case q: LinkedBlockingQueue[Long] => q.offer(d.toNanos)
-        case _                            =>
+        case null                         =>
       }
       def expectWait(): FiniteDuration = probe.expectMsgType[Long].nanos
       def probe = prb
       def step = sched.TickDuration
       def close() = lbq.getAndSet(null) match {
         case q: LinkedBlockingQueue[Long] => q.offer(0L)
-        case _                            =>
+        case null                         =>
       }
     }
     driver.expectWait()
