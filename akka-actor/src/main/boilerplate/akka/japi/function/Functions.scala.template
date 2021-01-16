@@ -11,7 +11,6 @@ import scala.annotation.nowarn
  * `Serializable` is needed to be able to grab line number for Java 8 lambdas.
  */
 @nowarn
-@SerialVersionUID(##1L)
 trait Function1[[#-T1#], +R] extends java.io.Serializable {
   @throws(classOf[Exception])
   def apply([#arg1: T1#]): R
@@ -25,7 +24,6 @@ trait Function1[[#-T1#], +R] extends java.io.Serializable {
  * `Serializable` is needed to be able to grab line number for Java 8 lambdas.
  */
 @nowarn("msg=@SerialVersionUID has no effect")
-@SerialVersionUID(##1L)
 trait Procedure1[[#-T1#]] extends java.io.Serializable {
   @throws(classOf[Exception])
   def apply([#arg1: T1#]): Unit

@@ -40,7 +40,6 @@ import akka.util.unused
  * RoutedActorRef has returned, there will be a `NullPointerException`!
  */
 @nowarn("msg=@SerialVersionUID has no effect")
-@SerialVersionUID(1L)
 trait RouterConfig extends Serializable {
 
   /**
@@ -377,7 +376,6 @@ case object NoRouter extends NoRouter {
  * INTERNAL API
  */
 @nowarn("msg=@SerialVersionUID has no effect")
-@SerialVersionUID(1L)
 private[akka] trait RouterManagementMesssage
 
 /**
