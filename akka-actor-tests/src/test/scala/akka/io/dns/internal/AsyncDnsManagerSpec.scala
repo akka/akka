@@ -50,7 +50,7 @@ class AsyncDnsManagerSpec extends AkkaSpec("""
 
     "provide access to cache" in {
       dns ! AsyncDnsManager.GetCache
-      (expectMsgType[akka.io.SimpleDnsCache] should be).theSameInstanceAs(Dns(system).cache)
+      ((expectMsgType[akka.io.SimpleDnsCache]: akka.io.SimpleDnsCache) should be).theSameInstanceAs(Dns(system).cache)
     }
   }
 

@@ -193,7 +193,7 @@ object TypedActorSpec {
       with Receiver {
 
     @nowarn
-    private def ensureContextAvailable[T](f: => T): T = TypedActor.context match {
+    private def ensureContextAvailable[T](f: => T): T = akka.actor.TypedActor.context match {
       case null => throw new IllegalStateException("TypedActor.context is null!")
       case _    => f
     }
@@ -587,7 +587,7 @@ class TypedActorRouterSpec
   def newFooBar(d: FiniteDuration): Foo =
     akka.actor.TypedActor(system).typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)))
 
-  def mustStop(typedActor: AnyRef) = TypedActor(system).stop(typedActor) should ===(true)
+  def mustStop(typedActor: AnyRef) = akka.actor.TypedActor(system).stop(typedActor) should ===(true)
 
   "TypedActor Router" must {
 

@@ -101,9 +101,13 @@ object AkkaDisciplinePlugin extends AutoPlugin {
         Compile / scalacOptions ++= Seq("-Xfatal-warnings"),
         Test / scalacOptions --= testUndicipline,
         Compile / javacOptions ++= (
+          if (Dependencies.getScalaVersion().startsWith("3.0")) {
+            Seq()
+          } else {
             if (!nonFatalJavaWarningsFor(name.value)) Seq("-Werror", "-Xlint:deprecation", "-Xlint:unchecked")
             else Seq.empty
-          ),
+          }
+        ),
         Compile / javacOptions in doc := Seq("-Xdoclint:none"),
         Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
             case Some((2, 13)) =>

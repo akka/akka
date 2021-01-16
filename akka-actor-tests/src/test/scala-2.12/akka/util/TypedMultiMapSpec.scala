@@ -13,7 +13,7 @@ object TypedMultiMapSpec {
   final case class Key[T](t: T) extends AbstractKey { final override type Type = T }
   final case class MyValue[T](t: T)
 
-  type KV[K <: AbstractKey] = MyValue[K#Type]
+  opaque type KV[K <: AbstractKey] = MyValue[K#Type]
 }
 
 class TypedMultiMapSpec extends AnyWordSpec with Matchers with TypeCheckedTripleEquals {

@@ -33,6 +33,10 @@ final case class Address private (protocol: String, system: String, host: Option
   def this(protocol: String, system: String) = this(protocol, system, None, None)
   def this(protocol: String, system: String, host: String, port: Int) = this(protocol, system, Option(host), Some(port))
 
+  def copy(protocol: String = protocol, system: String = system, host: Option[String] = host, port: Option[Int] = port) = {
+    Address(protocol, system, host, port)
+  }
+
   /**
    * Java API: The hostname if specified or empty optional if not
    */

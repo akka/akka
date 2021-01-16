@@ -27,7 +27,7 @@ class AskSpec extends AkkaSpec("""
       implicit val timeout: Timeout = Timeout(5.seconds)
       val echo = system.actorOf(Props(new Actor { def receive = { case x => sender() ! x } }))
       val f = echo ? "ping"
-      f.futureValue should ===("ping")
+      Await.result(f, timeout.duration) should ===("ping")
     }
 
     "return broken promises on DeadLetters" in {

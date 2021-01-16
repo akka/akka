@@ -4,7 +4,7 @@
 
 package akka.pattern
 
-import scala.concurrent.Promise
+import scala.concurrent.{ Await, Promise } 
 import scala.concurrent.duration._
 
 import akka.actor._
@@ -32,7 +32,7 @@ class PromiseRefSpec extends AkkaSpec with ImplicitSender {
       }))
 
       target ! Request(promiseRef.ref)
-      promiseRef.future.futureValue should ===(Response)
+      Await.result(promiseRef.future, 5.seconds) should ===(Response)
     }
 
     "throw IllegalArgumentException on negative timeout" in {
@@ -48,7 +48,7 @@ class PromiseRefSpec extends AkkaSpec with ImplicitSender {
       val promiseRef = PromiseRef(5.seconds)
 
       promiseRef.ref ! FirstMessage
-      promiseRef.future.futureValue should ===(FirstMessage)
+      Await.result(promiseRef.future, 5.seconds) should ===(FirstMessage)
 
       promiseRef.ref ! SecondMessage
       deadListener.expectMsgType[DeadLetter].message should ===(SecondMessage)

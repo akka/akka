@@ -10,6 +10,7 @@ import java.util.concurrent.locks.{ Condition, LockSupport, ReentrantLock }
 
 import scala.collection.mutable
 import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Future }
+import scala.language.postfixOps
 import scala.util.control.Exception
 
 import org.scalactic.source.Position

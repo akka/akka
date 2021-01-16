@@ -296,7 +296,7 @@ trait ManagedActorClassification { this: ActorEventBus with ActorClassifier =>
   private val empty = immutable.TreeSet.empty[ActorRef]
 
   /** The unsubscriber takes care of unsubscribing actors, which have terminated. */
-  protected lazy val unsubscriber = ActorClassificationUnsubscriber.start(system, this.toString(), this.unsubscribe)
+  protected lazy val unsubscriber = ActorClassificationUnsubscriber.start(system, this.toString, this.unsubscribe)
 
   @tailrec
   protected final def associate(monitored: ActorRef, monitor: ActorRef): Boolean = {

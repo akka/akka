@@ -90,7 +90,7 @@ class StablePriorityDispatcherSpec extends AkkaSpec(StablePriorityDispatcherSpec
       // should come out in the same order in which they were sent.
       val lo = (1 to 100) toList
       val hi = shuffled.filter { _ > 100 }
-      expectMsgType[List[Int]] should ===(lo ++ hi)
+      (expectMsgType[List[Int]]: List[Int]) should ===(lo ++ hi)
     }
   }
 }

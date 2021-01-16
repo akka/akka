@@ -4,7 +4,7 @@
 
 package akka.pattern
 
-import scala.concurrent.Future
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
 import org.scalatest.concurrent.ScalaFutures
@@ -68,7 +68,7 @@ class StatusReplySpec extends AkkaSpec with ScalaFutures {
       val result = probe.ref.askWithStatus("request")
       probe.expectMsg("request")
       probe.lastSender ! StatusReply.Success("woho")
-      result.futureValue should ===("woho")
+      Await.result(result, timeout.duration) should ===("woho")
     }
 
     "unwrap Error with message" in {
