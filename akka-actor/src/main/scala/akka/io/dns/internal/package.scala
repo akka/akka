@@ -28,7 +28,7 @@ package object internal {
       (a, b) match {
         case (Forever, Forever) => 0
         case (Never, Never)     => 0
-        case (Ttl(v1), Ttl(v2)) => v1.compare(v2)
+        case (v1: Ttl, v2: Ttl) => v1.value.compare(v2.value)
         case (Never, _)         => -1
         case (_, Forever)       => -1
         case (Forever, _)       => 1

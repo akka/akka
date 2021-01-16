@@ -340,8 +340,12 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
                 case f: Future[_] if m.returnsFuture =>
                   implicit val dispatcher = self.context.dispatcher
                   f.onComplete {
-                    case Success(null)   => s ! NullResponse
-                    case Success(result) => s ! result
+                    case Success(result) =>
+                      if (result == null) {
+                        s ! NullResponse
+                      } else {
+                        s ! result
+                      }
                     case Failure(f)      => s ! Status.Failure(f)
                   }
                 case null   => s ! NullResponse

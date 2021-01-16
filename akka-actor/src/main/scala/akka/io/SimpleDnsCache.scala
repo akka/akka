@@ -110,7 +110,7 @@ object SimpleDnsCache {
       val until = ttl match {
         case Forever  => Long.MaxValue
         case Never    => clock() - 1
-        case Ttl(ttl) => clock() + ttl.toMillis
+        case ttl: Ttl => clock() + ttl.value.toMillis
       }
 
       new Cache[K, V](queue + new ExpiryEntry[K](name, until), cache + (name -> CacheEntry(answer, until)), clock)

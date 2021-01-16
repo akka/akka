@@ -1043,7 +1043,7 @@ private[akka] class ActorSystemImpl(
   }
 
   def start(): this.type = _start
-  def registerOnTermination[T](code: => T): Unit = { registerOnTermination(new Runnable { def run = code }) }
+  def registerOnTermination[T](code: => T): Unit = { registerOnTermination(new Runnable { def run() = code }) }
   def registerOnTermination(code: Runnable): Unit = { terminationCallbacks.add(code) }
 
   @volatile private var terminating = false

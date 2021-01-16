@@ -160,8 +160,11 @@ object StatusReply {
   @InternalApi
   private[akka] def flattenStatusFuture[T](f: Future[StatusReply[T]]): Future[T] =
     f.transform {
-      case ScalaSuccess(StatusReply.Success(v)) => ScalaSuccess(v.asInstanceOf[T])
-      case ScalaSuccess(StatusReply.Error(ex))  => ScalaFailure[T](ex)
+      case ScalaSuccess(s) =>
+        s match {
+          case StatusReply.Success(v) => ScalaSuccess(v.asInstanceOf[T])
+          case StatusReply.Error(ex)  => ScalaFailure[T](ex)
+        }
       case fail @ ScalaFailure(_)               => fail.asInstanceOf[Try[T]]
     }(ExecutionContexts.parasitic)
 }

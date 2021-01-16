@@ -108,7 +108,7 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
     cp match {
       case Forever  => Long.MaxValue
       case Never    => 0
-      case Ttl(ttl) => ttl.toMillis
+      case ttl: Ttl => ttl.value.toMillis
     }
   }
 
