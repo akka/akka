@@ -203,6 +203,10 @@ object FSM {
         replies: List[Any] = Nil) = {
       new State(stateName, stateData, timeout, stopReason, replies)
     }
+
+    def unapply[S, D](state: State[S, D]): Option[(S, D, Option[FiniteDuration], Option[Reason], List[Any])] = {
+      Some((state.stateName, state.stateData, state.timeout, state.stopReason, state.replies))
+    }
   }
   class State[S, D](
       val stateName: S,
