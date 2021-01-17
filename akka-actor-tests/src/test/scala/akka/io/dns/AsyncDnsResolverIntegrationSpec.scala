@@ -14,7 +14,7 @@ import CachePolicy.Ttl
 import akka.io.{ Dns, IO }
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.pattern.ask
-import akka.testkit.{ AkkaSpec, SocketUtil }
+import akka.testkit.SocketUtil
 import akka.testkit.SocketUtil.Both
 import akka.testkit.WithLogCapturing
 import akka.util.Timeout
