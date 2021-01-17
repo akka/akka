@@ -687,34 +687,34 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
   @nowarn
   def withScheduler(start: Long = 0L, _startTick: Int = 0, config: Config = ConfigFactory.empty)(
       thunk: (Scheduler with Closeable, Driver) => Unit): Unit = {
-    import akka.actor.{ LightArrayRevolverScheduler => LARS }
     val lbq = new AtomicReference[LinkedBlockingQueue[Long]](new LinkedBlockingQueue[Long])
     val prb = TestProbe()
     val tf = system.asInstanceOf[ActorSystemImpl].threadFactory
-    val sched =
-      new LARS(config.withFallback(system.settings.config), log, tf) {
-        @volatile var time = start
-        override protected def clock(): Long = {
-          // println(s"clock=$time")
-          time
-        }
 
-        override protected def getShutdownTimeout: FiniteDuration = (10 seconds).dilated
-
-        override protected def waitNanos(ns: Long): Unit = {
-          // println(s"waiting $ns")
-          prb.ref ! ns
-          try time += (lbq.get match {
-              case q: LinkedBlockingQueue[Long] => q.take()
-              case null                         => 0L
-            })
-          catch {
-            case _: InterruptedException => Thread.currentThread.interrupt()
-          }
-        }
-
-        override protected def startTick: Int = _startTick
+    @volatile var time: Long = start
+    val sched = new LightArrayRevolverScheduler(config.withFallback(system.settings.config), log, tf) {
+      override protected def clock(): Long = {
+        // println(s"clock=$time")
+        time
       }
+
+      override protected def getShutdownTimeout: FiniteDuration = (10 seconds).dilated
+
+      override protected def waitNanos(ns: Long): Unit = {
+        // println(s"waiting $ns")
+        prb.ref ! ns
+        try time += (lbq.get match {
+            case q: LinkedBlockingQueue[Long] => q.take()
+            case null                         => 0L
+          })
+        catch {
+          case _: InterruptedException => Thread.currentThread.interrupt()
+        }
+      }
+
+      override protected def startTick: Int = _startTick
+    }
+
     val driver = new Driver {
       def wakeUp(d: FiniteDuration) = lbq.get match {
         case q: LinkedBlockingQueue[Long] => q.offer(d.toNanos)
