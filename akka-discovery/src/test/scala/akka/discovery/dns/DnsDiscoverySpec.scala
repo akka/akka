@@ -37,7 +37,7 @@ object DnsDiscoverySpec {
 
 }
 
-class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config) with DockerBindDnsService {
+class DnsDiscoverySpec extends DockerBindDnsService(DnsDiscoverySpec.config) {
 
   import DnsDiscoverySpec._
 
