@@ -338,7 +338,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
               val s = sender()
               m(me) match {
                 case f: Future[_] if m.returnsFuture =>
-                  implicit val dispatcher = self.context.dispatcher
+                  implicit val dispatcher = this.context.dispatcher
                   f.onComplete {
                     case Success(result) =>
                       if (result == null) {

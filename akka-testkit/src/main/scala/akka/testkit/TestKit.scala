@@ -268,7 +268,7 @@ trait TestKitBase {
     case x if x eq Duration.Undefined => remainingOrDefault
     case x if !x.isFinite             => throw new IllegalArgumentException("max duration cannot be infinite")
     case f: FiniteDuration            => f.dilated
-    case _1                           => throw new IllegalArgumentException("max duration cannot be infinite")
+    case _                            => throw new IllegalArgumentException("max duration cannot be infinite")
   }
 
   /**
