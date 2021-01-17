@@ -178,6 +178,15 @@ object FSM {
      */
     private[akka] override def notifies: Boolean = false
 
+    override def copy(
+        stateName: S = stateName,
+        stateData: D = stateData,
+        timeout: Option[FiniteDuration] = timeout,
+        stopReason: Option[Reason] = stopReason,
+        replies: List[Any] = replies): State[S, D] = {
+      new SilentState(stateName, stateData, timeout, stopReason, replies)
+    }
+
   }
 
   /**
@@ -185,17 +194,37 @@ object FSM {
    * name, the state data, possibly custom timeout, stop reason and replies
    * accumulated while processing the last message.
    */
-  case class State[S, D](
+  object State {
+    def apply[S, D](
       stateName: S,
       stateData: D,
       timeout: Option[FiniteDuration] = None,
       stopReason: Option[Reason] = None,
-      replies: List[Any] = Nil) {
+      replies: List[Any] = Nil) = {
+        new State(stateName, stateData, timeout, stopReason, replies)
+      }
+  }
+  class State[S, D](
+      val stateName: S,
+      val stateData: D,
+      val timeout: Option[FiniteDuration] = None,
+      val stopReason: Option[Reason] = None,
+      val replies: List[Any] = Nil) {
 
     /**
      * INTERNAL API
      */
     private[akka] def notifies: Boolean = true
+
+    // defined here to be able to override it in SilentState
+    def copy(
+        stateName: S = stateName,
+        stateData: D = stateData,
+        timeout: Option[FiniteDuration] = timeout,
+        stopReason: Option[Reason] = stopReason,
+        replies: List[Any] = replies): State[S, D] = {
+      new State(stateName, stateData, timeout, stopReason, replies)
+    }
 
     /**
      * Modify state transition descriptor to include a state timeout for the
