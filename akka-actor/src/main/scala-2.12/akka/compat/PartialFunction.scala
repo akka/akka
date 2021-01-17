@@ -7,6 +7,7 @@ package akka.compat
 import scala.annotation.nowarn
 
 import akka.annotation.InternalApi
+
 /**
  * INTERNAL API
  *

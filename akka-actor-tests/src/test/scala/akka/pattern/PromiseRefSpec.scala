@@ -4,7 +4,7 @@
 
 package akka.pattern
 
-import scala.concurrent.{ Await, Promise } 
+import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration._
 
 import akka.actor._

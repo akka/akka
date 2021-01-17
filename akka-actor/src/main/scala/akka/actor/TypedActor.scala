@@ -269,7 +269,9 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
     self =>
     // if we were remote deployed we need to create a local proxy
     if (!self.context.parent.asInstanceOf[InternalActorRef].isLocal)
-      akka.actor.TypedActor.get(self.context.system).createActorRefProxy(TypedProps(interfaces, createInstance), proxyVar, self.context.self)
+      akka.actor.TypedActor
+        .get(self.context.system)
+        .createActorRefProxy(TypedProps(interfaces, createInstance), proxyVar, self.context.self)
 
     private val me = withContext[T](createInstance)
 
@@ -346,7 +348,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
                       } else {
                         s ! result
                       }
-                    case Failure(f)      => s ! Status.Failure(f)
+                    case Failure(f) => s ! Status.Failure(f)
                   }
                 case null   => s ! NullResponse
                 case result => s ! result

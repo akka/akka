@@ -95,7 +95,7 @@ object AkkaBuild {
         "-feature",
         "-unchecked",
         // 'blessed' since 2.13.1
-        "-language:higherKinds")  
+        "-language:higherKinds")
     } else {
       Seq(
         "-encoding",
@@ -138,8 +138,7 @@ object AkkaBuild {
         ScmInfo(
           url("https://github.com/akka/akka"),
           "scm:git:https://github.com/akka/akka.git",
-          "scm:git:git@github.com:akka/akka.git"
-        )),
+          "scm:git:git@github.com:akka/akka.git")),
     apiURL := Some(url(s"https://doc.akka.io/api/akka/${version.value}")),
     initialCommands :=
       """|import language.postfixOps
@@ -228,8 +227,7 @@ object AkkaBuild {
       files.map { x =>
         Attributed.blank(x)
       }
-    }
-  )
+    })
 
   private def optionalDir(path: String): Option[File] =
     Option(path).filter(_.nonEmpty).map { path =>

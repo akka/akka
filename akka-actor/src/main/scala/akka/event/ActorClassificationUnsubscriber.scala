@@ -79,7 +79,9 @@ private[akka] object ActorClassificationUnsubscriber {
     val debug = system.settings.config.getBoolean("akka.actor.debug.event-stream")
     system
       .asInstanceOf[ExtendedActorSystem]
-      .systemActorOf(props(busName, unsubscribe, debug), "actorClassificationUnsubscriber-" + unsubscribersCount.incrementAndGet())
+      .systemActorOf(
+        props(busName, unsubscribe, debug),
+        "actorClassificationUnsubscriber-" + unsubscribersCount.incrementAndGet())
   }
 
   private def props(busName: String, unsubscribe: ActorRef => Unit, debug: Boolean) =

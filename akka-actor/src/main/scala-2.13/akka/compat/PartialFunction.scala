@@ -5,6 +5,7 @@
 package akka.compat
 
 import akka.annotation.InternalApi
+
 /**
  * INTERNAL API
  *

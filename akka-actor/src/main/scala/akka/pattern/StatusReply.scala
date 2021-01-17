@@ -165,6 +165,6 @@ object StatusReply {
           case StatusReply.Success(v) => ScalaSuccess(v.asInstanceOf[T])
           case StatusReply.Error(ex)  => ScalaFailure[T](ex)
         }
-      case fail @ ScalaFailure(_)               => fail.asInstanceOf[Try[T]]
+      case fail @ ScalaFailure(_) => fail.asInstanceOf[Try[T]]
     }(ExecutionContexts.parasitic)
 }

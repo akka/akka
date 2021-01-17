@@ -100,14 +100,18 @@ object Dependencies {
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
 
     // ssl-config
-    val sslConfigCore = DottyCompatModuleID("com.typesafe" %% "ssl-config-core" % sslConfigVersion).withDottyCompat(getScalaVersion()) // ApacheV2
+    val sslConfigCore = DottyCompatModuleID("com.typesafe" %% "ssl-config-core" % sslConfigVersion)
+      .withDottyCompat(getScalaVersion()) // ApacheV2
 
     val lmdb = "org.lmdbjava" % "lmdbjava" % "0.7.0" // ApacheV2, OpenLDAP Public License
 
     val junit = "junit" % "junit" % junitVersion // Common Public License 1.0
 
     // For Java 8 Conversions
-    val java8Compat = Def.setting { DottyCompatModuleID("org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value).withDottyCompat(getScalaVersion()) } // Scala License
+    val java8Compat = Def.setting {
+      DottyCompatModuleID("org.scala-lang.modules" %% "scala-java8-compat" % java8CompatVersion.value)
+        .withDottyCompat(getScalaVersion())
+    } // Scala License
 
     val aeronDriver = "io.aeron" % "aeron-driver" % aeronVersion // ApacheV2
     val aeronClient = "io.aeron" % "aeron-client" % aeronVersion // ApacheV2
@@ -321,12 +325,7 @@ object Dependencies {
 
   lazy val streamTestkit = l ++= Seq(Test.scalatest, Test.scalatestScalaCheck, Test.junit)
 
-  lazy val streamTests = l ++= Seq(
-        Test.scalatest,
-        Test.scalatestScalaCheck,
-        Test.junit,
-        Test.commonsIo,
-        Test.jimfs)
+  lazy val streamTests = l ++= Seq(Test.scalatest, Test.scalatestScalaCheck, Test.junit, Test.commonsIo, Test.jimfs)
 
   lazy val streamTestsTck = l ++= Seq(
         Test.scalatest,

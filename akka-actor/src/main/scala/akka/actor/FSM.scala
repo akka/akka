@@ -196,13 +196,13 @@ object FSM {
    */
   object State {
     def apply[S, D](
-      stateName: S,
-      stateData: D,
-      timeout: Option[FiniteDuration] = None,
-      stopReason: Option[Reason] = None,
-      replies: List[Any] = Nil) = {
-        new State(stateName, stateData, timeout, stopReason, replies)
-      }
+        stateName: S,
+        stateData: D,
+        timeout: Option[FiniteDuration] = None,
+        stopReason: Option[Reason] = None,
+        replies: List[Any] = Nil) = {
+      new State(stateName, stateData, timeout, stopReason, replies)
+    }
   }
   class State[S, D](
       val stateName: S,
