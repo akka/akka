@@ -256,7 +256,8 @@ import akka.util.JavaDurationConverters._
       new EntityRefImpl[M](
         classicSharding.shardRegionProxy(typeKey.name, dataCenter),
         entityId,
-        typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
+        typeKey.asInstanceOf[EntityTypeKeyImpl[M]],
+        Some(dataCenter))
   }
 
   override def entityRefFor[M](typeKey: javadsl.EntityTypeKey[M], entityId: String): javadsl.EntityRef[M] = {
@@ -276,7 +277,8 @@ import akka.util.JavaDurationConverters._
       new EntityRefImpl[M](
         classicSharding.shardRegionProxy(typeKey.name, dataCenter),
         entityId,
-        typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
+        typeKey.asInstanceOf[EntityTypeKeyImpl[M]],
+        Some(dataCenter))
   }
 
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
