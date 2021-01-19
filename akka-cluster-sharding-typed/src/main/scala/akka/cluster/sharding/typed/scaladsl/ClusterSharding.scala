@@ -418,6 +418,27 @@ object EntityTypeKey {
 @DoNotInherit trait EntityRef[-M] extends RecipientRef[M] { this: InternalRecipientRef[M] =>
 
   /**
+   * The identifier for the particular entity referenced by this EntityRef.
+   *
+   * {{{
+   * // given sharding, typeKey
+   * sharding.entityRefFor(typeKey, "someId").entityId == "someId"  // always true
+   * }}}
+   */
+  def entityId: String
+
+  /**
+   * The name of the EntityTypeKey associated with this EntityRef.
+   */
+  def entityName: String
+
+  /**
+   * The specified datacenter of the incarnation of the particular entity referenced by this EntityRef,
+   * if a datacenter was specified.
+   */
+  def dataCenter: Option[String]
+
+  /**
    * Send a message to the entity referenced by this EntityRef using *at-most-once*
    * messaging semantics.
    *

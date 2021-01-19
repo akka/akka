@@ -443,6 +443,23 @@ object EntityTypeKey {
   scaladslSelf: scaladsl.EntityRef[M] with InternalRecipientRef[M] =>
 
   /**
+   * The identifier for the particular entity referenced by this EntityRef.
+   */
+  def getEntityId: String = entityId
+
+  /**
+   * The name of the EntityTypeKey associated with this EntityRef
+   */
+  def getEntityName: String = entityName
+
+  /**
+   * The specified datacenter of the incarnation of the particular entity referenced by this EntityRef,
+   * if a datacenter was specified.
+   */
+  def getDataCenter: Optional[String] =
+    Optional.ofNullable(dataCenter.orNull)
+
+  /**
    * Send a message to the entity referenced by this EntityRef using *at-most-once*
    * messaging semantics.
    */
