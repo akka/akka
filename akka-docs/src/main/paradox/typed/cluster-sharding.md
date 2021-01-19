@@ -84,7 +84,7 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #init }
 
-Messages to a specific entity are then sent via an `EntityRef`.
+Messages to a specific entity are then sent via an `EntityRef`.  The `entityId` and the name of the Entity's key can be retrieved from the `EntityRef`.
 It is also possible to wrap methods in a `ShardingEnvelope` or define extractor functions and send messages directly to the shard region.
 
 Scala
@@ -105,7 +105,11 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #roles }
 
+### A note about EntityRef and serialization
 
+If including `EntityRef`s in messages or the `State`/`Event`s of an `EventSourcedBehavior`, those `EntityRef`s will need to be serialized.
+The @scala[`entityId`, `entityName`, and (in multi-DC use-cases) `dataCenter` of an `EntityRef`]@java[`getEntityId`, `getEntityName`, and (in multi-DC use-cases) `getDataCenter` methods of an `EntityRef`]
+provide exactly the information needed upon deserialization to regenerate an `EntityRef` equivalent to the one serialized.
 
 ## Persistence example
 
