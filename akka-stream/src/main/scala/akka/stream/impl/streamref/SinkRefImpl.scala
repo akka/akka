@@ -76,7 +76,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
 
       override protected val stageActorName: String = streamRefsMaster.nextSinkRefStageName()
       private[this] val self: GraphStageLogic.StageActor =
-        getEagerStageActor(eagerMaterializer, poisonPillCompatibility = false)(initialReceive)
+        getEagerStageActor(eagerMaterializer)(initialReceive)
       override val ref: ActorRef = self.ref
       implicit def selfSender: ActorRef = ref
 

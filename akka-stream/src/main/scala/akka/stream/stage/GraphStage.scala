@@ -195,7 +195,6 @@ object GraphStageLogic {
       materializer: Materializer,
       getAsyncCallback: StageActorRef.Receive => AsyncCallback[(ActorRef, Any)],
       initialReceive: StageActorRef.Receive,
-      poisonPillFallback: Boolean, // internal fallback to support deprecated SourceActorRef implementation replacement
       name: String) {
 
     private val callback = getAsyncCallback(internalReceive)
@@ -207,8 +206,6 @@ object GraphStageLogic {
     }
     private val functionRef: FunctionRef = {
       val f: (ActorRef, Any) => Unit = {
-        case (r, PoisonPill) if poisonPillFallback =>
-          callback.invoke((r, PoisonPill))
         case (_, m @ (PoisonPill | Kill)) =>
           materializer.logger.warning(
             "{} message sent to StageActor({}) will be ignored, since it is not a real Actor." +
@@ -1310,7 +1307,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * @return minimal actor with watch method
    */
   final protected def getStageActor(receive: ((ActorRef, Any)) => Unit): StageActor =
-    getEagerStageActor(interpreter.materializer, poisonPillCompatibility = false)(receive)
+    getEagerStageActor(interpreter.materializer)(receive)
 
   /**
    * INTERNAL API
@@ -1319,14 +1316,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * materialization or one of the methods invoked by the graph operator machinery, such as `onPush` and `onPull`.
    */
   @InternalApi
-  protected[akka] def getEagerStageActor(
-      eagerMaterializer: Materializer,
-      poisonPillCompatibility: Boolean)( // fallback required for source actor backwards compatibility
+  protected[akka] def getEagerStageActor(eagerMaterializer: Materializer)(
       receive: ((ActorRef, Any)) => Unit): StageActor =
     _stageActor match {
       case null =>
-        _stageActor =
-          new StageActor(eagerMaterializer, getAsyncCallback _, receive, poisonPillCompatibility, stageActorName)
+        _stageActor = new StageActor(eagerMaterializer, getAsyncCallback _, receive, stageActorName)
         _stageActor
       case existing =>
         existing.become(receive)
