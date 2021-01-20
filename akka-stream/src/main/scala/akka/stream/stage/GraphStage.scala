@@ -273,6 +273,24 @@ object GraphStageLogic {
 }
 
 /**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] object ConcurrentAsyncCallbackState {
+  sealed trait State[E]
+  // waiting for materialization completion or during dispatching of initially queued events
+  final case class Pending[E](pendingEvents: List[Event[E]]) extends State[E]
+  // stream is initialized and so no threads can just send events without any synchronization overhead
+  case object Initialized extends State[Any]
+  def initialized[E]: State[E] = Initialized.asInstanceOf[State[E]]
+  // Event with feedback promise
+  final case class Event[E](e: E, handlingPromise: Promise[Done])
+
+  private val NoPendingEvents = Pending(Nil)
+  def noPendingEvents[E]: State[E] = NoPendingEvents.asInstanceOf[State[E]]
+}
+
+/**
  * Represents the processing logic behind a [[GraphStage]]. Roughly speaking, a subclass of [[GraphStageLogic]] is a
  * collection of the following parts:
  *  * A set of [[InHandler]] and [[OutHandler]] instances and their assignments to the [[Inlet]]s and [[Outlet]]s
@@ -1174,30 +1192,20 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * "Real world" calls of [[invokeWithFeedback]] always return failed promises for `Completed` state
    */
   private final class ConcurrentAsyncCallback[T](handler: T => Unit) extends AsyncCallback[T] {
-
-    sealed trait State
-    // waiting for materialization completion or during dispatching of initially queued events
-    // - can't be final because of SI-4440
-    private case class Pending(pendingEvents: List[Event]) extends State
-    // stream is initialized and so no threads can just send events without any synchronization overhead
-    private case object Initialized extends State
-    // Event with feedback promise - can't be final because of SI-4440
-    private case class Event(e: T, handlingPromise: Promise[Done])
-
-    private[this] val NoPendingEvents = Pending(Nil)
-    private[this] val currentState = new AtomicReference[State](NoPendingEvents)
+    import ConcurrentAsyncCallbackState._
+    private[this] val currentState = new AtomicReference[State[T]](noPendingEvents)
 
     // is called from the owning [[GraphStage]]
     @tailrec
     private[stage] def onStart(): Unit = {
       // dispatch callbacks that have been queued before the interpreter was started
-      (currentState.getAndSet(NoPendingEvents): @unchecked) match {
+      (currentState.getAndSet(noPendingEvents): @unchecked) match {
         case Pending(l) => if (l.nonEmpty) l.reverse.foreach(evt => onAsyncInput(evt.e, evt.handlingPromise))
         case s          => throw new IllegalStateException(s"Unexpected callback state [$s]")
       }
 
       // in the meantime more callbacks might have been queued (we keep queueing them to ensure order)
-      if (!currentState.compareAndSet(NoPendingEvents, Initialized))
+      if (!currentState.compareAndSet(noPendingEvents, initialized))
         // state guaranteed to be still Pending
         onStart()
     }
@@ -1234,13 +1242,13 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     @tailrec
     private def invokeWithPromise(event: T, promise: Promise[Done]): Unit =
       currentState.get() match {
-        case Initialized =>
+        case i if i eq Initialized =>
           // started - can just dispatch async message to interpreter
           onAsyncInput(event, promise)
 
         case list @ Pending(l) =>
           // not started yet
-          if (!currentState.compareAndSet(list, Pending(Event(event, promise) :: l)))
+          if (!currentState.compareAndSet(list, Pending[T](Event[T](event, promise) :: l)))
             invokeWithPromise(event, promise)
       }
 
