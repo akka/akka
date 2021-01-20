@@ -309,15 +309,13 @@ import akka.util.JavaDurationConverters._
 @InternalApi private[akka] final class EntityRefImpl[M](
     shardRegion: akka.actor.ActorRef,
     override val entityId: String,
-    typeKey: EntityTypeKeyImpl[M],
+    override val typeKey: EntityTypeKeyImpl[M],
     override val dataCenter: Option[String] = None)
     extends javadsl.EntityRef[M]
     with scaladsl.EntityRef[M]
     with InternalRecipientRef[M] {
 
   override val refPrefix = URLEncoder.encode(s"${typeKey.name}-$entityId", ByteString.UTF_8)
-
-  override def entityName: String = typeKey.name
 
   override def tell(msg: M): Unit =
     shardRegion ! ShardingEnvelope(entityId, msg)

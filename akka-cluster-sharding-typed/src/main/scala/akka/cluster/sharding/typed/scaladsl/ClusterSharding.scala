@@ -428,9 +428,9 @@ object EntityTypeKey {
   def entityId: String
 
   /**
-   * The name of the EntityTypeKey associated with this EntityRef.
+   * The EntityTypeKey associated with this EntityRef.
    */
-  def entityName: String
+  def typeKey: EntityTypeKey[M]
 
   /**
    * The specified datacenter of the incarnation of the particular entity referenced by this EntityRef,

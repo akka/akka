@@ -450,7 +450,7 @@ object EntityTypeKey {
   /**
    * The name of the EntityTypeKey associated with this EntityRef
    */
-  def getEntityName: String = entityName
+  def getTypeKey: scaladsl.EntityTypeKey[M] = typeKey
 
   /**
    * The specified datacenter of the incarnation of the particular entity referenced by this EntityRef,
