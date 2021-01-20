@@ -93,16 +93,17 @@ class WorkPullingWithEventSourcedProducerQueueSpec
       producerProbe.expectNoMessage()
 
       val delivery1 = consumerProbe.receiveMessage()
-      delivery1.message should ===("a")
       delivery1.confirmTo ! ConsumerController.Confirmed
 
       val delivery2 = consumerProbe.receiveMessage()
-      delivery2.message should ===("b")
       delivery2.confirmTo ! ConsumerController.Confirmed
 
       val delivery3 = consumerProbe.receiveMessage()
-      delivery3.message should ===("c")
       delivery3.confirmTo ! ConsumerController.Confirmed
+
+      // since we have two consumers with the same probe order of delivery to the
+      // probe is not deterministic
+      Set(delivery1.message, delivery2.message, delivery3.message) should ===(Set("a", "b", "c"))
 
       producerProbe.expectNoMessage()
       requestNext4.sendNextTo ! "d"
