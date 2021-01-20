@@ -48,7 +48,7 @@ private object ActorRefBackpressureSource {
       override protected def stageActorName: String =
         inheritedAttributes.get[Attributes.Name].map(_.n).getOrElse(super.stageActorName)
 
-      val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillCompatibility = false) {
+      val ref: ActorRef = getEagerStageActor(eagerMaterializer) {
         case (_, m) if failureMatcher.isDefinedAt(m) =>
           failStage(failureMatcher(m))
         case (_, m) if completionMatcher.isDefinedAt(m) =>
