@@ -154,7 +154,6 @@ class BoundedSourceQueueSpec extends StreamSpec("""akka.loglevel = debug
           startBarrier.await() // wait for all threads being in this state before starting race
           runLoop()
           stopBarrier.countDown()
-          stopBarrier.await()
           log.debug(
             f"Thread $getName%-20s enqueued: $numElemsEnqueued%7d dropped: $numElemsDropped%7d before completion")
         }
