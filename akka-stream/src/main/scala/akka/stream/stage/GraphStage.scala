@@ -1435,9 +1435,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         case OnComplete =>
           closed = true
           handler.onUpstreamFinish()
+          GraphStageLogic.this.completedOrFailed(this)
         case OnError(ex) =>
           closed = true
           handler.onUpstreamFailure(ex)
+          GraphStageLogic.this.completedOrFailed(this)
       }
     }.invoke _)
 
@@ -1513,6 +1515,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
           available = false
           closed = true
           handler.onDownstreamFinish(cause)
+          GraphStageLogic.this.completedOrFailed(this)
         }
     }
 
