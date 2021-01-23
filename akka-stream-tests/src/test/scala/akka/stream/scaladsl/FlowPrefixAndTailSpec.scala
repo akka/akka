@@ -98,6 +98,8 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
 
       val subscriber1 = TestSubscriber.probe[Int]()
       tail.to(Sink.fromSubscriber(subscriber1)).run()
+      // TODO: FIXME properly
+      Thread.sleep(1000)
 
       val subscriber2 = TestSubscriber.probe[Int]()
       tail.to(Sink.fromSubscriber(subscriber2)).run()
