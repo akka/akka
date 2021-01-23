@@ -30,7 +30,7 @@ class SerialVersionRemoverPhase extends PluginPhase {
 
   override val runsBefore = Set(GenBCode.name)
 
-  override def transformTypeDef(tree: TypeDef)(using Context): Tree = {
+  override def transformTypeDef(tree: TypeDef)(implicit ctx: Context): Tree = {
     val symbol = tree.symbol
     if (tree.symbol.getAnnotation(defn.SerialVersionUIDAnnot).isDefined && tree.symbol.is(Trait)) {
       tree.symbol.removeAnnotation(defn.SerialVersionUIDAnnot)
