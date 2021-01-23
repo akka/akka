@@ -103,9 +103,6 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
       tail.to(Sink.fromSubscriber(subscriber2)).run()
       val ex = subscriber2.expectSubscriptionAndError()
       ex.getMessage should ===("Substream Source(TailSource) cannot be materialized more than once")
-      println("DEBUG")
-      println(ex.getStackTrace)
-      println("DEBUG")
       ex.getStackTrace.exists(_.getClassName contains "FlowPrefixAndTailSpec") shouldBe true
 
       subscriber1.requestNext(2).expectComplete()
