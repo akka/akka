@@ -64,6 +64,12 @@ class TestActorRef[T <: Actor](_system: ActorSystem, _props: Props, _supervisor:
       _system.mailboxes.getMailboxType(props, dispatcher.configurator.config)
     }, _supervisor.asInstanceOf[InternalActorRef], _supervisor.path / name) {
 
+  val props = _props.withDispatcher(
+    if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
+    else _props.dispatcher)
+
+  val dispatcher = _system.dispatchers.lookup(props.dispatcher)
+
   // we need to start ourselves since the creation of an actor has been split into initialization and starting
   underlying.start()
 

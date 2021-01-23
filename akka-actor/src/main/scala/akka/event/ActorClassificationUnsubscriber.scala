@@ -6,6 +6,8 @@ package akka.event
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.annotation.nowarn
+
 import akka.actor._
 import akka.event.Logging.simpleName
 import akka.util.unused
@@ -18,6 +20,10 @@ import akka.util.unused
 protected[akka] class ActorClassificationUnsubscriber(bus: String, unsubscribe: ActorRef => Unit, debug: Boolean)
     extends Actor
     with Stash {
+
+  protected[akka] def this(bus: ManagedActorClassification, debug: Boolean) = {
+    this(bus.toString(), bus.unsubscribe, debug)
+  }
 
   import ActorClassificationUnsubscriber._
 
@@ -75,7 +81,11 @@ private[akka] object ActorClassificationUnsubscriber {
   final case class Register(actor: ActorRef, seq: Int)
   final case class Unregister(actor: ActorRef, seq: Int)
 
-  def start(system: ActorSystem, busName: String, unsubscribe: ActorRef => Unit, @unused debug: Boolean = false) = {
+  @nowarn def start(system: ActorSystem, bus: ManagedActorClassification, @unused debug: Boolean = false): ActorRef = {
+    start(system, bus.toString(), bus.unsubscribe, debug)
+  }
+
+  def start(system: ActorSystem, busName: String, unsubscribe: ActorRef => Unit, @unused debug: Boolean): ActorRef = {
     val debug = system.settings.config.getBoolean("akka.actor.debug.event-stream")
     system
       .asInstanceOf[ExtendedActorSystem]

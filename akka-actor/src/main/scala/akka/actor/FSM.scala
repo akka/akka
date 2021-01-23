@@ -213,7 +213,34 @@ object FSM {
       val stateData: D,
       val timeout: Option[FiniteDuration] = None,
       val stopReason: Option[Reason] = None,
-      val replies: List[Any] = Nil) {
+      val replies: List[Any] = Nil)
+      extends Product
+      with Serializable {
+
+    def canEqual(that: Any): Boolean = that.isInstanceOf[State[S, D]]
+
+    override def equals(that: Any) = that match {
+      case other: State[S, D] =>
+        other.canEqual(this) &&
+        this.stateName == other.stateName &&
+        this.stateData == other.stateData &&
+        this.timeout == other.timeout &&
+        this.stopReason == other.stopReason &&
+        this.replies == other.replies
+      case _ => false
+    }
+
+    override def productPrefix = classOf[State[S, D]].getSimpleName
+
+    def productArity: Int = 5
+    def productElement(n: Int): Any = n match {
+      case 0 => this.stateName
+      case 1 => this.stateData
+      case 2 => this.timeout
+      case 3 => this.stopReason
+      case 4 => this.replies
+      case _ => throw new IndexOutOfBoundsException(n.toString)
+    }
 
     /**
      * INTERNAL API
