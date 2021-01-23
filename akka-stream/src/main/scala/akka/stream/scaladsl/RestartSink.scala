@@ -120,7 +120,7 @@ private final class RestartWithBackoffSink[T](sinkFactory: () => Sink[T, _], res
 
       override protected def startGraph() = {
         val sourceOut = createSubOutlet(in)
-        Source.fromGraph(sourceOut.source).runWith(sinkFactory())(subFusingMaterializer)
+        subFusingMaterializer.materialize(Source.fromGraph(sourceOut.source).to(sinkFactory()), inheritedAttributes)
       }
 
       override protected def backoff() = {
