@@ -103,7 +103,15 @@ lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
   .enablePlugins(PublishRsyncPlugin)
   .settings(rootSettings: _*)
-  .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, protobufV3, akkaScalaNightly, docs, serialversionRemoverPlugin))
+  .settings(
+    unidocRootIgnoreProjects := Seq(
+        remoteTests,
+        benchJmh,
+        protobuf,
+        protobufV3,
+        akkaScalaNightly,
+        docs,
+        serialversionRemoverPlugin))
   .settings(unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get)
   .enablePlugins(CopyrightHeaderForBuild)
 
@@ -569,25 +577,19 @@ lazy val billOfMaterials = Project("akka-bill-of-materials", file("akka-bill-of-
     description := s"${description.value} (depending on Scala ${CrossVersion.binaryScalaVersion(scalaVersion.value)})")
 
 lazy val serialversionRemoverPlugin =
-  Project(
-    id   = "serialVersionRemoverPlugin",
-    base = file("plugins/serialversion-remover-plugin")
-  )
-  .settings(
+  Project(id = "serialVersionRemoverPlugin", base = file("plugins/serialversion-remover-plugin")).settings(
     scalaVersion := akka.Dependencies.scala3Version,
     libraryDependencies += ("org.scala-lang" %% "scala3-compiler" % akka.Dependencies.scala3Version),
     Compile / doc / sources := Nil,
-    publishArtifact in Compile := false
-  )
+    publishArtifact in Compile := false)
 
 lazy val serialversionRemoverPluginSettings = {
   if (akka.Dependencies.getScalaVersion() == akka.Dependencies.scala3Version) {
     Seq(
       autoCompilerPlugins := true,
       scalacOptions in Compile += (
-        "-Xplugin:" + (Keys.`package` in (serialversionRemoverPlugin, Compile)).value.getAbsolutePath.toString
-      )
-    )
+          "-Xplugin:" + (Keys.`package` in (serialversionRemoverPlugin, Compile)).value.getAbsolutePath.toString
+        ))
   } else {
     Seq()
   }
