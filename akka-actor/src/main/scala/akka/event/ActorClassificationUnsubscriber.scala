@@ -75,7 +75,11 @@ private[akka] object ActorClassificationUnsubscriber {
   final case class Register(actor: ActorRef, seq: Int)
   final case class Unregister(actor: ActorRef, seq: Int)
 
-  def start(system: ActorSystem, busName: String, unsubscribe: ActorRef => Unit, @unused debug: Boolean = false): ActorRef = {
+  def start(
+      system: ActorSystem,
+      busName: String,
+      unsubscribe: ActorRef => Unit,
+      @unused debug: Boolean = false): ActorRef = {
     val debug = system.settings.config.getBoolean("akka.actor.debug.event-stream")
     system
       .asInstanceOf[ExtendedActorSystem]

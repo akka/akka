@@ -220,7 +220,7 @@ object FSM {
     def canEqual(that: Any): Boolean = {
       that match {
         case _: State[_, _] => true
-        case _ => false
+        case _              => false
       }
     }
 
