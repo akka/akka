@@ -116,6 +116,7 @@ lazy val actor = akkaModule("akka-actor")
     (scalaSource in Compile).value.getParentFile / s"scala-$ver"
   })
   .settings(VersionGenerator.settings)
+  .settings(serialversionRemoverPluginSettings)
   .enablePlugins(BoilerplatePlugin)
 
 lazy val actorTests = akkaModule("akka-actor-tests")
@@ -566,6 +567,28 @@ lazy val billOfMaterials = Project("akka-bill-of-materials", file("akka-bill-of-
     name := "akka-bom",
     bomIncludeProjects := userProjects,
     description := s"${description.value} (depending on Scala ${CrossVersion.binaryScalaVersion(scalaVersion.value)})")
+
+lazy val serialversionRemoverPlugin = Project(
+    id   = "serialVersionRemoverPlugin",
+    base = file("plugins/serialversion-remover-plugin")
+  ) settings (
+    scalaVersion := akka.Dependencies.scala3Version,
+    libraryDependencies += ("org.scala-lang" %% "scala3-compiler" % akka.Dependencies.scala3Version),
+    publishArtifact in Compile := false
+  )
+
+lazy val serialversionRemoverPluginSettings = {
+  if (akka.Dependencies.getScalaVersion() == akka.Dependencies.scala3Version) {
+    Seq(
+      autoCompilerPlugins := true,
+      scalacOptions in Compile += (
+        "-Xplugin:" + (Keys.`package` in (serialversionRemoverPlugin, Compile)).value.getAbsolutePath.toString
+      )
+    )
+  } else {
+    Seq()
+  }
+}
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))

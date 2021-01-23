@@ -217,10 +217,15 @@ object FSM {
       extends Product
       with Serializable {
 
-    def canEqual(that: Any): Boolean = that.isInstanceOf[State[S, D]]
+    def canEqual(that: Any): Boolean = {
+      that match {
+        case _: State[_, _] => true
+        case _ => false
+      }
+    }
 
     override def equals(that: Any) = that match {
-      case other: State[S, D] =>
+      case other: State[_, _] =>
         other.canEqual(this) &&
         this.stateName == other.stateName &&
         this.stateData == other.stateData &&
