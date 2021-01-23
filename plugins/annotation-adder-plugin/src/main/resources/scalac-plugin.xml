@@ -1,0 +1,4 @@
+<plugin>
+  <name>serialversion-remover-plugin</name>
+  <classname>akka.SerialVersionRemoverPlugin</classname>
+</plugin>
