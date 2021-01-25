@@ -325,7 +325,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
             .mapMaterializedValue(promisedAttributes.success)
         }.withAttributes(whateverAttribute("other-thing"))
         .named("outer-name")
-        .runWith(Sink.ignore)
+        .runWith(Sink.cancelled)
 
       val attributes = Await.result(promisedAttributes.future, 1.second)
       attributes.get[Name] should contain(Name("inner-name"))
