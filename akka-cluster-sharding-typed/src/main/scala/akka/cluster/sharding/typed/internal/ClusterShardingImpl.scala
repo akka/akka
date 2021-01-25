@@ -254,6 +254,8 @@ import akka.util.JavaDurationConverters._
       dataCenter: DataCenter): scaladsl.EntityRef[M] = {
     if (dataCenter == cluster.selfMember.dataCenter)
       entityRefFor(typeKey, entityId)
+        .asInstanceOf[EntityRefImpl[M]]
+        .withDataCenter(Some(dataCenter))
     else
       new EntityRefImpl[M](
         classicSharding.shardRegionProxy(typeKey.name, dataCenter),
@@ -275,6 +277,8 @@ import akka.util.JavaDurationConverters._
       dataCenter: String): javadsl.EntityRef[M] = {
     if (dataCenter == cluster.selfMember.dataCenter)
       entityRefFor(typeKey, entityId)
+        .asInstanceOf[EntityRefImpl[M]]
+        .withDataCenter(Some(dataCenter))
     else
       new EntityRefImpl[M](
         classicSharding.shardRegionProxy(typeKey.name, dataCenter),
@@ -417,6 +421,14 @@ import akka.util.JavaDurationConverters._
    * INTERNAL API
    */
   override private[akka] def asJava: javadsl.EntityRef[M] = this
+
+  private[internal] def withDataCenter(dataCenter: Option[String]): EntityRefImpl[M] =
+    new EntityRefImpl[M](
+      shardRegion,
+      entityId,
+      typeKey,
+      dataCenter
+    )
 }
 
 /**
