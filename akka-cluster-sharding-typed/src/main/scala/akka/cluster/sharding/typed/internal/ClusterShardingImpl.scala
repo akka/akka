@@ -317,6 +317,19 @@ import akka.util.JavaDurationConverters._
     with scaladsl.EntityRef[M]
     with InternalRecipientRef[M] {
 
+  override def hashCode(): Int =
+    // 3 and 5 chosen as primes which are +/- 1 from a power-of-two
+    ((entityId.hashCode * 3) + typeKey.hashCode) * 5 + dataCenter.hashCode
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case eri: EntityRefImpl[_] =>
+        (eri.entityId == entityId) &&
+        (eri.typeKey == typeKey) &&
+        (eri.dataCenter == dataCenter)
+      case _ => false
+    }
+
   override val refPrefix = URLEncoder.encode(s"${typeKey.name}-$entityId", ByteString.UTF_8)
 
   override def tell(msg: M): Unit =
