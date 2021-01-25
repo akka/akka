@@ -85,6 +85,8 @@ import akka.util.JavaDurationConverters._
     with scaladsl.EntityTypeKey[T] {
 
   override def toString: String = s"EntityTypeKey[$messageClassName]($name)"
+
+  private[akka] def asJava: javadsl.EntityTypeKey[T] = this
 }
 
 /** INTERNAL API */

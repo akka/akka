@@ -402,7 +402,7 @@ object StartEntity {
  *
  * Not for user extension.
  */
-@DoNotInherit abstract class EntityTypeKey[T] { scaladslSelf: scaladsl.EntityTypeKey[T] =>
+@DoNotInherit abstract class EntityTypeKey[-T] { scaladslSelf: scaladsl.EntityTypeKey[T] =>
 
   /**
    * Name of the entity type.
@@ -450,7 +450,7 @@ object EntityTypeKey {
   /**
    * The name of the EntityTypeKey associated with this EntityRef
    */
-  def getTypeKey: scaladsl.EntityTypeKey[M] = typeKey
+  def getTypeKey: javadsl.EntityTypeKey[M] = typeKey.asJava
 
   /**
    * The specified datacenter of the incarnation of the particular entity referenced by this EntityRef,

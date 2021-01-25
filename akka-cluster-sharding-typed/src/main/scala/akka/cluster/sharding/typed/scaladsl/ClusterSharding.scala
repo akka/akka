@@ -391,6 +391,7 @@ object StartEntity {
    */
   def name: String
 
+  private[akka] def asJava: javadsl.EntityTypeKey[T]
 }
 
 object EntityTypeKey {
