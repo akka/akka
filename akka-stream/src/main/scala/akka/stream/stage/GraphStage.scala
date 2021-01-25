@@ -277,17 +277,15 @@ object GraphStageLogic {
  */
 @InternalApi
 private[akka] object ConcurrentAsyncCallbackState {
-  sealed trait State[E]
+  sealed trait State[+E]
   // waiting for materialization completion or during dispatching of initially queued events
   final case class Pending[E](pendingEvents: List[Event[E]]) extends State[E]
   // stream is initialized and so no threads can just send events without any synchronization overhead
-  case object Initialized extends State[Any]
-  def initialized[E]: State[E] = Initialized.asInstanceOf[State[E]]
+  case object Initialized extends State[Nothing]
   // Event with feedback promise
   final case class Event[E](e: E, handlingPromise: Promise[Done])
 
-  private val NoPendingEvents = Pending(Nil)
-  def noPendingEvents[E]: State[E] = NoPendingEvents.asInstanceOf[State[E]]
+  val NoPendingEvents = Pending[Nothing](Nil)
 }
 
 /**
@@ -1193,19 +1191,19 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    */
   private final class ConcurrentAsyncCallback[T](handler: T => Unit) extends AsyncCallback[T] {
     import ConcurrentAsyncCallbackState._
-    private[this] val currentState = new AtomicReference[State[T]](noPendingEvents)
+    private[this] val currentState = new AtomicReference[State[T]](NoPendingEvents)
 
     // is called from the owning [[GraphStage]]
     @tailrec
     private[stage] def onStart(): Unit = {
       // dispatch callbacks that have been queued before the interpreter was started
-      (currentState.getAndSet(noPendingEvents): @unchecked) match {
+      (currentState.getAndSet(NoPendingEvents): @unchecked) match {
         case Pending(l) => if (l.nonEmpty) l.reverse.foreach(evt => onAsyncInput(evt.e, evt.handlingPromise))
         case s          => throw new IllegalStateException(s"Unexpected callback state [$s]")
       }
 
       // in the meantime more callbacks might have been queued (we keep queueing them to ensure order)
-      if (!currentState.compareAndSet(noPendingEvents, initialized))
+      if (!currentState.compareAndSet(NoPendingEvents, Initialized))
         // state guaranteed to be still Pending
         onStart()
     }
@@ -1242,7 +1240,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     @tailrec
     private def invokeWithPromise(event: T, promise: Promise[Done]): Unit =
       currentState.get() match {
-        case i if i eq Initialized =>
+        case Initialized =>
           // started - can just dispatch async message to interpreter
           onAsyncInput(event, promise)
 
