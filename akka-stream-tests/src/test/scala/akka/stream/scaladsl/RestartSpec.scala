@@ -317,7 +317,7 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       probe.cancel()
     }
 
-    "provide attributes to inner source" in {
+    "provide attributes to inner source" in assertAllStagesStopped {
       val promisedAttributes = Promise[Attributes]()
       RestartSource
         .withBackoff(restartSettings) { () =>
