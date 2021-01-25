@@ -5,15 +5,21 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent.{Await, Promise}
+import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 import akka.Done
 import akka.NotUsed
 import akka.stream.Attributes.Name
-import akka.stream.scaladsl.AttributesSpec.{AttributesFlow, AttributesSink, AttributesSource, WhateverAttribute, whateverAttribute}
-import akka.stream.{Attributes, OverflowStrategy, RestartSettings}
+import akka.stream.scaladsl.AttributesSpec.{
+  whateverAttribute,
+  AttributesFlow,
+  AttributesSink,
+  AttributesSource,
+  WhateverAttribute
+}
+import akka.stream.{ Attributes, OverflowStrategy, RestartSettings }
 import akka.stream.scaladsl.RestartWithBackoffFlow.Delay
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
@@ -321,9 +327,9 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val promisedAttributes = Promise[Attributes]()
       RestartSource
         .withBackoff(restartSettings) { () =>
-          Source.fromGraph(new AttributesSource().named("inner-name"))
-            .mapMaterializedValue(promisedAttributes.success)
-        }.withAttributes(whateverAttribute("other-thing"))
+          Source.fromGraph(new AttributesSource().named("inner-name")).mapMaterializedValue(promisedAttributes.success)
+        }
+        .withAttributes(whateverAttribute("other-thing"))
         .named("outer-name")
         .runWith(Sink.cancelled)
 
@@ -571,9 +577,9 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val promisedAttributes = Promise[Attributes]()
       RestartSink
         .withBackoff(restartSettings) { () =>
-          Sink.fromGraph(new AttributesSink().named("inner-name"))
-            .mapMaterializedValue(promisedAttributes.success)
-        }.withAttributes(whateverAttribute("other-thing"))
+          Sink.fromGraph(new AttributesSink().named("inner-name")).mapMaterializedValue(promisedAttributes.success)
+        }
+        .withAttributes(whateverAttribute("other-thing"))
         .named("outer-name")
         .runWith(Source.empty)
 
@@ -914,9 +920,9 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
       val promisedAttributes = Promise[Attributes]()
       RestartFlow
         .withBackoff(restartSettings) { () =>
-          Flow.fromGraph(new AttributesFlow().named("inner-name"))
-            .mapMaterializedValue(promisedAttributes.success)
-        }.withAttributes(whateverAttribute("other-thing"))
+          Flow.fromGraph(new AttributesFlow().named("inner-name")).mapMaterializedValue(promisedAttributes.success)
+        }
+        .withAttributes(whateverAttribute("other-thing"))
         .named("outer-name")
         .runWith(Source.empty, Sink.ignore)
 
