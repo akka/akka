@@ -392,7 +392,7 @@ private[akka] class LocalActorRefProvider private[akka] (
   override val rootPath: ActorPath = RootActorPath(Address("akka", _systemName))
 
   private[akka] val log: MarkerLoggingAdapter =
-    Logging.withMarker(eventStream, Logging.simpleName(this))
+    Logging.withMarker(eventStream, classOf[LocalActorRefProvider])
 
   /*
    * This dedicated logger is used whenever a deserialization failure occurs

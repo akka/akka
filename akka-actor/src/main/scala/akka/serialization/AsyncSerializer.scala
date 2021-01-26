@@ -41,7 +41,7 @@ abstract class AsyncSerializerWithStringManifest(system: ExtendedActorSystem)
     extends SerializerWithStringManifest
     with AsyncSerializer {
 
-  private val log = Logging(system, Logging.simpleName(this))
+  private val log = Logging(system, classOf[AsyncSerializerWithStringManifest])
 
   final override def toBinary(o: AnyRef): Array[Byte] = {
     log.warning(

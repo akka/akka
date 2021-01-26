@@ -359,7 +359,7 @@ final case class DisabledJavaSerializer(system: ExtendedActorSystem) extends Ser
 
   private[this] val empty = Array.empty[Byte]
 
-  private[this] val log = Logging.withMarker(system, Logging.simpleName(this))
+  private[this] val log = Logging.withMarker(system, classOf[DisabledJavaSerializer])
 
   def includeManifest: Boolean = false
 
