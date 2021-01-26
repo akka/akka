@@ -50,7 +50,6 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.IntSupplier;
-import java.util.stream.Collectors;
 
 class SourceOrFlow {
   private static ActorSystem system = null;
@@ -352,10 +351,9 @@ class SourceOrFlow {
 
     Source.from(Arrays.asList(Arrays.asList(1, 2), Arrays.asList(3, 4), Arrays.asList(5, 6)))
         .groupedWeighted(3, x -> (long) x.size())
-        .map(g -> g.stream().flatMap(Collection::stream).collect(Collectors.toList()))
         .runForeach(System.out::println, system);
-    // [1, 2, 3, 4]
-    // [5, 6]
+    // [[1, 2], [3, 4]]
+    // [[5, 6]]
     // #groupedWeighted
   }
 

@@ -18,9 +18,9 @@ object GroupedWeighted {
     // Vector(Seq(1, 2), Seq(3, 4))
     // Vector(Seq(5, 6))
 
-    Source[Seq[Int]](collections).groupedWeighted(3)(_.length).map(_.flatten).runForeach(println)
-    // Vector(1, 2, 3, 4)
-    // Vector(5, 6)
+    Source[Seq[Int]](collections).groupedWeighted(3)(_.length).runForeach(println)
+    // Vector(Seq(1, 2), Seq(3, 4))
+    // Vector(Seq(5, 6))
     //#groupedWeighted
   }
 

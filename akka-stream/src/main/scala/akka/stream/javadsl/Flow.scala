@@ -951,7 +951,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * '''Cancels when''' downstream cancels
    */
   def groupedWeighted(minWeight: Long)(
-      costFn: function.Function[Out, java.lang.Long]): javadsl.Flow[In, java.util.List[Out], Mat] =
+      costFn: java.util.function.Function[Out, java.lang.Long]): javadsl.Flow[In, java.util.List[Out], Mat] =
     new Flow(delegate.groupedWeighted(minWeight)(costFn.apply).map(_.asJava)) // TODO optimize to one step
 
   /**
