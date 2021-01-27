@@ -15,7 +15,7 @@ import akka.util.unused
  *
  * Watches all actors which subscribe on the given event stream, and unsubscribes them from it when they are Terminated.
  */
-protected[akka] class ActorClassificationUnsubscriber(bus: String, unsubscribe: ActorRef => Unit, debug: Boolean)
+protected[akka] class ActorClassificationUnsubscriber(bus: ManagedActorClassification, debug: Boolean)
     extends Actor
     with Stash {
 
@@ -58,7 +58,7 @@ protected[akka] class ActorClassificationUnsubscriber(bus: String, unsubscribe: 
           Logging.Debug(simpleName(getClass), getClass, s"actor $actor has terminated, unsubscribing it from $bus"))
       // the `unsubscribe` will trigger another `Unregister(actor, _)` message to this unsubscriber;
       // but since that actor is terminated, there cannot be any harm in processing an Unregister for it.
-      unsubscribe(actor)
+      bus.unsubscribe(actor)
   }
 
 }
@@ -75,20 +75,13 @@ private[akka] object ActorClassificationUnsubscriber {
   final case class Register(actor: ActorRef, seq: Int)
   final case class Unregister(actor: ActorRef, seq: Int)
 
-  def start(
-      system: ActorSystem,
-      busName: String,
-      unsubscribe: ActorRef => Unit,
-      @unused debug: Boolean = false): ActorRef = {
-    val debug = system.settings.config.getBoolean("akka.actor.debug.event-stream")
+  def start(system: ActorSystem, bus: ManagedActorClassification, @unused debug: Boolean = false) = {
     system
       .asInstanceOf[ExtendedActorSystem]
-      .systemActorOf(
-        props(busName, unsubscribe, debug),
-        "actorClassificationUnsubscriber-" + unsubscribersCount.incrementAndGet())
+      .systemActorOf(props(bus, debug), "actorClassificationUnsubscriber-" + unsubscribersCount.incrementAndGet())
   }
 
-  private def props(busName: String, unsubscribe: ActorRef => Unit, debug: Boolean) =
-    Props(classOf[ActorClassificationUnsubscriber], busName, unsubscribe, debug)
+  private def props(eventBus: ManagedActorClassification, debug: Boolean) =
+    Props(classOf[ActorClassificationUnsubscriber], eventBus, debug)
 
 }
