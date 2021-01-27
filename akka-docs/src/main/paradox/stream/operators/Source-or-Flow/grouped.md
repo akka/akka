@@ -15,6 +15,12 @@ Accumulate incoming events until the specified number of elements have been accu
 Accumulate incoming events until the specified number of elements have been accumulated and then pass the collection of
 elements downstream.
 
+See also:
+
+* @ref[groupedWeighted](groupedWeighted.md) for a variant that groups based on element weight
+* @ref[groupedWithin](groupedWithin.md) for a variant that groups based on number of elements and a time window
+* @ref[groupedWeightedWithin](groupedWeightedWithin.md) for a variant that groups based on element weight and a time window
+
 ## Examples
 
 The below example demonstrates how `grouped` groups the accumulated elements into @scala[`Seq`] @java[`List`]

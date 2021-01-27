@@ -5,9 +5,9 @@
 package akka.stream.impl.fusing
 
 import scala.util.control.NoStackTrace
-
 import akka.stream.Supervision
 import akka.stream.testkit.StreamSpec
+import akka.util.ConstantFun
 
 class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit {
 
@@ -102,7 +102,7 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       Supervision.resumingDecider,
       Map((x: Int) => x + 1),
       Map((x: Int) => if (x <= 0) throw TE else x + 10),
-      Grouped(3)) {
+      GroupedWeighted(3, ConstantFun.oneLong)) {
 
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))
@@ -123,7 +123,7 @@ class InterpreterSupervisionSpec extends StreamSpec with GraphInterpreterSpecKit
       Supervision.resumingDecider,
       Map((x: Int) => x + 1),
       Map((x: Int) => if (x <= 0) throw TE else x + 10),
-      Grouped(1000)) {
+      GroupedWeighted(1000, ConstantFun.oneLong)) {
 
       downstream.requestOne()
       lastEvents() should be(Set(RequestOne))

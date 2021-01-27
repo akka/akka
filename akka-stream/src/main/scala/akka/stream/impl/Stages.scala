@@ -33,6 +33,7 @@ import akka.stream.Attributes._
     val ask = name("ask")
     val grouped = name("grouped")
     val groupedWithin = name("groupedWithin")
+    val groupedWeighted = name("groupedWeighted")
     val groupedWeightedWithin = name("groupedWeightedWithin")
     val limit = name("limit")
     val limitWeighted = name("limitWeighted")
