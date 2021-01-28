@@ -97,6 +97,8 @@ Cluster sharding `init` should be called on every node for each entity type. Whi
 can be controlled with @ref:[roles](cluster.md#node-roles). `init` will create a `ShardRegion` or a proxy depending on whether the node's role matches
 the entity's role. 
 
+The behavior factory lambda passed to the init method is defined on each node and only used locally, this means it is safe to use it for injecting for example a node local `ActorRef` that each sharded actor should have access to or some object that is not possible to serialize.
+
 Specifying the role:
 
 Scala
