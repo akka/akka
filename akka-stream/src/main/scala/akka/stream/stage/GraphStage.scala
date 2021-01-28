@@ -275,6 +275,22 @@ object GraphStageLogic {
 }
 
 /**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] object ConcurrentAsyncCallbackState {
+  sealed trait State[+E]
+  // waiting for materialization completion or during dispatching of initially queued events
+  final case class Pending[E](pendingEvents: List[Event[E]]) extends State[E]
+  // stream is initialized and so no threads can just send events without any synchronization overhead
+  case object Initialized extends State[Nothing]
+  // Event with feedback promise
+  final case class Event[E](e: E, handlingPromise: Promise[Done])
+
+  val NoPendingEvents = Pending[Nothing](Nil)
+}
+
+/**
  * Represents the processing logic behind a [[GraphStage]]. Roughly speaking, a subclass of [[GraphStageLogic]] is a
  * collection of the following parts:
  *  * A set of [[InHandler]] and [[OutHandler]] instances and their assignments to the [[Inlet]]s and [[Outlet]]s
@@ -1176,18 +1192,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * "Real world" calls of [[invokeWithFeedback]] always return failed promises for `Completed` state
    */
   private final class ConcurrentAsyncCallback[T](handler: T => Unit) extends AsyncCallback[T] {
-
-    sealed trait State
-    // waiting for materialization completion or during dispatching of initially queued events
-    // - can't be final because of SI-4440
-    private case class Pending(pendingEvents: List[Event]) extends State
-    // stream is initialized and so no threads can just send events without any synchronization overhead
-    private case object Initialized extends State
-    // Event with feedback promise - can't be final because of SI-4440
-    private case class Event(e: T, handlingPromise: Promise[Done])
-
-    private[this] val NoPendingEvents = Pending(Nil)
-    private[this] val currentState = new AtomicReference[State](NoPendingEvents)
+    import ConcurrentAsyncCallbackState._
+    private[this] val currentState = new AtomicReference[State[T]](NoPendingEvents)
 
     // is called from the owning [[GraphStage]]
     @tailrec
@@ -1242,7 +1248,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
         case list @ Pending(l) =>
           // not started yet
-          if (!currentState.compareAndSet(list, Pending(Event(event, promise) :: l)))
+          if (!currentState.compareAndSet(list, Pending[T](Event[T](event, promise) :: l)))
             invokeWithPromise(event, promise)
       }
 
@@ -1437,9 +1443,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         case OnComplete =>
           closed = true
           handler.onUpstreamFinish()
+          GraphStageLogic.this.completedOrFailed(this)
         case OnError(ex) =>
           closed = true
           handler.onUpstreamFailure(ex)
+          GraphStageLogic.this.completedOrFailed(this)
       }
     }.invoke _)
 
@@ -1515,6 +1523,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
           available = false
           closed = true
           handler.onDownstreamFinish(cause)
+          GraphStageLogic.this.completedOrFailed(this)
         }
     }
 

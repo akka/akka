@@ -102,7 +102,7 @@ import akka.annotation.DoNotInherit
    *
    * Care is taken to remove the testkit when the block is finished or aborted.
    */
-  @deprecated("Use except instead.", "2.6.0")
+  @deprecated("Use expect instead.", "2.6.0")
   def intercept[T](code: => T)(implicit system: ActorSystem[_]): T
 
 }

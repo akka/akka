@@ -425,4 +425,4 @@ The following plugins support Replicated Event Sourcing:
 
 * [Akka Persistence Cassandra](https://doc.akka.io/docs/akka-persistence-cassandra/current/index.html) versions 1.0.3+
 * [Akka Persistence Spanner](https://doc.akka.io/docs/akka-persistence-spanner/current/overview.html) versions 1.0.0-RC4+
-* [Akka Persistence JDBC](https://github.com/akka/akka-persistence-jdbc) with snapshots disabled
+* [Akka Persistence JDBC](https://doc.akka.io/docs/akka-persistence-jdbc/current) versions 5.0.0+

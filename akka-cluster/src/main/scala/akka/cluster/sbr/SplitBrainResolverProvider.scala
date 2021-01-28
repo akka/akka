@@ -41,20 +41,20 @@ final class SplitBrainResolverProvider(system: ActorSystem) extends DowningProvi
     val strategy =
       settings.DowningStrategy match {
         case KeepMajorityName =>
-          new KeepMajority(selfDc, settings.keepMajorityRole)
+          new KeepMajority(selfDc, settings.keepMajorityRole, cluster.selfUniqueAddress)
         case StaticQuorumName =>
           val s = settings.staticQuorumSettings
-          new StaticQuorum(selfDc, s.size, s.role)
+          new StaticQuorum(selfDc, s.size, s.role, cluster.selfUniqueAddress)
         case KeepOldestName =>
           val s = settings.keepOldestSettings
-          new KeepOldest(selfDc, s.downIfAlone, s.role)
+          new KeepOldest(selfDc, s.downIfAlone, s.role, cluster.selfUniqueAddress)
         case DownAllName =>
-          new DownAllNodes(selfDc)
+          new DownAllNodes(selfDc, cluster.selfUniqueAddress)
         case LeaseMajorityName =>
           val s = settings.leaseMajoritySettings
           val leaseOwnerName = cluster.selfUniqueAddress.address.hostPort
           val lease = LeaseProvider(system).getLease(s"${system.name}-akka-sbr", s.leaseImplementation, leaseOwnerName)
-          new LeaseMajority(selfDc, s.role, lease, s.acquireLeaseDelayForMinority)
+          new LeaseMajority(selfDc, s.role, lease, s.acquireLeaseDelayForMinority, cluster.selfUniqueAddress)
       }
 
     Some(SplitBrainResolver.props(settings.DowningStableAfter, strategy))
