@@ -809,9 +809,9 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
           system.deadLetters,
           settings.Advanced.SystemMessageResendInterval,
           settings.Advanced.SysMsgBufferSize))
+      .viaMat(new OutboundControlJunction(outboundContext, outboundEnvelopePool))(Keep.right)
       // note that System messages must not be dropped before the SystemMessageDelivery stage
       .via(outboundTestFlow(outboundContext))
-      .viaMat(new OutboundControlJunction(outboundContext, outboundEnvelopePool))(Keep.right)
       .via(createEncoder(envelopeBufferPool, ControlStreamId))
       .toMat(outboundTransportSink(outboundContext, ControlStreamId, envelopeBufferPool))(Keep.both)
 
