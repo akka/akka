@@ -9,7 +9,7 @@ import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 
 /**
- * Supertype for all Akka Persistence Typed specific signals
+ * Supertype for all Akka Persistence Typed - Event Sourced specific signals
  *
  * Not for user extension
  */

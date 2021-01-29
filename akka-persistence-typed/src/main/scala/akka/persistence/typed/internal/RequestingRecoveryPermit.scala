@@ -15,7 +15,7 @@ import akka.util.unused
  *
  * First (of four) behavior of an PersistentBehaviour.
  *
- * Requests a permit to start replaying this actor; this is tone to avoid
+ * Requests a permit to start replaying this actor; this is done to avoid
  * hammering the journal with too many concurrently replaying actors.
  *
  * See next behavior [[ReplayingSnapshot]].
