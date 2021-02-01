@@ -6,14 +6,14 @@ package akka.remote.artery
 
 import java.nio.{ ByteBuffer, CharBuffer }
 import java.nio.charset.Charset
-
 import scala.concurrent.duration._
-
 import akka.actor.{ ActorRef, ActorSystem, ExtendedActorSystem, InternalActorRef }
 import akka.event._
 import akka.testkit.{ AkkaSpec, EventFilter, TestProbe }
 import akka.testkit.TestEvent.Mute
 import akka.util.{ unused, OptionVal }
+
+import java.nio.ByteOrder
 
 class RemoteInstrumentsSerializationSpec extends AkkaSpec("akka.loglevel = DEBUG") {
   import RemoteInstrumentsSerializationSpec._
@@ -34,7 +34,7 @@ class RemoteInstrumentsSerializationSpec extends AkkaSpec("akka.loglevel = DEBUG
 
   "RemoteInstruments" should {
     "not write anything in the buffer if not deserializing" in {
-      val buffer = ByteBuffer.allocate(1024)
+      val buffer = ByteBuffer.allocate(1024).order(ByteOrder.LITTLE_ENDIAN)
       serialize(remoteInstruments(), buffer)
       buffer.position() should be(0)
     }
@@ -209,7 +209,7 @@ object RemoteInstrumentsSerializationSpec {
       riD: RemoteInstruments,
       recipient: ActorRef,
       message: AnyRef): Unit = {
-    val buffer = ByteBuffer.allocate(1024)
+    val buffer = ByteBuffer.allocate(1024).order(ByteOrder.LITTLE_ENDIAN)
     serialize(riS, buffer)
     buffer.flip()
     deserialize(riD, buffer, recipient, message)
