@@ -6,10 +6,10 @@ package akka.stream.scaladsl
 
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.{ BaseTwoStreamsSetup, TestSubscriber }
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.reactivestreams.Publisher
 
-@silent // keep unused imports
+@nowarn // keep unused imports
 class FlowZipSpec extends BaseTwoStreamsSetup {
 
 //#zip

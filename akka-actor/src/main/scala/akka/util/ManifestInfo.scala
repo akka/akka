@@ -10,7 +10,7 @@ import java.util.jar.Manifest
 
 import scala.collection.immutable
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
@@ -74,7 +74,7 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
       productName: String,
       dependencies: immutable.Seq[String],
       versions: Map[String, Version]): Option[String] = {
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     val filteredVersions = versions.filterKeys(dependencies.toSet)
     val values = filteredVersions.values.toSet
     if (values.size > 1) {
@@ -137,7 +137,7 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
       }
     } catch {
       case ioe: IOException =>
-        Logging(system, getClass).warning("Could not read manifest information. {}", ioe)
+        Logging(system, classOf[ManifestInfo]).warning("Could not read manifest information. {}", ioe)
     }
     manifests
   }
@@ -170,7 +170,7 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
     ManifestInfo.checkSameVersion(productName, dependencies, versions) match {
       case Some(message) =>
         if (logWarning)
-          Logging(system, getClass).warning(message)
+          Logging(system, classOf[ManifestInfo]).warning(message)
 
         if (throwException)
           throw new IllegalStateException(message)

@@ -4,7 +4,7 @@
 
 package akka.stream.scaladsl
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.scalacheck.Gen
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
@@ -13,7 +13,7 @@ import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 
-@silent
+@nowarn
 class FlowSlidingSpec extends StreamSpec with ScalaCheckPropertyChecks {
   import system.dispatcher
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)

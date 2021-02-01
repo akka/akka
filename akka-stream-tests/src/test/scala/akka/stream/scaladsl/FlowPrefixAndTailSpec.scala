@@ -9,7 +9,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.stream._
 import akka.stream.testkit._
@@ -116,7 +116,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
     "signal error if substream has been not subscribed in time" in assertAllStagesStopped {
       val ms = 300
 
-      @silent("deprecated")
+      @nowarn("msg=deprecated")
       val tightTimeoutMaterializer =
         ActorMaterializer(
           ActorMaterializerSettings(system).withSubscriptionTimeoutSettings(
@@ -135,7 +135,7 @@ class FlowPrefixAndTailSpec extends StreamSpec("""
         s"Substream Source(TailSource) has not been materialized in ${ms} milliseconds")
     }
     "not fail the stream if substream has not been subscribed in time and configured subscription timeout is noop" in assertAllStagesStopped {
-      @silent("deprecated")
+      @nowarn("msg=deprecated")
       val tightTimeoutMaterializer =
         ActorMaterializer(
           ActorMaterializerSettings(system).withSubscriptionTimeoutSettings(

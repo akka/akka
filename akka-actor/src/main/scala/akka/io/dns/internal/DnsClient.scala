@@ -10,9 +10,9 @@ import scala.collection.{ immutable => im }
 import scala.concurrent.duration._
 import scala.util.Try
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, NoSerializationVerificationNeeded, Props, Stash }
+import akka.actor.{ actorRef2Scala, Actor, ActorLogging, ActorRef, NoSerializationVerificationNeeded, Props, Stash }
 import akka.actor.Status.Failure
 import akka.annotation.InternalApi
 import akka.io.{ IO, Tcp, Udp }
@@ -73,7 +73,7 @@ import akka.pattern.{ BackoffOpts, BackoffSupervisor }
   /**
    * Silent to allow map update syntax
    */
-  @silent()
+  @nowarn()
   def ready(socket: ActorRef): Receive = {
     case DropRequest(id) =>
       log.debug("Dropping request [{}]", id)

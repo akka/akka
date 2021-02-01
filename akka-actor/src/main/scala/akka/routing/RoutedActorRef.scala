@@ -4,7 +4,7 @@
 
 package akka.routing
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.ConfigurationException
 import akka.actor.ActorPath
@@ -24,7 +24,7 @@ import akka.dispatch.MessageDispatcher
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
  * send a message to one (or more) of these actors.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[akka] class RoutedActorRef(
     _system: ActorSystemImpl,
     _routerProps: Props,

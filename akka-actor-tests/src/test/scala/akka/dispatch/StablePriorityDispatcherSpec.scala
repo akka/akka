@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.Config
 import language.postfixOps
 
-import akka.actor.{ Actor, ActorSystem, Props }
+import akka.actor.{ actorRef2Scala, Actor, ActorSystem, Props }
 import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.util.unused
 
@@ -90,7 +90,7 @@ class StablePriorityDispatcherSpec extends AkkaSpec(StablePriorityDispatcherSpec
       // should come out in the same order in which they were sent.
       val lo = (1 to 100) toList
       val hi = shuffled.filter { _ > 100 }
-      expectMsgType[List[Int]] should ===(lo ++ hi)
+      (expectMsgType[List[Int]]: List[Int]) should ===(lo ++ hi)
     }
   }
 }

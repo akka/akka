@@ -7,7 +7,7 @@ package akka.remote.transport
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.AkkaException
 import akka.actor.{ ActorRef, Address, NoSerializationVerificationNeeded }
@@ -284,7 +284,7 @@ trait AssociationHandle {
    * be notified, but this is not guaranteed. The Transport that provides the handle MUST guarantee that disassociate()
    * could be called arbitrarily many times.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def disassociate(reason: String, log: LoggingAdapter): Unit = {
     if (log.isDebugEnabled)
       log.debug(

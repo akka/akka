@@ -7,15 +7,16 @@ package akka.pattern
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Failure
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import language.postfixOps
+
 import akka.actor._
-import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.testkit.WithLogCapturing
 import akka.util.Timeout
 
-@silent
+@nowarn
 class AskSpec extends AkkaSpec("""
      akka.loglevel = DEBUG
      akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
@@ -26,7 +27,7 @@ class AskSpec extends AkkaSpec("""
       implicit val timeout: Timeout = Timeout(5.seconds)
       val echo = system.actorOf(Props(new Actor { def receive = { case x => sender() ! x } }))
       val f = echo ? "ping"
-      f.futureValue should ===("ping")
+      Await.result(f, timeout.duration) should ===("ping")
     }
 
     "return broken promises on DeadLetters" in {

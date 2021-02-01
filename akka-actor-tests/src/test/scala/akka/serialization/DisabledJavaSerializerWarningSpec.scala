@@ -9,6 +9,7 @@ import java.nio.{ ByteBuffer, ByteOrder }
 import scala.concurrent.duration._
 
 import akka.actor.ExtendedActorSystem
+import akka.actor.actorRef2Scala
 import akka.testkit._
 
 object DisabledJavaSerializerWarningSpec {

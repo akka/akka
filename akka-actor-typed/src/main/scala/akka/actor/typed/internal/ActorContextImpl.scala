@@ -13,7 +13,7 @@ import java.util.concurrent.CompletionStage
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
 import scala.util.Try
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import akka.actor.Address
@@ -219,7 +219,7 @@ import scala.util.Success
     }
 
   // Java API impl
-  @silent("never used") // resClass is just a pretend param
+  @nowarn("msg=never used") // resClass is just a pretend param
   override def ask[Req, Res](
       resClass: Class[Res],
       target: RecipientRef[Req],

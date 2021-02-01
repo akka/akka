@@ -14,7 +14,7 @@ import akka.actor.typed.SupervisorStrategy
 
 import scala.concurrent.duration.FiniteDuration
 import akka.Done
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 //#oo-style
 //#fun-style
@@ -481,7 +481,7 @@ object StyleGuideDocExamples {
         //#pattern-match-guard
       }
 
-      @silent
+      @nowarn
       private def counter(remaining: Int): Behavior[Command] = {
         //#pattern-match-without-guard
         Behaviors.receiveMessage {
@@ -507,7 +507,7 @@ object StyleGuideDocExamples {
       }
       //#pattern-match-unhandled
 
-      @silent
+      @nowarn
       object partial {
         //#pattern-match-partial
         private val zero: Behavior[Command] = {

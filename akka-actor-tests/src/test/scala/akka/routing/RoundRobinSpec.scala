@@ -15,6 +15,7 @@ import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.Terminated
+import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.testkit._
 

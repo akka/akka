@@ -14,10 +14,10 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 
-import akka.actor.{ Actor, ActorLogging }
+import akka.actor.{ actorRef2Scala, Actor, ActorLogging }
 import akka.actor.Status
 import akka.annotation.InternalApi
 import akka.io.dns.AAAARecord
@@ -34,7 +34,7 @@ import akka.util.Helpers.Requiring
  *
  * Respects the settings that can be set on the Java runtime via parameters.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 @InternalApi
 class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Actor with ActorLogging {
 
@@ -108,7 +108,7 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
     cp match {
       case Forever  => Long.MaxValue
       case Never    => 0
-      case Ttl(ttl) => ttl.toMillis
+      case ttl: Ttl => ttl.value.toMillis
     }
   }
 

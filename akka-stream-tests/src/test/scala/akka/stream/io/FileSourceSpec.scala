@@ -11,7 +11,7 @@ import java.util.Random
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.google.common.jimfs.{ Configuration, Jimfs }
 
 import akka.actor.ActorSystem
@@ -31,7 +31,7 @@ object FileSourceSpec {
   final case class Settings(chunkSize: Int, readAhead: Int)
 }
 
-@silent
+@nowarn
 class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")

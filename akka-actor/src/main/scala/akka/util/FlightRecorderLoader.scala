@@ -3,11 +3,11 @@
  */
 
 package akka.util
-import akka.actor.{ ClassicActorSystemProvider, ExtendedActorSystem }
-import akka.annotation.InternalApi
-
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
+
+import akka.actor.{ ClassicActorSystemProvider, ExtendedActorSystem }
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

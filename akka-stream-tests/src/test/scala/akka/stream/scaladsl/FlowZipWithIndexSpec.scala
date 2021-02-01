@@ -7,9 +7,9 @@ package akka.stream.scaladsl
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, Materializer }
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent // keep unused imports
+@nowarn // keep unused imports
 class FlowZipWithIndexSpec extends StreamSpec {
 
 //#zip-with-index

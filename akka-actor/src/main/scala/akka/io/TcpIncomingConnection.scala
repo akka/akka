@@ -8,7 +8,7 @@ import java.nio.channels.SocketChannel
 
 import scala.collection.immutable
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.ActorRef
 import akka.io.Inet.SocketOption
@@ -19,7 +19,7 @@ import akka.io.Inet.SocketOption
  *
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[io] class TcpIncomingConnection(
     _tcp: TcpExt,
     _channel: SocketChannel,

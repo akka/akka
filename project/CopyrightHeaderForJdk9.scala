@@ -6,8 +6,7 @@ package akka
 
 import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport.headerSources
 import sbt.Keys.sourceDirectory
-import sbt.{Compile, Def, Test, _}
-
+import sbt.{ Compile, Def, Test, _ }
 
 object CopyrightHeaderForJdk9 extends CopyrightHeader {
 
@@ -22,7 +21,6 @@ object CopyrightHeaderForJdk9 extends CopyrightHeader {
       headerSources in Compile ++=
         (((sourceDirectory in Compile).value / JAVA_SOURCE_DIRECTORY) ** "*.java").get,
       headerSources in Test ++=
-        (((sourceDirectory in Test).value / JAVA_TEST_SOURCE_DIRECTORY) ** "*.java").get,
-    )
+        (((sourceDirectory in Test).value / JAVA_TEST_SOURCE_DIRECTORY) ** "*.java").get)
   }
 }

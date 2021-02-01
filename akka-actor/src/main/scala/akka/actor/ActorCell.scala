@@ -13,7 +13,7 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.dungeon.ChildrenContainer
 import akka.annotation.{ InternalApi, InternalStableApi }
@@ -406,7 +406,7 @@ private[akka] object ActorCell {
  * supported APIs in this place. This is not the API you were looking
  * for! (waves hand)
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[akka] class ActorCell(
     val system: ActorSystemImpl,
     val self: InternalActorRef,
@@ -687,7 +687,7 @@ private[akka] class ActorCell(
   }
 
   @InternalStableApi
-  @silent("never used")
+  @nowarn("msg=never used")
   final protected def clearActorFields(actorInstance: Actor, recreate: Boolean): Unit = {
     currentMessage = null
     behaviorStack = emptyBehaviorStack

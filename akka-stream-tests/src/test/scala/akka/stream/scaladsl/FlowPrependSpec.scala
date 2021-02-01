@@ -5,9 +5,9 @@
 package akka.stream.scaladsl
 
 import akka.testkit.AkkaSpec
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent // for keeping imports
+@nowarn // for keeping imports
 class FlowPrependSpec extends AkkaSpec {
 
 //#prepend

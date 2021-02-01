@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NoStackTrace
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.Done
 import akka.NotUsed
@@ -558,7 +558,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
               // and can result in forming two separate clusters (cluster split).
               // Instead, the downing strategy should act on ThisActorSystemQuarantinedEvent, e.g.
               // use it as a STONITH signal.
-              @silent("deprecated")
+              @nowarn("msg=deprecated")
               val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress, from)
               system.eventStream.publish(lifecycleEvent)
 
@@ -671,7 +671,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   private[remote] def isShutdown: Boolean = hasBeenShutdown.get()
 
-  @silent // ThrottleMode from classic is deprecated, we can replace when removing classic
+  @nowarn // ThrottleMode from classic is deprecated, we can replace when removing classic
   override def managementCommand(cmd: Any): Future[Boolean] = {
     cmd match {
       case SetThrottle(address, direction, Blackhole) =>

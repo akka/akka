@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.immutable
 
-import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.{ actorRef2Scala, ActorRef, ActorSystem }
 import akka.util.{ Subclassification, SubclassifiedIndex }
 import akka.util.Index
 
@@ -296,7 +296,8 @@ trait ManagedActorClassification { this: ActorEventBus with ActorClassifier =>
   private val empty = immutable.TreeSet.empty[ActorRef]
 
   /** The unsubscriber takes care of unsubscribing actors, which have terminated. */
-  protected lazy val unsubscriber = ActorClassificationUnsubscriber.start(system, this)
+  protected lazy val unsubscriber =
+    ActorClassificationUnsubscriber.start(system, this.toString(), (this.unsubscribe: ActorRef => Unit))
 
   @tailrec
   protected final def associate(monitored: ActorRef, monitor: ActorRef): Boolean = {

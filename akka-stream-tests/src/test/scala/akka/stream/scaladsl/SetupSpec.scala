@@ -4,12 +4,12 @@
 
 package akka.stream.scaladsl
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.NotUsed
 import akka.stream.testkit.StreamSpec
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class SetupSpec extends StreamSpec {
 
   import system.dispatcher

@@ -9,7 +9,9 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic._
 
 import scala.concurrent.{ Await, Future }
+
 import org.scalatest.BeforeAndAfterEach
+
 import akka.actor.Actor._
 import akka.pattern.ask
 import akka.testkit._
@@ -153,6 +155,7 @@ class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitS
   "have a non null context after termination" in {
     class StopBeforeFutureFinishes(val latch: CountDownLatch) extends Actor {
       import context.dispatcher
+
       import akka.pattern._
 
       override def receive: Receive = {

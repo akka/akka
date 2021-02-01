@@ -53,11 +53,11 @@ private[persistence] trait LeveldbStore
   override val compactionIntervals: Map[String, Long] =
     LeveldbStore.toCompactionIntervalMap(config.getObject("compaction-intervals"))
 
-  import com.github.ghik.silencer.silent
-  @silent("deprecated")
+  import scala.annotation.nowarn
+  @nowarn("msg=deprecated")
   private val persistenceIdSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]]
     with mutable.MultiMap[String, ActorRef]
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private val tagSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]]
     with mutable.MultiMap[String, ActorRef]
   private var allPersistenceIdsSubscribers = Set.empty[ActorRef]

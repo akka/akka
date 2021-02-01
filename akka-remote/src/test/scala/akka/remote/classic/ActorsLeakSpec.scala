@@ -10,7 +10,7 @@ import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 
 import akka.actor._
@@ -131,7 +131,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
           val beforeQuarantineActors = targets.flatMap(collectLiveActors).toSet
 
           // it must not quarantine the current connection
-          @silent
+          @nowarn
           val addressUid = AddressUidExtension(remoteSystem).addressUid + 1
           RARP(system).provider.transport.quarantine(remoteAddress, Some(addressUid), "test")
 

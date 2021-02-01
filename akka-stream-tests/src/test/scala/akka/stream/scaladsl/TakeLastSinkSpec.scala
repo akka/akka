@@ -7,12 +7,12 @@ package akka.stream.scaladsl
 import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
 
-@silent
+@nowarn
 class TakeLastSinkSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)

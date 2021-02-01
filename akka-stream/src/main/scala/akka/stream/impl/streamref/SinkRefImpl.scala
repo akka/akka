@@ -6,7 +6,7 @@ package akka.stream.impl.streamref
 
 import scala.util.{ Failure, Success, Try }
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.Done
 import akka.NotUsed
@@ -65,7 +65,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       private[this] val streamRefsMaster = StreamRefsMaster(eagerMaterializer.system)
 
       // settings ---
-      @silent("deprecated") // can't remove this settings access without breaking compat
+      @nowarn("msg=deprecated") // can't remove this settings access without breaking compat
       private[this] val subscriptionTimeout = {
         import StreamRefAttributes._
         val settings = eagerMaterializer.settings.streamRefSettings

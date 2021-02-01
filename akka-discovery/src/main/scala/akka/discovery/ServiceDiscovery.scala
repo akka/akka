@@ -67,8 +67,8 @@ object ServiceDiscovery {
   object ResolvedTarget {
     // Simply compare the bytes of the address.
     // This may not work in exotic cases such as IPv4 addresses encoded as IPv6 addresses.
-    import com.github.ghik.silencer.silent
-    @silent("deprecated")
+    import scala.annotation.nowarn
+    @nowarn("msg=deprecated")
     private implicit val inetAddressOrdering: Ordering[InetAddress] =
       Ordering.by[InetAddress, Iterable[Byte]](_.getAddress)
 

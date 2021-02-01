@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.annotation.implicitNotFound
 import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 import scala.util.control.NonFatal
+
 import akka.ConfigurationException
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -320,7 +321,7 @@ private[akka] object LocalActorRefProvider {
   private class SystemGuardian(override val supervisorStrategy: SupervisorStrategy, val guardian: ActorRef)
       extends Actor
       with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
-    import SystemGuardian._
+    import akka.actor.SystemGuardian._
 
     var terminationHooks = Set.empty[ActorRef]
 
@@ -391,7 +392,7 @@ private[akka] class LocalActorRefProvider private[akka] (
   override val rootPath: ActorPath = RootActorPath(Address("akka", _systemName))
 
   private[akka] val log: MarkerLoggingAdapter =
-    Logging.withMarker(eventStream, getClass)
+    Logging.withMarker(eventStream, classOf[LocalActorRefProvider])
 
   /*
    * This dedicated logger is used whenever a deserialization failure occurs
@@ -584,7 +585,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     ref
   }
 
-  lazy val tempContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
+  lazy val tempContainer: VirtualPathContainer = new VirtualPathContainer(system.provider, tempNode, rootGuardian, log)
 
   def registerTempActor(actorRef: InternalActorRef, path: ActorPath): Unit = {
     assert(path.parent eq tempNode, "cannot registerTempActor() with anything not obtained from tempPath()")

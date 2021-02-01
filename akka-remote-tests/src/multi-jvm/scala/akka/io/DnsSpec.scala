@@ -8,7 +8,7 @@ import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InetAddress
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testkit.MultiNodeConfig
@@ -20,7 +20,7 @@ object DnsSpec extends MultiNodeConfig {
 class DnsSpecMultiJvmNode1 extends DnsSpec
 
 // This is a multi-jvm tests because it is modifying global System.properties
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class DnsSpec extends RemotingMultiNodeSpec(DnsSpec) {
 
   def initialParticipants = roles.size

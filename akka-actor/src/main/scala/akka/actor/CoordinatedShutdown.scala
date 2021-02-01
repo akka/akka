@@ -18,8 +18,10 @@ import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 import scala.util.control.NonFatal
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+
 import akka.Done
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
@@ -353,7 +355,7 @@ final class CoordinatedShutdown private[akka] (
   import CoordinatedShutdown.{ Reason, UnknownReason }
 
   /** INTERNAL API */
-  private[akka] val log = Logging(system, getClass)
+  private[akka] val log = Logging(system, classOf[CoordinatedShutdown])
   private val knownPhases = phases.keySet ++ phases.values.flatMap(_.dependsOn)
 
   /** INTERNAL API */

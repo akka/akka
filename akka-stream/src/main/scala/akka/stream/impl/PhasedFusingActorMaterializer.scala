@@ -11,7 +11,7 @@ import scala.collection.immutable.Map
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.reactivestreams.Processor
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
@@ -610,7 +610,7 @@ private final case class SavedIslandData(
   /**
    * INTERNAL API
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   @InternalApi private[akka] override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
     val effectiveProps = props.dispatcher match {
       case Dispatchers.DefaultDispatcherId =>

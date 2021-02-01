@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.collection.immutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import akka.actor._
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -27,7 +27,7 @@ import akka.util.OptionVal
  *
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 @DoNotInherit private[akka] abstract class ExtendedActorMaterializer extends ActorMaterializer {
 
   override def withNamePrefix(name: String): ExtendedActorMaterializer
@@ -160,7 +160,7 @@ private[akka] class SubFusingActorMaterializerImpl(
   override private[akka] def actorOf(context: MaterializationContext, props: Props): ActorRef =
     delegate.actorOf(context, props)
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   override def settings: ActorMaterializerSettings = delegate.settings
 }
 

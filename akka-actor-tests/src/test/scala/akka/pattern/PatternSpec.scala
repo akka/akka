@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 
 import language.postfixOps
 
-import akka.actor.{ Actor, Props }
+import akka.actor.{ actorRef2Scala, Actor, Props }
 import akka.testkit.{ AkkaSpec, TestLatch }
 
 object PatternSpec {

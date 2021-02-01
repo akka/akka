@@ -8,12 +8,12 @@ import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 import language.postfixOps
 
 import akka.ConfigurationException
-import akka.actor.{ Actor, ActorRef, Deploy, Props }
+import akka.actor.{ actorRef2Scala, Actor, ActorRef, Deploy, Props }
 import akka.actor.ActorPath
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
@@ -170,7 +170,7 @@ class ConfiguredLocalRoutingSpec
     "not get confused when trying to wildcard-configure children" in {
       system.actorOf(FromConfig.props(routeeProps = Props(classOf[SendRefAtStartup], testActor)), "weird")
       val recv = (for (_ <- 1 to 3) yield expectMsgType[ActorRef].path.elements.mkString("/", "/", "")).toSet
-      @silent
+      @nowarn
       val expc = Set('a', 'b', 'c').map(i => "/user/weird/$" + i)
       recv should ===(expc)
       expectNoMessage(1 second)

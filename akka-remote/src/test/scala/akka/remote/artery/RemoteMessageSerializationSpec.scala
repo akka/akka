@@ -8,7 +8,7 @@ import java.io.NotSerializableException
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.concurrent.duration._
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import akka.actor.{ Actor, ActorRef, Dropped, PoisonPill, Props }
 import akka.remote.{ AssociationErrorEvent, DisassociatedEvent, OversizedPayloadException, RARP }
 import akka.testkit.{ EventFilter, ImplicitSender, TestActors, TestProbe }
@@ -93,7 +93,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec with ImplicitSe
         case x      => sender() ! x
       }
     }), bigBounceId)
-    @silent
+    @nowarn
     val bigBounceHere =
       RARP(system).provider.resolveActorRef(s"akka://${remoteSystem.name}@localhost:$remotePort/user/$bigBounceId")
 

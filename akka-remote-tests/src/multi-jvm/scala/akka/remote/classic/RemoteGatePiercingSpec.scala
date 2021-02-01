@@ -7,7 +7,7 @@ package akka.remote.classic
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 
 import akka.actor.{ ActorIdentity, Identify, _ }
@@ -48,7 +48,7 @@ object RemoteGatePiercingSpec extends MultiNodeConfig {
 class RemoteGatePiercingSpecMultiJvmNode1 extends RemoteGatePiercingSpec
 class RemoteGatePiercingSpecMultiJvmNode2 extends RemoteGatePiercingSpec
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 abstract class RemoteGatePiercingSpec extends RemotingMultiNodeSpec(RemoteGatePiercingSpec) {
 
   import RemoteGatePiercingSpec._

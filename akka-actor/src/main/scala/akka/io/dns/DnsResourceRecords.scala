@@ -147,8 +147,10 @@ private[dns] object ResourceRecord {
     val name = DomainName.parse(it, msg)
     val recType = it.getShort
     val recClass = it.getShort
+    // If the number of cases increase remember to add a `@switch` annotation e.g.:
+    // val ttl = (it.getInt: @switch) match {
     // According to https://www.ietf.org/rfc/rfc1035.txt: "TTL: positive values of a signed 32 bit number."
-    val ttl = (it.getInt: @switch) match {
+    val ttl = (it.getInt) match {
       case 0       => Ttl.never
       case nonZero => Ttl.fromPositive(nonZero.seconds)
     }

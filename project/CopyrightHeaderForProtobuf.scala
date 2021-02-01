@@ -4,9 +4,9 @@
 
 package akka
 
-import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport.{HeaderFileType, headerMappings, headerSources}
+import de.heikoseeberger.sbtheader.HeaderPlugin.autoImport.{ headerMappings, headerSources, HeaderFileType }
 import sbt.Keys.sourceDirectory
-import sbt.{Compile, Def, Test, inConfig, _}
+import sbt.{ Compile, Def, Test, inConfig, _ }
 
 object CopyrightHeaderForProtobuf extends CopyrightHeader {
   override protected def headerMappingSettings: Seq[Def.Setting[_]] = {
@@ -16,10 +16,7 @@ object CopyrightHeaderForProtobuf extends CopyrightHeader {
         Seq(
           headerSources in config ++=
             (((sourceDirectory in config).value / "protobuf") ** "*.proto").get,
-          headerMappings := headerMappings.value ++ Map(
-            HeaderFileType("proto") -> cStyleComment
-          )
-        )
+          headerMappings := headerMappings.value ++ Map(HeaderFileType("proto") -> cStyleComment))
       }
     }
   }

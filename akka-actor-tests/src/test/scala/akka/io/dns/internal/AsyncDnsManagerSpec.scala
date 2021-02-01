@@ -8,8 +8,9 @@ import java.net.InetAddress
 
 import scala.collection.immutable.Seq
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
+import akka.actor.actorRef2Scala
 import akka.io.Dns
 import akka.io.dns.AAAARecord
 import akka.io.dns.CachePolicy.Ttl
@@ -18,7 +19,7 @@ import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.testkit.WithLogCapturing
 
 // tests deprecated DNS API
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class AsyncDnsManagerSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
@@ -49,7 +50,7 @@ class AsyncDnsManagerSpec extends AkkaSpec("""
 
     "provide access to cache" in {
       dns ! AsyncDnsManager.GetCache
-      (expectMsgType[akka.io.SimpleDnsCache] should be).theSameInstanceAs(Dns(system).cache)
+      ((expectMsgType[akka.io.SimpleDnsCache]: akka.io.SimpleDnsCache) should be).theSameInstanceAs(Dns(system).cache)
     }
   }
 

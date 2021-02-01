@@ -17,6 +17,7 @@
 .*.swp
 .DS_Store
 .bloop/
+.bsp/
 .cache
 .classpath
 .codefellow

@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import com.typesafe.config.{ Config, ConfigFactory }
 import language.postfixOps
 
-import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
+import akka.actor.{ actorRef2Scala, Actor, ActorRef, ActorSystem, Props }
 import akka.pattern.ask
 import akka.testkit._
 import akka.testkit.TestEvent._
