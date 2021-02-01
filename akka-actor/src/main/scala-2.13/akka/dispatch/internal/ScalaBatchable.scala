@@ -20,9 +20,9 @@ private[akka] object ScalaBatchable {
    */
 
   def isBatchable(runnable: Runnable): Boolean = runnable match {
-    case b: akka.dispatch.Batchable                           => b.isBatchable
+    case b: akka.dispatch.Batchable    => b.isBatchable
     case _: scala.concurrent.Batchable => true
-    case _                                      => false
+    case _                             => false
   }
 
 }
