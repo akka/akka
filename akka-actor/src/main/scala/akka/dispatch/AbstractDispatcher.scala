@@ -38,11 +38,7 @@ object Envelope {
 }
 
 final case class TaskInvocation(eventStream: EventStream, runnable: Runnable, cleanup: () => Unit) extends Batchable {
-  final override def isBatchable: Boolean = runnable match {
-    case b: Batchable                           => b.isBatchable
-    case _: scala.concurrent.OnCompleteRunnable => true
-    case _                                      => false
-  }
+  final override def isBatchable: Boolean = akka.dispatch.internal.ScalaBatchable.isBatchable(runnable)
 
   def run(): Unit =
     try runnable.run()
