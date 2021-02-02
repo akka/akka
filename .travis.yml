@@ -38,7 +38,7 @@ jobs:
     - stage: scala3
       name: scala3
       # separate job since only a few modules compile with Scala 3 yet
-      script: sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=3.0 "akka-actor-tests/test:compile"
+      script: sbt -Dakka.build.scalaVersion=3.0 "akka-actor-tests/test:compile"
 
 stages:
   - name: whitesource
