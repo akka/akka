@@ -2,7 +2,7 @@
 
 Allow switching to alternative Source when a failure has happened upstream.
 
-@ref[Simple operators](../index.md#simple-operators)
+@ref[Error handling](../index.md#error-handling)
 
 ## Signature
 
