@@ -2,7 +2,7 @@
 
 While similar to `recover` this operators can be used to transform an error signal to a different one *without* logging it as an error in the process.
 
-@ref[Simple operators](../index.md#simple-operators)
+@ref[Error handling](../index.md#error-handling)
 
 ## Signature
 
