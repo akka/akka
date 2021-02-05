@@ -7,7 +7,7 @@ refer to the corresponding chapters for Scala and Java APIs.
 ## Sample project
 
 You can look at the
-@extref[Supervision example project](samples:akka-samples-supervision-java)
+@link[Supervision example project](https://github.com/akka/akka-samples/tree/2.5/akka-sample-supervision-java) { open=new }
 to see what this looks like in practice.
 
 <a id="supervision-directives"></a>
