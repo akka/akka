@@ -17,7 +17,7 @@ import scala.util.{ Failure, Success, Try }
 import scala.annotation.nowarn
 import com.typesafe.config.Config
 
-import akka.actor.{ actorRef2Scala, Actor, ActorLogging }
+import akka.actor.{ Actor, ActorLogging }
 import akka.actor.Status
 import akka.annotation.InternalApi
 import akka.io.dns.AAAARecord

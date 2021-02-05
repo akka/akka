@@ -13,7 +13,6 @@ import scala.concurrent.duration._
 
 import akka.actor.Actor
 import akka.actor.Props
-import akka.actor.actorRef2Scala
 import akka.testkit.{ AkkaSpec, DefaultTimeout, TestLatch }
 import akka.testkit.CallingThreadDispatcher
 import akka.testkit.TestActorRef

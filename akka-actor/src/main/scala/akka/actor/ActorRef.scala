@@ -7,6 +7,7 @@ package akka.actor
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.annotation.tailrec
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.util.control.NonFatal
 
@@ -103,6 +104,7 @@ object ActorRef {
  * about the exact actor incarnation you can use the ``ActorPath`` as key because
  * the unique id of the actor is not taken into account when comparing actor paths.
  */
+@nowarn("msg=deprecated")
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
   scalaRef: InternalActorRef with ActorRefScope =>
 
@@ -127,6 +129,22 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    * Pass [[akka.actor.ActorRef]] `noSender` or `null` as sender if there is nobody to reply to
    */
   final def tell(msg: Any, sender: ActorRef): Unit = this.!(msg)(sender)
+
+  /**
+   * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
+   * <p/>
+   *
+   * If invoked from within an actor then the actor reference is implicitly passed on as the implicit 'sender' argument.
+   * <p/>
+   *
+   * This actor 'sender' reference is then available in the receiving actor in the 'sender()' member variable,
+   * if invoked from within an Actor. If not then no sender is available.
+   * <pre>
+   *   actor ! message
+   * </pre>
+   * <p/>
+   */
+  def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit
 
   /**
    * Forwards the message and passes the original sender actor as the sender.
@@ -167,6 +185,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
  * There are implicit conversions in package.scala
  * from ActorRef -&gt; ScalaActorRef and back
  */
+@deprecated("tell method is now provided by ActorRef trait", "2.6.13")
 trait ScalaActorRef { ref: ActorRef with InternalActorRef with ActorRefScope =>
 
   /**
@@ -184,7 +203,6 @@ trait ScalaActorRef { ref: ActorRef with InternalActorRef with ActorRefScope =>
    * <p/>
    */
   def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit
-
 }
 
 /**
@@ -233,6 +251,7 @@ private[akka] trait RepointableRef extends ActorRefScope {
  *
  * DO NOT USE THIS UNLESS INTERNALLY WITHIN AKKA!
  */
+@nowarn("msg=deprecated")
 @InternalApi private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRef { this: ActorRefScope =>
   /*
    * Actor life-cycle management, invoked only internally (in response to user requests via ActorContext).

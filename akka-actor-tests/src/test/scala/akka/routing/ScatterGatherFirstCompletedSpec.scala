@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import akka.actor.{ actorRef2Scala, Actor, Props }
+import akka.actor.{ Actor, Props }
 import akka.actor.ActorSystem
 import akka.actor.Status
 import akka.pattern.ask

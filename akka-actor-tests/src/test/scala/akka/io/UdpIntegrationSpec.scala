@@ -8,7 +8,6 @@ import java.net.DatagramSocket
 import java.net.InetSocketAddress
 
 import akka.actor.ActorRef
-import akka.actor.actorRef2Scala
 import akka.io.Inet._
 import akka.io.Udp._
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }

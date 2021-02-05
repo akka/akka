@@ -6,7 +6,6 @@ package akka.cluster.sharding
 
 import scala.concurrent.duration._
 
-import akka.actor._
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion.{ ClusterShardingStats, GetClusterShardingStats }

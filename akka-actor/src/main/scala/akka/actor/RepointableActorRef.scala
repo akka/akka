@@ -179,7 +179,7 @@ private[akka] class RepointableActorRef(
 
   def children: immutable.Iterable[ActorRef] = lookup.childrenRefs.children
 
-  def !(message: Any)(implicit sender: ActorRef = Actor.noSender) = underlying.sendMessage(message, sender)
+  def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = underlying.sendMessage(message, sender)
 
   def sendSystemMessage(message: SystemMessage) = underlying.sendSystemMessage(message)
 

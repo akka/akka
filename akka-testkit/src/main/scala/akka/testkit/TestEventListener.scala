@@ -11,7 +11,7 @@ import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 import scala.util.matching.Regex
 
-import akka.actor.{ actorRef2Scala, ActorSystem, DeadLetter, UnhandledMessage }
+import akka.actor.{ ActorSystem, DeadLetter, UnhandledMessage }
 import akka.actor.Dropped
 import akka.actor.NoSerializationVerificationNeeded
 import akka.dispatch.sysmsg.{ SystemMessage, Terminate }
