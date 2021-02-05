@@ -69,12 +69,17 @@ private[akka] case object PersistNothing extends EffectImpl[Nothing, Nothing]
 @InternalApi
 private[akka] final case class Persist[Event, State](event: Event) extends EffectImpl[Event, State] {
   override def events = event :: Nil
+
+  override def toString: String = s"Persist(${event.getClass.getName})"
 }
 
 /** INTERNAL API */
 @InternalApi
 private[akka] final case class PersistAll[Event, State](override val events: immutable.Seq[Event])
-    extends EffectImpl[Event, State]
+    extends EffectImpl[Event, State] {
+  
+  override def toString: String = s"PersistAll(${events.map(_.getClass.getName).mkString(",")})"
+}
 
 /** INTERNAL API */
 @InternalApi
