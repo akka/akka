@@ -151,7 +151,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
 
       override protected val stageActorName: String = streamRefsMaster.nextSourceRefStageName()
       private[this] val self: GraphStageLogic.StageActor =
-        getEagerStageActor(eagerMaterializer, poisonPillCompatibility = false)(receiveRemoteMessage)
+        getEagerStageActor(eagerMaterializer)(receiveRemoteMessage)
       override val ref: ActorRef = self.ref
       private[this] implicit def selfSender: ActorRef = ref
 
