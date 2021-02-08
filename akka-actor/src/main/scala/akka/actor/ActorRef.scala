@@ -131,7 +131,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
   final def tell(msg: Any, sender: ActorRef): Unit = this.!(msg)(sender)
 
   /**
-   * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
+   * Scala API: Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
    * <p/>
    *
    * If invoked from within an actor then the actor reference is implicitly passed on as the implicit 'sender' argument.
