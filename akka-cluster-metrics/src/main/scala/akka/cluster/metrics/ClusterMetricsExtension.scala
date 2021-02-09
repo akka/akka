@@ -88,7 +88,7 @@ class ClusterMetricsExtension(system: ExtendedActorSystem) extends Extension {
  * Cluster metrics extension provider.
  */
 object ClusterMetricsExtension extends ExtensionId[ClusterMetricsExtension] with ExtensionIdProvider {
-  override def lookup = ClusterMetricsExtension
+  override def lookup() = ClusterMetricsExtension
   override def get(system: ActorSystem): ClusterMetricsExtension = super.get(system)
   override def get(system: ClassicActorSystemProvider): ClusterMetricsExtension = super.get(system)
   override def createExtension(system: ExtendedActorSystem): ClusterMetricsExtension =

@@ -159,7 +159,7 @@ object ClusterSharding extends ExtensionId[ClusterSharding] with ExtensionIdProv
   override def get(system: ActorSystem): ClusterSharding = super.get(system)
   override def get(system: ClassicActorSystemProvider): ClusterSharding = super.get(system)
 
-  override def lookup = ClusterSharding
+  override def lookup() = ClusterSharding
 
   override def createExtension(system: ExtendedActorSystem): ClusterSharding =
     new ClusterSharding(system)

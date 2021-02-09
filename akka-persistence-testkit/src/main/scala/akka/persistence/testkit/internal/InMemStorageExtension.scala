@@ -26,7 +26,7 @@ private[testkit] object InMemStorageExtension extends ExtensionId[InMemStorageEx
   override def createExtension(system: ExtendedActorSystem): InMemStorageExtension =
     new InMemStorageExtension(system)
 
-  override def lookup = InMemStorageExtension
+  override def lookup() = InMemStorageExtension
 
 }
 

@@ -922,7 +922,7 @@ object DistributedPubSub extends ExtensionId[DistributedPubSub] with ExtensionId
 
   override def get(system: ClassicActorSystemProvider): DistributedPubSub = super.get(system)
 
-  override def lookup = DistributedPubSub
+  override def lookup() = DistributedPubSub
 
   override def createExtension(system: ExtendedActorSystem): DistributedPubSub =
     new DistributedPubSub(system)

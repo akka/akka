@@ -25,7 +25,7 @@ package akka.actor
  * {{{
  * object MyExt extends ExtensionId[Ext] with ExtensionIdProvider {
  *
- *   override def lookup = MyExt
+ *   override def lookup() = MyExt
  *
  *   override def createExtension(system: ExtendedActorSystem): Ext = new Ext(system)
  *
@@ -132,5 +132,5 @@ trait ExtensionIdProvider {
   /**
    * Returns the canonical ExtensionId for this Extension
    */
-  def lookup: ExtensionId[_ <: Extension]
+  def lookup(): ExtensionId[_ <: Extension]
 }

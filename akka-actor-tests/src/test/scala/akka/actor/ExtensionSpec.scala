@@ -16,7 +16,7 @@ import akka.testkit.EventFilter
 import akka.testkit.TestKit._
 
 object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider {
-  def lookup = this
+  override def lookup() = this
   def createExtension(s: ExtendedActorSystem) = new TestExtension(s)
 }
 
@@ -24,7 +24,7 @@ object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider
 class TestExtension(val system: ExtendedActorSystem) extends Extension
 
 object FailingTestExtension extends ExtensionId[FailingTestExtension] with ExtensionIdProvider {
-  def lookup = this
+  override def lookup() = this
   def createExtension(s: ExtendedActorSystem) = new FailingTestExtension(s)
 
   class TestException extends IllegalArgumentException("ERR") with NoStackTrace
@@ -35,7 +35,7 @@ object InstanceCountingExtension extends ExtensionId[InstanceCountingExtension] 
   override def createExtension(system: ExtendedActorSystem): InstanceCountingExtension = {
     new InstanceCountingExtension
   }
-  override def lookup: ExtensionId[_ <: Extension] = this
+  override def lookup(): ExtensionId[_ <: Extension] = this
 }
 
 class InstanceCountingExtension extends Extension {

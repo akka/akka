@@ -99,7 +99,7 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
 object Discovery extends ExtensionId[Discovery] with ExtensionIdProvider {
   override def apply(system: ActorSystem): Discovery = super.apply(system)
 
-  override def lookup: Discovery.type = Discovery
+  override def lookup(): Discovery.type = Discovery
 
   override def get(system: ActorSystem): Discovery = super.get(system)
 

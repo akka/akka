@@ -18,7 +18,7 @@ object DistributedData extends ExtensionId[DistributedData] with ExtensionIdProv
   override def get(system: ActorSystem): DistributedData = super.get(system)
   override def get(system: ClassicActorSystemProvider): DistributedData = super.get(system)
 
-  override def lookup = DistributedData
+  override def lookup() = DistributedData
 
   override def createExtension(system: ExtendedActorSystem): DistributedData =
     new DistributedData(system)
