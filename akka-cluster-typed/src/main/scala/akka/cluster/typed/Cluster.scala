@@ -154,8 +154,11 @@ final case class Down(address: Address) extends ClusterCommand
  * Initiate a full cluster shutdown. This stops:
  * - New members joining the cluster
  * - New rebalances in Cluster Sharding
+ * - Singleton handovers
  *
  * However, it does not stop the nodes. That is expected to be signalled externally.
+ *
+ * Not for user extension
  */
 @DoNotInherit sealed trait PrepareForFullClusterShutdown extends ClusterCommand
 

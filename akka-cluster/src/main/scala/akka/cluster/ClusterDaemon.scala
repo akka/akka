@@ -361,7 +361,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   var joinSeedNodesDeadline: Option[Deadline] = None
   var leaderActionCounter = 0
   var selfDownCounter = 0
-  var prepareForShutdown = false
+  var preparingForShutdown = false
 
   var exitingTasksInProgress = false
   val selfExiting = Promise[Done]()
@@ -482,7 +482,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           joinSeedNodesWasUnsuccessful()
     }: Actor.Receive).orElse(receiveExitingCompleted)
 
-  // FIXME, what happens if we try to join a node that is Shutting down, just timeout?
   def tryingToJoin(joinWith: Address, deadline: Option[Deadline]): Actor.Receive =
     ({
       case Welcome(from, gossip) =>
@@ -736,7 +735,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
    * current gossip state, including the new joining member.
    */
   def joining(joiningNode: UniqueAddress, roles: Set[String], appVersion: Version): Unit = {
-    if (!prepareForShutdown) {
+    if (!preparingForShutdown) {
       val selfStatus = latestGossip.member(selfUniqueAddress).status
       if (joiningNode.address.protocol != selfAddress.protocol)
         logWarning(
@@ -842,22 +841,24 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   }
 
   def startPrepareForShutdown(): Unit = {
-    prepareForShutdown = true
-    val changedMembers = latestGossip.members.collect {
-      case m if MembershipState.allowedToPrepareToShutdown(m.status) =>
-        m.copy(status = PreparingForShutdown)
+    preparingForShutdown = true
+    if (!preparingForShutdown) {
+      val changedMembers = latestGossip.members.collect {
+        case m if MembershipState.allowedToPrepareToShutdown(m.status) =>
+          m.copy(status = PreparingForShutdown)
+      }
+      val newGossip = latestGossip.update(changedMembers)
+      updateLatestGossip(newGossip)
+      changedMembers.foreach { member =>
+        logInfo(
+          ClusterLogMarker.memberChanged(member.uniqueAddress, MemberStatus.PreparingForShutdown),
+          "Preparing for shutdown [{}] as [{}]",
+          member.address,
+          PreparingForShutdown)
+      }
+      publishMembershipState()
+      gossip()
     }
-    val newGossip = latestGossip.update(changedMembers)
-    updateLatestGossip(newGossip)
-    changedMembers.foreach { member =>
-      logInfo(
-        ClusterLogMarker.memberChanged(member.uniqueAddress, MemberStatus.PreparingForShutdown),
-        "Preparing for shutdown [{}] as [{}]",
-        member.address,
-        PreparingForShutdown)
-    }
-    publishMembershipState()
-    gossip()
   }
 
   /**
@@ -866,7 +867,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
    * removal a new node with same address can join the cluster through the normal joining procedure.
    */
   def leaving(address: Address): Unit = {
-    logInfo("Member leaving {}", address) // FIXME remove
     // only try to update if the node is available (in the member ring)
     latestGossip.members.find(_.address == address).foreach { existingMember =>
       if (existingMember.status == Joining || existingMember.status == WeaklyUp || existingMember.status == Up || existingMember.status == PreparingForShutdown || existingMember.status == ReadyForShutdown) {
@@ -1246,7 +1246,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       } else {
         leaderActionCounter += 1
         import cluster.settings.{ AllowWeaklyUpMembers, LeaderActionsInterval, WeaklyUpAfter }
-        if (AllowWeaklyUpMembers && LeaderActionsInterval * leaderActionCounter >= WeaklyUpAfter && !prepareForShutdown)
+        if (AllowWeaklyUpMembers && LeaderActionsInterval * leaderActionCounter >= WeaklyUpAfter && !preparingForShutdown)
           moveJoiningToWeaklyUp()
 
         if (leaderActionCounter == firstNotice || leaderActionCounter % periodicNotice == 0)
@@ -1347,7 +1347,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         var upNumber = 0
 
         {
-          case m if m.dataCenter == selfDc && isJoiningToUp(m) && !prepareForShutdown =>
+          case m if m.dataCenter == selfDc && isJoiningToUp(m) && !preparingForShutdown =>
             // Move JOINING => UP (once all nodes have seen that this node is JOINING, i.e. we have a convergence)
             // and minimum number of nodes have joined the cluster
             // don't move members to up when preparing for shutdown
@@ -1366,7 +1366,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
             m.copy(status = Exiting)
 
           case m if m.dataCenter == selfDc & m.status == PreparingForShutdown =>
-            // Move PreparingForShutdown => ReadingForShutdown (once we have a convergence on PreparingForShutdown)
+            // Move PreparingForShutdown => ReadyForShutdown (once we have a convergence on PreparingForShutdown)
             m.copy(status = ReadyForShutdown)
         }
       }

@@ -1122,7 +1122,10 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
 
   def selfMemberExited(): Unit = {
     selfExited = true
-    logInfo("Exited [{}]. Preparing for shutdown? {}", cluster.selfAddress, preparingForFullShutdown)
+    logInfo(
+      "Exited [{}].{}",
+      cluster.selfAddress,
+      if (preparingForFullShutdown) " From preparing from shutdown" else "")
     // handover won't be done so just complete right away
     if (preparingForFullShutdown) {
       memberExitingProgress.trySuccess(Done)

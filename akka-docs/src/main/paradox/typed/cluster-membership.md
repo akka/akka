@@ -136,7 +136,7 @@ In some rare cases it may be desirable to do a full cluster shutdown rather than
 For example, a protocol change where it is simpler to restart the cluster than to make the protocol change
 backward compatible.
 
-As of Akka `2.6.12` it can be signalled that a full cluster shutdown is about to happen and any expensive actions such as:
+As of Akka `2.6.13` it can be signalled that a full cluster shutdown is about to happen and any expensive actions such as:
 
 * Cluster sharding rebalances
 * Moving of Cluster singletons
