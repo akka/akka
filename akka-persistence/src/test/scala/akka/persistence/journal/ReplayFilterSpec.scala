@@ -4,7 +4,6 @@
 
 package akka.persistence.journal
 
-import akka.actor._
 import akka.persistence.JournalProtocol
 import akka.persistence.PersistentRepr
 import akka.testkit._

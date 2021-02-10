@@ -15,7 +15,7 @@ import scala.util.control.NonFatal
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.ConfigurationException
-import akka.actor.{ actorRef2Scala, Actor, ActorRef, ActorSystem, DeadLetter, Deploy, DynamicAccess, Props }
+import akka.actor.{ Actor, ActorRef, ActorSystem, DeadLetter, Deploy, DynamicAccess, Props }
 import akka.dispatch.sysmsg.{
   EarliestFirstSystemMessageList,
   LatestFirstSystemMessageList,

@@ -14,7 +14,6 @@ import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.Status.Failure
-import akka.actor.actorRef2Scala
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 

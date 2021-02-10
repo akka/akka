@@ -9,7 +9,7 @@ import java.nio.channels.{ DatagramChannel, SelectionKey }
 
 import scala.util.control.NonFatal
 
-import akka.actor.{ actorRef2Scala, Actor, ActorLogging, ActorRef }
+import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.io.SelectionHandler._
 import akka.io.Udp.{ CommandFailed, Send }
 import akka.io.dns.DnsProtocol

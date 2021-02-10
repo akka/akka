@@ -4,7 +4,6 @@
 
 package akka.testkit
 
-import akka.actor.actorRef2Scala
 class TestActorsSpec extends AkkaSpec with ImplicitSender {
 
   import TestActors.{ echoActorProps, forwardActorProps }

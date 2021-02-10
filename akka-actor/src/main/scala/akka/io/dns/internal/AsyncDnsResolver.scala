@@ -12,7 +12,7 @@ import scala.concurrent.Future
 import scala.util.Try
 import scala.util.control.NonFatal
 
-import akka.actor.{ actorRef2Scala, Actor, ActorLogging, ActorRef, ActorRefFactory }
+import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory }
 import akka.annotation.InternalApi
 import akka.io.SimpleDnsCache
 import akka.io.dns._
