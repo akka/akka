@@ -742,6 +742,32 @@ class SubSource[Out, Mat](
     groupedWeightedWithin(maxWeight, costFn, d.asScala)
 
   /**
+   * Chunk up this stream into groups of elements received within a time window,
+   * or limited by the weight and number of the elements, whatever happens first.
+   * Empty groups will not be emitted if no elements are received from upstream.
+   * The last group before end-of-stream will contain the buffered elements
+   * since the previously emitted group.
+   *
+   * '''Emits when''' the configured time elapses since the last group has been emitted or weight limit reached
+   *
+   * '''Backpressures when''' downstream backpressures, and buffered group (+ pending element) weighs more than
+   * `maxWeight` or has more than `maxNumber` elements
+   *
+   * '''Completes when''' upstream completes (emits last group)
+   *
+   * '''Cancels when''' downstream completes
+   *
+   * `maxWeight` must be positive, `maxNumber` must be positive, and `d` must be greater than 0 seconds,
+   * otherwise IllegalArgumentException is thrown.
+   */
+  def groupedWeightedWithin(
+      maxWeight: Long,
+      maxNumber: Int,
+      costFn: function.Function[Out, java.lang.Long],
+      d: java.time.Duration): javadsl.SubSource[java.util.List[Out @uncheckedVariance], Mat] =
+    new SubSource(delegate.groupedWeightedWithin(maxWeight, maxNumber, d.asScala)(costFn.apply).map(_.asJava))
+
+  /**
    * Discard the given number of elements at the beginning of the stream.
    * No elements will be dropped if `n` is zero or negative.
    *
