@@ -269,9 +269,9 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
     case MemberWeaklyUp(m)                          => addWeaklyUp(m)
     case MemberUp(m)                                => addUp(m)
     case MemberLeft(m)                              => leaving(m)
+    case MemberExited(m)                            => exited(m)
     case UnreachableMember(m)                       => unreachableMember(m)
     case MemberDowned(m)                            => unreachableMember(m)
-    case MemberExited(m)                            => unreachableMember(m)
     case ReachableMember(m)                         => reachableMember(m)
     case ReachabilityChanged(r)                     => reachabilityChanged(r)
     case MemberRemoved(m, _)                        => remove(m)
@@ -473,7 +473,7 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
       else ""}, " +
       s"[${strategy.unreachable.size}] unreachable of [${strategy.members.size}] members" +
       indirectlyConnectedLogMessage +
-      s", all members in DC [${strategy.allMembersInDC.mkString(", ")}], full reachability status: ${strategy.reachability}" +
+      s", all members in DC [${strategy.allMembersInDC.mkString(", ")}], full reachability status: [${strategy.reachability}]" +
       unreachableDataCentersLogMessage)
   }
 
@@ -565,6 +565,15 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
     if (selfDc == m.dataCenter) {
       log.debug("SBR leaving [{}]", m)
       mutateMemberInfo(resetStable = false) { () =>
+        strategy.add(m)
+      }
+    }
+  }
+
+  def exited(m: Member): Unit = {
+    if (selfDc == m.dataCenter) {
+      log.debug("SBR exited [{}]", m)
+      mutateMemberInfo(resetStable = true) { () =>
         strategy.add(m)
       }
     }
