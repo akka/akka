@@ -63,7 +63,6 @@ abstract class ClusterShardingStatsSpec
   import Pinger._
 
   private val typeKey = EntityTypeKey[Command]("ping")
-
   private val sharding = ClusterSharding(typedSystem)
   private val settings = ClusterShardingSettings(typedSystem)
   private val queryTimeout = settings.shardRegionQueryTimeout * roles.size.toLong //numeric widening y'all

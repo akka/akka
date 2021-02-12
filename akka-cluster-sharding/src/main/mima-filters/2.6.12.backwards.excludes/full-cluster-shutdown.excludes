@@ -1,0 +1,2 @@
+# private[akka] class
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.sharding.ShardCoordinator.rebalanceTask")

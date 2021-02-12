@@ -54,6 +54,7 @@ private[akka] object ClusterMessageSerializer {
   val WelcomeManifest = "W"
   val LeaveManifest = "L"
   val DownManifest = "D"
+  val PrepareForShutdownManifest = "PS"
   val InitJoinManifest = "IJ"
   val InitJoinAckManifest = "IJA"
   val InitJoinNackManifest = "IJN"
@@ -93,6 +94,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
     case _: GossipStatus                        => GossipStatusManifest
     case _: GossipEnvelope                      => GossipEnvelopeManifest
     case _: ClusterRouterPool                   => ClusterRouterPoolManifest
+    case ClusterUserAction.PrepareForShutdown   => PrepareForShutdownManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
@@ -372,7 +374,9 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
     MemberStatus.Exiting -> cm.MemberStatus.Exiting_VALUE,
     MemberStatus.Down -> cm.MemberStatus.Down_VALUE,
     MemberStatus.Removed -> cm.MemberStatus.Removed_VALUE,
-    MemberStatus.WeaklyUp -> cm.MemberStatus.WeaklyUp_VALUE)
+    MemberStatus.WeaklyUp -> cm.MemberStatus.WeaklyUp_VALUE,
+    MemberStatus.PreparingForShutdown -> cm.MemberStatus.PreparingForShutdown_VALUE,
+    MemberStatus.ReadyForShutdown -> cm.MemberStatus.ReadyForShutdown_VALUE)
 
   private val memberStatusFromInt = memberStatusToInt.map { case (a, b) => (b, a) }
 

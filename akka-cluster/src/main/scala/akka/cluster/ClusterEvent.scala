@@ -318,6 +318,16 @@ object ClusterEvent {
     if (member.status != Leaving) throw new IllegalArgumentException("Expected Leaving status, got: " + member)
   }
 
+  final case class MemberPreparingForShutdown(member: Member) extends MemberEvent {
+    if (member.status != PreparingForShutdown)
+      throw new IllegalArgumentException("Expected PreparingForShutdown status, got: " + member)
+  }
+
+  final case class MemberReadyForShutdown(member: Member) extends MemberEvent {
+    if (member.status != ReadyForShutdown)
+      throw new IllegalArgumentException("Expected ReadyForShutdown status, got: " + member)
+  }
+
   /**
    * Member status changed to `MemberStatus.Exiting` and will be removed
    * when all members have seen the `Exiting` status.
@@ -554,12 +564,14 @@ object ClusterEvent {
           newMember
       }
       val memberEvents = (newMembers ++ changedMembers).unsorted.collect {
-        case m if m.status == Joining  => MemberJoined(m)
-        case m if m.status == WeaklyUp => MemberWeaklyUp(m)
-        case m if m.status == Up       => MemberUp(m)
-        case m if m.status == Leaving  => MemberLeft(m)
-        case m if m.status == Exiting  => MemberExited(m)
-        case m if m.status == Down     => MemberDowned(m)
+        case m if m.status == Joining              => MemberJoined(m)
+        case m if m.status == WeaklyUp             => MemberWeaklyUp(m)
+        case m if m.status == Up                   => MemberUp(m)
+        case m if m.status == Leaving              => MemberLeft(m)
+        case m if m.status == Exiting              => MemberExited(m)
+        case m if m.status == Down                 => MemberDowned(m)
+        case m if m.status == PreparingForShutdown => MemberPreparingForShutdown(m)
+        case m if m.status == ReadyForShutdown     => MemberReadyForShutdown(m)
         // no events for other transitions
       }
 

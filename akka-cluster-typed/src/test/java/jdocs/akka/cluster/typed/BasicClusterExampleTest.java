@@ -67,6 +67,12 @@ public class BasicClusterExampleTest { // extends JUnitSuite {
 
       // TODO wait for/verify cluster to form
 
+      // #prepare
+      PrepareForFullClusterShutdown msg =
+          PrepareForFullClusterShutdown.prepareForFullClusterShutdown();
+      cluster2.manager().tell(msg);
+      // #prepare
+
       // #cluster-leave
       cluster2.manager().tell(Leave.create(cluster2.selfMember().address()));
       // #cluster-leave
