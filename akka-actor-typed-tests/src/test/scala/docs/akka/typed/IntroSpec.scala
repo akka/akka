@@ -214,6 +214,8 @@ object IntroSpec {
 
   //#chatroom-main
   object Main {
+    import ChatRoom._
+
     def apply(): Behavior[NotUsed] =
       Behaviors.setup { context =>
         val chatRoom = context.spawn(ChatRoom(), "chatroom")
