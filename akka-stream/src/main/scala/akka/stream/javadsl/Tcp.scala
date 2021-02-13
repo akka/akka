@@ -86,7 +86,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
      * Handles the connection using the given flow, which is materialized exactly once and the respective
      * materialized value is returned.
      *
-     * Convenience shortcut for: `flow.join(handler).run()`.
+     * Convenience shortcut for: `flow.joinMat(handler, Keep.right).run(systemProvider)`.
      *
      * Note that the classic or typed `ActorSystem` can be used as the `systemProvider` parameter.
      */
@@ -97,7 +97,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
      * Handles the connection using the given flow, which is materialized exactly once and the respective
      * materialized value is returned.
      *
-     * Convenience shortcut for: `flow.join(handler).run()`.
+     * Convenience shortcut for: `flow.joinMat(handler, Keep.right).run(materializer)`.
      *
      * Prefer the method taking an `ActorSystem` unless you have special requirements
      */
