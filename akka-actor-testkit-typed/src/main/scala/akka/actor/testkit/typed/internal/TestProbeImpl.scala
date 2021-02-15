@@ -90,7 +90,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
 
   override def ref: ActorRef[M] = testActor
 
-  override def remainingOrDefault: FiniteDuration = remainingOr(settings.SingleExpectDefaultTimeout.dilated)
+  override def remainingOrDefault: FiniteDuration = remainingOr(settings.SingleExpectDefaultTimeout)
 
   override def getRemainingOrDefault: JDuration = remainingOrDefault.asJava
 
@@ -203,7 +203,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     expectNoMessage(max.asScala)
 
   override def expectNoMessage(): Unit =
-    expectNoMessage_internal(settings.ExpectNoMessageDefaultTimeout.dilated)
+    expectNoMessage_internal(settings.ExpectNoMessageDefaultTimeout)
 
   private def expectNoMessage_internal(max: FiniteDuration): Unit = {
     val o = receiveOne_internal(max)
