@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -8,7 +8,6 @@ import akka.cluster.MemberStatus.Removed
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.util.ccompat._
-import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually
 
 import scala.concurrent.duration._
@@ -19,9 +18,7 @@ object ClusterShutdownSpec extends MultiNodeConfig {
   val third = role("third")
   val forth = role("forth")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
-       # important config
-      """).withFallback(MultiNodeClusterSpec.clusterConfig)))
+  commonConfig(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 class ClusterShutdownSpecMultiJvmNode1 extends ClusterShutdownSpec

@@ -841,8 +841,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   }
 
   def startPrepareForShutdown(): Unit = {
-    preparingForShutdown = true
     if (!preparingForShutdown) {
+      preparingForShutdown = true
       val changedMembers = latestGossip.members.collect {
         case m if MembershipState.allowedToPrepareToShutdown(m.status) =>
           m.copy(status = PreparingForShutdown)
