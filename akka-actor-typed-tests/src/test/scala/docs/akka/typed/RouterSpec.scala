@@ -7,7 +7,7 @@ package docs.akka.typed
 import akka.actor.typed.DispatcherSelector
 // #pool
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
-import akka.actor.typed.{ Behavior, SupervisorStrategy }
+import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy }
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.{ Behaviors, Routers }
 
@@ -143,5 +143,50 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
 
       probe.receiveMessages(10)
     }
+    "show group routing with consistent hashing" in {
+
+      val probe1 = createTestProbe[String]()
+      val probe2 = createTestProbe[String]()
+
+      object Proxy {
+
+        val RegisteringKey = ServiceKey[Command]("aggregator-key")
+
+        def mapping(command: Command) = command.id
+
+        sealed trait Command {
+          def id: String
+        }
+        case class Message(id: String, content: String) extends Command
+
+        def apply(monitor: ActorRef[String]): Behavior[Command] =
+          Behaviors.setup[Command] { context =>
+            context.system.receptionist ! Receptionist.Register(RegisteringKey, context.self)
+            Behaviors.receiveMessage {
+              case Message(id, _) =>
+                monitor ! id
+                Behaviors.same
+            }
+          }
+      }
+      //they register to Proxy.RegisteringKey on initialization
+      spawn(Proxy(probe1.ref))
+      spawn(Proxy(probe2.ref))
+
+      //messages sent to a router with constant hashing
+      val router = spawn(Routers.group(Proxy.RegisteringKey).withConsistentHashingRouting(10, Proxy.mapping))
+      router ! Proxy.Message("123", "Text1")
+      router ! Proxy.Message("123", "Text2")
+
+      router ! Proxy.Message("zh3", "Text3")
+      router ! Proxy.Message("zh3", "Text4")
+
+      //Then reach the same actor those with same id
+      probe1.receiveMessage() shouldBe probe1.receiveMessage()
+      probe2.receiveMessage() shouldBe probe2.receiveMessage()
+
+    }
+
   }
+
 }
