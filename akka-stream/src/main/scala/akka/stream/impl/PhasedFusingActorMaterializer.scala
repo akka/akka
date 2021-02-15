@@ -769,10 +769,9 @@ private final case class SavedIslandData(
 
   override def takePublisher(slot: Int, publisher: Publisher[Any]): Unit = {
     val connection = conn(slot)
-    // TODO: proper input port debug string (currently prints the stage)
     val bufferSize = connection.inOwner.attributes.mandatoryAttribute[InputBuffer].max
     val boundary =
-      new BatchingActorInputBoundary(bufferSize, shell, publisher, connection.inOwner.toString)
+      new BatchingActorInputBoundary(bufferSize, shell, publisher, "publisher.in")
     logics.add(boundary)
     boundary.stageId = logics.size() - 1
     boundary.attributes = connection.inOwner.attributes.and(DefaultAttributes.inputBoundary)
