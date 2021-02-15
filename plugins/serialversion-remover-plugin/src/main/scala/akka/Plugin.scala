@@ -35,7 +35,7 @@ class SerialVersionRemoverPhase extends PluginPhase {
     if (tree.symbol.getAnnotation(defn.SerialVersionUIDAnnot).isDefined && tree.symbol.is(Trait)) {
       tree.symbol.removeAnnotation(defn.SerialVersionUIDAnnot)
     }
-    
+
     tree
   }
 
