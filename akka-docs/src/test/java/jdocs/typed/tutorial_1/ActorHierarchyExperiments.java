@@ -6,7 +6,7 @@ package jdocs.typed.tutorial_1;
 
 /*
 //#print-refs
-package com.example
+package com.example;
 
 //#print-refs
 */
