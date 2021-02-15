@@ -181,7 +181,8 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
       router ! Proxy.Message("zh3", "Text3")
       router ! Proxy.Message("zh3", "Text4")
 
-      //Then reach the same actor those with same id
+      //Then those messages reach the same actor when they have an equal id
+      //so the first message in the probe queue is equal to the second
       probe1.receiveMessage() shouldBe probe1.receiveMessage()
       probe2.receiveMessage() shouldBe probe2.receiveMessage()
 
