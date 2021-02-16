@@ -122,9 +122,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     // stashState outside supervise because StashState should survive restarts due to persist failures
     val stashState = new StashState(ctx.asInstanceOf[ActorContext[InternalProtocol]], settings)
 
-    /**
-     * This method ensures that the MDC is set before we use the internal logger
-     */
+    // This method ensures that the MDC is set before we use the internal logger
     def internalLogger() = {
       // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message,
       // but important to call `context.log` to mark MDC as used
