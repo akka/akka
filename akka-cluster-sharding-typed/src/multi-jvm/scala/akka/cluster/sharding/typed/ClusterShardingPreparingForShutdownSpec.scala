@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
@@ -89,7 +89,6 @@ class ClusterShardingPreparingForShutdownSpec
 
       runOn(second) {
         cluster.manager ! PrepareForFullClusterShutdown
-
       }
       awaitAssert({
         withClue("members: " + cluster.state.members) {
@@ -118,9 +117,13 @@ class ClusterShardingPreparingForShutdownSpec
         }
       }, 5.seconds) // keep this lower than coordinated shutdown timeout
 
+      // trigger creation of a new shard should be fine even though one node left
       runOn(first, third) {
+        
+        awaitAssert({
         shardRegion ! ShardingEnvelope("id3", Pinger.Ping(3, probe.ref))
         probe.expectMessage(Pong(3))
+        }, 10.seconds)
       }
       enterBarrier("new-shards-verified")
 
