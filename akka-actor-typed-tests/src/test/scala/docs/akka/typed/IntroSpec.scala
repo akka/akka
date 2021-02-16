@@ -128,10 +128,10 @@ object IntroSpec {
     }
   }
 
+  //#chatroom-protocol
   //#chatroom-behavior
   object ChatRoom {
     //#chatroom-behavior
-    //#chatroom-protocol
     sealed trait RoomCommand
     final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent]) extends RoomCommand
     //#chatroom-protocol
@@ -185,8 +185,10 @@ object IntroSpec {
           client ! message
           Behaviors.same
       }
+    //#chatroom-protocol
   }
   //#chatroom-behavior
+  //#chatroom-protocol
 
   //#chatroom-gabbler
   object Gabbler {
@@ -214,14 +216,12 @@ object IntroSpec {
 
   //#chatroom-main
   object Main {
-    import ChatRoom._
-
     def apply(): Behavior[NotUsed] =
       Behaviors.setup { context =>
         val chatRoom = context.spawn(ChatRoom(), "chatroom")
         val gabblerRef = context.spawn(Gabbler(), "gabbler")
         context.watch(gabblerRef)
-        chatRoom ! GetSession("ol’ Gabbler", gabblerRef)
+        chatRoom ! ChatRoom.GetSession("ol’ Gabbler", gabblerRef)
 
         Behaviors.receiveSignal {
           case (_, Terminated(_)) =>
