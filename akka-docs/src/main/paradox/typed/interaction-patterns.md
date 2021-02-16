@@ -546,3 +546,13 @@ Java
 
 A disadvantage is that a message adapter can't be used so the response has to be in the protocol of the actor being responded to. Additionally the `EntityTypeKey`
 could be included in the message if it is not known statically.
+
+As an "alternative to the alternative", an @apidoc[typed.*.EntityRef] can be included in the messages.  The `EntityRef` transparently wraps messages in a `ShardingEnvelope` and 
+sends them via sharding.  If the target sharded entity has been passivated, it will be delivered to a new incarnation of that entity; if the target sharded entity
+has been moved to a different cluster node, it will be routed to that new node.  If using this approach, be aware that at this time, @ref:[a custom serializer is required](cluster-sharding.md#a-note-about-entityref-and-serialization).
+
+As with directly including the `entityId` and `EntityTypeKey` in the message, `EntityRef`s do not support message adaptation: the response has to be in the protocol
+of the entity being responded to.
+
+In some cases, it may be useful to define messages with a @apidoc[akka.actor.typed.RecipientRef] which is a common supertype of `ActorRef` and `EntityRef`.  At this time,
+serializing a `RecipientRef` requires a custom serializer.
