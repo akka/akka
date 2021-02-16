@@ -119,10 +119,10 @@ class ClusterShardingPreparingForShutdownSpec
 
       // trigger creation of a new shard should be fine even though one node left
       runOn(first, third) {
-        
+
         awaitAssert({
-        shardRegion ! ShardingEnvelope("id3", Pinger.Ping(3, probe.ref))
-        probe.expectMessage(Pong(3))
+          shardRegion ! ShardingEnvelope("id3", Pinger.Ping(3, probe.ref))
+          probe.expectMessage(Pong(3))
         }, 10.seconds)
       }
       enterBarrier("new-shards-verified")
