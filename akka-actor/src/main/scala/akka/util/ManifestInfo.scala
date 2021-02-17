@@ -80,11 +80,13 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
     if (values.size > 1) {
       val highestVersion = values.max
       val toBeUpdated = filteredVersions.collect { case (k, v) if v != highestVersion => s"$k" }.mkString(", ")
+      val groupedByVersion = filteredVersions.toSeq.groupBy{ case (_, v) => v.version}.mapValues(_.map(_._1).mkString("[", ", ", "]")).mkString(", ")
       Some(
         s"You are using version $highestVersion of $productName, but it appears " +
         s"you (perhaps indirectly) also depend on older versions of related artifacts. " +
         s"You can solve this by adding an explicit dependency on version $highestVersion " +
         s"of the [$toBeUpdated] artifacts to your project. " +
+        s"Here's a complete collection of detected artifacts: ${groupedByVersion}. " +
         "See also: https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html#mixed-versioning-is-not-allowed")
     } else None
   }
