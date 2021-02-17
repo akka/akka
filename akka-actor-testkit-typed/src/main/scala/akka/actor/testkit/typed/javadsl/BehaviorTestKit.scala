@@ -4,6 +4,7 @@
 
 package akka.actor.testkit.typed.javadsl
 
+import java.time.Duration
 import java.util.concurrent.ThreadLocalRandom
 
 import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
@@ -51,6 +52,12 @@ abstract class BehaviorTestKit[T] {
    * will not include this effect.
    */
   def getEffect(): Effect
+
+  /**
+   * Advances the (mock) scheduler by the requested duration.  Any tasks which are scheduled to be performed by
+   * the conclusion of that duration will be performed synchronously.
+   */
+  def advanceClockBy(duration: Duration): Unit
 
   /**
    * Get the child inbox for the child with the given name, or fail if there is no child with the given name

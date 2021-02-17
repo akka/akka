@@ -6,6 +6,7 @@ package akka.actor.testkit.typed.internal
 
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
+import scala.collection.immutable.SortedMap
 import scala.compat.java8.FutureConverters
 import scala.concurrent._
 
@@ -16,7 +17,7 @@ import org.slf4j.LoggerFactory
 
 import akka.{ actor => classic }
 import akka.Done
-import akka.actor.{ ActorPath, ActorRefProvider, Address, ReflectiveDynamicAccess }
+import akka.actor.{ ActorPath, ActorRefProvider, Address, Cancellable, ReflectiveDynamicAccess }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -94,7 +95,8 @@ import akka.annotation.InternalApi
 
   override def logConfiguration(): Unit = log.info(settings.toString)
 
-  override def scheduler: Scheduler = throw new UnsupportedOperationException("no scheduler")
+  override def scheduler: ActorSystemStub.SynchronousScheduler =
+    new ActorSystemStub.SynchronousScheduler()
 
   private val terminationPromise = Promise[Done]()
   override def terminate(): Unit = terminationPromise.trySuccess(Done)
@@ -124,4 +126,175 @@ import akka.annotation.InternalApi
   override def log: Logger = LoggerFactory.getLogger(getClass)
 
   def address: Address = rootPath.address
+}
+
+object ActorSystemStub {
+  // Should only be used in synchronous tests, thus all the synchronization... Note that passed executors are not used: all runnables are run
+  // as part of 'advanceTimeBy'
+  final class SynchronousScheduler private[ActorSystemStub]() extends Scheduler {
+    import duration.FiniteDuration
+    import akka.util.JavaDurationConverters
+
+    def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(implicit executor: ExecutionContext): Cancellable = {
+      val runAfter = delay.toNanos + currentTimeNanos
+      val ret = cancellable()
+
+      synchronized {
+        if (runAfter < currentTimeNanos) {
+          throw new IllegalArgumentException(s"$delay causes arithmetic overflow")
+        }
+
+        tracker = tracker.updated(ret, runAfter, runnable)
+      }
+
+      ret
+    }
+
+    def scheduleOnce(delay: java.time.Duration, runnable: Runnable, executor: ExecutionContext): Cancellable = {
+      import JavaDurationConverters._
+
+      scheduleOnce(delay.asScala, runnable)(executor)
+    }
+
+    def scheduleWithFixedDelay(initialDelay: FiniteDuration, delay: FiniteDuration)(runnable: Runnable)(
+      implicit executor: ExecutionContext
+    ): Cancellable = {
+      val wrappedRunnable: Runnable = () => {
+        runnable.run()
+        scheduleWithFixedDelay(delay, delay)(runnable)
+      }
+      scheduleOnce(initialDelay, wrappedRunnable)
+    }
+
+    def scheduleWithFixedDelay(
+      initialDelay: java.time.Duration,
+      delay: java.time.Duration,
+      runnable: Runnable,
+      executor: ExecutionContext
+    ): Cancellable = {
+      import JavaDurationConverters._
+
+      scheduleWithFixedDelay(initialDelay.asScala, delay.asScala)(runnable)(executor)
+    }
+
+    // NB: due to the artificiality of this scheduler, this is the same as 'scheduleWithFixedDelay'
+    def scheduleAtFixedRate(initialDelay: FiniteDuration, delay: FiniteDuration)(runnable: Runnable)(
+      implicit executor: ExecutionContext
+    ): Cancellable =
+      scheduleWithFixedDelay(initialDelay, delay)(runnable)
+
+    def scheduleAtFixedRate(
+      initialDelay: java.time.Duration,
+      delay: java.time.Duration,
+      runnable: Runnable,
+      executor: ExecutionContext
+    ): Cancellable =
+      scheduleWithFixedDelay(initialDelay, delay, runnable, executor)
+
+    def advanceTimeBy(duration: FiniteDuration): Unit = {
+      val tasks =
+        synchronized {
+          val nextTime = currentTimeNanos + duration.toNanos
+          if (nextTime < currentTimeNanos) {
+            throw new ArithmeticException(s"$duration causes arithmetic overflow")
+          } else {
+            currentTimeNanos = nextTime
+          }
+          val (tasks, nextTracker) = tracker.toPerformThrough(nextTime)
+          tracker = nextTracker
+          tasks
+        }
+      tasks.foreach {
+        case (c, r) =>
+          c.cancel()
+          r.run()
+      }
+    }
+
+    private[this] def cancellable(): Cancellable = {
+      val outer = this
+
+      new Cancellable {
+        def cancel(): Boolean =
+          outer.synchronized {
+            if (_cancelled) false
+            else {
+              tracker = tracker.without(this)
+              _cancelled = true
+              true
+            }
+          }
+
+        def isCancelled: Boolean = _cancelled
+        private[this] var _cancelled: Boolean = false
+      }
+    }
+
+    private[this] var tracker: TaskTracker = TaskTracker.Empty
+    private[this] var currentTimeNanos: Long = Long.MinValue
+  }
+
+  final class TaskTracker private[TaskTracker](
+    val byKey: Map[Cancellable, (Long, Runnable)],
+    val preSorted: SortedMap[Long, Map[Cancellable, Runnable]]
+  ) {
+    def size: Int = byKey.size
+
+    def toPerformThrough(time: Long): (Iterable[(Cancellable, Runnable)], TaskTracker) = {
+      val ranged = preSorted.range(Long.MinValue, time) ++ preSorted.get(time).map(time -> _)
+      val afterByKey = byKey.filter {
+        case (_, (t, _)) => t > time
+      }
+      val afterSorted = preSorted.rangeImpl(Some(time), None) - time
+
+      ranged.values.flatten -> new TaskTracker(afterByKey, afterSorted)
+    }
+
+    def updated(c: Cancellable, t: Long, r: Runnable): TaskTracker = {
+      val presortedWithout = preSortedWithout(c)
+
+      val nextPresorted =
+        presortedWithout.get(t)
+          .map(m => presortedWithout.updated(t, m.updated(c, r)))
+          .getOrElse(presortedWithout + (t -> Map(c -> r)))
+
+      val nextByKey = byKey.updated(c, t -> r)
+      new TaskTracker(nextByKey, nextPresorted)
+    }
+
+    def without(c: Cancellable): TaskTracker = {
+      val nextByKey = byKey - c
+      new TaskTracker(nextByKey, preSortedWithout(c))
+    }
+
+    override def toString: String = byKey.toString
+
+    private[this] def preSortedWithout(c: Cancellable): SortedMap[Long, Map[Cancellable, Runnable]] =
+      byKey.get(c)
+        .map {
+          case (t, _) =>
+            val nextTasks = preSorted.get(t).map(_ - c).getOrElse(Map.empty)
+
+            if (nextTasks.isEmpty) (preSorted - t)
+            else preSorted.updated(t, nextTasks)
+        }
+        .getOrElse(preSorted)
+  }
+
+  object TaskTracker {
+    def apply(byKey: Map[Cancellable, (Long, Runnable)]): TaskTracker = {
+      var toBuild: SortedMap[Long, Map[Cancellable, Runnable]] = SortedMap.empty
+
+      // Compatible with Scalas 2.12 and 2.13...
+      byKey.groupBy(_._2._1).mapValues(_.mapValues(_._2)).foreach {
+        case (t, m) =>
+          toBuild = toBuild + (t -> m)
+      }
+      val preSorted = toBuild
+
+      new TaskTracker(byKey, preSorted)
+    }
+
+    val Empty: TaskTracker = new TaskTracker(Map.empty, SortedMap.empty)
+  }
 }

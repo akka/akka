@@ -8,6 +8,7 @@ import java.util
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
@@ -20,6 +21,7 @@ import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.util.ccompat.JavaConverters._
+import akka.util.JavaDurationConverters
 
 /**
  * INTERNAL API
@@ -50,6 +52,15 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
   override def retrieveEffect(): Effect = context.effectQueue.poll() match {
     case null => NoEffects
     case x    => x
+  }
+
+  override def advanceClockBy(duration: FiniteDuration): Unit =
+    context.system.scheduler.advanceTimeBy(duration)
+
+  override def advanceClockBy(duration: java.time.Duration): Unit = {
+    import JavaDurationConverters._
+
+    advanceClockBy(duration.asScala)
   }
 
   override def childInbox[U](name: String): TestInboxImpl[U] = {
