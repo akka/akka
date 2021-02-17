@@ -80,7 +80,12 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
     if (values.size > 1) {
       val highestVersion = values.max
       val toBeUpdated = filteredVersions.collect { case (k, v) if v != highestVersion => s"$k" }.mkString(", ")
-      val groupedByVersion = filteredVersions.toSeq.groupBy{ case (_, v) => v.version}.mapValues(_.map(_._1).mkString("[", ", ", "]")).mkString(", ")
+      val groupedByVersion = filteredVersions.toSeq
+        .groupBy { case (_, v) => v.version }
+        .view
+        .map { case (k, v) => k -> v.map(_._1).mkString("[", ", ", "]") }
+        .map { case (k, v) => s"($k, $v)" }
+        .mkString(", ")
       Some(
         s"You are using version $highestVersion of $productName, but it appears " +
         s"you (perhaps indirectly) also depend on older versions of related artifacts. " +
