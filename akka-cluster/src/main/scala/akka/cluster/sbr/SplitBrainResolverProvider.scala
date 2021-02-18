@@ -53,7 +53,8 @@ final class SplitBrainResolverProvider(system: ActorSystem) extends DowningProvi
         case LeaseMajorityName =>
           val s = settings.leaseMajoritySettings
           val leaseOwnerName = cluster.selfUniqueAddress.address.hostPort
-          val lease = LeaseProvider(system).getLease(s"${system.name}-akka-sbr", s.leaseImplementation, leaseOwnerName)
+          val leaseName = s.safeLeaseName(system.name)
+          val lease = LeaseProvider(system).getLease(leaseName, s.leaseImplementation, leaseOwnerName)
           new LeaseMajority(selfDc, s.role, lease, s.acquireLeaseDelayForMinority, cluster.selfUniqueAddress)
       }
 
