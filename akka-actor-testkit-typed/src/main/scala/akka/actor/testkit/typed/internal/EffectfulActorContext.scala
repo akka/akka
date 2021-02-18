@@ -91,10 +91,8 @@ import java.time.Duration
     super.scheduleOnce(delay, target, message)
   }
 
-  override def ask[Req, Res]
-    (target: RecipientRef[Req], createRequest: ActorRef[Res] => Req)
-    (mapResponse: Try[Res] => T)
-    (implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
+  override def ask[Req, Res](target: RecipientRef[Req], createRequest: ActorRef[Res] => Req)(
+      mapResponse: Try[Res] => T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
 
     val responseClass = classTag.runtimeClass.asInstanceOf[Class[Res]]
     effectQueue.offer(AskInitiated(target, responseClass, createRequest, mapResponse))
@@ -104,13 +102,16 @@ import java.time.Duration
       resClass: Class[Res],
       target: RecipientRef[Req],
       responseTimeout: Duration,
-      createRequest: akka.japi.function.Function[ActorRef[Res],Req],
-      applyToResponse: akka.japi.function.Function2[Res,Throwable,T]): Unit = {
+      createRequest: akka.japi.function.Function[ActorRef[Res], Req],
+      applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit = {
     val scalaCreateRequest = createRequest(_)
     val scalaApplyToResponse = { result: Try[Res] =>
-      result.map(applyToResponse(_, null)).recover {
-        case NonFatal(t) => applyToResponse(null.asInstanceOf[Res], t)
-      }.get
+      result
+        .map(applyToResponse(_, null))
+        .recover {
+          case NonFatal(t) => applyToResponse(null.asInstanceOf[Res], t)
+        }
+        .get
     }
 
     effectQueue.offer(AskInitiated(target, resClass, scalaCreateRequest, scalaApplyToResponse))

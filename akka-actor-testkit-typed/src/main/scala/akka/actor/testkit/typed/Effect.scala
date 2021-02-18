@@ -284,10 +284,11 @@ object Effect {
     }
 
     private[akka] def apply[Req, Res, T](
-      target: RecipientRef[Req],
-      responseClass: Class[Res],
-      createRequest: ActorRef[Res] => Req,
-      mapResponse: Try[Res] => T): AskInitiated[Req, Res, T] = new AskInitiated(target, responseClass, createRequest, mapResponse)
+        target: RecipientRef[Req],
+        responseClass: Class[Res],
+        createRequest: ActorRef[Res] => Req,
+        mapResponse: Try[Res] => T): AskInitiated[Req, Res, T] =
+      new AskInitiated(target, responseClass, createRequest, mapResponse)
   }
 
   /**

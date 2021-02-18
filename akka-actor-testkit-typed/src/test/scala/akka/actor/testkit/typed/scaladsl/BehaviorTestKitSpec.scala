@@ -139,9 +139,9 @@ object BehaviorTestKitSpec {
               val randomDenominator = 1 + scala.util.Random.nextInt(1 + randomNumerator)
               val nrCookies = randomNumerator / randomDenominator
               context.ask(distributor, CookieDistributor.GiveMeCookies(nrCookies, _)) {
-                _.map { cfy => Log(s"Got ${cfy.nrCookies} from the distributor") }
-                 .recover { case scala.util.control.NonFatal(e) => Log(s"Failed to get cookies: ${e.getMessage}") }
-                 .get
+                _.map { cfy =>
+                  Log(s"Got ${cfy.nrCookies} from the distributor")
+                }.recover { case scala.util.control.NonFatal(e) => Log(s"Failed to get cookies: ${e.getMessage}") }.get
               }
               Behaviors.same
           }
@@ -524,7 +524,8 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
 
       val effect = testkit.retrieveEffect()
       effect shouldBe AskInitiated(cdInbox.ref, classOf[CookieDistributor.CookiesForYou])
-      val aiEffect = effect.asInstanceOf[AskInitiated[CookieDistributor.Command, CookieDistributor.CookiesForYou, Parent.Command]]
+      val aiEffect =
+        effect.asInstanceOf[AskInitiated[CookieDistributor.Command, CookieDistributor.CookiesForYou, Parent.Command]]
       val request = aiEffect.requestFrom(TestInbox[CookieDistributor.CookiesForYou]())
       request shouldBe a[CookieDistributor.GiveMeCookies]
       val GiveMeCookies(cookiesRequested, _) = request
