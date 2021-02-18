@@ -521,6 +521,7 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       testkit.run(AskForCookiesFrom(cdInbox.ref))
 
       cdInbox.hasMessages shouldBe false
+
       val effect = testkit.retrieveEffect()
       effect shouldBe AskInitiated(cdInbox.ref, classOf[CookieDistributor.CookiesForYou])
       val aiEffect = effect.asInstanceOf[AskInitiated[CookieDistributor.Command, CookieDistributor.CookiesForYou, Parent.Command]]
