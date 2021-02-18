@@ -6,6 +6,8 @@ package akka.actor.testkit.typed.internal
 
 import java.util.concurrent.ConcurrentLinkedQueue
 
+import scala.util.control.NonFatal
+
 import akka.actor.testkit.typed.Effect
 import akka.actor.testkit.typed.Effect._
 import akka.actor.typed.internal.TimerSchedulerCrossDslSupport
@@ -15,6 +17,10 @@ import akka.annotation.InternalApi
 
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
+import akka.actor.typed.RecipientRef
+import akka.util.Timeout
+import scala.util.Try
+import java.time.Duration
 
 /**
  * INTERNAL API
@@ -83,6 +89,31 @@ import scala.reflect.ClassTag
   override def scheduleOnce[U](delay: FiniteDuration, target: ActorRef[U], message: U): Cancellable = {
     effectQueue.offer(Scheduled(delay, target, message))
     super.scheduleOnce(delay, target, message)
+  }
+
+  override def ask[Req, Res]
+    (target: RecipientRef[Req], createRequest: ActorRef[Res] => Req)
+    (mapResponse: Try[Res] => T)
+    (implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit = {
+
+    val responseClass = classTag.runtimeClass.asInstanceOf[Class[Res]]
+    effectQueue.offer(AskInitiated(target, responseClass, createRequest, mapResponse))
+  }
+
+  override def ask[Req, Res](
+      resClass: Class[Res],
+      target: RecipientRef[Req],
+      responseTimeout: Duration,
+      createRequest: akka.japi.function.Function[ActorRef[Res],Req],
+      applyToResponse: akka.japi.function.Function2[Res,Throwable,T]): Unit = {
+    val scalaCreateRequest = createRequest(_)
+    val scalaApplyToResponse = { result: Try[Res] =>
+      result.map(applyToResponse(_, null)).recover {
+        case NonFatal(t) => applyToResponse(null.asInstanceOf[Res], t)
+      }.get
+    }
+
+    effectQueue.offer(AskInitiated(target, resClass, scalaCreateRequest, scalaApplyToResponse))
   }
 
   override def mkTimer(): TimerSchedulerCrossDslSupport[T] = new TimerSchedulerCrossDslSupport[T] {

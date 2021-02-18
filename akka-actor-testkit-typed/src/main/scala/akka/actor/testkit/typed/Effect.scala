@@ -4,10 +4,13 @@
 
 package akka.actor.testkit.typed
 
+import java.util.concurrent.TimeoutException
+
 import scala.compat.java8.FunctionConverters._
 import scala.concurrent.duration.FiniteDuration
+import scala.util.{ Failure, Success, Try }
 
-import akka.actor.typed.{ ActorRef, Behavior, Props }
+import akka.actor.typed.{ ActorRef, Behavior, Props, RecipientRef }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.util.JavaDurationConverters._
 import akka.util.unused
@@ -229,6 +232,63 @@ object Effect {
   def timerScheduled = TimerScheduled
 
   final case class TimerCancelled(key: Any) extends Effect
+
+  /**
+   * The behavior initiated an ask of a targeted recipient.
+   */
+  final class AskInitiated[Req, Res, T](
+      val target: RecipientRef[Req],
+      val responseClass: Class[Res],
+      createMessage: ActorRef[Res] => Req,
+      mapResponse: Try[Res] => T)
+      extends Effect
+      with Product2[RecipientRef[Req], Class[Res]]
+      with Serializable {
+
+    override def equals(other: Any) = other match {
+      case o: AskInitiated[_, _, _] =>
+        this.target == o.target &&
+        this.responseClass == o.responseClass
+      case _ => false
+    }
+
+    override def hashCode: Int = target.## * 31 + responseClass.##
+    override def toString: String = s"AskInitiated($target, ${responseClass.getName})"
+
+    override def productPrefix = "AskInitiated"
+    override def _1: RecipientRef[Req] = target
+    override def _2: Class[Res] = responseClass
+    override def canEqual(o: Any) = o.isInstanceOf[AskInitiated[_, _, _]]
+
+    def requestFrom(testInbox: scaladsl.TestInbox[Res]): Req = createMessage(testInbox.ref)
+    def requestFrom(testInbox: javadsl.TestInbox[Res]): Req = createMessage(testInbox.getRef)
+
+    def successfulWith(response: Res): T = mapResponse(Success(response))
+    def timeout: T = mapResponse(Failure(new TimeoutException("simulated timeout")))
+  }
+
+  object AskInitiated {
+    /* Scala API */
+    def apply[Req, Res](target: RecipientRef[Req], responseClass: Class[Res]): AskInitiated[Req, Res, Nothing] =
+      new AskInitiated(target, responseClass, doNotCall, doNotCall)
+
+    def unapply[Req, Res](ai: AskInitiated[Req, Res, _]): Option[(RecipientRef[Req], Class[Res])] =
+      Some(ai.target -> ai.responseClass)
+
+    /* Java API */
+    def create[Req, Res](target: RecipientRef[Req], responseClass: Class[Res]): AskInitiated[Req, Res, Void] =
+      new AskInitiated(target, responseClass, doNotCall, doNotCall)
+
+    private val doNotCall = { _: Any =>
+      throw new RuntimeException("This object should only be used for checking expected effects")
+    }
+
+    private[akka] def apply[Req, Res, T](
+      target: RecipientRef[Req],
+      responseClass: Class[Res],
+      createRequest: ActorRef[Res] => Req,
+      mapResponse: Try[Res] => T): AskInitiated[Req, Res, T] = new AskInitiated(target, responseClass, createRequest, mapResponse)
+  }
 
   /**
    * Used to represent an empty list of effects - in other words, the behavior didn't do anything observable
