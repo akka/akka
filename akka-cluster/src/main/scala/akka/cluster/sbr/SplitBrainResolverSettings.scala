@@ -96,13 +96,9 @@ import akka.util.Helpers.Requiring
     val acquireLeaseDelayForMinority =
       FiniteDuration(c.getDuration("acquire-lease-delay-for-minority").toMillis, TimeUnit.MILLISECONDS)
 
-    val leaseName = if (c.hasPath("lease-name")) {
-      c.getString("lease-name").trim match {
-        case ""   => None
-        case name => Some(name)
-      }
-    } else {
-      None
+    val leaseName = c.getString("lease-name").trim match {
+      case ""   => None
+      case name => Some(name)
     }
     LeaseMajoritySettings(leaseImplementation, acquireLeaseDelayForMinority, role(c), leaseName)
   }
