@@ -81,9 +81,10 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
       val highestVersion = values.max
       val toBeUpdated = filteredVersions.collect { case (k, v) if v != highestVersion => s"$k" }.mkString(", ")
       val groupedByVersion = filteredVersions.toSeq
-        .groupBy { case (_, v) => v.version }
-        .view
-        .map { case (k, v) => k -> v.map(_._1).mkString("[", ", ", "]") }
+        .groupBy { case (_, v) => v }
+        .toSeq
+        .sortBy(_._1)
+        .map { case (k, v) => k -> v.map(_._1).sorted.mkString("[", ", ", "]") }
         .map { case (k, v) => s"($k, $v)" }
         .mkString(", ")
       Some(

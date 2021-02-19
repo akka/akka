@@ -18,7 +18,7 @@ class ManifestInfoSpec extends AkkaSpec {
       ManifestInfo.checkSameVersion("Akka", allModules, versions) shouldBe Some(
         "You are using version 2.6.4 of Akka, but it appears you (perhaps indirectly) also depend on older versions of related artifacts. " +
         "You can solve this by adding an explicit dependency on version 2.6.4 of the [akka-persistence, akka-cluster] artifacts to your project. " +
-        "Here's a complete collection of detected artifacts: (2.6.4, [akka-actor]), (2.5.3, [akka-persistence, akka-cluster]). " +
+        "Here's a complete collection of detected artifacts: (2.5.3, [akka-cluster, akka-persistence]), (2.6.4, [akka-actor]). " +
         "See also: https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html#mixed-versioning-is-not-allowed")
     }
 
