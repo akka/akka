@@ -96,7 +96,11 @@ import akka.util.Helpers.Requiring
     val acquireLeaseDelayForMinority =
       FiniteDuration(c.getDuration("acquire-lease-delay-for-minority").toMillis, TimeUnit.MILLISECONDS)
 
-    LeaseMajoritySettings(leaseImplementation, acquireLeaseDelayForMinority, role(c))
+    val leaseName = c.getString("lease-name").trim match {
+      case ""   => None
+      case name => Some(name)
+    }
+    LeaseMajoritySettings(leaseImplementation, acquireLeaseDelayForMinority, role(c), leaseName)
   }
 
   private def strategyConfig(strategyName: String): Config = cc.getConfig(strategyName)
@@ -124,4 +128,7 @@ import akka.util.Helpers.Requiring
 @InternalApi private[sbr] final case class LeaseMajoritySettings(
     leaseImplementation: String,
     acquireLeaseDelayForMinority: FiniteDuration,
-    role: Option[String])
+    role: Option[String],
+    leaseName: Option[String]) {
+  def safeLeaseName(systemName: String) = leaseName.getOrElse(s"$systemName-akka-sbr")
+}
