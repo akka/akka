@@ -127,7 +127,7 @@ class BidiFlowSpec extends StreamSpec {
       myBidi.atop(identity) should ===(myBidi)
       identity.atopMat(myBidi)(Keep.right) should ===(myBidi)
 
-      // optimized but not the same instance
+      // optimized but not the same instance (because myBidi mat value is dropped)
       identity.atop(myBidi) should !==(myBidi)
       myBidi.atopMat(identity)(Keep.right) should !==(myBidi)
     }
