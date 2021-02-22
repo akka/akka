@@ -114,7 +114,7 @@ included modules, so when you upgrade you can simply change it in this one place
 The warning includes a full list of Akka runtime dependencies in the classpath, and the version detected. 
 You can use that information to include an explicit list of Akka artifacts you depend on into your build. If you use
 Maven or Gradle, you can include the @ref:[Akka Maven BOM](../typed/guide/modules.md#actor-library) (bill 
-of materials) to help you keep all the versions fo your Akka dependencies in sync. 
+of materials) to help you keep all the versions of your Akka dependencies in sync. 
 
 
 ## The meaning of "may change"
