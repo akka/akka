@@ -6,6 +6,8 @@ package akka.stream.impl.fusing
 
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
+import akka.stream.Attributes.SourceLocation
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.{ AbruptStageTerminationException, Attributes, FlowShape, Inlet, NeverMaterializedException, Outlet }
 import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
@@ -17,8 +19,13 @@ import scala.util.{ Failure, Success, Try }
 
 @InternalApi private[akka] final class FutureFlow[In, Out, M](futureFlow: Future[Flow[In, Out, M]])
     extends GraphStageWithMaterializedValue[FlowShape[In, Out], Future[M]] {
-  val in = Inlet[In](s"${this}.in")
-  val out = Outlet[Out](s"${this}.out")
+
+  val in = Inlet[In]("FutureFlow.in")
+  val out = Outlet[Out]("FutureFlow.out")
+
+  override protected def initialAttributes: Attributes =
+    DefaultAttributes.futureFlow and SourceLocation.forLambda(futureFlow)
+
   override val shape: FlowShape[In, Out] = FlowShape(in, out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
@@ -87,8 +94,8 @@ import scala.util.{ Failure, Success, Try }
         }
 
         def connect(flow: Flow[In, Out, M]): Unit = {
-          val subSource = new SubSourceOutlet[In](s"${FutureFlow.this}.subIn")
-          val subSink = new SubSinkInlet[Out](s"${FutureFlow.this}.subOut")
+          val subSource = new SubSourceOutlet[In]("FutureFlow.subIn")
+          val subSink = new SubSinkInlet[Out]("FutureFlow.subOut")
 
           subSource.setHandler {
             new OutHandler {
