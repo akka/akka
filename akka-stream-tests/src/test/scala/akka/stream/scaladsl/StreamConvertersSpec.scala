@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -37,7 +37,7 @@ class StreamConvertersSpec extends StreamSpec with DefaultTimeout {
     import scala.compat.java8.FunctionConverters._
 
     def javaStreamInts =
-      IntStream.iterate(1, { i: Int =>
+      IntStream.iterate(1, { (i: Int) =>
         i + 1
       }.asJava)
 
@@ -70,7 +70,7 @@ class StreamConvertersSpec extends StreamSpec with DefaultTimeout {
     "work with a filtered stream" in {
       StreamConverters
         .fromJavaStream(() =>
-          javaStreamInts.filter({ i: Int =>
+          javaStreamInts.filter({ (i: Int) =>
             i % 2 == 0
           }.asJava))
         .take(1000)

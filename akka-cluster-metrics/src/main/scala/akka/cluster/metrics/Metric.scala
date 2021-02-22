@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
@@ -8,7 +8,7 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.Address
 
@@ -324,7 +324,7 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
   /**
    * Java API
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def getMetrics: java.lang.Iterable[Metric] =
     scala.collection.JavaConverters.asJavaIterableConverter(metrics).asJava
 

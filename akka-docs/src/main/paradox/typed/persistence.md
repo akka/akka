@@ -10,11 +10,16 @@ You are viewing the documentation for the new actor APIs, to view the Akka Class
 To use Akka Persistence, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group=com.typesafe.akka
   artifact=akka-persistence-typed_$scala.binary.version$
   version=AkkaVersion
+  group2=com.typesafe.akka
+  artifact2=akka-persistence-testkit_$scala.binary.version$
+  version2=AkkaVersion
+  scope2=test
 }
 
 You also have to select journal plugin and optionally snapshot store plugin, see 
@@ -47,9 +52,9 @@ provides tools to facilitate in building GDPR capable systems.
 
 @@@
 
-### Event sourcing concepts
+### Event Sourcing concepts
 
-See an [introduction to EventSourcing](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj591559%28v=pandp.10%29) at MSDN.
+See an [introduction to Event Sourcing](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj591559%28v=pandp.10%29) at MSDN.
 
 Another excellent article about "thinking in Events" is [Events As First-Class Citizens](https://hackernoon.com/events-as-first-class-citizens-8633e8479493)
 by Randy Shoup. It is a short and recommended read if you're starting developing Events based applications.

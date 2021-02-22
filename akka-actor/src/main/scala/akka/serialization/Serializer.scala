@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
@@ -359,7 +359,7 @@ final case class DisabledJavaSerializer(system: ExtendedActorSystem) extends Ser
 
   private[this] val empty = Array.empty[Byte]
 
-  private[this] val log = Logging.withMarker(system, getClass)
+  private[this] val log = Logging.withMarker(system, classOf[DisabledJavaSerializer])
 
   def includeManifest: Boolean = false
 

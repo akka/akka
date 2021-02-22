@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
 import java.io.InputStream
 
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuilder
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class ByteStringInitializationSpec extends AnyWordSpec with Matchers {
   "ByteString intialization" should {

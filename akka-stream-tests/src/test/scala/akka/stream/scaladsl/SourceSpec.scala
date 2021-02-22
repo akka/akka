@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -7,7 +7,7 @@ package akka.stream.scaladsl
 import akka.Done
 import akka.stream.testkit.Utils.TE
 import akka.testkit.DefaultTimeout
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.scalatest.time.Millis
 import org.scalatest.time.Span
 
@@ -23,7 +23,7 @@ import akka.testkit.EventFilter
 
 import scala.collection.immutable
 
-@silent // tests assigning to typed val
+@nowarn // tests assigning to typed val
 class SourceSpec extends StreamSpec with DefaultTimeout {
 
   implicit val config: PatienceConfig = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))

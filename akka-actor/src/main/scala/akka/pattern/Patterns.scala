@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -9,6 +9,7 @@ import java.util.concurrent.{ Callable, CompletionStage, TimeUnit }
 
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.ExecutionContext
+
 import akka.actor.{ ActorSelection, ClassicActorSystemProvider, Scheduler }
 import akka.util.JavaDurationConverters._
 

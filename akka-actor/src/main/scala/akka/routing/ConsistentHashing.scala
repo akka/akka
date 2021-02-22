@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -172,7 +172,7 @@ final case class ConsistentHashingRoutingLogic(
     if (virtualNodesFactor == 0) system.settings.DefaultVirtualNodesFactor
     else virtualNodesFactor
 
-  private lazy val log = Logging(system, getClass)
+  private lazy val log = Logging(system, classOf[ConsistentHashingRoutingLogic])
 
   /**
    * Setting the number of virtual nodes per node, used in [[akka.routing.ConsistentHash]]

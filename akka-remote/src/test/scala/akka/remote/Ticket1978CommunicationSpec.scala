@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -12,7 +12,7 @@ import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.reflect.classTag
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config._
 
 import akka.actor._
@@ -24,7 +24,7 @@ import akka.remote.transport.netty.SSLSettings
 import akka.testkit._
 import akka.util.Timeout
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 object Configuration {
   // set this in your JAVA_OPTS to see all ssl debug info: "-Djavax.net.debug=ssl,keymanager"
   // The certificate will expire in 2109
@@ -124,7 +124,7 @@ class Ticket1978CrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec
 class Ticket1978NonExistingRNGSecureSpec
     extends Ticket1978CommunicationSpec(CipherConfig(false, AkkaSpec.testConf, "NonExistingRNG", 12345, 12346, None))
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig)
     extends AkkaSpec(cipherConfig.config)
     with ImplicitSender {

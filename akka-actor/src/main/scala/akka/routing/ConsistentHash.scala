@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -13,7 +13,7 @@ import scala.reflect.ClassTag
  * Consistent Hashing node ring implementation.
  *
  * A good explanation of Consistent Hashing:
- * http://weblogs.java.net/blog/tomwhite/archive/2007/11/consistent_hash.html
+ * https://tom-e-white.com/2007/11/consistent-hashing.html
  *
  * Note that toString of the ring nodes are used for the node
  * hash, i.e. make sure it is different for different nodes.

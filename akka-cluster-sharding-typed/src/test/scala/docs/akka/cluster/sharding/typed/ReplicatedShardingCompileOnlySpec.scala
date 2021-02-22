@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.cluster.sharding.typed
@@ -14,9 +14,9 @@ import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityRef
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent("never used")
+@nowarn("msg=never used")
 object ReplicatedShardingCompileOnlySpec {
 
   sealed trait Command

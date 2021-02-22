@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.discovery.dns
@@ -13,7 +13,7 @@ import akka.discovery.{ Discovery, Lookup }
 import akka.discovery.ServiceDiscovery
 import akka.discovery.ServiceDiscovery.ResolvedTarget
 import akka.io.dns.DockerBindDnsService
-import akka.testkit.{ AkkaSpec, SocketUtil, TestKit }
+import akka.testkit.{ SocketUtil, TestKit }
 
 object DnsDiscoverySpec {
 
@@ -37,7 +37,7 @@ object DnsDiscoverySpec {
 
 }
 
-class DnsDiscoverySpec extends AkkaSpec(DnsDiscoverySpec.config) with DockerBindDnsService {
+class DnsDiscoverySpec extends DockerBindDnsService(DnsDiscoverySpec.config) {
 
   import DnsDiscoverySpec._
 

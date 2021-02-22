@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.io
@@ -16,7 +16,7 @@ import scala.io.StdIn
 object EchoServer extends App {
 
   val config = ConfigFactory.parseString("akka.loglevel = DEBUG")
-  implicit val system = ActorSystem("EchoServer", config)
+  implicit val system: ActorSystem = ActorSystem("EchoServer", config)
 
   system.actorOf(Props(classOf[EchoManager], classOf[EchoHandler]), "echo")
   system.actorOf(Props(classOf[EchoManager], classOf[SimpleEchoHandler]), "simple")

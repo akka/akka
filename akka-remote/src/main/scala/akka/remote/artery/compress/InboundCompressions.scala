@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery.compress
@@ -10,12 +10,15 @@ import scala.annotation.tailrec
 
 import org.agrona.collections.Long2ObjectHashMap
 
-import akka.actor.{ ActorRef, ActorSystem, Address, InternalActorRef }
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.Address
+import akka.actor.InternalActorRef
 import akka.event.Logging
 import akka.event.LoggingAdapter
-import akka.pattern.PromiseActorRef
 import akka.remote.artery._
-import akka.util.{ unused, OptionVal }
+import akka.util.OptionVal
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -198,9 +201,7 @@ private[remote] final class InboundActorRefCompression(
     var idx = 0
     elements.foreach {
       case ref: InternalActorRef =>
-        val isTemporaryRef = (ref.isLocal && ref.isInstanceOf[PromiseActorRef]) ||
-          (!ref.isLocal && ref.path.elements.head == "temp")
-        if (!isTemporaryRef) {
+        if (!InternalActorRef.isTemporaryRef(ref)) {
           mb += ref -> idx
           idx += 1
         }

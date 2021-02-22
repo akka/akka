@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
-import akka.actor.{ ClassicActorSystemProvider, ExtendedActorSystem }
-import akka.annotation.InternalApi
-
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
+
+import akka.actor.{ ClassicActorSystemProvider, ExtendedActorSystem }
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

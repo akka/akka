@@ -1,17 +1,17 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 @InternalApi
 class InetAddressDnsProvider extends DnsProvider {
   override def cache: Dns = new SimpleDnsCache()

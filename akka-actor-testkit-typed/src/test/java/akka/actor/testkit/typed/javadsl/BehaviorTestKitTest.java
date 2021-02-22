@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.javadsl;
@@ -16,14 +16,13 @@ import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 import org.slf4j.event.Level;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class BehaviorTestKitTest extends JUnitSuite {
 
@@ -366,5 +365,19 @@ public class BehaviorTestKitTest extends JUnitSuite {
 
     assertEquals(Collections.singletonList(Done.getInstance()), d.getAllReceived());
     test.expectEffectClass(Effect.Stopped.class);
+  }
+
+  @Test
+  public void canUseTimerScheduledInJavaApi() {
+    // this is a compilation test
+    Effect.TimerScheduled<String> timerScheduled =
+        Effects.timerScheduled(
+            "my key",
+            "my msg",
+            Duration.ofSeconds(42),
+            Effect.timerScheduled().fixedDelayMode(),
+            false,
+            () -> {});
+    assertNotNull(timerScheduled);
   }
 }

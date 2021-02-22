@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.classic
@@ -7,7 +7,7 @@ package akka.remote.classic
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor._
 import akka.remote._
@@ -68,7 +68,7 @@ object RemoteWatcherSpec {
 
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class RemoteWatcherSpec extends AkkaSpec("""
      akka {
        loglevel = INFO
@@ -93,7 +93,7 @@ class RemoteWatcherSpec extends AkkaSpec("""
 
   val remoteSystem = ActorSystem("RemoteSystem", system.settings.config)
   val remoteAddress = remoteSystem.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-  @silent
+  @nowarn
   def remoteAddressUid = AddressUidExtension(remoteSystem).addressUid
 
   Seq(system, remoteSystem).foreach(

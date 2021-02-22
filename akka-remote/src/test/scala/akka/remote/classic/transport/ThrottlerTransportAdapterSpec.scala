@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.classic.transport
@@ -7,7 +7,7 @@ package akka.remote.classic.transport
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.actor._
@@ -74,7 +74,7 @@ object ThrottlerTransportAdapterSpec {
   final case class Lost(msg: String)
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSender with DefaultTimeout {
 
   val systemB = ActorSystem("systemB", system.settings.config)
@@ -161,7 +161,7 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
   override def afterTermination(): Unit = shutdown(systemB)
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class ThrottlerTransportAdapterGenericSpec extends GenericTransportSpec(withAkkaProtocol = true) {
 
   def transportName = "ThrottlerTransportAdapter"

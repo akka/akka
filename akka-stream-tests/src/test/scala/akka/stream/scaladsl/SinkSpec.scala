@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -7,7 +7,7 @@ package akka.stream.scaladsl
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.reactivestreams.Publisher
 import org.scalatest.concurrent.ScalaFutures
 
@@ -154,7 +154,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("name")
 
       s.traversalBuilder.attributes.filtered[Name] shouldEqual List(Name("name"), Name("headSink"))
-      @silent("deprecated")
+      @nowarn("msg=deprecated")
       val res = s.traversalBuilder.attributes.getFirst[Attributes.AsyncBoundary.type]
       res shouldEqual (Some(AsyncBoundary))
     }
@@ -177,7 +177,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].withAttributes(none).async
 
-      @silent("deprecated")
+      @nowarn("msg=deprecated")
       val res = s.traversalBuilder.attributes.getFirst[Name](Name("default"))
       res shouldEqual Name("default")
     }
@@ -192,7 +192,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     "given multiple attributes of a class when getting first attribute with default value should get first attribute" in {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].withAttributes(none).async.named("name").named("another_name")
-      @silent("deprecated")
+      @nowarn("msg=deprecated")
       val res = s.traversalBuilder.attributes.getFirst[Name](Name("default"))
       res shouldEqual Name("name")
     }
@@ -212,7 +212,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
   "The ignore sink" should {
 
     "fail its materialized value on abrupt materializer termination" in {
-      @silent("deprecated")
+      @nowarn("msg=deprecated")
       val mat = ActorMaterializer()
 
       val matVal = Source.maybe[Int].runWith(Sink.ignore)(mat)

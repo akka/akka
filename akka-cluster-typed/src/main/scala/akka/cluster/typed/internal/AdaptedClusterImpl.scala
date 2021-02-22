@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed.internal
@@ -14,6 +14,7 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
 import akka.cluster.{ ClusterEvent, Member, MemberStatus }
 import akka.cluster.ClusterEvent.MemberEvent
+import akka.cluster.typed.PrepareForFullClusterShutdown
 import akka.cluster.typed._
 
 /**
@@ -127,6 +128,10 @@ private[akka] object AdapterClusterImpl {
 
       case JoinSeedNodes(addresses) =>
         adaptedCluster.joinSeedNodes(addresses)
+        Behaviors.same
+
+      case PrepareForFullClusterShutdown =>
+        adaptedCluster.prepareForFullClusterShutdown()
         Behaviors.same
 
     }

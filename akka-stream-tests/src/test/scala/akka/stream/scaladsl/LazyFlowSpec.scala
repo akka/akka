@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -8,7 +8,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import akka.{ Done, NotUsed }
 import akka.stream.AbruptStageTerminationException
 import akka.stream.Materializer
@@ -21,7 +21,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.TestProbe
 
-@silent("deprecated") // tests deprecated API as well
+@nowarn("msg=deprecated") // tests deprecated API as well
 class LazyFlowSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 1
     akka.stream.materializer.max-input-buffer-size = 1

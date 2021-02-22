@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.operators.source
@@ -52,7 +52,7 @@ object Restart extends App {
 
   }
 
-  def onRestartWithBackoffInnerComplete() = {
+  def onRestartWithBackoffInnerComplete(): Unit = {
 
     //#restart-failure-inner-complete
     val finiteSource = Source.tick(1.second, 1.second, "tick").take(3)

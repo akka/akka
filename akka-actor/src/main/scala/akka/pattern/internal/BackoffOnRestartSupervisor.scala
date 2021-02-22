@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern.internal
@@ -42,11 +42,12 @@ import akka.pattern.{
   import BackoffSupervisor._
   import context._
 
-  override val supervisorStrategy: OneForOneStrategy =
+  override val supervisorStrategy: OneForOneStrategy = {
+    val decider = super.supervisorStrategy.decider
     OneForOneStrategy(strategy.maxNrOfRetries, strategy.withinTimeRange, strategy.loggingEnabled) {
       case ex =>
         val defaultDirective: Directive =
-          super.supervisorStrategy.decider.applyOrElse(ex, (_: Any) => Escalate)
+          decider.applyOrElse(ex, (_: Any) => Escalate)
 
         strategy.decider.applyOrElse(ex, (_: Any) => defaultDirective) match {
           // Whatever the final Directive is, we will translate all Restarts
@@ -78,6 +79,7 @@ import akka.pattern.{
           case other => other
         }
     }
+  }
 
   def waitChildTerminatedBeforeBackoff(childRef: ActorRef): Receive = {
     case Terminated(`childRef`) =>

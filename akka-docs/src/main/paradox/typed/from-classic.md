@@ -26,6 +26,7 @@ module, with a few exceptions.
 For example `akka-cluster-typed`:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group=com.typesafe.akka
@@ -388,7 +389,7 @@ Links to reference documentation:
 
 The correspondence of the classic `PersistentActor` is @scala[`akka.persistence.typed.scaladsl.EventSourcedBehavior`]@java[`akka.persistence.typed.javadsl.EventSourcedBehavior`].
 
-The Typed API is much more guided to facilitate event sourcing best practises. It also has tighter integration with
+The Typed API is much more guided to facilitate Event Sourcing best practices. It also has tighter integration with
 Cluster Sharding.
 
 Links to reference documentation:

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io
@@ -11,7 +11,7 @@ import java.util.Random
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.google.common.jimfs.{ Configuration, Jimfs }
 
 import akka.actor.ActorSystem
@@ -31,7 +31,7 @@ object FileSourceSpec {
   final case class Settings(chunkSize: Int, readAhead: Int)
 }
 
-@silent
+@nowarn
 class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")

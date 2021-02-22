@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.javadsl;
@@ -8,6 +8,7 @@ import akka.NotUsed;
 // #ask-actor
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
+import akka.pattern.StatusReply;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -27,6 +28,16 @@ public class ActorFlowCompileTest {
     final ActorRef<Reply> replyTo;
 
     public Asking(String payload, ActorRef<Reply> replyTo) {
+      this.payload = payload;
+      this.replyTo = replyTo;
+    }
+  }
+
+  static class AskingWithStatus {
+    final String payload;
+    final ActorRef<StatusReply<String>> replyTo;
+
+    public AskingWithStatus(String payload, ActorRef<StatusReply<String>> replyTo) {
       this.payload = payload;
       this.replyTo = replyTo;
     }
@@ -52,6 +63,11 @@ public class ActorFlowCompileTest {
         null;
 
     // #ask
+    final ActorRef<AskingWithStatus> actorWithStatusRef = // ???
+        // #ask
+        null;
+
+    // #ask
     Duration timeout = Duration.ofSeconds(1);
 
     // method reference notation
@@ -60,6 +76,10 @@ public class ActorFlowCompileTest {
     // explicit creation of the sent message
     Flow<String, Reply, NotUsed> askFlowExplicit =
         ActorFlow.ask(actorRef, timeout, (msg, replyTo) -> new Asking(msg, replyTo));
+
+    Flow<String, String, NotUsed> askFlowExplicitWithStatus =
+        ActorFlow.askWithStatus(
+            actorWithStatusRef, timeout, (msg, replyTo) -> new AskingWithStatus(msg, replyTo));
 
     Source.repeat("hello").via(askFlow).map(reply -> reply.msg).runWith(Sink.seq(), system);
     // #ask

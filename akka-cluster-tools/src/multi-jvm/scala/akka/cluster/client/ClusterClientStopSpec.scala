@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.client
@@ -7,7 +7,7 @@ package akka.cluster.client
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 
 import akka.actor.{ Actor, Props }
@@ -46,7 +46,7 @@ class ClusterClientStopMultiJvmNode1 extends ClusterClientStopSpec
 class ClusterClientStopMultiJvmNode2 extends ClusterClientStopSpec
 class ClusterClientStopMultiJvmNode3 extends ClusterClientStopSpec
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class ClusterClientStopSpec extends MultiNodeSpec(ClusterClientStopSpec) with STMultiNodeSpec with ImplicitSender {
 
   import ClusterClientStopSpec._

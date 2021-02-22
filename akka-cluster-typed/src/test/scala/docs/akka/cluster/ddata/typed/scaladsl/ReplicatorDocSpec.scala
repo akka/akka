@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.cluster.ddata.typed.scaladsl
@@ -117,7 +117,7 @@ class ReplicatorDocSpec
 
   import ReplicatorDocSpec._
 
-  implicit val selfNodeAddress = DistributedData(system).selfUniqueAddress
+  implicit val selfNodeAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
 
   "Replicator" must {
 

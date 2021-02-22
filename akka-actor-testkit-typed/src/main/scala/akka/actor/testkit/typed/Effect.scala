@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed
@@ -202,6 +202,33 @@ object Effect {
   final case class Scheduled[U](delay: FiniteDuration, target: ActorRef[U], message: U) extends Effect {
     def duration(): java.time.Duration = delay.asJava
   }
+
+  final case class TimerScheduled[U](
+      key: Any,
+      msg: U,
+      delay: FiniteDuration,
+      mode: TimerScheduled.TimerMode,
+      overriding: Boolean)(val send: () => Unit)
+      extends Effect {
+    def duration(): java.time.Duration = delay.asJava
+  }
+
+  object TimerScheduled {
+    sealed trait TimerMode
+    case object FixedRateMode extends TimerMode
+    case object FixedDelayMode extends TimerMode
+    case object SingleMode extends TimerMode
+
+    /*Java API*/
+    def fixedRateMode = FixedRateMode
+    def fixedDelayMode = FixedDelayMode
+    def singleMode = SingleMode
+  }
+
+  /*Java API*/
+  def timerScheduled = TimerScheduled
+
+  final case class TimerCancelled(key: Any) extends Effect
 
   /**
    * Used to represent an empty list of effects - in other words, the behavior didn't do anything observable

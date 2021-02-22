@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
@@ -85,6 +85,8 @@ import akka.util.JavaDurationConverters._
     with scaladsl.EntityTypeKey[T] {
 
   override def toString: String = s"EntityTypeKey[$messageClassName]($name)"
+
+  private[akka] def asJava: javadsl.EntityTypeKey[T] = this
 }
 
 /** INTERNAL API */
@@ -251,12 +253,13 @@ import akka.util.JavaDurationConverters._
       entityId: String,
       dataCenter: DataCenter): scaladsl.EntityRef[M] = {
     if (dataCenter == cluster.selfMember.dataCenter)
-      entityRefFor(typeKey, entityId)
+      entityRefFor(typeKey, entityId).asInstanceOf[EntityRefImpl[M]].withDataCenter(Some(dataCenter))
     else
       new EntityRefImpl[M](
         classicSharding.shardRegionProxy(typeKey.name, dataCenter),
         entityId,
-        typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
+        typeKey.asInstanceOf[EntityTypeKeyImpl[M]],
+        Some(dataCenter))
   }
 
   override def entityRefFor[M](typeKey: javadsl.EntityTypeKey[M], entityId: String): javadsl.EntityRef[M] = {
@@ -271,12 +274,13 @@ import akka.util.JavaDurationConverters._
       entityId: String,
       dataCenter: String): javadsl.EntityRef[M] = {
     if (dataCenter == cluster.selfMember.dataCenter)
-      entityRefFor(typeKey, entityId)
+      entityRefFor(typeKey, entityId).asInstanceOf[EntityRefImpl[M]].withDataCenter(Some(dataCenter))
     else
       new EntityRefImpl[M](
         classicSharding.shardRegionProxy(typeKey.name, dataCenter),
         entityId,
-        typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
+        typeKey.asInstanceOf[EntityTypeKeyImpl[M]],
+        Some(dataCenter))
   }
 
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
@@ -306,11 +310,25 @@ import akka.util.JavaDurationConverters._
  */
 @InternalApi private[akka] final class EntityRefImpl[M](
     shardRegion: akka.actor.ActorRef,
-    entityId: String,
-    typeKey: EntityTypeKeyImpl[M])
+    override val entityId: String,
+    override val typeKey: EntityTypeKeyImpl[M],
+    override val dataCenter: Option[String] = None)
     extends javadsl.EntityRef[M]
     with scaladsl.EntityRef[M]
     with InternalRecipientRef[M] {
+
+  override def hashCode(): Int =
+    // 3 and 5 chosen as primes which are +/- 1 from a power-of-two
+    ((entityId.hashCode * 3) + typeKey.hashCode) * 5 + dataCenter.hashCode
+
+  override def equals(other: Any): Boolean =
+    other match {
+      case eri: EntityRefImpl[_] =>
+        (eri.entityId == entityId) &&
+        (eri.typeKey == typeKey) &&
+        (eri.dataCenter == dataCenter)
+      case _ => false
+    }
 
   override val refPrefix = URLEncoder.encode(s"${typeKey.name}-$entityId", ByteString.UTF_8)
 
@@ -399,6 +417,9 @@ import akka.util.JavaDurationConverters._
    * INTERNAL API
    */
   override private[akka] def asJava: javadsl.EntityRef[M] = this
+
+  private[internal] def withDataCenter(dataCenter: Option[String]): EntityRefImpl[M] =
+    new EntityRefImpl[M](shardRegion, entityId, typeKey, dataCenter)
 }
 
 /**

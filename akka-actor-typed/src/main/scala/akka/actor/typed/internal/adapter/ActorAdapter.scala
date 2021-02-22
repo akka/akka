@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -117,7 +117,8 @@ import akka.util.OptionVal
       if (c.hasTimer) {
         msg match {
           case timerMsg: TimerMsg =>
-            c.timer.interceptTimerMsg(ctx.log, timerMsg) match {
+            //we can only get this kind of message if the timer is of this concrete class
+            c.timer.asInstanceOf[TimerSchedulerImpl[T]].interceptTimerMsg(ctx.log, timerMsg) match {
               case OptionVal.None => // means TimerMsg not applicable, discard
               case OptionVal.Some(m) =>
                 next(Behavior.interpretMessage(behavior, c, m), m)
@@ -184,16 +185,23 @@ import akka.util.OptionVal
   }
 
   private def withSafelyAdapted[U, V](adapt: () => U)(body: U => V): Unit = {
-    try {
-      val a = adapt()
-      if (a != null) body(a)
-      else
-        ctx.log.warn(
-          "Adapter function returned null which is not valid as an actor message, ignoring. This can happen for example when using pipeToSelf and returning null from the adapt function. Null value is ignored and not passed on to actor.")
+    var failed = false
+    val adapted: U = try {
+      adapt()
     } catch {
       case NonFatal(ex) =>
         // pass it on through the signal handler chain giving supervision a chance to deal with it
         handleSignal(MessageAdaptionFailure(ex))
+        // Signal handler should actually throw so this is mostly to keep compiler happy (although a user could override
+        // the MessageAdaptionFailure handling to do something weird)
+        failed = true
+        null.asInstanceOf[U]
+    }
+    if (!failed) {
+      if (adapted != null) body(adapted)
+      else
+        ctx.log.warn(
+          "Adapter function returned null which is not valid as an actor message, ignoring. This can happen for example when using pipeToSelf and returning null from the adapt function. Null value is ignored and not passed on to actor.")
     }
   }
 

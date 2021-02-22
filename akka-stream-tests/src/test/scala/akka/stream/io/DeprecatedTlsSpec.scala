@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io
@@ -16,7 +16,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 
 import akka.NotUsed
@@ -97,7 +97,7 @@ object DeprecatedTlsSpec {
     """
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) with WithLogCapturing {
   import DeprecatedTlsSpec._
   import GraphDSL.Implicits._

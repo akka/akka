@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.testkit.AkkaSpec
 import akka.util.unused
@@ -60,7 +60,7 @@ class PropsCreationSpec extends AkkaSpec("""
 
   "Props Java API" must {
     "work with create(creator)" in {
-      @silent
+      @nowarn
       val p = Props.create(OneParamActorCreator)
       system.actorOf(p)
     }

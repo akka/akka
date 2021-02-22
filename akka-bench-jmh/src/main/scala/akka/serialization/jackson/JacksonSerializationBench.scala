@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization.jackson
@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
@@ -186,11 +186,11 @@ class JacksonSerializationBench {
   var system: ActorSystem = _
   var serialization: Serialization = _
 
-  @silent("immutable val") // JMH updates this via reflection
+  @nowarn("msg=immutable val") // JMH updates this via reflection
   @Param(Array("jackson-json", "jackson-cbor")) // "java"
   private var serializerName: String = _
 
-  @silent("immutable val")
+  @nowarn("msg=immutable val")
   @Param(Array("off", "gzip", "lz4"))
   private var compression: String = _
 

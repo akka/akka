@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.scaladsl
@@ -102,7 +102,7 @@ import akka.annotation.DoNotInherit
    *
    * Care is taken to remove the testkit when the block is finished or aborted.
    */
-  @deprecated("Use except instead.", "2.6.0")
+  @deprecated("Use expect instead.", "2.6.0")
   def intercept[T](code: => T)(implicit system: ActorSystem[_]): T
 
 }

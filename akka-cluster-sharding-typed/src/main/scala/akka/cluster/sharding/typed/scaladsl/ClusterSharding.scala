@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
@@ -391,6 +391,7 @@ object StartEntity {
    */
   def name: String
 
+  private[akka] def asJava: javadsl.EntityTypeKey[T]
 }
 
 object EntityTypeKey {
@@ -416,6 +417,27 @@ object EntityTypeKey {
  * Not for user extension.
  */
 @DoNotInherit trait EntityRef[-M] extends RecipientRef[M] { this: InternalRecipientRef[M] =>
+
+  /**
+   * The identifier for the particular entity referenced by this EntityRef.
+   *
+   * {{{
+   * // given sharding, typeKey
+   * sharding.entityRefFor(typeKey, "someId").entityId == "someId"  // always true
+   * }}}
+   */
+  def entityId: String
+
+  /**
+   * The EntityTypeKey associated with this EntityRef.
+   */
+  def typeKey: EntityTypeKey[M]
+
+  /**
+   * The specified datacenter of the incarnation of the particular entity referenced by this EntityRef,
+   * if a datacenter was specified.
+   */
+  def dataCenter: Option[String]
 
   /**
    * Send a message to the entity referenced by this EntityRef using *at-most-once*

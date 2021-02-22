@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.delivery
@@ -12,9 +12,9 @@ import scala.util.Success
 
 import akka.Done
 import akka.actor.typed.ActorRef
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent("never used")
+@nowarn("msg=never used")
 object WorkPullingDocExample {
 
   //#imports

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
@@ -185,13 +185,13 @@ private[akka] object Running {
                 // (logging is safe here since invoked on message receive
                 OptionVal(controlRef.get) match {
                   case OptionVal.Some(control) =>
-                    if (setup.log.isDebugEnabled)
-                      setup.log.debug("Fast forward replica [{}] to [{}]", replicaId, sequenceNumber)
+                    if (setup.internalLogger.isDebugEnabled)
+                      setup.internalLogger.debug("Fast forward replica [{}] to [{}]", replicaId, sequenceNumber)
                     control.fastForward(sequenceNumber)
                   case OptionVal.None =>
                     // stream not started yet, ok, fast forward is an optimization
-                    if (setup.log.isDebugEnabled)
-                      setup.log.debug(
+                    if (setup.internalLogger.isDebugEnabled)
+                      setup.internalLogger.debug(
                         "Ignoring fast forward replica [{}] to [{}], stream not started yet",
                         replicaId,
                         sequenceNumber)
@@ -268,20 +268,20 @@ private[akka] object Running {
         state: Running.RunningState[S],
         envelope: ReplicatedEventEnvelope[E],
         replication: ReplicationSetup): Behavior[InternalProtocol] = {
-      setup.log.infoN(
+      setup.internalLogger.infoN(
         "Replica {} received replicated event. Replica seqs nrs: {}. Envelope {}",
         setup.replication,
         state.seenPerReplica,
         envelope)
       envelope.ack ! ReplicatedEventAck
       if (envelope.event.originReplica != replication.replicaId && !alreadySeen(envelope.event)) {
-        setup.log.debug(
+        setup.internalLogger.debug(
           "Saving event [{}] from [{}] as first time",
           envelope.event.originSequenceNr,
           envelope.event.originReplica)
         handleExternalReplicatedEventPersist(replication, envelope.event)
       } else {
-        setup.log.debug(
+        setup.internalLogger.debug(
           "Filtering event [{}] from [{}] as it was already seen",
           envelope.event.originSequenceNr,
           envelope.event.originReplica)
@@ -292,7 +292,7 @@ private[akka] object Running {
     def onPublishedEvent(state: Running.RunningState[S], event: PublishedEventImpl): Behavior[InternalProtocol] = {
       val newBehavior: Behavior[InternalProtocol] = setup.replication match {
         case None =>
-          setup.log.warn(
+          setup.internalLogger.warn(
             "Received published event for [{}] but not an Replicated Event Sourcing actor, dropping",
             event.persistenceId)
           this
@@ -300,7 +300,7 @@ private[akka] object Running {
         case Some(replication) =>
           event.replicatedMetaData match {
             case None =>
-              setup.log.warn("Received published event for [{}] but with no replicated metadata, dropping")
+              setup.internalLogger.warn("Received published event for [{}] but with no replicated metadata, dropping")
               this
             case Some(replicatedEventMetaData) =>
               onPublishedEvent(state, replication, replicatedEventMetaData, event)
@@ -314,7 +314,7 @@ private[akka] object Running {
         replication: ReplicationSetup,
         replicatedMetadata: ReplicatedPublishedEventMetaData,
         event: PublishedEventImpl): Behavior[InternalProtocol] = {
-      val log = setup.log
+      val log = setup.internalLogger
       val separatorIndex = event.persistenceId.id.indexOf(PersistenceId.DefaultSeparator)
       val idPrefix = event.persistenceId.id.substring(0, separatorIndex)
       val originReplicaId = replicatedMetadata.replicaId
@@ -400,8 +400,8 @@ private[akka] object Running {
       val isConcurrent: Boolean = event.originVersion <> state.version
       val updatedVersion = event.originVersion.merge(state.version)
 
-      if (setup.log.isDebugEnabled())
-        setup.log.debugN(
+      if (setup.internalLogger.isDebugEnabled())
+        setup.internalLogger.debugN(
           "Processing event [{}] with version [{}]. Local version: {}. Updated version {}. Concurrent? {}",
           Logging.simpleName(event.event.getClass),
           event.originVersion,
@@ -469,8 +469,8 @@ private[akka] object Running {
                   updatedVersion,
                   concurrent = false))).copy(version = updatedVersion)
 
-            if (setup.log.isTraceEnabled())
-              setup.log.traceN(
+            if (setup.internalLogger.isTraceEnabled())
+              setup.internalLogger.traceN(
                 "Event persisted [{}]. Version vector after: [{}]",
                 Logging.simpleName(event.getClass),
                 r.version)
@@ -526,8 +526,8 @@ private[akka] object Running {
             val eventMetadata = metadataTemplate match {
               case Some(template) =>
                 val updatedVersion = currentState.version.updated(template.originReplica.id, _currentSequenceNumber)
-                if (setup.log.isDebugEnabled)
-                  setup.log.traceN(
+                if (setup.internalLogger.isDebugEnabled)
+                  setup.internalLogger.traceN(
                     "Processing event [{}] with version vector [{}]",
                     Logging.simpleName(event.getClass),
                     updatedVersion)
@@ -566,8 +566,8 @@ private[akka] object Running {
         state: RunningState[S],
         effect: Effect[E, S],
         sideEffects: immutable.Seq[SideEffect[S]] = Nil): (Behavior[InternalProtocol], Boolean) = {
-      if (setup.log.isDebugEnabled && !effect.isInstanceOf[CompositeEffect[_, _]])
-        setup.log.debugN(
+      if (setup.internalLogger.isDebugEnabled && !effect.isInstanceOf[CompositeEffect[_, _]])
+        setup.internalLogger.debugN(
           s"Handled command [{}], resulting effect: [{}], side effects: [{}]",
           msg.getClass.getName,
           effect,
@@ -658,7 +658,7 @@ private[akka] object Running {
     def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
       if (state.receivedPoisonPill) {
         if (setup.settings.logOnStashing)
-          setup.log.debug("Discarding message [{}], because actor is to be stopped.", cmd)
+          setup.internalLogger.debug("Discarding message [{}], because actor is to be stopped.", cmd)
         Behaviors.unhandled
       } else {
         stashInternal(cmd)
@@ -687,8 +687,8 @@ private[akka] object Running {
     }
 
     final def onJournalResponse(response: Response): Behavior[InternalProtocol] = {
-      if (setup.log.isDebugEnabled) {
-        setup.log.debug2(
+      if (setup.internalLogger.isDebugEnabled) {
+        setup.internalLogger.debug2(
           "Received Journal response: {} after: {} nanos",
           response,
           System.nanoTime() - persistStartTime)
@@ -786,7 +786,7 @@ private[akka] object Running {
     def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
       if (state.receivedPoisonPill) {
         if (setup.settings.logOnStashing)
-          setup.log.debug("Discarding message [{}], because actor is to be stopped.", cmd)
+          setup.internalLogger.debug("Discarding message [{}], because actor is to be stopped.", cmd)
         Behaviors.unhandled
       } else {
         stashInternal(cmd)
@@ -796,7 +796,7 @@ private[akka] object Running {
     def onSaveSnapshotResponse(response: SnapshotProtocol.Response): Unit = {
       val signal = response match {
         case SaveSnapshotSuccess(meta) =>
-          setup.log.debug(s"Persistent snapshot [{}] saved successfully", meta)
+          setup.internalLogger.debug(s"Persistent snapshot [{}] saved successfully", meta)
           if (snapshotReason == SnapshotWithRetention) {
             // deletion of old events and snapshots are triggered by the SaveSnapshotSuccess
             setup.retention match {
@@ -816,7 +816,7 @@ private[akka] object Running {
           Some(SnapshotCompleted(SnapshotMetadata.fromClassic(meta)))
 
         case SaveSnapshotFailure(meta, error) =>
-          setup.log.warn2("Failed to save snapshot given metadata [{}] due to: {}", meta, error.getMessage)
+          setup.internalLogger.warn2("Failed to save snapshot given metadata [{}] due to: {}", meta, error.getMessage)
           Some(SnapshotFailed(SnapshotMetadata.fromClassic(meta), error))
 
         case _ =>
@@ -825,12 +825,12 @@ private[akka] object Running {
 
       signal match {
         case Some(signal) =>
-          setup.log.debug("Received snapshot response [{}].", response)
+          setup.internalLogger.debug("Received snapshot response [{}].", response)
           if (setup.onSignal(state.state, signal, catchAndLog = false)) {
-            setup.log.debug("Emitted signal [{}].", signal)
+            setup.internalLogger.debug("Emitted signal [{}].", signal)
           }
         case None =>
-          setup.log.debug("Received snapshot response [{}], no signal emitted.", response)
+          setup.internalLogger.debug("Received snapshot response [{}], no signal emitted.", response)
       }
     }
 
@@ -917,7 +917,7 @@ private[akka] object Running {
   def onDeleteEventsJournalResponse(response: JournalProtocol.Response, state: S): Behavior[InternalProtocol] = {
     val signal = response match {
       case DeleteMessagesSuccess(toSequenceNr) =>
-        setup.log.debug("Persistent events to sequenceNr [{}] deleted successfully.", toSequenceNr)
+        setup.internalLogger.debug("Persistent events to sequenceNr [{}] deleted successfully.", toSequenceNr)
         setup.retention match {
           case DisabledRetentionCriteria             => // no further actions
           case s: SnapshotCountRetentionCriteriaImpl =>

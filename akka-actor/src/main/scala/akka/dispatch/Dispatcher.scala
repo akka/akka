@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.ActorCell
 import akka.dispatch.sysmsg.SystemMessage
@@ -49,7 +49,7 @@ class Dispatcher(
    * At first glance this var does not seem to be updated anywhere, but in
    * fact it is, via the esUpdater [[AtomicReferenceFieldUpdater]] below.
    */
-  @silent("never updated")
+  @nowarn("msg=never updated")
   @volatile private var executorServiceDelegate: LazyExecutorServiceDelegate =
     new LazyExecutorServiceDelegate(executorServiceFactoryProvider.createExecutorServiceFactory(id, threadFactory))
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.setup
@@ -22,8 +22,8 @@ class ActorSystemSetupSpec extends AnyWordSpec with Matchers {
       val setup = DummySetup("Al Dente")
       val setups = ActorSystemSetup().withSetup(setup)
 
-      setups.get[DummySetup] should ===(Some(setup))
-      setups.get[DummySetup2] should ===(None)
+      (setups.get[DummySetup]: Option[Setup]) should ===(Some(setup))
+      (setups.get[DummySetup2]: Option[Setup]) should ===(None)
     }
 
     "replace setup if already defined" in {
@@ -31,7 +31,7 @@ class ActorSystemSetupSpec extends AnyWordSpec with Matchers {
       val setup2 = DummySetup("Earl E. Bird")
       val setups = ActorSystemSetup().withSetup(setup1).withSetup(setup2)
 
-      setups.get[DummySetup] should ===(Some(setup2))
+      (setups.get[DummySetup]: Option[Setup]) should ===(Some(setup2))
     }
 
     "provide a fluent creation alternative" in {
@@ -40,8 +40,8 @@ class ActorSystemSetupSpec extends AnyWordSpec with Matchers {
       val c = DummySetup2("Amanda Reckonwith")
       val setups = a and b and c
 
-      setups.get[DummySetup] should ===(Some(b))
-      setups.get[DummySetup2] should ===(Some(c))
+      (setups.get[DummySetup]: Option[Setup]) should ===(Some(b))
+      (setups.get[DummySetup2]: Option[Setup]) should ===(Some(c))
     }
 
     "be created with a set of setups" in {
@@ -60,7 +60,7 @@ class ActorSystemSetupSpec extends AnyWordSpec with Matchers {
         val setup = DummySetup("Tad Moore")
         system = ActorSystem("name", ActorSystemSetup(setup))
 
-        system.settings.setup.get[DummySetup] should ===(Some(setup))
+        (system.settings.setup.get[DummySetup]: Option[Setup]) should ===(Some(setup))
 
       } finally {
         TestKit.shutdownActorSystem(system)

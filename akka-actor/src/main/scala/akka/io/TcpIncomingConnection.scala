@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -8,7 +8,7 @@ import java.nio.channels.SocketChannel
 
 import scala.collection.immutable
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.ActorRef
 import akka.io.Inet.SocketOption
@@ -19,7 +19,7 @@ import akka.io.Inet.SocketOption
  *
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[io] class TcpIncomingConnection(
     _tcp: TcpExt,
     _channel: SocketChannel,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -78,7 +78,7 @@ private[io] class TcpListener(
         } else {
           e
         }
-        bindCommander ! bind.failureMessage.withCause(exception)
+        bindCommander ! CommandFailed(bind).withCause(exception)
         log.error(exception, "Bind failed for TCP channel on endpoint [{}]", bind.localAddress)
         context.stop(self)
     }

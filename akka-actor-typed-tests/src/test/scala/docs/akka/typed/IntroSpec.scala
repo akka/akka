@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed
@@ -128,10 +128,10 @@ object IntroSpec {
     }
   }
 
+  //#chatroom-protocol
   //#chatroom-behavior
   object ChatRoom {
     //#chatroom-behavior
-    //#chatroom-protocol
     sealed trait RoomCommand
     final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent]) extends RoomCommand
     //#chatroom-protocol
@@ -185,8 +185,10 @@ object IntroSpec {
           client ! message
           Behaviors.same
       }
+    //#chatroom-protocol
   }
   //#chatroom-behavior
+  //#chatroom-protocol
 
   //#chatroom-gabbler
   object Gabbler {

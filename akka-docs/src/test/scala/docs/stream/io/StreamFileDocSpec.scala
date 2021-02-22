@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.io
@@ -13,10 +13,11 @@ import akka.util.ByteString
 import akka.testkit.AkkaSpec
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
 
 class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   // silence sysout
   def println(s: String) = ()

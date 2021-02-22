@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -16,10 +16,11 @@ import akka.testkit.AkkaSpec
 import akka.testkit.TestException
 import akka.testkit.TestProbe
 import akka.testkit.WithLogCapturing
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 
@@ -81,7 +82,7 @@ object RememberEntitiesFailureSpec {
   case class ShardStoreCreated(store: ActorRef, shardId: ShardId)
   case class CoordinatorStoreCreated(store: ActorRef)
 
-  @silent("never used")
+  @nowarn("msg=never used")
   class FakeStore(settings: ClusterShardingSettings, typeName: String) extends RememberEntitiesProvider {
     override def shardStoreProps(shardId: ShardId): Props = FakeShardStoreActor.props(shardId)
     override def coordinatorStoreProps(): Props = FakeCoordinatorStoreActor.props()
@@ -98,7 +99,7 @@ object RememberEntitiesFailureSpec {
   class FakeShardStoreActor(shardId: ShardId) extends Actor with ActorLogging with Timers {
     import FakeShardStoreActor._
 
-    implicit val ec = context.system.dispatcher
+    implicit val ec: ExecutionContext = context.system.dispatcher
     private var failUpdate: Option[Fail] = None
 
     context.system.eventStream.publish(ShardStoreCreated(self, shardId))
@@ -201,7 +202,7 @@ class RememberEntitiesFailureSpec
 
   "Remember entities handling in sharding" must {
 
-    List(NoResponse, CrashStore, StopStore, Delay(500.millis), Delay(1.second)).foreach { wayToFail: Fail =>
+    List(NoResponse, CrashStore, StopStore, Delay(500.millis), Delay(1.second)).foreach { (wayToFail: Fail) =>
       s"recover when initial remember entities load fails $wayToFail" in {
         log.debug("Getting entities for shard 1 will fail")
         failShardGetEntities = Map("1" -> wayToFail)

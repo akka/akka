@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -24,14 +24,14 @@ class FlowFutureFlowSpec extends StreamSpec {
   //so we run all tests cases using both modes of the attributes.
   //please notice most of the cases don't exhibit any difference in behaviour between the two modes
   for {
-    att <- List(
-      Attributes.NestedMaterializationCancellationPolicy.EagerCancellation,
-      Attributes.NestedMaterializationCancellationPolicy.PropagateToNested)
-    delayDownstreanCancellation = att.propagateToNestedMaterialization
+    (att, name) <- List(
+      (Attributes.NestedMaterializationCancellationPolicy.EagerCancellation, "EagerCancellation"),
+      (Attributes.NestedMaterializationCancellationPolicy.PropagateToNested, "PropagateToNested"))
+    delayDownstreamCancellation = att.propagateToNestedMaterialization
     attributes = Attributes(att)
   } {
 
-    s"a futureFlow with $att" must {
+    s"a futureFlow with $name (delayDownstreamCancellation=$delayDownstreamCancellation)" must {
       "work in the simple case with a completed future" in assertAllStagesStopped {
         val (fNotUsed, fSeq) = src10()
           .viaMat {
@@ -256,32 +256,32 @@ class FlowFutureFlowSpec extends StreamSpec {
 
       }
 
-      "handle closed downstream when flow future is late completed" in assertAllStagesStopped {
+      "handle closed downstream when flow future is completed after downstream cancel" in assertAllStagesStopped {
         val prFlow = Promise[Flow[Int, Int, Future[collection.immutable.Seq[Int]]]]()
-        val (fSeq1, fSeq2) = src10()
+        val (fNestedFlowMatVal, fSinkCompletion) = src10()
           .viaMat {
             Flow.futureFlow(prFlow.future)
           }(Keep.right)
           .mapMaterializedValue(_.flatten)
-          .take(0)
-          .toMat(Sink.seq)(Keep.both)
+          .take(0) // cancel asap
+          .toMat(Sink.ignore)(Keep.both)
           .withAttributes(attributes)
           .run()
 
-        if (delayDownstreanCancellation) {
-          fSeq1.value should be(empty)
-          fSeq2.value should be(empty)
+        fSinkCompletion.futureValue // downstream has completed/cancelled
+        if (delayDownstreamCancellation) {
+          fNestedFlowMatVal.value should be(empty)
 
           prFlow.success {
             Flow[Int].alsoToMat(Sink.seq)(Keep.right)
           }
 
-          fSeq1.futureValue should be(empty)
-          fSeq2.futureValue should be(empty)
+          // was materialized but cancelled
+          fNestedFlowMatVal.futureValue should be(empty)
         } else {
-          fSeq1.failed.futureValue should be(a[NeverMaterializedException])
-          fSeq1.failed.futureValue.getCause should be(a[NonFailureCancellation])
-          fSeq2.futureValue should be(empty)
+          // was never materialized
+          fNestedFlowMatVal.failed.futureValue should be(a[NeverMaterializedException])
+          fNestedFlowMatVal.failed.futureValue.getCause should be(a[NonFailureCancellation])
         }
       }
 
@@ -316,7 +316,7 @@ class FlowFutureFlowSpec extends StreamSpec {
           .withAttributes(attributes)
           .run()
 
-        if (delayDownstreanCancellation) {
+        if (delayDownstreamCancellation) {
           fSeq2.failed.futureValue should equal(TE("damn!"))
           fSeq1.value should be(empty)
 

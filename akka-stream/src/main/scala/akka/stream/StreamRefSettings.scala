@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -8,14 +8,14 @@ import java.util.concurrent.TimeUnit
 
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.actor.ActorSystem
 import akka.annotation.DoNotInherit
 import akka.stream.impl.streamref.StreamRefSettingsImpl
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 object StreamRefSettings {
 
   /** Java API */
@@ -56,7 +56,7 @@ object StreamRefSettings {
  * More detailed documentation about each of the settings is available in `reference.conf`.
  */
 @DoNotInherit
-@silent("deprecated")
+@nowarn("msg=deprecated")
 trait StreamRefSettings {
   @deprecated("Use attribute 'StreamRefAttributes.BufferCapacity' to read the concrete setting value", "2.6.0")
   def bufferCapacity: Int

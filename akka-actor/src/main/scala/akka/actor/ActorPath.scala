@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 import java.lang.{ StringBuilder => JStringBuilder }
 import java.net.MalformedURLException
 
-import scala.annotation.{ switch, tailrec }
+import scala.annotation.tailrec
 import scala.collection.immutable
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.japi.Util.immutableSeq
 
@@ -87,7 +87,9 @@ object ActorPath {
   final def validatePathElement(element: String, fullPath: String): Unit = {
     def fullPathMsg = if (fullPath ne null) s""" (in path [$fullPath])""" else ""
 
-    (findInvalidPathElementCharPosition(element): @switch) match {
+    // If the number of cases increase remember to add a `@switch` annotation e.g.:
+    // (findInvalidPathElementCharPosition(element): @switch) match {
+    (findInvalidPathElementCharPosition(element)) match {
       case ValidPathCode =>
       // valid
       case EmptyPathCode =>
@@ -153,8 +155,7 @@ object ActorPath {
  * references are compared the unique id of the actor is not taken into account
  * when comparing actor paths.
  */
-@silent("@SerialVersionUID has no effect on traits")
-@silent("deprecated")
+@nowarn("msg=@SerialVersionUID has no effect on traits")
 @SerialVersionUID(1L)
 sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
 
@@ -203,6 +204,7 @@ sealed trait ActorPath extends Comparable[ActorPath] with Serializable {
   /**
    * Java API: Sequence of names for this path from root to this. Performance implication: has to allocate a list.
    */
+  @nowarn("msg=deprecated")
   def getElements: java.lang.Iterable[String] =
     scala.collection.JavaConverters.asJavaIterableConverter(elements).asJava
 

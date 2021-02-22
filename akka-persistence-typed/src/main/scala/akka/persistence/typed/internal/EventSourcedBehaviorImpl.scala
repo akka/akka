@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
@@ -40,11 +40,12 @@ import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotSelectionCriteria
+import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.persistence.typed.scaladsl._
 import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
-import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.util.ConstantFun
 import akka.util.unused
+import org.slf4j.LoggerFactory
 
 @InternalApi
 private[akka] object EventSourcedBehaviorImpl {
@@ -106,6 +107,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   if (persistenceId eq null)
     throw new IllegalArgumentException("persistenceId must not be null")
 
+  // Don't use it directly, but instead call internalLogger() (see below)
+  private val logger = LoggerFactory.getLogger(this.getClass)
+
   override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
     val ctx = context.asScala
     val hasCustomLoggerName = ctx match {
@@ -118,24 +122,39 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     // stashState outside supervise because StashState should survive restarts due to persist failures
     val stashState = new StashState(ctx.asInstanceOf[ActorContext[InternalProtocol]], settings)
 
+    // This method ensures that the MDC is set before we use the internal logger
+    def internalLogger() = {
+      // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message,
+      // but important to call `context.log` to mark MDC as used
+      ctx.log
+      logger
+    }
+
     val actualSignalHandler: PartialFunction[(State, Signal), Unit] = signalHandler.orElse {
       // default signal handler is always the fallback
       case (_, SnapshotCompleted(meta)) =>
-        ctx.log.debug("Save snapshot successful, snapshot metadata [{}].", meta)
+        internalLogger().debug("Save snapshot successful, snapshot metadata [{}].", meta)
       case (_, SnapshotFailed(meta, failure)) =>
-        ctx.log.error(s"Save snapshot failed, snapshot metadata [$meta] due to: ${failure.getMessage}", failure)
+        internalLogger()
+          .error(s"Save snapshot failed, snapshot metadata [$meta] due to: ${failure.getMessage}", failure)
       case (_, DeleteSnapshotsCompleted(DeletionTarget.Individual(meta))) =>
-        ctx.log.debug("Persistent snapshot [{}] deleted successfully.", meta)
+        internalLogger().debug("Persistent snapshot [{}] deleted successfully.", meta)
       case (_, DeleteSnapshotsCompleted(DeletionTarget.Criteria(criteria))) =>
-        ctx.log.debug("Persistent snapshots given criteria [{}] deleted successfully.", criteria)
+        internalLogger().debug("Persistent snapshots given criteria [{}] deleted successfully.", criteria)
       case (_, DeleteSnapshotsFailed(DeletionTarget.Individual(meta), failure)) =>
-        ctx.log.warn2("Failed to delete snapshot with meta [{}] due to: {}", meta, failure.getMessage)
+        internalLogger().warn2("Failed to delete snapshot with meta [{}] due to: {}", meta, failure.getMessage)
       case (_, DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), failure)) =>
-        ctx.log.warn2("Failed to delete snapshots given criteria [{}] due to: {}", criteria, failure.getMessage)
+        internalLogger().warn2(
+          "Failed to delete snapshots given criteria [{}] due to: {}",
+          criteria,
+          failure.getMessage)
       case (_, DeleteEventsCompleted(toSequenceNr)) =>
-        ctx.log.debug("Events successfully deleted to sequence number [{}].", toSequenceNr)
+        internalLogger().debug("Events successfully deleted to sequence number [{}].", toSequenceNr)
       case (_, DeleteEventsFailed(toSequenceNr, failure)) =>
-        ctx.log.warn2("Failed to delete events to sequence number [{}] due to: {}", toSequenceNr, failure.getMessage)
+        internalLogger().warn2(
+          "Failed to delete events to sequence number [{}] due to: {}",
+          toSequenceNr,
+          failure.getMessage)
       case (_, EventSourcedBehaviorImpl.GetPersistenceId(replyTo)) => replyTo ! persistenceId
     }
 
@@ -163,7 +182,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             settings = settings,
             stashState = stashState,
             replication = replication,
-            publishEvents = publishEvents)
+            publishEvents = publishEvents,
+            internalLoggerFactory = () => internalLogger())
 
           // needs to accept Any since we also can get messages from the journal
           // not part of the user facing Command protocol

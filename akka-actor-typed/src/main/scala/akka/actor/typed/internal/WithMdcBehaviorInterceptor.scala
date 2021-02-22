@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
@@ -62,8 +62,12 @@ import akka.annotation.InternalApi
         case b => b
       }
     }
-
-    loop(target.start(ctx))
+    try {
+      setMdcValues(Map.empty)
+      loop(target.start(ctx))
+    } finally {
+      MDC.clear()
+    }
   }
 
   // in the normal case, a new withMDC replaces the previous one

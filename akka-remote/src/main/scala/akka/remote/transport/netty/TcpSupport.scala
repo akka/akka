@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport.netty
@@ -8,7 +8,7 @@ import java.net.InetSocketAddress
 
 import scala.concurrent.{ Future, Promise }
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.jboss.netty.buffer.{ ChannelBuffer, ChannelBuffers }
 import org.jboss.netty.channel._
 
@@ -30,7 +30,7 @@ private[remote] object ChannelLocalActor extends ChannelLocal[Option[HandleEvent
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] trait TcpHandlers extends CommonHandlers {
   protected def log: LoggingAdapter
 
@@ -66,7 +66,7 @@ private[remote] trait TcpHandlers extends CommonHandlers {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class TcpServerHandler(
     _transport: NettyTransport,
     _associationListenerFuture: Future[AssociationEventListener],
@@ -82,7 +82,7 @@ private[remote] class TcpServerHandler(
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class TcpClientHandler(_transport: NettyTransport, remoteAddress: Address, val log: LoggingAdapter)
     extends ClientHandler(_transport, remoteAddress)
     with TcpHandlers {
@@ -95,7 +95,7 @@ private[remote] class TcpClientHandler(_transport: NettyTransport, remoteAddress
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class TcpAssociationHandle(
     val localAddress: Address,
     val remoteAddress: Address,

@@ -1,13 +1,12 @@
 /*
- * Copyright (C) 2020-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.{ CountDownLatch, ThreadLocalRandom }
-
-import akka.stream.{ QueueCompletionResult, QueueOfferResult }
+import akka.stream.QueueOfferResult
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.testkit.WithLogCapturing
@@ -114,7 +113,7 @@ class BoundedSourceQueueSpec extends StreamSpec("""akka.loglevel = debug
       awaitAssert(queue.offer(1) should be(QueueOfferResult.Failure(ex)))
     }
 
-    "without cancellation only flag elements as enqueued that will also be passed to downstream" in {
+    "only flag elements as enqueued that will also be passed to downstream in the absence of cancellation or completion " in {
       val counter = new AtomicLong()
       val (queue, result) =
         Source.queue[Int](100000).toMat(Sink.fold(0L)(_ + _))(Keep.both).run()
@@ -123,7 +122,8 @@ class BoundedSourceQueueSpec extends StreamSpec("""akka.loglevel = debug
       val stopProb = 10000 // specifies run time of test indirectly
       val expected = 1d / (1d - math.pow(1d - 1d / stopProb, numThreads))
       log.debug(s"Expected elements per thread: $expected") // variance might be quite high depending on number of threads
-      val barrier = new CountDownLatch(numThreads)
+      val startBarrier = new CountDownLatch(numThreads)
+      val stopBarrier = new CountDownLatch(numThreads)
 
       class QueueingThread extends Thread {
         override def run(): Unit = {
@@ -132,7 +132,8 @@ class BoundedSourceQueueSpec extends StreamSpec("""akka.loglevel = debug
           def runLoop(): Unit = {
             val r = ThreadLocalRandom.current()
 
-            while (true) {
+            var done = false
+            while (!done) {
               val i = r.nextInt(0, Int.MaxValue)
               queue.offer(i) match {
                 case QueueOfferResult.Enqueued =>
@@ -140,21 +141,19 @@ class BoundedSourceQueueSpec extends StreamSpec("""akka.loglevel = debug
                   numElemsEnqueued += 1
                 case QueueOfferResult.Dropped =>
                   numElemsDropped += 1
-                case _: QueueCompletionResult => return // other thread completed
+                case unexpected => throw new IllegalStateException(s"Saw $unexpected should not happen in this test")
               }
 
               if ((i % stopProb) == 0) { // probabilistic exit condition
-                queue.complete()
-                return
-              }
-
-              if (i % 100 == 0) Thread.sleep(1) // probabilistic producer throttling delay
+                done = true
+              } else if (i % 100 == 0) Thread.sleep(1) // probabilistic producer throttling delay
             }
           }
 
-          barrier.countDown()
-          barrier.await() // wait for all threads being in this state before starting race
+          startBarrier.countDown()
+          startBarrier.await() // wait for all threads being in this state before starting race
           runLoop()
+          stopBarrier.countDown()
           log.debug(
             f"Thread $getName%-20s enqueued: $numElemsEnqueued%7d dropped: $numElemsDropped%7d before completion")
         }
@@ -165,6 +164,11 @@ class BoundedSourceQueueSpec extends StreamSpec("""akka.loglevel = debug
         t.setName(s"QueuingThread-$i")
         t.start()
       }
+      stopBarrier.await()
+      // if we'd complete from one of the threads and use the QueueCompletedResult as coordination there is a race
+      // where enqueueing an element concurrently with Done reaching the stage can lead to Enqueued being returned
+      // but the element dropped (no guarantee of entering stream as documented in BoundedSourceQueue.offer
+      queue.complete()
 
       result.futureValue should be(counter.get())
     }

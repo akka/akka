@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -182,7 +182,7 @@ object RetrySupport extends RetrySupport {
                   }
               case None =>
                 retry(attempt, maxAttempts, delayFunction, nextAttempt)
-              case _ =>
+              case null =>
                 Future.failed(new IllegalArgumentException("The delayFunction of retry should not return null."))
             }
 

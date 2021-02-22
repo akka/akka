@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
@@ -15,7 +15,7 @@ import akka.util.unused
  *
  * Watches all actors which subscribe on the given event stream, and unsubscribes them from it when they are Terminated.
  */
-protected[akka] class ActorClassificationUnsubscriber(bus: ManagedActorClassification, debug: Boolean)
+protected[akka] class ActorClassificationUnsubscriber(bus: String, unsubscribe: ActorRef => Unit, debug: Boolean)
     extends Actor
     with Stash {
 
@@ -58,7 +58,7 @@ protected[akka] class ActorClassificationUnsubscriber(bus: ManagedActorClassific
           Logging.Debug(simpleName(getClass), getClass, s"actor $actor has terminated, unsubscribing it from $bus"))
       // the `unsubscribe` will trigger another `Unregister(actor, _)` message to this unsubscriber;
       // but since that actor is terminated, there cannot be any harm in processing an Unregister for it.
-      bus.unsubscribe(actor)
+      unsubscribe(actor)
   }
 
 }
@@ -75,14 +75,20 @@ private[akka] object ActorClassificationUnsubscriber {
   final case class Register(actor: ActorRef, seq: Int)
   final case class Unregister(actor: ActorRef, seq: Int)
 
-  def start(system: ActorSystem, bus: ManagedActorClassification, @unused debug: Boolean = false) = {
+  def start(
+      system: ActorSystem,
+      busName: String,
+      unsubscribe: ActorRef => Unit,
+      @unused debug: Boolean = false): ActorRef = {
     val debug = system.settings.config.getBoolean("akka.actor.debug.event-stream")
     system
       .asInstanceOf[ExtendedActorSystem]
-      .systemActorOf(props(bus, debug), "actorClassificationUnsubscriber-" + unsubscribersCount.incrementAndGet())
+      .systemActorOf(
+        props(busName, unsubscribe, debug),
+        "actorClassificationUnsubscriber-" + unsubscribersCount.incrementAndGet())
   }
 
-  private def props(eventBus: ManagedActorClassification, debug: Boolean) =
-    Props(classOf[ActorClassificationUnsubscriber], eventBus, debug)
+  private def props(busName: String, unsubscribe: ActorRef => Unit, debug: Boolean) =
+    Props(classOf[ActorClassificationUnsubscriber], busName, unsubscribe, debug)
 
 }

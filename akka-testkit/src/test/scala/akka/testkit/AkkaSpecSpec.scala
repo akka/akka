@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
@@ -7,7 +7,7 @@ package akka.testkit
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import language.postfixOps
 import org.scalatest.matchers.should.Matchers
@@ -17,7 +17,7 @@ import akka.actor._
 import akka.actor.DeadLetter
 import akka.pattern.ask
 
-@silent
+@nowarn
 class AkkaSpecSpec extends AnyWordSpec with Matchers {
 
   "An AkkaSpec" must {
@@ -42,11 +42,11 @@ class AkkaSpecSpec extends AnyWordSpec with Matchers {
         "akka.actor.debug.event-stream" -> true,
         "akka.loglevel" -> "DEBUG",
         "akka.stdout-loglevel" -> "DEBUG")
-      val system = ActorSystem("AkkaSpec1", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
+      val localSystem = ActorSystem("AkkaSpec1", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
       var refs = Seq.empty[ActorRef]
-      val spec = new AkkaSpec(system) { refs = Seq(testActor, system.actorOf(Props.empty, "name")) }
+      val spec = new AkkaSpec(localSystem) { refs = Seq(testActor, localSystem.actorOf(Props.empty, "name")) }
       refs.foreach(_.isTerminated should not be true)
-      TestKit.shutdownActorSystem(system)
+      TestKit.shutdownActorSystem(localSystem)
       spec.awaitCond(refs.forall(_.isTerminated), 2 seconds)
     }
 

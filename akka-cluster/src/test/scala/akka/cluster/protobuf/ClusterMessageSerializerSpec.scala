@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.protobuf
 
 import collection.immutable.SortedSet
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 
 import akka.actor.{ Address, ExtendedActorSystem }
@@ -17,7 +17,7 @@ import akka.routing.RoundRobinPool
 import akka.testkit.AkkaSpec
 import akka.util.Version
 
-@silent
+@nowarn
 class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = cluster") {
 
   val serializer = new ClusterMessageSerializer(system.asInstanceOf[ExtendedActorSystem])

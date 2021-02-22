@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.testkit.internal
@@ -84,6 +84,13 @@ import akka.stream.scaladsl.Sink
   import EventSourcedBehaviorTestKitImpl._
 
   private def system: ActorSystem[_] = actorTestKit.system
+  if (system.settings.config.getBoolean("akka.persistence.testkit.events.serialize") ||
+      system.settings.config.getBoolean("akka.persistence.testkit.snapshots.serialize")) {
+    system.log.warn(
+      "Persistence TestKit serialization enabled when using EventSourcedBehaviorTestKit, this is not intended. " +
+      "make sure you create the system used in the test with the config from EventSourcedBehaviorTestKit.config " +
+      "as described in the docs https://doc.akka.io/docs/akka/current/typed/persistence-testing.html#unit-testing")
+  }
 
   override val persistenceTestKit: PersistenceTestKit = PersistenceTestKit(system)
   persistenceTestKit.clearAll()
@@ -172,13 +179,15 @@ import akka.stream.scaladsl.Sink
   }
 
   private def preCommandCheck(command: Command): Unit = {
-    if (serializationSettings.enabled && serializationSettings.verifyCommands)
-      verifySerializationAndThrow(command, "Command")
+    if (serializationSettings.enabled) {
+      if (serializationSettings.verifyCommands)
+        verifySerializationAndThrow(command, "Command")
 
-    if (serializationSettings.enabled && !emptyStateVerified) {
-      val emptyState = getState()
-      verifySerializationAndThrow(emptyState, "Empty State")
-      emptyStateVerified = true
+      if (serializationSettings.verifyState && !emptyStateVerified) {
+        val emptyState = getState()
+        verifySerializationAndThrow(emptyState, "Empty State")
+        emptyStateVerified = true
+      }
     }
   }
 

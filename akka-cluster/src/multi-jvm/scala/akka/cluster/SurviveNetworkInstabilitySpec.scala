@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -7,7 +7,7 @@ package akka.cluster
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 
 import akka.actor.Actor
@@ -94,14 +94,14 @@ abstract class SurviveNetworkInstabilitySpec
 
   private val remoteSettings = RARP(system).provider.remoteSettings
 
-  @silent
+  @nowarn
   def quarantinedEventClass: Class[_] =
     if (remoteSettings.Artery.Enabled)
       classOf[QuarantinedEvent]
     else
       classOf[akka.remote.QuarantinedEvent]
 
-  @silent
+  @nowarn
   def quarantinedEventFrom(event: Any): Address = {
     event match {
       case QuarantinedEvent(uniqueAddress)          => uniqueAddress.address
@@ -110,7 +110,7 @@ abstract class SurviveNetworkInstabilitySpec
 
   }
 
-  @silent
+  @nowarn
   def sysMsgBufferSize: Int =
     if (RARP(system).provider.remoteSettings.Artery.Enabled)
       remoteSettings.Artery.Advanced.SysMsgBufferSize

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.actor
@@ -453,7 +453,7 @@ class ActorDocSpec extends AkkaSpec("""
       class DependencyInjector(applicationContext: AnyRef, beanName: String) extends IndirectActorProducer {
 
         override def actorClass = classOf[Actor]
-        override def produce =
+        override def produce() =
           //#obtain-fresh-Actor-instance-from-DI-framework
           new Echo(beanName)
 
@@ -578,15 +578,16 @@ class ActorDocSpec extends AkkaSpec("""
 
         def receive = {
           case "kill" =>
-            context.stop(child); lastSender = sender()
-          case Terminated(`child`) => lastSender ! "finished"
+            context.stop(child)
+            lastSender = sender()
+          case Terminated(`child`) =>
+            lastSender ! "finished"
         }
       }
       //#watch
 
       val victim = system.actorOf(Props(classOf[WatchActor], this))
-      implicit val sender = testActor
-      victim ! "kill"
+      victim.tell("kill", testActor)
       expectMsg("finished")
     }
   }

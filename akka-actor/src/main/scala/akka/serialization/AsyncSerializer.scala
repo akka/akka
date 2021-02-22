@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
@@ -41,7 +41,7 @@ abstract class AsyncSerializerWithStringManifest(system: ExtendedActorSystem)
     extends SerializerWithStringManifest
     with AsyncSerializer {
 
-  private val log = Logging(system, getClass)
+  private val log = Logging(system, classOf[AsyncSerializerWithStringManifest])
 
   final override def toBinary(o: AnyRef): Array[Byte] = {
     log.warning(

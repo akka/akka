@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
@@ -13,7 +13,7 @@ import scala.concurrent.Await
 import scala.language.existentials
 import scala.util.control.{ NoStackTrace, NonFatal }
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.{ AkkaException, ConfigurationException }
 import akka.actor._
@@ -170,7 +170,7 @@ trait LoggingBus extends ActorEventBus {
    * Internal Akka use only
    */
   private[akka] def stopDefaultLoggers(system: ActorSystem): Unit = {
-    @silent("never used")
+    @nowarn("msg=never used")
     val level = _logLevel // volatile access before reading loggers
     if (!(loggers contains StandardOutLogger)) {
       setUpStdoutLogger(system.settings)
@@ -1514,7 +1514,7 @@ trait LoggingFilter {
  * In retrospect should have been abstract, but we cannot change that
  * without breaking binary compatibility
  */
-@silent("never us")
+@nowarn("msg=never us")
 trait LoggingFilterWithMarker extends LoggingFilter {
   def isErrorEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean =
     isErrorEnabled(logClass, logSource)

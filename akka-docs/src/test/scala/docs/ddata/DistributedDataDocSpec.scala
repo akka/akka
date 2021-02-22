@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.ddata
@@ -63,7 +63,7 @@ object DistributedDataDocSpec {
     import DataBot._
 
     val replicator = DistributedData(context.system).replicator
-    implicit val node = DistributedData(context.system).selfUniqueAddress
+    implicit val node: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
 
     import context.dispatcher
     val tickTask = context.system.scheduler.scheduleWithFixedDelay(5.seconds, 5.seconds, self, Tick)

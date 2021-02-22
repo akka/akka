@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -7,7 +7,7 @@ package akka.stream
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NoStackTrace
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.Done
 
@@ -17,7 +17,7 @@ import akka.Done
  * @param count Numeric value depending on context, for example IO operations performed or bytes processed.
  * @param status Status of the result. Can be either [[akka.Done]] or an exception.
  */
-@silent("deprecated") // Status
+@nowarn("msg=deprecated") // Status
 final case class IOResult(
     count: Long,
     @deprecated("status is always set to Success(Done)", "2.6.0") status: Try[Done]) {

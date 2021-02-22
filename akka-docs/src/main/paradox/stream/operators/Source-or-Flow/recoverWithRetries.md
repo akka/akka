@@ -2,7 +2,7 @@
 
 RecoverWithRetries allows to switch to alternative Source on flow failure.
 
-@ref[Simple operators](../index.md#simple-operators)
+@ref[Error handling](../index.md#error-handling)
 
 ## Signature
 

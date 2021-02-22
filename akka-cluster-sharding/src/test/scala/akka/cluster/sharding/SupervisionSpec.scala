@@ -1,17 +1,16 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
 
 import scala.concurrent.duration._
-
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.{ Actor, ActorLogging, ActorRef, PoisonPill, Props }
 import akka.cluster.Cluster
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.pattern.{ BackoffOpts, BackoffSupervisor }
+import akka.testkit.EventFilter
 import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 
@@ -98,8 +97,12 @@ class DeprecatedSupervisionSpec extends AkkaSpec(SupervisionSpec.config) with Im
       val response = expectMsgType[Response](5.seconds)
       watch(response.self)
 
-      region ! Msg(10, "passivate")
-      expectTerminated(response.self)
+      // We need the shard to have observed the passivation for this test but
+      // we don't know that this means the passivation reached the shard yet unless we observe it
+      EventFilter.debug("passy: Passivation started for [10]", occurrences = 1).intercept {
+        region ! Msg(10, "passivate")
+        expectTerminated(response.self)
+      }
 
       // This would fail before as sharded actor would be stuck passivating
       region ! Msg(10, "hello")

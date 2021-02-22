@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed
@@ -12,7 +12,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import docs.akka.typed.IntroSpec.HelloWorld
 import org.scalatest.wordspec.AnyWordSpecLike
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 //#imports1
 import akka.actor.typed.Behavior
@@ -33,7 +33,7 @@ import akka.util.Timeout
 object SpawnProtocolDocSpec {
 
   // Silent because we want to name the unused 'context' parameter
-  @silent("never used")
+  @nowarn("msg=never used")
   //#main
   object HelloWorldMain {
     def apply(): Behavior[SpawnProtocol.Command] =

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.dungeon
@@ -9,7 +9,7 @@ import java.util.Optional
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import akka.actor._
 import akka.annotation.InternalStableApi
 import akka.serialization.{ Serialization, SerializationExtension, Serializers }
@@ -23,7 +23,7 @@ private[akka] trait Children { this: ActorCell =>
 
   import ChildrenContainer._
 
-  @silent("never used")
+  @nowarn("msg=never used")
   @volatile
   private var _childrenRefsDoNotCallMeDirectly: ChildrenContainer = EmptyChildrenContainer
 
@@ -31,7 +31,7 @@ private[akka] trait Children { this: ActorCell =>
     Unsafe.instance.getObjectVolatile(this, AbstractActorCell.childrenOffset).asInstanceOf[ChildrenContainer]
 
   final def children: immutable.Iterable[ActorRef] = childrenRefs.children
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   final def getChildren(): java.lang.Iterable[ActorRef] =
     scala.collection.JavaConverters.asJavaIterableConverter(children).asJava
 
@@ -51,7 +51,7 @@ private[akka] trait Children { this: ActorCell =>
   private[akka] def attachChild(props: Props, name: String, systemService: Boolean): ActorRef =
     makeChild(this, props, checkName(name), async = true, systemService = systemService)
 
-  @silent @volatile private var _functionRefsDoNotCallMeDirectly = Map.empty[String, FunctionRef]
+  @nowarn @volatile private var _functionRefsDoNotCallMeDirectly = Map.empty[String, FunctionRef]
   private def functionRefs: Map[String, FunctionRef] =
     Unsafe.instance.getObjectVolatile(this, AbstractActorCell.functionRefsOffset).asInstanceOf[Map[String, FunctionRef]]
 
@@ -104,7 +104,7 @@ private[akka] trait Children { this: ActorCell =>
     refs.valuesIterator.foreach(_.stop())
   }
 
-  @silent @volatile private var _nextNameDoNotCallMeDirectly = 0L
+  @nowarn @volatile private var _nextNameDoNotCallMeDirectly = 0L
   final protected def randomName(sb: java.lang.StringBuilder): String = {
     val num = Unsafe.instance.getAndAddLong(this, AbstractActorCell.nextNameOffset, 1)
     Helpers.base64(num, sb)
@@ -127,6 +127,12 @@ private[akka] trait Children { this: ActorCell =>
           }) shallDie(actor)
     }
     actor.asInstanceOf[InternalActorRef].stop()
+  }
+
+  @nowarn private def _preventPrivateUnusedErasure = {
+    _childrenRefsDoNotCallMeDirectly
+    _functionRefsDoNotCallMeDirectly
+    _nextNameDoNotCallMeDirectly
   }
 
   /*

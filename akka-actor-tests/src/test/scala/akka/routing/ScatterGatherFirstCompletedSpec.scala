@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -37,7 +37,7 @@ object ScatterGatherFirstCompletedSpec {
           }
         }
 
-        override def postStop = {
+        override def postStop() = {
           shudownLatch.foreach(_.countDown())
         }
       }),

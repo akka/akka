@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.scalacheck.Gen
 import org.scalacheck.Shrink
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
@@ -12,7 +12,7 @@ import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import akka.stream._
 import akka.stream.testkit.TwoStreamsSetup
 
-@silent // tests deprecated apis
+@nowarn // tests deprecated apis
 class GraphMergeSortedSpec extends TwoStreamsSetup with ScalaCheckPropertyChecks {
 
   override type Outputs = Int

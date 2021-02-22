@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
@@ -129,7 +129,7 @@ class ActorSystemSpec
         Behaviors.receiveMessage[Done] { _ =>
           Behaviors.stopped
         }
-      withSystem("shutdown", stoppable, doTerminate = false) { sys: ActorSystem[Done] =>
+      withSystem("shutdown", stoppable, doTerminate = false) { (sys: ActorSystem[Done]) =>
         sys ! Done
         sys.whenTerminated.futureValue
       }

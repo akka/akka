@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
@@ -385,6 +385,9 @@ trait MessageQueue {
    * is expected to transfer all remaining messages into the dead letter queue
    * which is passed in. The owner of this MessageQueue is passed in if
    * available (e.g. for creating DeadLetters()), “/deadletters” otherwise.
+   *
+   * Note that we implement the method in a recursive manner mainly for
+   * atomicity (not touching the queue twice).
    */
   def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit
 }
@@ -956,26 +959,29 @@ object BoundedControlAwareMailbox {
     override def numberOfMessages: Int = size.get()
     override def hasMessages: Boolean = numberOfMessages > 0
 
-    @tailrec
     final override def dequeue(): Envelope = {
-      val count = size.get()
+      @tailrec def tailrecDequeue(): Envelope = {
+        val count = size.get()
 
-      // if both queues are empty return null
-      if (count > 0) {
-        // if there are messages try to fetch the current head
-        // or retry if other consumer dequeued in the mean time
-        if (size.compareAndSet(count, count - 1)) {
-          val item = super.dequeue()
+        // if both queues are empty return null
+        if (count > 0) {
+          // if there are messages try to fetch the current head
+          // or retry if other consumer dequeued in the mean time
+          if (size.compareAndSet(count, count - 1)) {
+            val item = super.dequeue()
 
-          if (size.get < capacity) signalNotFull()
+            if (size.get < capacity) signalNotFull()
 
-          item
+            item
+          } else {
+            tailrecDequeue()
+          }
         } else {
-          dequeue()
+          null
         }
-      } else {
-        null
       }
+
+      tailrecDequeue()
     }
 
     private def signalNotFull(): Unit = {

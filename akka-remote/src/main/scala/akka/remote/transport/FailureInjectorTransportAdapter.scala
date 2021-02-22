@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport
@@ -11,7 +11,7 @@ import scala.concurrent.{ Future, Promise }
 import scala.util.control.NoStackTrace
 
 import FailureInjectorTransportAdapter._
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.AkkaException
 import akka.actor.{ Address, ExtendedActorSystem }
@@ -61,7 +61,7 @@ private[remote] object FailureInjectorTransportAdapter {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class FailureInjectorTransportAdapter(
     wrappedTransport: Transport,
     val extendedSystem: ExtendedActorSystem)
@@ -162,7 +162,7 @@ private[remote] class FailureInjectorTransportAdapter(
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] final case class FailureInjectorHandle(
     _wrappedHandle: AssociationHandle,
     private val gremlinAdapter: FailureInjectorTransportAdapter)
@@ -189,7 +189,7 @@ private[remote] final case class FailureInjectorHandle(
   @deprecated(
     message = "Use method that states reasons to make sure disassociation reasons are logged.",
     since = "2.5.3")
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   override def disassociate(): Unit =
     wrappedHandle.disassociate()
 

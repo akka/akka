@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -84,7 +84,7 @@ object TLS {
     def theSslConfig(system: ActorSystem): AkkaSSLConfig =
       sslConfig.getOrElse(AkkaSSLConfig(system))
 
-    val createSSLEngine = { system: ActorSystem =>
+    val createSSLEngine = { (system: ActorSystem) =>
       val config = theSslConfig(system)
 
       val engine = hostInfo match {

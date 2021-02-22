@@ -13,7 +13,24 @@ Just like `fold` but receives a function that results in a @scala[`Future`] @jav
 
 Just like `fold` but receives a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.
 
-Note that the `zero` value must be immutable.
+@@@ warning
+
+Note that the `zero` value must be immutable, because otherwise
+the same mutable instance would be shared across different threads
+when running the stream more than once.
+
+@@@
+
+## Example
+
+`foldAsync` is typically used to 'fold up' the incoming values into an aggregate asynchronously. 
+For example, you might want to summarize the incoming values into a histogram:
+
+Scala
+:   @@snip [FoldAsync.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/FoldAsync.scala) { #imports #foldAsync }
+
+Java
+:   @@snip [FoldAsync.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #foldAsync }
 
 ## Reactive Streams semantics
 

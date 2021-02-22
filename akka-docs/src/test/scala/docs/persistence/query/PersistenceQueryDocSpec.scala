@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.persistence.query
@@ -24,7 +24,7 @@ import com.typesafe.config.Config
 
 object PersistenceQueryDocSpec {
 
-  implicit val timeout = Timeout(3.seconds)
+  implicit val timeout: Timeout = Timeout(3.seconds)
 
   //#advanced-journal-query-types
   final case class RichEvent(tags: Set[String], payload: Any)
@@ -150,7 +150,7 @@ object PersistenceQueryDocSpec {
     }
 
     //#projection-into-different-store-rs
-    implicit val system = ActorSystem()
+    implicit val system: ActorSystem = ActorSystem()
 
     val readJournal =
       PersistenceQuery(system).readJournalFor[MyScaladslReadJournal](JournalId)
@@ -199,14 +199,13 @@ object PersistenceQueryDocSpec {
 class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
   import PersistenceQueryDocSpec._
 
-  def this() = {
+  def this() =
     this("""
         akka.persistence.query.my-read-journal {
           class = "docs.persistence.query.PersistenceQueryDocSpec$MyReadJournalProvider"
           refresh-interval = 3s
         }
       """)
-  }
 
   class BasicUsage {
     //#basic-usage

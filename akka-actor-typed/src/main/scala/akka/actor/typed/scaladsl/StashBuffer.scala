@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
@@ -91,6 +91,22 @@ import akka.annotation.{ DoNotInherit, InternalApi }
    * @param f the function to apply to each element
    */
   def foreach(f: T => Unit): Unit
+
+  /**
+   * Tests whether this [[StashBuffer]] contains a given message.
+   *
+   * @param message the message to test
+   * @return true if the buffer contains the message, false otherwise.
+   */
+  def contains[U >: T](message: U): Boolean
+
+  /**
+   * Tests whether a predicate holds for at least one element of this [[StashBuffer]].
+   *
+   * @param predicate the predicate used to test
+   * @return true if the predicate holds for at least one message, false otherwise.
+   */
+  def exists(predicate: T => Boolean): Boolean
 
   /**
    * Removes all messages from the buffer.

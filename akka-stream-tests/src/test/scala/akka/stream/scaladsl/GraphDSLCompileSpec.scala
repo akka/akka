@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.NotUsed
 import akka.stream._
@@ -17,7 +17,7 @@ object GraphDSLCompileSpec {
   class Apple extends Fruit
 }
 
-@silent // tests deprecated APIs
+@nowarn // tests deprecated APIs
 class GraphDSLCompileSpec extends StreamSpec {
   import GraphDSLCompileSpec._
 

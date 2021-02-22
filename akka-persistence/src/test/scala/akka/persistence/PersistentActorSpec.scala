@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NoStackTrace
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.actor._
@@ -401,7 +401,7 @@ object PersistentActorSpec {
       extends AsyncPersistSameEventTwicePersistentActor(name)
       with InmemRuntimePluginConfig
 
-  @silent // compiler knows persistAll(Nil)(lambda) will never invoke lambda
+  @nowarn // compiler knows persistAll(Nil)(lambda) will never invoke lambda
   class PersistAllNilPersistentActor(name: String) extends ExamplePersistentActor(name) {
 
     val receiveCommand: Receive = commonBehavior.orElse {

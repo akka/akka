@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -7,7 +7,7 @@ package akka.actor
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import language.postfixOps
 
 import akka.actor.Props.EmptyActor
@@ -107,7 +107,7 @@ object DeathWatchSpec {
   }
 }
 
-@silent
+@nowarn
 trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
 
   import DeathWatchSpec._

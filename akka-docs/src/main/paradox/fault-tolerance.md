@@ -8,6 +8,7 @@ For the full documentation of this feature and for new projects see @ref:[fault 
 The concept of fault tolerance relates to actors, so in order to use these make sure to depend on actors:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group="com.typesafe.akka"
@@ -276,16 +277,14 @@ And must be used for passivation:
 
 ### Simple backoff
 
-The following Scala snippet shows how to create a backoff supervisor which will start the given echo actor after it has stopped
+The following snippet shows how to create a backoff supervisor which will start the given echo actor after it has stopped
 because of a failure, in increasing intervals of 3, 6, 12, 24 and finally 30 seconds:
 
-@@snip [BackoffSupervisorDocSpec.scala](/akka-docs/src/test/scala/docs/pattern/BackoffSupervisorDocSpec.scala) { #backoff-stop }
+Scala
+:  @@snip [BackoffSupervisorDocSpec.scala](/akka-docs/src/test/scala/docs/pattern/BackoffSupervisorDocSpec.scala) { #backoff-stop }
 
-The above is equivalent to this Java code:
-
-@@snip [BackoffSupervisorDocTest.java](/akka-docs/src/test/java/jdocs/pattern/BackoffSupervisorDocTest.java) { #backoff-imports }
-
-@@snip [BackoffSupervisorDocTest.java](/akka-docs/src/test/java/jdocs/pattern/BackoffSupervisorDocTest.java) { #backoff-stop }
+Java
+:  @@snip [BackoffSupervisorDocTest.java](/akka-docs/src/test/java/jdocs/pattern/BackoffSupervisorDocTest.java) { #backoff-stop }
 
 Using a `randomFactor` to add a little bit of additional variance to the backoff intervals
 is highly recommended, in order to avoid multiple actors re-start at the exact same point in time,
@@ -297,16 +296,14 @@ large spikes of traffic hitting the recovering shared database or other resource
 The `akka.pattern.BackoffSupervisor` actor can also be configured to stop and start the actor after a delay when the actor 
 crashes and the supervision strategy decides that it should restart.
 
-The following Scala snippet shows how to create a backoff supervisor which will start the given echo actor after it has crashed
+The following snippet shows how to create a backoff supervisor which will start the given echo actor after it has crashed
 because of some exception, in increasing intervals of 3, 6, 12, 24 and finally 30 seconds:
 
-@@snip [BackoffSupervisorDocSpec.scala](/akka-docs/src/test/scala/docs/pattern/BackoffSupervisorDocSpec.scala) { #backoff-fail }
+Scala
+:  @@snip [BackoffSupervisorDocSpec.scala](/akka-docs/src/test/scala/docs/pattern/BackoffSupervisorDocSpec.scala) { #backoff-fail }
 
-The above is equivalent to this Java code:
-
-@@snip [BackoffSupervisorDocTest.java](/akka-docs/src/test/java/jdocs/pattern/BackoffSupervisorDocTest.java) { #backoff-imports }
-
-@@snip [BackoffSupervisorDocTest.java](/akka-docs/src/test/java/jdocs/pattern/BackoffSupervisorDocTest.java) { #backoff-fail }
+Java
+:  @@snip [BackoffSupervisorDocTest.java](/akka-docs/src/test/java/jdocs/pattern/BackoffSupervisorDocTest.java) { #backoff-fail }
 
 ### Customization
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
@@ -329,7 +329,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     "provide the MDC values in the log" in {
       val behaviors = Behaviors.withMdc[Protocol](
         Map("static" -> "1"),
-        // FIXME why u no infer the type here Scala??
+        // why u no infer the type here Scala??
         (message: Protocol) =>
           if (message.transactionId == 1)
             Map("txId" -> message.transactionId.toString, "first" -> "true")
@@ -348,7 +348,9 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         .info("Starting")
         // not counting for example "akkaSource", but it shouldn't have any other entries
         .withCustom(logEvent =>
-          logEvent.mdc.keysIterator.forall(entry => entry.startsWith("akka") || entry == "sourceActorSystem"))
+          logEvent.mdc.keysIterator.forall(entry =>
+            entry.startsWith("akka") || entry == "sourceActorSystem" || entry == "static") &&
+          logEvent.mdc("static") == "1")
         .expect {
           spawn(behaviors)
         }

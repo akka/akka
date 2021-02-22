@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -626,6 +626,7 @@ private[akka] class ShardRegion(
   var startingShards = Set.empty[ShardId]
   var handingOff = Set.empty[ActorRef]
   var gracefulShutdownInProgress = false
+  var preparingForShutdown = false
 
   import context.dispatcher
   var retryCount = 0
@@ -759,6 +760,12 @@ private[akka] class ShardRegion(
         context.stop(self)
       }
 
+    case _: MemberReadyForShutdown | _: MemberPreparingForShutdown =>
+      if (!preparingForShutdown) {
+        log.info("{}. preparing for shutdown", typeName)
+      }
+      preparingForShutdown = true
+
     case _: MemberEvent => // these are expected, no need to warn about them
 
     case _ => unhandled(evt)
@@ -819,14 +826,18 @@ private[akka] class ShardRegion(
 
     case BeginHandOff(shard) =>
       log.debug("{}: BeginHandOff shard [{}]", typeName, shard)
-      if (regionByShard.contains(shard)) {
-        val regionRef = regionByShard(shard)
-        val updatedShards = regions(regionRef) - shard
-        if (updatedShards.isEmpty) regions -= regionRef
-        else regions = regions.updated(regionRef, updatedShards)
-        regionByShard -= shard
+      if (!preparingForShutdown) {
+        if (regionByShard.contains(shard)) {
+          val regionRef = regionByShard(shard)
+          val updatedShards = regions(regionRef) - shard
+          if (updatedShards.isEmpty) regions -= regionRef
+          else regions = regions.updated(regionRef, updatedShards)
+          regionByShard -= shard
+        }
+        sender() ! BeginHandOffAck(shard)
+      } else {
+        log.debug("{}: Ignoring begin handoff as preparing to shutdown", typeName)
       }
-      sender() ! BeginHandOffAck(shard)
 
     case msg @ HandOff(shard) =>
       log.debug("{}: HandOff shard [{}]", typeName, shard)
@@ -885,20 +896,28 @@ private[akka] class ShardRegion(
       }
 
     case GracefulShutdown =>
-      log.debug("{}: Starting graceful shutdown of region and all its shards", typeName)
+      if (preparingForShutdown) {
+        log.debug(
+          "{}: Skipping graceful shutdown of region and all its shards as cluster is preparing for shutdown",
+          typeName)
+        gracefulShutdownProgress.trySuccess(Done)
+        context.stop(self)
+      } else {
+        log.debug("{}: Starting graceful shutdown of region and all its shards", typeName)
 
-      val coordShutdown = CoordinatedShutdown(context.system)
-      if (coordShutdown.getShutdownReason().isPresent) {
-        // use a shorter timeout than the coordinated shutdown phase to be able to log better reason for the timeout
-        val timeout = coordShutdown.timeout(CoordinatedShutdown.PhaseClusterShardingShutdownRegion) - 1.second
-        if (timeout > Duration.Zero) {
-          timers.startSingleTimer(GracefulShutdownTimeout, GracefulShutdownTimeout, timeout)
+        val coordShutdown = CoordinatedShutdown(context.system)
+        if (coordShutdown.getShutdownReason().isPresent) {
+          // use a shorter timeout than the coordinated shutdown phase to be able to log better reason for the timeout
+          val timeout = coordShutdown.timeout(CoordinatedShutdown.PhaseClusterShardingShutdownRegion) - 1.second
+          if (timeout > Duration.Zero) {
+            timers.startSingleTimer(GracefulShutdownTimeout, GracefulShutdownTimeout, timeout)
+          }
         }
-      }
 
-      gracefulShutdownInProgress = true
-      sendGracefulShutdownToCoordinatorIfInProgress()
-      tryCompleteGracefulShutdownIfInProgress()
+        gracefulShutdownInProgress = true
+        sendGracefulShutdownToCoordinatorIfInProgress()
+        tryCompleteGracefulShutdownIfInProgress()
+      }
 
     case GracefulShutdownTimeout =>
       log.warning(
@@ -1258,9 +1277,7 @@ private[akka] class ShardRegion(
         .orElse(entityProps match {
           case Some(props) if !shardsByRef.values.exists(_ == id) =>
             log.debug(ShardingLogMarker.shardStarted(typeName, id), "{}: Starting shard [{}] in region", typeName, id)
-
             val name = URLEncoder.encode(id, "utf-8")
-
             val shard = context.watch(
               context.actorOf(
                 Shard

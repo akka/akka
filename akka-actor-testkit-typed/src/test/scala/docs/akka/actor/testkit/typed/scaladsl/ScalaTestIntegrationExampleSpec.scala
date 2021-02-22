@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.actor.testkit.typed.scaladsl
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import docs.akka.actor.testkit.typed.scaladsl.AsyncTestingExampleSpec.Echo
 
 //#log-capturing
@@ -16,7 +16,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 //#scalatest-integration
 //#log-capturing
 
-@silent
+@nowarn
 //#scalatest-integration
 class ScalaTestIntegrationExampleSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
 

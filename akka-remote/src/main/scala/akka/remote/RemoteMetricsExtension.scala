@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.annotation.tailrec
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.ActorSelectionMessage
 import akka.actor.ActorSystem
@@ -25,7 +25,7 @@ import akka.routing.RouterEnvelope
  * Extension that keeps track of remote metrics, such
  * as max size of different message types.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[akka] object RemoteMetricsExtension extends ExtensionId[RemoteMetrics] with ExtensionIdProvider {
   override def get(system: ActorSystem): RemoteMetrics = super.get(system)
   override def get(system: ClassicActorSystemProvider): RemoteMetrics = super.get(system)
@@ -62,7 +62,7 @@ private[akka] class RemoteMetricsOff extends RemoteMetrics {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[akka] class RemoteMetricsOn(system: ExtendedActorSystem) extends RemoteMetrics {
 
   private val logFrameSizeExceeding: Int =

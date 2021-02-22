@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io
@@ -15,7 +15,7 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.PatienceConfiguration
@@ -50,7 +50,7 @@ import akka.testkit.TestProbe
 import akka.testkit.WithLogCapturing
 import akka.util.ByteString
 
-@silent("never used")
+@nowarn("msg=never used")
 class NonResolvingDnsActor(cache: SimpleDnsCache, config: Config) extends Actor {
   def receive = {
     case msg =>
@@ -58,7 +58,7 @@ class NonResolvingDnsActor(cache: SimpleDnsCache, config: Config) extends Actor 
   }
 }
 
-@silent("never used")
+@nowarn("msg=never used")
 class NonResolvingDnsManager(ext: akka.io.DnsExt) extends Actor {
 
   def receive = {
@@ -67,7 +67,7 @@ class NonResolvingDnsManager(ext: akka.io.DnsExt) extends Actor {
   }
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class FailingDnsResolver extends DnsProvider {
   override val cache: Dns = new Dns {
     override def cached(name: String): Option[Dns.Resolved] = None
@@ -968,7 +968,7 @@ class TcpSpec extends StreamSpec("""
       test()
     }
 
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     def test(): Unit = {
       // cert is valid until 2025, so if this tests starts failing after that you need to create a new one
       val (sslContext, firstSession) = initSslMess()
@@ -1004,7 +1004,7 @@ class TcpSpec extends StreamSpec("""
       result.futureValue(PatienceConfiguration.Timeout(10.seconds)) should ===("hello")
     }
 
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     def initSslMess() = {
       // #setting-up-ssl-context
       import java.security.KeyStore

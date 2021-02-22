@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -32,6 +32,14 @@ final case class Address private (protocol: String, system: String, host: Option
 
   def this(protocol: String, system: String) = this(protocol, system, None, None)
   def this(protocol: String, system: String, host: String, port: Int) = this(protocol, system, Option(host), Some(port))
+
+  def copy(
+      protocol: String = protocol,
+      system: String = system,
+      host: Option[String] = host,
+      port: Option[Int] = port) = {
+    Address(protocol, system, host, port)
+  }
 
   /**
    * Java API: The hostname if specified or empty optional if not

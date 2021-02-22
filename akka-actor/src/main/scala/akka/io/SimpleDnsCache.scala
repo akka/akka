@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.collection.immutable
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
@@ -42,7 +42,7 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationV
    * This method is deprecated and involves a copy from the new protocol to
    * remain compatible
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   override def cached(name: String): Option[Dns.Resolved] = {
     // adapt response to the old protocol
     val ipv4 = cacheRef.get().get((name, Ip(ipv6 = false))).toList.flatMap(_.records)
@@ -110,7 +110,7 @@ object SimpleDnsCache {
       val until = ttl match {
         case Forever  => Long.MaxValue
         case Never    => clock() - 1
-        case Ttl(ttl) => clock() + ttl.toMillis
+        case ttl: Ttl => clock() + ttl.value.toMillis
       }
 
       new Cache[K, V](queue + new ExpiryEntry[K](name, until), cache + (name -> CacheEntry(answer, until)), clock)
@@ -131,7 +131,7 @@ object SimpleDnsCache {
     }
   }
 
-  private case class CacheEntry[T](answer: T, until: Long) {
+  private[io] case class CacheEntry[T](answer: T, until: Long) {
     def isValid(clock: Long): Boolean = clock < until
   }
 

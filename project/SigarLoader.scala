@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -33,19 +33,17 @@ object SigarLoader {
       // Prepare Sigar agent options.
       sigarArtifact := {
         val report = update.value
-        val artifactList = report.matching(
-          moduleFilter(organization = sigarLoader.organization, name = sigarLoader.name))
+        val artifactList =
+          report.matching(moduleFilter(organization = sigarLoader.organization, name = sigarLoader.name))
         require(artifactList.size == 1, "Expecting single artifact, while found: " + artifactList)
         artifactList.head
       },
       sigarFolder := target.value / "native",
       sigarOptions := "-javaagent:" + sigarArtifact.value + "=" + sigarFolderProperty + "=" + sigarFolder.value,
       //
-      fork in Test := true) ++ (
-        // Invoke Sigar agent at JVM init time, to extract and load native Sigar library.
-        if (sigarTestEnabled) Seq(
-          javaOptions in Test += sigarOptions.value)
-        else Seq())
+      fork in Test := true) ++ (// Invoke Sigar agent at JVM init time, to extract and load native Sigar library.
+    if (sigarTestEnabled) Seq(javaOptions in Test += sigarOptions.value)
+    else Seq())
   }
 
 }

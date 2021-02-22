@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -13,7 +13,7 @@ import java.util.concurrent.CompletionStage
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
 import scala.util.Try
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import akka.actor.Address
@@ -95,7 +95,7 @@ import scala.util.Success
 
   private var messageAdapterRef: OptionVal[ActorRef[Any]] = OptionVal.None
   private var _messageAdapters: List[(Class[_], Any => T)] = Nil
-  private var _timer: OptionVal[TimerSchedulerImpl[T]] = OptionVal.None
+  private var _timer: OptionVal[TimerSchedulerCrossDslSupport[T]] = OptionVal.None
 
   // _currentActorThread is on purpose not volatile. Used from `checkCurrentActorThread`.
   // It will always see the right value when accessed from the right thread.
@@ -103,14 +103,16 @@ import scala.util.Success
   private var _currentActorThread: OptionVal[Thread] = OptionVal.None
 
   // context-shared timer needed to allow for nested timer usage
-  def timer: TimerSchedulerImpl[T] = _timer match {
+  def timer: TimerSchedulerCrossDslSupport[T] = _timer match {
     case OptionVal.Some(timer) => timer
     case OptionVal.None =>
       checkCurrentActorThread()
-      val timer = new TimerSchedulerImpl[T](this)
+      val timer = mkTimer()
       _timer = OptionVal.Some(timer)
       timer
   }
+
+  protected[this] def mkTimer(): TimerSchedulerCrossDslSupport[T] = new TimerSchedulerImpl[T](this)
 
   override private[akka] def hasTimer: Boolean = _timer.isDefined
 
@@ -217,7 +219,7 @@ import scala.util.Success
     }
 
   // Java API impl
-  @silent("never used") // resClass is just a pretend param
+  @nowarn("msg=never used") // resClass is just a pretend param
   override def ask[Req, Res](
       resClass: Class[Res],
       target: RecipientRef[Req],

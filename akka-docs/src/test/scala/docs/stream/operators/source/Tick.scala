@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.operators.source
@@ -27,7 +27,7 @@ object Tick {
     case class Response(text: String)
   }
 
-  def simple() = {
+  def simple(): Unit = {
     // #simple
     Source
       .tick(
@@ -39,7 +39,7 @@ object Tick {
     // #simple
   }
 
-  def pollSomething() = {
+  def pollSomething(): Unit = {
     // #poll-actor
     val periodicActorResponse: Source[String, Cancellable] = Source
       .tick(1.second, 1.second, "tick")

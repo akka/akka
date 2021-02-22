@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns
@@ -8,12 +8,13 @@ import java.net.InetAddress
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
 import CachePolicy.Ttl
 
 import akka.io.{ Dns, IO }
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.pattern.ask
-import akka.testkit.{ AkkaSpec, SocketUtil }
+import akka.testkit.SocketUtil
 import akka.testkit.SocketUtil.Both
 import akka.testkit.WithLogCapturing
 import akka.util.Timeout
@@ -25,14 +26,14 @@ The configuration to start a bind DNS server in Docker with this configuration
 is included, and the test will automatically start this container when the
 test starts and tear it down when it finishes.
  */
-class AsyncDnsResolverIntegrationSpec extends AkkaSpec(s"""
+class AsyncDnsResolverIntegrationSpec extends DockerBindDnsService(ConfigFactory.parseString(s"""
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.dns.resolver = async-dns
     akka.io.dns.async-dns.nameservers = ["localhost:${AsyncDnsResolverIntegrationSpec.dockerDnsServerPort}"]
     akka.io.dns.async-dns.search-domains = ["foo.test", "test"]
     akka.io.dns.async-dns.ndots = 2
-  """) with DockerBindDnsService with WithLogCapturing {
+  """)) with WithLogCapturing {
   val duration = 10.seconds
   implicit val timeout: Timeout = Timeout(duration)
 

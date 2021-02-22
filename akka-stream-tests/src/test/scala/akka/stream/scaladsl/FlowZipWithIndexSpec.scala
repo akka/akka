@@ -1,15 +1,15 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, Materializer }
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent // keep unused imports
+@nowarn // keep unused imports
 class FlowZipWithIndexSpec extends StreamSpec {
 
 //#zip-with-index
@@ -19,7 +19,7 @@ class FlowZipWithIndexSpec extends StreamSpec {
 //#zip-with-index
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: Materializer = ActorMaterializer(settings)
 
   "A ZipWithIndex for Flow " must {
 

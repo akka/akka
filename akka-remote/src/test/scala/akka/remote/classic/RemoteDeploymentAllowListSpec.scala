@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.classic
 
 import scala.concurrent.duration._
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config._
 import akka.actor._
 import akka.remote.EndpointException
@@ -104,7 +104,7 @@ object RemoteDeploymentAllowListSpec {
   }
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class RemoteDeploymentAllowListSpec
     extends AkkaSpec(RemoteDeploymentAllowListSpec.cfg)
     with ImplicitSender

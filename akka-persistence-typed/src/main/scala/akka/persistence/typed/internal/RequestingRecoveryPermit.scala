@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
@@ -49,7 +49,7 @@ private[akka] class RequestingRecoveryPermit[C, E, S](override val setup: Behavi
           case other =>
             if (receivedPoisonPill) {
               if (setup.settings.logOnStashing)
-                setup.log.debug("Discarding message [{}], because actor is to be stopped.", other)
+                setup.internalLogger.debug("Discarding message [{}], because actor is to be stopped.", other)
               Behaviors.unhandled
             } else {
               stashInternal(other)
@@ -71,7 +71,7 @@ private[akka] class RequestingRecoveryPermit[C, E, S](override val setup: Behavi
   def onRequestingRecoveryPermit(@unused context: ActorContext[_]): Unit = ()
 
   private def becomeReplaying(receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
-    setup.log.debug(s"Initializing snapshot recovery: {}", setup.recovery)
+    setup.internalLogger.debug(s"Initializing snapshot recovery: {}", setup.recovery)
 
     setup.holdingRecoveryPermit = true
     ReplayingSnapshot(setup, receivedPoisonPill)

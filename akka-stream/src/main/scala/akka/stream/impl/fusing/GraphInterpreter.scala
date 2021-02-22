@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.fusing
@@ -306,7 +306,7 @@ import akka.stream.stage._
         logic.preStart()
       } catch {
         case NonFatal(e) =>
-          log.error(e, "Error during preStart in [{}]: {}", logic.originalStage.getOrElse(logic), e.getMessage)
+          log.error(e, "Error during preStart in [{}]: {}", logic.toString, e.getMessage)
           logic.failStage(e)
       }
       afterStageHasRun(logic)
@@ -366,7 +366,7 @@ import akka.stream.stage._
               case None         => true
             }
             if (loggingEnabled)
-              log.error(e, "Error in stage [{}]: {}", activeStage.originalStage.getOrElse(activeStage), e.getMessage)
+              log.error(e, "Error in stage [{}]: {}", activeStage.toString, e.getMessage)
             activeStage.failStage(e)
 
             // Abort chasing
@@ -600,7 +600,7 @@ import akka.stream.stage._
       logic.afterPostStop()
     } catch {
       case NonFatal(e) =>
-        log.error(e, s"Error during postStop in [{}]: {}", logic.originalStage.getOrElse(logic), e.getMessage)
+        log.error(e, s"Error during postStop in [{}]: {}", logic.toString, e.getMessage)
     }
   }
 
@@ -680,8 +680,7 @@ import akka.stream.stage._
 
     val logicSnapshots = logics.zipWithIndex.map {
       case (logic, idx) =>
-        val label = logic.originalStage.getOrElse(logic).toString
-        LogicSnapshotImpl(idx, label, logic.attributes)
+        LogicSnapshotImpl(idx, logic.toString, logic.attributes)
     }
     val logicIndexes = logics.zipWithIndex.map { case (stage, idx) => stage -> idx }.toMap
     val connectionSnapshots = connections.filter(_ != null).map { connection =>

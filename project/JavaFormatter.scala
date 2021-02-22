@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 import akka.ProjectFileIgnoreSupport
@@ -22,13 +22,14 @@ object JavaFormatter extends AutoPlugin {
   import sbt._
   import sbt.io._
 
-  override def projectSettings: Seq[Def.Setting[_]] = Seq(
-    //below is for sbt java formatter
-    (excludeFilter in javafmt) := {
-      val ignoreSupport =
-        new ProjectFileIgnoreSupport((baseDirectory in ThisBuild).value / ignoreConfigFileName, descriptor)
-      val simpleFileFilter = new SimpleFileFilter(file => ignoreSupport.isIgnoredByFileOrPackages(file))
-      simpleFileFilter || (excludeFilter in javafmt).value
-    },
-    javafmtOnCompile := formatOnCompile)
+  override def projectSettings: Seq[Def.Setting[_]] =
+    Seq(
+      //below is for sbt java formatter
+      (excludeFilter in javafmt) := {
+        val ignoreSupport =
+          new ProjectFileIgnoreSupport((baseDirectory in ThisBuild).value / ignoreConfigFileName, descriptor)
+        val simpleFileFilter = new SimpleFileFilter(file => ignoreSupport.isIgnoredByFileOrPackages(file))
+        simpleFileFilter || (excludeFilter in javafmt).value
+      },
+      javafmtOnCompile := formatOnCompile)
 }

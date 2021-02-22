@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
@@ -56,7 +56,7 @@ trait ReplicatedShardingExtension extends Extension {
 }
 
 /**
- * Represents the sharding instances for the replicas of one replicated event sourcing entity type
+ * Represents the sharding instances for the replicas of one Replicated Event Sourcing entity type
  *
  * Not for user extension.
  */

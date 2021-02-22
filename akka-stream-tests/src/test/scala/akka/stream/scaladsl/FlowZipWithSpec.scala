@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -9,9 +9,9 @@ import org.reactivestreams.Publisher
 
 import scala.concurrent.duration._
 import akka.testkit.EventFilter
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
-@silent // keep unused imports
+@nowarn // keep unused imports
 class FlowZipWithSpec extends BaseTwoStreamsSetup {
 
 //#zip-with

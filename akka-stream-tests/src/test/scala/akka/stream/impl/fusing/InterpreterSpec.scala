@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.fusing
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.stream._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
@@ -223,7 +223,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(OnComplete, OnNext(0)))
     }
 
-    "implement grouped" in new OneBoundedSetup[Int](Grouped(3)) {
+    "implement grouped" in new OneBoundedSetup[Int](GroupedWeighted(3, ConstantFun.oneLong)) {
       lastEvents() should be(Set.empty)
 
       downstream.requestOne()
@@ -536,7 +536,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
   }
 
-  @silent
+  @nowarn
   private[akka] final case class Doubler[T]() extends SimpleLinearGraphStage[T] {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
@@ -568,7 +568,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
 
   }
 
-  @silent
+  @nowarn
   private[akka] final case class KeepGoing[T]() extends SimpleLinearGraphStage[T] {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =

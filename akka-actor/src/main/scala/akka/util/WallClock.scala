@@ -1,13 +1,13 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
-import akka.annotation.ApiMayChange
 import java.util.concurrent.atomic.AtomicLong
 import java.util.function.LongUnaryOperator
 
+import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 
 /**

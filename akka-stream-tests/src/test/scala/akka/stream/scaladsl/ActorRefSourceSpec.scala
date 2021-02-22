@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 import org.reactivestreams.Publisher
 
 import akka.Done
-import akka.actor.{ ActorRef, PoisonPill, Status }
+import akka.actor.{ ActorRef, Status }
 import akka.stream.{ OverflowStrategy, _ }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
@@ -169,30 +169,6 @@ class ActorRefSourceSpec extends StreamSpec {
       verifyNext(1)
     }
 
-    "not signal buffered elements but complete immediately the stream after receiving a PoisonPill (backwards compatibility)" in assertAllStagesStopped {
-      val (ref, s) = Source
-        .actorRef(PartialFunction.empty, PartialFunction.empty, 100, OverflowStrategy.fail)
-        .toMat(TestSink.probe[Int])(Keep.both)
-        .run()
-
-      for (n <- 1 to 20) ref ! n
-      ref ! PoisonPill
-
-      s.request(10)
-
-      def verifyNext(n: Int): Unit = {
-        if (n > 10)
-          s.expectComplete()
-        else
-          s.expectNextOrComplete() match {
-            case Right(`n`) => verifyNext(n + 1)
-            case Right(x)   => fail(s"expected $n, got $x")
-            case Left(_)    => // ok, completed
-          }
-      }
-      verifyNext(1)
-    }
-
     "not buffer elements after receiving Status.Success" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
       val ref = Source
@@ -212,7 +188,7 @@ class ActorRefSourceSpec extends StreamSpec {
       s.expectComplete()
     }
 
-    "complete and materialize the stream after receiving Status.Success" in assertAllStagesStopped {
+    "complete and materialize the stream after receiving completion message" in assertAllStagesStopped {
       val (ref, done) = {
         Source
           .actorRef({ case "ok" => CompletionStrategy.draining }, PartialFunction.empty, 3, OverflowStrategy.dropBuffer)
@@ -223,7 +199,7 @@ class ActorRefSourceSpec extends StreamSpec {
       done.futureValue should be(Done)
     }
 
-    "fail the stream when receiving Status.Failure" in assertAllStagesStopped {
+    "fail the stream when receiving failure message" in assertAllStagesStopped {
       val s = TestSubscriber.manualProbe[Int]()
       val ref = Source
         .actorRef(PartialFunction.empty, { case Status.Failure(exc) => exc }, 10, OverflowStrategy.fail)
@@ -239,12 +215,12 @@ class ActorRefSourceSpec extends StreamSpec {
       val s = TestSubscriber.manualProbe[Int]()
       val name = "SomeCustomName"
       val ref = Source
-        .actorRef(PartialFunction.empty, PartialFunction.empty, 10, OverflowStrategy.fail)
+        .actorRef({ case "ok" => CompletionStrategy.draining }, PartialFunction.empty, 10, OverflowStrategy.fail)
         .withAttributes(Attributes.name(name))
         .to(Sink.fromSubscriber(s))
         .run()
       ref.path.name.contains(name) should ===(true)
-      ref ! PoisonPill
+      ref ! "ok"
     }
 
     "be possible to run immediately, reproducer of #26714" in {

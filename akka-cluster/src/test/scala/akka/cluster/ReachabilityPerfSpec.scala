@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -28,7 +28,7 @@ class ReachabilityPerfSpec extends AnyWordSpec with Matchers {
         r.unreachable(observer, subject).reachable(observer, subject)
     }
 
-  @silent
+  @nowarn
   private def addUnreachable(base: Reachability, count: Int): Reachability = {
     val observers = base.versions.keySet.take(count)
     val subjects = Stream.continually(base.versions.keySet).flatten.iterator

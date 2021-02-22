@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
@@ -8,7 +8,7 @@ import java.util.concurrent.{ ConcurrentHashMap, ThreadFactory }
 
 import scala.concurrent.ExecutionContext
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.{ Config, ConfigFactory, ConfigValueType }
 
 import akka.ConfigurationException
@@ -317,7 +317,7 @@ private[akka] object BalancingDispatcherConfigurator {
  * Returns the same dispatcher instance for each invocation
  * of the `dispatcher()` method.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class BalancingDispatcherConfigurator(_config: Config, _prerequisites: DispatcherPrerequisites)
     extends MessageDispatcherConfigurator(BalancingDispatcherConfigurator.amendConfig(_config), _prerequisites) {
 

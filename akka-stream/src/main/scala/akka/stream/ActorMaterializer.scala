@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -420,7 +420,7 @@ object ActorMaterializerSettings {
  *
  * The constructor is not public API, use create or apply on the [[ActorMaterializerSettings]] companion instead.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 final class ActorMaterializerSettings @InternalApi private (
     /*
      * Important note: `initialInputBufferSize`, `maxInputBufferSize`, `dispatcher` and
@@ -803,7 +803,7 @@ object IOSettings {
     apply(tcpWriteBufferSize)
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 final class IOSettings private (
     @deprecated("Use attribute 'TcpAttributes.TcpWriteBufferSize' to read the concrete setting value", "2.6.0")
     val tcpWriteBufferSize: Int) {
@@ -863,7 +863,7 @@ object StreamSubscriptionTimeoutSettings {
  * Leaked publishers and subscribers are cleaned up when they are not used within a given
  * deadline, configured by [[StreamSubscriptionTimeoutSettings]].
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 final class StreamSubscriptionTimeoutSettings(
     @deprecated(
       "Use attribute 'ActorAttributes.StreamSubscriptionTimeoutMode' to read the concrete setting value",

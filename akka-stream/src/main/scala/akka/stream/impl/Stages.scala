@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
@@ -27,11 +27,13 @@ import akka.stream.Attributes._
     val filterNot = name("filterNot")
     val collect = name("collect")
     val recover = name("recover")
+    val mapError = name("mapError")
     val mapAsync = name("mapAsync")
     val mapAsyncUnordered = name("mapAsyncUnordered")
     val ask = name("ask")
     val grouped = name("grouped")
     val groupedWithin = name("groupedWithin")
+    val groupedWeighted = name("groupedWeighted")
     val groupedWeightedWithin = name("groupedWeightedWithin")
     val limit = name("limit")
     val limitWeighted = name("limitWeighted")

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.dungeon
@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.control.Exception.Catcher
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.AkkaException
 import akka.actor._
@@ -24,7 +24,7 @@ import akka.serialization.Serialization
 import akka.util.Unsafe
 
 @SerialVersionUID(1L)
-final case class SerializationCheckFailedException private (msg: Object, cause: Throwable)
+final case class SerializationCheckFailedException private[dungeon] (msg: Object, cause: Throwable)
     extends AkkaException(
       s"Failed to serialize and deserialize message of type ${msg.getClass.getName} for testing. " +
       "To avoid this error, either disable 'akka.actor.serialize-messages', mark the message with 'akka.actor.NoSerializationVerificationNeeded', or configure serialization to support this message",
@@ -36,8 +36,12 @@ final case class SerializationCheckFailedException private (msg: Object, cause: 
 @InternalApi
 private[akka] trait Dispatch { this: ActorCell =>
 
-  @silent @volatile private var _mailboxDoNotCallMeDirectly
+  @nowarn @volatile private var _mailboxDoNotCallMeDirectly
       : Mailbox = _ //This must be volatile since it isn't protected by the mailbox status
+
+  @nowarn private def _preventPrivateUnusedErasure = {
+    _mailboxDoNotCallMeDirectly
+  }
 
   @inline final def mailbox: Mailbox =
     Unsafe.instance.getObjectVolatile(this, AbstractActorCell.mailboxOffset).asInstanceOf[Mailbox]

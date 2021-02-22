@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -7,9 +7,10 @@ package akka
 object GitHub {
 
   def envTokenOrThrow: Option[String] =
-    sys.env.get("PR_VALIDATOR_GH_TOKEN") orElse {
+    sys.env.get("PR_VALIDATOR_GH_TOKEN").orElse {
       if (sys.env.contains("ghprbPullId")) {
-        throw new Exception("No PR_VALIDATOR_GH_TOKEN env var provided during GitHub Pull Request Builder build, unable to reach GitHub!")
+        throw new Exception(
+          "No PR_VALIDATOR_GH_TOKEN env var provided during GitHub Pull Request Builder build, unable to reach GitHub!")
       } else {
         None
       }

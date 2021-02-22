@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -8,7 +8,7 @@ import java.net.InetAddress
 
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -102,10 +102,10 @@ private[akka] final class ArterySettings private (config: Config) {
     val TestMode: Boolean = getBoolean("test-mode")
     val Dispatcher: String = getString("use-dispatcher")
     val ControlStreamDispatcher: String = getString("use-control-stream-dispatcher")
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     val MaterializerSettings: ActorMaterializerSettings =
       ActorMaterializerSettings(config.getConfig("materializer")).withDispatcher(Dispatcher)
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     val ControlStreamMaterializerSettings: ActorMaterializerSettings =
       ActorMaterializerSettings(config.getConfig("materializer")).withDispatcher(ControlStreamDispatcher)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -14,7 +14,7 @@ import scala.concurrent.duration.Deadline
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.{ AkkaException, OnlyCauseStackTrace }
 import akka.actor._
@@ -54,7 +54,7 @@ private[remote] trait InboundMessageDispatcher {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class DefaultMessageDispatcher(
     private val system: ExtendedActorSystem,
     private val provider: RemoteActorRefProvider,
@@ -245,7 +245,7 @@ private[remote] object ReliableDeliverySupervisor {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class ReliableDeliverySupervisor(
     handleOrActive: Option[AkkaProtocolHandle],
     val localAddress: Address,
@@ -536,7 +536,7 @@ private[remote] class ReliableDeliverySupervisor(
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] abstract class EndpointActor(
     val localAddress: Address,
     val remoteAddress: Address,
@@ -563,7 +563,7 @@ private[remote] abstract class EndpointActor(
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] object EndpointWriter {
 
   def props(
@@ -620,7 +620,7 @@ private[remote] object EndpointWriter {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class EndpointWriter(
     handleOrActive: Option[AkkaProtocolHandle],
     localAddress: Address,
@@ -1041,7 +1041,7 @@ private[remote] class EndpointWriter(
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] object EndpointReader {
 
   def props(
@@ -1073,7 +1073,7 @@ private[remote] object EndpointReader {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class EndpointReader(
     localAddress: Address,
     remoteAddress: Address,

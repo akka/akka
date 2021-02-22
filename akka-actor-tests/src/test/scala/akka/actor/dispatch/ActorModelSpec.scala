@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.dispatch
@@ -12,7 +12,7 @@ import scala.annotation.tailrec
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 import language.postfixOps
 import org.scalatest.Assertions._
@@ -602,7 +602,7 @@ class DispatcherModelSpec extends ActorModelSpec(DispatcherModelSpec.config) {
   }
 }
 
-@silent
+@nowarn
 object BalancingDispatcherModelSpec {
   import ActorModelSpec._
 
@@ -641,7 +641,7 @@ object BalancingDispatcherModelSpec {
   }
 }
 
-@silent
+@nowarn
 class BalancingDispatcherModelSpec extends ActorModelSpec(BalancingDispatcherModelSpec.config) {
   import ActorModelSpec._
 

@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.classic.transport
 
 import scala.concurrent._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.Address
 import akka.remote.transport.{ AssociationHandle, TestTransport }
@@ -16,7 +16,7 @@ import akka.remote.transport.Transport._
 import akka.testkit._
 import akka.util.ByteString
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   val addressA: Address = Address("test", "testsytemA", "testhostA", 4321)

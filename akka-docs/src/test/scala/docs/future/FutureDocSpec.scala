@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.future
@@ -106,7 +106,7 @@ object FutureDocSpec {
     import akka.pattern.{ ask, pipe }
     implicit val ec: ExecutionContext = context.dispatcher
 
-    implicit val timeout = Timeout(5 seconds)
+    implicit val timeout: Timeout = Timeout(5 seconds)
 
     def receive = {
       case GetUserData =>

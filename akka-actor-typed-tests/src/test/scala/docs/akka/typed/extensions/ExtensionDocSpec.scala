@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed.extensions
@@ -9,7 +9,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.actor.typed.scaladsl.Behaviors
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Future
@@ -30,7 +30,7 @@ object DatabasePool extends ExtensionId[DatabasePool] {
 }
 //#extension-id
 
-@silent
+@nowarn
 //#extension
 class DatabasePool(system: ActorSystem[_]) extends Extension {
   // database configuration can be loaded from config
@@ -41,7 +41,7 @@ class DatabasePool(system: ActorSystem[_]) extends Extension {
 }
 //#extension
 
-@silent
+@nowarn
 object ExtensionDocSpec {
   val config = ConfigFactory.parseString("""
       #config      

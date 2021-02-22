@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata.protobuf
@@ -14,7 +14,7 @@ import java.util.Comparator
 import scala.annotation.tailrec
 import scala.collection.immutable
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
@@ -47,7 +47,7 @@ private object ReplicatedDataSerializer {
     def getKey(entry: A): Any
     final def compare(x: A, y: A): Int = compareKeys(getKey(x), getKey(y))
 
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     private final def compareKeys(t1: Any, t2: Any): Int = (t1, t2) match {
       case (k1: String, k2: String)             => k1.compareTo(k2)
       case (_: String, _)                       => -1

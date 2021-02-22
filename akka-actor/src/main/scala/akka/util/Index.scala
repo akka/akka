@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -10,7 +10,7 @@ import java.util.concurrent.{ ConcurrentHashMap, ConcurrentSkipListSet }
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 
 import annotation.tailrec
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.util.ccompat.JavaConverters._
 
@@ -145,7 +145,7 @@ class Index[K, V](val mapSize: Int, val valueComparator: Comparator[V]) {
     if (set ne null) {
       set.synchronized {
         container.remove(key, set)
-        @silent("deprecated")
+        @nowarn("msg=deprecated")
         val ret = collectionAsScalaIterableConverter(set.clone()).asScala // Make copy since we need to clear the original
         set.clear() // Clear the original set to signal to any pending writers that there was a conflict
         Some(ret)

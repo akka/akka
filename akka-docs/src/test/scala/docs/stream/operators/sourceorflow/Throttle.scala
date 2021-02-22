@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.operators.sourceorflow
@@ -17,7 +17,7 @@ import scala.concurrent.duration._
  */
 object Throttle extends App {
 
-  implicit val sys = ActorSystem("25fps-stream")
+  implicit val sys: ActorSystem = ActorSystem("25fps-stream")
 
   val frameSource: Source[Int, NotUsed] =
     Source.fromIterator(() => Iterator.from(0))

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -11,16 +11,16 @@ import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import scala.language.implicitConversions
 import scala.util.{ Failure, Success }
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
+import scala.util.control.NoStackTrace
+
 import akka.actor._
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.ExecutionContexts
 import akka.dispatch.sysmsg._
-import akka.util.ByteString
 import akka.util.{ Timeout, Unsafe }
+import akka.util.ByteString
 import akka.util.unused
-
-import scala.util.control.NoStackTrace
 
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,
@@ -529,12 +529,17 @@ private[akka] final class PromiseActorRef private (
    * Stopped               => stopped, path not yet created
    */
   @volatile
-  @silent("never used")
+  @nowarn("msg=never used")
   private[this] var _stateDoNotCallMeDirectly: AnyRef = _
 
   @volatile
-  @silent("never used")
+  @nowarn("msg=never used")
   private[this] var _watchedByDoNotCallMeDirectly: Set[ActorRef] = ActorCell.emptyActorRefSet
+
+  @nowarn private def _preventPrivateUnusedErasure = {
+    _stateDoNotCallMeDirectly
+    _watchedByDoNotCallMeDirectly
+  }
 
   @inline
   private[this] def watchedBy: Set[ActorRef] =

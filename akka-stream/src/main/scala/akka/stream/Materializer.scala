@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -7,7 +7,7 @@ package akka.stream
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -25,7 +25,7 @@ import akka.event.LoggingAdapter
  *
  * Not for user extension
  */
-@silent("deprecated") // Name(symbol) is deprecated but older Scala versions don't have a string signature, since "2.5.8"
+@nowarn("msg=deprecated") // Name(symbol) is deprecated but older Scala versions don't have a string signature, since "2.5.8"
 @DoNotInherit
 abstract class Materializer {
 
@@ -203,7 +203,7 @@ object Materializer {
    *
    * You can pass either a classic actor context or a typed actor context.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def apply(contextProvider: ClassicActorContextProvider): Materializer =
     ActorMaterializer(None, None)(contextProvider.classicActorContext)
 

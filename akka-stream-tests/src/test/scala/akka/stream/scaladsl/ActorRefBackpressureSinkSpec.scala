@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -105,6 +105,30 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       val publisher = TestSource
         .probe[Int]
         .to(Sink.actorRefWithBackpressure(fw, initMessage, ackMessage, completeMessage, _ => failMessage))
+        .run()
+      expectMsg(initMessage)
+
+      publisher.sendNext(1)
+      expectNoMessage(200.millis)
+      fw ! TriggerAckMessage
+      expectMsg(1)
+
+      publisher.sendNext(2)
+      publisher.sendNext(3)
+      publisher.sendComplete()
+      fw ! TriggerAckMessage
+      expectMsg(2)
+      fw ! TriggerAckMessage
+      expectMsg(3)
+
+      expectMsg(completeMessage)
+    }
+
+    "send message only when backpressure received with any ack message" in assertAllStagesStopped {
+      val fw = createActor(classOf[Fw2])
+      val publisher = TestSource
+        .probe[Int]
+        .to(Sink.actorRefWithBackpressure(fw, initMessage, completeMessage, _ => failMessage))
         .run()
       expectMsg(initMessage)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.internal
@@ -9,7 +9,7 @@ import java.util.concurrent.{ CompletionStage, ThreadFactory }
 import scala.compat.java8.FutureConverters
 import scala.concurrent._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -35,7 +35,7 @@ import akka.annotation.InternalApi
 /**
  * INTERNAL API
  */
-@silent
+@nowarn
 @InternalApi private[akka] final class ActorSystemStub(val name: String)
     extends ActorSystem[Nothing]
     with ActorRef[Nothing]

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
@@ -10,7 +10,7 @@ import java.util.stream.Collector
 
 import scala.concurrent.duration.FiniteDuration
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.NotUsed
 import akka.japi.function
@@ -112,7 +112,7 @@ object StreamConverters {
    *
    * @param readTimeout the max time the read operation on the materialized InputStream should block
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def asInputStream(readTimeout: java.time.Duration): Sink[ByteString, InputStream] = {
     import akka.util.JavaDurationConverters._
     asInputStream(readTimeout.asScala)
@@ -190,7 +190,7 @@ object StreamConverters {
    *
    * @param writeTimeout the max time the write operation on the materialized OutputStream should block
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def asOutputStream(writeTimeout: java.time.Duration): javadsl.Source[ByteString, OutputStream] = {
     import akka.util.JavaDurationConverters._
     asOutputStream(writeTimeout.asScala)

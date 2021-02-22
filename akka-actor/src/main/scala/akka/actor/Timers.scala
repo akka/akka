@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -43,7 +43,7 @@ trait Timers extends Actor {
       case timerMsg: TimerSchedulerImpl.TimerMsg =>
         _timers.interceptTimerMsg(timerMsg) match {
           case OptionVal.Some(m: AutoReceivedMessage) =>
-            context.asInstanceOf[ActorCell].autoReceiveMessage(Envelope(m, self))
+            context.asInstanceOf[ActorCell].autoReceiveMessage(Envelope(m, self, context.system))
           case OptionVal.Some(m) =>
             if (this.isInstanceOf[Stash]) {
               // this is important for stash interaction, as stash will look directly at currentMessage #24557

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -7,7 +7,7 @@ package akka.remote
 import scala.collection.mutable
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor._
 import akka.annotation.InternalApi
@@ -113,18 +113,18 @@ private[akka] class RemoteWatcher(
     if (artery) (ArteryHeartbeat, ArteryHeartbeatRsp(AddressUidExtension(context.system).longAddressUid))
     else {
       // For classic remoting the 'int' part is sufficient
-      @silent("deprecated")
+      @nowarn("msg=deprecated")
       val addressUid = AddressUidExtension(context.system).addressUid
       (Heartbeat, HeartbeatRsp(addressUid))
     }
 
   // actors that this node is watching, map of watchee -> Set(watchers)
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   val watching = new mutable.HashMap[InternalActorRef, mutable.Set[InternalActorRef]]()
     with mutable.MultiMap[InternalActorRef, InternalActorRef]
 
   // nodes that this node is watching, i.e. expecting heartbeats from these nodes. Map of address -> Set(watchee) on this address
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   val watcheeByNodes = new mutable.HashMap[Address, mutable.Set[InternalActorRef]]()
     with mutable.MultiMap[Address, InternalActorRef]
   def watchingNodes = watcheeByNodes.keySet

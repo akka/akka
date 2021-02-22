@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
@@ -149,6 +149,26 @@ object Leave {
  * this method.
  */
 final case class Down(address: Address) extends ClusterCommand
+
+/**
+ * Initiate a full cluster shutdown. This stops:
+ * - New members joining the cluster
+ * - New rebalances in Cluster Sharding
+ * - Singleton handovers
+ *
+ * However, it does not stop the nodes. That is expected to be signalled externally.
+ *
+ * Not for user extension
+ */
+@DoNotInherit sealed trait PrepareForFullClusterShutdown extends ClusterCommand
+
+case object PrepareForFullClusterShutdown extends PrepareForFullClusterShutdown {
+
+  /**
+   * Java API
+   */
+  def prepareForFullClusterShutdown(): PrepareForFullClusterShutdown = this
+}
 
 /**
  * Akka Typed Cluster API entry point

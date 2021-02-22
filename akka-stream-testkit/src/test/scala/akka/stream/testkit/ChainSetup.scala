@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.testkit
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.reactivestreams.Publisher
 
 import akka.NotUsed
@@ -21,14 +21,14 @@ class ChainSetup[In, Out, M](
     materializer: Materializer,
     toPublisher: (Source[Out, _], Materializer) => Publisher[Out])(implicit val system: ActorSystem) {
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def this(
       stream: Flow[In, In, NotUsed] => Flow[In, Out, M],
       settings: ActorMaterializerSettings,
       toPublisher: (Source[Out, _], Materializer) => Publisher[Out])(implicit system: ActorSystem) =
     this(stream, settings, ActorMaterializer(settings)(system), toPublisher)(system)
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def this(
       stream: Flow[In, In, NotUsed] => Flow[In, Out, M],
       settings: ActorMaterializerSettings,

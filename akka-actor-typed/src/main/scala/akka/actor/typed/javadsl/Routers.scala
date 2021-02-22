@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.javadsl
@@ -9,6 +9,8 @@ import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder }
 import akka.actor.typed.receptionist.ServiceKey
 import akka.annotation.DoNotInherit
+
+import java.util.function.Predicate
 
 object Routers {
 
@@ -181,4 +183,9 @@ abstract class PoolRouter[T] extends DeferredBehavior[T] {
    * Set the props used to spawn the pool's routees
    */
   def withRouteeProps(routeeProps: Props): PoolRouter[T]
+
+  /**
+   * Any message that the predicate returns true for will be broadcast to all routees.
+   */
+  def withBroadcastPredicate(pred: Predicate[T]): PoolRouter[T]
 }

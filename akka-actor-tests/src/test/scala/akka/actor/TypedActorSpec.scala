@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -13,7 +13,7 @@ import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
 import akka.actor.TypedActor._
@@ -26,7 +26,7 @@ import akka.util.Timeout
 
 object TypedActorSpec {
 
-  @silent
+  @nowarn
   val config = """
     pooled-dispatcher {
       type = "akka.dispatch.BalancingDispatcherConfigurator"
@@ -70,9 +70,9 @@ object TypedActorSpec {
   trait Foo {
     def pigdog(): String
 
-    @silent
+    @nowarn
     @throws(classOf[TimeoutException])
-    def self = TypedActor.self[Foo]
+    def self = akka.actor.TypedActor.self[Foo]
 
     def futurePigdog(): Future[String]
 
@@ -136,7 +136,7 @@ object TypedActorSpec {
       Future.successful(pigdog() + numbered)
     }
 
-    @silent
+    @nowarn
     def futureComposePigdogFrom(foo: Foo): Future[String] = {
       foo.futurePigdog(500 millis).map(_.toUpperCase)
     }
@@ -192,8 +192,8 @@ object TypedActorSpec {
       with LifeCycles
       with Receiver {
 
-    @silent
-    private def ensureContextAvailable[T](f: => T): T = TypedActor.context match {
+    @nowarn
+    private def ensureContextAvailable[T](f: => T): T = akka.actor.TypedActor.context match {
       case null => throw new IllegalStateException("TypedActor.context is null!")
       case _    => f
     }
@@ -247,7 +247,7 @@ object TypedActorSpec {
 
 }
 
-@silent
+@nowarn
 class TypedActorSpec
     extends AkkaSpec(TypedActorSpec.config)
     with BeforeAndAfterEach
@@ -259,23 +259,25 @@ class TypedActorSpec
   def newFooBar: Foo = newFooBar(timeout.duration)
 
   def newFooBar(d: FiniteDuration): Foo =
-    TypedActor(system).typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)))
+    akka.actor.TypedActor(system).typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)))
 
   def newFooBar(dispatcher: String, d: FiniteDuration): Foo =
-    TypedActor(system).typedActorOf(
-      TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)).withDispatcher(dispatcher))
+    akka.actor
+      .TypedActor(system)
+      .typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)).withDispatcher(dispatcher))
 
   def newStacked(): Stacked =
-    TypedActor(system).typedActorOf(
-      TypedProps[StackedImpl](classOf[Stacked], classOf[StackedImpl]).withTimeout(timeout))
+    akka.actor
+      .TypedActor(system)
+      .typedActorOf(TypedProps[StackedImpl](classOf[Stacked], classOf[StackedImpl]).withTimeout(timeout))
 
-  def mustStop(typedActor: AnyRef) = TypedActor(system).stop(typedActor) should ===(true)
+  def mustStop(typedActor: AnyRef) = akka.actor.TypedActor(system).stop(typedActor) should ===(true)
 
   "TypedActors" must {
 
     "be able to instantiate" in {
       val t = newFooBar
-      TypedActor(system).isTypedActor(t) should ===(true)
+      akka.actor.TypedActor(system).isTypedActor(t) should ===(true)
       mustStop(t)
     }
 
@@ -285,13 +287,13 @@ class TypedActorSpec
     }
 
     "not stop non-started ones" in {
-      TypedActor(system).stop(null) should ===(false)
+      akka.actor.TypedActor(system).stop(null) should ===(false)
     }
 
     "throw an IllegalStateException when TypedActor.self is called in the wrong scope" in {
       filterEvents(EventFilter[IllegalStateException]("Calling")) {
         intercept[IllegalStateException] {
-          TypedActor.self[Foo]
+          akka.actor.TypedActor.self[Foo]
         }.getMessage should ===("Calling TypedActor.self outside of a TypedActor implementation method!")
       }
     }
@@ -304,7 +306,7 @@ class TypedActorSpec
 
     "be able to call toString" in {
       val t = newFooBar
-      t.toString should ===(TypedActor(system).getActorRefFor(t).toString)
+      t.toString should ===(akka.actor.TypedActor(system).getActorRefFor(t).toString)
       mustStop(t)
     }
 
@@ -317,7 +319,7 @@ class TypedActorSpec
 
     "be able to call hashCode" in {
       val t = newFooBar
-      t.hashCode should ===(TypedActor(system).getActorRefFor(t).hashCode)
+      t.hashCode should ===(akka.actor.TypedActor(system).getActorRefFor(t).hashCode)
       mustStop(t)
     }
 
@@ -398,7 +400,7 @@ class TypedActorSpec
             case e: IllegalStateException if e.getMessage == "expected" => SupervisorStrategy.Resume
           }
           def receive = {
-            case p: TypedProps[_] => context.sender() ! TypedActor(context).typedActorOf(p)
+            case p: TypedProps[_] => context.sender() ! akka.actor.TypedActor(context).typedActorOf(p)
           }
         }))
         val t = Await.result(
@@ -431,7 +433,7 @@ class TypedActorSpec
         t.optionPigdog() should ===(Some("Pigdog"))
         mustStop(t)
 
-        val ta: F = TypedActor(system).typedActorOf(TypedProps[FI]())
+        val ta: F = akka.actor.TypedActor(system).typedActorOf(TypedProps[FI]())
         intercept[IllegalStateException] { ta.f(true) }.getMessage should ===("expected")
         ta.f(false) should ===(1)
 
@@ -447,7 +449,7 @@ class TypedActorSpec
     }
 
     "be able to support implementation only typed actors" in within(timeout.duration) {
-      val t: Foo = TypedActor(system).typedActorOf(TypedProps[Bar]())
+      val t: Foo = akka.actor.TypedActor(system).typedActorOf(TypedProps[Bar]())
       val f = t.futurePigdog(200 millis)
       val f2 = t.futurePigdog(Duration.Zero)
       f2.isCompleted should ===(false)
@@ -457,7 +459,7 @@ class TypedActorSpec
     }
 
     "be able to support implementation only typed actors with complex interfaces" in {
-      val t: Stackable1 with Stackable2 = TypedActor(system).typedActorOf(TypedProps[StackedImpl]())
+      val t: Stackable1 with Stackable2 = akka.actor.TypedActor(system).typedActorOf(TypedProps[StackedImpl]())
       t.stackable1 should ===("foo")
       t.stackable2 should ===("bar")
       mustStop(t)
@@ -477,7 +479,7 @@ class TypedActorSpec
     "be able to serialize and deserialize invocations" in {
       import java.io._
       JavaSerializer.currentSystem.withValue(system.asInstanceOf[ExtendedActorSystem]) {
-        val m = TypedActor.MethodCall(classOf[Foo].getDeclaredMethod("pigdog"), Array[AnyRef]())
+        val m = akka.actor.TypedActor.MethodCall(classOf[Foo].getDeclaredMethod("pigdog"), Array[AnyRef]())
         val baos = new ByteArrayOutputStream(8192 * 4)
         val out = new ObjectOutputStream(baos)
 
@@ -486,7 +488,7 @@ class TypedActorSpec
 
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
 
-        val mNew = in.readObject().asInstanceOf[TypedActor.MethodCall]
+        val mNew = in.readObject().asInstanceOf[akka.actor.TypedActor.MethodCall]
 
         mNew.method should ===(m.method)
       }
@@ -496,7 +498,7 @@ class TypedActorSpec
       import java.io._
       val someFoo: Foo = new Bar
       JavaSerializer.currentSystem.withValue(system.asInstanceOf[ExtendedActorSystem]) {
-        val m = TypedActor.MethodCall(
+        val m = akka.actor.TypedActor.MethodCall(
           classOf[Foo].getDeclaredMethod(
             "testMethodCallSerialization",
             Array[Class[_]](classOf[Foo], classOf[String], classOf[Int], classOf[WithStringSerializedClass]): _*),
@@ -509,7 +511,7 @@ class TypedActorSpec
 
         val in = new ObjectInputStream(new ByteArrayInputStream(baos.toByteArray))
 
-        val mNew = in.readObject().asInstanceOf[TypedActor.MethodCall]
+        val mNew = in.readObject().asInstanceOf[akka.actor.TypedActor.MethodCall]
 
         mNew.method should ===(m.method)
         mNew.parameters should have size 4
@@ -550,7 +552,7 @@ class TypedActorSpec
 
     "be able to override lifecycle callbacks" in {
       val latch = new CountDownLatch(16)
-      val ta = TypedActor(system)
+      val ta = akka.actor.TypedActor(system)
       val t: LifeCycles = ta.typedActorOf(TypedProps[LifeCyclesImpl](classOf[LifeCycles], new LifeCyclesImpl(latch)))
       EventFilter[IllegalStateException]("Crash!", occurrences = 1).intercept {
         t.crash()
@@ -571,7 +573,7 @@ class TypedActorSpec
   }
 }
 
-@silent
+@nowarn
 class TypedActorRouterSpec
     extends AkkaSpec(TypedActorSpec.config)
     with BeforeAndAfterEach
@@ -583,9 +585,9 @@ class TypedActorRouterSpec
   def newFooBar: Foo = newFooBar(timeout.duration)
 
   def newFooBar(d: FiniteDuration): Foo =
-    TypedActor(system).typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)))
+    akka.actor.TypedActor(system).typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)))
 
-  def mustStop(typedActor: AnyRef) = TypedActor(system).stop(typedActor) should ===(true)
+  def mustStop(typedActor: AnyRef) = akka.actor.TypedActor(system).stop(typedActor) should ===(true)
 
   "TypedActor Router" must {
 
@@ -595,15 +597,15 @@ class TypedActorRouterSpec
       val t3 = newFooBar
       val t4 = newFooBar
       val routees = List(t1, t2, t3, t4).map { t =>
-        TypedActor(system).getActorRefFor(t).path.toStringWithoutAddress
+        akka.actor.TypedActor(system).getActorRefFor(t).path.toStringWithoutAddress
       }
 
-      TypedActor(system).isTypedActor(t1) should ===(true)
-      TypedActor(system).isTypedActor(t2) should ===(true)
+      akka.actor.TypedActor(system).isTypedActor(t1) should ===(true)
+      akka.actor.TypedActor(system).isTypedActor(t2) should ===(true)
 
       val router = system.actorOf(RoundRobinGroup(routees).props(), "router")
 
-      val typedRouter = TypedActor(system).typedActorOf[Foo, Foo](TypedProps[Foo](), router)
+      val typedRouter = akka.actor.TypedActor(system).typedActorOf[Foo, Foo](TypedProps[Foo](), router)
 
       info("got = " + typedRouter.optionPigdog())
       info("got = " + typedRouter.optionPigdog())

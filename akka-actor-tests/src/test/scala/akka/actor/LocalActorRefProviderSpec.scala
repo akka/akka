@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import language.postfixOps
 
 import akka.testkit._
@@ -33,7 +33,7 @@ object LocalActorRefProviderSpec {
   """
 }
 
-@silent
+@nowarn
 class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.config) {
   "An LocalActorRefProvider" must {
 
@@ -134,7 +134,7 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
         val actors =
           for (_ <- 1 to 4)
             yield Future(system.actorOf(Props(new Actor { def receive = { case _ => } }), address))
-        val set = Set() ++ actors.map(a =>
+        val set: Set[Any] = Set() ++ actors.map(a =>
             Await.ready(a, timeout.duration).value match {
               case Some(Success(_: ActorRef))                  => 1
               case Some(Failure(_: InvalidActorNameException)) => 2

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
@@ -75,7 +75,7 @@ class ReplicatedShardingDirectReplicationSpec extends ScalaTestWithActorTestKit 
       replicaAProbe.expectNoMessage()
     }
 
-    "ignore messages not from replicated event sourcing" in {
+    "ignore messages not from Replicated Event Sourcing" in {
       val replicaAProbe = createTestProbe[ShardingEnvelope[PublishedEvent]]()
 
       val replicationActor = spawn(

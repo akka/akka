@@ -1,15 +1,14 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.typed.scaladsl
 
 import scala.annotation.implicitNotFound
 import scala.concurrent.Future
-
 import akka.NotUsed
 import akka.actor.typed.ActorRef
-import akka.pattern.AskTimeoutException
+import akka.pattern.{ AskTimeoutException, StatusReply }
 import akka.stream._
 import akka.stream.scaladsl._
 import akka.util.Timeout
@@ -126,6 +125,29 @@ object ActorFlow {
       .named("ask")
 
     askFlow
+  }
+
+  /**
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply#success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply#error]] arrives the future is instead
+   * failed.
+   */
+  def askWithStatus[I, Q, A](ref: ActorRef[Q])(makeMessage: (I, ActorRef[StatusReply[A]]) => Q)(
+      implicit timeout: Timeout): Flow[I, A, NotUsed] =
+    askWithStatus(2)(ref)(makeMessage)
+
+  /**
+   * Use for messages whose response is known to be a [[akka.pattern.StatusReply]]. When a [[akka.pattern.StatusReply#success]] response
+   * arrives the future is completed with the wrapped value, if a [[akka.pattern.StatusReply#error]] arrives the future is instead
+   * failed.
+   */
+  def askWithStatus[I, Q, A](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[StatusReply[A]]) => Q)(
+      implicit timeout: Timeout): Flow[I, A, NotUsed] = {
+    ActorFlow.ask(parallelism)(ref)(makeMessage).map {
+      case StatusReply.Success(a) => a.asInstanceOf[A]
+      case StatusReply.Error(err) => throw err
+    }
+
   }
 
 }

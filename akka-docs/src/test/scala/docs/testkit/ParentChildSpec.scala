@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.testkit
@@ -76,7 +76,7 @@ class MockedChild extends Actor {
 }
 
 class ParentChildSpec extends AnyWordSpec with Matchers with TestKitBase with BeforeAndAfterAll {
-  implicit lazy val system = ActorSystem("ParentChildSpec")
+  implicit lazy val system: ActorSystem = ActorSystem("ParentChildSpec")
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)

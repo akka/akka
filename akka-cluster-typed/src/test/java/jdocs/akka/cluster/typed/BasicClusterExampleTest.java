@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.cluster.typed;
@@ -66,6 +66,12 @@ public class BasicClusterExampleTest { // extends JUnitSuite {
       cluster2.manager().tell(Join.create(cluster.selfMember().address()));
 
       // TODO wait for/verify cluster to form
+
+      // #prepare
+      PrepareForFullClusterShutdown msg =
+          PrepareForFullClusterShutdown.prepareForFullClusterShutdown();
+      cluster2.manager().tell(msg);
+      // #prepare
 
       // #cluster-leave
       cluster2.manager().tell(Leave.create(cluster2.selfMember().address()));

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package sbt
@@ -16,13 +16,12 @@ trait ScalafixSupport {
     import scalafix.sbt.ScalafixPlugin.autoImport._
 
     unmanagedSources.in(configKey, scalafix) := {
-      val ignoreSupport = new ProjectFileIgnoreSupport((baseDirectory in ThisBuild).value / ignoreConfigFileName, descriptor)
+      val ignoreSupport =
+        new ProjectFileIgnoreSupport((baseDirectory in ThisBuild).value / ignoreConfigFileName, descriptor)
 
-      unmanagedSources.in(configKey, scalafix).value
-        .filterNot(file => ignoreSupport.isIgnoredByFileOrPackages(file))
+      unmanagedSources.in(configKey, scalafix).value.filterNot(file => ignoreSupport.isIgnoredByFileOrPackages(file))
     }
   }
-
 
   import sbt.Keys._
 
@@ -35,10 +34,7 @@ trait ScalafixSupport {
       if (isPresent)
         commands.value
       else
-        commands.value :+ BasicCommands.newAlias(
-          name = alias,
-          value = value
-        )
+        commands.value :+ BasicCommands.newAlias(name = alias, value = value)
     }
   }
 
@@ -46,11 +42,12 @@ trait ScalafixSupport {
     commands := {
       commands.value.filterNot({
         case command: SimpleCommand => command.name == alias
-        case _ => false
-      }) :+ BasicCommands.newAlias(
-        name = alias,
-        value = value
-      )
+        case _                      => false
+      }) :+ BasicCommands.newAlias(name = alias, value = value)
     }
   }
+}
+
+object ScalafixSupport {
+  def fixTestScope: Boolean = System.getProperty("akka.scalafix.fixTestScope", "false").toBoolean
 }

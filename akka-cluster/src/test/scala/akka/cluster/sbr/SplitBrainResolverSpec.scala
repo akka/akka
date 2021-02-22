@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sbr
@@ -112,6 +112,7 @@ class SplitBrainResolverSpec
   import TestAddresses._
 
   private val selfDc = TestAddresses.defaultDataCenter
+  private lazy val selfUniqueAddress = Cluster(system).selfUniqueAddress
 
   private val testLeaseSettings =
     new LeaseSettings("akka-sbr", "test", new TimeoutSettings(1.second, 2.minutes, 3.seconds), ConfigFactory.empty)
@@ -180,7 +181,7 @@ class SplitBrainResolverSpec
   "StaticQuorum" must {
     class Setup2(size: Int, role: Option[String]) extends StrategySetup {
       override def createStrategy() =
-        new StaticQuorum(selfDc, size, role)
+        new StaticQuorum(selfDc, size, role, selfUniqueAddress)
     }
 
     "down unreachable when enough reachable nodes" in new Setup2(3, None) {
@@ -257,7 +258,7 @@ class SplitBrainResolverSpec
   "KeepMajority" must {
     class Setup2(role: Option[String]) extends StrategySetup {
       override def createStrategy() =
-        new KeepMajority(selfDc, role)
+        new KeepMajority(selfDc, role, selfUniqueAddress)
     }
 
     "down minority partition: {A, C, E} | {B, D} => {A, C, E}" in new Setup2(role = None) {
@@ -593,7 +594,7 @@ class SplitBrainResolverSpec
 
   "KeepOldest" must {
     class Setup2(downIfAlone: Boolean = true, role: Option[String] = None) extends StrategySetup {
-      override def createStrategy() = new KeepOldest(selfDc, downIfAlone, role)
+      override def createStrategy() = new KeepOldest(selfDc, downIfAlone, role, selfUniqueAddress)
     }
 
     "keep partition with oldest" in new Setup2 {
@@ -803,7 +804,7 @@ class SplitBrainResolverSpec
 
   "DownAllNodes" must {
     class Setup2 extends StrategySetup {
-      override def createStrategy() = new DownAllNodes(selfDc)
+      override def createStrategy() = new DownAllNodes(selfDc, selfUniqueAddress)
     }
 
     "down all" in new Setup2 {
@@ -826,7 +827,7 @@ class SplitBrainResolverSpec
       val acquireLeaseDelayForMinority: FiniteDuration = 2.seconds
 
       override def createStrategy() =
-        new LeaseMajority(selfDc, role, testLease, acquireLeaseDelayForMinority)
+        new LeaseMajority(selfDc, role, testLease, acquireLeaseDelayForMinority, selfUniqueAddress)
     }
 
     "decide AcquireLeaseAndDownUnreachable, and DownReachable as reverse decision" in {
@@ -935,11 +936,11 @@ class SplitBrainResolverSpec
   "Strategy" must {
 
     class MajoritySetup(role: Option[String] = None) extends StrategySetup {
-      override def createStrategy() = new KeepMajority(selfDc, role)
+      override def createStrategy() = new KeepMajority(selfDc, role, selfUniqueAddress)
     }
 
     class OldestSetup(role: Option[String] = None) extends StrategySetup {
-      override def createStrategy() = new KeepOldest(selfDc, downIfAlone = true, role)
+      override def createStrategy() = new KeepOldest(selfDc, downIfAlone = true, role, selfUniqueAddress)
     }
 
     "add and remove members with default Member ordering" in {
@@ -1081,24 +1082,29 @@ class SplitBrainResolverSpec
         role: Option[String],
         downAllWhenUnstable: FiniteDuration = Duration.Zero,
         tickInterval: FiniteDuration = Duration.Zero)
-        extends Setup(stableAfter, new KeepMajority(selfDc, role), selfUniqueAddress, downAllWhenUnstable, tickInterval)
+        extends Setup(
+          stableAfter,
+          new KeepMajority(selfDc, role, selfUniqueAddress),
+          selfUniqueAddress,
+          downAllWhenUnstable,
+          tickInterval)
 
     class SetupKeepOldest(
         stableAfter: FiniteDuration,
         selfUniqueAddress: UniqueAddress,
         downIfAlone: Boolean,
         role: Option[String])
-        extends Setup(stableAfter, new KeepOldest(selfDc, downIfAlone, role), selfUniqueAddress)
+        extends Setup(stableAfter, new KeepOldest(selfDc, downIfAlone, role, selfUniqueAddress), selfUniqueAddress)
 
     class SetupStaticQuorum(
         stableAfter: FiniteDuration,
         selfUniqueAddress: UniqueAddress,
         size: Int,
         role: Option[String])
-        extends Setup(stableAfter, new StaticQuorum(selfDc, size, role), selfUniqueAddress)
+        extends Setup(stableAfter, new StaticQuorum(selfDc, size, role, selfUniqueAddress), selfUniqueAddress)
 
     class SetupDownAllNodes(stableAfter: FiniteDuration, selfUniqueAddress: UniqueAddress)
-        extends Setup(stableAfter, new DownAllNodes(selfDc), selfUniqueAddress)
+        extends Setup(stableAfter, new DownAllNodes(selfDc, selfUniqueAddress), selfUniqueAddress)
 
     class SetupLeaseMajority(
         stableAfter: FiniteDuration,
@@ -1109,7 +1115,7 @@ class SplitBrainResolverSpec
         tickInterval: FiniteDuration = Duration.Zero)
         extends Setup(
           stableAfter,
-          new LeaseMajority(selfDc, role, testLease, acquireLeaseDelayForMinority = 20.millis),
+          new LeaseMajority(selfDc, role, testLease, acquireLeaseDelayForMinority = 20.millis, selfUniqueAddress),
           selfUniqueAddress,
           downAllWhenUnstable,
           tickInterval)

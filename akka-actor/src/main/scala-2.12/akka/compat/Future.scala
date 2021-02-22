@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.compat
@@ -7,7 +7,7 @@ package akka.compat
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future => SFuture }
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.annotation.InternalApi
 import akka.util.ccompat._
@@ -20,7 +20,7 @@ import akka.util.ccompat._
  *
  * Remove these classes as soon as support for Scala 2.12 is dropped!
  */
-@silent @InternalApi private[akka] object Future {
+@nowarn @InternalApi private[akka] object Future {
   def fold[T, R](futures: IterableOnce[SFuture[T]])(zero: R)(op: (R, T) => R)(
       implicit executor: ExecutionContext): SFuture[R] =
     SFuture.fold[T, R](futures)(zero)(op)(executor)

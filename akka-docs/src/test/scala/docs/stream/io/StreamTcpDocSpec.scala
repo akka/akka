@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.io
@@ -14,10 +14,11 @@ import akka.util.ByteString
 
 import scala.concurrent.Future
 import akka.testkit.SocketUtil
+import scala.concurrent.ExecutionContext
 
 class StreamTcpDocSpec extends AkkaSpec {
 
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContext = system.dispatcher
 
   // silence sysout
   def println(s: String) = ()

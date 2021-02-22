@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.Done
@@ -78,7 +78,7 @@ private[akka] trait HeartbeatMessage extends PriorityMessage
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] object Remoting {
 
   final val EndpointManagerName = "endpointManager"
@@ -134,7 +134,7 @@ private[remote] object Remoting {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 @ccompatUsedUntil213
 private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
     extends RemoteTransport(_system, _provider) {
@@ -288,7 +288,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] object EndpointManager {
 
   // Messages between Remoting and EndpointManager
@@ -481,7 +481,7 @@ private[remote] object EndpointManager {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
     extends Actor
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
@@ -780,7 +780,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
     case ShutdownAndFlush =>
       // Shutdown all endpoints and signal to sender() when ready (and whether all endpoints were shut down gracefully)
 
-      @silent("deprecated")
+      @nowarn("msg=deprecated")
       def shutdownAll[T](resources: IterableOnce[T])(shutdown: T => Future[Boolean]): Future[Boolean] = {
         Future.sequence(resources.toList.map(shutdown)).map(_.forall(identity)).recover {
           case NonFatal(_) => false

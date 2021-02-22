@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -171,8 +171,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * <b>Multiple handlers may be installed, and every one of them will be
    * called, not only the first one matching.</b>
    */
-  final def onTransition(transitionHandler: UnitApply2[S, S]): Unit =
-    super.onTransition(transitionHandler(_: S, _: S))
+  final def onTransition(transitionHandler: UnitApply2[S, S]): Unit = {
+    val pf: PartialFunction[(S, S), Unit] = akka.compat.PartialFunction.fromFunction(transitionHandler(_: S, _: S))
+    super.onTransition(pf)
+  }
 
   /**
    * Set handler which is called upon reception of unhandled messages. Calling

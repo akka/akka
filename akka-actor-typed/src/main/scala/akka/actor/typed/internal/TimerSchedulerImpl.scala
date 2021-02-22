@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -7,18 +7,14 @@ package internal
 
 import java.time.Duration
 
-import scala.concurrent.duration.FiniteDuration
-
-import org.slf4j.Logger
-
-import akka.actor.Cancellable
-import akka.actor.NotInfluenceReceiveTimeout
-import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.scaladsl.LoggerOps
+import akka.actor.{ Cancellable, NotInfluenceReceiveTimeout }
+import akka.actor.typed.scaladsl.{ ActorContext, LoggerOps }
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
-import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
+import org.slf4j.Logger
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API
@@ -29,11 +25,11 @@ import akka.util.OptionVal
     override def toString = s"TimerMsg(key=$key, generation=$generation, owner=$owner)"
   }
 
-  def withTimers[T](factory: TimerSchedulerImpl[T] => Behavior[T]): Behavior[T] = {
+  def withTimers[T](factory: TimerSchedulerCrossDslSupport[T] => Behavior[T]): Behavior[T] = {
     scaladsl.Behaviors.setup[T](wrapWithTimers(factory))
   }
 
-  def wrapWithTimers[T](factory: TimerSchedulerImpl[T] => Behavior[T])(ctx: ActorContext[T]): Behavior[T] =
+  def wrapWithTimers[T](factory: TimerSchedulerCrossDslSupport[T] => Behavior[T])(ctx: ActorContext[T]): Behavior[T] =
     ctx match {
       case ctxImpl: ActorContextImpl[T] =>
         val timerScheduler = ctxImpl.timer
@@ -55,12 +51,32 @@ import akka.util.OptionVal
   }
 }
 
+@InternalApi private[akka] trait TimerSchedulerCrossDslSupport[T]
+    extends scaladsl.TimerScheduler[T]
+    with javadsl.TimerScheduler[T] {
+  import akka.util.JavaDurationConverters._
+
+  override final def startTimerWithFixedDelay(key: Any, msg: T, delay: Duration): Unit =
+    startTimerWithFixedDelay(key, msg, delay.asScala)
+
+  override final def startTimerAtFixedRate(key: Any, msg: T, interval: Duration): Unit =
+    startTimerAtFixedRate(key, msg, interval.asScala)
+
+  override final def startPeriodicTimer(key: Any, msg: T, interval: Duration): Unit = {
+    //this follows the deprecation note in the super class
+    startTimerWithFixedDelay(key, msg, interval.asScala)
+  }
+
+  override final def startSingleTimer(key: Any, msg: T, delay: Duration): Unit =
+    startSingleTimer(key, msg, delay.asScala)
+}
+
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] class TimerSchedulerImpl[T](ctx: ActorContext[T])
     extends scaladsl.TimerScheduler[T]
-    with javadsl.TimerScheduler[T] {
+    with TimerSchedulerCrossDslSupport[T] {
   import TimerSchedulerImpl._
 
   private var timers: Map[Any, Timer[T]] = Map.empty
@@ -69,26 +85,14 @@ import akka.util.OptionVal
   override def startTimerAtFixedRate(key: Any, msg: T, interval: FiniteDuration): Unit =
     startTimer(key, msg, interval, FixedRateMode)
 
-  override def startTimerAtFixedRate(key: Any, msg: T, interval: Duration): Unit =
-    startTimerAtFixedRate(key, msg, interval.asScala)
-
   override def startTimerWithFixedDelay(key: Any, msg: T, delay: FiniteDuration): Unit =
     startTimer(key, msg, delay, FixedDelayMode)
-
-  override def startTimerWithFixedDelay(key: Any, msg: T, delay: Duration): Unit =
-    startTimerWithFixedDelay(key, msg, delay.asScala)
 
   override def startPeriodicTimer(key: Any, msg: T, interval: FiniteDuration): Unit =
     startTimer(key, msg, interval, FixedRateMode)
 
-  override def startPeriodicTimer(key: Any, msg: T, interval: java.time.Duration): Unit =
-    startPeriodicTimer(key, msg, interval.asScala)
-
   override def startSingleTimer(key: Any, msg: T, delay: FiniteDuration): Unit =
     startTimer(key, msg, delay, SingleMode)
-
-  def startSingleTimer(key: Any, msg: T, delay: java.time.Duration): Unit =
-    startSingleTimer(key, msg, delay.asScala)
 
   private def startTimer(key: Any, msg: T, delay: FiniteDuration, mode: TimerMode): Unit = {
     timers.get(key) match {
@@ -170,5 +174,4 @@ import akka.util.OptionVal
         }
     }
   }
-
 }

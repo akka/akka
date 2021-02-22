@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
@@ -31,7 +31,7 @@ class DnsClientSpec extends AkkaSpec with ImplicitSender {
       val client = system.actorOf(Props(new DnsClient(dnsServerAddress) {
         override val udp = udpExtensionProbe.ref
 
-        override def createTcpClient = {
+        override def createTcpClient() = {
           tcpClientCreated.set(true)
           TestProbe().ref
         }
@@ -57,7 +57,7 @@ class DnsClientSpec extends AkkaSpec with ImplicitSender {
       val client = system.actorOf(Props(new DnsClient(dnsServerAddress) {
         override val udp = udpExtensionProbe.ref
 
-        override def createTcpClient = tcpClientProbe.ref
+        override def createTcpClient() = tcpClientProbe.ref
       }))
 
       client ! exampleRequest

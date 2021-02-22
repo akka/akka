@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.cookbook
@@ -20,7 +20,7 @@ class RecipeMultiGroupBy extends RecipeSpec {
       case class Topic(name: String)
 
       val elems = Source(List("1: a", "1: b", "all: c", "all: d", "1: e"))
-      val extractTopics = { msg: Message =>
+      val extractTopics = { (msg: Message) =>
         if (msg.startsWith("1")) List(Topic("1"))
         else List(Topic("1"), Topic("2"))
       }
@@ -28,7 +28,7 @@ class RecipeMultiGroupBy extends RecipeSpec {
       //#multi-groupby
       val topicMapper: (Message) => immutable.Seq[Topic] = extractTopics
 
-      val messageAndTopic: Source[(Message, Topic), NotUsed] = elems.mapConcat { msg: Message =>
+      val messageAndTopic: Source[(Message, Topic), NotUsed] = elems.mapConcat { (msg: Message) =>
         val topicsForMessage = topicMapper(msg)
         // Create a (Msg, Topic) pair for each of the topics
         // the message belongs to

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -28,15 +28,20 @@ private[akka] object Collections {
         private[this] var _next: To = _
         private[this] var _hasNext = false
 
-        @tailrec override final def hasNext: Boolean =
-          if (!_hasNext && superIterator.hasNext) { // If we need and are able to look for the next value
-            val potentiallyNext = superIterator.next()
-            if (isDefinedAt(potentiallyNext)) {
-              _next = apply(potentiallyNext)
-              _hasNext = true
-              true
-            } else hasNext //Attempt to find the next
-          } else _hasNext // Return if we found one
+        override final def hasNext: Boolean = {
+          @tailrec def tailrecHasNext(): Boolean = {
+            if (!_hasNext && superIterator.hasNext) { // If we need and are able to look for the next value
+              val potentiallyNext = superIterator.next()
+              if (isDefinedAt(potentiallyNext)) {
+                _next = apply(potentiallyNext)
+                _hasNext = true
+                true
+              } else tailrecHasNext() //Attempt to find the next
+            } else _hasNext // Return if we found one
+          }
+
+          tailrecHasNext()
+        }
 
         override final def next(): To =
           if (hasNext) {

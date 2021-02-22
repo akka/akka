@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -677,8 +677,7 @@ object Source {
    * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immediately.
    * Otherwise, if the content is [[akka.stream.CompletionStrategy.draining]] (or anything else)
    * already buffered elements will be sent out before signaling completion.
-   * Sending [[akka.actor.PoisonPill]] will signal completion immediately but this behavior is deprecated and scheduled to be removed.
-   * Using [[akka.actor.ActorSystem.stop]] to stop the actor and complete the stream is *not supported*.
+   * Using [[akka.actor.PoisonPill]] or [[akka.actor.ActorSystem.stop]] to stop the actor and complete the stream is *not supported*.
    *
    * The stream can be completed with failure by sending a [[akka.actor.Status.Failure]] to the
    * actor reference. In case the Actor is still draining its internal buffer (after having received

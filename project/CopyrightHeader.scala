@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -30,17 +30,18 @@ trait CopyrightHeader extends AutoPlugin {
 
   override def projectSettings: Seq[Def.Setting[_]] = Def.settings(headerMappingSettings, additional)
 
-  def additional: Seq[Def.Setting[_]] = Def.settings((compile in Compile) := {
-    (headerCreate in Compile).value
-    (compile in Compile).value
-  }, (compile in Test) := {
-    (headerCreate in Test).value
-    (compile in Test).value
-  })
+  def additional: Seq[Def.Setting[_]] =
+    Def.settings((compile in Compile) := {
+      (headerCreate in Compile).value
+      (compile in Compile).value
+    }, (compile in Test) := {
+      (headerCreate in Test).value
+      (compile in Test).value
+    })
 
   // We hard-code this so PR's created in year X will not suddenly fail in X+1.
   // Of course we should remember to update it early in the year.
-  val CurrentYear = "2020"
+  val CurrentYear = "2021"
   val CopyrightPattern = "Copyright \\([Cc]\\) (\\d{4}([-–]\\d{4})?) (Lightbend|Typesafe) Inc. <.*>".r
   val CopyrightHeaderPattern = s"(?s).*${CopyrightPattern}.*".r
 

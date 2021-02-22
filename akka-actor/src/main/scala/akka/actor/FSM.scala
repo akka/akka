@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import language.implicitConversions
 
 import akka.annotation.InternalApi
@@ -166,12 +166,12 @@ object FSM {
    * Using a subclass for binary compatibility reasons
    */
   private[akka] class SilentState[S, D](
-      _stateName: S,
-      _stateData: D,
-      _timeout: Option[FiniteDuration],
-      _stopReason: Option[Reason],
-      _replies: List[Any])
-      extends State[S, D](_stateName, _stateData, _timeout, _stopReason, _replies) {
+      stateName: S,
+      stateData: D,
+      timeout: Option[FiniteDuration],
+      stopReason: Option[Reason],
+      replies: List[Any])
+      extends State[S, D](stateName, stateData, timeout, stopReason, replies) {
 
     /**
      * INTERNAL API
@@ -186,6 +186,7 @@ object FSM {
         replies: List[Any] = replies): State[S, D] = {
       new SilentState(stateName, stateData, timeout, stopReason, replies)
     }
+
   }
 
   /**
@@ -193,12 +194,58 @@ object FSM {
    * name, the state data, possibly custom timeout, stop reason and replies
    * accumulated while processing the last message.
    */
-  case class State[S, D](
-      stateName: S,
-      stateData: D,
-      timeout: Option[FiniteDuration] = None,
-      stopReason: Option[Reason] = None,
-      replies: List[Any] = Nil) {
+  object State {
+    def apply[S, D](
+        stateName: S,
+        stateData: D,
+        timeout: Option[FiniteDuration] = None,
+        stopReason: Option[Reason] = None,
+        replies: List[Any] = Nil) = {
+      new State(stateName, stateData, timeout, stopReason, replies)
+    }
+
+    def unapply[S, D](state: State[S, D]): Option[(S, D, Option[FiniteDuration], Option[Reason], List[Any])] = {
+      Some((state.stateName, state.stateData, state.timeout, state.stopReason, state.replies))
+    }
+  }
+  class State[S, D](
+      val stateName: S,
+      val stateData: D,
+      val timeout: Option[FiniteDuration] = None,
+      val stopReason: Option[Reason] = None,
+      val replies: List[Any] = Nil)
+      extends Product
+      with Serializable {
+
+    def canEqual(that: Any): Boolean = {
+      that match {
+        case _: State[_, _] => true
+        case _              => false
+      }
+    }
+
+    override def equals(that: Any) = that match {
+      case other: State[_, _] =>
+        other.canEqual(this) &&
+        this.stateName == other.stateName &&
+        this.stateData == other.stateData &&
+        this.timeout == other.timeout &&
+        this.stopReason == other.stopReason &&
+        this.replies == other.replies
+      case _ => false
+    }
+
+    override def productPrefix = classOf[State[S, D]].getSimpleName
+
+    def productArity: Int = 5
+    def productElement(n: Int): Any = n match {
+      case 0 => this.stateName
+      case 1 => this.stateData
+      case 2 => this.timeout
+      case 3 => this.stopReason
+      case 4 => this.replies
+      case _ => throw new IndexOutOfBoundsException(n.toString)
+    }
 
     /**
      * INTERNAL API
@@ -212,7 +259,7 @@ object FSM {
         timeout: Option[FiniteDuration] = timeout,
         stopReason: Option[Reason] = stopReason,
         replies: List[Any] = replies): State[S, D] = {
-      State(stateName, stateData, timeout, stopReason, replies)
+      new State(stateName, stateData, timeout, stopReason, replies)
     }
 
     /**
@@ -254,7 +301,7 @@ object FSM {
      * Modify state transition descriptor with new state data. The data will be
      * set when transitioning to the new state.
      */
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     def using(@deprecatedName(Symbol("nextStateDate")) nextStateData: D): State[S, D] = {
       copy(stateData = nextStateData)
     }

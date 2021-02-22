@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -8,7 +8,7 @@ import scala.collection.immutable
 import scala.collection.immutable.{ SortedSet, VectorBuilder }
 import scala.runtime.AbstractFunction5
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import language.postfixOps
 
 import akka.actor.{ Actor, ActorRef, Address }
@@ -74,7 +74,7 @@ object ClusterEvent {
         Map[String, Option[Address]],
         CurrentClusterState] {
 
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     def apply(
         members: immutable.SortedSet[Member] = immutable.SortedSet.empty,
         unreachable: Set[Member] = Set.empty,
@@ -144,21 +144,21 @@ object ClusterEvent {
     /**
      * Java API: get current unreachable set.
      */
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     def getUnreachable: java.util.Set[Member] =
       scala.collection.JavaConverters.setAsJavaSetConverter(unreachable).asJava
 
     /**
      * Java API: All data centers in the cluster
      */
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     def getUnreachableDataCenters: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(unreachableDataCenters).asJava
 
     /**
      * Java API: get current “seen-by” set.
      */
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     def getSeenBy: java.util.Set[Address] =
       scala.collection.JavaConverters.setAsJavaSetConverter(seenBy).asJava
 
@@ -186,7 +186,7 @@ object ClusterEvent {
     /**
      * Java API: All node roles in the cluster
      */
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     def getAllRoles: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(allRoles).asJava
 
@@ -198,7 +198,7 @@ object ClusterEvent {
     /**
      * Java API: All data centers in the cluster
      */
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     def getAllDataCenters: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(allDataCenters).asJava
 
@@ -316,6 +316,16 @@ object ClusterEvent {
    */
   final case class MemberLeft(member: Member) extends MemberEvent {
     if (member.status != Leaving) throw new IllegalArgumentException("Expected Leaving status, got: " + member)
+  }
+
+  final case class MemberPreparingForShutdown(member: Member) extends MemberEvent {
+    if (member.status != PreparingForShutdown)
+      throw new IllegalArgumentException("Expected PreparingForShutdown status, got: " + member)
+  }
+
+  final case class MemberReadyForShutdown(member: Member) extends MemberEvent {
+    if (member.status != ReadyForShutdown)
+      throw new IllegalArgumentException("Expected ReadyForShutdown status, got: " + member)
   }
 
   /**
@@ -554,12 +564,14 @@ object ClusterEvent {
           newMember
       }
       val memberEvents = (newMembers ++ changedMembers).unsorted.collect {
-        case m if m.status == Joining  => MemberJoined(m)
-        case m if m.status == WeaklyUp => MemberWeaklyUp(m)
-        case m if m.status == Up       => MemberUp(m)
-        case m if m.status == Leaving  => MemberLeft(m)
-        case m if m.status == Exiting  => MemberExited(m)
-        case m if m.status == Down     => MemberDowned(m)
+        case m if m.status == Joining              => MemberJoined(m)
+        case m if m.status == WeaklyUp             => MemberWeaklyUp(m)
+        case m if m.status == Up                   => MemberUp(m)
+        case m if m.status == Leaving              => MemberLeft(m)
+        case m if m.status == Exiting              => MemberExited(m)
+        case m if m.status == Down                 => MemberDowned(m)
+        case m if m.status == PreparingForShutdown => MemberPreparingForShutdown(m)
+        case m if m.status == ReadyForShutdown     => MemberReadyForShutdown(m)
         // no events for other transitions
       }
 

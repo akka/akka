@@ -1,10 +1,9 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal
 
-import akka.actor._
 import akka.persistence.JournalProtocol
 import akka.persistence.PersistentRepr
 import akka.testkit._

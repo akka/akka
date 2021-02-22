@@ -1,34 +1,40 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
 import akka.Done
-import akka.actor.{ EmptyLocalActorRef, _ }
+import akka.actor.EmptyLocalActorRef
+import akka.actor._
 import akka.event.Logging
-import akka.pattern.PromiseActorRef
-import akka.remote.{ MessageSerializer, OversizedPayloadException, RemoteActorRefProvider, UniqueAddress }
-import akka.remote.artery.Decoder.{
-  AdvertiseActorRefsCompressionTable,
-  AdvertiseClassManifestsCompressionTable,
-  InboundCompressionAccess,
-  InboundCompressionAccessImpl
-}
+import akka.remote.MessageSerializer
+import akka.remote.OversizedPayloadException
+import akka.remote.RemoteActorRefProvider
+import akka.remote.UniqueAddress
+import akka.remote.artery.Decoder.AdvertiseActorRefsCompressionTable
+import akka.remote.artery.Decoder.AdvertiseClassManifestsCompressionTable
+import akka.remote.artery.Decoder.InboundCompressionAccess
+import akka.remote.artery.Decoder.InboundCompressionAccessImpl
 import akka.remote.artery.OutboundHandshake.HandshakeReq
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
-import akka.remote.artery.compress._
 import akka.remote.artery.compress.CompressionProtocol._
-import akka.serialization.{ Serialization, SerializationExtension, Serializers }
+import akka.remote.artery.compress._
+import akka.remote.serialization.AbstractActorRefResolveCache
+import akka.serialization.Serialization
+import akka.serialization.SerializationExtension
+import akka.serialization.Serializers
 import akka.stream._
 import akka.stream.stage._
-import akka.util.{ unused, OptionVal, Unsafe }
+import akka.util.OptionVal
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -335,21 +341,10 @@ private[remote] object Decoder {
 private[remote] final class ActorRefResolveCacheWithAddress(
     provider: RemoteActorRefProvider,
     localAddress: UniqueAddress)
-    extends LruBoundedCache[String, InternalActorRef](capacity = 1024, evictAgeThreshold = 600) {
+    extends AbstractActorRefResolveCache[InternalActorRef] {
 
   override protected def compute(k: String): InternalActorRef =
     provider.resolveActorRefWithLocalAddress(k, localAddress.address)
-
-  override protected def hash(k: String): Int = Unsafe.fastHash(k)
-
-  override protected def isCacheable(v: InternalActorRef): Boolean =
-    v match {
-      case _: EmptyLocalActorRef => false
-      case _: PromiseActorRef    =>
-        // each of these are only for one request-response interaction so don't cache
-        false
-      case _ => true
-    }
 }
 
 /**
@@ -437,7 +432,7 @@ private[remote] class Decoder(
             case OptionVal.Some(ref) =>
               OptionVal(ref.asInstanceOf[InternalActorRef])
             case OptionVal.None if headerBuilder.senderActorRefPath.isDefined =>
-              OptionVal(actorRefResolver.getOrCompute(headerBuilder.senderActorRefPath.get))
+              OptionVal(actorRefResolver.resolve(headerBuilder.senderActorRefPath.get))
             case _ =>
               OptionVal.None
           } catch {

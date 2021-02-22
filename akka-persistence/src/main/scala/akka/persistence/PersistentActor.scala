@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -160,7 +160,7 @@ final class DiscardConfigurator extends StashOverflowStrategyConfigurator {
 }
 
 /**
- * Scala API: A persistent Actor - can be used to implement command or event sourcing.
+ * Scala API: A persistent Actor - can be used to implement command or Event Sourcing.
  */
 trait PersistentActor extends Eventsourced with PersistenceIdentity {
   def receive = receiveCommand
@@ -290,7 +290,7 @@ trait PersistentActor extends Eventsourced with PersistenceIdentity {
 }
 
 /**
- * Java API: an persistent actor - can be used to implement command or event sourcing.
+ * Java API: an persistent actor - can be used to implement command or Event Sourcing.
  */
 abstract class AbstractPersistentActor extends AbstractActor with AbstractPersistentActorLike {
 

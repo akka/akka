@@ -43,7 +43,7 @@ The simplest classification is just to extract an arbitrary classifier from
 each event and maintaining a set of subscribers for each possible classifier.
 This can be compared to tuning in on a radio station. The trait
 `LookupClassification` is still generic in that it abstracts over how to
-compare subscribers and how exactly to classify.
+compare subscribers and how exactly to classify them.
 
 The necessary methods to be implemented are illustrated with the following example:
 

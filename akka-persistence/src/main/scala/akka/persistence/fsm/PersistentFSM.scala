@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.fsm
@@ -10,7 +10,7 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.actor._
@@ -49,8 +49,8 @@ private[akka] class SnapshotAfter(config: Config) extends Extension {
    * sequence number should trigger auto snapshot or not
    */
   val isSnapshotAfterSeqNo: Long => Boolean = snapshotAfterValue match {
-    case Some(snapShotAfterValue) => seqNo: Long => seqNo % snapShotAfterValue == 0
-    case None                     => _: Long => false //always false, if snapshotAfter is not specified in config
+    case Some(snapShotAfterValue) => (seqNo: Long) => seqNo % snapShotAfterValue == 0
+    case None                     => (_: Long) => false //always false, if snapshotAfter is not specified in config
   }
 }
 
@@ -124,7 +124,7 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
   /**
    * Discover the latest recorded state
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   override def receiveRecover: Receive = {
     case domainEventTag(event)                      => startWith(stateName, applyEvent(event, stateData))
     case StateChangeEvent(stateIdentifier, timeout) => startWith(statesMap(stateIdentifier), stateData, timeout)
@@ -380,7 +380,7 @@ object PersistentFSM {
       stopReason: Option[Reason] = None,
       replies: List[Any] = Nil,
       domainEvents: Seq[E] = Nil,
-      afterTransitionDo: D => Unit = { _: D =>
+      afterTransitionDo: D => Unit = { (_: D) =>
       })(private[akka] val notifies: Boolean = true) {
 
     /**
@@ -527,7 +527,7 @@ abstract class AbstractPersistentFSM[S <: FSMState, D, E]
  * Persistent Finite State Machine actor abstract base class with FSM Logging
  *
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 @deprecated("Use EventSourcedBehavior", "2.6.0")
 abstract class AbstractPersistentLoggingFSM[S <: FSMState, D, E]
     extends AbstractPersistentFSM[S, D, E]

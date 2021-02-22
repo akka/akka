@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
@@ -7,12 +7,10 @@ package akka.stream
 import java.net.URLEncoder
 import java.time.Duration
 import java.util.Optional
-
 import scala.annotation.tailrec
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.{ classTag, ClassTag }
-
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -21,6 +19,7 @@ import akka.japi.function
 import akka.stream.impl.TraversalBuilder
 import akka.util.{ ByteString, OptionVal }
 import akka.util.JavaDurationConverters._
+import akka.util.LineNumbers
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
@@ -303,6 +302,32 @@ object Attributes {
   sealed trait MandatoryAttribute extends Attribute
 
   final case class Name(n: String) extends Attribute
+
+  /**
+   * Attribute that contains the source location of for example a lambda passed to an operator, useful for example
+   * for debugging. Included in the default toString of GraphStageLogic if present
+   */
+  final class SourceLocation(lambda: AnyRef) extends Attribute {
+    lazy val locationName: String = {
+      val locationName = LineNumbers(lambda) match {
+        case LineNumbers.NoSourceInfo           => "unknown"
+        case LineNumbers.UnknownSourceFormat(_) => "unknown"
+        case LineNumbers.SourceFile(filename)   => filename
+        case LineNumbers.SourceFileLines(filename, from, _) =>
+          s"$filename:$from"
+      }
+      s"${lambda.getClass.getPackage.getName}-$locationName"
+    }
+
+    override def toString: String = locationName
+  }
+
+  object SourceLocation {
+    def forLambda(lambda: AnyRef): SourceLocation = new SourceLocation(lambda)
+
+    def stringFrom(attributes: Attributes): String =
+      attributes.get[SourceLocation].map(_.locationName).getOrElse("unknown")
+  }
 
   /**
    * Each asynchronous piece of a materialized stream topology is executed by one Actor

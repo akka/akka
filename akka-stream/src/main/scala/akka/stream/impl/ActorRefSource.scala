@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
-import akka.actor.{ ActorRef, PoisonPill }
+import akka.actor.ActorRef
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.OverflowStrategies._
@@ -52,11 +52,7 @@ private object ActorRefSource {
       override protected def stageActorName: String = inheritedAttributes.nameForActorRef(super.stageActorName)
 
       private val name = inheritedAttributes.nameOrDefault(getClass.toString)
-      override val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillCompatibility = true) {
-        case (_, PoisonPill) =>
-          log.warning(
-            "PoisonPill only completes ActorRefSource for backwards compatibility and not be supported in the future. Send Status.Success(CompletionStrategy) instead")
-          completeStage()
+      override val ref: ActorRef = getEagerStageActor(eagerMaterializer) {
         case (_, m) if failureMatcher.isDefinedAt(m) =>
           failStage(failureMatcher(m))
         case (_, m) if completionMatcher.isDefinedAt(m) =>

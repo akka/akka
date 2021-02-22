@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
@@ -12,7 +12,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import SerializationTests._
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config._
 import language.postfixOps
 import test.akka.serialization.NoVerification
@@ -58,10 +58,10 @@ object SerializationTests {
 
   protected[akka] trait Marker
   protected[akka] trait Marker2
-  @silent // can't use unused otherwise case class below gets a deprecated
+  @nowarn // can't use unused otherwise case class below gets a deprecated
   class SimpleMessage(s: String) extends Marker
 
-  @silent
+  @nowarn
   class ExtendedSimpleMessage(s: String, i: Int) extends SimpleMessage(s)
 
   trait AnotherInterface extends Marker

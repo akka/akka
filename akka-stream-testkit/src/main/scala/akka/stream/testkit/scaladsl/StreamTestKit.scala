@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.testkit.scaladsl
@@ -102,7 +102,7 @@ object StreamTestKit {
         .append(logic.attributes.attributeList.mkString(", "))
         .append("],\n")
     }
-    builder.setLength(builder.length() - 2)
+    builder.setLength(builder.length - 2)
     shell match {
       case running: RunningInterpreter =>
         builder.append("\n  ],\n  connections: [\n")
@@ -119,7 +119,7 @@ object StreamTestKit {
             .append(connection.state)
             .append(")\n")
         }
-        builder.setLength(builder.length() - 2)
+        builder.setLength(builder.length - 2)
 
       case _ =>
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
@@ -184,7 +184,7 @@ private[akka] final class ReplayingEvents[C, E, S](
         case RecoverySuccess(highestJournalSeqNr) =>
           val highestSeqNr = Math.max(highestJournalSeqNr, state.seqNr)
           state = state.copy(seqNr = highestSeqNr)
-          setup.log.debug("Recovery successful, recovered until sequenceNr: [{}]", highestSeqNr)
+          setup.internalLogger.debug("Recovery successful, recovered until sequenceNr: [{}]", highestSeqNr)
           onRecoveryCompleted(state)
 
         case ReplayMessagesFailure(cause) =>
@@ -206,7 +206,7 @@ private[akka] final class ReplayingEvents[C, E, S](
     // during recovery, stash all incoming commands
     if (state.receivedPoisonPill) {
       if (setup.settings.logOnStashing)
-        setup.log.debug("Discarding message [{}], because actor is to be stopped.", cmd)
+        setup.internalLogger.debug("Discarding message [{}], because actor is to be stopped.", cmd)
       Behaviors.unhandled
     } else {
       stashInternal(cmd)
@@ -229,7 +229,7 @@ private[akka] final class ReplayingEvents[C, E, S](
     }
 
   def onSnapshotterResponse(response: SnapshotProtocol.Response): Behavior[InternalProtocol] = {
-    setup.log
+    setup.internalLogger
       .warn("Unexpected [{}] from SnapshotStore, already in replaying events state.", Logging.simpleName(response))
     Behaviors.unhandled // ignore the response
   }
@@ -248,8 +248,8 @@ private[akka] final class ReplayingEvents[C, E, S](
     setup.onSignal(state.state, RecoveryFailed(cause), catchAndLog = true)
     setup.cancelRecoveryTimer()
     tryReturnRecoveryPermit("on replay failure: " + cause.getMessage)
-    if (setup.log.isDebugEnabled) {
-      setup.log.debug2(
+    if (setup.internalLogger.isDebugEnabled) {
+      setup.internalLogger.debug2(
         "Recovery failure for persistenceId [{}] after {}",
         setup.persistenceId,
         (System.nanoTime() - state.recoveryStartTime).nanos.pretty)
@@ -272,8 +272,8 @@ private[akka] final class ReplayingEvents[C, E, S](
     try {
       onRecoveryComplete(setup.context)
       tryReturnRecoveryPermit("replay completed successfully")
-      if (setup.log.isDebugEnabled) {
-        setup.log.debug2(
+      if (setup.internalLogger.isDebugEnabled) {
+        setup.internalLogger.debug2(
           "Recovery for persistenceId [{}] took {}",
           setup.persistenceId,
           (System.nanoTime() - state.recoveryStartTime).nanos.pretty)

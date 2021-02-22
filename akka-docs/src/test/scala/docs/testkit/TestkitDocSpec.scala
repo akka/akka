@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.testkit
@@ -342,7 +342,7 @@ class TestKitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     import akka.testkit.TestKitBase
 
     class MyTest extends TestKitBase {
-      implicit lazy val system = ActorSystem()
+      implicit lazy val system: ActorSystem = ActorSystem()
 
       //#put-your-test-code-here
       val probe = TestProbe()

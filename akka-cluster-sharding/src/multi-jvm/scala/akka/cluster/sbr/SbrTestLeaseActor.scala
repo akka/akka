@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sbr
@@ -97,7 +97,7 @@ class SbrTestLeaseActorClient(settings: LeaseSettings, system: ExtendedActorSyst
 
   SbrTestLeaseActorClientExt(system).setActorLeaseClient(this)
 
-  private implicit val timeout = Timeout(3.seconds)
+  private implicit val timeout: Timeout = Timeout(3.seconds)
 
   private val _leaseRef = new AtomicReference[ActorRef]
 

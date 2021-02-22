@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 syntax = "proto2";
@@ -198,6 +198,8 @@ enum MemberStatus {
   Down = 4;
   Removed = 5;
   WeaklyUp = 6;
+  PreparingForShutdown = 7;
+  ReadyForShutdown = 8;
 }
 
 /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport
@@ -15,7 +15,7 @@ import scala.math.min
 import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
@@ -235,7 +235,7 @@ class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedA
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[transport] object ThrottlerManager {
   final case class Checkin(origin: Address, handle: ThrottlerHandle) extends NoSerializationVerificationNeeded
 
@@ -253,7 +253,7 @@ private[transport] object ThrottlerManager {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[transport] class ThrottlerManager(wrappedTransport: Transport)
     extends ActorTransportAdapterManager
     with ActorLogging {
@@ -352,7 +352,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport)
   }
 
   // silent because of use of isTerminated
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private def askModeWithDeathCompletion(target: ActorRef, mode: ThrottleMode)(
       implicit timeout: Timeout): Future[SetThrottleAck.type] = {
     if (target.isTerminated) Future.successful(SetThrottleAck)
@@ -424,7 +424,7 @@ private[transport] object ThrottledAssociation {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[transport] class ThrottledAssociation(
     val manager: ActorRef,
     val associationHandler: AssociationEventListener,
@@ -588,7 +588,7 @@ private[transport] class ThrottledAssociation(
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[transport] final case class ThrottlerHandle(_wrappedHandle: AssociationHandle, throttlerActor: ActorRef)
     extends AbstractTransportAdapterHandle(_wrappedHandle, SchemeIdentifier) {
 

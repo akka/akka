@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.delivery
 
 import java.util.UUID
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.typed.ActorSystem
 
@@ -18,7 +18,7 @@ import akka.actor.typed.scaladsl.Behaviors
 
 //#imports
 
-@silent("never used")
+@nowarn("msg=never used")
 object PointToPointDocExample {
 
   //#producer

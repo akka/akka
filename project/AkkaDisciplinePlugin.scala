@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -63,22 +63,48 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "akka-stream-tests-tck",
     "akka-testkit")
 
-  lazy val silencerSettings = {
-    val silencerVersion = "1.7.1"
-    Seq(
-      libraryDependencies ++= Seq(
-          compilerPlugin(("com.github.ghik" %% "silencer-plugin" % silencerVersion).cross(CrossVersion.patch)),
-          ("com.github.ghik" %% "silencer-lib" % silencerVersion % Provided).cross(CrossVersion.patch)))
+  val defaultScalaOptions = "-Wconf:cat=unused-nowarn:s,any:e"
+
+  lazy val nowarnSettings = {
+    Dependencies.getScalaVersion() match {
+      case three if three.startsWith("3.0") =>
+        Seq(Compile / scalacOptions := Seq(), Compile / doc / scalacOptions := Seq())
+      case _ =>
+        Seq(
+          Compile / scalacOptions += defaultScalaOptions,
+          Test / scalacOptions += defaultScalaOptions,
+          Compile / doc / scalacOptions := Seq())
+    }
+  }
+
+  /**
+   * We are a little less strict in docs
+   */
+  val docs = {
+    Dependencies.getScalaVersion() match {
+      case _ =>
+        Seq(
+          Compile / scalacOptions -= defaultScalaOptions,
+          Compile / scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e",
+          Test / scalacOptions --= Seq("-Xlint", "-unchecked", "-deprecation"),
+          Test / scalacOptions -= defaultScalaOptions,
+          Test / scalacOptions += "-Wconf:cat=unused:s,cat=deprecation:s,cat=unchecked:s,any:e",
+          Compile / doc / scalacOptions := Seq())
+    }
   }
 
   lazy val disciplineSettings =
     if (enabled) {
-      silencerSettings ++ Seq(
+      nowarnSettings ++ Seq(
         Compile / scalacOptions ++= Seq("-Xfatal-warnings"),
         Test / scalacOptions --= testUndicipline,
         Compile / javacOptions ++= (
-            if (!nonFatalJavaWarningsFor(name.value)) Seq("-Werror", "-Xlint:deprecation", "-Xlint:unchecked")
-            else Seq.empty
+            if (Dependencies.getScalaVersion().startsWith("3.0")) {
+              Seq()
+            } else {
+              if (!nonFatalJavaWarningsFor(name.value)) Seq("-Werror", "-Xlint:deprecation", "-Xlint:unchecked")
+              else Seq.empty
+            }
           ),
         Compile / javacOptions in doc := Seq("-Xdoclint:none"),
         Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
@@ -107,7 +133,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
         Compile / console / scalacOptions --= disciplineScalacOptions.toSeq)
     } else {
       // we still need these in opt-out since the annotations are present
-      silencerSettings ++ Seq(Compile / scalacOptions += "-deprecation")
+      nowarnSettings ++ Seq(Compile / scalacOptions += "-deprecation")
     }
 
   val testUndicipline = Seq("-Ywarn-dead-code" // '???' used in compile only specs
@@ -133,23 +159,4 @@ object AkkaDisciplinePlugin extends AutoPlugin {
     "-Ypartial-unification",
     "-Ywarn-extra-implicit")
 
-  /**
-   * We are a little less strict in docs
-   */
-  val docs = Seq(
-    scalacOptions ++= Seq(
-      // In docs, 'unused' variables can be useful for naming and showing the type
-      "-P:silencer:globalFilters=is never used",
-      // Import statements are often duplicated across multiple snippets in one file
-      "-P:silencer:globalFilters=Unused import",
-      // We keep documentation for this old API around for a while:
-      "-P:silencer:globalFilters=in object Dns is deprecated",
-      "-P:silencer:globalFilters=in class Dns is deprecated",
-      // Because we sometimes wrap things in a class:
-      "-P:silencer:globalFilters=The outer reference in this type test cannot be checked at run time",
-      // Because we show some things that are deprecated in
-      // 2.13 but don't have a replacement that was in 2.12:
-      "-P:silencer:globalFilters=deprecated \\(since 2.13.0\\)"
-    )
-  )
 }

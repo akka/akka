@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import org.reactivestreams.Subscriber
 
 import akka.stream._
@@ -38,7 +38,7 @@ object GraphFlowSpec {
   val stdResult = Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 }
 
-@silent
+@nowarn
 class GraphFlowSpec extends StreamSpec {
 
   import GraphFlowSpec._

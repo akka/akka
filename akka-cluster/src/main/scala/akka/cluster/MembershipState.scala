@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -22,10 +22,13 @@ import akka.util.ccompat._
 @ccompatUsedUntil213
 @InternalApi private[akka] object MembershipState {
   import MemberStatus._
-  private val leaderMemberStatus = Set[MemberStatus](Up, Leaving)
-  private val convergenceMemberStatus = Set[MemberStatus](Up, Leaving)
+  private val leaderMemberStatus = Set[MemberStatus](Up, Leaving, PreparingForShutdown, ReadyForShutdown)
+  private val convergenceMemberStatus = Set[MemberStatus](Up, Leaving, PreparingForShutdown, ReadyForShutdown)
   val convergenceSkipUnreachableWithMemberStatus = Set[MemberStatus](Down, Exiting)
   val removeUnreachableWithMemberStatus = Set[MemberStatus](Down, Exiting)
+  // If a member hasn't join yet or has already started leaving don't mark it as shutting down
+  val allowedToPrepareToShutdown = Set[MemberStatus](Up)
+  val prepareForShutdownStates = Set[MemberStatus](PreparingForShutdown, ReadyForShutdown)
 }
 
 /**

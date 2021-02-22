@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 
 import akka.actor.{ Actor, ActorLogging, ActorRefFactory, Deploy, ExtendedActorSystem, Props, Timers }
@@ -37,7 +37,7 @@ private[akka] object AsyncDnsManager {
  * INTERNAL API
  */
 @InternalApi
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[io] final class AsyncDnsManager(
     name: String,
     system: ExtendedActorSystem,
@@ -91,7 +91,7 @@ private[io] final class AsyncDnsManager(
   }
 
   // still support deprecated DNS API
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   override def receive: Receive = {
     case r: DnsProtocol.Resolve =>
       log.debug("Resolution request for {} {} from {}", r.name, r.requestType, sender())

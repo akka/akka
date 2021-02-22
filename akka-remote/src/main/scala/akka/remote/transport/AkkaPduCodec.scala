@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.AkkaException
 import akka.actor.{ ActorRef, Address, AddressFromURIString, InternalActorRef }
@@ -27,7 +27,7 @@ private[remote] class PduCodecException(msg: String, cause: Throwable) extends A
  * Companion object of the [[akka.remote.transport.AkkaPduCodec]] trait. Contains the representation case classes
  * of decoded Akka Protocol Data Units (PDUs).
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] object AkkaPduCodec {
 
   /**
@@ -58,7 +58,7 @@ private[remote] object AkkaPduCodec {
  *
  * A Codec that is able to convert Akka PDUs (Protocol Data Units) from and to [[akka.util.ByteString]]s.
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] trait AkkaPduCodec {
   import AkkaPduCodec._
 
@@ -118,7 +118,7 @@ private[remote] trait AkkaPduCodec {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
   import AkkaPduCodec._
 

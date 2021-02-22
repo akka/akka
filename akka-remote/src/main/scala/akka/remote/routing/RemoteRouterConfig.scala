@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.routing
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 
 import akka.actor.ActorCell
@@ -41,7 +41,7 @@ final case class RemoteRouterConfig(local: Pool, nodes: Iterable[Address]) exten
   def this(local: Pool, nodes: Array[Address]) = this(local, nodes: Iterable[Address])
 
   // need this iterator as instance variable since Resizer may call createRoutees several times
-  @silent @transient private val nodeAddressIter: Iterator[Address] = Stream.continually(nodes).flatten.iterator
+  @nowarn @transient private val nodeAddressIter: Iterator[Address] = Stream.continually(nodes).flatten.iterator
   // need this counter as instance variable since Resizer may call createRoutees several times
   @transient private val childNameCounter = new AtomicInteger
 

@@ -1,22 +1,22 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
+
+import scala.collection.immutable
+import scala.util.control.NonFatal
 
 import akka.actor._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.Inet.{ DatagramChannelCreator, SocketOption }
 import akka.io.Udp._
-import com.github.ghik.silencer.silent
-
-import scala.collection.immutable
-import scala.util.control.NonFatal
+import scala.annotation.nowarn
 
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[io] class UdpSender(
     val udp: UdpExt,
     channelRegistry: ChannelRegistry,

@@ -1,21 +1,27 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
 
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
-import org.slf4j.{ Logger, MDC }
-import akka.actor.{ Cancellable, ActorRef => ClassicActorRef }
+
+import akka.actor.Cancellable
 import akka.actor.typed.Signal
 import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.{ ActorRef => ClassicActorRef }
 import akka.annotation.InternalApi
 import akka.persistence._
+import akka.persistence.typed.EventAdapter
+import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
-import akka.persistence.typed.{ EventAdapter, PersistenceId, SnapshotAdapter }
-import akka.persistence.typed.scaladsl.{ EventSourcedBehavior, RetentionCriteria }
+import akka.persistence.typed.SnapshotAdapter
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
+import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.util.OptionVal
+import org.slf4j.Logger
+import org.slf4j.MDC
 
 /**
  * INTERNAL API
@@ -49,11 +55,11 @@ private[akka] final class BehaviorSetup[C, E, S](
     val settings: EventSourcedSettings,
     val stashState: StashState,
     val replication: Option[ReplicationSetup],
-    val publishEvents: Boolean) {
+    val publishEvents: Boolean,
+    private val internalLoggerFactory: () => Logger) {
 
   import BehaviorSetup._
   import InternalProtocol.RecoveryTickEvent
-
   import akka.actor.typed.scaladsl.adapter._
 
   val persistence: Persistence = Persistence(context.system.toClassic)
@@ -66,11 +72,10 @@ private[akka] final class BehaviorSetup[C, E, S](
   def selfClassic: ClassicActorRef = context.self.toClassic
 
   private var mdcPhase = PersistenceMdc.Initializing
-  def log: Logger = {
-    // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message,
-    // but important to call `context.log` to mark MDC as used
+
+  def internalLogger: Logger = {
     PersistenceMdc.setMdc(persistenceId, mdcPhase)
-    context.log
+    internalLoggerFactory()
   }
 
   def setMdcPhase(phaseName: String): BehaviorSetup[C, E, S] = {
@@ -117,11 +122,11 @@ private[akka] final class BehaviorSetup[C, E, S](
     } catch {
       case NonFatal(ex) =>
         if (catchAndLog) {
-          log.error(s"Error while processing signal [$signal]: $ex", ex)
+          internalLogger.error(s"Error while processing signal [$signal]: $ex", ex)
           true
         } else {
-          if (log.isDebugEnabled)
-            log.debug(s"Error while processing signal [$signal]: $ex", ex)
+          if (internalLogger.isDebugEnabled)
+            internalLogger.debug(s"Error while processing signal [$signal]: $ex", ex)
           throw ex
         }
     }

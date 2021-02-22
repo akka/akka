@@ -1,11 +1,10 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
 import java.util
-
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.stream._
@@ -20,29 +19,30 @@ import akka.stream.stage._
     ref: ActorRef,
     messageAdapter: ActorRef => In => Any,
     onInitMessage: ActorRef => Any,
-    ackMessage: Any,
+    ackMessage: Option[Any],
     onCompleteMessage: Any,
     onFailureMessage: (Throwable) => Any)
     extends GraphStage[SinkShape[In]] {
   val in: Inlet[In] = Inlet[In]("ActorRefBackpressureSink.in")
-  override def initialAttributes = DefaultAttributes.actorRefWithBackpressureSink
+  override def initialAttributes: Attributes = DefaultAttributes.actorRefWithBackpressureSink
   override val shape: SinkShape[In] = SinkShape(in)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler {
       implicit def self: ActorRef = stageActor.ref
 
-      val maxBuffer = inheritedAttributes.get[InputBuffer](InputBuffer(16, 16)).max
+      private val maxBuffer = inheritedAttributes.get[InputBuffer](InputBuffer(16, 16)).max
       require(maxBuffer > 0, "Buffer size must be greater than 0")
 
-      val buffer: util.Deque[In] = new util.ArrayDeque[In]()
-      var acknowledgementReceived = false
-      var completeReceived = false
-      var completionSignalled = false
+      private val buffer: util.Deque[In] = new util.ArrayDeque[In]()
+      private var acknowledgementReceived = false
+      private var completeReceived = false
+      private var completionSignalled = false
 
       private def receive(evt: (ActorRef, Any)): Unit = {
         evt._2 match {
-          case `ackMessage` => {
+          case Terminated(`ref`) => completeStage()
+          case ackMsg if ackMessage.isEmpty || ackMessage.contains(ackMsg) =>
             if (buffer.isEmpty) acknowledgementReceived = true
             else {
               // onPush might have filled the buffer up and
@@ -50,13 +50,11 @@ import akka.stream.stage._
               if (buffer.size() == maxBuffer) tryPull(in)
               dequeueAndSend()
             }
-          }
-          case Terminated(`ref`) => completeStage()
-          case _                 => //ignore all other messages
+          case _ => //ignore all other messages
         }
       }
 
-      override def preStart() = {
+      override def preStart(): Unit = {
         setKeepGoing(true)
         getStageActor(receive).watch(ref)
         ref ! onInitMessage(self)

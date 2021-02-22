@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
@@ -8,7 +8,7 @@ import scala.collection.GenTraversableOnce
 import scala.collection.immutable.Seq
 import scala.util.{ Failure, Success, Try }
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.annotation.InternalApi
 import akka.io.dns.ResourceRecord
@@ -157,7 +157,7 @@ private[internal] object Message {
     }
 
     import scala.language.implicitConversions
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     implicit def flattener[T](tried: Try[T]): GenTraversableOnce[T] =
       if (flags.isTruncated) tried.toOption
       else

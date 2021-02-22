@@ -38,6 +38,8 @@ merged and converge to the same end result.
  * **weakly up** - transient state while network split (only if `akka.cluster.allow-weakly-up-members=on`)
    
  * **up** - normal operating state
+ 
+ * **preparing for shutdown** / **ready for shutdown** - an optional state that can be moved to before doing a full cluster shut down
    
  * **leaving** / **exiting** - states during graceful removal
    
@@ -58,6 +60,8 @@ Note that the node might already have been shutdown when this event is published
 of at least one other node.
  * `ClusterEvent.ReachableMember` - A member is considered as reachable again, after having been unreachable.
 All nodes that previously detected it as unreachable has detected it as reachable again.
+ * `ClusterEvent.MemberPreparingForShutdown` - A member is preparing for a full cluster shutdown
+ * `ClusterEvent.MemberReadyForShutdown` - A member is ready for a full cluster shutdown
 
 ## Membership Lifecycle
 
@@ -125,6 +129,27 @@ You can subscribe to the `WeaklyUp` membership event to make use of the members
 that are in this state, but you should be aware of that members on the other
 side of a network partition have no knowledge about the existence of the
 new members. You should for example not count `WeaklyUp` members in quorum decisions.
+
+## Full cluster shutdown
+
+In some rare cases it may be desirable to do a full cluster shutdown rather than a rolling deploy. 
+For example, a protocol change where it is simpler to restart the cluster than to make the protocol change
+backward compatible.
+
+As of Akka `2.6.13` it can be signalled that a full cluster shutdown is about to happen and any expensive actions such as:
+
+* Cluster sharding rebalances
+* Moving of Cluster singletons
+
+Won't happen. That way the shutdown will be as quick as possible and a new version can be started up without delay.
+
+If a cluster isn't to be restarted right away then there is no need to prepare it for shutdown.
+
+To use this feature use `Cluster(system).prepareForFullClusterShutdown()` in classic or @apidoc[PrepareForFullClusterShutdown] in typed.
+
+Wait for all `Up` members to become `ReadyForShutdown` and then all nodes can be shutdown and restarted.
+Members that aren't `Up` yet will remain in the `Joining` or `WeaklyUp` states. Any node that is already leaving 
+the cluster i.e. in the `Leaving` or `Exiting` states will continue to leave the cluster via the normal path.
 
 ## State Diagrams
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
@@ -29,19 +29,19 @@ abstract class EventBusSpec(busName: String, conf: Config = ConfigFactory.empty(
 
   def createNewEventBus(): BusType
 
-  def createEvents(numberOfEvents: Int): Iterable[BusType#Event]
+  final val bus = createNewEventBus()
 
-  def createSubscriber(pipeTo: ActorRef): BusType#Subscriber
+  def createEvents(numberOfEvents: Int): Iterable[bus.Event]
 
-  def classifierFor(event: BusType#Event): BusType#Classifier
+  def createSubscriber(pipeTo: ActorRef): bus.Subscriber
 
-  def disposeSubscriber(system: ActorSystem, subscriber: BusType#Subscriber): Unit
+  def classifierFor(event: bus.Event): bus.Classifier
 
-  lazy val bus = createNewEventBus()
+  def disposeSubscriber(system: ActorSystem, subscriber: bus.Subscriber): Unit
 
   busName must {
     def createNewSubscriber() = createSubscriber(testActor).asInstanceOf[bus.Subscriber]
-    def getClassifierFor(event: BusType#Event) = classifierFor(event).asInstanceOf[bus.Classifier]
+    def getClassifierFor(event: bus.Event) = classifierFor(event).asInstanceOf[bus.Classifier]
     def createNewEvents(numberOfEvents: Int): Iterable[bus.Event] =
       createEvents(numberOfEvents).asInstanceOf[Iterable[bus.Event]]
 

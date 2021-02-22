@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.operators.source
@@ -47,7 +47,7 @@ object Zip {
     // #zipWithN-simple
   }
 
-  def zipAll() = {
+  def zipAll(): Unit = {
     // #zipAll-simple
     val numbers = Source(1 :: 2 :: 3 :: 4 :: Nil)
     val letters = Source("a" :: "b" :: "c" :: Nil)

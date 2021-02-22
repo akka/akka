@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -20,6 +20,10 @@ import akka.actor.Terminated
 import akka.actor.Timers
 import akka.annotation.InternalStableApi
 import akka.cluster.Cluster
+import akka.cluster.ClusterEvent.InitialStateAsEvents
+import akka.cluster.ClusterEvent.MemberEvent
+import akka.cluster.ClusterEvent.MemberPreparingForShutdown
+import akka.cluster.ClusterEvent.MemberReadyForShutdown
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore.GetEntities
 import akka.cluster.sharding.internal.RememberEntitiesProvider
@@ -453,6 +457,7 @@ private[akka] class Shard(
   private val messageBuffers = new MessageBufferMap[EntityId]
 
   private var handOffStopper: Option[ActorRef] = None
+  private var preparingForShutdown = false
 
   import context.dispatcher
   private val passivateIdleTask = if (settings.shouldPassivateIdleEntities) {
@@ -479,6 +484,11 @@ private[akka] class Shard(
   }
 
   override def preStart(): Unit = {
+    Cluster(context.system).subscribe(
+      self,
+      InitialStateAsEvents,
+      classOf[MemberPreparingForShutdown],
+      classOf[MemberReadyForShutdown])
     acquireLeaseIfNeeded()
   }
 
@@ -509,6 +519,8 @@ private[akka] class Shard(
       tryGetLease(lease.get)
     case ll: LeaseLost =>
       receiveLeaseLost(ll)
+    case me: MemberEvent =>
+      receiveMemberEvent(me)
     case msg =>
       if (verboseDebug)
         log.debug(
@@ -517,6 +529,15 @@ private[akka] class Shard(
           msg.getClass.getName,
           sender())
       stash()
+  }
+
+  private def receiveMemberEvent(event: MemberEvent): Unit = event match {
+    case _: MemberReadyForShutdown | _: MemberPreparingForShutdown =>
+      if (!preparingForShutdown) {
+        log.info("{}: Preparing for shutdown", typeName)
+        preparingForShutdown = true
+      }
+    case _ =>
   }
 
   private def tryGetLease(l: Lease): Unit = {
@@ -548,6 +569,8 @@ private[akka] class Shard(
       onEntitiesRemembered(entityIds)
     case RememberEntityTimeout(GetEntities) =>
       loadingEntityIdsFailed()
+    case me: MemberEvent =>
+      receiveMemberEvent(me)
     case msg =>
       if (verboseDebug)
         log.debug(
@@ -590,6 +613,7 @@ private[akka] class Shard(
   // when not remembering entities, we stay in this state all the time
   def idle: Receive = {
     case Terminated(ref)                         => receiveTerminated(ref)
+    case me: MemberEvent                         => receiveMemberEvent(me)
     case EntityTerminated(ref)                   => entityTerminated(ref)
     case msg: CoordinatorMessage                 => receiveCoordinatorMessage(msg)
     case msg: RememberEntityCommand              => receiveRememberEntityCommand(msg)
@@ -659,6 +683,7 @@ private[akka] class Shard(
       throw new RuntimeException(
         s"Async write timed out after ${settings.tuningParameters.updatingStateTimeout.pretty}")
     case ShardRegion.StartEntity(entityId) => startEntity(entityId, Some(sender()))
+    case me: MemberEvent                   => receiveMemberEvent(me)
     case Terminated(ref)                   => receiveTerminated(ref)
     case EntityTerminated(ref)             => entityTerminated(ref)
     case _: CoordinatorMessage             => stash()
@@ -814,7 +839,8 @@ private[akka] class Shard(
   }
 
   private def receiveCoordinatorMessage(msg: CoordinatorMessage): Unit = msg match {
-    case HandOff(`shardId`) => handOff(sender())
+    case HandOff(`shardId`) =>
+      handOff(sender())
     case HandOff(shard) =>
       log.warning("{}: Shard [{}] can not hand off for another Shard [{}]", typeName, shardId, shard)
     case _ => unhandled(msg)
@@ -839,7 +865,12 @@ private[akka] class Shard(
 
       // does conversion so only do once
       val activeEntities = entities.activeEntities()
-      if (activeEntities.nonEmpty) {
+      if (preparingForShutdown) {
+        log.info("{}: HandOff shard [{}] while preparing for shutdown. Stopping right away.", typeName, shardId)
+        activeEntities.foreach { _ ! handOffStopMessage }
+        replyTo ! ShardStopped(shardId)
+        context.stop(self)
+      } else if (activeEntities.nonEmpty && !preparingForShutdown) {
         val entityHandOffTimeout = (settings.tuningParameters.handOffTimeout - 5.seconds).max(1.seconds)
         log.debug(
           "{}: Starting HandOffStopper for shard [{}] to terminate [{}] entities.",

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -11,7 +11,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.dungeon.ChildrenContainer
 import akka.dispatch._
@@ -49,8 +49,12 @@ private[akka] class RepointableActorRef(
    * processing the very first message (i.e. before Cell.start()). Hence there
    * are two refs here, one for each function, and they are switched just so.
    */
-  @silent @volatile private var _cellDoNotCallMeDirectly: Cell = _
-  @silent @volatile private var _lookupDoNotCallMeDirectly: Cell = _
+  @nowarn @volatile private var _cellDoNotCallMeDirectly: Cell = _
+  @nowarn @volatile private var _lookupDoNotCallMeDirectly: Cell = _
+  @nowarn private def _preventPrivateUnusedErasure = {
+    _cellDoNotCallMeDirectly
+    _lookupDoNotCallMeDirectly
+  }
 
   def underlying: Cell = Unsafe.instance.getObjectVolatile(this, cellOffset).asInstanceOf[Cell]
   def lookup = Unsafe.instance.getObjectVolatile(this, lookupOffset).asInstanceOf[Cell]
@@ -175,7 +179,7 @@ private[akka] class RepointableActorRef(
 
   def children: immutable.Iterable[ActorRef] = lookup.childrenRefs.children
 
-  def !(message: Any)(implicit sender: ActorRef = Actor.noSender) = underlying.sendMessage(message, sender)
+  def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = underlying.sendMessage(message, sender)
 
   def sendSystemMessage(message: SystemMessage) = underlying.sendSystemMessage(message)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -32,6 +32,8 @@ object TestManagementCommands {
 private[remote] class SharedTestState {
 
   private val state = new AtomicReference[TestState](TestState(Map.empty, None))
+
+  def anyBlackholePresent(): Boolean = state.get.blackholes.nonEmpty
 
   def isBlackhole(from: Address, to: Address): Boolean =
     state.get.blackholes.get(from) match {
@@ -161,6 +163,10 @@ private[remote] class InboundTestStage(inboundContext: InboundContext, state: Sh
             env.association match {
               case OptionVal.None =>
                 // unknown, handshake not completed
+                if (state.anyBlackholePresent())
+                  log.debug(
+                    "inbound message [{}] before handshake completed, cannot check if remote is blackholed, letting through",
+                    Logging.messageClassName(env.message))
                 push(out, env)
               case OptionVal.Some(association) =>
                 if (state.isBlackhole(inboundContext.localAddress.address, association.remoteAddress)) {

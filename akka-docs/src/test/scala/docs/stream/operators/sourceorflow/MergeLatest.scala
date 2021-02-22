@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.operators.sourceorflow
@@ -7,7 +7,7 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
 
 object MergeLatest extends App {
-  implicit val system = ActorSystem()
+  implicit val system: ActorSystem = ActorSystem()
 
   //#mergeLatest
   val prices = Source(List(100, 101, 99, 103))

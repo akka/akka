@@ -1,5 +1,7 @@
 import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin }
 
+ThisBuild / scalafixScalaBinaryVersion := scalaBinaryVersion.value
+
 enablePlugins(
   UnidocRoot,
   UnidocWithPrValidation,
@@ -28,12 +30,9 @@ addCommandAlias("applyCodeStyle", "headerCreateAll; javafmtAll; scalafmtAll")
 
 addCommandAlias(
   name = "fixall",
-  value =
-    ";scalafixEnable; compile:scalafix; test:scalafix; multi-jvm:scalafix; scalafmtAll; test:compile; multi-jvm:compile; reload")
+  value = ";scalafixEnable; scalafixAll; scalafmtAll; test:compile; multi-jvm:compile; reload")
 
-addCommandAlias(
-  name = "sortImports",
-  value = ";scalafixEnable; compile:scalafix SortImports; test:scalafix SortImports; scalafmtAll")
+addCommandAlias(name = "sortImports", value = ";scalafixEnable; scalafixAll SortImports; scalafmtAll")
 
 import akka.AkkaBuild._
 import akka.{ AkkaBuild, Dependencies, OSGi, Protobuf, SigarLoader, VersionGenerator }
@@ -104,7 +103,15 @@ lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
   .enablePlugins(PublishRsyncPlugin)
   .settings(rootSettings: _*)
-  .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, protobufV3, akkaScalaNightly, docs))
+  .settings(
+    unidocRootIgnoreProjects := Seq(
+        remoteTests,
+        benchJmh,
+        protobuf,
+        protobufV3,
+        akkaScalaNightly,
+        docs,
+        serialversionRemoverPlugin))
   .settings(unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get)
   .enablePlugins(CopyrightHeaderForBuild)
 
@@ -117,6 +124,7 @@ lazy val actor = akkaModule("akka-actor")
     (scalaSource in Compile).value.getParentFile / s"scala-$ver"
   })
   .settings(VersionGenerator.settings)
+  .settings(serialversionRemoverPluginSettings)
   .enablePlugins(BoilerplatePlugin)
 
 lazy val actorTests = akkaModule("akka-actor-tests")
@@ -248,7 +256,7 @@ lazy val docs = akkaModule("akka-docs")
     StreamOperatorsIndexGenerator,
     Jdk9)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
-  .disablePlugins(ScalafixPlugin)
+  .disablePlugins((if (ScalafixSupport.fixTestScope) Nil else Seq(ScalafixPlugin)): _*)
 
 lazy val jackson = akkaModule("akka-serialization-jackson")
   .dependsOn(
@@ -332,6 +340,7 @@ lazy val protobuf = akkaModule("akka-protobuf")
   .settings(AutomaticModuleName.settings("akka.protobuf"))
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
+  .settings(autoScalaLibrary := false) // Pure java project
 
 lazy val protobufV3 = akkaModule("akka-protobuf-v3")
   .settings(OSGi.protobufV3)
@@ -566,6 +575,25 @@ lazy val billOfMaterials = Project("akka-bill-of-materials", file("akka-bill-of-
     name := "akka-bom",
     bomIncludeProjects := userProjects,
     description := s"${description.value} (depending on Scala ${CrossVersion.binaryScalaVersion(scalaVersion.value)})")
+
+lazy val serialversionRemoverPlugin =
+  Project(id = "serialVersionRemoverPlugin", base = file("plugins/serialversion-remover-plugin")).settings(
+    scalaVersion := akka.Dependencies.scala3Version,
+    libraryDependencies += ("org.scala-lang" %% "scala3-compiler" % akka.Dependencies.scala3Version),
+    Compile / doc / sources := Nil,
+    publishArtifact in Compile := false)
+
+lazy val serialversionRemoverPluginSettings = {
+  if (akka.Dependencies.getScalaVersion() == akka.Dependencies.scala3Version) {
+    Seq(
+      autoCompilerPlugins := true,
+      scalacOptions in Compile += (
+          "-Xplugin:" + (Keys.`package` in (serialversionRemoverPlugin, Compile)).value.getAbsolutePath.toString
+        ))
+  } else {
+    Seq()
+  }
+}
 
 def akkaModule(name: String): Project =
   Project(id = name, base = file(name))

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -46,7 +46,7 @@ private[io] class TcpOutgoingConnection(
   timeout.foreach(context.setReceiveTimeout) //Initiate connection timeout if supplied
 
   private def stop(cause: Throwable): Unit =
-    stopWith(CloseInformation(Set(commander), connect.failureMessage.withCause(cause)), shouldAbort = true)
+    stopWith(CloseInformation(Set(commander), CommandFailed(connect).withCause(cause)), shouldAbort = true)
 
   private def reportConnectFailure(thunk: => Unit): Unit = {
     try {

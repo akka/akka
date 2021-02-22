@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
@@ -171,4 +171,9 @@ trait PoolRouter[T] extends Behavior[T] {
    * Set the props used to spawn the pool's routees
    */
   def withRouteeProps(routeeProps: Props): PoolRouter[T]
+
+  /**
+   * Any message that the predicate returns true for will be broadcast to all routees.
+   */
+  def withBroadcastPredicate(pred: T => Boolean): PoolRouter[T]
 }

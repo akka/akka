@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
@@ -48,7 +48,7 @@ private object ActorRefBackpressureSource {
       override protected def stageActorName: String =
         inheritedAttributes.get[Attributes.Name].map(_.n).getOrElse(super.stageActorName)
 
-      val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillCompatibility = false) {
+      val ref: ActorRef = getEagerStageActor(eagerMaterializer) {
         case (_, m) if failureMatcher.isDefinedAt(m) =>
           failStage(failureMatcher(m))
         case (_, m) if completionMatcher.isDefinedAt(m) =>

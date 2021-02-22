@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -16,7 +16,7 @@ import scala.concurrent.duration._
 import scala.language.implicitConversions
 import scala.util.Success
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.dispatch.ExecutionContexts
 import akka.pattern.ask
@@ -328,7 +328,7 @@ private[akka] final case class ActorSelectionMessage(
 /**
  * INTERNAL API
  */
-@silent("@SerialVersionUID has no effect on traits")
+@nowarn("msg=@SerialVersionUID has no effect on traits")
 @SerialVersionUID(1L)
 private[akka] sealed trait SelectionPathElement
 

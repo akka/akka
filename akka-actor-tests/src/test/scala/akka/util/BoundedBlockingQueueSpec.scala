@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -101,7 +101,7 @@ class BoundedBlockingQueueSpec
       val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(1)
       queue.offer("1")
 
-      mustBlockFor(100 milliseconds) {
+      mustBlockFor(100.milliseconds) {
         queue.put("2")
       }
       (events should contain).inOrder(offer("1"), awaitNotFull)
@@ -114,12 +114,12 @@ class BoundedBlockingQueueSpec
 
       val f = Future(queue.put("b"))
 
-      after(10 milliseconds) {
+      after(10.milliseconds) {
         f.isCompleted should be(false)
         queue.take()
       }
 
-      Await.result(f, 3 seconds)
+      Await.result(f, 3.seconds)
       (events should contain).inOrder(offer("a"), poll, offer("b"))
     }
 
@@ -130,14 +130,14 @@ class BoundedBlockingQueueSpec
       // Blocks until another thread signals `notFull`
       val f = Future(queue.put("b"))
 
-      after(10 milliseconds) {
+      after(10.milliseconds) {
         f.isCompleted should be(false)
         lock.lockInterruptibly()
         notFull.signal()
         lock.unlock()
       }
 
-      mustBlockFor(100 milliseconds, f)
+      mustBlockFor(100.milliseconds, f)
       events.toList should containInSequence(offer("a"), awaitNotFull, signalNotFull, getSize, awaitNotFull)
       events shouldNot contain(offer("b"))
     }
@@ -162,7 +162,7 @@ class BoundedBlockingQueueSpec
     "block when the queue is empty" in {
       val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(1)
 
-      mustBlockFor(100 milliseconds) {
+      mustBlockFor(100.milliseconds) {
         queue.take()
       }
       events should contain(awaitNotEmpty)
@@ -173,12 +173,12 @@ class BoundedBlockingQueueSpec
       val TestContext(queue, events, _, _, _, _) = newBoundedBlockingQueue(1)
 
       val f = Future(queue.take())
-      after(10 milliseconds) {
+      after(10.milliseconds) {
         f.isCompleted should be(false)
         queue.put("a")
       }
 
-      Await.ready(f, 3 seconds)
+      Await.ready(f, 3.seconds)
       (events should contain).inOrder(awaitNotEmpty, offer("a"), poll)
     }
 
@@ -189,7 +189,7 @@ class BoundedBlockingQueueSpec
       val f = Future(queue.take())
 
       // Cause `notFull` signal, but don't fill the queue
-      after(10 milliseconds) {
+      after(10.milliseconds) {
         f.isCompleted should be(false)
         lock.lockInterruptibly()
         notEmpty.signal()
@@ -197,7 +197,7 @@ class BoundedBlockingQueueSpec
       }
 
       // `f` should still block since the queue is still empty
-      mustBlockFor(100 milliseconds, f)
+      mustBlockFor(100.milliseconds, f)
       events.toList should containInSequence(getSize, awaitNotEmpty, signalNotEmpty, getSize, awaitNotEmpty)
       events shouldNot contain(poll)
     }
@@ -252,11 +252,11 @@ class BoundedBlockingQueueSpec
       notFull.manualTimeControl(true)
 
       val f = Future(queue.offer("World", 100, TimeUnit.MILLISECONDS))
-      after(10 milliseconds) {
+      after(10.milliseconds) {
         f.isCompleted should be(false)
-        notFull.advanceTime(99 milliseconds)
+        notFull.advanceTime(99.milliseconds)
       }
-      mustBlockFor(100 milliseconds, f)
+      mustBlockFor(100.milliseconds, f)
       events shouldNot contain(offer("World"))
     }
 
@@ -274,12 +274,12 @@ class BoundedBlockingQueueSpec
 
       notFull.manualTimeControl(true)
       val f = Future(queue.offer("World", 100, TimeUnit.MILLISECONDS))
-      notFull.advanceTime(99 milliseconds)
-      after(50 milliseconds) {
+      notFull.advanceTime(99.milliseconds)
+      after(50.milliseconds) {
         f.isCompleted should be(false)
         queue.take()
       }
-      Await.result(f, 3 seconds) should equal(true)
+      Await.result(f, 3.seconds) should equal(true)
       (events should contain).inOrder(awaitNotFull, signalNotFull, offer("World"))
     }
 
@@ -290,7 +290,7 @@ class BoundedBlockingQueueSpec
       val f = Future(queue.offer("World", 1000, TimeUnit.DAYS))
 
       // Cause `notFull` signal, but don't fill the queue
-      after(10 milliseconds) {
+      after(10.milliseconds) {
         f.isCompleted should be(false)
         lock.lockInterruptibly()
         notFull.signal()
@@ -298,7 +298,7 @@ class BoundedBlockingQueueSpec
       }
 
       // `f` should still block since the queue is still empty
-      mustBlockFor(100 milliseconds, f)
+      mustBlockFor(100.milliseconds, f)
       events.toList should containInSequence(getSize, awaitNotFull, signalNotFull, getSize, awaitNotFull)
       events shouldNot contain(offer("World"))
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
@@ -122,7 +122,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       @unused repr: immutable.Seq[PersistentRepr]): Unit = ()
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
-    setup.log.debug2("Replaying events: from: {}, to: {}", fromSeqNr, toSeqNr)
+    setup.internalLogger.debug2("Replaying events: from: {}, to: {}", fromSeqNr, toSeqNr)
     setup.journal.tell(
       ReplayMessages(fromSeqNr, toSeqNr, setup.recovery.replayMax, setup.persistenceId.id, setup.selfClassic),
       setup.selfClassic)
@@ -146,7 +146,7 @@ private[akka] trait JournalInteractions[C, E, S] {
   /** Mutates setup, by setting the `holdingRecoveryPermit` to false */
   protected def tryReturnRecoveryPermit(reason: String): Unit = {
     if (setup.holdingRecoveryPermit) {
-      setup.log.debug("Returning recovery permit, reason: {}", reason)
+      setup.internalLogger.debug("Returning recovery permit, reason: {}", reason)
       setup.persistence.recoveryPermitter.tell(RecoveryPermitter.ReturnRecoveryPermit, setup.selfClassic)
       setup.holdingRecoveryPermit = false
     } // else, no need to return the permit
@@ -162,7 +162,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       val self = setup.selfClassic
 
       if (toSequenceNr == Long.MaxValue || toSequenceNr <= lastSequenceNr) {
-        setup.log.debug("Deleting events up to sequenceNr [{}]", toSequenceNr)
+        setup.internalLogger.debug("Deleting events up to sequenceNr [{}]", toSequenceNr)
         setup.journal.tell(JournalProtocol.DeleteMessagesTo(setup.persistenceId.id, toSequenceNr, self), self)
       } else
         self ! DeleteMessagesFailure(
@@ -187,7 +187,7 @@ private[akka] trait SnapshotInteractions[C, E, S] {
   }
 
   protected def internalSaveSnapshot(state: Running.RunningState[S]): Unit = {
-    setup.log.debug("Saving snapshot sequenceNr [{}]", state.seqNr)
+    setup.internalLogger.debug("Saving snapshot sequenceNr [{}]", state.seqNr)
     if (state.state == null)
       throw new IllegalStateException("A snapshot must not be a null state.")
     else {
@@ -209,7 +209,7 @@ private[akka] trait SnapshotInteractions[C, E, S] {
   protected def internalDeleteSnapshots(fromSequenceNr: Long, toSequenceNr: Long): Unit = {
     if (toSequenceNr > 0) {
       val snapshotCriteria = SnapshotSelectionCriteria(minSequenceNr = fromSequenceNr, maxSequenceNr = toSequenceNr)
-      setup.log.debug2("Deleting snapshots from sequenceNr [{}] to [{}]", fromSequenceNr, toSequenceNr)
+      setup.internalLogger.debug2("Deleting snapshots from sequenceNr [{}] to [{}]", fromSequenceNr, toSequenceNr)
       setup.snapshotStore
         .tell(SnapshotProtocol.DeleteSnapshots(setup.persistenceId.id, snapshotCriteria), setup.selfClassic)
     }

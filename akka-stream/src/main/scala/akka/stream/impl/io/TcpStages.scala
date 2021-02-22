@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.io
@@ -12,7 +12,7 @@ import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Terminated }
@@ -246,7 +246,7 @@ private[stream] object ConnectionSourceStage {
     // After that remains immutable
     private var connection: ActorRef = _
 
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     private val writeBufferSize = inheritedAttributes
       .get[TcpAttributes.TcpWriteBufferSize](
         TcpAttributes.TcpWriteBufferSize(
@@ -385,7 +385,7 @@ private[stream] object ConnectionSourceStage {
         cause match {
           case _: SubscriptionWithCancelException.NonFailureCancellation =>
             log.debug(
-              "Not aborting connection from {}:{} because downstream cancelled stream without failure",
+              "Closing connection from {}:{} because downstream cancelled stream without failure",
               remoteAddress.getHostString,
               remoteAddress.getPort)
             closeConnectionDownstreamFinished()

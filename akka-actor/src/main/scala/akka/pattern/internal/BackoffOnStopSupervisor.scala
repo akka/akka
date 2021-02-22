@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern.internal
@@ -43,16 +43,19 @@ import akka.pattern.{
   import BackoffSupervisor._
   import context.dispatcher
 
-  override val supervisorStrategy: SupervisorStrategy = strategy match {
-    case oneForOne: OneForOneStrategy =>
-      OneForOneStrategy(oneForOne.maxNrOfRetries, oneForOne.withinTimeRange, oneForOne.loggingEnabled) {
-        case ex =>
-          val defaultDirective: Directive =
-            super.supervisorStrategy.decider.applyOrElse(ex, (_: Any) => Escalate)
+  override val supervisorStrategy: SupervisorStrategy = {
+    val decider = super.supervisorStrategy.decider
+    strategy match {
+      case oneForOne: OneForOneStrategy =>
+        OneForOneStrategy(oneForOne.maxNrOfRetries, oneForOne.withinTimeRange, oneForOne.loggingEnabled) {
+          case ex =>
+            val defaultDirective: Directive =
+              decider.applyOrElse(ex, (_: Any) => Escalate)
 
-          strategy.decider.applyOrElse(ex, (_: Any) => defaultDirective)
-      }
-    case s => s
+            strategy.decider.applyOrElse(ex, (_: Any) => defaultDirective)
+        }
+      case s => s
+    }
   }
 
   def onTerminated: Receive = {

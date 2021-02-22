@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.persistence.typed
@@ -25,10 +25,10 @@ import akka.persistence.typed.PersistenceId
 //#structure
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotFailed
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 // unused variables in pattern match are useful in the docs
-@silent
+@nowarn
 object BasicPersistentBehaviorCompileOnly {
 
   import akka.persistence.typed.scaladsl.RetentionCriteria

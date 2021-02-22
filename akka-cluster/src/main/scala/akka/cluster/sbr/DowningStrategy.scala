@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sbr
@@ -7,7 +7,6 @@ package akka.cluster.sbr
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.Address
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
@@ -49,12 +48,15 @@ import akka.coordination.lease.scaladsl.Lease
   case object ReverseDownIndirectlyConnected extends Decision {
     override def isIndirectlyConnected = true
   }
+  case object DownSelfQuarantinedByRemote extends Decision {
+    override def isIndirectlyConnected: Boolean = false
+  }
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] abstract class DowningStrategy(val selfDc: DataCenter) {
+@InternalApi private[akka] abstract class DowningStrategy(val selfDc: DataCenter, selfUniqueAddress: UniqueAddress) {
   import DowningStrategy._
 
   // may contain Joining and WeaklyUp
@@ -273,6 +275,9 @@ import akka.coordination.lease.scaladsl.Lease
       case ReverseDownIndirectlyConnected =>
         // indirectly connected + all reachable
         downable.intersect(indirectlyConnected).union(downable.diff(unreachable))
+      case DownSelfQuarantinedByRemote =>
+        if (downable.contains(selfUniqueAddress)) Set(selfUniqueAddress)
+        else Set.empty
     }
   }
 
@@ -321,6 +326,8 @@ import akka.coordination.lease.scaladsl.Lease
       case DownIndirectlyConnected                   => ReverseDownIndirectlyConnected
       case AcquireLeaseAndDownIndirectlyConnected(_) => ReverseDownIndirectlyConnected
       case ReverseDownIndirectlyConnected            => DownIndirectlyConnected
+      case DownSelfQuarantinedByRemote =>
+        throw new IllegalArgumentException("Not expected to ever try to reverse DownSelfQuarantinedByRemote")
     }
   }
 
@@ -353,8 +360,9 @@ import akka.coordination.lease.scaladsl.Lease
 @InternalApi private[sbr] final class StaticQuorum(
     selfDc: DataCenter,
     val quorumSize: Int,
-    override val role: Option[String])
-    extends DowningStrategy(selfDc) {
+    override val role: Option[String],
+    selfUniqueAddress: UniqueAddress)
+    extends DowningStrategy(selfDc, selfUniqueAddress) {
   import DowningStrategy._
 
   override def decide(): Decision = {
@@ -386,8 +394,11 @@ import akka.coordination.lease.scaladsl.Lease
  *
  * It is only counting members within the own data center.
  */
-@InternalApi private[sbr] final class KeepMajority(selfDc: DataCenter, override val role: Option[String])
-    extends DowningStrategy(selfDc) {
+@InternalApi private[sbr] final class KeepMajority(
+    selfDc: DataCenter,
+    override val role: Option[String],
+    selfUniqueAddress: UniqueAddress)
+    extends DowningStrategy(selfDc, selfUniqueAddress) {
   import DowningStrategy._
 
   override def decide(): Decision = {
@@ -475,8 +486,9 @@ import akka.coordination.lease.scaladsl.Lease
 @InternalApi private[sbr] final class KeepOldest(
     selfDc: DataCenter,
     val downIfAlone: Boolean,
-    override val role: Option[String])
-    extends DowningStrategy(selfDc) {
+    override val role: Option[String],
+    selfUniqueAddress: UniqueAddress)
+    extends DowningStrategy(selfDc, selfUniqueAddress) {
   import DowningStrategy._
 
   // sort by age, oldest first
@@ -552,7 +564,8 @@ import akka.coordination.lease.scaladsl.Lease
  *
  * Down all nodes unconditionally.
  */
-@InternalApi private[sbr] final class DownAllNodes(selfDc: DataCenter) extends DowningStrategy(selfDc) {
+@InternalApi private[sbr] final class DownAllNodes(selfDc: DataCenter, selfUniqueAddress: UniqueAddress)
+    extends DowningStrategy(selfDc, selfUniqueAddress) {
   import DowningStrategy._
 
   override def decide(): Decision =
@@ -577,8 +590,9 @@ import akka.coordination.lease.scaladsl.Lease
     selfDc: DataCenter,
     override val role: Option[String],
     _lease: Lease,
-    acquireLeaseDelayForMinority: FiniteDuration)
-    extends DowningStrategy(selfDc) {
+    acquireLeaseDelayForMinority: FiniteDuration,
+    selfUniqueAddress: UniqueAddress)
+    extends DowningStrategy(selfDc, selfUniqueAddress) {
   import DowningStrategy._
 
   override val lease: Option[Lease] = Some(_lease)

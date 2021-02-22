@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.pubsub
@@ -195,6 +195,7 @@ class DistributedPubSubMediatorSpec
         expectMsg("hello")
         lastSender should ===(u2)
       }
+      enterBarrier("2-registered")
 
       runOn(second) {
         val u3 = createChatUser("u3")

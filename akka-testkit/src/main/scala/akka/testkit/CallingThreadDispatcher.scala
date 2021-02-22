@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
@@ -155,7 +155,7 @@ object CallingThreadDispatcher {
 class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) extends MessageDispatcher(_configurator) {
   import CallingThreadDispatcher._
 
-  val log = akka.event.Logging(eventStream, getClass)
+  val log = akka.event.Logging(eventStream, classOf[CallingThreadDispatcher])
 
   override def id: String = Id
 

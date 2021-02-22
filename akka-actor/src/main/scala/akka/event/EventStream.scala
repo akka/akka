@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.event.Logging.simpleName
@@ -41,7 +41,7 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
   protected def classify(event: Any): Class[_] = event.getClass
 
   // TODO consider avoiding the deprecated `isTerminated`?
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   protected def publish(event: Any, subscriber: ActorRef) = {
     if (sys == null && subscriber.isTerminated) unsubscribe(subscriber)
     else subscriber ! event

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.typed;
@@ -733,7 +733,8 @@ public class InteractionPatternsTest extends JUnitSuite {
 
         cookies.whenComplete(
             (cookiesReply, failure) -> {
-              if (cookies != null) System.out.println("Yay, " + cookiesReply.count + " cookies!");
+              if (cookiesReply != null)
+                System.out.println("Yay, " + cookiesReply.count + " cookies!");
               else System.out.println("Boo! didn't get cookies in time. " + failure);
             });
         // #standalone-ask-fail-future

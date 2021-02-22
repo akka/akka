@@ -10,6 +10,7 @@ You are viewing the documentation for the new actor APIs, to view the Akka Class
 To use Akka Cluster Sharding, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group=com.typesafe.akka
@@ -83,7 +84,7 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #init }
 
-Messages to a specific entity are then sent via an `EntityRef`.
+Messages to a specific entity are then sent via an `EntityRef`.  The `entityId` and the name of the Entity's key can be retrieved from the `EntityRef`.
 It is also possible to wrap methods in a `ShardingEnvelope` or define extractor functions and send messages directly to the shard region.
 
 Scala
@@ -96,6 +97,8 @@ Cluster sharding `init` should be called on every node for each entity type. Whi
 can be controlled with @ref:[roles](cluster.md#node-roles). `init` will create a `ShardRegion` or a proxy depending on whether the node's role matches
 the entity's role. 
 
+The behavior factory lambda passed to the init method is defined on each node and only used locally, this means it is safe to use it for injecting for example a node local `ActorRef` that each sharded actor should have access to or some object that is not possible to serialize.
+
 Specifying the role:
 
 Scala
@@ -104,7 +107,16 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #roles }
 
+### A note about EntityRef and serialization
 
+If including `EntityRef`s in messages or the `State`/`Event`s of an `EventSourcedBehavior`, those `EntityRef`s will need to be serialized.
+The @scala[`entityId`, `typeKey`, and (in multi-DC use-cases) `dataCenter` of an `EntityRef`]@java[`getEntityId`, `getTypeKey`, and (in multi-DC use-cases) `getDataCenter` methods of an `EntityRef`]
+provide exactly the information needed upon deserialization to regenerate an `EntityRef` equivalent to the one serialized, given an expected
+type of messages to send to the entity.
+
+At this time, serialization of `EntityRef`s requires a @ref:[custom serializer](../serialization.md#customization), as the specific
+`EntityTypeKey` (including the type of message which the desired entity type accepts) should not simply be encoded in the serialized
+representation but looked up on the deserializing side.
 
 ## Persistence example
 

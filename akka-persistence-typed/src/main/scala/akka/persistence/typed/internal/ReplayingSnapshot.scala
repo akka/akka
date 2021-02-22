@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.internal
@@ -66,7 +66,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
           case cmd: IncomingCommand[C] =>
             if (receivedPoisonPill) {
               if (setup.settings.logOnStashing)
-                setup.log.debug("Discarding message [{}], because actor is to be stopped.", cmd)
+                setup.internalLogger.debug("Discarding message [{}], because actor is to be stopped.", cmd)
               Behaviors.unhandled
             } else
               onCommand(cmd)
@@ -100,8 +100,8 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
 
     tryReturnRecoveryPermit("on snapshot recovery failure: " + cause.getMessage)
 
-    if (setup.log.isDebugEnabled)
-      setup.log.debug("Recovery failure for persistenceId [{}]", setup.persistenceId)
+    if (setup.internalLogger.isDebugEnabled)
+      setup.internalLogger.debug("Recovery failure for persistenceId [{}]", setup.persistenceId)
 
     val msg = s"Exception during recovery from snapshot. " +
       s"PersistenceId [${setup.persistenceId.id}]. ${cause.getMessage}"
@@ -135,7 +135,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
   }
 
   def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {
-    setup.log.debug(
+    setup.internalLogger.debug(
       "Unexpected response from journal: [{}], may be due to an actor restart, ignoring...",
       response.getClass.getName)
     Behaviors.unhandled

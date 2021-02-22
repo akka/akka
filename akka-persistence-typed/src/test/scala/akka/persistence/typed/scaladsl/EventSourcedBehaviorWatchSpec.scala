@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.scaladsl
@@ -7,7 +7,6 @@ package akka.persistence.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, LoggingTestKit, ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed._
@@ -24,6 +23,7 @@ import akka.persistence.typed.internal.{
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WriterIdentity
 import akka.serialization.jackson.CborSerializable
 import akka.util.ConstantFun
+import org.slf4j.LoggerFactory
 
 object EventSourcedBehaviorWatchSpec {
   sealed trait Command extends CborSerializable
@@ -45,6 +45,8 @@ class EventSourcedBehaviorWatchSpec
   private val pidCounter = new AtomicInteger(0)
 
   private def nextPid: PersistenceId = PersistenceId.ofUniqueId(s"${pidCounter.incrementAndGet()}")
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   private def setup(
       pf: PartialFunction[(String, Signal), Unit],
@@ -68,7 +70,8 @@ class EventSourcedBehaviorWatchSpec
       settings = settings,
       stashState = new StashState(context.asInstanceOf[ActorContext[InternalProtocol]], settings),
       replication = None,
-      publishEvents = false)
+      publishEvents = false,
+      internalLoggerFactory = () => logger)
 
   "A typed persistent parent actor watching a child" must {
 

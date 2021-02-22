@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.classic.transport
 
 import scala.concurrent.{ Await, Future }
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.remote.RemoteActorRefProvider
@@ -17,7 +17,7 @@ import akka.remote.transport.Transport._
 import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender }
 import akka.util.ByteString
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
     extends AkkaSpec("""
          akka.remote.artery.enabled = false

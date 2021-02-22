@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -15,7 +15,7 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
@@ -41,7 +41,7 @@ import akka.util.OptionVal
 class CodecBenchmark {
   import CodecBenchmark._
 
-  @silent("immutable val") // JMH updates this via reflection
+  @nowarn("msg=immutable val") // JMH updates this via reflection
   @Param(Array(Standard, RemoteInstrument))
   private var configType: String = _
 
@@ -70,10 +70,10 @@ class CodecBenchmark {
     override def publishDropped(inbound: InboundEnvelope, reason: String): Unit = ()
   }
 
-  @silent("never used") private var remoteRefB: RemoteActorRef = _
-  @silent("never used") private var resolvedRef: InternalActorRef = _
-  @silent("never used") private var senderStringA: String = _
-  @silent("never used") private var recipientStringB: String = _
+  @nowarn("msg=never used") private var remoteRefB: RemoteActorRef = _
+  @nowarn("msg=never used") private var resolvedRef: InternalActorRef = _
+  @nowarn("msg=never used") private var senderStringA: String = _
+  @nowarn("msg=never used") private var recipientStringB: String = _
 
   private var encodeGraph: Flow[String, Unit, NotUsed] = _
   private var decodeGraph: Flow[String, Unit, NotUsed] = _

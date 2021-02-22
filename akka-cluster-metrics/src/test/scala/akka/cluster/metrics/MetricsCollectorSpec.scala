@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
@@ -8,12 +8,12 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Try
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.cluster.metrics.StandardMetrics._
 import akka.testkit._
 
-@silent
+@nowarn
 class MetricsCollectorSpec
     extends AkkaSpec(MetricsConfig.defaultEnabled)
     with ImplicitSender

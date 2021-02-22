@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
 
 import java.io.FileReader
-import java.io.{FileInputStream, InputStreamReader}
+import java.io.{ FileInputStream, InputStreamReader }
 import java.util.Properties
 import java.time.format.DateTimeFormatter
 import java.time.ZonedDateTime
@@ -25,20 +25,18 @@ object AkkaBuild {
 
   val parallelExecutionByDefault = false // TODO: enable this once we're sure it does not break things
 
-  lazy val buildSettings = Def.settings(
-    organization := "com.typesafe.akka",
-    Dependencies.Versions)
+  lazy val buildSettings = Def.settings(organization := "com.typesafe.akka", Dependencies.Versions)
 
   lazy val rootSettings = Def.settings(
     UnidocRoot.akkaSettings,
     Protobuf.settings,
-    parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
+    parallelExecution in GlobalScope := System
+        .getProperty("akka.parallelExecution", parallelExecutionByDefault.toString)
+        .toBoolean,
     // used for linking to API docs (overwrites `project-info.version`)
-    ThisBuild / projectInfoVersion := { if (isSnapshot.value) "snapshot" else version.value }
-  )
+    ThisBuild / projectInfoVersion := { if (isSnapshot.value) "snapshot" else version.value })
 
-  lazy val mayChangeSettings = Seq(
-    description := """|This module of Akka is marked as
+  lazy val mayChangeSettings = Seq(description := """|This module of Akka is marked as
                       |'may change', which means that it is in early
                       |access mode, which also means that it is not covered
                       |by commercial support. An module marked 'may change' doesn't
@@ -59,18 +57,20 @@ object AkkaBuild {
           (outputPath / "[artifact]-[revision](-[classifier]).[ext]").absolutePath
 
         val resolver = Resolver.file("user-publish-m2-local", new File(path))
-        (resolver, Seq(
-          otherResolvers := resolver :: publishTo.value.toList,
-          publishM2Configuration := Classpaths.publishConfig(
-            publishMavenStyle.value,
-            deliverPattern(crossTarget.value),
-            if (isSnapshot.value) "integration" else "release",
-            ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,
-            artifacts = packagedArtifacts.value.toVector,
-            resolverName = resolver.name,
-            checksums = checksums.in(publishM2).value.toVector,
-            logging = ivyLoggingLevel.value,
-            overwrite = true)))
+        (
+          resolver,
+          Seq(
+            otherResolvers := resolver :: publishTo.value.toList,
+            publishM2Configuration := Classpaths.publishConfig(
+                publishMavenStyle.value,
+                deliverPattern(crossTarget.value),
+                if (isSnapshot.value) "integration" else "release",
+                ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,
+                artifacts = packagedArtifacts.value.toVector,
+                resolverName = resolver.name,
+                checksums = checksums.in(publishM2).value.toVector,
+                logging = ivyLoggingLevel.value,
+                overwrite = true)))
     }
 
   lazy val resolverSettings = Def.settings(
@@ -82,18 +82,31 @@ object AkkaBuild {
     if (System.getProperty("akka.build.useSnapshotSonatypeResolver", "false").toBoolean)
       resolvers += Resolver.sonatypeRepo("snapshots")
     else Seq.empty,
-    pomIncludeRepository := (_ => false), // do not leak internal repositories during staging
+    pomIncludeRepository := (_ => false) // do not leak internal repositories during staging
   )
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
-  final val DefaultScalacOptions = Seq(
-    "-encoding", "UTF-8",
-    "-feature",
-    "-unchecked",
-    "-Xlog-reflective-calls",
-    // 'blessed' since 2.13.1
-    "-language:higherKinds")
+  final val DefaultScalacOptions = {
+    if (Dependencies.getScalaVersion().startsWith("3.0")) {
+      Seq(
+        "-encoding",
+        "UTF-8",
+        "-feature",
+        "-unchecked",
+        // 'blessed' since 2.13.1
+        "-language:higherKinds")
+    } else {
+      Seq(
+        "-encoding",
+        "UTF-8",
+        "-feature",
+        "-unchecked",
+        "-Xlog-reflective-calls",
+        // 'blessed' since 2.13.1
+        "-language:higherKinds")
+    }
+  }
 
   // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
   final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")
@@ -107,30 +120,26 @@ object AkkaBuild {
       JdkOptions.targetJdkScalacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
     scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
     scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
-      opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
+        opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
     javacOptions in Compile ++= {
       DefaultJavacOptions ++
-        JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value)
+      JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value)
     },
     javacOptions in Test ++= DefaultJavacOptions ++
       JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
     javacOptions in Compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
     javacOptions in doc := Seq(),
-
     crossVersion := CrossVersion.binary,
-
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
-
     licenses := Seq(("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html"))),
     homepage := Some(url("https://akka.io/")),
     description := "Akka is a toolkit for building highly concurrent, distributed, and resilient message-driven applications for Java and Scala.",
-    scmInfo := Some(ScmInfo(
-      url("https://github.com/akka/akka"),
-      "scm:git:https://github.com/akka/akka.git",
-      "scm:git:git@github.com:akka/akka.git",
-    )),
+    scmInfo := Some(
+        ScmInfo(
+          url("https://github.com/akka/akka"),
+          "scm:git:https://github.com/akka/akka.git",
+          "scm:git:git@github.com:akka/akka.git")),
     apiURL := Some(url(s"https://doc.akka.io/api/akka/${version.value}")),
-
     initialCommands :=
       """|import language.postfixOps
          |import akka.actor._
@@ -146,12 +155,10 @@ object AkkaBuild {
          |implicit def ec = system.dispatcher
          |implicit val timeout: Timeout = Timeout(5 seconds)
          |""".stripMargin,
-
     /**
      * Test settings
      */
     fork in Test := true,
-
     // default JVM config for tests
     javaOptions in Test ++= {
       val defaults = Seq(
@@ -159,10 +166,10 @@ object AkkaBuild {
         "-XX:+UseG1GC",
         // most tests actually don't really use _that_ much memory (>1g usually)
         // twice used (and then some) keeps G1GC happy - very few or to no full gcs
-        "-Xms3g", "-Xmx3g",
+        "-Xms3g",
+        "-Xmx3g",
         // increase stack size (todo why?)
         "-Xss2m",
-
         // ## extra memory/gc tuning
         // this breaks jstat, but could avoid costly syncs to disc see http://www.evanjones.ca/jvm-mmap-pause.html
         "-XX:+PerfDisableSharedMem",
@@ -171,7 +178,6 @@ object AkkaBuild {
         "-XX:MaxGCPauseMillis=300",
         // nio direct memory limit for artery/aeron (probably)
         "-XX:MaxDirectMemorySize=256m",
-
         // faster random source
         "-Djava.security.egd=file:/dev/./urandom")
 
@@ -180,17 +186,14 @@ object AkkaBuild {
       else
         defaults
     },
-
     // all system properties passed to sbt prefixed with "akka." will be passed on to the forked jvms as is
     javaOptions in Test := {
       val base = (javaOptions in Test).value
       val akkaSysProps: Seq[String] =
-        sys.props.filter(_._1.startsWith("akka"))
-          .map { case (key, value) => s"-D$key=$value" }(breakOut)
+        sys.props.filter(_._1.startsWith("akka")).map { case (key, value) => s"-D$key=$value" }(breakOut)
 
       base ++ akkaSysProps
     },
-
     // with forked tests the working directory is set to each module's home directory
     // rather than the Akka root, some tests depend on Akka root being working dir, so reset
     testGrouping in Test := {
@@ -199,31 +202,32 @@ object AkkaBuild {
       original.map { group =>
         group.runPolicy match {
           case Tests.SubProcess(forkOptions) =>
-            group.copy(runPolicy = Tests.SubProcess(forkOptions.withWorkingDirectory(
-              workingDirectory = Some(new File(System.getProperty("user.dir"))))))
+            // format: off
+            group.copy(runPolicy = Tests.SubProcess(
+              forkOptions.withWorkingDirectory(workingDirectory = Some(new File(System.getProperty("user.dir"))))))
+            // format: on
           case _ => group
         }
       }
     },
-
-    parallelExecution in Test := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
+    parallelExecution in Test := System
+        .getProperty("akka.parallelExecution", parallelExecutionByDefault.toString)
+        .toBoolean,
     logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
-
     // show full stack traces and test case durations
     testOptions in Test += Tests.Argument("-oDF"),
-
     mavenLocalResolverSettings,
     docLintingSettings,
     JdkOptions.targetJdkSettings,
-
     // a workaround for https://github.com/akka/akka/issues/27661
     // see also project/Protobuf.scala that introduces /../ to make "intellij happy"
     MultiJvm / assembly / fullClasspath := {
       val old = (MultiJvm / assembly / fullClasspath).value.toVector
       val files = old.map(_.data.getCanonicalFile).distinct
-      files map { x => Attributed.blank(x) }
-    },
-  )
+      files.map { x =>
+        Attributed.blank(x)
+      }
+    })
 
   private def optionalDir(path: String): Option[File] =
     Option(path).filter(_.nonEmpty).map { path =>
@@ -239,9 +243,7 @@ object AkkaBuild {
     javacOptions in doc ++= {
       if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
       else Seq("-Xdoclint:none", "--ignore-source-errors")
-    }
-  )
-
+    })
 
   def loadSystemProperties(fileName: String): Unit = {
     import scala.collection.JavaConverters._

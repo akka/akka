@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.serialization
@@ -11,7 +11,7 @@ import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration
 import scala.concurrent.duration.Duration
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.{ ActorPath, ExtendedActorSystem }
 import akka.actor.Actor
@@ -129,7 +129,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     AtLeastOnceDeliverySnapshot(atLeastOnceDeliverySnapshot.getCurrentDeliveryId, unconfirmedDeliveries.result())
   }
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def stateChange(persistentStateChange: mf.PersistentStateChangeEvent): StateChangeEvent = {
     StateChangeEvent(
       persistentStateChange.getStateIdentifier,

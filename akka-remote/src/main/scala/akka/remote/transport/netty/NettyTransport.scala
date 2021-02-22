@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport.netty
@@ -21,7 +21,7 @@ import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 import org.jboss.netty.bootstrap.Bootstrap
 import org.jboss.netty.bootstrap.ClientBootstrap
@@ -170,7 +170,7 @@ class NettyTransportSettings(config: Config) {
   val PortSelector: Int = getInt("port")
 
   @deprecated("WARNING: This should only be used by professionals.", "2.4")
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   val BindPortSelector: Int = getString("bind-port") match {
     case ""    => PortSelector
     case value => value.toInt
@@ -213,7 +213,7 @@ class NettyTransportSettings(config: Config) {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[netty] trait CommonHandlers extends NettyHelpers {
   protected val transport: NettyTransport
 
@@ -256,7 +256,7 @@ private[netty] trait CommonHandlers extends NettyHelpers {
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[netty] abstract class ServerHandler(
     protected final val transport: NettyTransport,
     private final val associationListenerFuture: Future[AssociationEventListener])
@@ -288,7 +288,7 @@ private[netty] abstract class ServerHandler(
 /**
  * INTERNAL API
  */
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private[netty] abstract class ClientHandler(protected final val transport: NettyTransport, remoteAddress: Address)
     extends NettyClientHelpers
     with CommonHandlers {
@@ -498,7 +498,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   }
 
   override def listen: Future[(Address, Promise[AssociationEventListener])] = {
-    @silent("deprecated")
+    @nowarn("msg=deprecated")
     val bindPort = settings.BindPortSelector
 
     for {
@@ -516,7 +516,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
 
         serverChannel = newServerChannel
 
-        @silent("deprecated")
+        @nowarn("msg=deprecated")
         val port = if (settings.PortSelector == 0) None else Some(settings.PortSelector)
 
         addressFromSocketAddress(

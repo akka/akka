@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -8,7 +8,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 import akka.actor._
 import akka.actor.DeadLetterSuppression
 import akka.annotation.DoNotInherit
@@ -47,7 +47,7 @@ object ShardCoordinator {
    * INTERNAL API
    * Factory method for the [[akka.actor.Props]] of the [[ShardCoordinator]] actor.
    */
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   private[akka] def props(
       typeName: String,
       settings: ClusterShardingSettings,
@@ -639,7 +639,8 @@ object ShardCoordinator {
 abstract class ShardCoordinator(
     settings: ClusterShardingSettings,
     allocationStrategy: ShardCoordinator.ShardAllocationStrategy)
-    extends Actor {
+    extends Actor
+    with Timers {
 
   import ShardCoordinator._
   import ShardCoordinator.Internal._
@@ -661,6 +662,7 @@ abstract class ShardCoordinator(
   var allRegionsRegistered = false
 
   var state = State.empty.withRememberEntities(settings.rememberEntities)
+  var preparingForShutdown = false
   // rebalanceInProgress for the ShardId keys, pending GetShardHome requests by the ActorRef values
   var rebalanceInProgress = Map.empty[ShardId, Set[ActorRef]]
   var rebalanceWorkers: Set[ActorRef] = Set.empty
@@ -672,14 +674,17 @@ abstract class ShardCoordinator(
 
   import context.dispatcher
 
-  val rebalanceTask =
-    context.system.scheduler.scheduleWithFixedDelay(rebalanceInterval, rebalanceInterval, self, RebalanceTick)
-
-  cluster.subscribe(self, initialStateMode = InitialStateAsEvents, ClusterShuttingDown.getClass)
+  cluster.subscribe(
+    self,
+    initialStateMode = InitialStateAsEvents,
+    ClusterShuttingDown.getClass,
+    classOf[MemberReadyForShutdown],
+    classOf[MemberPreparingForShutdown])
 
   protected def typeName: String
 
   override def preStart(): Unit = {
+    timers.startTimerWithFixedDelay(RebalanceTick, RebalanceTick, rebalanceInterval)
     allocationStrategy match {
       case strategy: StartableAllocationStrategy =>
         strategy.start()
@@ -691,7 +696,6 @@ abstract class ShardCoordinator(
 
   override def postStop(): Unit = {
     super.postStop()
-    rebalanceTask.cancel()
     cluster.unsubscribe(self)
   }
 
@@ -786,7 +790,7 @@ abstract class ShardCoordinator(
         }
 
       case RebalanceTick =>
-        if (state.regions.nonEmpty) {
+        if (state.regions.nonEmpty && !preparingForShutdown) {
           val shardsFuture = allocationStrategy.rebalance(state.regions, rebalanceInProgress.keySet)
           shardsFuture.value match {
             case Some(Success(shards)) =>
@@ -895,6 +899,15 @@ abstract class ShardCoordinator(
         // can't stop because supervisor will start it again,
         // it will soon be stopped when singleton is stopped
         context.become(shuttingDown)
+
+      case _: MemberPreparingForShutdown | _: MemberReadyForShutdown =>
+        if (!preparingForShutdown) {
+          log.info(
+            "{}: Shard coordinator detected prepare for full cluster shutdown. No new rebalances will take place.",
+            typeName)
+          timers.cancel(RebalanceTick)
+          preparingForShutdown = true
+        }
 
       case ShardRegion.GetCurrentRegions =>
         val reply = ShardRegion.CurrentRegions(state.regions.keySet.map { ref =>
@@ -1191,7 +1204,7 @@ abstract class ShardCoordinator(
 /**
  * Singleton coordinator that decides where to allocate shards.
  *
- * Users can migrate to using DData to store state then either event sourcing or ddata to store
+ * Users can migrate to using DData to store state then either Event Sourcing or ddata to store
  * the remembered entities.
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]

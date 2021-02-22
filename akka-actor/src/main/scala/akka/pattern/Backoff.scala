@@ -1,12 +1,12 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.actor.{ OneForOneStrategy, Props, SupervisorStrategy }
 import akka.annotation.DoNotInherit
@@ -567,7 +567,7 @@ trait BackoffOptions {
   private[akka] def props: Props
 }
 
-@silent("deprecated")
+@nowarn("msg=deprecated")
 private final case class BackoffOptionsImpl(
     backoffType: BackoffType = RestartImpliesFailure,
     childProps: Props,

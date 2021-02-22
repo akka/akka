@@ -1,5 +1,5 @@
 ---
-project.description: Akka Persistence Classic, event sourcing with Akka, At-Least-Once delivery, snapshots, recovery and replay with Akka actors.
+project.description: Akka Persistence Classic, Event Sourcing with Akka, At-Least-Once delivery, snapshots, recovery and replay with Akka actors.
 ---
 # Classic Persistence
 
@@ -11,11 +11,16 @@ For the full documentation of this feature and for new projects see @ref:[Event 
 To use Akka Persistence, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
   symbol1=AkkaVersion
   value1="$akka.version$"
   group="com.typesafe.akka"
   artifact="akka-persistence_$scala.binary.version$"
   version=AkkaVersion
+  group2="com.typesafe.akka"
+  artifact2="akka-persistence-testkit_$scala.binary.version$"
+  version2=AkkaVersion
+  scope2=test
 }
 
 You also have to select journal plugin and optionally snapshot store plugin, see 
@@ -44,12 +49,12 @@ Replicated journals are available as [Community plugins](https://akka.io/communi
  * *Snapshot store*: A snapshot store persists snapshots of a persistent actor's state. Snapshots are
 used for optimizing recovery times. The storage backend of a snapshot store is pluggable.
 The persistence extension comes with a "local" snapshot storage plugin, which writes to the local filesystem. Replicated snapshot stores are available as [Community plugins](https://akka.io/community/)
- * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
-development of event sourced applications (see section @ref:[Event sourcing](typed/persistence.md#event-sourcing-concepts)).
+ * *Event Sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
+development of event sourced applications (see section @ref:[Event Sourcing](typed/persistence.md#event-sourcing-concepts)).
 
 ## Example
 
-Akka persistence supports event sourcing with the @scala[`PersistentActor` trait]@java[`AbstractPersistentActor` abstract class]. An actor that extends this @scala[trait]@java[class] uses the
+Akka persistence supports Event Sourcing with the @scala[`PersistentActor` trait]@java[`AbstractPersistentActor` abstract class]. An actor that extends this @scala[trait]@java[class] uses the
 `persist` method to persist and handle events. The behavior of @scala[a `PersistentActor`]@java[an `AbstractPersistentActor`]
 is defined by implementing @scala[`receiveRecover`]@java[`createReceiveRecover`] and @scala[`receiveCommand`]@java[`createReceive`]. This is demonstrated in the following example.
 
@@ -453,7 +458,7 @@ timer-based which keeps latencies at a minimum.
 It is possible to delete all messages (journaled by a single persistent actor) up to a specified sequence number;
 Persistent actors may call the `deleteMessages` method to this end.
 
-Deleting messages in event sourcing based applications is typically either not used at all, or used in conjunction with
+Deleting messages in Event Sourcing based applications is typically either not used at all, or used in conjunction with
 [snapshotting](#snapshots), i.e. after a snapshot has been successfully stored, a `deleteMessages(toSequenceNr)`
 up until the sequence number of the data held by that snapshot can be issued to safely delete the previous events
 while still having access to the accumulated state during replays - by loading the snapshot.
@@ -750,7 +755,7 @@ configuration key. The method can be overridden by implementation classes to ret
 
 ## Event Adapters
 
-In long running projects using event sourcing sometimes the need arises to detach the data model from the domain model
+In long running projects using Event Sourcing sometimes the need arises to detach the data model from the domain model
 completely.
 
 Event Adapters help in situations where:

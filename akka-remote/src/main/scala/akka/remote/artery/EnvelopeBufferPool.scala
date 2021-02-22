@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -557,7 +557,7 @@ private[remote] final class EnvelopeBuffer(val byteBuffer: ByteBuffer) {
     byteBuffer.rewind()
     val bytes = new Array[Byte](byteBuffer.remaining)
     byteBuffer.get(bytes)
-    val newByteBuffer = ByteBuffer.wrap(bytes)
+    val newByteBuffer = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
     newByteBuffer.position(p)
     byteBuffer.position(p)
     new EnvelopeBuffer(newByteBuffer)

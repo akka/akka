@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -9,7 +9,7 @@ import scala.util.Failure
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
+import scala.annotation.nowarn
 
 import akka.ConfigurationException
 import akka.Done
@@ -514,8 +514,10 @@ private[akka] class RemoteActorRefProvider(
     // using thread local LRU cache, which will call internalResolveActorRef
     // if the value is not cached
     actorRefResolveThreadLocalCache match {
-      case null => internalResolveActorRef(path) // not initialized yet
-      case c    => c.threadLocalCache(this).getOrCompute(path)
+      case null =>
+        internalResolveActorRef(path) // not initialized yet
+      case c =>
+        c.threadLocalCache(this).resolve(path)
     }
   }
 
@@ -674,7 +676,7 @@ private[akka] class RemoteActorRef private[akka] (
   // used by artery to direct messages to separate specialized streams
   @volatile private[remote] var cachedSendQueueIndex: Int = -1
 
-  @silent("deprecated")
+  @nowarn("msg=deprecated")
   def getChild(name: Iterator[String]): InternalActorRef = {
     val s = name.toStream
     s.headOption match {

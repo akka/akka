@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
@@ -15,6 +15,7 @@ import akka.stream._
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage._
+import scala.concurrent.ExecutionContext
 
 /**
  * INTERNAL API
@@ -30,7 +31,7 @@ import akka.stream.stage._
 
   def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with OutHandler {
     lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
-    private implicit def ec = materializer.executionContext
+    private implicit def ec: ExecutionContext = materializer.executionContext
     private var state: Option[S] = None
 
     private val createdCallback = getAsyncCallback[Try[S]] {

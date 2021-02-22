@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -75,9 +75,9 @@ object MultiNode extends AutoPlugin {
       scalacOptions in MultiJvm := (scalacOptions in Test).value,
       logLevel in multiJvmCreateLogger := Level.Debug, //  to see ssh establishment
       assemblyMergeStrategy in assembly in MultiJvm := {
-        case n if n.endsWith("logback-test.xml") ⇒ MergeStrategy.first
+        case n if n.endsWith("logback-test.xml")                => MergeStrategy.first
         case n if n.toLowerCase.matches("meta-inf.*\\.default") => MergeStrategy.first
-        case n => (assemblyMergeStrategy in assembly in MultiJvm).value.apply(n)
+        case n                                                  => (assemblyMergeStrategy in assembly in MultiJvm).value.apply(n)
       },
       multiJvmCreateLogger in MultiJvm := { // to use normal sbt logging infra instead of custom sbt-multijvm-one
         val previous = (multiJvmCreateLogger in MultiJvm).value

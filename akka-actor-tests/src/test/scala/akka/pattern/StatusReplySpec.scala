@@ -1,18 +1,19 @@
 /*
- * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
+
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+
+import org.scalatest.concurrent.ScalaFutures
 
 import akka.Done
 import akka.testkit.AkkaSpec
 import akka.testkit.TestException
 import akka.testkit.TestProbe
 import akka.util.Timeout
-import org.scalatest.concurrent.ScalaFutures
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
 
 class StatusReplySpec extends AkkaSpec with ScalaFutures {
 
@@ -66,7 +67,7 @@ class StatusReplySpec extends AkkaSpec with ScalaFutures {
       val result = probe.ref.askWithStatus("request")
       probe.expectMsg("request")
       probe.lastSender ! StatusReply.Success("woho")
-      result.futureValue should ===("woho")
+      Await.result(result, timeout.duration) should ===("woho")
     }
 
     "unwrap Error with message" in {
