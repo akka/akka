@@ -241,6 +241,7 @@ private[akka] trait RepointableRef extends ActorRefScope {
       case i: InternalActorRef =>
         (i.isLocal && i.isInstanceOf[PromiseActorRef]) ||
         (!i.isLocal && i.path.elements.head == "temp")
+      case unexpected => throw new IllegalArgumentException(s"ActorRef is not internal: $unexpected") // will not happen, for exhaustiveness check
     }
 
 }

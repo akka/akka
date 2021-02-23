@@ -65,6 +65,8 @@ private[akka] trait AbstractProps {
       case c: Class[_] if c == coc =>
         throw new IllegalArgumentException(
           "erased Creator types (e.g. lambdas) are unsupported, use Props.create(actorClass, creator) instead")
+      case unexpected =>
+        throw new IllegalArgumentException(s"unexpected type: $unexpected")
     }
     create(classOf[CreatorConsumer], actorClass, creator)
   }

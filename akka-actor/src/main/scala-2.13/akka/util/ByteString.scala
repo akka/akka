@@ -833,6 +833,7 @@ sealed abstract class ByteString
     array
   }
 
+  @nowarn("msg=deprecated")
   final override def copyToArray[B >: Byte](xs: Array[B], start: Int): Int = {
     // super uses byteiterator
     copyToArray(xs, start, size.min(xs.size))
