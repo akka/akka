@@ -140,7 +140,7 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
         }
       case OptionVal.None =>
         askResolve()
-
+      case unexpected => throw new RuntimeException(s"Unexpected: $unexpected") // OptionVal exhaustiveness problem
     }
   }
 
@@ -187,7 +187,7 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
         }
       case OptionVal.None =>
         askResolve()
-
+      case unexpected => throw new RuntimeException(s"Unexpected: $unexpected") // OptionVal exhaustiveness problem
     }
 
   }

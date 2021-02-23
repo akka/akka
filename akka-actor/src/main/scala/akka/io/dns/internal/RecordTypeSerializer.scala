@@ -22,6 +22,7 @@ private[akka] object RecordTypeSerializer {
     RecordType(id) match {
       case OptionVal.None    => throw new IllegalArgumentException(s"Illegal id [$id] for DnsRecordType")
       case OptionVal.Some(t) => t
+      case unexpected => throw new RuntimeException(s"Unexpected: $unexpected") // OptionVal exhaustiveness problem
     }
   }
 

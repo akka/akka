@@ -913,7 +913,7 @@ private[akka] class VirtualPathContainer(
   protected def sendTerminated(): Unit = {
     def unwatchWatched(watched: ActorRef): Unit =
       watched.asInstanceOf[InternalActorRef].sendSystemMessage(Unwatch(watched, this))
-
+    
     val (toUnwatch, watchedBy) = this.synchronized {
       _watchedBy match {
         case OptionVal.Some(wBy) =>
@@ -927,6 +927,8 @@ private[akka] class VirtualPathContainer(
 
         case OptionVal.None =>
           (ActorCell.emptyActorRefSet, ActorCell.emptyActorRefSet)
+          
+        case unexpected => throw new RuntimeException(s"Unexpected: $unexpected") // OptionVal exhaustiveness problem  
       }
     }
 
@@ -958,6 +960,8 @@ private[akka] class VirtualPathContainer(
             _watchedBy = OptionVal.Some(watchedBy.filterNot(_.path.address == address))
           }
           watching
+
+        case unexpected => throw new RuntimeException(s"Unexpected: $unexpected") // OptionVal exhaustiveness problem
       }
     }
 
@@ -1002,6 +1006,7 @@ private[akka] class VirtualPathContainer(
               Logging.Error(path.toString, classOf[FunctionRef], s"BUG: illegal Watch($watchee,$watcher) for $this"))
           }
           false
+        case unexpected => throw new RuntimeException(s"Unexpected: $unexpected") // OptionVal exhaustiveness problem
       }
     }
     // outside of synchronized block
@@ -1034,6 +1039,8 @@ private[akka] class VirtualPathContainer(
           publish(
             Logging.Error(path.toString, classOf[FunctionRef], s"BUG: illegal Unwatch($watchee,$watcher) for $this"))
         }
+
+      case unexpected => throw new RuntimeException(s"Unexpected: $unexpected") // OptionVal exhaustiveness problem
     }
   }
 
@@ -1099,6 +1106,7 @@ private[akka] class VirtualPathContainer(
       _watchedBy match {
         case OptionVal.Some(watchedBy) => watchedBy
         case OptionVal.None            => ActorCell.emptyActorRefSet
+        case unexpected => throw new RuntimeException(s"Unexpected: $unexpected") // OptionVal exhaustiveness problem
       }
 
     change match {

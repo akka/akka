@@ -51,6 +51,7 @@ trait Timers extends Actor {
             }
             super.aroundReceive(receive, m)
           case OptionVal.None => // discard
+          case unexpected => throw new RuntimeException(s"Unexpected: $unexpected") // OptionVal exhaustiveness problem
         }
       case _ =>
         super.aroundReceive(receive, msg)
