@@ -374,14 +374,13 @@ import akka.util.ByteString
     result.getStatus match {
       case OK =>
         // https://github.com/akka/akka/issues/29922
-        // With JDK 11+, it seems to be possible to get the SSLEngine into a state where
+        // It seems to be possible to get the SSLEngine into a state where
         // result.getStatus == OK && getHandshakeStatus == NEED_WRAP but
         // it doesn't make any progress any more.
         //
         // We guard against this JDK bug by checking for reasonable invariants after the call to engine.wrap
-        require(
-          transportOutBuffer.position() > 0 || lastHandshakeStatus != NEED_WRAP,
-          "SSLEngine trying to loop NEED_WRAP without producing output")
+        if (!(transportOutBuffer.position() > 0 || lastHandshakeStatus != NEED_WRAP))
+          throw new IllegalStateException("SSLEngine trying to loop NEED_WRAP without producing output")
 
         flushToTransport()
         userInChoppingBlock.putBack(userInBuffer)
