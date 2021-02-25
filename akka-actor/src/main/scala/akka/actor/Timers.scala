@@ -105,6 +105,24 @@ abstract class AbstractActorWithTimers extends AbstractActor with Timers {
   def startTimerWithFixedDelay(key: Any, msg: Any, delay: FiniteDuration): Unit
 
   /**
+   * Scala API: Schedules a message to be sent repeatedly to the `self` actor with a
+   * fixed `delay` between messages after the `initialDelay`.
+   *
+   * It will not compensate the delay between messages if scheduling is delayed
+   * longer than specified for some reason. The delay between sending of subsequent
+   * messages will always be (at least) the given `delay`.
+   *
+   * In the long run, the frequency of messages will generally be slightly lower than
+   * the reciprocal of the specified `delay`.
+   *
+   * Each timer has a key and if a new timer with same key is started
+   * the previous is cancelled. It is guaranteed that a message from the
+   * previous timer is not received, even if it was already enqueued
+   * in the mailbox when the new timer was started.
+   */
+  def startTimerWithFixedDelay(key: Any, msg: Any, initialDelay: FiniteDuration, delay: FiniteDuration): Unit
+
+  /**
    * Java API: Schedules a message to be sent repeatedly to the `self` actor with a
    * fixed `delay` between messages.
    *
@@ -122,6 +140,29 @@ abstract class AbstractActorWithTimers extends AbstractActor with Timers {
    */
   final def startTimerWithFixedDelay(key: Any, msg: Any, delay: java.time.Duration): Unit =
     startTimerWithFixedDelay(key, msg, delay.asScala)
+
+  /**
+   * Java API: Schedules a message to be sent repeatedly to the `self` actor with a
+   * fixed `delay` between messages after the `initialDelay`.
+   *
+   * It will not compensate the delay between messages if scheduling is delayed
+   * longer than specified for some reason. The delay between sending of subsequent
+   * messages will always be (at least) the given `delay`.
+   *
+   * In the long run, the frequency of messages will generally be slightly lower than
+   * the reciprocal of the specified `delay`.
+   *
+   * Each timer has a key and if a new timer with same key is started
+   * the previous is cancelled. It is guaranteed that a message from the
+   * previous timer is not received, even if it was already enqueued
+   * in the mailbox when the new timer was started.
+   */
+  final def startTimerWithFixedDelay(
+      key: Any,
+      msg: Any,
+      initialDelay: java.time.Duration,
+      delay: java.time.Duration): Unit =
+    startTimerWithFixedDelay(key, msg, initialDelay.asScala, delay.asScala)
 
   /**
    * Scala API: Schedules a message to be sent repeatedly to the `self` actor with a
@@ -151,6 +192,33 @@ abstract class AbstractActorWithTimers extends AbstractActor with Timers {
   def startTimerAtFixedRate(key: Any, msg: Any, interval: FiniteDuration): Unit
 
   /**
+   * Scala API: Schedules a message to be sent repeatedly to the `self` actor with a
+   * given frequency.
+   *
+   * It will compensate the delay for a subsequent message if the sending of previous
+   * message was delayed more than specified. In such cases, the actual message interval
+   * will differ from the interval passed to the method.
+   *
+   * If the execution is delayed longer than the `interval`, the subsequent message will
+   * be sent immediately after the prior one. This also has the consequence that after
+   * long garbage collection pauses or other reasons when the JVM was suspended all
+   * "missed" messages will be sent when the process wakes up again.
+   *
+   * In the long run, the frequency of messages will be exactly the reciprocal of the
+   * specified `interval` after `initialDelay`.
+   *
+   * Warning: `startTimerAtFixedRate` can result in bursts of scheduled messages after long
+   * garbage collection pauses, which may in worst case cause undesired load on the system.
+   * Therefore `startTimerWithFixedDelay` is often preferred.
+   *
+   * Each timer has a key and if a new timer with same key is started
+   * the previous is cancelled. It is guaranteed that a message from the
+   * previous timer is not received, even if it was already enqueued
+   * in the mailbox when the new timer was started.
+   */
+  def startTimerAtFixedRate(key: Any, msg: Any, initialDelay: FiniteDuration, interval: FiniteDuration): Unit
+
+  /**
    * Java API: Schedules a message to be sent repeatedly to the `self` actor with a
    * given frequency.
    *
@@ -177,6 +245,38 @@ abstract class AbstractActorWithTimers extends AbstractActor with Timers {
    */
   final def startTimerAtFixedRate(key: Any, msg: Any, interval: java.time.Duration): Unit =
     startTimerAtFixedRate(key, msg, interval.asScala)
+
+  /**
+   * Java API: Schedules a message to be sent repeatedly to the `self` actor with a
+   * given frequency.
+   *
+   * It will compensate the delay for a subsequent message if the sending of previous
+   * message was delayed more than specified. In such cases, the actual message interval
+   * will differ from the interval passed to the method.
+   *
+   * If the execution is delayed longer than the `interval`, the subsequent message will
+   * be sent immediately after the prior one. This also has the consequence that after
+   * long garbage collection pauses or other reasons when the JVM was suspended all
+   * "missed" messages will be sent when the process wakes up again.
+   *
+   * In the long run, the frequency of messages will be exactly the reciprocal of the
+   * specified `interval`.
+   *
+   * Warning: `startTimerAtFixedRate` can result in bursts of scheduled messages after long
+   * garbage collection pauses, which may in worst case cause undesired load on the system.
+   * Therefore `startTimerWithFixedDelay` is often preferred.
+   *
+   * Each timer has a key and if a new timer with same key is started
+   * the previous is cancelled. It is guaranteed that a message from the
+   * previous timer is not received, even if it was already enqueued
+   * in the mailbox when the new timer was started.
+   */
+  final def startTimerAtFixedRate(
+      key: Any,
+      msg: Any,
+      initialDelay: java.time.Duration,
+      interval: java.time.Duration): Unit =
+    startTimerAtFixedRate(key, msg, initialDelay.asScala, interval.asScala)
 
   /**
    * Deprecated API: See [[TimerScheduler#startTimerWithFixedDelay]] or [[TimerScheduler#startTimerAtFixedRate]].
