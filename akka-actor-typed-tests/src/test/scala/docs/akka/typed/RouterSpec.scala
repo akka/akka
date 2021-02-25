@@ -160,18 +160,22 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
         case class Message(id: String, content: String) extends Command
 
         def apply(monitor: ActorRef[String]): Behavior[Command] =
-          Behaviors.setup[Command] { context =>
-            context.system.receptionist ! Receptionist.Register(RegisteringKey, context.self)
-            Behaviors.receiveMessage {
-              case Message(id, _) =>
-                monitor ! id
-                Behaviors.same
-            }
+          Behaviors.receiveMessage {
+            case Message(id, _) =>
+              monitor ! id
+              Behaviors.same
           }
       }
-      //they register to Proxy.RegisteringKey on initialization
-      spawn(Proxy(probe1.ref))
-      spawn(Proxy(probe2.ref))
+
+      //registering proxies
+      val proxy1 = spawn(Proxy(probe1.ref))
+      val proxy2 = spawn(Proxy(probe2.ref))
+      val waiterProbe = createTestProbe[Receptionist.Registered]()
+
+      system.receptionist ! Receptionist.Register(Proxy.RegisteringKey, proxy1, waiterProbe.ref)
+      system.receptionist ! Receptionist.Register(Proxy.RegisteringKey, proxy2, waiterProbe.ref)
+      //wait until both registrations get Receptionist.Registered
+      waiterProbe.receiveMessages(2)
 
       //messages sent to a router with constant hashing
       val router = spawn(Routers.group(Proxy.RegisteringKey).withConsistentHashingRouting(10, Proxy.mapping))
