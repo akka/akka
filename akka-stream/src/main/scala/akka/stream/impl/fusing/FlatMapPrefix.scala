@@ -7,8 +7,8 @@ package akka.stream.impl.fusing
 import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
-
 import akka.annotation.InternalApi
+import akka.stream.Attributes.SourceLocation
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.scaladsl.{ Flow, Keep, Source }
@@ -20,11 +20,11 @@ import akka.util.OptionVal
 
   require(n >= 0, s"FlatMapPrefix: n ($n) must be non-negative.")
 
-  val in = Inlet[In](s"${this}.in")
-  val out = Outlet[Out](s"${this}.out")
+  val in = Inlet[In]("FlatMapPrefix.in")
+  val out = Outlet[Out]("FlatMapPrefix.out")
   override val shape: FlowShape[In, Out] = FlowShape(in, out)
 
-  override def initialAttributes: Attributes = DefaultAttributes.flatMapPrefix
+  override def initialAttributes: Attributes = DefaultAttributes.flatMapPrefix and SourceLocation.forLambda(f)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
     val propagateToNestedMaterialization =
@@ -106,7 +106,7 @@ import akka.util.OptionVal
         try {
           val prefix = accumulated.toVector
           accumulated.clear()
-          subSource = OptionVal.Some(new SubSourceOutlet[In](s"${this}.subSource"))
+          subSource = OptionVal.Some(new SubSourceOutlet[In]("FlatMapPrefix.subSource"))
           val OptionVal.Some(theSubSource) = subSource
           theSubSource.setHandler {
             new OutHandler {
@@ -123,7 +123,7 @@ import akka.util.OptionVal
               }
             }
           }
-          subSink = OptionVal.Some(new SubSinkInlet[Out](s"${this}.subSink"))
+          subSink = OptionVal.Some(new SubSinkInlet[Out]("FlatMapPrefix.subSink"))
           val OptionVal.Some(theSubSink) = subSink
           theSubSink.setHandler {
             new InHandler {

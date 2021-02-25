@@ -82,8 +82,8 @@ so there is no reason to remain on Akka 2.3.x, since upgrading is completely com
 ## Mixed versioning is not allowed
 
 Modules that are released together under the Akka project are intended to be upgraded together.
-For example, it is not legal to mix Akka Actor `2.4.2` with Akka Cluster `2.4.5` even though
-"Akka `2.4.2`" and "Akka `2.4.5`" *are* binary compatible. 
+For example, it is not legal to mix Akka Actor `2.6.2` with Akka Cluster `2.6.5` even though
+"Akka `2.6.2`" and "Akka `2.6.5`" *are* binary compatible. 
 
 This is because modules may assume internals changes across module boundaries, for example some feature
 in Clustering may have required an internals change in Actor, however it is not public API, 
@@ -93,9 +93,10 @@ If you accidentally mix Akka versions, for example through transitive
 dependencies, you might get a warning at run time such as:
 
 ```
-You are using version 2.6.6 of Akka, but it appears you (perhaps indirectly) also depend on older versions
-of related artifacts. You can solve this by adding an explicit dependency on version 2.6.6 of the
-[akka-persistence-query] artifacts to your project. 
+You are using version 2.6.6 of Akka, but it appears you (perhaps indirectly) also depend on older versions 
+of related artifacts. You can solve this by adding an explicit dependency on version 2.6.6 of the 
+[akka-persistence-query] artifacts to your project. Here's a complete collection of detected 
+artifacts: (2.5.3, [akka-persistence-query]), (2.6.6, [akka-actor, akka-cluster]).
 See also: https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html#mixed-versioning-is-not-allowed
 ```
 
@@ -109,6 +110,12 @@ We recommend keeping an `akkaVersion` variable in your build file, and re-use it
 included modules, so when you upgrade you can simply change it in this one place.
 
 @@@
+
+The warning includes a full list of Akka runtime dependencies in the classpath, and the version detected. 
+You can use that information to include an explicit list of Akka artifacts you depend on into your build. If you use
+Maven or Gradle, you can include the @ref:[Akka Maven BOM](../typed/guide/modules.md#actor-library) (bill 
+of materials) to help you keep all the versions of your Akka dependencies in sync. 
+
 
 ## The meaning of "may change"
 

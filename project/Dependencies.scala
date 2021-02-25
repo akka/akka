@@ -17,10 +17,10 @@ object Dependencies {
   val junitVersion = "4.13.1"
   val slf4jVersion = "1.7.30"
   // check agrona version when updating this
-  val aeronVersion = "1.31.1"
+  val aeronVersion = "1.32.0"
   // needs to be inline with the aeron version, check
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
-  val agronaVersion = "1.8.0"
+  val agronaVersion = "1.9.0"
   val nettyVersion = "3.10.6.Final"
   val protobufJavaVersion = "3.11.4"
   val logbackVersion = "1.2.3"
@@ -165,8 +165,8 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.16" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.16" % "test" // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.17" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.17" % "test" // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
       val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)

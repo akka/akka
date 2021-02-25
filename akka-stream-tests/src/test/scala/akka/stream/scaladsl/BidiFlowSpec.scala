@@ -7,9 +7,7 @@ package akka.stream.scaladsl
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import scala.annotation.nowarn
-
 import akka.NotUsed
 import akka.stream._
 import akka.stream.testkit.StreamSpec
@@ -119,6 +117,47 @@ class BidiFlowSpec extends StreamSpec {
 
       b.traversalBuilder.attributes.getFirst[Name] shouldEqual Some(Name("name"))
       b.traversalBuilder.attributes.getFirst[AsyncBoundary.type] shouldEqual Some(AsyncBoundary)
+    }
+
+    "short circuit identity in atop" in {
+      val myBidi = BidiFlow.fromFlows(Flow[Long].map(_ + 1L), Flow[ByteString])
+      val identity = BidiFlow.identity[Long, ByteString]
+
+      // simple ones
+      myBidi.atop(identity) should ===(myBidi)
+      identity.atopMat(myBidi)(Keep.right) should ===(myBidi)
+
+      // optimized but not the same instance (because myBidi mat value is dropped)
+      identity.atop(myBidi) should !==(myBidi)
+      myBidi.atopMat(identity)(Keep.right) should !==(myBidi)
+    }
+
+    "semi-shortcuted atop with identity should still work" in {
+      // atop when the NotUsed matval is kept from identity has a smaller optimization, so verify they still work
+      val myBidi =
+        BidiFlow.fromFlows(Flow[Long].map(_ + 1L), Flow[Long].map(_ + 1L)).mapMaterializedValue(_ => "bidi-matval")
+      val identity = BidiFlow.identity[Long, Long]
+
+      def verify[M](atopBidi: BidiFlow[Long, Long, Long, Long, M], expectedMatVal: M): Unit = {
+        val joinedFlow = atopBidi.joinMat(Flow[Long])(Keep.left)
+        val (bidiMatVal, seqSinkMatValF) =
+          Source(1L :: 2L :: Nil).viaMat(joinedFlow)(Keep.right).toMat(Sink.seq)(Keep.both).run()
+        seqSinkMatValF.futureValue should ===(Seq(3L, 4L))
+        bidiMatVal should ===(expectedMatVal)
+      }
+
+      // identity atop myBidi
+      verify(identity.atopMat(myBidi)(Keep.left), NotUsed)
+      verify(identity.atopMat(myBidi)(Keep.none), NotUsed)
+      verify(identity.atopMat(myBidi)(Keep.right), "bidi-matval")
+      // arbitrary matval combine
+      verify(identity.atopMat(myBidi)((_, m) => m), "bidi-matval")
+
+      // myBidi atop identity
+      verify(myBidi.atopMat(identity)(Keep.left), "bidi-matval")
+      verify(myBidi.atopMat(identity)(Keep.none), NotUsed)
+      verify(myBidi.atopMat(identity)(Keep.right), NotUsed)
+      verify(myBidi.atopMat(identity)((m, _) => m), "bidi-matval")
     }
 
   }
