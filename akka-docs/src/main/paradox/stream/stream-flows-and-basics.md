@@ -230,7 +230,7 @@ To illustrate this further let us consider both problem situations and how the b
 This is the happy case – we do not need to slow down the Publisher in this case. However signalling rates are
 rarely constant and could change at any point in time, suddenly ending up in a situation where the Subscriber is now
 slower than the Publisher. In order to safeguard from these situations, the back-pressure protocol must still be enabled
-during such situations, however we do not want to pay a high penalty for this safety net being enabled.
+during such situations, however we do not want to pay a high penalty for this safety not being enabled.
 
 The Reactive Streams protocol solves this by asynchronously signalling from the Subscriber to the Publisher
 @scala[`Request(n:Int)`] @java[`Request(int n)`] signals. The protocol guarantees that the Publisher will never signal *more* elements than the
