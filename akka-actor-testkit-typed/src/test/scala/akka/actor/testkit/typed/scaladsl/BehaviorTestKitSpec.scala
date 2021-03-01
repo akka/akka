@@ -123,8 +123,12 @@ object BehaviorTestKitSpec {
             case ScheduleCommand(key, delay, mode, cmd) =>
               mode match {
                 case Effect.TimerScheduled.SingleMode     => timers.startSingleTimer(key, cmd, delay)
-                case Effect.TimerScheduled.FixedDelayMode => timers.startTimerWithFixedDelay(key, cmd, delay)
-                case Effect.TimerScheduled.FixedRateMode  => timers.startTimerAtFixedRate(key, cmd, delay)
+                case Effect.TimerScheduled.FixedDelayMode => timers.startTimerWithFixedDelay(key, cmd, delay, delay)
+                case m: Effect.TimerScheduled.FixedDelayModeWithInitialDelay =>
+                  timers.startTimerWithFixedDelay(key, cmd, m.initialDelay, delay)
+                case Effect.TimerScheduled.FixedRateMode => timers.startTimerAtFixedRate(key, cmd, delay, delay)
+                case m: Effect.TimerScheduled.FixedRateModeWithInitialDelay =>
+                  timers.startTimerAtFixedRate(key, cmd, m.initialDelay, delay)
               }
               Behaviors.same
             case CancelScheduleCommand(key) =>
@@ -445,16 +449,17 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
     }
 
     "schedule and fire timers multiple times" in {
+      val delay = 42.seconds
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
-      testkit.run(ScheduleCommand("abc", 42.seconds, Effect.TimerScheduled.FixedRateMode, SpawnChild))
+      testkit.run(ScheduleCommand("abc", delay, Effect.TimerScheduled.FixedRateMode, SpawnChild))
       val send = testkit.expectEffectPF {
         case e @ Effect.TimerScheduled(
               "abc",
               SpawnChild,
               finiteDuration,
-              Effect.TimerScheduled.FixedRateMode,
+              Effect.TimerScheduled.FixedRateModeWithInitialDelay(`delay`),
               false /*not overriding*/ ) =>
-          finiteDuration should equal(42.seconds)
+          finiteDuration should equal(delay)
           e.send
       }
       send()

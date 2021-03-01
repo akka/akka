@@ -214,14 +214,20 @@ object Effect {
   }
 
   object TimerScheduled {
+    import akka.util.JavaDurationConverters._
+
     sealed trait TimerMode
     case object FixedRateMode extends TimerMode
+    case class FixedRateModeWithInitialDelay(initialDelay: FiniteDuration) extends TimerMode
     case object FixedDelayMode extends TimerMode
+    case class FixedDelayModeWithInitialDelay(initialDelay: FiniteDuration) extends TimerMode
     case object SingleMode extends TimerMode
 
     /*Java API*/
     def fixedRateMode = FixedRateMode
+    def fixedRateMode(initialDelay: java.time.Duration) = FixedRateModeWithInitialDelay(initialDelay.asScala)
     def fixedDelayMode = FixedDelayMode
+    def fixedDelayMode(initialDelay: java.time.Duration) = FixedDelayModeWithInitialDelay(initialDelay.asScala)
     def singleMode = SingleMode
   }
 
