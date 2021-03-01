@@ -4,20 +4,26 @@
 
 package akka.dispatch
 
+import akka.annotation.InternalApi
+
 import java.util.ArrayDeque
 import java.util.concurrent.Executor
-
 import scala.annotation.tailrec
 import scala.concurrent._
 
 /**
+ * INTERNAL API
+ *
  * All Batchables are automatically batched when submitted to a BatchingExecutor
  */
+@InternalApi
 private[akka] trait Batchable extends Runnable {
   def isBatchable: Boolean
 }
 
 /**
+ * INTERNAL API
+ *
  * Mixin trait for an Executor
  * which groups multiple nested `Runnable.run()` calls
  * into a single Runnable passed to the original
@@ -45,6 +51,7 @@ private[akka] trait Batchable extends Runnable {
  * WARNING: The underlying Executor's execute-method must not execute the submitted Runnable
  * in the calling thread synchronously. It must enqueue/handoff the Runnable.
  */
+@InternalApi
 private[akka] trait BatchingExecutor extends Executor {
 
   // invariant: if "_tasksLocal.get ne null" then we are inside Batch.run; if it is null, we are outside
@@ -127,9 +134,5 @@ private[akka] trait BatchingExecutor extends Executor {
   }
 
   /** Override this to define which runnables will be batched. */
-  def batchable(runnable: Runnable): Boolean = runnable match {
-    case b: Batchable                           => b.isBatchable
-    case _: scala.concurrent.OnCompleteRunnable => true
-    case _                                      => false
-  }
+  def batchable(runnable: Runnable): Boolean = akka.dispatch.internal.ScalaBatchable.isBatchable(runnable)
 }
