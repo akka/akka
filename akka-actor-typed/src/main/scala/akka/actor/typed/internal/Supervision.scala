@@ -193,14 +193,12 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
   private var deadline: OptionVal[Deadline] = OptionVal.None
 
   private def deadlineHasTimeLeft: Boolean = deadline match {
-    case OptionVal.None    => true
     case OptionVal.Some(d) => d.hasTimeLeft()
+    case _    => true
   }
 
   override def aroundSignal(ctx: TypedActorContext[Any], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
     restartingInProgress match {
-      case OptionVal.None =>
-        super.aroundSignal(ctx, signal, target)
       case OptionVal.Some((stashBuffer, children)) =>
         signal match {
           case Terminated(ref) if strategy.stopChildren && children(ref) =>
@@ -219,6 +217,8 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
               stashBuffer.stash(signal)
             Behaviors.same
         }
+      case _ =>
+        super.aroundSignal(ctx, signal, target)
     }
   }
 
@@ -235,7 +235,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
               } else
                 restartCompleted(ctx)
 
-            case OptionVal.None =>
+            case _ =>
               throw new IllegalStateException("Unexpected ScheduledRestart when restart not in progress")
           }
         } else {
@@ -254,18 +254,19 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
           target(ctx, msg.asInstanceOf[T])
         }
 
-      case m: T @unchecked =>
+      case msg =>
+        val m = msg.asInstanceOf[T]
         restartingInProgress match {
-          case OptionVal.None =>
-            try {
-              target(ctx, m)
-            } catch handleReceiveException(ctx, target)
           case OptionVal.Some((stashBuffer, _)) =>
             if (stashBuffer.isFull)
               dropped(ctx, m)
             else
               stashBuffer.stash(m)
             Behaviors.same
+          case _ =>
+            try {
+              target(ctx, m)
+            } catch handleReceiveException(ctx, target)
         }
     }
   }
@@ -371,10 +372,10 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
     try {
       val newBehavior = Behavior.validateAsInitial(Behavior.start(initial, ctx.asInstanceOf[TypedActorContext[T]]))
       val nextBehavior = restartingInProgress match {
-        case OptionVal.None => newBehavior
         case OptionVal.Some((stashBuffer, _)) =>
           restartingInProgress = OptionVal.None
           stashBuffer.unstashAll(newBehavior.unsafeCast)
+        case _ => newBehavior
       }
       nextBehavior.narrow
     } catch handleException(ctx, signalRestart = {
