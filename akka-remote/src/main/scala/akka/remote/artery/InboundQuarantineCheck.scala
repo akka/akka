@@ -33,9 +33,6 @@ private[remote] class InboundQuarantineCheck(inboundContext: InboundContext)
       override def onPush(): Unit = {
         val env = grab(in)
         env.association match {
-          case OptionVal.None =>
-            // unknown, handshake not completed
-            push(out, env)
           case OptionVal.Some(association) =>
             if (association.associationState.isQuarantined(env.originUid)) {
               if (log.isDebugEnabled)
@@ -52,6 +49,9 @@ private[remote] class InboundQuarantineCheck(inboundContext: InboundContext)
               pull(in)
             } else
               push(out, env)
+          case _ =>
+            // unknown, handshake not completed
+            push(out, env)
         }
       }
 

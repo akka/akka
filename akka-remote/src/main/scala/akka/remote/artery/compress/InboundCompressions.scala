@@ -205,6 +205,7 @@ private[remote] final class InboundActorRefCompression(
           mb += ref -> idx
           idx += 1
         }
+      case _ => // ignore others
     }
     mb.result()
   }
@@ -415,7 +416,7 @@ private[remote] abstract class InboundCompression[T >: Null](
           tableVersion,
           originUid,
           inProgress.version)
-      case None =>
+      case _ =>
       // already confirmed
     }
 
@@ -469,7 +470,7 @@ private[remote] abstract class InboundCompression[T >: Null](
                 originUid)
             }
 
-          case OptionVal.None =>
+          case _ =>
             // otherwise it's too early, association not ready yet.
             // so we don't build the table since we would not be able to send it anyway.
             log.debug("No Association for originUid [{}] yet, unable to advertise compression table.", originUid)
@@ -489,7 +490,7 @@ private[remote] abstract class InboundCompression[T >: Null](
                 resendCount,
                 maxResendCount)
               advertiseCompressionTable(association, inProgress) // resend
-            case OptionVal.None =>
+            case _ =>
           }
         } else {
           // give up, it might be dead
