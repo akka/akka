@@ -873,6 +873,7 @@ object Source {
    * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
+  @deprecated("Use queue without `overflowStrategy` parameter instead.", "2.6.14")
   def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, SourceQueueWithComplete[T]] =
     queue(bufferSize, overflowStrategy, maxConcurrentOffers = 1)
 
@@ -911,6 +912,7 @@ object Source {
    * @param maxConcurrentOffers maximum number of pending offers when buffer is full, should be greater than 0, not
    *                            applicable when `OverflowStrategy.dropNew` is used
    */
+  @deprecated("Use queue without `overflowStrategy` and `maxConcurrentOffers` parameters instead.", "2.6.14")
   def queue[T](
       bufferSize: Int,
       overflowStrategy: OverflowStrategy,

@@ -13,6 +13,9 @@ import akka.dispatch.AbstractBoundedNodeQueue
 import akka.stream._
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, OutHandler, StageLogging }
 
+import java.util.concurrent.ConcurrentLinkedQueue
+import scala.concurrent.{ Future, Promise }
+
 /**
  * INTERNAL API
  */
@@ -40,6 +43,7 @@ import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, Out
 
     val state = new AtomicReference[State](Running)
     val queue = new AbstractBoundedNodeQueue[T](bufferSize) {}
+    val awaitingSubscribers = new ConcurrentLinkedQueue[Promise[akka.Done]]()
 
     object Logic extends GraphStageLogic(shape) with OutHandler with StageLogging {
 
@@ -86,8 +90,10 @@ import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, Out
                   clearNeedsActivation()
                   run()
                 } // else Queue.isEmpty && setNeedsActivation was true: waiting for next offer
-              } else
+              } else {
                 push(out, next) // and then: wait for pull
+                notifySubscribers() // notify subscribers on having capacity to accept a new element
+              }
             } // else: wait for pull
 
           case Done(QueueOfferResult.QueueClosed) =>
@@ -101,6 +107,10 @@ import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, Out
           case Done(QueueOfferResult.Failure(ex)) => failStage(ex)
           case NeedsActivation                    => throw new IllegalStateException // needs to be cleared before
         }
+
+      def notifySubscribers(): Unit = {
+        awaitingSubscribers.forEach(promise => promise.success(akka.Done.getInstance()))
+      }
     }
 
     object Mat extends BoundedSourceQueue[T] {
@@ -132,6 +142,12 @@ import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, Out
           throw new IllegalStateException("The queue has already been completed.")
         if (setDone(Done(QueueOfferResult.Failure(ex))))
           Logic.callback.invoke(()) // if this thread won the completion race also schedule an async callback
+      }
+
+      override def whenReady(): Future[akka.Done] = {
+        val promise = Promise[akka.Done]()
+        awaitingSubscribers.offer(promise)
+        promise.future
       }
     }
 
