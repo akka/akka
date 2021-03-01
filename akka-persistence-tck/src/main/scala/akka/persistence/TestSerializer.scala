@@ -25,6 +25,7 @@ class TestSerializer(system: ExtendedActorSystem) extends SerializerWithStringMa
       verifyTransportInfo()
       val refStr = Serialization.serializedActorPath(ref)
       refStr.getBytes(StandardCharsets.UTF_8)
+    case _ => throw new NotSerializableException() // compiler exhaustiveness check pleaser
   }
   def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
     verifyTransportInfo()

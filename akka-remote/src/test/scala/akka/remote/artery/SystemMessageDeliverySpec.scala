@@ -82,6 +82,7 @@ abstract class AbstractSystemMessageDeliverySpec(c: Config) extends ArteryMultiN
         outboundEnvelope.message match {
           case sysEnv: SystemMessageEnvelope =>
             InboundEnvelope(recipient, sysEnv, OptionVal.None, addressA.uid, inboundContext.association(addressA.uid))
+          case _ => throw new RuntimeException()
         })
       .async
       .via(new SystemMessageAcker(inboundContext))

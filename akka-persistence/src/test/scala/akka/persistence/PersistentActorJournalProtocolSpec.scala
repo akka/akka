@@ -117,6 +117,7 @@ class PersistentActorJournalProtocolSpec extends AkkaSpec(config) with ImplicitS
           writes.zip(msg.msg).foreach {
             case (PersistentRepr(evt, _), m) =>
               evt should ===(m)
+            case _ =>
           }
         case x => fail(s"unexpected $x")
       }

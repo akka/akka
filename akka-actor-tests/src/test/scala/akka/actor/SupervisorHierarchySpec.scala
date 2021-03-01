@@ -683,6 +683,7 @@ object SupervisorHierarchySpec {
           if (depth > 0) {
             l.underlying.children.foreach(getErrors(_, depth - 1))
           }
+        case _ => throw new IllegalArgumentException()
       }
     }
 
@@ -694,6 +695,7 @@ object SupervisorHierarchySpec {
             case _            => errors :+= target -> ErrorLog("fetched", stateCache.get(target.path).log)
           }
           if (target != hierarchy) getErrorsUp(l.getParent)
+        case _ => throw new IllegalArgumentException()
       }
     }
 

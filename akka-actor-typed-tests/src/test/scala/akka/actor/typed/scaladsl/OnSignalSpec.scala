@@ -39,7 +39,7 @@ final class OnSignalSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike 
         }, s"$i")
       }
       Behaviors
-        .receiveMessage[String] {
+        .receiveMessagePartial[String] {
           case "stop" =>
             Behaviors.stopped
         }

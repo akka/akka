@@ -31,9 +31,9 @@ object GlobalRegistry {
       case id: Int => (id.toString, id)
     }
 
-    val extractShardId: ShardRegion.ExtractShardId = msg =>
-      msg match {
+    val extractShardId: ShardRegion.ExtractShardId = {
         case id: Int => (id % 10).toString
+        case _ => throw new IllegalArgumentException()
       }
   }
 

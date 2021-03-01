@@ -122,6 +122,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
         config match {
           case BoundedMailbox(capacity, _) => aQueue.remainingCapacity should ===(capacity)
           case UnboundedMailbox()          => aQueue.remainingCapacity should ===(Int.MaxValue)
+          case _ => fail()
         }
       case _ =>
     }

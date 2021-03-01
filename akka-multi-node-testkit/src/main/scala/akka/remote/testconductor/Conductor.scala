@@ -88,7 +88,7 @@ trait Conductor { this: TestConductorExt =>
     _controller = system.systemActorOf(Props(classOf[Controller], participants, controllerPort), "controller")
     import Settings.BarrierTimeout
     import system.dispatcher
-    (controller ? GetSockAddr).flatMap {
+    (controller ? GetSockAddr).mapTo[InetSocketAddress].flatMap {
       case sockAddr: InetSocketAddress => startClient(name, sockAddr).map(_ => sockAddr)
     }
   }

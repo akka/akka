@@ -401,11 +401,11 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(c
         snd.tell(Req("c-" + n), probe.ref)
       }
       val deliverWithin = 20.seconds
-      probeA.receiveN(N, deliverWithin).map { case a: Action => a.payload }.toSet should ===(
+      probeA.receiveN(N, deliverWithin).collect { case a: Action => a.payload }.toSet should ===(
         (1 to N).map(n => "a-" + n).toSet)
-      probeB.receiveN(N, deliverWithin).map { case a: Action => a.payload }.toSet should ===(
+      probeB.receiveN(N, deliverWithin).collect { case a: Action => a.payload }.toSet should ===(
         (1 to N).map(n => "b-" + n).toSet)
-      probeC.receiveN(N, deliverWithin).map { case a: Action => a.payload }.toSet should ===(
+      probeC.receiveN(N, deliverWithin).collect { case a: Action => a.payload }.toSet should ===(
         (1 to N).map(n => "c-" + n).toSet)
     }
 

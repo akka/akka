@@ -131,10 +131,10 @@ class MessageAdapterSpec
     }
 
     "not break if wrong/unknown response type" in {
-      trait Ping
+      sealed trait Ping
       case class Ping1(sender: ActorRef[Pong1]) extends Ping
       case class Ping2(sender: ActorRef[Pong2]) extends Ping
-      trait Response
+      sealed trait Response
       case class Pong1(greeting: String) extends Response
       case class Pong2(greeting: String) extends Response
 

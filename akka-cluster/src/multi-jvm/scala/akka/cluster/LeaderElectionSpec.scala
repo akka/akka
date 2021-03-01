@@ -108,6 +108,8 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
 
           enterBarrier("completed" + n)
 
+        case _ =>
+          fail()
       }
     }
 
