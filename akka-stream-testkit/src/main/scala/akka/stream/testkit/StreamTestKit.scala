@@ -584,9 +584,11 @@ object TestSubscriber {
       probe.fishForMessage(hint = s"OnNext(_) or error") {
         case OnNext(_)  => true
         case OnError(_) => true
+        case _ => false
       } match {
         case OnNext(n: I @unchecked) => Right(n)
         case OnError(err)            => Left(err)
+        case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }
     }
 
@@ -598,9 +600,11 @@ object TestSubscriber {
       probe.fishForMessage(hint = s"OnNext($element) or ${cause.getClass.getName}") {
         case OnNext(`element`) => true
         case OnError(`cause`)  => true
+        case _ => false
       } match {
         case OnNext(n: I @unchecked) => Right(n)
         case OnError(err)            => Left(err)
+        case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }
     }
 
@@ -611,9 +615,11 @@ object TestSubscriber {
       probe.fishForMessage(hint = s"OnNext(_) or OnComplete") {
         case OnNext(_)  => true
         case OnComplete => true
+        case _ => false
       } match {
         case OnComplete              => Left(OnComplete)
         case OnNext(n: I @unchecked) => Right(n)
+        case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }
     }
 
@@ -766,6 +772,7 @@ object TestSubscriber {
           case OnNext(i: I @unchecked) =>
             b += i
             drain()
+          case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
         }
 
       // if no subscription was obtained yet, we expect it

@@ -132,6 +132,8 @@ final private[leveldb] class EventsByTagStage(
 
           case TaggedEventAppended(_) =>
             requestMore()
+
+          case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
         }
       }
 

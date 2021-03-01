@@ -960,7 +960,7 @@ private[akka] class Shard(
               entityId,
               unexpected)
         }
-      case OptionVal.None =>
+      case _ =>
         log.warning("{}: Unexpected entity terminated: {}", typeName, ref)
     }
   }
@@ -982,7 +982,7 @@ private[akka] class Shard(
           entity ! stopMessage
           flightRecorder.entityPassivate(id)
         }
-      case OptionVal.None =>
+      case _ =>
         log.debug("{}: Unknown entity passivating [{}]. Not sending stopMessage back to entity", typeName, entity)
     }
   }
@@ -1108,7 +1108,7 @@ private[akka] class Shard(
   def getOrCreateEntity(id: EntityId): ActorRef = {
     entities.entity(id) match {
       case OptionVal.Some(child) => child
-      case OptionVal.None =>
+      case _ =>
         val name = URLEncoder.encode(id, "utf-8")
         val a = context.actorOf(entityProps(id), name)
         context.watchWith(a, EntityTerminated(a))

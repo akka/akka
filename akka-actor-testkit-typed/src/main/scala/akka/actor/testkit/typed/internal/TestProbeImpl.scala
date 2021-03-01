@@ -105,6 +105,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     case x if x eq Duration.Undefined => duration
     case x if !x.isFinite             => throw new IllegalArgumentException("`end` cannot be infinite")
     case f: FiniteDuration            => f - now
+    case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
   }
 
   override def getRemainingOr(duration: JDuration): JDuration =
