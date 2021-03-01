@@ -40,10 +40,10 @@ import scala.concurrent.duration.FiniteDuration
   private sealed trait TimerMode {
     def repeat: Boolean
   }
-  private case object FixedRateMode extends TimerMode {
+  private case class FixedRateMode(initialDelay: FiniteDuration) extends TimerMode {
     override def repeat: Boolean = true
   }
-  private case object FixedDelayMode extends TimerMode {
+  private case class FixedDelayMode(initialDelay: FiniteDuration) extends TimerMode {
     override def repeat: Boolean = true
   }
   private case object SingleMode extends TimerMode {
@@ -59,8 +59,14 @@ import scala.concurrent.duration.FiniteDuration
   override final def startTimerWithFixedDelay(key: Any, msg: T, delay: Duration): Unit =
     startTimerWithFixedDelay(key, msg, delay.asScala)
 
+  override final def startTimerWithFixedDelay(key: Any, msg: T, initialDelay: Duration, delay: Duration): Unit =
+    startTimerWithFixedDelay(key, msg, initialDelay.asScala, delay.asScala)
+
   override final def startTimerAtFixedRate(key: Any, msg: T, interval: Duration): Unit =
     startTimerAtFixedRate(key, msg, interval.asScala)
+
+  override final def startTimerAtFixedRate(key: Any, msg: T, initialDelay: Duration, interval: Duration): Unit =
+    startTimerAtFixedRate(key, msg, initialDelay.asScala, interval.asScala)
 
   override final def startPeriodicTimer(key: Any, msg: T, interval: Duration): Unit = {
     //this follows the deprecation note in the super class
@@ -83,13 +89,19 @@ import scala.concurrent.duration.FiniteDuration
   private val timerGen = Iterator.from(1)
 
   override def startTimerAtFixedRate(key: Any, msg: T, interval: FiniteDuration): Unit =
-    startTimer(key, msg, interval, FixedRateMode)
+    startTimer(key, msg, interval, FixedRateMode(interval))
+
+  override def startTimerAtFixedRate(key: Any, msg: T, initialDelay: FiniteDuration, interval: FiniteDuration): Unit =
+    startTimer(key, msg, interval, FixedRateMode(initialDelay))
 
   override def startTimerWithFixedDelay(key: Any, msg: T, delay: FiniteDuration): Unit =
-    startTimer(key, msg, delay, FixedDelayMode)
+    startTimer(key, msg, delay, FixedDelayMode(delay))
+
+  override def startTimerWithFixedDelay(key: Any, msg: T, initialDelay: FiniteDuration, delay: FiniteDuration): Unit =
+    startTimer(key, msg, delay, FixedDelayMode(initialDelay))
 
   override def startPeriodicTimer(key: Any, msg: T, interval: FiniteDuration): Unit =
-    startTimer(key, msg, interval, FixedRateMode)
+    startTimer(key, msg, interval, FixedRateMode(interval))
 
   override def startSingleTimer(key: Any, msg: T, delay: FiniteDuration): Unit =
     startTimer(key, msg, delay, SingleMode)
@@ -110,11 +122,11 @@ import scala.concurrent.duration.FiniteDuration
     val task = mode match {
       case SingleMode =>
         ctx.system.scheduler.scheduleOnce(delay, () => ctx.self.unsafeUpcast ! timerMsg)(ExecutionContexts.parasitic)
-      case FixedDelayMode =>
-        ctx.system.scheduler.scheduleWithFixedDelay(delay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
+      case m: FixedDelayMode =>
+        ctx.system.scheduler.scheduleWithFixedDelay(m.initialDelay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
           ExecutionContexts.parasitic)
-      case FixedRateMode =>
-        ctx.system.scheduler.scheduleAtFixedRate(delay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
+      case m: FixedRateMode =>
+        ctx.system.scheduler.scheduleAtFixedRate(m.initialDelay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
           ExecutionContexts.parasitic)
     }
 
