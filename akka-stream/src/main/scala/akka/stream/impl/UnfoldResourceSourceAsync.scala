@@ -123,6 +123,7 @@ import scala.concurrent.ExecutionContext
               case Failure(ex) =>
                 throw ex // failed to open but stream is stopped already
             }
+          case _ => // we don't care here
         }
       }
     }

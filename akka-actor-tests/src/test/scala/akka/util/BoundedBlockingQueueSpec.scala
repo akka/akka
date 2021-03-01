@@ -621,7 +621,7 @@ trait CustomContainsMatcher {
         (remainingTruth, remainingSequence) match {
           case (_, Nil)                          => matchResult(true)
           case (Nil, _)                          => matchResult(false)
-          case (x :: xs, y :: ys) if x.equals(y) => attemptMatch(xs, ys)
+          case (x :: xs, y :: ys) if x == y      => attemptMatch(xs, ys)
           case (_ :: xs, ys)                     => attemptMatch(xs, ys)
         }
 

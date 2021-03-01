@@ -98,16 +98,16 @@ import akka.util.OptionVal
         override def onPush(): Unit = {
           val result = grab(internalIn)
           elementInProgress match {
-            case OptionVal.None =>
-              failStage(
-                new IllegalStateException(
-                  s"inner flow emitted unexpected element $result; the flow must be one-in one-out"))
             case OptionVal.Some(_) if retryNo == maxRetries => pushExternal(result)
             case OptionVal.Some(in) =>
               decideRetry(in, result) match {
                 case None          => pushExternal(result)
                 case Some(element) => planRetry(element)
               }
+            case _ =>
+              failStage(
+                new IllegalStateException(
+                  s"inner flow emitted unexpected element $result; the flow must be one-in one-out"))
           }
         }
       })

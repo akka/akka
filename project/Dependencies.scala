@@ -58,7 +58,7 @@ object Dependencies {
       case twoThirteen if twoThirteen.startsWith("2.13") => scala213Version
       case twoTwelve if twoTwelve.startsWith("2.12")     => scala212Version
       case three if three.startsWith("3.0")              => scala3Version
-      case "default"                                     => scala212Version
+      case "default"                                     => scala213Version
       case other =>
         throw new IllegalArgumentException(s"Unsupported scala version [$other]. Must be 2.12, 2.13 or 3.0.")
     }

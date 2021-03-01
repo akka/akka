@@ -50,8 +50,7 @@ trait Timers extends Actor {
               actorCell.currentMessage = actorCell.currentMessage.copy(message = m)
             }
             super.aroundReceive(receive, m)
-          case OptionVal.None => // discard
-          case unexpected => throw new RuntimeException(s"Unexpected: $unexpected") // OptionVal exhaustiveness problem
+          case _ => // discard
         }
       case _ =>
         super.aroundReceive(receive, msg)

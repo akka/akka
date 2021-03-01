@@ -36,6 +36,7 @@ object MaterializerState {
     SystemMaterializer(system).materializer match {
       case impl: PhasedFusingActorMaterializer =>
         requestFromSupervisor(impl.supervisor)(impl.system.dispatchers.internalDispatcher)
+      case other => throw new IllegalArgumentException(s"Unsupported Materializer type ${other.getClass}")
     }
   }
 
@@ -47,6 +48,7 @@ object MaterializerState {
     mat match {
       case impl: PhasedFusingActorMaterializer =>
         requestFromSupervisor(impl.supervisor)(impl.system.dispatchers.internalDispatcher)
+      case other => throw new IllegalArgumentException(s"Unsupported Materializer type ${other.getClass}")
     }
   }
 

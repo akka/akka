@@ -20,9 +20,8 @@ private[akka] object RecordTypeSerializer {
   def parse(it: ByteIterator): RecordType = {
     val id = it.getShort
     RecordType(id) match {
-      case OptionVal.None    => throw new IllegalArgumentException(s"Illegal id [$id] for DnsRecordType")
       case OptionVal.Some(t) => t
-      case unexpected => throw new RuntimeException(s"Unexpected: $unexpected") // OptionVal exhaustiveness problem
+      case _ => throw new IllegalArgumentException(s"Illegal id [$id] for DnsRecordType")
     }
   }
 
