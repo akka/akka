@@ -11,6 +11,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.testkit.WithLogCapturing
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class BoundedSourceQueueSpec extends StreamSpec("""akka.loglevel = debug
@@ -192,6 +193,44 @@ class BoundedSourceQueueSpec extends StreamSpec("""akka.loglevel = debug
       }
 
       downstream.cancel()
+    }
+
+    "notify caller immediately when it has available capacity" in {
+      val sub = TestSubscriber.probe[Int]()
+      val queue = Source.queue[Int](10).toMat(Sink.fromSubscriber(sub))(Keep.left).run()
+
+      queue.offer(1)
+
+      Await.ready(queue.whenReady(), Duration.Zero)
+    }
+
+    "notify caller immediately when it has available capacity after being full" in {
+      val (queue, downstream) =
+        Source.fromGraph(Source.queue[Int](10)).async.toMat(TestSink.probe)(Keep.both).run()
+
+      (1 to 10).map { i =>
+        queue.offer(i)
+      }
+
+      downstream.request(1)
+
+      Await.ready(queue.whenReady(), Duration.Zero)
+    }
+
+    "keep caller waiting while it is full" in {
+      val (queue, downstream) =
+        Source.fromGraph(Source.queue[Int](10)).async.toMat(TestSink.probe)(Keep.both).run()
+
+      (1 to 10).map { i =>
+        queue.offer(i)
+      }
+
+      val readyToAccept = queue.whenReady()
+
+      // TODO: ensure the future is not completed until we call downstream.request
+      downstream.request(1)
+
+      Await.ready(readyToAccept, Duration.Zero)
     }
   }
 }

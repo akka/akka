@@ -53,7 +53,7 @@ class SendQueueBenchmark {
     val N = 100000
     val burstSize = 1000
 
-    val source = Source.queue[Int](1024, OverflowStrategy.dropBuffer)
+    val source = Source.queue[Int](1024)
 
     val (queue, killSwitch) = source
       .viaMat(KillSwitches.single)(Keep.both)

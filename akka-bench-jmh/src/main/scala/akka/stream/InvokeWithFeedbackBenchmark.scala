@@ -20,7 +20,7 @@ import akka.stream.scaladsl._
 class InvokeWithFeedbackBenchmark {
   implicit val system: ActorSystem = ActorSystem("InvokeWithFeedbackBenchmark")
 
-  var sourceQueue: SourceQueueWithComplete[Int] = _
+  var sourceQueue: BoundedSourceQueue[Int] = _
   var sinkQueue: SinkQueueWithCancel[Int] = _
 
   val waitForResult = 100.millis
@@ -30,7 +30,7 @@ class InvokeWithFeedbackBenchmark {
     // these are currently the only two built in stages using invokeWithFeedback
     val (in, out) =
       Source
-        .queue[Int](bufferSize = 1, overflowStrategy = OverflowStrategy.backpressure)
+        .queue[Int](bufferSize = 1)
         .toMat(Sink.queue[Int]())(Keep.both)
         .run()
 
@@ -44,7 +44,9 @@ class InvokeWithFeedbackBenchmark {
   def pass_through_100k_elements(): Unit = {
     (0 to 100000).foreach { n =>
       val f = sinkQueue.pull()
-      Await.result(sourceQueue.offer(n), waitForResult)
+      val queueOfferResult = sourceQueue.offer(n)
+      if (queueOfferResult == QueueOfferResult.Dropped)
+        Await.result(sourceQueue.whenReady(), waitForResult)
       Await.result(f, waitForResult)
     }
   }
