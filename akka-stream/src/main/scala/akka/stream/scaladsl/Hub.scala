@@ -119,7 +119,8 @@ object MergeHub {
 /**
  * INTERNAL API
  */
-private[akka] class MergeHubDrainingControlImpl(completion: Future[Done], callback: AsyncCallback[NotUsed]) extends MergeHub.DrainingControl {
+@InternalApi
+private[akka] final class MergeHubDrainingControlImpl(completion: Future[Done], callback: AsyncCallback[NotUsed]) extends MergeHub.DrainingControl {
   override def drainAndComplete(): Future[Done] = {
     callback.invoke(NotUsed)
     completion
@@ -170,7 +171,7 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
     private val queue = new AbstractNodeQueue[Event] {}
     @volatile private[this] var needWakeup = false
     @volatile private[this] var shuttingDown = false
-    private[this] var draining = false
+    @volatile private[this] var draining = false
     private[MergeHub] val completionPromise = Promise[Done]()
 
     private[this] val demands = scala.collection.mutable.LongMap.empty[InputState]
@@ -312,22 +313,20 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
           private[this] val id = idCounter.getAndIncrement()
 
           override def preStart(): Unit = {
-            if (!logic.isDraining) {
-              if (!logic.isShuttingDown) {
-                logic.enqueue(Register(id, getAsyncCallback(onDemand)))
+            if (!logic.isDraining && !logic.isShuttingDown) {
+              logic.enqueue(Register(id, getAsyncCallback(onDemand)))
 
-                // At this point, we could be in the unfortunate situation that:
-                // - we missed the shutdown announcement and entered this arm of the if statement
-                // - *before* we enqueued our Register event, the Hub already finished looking at the queue
-                //   and is now dead, so we are never notified again.
-                // To safeguard against this, we MUST check the announcement again. This is enough:
-                // if the Hub is no longer looking at the queue, then it must be that isShuttingDown must be already true.
-                if (!logic.isShuttingDown) pullWithDemand()
-                else completeStage()
-              } else {
-                completeStage()
-              }
-            } else completeStage()
+              // At this point, we could be in the unfortunate situation that:
+              // - we missed the shutdown announcement and entered this arm of the if statement
+              // - *before* we enqueued our Register event, the Hub already finished looking at the queue
+              //   and is now dead, so we are never notified again.
+              // To safeguard against this, we MUST check the announcement again. This is enough:
+              // if the Hub is no longer looking at the queue, then it must be that isShuttingDown must be already true.
+              if (!logic.isShuttingDown) pullWithDemand()
+              else completeStage()
+            } else {
+              completeStage()
+            }
           }
           override def postStop(): Unit = {
             // Unlike in the case of preStart, we don't care about the Hub no longer looking at the queue.
