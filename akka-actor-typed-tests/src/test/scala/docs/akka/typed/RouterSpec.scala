@@ -178,14 +178,17 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
       waiterProbe.receiveMessages(2)
 
       //messages sent to a router with constant hashing
+      // #constant-hashing
       val router = spawn(Routers.group(Proxy.RegisteringKey).withConsistentHashingRouting(10, Proxy.mapping))
+
       router ! Proxy.Message("123", "Text1")
       router ! Proxy.Message("123", "Text2")
 
       router ! Proxy.Message("zh3", "Text3")
       router ! Proxy.Message("zh3", "Text4")
-
-      //Then those messages reach the same actor when they have an equal id
+      // the hash is calculated over the Proxy.Message first parameter obtained through the Proxy.mapping function
+      // #constant-hashing
+      //Then messages with equal Message.id reach the same actor
       //so the first message in the probe queue is equal to the second
       probe1.receiveMessage() shouldBe probe1.receiveMessage()
       probe2.receiveMessage() shouldBe probe2.receiveMessage()
