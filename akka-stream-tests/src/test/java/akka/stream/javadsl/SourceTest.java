@@ -644,9 +644,9 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseQueue() throws Exception {
-    final Pair<SourceQueueWithComplete<String>, CompletionStage<List<String>>> x =
-        Flow.of(String.class).runWith(Source.queue(2, OverflowStrategy.fail()), Sink.seq(), system);
-    final SourceQueueWithComplete<String> source = x.first();
+    final Pair<BoundedSourceQueue<String>, CompletionStage<List<String>>> x =
+        Flow.of(String.class).runWith(Source.queue(2), Sink.seq(), system);
+    final BoundedSourceQueue<String> source = x.first();
     final CompletionStage<List<String>> result = x.second();
     source.offer("hello");
     source.offer("world");
@@ -848,20 +848,19 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustBeAbleToCombineMat() throws Exception {
     final TestKit probe = new TestKit(system);
-    final Source<Integer, SourceQueueWithComplete<Integer>> source1 =
-        Source.queue(1, OverflowStrategy.dropNew());
+    final Source<Integer, BoundedSourceQueue<Integer>> source1 = Source.queue(2);
     final Source<Integer, NotUsed> source2 = Source.from(Arrays.asList(2, 3));
 
-    // compiler to check the correct materialized value of type = SourceQueueWithComplete<Integer>
+    // compiler to check the correct materialized value of type = BoundedSourceQueue<Integer>
     // available
-    final Source<Integer, SourceQueueWithComplete<Integer>> combined =
+    final Source<Integer, BoundedSourceQueue<Integer>> combined =
         Source.combineMat(
             source1,
             source2,
             width -> Concat.<Integer>create(width),
             Keep.left()); // Keep.left() (i.e. preserve queueSource's materialized value)
 
-    SourceQueueWithComplete<Integer> queue =
+    BoundedSourceQueue<Integer> queue =
         combined
             .toMat(
                 Sink.foreach(elem -> probe.getRef().tell(elem, ActorRef.noSender())), Keep.left())

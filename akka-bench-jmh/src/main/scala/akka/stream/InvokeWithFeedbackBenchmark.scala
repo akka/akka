@@ -14,23 +14,26 @@ import org.openjdk.jmh.annotations._
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 
+import scala.annotation.nowarn
+
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
 class InvokeWithFeedbackBenchmark {
   implicit val system: ActorSystem = ActorSystem("InvokeWithFeedbackBenchmark")
 
-  var sourceQueue: BoundedSourceQueue[Int] = _
+  var sourceQueue: SourceQueueWithComplete[Int] = _
   var sinkQueue: SinkQueueWithCancel[Int] = _
 
   val waitForResult = 100.millis
 
   @Setup
+  @nowarn("msg=Use queue without `overflowStrategy` parameter instead.")
   def setup(): Unit = {
     // these are currently the only two built in stages using invokeWithFeedback
     val (in, out) =
       Source
-        .queue[Int](bufferSize = 1)
+        .queue[Int](bufferSize = 1, overflowStrategy = OverflowStrategy.backpressure)
         .toMat(Sink.queue[Int]())(Keep.both)
         .run()
 
@@ -44,9 +47,7 @@ class InvokeWithFeedbackBenchmark {
   def pass_through_100k_elements(): Unit = {
     (0 to 100000).foreach { n =>
       val f = sinkQueue.pull()
-      val queueOfferResult = sourceQueue.offer(n)
-      if (queueOfferResult == QueueOfferResult.Dropped)
-        Await.result(sourceQueue.whenReady(), waitForResult)
+      Await.result(sourceQueue.offer(n), waitForResult)
       Await.result(f, waitForResult)
     }
   }
