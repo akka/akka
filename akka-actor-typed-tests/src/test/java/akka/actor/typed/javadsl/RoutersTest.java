@@ -57,15 +57,10 @@ public class RoutersTest extends JUnitSuite {
     String broadcastMsg = "bc-message";
     pool.tell(broadcastMsg);
 
-    List<String> messages = probe.receiveSeveralMessages(5);
+    assertEquals(notBroadcastMsg, probe.receiveMessage());
 
-    for (int i = 0; i < messages.size(); i++) {
-      String msg = messages.get(i);
-      if (i == 0) {
-        assertEquals(notBroadcastMsg, msg);
-      } else {
-        assertEquals(broadcastMsg, msg);
-      }
+    for (String msg : probe.receiveSeveralMessages(4)) {
+      assertEquals(broadcastMsg, msg);
     }
   }
 }
