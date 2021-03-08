@@ -30,53 +30,41 @@ public class StatusReplyTest extends JUnitSuite {
       new AkkaJUnitActorSystemResource("JavaAPI", AkkaSpec.testConf());
 
   @Test
-  public void testSuccessApi() {
+  public void successReplyThrowsExceptionWhenGetErrorIsCalled() {
     StatusReply<String> reply = StatusReply.success("woho");
     assertTrue(reply.isSuccess());
     assertFalse(reply.isError());
     assertEquals("woho", reply.getValue());
-    try {
-      reply.getError();
-      Assert.fail("Calling get error on success did not throw");
-    } catch (IllegalArgumentException ex) {
-      // this is what we expect
-    }
+    Assert.assertThrows(
+        "Calling get error on success did not throw",
+        IllegalArgumentException.class,
+        reply::getError);
   }
 
   @Test
-  public void testErrorMessageApi() {
+  public void failedReplyThrowsExceptionWhenGetValueIsCalled() {
     StatusReply<String> reply = StatusReply.error("boho");
     assertTrue(reply.isError());
     assertFalse(reply.isSuccess());
     assertEquals("boho", reply.getError().getMessage());
-    try {
-      reply.getValue();
-      Assert.fail("Calling get value on error did not throw");
-    } catch (StatusReply.ErrorMessage ex) {
-      // this is what we expect
-    } catch (Throwable th) {
-      Assert.fail("Unexpected exception type: " + th);
-    }
+    Assert.assertThrows(
+        "Calling get value on error did not throw",
+        StatusReply.ErrorMessage.class,
+        reply::getValue);
   }
 
   @Test
-  public void testErrorExceptionApi() {
+  public void failedReplyThrowsOriginalExceptionWhenGetValueIsCalled() {
     StatusReply<String> reply = StatusReply.error(new TestException("boho"));
     assertTrue(reply.isError());
     assertFalse(reply.isSuccess());
     assertEquals("boho", reply.getError().getMessage());
-    try {
-      reply.getValue();
-      Assert.fail("Calling get value on error did not throw");
-    } catch (TestException ex) {
-      // this is what we expect
-    } catch (Throwable th) {
-      Assert.fail("Unexpected exception type: " + th);
-    }
+    Assert.assertThrows(
+        "Calling get value on error did not throw", TestException.class, reply::getValue);
   }
 
   @Test
-  public void testAskWithStatusSuccess() throws Exception {
+  public void askWithStatusSuccessReturnsValue() throws Exception {
     TestProbe probe = new TestProbe(actorSystemResource.getSystem());
 
     CompletionStage<Object> response = askWithStatus(probe.ref(), "request", Duration.ofSeconds(3));
@@ -88,36 +76,32 @@ public class StatusReplyTest extends JUnitSuite {
   }
 
   @Test
-  public void testAskWithStatusErrorMessage() throws Exception {
+  public void askWithStatusErrorReturnsErrorMessageExceptionForText() {
     TestProbe probe = new TestProbe(actorSystemResource.getSystem());
 
     CompletionStage<Object> response = askWithStatus(probe.ref(), "request", Duration.ofSeconds(3));
     probe.expectMsg("request");
     probe.lastSender().tell(StatusReply.error("boho"), ActorRef.noSender());
-
-    try {
-      Object result = response.toCompletableFuture().get(3, TimeUnit.SECONDS);
-    } catch (ExecutionException ex) {
-      // what we expected
-      assertEquals(StatusReply.ErrorMessage.class, ex.getCause().getClass());
-      assertEquals("boho", ex.getCause().getMessage());
-    }
+    ExecutionException ex =
+        Assert.assertThrows(
+            ExecutionException.class,
+            () -> response.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    assertEquals(StatusReply.ErrorMessage.class, ex.getCause().getClass());
+    assertEquals("boho", ex.getCause().getMessage());
   }
 
   @Test
-  public void testAskWithStatusErrorException() throws Exception {
+  public void askWithStatusErrorReturnsOriginalException() {
     TestProbe probe = new TestProbe(actorSystemResource.getSystem());
 
     CompletionStage<Object> response = askWithStatus(probe.ref(), "request", Duration.ofSeconds(3));
     probe.expectMsg("request");
     probe.lastSender().tell(StatusReply.error(new TestException("boho")), ActorRef.noSender());
-
-    try {
-      Object result = response.toCompletableFuture().get(3, TimeUnit.SECONDS);
-    } catch (ExecutionException ex) {
-      // what we expected
-      assertEquals(TestException.class, ex.getCause().getClass());
-      assertEquals("boho", ex.getCause().getMessage());
-    }
+    ExecutionException ex =
+        Assert.assertThrows(
+            ExecutionException.class,
+            () -> response.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    assertEquals(TestException.class, ex.getCause().getClass());
+    assertEquals("boho", ex.getCause().getMessage());
   }
 }
