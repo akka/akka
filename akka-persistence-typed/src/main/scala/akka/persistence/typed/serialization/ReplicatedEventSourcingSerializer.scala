@@ -22,10 +22,9 @@ import akka.protobufv3.internal.ByteString
 import akka.remote.ContainerFormats.Payload
 import akka.remote.serialization.WrappedPayloadSupport
 import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
-
 import scala.annotation.tailrec
-import akka.util.ccompat.JavaConverters._
 
+import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable.TreeMap
 
 /**

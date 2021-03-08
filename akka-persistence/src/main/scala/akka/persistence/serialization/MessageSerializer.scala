@@ -6,18 +6,20 @@ package akka.persistence.serialization
 
 import java.io.NotSerializableException
 
+import scala.annotation.nowarn
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration
 import scala.concurrent.duration.Duration
 
-import scala.annotation.nowarn
-
-import akka.actor.{ ActorPath, ExtendedActorSystem }
 import akka.actor.Actor
-import akka.persistence._
+import akka.actor.ActorPath
+import akka.actor.ExtendedActorSystem
 import akka.persistence.AtLeastOnceDelivery._
-import akka.persistence.fsm.PersistentFSM.{ PersistentFSMSnapshot, StateChangeEvent }
+import akka.persistence._
+import akka.persistence.fsm.PersistentFSM.PersistentFSMSnapshot
+import akka.persistence.fsm.PersistentFSM.StateChangeEvent
+import akka.persistence.journal.Tagged
 import akka.persistence.serialization.{ MessageFormats => mf }
 import akka.protobufv3.internal.ByteString
 import akka.serialization._
@@ -29,7 +31,7 @@ import akka.util.ccompat._
 trait Message extends Serializable
 
 /**
- * Protobuf serializer for [[akka.persistence.PersistentRepr]], [[akka.persistence.AtLeastOnceDelivery]] and [[akka.persistence.fsm.PersistentFSM.StateChangeEvent]] messages.
+ * Protobuf serializer for several [[akka.persistence]] messages.
  */
 @ccompatUsedUntil213
 class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
@@ -41,6 +43,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
   val AtLeastOnceDeliverySnapshotClass = classOf[AtLeastOnceDeliverySnapshot]
   val PersistentStateChangeEventClass = classOf[StateChangeEvent]
   val PersistentFSMSnapshotClass = classOf[PersistentFSMSnapshot[Any]]
+  val TaggedClass = classOf[Tagged]
 
   private lazy val serialization = SerializationExtension(system)
 
@@ -56,6 +59,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     case a: AtLeastOnceDeliverySnapshot           => atLeastOnceDeliverySnapshotBuilder(a).build.toByteArray
     case s: StateChangeEvent                      => stateChangeBuilder(s).build.toByteArray
     case p: PersistentFSMSnapshot[Any @unchecked] => persistentFSMSnapshotBuilder(p).build.toByteArray
+    case t: Tagged                                => taggedBuilder(t).build.toByteArray
     case _                                        => throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
   }
 
@@ -74,6 +78,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
           atLeastOnceDeliverySnapshot(mf.AtLeastOnceDeliverySnapshot.parseFrom(bytes))
         case PersistentStateChangeEventClass => stateChange(mf.PersistentStateChangeEvent.parseFrom(bytes))
         case PersistentFSMSnapshotClass      => persistentFSMSnapshot(mf.PersistentFSMSnapshot.parseFrom(bytes))
+        case TaggedClass                     => tagged(mf.Tagged.parseFrom(bytes))
         case _                               => throw new NotSerializableException(s"Can't deserialize object of type ${c}")
       }
   }
@@ -115,6 +120,12 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     }
   }
 
+  private[persistence] def taggedBuilder(tagged: Tagged): mf.Tagged.Builder = {
+    val tags = new java.util.ArrayList[String](tagged.tags.size)
+    tagged.tags.foreach(tags.add)
+    mf.Tagged.newBuilder.setPayload(persistentPayloadBuilder(tagged.payload.asInstanceOf[AnyRef])).addAllTags(tags)
+  }
+
   def atLeastOnceDeliverySnapshot(
       atLeastOnceDeliverySnapshot: mf.AtLeastOnceDeliverySnapshot): AtLeastOnceDeliverySnapshot = {
     import akka.util.ccompat.JavaConverters._
@@ -148,6 +159,11 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       if (persistentFSMSnapshot.hasTimeoutNanos)
         Some(Duration.fromNanos(persistentFSMSnapshot.getTimeoutNanos))
       else None)
+  }
+
+  def tagged(tgd: mf.Tagged): Tagged = {
+    import akka.util.ccompat.JavaConverters._
+    Tagged(payload(tgd.getPayload), tgd.getTagsList.asByteStringList().asScala.map(_.toStringUtf8).toSet)
   }
 
   private def atomicWriteBuilder(a: AtomicWrite) = {

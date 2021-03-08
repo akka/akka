@@ -4,6 +4,7 @@
 
 package akka.persistence.journal
 
+import akka.persistence.serialization.Message
 import akka.util.ccompat.JavaConverters._
 
 /**
@@ -16,7 +17,7 @@ import akka.util.ccompat.JavaConverters._
  *
  * The journal will unwrap the event and store the `payload`.
  */
-case class Tagged(payload: Any, tags: Set[String]) {
+case class Tagged(payload: Any, tags: Set[String]) extends Message {
 
   /**
    * Java API

@@ -56,3 +56,8 @@ message PersistentFSMSnapshot {
   required PersistentPayload data = 2;
   optional int64 timeoutNanos = 3;
 }
+
+message Tagged {
+  required PersistentPayload payload = 1;
+  repeated string tags = 2;
+}
