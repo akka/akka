@@ -185,7 +185,7 @@ public final class SystemMessageFormats {
               if (((bitField0_ & 0x00000004) != 0)) {
                 subBuilder = causeData_.toBuilder();
               }
-              causeData_ = input.readMessage(akka.remote.ContainerFormats.Payload.parser(), extensionRegistry);
+              causeData_ = input.readMessage(akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
               if (subBuilder != null) {
                 subBuilder.mergeFrom(causeData_);
                 causeData_ = subBuilder.buildPartial();
@@ -1891,7 +1891,7 @@ public final class SystemMessageFormats {
               if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = watchee_.toBuilder();
               }
-              watchee_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.parser(), extensionRegistry);
+              watchee_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.PARSER, extensionRegistry);
               if (subBuilder != null) {
                 subBuilder.mergeFrom(watchee_);
                 watchee_ = subBuilder.buildPartial();
@@ -1904,7 +1904,7 @@ public final class SystemMessageFormats {
               if (((bitField0_ & 0x00000002) != 0)) {
                 subBuilder = watcher_.toBuilder();
               }
-              watcher_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.parser(), extensionRegistry);
+              watcher_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.PARSER, extensionRegistry);
               if (subBuilder != null) {
                 subBuilder.mergeFrom(watcher_);
                 watcher_ = subBuilder.buildPartial();
@@ -2749,7 +2749,7 @@ public final class SystemMessageFormats {
               if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = child_.toBuilder();
               }
-              child_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.parser(), extensionRegistry);
+              child_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.PARSER, extensionRegistry);
               if (subBuilder != null) {
                 subBuilder.mergeFrom(child_);
                 child_ = subBuilder.buildPartial();
@@ -3495,7 +3495,7 @@ public final class SystemMessageFormats {
               if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = child_.toBuilder();
               }
-              child_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.parser(), extensionRegistry);
+              child_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.PARSER, extensionRegistry);
               if (subBuilder != null) {
                 subBuilder.mergeFrom(child_);
                 child_ = subBuilder.buildPartial();
@@ -4252,7 +4252,7 @@ public final class SystemMessageFormats {
               if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = actor_.toBuilder();
               }
-              actor_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.parser(), extensionRegistry);
+              actor_ = input.readMessage(akka.remote.ContainerFormats.ActorRef.PARSER, extensionRegistry);
               if (subBuilder != null) {
                 subBuilder.mergeFrom(actor_);
                 actor_ = subBuilder.buildPartial();

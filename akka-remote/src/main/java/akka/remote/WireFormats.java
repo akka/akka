@@ -14638,7 +14638,7 @@ public final class WireFormats {
               if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = resizer_.toBuilder();
               }
-              resizer_ = input.readMessage(akka.remote.ContainerFormats.Payload.parser(), extensionRegistry);
+              resizer_ = input.readMessage(akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
               if (subBuilder != null) {
                 subBuilder.mergeFrom(resizer_);
                 resizer_ = subBuilder.buildPartial();
@@ -15495,7 +15495,7 @@ public final class WireFormats {
               if (((bitField0_ & 0x00000008) != 0)) {
                 subBuilder = resizer_.toBuilder();
               }
-              resizer_ = input.readMessage(akka.remote.ContainerFormats.Payload.parser(), extensionRegistry);
+              resizer_ = input.readMessage(akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
               if (subBuilder != null) {
                 subBuilder.mergeFrom(resizer_);
                 resizer_ = subBuilder.buildPartial();
@@ -19518,7 +19518,7 @@ public final class WireFormats {
               if (((bitField0_ & 0x00000001) != 0)) {
                 subBuilder = local_.toBuilder();
               }
-              local_ = input.readMessage(akka.remote.ContainerFormats.Payload.parser(), extensionRegistry);
+              local_ = input.readMessage(akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
               if (subBuilder != null) {
                 subBuilder.mergeFrom(local_);
                 local_ = subBuilder.buildPartial();

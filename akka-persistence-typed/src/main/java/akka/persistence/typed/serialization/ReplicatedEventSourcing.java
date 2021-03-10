@@ -1560,7 +1560,7 @@ public final class ReplicatedEventSourcing {
                 }
                 otherElements_.add(
                     input.readMessage(
-                        akka.remote.ContainerFormats.Payload.parser(), extensionRegistry));
+                        akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry));
                 break;
               }
             default:
@@ -11097,7 +11097,7 @@ public final class ReplicatedEventSourcing {
                 }
                 payload_ =
                     input.readMessage(
-                        akka.remote.ContainerFormats.Payload.parser(), extensionRegistry);
+                        akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
                 if (subBuilder != null) {
                   subBuilder.mergeFrom(payload_);
                   payload_ = subBuilder.buildPartial();
