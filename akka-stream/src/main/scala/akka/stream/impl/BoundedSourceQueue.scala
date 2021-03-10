@@ -4,7 +4,7 @@
 
 package akka.stream.impl
 
-import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
+import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
 
@@ -24,6 +24,7 @@ import scala.concurrent.{ Future, Promise }
   case object NeedsActivation extends State
   case object Running extends State
   case class Done(result: QueueCompletionResult) extends State
+  val successful = Future.successful(akka.Done)
 }
 
 /**
@@ -44,7 +45,7 @@ import scala.concurrent.{ Future, Promise }
     val state = new AtomicReference[State](Running)
     val queue = new AbstractBoundedNodeQueue[T](bufferSize) {}
     val subscriptions = new ConcurrentLinkedQueue[Promise[akka.Done]]()
-    val readyToAccept = new AtomicBoolean(true)
+    @volatile var readyToAccept = true
 
     object Logic extends GraphStageLogic(shape) with OutHandler with StageLogging {
 
@@ -111,8 +112,16 @@ import scala.concurrent.{ Future, Promise }
 
       def notifySubscribersIfNeeded(): Unit = {
         // if the queue was full previously but now it can accept a new element
-        if (readyToAccept.compareAndSet(false, true)) {
-          subscriptions.forEach(promise => promise.success(akka.Done.getInstance()))
+        if (!readyToAccept) {
+          // we do not wait until all subscribers have been notified before assuming we can accept more elements,
+          // so all new subscribers won't be remembered (because we're still notifying the old ones) until the
+          // queue is full again
+          readyToAccept = true
+          var subscription = subscriptions.poll()
+          while (subscription != null) {
+            subscription.success(akka.Done)
+            subscription = subscriptions.poll()
+          }
         }
       }
     }
@@ -130,7 +139,7 @@ import scala.concurrent.{ Future, Promise }
 
             QueueOfferResult.Enqueued
           } else {
-            readyToAccept.set(false) // queue is full
+            readyToAccept = false // queue is full
 
             QueueOfferResult.Dropped
           }
@@ -152,11 +161,11 @@ import scala.concurrent.{ Future, Promise }
       }
 
       override def whenReady(): Future[akka.Done] = {
-        if (readyToAccept.get()) {
-          // immediately return the result if queue has available capacity
-          Future.successful(akka.Done.getInstance())
+        if (readyToAccept) {
+          // immediately return the result if the queue has available capacity
+          successful
         } else {
-          // remember the subscriber if queue has no capacity
+          // remember the subscriber if the queue has no capacity
           val promise = Promise[akka.Done]()
           subscriptions.offer(promise)
           promise.future

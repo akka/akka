@@ -13,7 +13,6 @@ import akka.stream.javadsl.Source;
 
 import java.util.Optional;
 
-@SuppressWarnings("deprecated")
 public class ActorSourceSinkCompileTest {
 
   interface Protocol {}

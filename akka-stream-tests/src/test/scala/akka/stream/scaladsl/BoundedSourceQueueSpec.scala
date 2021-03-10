@@ -11,7 +11,6 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.testkit.WithLogCapturing
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class BoundedSourceQueueSpec extends StreamSpec("""akka.loglevel = debug
@@ -195,42 +194,82 @@ class BoundedSourceQueueSpec extends StreamSpec("""akka.loglevel = debug
       downstream.cancel()
     }
 
-    "notify caller immediately when it has available capacity" in {
+    "notify caller immediately when queue has available capacity" in {
       val sub = TestSubscriber.probe[Int]()
       val queue = Source.queue[Int](10).toMat(Sink.fromSubscriber(sub))(Keep.left).run()
 
       queue.offer(1)
 
-      Await.ready(queue.whenReady(), Duration.Zero)
+      // ensure the caller has been notified immediately
+      queue.whenReady().isCompleted shouldBe true
     }
 
-    "notify caller immediately when it has available capacity after being full" in {
+    "notify caller when queue has available capacity after being full" in {
       val (queue, downstream) =
         Source.fromGraph(Source.queue[Int](10)).async.toMat(TestSink.probe)(Keep.both).run()
 
-      (1 to 10).map { i =>
+      // make the queue full and one element being rejected
+      (1 to 11).map { i =>
         queue.offer(i)
       }
 
+      // future should not be completed until there is capacity in the queue to accept new elements
+      val whenReady = queue.whenReady()
+      whenReady.isCompleted shouldBe false
+
+      // make the queue available to accept a new element
       downstream.request(1)
 
-      Await.ready(queue.whenReady(), Duration.Zero)
+      // ensure the caller has been notified eventually
+      whenReady.futureValue shouldBe akka.Done
     }
 
-    "keep caller waiting while it is full" in {
+    "keep caller waiting while queue is full" in {
+      val sub = TestSubscriber.probe[Int]()
+      val queue = Source.queue[Int](10).toMat(Sink.fromSubscriber(sub))(Keep.left).run()
+
+      // make the queue full and one element being rejected
+      (1 to 11).map { i =>
+        queue.offer(i)
+      }
+
+      // future should not be completed because there are no elements consumed from the queue
+      // 100ms seems to be a reasonable delay
+      Thread.sleep(100)
+      queue.whenReady().isCompleted shouldBe false
+    }
+
+    "clean subscriptions when queue has available capacity after being full" in {
+      // This scenario emulates a situation when the queue becomes full twice and checks that subscribers are
+      // notified properly. The key point is to ensure that subscriptions have been cleaned after the first
+      // notification. If that was not the case then 'Promise already completed' exception would be thrown.
       val (queue, downstream) =
         Source.fromGraph(Source.queue[Int](10)).async.toMat(TestSink.probe)(Keep.both).run()
 
-      (1 to 10).map { i =>
+      // make the queue full and one element being rejected
+      (1 to 11).map { i =>
         queue.offer(i)
       }
 
-      val readyToAccept = queue.whenReady()
+      // make a subscription
+      queue.whenReady()
 
-      // TODO: ensure the future is not completed until we call downstream.request
+      // make the queue available to accept a new element
       downstream.request(1)
 
-      Await.ready(readyToAccept, Duration.Zero)
+      // make the queue full and one element being rejected
+      (12 to 13).map { i =>
+        queue.offer(i)
+      }
+
+      // make another subscription
+      val whenReady = queue.whenReady()
+
+      // make the queue available to accept a new element
+      downstream.request(1)
+
+      // ensure the caller has been notified eventually
+      whenReady.futureValue shouldBe akka.Done
     }
   }
 }
