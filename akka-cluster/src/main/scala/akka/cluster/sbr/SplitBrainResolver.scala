@@ -161,7 +161,7 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
   def downAllWhenUnstable: FiniteDuration =
     settings.DownAllWhenUnstable
 
-  private val releaseLeaseAfter = stableAfter * 2
+  private val releaseLeaseAfter = settings.leaseMajoritySettings.releaseAfter
 
   def tickInterval: FiniteDuration = 1.second
 
