@@ -36,7 +36,7 @@ public class StatusReplyTest extends JUnitSuite {
     assertFalse(reply.isError());
     assertEquals("woho", reply.getValue());
     Assert.assertThrows(
-        "Calling get error on success did not throw",
+        "Calling .getError() on success should throw",
         IllegalArgumentException.class,
         reply::getError);
   }
@@ -48,7 +48,7 @@ public class StatusReplyTest extends JUnitSuite {
     assertFalse(reply.isSuccess());
     assertEquals("boho", reply.getError().getMessage());
     Assert.assertThrows(
-        "Calling get value on error did not throw",
+        "Calling .getValue() on error should throw",
         StatusReply.ErrorMessage.class,
         reply::getValue);
   }
@@ -60,7 +60,7 @@ public class StatusReplyTest extends JUnitSuite {
     assertFalse(reply.isSuccess());
     assertEquals("boho", reply.getError().getMessage());
     Assert.assertThrows(
-        "Calling get value on error did not throw", TestException.class, reply::getValue);
+        "Calling .getValue() on error should throw", TestException.class, reply::getValue);
   }
 
   @Test
