@@ -154,7 +154,7 @@ The process of preparing and running a `SinkRef`-powered distributed stream is s
 
 ### Delivery guarantees
 
-Stream refs utilise normal actor messaging for their trainsport, and therefore provide the same level of basic delivery guarantees. Stream refs do extend the semantics somewhat, through demand re-delivery and sequence fault detection. In other words:
+Stream refs utilise normal actor messaging for their transport, and therefore provide the same level of basic delivery guarantees. Stream refs do extend the semantics somewhat, through demand re-delivery and sequence fault detection. In other words:
 
 - messages are sent over actor remoting
     - which relies on TCP (classic remoting or Artery TCP) or Aeron UDP for basic redelivery mechanisms
