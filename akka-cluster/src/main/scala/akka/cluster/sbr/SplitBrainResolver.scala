@@ -9,6 +9,7 @@ import java.time.temporal.ChronoUnit
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
@@ -161,7 +162,11 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
   def downAllWhenUnstable: FiniteDuration =
     settings.DownAllWhenUnstable
 
-  private val releaseLeaseAfter = settings.leaseMajoritySettings.releaseAfter
+  private def releaseLeaseAfter: FiniteDuration = strategy match {
+    case lm: LeaseMajority => lm.releaseAfter
+    case other =>
+      throw new IllegalStateException(s"Unexpected use of releaseLeaseAfter for strategy [${other.getClass.getName}]")
+  }
 
   def tickInterval: FiniteDuration = 1.second
 
