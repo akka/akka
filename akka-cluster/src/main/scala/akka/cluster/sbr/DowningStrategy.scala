@@ -591,6 +591,7 @@ import akka.coordination.lease.scaladsl.Lease
     override val role: Option[String],
     _lease: Lease,
     acquireLeaseDelayForMinority: FiniteDuration,
+    val releaseAfter: FiniteDuration,
     selfUniqueAddress: UniqueAddress)
     extends DowningStrategy(selfDc, selfUniqueAddress) {
   import DowningStrategy._

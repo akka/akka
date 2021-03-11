@@ -827,7 +827,13 @@ class SplitBrainResolverSpec
       val acquireLeaseDelayForMinority: FiniteDuration = 2.seconds
 
       override def createStrategy() =
-        new LeaseMajority(selfDc, role, testLease, acquireLeaseDelayForMinority, selfUniqueAddress)
+        new LeaseMajority(
+          selfDc,
+          role,
+          testLease,
+          acquireLeaseDelayForMinority,
+          releaseAfter = 10.seconds,
+          selfUniqueAddress)
     }
 
     "decide AcquireLeaseAndDownUnreachable, and DownReachable as reverse decision" in {
@@ -1115,7 +1121,13 @@ class SplitBrainResolverSpec
         tickInterval: FiniteDuration = Duration.Zero)
         extends Setup(
           stableAfter,
-          new LeaseMajority(selfDc, role, testLease, acquireLeaseDelayForMinority = 20.millis, selfUniqueAddress),
+          new LeaseMajority(
+            selfDc,
+            role,
+            testLease,
+            acquireLeaseDelayForMinority = 20.millis,
+            releaseAfter = 10.seconds,
+            selfUniqueAddress),
           selfUniqueAddress,
           downAllWhenUnstable,
           tickInterval)
