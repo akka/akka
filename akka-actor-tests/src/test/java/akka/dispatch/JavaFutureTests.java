@@ -34,7 +34,7 @@ public class JavaFutureTests extends JUnitSuite {
     new AkkaJUnitActorSystemResource("JavaFutureTests", AkkaSpec.testConf());
 
   private final ActorSystem system = actorSystemResource.getSystem();
-  private final Duration fiveSecondsTimeout = Duration.create(5, TimeUnit.SECONDS);
+  private final Duration timeout = Duration.create(5, TimeUnit.SECONDS);
 
   @Test
   public void mustBeAbleToMapAFuture() throws Exception {
@@ -51,7 +51,7 @@ public class JavaFutureTests extends JUnitSuite {
       }
     }, system.dispatcher());
 
-    assertEquals("Hello World", Await.result(f2, fiveSecondsTimeout));
+    assertEquals("Hello World", Await.result(f2, timeout));
   }
 
   @Test
@@ -68,7 +68,7 @@ public class JavaFutureTests extends JUnitSuite {
 
     cf.success("foo");
     assertTrue(latch.await(5, TimeUnit.SECONDS));
-    assertEquals("foo", Await.result(f, fiveSecondsTimeout));
+    assertEquals("foo", Await.result(f, timeout));
   }
 
   @Test
@@ -103,7 +103,7 @@ public class JavaFutureTests extends JUnitSuite {
 
     cf.success("foo");
     assertTrue(latch.await(5, TimeUnit.SECONDS));
-    assertEquals("foo", Await.result(f, fiveSecondsTimeout));
+    assertEquals("foo", Await.result(f, timeout));
   }
 
   @Test
@@ -119,7 +119,7 @@ public class JavaFutureTests extends JUnitSuite {
 
     cf.success("foo");
     assertTrue(latch.await(5, TimeUnit.SECONDS));
-    assertEquals("foo", Await.result(f, fiveSecondsTimeout));
+    assertEquals("foo", Await.result(f, timeout));
   }
 
   @Test
@@ -138,8 +138,8 @@ public class JavaFutureTests extends JUnitSuite {
       }
     }, system.dispatcher());
 
-    assertEquals("1000", Await.result(f, fiveSecondsTimeout));
-    assertEquals(1000, Await.result(r, fiveSecondsTimeout).intValue());
+    assertEquals("1000", Await.result(f, timeout));
+    assertEquals(1000, Await.result(r, timeout).intValue());
     assertTrue(latch.await(5, TimeUnit.SECONDS));
   }
 
@@ -157,8 +157,8 @@ public class JavaFutureTests extends JUnitSuite {
 
     cf.success("foo");
     assertTrue(latch.await(5, TimeUnit.SECONDS));
-    assertEquals("foo", Await.result(f, fiveSecondsTimeout));
-    assertEquals("foo", Await.result(r, fiveSecondsTimeout));
+    assertEquals("foo", Await.result(f, timeout));
+    assertEquals("foo", Await.result(r, timeout));
   }
 
   // TODO: Improve this test, perhaps with an Actor
@@ -178,7 +178,7 @@ public class JavaFutureTests extends JUnitSuite {
 
     Future<Iterable<String>> futureList = Futures.sequence(listFutures, system.dispatcher());
 
-    assertEquals(listExpected, Await.result(futureList, fiveSecondsTimeout));
+    assertEquals(listExpected, Await.result(futureList, timeout));
   }
 
   // TODO: Improve this test, perhaps with an Actor
@@ -202,7 +202,7 @@ public class JavaFutureTests extends JUnitSuite {
       }
     }, system.dispatcher());
 
-    assertEquals(expected.toString(), Await.result(result, fiveSecondsTimeout));
+    assertEquals(expected.toString(), Await.result(result, timeout));
   }
 
   @Test
@@ -225,7 +225,7 @@ public class JavaFutureTests extends JUnitSuite {
       }
     }, system.dispatcher());
 
-    assertEquals(expected.toString(), Await.result(result, fiveSecondsTimeout));
+    assertEquals(expected.toString(), Await.result(result, timeout));
   }
 
   @Test
@@ -248,7 +248,7 @@ public class JavaFutureTests extends JUnitSuite {
       }
     }, system.dispatcher());
 
-    assertEquals(expectedStrings, Await.result(result, fiveSecondsTimeout));
+    assertEquals(expectedStrings, Await.result(result, timeout));
   }
 
   @Test
@@ -269,7 +269,7 @@ public class JavaFutureTests extends JUnitSuite {
       }
     }, system.dispatcher());
 
-    assertEquals(expect, Await.result(f, fiveSecondsTimeout).get());
+    assertEquals(expect, Await.result(f, timeout).get());
   }
 
   @Test
