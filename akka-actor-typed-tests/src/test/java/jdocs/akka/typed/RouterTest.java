@@ -228,8 +228,7 @@ public class RouterTest extends JUnitSuite {
 
     router.tell(new Proxy.Message("zh3", "Text3"));
     router.tell(new Proxy.Message("zh3", "Text4"));
-    // the hash is calculated over the Proxy.Message first parameter obtained through the
-    // Proxy.mapping function
+    // the hash is calculated over the Proxy.Message first parameter obtained through the Proxy.mapping function
     // #constant-hashing
     // Then messages with equal Message.id reach the same actor
     // so the first message in each probe queue is equal to its second
