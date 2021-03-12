@@ -189,7 +189,7 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
       // the hash is calculated over the Proxy.Message first parameter obtained through the Proxy.mapping function
       // #constant-hashing
       //Then messages with equal Message.id reach the same actor
-      //so the first message in the probe queue is equal to the second
+      //so the first message in each probe queue is equal to its second
       probe1.receiveMessage() shouldBe probe1.receiveMessage()
       probe2.receiveMessage() shouldBe probe2.receiveMessage()
 

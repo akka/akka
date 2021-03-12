@@ -129,18 +129,17 @@ An optional parameter `preferLocalRoutees` can be used for this strategy. Router
 
 ### Consistent Hashing
 
-Uses [consistent hashing](https://en.wikipedia.org/wiki/Consistent_hashing) to select a routee based
-on the sent message. This [article](http://www.tom-e-white.com/2007/11/consistent-hashing.html)
-gives good insight into how consistent hashing is implemented.
+Uses [consistent hashing](https://en.wikipedia.org/wiki/Consistent_hashing) to select a routee based on the sent message. This [article](http://www.tom-e-white.com/2007/11/consistent-hashing.html) gives good insight into how consistent hashing is implemented.
 
-Currently you have to define hashMapping of the router to map incoming messages to their consistent
-hash key. This makes the decision transparent for the sender.
+Currently you have to define hashMapping of the router to map incoming messages to their consistent hash key. This makes the decision transparent for the sender.
 
-Consistent hashing delivers messages with the same hash to the same routee as long as the set of routees stays the same.
-When the set of routees changes, consistent hashing tries to make sure, but does not guarantee, that messages with the same hash are routed to the same routee.
+Consistent hashing delivers messages with the same hash to the same routee as long as the set of routees stays the same. When the set of routees changes, consistent hashing tries to make sure, but does not guarantee, that messages with the same hash are routed to the same routee.
 
 Scala
 :  @@snip [RouterSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/RouterSpec.scala) { #constant-hashing }
+
+Java
+:  @@snip [RouterTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/RouterTest.java) { #constant-hashing }
 
 See also @ref[Akka Cluster Sharding](cluster-sharding.md) which provides stable routing and rebalancing of the routee actors.
 
