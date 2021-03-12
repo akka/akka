@@ -11,7 +11,7 @@ import akka.stream.scaladsl.{Sink, Source}
 object AsPublisher {
   implicit val system: ActorSystem = ???
   implicit val ec: ExecutionContextExecutor = system.dispatcher
-  def asPublisherExample(): Future[Int] = {
+  def asPublisherExample() = {
     //#asPublisher
     val source = Source(1 to 5)
     val publisherTrue = source.runWith(Sink.asPublisher(true))

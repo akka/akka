@@ -7,11 +7,13 @@ package jdocs.stream.operators;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 
+import akka.stream.javadsl.AsPublisher;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 // #takeLast-operator-example
 import akka.japi.Pair;
+import org.reactivestreams.Publisher;
 // #takeLast-operator-example
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
