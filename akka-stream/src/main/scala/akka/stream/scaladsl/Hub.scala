@@ -6,16 +6,16 @@ package akka.stream.scaladsl
 
 import java.util
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.{AtomicLong, AtomicReference}
+import java.util.concurrent.atomic.{ AtomicLong, AtomicReference }
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReferenceArray
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.immutable.Queue
 import scala.collection.mutable.LongMap
-import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success, Try}
-import akka.{Done, NotUsed}
+import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success, Try }
+import akka.{ Done, NotUsed }
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.dispatch.AbstractNodeQueue
@@ -38,16 +38,17 @@ object MergeHub {
    * and eventual completion of the Hub from the outside.
    */
   trait DrainingControl {
+
     /**
      * Set the operation mode of the linked MergeHub to draining. In this mode the Hub will cancel any new producer and
      * will complete as soon as all the currently connected producers complete.
-     * 
+     *
      * The returned [[Future]] will be completed as soon as the Hub finish processing all messages and completes.
      * @return Hub completion future
      */
     def drainAndComplete(): Future[Done]
   }
-  
+
   /**
    * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
    * by this method is materialized, it returns a [[Sink]] as a materialized value. This [[Sink]] can be materialized
@@ -74,7 +75,7 @@ object MergeHub {
    *
    * Completed or failed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
    * and any new producers using the [[Sink]] will be cancelled.
-   * 
+   *
    * The materialized [[DrainingControl]] can be used to drain the Hub: any new produces using the [[Sink]] will be cancelled
    * and the Hub will be closed completing the [[Source]] as soon as all currently connected producers complete.
    *
@@ -82,7 +83,7 @@ object MergeHub {
    */
   def sourceWithDraining[T](perProducerBufferSize: Int): Source[T, (Sink[T, NotUsed], DrainingControl)] =
     Source.fromGraph(new MergeHub[T](perProducerBufferSize))
-  
+
   /**
    * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
    * by this method is materialized, it returns a [[Sink]] as a materialized value. This [[Sink]] can be materialized
@@ -112,7 +113,7 @@ object MergeHub {
    */
   def sourceWithDraining[T](): Source[T, (Sink[T, NotUsed], DrainingControl)] =
     sourceWithDraining(perProducerBufferSize = 16)
-  
+
   final class ProducerFailed(msg: String, cause: Throwable) extends RuntimeException(msg, cause)
 }
 
@@ -120,7 +121,8 @@ object MergeHub {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class MergeHubDrainingControlImpl(completion: Future[Done], callback: AsyncCallback[NotUsed]) extends MergeHub.DrainingControl {
+private[akka] final class MergeHubDrainingControlImpl(completion: Future[Done], callback: AsyncCallback[NotUsed])
+    extends MergeHub.DrainingControl {
   override def drainAndComplete(): Future[Done] = {
     callback.invoke(NotUsed)
     completion
@@ -184,7 +186,7 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
       draining = true
       tryCompleteOnDraining()
     }
-    
+
     setHandler(out, this)
 
     // Returns true when we have not consumed demand, false otherwise
@@ -201,7 +203,7 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
         if (draining) tryCompleteOnDraining()
         true
     }
-    
+
     private def tryCompleteOnDraining(): Unit = {
       if (demands.isEmpty && (queue.peek() eq null)) {
         completeStage()
@@ -228,7 +230,7 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
         // and have been enqueued just after it
         if (firstAttempt)
           tryProcessNext(firstAttempt = false)
-        else if (draining) 
+        else if (draining)
           tryCompleteOnDraining()
       }
     }
@@ -291,12 +293,13 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
       while (states.hasNext) {
         states.next().close()
       }
-      
+
       completionPromise.success(Done)
     }
   }
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, (Sink[T, NotUsed], MergeHub.DrainingControl)) = {
+  override def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes): (GraphStageLogic, (Sink[T, NotUsed], MergeHub.DrainingControl)) = {
     val idCounter = new AtomicLong()
 
     val logic: MergedSourceLogic = new MergedSourceLogic(shape)
@@ -369,9 +372,9 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
       case Some(a) => Sink.fromGraph(sink).addAttributes(Attributes(a))
       case None    => Sink.fromGraph(sink)
     }
-    
+
     val drainingControl = new MergeHubDrainingControlImpl(logic.completionPromise.future, logic.drainingCallback)
-    
+
     (logic, (sinkWithAttributes, drainingControl))
   }
 }

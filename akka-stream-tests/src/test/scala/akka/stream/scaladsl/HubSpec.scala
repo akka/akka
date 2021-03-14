@@ -184,15 +184,16 @@ class HubSpec extends StreamSpec {
       result.futureValue.sorted should ===(1 to 10)
 
     }
-    
+
     "complete after draining control is invoked and all connected producers complete" in assertAllStagesStopped {
       val downstream = TestSubscriber.probe[Int]()
-      val (sink, draining) = MergeHub.sourceWithDraining[Int](16).take(20).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
+      val (sink, draining) =
+        MergeHub.sourceWithDraining[Int](16).take(20).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
       Source(1 to 10).runWith(sink)
       Source(11 to 20).runWith(sink)
 
       val completeF = draining.drainAndComplete()
-      
+
       downstream.request(20)
       downstream.expectNextN(20).sorted should ===(1 to 20)
       downstream.expectComplete()
@@ -202,7 +203,8 @@ class HubSpec extends StreamSpec {
 
     "immediately cancel new producers while draining" in assertAllStagesStopped {
       val downstream = TestSubscriber.probe[Int]()
-      val (sink, draining) = MergeHub.sourceWithDraining[Int](16).take(20).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
+      val (sink, draining) =
+        MergeHub.sourceWithDraining[Int](16).take(20).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
       Source(1 to 10).runWith(sink)
       Source(11 to 20).runWith(sink)
       val completeF = draining.drainAndComplete()
@@ -213,17 +215,18 @@ class HubSpec extends StreamSpec {
       val upstream = TestPublisher.probe[Int]()
       Source.fromPublisher(upstream).runWith(sink)
       upstream.expectCancellation()
-      
+
       downstream.request(10)
       downstream.expectNextN(10).sorted should ===(11 to 20)
-      
+
       downstream.expectComplete()
       completeF.futureValue should ===(akka.Done)
     }
 
     "gracefully handle repeated draining requests after completion" in assertAllStagesStopped {
       val downstream = TestSubscriber.probe[Int]()
-      val (_, draining) = MergeHub.sourceWithDraining[Int](16).take(20).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
+      val (_, draining) =
+        MergeHub.sourceWithDraining[Int](16).take(20).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
 
       val completeF = draining.drainAndComplete()
       completeF.futureValue should ===(akka.Done)
