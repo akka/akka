@@ -15,7 +15,7 @@ import scala.collection.immutable.Queue
 import scala.collection.mutable.LongMap
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
-import akka.{ Done, NotUsed }
+import akka.NotUsed
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.dispatch.AbstractNodeQueue
@@ -37,16 +37,14 @@ object MergeHub {
    * A DrainingControl object is created during the materialization of a MergeHub and allows to initiate the draining
    * and eventual completion of the Hub from the outside.
    */
-  trait DrainingControl {
+  sealed trait DrainingControl {
 
     /**
      * Set the operation mode of the linked MergeHub to draining. In this mode the Hub will cancel any new producer and
      * will complete as soon as all the currently connected producers complete.
      *
-     * The returned [[Future]] will be completed as soon as the Hub finish processing all messages and completes.
-     * @return Hub completion future
      */
-    def drainAndComplete(): Future[Done]
+    def drainAndComplete(): Unit
   }
 
   /**
@@ -121,11 +119,10 @@ object MergeHub {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class MergeHubDrainingControlImpl(completion: Future[Done], callback: AsyncCallback[NotUsed])
+private[akka] final class MergeHubDrainingControlImpl(callback: AsyncCallback[NotUsed])
     extends MergeHub.DrainingControl {
-  override def drainAndComplete(): Future[Done] = {
+  override def drainAndComplete(): Unit = {
     callback.invoke(NotUsed)
-    completion
   }
 }
 
@@ -174,7 +171,6 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
     @volatile private[this] var needWakeup = false
     @volatile private[this] var shuttingDown = false
     @volatile private[this] var draining = false
-    private[MergeHub] val completionPromise = Promise[Done]()
 
     private[this] val demands = scala.collection.mutable.LongMap.empty[InputState]
     private[this] val wakeupCallback = getAsyncCallback[NotUsed](
@@ -293,8 +289,6 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
       while (states.hasNext) {
         states.next().close()
       }
-
-      completionPromise.success(Done)
     }
   }
 
@@ -373,7 +367,7 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
       case None    => Sink.fromGraph(sink)
     }
 
-    val drainingControl = new MergeHubDrainingControlImpl(logic.completionPromise.future, logic.drainingCallback)
+    val drainingControl = new MergeHubDrainingControlImpl(logic.drainingCallback)
 
     (logic, (sinkWithAttributes, drainingControl))
   }

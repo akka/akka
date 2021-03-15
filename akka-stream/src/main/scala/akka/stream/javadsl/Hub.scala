@@ -5,12 +5,9 @@
 package akka.stream.javadsl
 
 import java.util.function.{ BiFunction, Supplier, ToLongBiFunction }
-import akka.{ Done, NotUsed }
+import akka.NotUsed
 import akka.annotation.DoNotInherit
 import akka.util.unused
-
-import java.util.concurrent.CompletionStage
-import scala.compat.java8.FutureConverters
 
 /**
  * A MergeHub is a special streaming hub that is able to collect streamed elements from a dynamic set of
@@ -24,23 +21,21 @@ object MergeHub {
   /**
    * A DrainingControl object is created during the materialization of a MergeHub and allows to initiate the draining
    * and eventual completion of the Hub from the outside.
+   * 
+   * Not for user extension
    */
-  trait DrainingControl {
+  @DoNotInherit
+  sealed trait DrainingControl {
 
     /**
      * Set the operation mode of the linked MergeHub to draining. In this mode the Hub will cancel any new producer and
      * will complete as soon as all the currently connected producers complete.
-     *
-     * The returned [[CompletionStage]] will be completed as soon as the Hub finish processing all messages and completes.
-     * @return CompletionStage of Hub completion
      */
-    def drainAndComplete(): CompletionStage[Done]
+    def drainAndComplete(): Unit
   }
 
-  private class DrainingControlImpl(c: akka.stream.scaladsl.MergeHub.DrainingControl) extends DrainingControl {
-    override def drainAndComplete(): CompletionStage[Done] = {
-      FutureConverters.toJava(c.drainAndComplete())
-    }
+  private final class DrainingControlImpl(c: akka.stream.scaladsl.MergeHub.DrainingControl) extends DrainingControl {
+    override def drainAndComplete(): Unit = c.drainAndComplete()
   }
 
   /**
