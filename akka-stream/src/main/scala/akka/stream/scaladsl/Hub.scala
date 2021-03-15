@@ -61,7 +61,7 @@ object MergeHub {
    * @param perProducerBufferSize Buffer space used per producer. Default value is 16.
    */
   def source[T](perProducerBufferSize: Int): Source[T, Sink[T, NotUsed]] =
-    Source.fromGraph(new MergeHub[T](perProducerBufferSize)).mapMaterializedValue(_._1)
+    Source.fromGraph(new MergeHub[T](perProducerBufferSize, false)).mapMaterializedValue(_._1)
 
   /**
    * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
@@ -80,7 +80,7 @@ object MergeHub {
    * @param perProducerBufferSize Buffer space used per producer. Default value is 16.
    */
   def sourceWithDraining[T](perProducerBufferSize: Int): Source[T, (Sink[T, NotUsed], DrainingControl)] =
-    Source.fromGraph(new MergeHub[T](perProducerBufferSize))
+    Source.fromGraph(new MergeHub[T](perProducerBufferSize, true))
 
   /**
    * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
@@ -119,14 +119,13 @@ object MergeHub {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class MergeHubDrainingControlImpl(callback: AsyncCallback[NotUsed])
-    extends MergeHub.DrainingControl {
+private[akka] final class MergeHubDrainingControlImpl(drainAction: () => Unit) extends MergeHub.DrainingControl {
   override def drainAndComplete(): Unit = {
-    callback.invoke(NotUsed)
+    drainAction()
   }
 }
 
-private[akka] class MergeHub[T](perProducerBufferSize: Int)
+private[akka] class MergeHub[T](perProducerBufferSize: Int, drainingEnabled: Boolean = false)
     extends GraphStageWithMaterializedValue[SourceShape[T], (Sink[T, NotUsed], MergeHub.DrainingControl)] {
   require(perProducerBufferSize > 0, "Buffer size must be positive")
 
@@ -178,9 +177,14 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
         // We are only allowed to dequeue if we are not backpressured. See comment in tryProcessNext() for details.
         if (isAvailable(out)) tryProcessNext(firstAttempt = true))
 
-    private[MergeHub] val drainingCallback = getAsyncCallback[NotUsed] { _ =>
-      draining = true
-      tryCompleteOnDraining()
+    private[MergeHub] val drainingCallback: Option[AsyncCallback[NotUsed]] = {
+      // Only create an async callback if the draining support is enabled in order to avoid book-keeping costs.
+      if (drainingEnabled) {
+        Some(getAsyncCallback[NotUsed] { _ =>
+          draining = true
+          tryCompleteOnDraining()
+        })
+      } else None
     }
 
     setHandler(out, this)
@@ -367,7 +371,11 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
       case None    => Sink.fromGraph(sink)
     }
 
-    val drainingControl = new MergeHubDrainingControlImpl(logic.drainingCallback)
+    val drainingAction = logic.drainingCallback match {
+      case Some(cbk) => () => cbk.invoke(NotUsed)
+      case None      => () => throw new IllegalStateException("Draining control not enabled")
+    }
+    val drainingControl = new MergeHubDrainingControlImpl(drainingAction)
 
     (logic, (sinkWithAttributes, drainingControl))
   }
