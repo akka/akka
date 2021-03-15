@@ -192,13 +192,11 @@ class HubSpec extends StreamSpec {
       Source(1 to 10).runWith(sink)
       Source(11 to 20).runWith(sink)
 
-      val completeF = draining.drainAndComplete()
+      draining.drainAndComplete()
 
       downstream.request(20)
       downstream.expectNextN(20).sorted should ===(1 to 20)
       downstream.expectComplete()
-
-      completeF.futureValue should ===(akka.Done)
     }
 
     "immediately cancel new producers while draining" in assertAllStagesStopped {
@@ -207,7 +205,7 @@ class HubSpec extends StreamSpec {
         MergeHub.sourceWithDraining[Int](16).take(20).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
       Source(1 to 10).runWith(sink)
       Source(11 to 20).runWith(sink)
-      val completeF = draining.drainAndComplete()
+      draining.drainAndComplete()
 
       downstream.request(10)
       downstream.expectNextN(10).sorted should ===(1 to 10)
@@ -220,21 +218,7 @@ class HubSpec extends StreamSpec {
       downstream.expectNextN(10).sorted should ===(11 to 20)
 
       downstream.expectComplete()
-      completeF.futureValue should ===(akka.Done)
     }
-
-    "gracefully handle repeated draining requests after completion" in assertAllStagesStopped {
-      val downstream = TestSubscriber.probe[Int]()
-      val (_, draining) =
-        MergeHub.sourceWithDraining[Int](16).take(20).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
-
-      val completeF = draining.drainAndComplete()
-      completeF.futureValue should ===(akka.Done)
-
-      val repeatedCompleteF = draining.drainAndComplete()
-      repeatedCompleteF.futureValue should ===(akka.Done)
-    }
-
   }
 
   "BroadcastHub" must {
