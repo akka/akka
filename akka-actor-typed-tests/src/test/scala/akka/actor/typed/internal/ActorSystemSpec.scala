@@ -9,18 +9,19 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
 import akka.Done
-import akka.actor.{ Address, CoordinatedShutdown, InvalidMessageException }
+import akka.actor.dungeon.Dispatch
+import akka.actor.{Address, CoordinatedShutdown, InvalidMessageException}
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.TestInbox
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
+import com.typesafe.config.ConfigFactory
 
 class ActorSystemSpec
     extends AnyWordSpec
@@ -31,14 +32,14 @@ class ActorSystemSpec
     with LogCapturing {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(1.second)
-  def system[T](behavior: Behavior[T], name: String) = ActorSystem(behavior, name)
+  def system[T](behavior: Behavior[T], name: String, props: Props = Props.empty) = ActorSystem(behavior, name, ConfigFactory.empty(), props)
   def suite = "adapter"
 
   case class Probe(message: String, replyTo: ActorRef[String])
 
-  def withSystem[T](name: String, behavior: Behavior[T], doTerminate: Boolean = true)(
+  def withSystem[T](name: String, behavior: Behavior[T], doTerminate: Boolean = true, props: Props = Props.empty)(
       block: ActorSystem[T] => Unit): Unit = {
-    val sys = system(behavior, s"$suite-$name")
+    val sys = system(behavior, s"$suite-$name", props)
     try {
       block(sys)
       if (doTerminate) {
@@ -163,6 +164,19 @@ class ActorSystemSpec
     "return default address " in {
       withSystem("address", Behaviors.empty[String]) { sys =>
         sys.address shouldBe Address("akka", "adapter-address")
+      }
+    }
+    
+    case class WhatsYourMailbox(replyTo: ActorRef[String])
+    "use a custom mailbox type for the user guardian" in {
+      withSystem("guardian-mailbox", Behaviors.receive[WhatsYourMailbox] {
+        case (context, WhatsYourMailbox(replyTo)) => 
+          replyTo ! context.asInstanceOf[ActorContextImpl[_]].classicActorContext.asInstanceOf[Dispatch].mailbox.messageQueue.getClass.getName
+          Behaviors.same
+      }, props = MailboxSelector.bounded(5)) { implicit sys => 
+        val probe = TestProbe[String]()
+        sys ! WhatsYourMailbox(probe.ref)
+        probe.expectMessage("akka.dispatch.BoundedMailbox$MessageQueue")
       }
     }
   }

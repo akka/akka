@@ -562,7 +562,10 @@ private[akka] class LocalActorRefProvider private[akka] (
       system,
       system.guardianProps.getOrElse(Props(classOf[LocalActorRefProvider.Guardian], guardianStrategy)),
       dispatcher,
-      defaultMailbox,
+      system.guardianProps match {
+        case Some(props) => system.mailboxes.lookup(props.mailbox)
+        case None => defaultMailbox
+      },
       rootGuardian,
       rootPath / "user")
     cell.initChild(ref)
