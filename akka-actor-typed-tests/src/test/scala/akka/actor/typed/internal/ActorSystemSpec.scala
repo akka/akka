@@ -16,7 +16,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import akka.Done
 import akka.actor.dungeon.Dispatch
-import akka.actor.{Address, CoordinatedShutdown, InvalidMessageException}
+import akka.actor.{ Address, CoordinatedShutdown, InvalidMessageException }
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -32,7 +32,8 @@ class ActorSystemSpec
     with LogCapturing {
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(1.second)
-  def system[T](behavior: Behavior[T], name: String, props: Props = Props.empty) = ActorSystem(behavior, name, ConfigFactory.empty(), props)
+  def system[T](behavior: Behavior[T], name: String, props: Props = Props.empty) =
+    ActorSystem(behavior, name, ConfigFactory.empty(), props)
   def suite = "adapter"
 
   case class Probe(message: String, replyTo: ActorRef[String])
@@ -166,14 +167,24 @@ class ActorSystemSpec
         sys.address shouldBe Address("akka", "adapter-address")
       }
     }
-    
+
     case class WhatsYourMailbox(replyTo: ActorRef[String])
     "use a custom mailbox type for the user guardian" in {
-      withSystem("guardian-mailbox", Behaviors.receive[WhatsYourMailbox] {
-        case (context, WhatsYourMailbox(replyTo)) => 
-          replyTo ! context.asInstanceOf[ActorContextImpl[_]].classicActorContext.asInstanceOf[Dispatch].mailbox.messageQueue.getClass.getName
-          Behaviors.same
-      }, props = MailboxSelector.bounded(5)) { implicit sys => 
+      withSystem(
+        "guardian-mailbox",
+        Behaviors.receive[WhatsYourMailbox] {
+          case (context, WhatsYourMailbox(replyTo)) =>
+            replyTo ! context
+              .asInstanceOf[ActorContextImpl[_]]
+              .classicActorContext
+              .asInstanceOf[Dispatch]
+              .mailbox
+              .messageQueue
+              .getClass
+              .getName
+            Behaviors.same
+        },
+        props = MailboxSelector.bounded(5)) { implicit sys =>
         val probe = TestProbe[String]()
         sys ! WhatsYourMailbox(probe.ref)
         probe.expectMessage("akka.dispatch.BoundedMailbox$MessageQueue")

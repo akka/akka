@@ -564,7 +564,7 @@ private[akka] class LocalActorRefProvider private[akka] (
       dispatcher,
       system.guardianProps match {
         case Some(props) => system.mailboxes.lookup(props.mailbox)
-        case None => defaultMailbox
+        case None        => defaultMailbox
       },
       rootGuardian,
       rootPath / "user")
