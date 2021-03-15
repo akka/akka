@@ -252,19 +252,19 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
     }
 
     "not emit an empty group if first element is heavier than maxWeight" taggedAs TimingTest in {
-      val וupstream = TestPublisher.probe[Long]()
+      val upstream = TestPublisher.probe[Long]()
       val downstream = TestSubscriber.probe[immutable.Seq[Long]]()
       Source
-        .fromPublisher(וupstream)
+        .fromPublisher(upstream)
         .groupedWeightedWithin(10, 50.millis)(identity)
         .to(Sink.fromSubscriber(downstream))
         .run()
 
       downstream.ensureSubscription()
       downstream.request(1)
-      וupstream.sendNext(11)
+      upstream.sendNext(11)
       downstream.expectNext(Vector(11): immutable.Seq[Long])
-      וupstream.sendComplete()
+      upstream.sendComplete()
       downstream.expectComplete()
     }
 
@@ -286,6 +286,44 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       downstream.expectNoMessage(50.millis)
       downstream.expectNext(Vector("333", "22", "333", "22"): immutable.Seq[String])
       upstream.sendComplete()
+      downstream.expectComplete()
+    }
+
+    "group by max weight and max number of elements reached" taggedAs TimingTest in {
+      val upstream = TestPublisher.probe[Long]()
+      val downstream = TestSubscriber.probe[immutable.Seq[Long]]()
+      Source
+        .fromPublisher(upstream)
+        .groupedWeightedWithin(10, 3, 30.seconds)(identity)
+        .to(Sink.fromSubscriber(downstream))
+        .run()
+
+      downstream.ensureSubscription()
+      upstream.sendNext(1)
+      upstream.sendNext(2)
+      upstream.sendNext(3)
+      upstream.sendNext(4)
+      upstream.sendNext(5)
+      upstream.sendNext(6)
+      upstream.sendNext(11)
+      upstream.sendNext(7)
+      upstream.sendNext(2)
+      upstream.sendComplete()
+      downstream.request(1)
+      // split because of maxNumber: 3 element
+      downstream.expectNext(Vector(1, 2, 3): immutable.Seq[Long])
+      downstream.request(1)
+      // split because of maxWeight: 9=4+5, one more element did not fit
+      downstream.expectNext(Vector(4, 5): immutable.Seq[Long])
+      downstream.request(1)
+      // split because of maxWeight: 6, one more element did not fit
+      downstream.expectNext(Vector(6): immutable.Seq[Long])
+      downstream.request(1)
+      // split because of maxWeight: 11
+      downstream.expectNext(Vector(11): immutable.Seq[Long])
+      downstream.request(1)
+      // no split
+      downstream.expectNext(Vector(7, 2): immutable.Seq[Long])
       downstream.expectComplete()
     }
   }
