@@ -447,8 +447,7 @@ public class FlowTest extends StreamTest {
 
     final List<String> result = all.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(
-        new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")),
-        new HashSet<>(result));
+        new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<>(result));
   }
 
   @Test
@@ -501,8 +500,7 @@ public class FlowTest extends StreamTest {
 
     final List<String> result = all.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(
-        new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")),
-        new HashSet<>(result));
+        new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<>(result));
   }
 
   @Test
