@@ -30,7 +30,7 @@ object Dependencies {
 
   val scala212Version = "2.12.13"
   val scala213Version = "2.13.3"
-  val scala3Version = "3.0.0-M3"
+  val scala3Version = "3.0.0-RC1"
 
   val reactiveStreamsVersion = "1.0.3"
 
@@ -38,7 +38,7 @@ object Dependencies {
 
   val scalaTestVersion = {
     if (getScalaVersion().startsWith("3.0")) {
-      "3.2.3"
+      "3.2.6"
     } else {
       "3.1.4"
     }
