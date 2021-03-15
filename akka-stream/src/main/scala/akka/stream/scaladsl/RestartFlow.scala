@@ -199,12 +199,13 @@ private final class RestartWithBackoffFlow[In, Out](
         val sourceOut: SubSourceOutlet[In] = createSubOutlet(in)
         val sinkIn: SubSinkInlet[Out] = createSubInlet(out)
 
-        Source
+        val graph = Source
           .fromGraph(sourceOut.source)
           // Temp fix while waiting cause of cancellation. See #23909
           .via(RestartWithBackoffFlow.delayCancellation[In](delay))
           .via(flowFactory())
-          .runWith(sinkIn.sink)(subFusingMaterializer)
+          .to(sinkIn.sink)
+        subFusingMaterializer.materialize(graph, inheritedAttributes)
 
         if (isAvailable(out)) {
           sinkIn.pull()
