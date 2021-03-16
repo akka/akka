@@ -55,7 +55,7 @@ class TestDurableProducerQueue[A](
 
   private def active(state: State[A]): Behavior[Command[A]] = {
     stateHolder.set(state)
-    Behaviors.receiveMessage {
+    Behaviors.receiveMessagePartial {
       case cmd: LoadState[A] @unchecked =>
         maybeFail(cmd)
         if (delay == Duration.Zero) cmd.replyTo ! state else context.scheduleOnce(delay, cmd.replyTo, state)

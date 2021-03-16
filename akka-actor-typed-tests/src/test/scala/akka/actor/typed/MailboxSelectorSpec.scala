@@ -38,7 +38,9 @@ class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
               adapter.classicContext match {
                 case cell: ActorCell =>
                   cell.mailbox.messageQueue
+                case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
               }
+            case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
           }
 
           replyTo ! mailbox

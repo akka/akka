@@ -95,9 +95,13 @@ object ReplicatorDocSpec {
                   case InternalSubscribeResponse(chg @ Replicator.Changed(`key`)) =>
                     val value = chg.get(key).value.intValue
                     updated(value)
-
+                    
                   case InternalSubscribeResponse(Replicator.Deleted(_)) =>
                     Behaviors.unhandled // no deletes
+
+                  case InternalSubscribeResponse(_) => // changed but wrong key
+                    Behaviors.unhandled
+                    
                 }
             }
           }

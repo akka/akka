@@ -33,24 +33,22 @@ object TestProducerWorkPulling {
   }
 
   private def idle(n: Int): Behavior[Command] = {
-    Behaviors.receiveMessage {
+    Behaviors.receiveMessagePartial {
       case Tick                => Behaviors.same
       case RequestNext(sendTo) => active(n + 1, sendTo)
     }
   }
 
   private def active(n: Int, sendTo: ActorRef[TestConsumer.Job]): Behavior[Command] = {
-    Behaviors.receive { (ctx, msg) =>
-      msg match {
-        case Tick =>
-          val msg = s"msg-$n"
-          ctx.log.info("sent {}", msg)
-          sendTo ! TestConsumer.Job(msg)
-          idle(n)
+    Behaviors.receivePartial {
+      case (ctx, Tick) =>
+        val msg = s"msg-$n"
+        ctx.log.info("sent {}", msg)
+        sendTo ! TestConsumer.Job(msg)
+        idle(n)
 
-        case RequestNext(_) =>
-          throw new IllegalStateException("Unexpected RequestNext, already got one.")
-      }
+      case (_, RequestNext(_)) =>
+        throw new IllegalStateException("Unexpected RequestNext, already got one.")
     }
   }
 

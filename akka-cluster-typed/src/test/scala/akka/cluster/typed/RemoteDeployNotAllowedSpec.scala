@@ -82,6 +82,8 @@ class RemoteDeployNotAllowedSpec
               case ex: Exception => probe.ref ! ex
             }
             Behaviors.same
+
+          case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
         }
 
       }

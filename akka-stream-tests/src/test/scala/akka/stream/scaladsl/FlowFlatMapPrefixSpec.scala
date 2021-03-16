@@ -465,6 +465,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           case ex: NeverMaterializedException =>
             ex.getCause should not be null
             ex.getCause should be(a[AbruptTerminationException])
+          case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
         }
         doneF.failed.futureValue should be(a[AbruptTerminationException])
       }

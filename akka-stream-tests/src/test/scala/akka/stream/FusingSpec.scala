@@ -111,6 +111,7 @@ class FusingSpec extends StreamSpec {
         .prepend(Source.single(1))
         .flatMapPrefix(0) {
           case Nil => throw TE("I hate mondays")
+          case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
         }
         .watchTermination()(Keep.right)
         .to(Sink.ignore)

@@ -77,7 +77,7 @@ object DeliveryThroughputSpec extends MultiNodeConfig {
   }
 
   object Consumer {
-    trait Command
+    sealed trait Command
 
     case object TheMessage extends Command with CborSerializable
     case object Stop extends Command
@@ -122,7 +122,7 @@ object DeliveryThroughputSpec extends MultiNodeConfig {
   }
 
   object Producer {
-    trait Command
+    sealed trait Command
 
     case object Run extends Command
     private case class WrappedRequestNext(r: ProducerController.RequestNext[Consumer.Command]) extends Command
@@ -180,7 +180,7 @@ object DeliveryThroughputSpec extends MultiNodeConfig {
   def serviceKey(testName: String) = ServiceKey[ConsumerController.Command[Consumer.Command]](testName)
 
   object WorkPullingProducer {
-    trait Command
+    sealed trait Command
 
     case object Run extends Command
     private case class WrappedRequestNext(r: WorkPullingProducerController.RequestNext[Consumer.Command])
@@ -225,7 +225,7 @@ object DeliveryThroughputSpec extends MultiNodeConfig {
   def typeKey(testName: String) = EntityTypeKey[ConsumerController.SequencedMessage[Consumer.Command]](testName)
 
   object ShardingProducer {
-    trait Command
+    sealed trait Command
 
     case object Run extends Command
     private case class WrappedRequestNext(r: ShardingProducerController.RequestNext[Consumer.Command]) extends Command

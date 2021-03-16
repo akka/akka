@@ -29,21 +29,19 @@ object ClusterSingletonApiSpec {
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
     """)
 
-  trait PingProtocol
+  sealed trait PingProtocol
   case object Pong extends CborSerializable
   case class Ping(respondTo: ActorRef[Pong.type]) extends PingProtocol with CborSerializable
 
   case object Perish extends PingProtocol with CborSerializable
 
-  val pingPong = Behaviors.receive[PingProtocol] { (_, msg) =>
-    msg match {
-      case Ping(respondTo) =>
-        respondTo ! Pong
-        Behaviors.same
+  val pingPong = Behaviors.receiveMessage[PingProtocol] {
+    case Ping(respondTo) =>
+      respondTo ! Pong
+      Behaviors.same
 
-      case Perish =>
-        Behaviors.stopped
-    }
+    case Perish =>
+      Behaviors.stopped
 
   }
 

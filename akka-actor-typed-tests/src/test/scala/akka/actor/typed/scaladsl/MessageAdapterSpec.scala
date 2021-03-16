@@ -93,7 +93,7 @@ class MessageAdapterSpec
 
       case class Wrapped(qualifier: String, response: Response)
 
-      val pingPong = spawn(Behaviors.receiveMessage[Ping] {
+      val pingPong = spawn(Behaviors.receiveMessagePartial[Ping] {
         case Ping1(sender) =>
           sender ! Pong1("hello-1")
           Behaviors.same

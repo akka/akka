@@ -16,7 +16,7 @@ object SingletonCompileOnlySpec {
 
   //#counter
   object Counter {
-    trait Command
+    sealed trait Command
     case object Increment extends Command
     final case class GetValue(replyTo: ActorRef[Int]) extends Command
     case object GoodByeCounter extends Command

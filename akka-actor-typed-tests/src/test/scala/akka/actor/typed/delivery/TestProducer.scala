@@ -15,7 +15,7 @@ import akka.actor.typed.scaladsl.Behaviors
 
 object TestProducer {
 
-  trait Command
+  sealed trait Command
   final case class RequestNext(sendTo: ActorRef[TestConsumer.Job]) extends Command
   private case object Tick extends Command
 
@@ -62,12 +62,10 @@ object TestProducer {
   }
 
   private def activeNoDelay(n: Int): Behavior[Command] = {
-    Behaviors.receive { (ctx, msg) =>
-      msg match {
-        case RequestNext(sendTo) =>
-          sendMessage(n, sendTo, ctx)
-          activeNoDelay(n + 1)
-      }
+    Behaviors.receivePartial {
+      case (ctx, RequestNext(sendTo)) =>
+        sendMessage(n, sendTo, ctx)
+        activeNoDelay(n + 1)
     }
   }
 
