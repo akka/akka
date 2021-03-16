@@ -200,7 +200,7 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int, drainingEnabled: Boo
         true
       case Deregister(id) =>
         demands.remove(id)
-        if (draining) tryCompleteOnDraining()
+        if (drainingEnabled && draining) tryCompleteOnDraining()
         true
     }
 
@@ -230,13 +230,13 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int, drainingEnabled: Boo
         // and have been enqueued just after it
         if (firstAttempt)
           tryProcessNext(firstAttempt = false)
-        else if (draining)
+        else if (drainingEnabled && draining)
           tryCompleteOnDraining()
       }
     }
 
     def isShuttingDown: Boolean = shuttingDown
-    def isDraining: Boolean = draining
+    def isDraining: Boolean = drainingEnabled && draining
 
     // External API
     def enqueue(ev: Event): Unit = {
