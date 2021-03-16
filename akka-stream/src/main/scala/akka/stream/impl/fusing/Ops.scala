@@ -166,11 +166,11 @@ import akka.util.ccompat._
       override def onPush(): Unit = {
         val elem = grab(in)
         withSupervision(() => p(elem)) match {
-          case Some(flag) => 
+          case Some(flag) =>
             if (flag) pull(in)
             else {
-            push(out, elem)
-            setHandler(in, rest)
+              push(out, elem)
+              setHandler(in, rest)
             }
           case None => // do nothing
         }
@@ -247,7 +247,7 @@ private[stream] object Collect {
           result match {
             case NotApplied             => pull(in)
             case result: Out @unchecked => push(out, result)
-            case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
+            case _                      => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
           }
         case None => //do nothing
       }
@@ -527,15 +527,15 @@ private[stream] object Collect {
       }
 
       private val futureCB = getAsyncCallback[Try[Out]] {
-        case Success(next) => 
+        case Success(next) =>
           if (next != null) {
-          current = next
-          pushAndPullOrFinish(next)
-          elementHandled = true
+            current = next
+            pushAndPullOrFinish(next)
+            elementHandled = true
           } else {
             doSupervision(ReactiveStreamsCompliance.elementMustNotBeNullException)
           }
-        case Failure(t)    => doSupervision(t)
+        case Failure(t) => doSupervision(t)
       }.invoke _
 
       setHandlers(in, out, ZeroHandler)
@@ -1328,14 +1328,14 @@ private[stream] object Collect {
         else if (isAvailable(out)) {
           val holder = buffer.dequeue()
           holder.elem match {
-            case Success(elem) => 
+            case Success(elem) =>
               if (elem != null) {
                 push(out, elem)
-              pullIfNeeded()
+                pullIfNeeded()
               } else {
-            // elem is null
-              pullIfNeeded()
-              pushNextIfPossible()
+                // elem is null
+                pullIfNeeded()
+                pushNextIfPossible()
               }
 
             case Failure(NonFatal(ex)) =>

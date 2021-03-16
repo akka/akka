@@ -343,7 +343,7 @@ private[stream] object ConnectionSourceStage {
         case ConfirmedClosed    => completeStage()
         case PeerClosed         => complete(bytesOut)
         case other =>
-          log.warning("Unexpected message to connected TcpStage: [{}]", other.getClass)  
+          log.warning("Unexpected message to connected TcpStage: [{}]", other.getClass)
       }
     }
 

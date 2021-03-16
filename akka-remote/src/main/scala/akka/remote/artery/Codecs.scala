@@ -131,12 +131,12 @@ private[remote] class Encoder(
           // internally compression is applied by the builder:
           outboundEnvelope.recipient match {
             case OptionVal.Some(r) => headerBuilder.setRecipientActorRef(r)
-            case _    => headerBuilder.setNoRecipient()
+            case _                 => headerBuilder.setNoRecipient()
           }
 
           outboundEnvelope.sender match {
             case OptionVal.Some(s) => headerBuilder.setSenderActorRef(s)
-            case _    => headerBuilder.setNoSender()
+            case _                 => headerBuilder.setNoSender()
           }
 
           val startTime: Long = if (instruments.timeSerialization) System.nanoTime else 0
@@ -684,7 +684,7 @@ private[remote] class Deserializer(
           case NonFatal(e) =>
             val from = envelope.association match {
               case OptionVal.Some(a) => a.remoteAddress
-              case _    => "unknown"
+              case _                 => "unknown"
             }
             log.warning(
               "Failed to deserialize message from [{}] with serializer id [{}] and manifest [{}]. {}",

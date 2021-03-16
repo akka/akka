@@ -18,7 +18,7 @@ class TestSerializer(system: ExtendedActorSystem) extends SerializerWithStringMa
   def identifier: Int = 666
   def manifest(o: AnyRef): String = o match {
     case _: TestPayload => "A"
-    case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
+    case _              => throw new RuntimeException() // compiler exhaustiveness check pleaser
   }
   def toBinary(o: AnyRef): Array[Byte] = o match {
     case TestPayload(ref) =>

@@ -49,7 +49,7 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
       case _: akka.serialization.IntSerializer        => new IntSerializer(extSystem)
       case _: akka.serialization.StringSerializer     => new StringSerializer(extSystem)
       case _: akka.serialization.ByteStringSerializer => new ByteStringSerializer(extSystem)
-      case _ => throw new NotSerializableException()
+      case _                                          => throw new NotSerializableException()
     }
   }
 

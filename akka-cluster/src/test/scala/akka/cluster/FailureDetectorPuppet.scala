@@ -31,7 +31,7 @@ class FailureDetectorPuppet(@unused config: Config, @unused ev: EventStream) ext
   override def isAvailable: Boolean = status.get match {
     case Unknown | Up => true
     case Down         => false
-      
+
   }
 
   override def isMonitoring: Boolean = status.get != Unknown

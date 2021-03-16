@@ -67,7 +67,7 @@ class ReplicatorORSetDeltaSpec
           case g @ GetSuccess(`key`, _) =>
             g.dataValue match {
               case c: ORSet[_] => c.elements
-              case _ => fail()
+              case _           => fail()
             }
         }
         value should be(expected)

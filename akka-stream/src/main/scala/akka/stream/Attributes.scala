@@ -129,7 +129,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 
     find(attributeList) match {
       case OptionVal.Some(t) => t.asInstanceOf[T]
-      case _    => throw new IllegalStateException(s"Mandatory attribute [$c] not found")
+      case _                 => throw new IllegalStateException(s"Mandatory attribute [$c] not found")
     }
   }
 

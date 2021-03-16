@@ -77,9 +77,9 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   }
 
   val SeedNodes: immutable.IndexedSeq[Address] =
-    immutableSeq(cc.getStringList("seed-nodes")).map { 
+    immutableSeq(cc.getStringList("seed-nodes")).map {
       case AddressFromURIString(address) => address
-      case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
+      case _                             => throw new RuntimeException() // compiler exhaustiveness check pleaser
     }.toVector
   val SeedNodeTimeout: FiniteDuration = cc.getMillisDuration("seed-node-timeout")
   val RetryUnsuccessfulJoinAfter: Duration = {

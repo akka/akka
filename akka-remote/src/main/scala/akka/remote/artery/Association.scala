@@ -345,7 +345,7 @@ private[remote] class Association(
       val removed = isRemovedAfterQuarantined()
       if (removed) recipient match {
         case OptionVal.Some(ref) => ref.cachedAssociation = null // don't use this Association instance any more
-        case _      =>
+        case _                   =>
       }
       val reason =
         if (removed) "Due to removed unused quarantined association"

@@ -216,7 +216,7 @@ import scala.util.Success
       case Success(StatusReply.Success(t: Res)) => mapResponse(Success(t))
       case Success(StatusReply.Error(why))      => mapResponse(Failure(why))
       case fail: Failure[_]                     => mapResponse(fail.asInstanceOf[Failure[Res]])
-      case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
+      case _                                    => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
     }
 
   // Java API impl
@@ -248,8 +248,8 @@ import scala.util.Success
           case StatusReply.Success(value: Res) => applyToResponse(value, null)
           case StatusReply.Error(why)          => applyToResponse(null.asInstanceOf[Res], why)
           case null                            => applyToResponse(null.asInstanceOf[Res], failure)
-          case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
-         })
+          case _                               => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
+        })
   }
 
   // Scala API impl
@@ -297,7 +297,7 @@ import scala.util.Success
       _messageAdapters.filterNot { case (cls, _) => cls == boxedMessageClass }
     val ref = messageAdapterRef match {
       case OptionVal.Some(ref) => ref.asInstanceOf[ActorRef[U]]
-      case _    =>
+      case _                   =>
         // AdaptMessage is not really a T, but that is erased
         val ref =
           internalSpawnMessageAdapter[Any](msg => AdaptWithRegisteredMessageAdapter(msg).asInstanceOf[T], "adapter")

@@ -32,9 +32,9 @@ object GlobalRegistry {
     }
 
     val extractShardId: ShardRegion.ExtractShardId = {
-        case id: Int => (id % 10).toString
-        case _ => throw new IllegalArgumentException()
-      }
+      case id: Int => (id % 10).toString
+      case _       => throw new IllegalArgumentException()
+    }
   }
 
   class SingletonActor(registry: ActorRef) extends Actor with ActorLogging {

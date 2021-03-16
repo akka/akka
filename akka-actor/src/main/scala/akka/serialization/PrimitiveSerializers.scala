@@ -168,7 +168,7 @@ import akka.util.ByteString
     val flag = o match {
       case TRUE  => TrueB
       case FALSE => FalseB
-      case b => throw new IllegalArgumentException(s"Non boolean flag: $b")
+      case b     => throw new IllegalArgumentException(s"Non boolean flag: $b")
     }
     buf.put(flag)
   }
@@ -177,7 +177,7 @@ import akka.util.ByteString
     buf.get() match {
       case TrueB  => TRUE
       case FalseB => FALSE
-      case b => throw new IllegalArgumentException(s"Non boolean flag byte: $b")
+      case b      => throw new IllegalArgumentException(s"Non boolean flag byte: $b")
     }
   }
 
@@ -185,7 +185,7 @@ import akka.util.ByteString
     val flag = o match {
       case TRUE  => TrueB
       case FALSE => FalseB
-      case b => throw new IllegalArgumentException(s"Non boolean flag: $b")
+      case b     => throw new IllegalArgumentException(s"Non boolean flag: $b")
     }
     val result = new Array[Byte](1)
     result(0) = flag
@@ -196,7 +196,7 @@ import akka.util.ByteString
     bytes(0) match {
       case TrueB  => TRUE
       case FalseB => FALSE
-      case b => throw new IllegalArgumentException(s"Non boolean flag byte: $b")
+      case b      => throw new IllegalArgumentException(s"Non boolean flag byte: $b")
     }
   }
 }

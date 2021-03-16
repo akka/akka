@@ -55,7 +55,7 @@ import akka.util.JavaDurationConverters._
     message match {
       case ShardingEnvelope(entityId, _) => entityId //also covers ClassicStartEntity in ShardingEnvelope
       case ClassicStartEntity(entityId)  => entityId
-      case msg             => delegate.entityId(msg.asInstanceOf[E])
+      case msg                           => delegate.entityId(msg.asInstanceOf[E])
     }
   }
 

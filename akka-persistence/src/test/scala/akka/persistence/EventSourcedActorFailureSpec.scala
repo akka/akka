@@ -50,9 +50,9 @@ object EventSourcedActorFailureSpec {
     def isWrong(messages: immutable.Seq[AtomicWrite]): Boolean =
       messages.exists {
         case a: AtomicWrite =>
-          a.payload.exists { 
+          a.payload.exists {
             case PersistentRepr(Evt(s: String), _) => s.contains("wrong")
-            case _ => false
+            case _                                 => false
           }
         case _ => false
       }

@@ -220,7 +220,7 @@ import java.util.function.Predicate
       else if (started == BehaviorImpl.same) {
         currentBehaviorWhenUnstashInProgress match {
           case OptionVal.Some(c) => c
-          case _    => ctx.asScala.currentBehavior
+          case _                 => ctx.asScala.currentBehavior
         }
       } else started
 

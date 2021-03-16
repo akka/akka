@@ -908,7 +908,7 @@ private[remote] class EndpointWriter(
               "Transient association error (association remains live)")
             extendedSystem.eventStream.publish(s.senderOption match {
               case OptionVal.Some(msgSender) => Dropped(s.message, reasonText, msgSender, s.recipient)
-              case _            => Dropped(s.message, reasonText, s.recipient)
+              case _                         => Dropped(s.message, reasonText, s.recipient)
             })
             true
           } else {

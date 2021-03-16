@@ -452,7 +452,7 @@ class ORSetSpec extends AnyWordSpec with Matchers {
 
       val mg2 = merged2 match {
         case ORSet(mg2) => mg2
-        case _ => fail()
+        case _          => fail()
       }
       mg2 should be(Set("x")) // !!!
     }
@@ -607,7 +607,7 @@ class ORSetSpec extends AnyWordSpec with Matchers {
       val _: ORSet[String] = s1
       val elements1 = s1 match { // `unapply[A](s: ORSet[A])` is used here
         case ORSet(elements1) => elements1
-        case _ => fail()
+        case _                => fail()
       }
       val elements2: Set[String] = elements1
       elements2 should be(Set("a", "b"))
@@ -617,7 +617,7 @@ class ORSetSpec extends AnyWordSpec with Matchers {
           val _: ORSet[String] = c.dataValue
           val elements3 = c.dataValue match {
             case ORSet(elements3) => elements3
-            case _ => fail()  
+            case _                => fail()
           }
           val elements4: Set[String] = elements3
           elements4 should be(Set("a", "b"))
@@ -635,7 +635,7 @@ class ORSetSpec extends AnyWordSpec with Matchers {
           //   but trait Set is invariant in type A. You may wish to investigate a wildcard type such as _ <: Any. (SLS 3.2.10)
           val elements3 = c.dataValue match {
             case ORSet(elements3) => elements3
-            case _ => fail()
+            case _                => fail()
           }
           val elements4: Set[Any] = elements3
           elements4 should be(Set("a", "b"))

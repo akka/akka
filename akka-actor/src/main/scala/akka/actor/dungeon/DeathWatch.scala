@@ -33,7 +33,8 @@ private[akka] trait DeathWatch { this: ActorCell =>
           checkWatchingSame(a, None)
       }
       a
-    case unexpected => throw new IllegalArgumentException(s"ActorRef is not internal: $unexpected") // will not happen, for exhaustiveness check
+    case unexpected =>
+      throw new IllegalArgumentException(s"ActorRef is not internal: $unexpected") // will not happen, for exhaustiveness check
   }
 
   override final def watchWith(subject: ActorRef, msg: Any): ActorRef = subject match {
@@ -47,7 +48,8 @@ private[akka] trait DeathWatch { this: ActorCell =>
           checkWatchingSame(a, Some(msg))
       }
       a
-    case unexpected => throw new IllegalArgumentException(s"ActorRef is not internal: $unexpected") // will not happen, for exhaustiveness check
+    case unexpected =>
+      throw new IllegalArgumentException(s"ActorRef is not internal: $unexpected") // will not happen, for exhaustiveness check
   }
 
   override final def unwatch(subject: ActorRef): ActorRef = subject match {
@@ -60,7 +62,8 @@ private[akka] trait DeathWatch { this: ActorCell =>
       }
       terminatedQueued -= a
       a
-    case unexpected => throw new IllegalArgumentException(s"ActorRef is not internal: $unexpected") // will not happen, for exhaustiveness check
+    case unexpected =>
+      throw new IllegalArgumentException(s"ActorRef is not internal: $unexpected") // will not happen, for exhaustiveness check
   }
 
   protected def receivedTerminated(t: Terminated): Unit =

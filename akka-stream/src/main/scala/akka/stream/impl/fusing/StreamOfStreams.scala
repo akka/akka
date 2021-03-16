@@ -707,7 +707,7 @@ import akka.util.ccompat.JavaConverters._
       case cmd: CommandScheduledBeforeMaterialization =>
         throw new IllegalStateException(
           s"${newState.command} on subsink($name) is illegal when ${cmd.command} is still pending")
-        
+
       case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
     }
 
@@ -786,7 +786,7 @@ import akka.util.ccompat.JavaConverters._
         status.get.asInstanceOf[AsyncCallback[Any]].invoke(ActorSubscriberMessage.OnComplete)
     case OnError(_)                        => // already failed out, keep the exception as that happened first
     case ActorSubscriberMessage.OnComplete => // it was already completed
-    case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
+    case _                                 => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
   }
 
   def failSubstream(ex: Throwable): Unit = status.get match {
@@ -797,7 +797,7 @@ import akka.util.ccompat.JavaConverters._
         status.get.asInstanceOf[AsyncCallback[Any]].invoke(failure)
     case ActorSubscriberMessage.OnComplete => // it was already completed, ignore failure as completion happened first
     case OnError(_)                        => // already failed out, keep the exception as that happened first
-    case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
+    case _                                 => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
   }
 
   def timeout(d: FiniteDuration): Boolean =

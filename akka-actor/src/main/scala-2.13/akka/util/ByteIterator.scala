@@ -4,7 +4,7 @@
 
 package akka.util
 
-import java.nio.{ByteBuffer, ByteOrder}
+import java.nio.{ ByteBuffer, ByteOrder }
 import scala.annotation.tailrec
 import scala.collection.BufferedIterator
 import scala.collection.LinearSeq
@@ -64,7 +64,7 @@ object ByteIterator {
                 result
               }
             case mbai: MultiByteArrayIterator => this ++: mbai
-            case bi => super.++(bi)
+            case bi                           => super.++(bi)
           }
       case io => super.++(io)
     }

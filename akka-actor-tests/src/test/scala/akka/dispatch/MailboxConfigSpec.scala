@@ -122,7 +122,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
         config match {
           case BoundedMailbox(capacity, _) => aQueue.remainingCapacity should ===(capacity)
           case UnboundedMailbox()          => aQueue.remainingCapacity should ===(Int.MaxValue)
-          case _ => fail()
+          case _                           => fail()
         }
       case _ =>
     }
@@ -188,7 +188,7 @@ class DefaultMailboxSpec extends MailboxSpec {
   def factory = {
     case u: UnboundedMailbox => u.create(None, None)
     case b: BoundedMailbox   => b.create(None, None)
-    case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
+    case _                   => throw new RuntimeException() // compiler exhaustiveness check pleaser
   }
 }
 
@@ -263,7 +263,7 @@ class SingleConsumerOnlyMailboxSpec extends MailboxSpec {
   def factory = {
     case _: UnboundedMailbox            => SingleConsumerOnlyUnboundedMailbox().create(None, None)
     case _ @BoundedMailbox(capacity, _) => NonBlockingBoundedMailbox(capacity).create(None, None)
-    case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
+    case _                              => throw new RuntimeException() // compiler exhaustiveness check pleaser
   }
 }
 

@@ -62,12 +62,12 @@ object RememberEntitiesFailureSpec {
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
     case EntityEnvelope(id, payload) => (id.toString, payload)
-    case _ => throw new IllegalArgumentException()
+    case _                           => throw new IllegalArgumentException()
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case EntityEnvelope(id, _) => (id % 10).toString
-    case _ => throw new IllegalArgumentException()
+    case _                     => throw new IllegalArgumentException()
   }
 
   sealed trait Fail

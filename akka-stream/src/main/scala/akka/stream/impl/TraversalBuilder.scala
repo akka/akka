@@ -532,8 +532,8 @@ import akka.util.unused
 
   override def makeIsland(islandTag: IslandTag): TraversalBuilder =
     this.islandTag match {
-      case OptionVal.None    => copy(islandTag = OptionVal(islandTag))
-      case _ => this
+      case OptionVal.None => copy(islandTag = OptionVal(islandTag))
+      case _              => this
     }
 
   override def assign(out: OutPort, relativeSlot: Int): TraversalBuilder =
@@ -687,7 +687,7 @@ import akka.util.unused
         val inOpt = OptionVal(shape.inlets.headOption.orNull)
         val inOffs = inOpt match {
           case OptionVal.Some(in) => completed.offsetOf(in)
-          case _     => 0
+          case _                  => 0
         }
 
         LinearTraversalBuilder(
@@ -704,7 +704,7 @@ import akka.util.unused
         val out = shape.outlets.head // Cannot be empty, otherwise it would be a CompletedTraversalBuilder
         val inOffs = inOpt match {
           case OptionVal.Some(in) => composite.offsetOf(in)
-          case _     => 0
+          case _                  => 0
         }
 
         LinearTraversalBuilder(
@@ -772,7 +772,7 @@ import akka.util.unused
   private def applyIslandAndAttributes(t: Traversal): Traversal = {
     val withIslandTag = islandTag match {
       case OptionVal.Some(tag) => EnterIsland(tag).concat(t).concat(ExitIsland)
-      case _      => t
+      case _                   => t
     }
 
     if (attributes eq Attributes.none) withIslandTag
@@ -822,7 +822,7 @@ import akka.util.unused
     if (outPort.contains(out)) {
       pendingBuilder match {
         case OptionVal.Some(composite) => composite.offsetOfModule(out)
-        case _            => 0 // Output belongs to the last module, which will be materialized *first*
+        case _                         => 0 // Output belongs to the last module, which will be materialized *first*
       }
     } else
       throw new IllegalArgumentException(s"Port $out cannot be accessed in this builder")
@@ -1029,7 +1029,7 @@ import akka.util.unused
               islandTag = OptionVal.None // islandTag is reset for the new enclosing builder
             )
 
-          case _ => // Some(pendingBuilder) 
+          case _ => // Some(pendingBuilder)
             /*
              * In this case we need to assemble as much as we can, and create a new "sandwich" of
              *   beforeBuilder ~ pendingBuilder ~ traversalSoFar
@@ -1048,7 +1048,7 @@ import akka.util.unused
                 newBeforeTraversal = EnterIsland(tag).concat(newBeforeTraversal)
                 // Exit the island just after the appended builder (they should not applied to _this_ builder)
                 newTraversalSoFar = ExitIsland.concat(newTraversalSoFar)
-              case _      => // Nothing changes
+              case _ => // Nothing changes
             }
 
             // Secondly, prepare attribute push and pop if Attributes are present
@@ -1208,7 +1208,7 @@ import akka.util.unused
 
       val finalTraversal = islandTag match {
         case OptionVal.Some(tag) => EnterIsland(tag).concat(traversal).concat(ExitIsland)
-        case _      => traversal
+        case _                   => traversal
       }
 
       // The CompleteTraversalBuilder only keeps the minimum amount of necessary information that is needed for it

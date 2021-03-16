@@ -464,7 +464,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
     case CreateServerFSM(channel) =>
       val (ip, port) = channel.getRemoteAddress match {
         case s: InetSocketAddress => (s.getAddress.getHostAddress, s.getPort)
-        case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
+        case _                    => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }
       val name = ip + ":" + port + "-server" + generation.next()
       sender() ! context.actorOf(Props(classOf[ServerFSM], self, channel).withDeploy(Deploy.local), name)

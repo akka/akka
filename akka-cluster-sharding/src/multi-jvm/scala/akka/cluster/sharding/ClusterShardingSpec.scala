@@ -78,7 +78,7 @@ object ClusterShardingSpec {
     case EntityEnvelope(id, _)       => (id % numberOfShards).toString
     case Get(id)                     => (id % numberOfShards).toString
     case ShardRegion.StartEntity(id) => (id.toLong % numberOfShards).toString
-    case _ => throw new IllegalArgumentException()
+    case _                           => throw new IllegalArgumentException()
   }
 
   def qualifiedCounterProps(typeName: String): Props =
@@ -1006,7 +1006,7 @@ abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
             receiveOne(3 seconds) match {
               case ActorIdentity(id, Some(_)) if id == n => count = count + 1
               case ActorIdentity(_, None)                => //Not on the fifth shard
-              case _ => fail()
+              case _                                     => fail()
             }
           }
           count should be >= (2)

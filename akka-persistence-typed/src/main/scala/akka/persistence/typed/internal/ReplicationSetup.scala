@@ -50,7 +50,7 @@ private[akka] final class ReplicationContextImpl(
     checkAccess("origin")
     _origin match {
       case OptionVal.Some(origin) => origin
-      case _         => throw new IllegalStateException("origin can only be accessed from the event handler")
+      case _                      => throw new IllegalStateException("origin can only be accessed from the event handler")
     }
   }
 

@@ -94,7 +94,7 @@ object ActorSystemSpec {
           TestKit.awaitCond(mbox.actor.actor != null, 1.second)
           mbox.actor.actor match {
             case FastActor(latch, _) => Await.ready(latch, 1.second)
-            case _ => throw new IllegalStateException()              
+            case _                   => throw new IllegalStateException()
           }
         }
         ret

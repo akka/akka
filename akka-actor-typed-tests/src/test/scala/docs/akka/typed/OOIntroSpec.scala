@@ -84,7 +84,7 @@ object OOIntroSpec {
         client: ActorRef[SessionEvent])
         extends AbstractBehavior[SessionCommand](context) {
 
-      override def onMessage(msg: SessionCommand): Behavior[SessionCommand] = 
+      override def onMessage(msg: SessionCommand): Behavior[SessionCommand] =
         msg match {
           case PostMessage(message) =>
             // from client, publish to others via the room

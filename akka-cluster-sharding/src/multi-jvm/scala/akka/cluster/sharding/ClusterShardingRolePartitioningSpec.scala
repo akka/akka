@@ -22,7 +22,7 @@ object E1 {
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case id: String => id
-    case _ => throw new IllegalArgumentException()
+    case _          => throw new IllegalArgumentException()
   }
 }
 
@@ -34,7 +34,7 @@ object E2 {
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case id: Int => id.toString
-    case _ => throw new IllegalArgumentException()
+    case _       => throw new IllegalArgumentException()
   }
 }
 

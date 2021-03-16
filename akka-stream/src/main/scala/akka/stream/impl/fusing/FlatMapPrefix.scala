@@ -65,14 +65,14 @@ import akka.util.OptionVal
       override def onUpstreamFinish(): Unit = {
         subSource match {
           case OptionVal.Some(s) => s.complete()
-          case _    => materializeFlow()
+          case _                 => materializeFlow()
         }
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
         subSource match {
           case OptionVal.Some(s) => s.fail(ex)
-          case _    =>
+          case _                 =>
             //flow won't be materialized, so we have to complete the future with a failure indicating this
             matPromise.failure(new NeverMaterializedException(ex))
             super.onUpstreamFailure(ex)
@@ -84,7 +84,7 @@ import akka.util.OptionVal
           case OptionVal.Some(s) =>
             //delegate to subSink
             s.pull()
-          case _ => 
+          case _ =>
             if (accumulated.size < n) pull(in)
             else if (accumulated.size == n) {
               //corner case for n = 0, can be handled in FlowOps
@@ -95,17 +95,17 @@ import akka.util.OptionVal
         }
       }
 
-      override def onDownstreamFinish(cause: Throwable): Unit = 
+      override def onDownstreamFinish(cause: Throwable): Unit =
         subSink match {
           case OptionVal.Some(s) => s.cancel(cause)
-          case OptionVal.None =>
+          case OptionVal.None    =>
           case _ =>
             if (propagateToNestedMaterialization) downstreamCause = OptionVal.Some(cause)
             else {
-        matPromise.failure (new NeverMaterializedException (cause) )
-        cancelStage (cause)
+              matPromise.failure(new NeverMaterializedException(cause))
+              cancelStage(cause)
+            }
         }
-      }
 
       def materializeFlow(): Unit =
         try {
@@ -161,7 +161,7 @@ import akka.util.OptionVal
           //in case downstream was closed
           downstreamCause match {
             case OptionVal.Some(ex) => theSubSink.cancel(ex)
-            case _     =>
+            case _                  =>
           }
 
           //in case we've materialized due to upstream completion

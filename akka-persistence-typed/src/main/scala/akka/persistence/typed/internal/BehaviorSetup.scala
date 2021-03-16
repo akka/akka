@@ -102,7 +102,7 @@ private[akka] final class BehaviorSetup[C, E, S](
   def cancelRecoveryTimer(): Unit = {
     recoveryTimer match {
       case OptionVal.Some(t) => t.cancel()
-      case _    =>
+      case _                 =>
     }
     recoveryTimer = OptionVal.None
   }

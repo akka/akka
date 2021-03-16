@@ -36,7 +36,7 @@ object CoordinatedShutdownShardingSpec {
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case msg: Int => (msg % 10).toString
-    case _ => throw new IllegalArgumentException()
+    case _        => throw new IllegalArgumentException()
   }
 }
 

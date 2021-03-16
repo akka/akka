@@ -130,8 +130,8 @@ private object ActorRefSource {
                   name)
               }
           }
-          
-          case _ => throw new IllegalArgumentException() // won't happen, compiler exhaustiveness check pleaser
+
+        case _ => throw new IllegalArgumentException() // won't happen, compiler exhaustiveness check pleaser
       }.ref
 
       private def tryPush(): Unit = {

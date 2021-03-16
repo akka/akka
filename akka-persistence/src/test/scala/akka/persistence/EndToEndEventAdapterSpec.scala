@@ -34,9 +34,9 @@ object EndToEndEventAdapterSpec {
     override def manifest(event: Any): String = event.getClass.getCanonicalName
 
     override def toJournal(event: Any): Any =
-      event match { 
+      event match {
         case m: AppModel => JSON(m.payload)
-        case _ => throw new RuntimeException()
+        case _           => throw new RuntimeException()
       }
     override def fromJournal(event: Any, manifest: String): EventSeq = event match {
       case m: JSON if m.payload.toString.startsWith("a") => EventSeq.single(A(m.payload))
@@ -47,9 +47,9 @@ object EndToEndEventAdapterSpec {
     override def manifest(event: Any): String = event.getClass.getCanonicalName
 
     override def toJournal(event: Any): Any =
-      event match { 
+      event match {
         case m: AppModel => JSON(m.payload)
-        case _ => throw new RuntimeException()  
+        case _           => throw new RuntimeException()
       }
     override def fromJournal(event: Any, manifest: String): EventSeq = event match {
       case m: JSON if m.payload.toString.startsWith("a") => EventSeq.single(NewA(m.payload))
@@ -60,9 +60,9 @@ object EndToEndEventAdapterSpec {
     override def manifest(event: Any): String = event.getClass.getCanonicalName
 
     override def toJournal(event: Any): Any =
-      event match { 
+      event match {
         case m: AppModel => JSON(m.payload)
-        case _ => throw new RuntimeException()
+        case _           => throw new RuntimeException()
       }
     override def fromJournal(event: Any, manifest: String): EventSeq = event match {
       case m: JSON if m.payload.toString.startsWith("b") => EventSeq.single(B(m.payload))
@@ -73,9 +73,9 @@ object EndToEndEventAdapterSpec {
     override def manifest(event: Any): String = event.getClass.getCanonicalName
 
     override def toJournal(event: Any): Any =
-      event match { 
+      event match {
         case m: AppModel => JSON(m.payload)
-        case _ => throw new RuntimeException()  
+        case _           => throw new RuntimeException()
       }
     override def fromJournal(event: Any, manifest: String): EventSeq = event match {
       case m: JSON if m.payload.toString.startsWith("b") => EventSeq.single(NewB(m.payload))

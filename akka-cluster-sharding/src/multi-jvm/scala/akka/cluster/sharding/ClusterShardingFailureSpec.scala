@@ -46,7 +46,7 @@ object ClusterShardingFailureSpec {
     case Get(id)         => id.charAt(0).toString
     case Add(id, _)      => id.charAt(0).toString
     case StartEntity(id) => id
-    case _ => throw new IllegalArgumentException()
+    case _               => throw new IllegalArgumentException()
   }
 }
 

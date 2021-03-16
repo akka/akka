@@ -404,7 +404,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             Behaviors.same
           }
 
-        case _ => 
+        case _ =>
           throw new IllegalArgumentException() // to please exhaustiveness check, compiler does not know about internal/public command
 
       }

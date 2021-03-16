@@ -761,7 +761,8 @@ import akka.util.OptionVal
       shortCircuitBuffer.poll() match {
         case b: BoundaryEvent => processEvent(b)
         case Resume           => finishShellRegistration()
-        case unexpected => throw new IllegalStateException(s"Unexpected element in short circuit buffer: '${unexpected.getClass}'")
+        case unexpected =>
+          throw new IllegalStateException(s"Unexpected element in short circuit buffer: '${unexpected.getClass}'")
       }
       shortCircuitBatch()
     }

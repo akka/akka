@@ -275,7 +275,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
       l.valueBuffer.put(value).flip()
       tx match {
         case OptionVal.Some(t) => l.db.put(t, l.keyBuffer, l.valueBuffer)
-        case _    => l.db.put(l.keyBuffer, l.valueBuffer)
+        case _                 => l.db.put(l.keyBuffer, l.valueBuffer)
       }
     } finally {
       val l = lmdb()

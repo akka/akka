@@ -21,7 +21,7 @@ private[akka] object RecordTypeSerializer {
     val id = it.getShort
     RecordType(id) match {
       case OptionVal.Some(t) => t
-      case _ => throw new IllegalArgumentException(s"Illegal id [$id] for DnsRecordType")
+      case _                 => throw new IllegalArgumentException(s"Illegal id [$id] for DnsRecordType")
     }
   }
 

@@ -419,12 +419,12 @@ class TestMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   override def manifest(o: AnyRef): String =
     o match {
       case _: TestMessage => TestMessageManifest
-      case _ => throw new NotSerializableException()
+      case _              => throw new NotSerializableException()
     }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
     case msg: TestMessage => msg.name.getBytes
-    case _ => throw new NotSerializableException()
+    case _                => throw new NotSerializableException()
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {

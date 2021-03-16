@@ -777,7 +777,8 @@ private[akka] class ClusterShardingGuardian extends Actor {
                 new EventSourcedRememberEntitiesProvider(typeName, settings)
               case ClusterShardingSettings.RememberEntitiesStoreCustom =>
                 new CustomStateStoreModeProvider(typeName, context.system, settings)
-              case unknown => throw new IllegalArgumentException(s"Unknown store type: $unknown") // compiler exhaustiveness check pleaser
+              case unknown =>
+                throw new IllegalArgumentException(s"Unknown store type: $unknown") // compiler exhaustiveness check pleaser
             })
           }
 

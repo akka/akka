@@ -70,7 +70,7 @@ object MultiNodeClusterShardingSpec {
     msg match {
       case id: Int                     => id.toString
       case ShardRegion.StartEntity(id) => id
-      case _ => throw new IllegalArgumentException()
+      case _                           => throw new IllegalArgumentException()
     }
 
 }

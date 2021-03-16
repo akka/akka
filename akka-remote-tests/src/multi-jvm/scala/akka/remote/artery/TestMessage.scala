@@ -6,7 +6,7 @@ package akka.remote.artery
 
 import akka.actor.ExtendedActorSystem
 import akka.protobufv3.internal.ByteString
-import akka.remote.artery.protobuf.{TestMessages => proto}
+import akka.remote.artery.protobuf.{ TestMessages => proto }
 import akka.serialization.SerializerWithStringManifest
 
 import java.io.NotSerializableException
@@ -32,7 +32,7 @@ class TestMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   override def manifest(o: AnyRef): String =
     o match {
       case _: TestMessage => TestMessageManifest
-      case _ => throw new NotSerializableException()
+      case _              => throw new NotSerializableException()
     }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {

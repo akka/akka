@@ -192,7 +192,7 @@ class GCounterSpec extends AnyWordSpec with Matchers {
       val c1 = GCounter.empty.increment(node1).increment(node2)
       val value1 = c1 match {
         case GCounter(value1) => value1
-        case _ => fail()
+        case _                => fail()
       }
       val value2: BigInt = value1
       value2 should be(2L)
@@ -201,7 +201,7 @@ class GCounterSpec extends AnyWordSpec with Matchers {
         case c @ Changed(GCounterKey("key")) =>
           val value3 = c.dataValue match {
             case GCounter(value3) => value3
-            case _ => fail()
+            case _                => fail()
           }
           val value4: BigInt = value3
           value4 should be(2L)

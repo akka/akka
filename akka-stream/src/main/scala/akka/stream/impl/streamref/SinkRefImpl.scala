@@ -49,7 +49,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
   private def initialRefName: String =
     initialPartnerRef match {
       case OptionVal.Some(ref) => ref.toString
-      case _      => "<no-initial-ref>"
+      case _                   => "<no-initial-ref>"
     }
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, SourceRef[In]) =
@@ -84,7 +84,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       private def getPartnerRef: ActorRef =
         partnerRef match {
           case OptionVal.Some(ref) => ref
-          case _      => throw TargetRefNotInitializedYetException()
+          case _                   => throw TargetRefNotInitializedYetException()
         }
 
       val SubscriptionTimeoutTimerKey = "SubscriptionTimeoutKey"

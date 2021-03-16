@@ -352,9 +352,9 @@ abstract class ClusterRoundRobinSpec
         def routees = currentRoutees(router2)
         def routeeAddresses = routees.collect { case ActorRefRoutee(ref) => fullAddress(ref) }.toSet
 
-        routees.foreach { 
+        routees.foreach {
           case ActorRefRoutee(ref) => watch(ref)
-          case _ => 
+          case _                   =>
         }
         val notUsedAddress = roles.map(address).toSet.diff(routeeAddresses).head
         val downAddress = routeeAddresses.find(_ != address(first)).get

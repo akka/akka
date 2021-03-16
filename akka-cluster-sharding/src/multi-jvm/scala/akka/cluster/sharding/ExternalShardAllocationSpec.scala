@@ -48,7 +48,7 @@ object ExternalShardAllocationSpec {
     // shard == id to make testing easier
     val extractShardId: ShardRegion.ExtractShardId = {
       case Get(id) => id
-      case _ => throw new IllegalArgumentException()
+      case _       => throw new IllegalArgumentException()
     }
   }
 

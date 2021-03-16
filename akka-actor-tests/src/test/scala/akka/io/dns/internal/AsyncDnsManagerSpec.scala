@@ -39,7 +39,7 @@ class AsyncDnsManagerSpec extends AkkaSpec("""
       dns ! Resolve("::1") // ::1 will short circuit the resolution
       expectMsgType[Resolved] match {
         case Resolved("::1", Seq(AAAARecord("::1", Ttl.effectivelyForever, _)), Nil) =>
-        case other => fail(other.toString)
+        case other                                                                   => fail(other.toString)
       }
     }
 

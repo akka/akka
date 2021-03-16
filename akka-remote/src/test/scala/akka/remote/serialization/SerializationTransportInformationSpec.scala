@@ -32,7 +32,7 @@ object SerializationTransportInformationSpec {
     def identifier: Int = 666
     def manifest(o: AnyRef): String = o match {
       case _: TestMessage => "A"
-      case _ => throw new NotSerializableException()
+      case _              => throw new NotSerializableException()
     }
     def toBinary(o: AnyRef): Array[Byte] = o match {
       case TestMessage(from, to) =>

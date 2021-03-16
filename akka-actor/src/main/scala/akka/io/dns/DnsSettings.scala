@@ -136,11 +136,12 @@ object DnsSettings {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def parseNameserverAddress(str: String): InetSocketAddress = 
+  @InternalApi private[akka] def parseNameserverAddress(str: String): InetSocketAddress =
     str match {
       case inetSocketAddress(host, port) =>
         new InetSocketAddress(host, Option(port).fold(DnsFallbackPort)(_.toInt))
-      case unexpected => throw new IllegalArgumentException(s"Unparseable address string: $unexpected") // will not happen, for exhaustiveness check
+      case unexpected =>
+        throw new IllegalArgumentException(s"Unparseable address string: $unexpected") // will not happen, for exhaustiveness check
     }
 
   /**

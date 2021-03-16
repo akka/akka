@@ -199,7 +199,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
                 case res: SnapshotProtocol.Response          => InternalProtocol.SnapshotterResponse(res)
                 case RecoveryPermitter.RecoveryPermitGranted => InternalProtocol.RecoveryPermitGranted
                 case internal: InternalProtocol              => internal // such as RecoveryTickEvent
-                case cmd                 => InternalProtocol.IncomingCommand(cmd.asInstanceOf[Command])
+                case cmd                                     => InternalProtocol.IncomingCommand(cmd.asInstanceOf[Command])
               }
               target(ctx, innerMsg)
             }

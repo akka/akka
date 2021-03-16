@@ -184,7 +184,7 @@ object Guardian {
           replyTo ! Done
           Behaviors.same
 
-        case msg => 
+        case msg =>
           throw new RuntimeException(s"Unexpected message $msg")
       }
     }

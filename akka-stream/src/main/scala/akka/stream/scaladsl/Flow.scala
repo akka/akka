@@ -592,7 +592,7 @@ object Flow {
       .flatMapPrefix(1) {
         case Seq(a) => futureFlow(flowFactory(a)).mapMaterializedValue(_ => NotUsed)
         case Nil    => Flow[I].asInstanceOf[Flow[I, O, NotUsed]]
-        case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
+        case _      => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
       }
       .mapMaterializedValue(_ => fallback())
 

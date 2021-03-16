@@ -350,7 +350,7 @@ import akka.util.PrettyDuration.PrettyPrintableDuration
         // for logging
         def fromRemoteAddressStr: String = env.association match {
           case OptionVal.Some(a) => a.remoteAddress.toString
-          case _    => "N/A"
+          case _                 => "N/A"
         }
 
         env.message match {

@@ -508,7 +508,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
         val newServerChannel = inboundBootstrap match {
           case b: ServerBootstrap         => b.bind(address)
           case b: ConnectionlessBootstrap => b.bind(address)
-          case _ => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
+          case _                          => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
         }
 
         // Block reads until a handler actor is registered

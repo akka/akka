@@ -241,7 +241,8 @@ private[akka] trait RepointableRef extends ActorRefScope {
       case i: InternalActorRef =>
         (i.isLocal && i.isInstanceOf[PromiseActorRef]) ||
         (!i.isLocal && i.path.elements.head == "temp")
-      case unexpected => throw new IllegalArgumentException(s"ActorRef is not internal: $unexpected") // will not happen, for exhaustiveness check
+      case unexpected =>
+        throw new IllegalArgumentException(s"ActorRef is not internal: $unexpected") // will not happen, for exhaustiveness check
     }
 
 }
@@ -913,7 +914,7 @@ private[akka] class VirtualPathContainer(
   protected def sendTerminated(): Unit = {
     def unwatchWatched(watched: ActorRef): Unit =
       watched.asInstanceOf[InternalActorRef].sendSystemMessage(Unwatch(watched, this))
-    
+
     val (toUnwatch, watchedBy) = this.synchronized {
       _watchedBy match {
         case OptionVal.Some(wBy) =>
@@ -927,7 +928,7 @@ private[akka] class VirtualPathContainer(
 
         case _ =>
           (ActorCell.emptyActorRefSet, ActorCell.emptyActorRefSet)
-         
+
       }
     }
 
@@ -1100,7 +1101,7 @@ private[akka] class VirtualPathContainer(
     def watchedByOrEmpty: Set[ActorRef] =
       _watchedBy match {
         case OptionVal.Some(watchedBy) => watchedBy
-        case _            => ActorCell.emptyActorRefSet
+        case _                         => ActorCell.emptyActorRefSet
       }
 
     change match {

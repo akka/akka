@@ -72,16 +72,16 @@ class LWWRegisterSpec extends AnyWordSpec with Matchers {
       val r1 = LWWRegister(node1, "a", defaultClock[String])
       val value1 = r1 match {
         case LWWRegister(value1) => value1
-        case _ => fail()
-      } 
-      val value2: String = value1 
+        case _                   => fail()
+      }
+      val value2: String = value1
       value2 should be("a")
 
       Changed(LWWRegisterKey[String]("key"))(r1) match {
         case c @ Changed(LWWRegisterKey("key")) =>
           val value3 = c.dataValue match {
             case LWWRegister(value3) => value3
-            case _ => fail()
+            case _                   => fail()
           }
           val value4: String = value3
           value4 should be("a")

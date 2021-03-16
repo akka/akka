@@ -635,7 +635,7 @@ private[akka] class RemoteActorRefProvider(
   override private[akka] def addressString: String = {
     _addressString match {
       case OptionVal.Some(addr) => addr
-      case _       =>
+      case _                    =>
         // not initialized yet, fallback
         local.addressString
     }
