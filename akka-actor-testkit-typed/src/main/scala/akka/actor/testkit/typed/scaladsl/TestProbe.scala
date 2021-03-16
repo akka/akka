@@ -213,7 +213,6 @@ object TestProbe {
    */
   def fishForMessagePF(max: FiniteDuration)(fisher: PartialFunction[M, FishingOutcome]): immutable.Seq[M]
 
-
   /**
    * Expect the given actor to be stopped or stop within the given timeout or
    * throw an [[AssertionError]].

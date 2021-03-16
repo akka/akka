@@ -139,7 +139,7 @@ class TestSerializer extends SerializerWithStringManifest {
   override def toBinary(o: AnyRef): Array[Byte] =
     o match {
       case TestConsumer.Job(payload) => payload.getBytes(StandardCharsets.UTF_8)
-      case unexpected => throw new NotSerializableException(s"Unexpected: $unexpected")
+      case unexpected                => throw new NotSerializableException(s"Unexpected: $unexpected")
     }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =

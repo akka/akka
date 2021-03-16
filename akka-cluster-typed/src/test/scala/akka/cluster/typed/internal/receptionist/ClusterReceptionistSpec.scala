@@ -60,7 +60,7 @@ object ClusterReceptionistSpec {
   case class Ping(respondTo: ActorRef[Pong.type]) extends PingProtocol with CborSerializable
   case object Perish extends PingProtocol with CborSerializable
 
-  val pingPongBehavior = Behaviors.receiveMessage[PingProtocol] { 
+  val pingPongBehavior = Behaviors.receiveMessage[PingProtocol] {
     case Ping(respondTo) =>
       respondTo ! Pong
       Behaviors.same
@@ -104,7 +104,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
         val remoteServiceRefs = regProbe2.expectMessageType[Listing] match {
           case PingKey.Listing(r) => r
-          case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
+          case unexpected         => throw new RuntimeException(s"Unexpected: $unexpected")
         }
         val theRef = remoteServiceRefs.head
         theRef ! Ping(regProbe2.ref)
@@ -139,7 +139,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
         val remoteServiceRefs = regProbe2.expectMessageType[Listing](10.seconds) match {
           case PingKey.Listing(r) => r
-          case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")  
+          case unexpected         => throw new RuntimeException(s"Unexpected: $unexpected")
         }
         remoteServiceRefs.head.path.address should ===(Cluster(system1).selfMember.address)
       } finally {
@@ -402,7 +402,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
           }
           val entries = msg.last match {
             case PingKey.Listing(e) => e
-            case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")  
+            case unexpected         => throw new RuntimeException(s"Unexpected: $unexpected")
           }
           entries should have size 1
           val ref = entries.head

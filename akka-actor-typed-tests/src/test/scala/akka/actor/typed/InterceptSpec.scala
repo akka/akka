@@ -55,7 +55,7 @@ object InterceptSpec {
         val wrapped = msg match {
           case c: Command          => InternalProtocol.WrappedCommand(c)
           case r: ExternalResponse => InternalProtocol.WrappedExternalResponse(r)
-          case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
+          case unexpected          => throw new RuntimeException(s"Unexpected: $unexpected")
         }
         target(ctx, wrapped)
       }

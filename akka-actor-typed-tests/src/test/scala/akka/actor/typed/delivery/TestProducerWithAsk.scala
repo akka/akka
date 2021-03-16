@@ -43,7 +43,7 @@ object TestProducerWithAsk {
   }
 
   private def idle(n: Int, replyProbe: ActorRef[Long]): Behavior[Command] = {
-    Behaviors.receivePartial { 
+    Behaviors.receivePartial {
       case (_, Tick)                => Behaviors.same
       case (_, RequestNext(sendTo)) => active(n + 1, replyProbe, sendTo)
       case (_, Confirmed(seqNr)) =>
@@ -84,7 +84,7 @@ object TestProducerWithAsk {
         ctx.log.warn("Timeout")
         Behaviors.same
     }
-  
+
   }
 
 }

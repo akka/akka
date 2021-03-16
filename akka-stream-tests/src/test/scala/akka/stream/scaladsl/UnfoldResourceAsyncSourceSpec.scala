@@ -172,8 +172,8 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           iterator =>
             if (iterator.hasNext) {
               iterator.next() match {
-                case n: Int => Future.successful(Some(n))
-                case e: TE  => throw e
+                case n: Int     => Future.successful(Some(n))
+                case e: TE      => throw e
                 case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
               }
             } else Future.successful(None),
@@ -191,8 +191,8 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           iterator =>
             if (iterator.hasNext) {
               iterator.next() match {
-                case n: Int => Future.successful(Some(n))
-                case e: TE  => Future.failed(e)
+                case n: Int     => Future.successful(Some(n))
+                case e: TE      => Future.failed(e)
                 case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
               }
             } else Future.successful(None),
