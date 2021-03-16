@@ -472,6 +472,27 @@ public abstract class GeneratedMessageLite extends AbstractMessageLite
 
   // -----------------------------------------------------------------
 
+  private enum FiledType {
+    UNKNOWN_OR_WRONG_WIRE_TYPE,
+    PACKED,
+    UNPACKACKED
+  }
+
+  private static <MessageType extends MessageLite> FiledType getFieldType(GeneratedExtension<MessageType, ?> extension, int wireType) {
+    if (extension == null) {
+      return FiledType.UNKNOWN_OR_WRONG_WIRE_TYPE;
+    } else if (wireType == FieldSet.getUnPackedWireFormatForFieldType(
+            extension.descriptor.getLiteType())) {
+      return FiledType.UNPACKACKED;
+    } else if (extension.descriptor.isRepeated &&
+            extension.descriptor.type.isPackable() &&
+            wireType == FieldSet.getPackedWireFormatForFieldType()) {
+      return FiledType.PACKED;
+    } else {
+      return FiledType.UNKNOWN_OR_WRONG_WIRE_TYPE;
+    }
+  }
+  
   /**
    * Parse an unknown field or an extension.
    * @return {@code true} unless the tag is an end-group tag.
@@ -490,29 +511,12 @@ public abstract class GeneratedMessageLite extends AbstractMessageLite
       extensionRegistry.findLiteExtensionByNumber(
           defaultInstance, fieldNumber);
 
-    boolean unknown = false;
-    boolean packed = false;
-    if (extension == null) {
-      unknown = true;  // Unknown field.
-    } else if (wireType == FieldSet.getWireFormatForFieldType(
-                 extension.descriptor.getLiteType(),
-                 false  /* isPacked */)) {
-      packed = false;  // Normal, unpacked value.
-    } else if (extension.descriptor.isRepeated &&
-               extension.descriptor.type.isPackable() &&
-               wireType == FieldSet.getWireFormatForFieldType(
-                 extension.descriptor.getLiteType(),
-                 true  /* isPacked */)) {
-      packed = true;  // Packed value.
-    } else {
-      unknown = true;  // Wrong wire type.
-    }
-
-    if (unknown) {  // Unknown field or wrong wire type.  Skip.
+    FiledType fieldType = getFieldType(extension, wireType);
+    if (fieldType == FiledType.UNKNOWN_OR_WRONG_WIRE_TYPE) {
       return input.skipField(tag);
     }
 
-    if (packed) {
+    if (fieldType == FiledType.PACKED) {
       int length = input.readRawVarint32();
       int limit = input.pushLimit(length);
       if (extension.descriptor.getLiteType() == WireFormat.FieldType.ENUM) {

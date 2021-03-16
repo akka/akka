@@ -461,7 +461,7 @@ final class FieldSet<FieldDescriptorType extends
   /**
    * Given a field type, return the wire type.
    *
-   * @returns One of the {@code WIRETYPE_} constants defined in
+   * @return One of the {@code WIRETYPE_} constants defined in
    *          {@link WireFormat}.
    */
   static int getWireFormatForFieldType(final WireFormat.FieldType type,
@@ -471,6 +471,25 @@ final class FieldSet<FieldDescriptorType extends
     } else {
       return type.getWireType();
     }
+  }
+
+  /**
+   *
+   * @return Constant WIRETYPE_LENGTH_DELIMITED defined in
+   *          {@link WireFormat} for packed field type.
+   */
+  static int getPackedWireFormatForFieldType() {
+    return WireFormat.WIRETYPE_LENGTH_DELIMITED;
+  }
+
+  /**
+   * Given an unpacked field type, return the wire type.
+   *
+   * @return One of the {@code WIRETYPE_} constants defined in
+   *          {@link WireFormat}.
+   */
+  static int getUnPackedWireFormatForFieldType(final WireFormat.FieldType type) {
+    return type.getWireType();
   }
 
   /**
