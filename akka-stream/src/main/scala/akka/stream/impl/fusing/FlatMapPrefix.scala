@@ -98,7 +98,6 @@ import akka.util.OptionVal
       override def onDownstreamFinish(cause: Throwable): Unit =
         subSink match {
           case OptionVal.Some(s) => s.cancel(cause)
-          case OptionVal.None    =>
           case _ =>
             if (propagateToNestedMaterialization) downstreamCause = OptionVal.Some(cause)
             else {
