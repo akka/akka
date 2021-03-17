@@ -105,9 +105,8 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
       probe.ref ! "two"
 
       intercept[AssertionError] {
-        probe.fishForMessage(shortDuration) {
+        probe.fishForMessagePF(shortDuration) {
           case "one" => FishingOutcomes.continue
-          case _     => throw new RuntimeException()
         }
       }
     }
@@ -118,9 +117,8 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
       probe.ref ! "one"
 
       intercept[AssertionError] {
-        probe.fishForMessage(shortDuration) {
+        probe.fishForMessagePF(shortDuration) {
           case "one" => FishingOutcomes.continue
-          case _     => throw new RuntimeException()
         }
       }
     }
