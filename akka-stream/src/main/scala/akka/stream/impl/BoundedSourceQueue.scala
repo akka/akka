@@ -134,7 +134,7 @@ import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, Out
           Logic.callback.invoke(()) // if this thread won the completion race also schedule an async callback
       }
 
-      override def size(): Integer = queue.size()
+      override def size(): Int = queue.size()
     }
 
     // some state transition helpers

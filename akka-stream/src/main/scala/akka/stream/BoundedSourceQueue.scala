@@ -38,5 +38,5 @@ trait BoundedSourceQueue[T] {
    *
    * @return the approximate number of elements in this queue
    */
-  def size(): Integer
+  def size(): Int
 }
