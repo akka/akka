@@ -193,5 +193,18 @@ class BoundedSourceQueueSpec extends StreamSpec("""akka.loglevel = debug
 
       downstream.cancel()
     }
+
+    "provide info about number of messages" in {
+      val sub = TestSubscriber.probe[Int]()
+      val queue = Source.queue[Int](100).toMat(Sink.fromSubscriber(sub))(Keep.left).run()
+
+      queue.offer(1)
+      queue.size() shouldBe 1
+
+      (2 to 100).map { i =>
+        queue.offer(i)
+      }
+      queue.size() shouldBe 100
+    }
   }
 }

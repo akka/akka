@@ -32,4 +32,11 @@ trait BoundedSourceQueue[T] {
    * Completes the stream with a failure.
    */
   def fail(ex: Throwable): Unit
+
+  /**
+   * Returns the approximate number of elements in this queue.
+   *
+   * @return the approximate number of elements in this queue
+   */
+  def size(): Integer
 }
