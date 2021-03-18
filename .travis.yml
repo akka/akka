@@ -9,7 +9,16 @@ scala:
   - "2.13.3"
 
 before_install: curl -Ls https://git.io/jabba | bash && . ~/.jabba/jabba.sh
-install: jabba install "adopt@~1.$TRAVIS_JDK.0-0" && jabba use "$_" && java -Xmx32m -version
+install: 
+  - jabba install "adopt@~1.$TRAVIS_JDK.0-0" && jabba use "$_" && java -Xmx32m -version
+  - |
+    # update this only when sbt-the-bash-script needs to be updated
+    export SBT_LAUNCHER=1.4.9
+    export SBT_OPTS="-Dfile.encoding=UTF-8"
+    curl -L --silent "https://github.com/sbt/sbt/releases/download/v$SBT_LAUNCHER/sbt-$SBT_LAUNCHER.tgz" > $HOME/sbt.tgz
+    tar zxf $HOME/sbt.tgz -C $HOME
+    sudo rm /usr/local/bin/sbt
+    sudo ln -s $HOME/sbt/bin/sbt /usr/local/bin/sbt
 
 addons:
   apt:
