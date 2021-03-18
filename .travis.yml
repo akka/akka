@@ -37,7 +37,7 @@ cache:
     - $HOME/.jabba/jdk
 
 # script for the default 'test' stage:
-script: sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile ;headerCheckAll"
+script: cp .jvmopts-travis .jvmopts && sbt -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile ;headerCheckAll"
 
 jobs:
   include:
