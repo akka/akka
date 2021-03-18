@@ -52,7 +52,7 @@ object EventSourcedActorFailureSpec {
         case a: AtomicWrite =>
           a.payload.exists {
             case PersistentRepr(Evt(s: String), _) => s.contains("wrong")
-            case _ => false
+            case _                                 => false
           }
         case _ => false
       }
@@ -69,9 +69,9 @@ object EventSourcedActorFailureSpec {
       }
 
     def isCorrupt(events: Seq[PersistentRepr]): Boolean =
-      events.exists { 
+      events.exists {
         case PersistentRepr(Evt(s: String), _) => s.contains("corrupt")
-        case _ => false
+        case _                                 => false
       }
 
   }
