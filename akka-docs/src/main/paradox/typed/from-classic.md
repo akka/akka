@@ -117,6 +117,9 @@ for creating top level actors. Instead, there is a single top level actor define
 when starting the `ActorSystem`. Other actors are started as children of that user guardian actor or
 children of other actors in the actor hierarchy. This is explained more in @ref:[ActorSystem](#actorsystem).
 
+Note that when mixing classic and typed and have a classic system, spawning top level actors from the side is possible, see
+@ref:[Coexistence](coexisting.md#top-level-typed-actor-classic-system).
+
 The `actorOf` method takes an `akka.actor.Props` parameter, which is like a factory for creating the actor instance, and it's
 also used when creating a new instance when the actor is restarted. The `Props` may also define additional
 properties such as which dispatcher to use for the actor.

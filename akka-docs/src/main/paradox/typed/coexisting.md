@@ -103,6 +103,8 @@ Scala
 Java
 :  @@snip [TypedWatchingClassicTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/TypedWatchingClassicTest.java) { #classic }
 
+<a id="top-level-typed-actor-classic-system"></a>
+
 Creating the actor system and the typed actor:
 
 Scala
