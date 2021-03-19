@@ -377,5 +377,10 @@ private[akka] final case class PublishedEventImpl(
     case _                => payload
   }
 
+  override def withoutTags: PublishedEvent = payload match {
+    case Tagged(event, _) => PublishedEventImpl(persistenceId, sequenceNumber, event, timestamp, replicatedMetaData)
+    case _                => this
+  }
+
   override def getReplicatedMetaData: Optional[ReplicatedPublishedEventMetaData] = replicatedMetaData.asJava
 }
