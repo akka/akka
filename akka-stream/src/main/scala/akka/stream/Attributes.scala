@@ -10,16 +10,18 @@ import java.util.Optional
 import scala.annotation.tailrec
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
-import scala.reflect.{ classTag, ClassTag }
+import scala.reflect.{ClassTag, classTag}
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.japi.function
 import akka.stream.impl.TraversalBuilder
-import akka.util.{ ByteString, OptionVal }
+import akka.util.{ByteString, OptionVal}
 import akka.util.JavaDurationConverters._
 import akka.util.LineNumbers
+
+import scala.util.control.NonFatal
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
@@ -308,7 +310,7 @@ object Attributes {
    * for debugging. Included in the default toString of GraphStageLogic if present
    */
   final class SourceLocation(lambda: AnyRef) extends Attribute {
-    lazy val locationName: String = {
+    lazy val locationName: String = try {
       val locationName = LineNumbers(lambda) match {
         case LineNumbers.NoSourceInfo           => "unknown"
         case LineNumbers.UnknownSourceFormat(_) => "unknown"
@@ -317,6 +319,8 @@ object Attributes {
           s"$filename:$from"
       }
       s"${lambda.getClass.getPackage.getName}-$locationName"
+    } catch {
+      case NonFatal(_) => "unknown" // location is not critical so give up without failing
     }
 
     override def toString: String = locationName
