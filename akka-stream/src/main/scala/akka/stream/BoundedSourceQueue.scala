@@ -6,10 +6,6 @@ package akka.stream
 
 import akka.annotation.DoNotInherit
 
-import java.util.concurrent.CompletionStage
-import scala.compat.java8.FutureConverters
-import scala.concurrent.Future
-
 /**
  * A queue of the given size that gives immediate feedback whether an element could be enqueued or not.
  *
@@ -26,22 +22,6 @@ trait BoundedSourceQueue[T] {
    * the downstream.
    */
   def offer(elem: T): QueueOfferResult
-
-  /**
-   * If [[BoundedSourceQueue#offer]] returns [[akka.stream.QueueOfferResult.Dropped]] then a caller can use this method
-   * to be notified when the queue has available capacity to accept a new element. In case of multiple producers, all
-   * will be notified. Therefore, it is not guaranteed that upon [[Future]] completion the next offer will be accepted.
-   * First (or as much as there is capacity) offer wins and others have to try again.
-   */
-  def whenReady(): Future[akka.Done]
-
-  /**
-   * Java API: If [[BoundedSourceQueue#offer]] returns [[akka.stream.QueueOfferResult.Dropped]] then a caller can use
-   * this method to be notified when the queue has available capacity to accept a new element. In case of multiple
-   * producers, all will be notified. Therefore, it is not guaranteed that upon [[CompletionStage]] completion the
-   * next offer will be accepted. First (or as much as there is capacity) offer wins and others have to try again.
-   */
-  def getWhenReady: CompletionStage[akka.Done] = FutureConverters.toJava(whenReady())
 
   /**
    * Completes the stream normally.

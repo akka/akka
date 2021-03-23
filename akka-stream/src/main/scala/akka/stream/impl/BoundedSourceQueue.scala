@@ -13,9 +13,6 @@ import akka.dispatch.AbstractBoundedNodeQueue
 import akka.stream._
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, OutHandler, StageLogging }
 
-import java.util.concurrent.ConcurrentLinkedQueue
-import scala.concurrent.{ Future, Promise }
-
 /**
  * INTERNAL API
  */
@@ -24,7 +21,6 @@ import scala.concurrent.{ Future, Promise }
   case object NeedsActivation extends State
   case object Running extends State
   case class Done(result: QueueCompletionResult) extends State
-  val successful = Future.successful(akka.Done)
 }
 
 /**
@@ -44,8 +40,6 @@ import scala.concurrent.{ Future, Promise }
 
     val state = new AtomicReference[State](Running)
     val queue = new AbstractBoundedNodeQueue[T](bufferSize) {}
-    val subscriptions = new ConcurrentLinkedQueue[Promise[akka.Done]]()
-    @volatile var readyToAccept = true
 
     object Logic extends GraphStageLogic(shape) with OutHandler with StageLogging {
 
@@ -92,10 +86,8 @@ import scala.concurrent.{ Future, Promise }
                   clearNeedsActivation()
                   run()
                 } // else Queue.isEmpty && setNeedsActivation was true: waiting for next offer
-              } else {
+              } else
                 push(out, next) // and then: wait for pull
-                notifySubscribersIfNeeded()
-              }
             } // else: wait for pull
 
           case Done(QueueOfferResult.QueueClosed) =>
@@ -109,21 +101,6 @@ import scala.concurrent.{ Future, Promise }
           case Done(QueueOfferResult.Failure(ex)) => failStage(ex)
           case NeedsActivation                    => throw new IllegalStateException // needs to be cleared before
         }
-
-      def notifySubscribersIfNeeded(): Unit = {
-        // if the queue was full previously but now it can accept a new element
-        if (!readyToAccept) {
-          // we do not wait until all subscribers have been notified before assuming we can accept more elements,
-          // so all new subscribers won't be remembered (because we're still notifying the old ones) until the
-          // queue is full again
-          readyToAccept = true
-          var subscription = subscriptions.poll()
-          while (subscription != null) {
-            subscription.success(akka.Done)
-            subscription = subscriptions.poll()
-          }
-        }
-      }
     }
 
     object Mat extends BoundedSourceQueue[T] {
@@ -138,11 +115,8 @@ import scala.concurrent.{ Future, Promise }
                 Logic.callback.invoke(())
 
             QueueOfferResult.Enqueued
-          } else {
-            readyToAccept = false // queue is full
-
+          } else
             QueueOfferResult.Dropped
-          }
         case Done(result) => result
       }
 
@@ -158,18 +132,6 @@ import scala.concurrent.{ Future, Promise }
           throw new IllegalStateException("The queue has already been completed.")
         if (setDone(Done(QueueOfferResult.Failure(ex))))
           Logic.callback.invoke(()) // if this thread won the completion race also schedule an async callback
-      }
-
-      override def whenReady(): Future[akka.Done] = {
-        if (readyToAccept) {
-          // immediately return the result if the queue has available capacity
-          successful
-        } else {
-          // remember the subscriber if the queue has no capacity
-          val promise = Promise[akka.Done]()
-          subscriptions.offer(promise)
-          promise.future
-        }
       }
     }
 
