@@ -25,12 +25,11 @@ object Dependencies {
   val protobufJavaVersion = "3.11.4"
   val logbackVersion = "1.2.3"
 
-  val jacksonVersion = "2.10.5"
-  val jacksonDatabindVersion = "2.10.5.1"
+  val jacksonVersion = "2.11.4"
 
   val scala212Version = "2.12.13"
   val scala213Version = "2.13.3"
-  val scala3Version = "3.0.0-M3"
+  val scala3Version = "3.0.0-RC1"
 
   val reactiveStreamsVersion = "1.0.3"
 
@@ -38,7 +37,7 @@ object Dependencies {
 
   val scalaTestVersion = {
     if (getScalaVersion().startsWith("3.0")) {
-      "3.2.3"
+      "3.2.6"
     } else {
       "3.1.4"
     }
@@ -122,7 +121,7 @@ object Dependencies {
 
     val jacksonCore = "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion // ApacheV2
     val jacksonAnnotations = "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion // ApacheV2
-    val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind" % jacksonDatabindVersion // ApacheV2
+    val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion // ApacheV2
     val jacksonJdk8 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jacksonVersion // ApacheV2
     val jacksonJsr310 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion // ApacheV2
     val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion // ApacheV2

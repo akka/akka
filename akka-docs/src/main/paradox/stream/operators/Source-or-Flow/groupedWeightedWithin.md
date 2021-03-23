@@ -12,8 +12,8 @@ Chunk up this stream into groups of elements received within a time window, or l
 
 ## Description
 
-Chunk up this stream into groups of elements received within a time window, or limited by the weight of the elements,
-whatever happens first. Empty groups will not be emitted if no elements are received from upstream.
+Chunk up this stream into groups of elements received within a time window, or limited by the weight and number of 
+the elements, whatever happens first. Empty groups will not be emitted if no elements are received from upstream.
 The last group before end-of-stream will contain the buffered elements since the previously emitted group.
 
 See also:

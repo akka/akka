@@ -41,6 +41,7 @@ object LeaseMajority5NodeSpec extends MultiNodeConfig {
           lease-majority {
             lease-implementation = test-lease
             acquire-lease-delay-for-minority = 1s
+            release-after = 3s
           }
         }
 

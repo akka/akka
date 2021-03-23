@@ -1714,10 +1714,12 @@ private[stream] object Collect {
  */
 @InternalApi private[akka] final class GroupedWeightedWithin[T](
     val maxWeight: Long,
-    costFn: T => Long,
+    val maxNumber: Int,
+    val costFn: T => Long,
     val interval: FiniteDuration)
     extends GraphStage[FlowShape[T, immutable.Seq[T]]] {
   require(maxWeight > 0, "maxWeight must be greater than 0")
+  require(maxNumber > 0, "maxNumber must be greater than 0")
   require(interval > Duration.Zero)
 
   val in = Inlet[T]("in")
@@ -1747,6 +1749,7 @@ private[stream] object Collect {
       private var groupEmitted = true
       private var finished = false
       private var totalWeight = 0L
+      private var totalNumber = 0
       private var hasElements = false
 
       override def preStart() = {
@@ -1761,15 +1764,17 @@ private[stream] object Collect {
           failStage(new IllegalArgumentException(s"Negative weight [$cost] for element [$elem] is not allowed"))
         else {
           hasElements = true
-          if (totalWeight + cost <= maxWeight) {
+          // if there is place (both weight and number) for `elem` in the current group
+          if (totalWeight + cost <= maxWeight && totalNumber + 1 <= maxNumber) {
             buf += elem
             totalWeight += cost
+            totalNumber += 1;
 
-            if (totalWeight < maxWeight) pull(in)
+            // if potentially there is a place (both weight and number) for one more element in the current group
+            if (totalWeight < maxWeight && totalNumber < maxNumber) pull(in)
             else {
-              // `totalWeight >= maxWeight` which means that downstream can get the next group.
               if (!isAvailable(out)) {
-                // We should emit group when downstream becomes available
+                // we should emit group when downstream becomes available
                 pushEagerly = true
                 // we want to pull anyway, since we allow for zero weight elements
                 // but since `emitGroup()` will pull internally (by calling `startNewGroup()`)
@@ -1781,10 +1786,11 @@ private[stream] object Collect {
               }
             }
           } else {
-            //we have a single heavy element that weighs more than the limit
-            if (totalWeight == 0L) {
+            // if there is a single heavy element that weighs more than the limit
+            if (totalWeight == 0L && totalNumber == 0) {
               buf += elem
               totalWeight += cost
+              totalNumber += 1;
               pushEagerly = true
             } else {
               pending = elem
@@ -1813,12 +1819,14 @@ private[stream] object Collect {
       private def startNewGroup(): Unit = {
         if (pending != null) {
           totalWeight = pendingWeight
+          totalNumber = 1
           pendingWeight = 0L
           buf += pending
           pending = null.asInstanceOf[T]
           groupEmitted = false
         } else {
           totalWeight = 0L
+          totalNumber = 0
           hasElements = false
         }
         pushEagerly = false

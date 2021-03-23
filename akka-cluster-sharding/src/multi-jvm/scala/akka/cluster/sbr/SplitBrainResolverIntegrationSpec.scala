@@ -396,6 +396,7 @@ class SplitBrainResolverIntegrationSpec
         lease-majority {
           lease-implementation = test-lease
           acquire-lease-delay-for-minority = 3s
+          release-after = 20s          
         }
       }
       test-lease {
