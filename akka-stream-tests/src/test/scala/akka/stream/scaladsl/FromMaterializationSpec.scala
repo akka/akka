@@ -15,7 +15,7 @@ class FromMaterializerSpec extends StreamSpec {
 
   case class MyAttribute() extends Attribute
   val myAttributes = Attributes(MyAttribute())
-  
+
   "Source.fromMaterializer" should {
 
     "expose materializer" in {
@@ -69,9 +69,11 @@ class FromMaterializerSpec extends StreamSpec {
     "preserve attributes of inner source" in {
       val source = Source
         .fromMaterializer { (_, _) =>
-          Source.fromMaterializer { (_, attr) =>
-            Source.single(attr.get[MyAttribute])
-          }.addAttributes(myAttributes)
+          Source
+            .fromMaterializer { (_, attr) =>
+              Source.single(attr.get[MyAttribute])
+            }
+            .addAttributes(myAttributes)
         }
         .named("my-name")
 
@@ -155,9 +157,11 @@ class FromMaterializerSpec extends StreamSpec {
     "preserve attributes of inner flow" in {
       val flow = Flow
         .fromMaterializer { (_, _) =>
-          Flow.fromMaterializer { (_, attr) =>
-            Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.get[MyAttribute]))
-          }.addAttributes(myAttributes)
+          Flow
+            .fromMaterializer { (_, attr) =>
+              Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.get[MyAttribute]))
+            }
+            .addAttributes(myAttributes)
         }
         .named("my-name")
 
@@ -239,9 +243,11 @@ class FromMaterializerSpec extends StreamSpec {
     "preserve attributes of inner sink" in {
       val sink = Sink
         .fromMaterializer { (_, _) =>
-          Sink.fromMaterializer { (_, attr) =>
-            Sink.fold(attr.get[MyAttribute])(Keep.left)
-          }.addAttributes(myAttributes)
+          Sink
+            .fromMaterializer { (_, attr) =>
+              Sink.fold(attr.get[MyAttribute])(Keep.left)
+            }
+            .addAttributes(myAttributes)
         }
         .named("my-name")
 
