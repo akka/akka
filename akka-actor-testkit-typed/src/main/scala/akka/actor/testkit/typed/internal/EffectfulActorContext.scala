@@ -106,7 +106,7 @@ import scala.reflect.ClassTag
     override def startSingleTimer(key: Any, msg: T, delay: FiniteDuration): Unit =
       startTimer(key, msg, delay, Effect.TimerScheduled.SingleMode)
 
-    override def isTimerActive(key: Any): Boolean = ???
+    override def isTimerActive(key: Any): Boolean = activeTimers.isDefinedAt(key)
 
     override def cancel(key: Any): Unit = if (activeTimers.keySet(key)) {
       val effect = Effect.TimerCancelled(key)
