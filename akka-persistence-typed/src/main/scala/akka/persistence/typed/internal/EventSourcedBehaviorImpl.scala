@@ -378,7 +378,7 @@ private[akka] final case class PublishedEventImpl(
   }
 
   override def withoutTags: PublishedEvent = payload match {
-    case Tagged(event, _) => PublishedEventImpl(persistenceId, sequenceNumber, event, timestamp, replicatedMetaData)
+    case Tagged(event, _) => copy(payload = event)
     case _                => this
   }
 
