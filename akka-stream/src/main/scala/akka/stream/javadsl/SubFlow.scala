@@ -671,13 +671,15 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream completes
    *
-   * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * `maxNumber` must be positive, and `duration` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def groupedWithin(n: Int, duration: FiniteDuration): SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
-    new SubFlow(delegate.groupedWithin(n, duration).map(_.asJava)) // TODO optimize to one step
+  def groupedWithin(
+      maxNumber: Int,
+      duration: FiniteDuration): SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
+    new SubFlow(delegate.groupedWithin(maxNumber, duration).map(_.asJava)) // TODO optimize to one step
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
@@ -694,12 +696,14 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream completes
    *
-   * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * `maxNumber` must be positive, and `duration` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
   @nowarn("msg=deprecated")
-  def groupedWithin(n: Int, duration: java.time.Duration): SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
-    groupedWithin(n, duration.asScala)
+  def groupedWithin(
+      maxNumber: Int,
+      duration: java.time.Duration): SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
+    groupedWithin(maxNumber, duration.asScala)
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
@@ -716,7 +720,7 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream completes
    *
-   * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * `maxWeight` must be positive, and `duration` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
   @Deprecated
@@ -742,7 +746,7 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream completes
    *
-   * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * `maxWeight` must be positive, and `duration` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
   @nowarn("msg=deprecated")
@@ -768,7 +772,7 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream completes
    *
-   * `maxWeight` must be positive, `maxNumber` must be positive, and `d` must be greater than 0 seconds,
+   * `maxWeight` must be positive, `maxNumber` must be positive, and `duration` must be greater than 0 seconds,
    * otherwise IllegalArgumentException is thrown.
    */
   def groupedWeightedWithin(
