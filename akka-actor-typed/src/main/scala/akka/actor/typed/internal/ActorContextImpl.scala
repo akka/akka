@@ -191,8 +191,8 @@ import scala.util.Success
     }
   }
 
-  override def setReceiveTimeout(d: java.time.Duration, msg: T): Unit =
-    setReceiveTimeout(d.asScala, msg)
+  override def setReceiveTimeout(duration: java.time.Duration, msg: T): Unit =
+    setReceiveTimeout(duration.asScala, msg)
 
   override def scheduleOnce[U](delay: java.time.Duration, target: ActorRef[U], msg: U): akka.actor.Cancellable =
     scheduleOnce(delay.asScala, target, msg)
