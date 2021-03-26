@@ -750,9 +750,6 @@ object Source {
    * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  @Deprecated
-  @deprecated("Use queue without `overflowStrategy` parameter instead.", "2.6.14")
-  @nowarn("msg=deprecated")
   def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, SourceQueueWithComplete[T]] =
     new Source(
       scaladsl.Source.queue[T](bufferSize, overflowStrategy, maxConcurrentOffers = 1).mapMaterializedValue(_.asJava))
@@ -792,9 +789,6 @@ object Source {
    * @param maxConcurrentOffers maximum number of pending offers when buffer is full, should be greater than 0, not
    *                            applicable when `OverflowStrategy.dropNew` is used
    */
-  @Deprecated
-  @deprecated("Use queue without `overflowStrategy` and `maxConcurrentOffers` parameters instead.", "2.6.14")
-  @nowarn("msg=deprecated")
   def queue[T](
       bufferSize: Int,
       overflowStrategy: OverflowStrategy,

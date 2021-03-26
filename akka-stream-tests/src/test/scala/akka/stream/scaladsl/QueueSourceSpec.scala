@@ -22,9 +22,6 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestProbe
 
-import scala.annotation.nowarn
-
-@nowarn("msg=deprecated")
 class QueueSourceSpec extends StreamSpec {
   implicit val ec: ExecutionContextExecutor = system.dispatcher
   val pause = 300.millis

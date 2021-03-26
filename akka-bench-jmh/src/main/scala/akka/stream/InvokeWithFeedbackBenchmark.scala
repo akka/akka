@@ -14,8 +14,6 @@ import org.openjdk.jmh.annotations._
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 
-import scala.annotation.nowarn
-
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
@@ -28,7 +26,6 @@ class InvokeWithFeedbackBenchmark {
   val waitForResult = 100.millis
 
   @Setup
-  @nowarn("msg=Use queue without `overflowStrategy` parameter instead.")
   def setup(): Unit = {
     // these are currently the only two built in stages using invokeWithFeedback
     val (in, out) =
