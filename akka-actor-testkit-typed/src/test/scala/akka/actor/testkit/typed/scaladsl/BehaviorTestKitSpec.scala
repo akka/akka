@@ -13,6 +13,7 @@ import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior, Props, Terminated }
+import akka.util.Timeout
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.slf4j.event.Level
@@ -49,6 +50,8 @@ object BehaviorTestKitSpec {
     case class ScheduleCommand(key: Any, delay: FiniteDuration, mode: Effect.TimerScheduled.TimerMode, cmd: Command)
         extends Command
     case class CancelScheduleCommand(key: Any) extends Command
+
+    case class AskForCookiesFrom(distributor: ActorRef[CookieDistributor.Command]) extends Command
 
     val init: Behavior[Command] = Behaviors.withTimers { timers =>
       Behaviors
@@ -134,6 +137,17 @@ object BehaviorTestKitSpec {
             case CancelScheduleCommand(key) =>
               timers.cancel(key)
               Behaviors.same
+            case AskForCookiesFrom(distributor) =>
+              implicit val timeout: Timeout = 10.seconds
+              val randomNumerator = scala.util.Random.nextInt(13)
+              val randomDenominator = 1 + scala.util.Random.nextInt(1 + randomNumerator)
+              val nrCookies = randomNumerator / randomDenominator
+              context.ask(distributor, CookieDistributor.GiveMeCookies(nrCookies, _)) {
+                _.map { cfy =>
+                  Log(s"Got ${cfy.nrCookies} from the distributor")
+                }.recover { case scala.util.control.NonFatal(e) => Log(s"Failed to get cookies: ${e.getMessage}") }.get
+              }
+              Behaviors.same
           }
         }
         .receiveSignal {
@@ -155,6 +169,24 @@ object BehaviorTestKitSpec {
       }
     }
 
+  }
+
+  object CookieDistributor {
+    sealed trait Command
+
+    case class GiveMeCookies(nrCookies: Int, replyTo: ActorRef[CookiesForYou]) extends Command
+
+    case class CookiesForYou(nrCookies: Int)
+
+    def apply(cookieInventory: Int): Behavior[Command] =
+      Behaviors.receiveMessage {
+        _ match {
+          case GiveMeCookies(n, r) =>
+            val cookiesGiven = n.min(cookieInventory)
+            r ! CookiesForYou(cookiesGiven)
+            CookieDistributor(cookieInventory - cookiesGiven)
+        }
+      }
   }
 
 }
@@ -481,6 +513,36 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
 
       testkit.run(CancelScheduleCommand("abc"))
       testkit.expectEffect(Effect.TimerCancelled("abc"))
+    }
+  }
+
+  "BehaviorTestKit's Ask" must {
+    "reify the ask for inspection" in {
+      import BehaviorTestKitSpec.CookieDistributor
+      import CookieDistributor._
+
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
+      val cdInbox = TestInbox[CookieDistributor.Command]()
+      testkit.run(AskForCookiesFrom(cdInbox.ref))
+
+      cdInbox.hasMessages shouldBe false
+
+      val effect = testkit.retrieveEffect()
+      effect shouldBe AskInitiated(cdInbox.ref, classOf[CookieDistributor.CookiesForYou])
+      val aiEffect =
+        effect.asInstanceOf[AskInitiated[CookieDistributor.Command, CookieDistributor.CookiesForYou, Parent.Command]]
+      val request = aiEffect.requestFrom(TestInbox[CookieDistributor.CookiesForYou]())
+      request shouldBe a[CookieDistributor.GiveMeCookies]
+      val GiveMeCookies(cookiesRequested, _) = request
+
+      cookiesRequested shouldBe >=(0)
+      cookiesRequested shouldBe <=(12)
+
+      val successResponse = aiEffect.successfulWith(CookiesForYou(0))
+      val timeoutResponse = aiEffect.timeout
+
+      successResponse shouldBe a[Log]
+      timeoutResponse shouldBe a[Log]
     }
   }
 }
