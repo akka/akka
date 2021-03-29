@@ -4,6 +4,8 @@
 
 package akka.remote.serialization
 
+import scala.concurrent.duration.Deadline
+import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
 import akka.actor.ActorRef
@@ -35,12 +37,20 @@ private[akka] object ActorRefResolveThreadLocalCache
 
   override def createExtension(system: ExtendedActorSystem): ActorRefResolveThreadLocalCache =
     new ActorRefResolveThreadLocalCache(system)
+
+  private final case class ActorRefResolveCacheHolder(cache: ActorRefResolveCache, evictDeadine: Deadline)
 }
 
 /**
  * INTERNAL API
  */
 private[akka] class ActorRefResolveThreadLocalCache(val system: ExtendedActorSystem) extends Extension {
+  import ActorRefResolveThreadLocalCache.ActorRefResolveCacheHolder
+
+  val evictInterval: FiniteDuration = {
+    import scala.concurrent.duration._
+    60.seconds // FIXME config
+  }
 
   private val provider = system.provider match {
     case r: RemoteActorRefProvider => r
@@ -50,12 +60,21 @@ private[akka] class ActorRefResolveThreadLocalCache(val system: ExtendedActorSys
         s"not with ${system.provider.getClass}")
   }
 
-  private val current = new ThreadLocal[ActorRefResolveCache] {
-    override def initialValue: ActorRefResolveCache = new ActorRefResolveCache(provider)
+  private val current = new ThreadLocal[ActorRefResolveCacheHolder] {
+    override def initialValue: ActorRefResolveCacheHolder = {
+      ActorRefResolveCacheHolder(new ActorRefResolveCache(provider), Deadline.now + evictInterval)
+    }
   }
 
-  def threadLocalCache(@unused provider: RemoteActorRefProvider): ActorRefResolveCache =
-    current.get
+  def threadLocalCache(@unused provider: RemoteActorRefProvider): ActorRefResolveCache = {
+    val holder = current.get
+    val cache = holder.cache
+    if (holder.evictDeadine.isOverdue()) {
+      cache.clearRemovedAssociations()
+      current.set(ActorRefResolveCacheHolder(cache, Deadline.now + evictInterval))
+    }
+    cache
+  }
 
 }
 
@@ -89,6 +108,19 @@ private[akka] abstract class AbstractActorRefResolveCache[R <: ActorRef: ClassTa
       case _ =>
     }
     ref
+  }
+
+  /**
+   * Invalidate cachedAssociation in all RemoteActorRef entries where the `Association` is removed.
+   */
+  def clearRemovedAssociations(): Unit = {
+    valuesIterator().foreach {
+      case r: RemoteActorRef =>
+        val cachedAssociation = r.cachedAssociation
+        if (cachedAssociation != null && cachedAssociation.isRemovedAfterQuarantined())
+          r.cachedAssociation = null
+      case _ =>
+    }
   }
 
   override protected def compute(k: String): R
