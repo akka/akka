@@ -671,13 +671,15 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream completes
    *
-   * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * `maxNumber` must be positive, and `duration` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def groupedWithin(n: Int, d: FiniteDuration): SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
-    new SubFlow(delegate.groupedWithin(n, d).map(_.asJava)) // TODO optimize to one step
+  def groupedWithin(
+      maxNumber: Int,
+      duration: FiniteDuration): SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
+    new SubFlow(delegate.groupedWithin(maxNumber, duration).map(_.asJava)) // TODO optimize to one step
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
@@ -694,12 +696,14 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream completes
    *
-   * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * `maxNumber` must be positive, and `duration` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
   @nowarn("msg=deprecated")
-  def groupedWithin(n: Int, d: java.time.Duration): SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
-    groupedWithin(n, d.asScala)
+  def groupedWithin(
+      maxNumber: Int,
+      duration: java.time.Duration): SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
+    groupedWithin(maxNumber, duration.asScala)
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
@@ -716,7 +720,7 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream completes
    *
-   * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * `maxWeight` must be positive, and `duration` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
   @Deprecated
@@ -724,8 +728,8 @@ class SubFlow[In, Out, Mat](
   def groupedWeightedWithin(
       maxWeight: Long,
       costFn: function.Function[Out, java.lang.Long],
-      d: FiniteDuration): javadsl.SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
-    new SubFlow(delegate.groupedWeightedWithin(maxWeight, d)(costFn.apply).map(_.asJava))
+      duration: FiniteDuration): javadsl.SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
+    new SubFlow(delegate.groupedWeightedWithin(maxWeight, duration)(costFn.apply).map(_.asJava))
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
@@ -742,15 +746,15 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream completes
    *
-   * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * `maxWeight` must be positive, and `duration` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
   @nowarn("msg=deprecated")
   def groupedWeightedWithin(
       maxWeight: Long,
       costFn: function.Function[Out, java.lang.Long],
-      d: java.time.Duration): javadsl.SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
-    groupedWeightedWithin(maxWeight, costFn, d.asScala)
+      duration: java.time.Duration): javadsl.SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
+    groupedWeightedWithin(maxWeight, costFn, duration.asScala)
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
@@ -768,15 +772,15 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' downstream completes
    *
-   * `maxWeight` must be positive, `maxNumber` must be positive, and `d` must be greater than 0 seconds,
+   * `maxWeight` must be positive, `maxNumber` must be positive, and `duration` must be greater than 0 seconds,
    * otherwise IllegalArgumentException is thrown.
    */
   def groupedWeightedWithin(
       maxWeight: Long,
       maxNumber: Int,
       costFn: function.Function[Out, java.lang.Long],
-      d: java.time.Duration): javadsl.SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
-    new SubFlow(delegate.groupedWeightedWithin(maxWeight, maxNumber, d.asScala)(costFn.apply).map(_.asJava))
+      duration: java.time.Duration): javadsl.SubFlow[In, java.util.List[Out @uncheckedVariance], Mat] =
+    new SubFlow(delegate.groupedWeightedWithin(maxWeight, maxNumber, duration.asScala)(costFn.apply).map(_.asJava))
 
   /**
    * Shifts elements emission in time by a specified amount. It allows to store elements
@@ -901,8 +905,8 @@ class SubFlow[In, Out, Mat](
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def dropWithin(d: FiniteDuration): SubFlow[In, Out, Mat] =
-    new SubFlow(delegate.dropWithin(d))
+  def dropWithin(duration: FiniteDuration): SubFlow[In, Out, Mat] =
+    new SubFlow(delegate.dropWithin(duration))
 
   /**
    * Discard the elements received within the given duration at beginning of the stream.
@@ -916,8 +920,8 @@ class SubFlow[In, Out, Mat](
    * '''Cancels when''' downstream cancels
    */
   @nowarn("msg=deprecated")
-  def dropWithin(d: java.time.Duration): SubFlow[In, Out, Mat] =
-    dropWithin(d.asScala)
+  def dropWithin(duration: java.time.Duration): SubFlow[In, Out, Mat] =
+    dropWithin(duration.asScala)
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
@@ -936,7 +940,7 @@ class SubFlow[In, Out, Mat](
    *
    * '''Cancels when''' predicate returned false or downstream cancels
    */
-  def takeWhile(p: function.Predicate[Out]): SubFlow[In, Out, Mat] = takeWhile(p, false)
+  def takeWhile(p: function.Predicate[Out]): SubFlow[In, Out, Mat] = takeWhile(p, inclusive = false)
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
@@ -1136,8 +1140,8 @@ class SubFlow[In, Out, Mat](
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def takeWithin(d: FiniteDuration): SubFlow[In, Out, Mat] =
-    new SubFlow(delegate.takeWithin(d))
+  def takeWithin(duration: FiniteDuration): SubFlow[In, Out, Mat] =
+    new SubFlow(delegate.takeWithin(duration))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given
@@ -1157,8 +1161,8 @@ class SubFlow[In, Out, Mat](
    * '''Cancels when''' downstream cancels or timer fires
    */
   @nowarn("msg=deprecated")
-  def takeWithin(d: java.time.Duration): SubFlow[In, Out, Mat] =
-    takeWithin(d.asScala)
+  def takeWithin(duration: java.time.Duration): SubFlow[In, Out, Mat] =
+    takeWithin(duration.asScala)
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary

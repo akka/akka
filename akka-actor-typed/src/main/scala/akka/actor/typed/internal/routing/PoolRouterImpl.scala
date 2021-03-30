@@ -4,13 +4,13 @@
 
 package akka.actor.typed.internal.routing
 
-import java.util.function
 import akka.actor.typed._
 import akka.actor.typed.javadsl.PoolRouter
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
 import akka.annotation.InternalApi
 import akka.util.ConstantFun
 
+import java.util.function
 import java.util.function.Predicate
 
 /**
@@ -53,7 +53,8 @@ private[akka] final case class PoolRouterBuilder[T](
 
   def withRouteeProps(routeeProps: Props): PoolRouterBuilder[T] = copy(routeeProps = routeeProps)
 
-  override def withBroadcastPredicate(pred: Predicate[T]): PoolRouter[T] = withBroadcastPredicate(pred.test _)
+  override def withBroadcastPredicate(pred: Predicate[T]): PoolRouter[T] =
+    copy(broadcastPredicate = value => pred.test(value))
 
   override def withBroadcastPredicate(pred: T => Boolean): scaladsl.PoolRouter[T] = copy(broadcastPredicate = pred)
 }

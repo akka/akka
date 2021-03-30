@@ -274,10 +274,14 @@ echolog "Pushing to git origin..."
 important git push origin --tags
 
 echolog "Building docs and pushing to the server..."
-important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'before publishing version $version'; true"
+for section in docs api japi; do
+  important ssh ${release_server} "cd ${release_path}/${section}/akka; git add .; git commit -m 'before publishing version $version $section'; true"
+done
 # using Scala 2.13 here to avoid the infamous problem with missing AskSupport in classpath
 important sbt -Dakka.build.scalaVersion=2.13.0 $RELEASE_OPT publishRsync
-important ssh ${release_server} "cd ${release_path}/docs/akka; git add .; git commit -m 'publish version $version'"
+for section in docs api japi; do
+  important ssh ${release_server} "cd ${release_path}/${section}/akka; git add .; git commit -m 'publish version $version $section'"
+done
 
 echolog "*****"
 echolog "Do not forget to update https://github.com/akka/akka.io/blob/master/versions.json !"

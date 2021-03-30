@@ -4,10 +4,28 @@
 
 package akka.actor.typed.javadsl;
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
+import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
+import akka.actor.testkit.typed.javadsl.TestProbe;
+import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.receptionist.ServiceKey;
+import akka.testkit.AkkaSpec;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.scalatestplus.junit.JUnitSuite;
 
-public class RoutersTest {
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+
+public class RoutersTest extends JUnitSuite {
+
+  @ClassRule
+  public static final TestKitJunitResource testKit = new TestKitJunitResource(AkkaSpec.testConf());
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   public void compileOnlyApiTest() {
 
@@ -18,9 +36,31 @@ public class RoutersTest {
         Routers.pool(5, Behaviors.<String>empty()).withRandomRouting().withRoundRobinRouting();
   }
 
-  public void poolBroadcastCompileOnlyApiTest() {
-    Behavior<String> b = Behaviors.receiveMessage((String str) -> Behaviors.same());
+  @Test
+  public void poolBroadcastTest() {
+    TestProbe<String> probe = testKit.createTestProbe();
+    Behavior<String> behavior =
+        Behaviors.receiveMessage(
+            (String str) -> {
+              probe.getRef().tell(str);
+              return Behaviors.same();
+            });
+
     Behavior<String> poolBehavior =
-        Routers.pool(5, b).withBroadcastPredicate(str -> str.startsWith("bc-"));
+        Routers.pool(4, behavior).withBroadcastPredicate(str -> str.startsWith("bc-"));
+
+    ActorRef<String> pool = testKit.spawn(poolBehavior);
+
+    String notBroadcastMsg = "not-bc-message";
+    pool.tell(notBroadcastMsg);
+
+    String broadcastMsg = "bc-message";
+    pool.tell(broadcastMsg);
+
+    assertEquals(notBroadcastMsg, probe.receiveMessage());
+
+    for (String msg : probe.receiveSeveralMessages(4)) {
+      assertEquals(broadcastMsg, msg);
+    }
   }
 }
