@@ -11,7 +11,7 @@ import akka.stream.testkit.StreamSpec
 
 @nowarn("msg=deprecated")
 class SetupSpec extends StreamSpec {
-  
+
   "Source.setup" should {
 
     "expose materializer" in {

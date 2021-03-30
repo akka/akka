@@ -10,7 +10,7 @@ import akka.stream.Attributes.Attribute
 import akka.stream.testkit.StreamSpec
 
 class FromMaterializerSpec extends StreamSpec {
-  
+
   case class MyAttribute() extends Attribute
   val myAttributes = Attributes(MyAttribute())
 
