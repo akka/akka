@@ -17,7 +17,9 @@ public class ActorSinkWithAckExample {
 
   // #actor-sink-ref-with-backpressure
 
-  enum Ack { INSTANCE; }
+  enum Ack {
+    INSTANCE;
+  }
 
   interface Protocol {}
 
