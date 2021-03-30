@@ -123,8 +123,9 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
       r ! Resolve(name)
       dnsClient1.expectNoMessage(50.millis)
       val answer = senderProbe.expectMsgType[Resolved]
-      val Seq(aaaaRecord) = answer.records.collect {
-        case r: AAAARecord => r
+      val aaaaRecord = answer.records match {
+        case Seq(r: AAAARecord) => r
+        case _                  => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }
       aaaaRecord.name should be("1:2:3:0:0:0:0:0")
       aaaaRecord.ttl should be(Ttl.effectivelyForever)

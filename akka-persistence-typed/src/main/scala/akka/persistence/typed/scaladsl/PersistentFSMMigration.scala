@@ -28,7 +28,7 @@ object PersistentFSMMigration {
       override def fromJournal(from: Any): State = {
         from match {
           case PersistentFSMSnapshot(stateIdentifier, data, timeout) => adapt(stateIdentifier, data, timeout)
-          case data: State @unchecked                                => data
+          case data                                                  => data.asInstanceOf[State]
         }
       }
     }

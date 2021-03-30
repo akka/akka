@@ -25,6 +25,7 @@ import akka.dispatch.Mailboxes
       case _: DispatcherDefault          => classicProps
       case DispatcherFromConfig(name, _) => classicProps.withDispatcher(name)
       case _: DispatcherSameAsParent     => classicProps.withDispatcher(Deploy.DispatcherSameAsParent)
+      case unknown                       => throw new RuntimeException(s"Unsupported dispatcher selector: $unknown")
     }).withDeploy(Deploy.local) // disallow remote deployment for typed actors
 
     val mailboxProps = props.firstOrElse[MailboxSelector](MailboxSelector.default()) match {
@@ -34,6 +35,7 @@ import akka.dispatch.Mailboxes
         dispatcherProps.withMailbox(s"${Mailboxes.BoundedCapacityPrefix}$capacity")
       case MailboxFromConfigSelector(path, _) =>
         dispatcherProps.withMailbox(path)
+      case unknown => throw new RuntimeException(s"Unsupported mailbox selector: $unknown")
     }
 
     val localDeploy = mailboxProps.withDeploy(Deploy.local) // disallow remote deployment for typed actors

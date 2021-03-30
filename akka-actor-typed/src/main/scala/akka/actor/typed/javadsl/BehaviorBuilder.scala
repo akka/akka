@@ -82,7 +82,7 @@ final class BehaviorBuilder[T] private (messageHandlers: List[Case[T, T]], signa
   def onMessageEquals(msg: T, handler: Creator[Behavior[T]]): BehaviorBuilder[T] =
     withMessage[T](
       OptionVal.Some(msg.getClass.asInstanceOf[Class[T]]),
-      OptionVal.Some(_.equals(msg)),
+      OptionVal.Some(_ == msg),
       (_: T) => handler.create())
 
   /**

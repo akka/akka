@@ -38,7 +38,7 @@ object ShardedDaemonProcessSpec {
       """)
 
   object MyActor {
-    trait Command
+    sealed trait Command
     case object Stop extends Command
 
     case class Started(id: Int, selfRef: ActorRef[Command])

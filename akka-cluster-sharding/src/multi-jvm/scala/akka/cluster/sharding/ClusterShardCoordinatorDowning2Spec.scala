@@ -42,6 +42,7 @@ object ClusterShardCoordinatorDowning2Spec {
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case Ping(id: String) => id.charAt(0).toString
+    case _                => throw new IllegalArgumentException()
   }
 }
 

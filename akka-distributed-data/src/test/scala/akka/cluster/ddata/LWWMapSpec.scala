@@ -71,13 +71,19 @@ class LWWMapSpec extends AnyWordSpec with Matchers {
 
     "have unapply extractor" in {
       val m1 = LWWMap.empty[String, Long].put(node1, "a", 1L, defaultClock[Long])
-      val LWWMap(entries1) = m1
+      val entries1 = m1 match {
+        case LWWMap(entries1) => entries1
+        case _                => fail()
+      }
       val entries2: Map[String, Long] = entries1
       entries2 should be(Map("a" -> 1L))
 
       Changed(LWWMapKey[String, Long]("key"))(m1) match {
         case c @ Changed(LWWMapKey("key")) =>
-          val LWWMap(entries3) = c.dataValue
+          val entries3 = c.dataValue match {
+            case LWWMap(entries3) => entries3
+            case _                => fail()
+          }
           val entries4: Map[String, Long] = entries3
           entries4 should be(Map("a" -> 1L))
         case changed =>

@@ -65,18 +65,6 @@ private object ActorRefSource {
           }
         case (_, m: T @unchecked) =>
           buffer match {
-            case OptionVal.None =>
-              if (isCompleting) {
-                log.warning("Dropping element because Status.Success received already: [{}] in stream [{}]", m, name)
-              } else if (isAvailable(out)) {
-                push(out, m)
-              } else {
-                log.debug(
-                  "Dropping element because there is no downstream demand and no buffer: [{}] in stream [{}]",
-                  m,
-                  name)
-              }
-
             case OptionVal.Some(buf) =>
               if (isCompleting) {
                 log.warning(
@@ -130,7 +118,20 @@ private object ActorRefSource {
                     // there is a precondition check in Source.actorRefSource factory method to not allow backpressure as strategy
                     failStage(new IllegalStateException("Backpressure is not supported"))
                 }
+            case _ =>
+              if (isCompleting) {
+                log.warning("Dropping element because Status.Success received already: [{}] in stream [{}]", m, name)
+              } else if (isAvailable(out)) {
+                push(out, m)
+              } else {
+                log.debug(
+                  "Dropping element because there is no downstream demand and no buffer: [{}] in stream [{}]",
+                  m,
+                  name)
+              }
           }
+
+        case _ => throw new IllegalArgumentException() // won't happen, compiler exhaustiveness check pleaser
       }.ref
 
       private def tryPush(): Unit = {

@@ -432,7 +432,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
         val handler = NettySSLSupport(sslProvider, isClient)
         handler.setCloseOnSSLException(true)
         handler
-      case OptionVal.None =>
+      case _ =>
         throw new IllegalStateException("Expected enable-ssl=on")
     }
 
@@ -508,6 +508,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
         val newServerChannel = inboundBootstrap match {
           case b: ServerBootstrap         => b.bind(address)
           case b: ConnectionlessBootstrap => b.bind(address)
+          case _                          => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
         }
 
         // Block reads until a handler actor is registered

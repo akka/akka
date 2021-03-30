@@ -7,11 +7,8 @@ package akka.remote.artery
 import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.NANOSECONDS
-
 import scala.concurrent.duration._
-
 import com.typesafe.config.ConfigFactory
-
 import akka.actor._
 import akka.remote.{ RARP, RemoteActorRefProvider, RemotingMultiNodeSpec }
 import akka.remote.artery.compress.CompressionProtocol.Events.ReceivedActorRefCompressionTable
@@ -20,6 +17,8 @@ import akka.remote.testkit.{ MultiNodeConfig, PerfFlamesSupport }
 import akka.serialization.{ ByteBufferSerializer, SerializerWithStringManifest }
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
+
+import java.io.NotSerializableException
 
 object MaxThroughputSpec extends MultiNodeConfig {
   val first = role("first")
@@ -326,6 +325,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
     override def manifest(o: AnyRef): String =
       o match {
         case _: FlowControl => FlowControlManifest
+        case _              => throw new NotSerializableException()
       }
 
     override def toBinary(o: AnyRef, buf: ByteBuffer): Unit =
@@ -333,11 +333,13 @@ object MaxThroughputSpec extends MultiNodeConfig {
         case FlowControl(id, burstStartTime) =>
           buf.putInt(id)
           buf.putLong(burstStartTime)
+        case _ => throw new NotSerializableException()
       }
 
     override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef =
       manifest match {
         case FlowControlManifest => FlowControl(buf.getInt, buf.getLong)
+        case _                   => throw new NotSerializableException()
       }
 
     override def toBinary(o: AnyRef): Array[Byte] = o match {
@@ -348,6 +350,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
         val bytes = new Array[Byte](buf.remaining)
         buf.get(bytes)
         bytes
+      case _ => throw new NotSerializableException()
     }
 
     override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =

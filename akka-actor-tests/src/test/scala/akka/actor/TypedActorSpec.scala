@@ -212,6 +212,7 @@ object TypedActorSpec {
     override def onReceive(msg: Any, sender: ActorRef): Unit = {
       ensureContextAvailable(msg match {
         case "pigdog" => sender ! "dogpig"
+        case _        =>
       })
     }
   }

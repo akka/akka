@@ -122,6 +122,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
         config match {
           case BoundedMailbox(capacity, _) => aQueue.remainingCapacity should ===(capacity)
           case UnboundedMailbox()          => aQueue.remainingCapacity should ===(Int.MaxValue)
+          case _                           => fail()
         }
       case _ =>
     }
@@ -187,6 +188,7 @@ class DefaultMailboxSpec extends MailboxSpec {
   def factory = {
     case u: UnboundedMailbox => u.create(None, None)
     case b: BoundedMailbox   => b.create(None, None)
+    case _                   => throw new RuntimeException() // compiler exhaustiveness check pleaser
   }
 }
 
@@ -197,6 +199,7 @@ class PriorityMailboxSpec extends MailboxSpec {
     case UnboundedMailbox() => new UnboundedPriorityMailbox(comparator).create(None, None)
     case BoundedMailbox(capacity, pushTimeOut) =>
       new BoundedPriorityMailbox(comparator, capacity, pushTimeOut).create(None, None)
+    case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
   }
 }
 
@@ -207,6 +210,7 @@ class StablePriorityMailboxSpec extends MailboxSpec {
     case UnboundedMailbox() => new UnboundedStablePriorityMailbox(comparator).create(None, None)
     case BoundedMailbox(capacity, pushTimeOut) =>
       new BoundedStablePriorityMailbox(comparator, capacity, pushTimeOut).create(None, None)
+    case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
   }
 }
 
@@ -216,6 +220,7 @@ class ControlAwareMailboxSpec extends MailboxSpec {
     case UnboundedMailbox() => new UnboundedControlAwareMailbox().create(None, None)
     case BoundedMailbox(capacity, pushTimeOut) =>
       new BoundedControlAwareMailbox(capacity, pushTimeOut).create(None, None)
+    case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
   }
 }
 
@@ -258,6 +263,7 @@ class SingleConsumerOnlyMailboxSpec extends MailboxSpec {
   def factory = {
     case _: UnboundedMailbox            => SingleConsumerOnlyUnboundedMailbox().create(None, None)
     case _ @BoundedMailbox(capacity, _) => NonBlockingBoundedMailbox(capacity).create(None, None)
+    case _                              => throw new RuntimeException() // compiler exhaustiveness check pleaser
   }
 }
 

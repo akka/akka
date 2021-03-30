@@ -6,11 +6,8 @@ package akka.serialization
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
-
 import scala.concurrent.Future
-
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.ExtendedActorSystem
 import akka.testkit.{ AkkaSpec, EventFilter }
 
@@ -45,6 +42,7 @@ object AsyncSerializeSpec {
       o match {
         case Message1(msg) => Future.successful(msg.getBytes)
         case Message2(msg) => Future.successful(msg.getBytes)
+        case _             => throw new IllegalArgumentException(s"Unknown type $o")
       }
     }
 
@@ -52,6 +50,7 @@ object AsyncSerializeSpec {
       manifest match {
         case "1" => Future.successful(Message1(new String(bytes)))
         case "2" => Future.successful(Message2(new String(bytes)))
+        case _   => throw new IllegalArgumentException(s"Unknown manifest $manifest")
       }
     }
 
@@ -60,6 +59,7 @@ object AsyncSerializeSpec {
     override def manifest(o: AnyRef): String = o match {
       case _: Message1 => "1"
       case _: Message2 => "2"
+      case _           => throw new IllegalArgumentException(s"Unknown type $o")
     }
   }
 
@@ -69,6 +69,7 @@ object AsyncSerializeSpec {
       o match {
         case Message3(msg) => CompletableFuture.completedFuture(msg.getBytes)
         case Message4(msg) => CompletableFuture.completedFuture(msg.getBytes)
+        case _             => throw new IllegalArgumentException(s"Unknown type $o")
       }
     }
 
@@ -76,6 +77,7 @@ object AsyncSerializeSpec {
       manifest match {
         case "1" => CompletableFuture.completedFuture(Message3(new String(bytes)))
         case "2" => CompletableFuture.completedFuture(Message4(new String(bytes)))
+        case _   => throw new IllegalArgumentException(s"Unknown manifest $manifest")
       }
     }
 
@@ -84,6 +86,7 @@ object AsyncSerializeSpec {
     override def manifest(o: AnyRef): String = o match {
       case _: Message3 => "1"
       case _: Message4 => "2"
+      case _           => throw new IllegalArgumentException(s"Unknown type $o")
     }
   }
 

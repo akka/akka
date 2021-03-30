@@ -592,6 +592,7 @@ object Flow {
       .flatMapPrefix(1) {
         case Seq(a) => futureFlow(flowFactory(a)).mapMaterializedValue(_ => NotUsed)
         case Nil    => Flow[I].asInstanceOf[Flow[I, O, NotUsed]]
+        case _      => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
       }
       .mapMaterializedValue(_ => fallback())
 
@@ -702,6 +703,7 @@ object Flow {
             .asInstanceOf[Flow[I, O, NotUsed]]
             .mapMaterializedValue(_ => Future.failed[M](new NeverMaterializedException()))
           f
+        case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
       }(Keep.right)
       .addAttributes(Attributes(SourceLocation.forLambda(create)))
       .mapMaterializedValue(_.flatten)

@@ -102,7 +102,7 @@ private[akka] final class BehaviorSetup[C, E, S](
   def cancelRecoveryTimer(): Unit = {
     recoveryTimer match {
       case OptionVal.Some(t) => t.cancel()
-      case OptionVal.None    =>
+      case _                 =>
     }
     recoveryTimer = OptionVal.None
   }
@@ -141,6 +141,7 @@ private[akka] final class BehaviorSetup[C, E, S](
         if (s.snapshotWhen(sequenceNr)) SnapshotWithRetention
         else if (snapshotWhen(state, event, sequenceNr)) SnapshotWithoutRetention
         else NoSnapshot
+      case unexpected => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
     }
   }
 

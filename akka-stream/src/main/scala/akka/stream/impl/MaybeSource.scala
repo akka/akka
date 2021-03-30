@@ -47,7 +47,7 @@ import akka.util.OptionVal
         case OptionVal.Some(value) =>
           push(out, value)
           completeStage()
-        case OptionVal.None =>
+        case _ =>
       }
 
       private def handleCompletion(elem: Try[Option[AnyRef]]): Unit = {

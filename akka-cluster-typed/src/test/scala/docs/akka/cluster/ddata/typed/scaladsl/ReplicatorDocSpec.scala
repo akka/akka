@@ -98,6 +98,10 @@ object ReplicatorDocSpec {
 
                   case InternalSubscribeResponse(Replicator.Deleted(_)) =>
                     Behaviors.unhandled // no deletes
+
+                  case InternalSubscribeResponse(_) => // changed but wrong key
+                    Behaviors.unhandled
+
                 }
             }
           }

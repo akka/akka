@@ -255,7 +255,7 @@ object Framing {
           // Retrive previous position
           val previous = indices.lastOption match {
             case OptionVal.Some((_, i)) => i + separatorBytes.size
-            case OptionVal.None         => 0
+            case _                      => 0
           }
 
           if (possibleMatchPos - previous > maximumLineBytes) {
@@ -315,7 +315,7 @@ object Framing {
         private def reset(): Unit = {
           val previous = indices.lastOption match {
             case OptionVal.Some((_, i)) => i + separatorBytes.size
-            case OptionVal.None         => 0
+            case _                      => 0
           }
 
           buffer = buffer.drop(previous).compact
@@ -378,6 +378,7 @@ object Framing {
     private val intDecoder = byteOrder match {
       case ByteOrder.BIG_ENDIAN    => bigEndianDecoder
       case ByteOrder.LITTLE_ENDIAN => littleEndianDecoder
+      case _                       => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
     }
 
     val in = Inlet[ByteString]("LengthFieldFramingStage.in")

@@ -78,11 +78,13 @@ class FlowSectionSpec extends StreamSpec(FlowSectionSpec.config) {
       Source(0 to 2).via(f1).via(f2).runWith(Sink.ignore)
 
       defaultDispatcher.receiveN(3).foreach {
-        case s: String => s should include("akka.test.stream-dispatcher")
+        case s: String  => s should include("akka.test.stream-dispatcher")
+        case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
       }
 
       customDispatcher.receiveN(3).foreach {
-        case s: String => s should include("my-dispatcher1")
+        case s: String  => s should include("my-dispatcher1")
+        case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
       }
     }
 

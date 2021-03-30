@@ -140,7 +140,7 @@ import akka.util.Timeout
       .narrow
   }
 
-  private def createInitialState[A: ClassTag](hasDurableQueue: Boolean) = {
+  private def createInitialState[A](hasDurableQueue: Boolean) = {
     if (hasDurableQueue) None else Some(DurableProducerQueue.State.empty[A])
   }
 
@@ -158,6 +158,7 @@ import akka.util.Timeout
       s.unconfirmed.foreach {
         case DurableProducerQueue.MessageSent(oldSeqNr, msg, _, oldConfirmationQualifier, _) =>
           context.self ! ResendDurableMsg(msg, oldConfirmationQualifier, oldSeqNr)
+        case _ => // please compiler exhaustiveness check
       }
 
       val msgAdapter: ActorRef[A] = context.messageAdapter(msg => Msg(msg, wasStashed = false, replyTo = None))
@@ -220,12 +221,12 @@ import akka.util.Timeout
     }
   }
 
-  private def checkStashFull[A: ClassTag](stashBuffer: StashBuffer[InternalCommand]): Unit = {
+  private def checkStashFull[A](stashBuffer: StashBuffer[InternalCommand]): Unit = {
     if (stashBuffer.isFull)
       throw new IllegalArgumentException(s"Buffer is full, size [${stashBuffer.size}].")
   }
 
-  private def askLoadState[A: ClassTag](
+  private def askLoadState[A](
       context: ActorContext[InternalCommand],
       durableQueueBehavior: Option[Behavior[DurableProducerQueue.Command[A]]],
       settings: WorkPullingProducerController.Settings): Option[ActorRef[DurableProducerQueue.Command[A]]] = {
@@ -238,7 +239,7 @@ import akka.util.Timeout
     }
   }
 
-  private def askLoadState[A: ClassTag](
+  private def askLoadState[A](
       context: ActorContext[InternalCommand],
       durableQueue: Option[ActorRef[DurableProducerQueue.Command[A]]],
       settings: WorkPullingProducerController.Settings,
@@ -658,6 +659,8 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
       case DurableQueueTerminated =>
         throw new IllegalStateException("DurableQueue was unexpectedly terminated.")
 
+      case unexpected =>
+        throw new RuntimeException(s"Unexpected message: $unexpected")
     }
   }
 

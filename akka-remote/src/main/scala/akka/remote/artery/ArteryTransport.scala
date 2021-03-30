@@ -454,7 +454,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         val hashA = 23 + a
         val hash: Int = 23 * hashA + java.lang.Long.hashCode(b)
         math.abs(hash % inboundLanes)
-      case OptionVal.None =>
+      case _ =>
         // the lane is set by the DuplicateHandshakeReq stage, otherwise 0
         env.lane
     }
@@ -855,7 +855,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
                   if (!isShutdown)
                     quarantine(from.address, Some(from.uid), "ActorSystem terminated", harmless = true)
                 }(materializer.executionContext)
-            case OptionVal.None =>
+            case _ =>
               log.error("Expected sender for ActorSystemTerminating message from [{}]", from)
           }
           false
@@ -874,7 +874,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
           envelope.sender match {
             case OptionVal.Some(snd) =>
               snd.tell(FlushAck, ActorRef.noSender)
-            case OptionVal.None =>
+            case _ =>
               log.error("Expected sender for Flush message from [{}]", envelope.association)
           }
           false

@@ -43,6 +43,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
     case _: SinkRefImpl[_] => SinkRefManifest
     //    case _: MaterializedSinkRef[_]                   => SinkRefManifest
     case StreamRefsProtocol.Ack => AckManifest
+    case unknown                => throw new IllegalArgumentException(s"Unsupported object ${unknown.getClass}")
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
@@ -60,6 +61,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
     case ref: SourceRefImpl[_] => serializeSourceRef(ref).toByteArray
     //    case ref: MaterializedSourceRef[_]               => serializeSourceRef(ref.).toByteArray
     case StreamRefsProtocol.Ack => Array.emptyByteArray
+    case unknown                => throw new IllegalArgumentException(s"Unsupported object ${unknown.getClass}")
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
@@ -73,6 +75,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
     case SinkRefManifest   => deserializeSinkRef(bytes)
     case SourceRefManifest => deserializeSourceRef(bytes)
     case AckManifest       => StreamRefsProtocol.Ack
+    case unknown           => throw new IllegalArgumentException(s"Unsupported manifest '$unknown''")
   }
 
   // -----

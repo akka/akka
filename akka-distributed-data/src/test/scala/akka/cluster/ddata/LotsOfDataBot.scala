@@ -115,7 +115,10 @@ class LotsOfDataBot extends Actor with ActorLogging {
     case _: UpdateResponse[_] => // ignore
 
     case c @ Changed(ORSetKey(id)) =>
-      val ORSet(elements) = c.dataValue
+      val elements = c.dataValue match {
+        case ORSet(e) => e
+        case _        => throw new RuntimeException()
+      }
       log.info("Current elements: {} -> {}", id, elements)
   }
 
@@ -130,7 +133,10 @@ class LotsOfDataBot extends Actor with ActorLogging {
         log.info("It took {} ms to replicate {} entries", duration, keys.size)
       }
     case c @ Changed(ORSetKey(id)) =>
-      val ORSet(elements) = c.dataValue
+      val elements = c.dataValue match {
+        case ORSet(e) => e
+        case _        => throw new RuntimeException()
+      }
       log.info("Current elements: {} -> {}", id, elements)
   }
 

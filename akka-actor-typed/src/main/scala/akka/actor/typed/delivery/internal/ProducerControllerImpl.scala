@@ -193,7 +193,7 @@ object ProducerControllerImpl {
       .narrow
   }
 
-  private def askLoadState[A: ClassTag](
+  private def askLoadState[A](
       context: ActorContext[InternalCommand],
       durableQueueBehavior: Option[Behavior[DurableProducerQueue.Command[A]]],
       settings: ProducerController.Settings): Option[ActorRef[DurableProducerQueue.Command[A]]] = {
@@ -206,7 +206,7 @@ object ProducerControllerImpl {
     }
   }
 
-  private def askLoadState[A: ClassTag](
+  private def askLoadState[A](
       context: ActorContext[InternalCommand],
       durableQueue: Option[ActorRef[DurableProducerQueue.Command[A]]],
       settings: ProducerController.Settings,
@@ -222,11 +222,11 @@ object ProducerControllerImpl {
     }
   }
 
-  private def createInitialState[A: ClassTag](hasDurableQueue: Boolean) = {
+  private def createInitialState[A](hasDurableQueue: Boolean) = {
     if (hasDurableQueue) None else Some(DurableProducerQueue.State.empty[A])
   }
 
-  private def createState[A: ClassTag](
+  private def createState[A](
       self: ActorRef[InternalCommand],
       producerId: String,
       send: SequencedMessage[A] => Unit,
@@ -825,6 +825,9 @@ private class ProducerControllerImpl[A: ClassTag](
 
       case DurableQueueTerminated =>
         throw new IllegalStateException("DurableQueue was unexpectedly terminated.")
+
+      case unexpected =>
+        throw new RuntimeException(s"Unexpected message: $unexpected")
     }
   }
 

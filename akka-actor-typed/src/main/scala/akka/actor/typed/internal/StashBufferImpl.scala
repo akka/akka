@@ -219,8 +219,8 @@ import java.util.function.Predicate
         throw new IllegalArgumentException("Cannot unstash with unhandled as starting behavior")
       else if (started == BehaviorImpl.same) {
         currentBehaviorWhenUnstashInProgress match {
-          case OptionVal.None    => ctx.asScala.currentBehavior
           case OptionVal.Some(c) => c
+          case _                 => ctx.asScala.currentBehavior
         }
       } else started
 

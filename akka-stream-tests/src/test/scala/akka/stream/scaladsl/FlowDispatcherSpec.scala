@@ -25,7 +25,8 @@ class FlowDispatcherSpec extends StreamSpec(s"my-dispatcher = $${akka.test.strea
     val probe = TestProbe()
     Source(List(1, 2, 3)).map(i => { probe.ref ! Thread.currentThread().getName(); i }).to(Sink.ignore).run()
     probe.receiveN(3).foreach {
-      case s: String => s should startWith(system.name + "-" + dispatcher)
+      case s: String  => s should startWith(system.name + "-" + dispatcher)
+      case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
     }
   }
 

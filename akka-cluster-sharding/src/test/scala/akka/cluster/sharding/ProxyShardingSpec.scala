@@ -36,11 +36,12 @@ class ProxyShardingSpec extends AkkaSpec(ProxyShardingSpec.config) with WithLogC
   }
 
   val idExtractor: ShardRegion.ExtractEntityId = {
-    case msg @ id => (id.toString, msg)
+    case msg => (msg.toString, msg)
   }
 
   val shardResolver: ShardRegion.ExtractShardId = {
     case id: Int => id.toString
+    case _       => throw new IllegalArgumentException()
   }
 
   val shardProxy: ActorRef =

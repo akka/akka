@@ -100,6 +100,8 @@ private[akka] object AdapterClusterImpl {
           case _: MemberEvent =>
             Behaviors.same
 
+          case _ => throw new IllegalArgumentException() // compiler exhaustiveness check pleaser
+
         }
         .receiveSignal {
 

@@ -30,6 +30,7 @@ object StablePriorityDispatcherSpec {
         case i: Int if i <= 100 => i // Small integers have high priority
         case _: Int             => 101 // Don't care for other integers
         case Result             => Int.MaxValue
+        case _                  => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }: Any => Int))
 
   class Bounded(@unused settings: ActorSystem.Settings, @unused config: Config)
@@ -37,6 +38,7 @@ object StablePriorityDispatcherSpec {
         case i: Int if i <= 100 => i // Small integers have high priority
         case _: Int             => 101 // Don't care for other integers
         case Result             => Int.MaxValue
+        case _                  => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }: Any => Int), 1000, 10 seconds)
 
 }

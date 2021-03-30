@@ -105,6 +105,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     case x if x eq Duration.Undefined => duration
     case x if !x.isFinite             => throw new IllegalArgumentException("`end` cannot be infinite")
     case f: FiniteDuration            => f - now
+    case _                            => throw new RuntimeException() // compiler exhaustiveness check pleaser
   }
 
   override def getRemainingOr(duration: JDuration): JDuration =
@@ -266,8 +267,15 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   override def fishForMessage(max: FiniteDuration, hint: String)(fisher: M => FishingOutcome): immutable.Seq[M] =
     fishForMessage_internal(max.dilated, hint, fisher)
 
+  override def fishForMessagePF(max: FiniteDuration, hint: String)(
+      fisher: PartialFunction[M, FishingOutcome]): immutable.Seq[M] =
+    fishForMessage(max, hint)(fisher)
+
   override def fishForMessage(max: FiniteDuration)(fisher: M => FishingOutcome): immutable.Seq[M] =
     fishForMessage(max, "")(fisher)
+
+  override def fishForMessagePF(max: FiniteDuration)(fisher: PartialFunction[M, FishingOutcome]): immutable.Seq[M] =
+    fishForMessage(max)(fisher)
 
   override def fishForMessage(max: JDuration, fisher: java.util.function.Function[M, FishingOutcome]): JList[M] =
     fishForMessage(max, "", fisher)

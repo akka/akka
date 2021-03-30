@@ -166,10 +166,12 @@ import akka.util.ccompat._
       override def onPush(): Unit = {
         val elem = grab(in)
         withSupervision(() => p(elem)) match {
-          case Some(flag) if flag => pull(in)
-          case Some(flag) if !flag =>
-            push(out, elem)
-            setHandler(in, rest)
+          case Some(flag) =>
+            if (flag) pull(in)
+            else {
+              push(out, elem)
+              setHandler(in, rest)
+            }
           case None => // do nothing
         }
       }
@@ -245,6 +247,7 @@ private[stream] object Collect {
           result match {
             case NotApplied             => pull(in)
             case result: Out @unchecked => push(out, result)
+            case _                      => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
           }
         case None => //do nothing
       }
@@ -298,6 +301,7 @@ private[stream] object Collect {
               recovered = Some(result)
             }
           }
+          case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
         } catch {
           case NonFatal(ex) => failStage(ex)
         }
@@ -523,12 +527,15 @@ private[stream] object Collect {
       }
 
       private val futureCB = getAsyncCallback[Try[Out]] {
-        case Success(next) if next != null =>
-          current = next
-          pushAndPullOrFinish(next)
-          elementHandled = true
-        case Success(null) => doSupervision(ReactiveStreamsCompliance.elementMustNotBeNullException)
-        case Failure(t)    => doSupervision(t)
+        case Success(next) =>
+          if (next != null) {
+            current = next
+            pushAndPullOrFinish(next)
+            elementHandled = true
+          } else {
+            doSupervision(ReactiveStreamsCompliance.elementMustNotBeNullException)
+          }
+        case Failure(t) => doSupervision(t)
       }.invoke _
 
       setHandlers(in, out, ZeroHandler)
@@ -663,8 +670,10 @@ private[stream] object Collect {
         case other =>
           val ex = other match {
             case Failure(t) => t
-            case Success(s) if s == null =>
+            case Success(null) =>
               ReactiveStreamsCompliance.elementMustNotBeNullException
+            case Success(_) =>
+              throw new IllegalArgumentException() // won't happen, compiler exhaustiveness check pleaser
           }
           val supervision = decider(ex)
 
@@ -1227,7 +1236,7 @@ private[stream] object Collect {
     def supervisionDirectiveFor(decider: Supervision.Decider, ex: Throwable): Supervision.Directive = {
       cachedSupervisionDirective match {
         case OptionVal.Some(d) => d
-        case OptionVal.None =>
+        case _ =>
           val d = decider(ex)
           cachedSupervisionDirective = OptionVal.Some(d)
           d
@@ -1319,13 +1328,15 @@ private[stream] object Collect {
         else if (isAvailable(out)) {
           val holder = buffer.dequeue()
           holder.elem match {
-            case Success(elem) if elem != null =>
-              push(out, elem)
-              pullIfNeeded()
-
-            case Success(null) =>
-              pullIfNeeded()
-              pushNextIfPossible()
+            case Success(elem) =>
+              if (elem != null) {
+                push(out, elem)
+                pullIfNeeded()
+              } else {
+                // elem is null
+                pullIfNeeded()
+                pushNextIfPossible()
+              }
 
             case Failure(NonFatal(ex)) =>
               holder.supervisionDirectiveFor(decider, ex) match {
@@ -1336,6 +1347,9 @@ private[stream] object Collect {
                   // try next element
                   pushNextIfPossible()
               }
+            case Failure(ex) =>
+              // fatal exception in buffer, not sure that it can actually happen, but for good measure
+              throw ex
           }
         }
 
@@ -1386,7 +1400,7 @@ private[stream] object Collect {
               push(out, elem)
               if (isCompleted) completeStage()
             } else buffer.enqueue(elem)
-          case Success(null) =>
+          case Success(_) =>
             if (isCompleted) completeStage()
             else if (!hasBeenPulled(in)) tryPull(in)
           case Failure(ex) =>

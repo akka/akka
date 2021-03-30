@@ -133,6 +133,8 @@ final private[akka] class EventsByPersistenceIdStage(
 
           case EventAppended(_) =>
             requestMore()
+
+          case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
         }
       }
 

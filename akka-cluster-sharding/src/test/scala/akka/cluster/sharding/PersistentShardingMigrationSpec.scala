@@ -99,6 +99,7 @@ object PersistentShardingMigrationSpec {
       // StartEntity is used by remembering entities feature
       probe ! id
       id
+    case _ => throw new IllegalArgumentException()
   }
 }
 

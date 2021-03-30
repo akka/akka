@@ -69,6 +69,8 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
           case null                  => throw new NullPointerException
           case x if !t.isInstance(x) => throw new ClassCastException(fqcn + " is not a subtype of " + t)
           case x: T                  => x
+          case unexpected =>
+            throw new IllegalArgumentException(s"Unexpected module field: $unexpected") // will not happen, for exhaustiveness check
         }
       }.recover { case i: InvocationTargetException if i.getTargetException ne null => throw i.getTargetException }
     }

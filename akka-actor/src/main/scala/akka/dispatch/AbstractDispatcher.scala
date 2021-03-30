@@ -186,6 +186,8 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
         if (updateShutdownSchedule(SCHEDULED, RESCHEDULED)) ()
         else ifSensibleToDoSoThenScheduleShutdown()
       case RESCHEDULED =>
+      case unexpected =>
+        throw new IllegalArgumentException(s"Unexpected actor class marker: $unexpected") // will not happen, for exhaustiveness check
     }
   }
 
@@ -245,6 +247,8 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
           if (updateShutdownSchedule(RESCHEDULED, SCHEDULED)) scheduleShutdownAction()
           else run()
         case UNSCHEDULED =>
+        case unexpected =>
+          throw new IllegalArgumentException(s"Unexpected actor class marker: $unexpected") // will not happen, for exhaustiveness check
       }
     }
   }

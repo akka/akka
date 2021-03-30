@@ -116,11 +116,11 @@ import scala.util.{ Failure, Success, Try }
             innerMatValue.success(matVal)
             upstreamFailure match {
               case OptionVal.Some(ex) => subSource.fail(ex)
-              case OptionVal.None     => if (isClosed(in)) subSource.complete()
+              case _                  => if (isClosed(in)) subSource.complete()
             }
             downstreamCause match {
               case OptionVal.Some(cause) => subSink.cancel(cause)
-              case OptionVal.None        => if (isAvailable(out)) subSink.pull()
+              case _                     => if (isAvailable(out)) subSink.pull()
             }
             setHandlers(in, out, new InHandler with OutHandler {
               override def onPull(): Unit = subSink.pull()

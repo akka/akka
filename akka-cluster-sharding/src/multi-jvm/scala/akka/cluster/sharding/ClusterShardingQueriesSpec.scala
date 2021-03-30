@@ -23,6 +23,7 @@ object ClusterShardingQueriesSpec {
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case PingPongActor.Ping(id) => (id % numberOfShards).toString
+    case _                      => throw new RuntimeException()
   }
 
   val shardTypeName = "DatatypeA"

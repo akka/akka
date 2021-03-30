@@ -69,6 +69,7 @@ object ScalaTestMessages {
   final class SimpleCommandNotCaseClass(val name: String) extends TestMessage {
     override def equals(obj: Any): Boolean = obj match {
       case other: SimpleCommandNotCaseClass => other.name == name
+      case _                                => false
     }
     override def hashCode(): Int = name.hashCode
   }

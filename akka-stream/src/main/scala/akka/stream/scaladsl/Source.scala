@@ -808,6 +808,7 @@ object Source {
       case immutable.Seq()       => empty[O]
       case immutable.Seq(source) => source.map(t => zipper(immutable.Seq(t))).mapMaterializedValue(_ => NotUsed)
       case s1 +: s2 +: ss        => combine(s1, s2, ss: _*)(ZipWithN(zipper))
+      case _                     => throw new IllegalArgumentException() // just to please compiler completeness check
     }
 
     source.addAttributes(DefaultAttributes.zipWithN)

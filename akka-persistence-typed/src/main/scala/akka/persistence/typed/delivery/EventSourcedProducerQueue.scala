@@ -266,6 +266,9 @@ private class EventSourcedProducerQueue[A](
 
         case _: CleanupTick[_] =>
           onCleanupTick(state)
+
+        case cmd =>
+          throw new RuntimeException(s"Unexpected command $cmd")
       }
     } else {
       onCommandBeforeInitialCleanup(state, command)

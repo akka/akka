@@ -208,6 +208,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               ChangeFromReplicator(
                 changed.key.asInstanceOf[DDataKey],
                 changed.dataValue.asInstanceOf[ORMultiMap[ServiceKey[_], Entry]])
+            case _ => throw new IllegalArgumentException() // compiler exhaustiveness check pleaser
           }
 
         initialRegistry.allDdataKeys.foreach(key =>
@@ -402,6 +403,9 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             ctx.log.error("ClusterReceptionist [{}] - Subscriptions from non-local [{}] is not supported", subscriber)
             Behaviors.same
           }
+
+        case _ =>
+          throw new IllegalArgumentException() // to please exhaustiveness check, compiler does not know about internal/public command
 
       }
 

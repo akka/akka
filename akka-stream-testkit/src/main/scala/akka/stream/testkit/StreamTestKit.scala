@@ -587,6 +587,7 @@ object TestSubscriber {
       } match {
         case OnNext(n: I @unchecked) => Right(n)
         case OnError(err)            => Left(err)
+        case _                       => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }
     }
 
@@ -601,6 +602,7 @@ object TestSubscriber {
       } match {
         case OnNext(n: I @unchecked) => Right(n)
         case OnError(err)            => Left(err)
+        case _                       => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }
     }
 
@@ -614,6 +616,7 @@ object TestSubscriber {
       } match {
         case OnComplete              => Left(OnComplete)
         case OnNext(n: I @unchecked) => Right(n)
+        case _                       => throw new RuntimeException() // compiler exhaustiveness check pleaser
       }
     }
 
@@ -766,6 +769,7 @@ object TestSubscriber {
           case OnNext(i: I @unchecked) =>
             b += i
             drain()
+          case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
         }
 
       // if no subscription was obtained yet, we expect it

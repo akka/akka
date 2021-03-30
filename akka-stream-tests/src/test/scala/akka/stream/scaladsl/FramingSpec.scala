@@ -188,6 +188,7 @@ class FramingSpec extends StreamSpec {
         byteOrder match {
           case ByteOrder.LITTLE_ENDIAN => h.take(fieldLength)
           case ByteOrder.BIG_ENDIAN    => h.drop(4 - fieldLength)
+          case unexpected              => throw new RuntimeException(s"Unexpected: $unexpected")
         }
       }
       offset ++ header ++ payload ++ tail

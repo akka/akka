@@ -113,6 +113,8 @@ import akka.util.ByteString
               unbindPromise.tryFailure(ex)
               failStage(ex)
             }
+          case other =>
+            log.warning("Unexpected message to TcpStage: [{}]", other.getClass)
         }
       }
 
@@ -184,6 +186,8 @@ import akka.util.ByteString
       override def onTimer(timerKey: Any): Unit = timerKey match {
         case BindShutdownTimer =>
           completeStage() // TODO need to manually shut down instead right?
+        case other =>
+          throw new IllegalArgumentException(s"Unknown timer key $other")
       }
 
       override def postStop(): Unit = {
@@ -278,6 +282,7 @@ private[stream] object ConnectionSourceStage {
         case ob @ Outbound(manager, cmd, _, _) =>
           getStageActor(connecting(ob)).watch(manager)
           manager ! cmd
+        case other => throw new IllegalArgumentException(s"Unsupported TCP role: ${other}")
       }
     }
 
@@ -300,6 +305,7 @@ private[stream] object ConnectionSourceStage {
           if (isAvailable(bytesOut)) connection ! ResumeReading
           if (isClosed(bytesIn)) connection ! ConfirmedClose
           else pull(bytesIn)
+        case other => log.warning("Unexpected message to connecting TcpStage: [{}]", other.getClass)
       }
     }
 
@@ -336,6 +342,8 @@ private[stream] object ConnectionSourceStage {
         case Closed             => completeStage()
         case ConfirmedClosed    => completeStage()
         case PeerClosed         => complete(bytesOut)
+        case other =>
+          log.warning("Unexpected message to connected TcpStage: [{}]", other.getClass)
       }
     }
 

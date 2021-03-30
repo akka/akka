@@ -80,6 +80,7 @@ class GraphZipWithSpec extends TwoStreamsSetup {
       }
       probe.expectError() match {
         case a: java.lang.ArithmeticException => a.getMessage should be("/ by zero")
+        case unexpected                       => throw new RuntimeException(s"Unexpected: $unexpected")
       }
       probe.expectNoMessage(200.millis)
     }

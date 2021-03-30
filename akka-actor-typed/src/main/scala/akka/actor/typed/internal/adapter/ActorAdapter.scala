@@ -102,8 +102,9 @@ import akka.util.OptionVal
           adaptAndHandle(msg)
         case signal: Signal =>
           handleSignal(signal)
-        case msg: T @unchecked =>
-          handleMessage(msg)
+        case msg =>
+          val t = msg.asInstanceOf[T]
+          handleMessage(t)
       }
     } finally {
       ctx.clearCurrentActorThread()
@@ -119,9 +120,9 @@ import akka.util.OptionVal
           case timerMsg: TimerMsg =>
             //we can only get this kind of message if the timer is of this concrete class
             c.timer.asInstanceOf[TimerSchedulerImpl[T]].interceptTimerMsg(ctx.log, timerMsg) match {
-              case OptionVal.None => // means TimerMsg not applicable, discard
               case OptionVal.Some(m) =>
                 next(Behavior.interpretMessage(behavior, c, m), m)
+              case _ => // means TimerMsg not applicable, discard
             }
           case _ =>
             next(Behavior.interpretMessage(behavior, c, msg), msg)

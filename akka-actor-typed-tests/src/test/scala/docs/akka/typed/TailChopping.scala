@@ -31,8 +31,8 @@ object TailChopping {
 
         def waiting(requestCount: Int): Behavior[Command] = {
           Behaviors.receiveMessage {
-            case WrappedReply(reply: Reply) =>
-              replyTo ! reply
+            case WrappedReply(reply) =>
+              replyTo ! reply.asInstanceOf[Reply]
               Behaviors.stopped
 
             case RequestTimeout =>

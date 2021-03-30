@@ -35,7 +35,7 @@ object GroupRouterSpec {
 
   case object Ping extends CborSerializable
 
-  trait Command
+  sealed trait Command
   case class UpdateWorker(actorRef: ActorRef[Ping.type]) extends Command
   case class GetWorkers(replyTo: ActorRef[Seq[ActorRef[Ping.type]]]) extends Command
 

@@ -55,7 +55,7 @@ import akka.util.JavaDurationConverters._
     message match {
       case ShardingEnvelope(entityId, _) => entityId //also covers ClassicStartEntity in ShardingEnvelope
       case ClassicStartEntity(entityId)  => entityId
-      case msg: E @unchecked             => delegate.entityId(msg)
+      case msg                           => delegate.entityId(msg.asInstanceOf[E])
     }
   }
 
@@ -69,8 +69,8 @@ import akka.util.JavaDurationConverters._
       case msg: ClassicStartEntity =>
         // not really of type M, but erased and StartEntity is only handled internally, not delivered to the entity
         msg.asInstanceOf[M]
-      case msg: E @unchecked =>
-        delegate.unwrapMessage(msg)
+      case msg =>
+        delegate.unwrapMessage(msg.asInstanceOf[E])
     }
   }
 

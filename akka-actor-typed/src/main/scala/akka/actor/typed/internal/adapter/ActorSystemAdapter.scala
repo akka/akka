@@ -88,6 +88,7 @@ import akka.annotation.InternalApi
         case DispatcherDefault(_)         => system.dispatcher
         case DispatcherFromConfig(str, _) => system.dispatchers.lookup(str)
         case DispatcherSameAsParent(_)    => system.dispatcher
+        case unknown                      => throw new RuntimeException(s"Unsupported dispatcher selector: $unknown")
       }
     override def shutdown(): Unit = () // there was no shutdown in classic Akka
   }

@@ -19,7 +19,7 @@ import akka.testkit.TestProbe
 object ProbedBehavior {
   def behavior(probe: u.ActorRef): Behavior[String] = {
     Behaviors
-      .receiveMessage[String] {
+      .receiveMessagePartial[String] {
         case "throw" => throw TestException("oh dear")
       }
       .receiveSignal {

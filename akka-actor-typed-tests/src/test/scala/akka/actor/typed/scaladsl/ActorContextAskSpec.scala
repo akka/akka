@@ -79,12 +79,11 @@ class ActorContextAskSpec
       case class Ping(respondTo: ActorRef[Pong.type]) extends Protocol
       case object Pong extends Protocol
 
-      val pingPong = spawn(Behaviors.receive[Protocol]((_, message) =>
-        message match {
-          case Ping(respondTo) =>
-            respondTo ! Pong
-            Behaviors.same
-        }))
+      val pingPong = spawn(Behaviors.receiveMessagePartial[Protocol] {
+        case Ping(respondTo) =>
+          respondTo ! Pong
+          Behaviors.same
+      })
 
       val snitch = Behaviors.setup[AnyRef] { context =>
         context.ask(pingPong, Ping) {
@@ -93,7 +92,7 @@ class ActorContextAskSpec
         }
 
         Behaviors
-          .receive[AnyRef] {
+          .receivePartial[AnyRef] {
             case (_, message) =>
               probe.ref ! message
               Behaviors.same

@@ -812,6 +812,7 @@ trait TestKitBase {
             queue.offerFirst(lastMessage)
             lastMessage = msg
             acc.reverse
+          case unexpected => throw new RuntimeException(s"Unexpected: $unexpected") // exhaustiveness check
         }
       }
     }
@@ -865,6 +866,7 @@ trait TestKitBase {
       case RealMessage(msg, _) =>
         lastMessage = message
         msg
+      case unexpected => throw new RuntimeException(s"Unexpected: $unexpected") // exhaustiveness check
     }
   }
 

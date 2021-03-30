@@ -32,10 +32,12 @@ object SupervisionSpec {
 
   val idExtractor: ShardRegion.ExtractEntityId = {
     case Msg(id, msg) => (id.toString, msg)
+    case _            => throw new IllegalArgumentException()
   }
 
   val shardResolver: ShardRegion.ExtractShardId = {
     case Msg(id, _) => (id % 2).toString
+    case _          => throw new IllegalArgumentException()
   }
 
   class PassivatingActor extends Actor with ActorLogging {

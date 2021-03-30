@@ -51,6 +51,7 @@ object AggregatorSpec {
                     .map {
                       case Hotel1.Quote(hotel, price) => Quote(hotel, price)
                       case Hotel2.Price(hotel, price) => Quote(hotel, price)
+                      case unknown                    => throw new RuntimeException(s"Unknown reply $unknown")
                     }
                     .sortBy(_.price)
                     .toList),

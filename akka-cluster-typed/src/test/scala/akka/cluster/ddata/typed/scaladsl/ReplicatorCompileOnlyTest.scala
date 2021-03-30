@@ -84,6 +84,7 @@ object ReplicatorCompileOnlyTest {
       case GetFailure(`key`)     =>
       case NotFound(`key`)       =>
       case GetDataDeleted(`key`) =>
+      case unexpected            => throw new RuntimeException(s"Unexpected: $unexpected")
     }
 
     val updateResponse: UpdateResponse[GCounter] = ???
@@ -94,6 +95,7 @@ object ReplicatorCompileOnlyTest {
       case StoreFailure(`key`)        =>
       case UpdateFailure(`key`)       =>
       case UpdateDataDeleted(`key`)   =>
+      case unexpected                 => throw new RuntimeException(s"Unexpected: $unexpected")
     }
 
     val deleteResponse: DeleteResponse[GCounter] = ???
@@ -101,17 +103,20 @@ object ReplicatorCompileOnlyTest {
       case DeleteSuccess(`key`) =>
       case DeleteFailure(`key`) =>
       case DataDeleted(`key`)   =>
+      case unexpected           => throw new RuntimeException(s"Unexpected: $unexpected")
     }
 
     val subscribeResponse: SubscribeResponse[GCounter] = ???
     subscribeResponse match {
       case Changed(`key`) =>
       case Deleted(`key`) =>
+      case unexpected     => throw new RuntimeException(s"Unexpected: $unexpected")
     }
 
     val replicaCount: ReplicaCount = ???
     replicaCount match {
       case ReplicaCount(_) =>
+      case unexpected      => throw new RuntimeException(s"Unexpected: $unexpected")
     }
   }
 

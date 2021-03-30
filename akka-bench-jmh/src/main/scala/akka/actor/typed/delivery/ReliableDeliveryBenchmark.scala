@@ -41,7 +41,7 @@ object Producer {
       val requestNextAdapter =
         context.messageAdapter[ProducerController.RequestNext[Consumer.Command]](WrappedRequestNext(_))
 
-      Behaviors.receiveMessage {
+      Behaviors.receiveMessagePartial {
         case WrappedRequestNext(next) =>
           if (next.confirmedSeqNr >= numberOfMessages) {
             context.log.info("Completed {} messages", numberOfMessages)
@@ -114,7 +114,7 @@ object WorkPullingProducer {
       var remaining = numberOfMessages + context.system.settings.config
           .getInt("akka.reliable-delivery.consumer-controller.flow-control-window")
 
-      Behaviors.receiveMessage {
+      Behaviors.receiveMessagePartial {
         case WrappedRequestNext(next) =>
           remaining -= 1
           if (remaining == 0) {
@@ -183,6 +183,9 @@ object Guardian {
           consumers.foreach(context.stop)
           replyTo ! Done
           Behaviors.same
+
+        case msg =>
+          throw new RuntimeException(s"Unexpected message $msg")
       }
     }
   }

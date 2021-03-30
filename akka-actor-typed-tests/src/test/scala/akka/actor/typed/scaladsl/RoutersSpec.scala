@@ -119,7 +119,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       case object BCast extends Cmd
 
       def behavior(replyTo: ActorRef[AnyRef]) = Behaviors.setup[Cmd] { ctx =>
-        Behaviors.receiveMessage[Cmd] {
+        Behaviors.receiveMessagePartial[Cmd] {
           case ReplyWithAck | BCast =>
             val reply = ctx.self.path
             replyTo ! reply

@@ -60,6 +60,8 @@ import akka.util.ccompat.JavaConverters._
           case single: SingleSource[T] @unchecked =>
             push(out, single.elem)
             removeSource(single)
+          case other =>
+            throw new IllegalStateException(s"Unexpected source type in queue: '${other.getClass}'")
         }
       }
 
@@ -120,6 +122,7 @@ import akka.util.ccompat.JavaConverters._
             sources -= sub
           case _: SingleSource[_] =>
             pendingSingleSources -= 1
+          case other => throw new IllegalArgumentException(s"Unexpected source type: '${other.getClass}'")
         }
         if (pullSuppressed) tryPull(in)
         if (activeSources == 0 && isClosed(in)) completeStage()
@@ -704,6 +707,8 @@ import akka.util.ccompat.JavaConverters._
       case cmd: CommandScheduledBeforeMaterialization =>
         throw new IllegalStateException(
           s"${newState.command} on subsink($name) is illegal when ${cmd.command} is still pending")
+
+      case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
     }
 
   override def createLogic(attr: Attributes) = new GraphStageLogic(shape) with InHandler {
@@ -737,6 +742,8 @@ import akka.util.ccompat.JavaConverters._
 
         case _: /* Materialized */ AsyncCallback[Command @unchecked] =>
           failStage(materializationException.getOrElse(createMaterializedTwiceException()))
+
+        case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
       }
 
     override def preStart(): Unit =
@@ -779,6 +786,7 @@ import akka.util.ccompat.JavaConverters._
         status.get.asInstanceOf[AsyncCallback[Any]].invoke(ActorSubscriberMessage.OnComplete)
     case OnError(_)                        => // already failed out, keep the exception as that happened first
     case ActorSubscriberMessage.OnComplete => // it was already completed
+    case _                                 => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
   }
 
   def failSubstream(ex: Throwable): Unit = status.get match {
@@ -789,6 +797,7 @@ import akka.util.ccompat.JavaConverters._
         status.get.asInstanceOf[AsyncCallback[Any]].invoke(failure)
     case ActorSubscriberMessage.OnComplete => // it was already completed, ignore failure as completion happened first
     case OnError(_)                        => // already failed out, keep the exception as that happened first
+    case _                                 => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
   }
 
   def timeout(d: FiniteDuration): Boolean =
@@ -814,6 +823,7 @@ import akka.util.ccompat.JavaConverters._
         case ActorSubscriberMessage.OnError(ex) => failStage(ex)
         case _: AsyncCallback[_] =>
           failStage(materializationException.getOrElse(createMaterializedTwiceException()))
+        case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
       }
     }
 

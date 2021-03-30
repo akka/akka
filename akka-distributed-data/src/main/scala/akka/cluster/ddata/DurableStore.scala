@@ -137,7 +137,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
 
   private def lmdb(): Lmdb = _lmdb match {
     case OptionVal.Some(l) => l
-    case OptionVal.None =>
+    case _ =>
       val t0 = System.nanoTime()
       log.info("Using durable data in LMDB directory [{}]", dir.getCanonicalPath)
       val env = {
@@ -274,8 +274,8 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
       l.keyBuffer.put(key.getBytes(ByteString.UTF_8)).flip()
       l.valueBuffer.put(value).flip()
       tx match {
-        case OptionVal.None    => l.db.put(l.keyBuffer, l.valueBuffer)
         case OptionVal.Some(t) => l.db.put(t, l.keyBuffer, l.valueBuffer)
+        case _                 => l.db.put(l.keyBuffer, l.valueBuffer)
       }
     } finally {
       val l = lmdb()

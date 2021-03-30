@@ -75,8 +75,8 @@ final class SteppingInmemJournal extends InmemJournal {
   override def receivePluginInternal = super.receivePluginInternal.orElse {
     case Token if queuedOps.isEmpty => queuedTokenRecipients = queuedTokenRecipients :+ sender()
     case Token =>
-      val op +: rest = queuedOps
-      queuedOps = rest
+      val op = queuedOps.head
+      queuedOps = queuedOps.tail
       val tokenConsumer = sender()
       op().onComplete(_ => tokenConsumer ! TokenConsumed)
   }
@@ -97,8 +97,8 @@ final class SteppingInmemJournal extends InmemJournal {
       val future = promise.future
       doOrEnqueue { () =>
         promise.completeWith(super.asyncWriteMessages(Seq(message)).map {
-          case Nil       => AsyncWriteJournal.successUnit
-          case head :: _ => head
+          case Nil      => AsyncWriteJournal.successUnit
+          case nonEmpty => nonEmpty.head
         })
         future.map(_ => ())
       }
@@ -144,7 +144,8 @@ final class SteppingInmemJournal extends InmemJournal {
   private def doOrEnqueue(op: () => Future[Unit]): Unit = {
     if (queuedTokenRecipients.nonEmpty) {
       val completed = op()
-      val tokenRecipient +: rest = queuedTokenRecipients
+      val tokenRecipient = queuedTokenRecipients.head
+      val rest = queuedTokenRecipients.tail
       queuedTokenRecipients = rest
       completed.onComplete(_ => tokenRecipient ! TokenConsumed)
     } else {

@@ -52,6 +52,7 @@ object ClusterShardingLeaseSpec {
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case msg: Int => (msg % 10).toString
+    case _        => throw new IllegalArgumentException()
   }
   case class LeaseFailed(msg: String) extends RuntimeException(msg) with NoStackTrace
 }

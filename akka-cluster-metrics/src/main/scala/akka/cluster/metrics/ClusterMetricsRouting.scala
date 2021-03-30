@@ -489,6 +489,7 @@ private[metrics] class WeightedRoutees(
       val a = routee match {
         case ActorRefRoutee(ref)       => ref.path.address
         case ActorSelectionRoutee(sel) => sel.anchor.path.address
+        case _                         => throw new RuntimeException()
       }
       a match {
         case Address(_, _, None, None) => selfAddress

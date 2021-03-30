@@ -49,10 +49,12 @@ object RemoveInternalClusterShardingDataSpec {
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
     case msg: Int => (msg.toString, msg)
+    case _        => throw new IllegalArgumentException()
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case msg: Int => (msg % 10).toString
+    case _        => throw new IllegalArgumentException()
   }
 
   class HasSnapshots(override val persistenceId: String, replyTo: ActorRef) extends PersistentActor {

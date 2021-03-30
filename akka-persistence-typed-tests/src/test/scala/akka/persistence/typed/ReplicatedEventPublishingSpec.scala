@@ -51,6 +51,7 @@ object ReplicatedEventPublishingSpec {
                     Effect.none
                   case Stop =>
                     Effect.stop()
+                  case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
                 },
               (state, string) => state + string))
       }

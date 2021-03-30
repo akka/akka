@@ -1195,6 +1195,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
                 case "boom" =>
                   probe.ref ! context.self
                   Behaviors.stopped
+                case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
               }
             })
             context.watch(child)
@@ -1420,7 +1421,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
                   Behaviors.stopped
                 } else {
                   stopInSetup.set(true)
-                  Behaviors.receiveMessage {
+                  Behaviors.receiveMessagePartial {
                     case "boom" => throw TestException("boom")
                   }
                 }

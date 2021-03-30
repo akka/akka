@@ -62,16 +62,19 @@ object RememberEntitiesShardIdExtractorChangeSpec {
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
     case msg @ Message(id) => (id.toString, msg)
+    case _                 => throw new IllegalArgumentException()
   }
 
   val firstExtractShardId: ShardRegion.ExtractShardId = {
     case Message(id)                 => (id % 10).toString
     case ShardRegion.StartEntity(id) => (id.toInt % 10).toString
+    case _                           => throw new IllegalArgumentException()
   }
 
   val secondExtractShardId: ShardRegion.ExtractShardId = {
     case Message(id)                 => (id % 10 + 1L).toString
     case ShardRegion.StartEntity(id) => (id.toInt % 10 + 1L).toString
+    case _                           => throw new IllegalArgumentException()
   }
 
   val TypeName = "ShardIdExtractorChange"

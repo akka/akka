@@ -21,7 +21,7 @@ import scala.concurrent.duration._
 object EventSourcedStashOverflowSpec {
 
   object EventSourcedStringList {
-    trait Command
+    sealed trait Command
     case class DoNothing(replyTo: ActorRef[Done]) extends Command
 
     def apply(persistenceId: PersistenceId): Behavior[Command] =

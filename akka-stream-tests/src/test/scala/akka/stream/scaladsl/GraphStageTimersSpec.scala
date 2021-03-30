@@ -80,6 +80,7 @@ class GraphStageTimersSpec extends StreamSpec {
           scheduleOnce("TestCancelTimer", 500.milli.dilated)
         case TestRepeatedTimer =>
           scheduleWithFixedDelay("TestRepeatedTimer", 100.millis.dilated, 100.millis.dilated)
+        case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
       }
     }
   }

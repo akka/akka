@@ -226,7 +226,7 @@ private[remote] class Association(
   def outboundControlIngress: OutboundControlIngress = {
     _outboundControlIngress match {
       case OptionVal.Some(o) => o
-      case OptionVal.None =>
+      case _ =>
         controlQueue match {
           case w: LazyQueueWrapper => w.runMaterialize()
           case _                   =>
@@ -236,7 +236,7 @@ private[remote] class Association(
         materializing.await(10, TimeUnit.SECONDS)
         _outboundControlIngress match {
           case OptionVal.Some(o) => o
-          case OptionVal.None =>
+          case _ =>
             if (transport.isShutdown || isRemovedAfterQuarantined()) throw ShuttingDown
             else throw new IllegalStateException(s"outboundControlIngress for [$remoteAddress] not initialized yet")
         }
@@ -345,7 +345,7 @@ private[remote] class Association(
       val removed = isRemovedAfterQuarantined()
       if (removed) recipient match {
         case OptionVal.Some(ref) => ref.cachedAssociation = null // don't use this Association instance any more
-        case OptionVal.None      =>
+        case _                   =>
       }
       val reason =
         if (removed) "Due to removed unused quarantined association"
@@ -472,7 +472,7 @@ private[remote] class Association(
           case idx => idx
         }
 
-      case OptionVal.None =>
+      case _ =>
         OrdinaryQueueIndex
     }
   }
@@ -642,7 +642,7 @@ private[remote] class Association(
             setStopReason(queueIndex, OutboundStreamStopQuarantinedSignal)
             clearStreamKillSwitch(queueIndex, k)
             k.abort(OutboundStreamStopQuarantinedSignal)
-          case OptionVal.None => // already aborted
+          case _ => // already aborted
         }
     }
   }
@@ -688,7 +688,7 @@ private[remote] class Association(
                         setStopReason(queueIndex, OutboundStreamStopIdleSignal)
                         clearStreamKillSwitch(queueIndex, k)
                         k.abort(OutboundStreamStopIdleSignal)
-                      case OptionVal.None => // already aborted
+                      case _ => // already aborted
                     }
 
                   } else {
@@ -700,7 +700,7 @@ private[remote] class Association(
                         flightRecorder.transportStopIdleOutbound(remoteAddress, queueIndex)
                         setControlIdleKillSwitch(OptionVal.None)
                         killSwitch.abort(OutboundStreamStopIdleSignal)
-                      case OptionVal.None => // already stopped
+                      case _ => // already stopped
                     }
                   }
                 }

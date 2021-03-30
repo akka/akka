@@ -37,7 +37,7 @@ private[akka] final class ReplicationContextImpl(
     _currentThread match {
       case OptionVal.Some(t) =>
         if (callerThread ne t) error()
-      case OptionVal.None =>
+      case _ =>
         error()
     }
   }
@@ -50,7 +50,7 @@ private[akka] final class ReplicationContextImpl(
     checkAccess("origin")
     _origin match {
       case OptionVal.Some(origin) => origin
-      case OptionVal.None         => throw new IllegalStateException("origin can only be accessed from the event handler")
+      case _                      => throw new IllegalStateException("origin can only be accessed from the event handler")
     }
   }
 

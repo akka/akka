@@ -87,6 +87,7 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
       case Some(s) =>
         (s ? ReplayMessages(persistenceId, fromSequenceNr = 0L, toSequenceNr = 0L, max = 0L)).map {
           case ReplaySuccess(highest) => highest
+          case _                      => throw new RuntimeException() // compiler exhaustiveness check pleaser
         }
       case None => storeNotInitialized
     }

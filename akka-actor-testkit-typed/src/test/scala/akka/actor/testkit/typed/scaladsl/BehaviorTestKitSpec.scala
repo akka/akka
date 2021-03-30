@@ -138,6 +138,8 @@ object BehaviorTestKitSpec {
             case IsTimerActive(key, replyTo) =>
               replyTo ! timers.isTimerActive(key)
               Behaviors.same
+            case unexpected =>
+              throw new RuntimeException(s"Unexpected command: $unexpected")
           }
         }
         .receiveSignal {
