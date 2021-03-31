@@ -65,18 +65,14 @@ public class RouterTest extends JUnitSuite {
 
   static class Proxy {
 
-    public final ServiceKey<Command> registeringKey =
-        ServiceKey.create(Command.class, "aggregator-key");
+    public final ServiceKey<Message> registeringKey =
+        ServiceKey.create(Message.class, "aggregator-key");
 
-    public String mapping(Command command) {
-      return command.getId();
+    public String mapping(Message message) {
+      return message.getId();
     }
 
-    interface Command {
-      public String getId();
-    }
-
-    static class Message implements Command {
+    static class Message {
 
       public Message(String id, String content) {
         this.id = id;
@@ -95,13 +91,13 @@ public class RouterTest extends JUnitSuite {
       }
     }
 
-    static Behavior<Command> create(ActorRef<String> monitor) {
-      return Behaviors.receive(Command.class)
+    static Behavior<Message> create(ActorRef<String> monitor) {
+      return Behaviors.receive(Message.class)
           .onMessage(Message.class, in -> onMyMessage(monitor, in))
           .build();
     }
 
-    private static Behavior<Command> onMyMessage(ActorRef<String> monitor, Message message) {
+    private static Behavior<Message> onMyMessage(ActorRef<String> monitor, Message message) {
       monitor.tell(message.getId());
       return Behaviors.same();
     }
@@ -199,8 +195,8 @@ public class RouterTest extends JUnitSuite {
 
     Proxy proxy = new Proxy();
 
-    ActorRef<Proxy.Command> proxy1 = testKit.spawn(proxy.create(probe1.ref()));
-    ActorRef<Proxy.Command> proxy2 = testKit.spawn(proxy.create(probe2.ref()));
+    ActorRef<Proxy.Message> proxy1 = testKit.spawn(proxy.create(probe1.ref()));
+    ActorRef<Proxy.Message> proxy2 = testKit.spawn(proxy.create(probe2.ref()));
 
     TestProbe<Receptionist.Registered> waiterProbe = testKit.createTestProbe();
     // registering proxies
@@ -218,7 +214,7 @@ public class RouterTest extends JUnitSuite {
     waiterProbe.receiveSeveralMessages(2);
     // messages sent to a router with consistent hashing
     // #constant-hashing
-    ActorRef<Proxy.Command> router =
+    ActorRef<Proxy.Message> router =
         testKit.spawn(
             Routers.group(proxy.registeringKey)
                 .withConsistentHashingRouting(10, command -> proxy.mapping(command)));

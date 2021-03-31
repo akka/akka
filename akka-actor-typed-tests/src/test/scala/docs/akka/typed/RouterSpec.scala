@@ -150,16 +150,13 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
 
       object Proxy {
 
-        val RegisteringKey = ServiceKey[Command]("aggregator-key")
+        val RegisteringKey = ServiceKey[Message]("aggregator-key")
 
-        def mapping(command: Command) = command.id
+        def mapping(message: Message) = message.id
 
-        sealed trait Command {
-          def id: String
-        }
-        case class Message(id: String, content: String) extends Command
+        case class Message(id: String, content: String)
 
-        def apply(monitor: ActorRef[String]): Behavior[Command] =
+        def apply(monitor: ActorRef[String]): Behavior[Message] =
           Behaviors.receiveMessage {
             case Message(id, _) =>
               monitor ! id
