@@ -174,8 +174,8 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
       //wait until both registrations get Receptionist.Registered
       waiterProbe.receiveMessages(2)
 
-      //messages sent to a router with constant hashing
-      // #constant-hashing
+      //messages sent to a router with consistent hashing
+      // #consistent-hashing
       val router = spawn(Routers.group(Proxy.RegisteringKey).withConsistentHashingRouting(10, Proxy.mapping))
 
       router ! Proxy.Message("123", "Text1")
