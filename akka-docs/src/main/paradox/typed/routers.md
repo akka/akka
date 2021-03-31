@@ -141,7 +141,7 @@ When the set of routees changes, consistent hashing tries to make sure, but does
 
 
 Scala
-:  @@snip [RouterSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/RouterSpec.scala) { #constant-hashing }
+:  @@snip [RouterSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/RouterSpec.scala) { #consistent-hashing }
 
 Java
 :  @@snip [RouterTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/RouterTest.java) { #constant-hashing }
