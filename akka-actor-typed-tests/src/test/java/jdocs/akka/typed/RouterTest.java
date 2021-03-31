@@ -216,7 +216,7 @@ public class RouterTest extends JUnitSuite {
     // wait until both registrations get Receptionist.Registered
 
     waiterProbe.receiveSeveralMessages(2);
-    // messages sent to a router with constant hashing
+    // messages sent to a router with consistent hashing
     // #constant-hashing
     ActorRef<Proxy.Command> router =
         testKit.spawn(
