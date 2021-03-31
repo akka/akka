@@ -17,7 +17,9 @@ public class ActorSinkWithAckExample {
 
   // #actor-sink-ref-with-backpressure
 
-  class Ack {}
+  enum Ack {
+    INSTANCE;
+  }
 
   interface Protocol {}
 
@@ -58,7 +60,6 @@ public class ActorSinkWithAckExample {
     final ActorRef<Protocol> actorRef = // spawned actor
         null; // #hidden
 
-    final Ack ackMessage = new Ack();
     final Complete completeMessage = new Complete();
 
     final Sink<String, NotUsed> sink =
@@ -66,7 +67,7 @@ public class ActorSinkWithAckExample {
             actorRef,
             (responseActorRef, element) -> new Message(responseActorRef, element),
             (responseActorRef) -> new Init(responseActorRef),
-            ackMessage,
+            Ack.INSTANCE,
             completeMessage,
             (exception) -> new Fail(exception));
 
