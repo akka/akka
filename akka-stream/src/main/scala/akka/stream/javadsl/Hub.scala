@@ -103,7 +103,7 @@ object MergeHub {
   /**
    * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
    * by this method is materialized, it returns a [[Sink]] as a materialized value. This [[Sink]] can be materialized
-   * arbitrary many times and each of the materializations will feed the elements into the original [[Source]].
+   * arbitrarily many times and each of the materializations will feed the elements into the original [[Source]].
    *
    * Every new materialization of the [[Source]] results in a new, independent hub, which materializes to its own
    * [[Sink]] for feeding that materialization.
