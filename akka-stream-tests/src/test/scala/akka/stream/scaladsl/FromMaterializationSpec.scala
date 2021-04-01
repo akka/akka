@@ -65,14 +65,13 @@ class FromMaterializerSpec extends StreamSpec {
     }
 
     "preserve attributes of inner source" in {
-      val source = Source
-        .fromMaterializer { (_, _) =>
-          Source
-            .fromMaterializer { (_, attr) =>
-              Source.single(attr.get[MyAttribute])
-            }
-            .addAttributes(myAttributes)
-        }
+      val source = Source.fromMaterializer { (_, _) =>
+        Source
+          .fromMaterializer { (_, attr) =>
+            Source.single(attr.get[MyAttribute])
+          }
+          .addAttributes(myAttributes)
+      }
 
       source.runWith(Sink.head).futureValue shouldBe Some(MyAttribute())
     }
@@ -152,14 +151,13 @@ class FromMaterializerSpec extends StreamSpec {
     }
 
     "preserve attributes of inner flow" in {
-      val flow = Flow
-        .fromMaterializer { (_, _) =>
-          Flow
-            .fromMaterializer { (_, attr) =>
-              Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.get[MyAttribute]))
-            }
-            .addAttributes(myAttributes)
-        }
+      val flow = Flow.fromMaterializer { (_, _) =>
+        Flow
+          .fromMaterializer { (_, attr) =>
+            Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.get[MyAttribute]))
+          }
+          .addAttributes(myAttributes)
+      }
 
       Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some(MyAttribute())
     }
@@ -237,14 +235,13 @@ class FromMaterializerSpec extends StreamSpec {
     }
 
     "preserve attributes of inner sink" in {
-      val sink = Sink
-        .fromMaterializer { (_, _) =>
-          Sink
-            .fromMaterializer { (_, attr) =>
-              Sink.fold(attr.get[MyAttribute])(Keep.left)
-            }
-            .addAttributes(myAttributes)
-        }
+      val sink = Sink.fromMaterializer { (_, _) =>
+        Sink
+          .fromMaterializer { (_, attr) =>
+            Sink.fold(attr.get[MyAttribute])(Keep.left)
+          }
+          .addAttributes(myAttributes)
+      }
 
       Source.empty.runWith(sink).flatten.flatten.futureValue shouldBe Some(MyAttribute())
     }
