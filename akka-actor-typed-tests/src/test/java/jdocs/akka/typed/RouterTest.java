@@ -21,9 +21,18 @@ import akka.actor.typed.javadsl.Routers;
 import akka.actor.typed.receptionist.Receptionist;
 import akka.actor.typed.receptionist.ServiceKey;
 
+import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
+import akka.actor.testkit.typed.javadsl.TestProbe;
+
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.scalatestplus.junit.JUnitSuite;
+
 // #pool
 
-public class RouterTest {
+public class RouterTest extends JUnitSuite {
+
+  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
 
   static // #routee
   class Worker {
@@ -50,6 +59,46 @@ public class RouterTest {
 
     private static Behavior<Command> onDoLog(ActorContext<Command> context, DoLog doLog) {
       context.getLog().info("Got message {}", doLog.text);
+      return Behaviors.same();
+    }
+  }
+
+  static class Proxy {
+
+    public final ServiceKey<Message> registeringKey =
+        ServiceKey.create(Message.class, "aggregator-key");
+
+    public String mapping(Message message) {
+      return message.getId();
+    }
+
+    static class Message {
+
+      public Message(String id, String content) {
+        this.id = id;
+        this.content = content;
+      }
+
+      private String content;
+      private String id;
+
+      public final String getContent() {
+        return content;
+      }
+
+      public final String getId() {
+        return id;
+      }
+    }
+
+    static Behavior<Message> create(ActorRef<String> monitor) {
+      return Behaviors.receive(Message.class)
+          .onMessage(Message.class, in -> onMyMessage(monitor, in))
+          .build();
+    }
+
+    private static Behavior<Message> onMyMessage(ActorRef<String> monitor, Message message) {
+      monitor.tell(message.getId());
       return Behaviors.same();
     }
   }
@@ -136,6 +185,52 @@ public class RouterTest {
           return Behaviors.empty();
         });
     // #group
+  }
+
+  @Test
+  public void showGroupRoutingWithConsistentHashing() throws Exception {
+
+    TestProbe<String> probe1 = testKit.createTestProbe();
+    TestProbe<String> probe2 = testKit.createTestProbe();
+
+    Proxy proxy = new Proxy();
+
+    ActorRef<Proxy.Message> proxy1 = testKit.spawn(proxy.create(probe1.ref()));
+    ActorRef<Proxy.Message> proxy2 = testKit.spawn(proxy.create(probe2.ref()));
+
+    TestProbe<Receptionist.Registered> waiterProbe = testKit.createTestProbe();
+    // registering proxies
+
+    testKit
+        .system()
+        .receptionist()
+        .tell(Receptionist.register(proxy.registeringKey, proxy1, waiterProbe.ref()));
+    testKit
+        .system()
+        .receptionist()
+        .tell(Receptionist.register(proxy.registeringKey, proxy2, waiterProbe.ref()));
+    // wait until both registrations get Receptionist.Registered
+
+    waiterProbe.receiveSeveralMessages(2);
+    // messages sent to a router with consistent hashing
+    // #consistent-hashing
+    ActorRef<Proxy.Message> router =
+        testKit.spawn(
+            Routers.group(proxy.registeringKey)
+                .withConsistentHashingRouting(10, command -> proxy.mapping(command)));
+
+    router.tell(new Proxy.Message("123", "Text1"));
+    router.tell(new Proxy.Message("123", "Text2"));
+
+    router.tell(new Proxy.Message("zh3", "Text3"));
+    router.tell(new Proxy.Message("zh3", "Text4"));
+    // the hash is calculated over the Proxy.Message first parameter obtained through the
+    // Proxy.mapping function
+    // #consistent-hashing
+    // Then messages with equal Message.id reach the same actor
+    // so the first message in each probe queue is equal to its second
+    probe1.expectMessage(probe1.receiveMessage());
+    probe2.expectMessage(probe2.receiveMessage());
   }
 
   public static void main(String[] args) {

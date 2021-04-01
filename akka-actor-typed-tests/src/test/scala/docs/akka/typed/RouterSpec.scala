@@ -7,7 +7,7 @@ package docs.akka.typed
 import akka.actor.typed.DispatcherSelector
 // #pool
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
-import akka.actor.typed.{ Behavior, SupervisorStrategy }
+import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy }
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.{ Behaviors, Routers }
 
@@ -143,5 +143,55 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
 
       probe.receiveMessages(10)
     }
+    "show group routing with consistent hashing" in {
+
+      val probe1 = createTestProbe[String]()
+      val probe2 = createTestProbe[String]()
+
+      object Proxy {
+
+        val RegisteringKey = ServiceKey[Message]("aggregator-key")
+
+        def mapping(message: Message) = message.id
+
+        case class Message(id: String, content: String)
+
+        def apply(monitor: ActorRef[String]): Behavior[Message] =
+          Behaviors.receiveMessage {
+            case Message(id, _) =>
+              monitor ! id
+              Behaviors.same
+          }
+      }
+
+      //registering proxies
+      val proxy1 = spawn(Proxy(probe1.ref))
+      val proxy2 = spawn(Proxy(probe2.ref))
+      val waiterProbe = createTestProbe[Receptionist.Registered]()
+
+      system.receptionist ! Receptionist.Register(Proxy.RegisteringKey, proxy1, waiterProbe.ref)
+      system.receptionist ! Receptionist.Register(Proxy.RegisteringKey, proxy2, waiterProbe.ref)
+      //wait until both registrations get Receptionist.Registered
+      waiterProbe.receiveMessages(2)
+
+      //messages sent to a router with consistent hashing
+      // #consistent-hashing
+      val router = spawn(Routers.group(Proxy.RegisteringKey).withConsistentHashingRouting(10, Proxy.mapping))
+
+      router ! Proxy.Message("123", "Text1")
+      router ! Proxy.Message("123", "Text2")
+
+      router ! Proxy.Message("zh3", "Text3")
+      router ! Proxy.Message("zh3", "Text4")
+      // the hash is calculated over the Proxy.Message first parameter obtained through the Proxy.mapping function
+      // #consistent-hashing
+      //Then messages with equal Message.id reach the same actor
+      //so the first message in each probe queue is equal to its second
+      probe1.receiveMessage() shouldBe probe1.receiveMessage()
+      probe2.receiveMessage() shouldBe probe2.receiveMessage()
+
+    }
+
   }
+
 }
