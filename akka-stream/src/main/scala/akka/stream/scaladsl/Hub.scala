@@ -106,7 +106,7 @@ object MergeHub {
    * Completed or failed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
    * and any new producers using the [[Sink]] will be cancelled.
    *
-   * The materialized [[DrainingControl]] can be used to drain the Hub: any new produces using the [[Sink]] will be cancelled
+   * The materialized [[DrainingControl]] can be used to drain the Hub: any new producers using the [[Sink]] will be cancelled
    * and the Hub will be closed completing the [[Source]] as soon as all currently connected producers complete.
    */
   def sourceWithDraining[T](): Source[T, (Sink[T, NotUsed], DrainingControl)] =
