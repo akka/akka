@@ -213,7 +213,7 @@ public class RouterTest extends JUnitSuite {
 
     waiterProbe.receiveSeveralMessages(2);
     // messages sent to a router with consistent hashing
-    // #constant-hashing
+    // #consistent-hashing
     ActorRef<Proxy.Message> router =
         testKit.spawn(
             Routers.group(proxy.registeringKey)
@@ -226,7 +226,7 @@ public class RouterTest extends JUnitSuite {
     router.tell(new Proxy.Message("zh3", "Text4"));
     // the hash is calculated over the Proxy.Message first parameter obtained through the
     // Proxy.mapping function
-    // #constant-hashing
+    // #consistent-hashing
     // Then messages with equal Message.id reach the same actor
     // so the first message in each probe queue is equal to its second
     probe1.expectMessage(probe1.receiveMessage());
