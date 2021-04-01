@@ -418,8 +418,8 @@ Since this is such a common pattern there is a reply effect for this purpose. It
 it can be used to enforce that replies are not forgotten when implementing the `EventSourcedBehavior`.
 If it's defined with @scala[`EventSourcedBehavior.withEnforcedReplies`]@java[`EventSourcedBehaviorWithEnforcedReplies`]
 there will be compilation errors if the returned effect isn't a `ReplyEffect`, which can be
-created with @scala[`Effect.reply`]@java[`Effects().reply`], @scala[`Effect.noReply`]@java[`Effects().noReply`],
-@scala[`Effect.thenReply`]@java[`Effects().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effects().thenNoReply`].
+created with @scala[`Effect.reply`]@java[`Effect().reply`], @scala[`Effect.noReply`]@java[`Effect().noReply`],
+@scala[`Effect.thenReply`]@java[`Effect().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effect().thenNoReply`].
 
 Scala
 :  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.scala) { #withEnforcedReplies }
@@ -435,8 +435,8 @@ Scala
 Java
 :  @@snip [AccountExampleWithNullState.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.java) { #reply-command }
 
-The `ReplyEffect` is created with @scala[`Effect.reply`]@java[`Effects().reply`], @scala[`Effect.noReply`]@java[`Effects().noReply`],
-@scala[`Effect.thenReply`]@java[`Effects().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effects().thenNoReply`].
+The `ReplyEffect` is created with @scala[`Effect.reply`]@java[`Effect().reply`], @scala[`Effect.noReply`]@java[`Effect().noReply`],
+@scala[`Effect.thenReply`]@java[`Effect().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effect().thenNoReply`].
 
 @java[Note that command handlers are defined with `newCommandHandlerWithReplyBuilder` when using
 `EventSourcedBehaviorWithEnforcedReplies`, as opposed to newCommandHandlerBuilder when using `EventSourcedBehavior`.]
