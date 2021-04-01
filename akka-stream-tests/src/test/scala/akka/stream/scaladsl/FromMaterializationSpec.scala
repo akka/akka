@@ -73,7 +73,6 @@ class FromMaterializerSpec extends StreamSpec {
             }
             .addAttributes(myAttributes)
         }
-        .named("my-name")
 
       source.runWith(Sink.head).futureValue shouldBe Some(MyAttribute())
     }
@@ -161,7 +160,6 @@ class FromMaterializerSpec extends StreamSpec {
             }
             .addAttributes(myAttributes)
         }
-        .named("my-name")
 
       Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some(MyAttribute())
     }
@@ -247,7 +245,6 @@ class FromMaterializerSpec extends StreamSpec {
             }
             .addAttributes(myAttributes)
         }
-        .named("my-name")
 
       Source.empty.runWith(sink).flatten.flatten.futureValue shouldBe Some(MyAttribute())
     }
