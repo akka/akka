@@ -29,9 +29,7 @@ import akka.stream.impl.QueueSink.Output
 import akka.stream.impl.QueueSink.Pull
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.AtomicModule
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.SinkQueueWithCancel
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Keep, Sink, SinkQueueWithCancel, Source }
 import akka.stream.stage._
 import akka.util.ccompat._
 
@@ -604,7 +602,8 @@ import akka.util.ccompat._
 
         val subOutlet = new SubSourceOutlet[T]("LazySink")
 
-        val matVal = Source.fromGraph(subOutlet.source).runWith(sink)(interpreter.subFusingMaterializer)
+        val matVal = interpreter.subFusingMaterializer
+          .materialize(Source.fromGraph(subOutlet.source).toMat(sink)(Keep.right), inheritedAttributes)
 
         def maybeCompleteStage(): Unit = {
           if (isClosed(in) && subOutlet.isClosed) {
