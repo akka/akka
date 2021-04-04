@@ -5,16 +5,15 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicBoolean
-
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.concurrent.Promise
-
 import org.scalatest.concurrent.ScalaFutures
-
 import akka.Done
 import akka.NotUsed
+import akka.stream.Attributes.Attribute
 import akka.stream._
+import akka.stream.scaladsl.AttributesSpec.AttributesSource
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.testkit.StreamSpec
@@ -28,6 +27,8 @@ import akka.testkit.TestProbe
 class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   import system.dispatcher
+  case class MyAttribute() extends Attribute
+  val myAttributes = Attributes(MyAttribute())
 
   "Source.lazySingle" must {
     "work like a normal source, happy path" in assertAllStagesStopped {
@@ -247,6 +248,17 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       killswitch.abort(boom)
       doneF.failed.futureValue should ===(boom)
     }
+
+    "provide attributes to inner source" in assertAllStagesStopped {
+      val attributes = Source
+        .lazySource(() => Source.fromGraph(new AttributesSource()))
+        .addAttributes(myAttributes)
+        .buffer(1, OverflowStrategy.backpressure)
+        .to(Sink.cancelled)
+        .run()
+
+      attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
+    }
   }
 
   "Source.lazyFutureSource" must {
@@ -415,6 +427,16 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       terminationF.failed.futureValue should ===(boom)
     }
 
+    "provide attributes to inner source" in assertAllStagesStopped {
+      val attributes = Source
+        .lazyFutureSource(() => Future(Source.fromGraph(new AttributesSource())))
+        .addAttributes(myAttributes)
+        .buffer(1, OverflowStrategy.backpressure)
+        .to(Sink.cancelled)
+        .run()
+
+      attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
+    }
   }
 
 }

@@ -5,17 +5,16 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.TimeoutException
-
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-
 import scala.annotation.nowarn
-
-import akka.NotUsed
+import akka.{ Done, NotUsed }
+import akka.stream.Attributes.Attribute
 import akka.stream._
+import akka.stream.scaladsl.AttributesSpec.AttributesSink
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.testkit.StreamSpec
@@ -31,7 +30,10 @@ class LazySinkSpec extends StreamSpec("""
     akka.stream.materializer.max-input-buffer-size = 1
   """) {
 
+  import system.dispatcher
   val ex = TE("")
+  case class MyAttribute() extends Attribute
+  val myAttributes = Attributes(MyAttribute())
 
   "A LazySink" must {
     "work in happy case" in assertAllStagesStopped {
@@ -157,6 +159,16 @@ class LazySinkSpec extends StreamSpec("""
       // the actual matval from Sink.seq should be failed when the stream fails
       innerMatVal.failed.futureValue should ===(MyException)
 
+    }
+
+    "provide attributes to inner source" in assertAllStagesStopped {
+      val attributes = Source
+        .single(Done)
+        .toMat(Sink.lazyFutureSink(() => Future(Sink.fromGraph(new AttributesSink()))))(Keep.right)
+        .addAttributes(myAttributes)
+        .run()
+
+      attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
     }
   }
 
