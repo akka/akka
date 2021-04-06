@@ -209,8 +209,7 @@ object EventSourcedBehavior {
    * it will be unknown if the event has been persisted.
    *
    * This supervision is only around the event sourced behavior not any outer setup/withTimers
-   * block. If using restart any actions e.g. scheduling timers, can be done on the PreRestart
-   * signal or on the RecoveryCompleted signal.
+   * block. If using restart, any actions e.g. scheduling timers, can be done on the PreRestart
    *
    * If not specified the actor will be stopped on failure.
    */
