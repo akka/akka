@@ -232,6 +232,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
     var tick = startTick
     var totalTick: Long = tick // tick count that doesn't wrap around, used for calculating sleep time
     val wheel = Array.fill(WheelSize)(new TaskQueue)
+    var spareTaskQueue = new TaskQueue
 
     private def clearAll(): immutable.Seq[TimerTask] = {
       @tailrec def collect(q: TaskQueue, acc: Vector[TimerTask]): Vector[TimerTask] = {
@@ -300,7 +301,7 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
       } else {
         val bucket = tick & wheelMask
         val tasks = wheel(bucket)
-        val putBack = new TaskQueue
+        val putBack = spareTaskQueue
 
         @tailrec def executeBucket(): Unit = tasks.pollNode() match {
           case null => ()
@@ -316,6 +317,8 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
         }
         executeBucket()
         wheel(bucket) = putBack
+        // we know tasks is empty now, so we can re-use it next tick
+        spareTaskQueue = tasks
 
         tick += 1
         totalTick += 1
