@@ -28,8 +28,7 @@ object ActorSource {
    * IllegalArgument("Backpressure overflowStrategy not supported") will be thrown if it is passed as argument.
    *
    * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped if there is no demand
-   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter. An async boundary is added after
-   * this Source; as such, it is never safe to assume the downstream will always generate demand.
+   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter.
    *
    * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]]
    * (whose content will be ignored) in which case already buffered elements will be signaled before signaling
