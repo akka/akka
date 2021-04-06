@@ -12,7 +12,7 @@ import akka.stream.StreamRefSettings
 
 /** INTERNAL API */
 @InternalApi
-private[akka] final case class StreamRefSettingsImpl private (
+private[akka] final case class StreamRefSettingsImpl (
     override val bufferCapacity: Int,
     override val demandRedeliveryInterval: FiniteDuration,
     override val subscriptionTimeout: FiniteDuration,

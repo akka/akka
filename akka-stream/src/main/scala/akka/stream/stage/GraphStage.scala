@@ -1243,7 +1243,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
           // started - can just dispatch async message to interpreter
           onAsyncInput(event, promise)
 
-        case list @ Pending(l) =>
+        case list @ Pending(l: List[Event[T]]) =>
           // not started yet
           if (!currentState.compareAndSet(list, Pending[T](Event[T](event, promise) :: l)))
             invokeWithPromise(event, promise)

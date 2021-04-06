@@ -44,7 +44,7 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
 
   private val mkLogger = new AkkaLoggerFactory(system)
 
-  private val log = Logging(system, getClass)
+  private val log = Logging(system, classOf[AkkaSSLConfig])
   log.debug("Initializing AkkaSSLConfig extension...")
 
   /** Can be used to modify the underlying config, most typically used to change a few values in the default config */

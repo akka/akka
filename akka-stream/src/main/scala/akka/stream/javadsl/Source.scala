@@ -2030,9 +2030,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def recoverWith(
       clazz: Class[_ <: Throwable],
       supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
-    recoverWith {
+    recoverWith({
       case elem if clazz.isInstance(elem) => supplier.get()
-    }
+    }: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]])
 
   /**
    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
@@ -2094,7 +2094,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
       supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
     recoverWithRetries(attempts, {
       case elem if clazz.isInstance(elem) => supplier.get()
-    })
+    }: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]])
 
   /**
    * Transform each input element into an `Iterable` of output elements that is

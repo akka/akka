@@ -7,7 +7,7 @@ package akka.stream.impl
 import scala.annotation.tailrec
 import scala.util.control.NoStackTrace
 
-import ResizableMultiReaderRingBuffer._
+import ResizableMultiReaderRingBuffer.{Cursor, Cursors, NothingToReadException}
 
 import akka.annotation.InternalApi
 
@@ -87,7 +87,7 @@ import akka.annotation.InternalApi
       // the growing logic is quite simple: we assemble all current buffer entries in the new array
       // in their natural order (removing potential wrap around) and rebase all indices to zero
       val r = readIx & mask
-      val newArray = new Array[Any](array.length << 1)
+      val newArray = new Array[Any]((array.length << 1))
       System.arraycopy(array, r, newArray, 0, array.length - r)
       System.arraycopy(array, 0, newArray, array.length - r, r)
       @tailrec def rebaseCursors(remaining: List[Cursor]): Unit = remaining match {

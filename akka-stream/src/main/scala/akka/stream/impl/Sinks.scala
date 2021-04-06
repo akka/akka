@@ -340,7 +340,7 @@ import akka.util.ccompat._
       }
 
       private val callback = getAsyncCallback[Output[T]] {
-        case QueueSink.Pull(pullPromise) =>
+        case QueueSink.Pull(pullPromise: Requested[T]) =>
           if (currentRequests.isFull)
             pullPromise.failure(
               new IllegalStateException(s"Too many concurrent pulls. Specified maximum is $maxConcurrentPulls. " +

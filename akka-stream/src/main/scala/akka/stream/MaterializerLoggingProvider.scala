@@ -12,6 +12,6 @@ import akka.event.LoggingAdapter
  */
 trait MaterializerLoggingProvider { this: Materializer =>
 
-  def makeLogger(logSource: Class[_]): LoggingAdapter
+  def makeLogger(logSource: Class[Any]): LoggingAdapter
 
 }

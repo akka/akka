@@ -25,6 +25,7 @@ import akka.japi.function
 import akka.japi.function.Creator
 import akka.stream.{ javadsl, scaladsl, _ }
 import akka.stream.impl.LinearTraversalBuilder
+import akka.stream.scaladsl.SinkToCompletionStage
 
 /** Java API */
 object Sink {

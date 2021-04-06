@@ -2070,8 +2070,9 @@ private[stream] object Collect {
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler { self =>
       override def toString = s"Reduce.Logic(aggregator=$aggregator)"
-
+      
       private var aggregator: T = _
+      private var empty: T = aggregator
 
       private def decider =
         inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
@@ -2100,7 +2101,7 @@ private[stream] object Collect {
             decider(ex) match {
               case Supervision.Stop => failStage(ex)
               case Supervision.Restart =>
-                aggregator = _: T
+                aggregator = empty
                 setInitialInHandler()
               case _ => ()
 
