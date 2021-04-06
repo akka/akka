@@ -161,7 +161,7 @@ class LazySinkSpec extends StreamSpec("""
 
     }
 
-    "provide attributes to inner source" in assertAllStagesStopped {
+    "provide attributes to inner sink" in assertAllStagesStopped {
       val attributes = Source
         .single(Done)
         .toMat(Sink.lazyFutureSink(() => Future(Sink.fromGraph(new AttributesSink()))))(Keep.right)
