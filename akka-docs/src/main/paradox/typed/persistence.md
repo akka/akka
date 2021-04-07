@@ -155,6 +155,7 @@ function e.g @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).the
 ### Event handler
 
 When an event has been persisted successfully the new state is created by applying the event to the current state with the `eventHandler`.
+In the case of multiple persisted events, the `eventHandler` is called with each event in the same order as they were passed to @scala[`Effect.persist(..)`]@java[`Effect().persist(..)`].
 
 The state is typically defined as an immutable class and then the event handler returns a new instance of the state.
 You may choose to use a mutable class for the state, and then the event handler may update the state instance and
@@ -235,7 +236,8 @@ chain side effects that are to be performed after successful persist which is ac
 function e.g @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
 
 In the example below the state is sent to the `subscriber` ActorRef. Note that the new state after applying 
-the event is passed as parameter of the `thenRun` function.
+the event is passed as parameter of the `thenRun` function. In the case where multiple events have been persisted,
+the state passed to `thenRun` is the updated state after all events have been handled.
 
 All `thenRun` registered callbacks are executed sequentially after successful execution of the persist statement
 (or immediately, in case of `none` and `unhandled`).
