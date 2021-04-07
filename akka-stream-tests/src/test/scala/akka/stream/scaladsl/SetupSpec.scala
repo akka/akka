@@ -59,7 +59,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      source.runWith(Sink.head).futureValue shouldBe Some("setup-setup-my-name")
+      source.runWith(Sink.head).futureValue shouldBe Some("setup-my-name-setup")
     }
 
     "handle factory failure" in {
@@ -133,7 +133,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("setup-setup-my-name")
+      Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("setup-my-name-setup")
     }
 
     "handle factory failure" in {
@@ -200,12 +200,12 @@ class SetupSpec extends StreamSpec {
       val sink = Sink
         .setup { (_, _) =>
           Sink.setup { (_, attr) =>
-            Sink.fold(attr.nameLifted)(Keep.left)
+            Sink.cancelled.mapMaterializedValue(_ => attr.nameLifted)
           }
         }
         .named("my-name")
 
-      Source.empty.runWith(sink).flatten.flatten.futureValue shouldBe Some("setup-setup-my-name")
+      Source.empty.runWith(sink).flatten.futureValue shouldBe Some("setup-my-name-setup")
     }
 
     "handle factory failure" in {

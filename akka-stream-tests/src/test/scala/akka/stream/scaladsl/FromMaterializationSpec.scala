@@ -7,6 +7,7 @@ package akka.stream.scaladsl
 import akka.NotUsed
 import akka.stream.Attributes
 import akka.stream.Attributes.Attribute
+import akka.stream.scaladsl.AttributesSpec.{ whateverAttribute, WhateverAttribute }
 import akka.stream.testkit.StreamSpec
 
 class FromMaterializerSpec extends StreamSpec {
@@ -61,7 +62,7 @@ class FromMaterializerSpec extends StreamSpec {
         }
         .named("my-name")
 
-      source.runWith(Sink.head).futureValue shouldBe Some("setup-setup-my-name")
+      source.runWith(Sink.head).futureValue shouldBe Some("setup-my-name-setup")
     }
 
     "preserve attributes of inner source" in {
@@ -74,6 +75,20 @@ class FromMaterializerSpec extends StreamSpec {
       }
 
       source.runWith(Sink.head).futureValue shouldBe Some(MyAttribute())
+    }
+
+    "give priority to attributes of inner source" in {
+      val source = Source
+        .fromMaterializer { (_, _) =>
+          Source
+            .fromMaterializer { (_, attr) =>
+              Source.single(attr.get[WhateverAttribute])
+            }
+            .addAttributes(whateverAttribute("inner"))
+        }
+        .addAttributes(whateverAttribute("outer"))
+
+      source.runWith(Sink.head).futureValue shouldBe Some(WhateverAttribute("inner"))
     }
 
     "handle factory failure" in {
@@ -147,7 +162,7 @@ class FromMaterializerSpec extends StreamSpec {
         }
         .named("my-name")
 
-      Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("setup-setup-my-name")
+      Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("setup-my-name-setup")
     }
 
     "preserve attributes of inner flow" in {
@@ -160,6 +175,20 @@ class FromMaterializerSpec extends StreamSpec {
       }
 
       Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some(MyAttribute())
+    }
+
+    "give priority to attributes of inner flow" in {
+      val flow = Flow
+        .fromMaterializer { (_, _) =>
+          Flow
+            .fromMaterializer { (_, attr) =>
+              Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.get[WhateverAttribute]))
+            }
+            .addAttributes(whateverAttribute("inner"))
+        }
+        .addAttributes(whateverAttribute("outer"))
+
+      Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some(WhateverAttribute("inner"))
     }
 
     "handle factory failure" in {
@@ -226,24 +255,38 @@ class FromMaterializerSpec extends StreamSpec {
       val sink = Sink
         .fromMaterializer { (_, _) =>
           Sink.fromMaterializer { (_, attr) =>
-            Sink.fold(attr.nameLifted)(Keep.left)
+            Sink.cancelled.mapMaterializedValue(_ => attr.nameLifted)
           }
         }
         .named("my-name")
 
-      Source.empty.runWith(sink).flatten.flatten.futureValue shouldBe Some("setup-setup-my-name")
+      Source.empty.runWith(sink).flatten.futureValue shouldBe Some("setup-my-name-setup")
     }
 
     "preserve attributes of inner sink" in {
       val sink = Sink.fromMaterializer { (_, _) =>
         Sink
           .fromMaterializer { (_, attr) =>
-            Sink.fold(attr.get[MyAttribute])(Keep.left)
+            Sink.cancelled.mapMaterializedValue(_ => attr.get[MyAttribute])
           }
           .addAttributes(myAttributes)
       }
 
-      Source.empty.runWith(sink).flatten.flatten.futureValue shouldBe Some(MyAttribute())
+      Source.empty.runWith(sink).flatten.futureValue shouldBe Some(MyAttribute())
+    }
+
+    "give priority to attributes of inner sink" in {
+      val sink = Sink
+        .fromMaterializer { (_, _) =>
+          Sink
+            .fromMaterializer { (_, attr) =>
+              Sink.cancelled.mapMaterializedValue(_ => attr.get[WhateverAttribute])
+            }
+            .addAttributes(whateverAttribute("inner"))
+        }
+        .addAttributes(whateverAttribute("outer"))
+
+      Source.empty.runWith(sink).flatten.futureValue shouldBe Some(WhateverAttribute("inner"))
     }
 
     "handle factory failure" in {

@@ -44,7 +44,8 @@ import akka.stream.stage.OutHandler
       try {
         val sink = factory(materializer, attributes)
 
-        val mat = Source.fromGraph(subOutlet.source).runWith(sink.addAttributes(attributes))(subFusingMaterializer)
+        val mat =
+          subFusingMaterializer.materialize(Source.fromGraph(subOutlet.source).toMat(sink)(Keep.right), attributes)
         matPromise.success(mat)
       } catch {
         case NonFatal(ex) =>
@@ -87,11 +88,9 @@ import akka.stream.stage.OutHandler
       try {
         val flow = factory(materializer, attributes)
 
-        val mat = Source
-          .fromGraph(subOutlet.source)
-          .viaMat(flow.addAttributes(attributes))(Keep.right)
-          .to(Sink.fromGraph(subInlet.sink))
-          .run()(subFusingMaterializer)
+        val mat = subFusingMaterializer.materialize(
+          Source.fromGraph(subOutlet.source).viaMat(flow)(Keep.right).to(Sink.fromGraph(subInlet.sink)),
+          attributes)
         matPromise.success(mat)
       } catch {
         case NonFatal(ex) =>
@@ -127,7 +126,7 @@ import akka.stream.stage.OutHandler
       try {
         val source = factory(materializer, attributes)
 
-        val mat = source.addAttributes(attributes).to(Sink.fromGraph(subInlet.sink)).run()(subFusingMaterializer)
+        val mat = subFusingMaterializer.materialize(source.to(Sink.fromGraph(subInlet.sink)), attributes)
         matPromise.success(mat)
       } catch {
         case NonFatal(ex) =>
