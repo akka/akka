@@ -31,6 +31,10 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
   }
 
   /**
+   * If using onPersistFailure the supervision is only around the event sourced behavior not any outer setup/withTimers
+   * block. If using restart any actions e.g. scheduling timers, can be done on the PreRestart signal or on the
+   * RecoveryCompleted signal.
+   *
    * @param persistenceId stable unique identifier for the event sourced behavior
    * @param onPersistFailure BackoffSupervisionStrategy for persist failures
    */
