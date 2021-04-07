@@ -386,6 +386,8 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
 
   private def stopChildren(ctx: TypedActorContext[_], children: Set[ActorRef[Nothing]]): Unit = {
     children.foreach { child =>
+      // Unwatch in case the actor being restarted used watchWith to watch the child.
+      ctx.asScala.unwatch(child)
       ctx.asScala.watch(child)
       ctx.asScala.stop(child)
     }
