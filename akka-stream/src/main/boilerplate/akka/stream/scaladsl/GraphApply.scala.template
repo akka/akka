@@ -22,6 +22,9 @@ trait GraphApply {
    * Creates a new [[Graph]] by importing the given graph `g1` and passing its [[Shape]]
    * along with the [[GraphDSL.Builder]] to the given create function.
    */
+   /* FIXME stuck on Scala 3 not inferring Graph.Shape for g1.Shape to the concrete type here, while 2.13 does, so the graph builder
+    * implicits for the concrete type is not found and all GraphDSL usage fails to compile.
+    */
   def create[S <: Shape, Mat](g1: Graph[Shape, Mat])(buildBlock: GraphDSL.Builder[Mat] => (g1.Shape) => S): Graph[S, Mat] = {
     val builder = new GraphDSL.Builder
     val s1 = builder.add(g1, Keep.right)
