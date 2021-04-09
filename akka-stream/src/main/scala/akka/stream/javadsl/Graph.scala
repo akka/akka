@@ -675,7 +675,7 @@ object GraphDSL extends GraphCreate {
 
     final class ReverseOps[T](out: Inlet[T]) {
       def fromOutlet(dst: Outlet[_ <: T]): Builder[Mat] = { out <~ dst; self }
-      def from(dst: SourceShape[_ <: T]): Builder[Mat] = { out <~ dst; self }
+      def from(dst: SourceShape[_ <: T]): Builder[Mat] = { out <~ dst.asInstanceOf[SourceShape[T]]; self }
       def fromFanIn[U](j: UniformFanInShape[U, _ <: T]): Builder[Mat] = { out <~ j; self }
       def fromFanOut[U](j: UniformFanOutShape[U, _ <: T]): Builder[Mat] = { out <~ j; self }
       def via[U](f: FlowShape[U, _ <: T]): ReverseOps[U] = to((out <~ f).inlet)

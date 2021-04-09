@@ -1573,7 +1573,8 @@ object GraphDSL extends GraphApply {
      * materialized value and returning the copied Ports that are now to be
      * connected.
      */
-    def add[S <: Shape](graph: Graph[S, _]): S = {
+    // FIXME source incompatible change for Scala 3 adding the M type parameter
+    def add[S <: Shape, M](graph: Graph[S, M]): S = {
       val newShape = graph.shape.deepCopy()
       traversalBuilderInProgress = traversalBuilderInProgress.add(graph.traversalBuilder, newShape, Keep.left)
 
@@ -1589,7 +1590,7 @@ object GraphDSL extends GraphApply {
      * This is only used by the materialization-importing apply methods of Source,
      * Flow, Sink and Graph.
      */
-    private[stream] def add[S <: Shape, A](graph: Graph[S, _], transform: (A) => Any): S = {
+    private[stream] def add[S <: Shape, A, M](graph: Graph[S, M], transform: (A) => Any): S = {
       val newShape = graph.shape.deepCopy()
       traversalBuilderInProgress =
         traversalBuilderInProgress.add(graph.traversalBuilder.transformMat(transform), newShape, Keep.right)
@@ -1606,7 +1607,7 @@ object GraphDSL extends GraphApply {
      * This is only used by the materialization-importing apply methods of Source,
      * Flow, Sink and Graph.
      */
-    private[stream] def add[S <: Shape, A, B](graph: Graph[S, _], combine: (A, B) => Any): S = {
+    private[stream] def add[S <: Shape, A, B, M](graph: Graph[S, M], combine: (A, B) => Any): S = {
       val newShape = graph.shape.deepCopy()
       traversalBuilderInProgress = traversalBuilderInProgress.add(graph.traversalBuilder, newShape, combine)
 

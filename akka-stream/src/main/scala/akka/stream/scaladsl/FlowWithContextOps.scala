@@ -190,7 +190,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.log]]
    */
-  def log(name: String, extract: Out => Any = ConstantFun.scalaIdentityFunction)(
+  def log(name: String, extract: Out @uncheckedVariance => Any = ConstantFun.scalaIdentityFunction)(
       implicit log: LoggingAdapter = null): Repr[Out, Ctx] = {
     val extractWithContext: ((Out, Ctx)) => Any = { case (e, _) => extract(e) }
     via(flow.log(name, extractWithContext)(log))

@@ -280,7 +280,7 @@ case class AmorphousShape(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Se
  * A Source [[Shape]] has exactly one output and no inputs, it models a source
  * of data.
  */
-final case class SourceShape[+T](out: Outlet[T @uncheckedVariance]) extends Shape {
+final case class SourceShape[T](out: Outlet[T @uncheckedVariance]) extends Shape {
   override val inlets: immutable.Seq[Inlet[_]] = EmptyImmutableSeq
   override val outlets: immutable.Seq[Outlet[_]] = out :: Nil
 

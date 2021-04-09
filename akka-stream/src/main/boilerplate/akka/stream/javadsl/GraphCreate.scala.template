@@ -22,7 +22,7 @@ private[stream] abstract class GraphCreate {
    */
   def create[S1 <: Shape, S <: Shape, M](g1: Graph[S1, M],
       block: function.Function2[GraphDSL.Builder[M], S1, S]): Graph[S, M] =
-    scaladsl.GraphDSL.create(g1) { b => s => block.apply(b.asJava, s.asInstanceOf[S1]) }
+    scaladsl.GraphDSL.create(g1) { b => s => block.apply(b.asJava, s) }
 
   /**
    * Creates a new [[Graph]] by importing the given graphs and passing their [[Shape]]s
@@ -30,7 +30,7 @@ private[stream] abstract class GraphCreate {
    */
   def create[S1 <: Shape, S2 <: Shape, S <: Shape, M1, M2, M](g1: Graph[S1, M1], g2: Graph[S2, M2], combineMat: function.Function2[M1, M2, M],
       block: function.Function3[GraphDSL.Builder[M], S1, S2, S]): Graph[S, M] =
-    scaladsl.GraphDSL.create(g1, g2)(combineMat.apply) { b => (s1, s2) => block.apply(b.asJava, s1.asInstanceOf[S1], s2.asInstanceOf[S2]) }
+    scaladsl.GraphDSL.create(g1, g2)(combineMat.apply) { b => (s1, s2) => block.apply(b.asJava, s1, s2) }
 
   [3..21#/**
    * Creates a new [[Graph]] by importing the given graphs and passing their [[Shape]]s
@@ -38,7 +38,7 @@ private[stream] abstract class GraphCreate {
    */
   def create1[[#S1 <: Shape#], S <: Shape, [#M1#], M]([#g1: Graph[S1, M1]#], combineMat: function.Function1[[#M1#], M],
       block: function.Function2[GraphDSL.Builder[M], [#S1#], S]): Graph[S, M] =
-    scaladsl.GraphDSL.create([#g1#])(combineMat.apply) { b => ([#s1#]) => block.apply(b.asJava, [#s1.asInstanceOf[S1]#]) }#
+    scaladsl.GraphDSL.create([#g1#])(combineMat.apply) { b => ([#s1#]) => block.apply(b.asJava, [#s1#]) }#
 
   ]
 }
