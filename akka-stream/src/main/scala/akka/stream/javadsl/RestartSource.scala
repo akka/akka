@@ -239,8 +239,8 @@ object RestartSource {
   /**
    * Wrap the given [[Source]] with a [[Source]] that will restart it when it fails using an exponential backoff.
    *
-   * This [[Source]] will not emit a complete or failure as long as maxRestarts is not reached, since the completion
-   * or failure of the wrapped [[Source]] is handled by restarting it. The wrapped [[Source]] can however be cancelled
+   * This [[Source]] will not emit a failure as long as maxRestarts is not reached, since failure of the wrapped [[Source]]
+   * is handled by restarting it. The wrapped [[Source]] can be cancelled
    * by cancelling this [[Source]]. When that happens, the wrapped [[Source]], if currently running will be cancelled,
    * and it will not be restarted. This can be triggered simply by the downstream cancelling, or externally by
    * introducing a [[KillSwitch]] right after this [[Source]] in the graph.
@@ -273,8 +273,8 @@ object RestartSource {
   /**
    * Wrap the given [[Source]] with a [[Source]] that will restart it when it fails using an exponential backoff.
    *
-   * This [[Source]] will not emit a complete or failure as long as maxRestarts is not reached, since the completion
-   * or failure of the wrapped [[Source]] is handled by restarting it. The wrapped [[Source]] can however be cancelled
+   * This [[Source]] will not emit a failure as long as maxRestarts is not reached, since failure of the wrapped [[Source]]
+   * is handled by restarting it. The wrapped [[Source]] can be cancelled
    * by cancelling this [[Source]]. When that happens, the wrapped [[Source]], if currently running will be cancelled,
    * and it will not be restarted. This can be triggered simply by the downstream cancelling, or externally by
    * introducing a [[KillSwitch]] right after this [[Source]] in the graph.
@@ -307,8 +307,8 @@ object RestartSource {
   /**
    * Wrap the given [[Source]] with a [[Source]] that will restart it when it fails using an exponential backoff.
    *
-   * This [[Source]] will not emit a complete or failure as long as maxRestarts is not reached, since the completion
-   * or failure of the wrapped [[Source]] is handled by restarting it. The wrapped [[Source]] can however be cancelled
+   * This [[Source]] will not emit a failure as long as maxRestarts is not reached, since failure of the wrapped [[Source]]
+   * is handled by restarting it. The wrapped [[Source]] can be cancelled
    * by cancelling this [[Source]]. When that happens, the wrapped [[Source]], if currently running will be cancelled,
    * and it will not be restarted. This can be triggered simply by the downstream cancelling, or externally by
    * introducing a [[KillSwitch]] right after this [[Source]] in the graph.
