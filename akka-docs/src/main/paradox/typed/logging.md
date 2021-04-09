@@ -188,6 +188,7 @@ We recommend [Logback](http://logback.qos.ch/):
 
 Logback has flexible configuration options and details can be found in the
 [Logback manual](https://logback.qos.ch/manual/configuration.html) and other external resources.
+Additionally, the [akka-logback](https://github.com/armanbilge/akka-logback) extension lets you import Akka config settings into your Logback configuration.
 
 One part that is important to highlight is the importance of configuring an [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender),
 because it offloads rendering of logging events to a background thread, increasing performance. It doesn't block
