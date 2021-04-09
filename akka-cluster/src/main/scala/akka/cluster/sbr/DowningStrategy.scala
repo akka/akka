@@ -317,17 +317,10 @@ import akka.coordination.lease.scaladsl.Lease
     unreachableMembers.forall(m => m.status == MemberStatus.Down || m.status == MemberStatus.Exiting)
   }
 
-  def reverseDecision(decision: Decision): Decision = {
+  def reverseDecision(decision: AcquireLeaseDecision): Decision = {
     decision match {
-      case DownUnreachable                           => DownReachable
       case AcquireLeaseAndDownUnreachable(_)         => DownReachable
-      case DownReachable                             => DownUnreachable
-      case DownAll                                   => DownAll
-      case DownIndirectlyConnected                   => ReverseDownIndirectlyConnected
       case AcquireLeaseAndDownIndirectlyConnected(_) => ReverseDownIndirectlyConnected
-      case ReverseDownIndirectlyConnected            => DownIndirectlyConnected
-      case DownSelfQuarantinedByRemote =>
-        throw new IllegalArgumentException("Not expected to ever try to reverse DownSelfQuarantinedByRemote")
     }
   }
 
