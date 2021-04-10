@@ -9,7 +9,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
 //#sbt-multi-jvm
 
 addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.6.0")
-addSbtPlugin("com.lightbend.sbt" % "sbt-bill-of-materials" % "1.0.1")
+addSbtPlugin("com.lightbend.sbt" % "sbt-bill-of-materials" % "1.0.2")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.2")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.25")
 // sbt-osgi 0.9.5 is available but breaks including jdk9-only classes
