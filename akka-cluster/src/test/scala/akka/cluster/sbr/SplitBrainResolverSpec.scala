@@ -846,7 +846,7 @@ class SplitBrainResolverSpec
       val decision1 = strategy1.decide()
       decision1 should ===(AcquireLeaseAndDownUnreachable(Duration.Zero))
       strategy1.nodesToDown(decision1) should ===(side2Nodes)
-      val reverseDecision1 = strategy1.reverseDecision(decision1)
+      val reverseDecision1 = strategy1.reverseDecision(decision1.asInstanceOf[AcquireLeaseDecision])
       reverseDecision1 should ===(DownReachable)
       strategy1.nodesToDown(reverseDecision1) should ===(side1Nodes)
 
@@ -854,7 +854,7 @@ class SplitBrainResolverSpec
       val decision2 = strategy2.decide()
       decision2 should ===(AcquireLeaseAndDownUnreachable(acquireLeaseDelayForMinority))
       strategy2.nodesToDown(decision2) should ===(side1Nodes)
-      val reverseDecision2 = strategy2.reverseDecision(decision2)
+      val reverseDecision2 = strategy2.reverseDecision(decision2.asInstanceOf[AcquireLeaseDecision])
       reverseDecision2 should ===(DownReachable)
       strategy2.nodesToDown(reverseDecision2) should ===(side2Nodes)
     }
@@ -888,7 +888,7 @@ class SplitBrainResolverSpec
       val decision1 = strategy1.decide()
       decision1 should ===(AcquireLeaseAndDownIndirectlyConnected(Duration.Zero))
       strategy1.nodesToDown(decision1) should ===(Set(memberA.uniqueAddress, memberB.uniqueAddress))
-      val reverseDecision1 = strategy1.reverseDecision(decision1)
+      val reverseDecision1 = strategy1.reverseDecision(decision1.asInstanceOf[AcquireLeaseDecision])
       reverseDecision1 should ===(ReverseDownIndirectlyConnected)
       strategy1.nodesToDown(reverseDecision1) should ===(side1Nodes)
     }
@@ -908,7 +908,7 @@ class SplitBrainResolverSpec
       val decision1 = strategy1.decide()
       decision1 should ===(AcquireLeaseAndDownIndirectlyConnected(Duration.Zero))
       strategy1.nodesToDown(decision1) should ===(Set(memberB, memberC, memberD, memberE).map(_.uniqueAddress))
-      val reverseDecision1 = strategy1.reverseDecision(decision1)
+      val reverseDecision1 = strategy1.reverseDecision(decision1.asInstanceOf[AcquireLeaseDecision])
       reverseDecision1 should ===(ReverseDownIndirectlyConnected)
       strategy1.nodesToDown(reverseDecision1) should ===(side1Nodes)
 
@@ -921,7 +921,7 @@ class SplitBrainResolverSpec
       val decision2 = strategy2.decide()
       decision2 should ===(AcquireLeaseAndDownUnreachable(acquireLeaseDelayForMinority))
       strategy2.nodesToDown(decision2) should ===(side1Nodes)
-      val reverseDecision2 = strategy2.reverseDecision(decision2)
+      val reverseDecision2 = strategy2.reverseDecision(decision2.asInstanceOf[AcquireLeaseDecision])
       reverseDecision2 should ===(DownReachable)
       strategy2.nodesToDown(reverseDecision2) should ===(side2Nodes)
 
@@ -932,7 +932,7 @@ class SplitBrainResolverSpec
       val decision3 = strategy3.decide()
       decision3 should ===(AcquireLeaseAndDownIndirectlyConnected(Duration.Zero))
       strategy3.nodesToDown(decision3) should ===(side1Nodes)
-      val reverseDecision3 = strategy3.reverseDecision(decision3)
+      val reverseDecision3 = strategy3.reverseDecision(decision3.asInstanceOf[AcquireLeaseDecision])
       reverseDecision3 should ===(ReverseDownIndirectlyConnected)
       strategy3.nodesToDown(reverseDecision3) should ===(Set(memberB, memberC, memberD, memberE).map(_.uniqueAddress))
 
