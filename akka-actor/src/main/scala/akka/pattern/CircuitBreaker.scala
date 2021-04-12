@@ -411,7 +411,7 @@ class CircuitBreaker(
       callTimeout)
 
   /**
-   * Java API for [[#withSyncCircuitBreaker]]. Throws [[java.util.concurrent.TimeoutException]] if the call timed out.
+   * Java API for [[withSyncCircuitBreaker[T](body:=>T):T* withSyncCircuitBreaker(=>T)]]. Throws [[java.util.concurrent.TimeoutException]] if the call timed out.
    *
    * @param body Call needing protected
    * @return The result of the call
@@ -420,7 +420,7 @@ class CircuitBreaker(
     callWithSyncCircuitBreaker(body, CircuitBreaker.exceptionAsFailureJava[T])
 
   /**
-   * Java API for [[#withSyncCircuitBreaker]]. Throws [[java.util.concurrent.TimeoutException]] if the call timed out.
+   * Java API for [[withSyncCircuitBreaker[T](body:=>T,defineFailureFn:* withSyncCircuitBreaker[T](=>T,Try[T]=>Boolean)]]. Throws [[java.util.concurrent.TimeoutException]] if the call timed out.
    *
    * @param body Call needing protected
    * @param defineFailureFn function that define what should be consider failure and thus increase failure count
