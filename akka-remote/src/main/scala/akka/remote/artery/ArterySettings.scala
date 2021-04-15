@@ -20,6 +20,7 @@ import akka.util.Helpers.Requiring
 import akka.util.Helpers.toRootLowerCase
 import akka.util.WildcardIndex
 import akka.util.ccompat.JavaConverters._
+import akka.io.dns.internal.AsyncDnsResolver
 
 /** INTERNAL API */
 private[akka] final class ArterySettings private (config: Config) {
@@ -292,7 +293,11 @@ private[akka] object ArterySettings {
   def getHostname(key: String, config: Config): String = config.getString(key) match {
     case "<getHostAddress>" => InetAddress.getLocalHost.getHostAddress
     case "<getHostName>"    => InetAddress.getLocalHost.getHostName
-    case other              => other
+    case other =>
+      if (other.startsWith("[") && other.endsWith("]")) other
+      else if (AsyncDnsResolver.isIpv6Address(other)) {
+        "[" + other + "]"
+      } else other
   }
 
   sealed trait Transport {
