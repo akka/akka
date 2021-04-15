@@ -344,7 +344,7 @@ import akka.util.OptionVal
         case OptionVal.Some(e) =>
           tryOnSubscribe(subscriber, CancelledSubscription)
           tryOnError(subscriber, e)
-        case OptionVal.None =>
+        case _ =>
           tryOnSubscribe(subscriber, CancelledSubscription)
           tryOnComplete(subscriber)
       } catch {
@@ -761,6 +761,8 @@ import akka.util.OptionVal
       shortCircuitBuffer.poll() match {
         case b: BoundaryEvent => processEvent(b)
         case Resume           => finishShellRegistration()
+        case unexpected =>
+          throw new IllegalStateException(s"Unexpected element in short circuit buffer: '${unexpected.getClass}'")
       }
       shortCircuitBatch()
     }

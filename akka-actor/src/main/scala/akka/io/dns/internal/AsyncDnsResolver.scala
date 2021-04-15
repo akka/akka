@@ -94,6 +94,7 @@ private[io] final class AsyncDnsResolver(
           val record = address match {
             case _: Inet4Address           => ARecord(name, Ttl.effectivelyForever, address)
             case ipv6address: Inet6Address => AAAARecord(name, Ttl.effectivelyForever, ipv6address)
+            case unexpected                => throw new IllegalArgumentException(s"Unexpected address: $unexpected")
           }
           DnsProtocol.Resolved(name, record :: Nil)
         }

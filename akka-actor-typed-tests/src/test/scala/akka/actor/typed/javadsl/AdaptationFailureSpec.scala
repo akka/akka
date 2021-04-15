@@ -86,6 +86,7 @@ class AdaptationFailureSpec extends ScalaTestWithActorTestKit with AnyWordSpecLi
               case (_, Terminated(`ref`)) =>
                 probe.ref ! "actor-stopped"
                 Behaviors.same
+              case _ => Behaviors.unhandled
             }
           })
 

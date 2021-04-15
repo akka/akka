@@ -25,6 +25,7 @@ object ClusterShardingGetStatsSpec {
   }
   val extractShardId: ShardRegion.ExtractShardId = {
     case PingPongActor.Ping(id) => (id % numberOfShards).toString
+    case _                      => throw new IllegalArgumentException()
   }
 }
 

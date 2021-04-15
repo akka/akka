@@ -394,6 +394,8 @@ private[remote] class ProtocolStateActor(
       d.wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(self))
       initHandshakeTimer()
       startWith(WaitHandshake, d)
+
+    case _ => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
   }
 
   initHandshakeTimer()

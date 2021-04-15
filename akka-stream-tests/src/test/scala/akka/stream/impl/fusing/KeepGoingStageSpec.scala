@@ -26,14 +26,14 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class KeepGoingStageSpec extends StreamSpec {
 
-  trait PingCmd extends NoSerializationVerificationNeeded
+  sealed trait PingCmd extends NoSerializationVerificationNeeded
   case class Register(probe: ActorRef) extends PingCmd
   case object Ping extends PingCmd
   case object CompleteStage extends PingCmd
   case object FailStage extends PingCmd
   case object Throw extends PingCmd
 
-  trait PingEvt extends NoSerializationVerificationNeeded
+  sealed trait PingEvt extends NoSerializationVerificationNeeded
   case object Pong extends PingEvt
   case object PostStop extends PingEvt
   case object UpstreamCompleted extends PingEvt

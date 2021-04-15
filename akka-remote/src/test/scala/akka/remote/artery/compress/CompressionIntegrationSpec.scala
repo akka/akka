@@ -5,15 +5,15 @@
 package akka.remote.artery.compress
 
 import scala.concurrent.duration._
-
 import com.typesafe.config.ConfigFactory
-
 import akka.actor._
 import akka.actor.ExtendedActorSystem
 import akka.remote.artery.ArteryMultiNodeSpec
 import akka.remote.artery.compress.CompressionProtocol.Events
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit._
+
+import java.io.NotSerializableException
 
 object CompressionIntegrationSpec {
 
@@ -419,10 +419,12 @@ class TestMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
   override def manifest(o: AnyRef): String =
     o match {
       case _: TestMessage => TestMessageManifest
+      case _              => throw new NotSerializableException()
     }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
     case msg: TestMessage => msg.name.getBytes
+    case _                => throw new NotSerializableException()
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {

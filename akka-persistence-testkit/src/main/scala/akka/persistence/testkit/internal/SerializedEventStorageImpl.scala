@@ -43,6 +43,7 @@ private[testkit] class SerializedEventStorageImpl(system: ActorSystem) extends E
       val (payload, tags) = pr.payload match {
         case Tagged(event: AnyRef, tags) => (event, tags)
         case event: AnyRef               => (event, Set.empty[String])
+        case p                           => throw new RuntimeException(s"Unexpected payload: $p")
       }
       val s = serialization.findSerializerFor(payload)
       val manifest = Serializers.manifestFor(s, payload)

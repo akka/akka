@@ -82,6 +82,7 @@ class ClusterMetricsExtensionSpec
               loadAverageMock.get should ===(loadAverageEwma +- epsilon)
               cpuCombinedMock.get should ===(cpuCombinedEwma +- epsilon)
               cpuStolenMock.get should ===(cpuStolenEwma +- epsilon)
+            case _ => fail()
           }
       }
     }

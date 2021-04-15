@@ -313,6 +313,7 @@ object MessageSerializerRemotingSpec {
       case a: AtomicWrite =>
         a.payload.foreach {
           case p @ PersistentRepr(MyPayload(data), _) => p.sender ! s"p${data}"
+          case x                                      => throw new RuntimeException(s"Unexpected payload: $x")
         }
     }
   }
@@ -383,6 +384,7 @@ class MyPayloadSerializer extends Serializer {
 
   def toBinary(o: AnyRef): Array[Byte] = o match {
     case MyPayload(data) => s".${data}".getBytes(UTF_8)
+    case x               => throw new NotSerializableException(s"Unexpected object: $x")
   }
 
   def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = manifest match {
@@ -404,6 +406,7 @@ class MyPayload2Serializer extends SerializerWithStringManifest {
 
   def toBinary(o: AnyRef): Array[Byte] = o match {
     case MyPayload2(data, n) => s".$data:$n".getBytes(UTF_8)
+    case x                   => throw new NotSerializableException(s"Unexpected object: $x")
   }
 
   def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
@@ -425,6 +428,7 @@ class MySnapshotSerializer extends Serializer {
 
   def toBinary(o: AnyRef): Array[Byte] = o match {
     case MySnapshot(data) => s".${data}".getBytes(UTF_8)
+    case x                => throw new NotSerializableException(s"Unexpected object: $x")
   }
 
   def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = manifest match {
@@ -444,6 +448,7 @@ class MySnapshotSerializer2 extends SerializerWithStringManifest {
 
   def toBinary(o: AnyRef): Array[Byte] = o match {
     case MySnapshot2(data) => s".${data}".getBytes(UTF_8)
+    case unexpected        => throw new NotSerializableException(s"Unexpected: $unexpected")
   }
 
   def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
@@ -466,6 +471,7 @@ class OldPayloadSerializer extends SerializerWithStringManifest {
     case MyPayload(data) => s".${data}".getBytes(UTF_8)
     case old if old.getClass.getName == OldPayloadClassName =>
       o.toString.getBytes(UTF_8)
+    case x => throw new NotSerializableException(s"Unexpected object: $x")
   }
 
   def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {

@@ -185,6 +185,40 @@ class HubSpec extends StreamSpec {
 
     }
 
+    "complete after draining control is invoked and all connected producers complete" in assertAllStagesStopped {
+      val downstream = TestSubscriber.probe[Int]()
+      val (sink, draining) =
+        MergeHub.sourceWithDraining[Int](16).take(20).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
+      Source(1 to 10).runWith(sink)
+      Source(11 to 20).runWith(sink)
+
+      draining.drainAndComplete()
+
+      downstream.request(20)
+      downstream.expectNextN(20).sorted should ===(1 to 20)
+      downstream.expectComplete()
+    }
+
+    "immediately cancel new producers while draining" in assertAllStagesStopped {
+      val downstream = TestSubscriber.probe[Int]()
+      val (sink, draining) =
+        MergeHub.sourceWithDraining[Int](16).take(20).toMat(Sink.fromSubscriber(downstream))(Keep.left).run()
+      Source(1 to 10).runWith(sink)
+      Source(11 to 20).runWith(sink)
+      draining.drainAndComplete()
+
+      downstream.request(10)
+      downstream.expectNextN(10).sorted should ===(1 to 10)
+
+      val upstream = TestPublisher.probe[Int]()
+      Source.fromPublisher(upstream).runWith(sink)
+      upstream.expectCancellation()
+
+      downstream.request(10)
+      downstream.expectNextN(10).sorted should ===(11 to 20)
+
+      downstream.expectComplete()
+    }
   }
 
   "BroadcastHub" must {

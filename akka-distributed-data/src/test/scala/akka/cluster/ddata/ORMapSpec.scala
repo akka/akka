@@ -21,13 +21,22 @@ class ORMapSpec extends AnyWordSpec with Matchers {
 
     "be able to add entries" in {
       val m = ORMap().put(node1, "a", GSet() + "A").put(node1, "b", GSet() + "B")
-      val GSet(a) = m.entries("a")
+      val a = m.entries("a") match {
+        case GSet(a) => a
+        case _       => fail()
+      }
       a should be(Set("A"))
-      val GSet(b) = m.entries("b")
+      val b = m.entries("b") match {
+        case GSet(b) => b
+        case _       => fail()
+      }
       b should be(Set("B"))
 
       val m2 = m.put(node1, "a", GSet() + "C")
-      val GSet(a2) = m2.entries("a")
+      val a2 = m2.entries("a") match {
+        case GSet(a2) => a2
+        case _        => fail()
+      }
       a2 should be(Set("C"))
 
     }
@@ -38,13 +47,22 @@ class ORMapSpec extends AnyWordSpec with Matchers {
 
       val m1 = ORMap().mergeDelta(md)
 
-      val GSet(a) = m1.entries("a")
+      val a = m1.entries("a") match {
+        case GSet(a) => a
+        case _       => fail()
+      }
       a should be(Set("A"))
-      val GSet(b) = m1.entries("b")
+      val b = m1.entries("b") match {
+        case GSet(b) => b
+        case _       => fail()
+      }
       b should be(Set("B"))
 
       val m2 = m1.put(node1, "a", GSet() + "C")
-      val GSet(a2) = m2.entries("a")
+      val a2 = m2.entries("a") match {
+        case GSet(a2) => a2
+        case _        => fail()
+      }
       a2 should be(Set("C"))
 
     }
@@ -110,26 +128,44 @@ class ORMapSpec extends AnyWordSpec with Matchers {
       // merge both ways
       val merged1 = m1.merge(m2)
       merged1.entries.keySet should contain("a")
-      val GSet(a1) = merged1.entries("a")
+      val a1 = merged1.entries("a") match {
+        case GSet(a1) => a1
+        case _        => fail()
+      }
       a1 should be(Set("A2"))
       merged1.entries.keySet should contain("b")
-      val GSet(b1) = merged1.entries("b")
+      val b1 = merged1.entries("b") match {
+        case GSet(b1) => b1
+        case _        => fail()
+      }
       b1 should be(Set("B1"))
       merged1.entries.keySet should contain("c")
       merged1.entries.keySet should contain("d")
-      val GSet(d1) = merged1.entries("d")
+      val d1 = merged1.entries("d") match {
+        case GSet(d1) => d1
+        case _        => fail()
+      }
       d1 should be(Set("D1", "D2"))
 
       val merged2 = m2.merge(m1)
       merged2.entries.keySet should contain("a")
-      val GSet(a2) = merged1.entries("a")
+      val a2 = merged1.entries("a") match {
+        case GSet(a2) => a2
+        case _        => fail()
+      }
       a2 should be(Set("A2"))
       merged2.entries.keySet should contain("b")
-      val GSet(b2) = merged2.entries("b")
+      val b2 = merged2.entries("b") match {
+        case GSet(b2) => b2
+        case _        => fail()
+      }
       b2 should be(Set("B1"))
       merged2.entries.keySet should contain("c")
       merged2.entries.keySet should contain("d")
-      val GSet(d2) = merged2.entries("d")
+      val d2 = merged2.entries("d") match {
+        case GSet(d2) => d2
+        case _        => fail()
+      }
       d2 should be(Set("D1", "D2"))
     }
 
@@ -553,7 +589,10 @@ class ORMapSpec extends AnyWordSpec with Matchers {
       val m1 = ORMap.empty.put(node1, "a", GSet.empty + "A")
       val m2 = m1.resetDelta.updated(node1, "a", GSet.empty[String])(_.add("B"))
       val m3 = ORMap().mergeDelta(m1.delta.get).mergeDelta(m2.delta.get)
-      val GSet(d3) = m3.entries("a")
+      val d3 = m3.entries("a") match {
+        case GSet(d3) => d3
+        case _        => fail()
+      }
       d3 should be(Set("A", "B"))
     }
 
@@ -562,7 +601,10 @@ class ORMapSpec extends AnyWordSpec with Matchers {
       val m2 = m1.resetDelta.updated(node1, "a", ORSet.empty[String])(_.add(node1, "B"))
       val m3 = ORMap().mergeDelta(m1.delta.get).mergeDelta(m2.delta.get)
 
-      val ORSet(d3) = m3.entries("a")
+      val d3 = m3.entries("a") match {
+        case ORSet(d3) => d3
+        case _         => fail()
+      }
       d3 should be(Set("A", "B"))
     }
 
@@ -572,7 +614,10 @@ class ORMapSpec extends AnyWordSpec with Matchers {
         .updated(node1, "a", GSet.empty[String])(_.add("B"))
         .updated(node1, "a", GSet.empty[String])(_.add("C"))
       val m3 = ORMap().mergeDelta(m1.delta.get).mergeDelta(m2.delta.get)
-      val GSet(d3) = m3.entries("a")
+      val d3 = m3.entries("a") match {
+        case GSet(d3) => d3
+        case _        => fail()
+      }
       d3 should be(Set("A", "B", "C"))
     }
 
@@ -581,7 +626,10 @@ class ORMapSpec extends AnyWordSpec with Matchers {
       val m2 = m1.resetDelta.updated(node1, "a", GCounter.empty)(_.increment(node1, 10))
       val m3 = m2.resetDelta.updated(node2, "a", GCounter.empty)(_.increment(node2, 10))
       val m4 = ORMap().mergeDelta(m1.delta.get).mergeDelta(m2.delta.get).mergeDelta(m3.delta.get)
-      val GCounter(num) = m4.entries("a")
+      val num = m4.entries("a") match {
+        case GCounter(num) => num
+        case _             => fail()
+      }
       num should ===(20)
     }
 
@@ -590,7 +638,10 @@ class ORMapSpec extends AnyWordSpec with Matchers {
       val m2 = m1.resetDelta.updated(node1, "a", PNCounter.empty)(_.increment(node1, 10))
       val m3 = m2.resetDelta.updated(node2, "a", PNCounter.empty)(_.decrement(node2, 10))
       val m4 = ORMap().mergeDelta(m1.delta.get).mergeDelta(m2.delta.get).mergeDelta(m3.delta.get)
-      val PNCounter(num) = m4.entries("a")
+      val num = m4.entries("a") match {
+        case PNCounter(num) => num
+        case _              => fail()
+      }
       num should ===(0)
     }
 
@@ -598,7 +649,10 @@ class ORMapSpec extends AnyWordSpec with Matchers {
       val m1 = ORMap.empty.put(node1, "a", Flag(false))
       val m2 = m1.resetDelta.updated(node1, "a", Flag.Disabled)(_.switchOn)
       val m3 = ORMap().mergeDelta(m1.delta.get).mergeDelta(m2.delta.get)
-      val Flag(d3) = m3.entries("a")
+      val d3 = m3.entries("a") match {
+        case Flag(d3) => d3
+        case _        => fail()
+      }
       d3 should be(true)
     }
 
@@ -689,13 +743,19 @@ class ORMapSpec extends AnyWordSpec with Matchers {
     "have unapply extractor" in {
       val m1 = ORMap.empty.put(node1, "a", Flag(true)).put(node2, "b", Flag(false))
       val _: ORMap[String, Flag] = m1
-      val ORMap(entries1) = m1
+      val entries1 = m1 match {
+        case ORMap(entries1) => entries1
+        case _               => fail()
+      }
       val entries2: Map[String, Flag] = entries1
       entries2 should be(Map("a" -> Flag(true), "b" -> Flag(false)))
 
       Changed(ORMapKey[String, Flag]("key"))(m1) match {
         case c @ Changed(ORMapKey("key")) =>
-          val ORMap(entries3) = c.dataValue
+          val entries3 = c.dataValue match {
+            case ORMap(entries3) => entries3
+            case _               => fail()
+          }
           val entries4: Map[String, ReplicatedData] = entries3
           entries4 should be(Map("a" -> Flag(true), "b" -> Flag(false)))
         case changed =>

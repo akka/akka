@@ -108,6 +108,8 @@ private[akka] class Mailboxes(
           case x =>
             throw new IllegalArgumentException(s"no wildcard type allowed in RequireMessageQueue argument (was [$x])")
         }
+      case unexpected =>
+        throw new IllegalArgumentException(s"Unexpected actor class marker: $unexpected") // will not happen, for exhaustiveness check
     }
 
   // don’t care if this happens twice
@@ -131,6 +133,8 @@ private[akka] class Mailboxes(
               throw new IllegalArgumentException(
                 s"no wildcard type allowed in ProducesMessageQueue argument (was [$x])")
           }
+        case unexpected =>
+          throw new IllegalArgumentException(s"Unexpected message queue type marker: $unexpected") // will not happen, for exhaustiveness check
       }
   }
 

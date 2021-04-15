@@ -145,7 +145,7 @@ object IntroSpec {
     final case class SessionDenied(reason: String) extends SessionEvent
     final case class MessagePosted(screenName: String, message: String) extends SessionEvent
 
-    trait SessionCommand
+    sealed trait SessionCommand
     final case class PostMessage(message: String) extends SessionCommand
     private final case class NotifyClient(message: MessagePosted) extends SessionCommand
     //#chatroom-protocol

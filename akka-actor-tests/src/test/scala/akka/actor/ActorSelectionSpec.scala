@@ -51,6 +51,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
   def empty(path: String) =
     new EmptyLocalActorRef(sysImpl.provider, path match {
       case RelativeActorPath(elems) => sysImpl.lookupRoot.path / elems
+      case _                        => throw new RuntimeException()
     }, system.eventStream)
 
   val idProbe = TestProbe()
@@ -79,6 +80,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
     Await.result(node ? query, timeout.duration) match {
       case ref: ActorRef             => Some(ref)
       case selection: ActorSelection => identify(selection)
+      case _                         => throw new RuntimeException()
     }
   }
 
@@ -365,8 +367,13 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
 
       val probe = TestProbe()
       system.actorSelection("/user/a/*").tell(Identify(1), probe.ref)
-      probe.receiveN(2).map { case ActorIdentity(1, r) => r }.toSet should ===(
-        Set[Option[ActorRef]](Some(b1), Some(b2)))
+      probe
+        .receiveN(2)
+        .map {
+          case ActorIdentity(1, r) => r
+          case _                   => throw new IllegalArgumentException()
+        }
+        .toSet should ===(Set[Option[ActorRef]](Some(b1), Some(b2)))
       probe.expectNoMessage()
 
       system.actorSelection("/user/a/b1/*").tell(Identify(2), probe.ref)

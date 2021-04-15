@@ -562,7 +562,10 @@ private[akka] class LocalActorRefProvider private[akka] (
       system,
       system.guardianProps.getOrElse(Props(classOf[LocalActorRefProvider.Guardian], guardianStrategy)),
       dispatcher,
-      defaultMailbox,
+      system.guardianProps match {
+        case Some(props) => system.mailboxes.lookup(props.mailbox)
+        case None        => defaultMailbox
+      },
       rootGuardian,
       rootPath / "user")
     cell.initChild(ref)
@@ -753,7 +756,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     Serialization.Information(getDefaultAddress, system)
     serializationInformationCache match {
       case OptionVal.Some(info) => info
-      case OptionVal.None =>
+      case _ =>
         if (system eq null)
           throw new IllegalStateException("Too early access of serializationInformation")
         else {
@@ -770,7 +773,7 @@ private[akka] class LocalActorRefProvider private[akka] (
   override private[akka] def addressString: String = {
     _addressString match {
       case OptionVal.Some(addr) => addr
-      case OptionVal.None =>
+      case _ =>
         val addr = getDefaultAddress.toString
         _addressString = OptionVal.Some(addr)
         addr

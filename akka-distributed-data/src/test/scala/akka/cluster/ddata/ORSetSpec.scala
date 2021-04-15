@@ -450,7 +450,10 @@ class ORSetSpec extends AnyWordSpec with Matchers {
 
       val merged2 = node3_1.mergeDelta(delta2_2)
 
-      val ORSet(mg2) = merged2
+      val mg2 = merged2 match {
+        case ORSet(mg2) => mg2
+        case _          => fail()
+      }
       mg2 should be(Set("x")) // !!!
     }
 
@@ -602,14 +605,20 @@ class ORSetSpec extends AnyWordSpec with Matchers {
     "have unapply extractor" in {
       val s1 = ORSet.empty.add(node1, "a").add(node2, "b")
       val _: ORSet[String] = s1
-      val ORSet(elements1) = s1 // `unapply[A](s: ORSet[A])` is used here
+      val elements1 = s1 match { // `unapply[A](s: ORSet[A])` is used here
+        case ORSet(elements1) => elements1
+        case _                => fail()
+      }
       val elements2: Set[String] = elements1
       elements2 should be(Set("a", "b"))
 
       Changed(ORSetKey[String]("key"))(s1) match {
         case c @ Changed(ORSetKey("key")) =>
           val _: ORSet[String] = c.dataValue
-          val ORSet(elements3) = c.dataValue
+          val elements3 = c.dataValue match {
+            case ORSet(elements3) => elements3
+            case _                => fail()
+          }
           val elements4: Set[String] = elements3
           elements4 should be(Set("a", "b"))
         case changed =>
@@ -619,10 +628,15 @@ class ORSetSpec extends AnyWordSpec with Matchers {
       val msg: Any = Changed(ORSetKey[String]("key"))(s1)
       msg match {
         case c @ Changed(ORSetKey("key")) =>
-          val ORSet(elements3) = c.dataValue // `unapply(a: ReplicatedData)` is used here
+          // FIXME we need to look into this for Scala 2.13.5
+          // val ORSet(elements3) = c.dataValue // `unapply(a: ReplicatedData)` is used here
           // if `unapply(a: ReplicatedData)` isn't defined the next line doesn't compile:
           //   type mismatch; found : scala.collection.immutable.Set[A] where type A required: Set[Any] Note: A <: Any,
           //   but trait Set is invariant in type A. You may wish to investigate a wildcard type such as _ <: Any. (SLS 3.2.10)
+          val elements3 = c.dataValue match {
+            case ORSet(elements3) => elements3
+            case _                => fail()
+          }
           val elements4: Set[Any] = elements3
           elements4 should be(Set("a", "b"))
         case changed =>

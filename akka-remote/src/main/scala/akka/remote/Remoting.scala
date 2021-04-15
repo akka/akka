@@ -258,7 +258,10 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
   override def managementCommand(cmd: Any): Future[Boolean] = endpointManager match {
     case Some(manager) =>
       implicit val timeout = CommandAckTimeout
-      (manager ? ManagementCommand(cmd)).map { case ManagementCommandAck(status) => status }
+      (manager ? ManagementCommand(cmd)).map {
+        case ManagementCommandAck(status) => status
+        case unexpected                   => throw new IllegalArgumentException(s"Unexpected response type: ${unexpected.getClass}")
+      }
     case None =>
       throw new RemoteTransportExceptionNoStackTrace(
         "Attempted to send management command but Remoting is not running.",

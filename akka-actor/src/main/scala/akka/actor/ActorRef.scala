@@ -241,6 +241,8 @@ private[akka] trait RepointableRef extends ActorRefScope {
       case i: InternalActorRef =>
         (i.isLocal && i.isInstanceOf[PromiseActorRef]) ||
         (!i.isLocal && i.path.elements.head == "temp")
+      case unexpected =>
+        throw new IllegalArgumentException(s"ActorRef is not internal: $unexpected") // will not happen, for exhaustiveness check
     }
 
 }
@@ -924,8 +926,9 @@ private[akka] class VirtualPathContainer(
 
           (oldWatching, wBy)
 
-        case OptionVal.None =>
+        case _ =>
           (ActorCell.emptyActorRefSet, ActorCell.emptyActorRefSet)
+
       }
     }
 
@@ -949,14 +952,14 @@ private[akka] class VirtualPathContainer(
     val toNotify = this.synchronized {
       // cleanup watchedBy since we know they are dead
       _watchedBy match {
-        case OptionVal.None =>
-          // terminated
-          ActorCell.emptyActorRefSet
         case OptionVal.Some(watchedBy) =>
           maintainAddressTerminatedSubscription(OptionVal.None) {
             _watchedBy = OptionVal.Some(watchedBy.filterNot(_.path.address == address))
           }
           watching
+        case _ =>
+          // terminated
+          ActorCell.emptyActorRefSet
       }
     }
 
@@ -978,8 +981,6 @@ private[akka] class VirtualPathContainer(
   private def addWatcher(watchee: ActorRef, watcher: ActorRef): Unit = {
     val selfTerminated = this.synchronized {
       _watchedBy match {
-        case OptionVal.None =>
-          true
         case OptionVal.Some(watchedBy) =>
           val watcheeSelf = watchee == this
           val watcherSelf = watcher == this
@@ -1001,6 +1002,8 @@ private[akka] class VirtualPathContainer(
               Logging.Error(path.toString, classOf[FunctionRef], s"BUG: illegal Watch($watchee,$watcher) for $this"))
           }
           false
+        case _ =>
+          true
       }
     }
     // outside of synchronized block
@@ -1012,7 +1015,6 @@ private[akka] class VirtualPathContainer(
 
   private def remWatcher(watchee: ActorRef, watcher: ActorRef): Unit = this.synchronized {
     _watchedBy match {
-      case OptionVal.None => // do nothing...
       case OptionVal.Some(watchedBy) =>
         val watcheeSelf = watchee == this
         val watcherSelf = watcher == this
@@ -1033,6 +1035,8 @@ private[akka] class VirtualPathContainer(
           publish(
             Logging.Error(path.toString, classOf[FunctionRef], s"BUG: illegal Unwatch($watchee,$watcher) for $this"))
         }
+
+      case _ => // do nothing...
     }
   }
 
@@ -1097,7 +1101,7 @@ private[akka] class VirtualPathContainer(
     def watchedByOrEmpty: Set[ActorRef] =
       _watchedBy match {
         case OptionVal.Some(watchedBy) => watchedBy
-        case OptionVal.None            => ActorCell.emptyActorRefSet
+        case _                         => ActorCell.emptyActorRefSet
       }
 
     change match {

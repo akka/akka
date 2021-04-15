@@ -80,6 +80,9 @@ object ActorMaterializer {
       case context: ActorContext =>
         // actor context level materializer, will live as a child of this actor
         PhasedFusingActorMaterializer(context, namePrefix, materializerSettings, materializerSettings.toAttributes)
+
+      case other =>
+        throw new IllegalArgumentException(s"Unexpected type of context: ${other}")
     }
   }
 

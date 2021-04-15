@@ -40,7 +40,7 @@ object ReliableDeliveryShardingSpec {
 
   object TestShardingProducer {
 
-    trait Command
+    sealed trait Command
     final case class RequestNext(sendToRef: ActorRef[ShardingEnvelope[TestConsumer.Job]]) extends Command
 
     private case object Tick extends Command

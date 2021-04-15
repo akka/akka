@@ -41,6 +41,7 @@ object MultiDcClusterShardingSpec {
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case m: EntityMsg => m.id.charAt(0).toString
+    case _            => throw new IllegalArgumentException()
   }
 }
 

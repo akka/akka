@@ -27,10 +27,12 @@ class DnsSpec extends RemotingMultiNodeSpec(DnsSpec) {
 
   val ip4Address = InetAddress.getByAddress("localhost", Array[Byte](127, 0, 0, 1)) match {
     case address: Inet4Address => address
+    case _                     => fail()
   }
   val ipv6Address =
     InetAddress.getByAddress("localhost", Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)) match {
       case address: Inet6Address => address
+      case _                     => fail()
     }
 
   var temporaryValue: Option[String] = None

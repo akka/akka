@@ -542,6 +542,7 @@ private[akka] trait ClusterRouterActor { this: RouterActor =>
     val address = routee match {
       case ActorRefRoutee(ref)       => ref.path.address
       case ActorSelectionRoutee(sel) => sel.anchor.path.address
+      case unknown                   => throw new IllegalArgumentException(s"Unsupported routee type: ${unknown.getClass}")
     }
     address match {
       case Address(_, _, None, None) => cluster.selfAddress

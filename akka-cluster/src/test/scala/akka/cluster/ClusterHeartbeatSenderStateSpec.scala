@@ -16,7 +16,7 @@ import akka.remote.FailureDetector
 object ClusterHeartbeatSenderStateSpec {
   class FailureDetectorStub extends FailureDetector {
 
-    trait Status
+    sealed trait Status
     object Up extends Status
     object Down extends Status
     object Unknown extends Status
@@ -220,6 +220,7 @@ class ClusterHeartbeatSenderStateSpec extends AnyWordSpec with Matchers {
 
               }
 
+            case _ => throw new RuntimeException()
           }
         } catch {
           case e: Throwable =>

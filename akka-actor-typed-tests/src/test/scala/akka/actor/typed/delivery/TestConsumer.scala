@@ -5,14 +5,11 @@
 package akka.actor.typed.delivery
 
 import java.nio.charset.StandardCharsets
-
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.delivery.ConsumerController.SequencedMessage
@@ -20,6 +17,8 @@ import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.serialization.SerializerWithStringManifest
+
+import java.io.NotSerializableException
 
 object TestConsumer {
 
@@ -140,6 +139,7 @@ class TestSerializer extends SerializerWithStringManifest {
   override def toBinary(o: AnyRef): Array[Byte] =
     o match {
       case TestConsumer.Job(payload) => payload.getBytes(StandardCharsets.UTF_8)
+      case unexpected                => throw new NotSerializableException(s"Unexpected: $unexpected")
     }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =

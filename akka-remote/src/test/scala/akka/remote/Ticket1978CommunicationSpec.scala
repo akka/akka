@@ -74,6 +74,7 @@ object Configuration {
   def getCipherConfig(cipher: String, enabled: String*): CipherConfig = {
     val (localPort, remotePort) = SocketUtil.temporaryServerAddresses(2, "127.0.0.1").map(_.getPort) match {
       case Seq(local, remote) => (local, remote)
+      case _                  => throw new RuntimeException()
     }
     try {
       //if (true) throw new IllegalArgumentException("Ticket1978*Spec isn't enabled")

@@ -97,7 +97,7 @@ private[akka] object BehaviorTags {
     def onPostStop(ctx: TypedActorContext[T]): Unit = {
       postStop match {
         case OptionVal.Some(callback) => callback(ctx)
-        case OptionVal.None           =>
+        case _                        =>
       }
     }
 

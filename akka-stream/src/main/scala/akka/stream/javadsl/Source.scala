@@ -424,8 +424,7 @@ object Source {
    * IllegalArgument("Backpressure overflowStrategy not supported") will be thrown if it is passed as argument.
    *
    * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped if there is no demand
-   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter. An async boundary is added after
-   * this Source; as such, it is never safe to assume the downstream will always generate demand.
+   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter.
    *
    * The stream can be completed successfully by sending the actor reference a message that is matched by
    * `completionMatcher` in which case already buffered elements will be signaled before signaling
@@ -482,8 +481,7 @@ object Source {
    * IllegalArgument("Backpressure overflowStrategy not supported") will be thrown if it is passed as argument.
    *
    * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped if there is no demand
-   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter. An async boundary is added after
-   * this Source; as such, it is never safe to assume the downstream will always generate demand.
+   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter.
    *
    * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]]
    * (whose content will be ignored) in which case already buffered elements will be signaled before signaling
@@ -2674,13 +2672,15 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream completes
    *
-   * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * `maxNumber` must be positive, and `duration` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def groupedWithin(n: Int, d: FiniteDuration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
-    new Source(delegate.groupedWithin(n, d).map(_.asJava)) // TODO optimize to one step
+  def groupedWithin(
+      maxNumber: Int,
+      duration: FiniteDuration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
+    new Source(delegate.groupedWithin(maxNumber, duration).map(_.asJava)) // TODO optimize to one step
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
@@ -2697,12 +2697,14 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream completes
    *
-   * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * `maxNumber` must be positive, and `duration` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
   @nowarn("msg=deprecated")
-  def groupedWithin(n: Int, d: java.time.Duration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
-    groupedWithin(n, d.asScala)
+  def groupedWithin(
+      maxNumber: Int,
+      duration: java.time.Duration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
+    groupedWithin(maxNumber, duration.asScala)
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
@@ -2719,7 +2721,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream completes
    *
-   * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * `maxWeight` must be positive, and `duration` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
   @Deprecated
@@ -2727,8 +2729,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def groupedWeightedWithin(
       maxWeight: Long,
       costFn: function.Function[Out, java.lang.Long],
-      d: FiniteDuration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
-    new Source(delegate.groupedWeightedWithin(maxWeight, d)(costFn.apply).map(_.asJava))
+      duration: FiniteDuration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
+    new Source(delegate.groupedWeightedWithin(maxWeight, duration)(costFn.apply).map(_.asJava))
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
@@ -2745,15 +2747,41 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream completes
    *
-   * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * `maxWeight` must be positive, and `duration` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
   @nowarn("msg=deprecated")
   def groupedWeightedWithin(
       maxWeight: Long,
       costFn: function.Function[Out, java.lang.Long],
-      d: java.time.Duration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
-    groupedWeightedWithin(maxWeight, costFn, d.asScala)
+      duration: java.time.Duration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
+    groupedWeightedWithin(maxWeight, costFn, duration.asScala)
+
+  /**
+   * Chunk up this stream into groups of elements received within a time window,
+   * or limited by the weight and number of the elements, whatever happens first.
+   * Empty groups will not be emitted if no elements are received from upstream.
+   * The last group before end-of-stream will contain the buffered elements
+   * since the previously emitted group.
+   *
+   * '''Emits when''' the configured time elapses since the last group has been emitted or weight limit reached
+   *
+   * '''Backpressures when''' downstream backpressures, and buffered group (+ pending element) weighs more than
+   * `maxWeight` or has more than `maxNumber` elements
+   *
+   * '''Completes when''' upstream completes (emits last group)
+   *
+   * '''Cancels when''' downstream completes
+   *
+   * `maxWeight` must be positive, `maxNumber` must be positive, and `duration` must be greater than 0 seconds,
+   * otherwise IllegalArgumentException is thrown.
+   */
+  def groupedWeightedWithin(
+      maxWeight: Long,
+      maxNumber: Int,
+      costFn: function.Function[Out, java.lang.Long],
+      duration: java.time.Duration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
+    new Source(delegate.groupedWeightedWithin(maxWeight, maxNumber, duration.asScala)(costFn.apply).map(_.asJava))
 
   /**
    * Shifts elements emission in time by a specified amount. It allows to store elements
@@ -2878,8 +2906,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def dropWithin(d: FiniteDuration): javadsl.Source[Out, Mat] =
-    new Source(delegate.dropWithin(d))
+  def dropWithin(duration: FiniteDuration): javadsl.Source[Out, Mat] =
+    new Source(delegate.dropWithin(duration))
 
   /**
    * Discard the elements received within the given duration at beginning of the stream.
@@ -2893,8 +2921,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Cancels when''' downstream cancels
    */
   @nowarn("msg=deprecated")
-  def dropWithin(d: java.time.Duration): javadsl.Source[Out, Mat] =
-    dropWithin(d.asScala)
+  def dropWithin(duration: java.time.Duration): javadsl.Source[Out, Mat] =
+    dropWithin(duration.asScala)
 
   /**
    * Terminate processing (and cancel the upstream publisher) after predicate
@@ -2998,8 +3026,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def takeWithin(d: FiniteDuration): javadsl.Source[Out, Mat] =
-    new Source(delegate.takeWithin(d))
+  def takeWithin(duration: FiniteDuration): javadsl.Source[Out, Mat] =
+    new Source(delegate.takeWithin(duration))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given
@@ -3019,8 +3047,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Cancels when''' downstream cancels or timer fires
    */
   @nowarn("msg=deprecated")
-  def takeWithin(d: java.time.Duration): javadsl.Source[Out, Mat] =
-    takeWithin(d.asScala)
+  def takeWithin(duration: java.time.Duration): javadsl.Source[Out, Mat] =
+    takeWithin(duration.asScala)
 
   /**
    * Allows a faster upstream to progress independently of a slower subscriber by conflating elements into a summary

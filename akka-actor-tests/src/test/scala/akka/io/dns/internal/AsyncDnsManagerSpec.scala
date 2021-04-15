@@ -37,7 +37,10 @@ class AsyncDnsManagerSpec extends AkkaSpec("""
 
     "support ipv6" in {
       dns ! Resolve("::1") // ::1 will short circuit the resolution
-      val Resolved("::1", Seq(AAAARecord("::1", Ttl.effectivelyForever, _)), Nil) = expectMsgType[Resolved]
+      expectMsgType[Resolved] match {
+        case Resolved("::1", Seq(AAAARecord("::1", Ttl.effectivelyForever, _)), Nil) =>
+        case other                                                                   => fail(other.toString)
+      }
     }
 
     "support ipv6 also using the old protocol" in {

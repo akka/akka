@@ -219,6 +219,8 @@ final case class ConsistentHashingRoutingLogic(
               case bytes: Array[Byte] => currentConsistenHash.nodeFor(bytes).routee
               case str: String        => currentConsistenHash.nodeFor(str).routee
               case x: AnyRef          => currentConsistenHash.nodeFor(SerializationExtension(system).serialize(x).get).routee
+              case unexpected =>
+                throw new IllegalArgumentException(s"Unexpected hashdata: $unexpected") // will not happen, for exhaustiveness check
             }
         } catch {
           case NonFatal(e) =>

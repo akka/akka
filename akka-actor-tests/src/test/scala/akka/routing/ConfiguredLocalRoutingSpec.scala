@@ -113,7 +113,9 @@ class ConfiguredLocalRoutingSpec
       r.underlying match {
         case c: RoutedActorCell => c.routerConfig
         case _: UnstartedCell   => awaitCond(r.isStarted, 1 second, 10 millis); routerConfig(ref)
+        case _                  => throw new IllegalArgumentException(s"Unexpected underlying cell ${r.underlying}")
       }
+    case _ => throw new IllegalArgumentException(s"Unexpected actorref $ref")
   }
 
   def collectRouteePaths(probe: TestProbe, router: ActorRef, n: Int): immutable.Seq[ActorPath] = {

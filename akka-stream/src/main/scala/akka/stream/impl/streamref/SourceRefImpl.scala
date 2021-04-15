@@ -161,7 +161,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
           // this means we're the "remote" for an already active Source on the other side (the "origin")
           self.watch(ref)
           AwaitingSubscription(ref)
-        case OptionVal.None =>
+        case _ =>
           // we are the "origin", and awaiting the other side to start when we'll receive their partherRef
           AwaitingPartner
       }
@@ -394,6 +394,8 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
               throw new IllegalStateException(
                 s"[$stageActorName] CancellationDeadlineTimerKey can't happen in state $other")
           }
+
+        case other => throw new IllegalArgumentException(s"Unknown timer key: ${other}")
       }
 
       override def onDownstreamFinish(cause: Throwable): Unit = {

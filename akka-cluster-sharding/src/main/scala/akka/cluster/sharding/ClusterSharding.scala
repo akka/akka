@@ -301,7 +301,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
             extractShardId,
             allocationStrategy,
             handOffStopMessage)
-          val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
+          val shardRegion = Await.result((guardian ? startMsg).mapTo[Started], timeout.duration).shardRegion
           regions.put(typeName, shardRegion)
           shardRegion
         case ref => ref // already started, use cached ActorRef
@@ -545,7 +545,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
         implicit val timeout = system.settings.CreationTimeout
         val settings = ClusterShardingSettings(system).withRole(role)
         val startMsg = StartProxy(typeName, dataCenter, settings, extractEntityId, extractShardId)
-        val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
+        val shardRegion = Await.result((guardian ? startMsg).mapTo[Started], timeout.duration).shardRegion
         // it must be possible to start several proxies, one per data center
         proxies.put(proxyName(typeName, dataCenter), shardRegion)
         shardRegion
@@ -777,6 +777,8 @@ private[akka] class ClusterShardingGuardian extends Actor {
                 new EventSourcedRememberEntitiesProvider(typeName, settings)
               case ClusterShardingSettings.RememberEntitiesStoreCustom =>
                 new CustomStateStoreModeProvider(typeName, context.system, settings)
+              case unknown =>
+                throw new IllegalArgumentException(s"Unknown store type: $unknown") // compiler exhaustiveness check pleaser
             })
           }
 

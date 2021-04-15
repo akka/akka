@@ -16,6 +16,8 @@ such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
 
 @@@
 
+If migrating from classic remoting see @ref:[what's new in Artery](#what-is-new-in-artery)
+
 ## Dependency
 
 To use Artery Remoting, you must add the following dependency in your project:
@@ -29,8 +31,8 @@ To use Artery Remoting, you must add the following dependency in your project:
   version=AkkaVersion
 }
 
-Artery UDP depends on Aeron. This needs to be explicitly added as a dependency if using `aeron-udp` so that users
-not using Artery remoting do not have Aeron on the classpath:
+One option is to use Artery with Aeron, see @ref:[Selecting a transport](#selecting-a-transport).
+The Aeron dependency needs to be explicitly added if using the `aeron-udp` transport:
 
 @@dependency[sbt,Maven,Gradle] {
   group=io.aeron
@@ -40,8 +42,6 @@ not using Artery remoting do not have Aeron on the classpath:
   artifact2=aeron-client
   version2="$aeron_version$"
 }
-
-If migrating from classic remoting see @ref:[what's new in Artery](#what-is-new-in-artery)
 
 ## Configuration
 
@@ -447,13 +447,13 @@ marking them `PossiblyHarmful` so that a client cannot forge them.
 
 ## Quarantine
 
-Akka remoting is using Aeron as underlying message transport. Aeron is using UDP and adds
+Akka remoting is using TCP or Aeron as underlying message transport. Aeron is using UDP and adds
 among other things reliable delivery and session semantics, very similar to TCP. This means that
 the order of the messages are preserved, which is needed for the @ref:[Actor message ordering guarantees](general/message-delivery-reliability.md#message-ordering).
 Under normal circumstances all messages will be delivered but there are cases when messages
 may not be delivered to the destination:
 
- * during a network partition and the Aeron session is broken, this automatically recovered once the partition is over
+ * during a network partition when the TCP connection or the Aeron session is broken, this automatically recovered once the partition is over
  * when sending too many messages without flow control and thereby filling up the outbound send queue (`outbound-message-queue-size` config)
  * if serialization or deserialization of a message fails (only that message will be dropped)
  * if an unexpected exception occurs in the remoting infrastructure
@@ -630,7 +630,7 @@ Artery is a reimplementation of the old remoting module aimed at improving perfo
 source compatible with the old implementation and it is a drop-in replacement in many cases. Main features
 of Artery compared to the previous implementation:
 
- * Based on [Aeron](https://github.com/real-logic/Aeron) (UDP) and Akka Streams TCP/TLS instead of Netty TCP
+ * Based on Akka Streams TCP/TLS or [Aeron](https://github.com/real-logic/Aeron) (UDP) instead of Netty TCP
  * Focused on high-throughput, low-latency communication
  * Isolation of internal control messages from user messages improving stability and reducing false failure detection
 in case of heavy traffic by using a dedicated subchannel.
@@ -638,7 +638,7 @@ in case of heavy traffic by using a dedicated subchannel.
  * Support for a separate subchannel for large messages to avoid interference with smaller messages
  * Compression of actor paths on the wire to reduce overhead for smaller messages
  * Support for faster serialization/deserialization using ByteBuffers directly
- * Built-in Flight-Recorder to help debugging implementation issues without polluting users logs with implementation
+ * Built-in Java Flight Recorder (JFR) to help debugging implementation issues without polluting users logs with implementation
 specific events
  * Providing protocol stability across major Akka versions to support rolling updates of large-scale systems
 

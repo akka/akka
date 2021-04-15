@@ -208,6 +208,9 @@ object EventSourcedBehavior {
    * Specifically BackOff to prevent resume being used. Resume is not allowed as
    * it will be unknown if the event has been persisted.
    *
+   * This supervision is only around the event sourced behavior not any outer setup/withTimers
+   * block. If using restart, any actions e.g. scheduling timers, can be done on the PreRestart
+   *
    * If not specified the actor will be stopped on failure.
    */
   def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): EventSourcedBehavior[Command, Event, State]

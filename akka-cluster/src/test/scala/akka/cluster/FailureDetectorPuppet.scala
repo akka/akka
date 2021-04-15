@@ -17,7 +17,7 @@ import akka.util.unused
  */
 class FailureDetectorPuppet(@unused config: Config, @unused ev: EventStream) extends FailureDetector {
 
-  trait Status
+  sealed trait Status
   object Up extends Status
   object Down extends Status
   object Unknown extends Status
@@ -31,6 +31,7 @@ class FailureDetectorPuppet(@unused config: Config, @unused ev: EventStream) ext
   override def isAvailable: Boolean = status.get match {
     case Unknown | Up => true
     case Down         => false
+
   }
 
   override def isMonitoring: Boolean = status.get != Unknown

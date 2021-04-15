@@ -5,7 +5,6 @@
 package akka.stream.javadsl
 
 import java.util.function.{ BiFunction, Supplier, ToLongBiFunction }
-
 import akka.NotUsed
 import akka.annotation.DoNotInherit
 import akka.util.unused
@@ -18,6 +17,26 @@ import akka.util.unused
  * materializations will feed its consumed elements to the original [[Source]].
  */
 object MergeHub {
+
+  /**
+   * A DrainingControl object is created during the materialization of a MergeHub and allows to initiate the draining
+   * and eventual completion of the Hub from the outside.
+   *
+   * Not for user extension
+   */
+  @DoNotInherit
+  sealed trait DrainingControl {
+
+    /**
+     * Set the operation mode of the linked MergeHub to draining. In this mode the Hub will cancel any new producer and
+     * will complete as soon as all the currently connected producers complete.
+     */
+    def drainAndComplete(): Unit
+  }
+
+  private final class DrainingControlImpl(c: akka.stream.scaladsl.MergeHub.DrainingControl) extends DrainingControl {
+    override def drainAndComplete(): Unit = c.drainAndComplete()
+  }
 
   /**
    * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
@@ -40,6 +59,35 @@ object MergeHub {
   /**
    * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
    * by this method is materialized, it returns a [[Sink]] as a materialized value. This [[Sink]] can be materialized
+   * arbitrarily many times and each of the materializations will feed the elements into the original [[Source]].
+   *
+   * Every new materialization of the [[Source]] results in a new, independent hub, which materializes to its own
+   * [[Sink]] for feeding that materialization.
+   *
+   * Completed or failed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
+   * and any new producers using the [[Sink]] will be cancelled.
+   *
+   * The materialized [[DrainingControl]] can be used to drain the Hub: any new produces using the [[Sink]] will be cancelled
+   * and the Hub will be closed completing the [[Source]] as soon as all currently connected producers complete.
+   *
+   * @param clazz Type of elements this hub emits and consumes
+   * @param perProducerBufferSize Buffer space used per producer. Default value is 16.
+   */
+  def withDraining[T](
+      @unused clazz: Class[T],
+      perProducerBufferSize: Int): Source[T, akka.japi.Pair[Sink[T, NotUsed], DrainingControl]] = {
+    akka.stream.scaladsl.MergeHub
+      .sourceWithDraining[T](perProducerBufferSize)
+      .mapMaterializedValue {
+        case (sink, draining) =>
+          akka.japi.Pair(sink.asJava[T], new DrainingControlImpl(draining): DrainingControl)
+      }
+      .asJava
+  }
+
+  /**
+   * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
+   * by this method is materialized, it returns a [[Sink]] as a materialized value. This [[Sink]] can be materialized
    * arbitrary many times and each of the materializations will feed the elements into the original [[Source]].
    *
    * Every new materialization of the [[Source]] results in a new, independent hub, which materializes to its own
@@ -51,6 +99,25 @@ object MergeHub {
    * @param clazz Type of elements this hub emits and consumes
    */
   def of[T](clazz: Class[T]): Source[T, Sink[T, NotUsed]] = of(clazz, 16)
+
+  /**
+   * Creates a [[Source]] that emits elements merged from a dynamic set of producers. After the [[Source]] returned
+   * by this method is materialized, it returns a [[Sink]] as a materialized value. This [[Sink]] can be materialized
+   * arbitrarily many times and each of the materializations will feed the elements into the original [[Source]].
+   *
+   * Every new materialization of the [[Source]] results in a new, independent hub, which materializes to its own
+   * [[Sink]] for feeding that materialization.
+   *
+   * Completed or failed [[Sink]]s are simply removed. Once the [[Source]] is cancelled, the Hub is considered closed
+   * and any new producers using the [[Sink]] will be cancelled.
+   *
+   * The materialized [[DrainingControl]] can be used to drain the Hub: any new produces using the [[Sink]] will be cancelled
+   * and the Hub will be closed completing the [[Source]] as soon as all currently connected producers complete.
+   *
+   * @param clazz Type of elements this hub emits and consumes
+   */
+  def withDraining[T](clazz: Class[T]): Source[T, akka.japi.Pair[Sink[T, NotUsed], DrainingControl]] =
+    withDraining(clazz, 16)
 
 }
 

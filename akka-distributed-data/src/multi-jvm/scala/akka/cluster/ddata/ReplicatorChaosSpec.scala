@@ -77,6 +77,7 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
               case c: PNCounter => c.value
               case c: GSet[_]   => c.elements
               case c: ORSet[_]  => c.elements
+              case _            => fail()
             }
         }
         value should be(expected)

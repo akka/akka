@@ -5,9 +5,7 @@
 package akka.cluster
 
 import scala.concurrent.duration._
-
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
@@ -21,6 +19,8 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit._
 import akka.util.unused
+
+import java.io.NotSerializableException
 
 object LargeMessageClusterMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -72,6 +72,7 @@ object LargeMessageClusterMultiJvmSpec extends MultiNodeConfig {
         // simulate slow serialization to not completely overload the machine/network, see issue #24576
         Thread.sleep(100)
         payload
+      case _ => throw new NotSerializableException()
     }
     override def fromBinary(bytes: Array[Byte], manifest: String) = {
       Slow(bytes)

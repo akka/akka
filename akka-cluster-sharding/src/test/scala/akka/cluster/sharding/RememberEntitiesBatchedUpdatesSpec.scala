@@ -62,11 +62,13 @@ class RememberEntitiesBatchedUpdatesSpec
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
     case EntityEnvelope(id, payload) => (id.toString, payload)
+    case _                           => throw new IllegalArgumentException()
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case EntityEnvelope(_, _)       => "1" // single shard for all entities
     case ShardRegion.StartEntity(_) => "1"
+    case _                          => throw new IllegalArgumentException()
   }
 
   override def atStartup(): Unit = {

@@ -703,8 +703,8 @@ private final case class SavedIslandData(
     logics.add(logic)
     logic.stageId = logics.size() - 1
     fullIslandName match {
-      case OptionVal.Some(_) => // already set
-      case OptionVal.None    => fullIslandName = OptionVal.Some(islandName + "-" + logic.attributes.nameForActorRef())
+      case OptionVal.None => fullIslandName = OptionVal.Some(islandName + "-" + logic.attributes.nameForActorRef())
+      case _              => // already set
     }
     matAndLogic
   }
@@ -812,7 +812,7 @@ private final case class SavedIslandData(
 
         val actorName = fullIslandName match {
           case OptionVal.Some(n) => n
-          case OptionVal.None    => islandName
+          case _                 => islandName
         }
 
         val ref = materializer.actorOf(props, actorName)
@@ -829,7 +829,7 @@ private final case class SavedIslandData(
       case OptionVal.Some(stage) =>
         if (isIn) s"in port [${stage.shape.inlets(missingHandlerIdx)}]"
         else s"out port [${stage.shape.outlets(missingHandlerIdx - logic.inCount)}"
-      case OptionVal.None =>
+      case _ =>
         if (isIn) s"in port id [$missingHandlerIdx]"
         else s"out port id [$missingHandlerIdx]"
     }
@@ -907,6 +907,7 @@ private final case class SavedIslandData(
     subscriberOrVirtualPublisher match {
       case v: VirtualPublisher[_]        => v.registerPublisher(publisher)
       case s: Subscriber[Any] @unchecked => publisher.subscribe(s)
+      case _                             => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
     }
   }
 

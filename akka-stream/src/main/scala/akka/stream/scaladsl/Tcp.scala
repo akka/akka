@@ -67,7 +67,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
      * Handles the connection using the given flow, which is materialized exactly once and the respective
      * materialized instance is returned.
      *
-     * Convenience shortcut for: `flow.join(handler).run()`.
+     * Convenience shortcut for: `flow.joinMat(handler)(Keep.right).run()`.
      */
     def handleWith[Mat](handler: Flow[ByteString, ByteString, Mat])(implicit materializer: Materializer): Mat =
       flow.joinMat(handler)(Keep.right).run()

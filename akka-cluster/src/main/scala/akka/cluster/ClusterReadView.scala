@@ -90,6 +90,8 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
                 _state = _state.withUnreachableDataCenters(_state.unreachableDataCenters + r.dataCenter)
               case MemberTombstonesChanged(tombstones) =>
                 _state = _state.withMemberTombstones(tombstones)
+              case unexpected =>
+                throw new IllegalArgumentException(s"Unexpected cluster event type ${unexpected.getClass}") // compiler exhaustiveness check pleaser
             }
 
             e match {

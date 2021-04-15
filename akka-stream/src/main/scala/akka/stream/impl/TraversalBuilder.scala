@@ -532,8 +532,8 @@ import akka.util.unused
 
   override def makeIsland(islandTag: IslandTag): TraversalBuilder =
     this.islandTag match {
-      case OptionVal.None    => copy(islandTag = OptionVal(islandTag))
-      case OptionVal.Some(_) => this
+      case OptionVal.None => copy(islandTag = OptionVal(islandTag))
+      case _              => this
     }
 
   override def assign(out: OutPort, relativeSlot: Int): TraversalBuilder =
@@ -687,7 +687,7 @@ import akka.util.unused
         val inOpt = OptionVal(shape.inlets.headOption.orNull)
         val inOffs = inOpt match {
           case OptionVal.Some(in) => completed.offsetOf(in)
-          case OptionVal.None     => 0
+          case _                  => 0
         }
 
         LinearTraversalBuilder(
@@ -704,7 +704,7 @@ import akka.util.unused
         val out = shape.outlets.head // Cannot be empty, otherwise it would be a CompletedTraversalBuilder
         val inOffs = inOpt match {
           case OptionVal.Some(in) => composite.offsetOf(in)
-          case OptionVal.None     => 0
+          case _                  => 0
         }
 
         LinearTraversalBuilder(
@@ -771,8 +771,8 @@ import akka.util.unused
 
   private def applyIslandAndAttributes(t: Traversal): Traversal = {
     val withIslandTag = islandTag match {
-      case OptionVal.None      => t
       case OptionVal.Some(tag) => EnterIsland(tag).concat(t).concat(ExitIsland)
+      case _                   => t
     }
 
     if (attributes eq Attributes.none) withIslandTag
@@ -808,7 +808,7 @@ import akka.util.unused
                 .concat(traversalSoFar)),
             pendingBuilder = OptionVal.None,
             beforeBuilder = EmptyTraversal)
-        case OptionVal.None =>
+        case _ =>
           copy(
             inPort = OptionVal.None,
             outPort = OptionVal.None,
@@ -822,7 +822,7 @@ import akka.util.unused
     if (outPort.contains(out)) {
       pendingBuilder match {
         case OptionVal.Some(composite) => composite.offsetOfModule(out)
-        case OptionVal.None            => 0 // Output belongs to the last module, which will be materialized *first*
+        case _                         => 0 // Output belongs to the last module, which will be materialized *first*
       }
     } else
       throw new IllegalArgumentException(s"Port $out cannot be accessed in this builder")
@@ -847,7 +847,7 @@ import akka.util.unused
               beforeBuilder.concat(composite.assign(out, relativeSlot).traversal.concat(traversalSoFar))),
             pendingBuilder = OptionVal.None,
             beforeBuilder = EmptyTraversal)
-        case OptionVal.None =>
+        case _ =>
           copy(outPort = OptionVal.None, traversalSoFar = rewireLastOutTo(traversalSoFar, relativeSlot))
       }
     } else
@@ -919,45 +919,6 @@ import akka.util.unused
          * different.
          */
         val assembledTraversalForThis = this.pendingBuilder match {
-          case OptionVal.None =>
-            /*
-             * This is the case where we are a pure linear builder (all composites have been already completed),
-             * which means that traversalSoFar contains everything already, except the final attributes and islands
-             * applied.
-             *
-             * Since the exposed output port has been wired optimistically to -1, we need to check if this is correct,
-             * and correct if necessary. This is the step below:
-             */
-            if (toAppend.inOffset == (toAppend.inSlots - 1)) {
-              /*
-               * if the builder we want to append (remember that is _prepend_ from the Traversal's perspective)
-               * has its exposed input port at the last location (which is toAppend.inSlots - 1 because input
-               * port offsets start with 0), then -1 is the correct wiring. I.e.
-               *
-               * 1. Visit the appended module first in the traversal, its input port is the last
-               * 2. Visit this module second in the traversal, wire the output port back to the previous input port (-1)
-               */
-              traversalSoFar
-            } else {
-              /*
-               * The optimistic mapping to -1 is not correct, we need to unfold the Traversal to find our last module
-               * (which is the _first_ module in the Traversal) and rewire the output assignment to the correct offset.
-               *
-               * Since we will be visited second (and the appended toAppend first), we need to
-               *
-               * 1. go backward toAppend.inSlots slots to reach the beginning offset of toAppend
-               * 2. now go forward toAppend.inOffset to reach the correct location
-               *
-               * <-------------- (-toAppend.inSlots)
-               * ------->        (+toAppend.inOffset)
-               *
-               * --------in----|[out module]----------
-               *    toAppend           this
-               *
-               */
-              rewireLastOutTo(traversalSoFar, toAppend.inOffset - toAppend.inSlots)
-            }
-
           case OptionVal.Some(composite) =>
             /*
              * This is the case where our last module is a composite, and since it does not have its output port
@@ -995,6 +956,45 @@ import akka.util.unused
              * (remember that this is the _reverse_ of the Flow DSL order)
              */
             beforeBuilder.concat(compositeTraversal).concat(traversalSoFar)
+
+          case _ =>
+            /*
+             * This is the case where we are a pure linear builder (all composites have been already completed),
+             * which means that traversalSoFar contains everything already, except the final attributes and islands
+             * applied.
+             *
+             * Since the exposed output port has been wired optimistically to -1, we need to check if this is correct,
+             * and correct if necessary. This is the step below:
+             */
+            if (toAppend.inOffset == (toAppend.inSlots - 1)) {
+              /*
+               * if the builder we want to append (remember that is _prepend_ from the Traversal's perspective)
+               * has its exposed input port at the last location (which is toAppend.inSlots - 1 because input
+               * port offsets start with 0), then -1 is the correct wiring. I.e.
+               *
+               * 1. Visit the appended module first in the traversal, its input port is the last
+               * 2. Visit this module second in the traversal, wire the output port back to the previous input port (-1)
+               */
+              traversalSoFar
+            } else {
+              /*
+               * The optimistic mapping to -1 is not correct, we need to unfold the Traversal to find our last module
+               * (which is the _first_ module in the Traversal) and rewire the output assignment to the correct offset.
+               *
+               * Since we will be visited second (and the appended toAppend first), we need to
+               *
+               * 1. go backward toAppend.inSlots slots to reach the beginning offset of toAppend
+               * 2. now go forward toAppend.inOffset to reach the correct location
+               *
+               * <-------------- (-toAppend.inSlots)
+               * ------->        (+toAppend.inOffset)
+               *
+               * --------in----|[out module]----------
+               *    toAppend           this
+               *
+               */
+              rewireLastOutTo(traversalSoFar, toAppend.inOffset - toAppend.inSlots)
+            }
         }
 
         /*
@@ -1029,7 +1029,7 @@ import akka.util.unused
               islandTag = OptionVal.None // islandTag is reset for the new enclosing builder
             )
 
-          case OptionVal.Some(_) =>
+          case _ => // Some(pendingBuilder)
             /*
              * In this case we need to assemble as much as we can, and create a new "sandwich" of
              *   beforeBuilder ~ pendingBuilder ~ traversalSoFar
@@ -1043,12 +1043,12 @@ import akka.util.unused
 
             // First prepare island enter and exit if tags are present
             toAppend.islandTag match {
-              case OptionVal.None      => // Nothing changes
               case OptionVal.Some(tag) =>
                 // Enter the island just before the appended builder (keeping the toAppend.beforeBuilder steps)
                 newBeforeTraversal = EnterIsland(tag).concat(newBeforeTraversal)
                 // Exit the island just after the appended builder (they should not applied to _this_ builder)
                 newTraversalSoFar = ExitIsland.concat(newTraversalSoFar)
+              case _ => // Nothing changes
             }
 
             // Secondly, prepare attribute push and pop if Attributes are present
@@ -1101,7 +1101,7 @@ import akka.util.unused
     this.islandTag match {
       case OptionVal.Some(_) =>
         this // Wrapping with an island, then immediately re-wrapping makes the second island empty, so can be omitted
-      case OptionVal.None => copy(islandTag = OptionVal.Some(islandTag))
+      case _ => copy(islandTag = OptionVal.Some(islandTag))
     }
 }
 
@@ -1207,8 +1207,8 @@ import akka.util.unused
       }
 
       val finalTraversal = islandTag match {
-        case OptionVal.None      => traversal
         case OptionVal.Some(tag) => EnterIsland(tag).concat(traversal).concat(ExitIsland)
+        case _                   => traversal
       }
 
       // The CompleteTraversalBuilder only keeps the minimum amount of necessary information that is needed for it

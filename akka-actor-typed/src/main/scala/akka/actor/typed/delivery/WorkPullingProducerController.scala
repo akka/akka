@@ -237,7 +237,7 @@ object WorkPullingProducerController {
   /**
    * Java API
    */
-  def apply[A: ClassTag](
+  def apply[A](
       messageClass: Class[A],
       producerId: String,
       workerServiceKey: ServiceKey[ConsumerController.Command[A]],

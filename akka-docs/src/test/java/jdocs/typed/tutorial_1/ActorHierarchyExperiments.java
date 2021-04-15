@@ -152,12 +152,12 @@ class SupervisedActor extends AbstractBehavior<String> {
   }
 
   private Behavior<String> preRestart() {
-    System.out.println("second will be restarted");
+    System.out.println("supervised will be restarted");
     return this;
   }
 
   private Behavior<String> postStop() {
-    System.out.println("second stopped");
+    System.out.println("supervised stopped");
     return this;
   }
 }

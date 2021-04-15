@@ -224,10 +224,22 @@ class ThrottlerTransportAdapter(_wrappedTransport: Transport, _system: ExtendedA
   override def managementCommand(cmd: Any): Future[Boolean] = {
     import ActorTransportAdapter.AskTimeout
     cmd match {
-      case s: SetThrottle                 => (manager ? s).map { case SetThrottleAck => true }
-      case f: ForceDisassociate           => (manager ? f).map { case ForceDisassociateAck => true }
-      case f: ForceDisassociateExplicitly => (manager ? f).map { case ForceDisassociateAck => true }
-      case _                              => wrappedTransport.managementCommand(cmd)
+      case s: SetThrottle =>
+        (manager ? s).map {
+          case SetThrottleAck => true
+          case _              => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
+        }
+      case f: ForceDisassociate =>
+        (manager ? f).map {
+          case ForceDisassociateAck => true
+          case _                    => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
+        }
+      case f: ForceDisassociateExplicitly =>
+        (manager ? f).map {
+          case ForceDisassociateAck => true
+          case _                    => throw new IllegalStateException() // won't happen, compiler exhaustiveness check pleaser
+        }
+      case _ => wrappedTransport.managementCommand(cmd)
     }
   }
 }
@@ -363,8 +375,13 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport)
       internalTarget.sendSystemMessage(Watch(internalTarget, ref))
       target.tell(mode, ref)
       ref.result.future.transform({
-        case Terminated(t) if t.path == target.path => SetThrottleAck
-        case SetThrottleAck                         => { internalTarget.sendSystemMessage(Unwatch(target, ref)); SetThrottleAck }
+        case Terminated(t) if t.path == target.path =>
+          SetThrottleAck
+        case SetThrottleAck =>
+          internalTarget.sendSystemMessage(Unwatch(target, ref))
+          SetThrottleAck
+        case _ =>
+          throw new IllegalArgumentException() // won't happen, compiler exhaustiveness check pleaser
       }, t => { internalTarget.sendSystemMessage(Unwatch(target, ref)); t })(ExecutionContexts.parasitic)
     }
   }

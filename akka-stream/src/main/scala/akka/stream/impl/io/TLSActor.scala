@@ -103,6 +103,7 @@ import akka.util.ByteString
           case n: NegotiateNewSession =>
             setNewSessionParameters(n)
             ByteString.empty
+          case _ => throw new RuntimeException() // won't happen, compiler exhaustiveness check pleaser
         }
         if (tracing) log.debug(s"chopping from new chunk of ${buffer.size} into $name (${b.position()})")
       } else {

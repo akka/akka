@@ -35,7 +35,7 @@ private[remote] class MessageDispatcher(system: ExtendedActorSystem, provider: R
     val senderOption = inboundEnvelope.sender
     val originAddress = inboundEnvelope.association match {
       case OptionVal.Some(a) => OptionVal.Some(a.remoteAddress)
-      case OptionVal.None    => OptionVal.None
+      case _                 => OptionVal.None
     }
 
     val sender: ActorRef = senderOption.getOrElse(system.deadLetters)

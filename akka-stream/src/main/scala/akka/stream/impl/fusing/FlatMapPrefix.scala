@@ -51,7 +51,7 @@ import akka.util.OptionVal
       override def onPush(): Unit = {
         subSource match {
           case OptionVal.Some(s) => s.push(grab(in))
-          case OptionVal.None =>
+          case _ =>
             accumulated.append(grab(in))
             if (accumulated.size == n) {
               materializeFlow()
@@ -65,14 +65,14 @@ import akka.util.OptionVal
       override def onUpstreamFinish(): Unit = {
         subSource match {
           case OptionVal.Some(s) => s.complete()
-          case OptionVal.None    => materializeFlow()
+          case _                 => materializeFlow()
         }
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
         subSource match {
           case OptionVal.Some(s) => s.fail(ex)
-          case OptionVal.None    =>
+          case _                 =>
             //flow won't be materialized, so we have to complete the future with a failure indicating this
             matPromise.failure(new NeverMaterializedException(ex))
             super.onUpstreamFailure(ex)
@@ -84,30 +84,34 @@ import akka.util.OptionVal
           case OptionVal.Some(s) =>
             //delegate to subSink
             s.pull()
-          case OptionVal.None if accumulated.size < n =>
-            pull(in)
-          case OptionVal.None if accumulated.size == n =>
-            //corner case for n = 0, can be handled in FlowOps
-            materializeFlow()
+          case _ =>
+            if (accumulated.size < n) pull(in)
+            else if (accumulated.size == n) {
+              //corner case for n = 0, can be handled in FlowOps
+              materializeFlow()
+            } else {
+              throw new IllegalStateException(s"Unexpected accumulated size: ${accumulated.size} (n: $n)")
+            }
         }
       }
 
-      override def onDownstreamFinish(cause: Throwable): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit =
         subSink match {
-          case OptionVal.None if propagateToNestedMaterialization => downstreamCause = OptionVal.Some(cause)
-          case OptionVal.None =>
-            matPromise.failure(new NeverMaterializedException(cause))
-            cancelStage(cause)
           case OptionVal.Some(s) => s.cancel(cause)
+          case _ =>
+            if (propagateToNestedMaterialization) downstreamCause = OptionVal.Some(cause)
+            else {
+              matPromise.failure(new NeverMaterializedException(cause))
+              cancelStage(cause)
+            }
         }
-      }
 
       def materializeFlow(): Unit =
         try {
           val prefix = accumulated.toVector
           accumulated.clear()
           subSource = OptionVal.Some(new SubSourceOutlet[In]("FlatMapPrefix.subSource"))
-          val OptionVal.Some(theSubSource) = subSource
+          val theSubSource = subSource.get
           theSubSource.setHandler {
             new OutHandler {
               override def onPull(): Unit = {
@@ -124,7 +128,7 @@ import akka.util.OptionVal
             }
           }
           subSink = OptionVal.Some(new SubSinkInlet[Out]("FlatMapPrefix.subSink"))
-          val OptionVal.Some(theSubSink) = subSink
+          val theSubSink = subSink.get
           theSubSink.setHandler {
             new InHandler {
               override def onPush(): Unit = {
@@ -156,7 +160,7 @@ import akka.util.OptionVal
           //in case downstream was closed
           downstreamCause match {
             case OptionVal.Some(ex) => theSubSink.cancel(ex)
-            case OptionVal.None     =>
+            case _                  =>
           }
 
           //in case we've materialized due to upstream completion

@@ -70,7 +70,7 @@ object ReplicatedShardingSpec {
   val AllReplicas = Set(ReplicaId("DC-A"), ReplicaId("DC-B"))
 
   object MyReplicatedStringSet {
-    trait Command extends CborSerializable
+    sealed trait Command extends CborSerializable
     case class Add(text: String) extends Command
     case class GetTexts(replyTo: ActorRef[Texts]) extends Command
 
@@ -122,7 +122,7 @@ object ReplicatedShardingSpec {
   }
 
   object MyReplicatedIntSet {
-    trait Command extends CborSerializable
+    sealed trait Command extends CborSerializable
     case class Add(text: Int) extends Command
     case class GetInts(replyTo: ActorRef[Ints]) extends Command
     case class Ints(ints: Set[Int]) extends CborSerializable

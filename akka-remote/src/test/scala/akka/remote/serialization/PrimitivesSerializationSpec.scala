@@ -6,11 +6,8 @@ package akka.remote.serialization
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-
 import scala.util.Random
-
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.ExtendedActorSystem
 import akka.serialization.BaseSerializer
 import akka.serialization.ByteBufferSerializer
@@ -18,6 +15,8 @@ import akka.serialization.SerializationExtension
 import akka.serialization.Serializer
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
+
+import java.io.NotSerializableException
 
 object PrimitivesSerializationSpec {
   val serializationTestOverrides = ""
@@ -50,6 +49,7 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
       case _: akka.serialization.IntSerializer        => new IntSerializer(extSystem)
       case _: akka.serialization.StringSerializer     => new StringSerializer(extSystem)
       case _: akka.serialization.ByteStringSerializer => new ByteStringSerializer(extSystem)
+      case _                                          => throw new NotSerializableException()
     }
   }
 

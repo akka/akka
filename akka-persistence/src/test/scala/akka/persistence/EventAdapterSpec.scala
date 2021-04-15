@@ -43,6 +43,7 @@ object EventAdapterSpec {
     override def fromJournal(event: Any, manifest: String): EventSeq = EventSeq.single {
       event match {
         case m: JournalModel => m.payload
+        case _               => throw new RuntimeException()
       }
     }
 
@@ -53,6 +54,7 @@ object EventAdapterSpec {
     override def fromJournal(event: Any, manifest: String): EventSeq = EventSeq.single {
       event match {
         case m: JournalModel => m // don't unpack, just pass through the JournalModel
+        case _               => throw new RuntimeException()
       }
     }
   }

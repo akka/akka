@@ -619,8 +619,7 @@ object Source {
    * IllegalArgument("Backpressure overflowStrategy not supported") will be thrown if it is passed as argument.
    *
    * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped if there is no demand
-   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter. An async boundary is added after
-   * this Source; as such, it is never safe to assume the downstream will always generate demand.
+   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter.
    *
    * The stream can be completed successfully by sending the actor reference a message that is matched by
    * `completionMatcher` in which case already buffered elements will be signaled before signaling
@@ -670,8 +669,7 @@ object Source {
    * IllegalArgument("Backpressure overflowStrategy not supported") will be thrown if it is passed as argument.
    *
    * The buffer can be disabled by using `bufferSize` of 0 and then received messages are dropped if there is no demand
-   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter. An async boundary is added after
-   * this Source; as such, it is never safe to assume the downstream will always generate demand.
+   * from downstream. When `bufferSize` is 0 the `overflowStrategy` does not matter.
    *
    * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]].
    * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immediately.
@@ -808,6 +806,7 @@ object Source {
       case immutable.Seq()       => empty[O]
       case immutable.Seq(source) => source.map(t => zipper(immutable.Seq(t))).mapMaterializedValue(_ => NotUsed)
       case s1 +: s2 +: ss        => combine(s1, s2, ss: _*)(ZipWithN(zipper))
+      case _                     => throw new IllegalArgumentException() // just to please compiler completeness check
     }
 
     source.addAttributes(DefaultAttributes.zipWithN)

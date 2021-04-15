@@ -39,7 +39,7 @@ object ShardedDaemonProcessSpec extends MultiNodeConfig {
       val snitchRouter = ctx.spawn(Routers.group(SnitchServiceKey), "router")
       snitchRouter ! ProcessActorEvent(id, "Started")
 
-      Behaviors.receiveMessage {
+      Behaviors.receiveMessagePartial {
         case Stop =>
           snitchRouter ! ProcessActorEvent(id, "Stopped")
           Behaviors.stopped

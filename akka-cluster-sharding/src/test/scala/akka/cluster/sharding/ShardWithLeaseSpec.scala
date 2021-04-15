@@ -54,10 +54,12 @@ object ShardWithLeaseSpec {
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
     case EntityEnvelope(id, payload) => (id.toString, payload)
+    case _                           => throw new IllegalArgumentException()
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case EntityEnvelope(id, _) => (id % numberOfShards).toString
+    case _                     => throw new IllegalArgumentException()
   }
 
   case class BadLease(msg: String) extends RuntimeException(msg) with NoStackTrace

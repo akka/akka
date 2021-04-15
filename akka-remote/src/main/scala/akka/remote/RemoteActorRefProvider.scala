@@ -606,7 +606,7 @@ private[akka] class RemoteActorRefProvider(
   @InternalApi override private[akka] def serializationInformation: Serialization.Information =
     serializationInformationCache match {
       case OptionVal.Some(info) => info
-      case OptionVal.None =>
+      case _ =>
         if ((transport eq null) || (transport.defaultAddress eq null))
           local.serializationInformation // address not know yet, access before complete init and binding
         else {
@@ -635,7 +635,7 @@ private[akka] class RemoteActorRefProvider(
   override private[akka] def addressString: String = {
     _addressString match {
       case OptionVal.Some(addr) => addr
-      case OptionVal.None       =>
+      case _                    =>
         // not initialized yet, fallback
         local.addressString
     }

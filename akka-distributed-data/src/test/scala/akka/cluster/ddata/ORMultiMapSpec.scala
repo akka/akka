@@ -555,13 +555,19 @@ class ORMultiMapSpec extends AnyWordSpec with Matchers {
   "have unapply extractor" in {
     val m1 = ORMultiMap.empty.put(node1, "a", Set(1L, 2L)).put(node2, "b", Set(3L))
     val _: ORMultiMap[String, Long] = m1
-    val ORMultiMap(entries1) = m1
+    val entries1 = m1 match {
+      case ORMultiMap(entries1) => entries1
+      case _                    => fail()
+    }
     val entries2: Map[String, Set[Long]] = entries1
     entries2 should be(Map("a" -> Set(1L, 2L), "b" -> Set(3L)))
 
     Changed(ORMultiMapKey[String, Long]("key"))(m1) match {
       case c @ Changed(ORMultiMapKey("key")) =>
-        val ORMultiMap(entries3) = c.dataValue
+        val entries3 = c.dataValue match {
+          case ORMultiMap(entries3: Map[String, Set[Long]]) => entries3
+          case _                                            => fail()
+        }
         val entries4: Map[String, Set[Long]] = entries3
         entries4 should be(Map("a" -> Set(1L, 2L), "b" -> Set(3L)))
       case changed =>

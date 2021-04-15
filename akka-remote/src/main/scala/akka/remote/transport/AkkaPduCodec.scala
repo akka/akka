@@ -146,7 +146,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     envelopeBuilder.setRecipient(serializeActorRef(recipient.path.address, recipient))
     senderOption match {
       case OptionVal.Some(sender) => envelopeBuilder.setSender(serializeActorRef(localAddress, sender))
-      case OptionVal.None         =>
+      case _                      =>
     }
 
     seqOption.foreach { seq =>

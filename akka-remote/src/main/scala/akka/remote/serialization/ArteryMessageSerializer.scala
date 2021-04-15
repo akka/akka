@@ -91,6 +91,8 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
     case adv: ClassManifestCompressionAdvertisement => serializeCompressionAdvertisement(adv)(identity).toByteArray
     case ClassManifestCompressionAdvertisementAck(from, id) =>
       serializeCompressionTableAdvertisementAck(from, id).toByteArray
+    case _ =>
+      throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =

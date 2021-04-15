@@ -46,14 +46,14 @@ Java
 Acquiring a lease returns a @scala[Future]@java[CompletionStage] as lease implementations typically are implemented 
 via a third party system such as the Kubernetes API server or Zookeeper.
 
-Once a lease is acquired `checkLease` can be called to ensure that the lease is still acquired. As lease implementations
-are based on other distributed systems a lease can be lost due to a timeout with the third party system. This operation is 
-not asynchronous so it can be called before performing any action for which having the lease is important.
+Once a lease is acquired, `checkLease` can be called to ensure that the lease is still acquired. As lease implementations
+are based on other distributed systems, a lease can be lost due to a timeout with the third party system. This operation is 
+not asynchronous, so it can be called before performing any action for which having the lease is important.
 
-A lease has an owner. If the same owner tries to acquire the lease multiple times it will succeed i.e. leases are reentrant. 
+A lease has an owner. If the same owner tries to acquire the lease multiple times, it will succeed i.e. leases are reentrant. 
 
 It is important to pick a lease name that will be unique for your use case. If a lease needs to be unique for each node
-in a Cluster the cluster host port can be use:
+in a Cluster the cluster host port can be used:
 
 Scala
 :  @@snip [LeaseDocSpec.scala](/akka-docs/src/test/scala/docs/coordination/LeaseDocSpec.scala) { #cluster-owner }
@@ -66,7 +66,7 @@ a lease can be used with Cluster Sharding and in this case the shard Id is inclu
 
 ### Setting a lease heartbeat
 
-If a node with a lease crashes or is unresponsive the `heartbeat-timeout` is how long before other nodes can acquire the 
+If a node with a lease crashes or is unresponsive the `heartbeat-timeout` is how long before other nodes can acquire 
 the lease. Without this timeout operator intervention would be needed to release a lease in the case of a node crash.
 This is the safest option but not practical in all cases.
 
@@ -76,7 +76,7 @@ can take action e.g. shutdown shards or singletons.
 
 ## Usages in other Akka modules
 
-Leases can be used for @ref[Cluster Singletons](cluster-singleton.md#lease) and @ref[Cluster Sharding](cluster-sharding.md#lease). 
+Leases can be used for @ref[Split Brain Resolver](split-brain-resolver.md#lease), @ref[Cluster Singleton](cluster-singleton.md#lease), and @ref[Cluster Sharding](cluster-sharding.md#lease). 
 
 ## Lease implementations
 
@@ -97,10 +97,10 @@ The methods should provide the following guarantees:
 
 * `acquire` should complete with: `true` if the lease has been acquired, `false` if the lease is taken by another owner, or fail if it can't communicate with the third party system implementing the lease.
 * `release` should complete with: `true` if the lease has definitely been released, `false` if the lease has definitely not been released, or fail if it is unknown if the lease has been released.
-* `checkLease` should return false until an `acquire` @scala[Future]@java[CompletionStage] has completed and should return `false` if the lease is lost due to an error communicating with the third party. Check lease should also not block.
-* The `acquire` lease lost callback should only be called after an `aquire` @scala[Future]@java[CompletionStage] has completed and should be called if the lease is lose e.g. due to losing communication with the third party system.
+* `checkLease` should return `true` if the lease has been acquired, should return `false` until an `acquire` @scala[Future]@java[CompletionStage] has completed, and should return `false` if the lease is lost due to an error communicating with the third party. Check lease should not block.
+* The `acquire` lease lost callback should only be called after an `acquire` @scala[Future]@java[CompletionStage] has completed and should be called if the lease is lost e.g. due to losing communication with the third party system.
 
-In addition it is expected that a lease implementation will include a time to live mechanism meaning that a lease won't be held for ever in case the node crashes.
+In addition, it is expected that a lease implementation will include a time to live mechanism meaning that a lease won't be held for ever in case the node crashes.
 If a user prefers to have outside intervention in this case for maximum safety then the time to live can be set to infinite.
 
 The configuration must define the `lease-class` property for the FQCN of the lease implementation.
@@ -116,8 +116,3 @@ Scala
 
 Java
 :  @@snip [LeaseDocSpec.scala](/akka-docs/src/test/scala/docs/coordination/LeaseDocSpec.scala) { #lease-config }
-
-
-
-
-

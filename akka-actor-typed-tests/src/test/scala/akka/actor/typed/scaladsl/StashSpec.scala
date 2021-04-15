@@ -299,7 +299,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
                 Behaviors.same
             }
 
-        Behaviors.receiveMessage[String] {
+        Behaviors.receiveMessagePartial[String] {
           case msg if msg.startsWith("stash") =>
             stash.stash(msg)
             Behaviors.same
@@ -635,14 +635,14 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
         stash.stash("handled")
 
         def unstashing(n: Int): Behavior[String] =
-          Behaviors.receiveMessage {
+          Behaviors.receiveMessagePartial {
             case "unhandled" => Behaviors.unhandled
             case "handled" =>
               probe.ref ! s"handled $n"
               unstashing(n + 1)
           }
 
-        Behaviors.receiveMessage {
+        Behaviors.receiveMessagePartial {
           case "unstash" =>
             stash.unstashAll(unstashing(1))
         }
@@ -665,7 +665,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
       val ref = spawn(Behaviors.withStash[String](10) { stash =>
         stash.stash("one")
 
-        Behaviors.receiveMessage {
+        Behaviors.receiveMessagePartial {
           case "unstash" =>
             stash.unstashAll(Behaviors.stopped)
         }
@@ -683,7 +683,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
         stash.stash("one")
         stash.stash("two")
 
-        Behaviors.receiveMessage {
+        Behaviors.receiveMessagePartial {
           case "unstash" =>
             stash.unstashAll(Behaviors.receiveMessage { unstashed =>
               probe.ref ! unstashed

@@ -84,6 +84,7 @@ class EventSourcedSnapshotAdapterSpec
             case ps: PersistedState =>
               snapshotFromJournal.ref.tell(ps)
               State(ps.s)
+            case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
           }
         })
         .snapshotWhen { (_, event, _) =>

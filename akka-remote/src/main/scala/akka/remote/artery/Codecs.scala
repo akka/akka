@@ -83,7 +83,7 @@ private[remote] class Encoder(
       private var _serialization: OptionVal[Serialization] = OptionVal.None
       private def serialization: Serialization = _serialization match {
         case OptionVal.Some(s) => s
-        case OptionVal.None =>
+        case _ =>
           val s = SerializationExtension(system)
           _serialization = OptionVal.Some(s)
           s
@@ -131,12 +131,12 @@ private[remote] class Encoder(
           // internally compression is applied by the builder:
           outboundEnvelope.recipient match {
             case OptionVal.Some(r) => headerBuilder.setRecipientActorRef(r)
-            case OptionVal.None    => headerBuilder.setNoRecipient()
+            case _                 => headerBuilder.setNoRecipient()
           }
 
           outboundEnvelope.sender match {
-            case OptionVal.None    => headerBuilder.setNoSender()
             case OptionVal.Some(s) => headerBuilder.setSenderActorRef(s)
+            case _                 => headerBuilder.setNoSender()
           }
 
           val startTime: Long = if (instruments.timeSerialization) System.nanoTime else 0
@@ -186,7 +186,7 @@ private[remote] class Encoder(
                       reasonText,
                       msgSender,
                       outboundEnvelope.recipient.getOrElse(ActorRef.noSender))
-                  case OptionVal.None =>
+                  case _ =>
                     Dropped(
                       outboundEnvelope.message,
                       reasonText,
@@ -478,13 +478,13 @@ private[remote] class Decoder(
                   sender match {
                     case OptionVal.Some(snd) =>
                       compressions.hitActorRef(originUid, remoteAddress, snd, 1)
-                    case OptionVal.None =>
+                    case _ =>
                   }
 
                   recipient match {
                     case OptionVal.Some(rcp) =>
                       compressions.hitActorRef(originUid, remoteAddress, rcp, 1)
-                    case OptionVal.None =>
+                    case _ =>
                   }
 
                   compressions.hitClassManifest(originUid, remoteAddress, classManifest, 1)
@@ -529,7 +529,7 @@ private[remote] class Decoder(
                         "Message for banned (terminated, unresolved) remote deployed recipient [{}].",
                         recipientActorRefPath)
                     push(out, decoded.withRecipient(ref))
-                  case OptionVal.None =>
+                  case _ =>
                     log.warning(
                       "Dropping message for banned (terminated, unresolved) remote deployed recipient [{}].",
                       recipientActorRefPath)
@@ -594,7 +594,9 @@ private[remote] class Decoder(
 
           case RetryResolveRemoteDeployedRecipient(attemptsLeft, recipientPath, inboundEnvelope) =>
             resolveRecipient(recipientPath) match {
-              case OptionVal.None =>
+              case OptionVal.Some(recipient) =>
+                push(out, inboundEnvelope.withRecipient(recipient))
+              case _ =>
                 if (attemptsLeft > 0)
                   scheduleOnce(
                     RetryResolveRemoteDeployedRecipient(attemptsLeft - 1, recipientPath, inboundEnvelope),
@@ -613,9 +615,9 @@ private[remote] class Decoder(
                   val recipient = actorRefResolver.getOrCompute(recipientPath)
                   push(out, inboundEnvelope.withRecipient(recipient))
                 }
-              case OptionVal.Some(recipient) =>
-                push(out, inboundEnvelope.withRecipient(recipient))
             }
+
+          case unknown => throw new IllegalArgumentException(s"Unknown timer key: $unknown")
         }
       }
 
@@ -648,7 +650,7 @@ private[remote] class Deserializer(
       private var _serialization: OptionVal[Serialization] = OptionVal.None
       private def serialization: Serialization = _serialization match {
         case OptionVal.Some(s) => s
-        case OptionVal.None =>
+        case _ =>
           val s = SerializationExtension(system)
           _serialization = OptionVal.Some(s)
           s
@@ -682,7 +684,7 @@ private[remote] class Deserializer(
           case NonFatal(e) =>
             val from = envelope.association match {
               case OptionVal.Some(a) => a.remoteAddress
-              case OptionVal.None    => "unknown"
+              case _                 => "unknown"
             }
             log.warning(
               "Failed to deserialize message from [{}] with serializer id [{}] and manifest [{}]. {}",

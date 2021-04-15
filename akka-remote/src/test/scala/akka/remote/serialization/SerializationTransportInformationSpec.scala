@@ -5,10 +5,8 @@
 package akka.remote.serialization
 
 import java.nio.charset.StandardCharsets
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -23,6 +21,8 @@ import akka.testkit.ImplicitSender
 import akka.testkit.JavaSerializable
 import akka.testkit.TestActors
 
+import java.io.NotSerializableException
+
 object SerializationTransportInformationSpec {
 
   final case class TestMessage(from: ActorRef, to: ActorRef)
@@ -32,6 +32,7 @@ object SerializationTransportInformationSpec {
     def identifier: Int = 666
     def manifest(o: AnyRef): String = o match {
       case _: TestMessage => "A"
+      case _              => throw new NotSerializableException()
     }
     def toBinary(o: AnyRef): Array[Byte] = o match {
       case TestMessage(from, to) =>
@@ -39,6 +40,7 @@ object SerializationTransportInformationSpec {
         val fromStr = Serialization.serializedActorPath(from)
         val toStr = Serialization.serializedActorPath(to)
         s"$fromStr,$toStr".getBytes(StandardCharsets.UTF_8)
+      case _ => throw new NotSerializableException()
     }
     def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
       verifyTransportInfo()
@@ -50,6 +52,7 @@ object SerializationTransportInformationSpec {
           val from = system.provider.resolveActorRef(fromStr)
           val to = system.provider.resolveActorRef(toStr)
           TestMessage(from, to)
+        case _ => throw new NotSerializableException()
       }
     }
 

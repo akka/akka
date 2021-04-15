@@ -55,6 +55,7 @@ object RandomizedSplitBrainResolverIntegrationSpec extends MultiNodeConfig {
           active-strategy = lease-majority
           lease-majority {
             lease-implementation = test-lease
+            release-after = 20s
           }
         }
 

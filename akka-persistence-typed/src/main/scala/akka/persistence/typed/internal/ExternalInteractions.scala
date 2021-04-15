@@ -65,7 +65,7 @@ private[akka] trait JournalInteractions[C, E, S] {
 
     val write = AtomicWrite(metadata match {
         case OptionVal.Some(meta) => repr.withMetadata(meta)
-        case OptionVal.None       => repr
+        case _                    => repr
       }) :: Nil
 
     setup.journal

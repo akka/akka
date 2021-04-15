@@ -781,6 +781,8 @@ private[remote] class EndpointWriter(
       case s @ StopReading(_, replyTo) =>
         reader.foreach(_.tell(s, replyTo))
         true
+      case unexpected =>
+        throw new IllegalArgumentException(s"Unexpected message type: ${unexpected.getClass}")
     }
 
     @tailrec def writeLoop(count: Int): Boolean =
@@ -906,7 +908,7 @@ private[remote] class EndpointWriter(
               "Transient association error (association remains live)")
             extendedSystem.eventStream.publish(s.senderOption match {
               case OptionVal.Some(msgSender) => Dropped(s.message, reasonText, msgSender, s.recipient)
-              case OptionVal.None            => Dropped(s.message, reasonText, s.recipient)
+              case _                         => Dropped(s.message, reasonText, s.recipient)
             })
             true
           } else {

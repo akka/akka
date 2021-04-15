@@ -93,7 +93,7 @@ class MessageAdapterSpec
 
       case class Wrapped(qualifier: String, response: Response)
 
-      val pingPong = spawn(Behaviors.receiveMessage[Ping] {
+      val pingPong = spawn(Behaviors.receiveMessagePartial[Ping] {
         case Ping1(sender) =>
           sender ! Pong1("hello-1")
           Behaviors.same
@@ -131,10 +131,10 @@ class MessageAdapterSpec
     }
 
     "not break if wrong/unknown response type" in {
-      trait Ping
+      sealed trait Ping
       case class Ping1(sender: ActorRef[Pong1]) extends Ping
       case class Ping2(sender: ActorRef[Pong2]) extends Ping
-      trait Response
+      sealed trait Response
       case class Pong1(greeting: String) extends Response
       case class Pong2(greeting: String) extends Response
 

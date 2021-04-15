@@ -81,7 +81,7 @@ object PingPongExample {
 
         context.spawnAnonymous(PingService())
 
-        Behaviors.receiveMessage {
+        Behaviors.receiveMessagePartial {
           case PingAll =>
             context.system.receptionist ! Receptionist.Find(PingService.PingServiceKey, listingResponseAdapter)
             Behaviors.same

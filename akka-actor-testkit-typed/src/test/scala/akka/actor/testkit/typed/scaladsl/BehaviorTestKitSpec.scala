@@ -49,6 +49,7 @@ object BehaviorTestKitSpec {
     case class ScheduleCommand(key: Any, delay: FiniteDuration, mode: Effect.TimerScheduled.TimerMode, cmd: Command)
         extends Command
     case class CancelScheduleCommand(key: Any) extends Command
+    case class IsTimerActive(key: Any, replyTo: ActorRef[Boolean]) extends Command
 
     val init: Behavior[Command] = Behaviors.withTimers { timers =>
       Behaviors
@@ -134,6 +135,11 @@ object BehaviorTestKitSpec {
             case CancelScheduleCommand(key) =>
               timers.cancel(key)
               Behaviors.same
+            case IsTimerActive(key, replyTo) =>
+              replyTo ! timers.isTimerActive(key)
+              Behaviors.same
+            case unexpected =>
+              throw new RuntimeException(s"Unexpected command: $unexpected")
           }
         }
         .receiveSignal {
@@ -408,6 +414,9 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
   "timer support" must {
     "schedule and cancel timers" in {
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
+      val t = TestInbox[Boolean]()
+      testkit.run(IsTimerActive("abc", t.ref))
+      t.receiveMessage() shouldBe false
       testkit.run(ScheduleCommand("abc", 42.seconds, Effect.TimerScheduled.SingleMode, SpawnChild))
       testkit.expectEffectPF {
         case Effect.TimerScheduled(
@@ -418,11 +427,15 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
             false /*not overriding*/ ) =>
           finiteDuration should equal(42.seconds)
       }
+      testkit.run(IsTimerActive("abc", t.ref))
+      t.receiveMessage() shouldBe true
       testkit.run(CancelScheduleCommand("abc"))
       testkit.expectEffectPF {
         case Effect.TimerCancelled(key) =>
           key should equal("abc")
       }
+      testkit.run(IsTimerActive("abc", t.ref))
+      t.receiveMessage() shouldBe false
     }
 
     "schedule and fire timers" in {

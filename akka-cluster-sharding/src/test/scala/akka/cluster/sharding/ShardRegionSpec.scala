@@ -47,11 +47,13 @@ object ShardRegionSpec {
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
     case msg: Int => (msg.toString, msg)
+    case _        => throw new IllegalArgumentException()
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
     case msg: Int                    => (msg % 10).toString
     case ShardRegion.StartEntity(id) => (id.toLong % numberOfShards).toString
+    case _                           => throw new IllegalArgumentException()
   }
 
   class EntityActor extends Actor with ActorLogging {

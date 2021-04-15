@@ -205,6 +205,8 @@ import akka.util.Timeout
                 classicReplicator.tell(dd.Replicator.FlushChanges, sender = akka.actor.ActorRef.noSender)
                 Behaviors.same
 
+              case unexpected =>
+                throw new RuntimeException(s"Unexpected message: ${unexpected.getClass}") // compiler exhaustiveness check pleaser
             }
           }
           .receiveSignal {

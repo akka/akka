@@ -30,6 +30,7 @@ object TransientSerializationErrorSpec {
       case ToBinaryIllegal         => "TI"
       case NotDeserializable       => "ND"
       case IllegalOnDeserialize    => "IOD"
+      case _                       => throw new NotSerializableException()
     }
     def toBinary(o: AnyRef): Array[Byte] = o match {
       case ToBinaryNotSerializable => throw new NotSerializableException()
@@ -40,6 +41,7 @@ object TransientSerializationErrorSpec {
       manifest match {
         case "ND"  => throw new NotSerializableException() // Not sure this applies here
         case "IOD" => throw new IllegalArgumentException()
+        case _     => throw new NotSerializableException()
       }
     }
   }

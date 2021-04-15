@@ -23,6 +23,7 @@ object ClusterShardingRememberEntitiesSpec {
   val extractShardId: ShardRegion.ExtractShardId = {
     case id: Int                     => id.toString
     case ShardRegion.StartEntity(id) => id
+    case _                           => throw new IllegalArgumentException()
   }
 
 }

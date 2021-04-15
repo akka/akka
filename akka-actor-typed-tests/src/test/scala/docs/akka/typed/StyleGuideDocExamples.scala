@@ -471,7 +471,8 @@ object StyleGuideDocExamples {
       private def counterWithGuard(remaining: Int): Behavior[Command] = {
         //#pattern-match-guard
         // no exhaustiveness check because of guard condition
-        Behaviors.receiveMessage {
+        // FIXME not true anymore since Scala 2.13.5
+        Behaviors.receiveMessagePartial {
           case Down if remaining == 1 =>
             notifyWhenZero.tell(Done)
             zero

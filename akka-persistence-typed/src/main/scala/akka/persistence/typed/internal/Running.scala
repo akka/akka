@@ -188,7 +188,7 @@ private[akka] object Running {
                     if (setup.internalLogger.isDebugEnabled)
                       setup.internalLogger.debug("Fast forward replica [{}] to [{}]", replicaId, sequenceNumber)
                     control.fastForward(sequenceNumber)
-                  case OptionVal.None =>
+                  case _ =>
                     // stream not started yet, ok, fast forward is an optimization
                     if (setup.internalLogger.isDebugEnabled)
                       setup.internalLogger.debug(
@@ -596,6 +596,8 @@ private[akka] object Running {
         case _: Stash.type =>
           stashUser(IncomingCommand(msg))
           (applySideEffects(sideEffects, state), true)
+
+        case unexpected => throw new IllegalStateException(s"Unexpected retention effect: $unexpected")
       }
     }
 
@@ -810,6 +812,7 @@ private[akka] object Running {
                 // deleteEventsOnSnapshot == false, deletion of old snapshots
                 val deleteSnapshotsToSeqNr = s.deleteUpperSequenceNr(meta.sequenceNr)
                 internalDeleteSnapshots(s.deleteLowerSequenceNr(deleteSnapshotsToSeqNr), deleteSnapshotsToSeqNr)
+              case unexpected => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
             }
           }
 
@@ -926,6 +929,7 @@ private[akka] object Running {
             // starting at the snapshot at toSequenceNr would be invalid.
             val deleteSnapshotsToSeqNr = toSequenceNr - 1
             internalDeleteSnapshots(s.deleteLowerSequenceNr(deleteSnapshotsToSeqNr), deleteSnapshotsToSeqNr)
+          case unexpected => throw new IllegalStateException(s"Unexpected retention criteria: $unexpected")
         }
         Some(DeleteEventsCompleted(toSequenceNr))
       case DeleteMessagesFailure(e, toSequenceNr) =>

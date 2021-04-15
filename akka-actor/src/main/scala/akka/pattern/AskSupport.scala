@@ -604,6 +604,7 @@ private[akka] final class PromiseActorRef private (
       updateState(Stopped, StoppedWithPath(provider.tempPath()))
       path
     case Registering => path // spin until registration is completed
+    case unexpected  => throw new IllegalStateException(s"Unexpected state: $unexpected")
   }
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = state match {
@@ -668,6 +669,7 @@ private[akka] final class PromiseActorRef private (
         } else stop()
       case Stopped | _: StoppedWithPath => // already stopped
       case Registering                  => stop() // spin until registration is completed before stopping
+      case unexpected                   => throw new IllegalStateException(s"Unexpected state: $unexpected")
     }
   }
 

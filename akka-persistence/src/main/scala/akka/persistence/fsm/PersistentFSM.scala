@@ -178,6 +178,8 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
         case _: StateChangeEvent =>
           doSnapshot = doSnapshot || snapshotAfterExtension.isSnapshotAfterSeqNo(lastSequenceNr)
           applyStateOnLastHandler()
+        case _ =>
+          throw new RuntimeException() // compiler exhaustiveness check pleaser
       }
     }
   }

@@ -69,6 +69,7 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
   private val receptionist = context.system.receptionist
   private val receptionistAdapter = context.messageAdapter[Receptionist.Listing] {
     case topicServiceKey.Listing(topics) => TopicInstancesUpdated(topics)
+    case _                               => throw new IllegalArgumentException() // FIXME exhaustiveness check fails on receptionist listing match
   }
   receptionist ! Receptionist.Subscribe(topicServiceKey, receptionistAdapter)
 
@@ -139,5 +140,9 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
     case GetTopicStats(replyTo) =>
       replyTo ! TopicStats(localSubscribers.size, topicInstances.size)
       this
+
+    case other =>
+      // can't do exhaustiveness check correctly because of protocol internal/public design
+      throw new IllegalArgumentException(s"Unexpected command type ${other.getClass}")
   }
 }

@@ -218,6 +218,10 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
         replyWithListing(key, subscriber)
 
         behavior(state.subscriberAdded(key)(subscriber))
+
+      case other =>
+        // compiler does not know about our division into public and internal commands
+        throw new IllegalArgumentException(s"Unexpected command type ${other.getClass}")
     }
 
     def onInternal(ctx: ActorContext[Any], cmd: InternalCommand): Behavior[Any] = cmd match {

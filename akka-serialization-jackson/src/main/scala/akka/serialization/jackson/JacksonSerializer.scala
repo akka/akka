@@ -327,7 +327,7 @@ import akka.util.OptionVal
         throw new IllegalStateException(
           s"Migration version ${transformer.supportedForwardVersion} is " +
           s"behind version $fromVersion of deserialized type [$manifestClassName]")
-      case None =>
+      case _ =>
         manifestClassName
     }
 
@@ -370,7 +370,7 @@ import akka.util.OptionVal
           val jsonTree = objectMapper.readTree(decompressedBytes)
           val newJsonTree = transformer.transform(fromVersion, jsonTree)
           objectMapper.treeToValue(newJsonTree, clazz)
-        case None =>
+        case _ =>
           objectMapper.readValue(decompressedBytes, clazz)
       }
 
@@ -539,10 +539,10 @@ import akka.util.OptionVal
       out.toByteArray
     } else {
       LZ4Meta.get(bytes) match {
-        case OptionVal.None => bytes
         case OptionVal.Some(meta) =>
           val srcLen = bytes.length - meta.offset
           lz4Decompressor.decompress(bytes, meta.offset, srcLen, meta.length)
+        case _ => bytes
       }
     }
   }

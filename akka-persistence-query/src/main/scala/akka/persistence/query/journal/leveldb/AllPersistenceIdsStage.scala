@@ -55,6 +55,8 @@ final private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJourna
               buffer(persistenceId)
               deliverBuf(out)
             }
+
+          case _ => throw new RuntimeException() // compiler exhaustiveness check pleaser
         }
       }
 

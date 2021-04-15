@@ -199,7 +199,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
                 case res: SnapshotProtocol.Response          => InternalProtocol.SnapshotterResponse(res)
                 case RecoveryPermitter.RecoveryPermitGranted => InternalProtocol.RecoveryPermitGranted
                 case internal: InternalProtocol              => internal // such as RecoveryTickEvent
-                case cmd: Command @unchecked                 => InternalProtocol.IncomingCommand(cmd)
+                case cmd                                     => InternalProtocol.IncomingCommand(cmd.asInstanceOf[Command])
               }
               target(ctx, innerMsg)
             }
@@ -375,6 +375,11 @@ private[akka] final case class PublishedEventImpl(
   def event: Any = payload match {
     case Tagged(event, _) => event
     case _                => payload
+  }
+
+  override def withoutTags: PublishedEvent = payload match {
+    case Tagged(event, _) => copy(payload = event)
+    case _                => this
   }
 
   override def getReplicatedMetaData: Optional[ReplicatedPublishedEventMetaData] = replicatedMetaData.asJava

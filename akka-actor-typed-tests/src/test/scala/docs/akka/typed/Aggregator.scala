@@ -32,8 +32,8 @@ object Aggregator {
 
       def collecting(replies: immutable.IndexedSeq[Reply]): Behavior[Command] = {
         Behaviors.receiveMessage {
-          case WrappedReply(reply: Reply) =>
-            val newReplies = replies :+ reply
+          case WrappedReply(reply) =>
+            val newReplies = replies :+ reply.asInstanceOf[Reply]
             if (newReplies.size == expectedReplies) {
               val result = aggregateReplies(newReplies)
               replyTo ! result

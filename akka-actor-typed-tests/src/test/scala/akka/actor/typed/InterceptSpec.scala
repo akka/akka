@@ -55,6 +55,7 @@ object InterceptSpec {
         val wrapped = msg match {
           case c: Command          => InternalProtocol.WrappedCommand(c)
           case r: ExternalResponse => InternalProtocol.WrappedExternalResponse(r)
+          case unexpected          => throw new RuntimeException(s"Unexpected: $unexpected")
         }
         target(ctx, wrapped)
       }
@@ -63,7 +64,7 @@ object InterceptSpec {
 
     def apply(probe: ActorRef[String]): Behavior[Command] = {
       Behaviors
-        .intercept(() => new ProtocolTransformer)(Behaviors.receiveMessage[InternalProtocol] {
+        .intercept(() => new ProtocolTransformer)(Behaviors.receiveMessagePartial[InternalProtocol] {
           case InternalProtocol.WrappedCommand(cmd) =>
             probe ! cmd.s
             Behaviors.same
@@ -396,6 +397,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
           signal match {
             case PostStop =>
               probe.ref ! "interceptor-post-stop"
+            case _ =>
           }
           target(ctx, signal)
         }

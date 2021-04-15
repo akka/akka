@@ -146,6 +146,7 @@ object ActorFlow {
     ActorFlow.ask(parallelism)(ref)(makeMessage).map {
       case StatusReply.Success(a) => a.asInstanceOf[A]
       case StatusReply.Error(err) => throw err
+      case _                      => throw new RuntimeException() // compiler exhaustiveness check pleaser
     }
 
   }

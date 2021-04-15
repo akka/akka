@@ -164,6 +164,8 @@ object StatusReply {
         s match {
           case StatusReply.Success(v) => ScalaSuccess(v.asInstanceOf[T])
           case StatusReply.Error(ex)  => ScalaFailure[T](ex)
+          case unexpected =>
+            ScalaFailure(new IllegalArgumentException(s"Unexpected status reply success value: ${unexpected}"))
         }
       case fail @ ScalaFailure(_) => fail.asInstanceOf[Try[T]]
     }(ExecutionContexts.parasitic)

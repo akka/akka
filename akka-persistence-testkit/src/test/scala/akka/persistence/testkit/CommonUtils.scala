@@ -97,7 +97,7 @@ class A(pid: String, notifyOnStateChange: Option[ActorRef]) extends PersistentAc
   override def persistenceId = pid
 }
 
-trait TestCommand
+sealed trait TestCommand
 case class Cmd(data: String) extends TestCommand
 case object Passivate extends TestCommand
 case class Evt(data: String)

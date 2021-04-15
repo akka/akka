@@ -56,19 +56,17 @@ object ClusterReceptionistSpec {
     """)
 
   case object Pong extends CborSerializable
-  trait PingProtocol
+  sealed trait PingProtocol
   case class Ping(respondTo: ActorRef[Pong.type]) extends PingProtocol with CborSerializable
   case object Perish extends PingProtocol with CborSerializable
 
-  val pingPongBehavior = Behaviors.receive[PingProtocol] { (_, msg) =>
-    msg match {
-      case Ping(respondTo) =>
-        respondTo ! Pong
-        Behaviors.same
+  val pingPongBehavior = Behaviors.receiveMessage[PingProtocol] {
+    case Ping(respondTo) =>
+      respondTo ! Pong
+      Behaviors.same
 
-      case Perish =>
-        Behaviors.stopped
-    }
+    case Perish =>
+      Behaviors.stopped
   }
 
   val PingKey = ServiceKey[PingProtocol]("pingy")
@@ -104,7 +102,10 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
         testKit1.system.receptionist ! Register(PingKey, service, regProbe1.ref)
         regProbe1.expectMessage(Registered(PingKey, service))
 
-        val PingKey.Listing(remoteServiceRefs) = regProbe2.expectMessageType[Listing]
+        val remoteServiceRefs = regProbe2.expectMessageType[Listing] match {
+          case PingKey.Listing(r) => r
+          case unexpected         => throw new RuntimeException(s"Unexpected: $unexpected")
+        }
         val theRef = remoteServiceRefs.head
         theRef ! Ping(regProbe2.ref)
         regProbe2.expectMessage(Pong)
@@ -136,7 +137,10 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
         val clusterNode2 = Cluster(system2)
         clusterNode2.manager ! Join(clusterNode1.selfMember.address)
 
-        val PingKey.Listing(remoteServiceRefs) = regProbe2.expectMessageType[Listing](10.seconds)
+        val remoteServiceRefs = regProbe2.expectMessageType[Listing](10.seconds) match {
+          case PingKey.Listing(r) => r
+          case unexpected         => throw new RuntimeException(s"Unexpected: $unexpected")
+        }
         remoteServiceRefs.head.path.address should ===(Cluster(system1).selfMember.address)
       } finally {
         testKit1.shutdownTestKit()
@@ -392,11 +396,14 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
           // we should get either empty message and then updated with the new incarnation actor
           // or just updated with the new service directly
-          val msg = regProbe1.fishForMessage(20.seconds) {
+          val msg = regProbe1.fishForMessagePF(20.seconds) {
             case PingKey.Listing(entries) if entries.size == 1 => FishingOutcome.Complete
             case _: Listing                                    => FishingOutcome.ContinueAndIgnore
           }
-          val PingKey.Listing(entries) = msg.last
+          val entries = msg.last match {
+            case PingKey.Listing(e) => e
+            case unexpected         => throw new RuntimeException(s"Unexpected: $unexpected")
+          }
           entries should have size 1
           val ref = entries.head
           val service3RemotePath = RootActorPath(clusterNode3.selfMember.address) / "user" / "instance"
@@ -557,7 +564,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
         regProbe1.awaitAssert(regProbe1.expectMessage(Listing(TheKey, Set(actor1))), 5.seconds)
 
         system2.receptionist ! Subscribe(TheKey, regProbe2.ref)
-        regProbe2.fishForMessage(10.seconds) {
+        regProbe2.fishForMessagePF(10.seconds) {
           case TheKey.Listing(actors) if actors.nonEmpty =>
             FishingOutcomes.complete
           case _ => FishingOutcomes.continue
@@ -572,13 +579,13 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
         system2.log.info("actor2 registered")
 
         // we should now, eventually, see the removal on both nodes
-        regProbe1.fishForMessage(10.seconds) {
+        regProbe1.fishForMessagePF(10.seconds) {
           case TheKey.Listing(actors) if actors.size == 1 =>
             FishingOutcomes.complete
           case _ =>
             FishingOutcomes.continue
         }
-        regProbe2.fishForMessage(10.seconds) {
+        regProbe2.fishForMessagePF(10.seconds) {
           case TheKey.Listing(actors) if actors.size == 1 =>
             FishingOutcomes.complete
           case _ =>
@@ -747,14 +754,14 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
         regProbe1.expectMessage(Deregistered(PingKey, service1))
         regProbe2.expectMessage(Registered(PingKey, service2))
 
-        regProbe2.fishForMessage(3.seconds) {
+        regProbe2.fishForMessagePF(3.seconds) {
           case PingKey.Listing(actors) if actors == Set(service2) => FishingOutcomes.complete
           case PingKey.Listing(actors) if actors.size == 2        =>
             // we may see both actors before we see the removal
             FishingOutcomes.continueAndIgnore
         }
 
-        regProbe1.fishForMessage(3.seconds) {
+        regProbe1.fishForMessagePF(3.seconds) {
           case PingKey.Listing(actors) if actors.size == 1 => FishingOutcomes.complete
           case PingKey.Listing(actors) if actors.isEmpty   => FishingOutcomes.continueAndIgnore
         }
@@ -818,7 +825,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
         // eventually, all should be included in the Listing
         (0 until numberOfNodes).foreach { i =>
-          probes(i).fishForMessage(10.seconds, s"$i") {
+          probes(i).fishForMessagePF(10.seconds, s"$i") {
             case PingKey.Listing(actors) if actors.size == numberOfNodes => FishingOutcomes.complete
             case PingKey.Listing(_)                                      => FishingOutcomes.continue
           }

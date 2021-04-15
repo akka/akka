@@ -32,6 +32,7 @@ class SystemMessageAckerSpec extends AkkaSpec("""
       .map {
         case sysMsg @ SystemMessageEnvelope(_, _, ackReplyTo) =>
           InboundEnvelope(recipient, sysMsg, OptionVal.None, ackReplyTo.uid, inboundContext.association(ackReplyTo.uid))
+        case _ => throw new RuntimeException()
       }
       .via(new SystemMessageAcker(inboundContext))
       .map { case env: InboundEnvelope => env.message }
