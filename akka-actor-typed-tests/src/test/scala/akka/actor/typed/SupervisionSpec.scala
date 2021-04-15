@@ -40,6 +40,7 @@ object SupervisionSpec {
   case object GetState extends Command
   final case class CreateChild[T](behavior: Behavior[T], name: String) extends Command
   final case class Watch(ref: ActorRef[_]) extends Command
+  final case class WatchWith(ref: ActorRef[_], cmd: Command) extends Command
 
   sealed trait Event
   final case class Pong(n: Int) extends Event
@@ -72,6 +73,9 @@ object SupervisionSpec {
           Behaviors.same
         case Watch(ref) =>
           context.watch(ref)
+          Behaviors.same
+        case WatchWith(ref, cmd) =>
+          context.watchWith(ref, cmd)
           Behaviors.same
         case Throw(e) =>
           throw e
@@ -546,6 +550,50 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       parentProbe.expectMessageType[State].children.keySet should ===(Set.empty)
       // anotherProbe was stopped, Terminated signal stashed and delivered to new behavior
       parentProbe.expectMessage(ReceivedSignal(Terminated(anotherProbe.ref)))
+    }
+
+    "successfully restart after stopping watchWith'd children" in {
+      val parentProbe = TestProbe[Event]("evt")
+      val behv = Behaviors.supervise(targetBehavior(parentProbe.ref)).onFailure[Exc1](SupervisorStrategy.restart)
+      val ref = spawn(behv)
+
+      val anotherProbe = TestProbe[String]("another")
+      ref ! WatchWith(anotherProbe.ref, Ping(0))
+
+      val childProbe = TestProbe[Event]("childEvt")
+      val slowStop = new CountDownLatch(1)
+      val childName = nextName()
+      ref ! CreateChild(targetBehavior(childProbe.ref, slowStop = Some(slowStop)), childName)
+      ref ! GetState
+      val childRef =
+        parentProbe.receiveMessage() match {
+          case State(0, children) =>
+            children.keySet should ===(Set(childName))
+            children(childName)
+          case _ =>
+            fail("expected to receive a State(0, _)")
+        }
+
+      ref ! WatchWith(childRef, Ping(1))
+
+      LoggingTestKit.error[Exc1].expect {
+        ref ! Throw(new Exc1)
+        parentProbe.expectMessage(ReceivedSignal(PreRestart))
+        ref ! GetState
+        anotherProbe.stop()
+      }
+
+      // waiting for children to stop, GetState stashed
+      parentProbe.expectNoMessage()
+      slowStop.countDown()
+
+      childProbe.expectMessage(ReceivedSignal(PostStop))
+      parentProbe.expectMessageType[State].children.keySet should ===(Set.empty)
+      // we get the Ping(0) message from stopping anotherProbe
+      parentProbe.expectMessage(Pong(0))
+      // but we didn't get the Ping(1) message from stopping the child, because the
+      // restart strategy revokes the watchWith in favor of watch
+      parentProbe.expectNoMessage()
     }
 
     "optionally NOT stop children when restarting" in {
