@@ -6,12 +6,12 @@ package akka.stream.scaladsl
 
 import akka.Done
 import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.DefaultTimeout
-import scala.annotation.nowarn
-import org.scalatest.time.Millis
-import org.scalatest.time.Span
+import org.scalatest.time.{ Millis, Span }
 
-import scala.concurrent.Future
+import scala.annotation.nowarn
+import scala.concurrent.{ Await, Future }
 //#imports
 import akka.stream._
 
@@ -22,6 +22,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.EventFilter
 
 import scala.collection.immutable
+import scala.concurrent.duration._
 
 @nowarn // tests assigning to typed val
 class SourceSpec extends StreamSpec with DefaultTimeout {
@@ -434,6 +435,19 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       val matValPoweredSource = Source.empty.mapMaterializedValue(_ => throw new RuntimeException("boom"))
 
       a[RuntimeException] shouldBe thrownBy(matValPoweredSource.preMaterialize())
+    }
+  }
+
+  "Source.futureSource" must {
+
+    "not cancel substream twice" in assertAllStagesStopped {
+      val result = Source
+        .futureSource(akka.pattern.after(2.seconds)(Future.successful(Source(1 to 2))))
+        .merge(Source(3 to 4))
+        .take(1)
+        .runWith(Sink.ignore)
+
+      Await.result(result, 4.seconds) shouldBe Done
     }
   }
 }
