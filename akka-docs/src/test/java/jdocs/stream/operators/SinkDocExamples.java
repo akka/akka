@@ -145,15 +145,6 @@ public class SinkDocExamples {
     // #asPublisher
     Source<Integer, NotUsed> source = Source.range(1, 5);
 
-    Publisher<Integer> publisherTrue = source.runWith(Sink.asPublisher(AsPublisher.WITH_FANOUT), system);
-    CompletionStage<Integer> resultFromFirstSubscriberTrue =
-            Source.fromPublisher(publisherTrue).runWith(Sink.fold(0, (acc, element) -> acc + element), system);
-    CompletionStage<Integer> resultFromSecondSubscriberTrue =
-            Source.fromPublisher(publisherTrue).runWith(Sink.fold(1, (acc, element) -> acc * element), system);
-
-    resultFromFirstSubscriberTrue.thenAccept(System.out::println); //15
-    resultFromSecondSubscriberTrue.thenAccept(System.out::println); //120
-
     Publisher<Integer> publisherFalse = source.runWith(Sink.asPublisher(AsPublisher.WITHOUT_FANOUT), system);
     CompletionStage<Integer> resultFromFirstSubscriberFalse =
             Source.fromPublisher(publisherFalse).runWith(Sink.fold(0, (acc, element) -> acc + element), system);
