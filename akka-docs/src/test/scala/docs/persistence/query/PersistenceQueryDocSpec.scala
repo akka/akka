@@ -167,33 +167,6 @@ object PersistenceQueryDocSpec {
     //#projection-into-different-store-rs
   }
 
-  import akka.actor.typed.ActorRef
-  //#projection-into-different-store-actor
-  object TheOneWhoWritesToQueryJournal {
-
-    sealed trait Command
-    final case class Update(payload: Any, replyTo: ActorRef[Done]) extends Command
-
-    def apply(id: String, store: ExampleStore): Behavior[Command] = {
-      updated(ComplexState(), store)
-    }
-
-    private def updated(state: ComplexState, store: ExampleStore): Behavior[Command] = {
-      Behaviors.receiveMessage {
-        case command: Update =>
-          val newState = updateState(state, command)
-          if (state.readyToSave) store.save(Record(state))
-          updated(newState, store)
-      }
-    }
-
-    private def updateState(state: ComplexState, command: Command): ComplexState = {
-      // some complicated aggregation logic here ...
-      state
-    }
-  }
-  //#projection-into-different-store-actor
-
 }
 
 class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
@@ -281,40 +254,6 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     def latestOffset: Future[Long] = ???
   }
   //#projection-into-different-store
-
-  class RunWithActor {
-    import akka.actor.typed.ActorSystem
-    import akka.actor.typed.ActorRef
-    import akka.actor.typed.scaladsl.adapter._
-    import akka.actor.typed.scaladsl.AskPattern._
-
-    //#projection-into-different-store-actor-run
-    def runQuery(writer: ActorRef[TheOneWhoWritesToQueryJournal.Command])(implicit system: ActorSystem[_]): Unit = {
-
-      val readJournal =
-        PersistenceQuery(system.toClassic).readJournalFor[MyScaladslReadJournal](JournalId)
-
-      import system.executionContext
-      implicit val timeout = Timeout(3.seconds)
-
-      val bidProjection = new MyResumableProjection("bid")
-
-      bidProjection.latestOffset.foreach { startFromOffset =>
-        readJournal
-          .eventsByTag("bid", Sequence(startFromOffset))
-          .mapAsync(8) { envelope =>
-            writer
-              .ask((replyTo: ActorRef[Done]) => TheOneWhoWritesToQueryJournal.Update(envelope.event, replyTo))
-              .map(_ => envelope.offset)
-          }
-          .mapAsync(1) { offset =>
-            bidProjection.saveProgress(offset)
-          }
-          .runWith(Sink.ignore)
-      }
-    }
-    //#projection-into-different-store-actor-run
-  }
 
   class RunWithAsyncFunction {
     val readJournal =

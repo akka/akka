@@ -254,26 +254,11 @@ Java
 
 ### Resumable projections
 
-Sometimes you may need to implement "resumable" projections, that will not start from the beginning of time each time
-when run. In this case you will need to store the sequence number (or `offset`) of the processed event and use it
-the next time this projection is started. This pattern is not built-in, however is rather simple to implement yourself.
+Sometimes you may need to use "resumable" projections, which will not start from the beginning of time each time
+when run. In such case, the sequence number (or `offset`) of the processed event will be stored and
+used the next time this projection is started. This pattern is implemented in the
+[Akka Projections](https://doc.akka.io/docs/akka-projection/current/) module.
 
-The example below additionally highlights how you would use Actors to implement the write side, in case
-you need to do some complex logic that would be best handled inside an Actor before persisting the event
-into the other datastore:
-
-Scala
-:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-actor-run }
-
-Java
-:  @@snip [ResumableProjectionExample.java](/akka-docs/src/test/java/jdocs/persistence/ResumableProjectionExample.java) { #projection-into-different-store-actor-run }
-
-
-Scala
-:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-actor }
-
-Java
-:  @@snip [ResumableProjectionExample.java](/akka-docs/src/test/java/jdocs/persistence/ResumableProjectionExample.java) { #projection-into-different-store-actor }
 
 <a id="read-journal-plugin-api"></a>
 ## Query plugins
