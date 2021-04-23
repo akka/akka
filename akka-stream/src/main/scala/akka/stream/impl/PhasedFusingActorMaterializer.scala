@@ -665,7 +665,7 @@ private final case class SavedIslandData(
   def createPublisher(out: OutPort, logic: M): Publisher[Any]
 
   @InternalStableApi
-  def takePublisher(slot: Int, publisher: Publisher[Any], publisherAttributes: Attributes = Attributes.none): Unit
+  def takePublisher(slot: Int, publisher: Publisher[Any], publisherAttributes: Attributes): Unit
 
   def onIslandReady(): Unit
 
