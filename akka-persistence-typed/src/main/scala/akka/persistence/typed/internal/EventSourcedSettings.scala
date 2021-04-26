@@ -80,7 +80,7 @@ private[akka] final case class EventSourcedSettings(
     recoveryEventTimeout: FiniteDuration,
     journalPluginId: String,
     snapshotPluginId: String,
-    useContextLoggerForInternalLogging: Boolean = true) {
+    useContextLoggerForInternalLogging: Boolean) {
 
   require(journalPluginId != null, "journal plugin id must not be null; use empty string for 'default' journal")
   require(
