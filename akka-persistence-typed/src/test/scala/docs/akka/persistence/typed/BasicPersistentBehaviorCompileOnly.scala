@@ -108,10 +108,10 @@ object BasicPersistentBehaviorCompileOnly {
   import MyPersistentBehavior._
 
   object RecoveryBehavior {
-    def apply(): Behavior[Command] =
+    def apply(persistenceId: PersistenceId): Behavior[Command] =
       //#recovery
       EventSourcedBehavior[Command, Event, State](
-        persistenceId = PersistenceId.ofUniqueId("abc"),
+        persistenceId = persistenceId,
         emptyState = State(),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
         eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
