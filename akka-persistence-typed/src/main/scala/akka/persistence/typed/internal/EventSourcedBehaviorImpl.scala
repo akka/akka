@@ -108,7 +108,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     throw new IllegalArgumentException("persistenceId must not be null")
 
   // Don't use it directly, but instead call internalLogger() (see below)
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private val loggerForInternal = LoggerFactory.getLogger(this.getClass)
 
   override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
     val ctx = context.asScala
@@ -127,7 +127,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message,
       // but important to call `context.log` to mark MDC as used
       ctx.log
-      logger
+
+      if (settings.useContextLoggerForInternalLogging) ctx.log
+      else loggerForInternal
     }
 
     val actualSignalHandler: PartialFunction[(State, Signal), Unit] = signalHandler.orElse {
