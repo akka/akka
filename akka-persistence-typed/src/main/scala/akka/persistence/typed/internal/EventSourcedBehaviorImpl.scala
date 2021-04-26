@@ -124,12 +124,13 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
     // This method ensures that the MDC is set before we use the internal logger
     def internalLogger() = {
-      // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message,
-      // but important to call `context.log` to mark MDC as used
-      ctx.log
-
       if (settings.useContextLoggerForInternalLogging) ctx.log
-      else loggerForInternal
+      else {
+        // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message,
+        // but important to call `context.log` to mark MDC as used
+        ctx.log
+        loggerForInternal
+      }
     }
 
     val actualSignalHandler: PartialFunction[(State, Signal), Unit] = signalHandler.orElse {
