@@ -66,6 +66,7 @@ class StashStateSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
       logOnStashing = false,
       recoveryEventTimeout = 3.seconds,
       journalPluginId = "",
-      snapshotPluginId = "")
+      snapshotPluginId = "",
+      useContextLoggerForInternalLogging = false)
 
 }
