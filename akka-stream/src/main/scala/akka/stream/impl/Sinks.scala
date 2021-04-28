@@ -302,9 +302,9 @@ import akka.util.ccompat._
  * INTERNAL API
  */
 @InternalApi private[akka] object QueueSink {
-  sealed trait Output[+T]
+  sealed trait Output[T]
   final case class Pull[T](promise: Promise[Option[T]]) extends Output[T]
-  case object Cancel extends Output[Nothing]
+  final case class Cancel[T]() extends Output[T]
 }
 
 /**
@@ -340,8 +340,7 @@ import akka.util.ccompat._
       }
 
       private val callback = getAsyncCallback[Output[T]] {
-        case QueueSink.Pull(pullPromise0) =>
-          val pullPromise: Requested[T] = pullPromise0.asInstanceOf[Requested[T]] // Workaround for Scala 3 not unifying Pull's T with Output's T
+        case QueueSink.Pull(pullPromise: Requested[T]) =>
           if (currentRequests.isFull)
             pullPromise.failure(
               new IllegalStateException(s"Too many concurrent pulls. Specified maximum is $maxConcurrentPulls. " +
@@ -351,7 +350,7 @@ import akka.util.ccompat._
             if (buffer.used == maxBuffer) tryPull(in)
             sendDownstream(pullPromise)
           }
-        case QueueSink.Cancel => completeStage()
+        case QueueSink.Cancel() => completeStage()
       }
 
       def sendDownstream(promise: Requested[T]): Unit = {
@@ -402,7 +401,7 @@ import akka.util.ccompat._
         p.future
       }
       override def cancel(): Unit = {
-        callback.invoke(QueueSink.Cancel)
+        callback.invoke(QueueSink.Cancel())
       }
     }
 
