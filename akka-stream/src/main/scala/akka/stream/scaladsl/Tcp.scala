@@ -79,8 +79,6 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
    */
   final case class OutgoingConnection(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress)
 
-  def apply()(implicit system: ActorSystem): Tcp = super.apply(system)
-
   override def get(system: ActorSystem): Tcp = super.get(system)
   override def get(system: ClassicActorSystemProvider): Tcp = super.get(system)
 

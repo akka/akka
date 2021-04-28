@@ -185,12 +185,19 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
   def mapContext[Ctx2](f: Ctx => Ctx2): Repr[Out, Ctx2] =
     via(flow.map { case (e, ctx) => (e, f(ctx)) })
 
+  def log(name: String)(implicit wrap: Flow.LoggingAdapterWrapper): Repr[Out, Ctx] =
+    log(name, ConstantFun.scalaIdentityFunction)(wrap.value)
+
+  def logWithMarker(name: String, marker: (Out, Ctx) => LogMarker)(
+      implicit wrap: Flow.MarkerLoggingAdapterWrapper): Repr[Out, Ctx] =
+    logWithMarker(name, marker, ConstantFun.scalaIdentityFunction)(wrap.value)
+
   /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.log]].
    *
    * @see [[akka.stream.scaladsl.FlowOps.log]]
    */
-  def log(name: String, extract: Out @uncheckedVariance => Any = ConstantFun.scalaIdentityFunction)(
+  def log(name: String, extract: Out => Any)(
       implicit log: LoggingAdapter = null): Repr[Out, Ctx] = {
     val extractWithContext: ((Out, Ctx)) => Any = { case (e, _) => extract(e) }
     via(flow.log(name, extractWithContext)(log))
@@ -204,7 +211,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
   def logWithMarker(
       name: String,
       marker: (Out, Ctx) => LogMarker,
-      extract: Out => Any = ConstantFun.scalaIdentityFunction)(
+      extract: Out => Any)(
       implicit log: MarkerLoggingAdapter = null): Repr[Out, Ctx] = {
     val extractWithContext: ((Out, Ctx)) => Any = { case (e, _) => extract(e) }
     via(flow.logWithMarker(name, marker.tupled, extractWithContext)(log))

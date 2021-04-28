@@ -377,7 +377,7 @@ object Flow {
   def fromGraph[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
     g match {
       case f: Flow[I, O, M]                                       => f
-      case f: javadsl.Flow[I, O, M]                               => f.asScala
+      case f: javadsl.Flow[I, O, M] @unchecked                    => f.asScala
       case g: GraphStageWithMaterializedValue[FlowShape[I, O], M] =>
         // move these from the operator itself to make the returned source
         // behave as it is the operator with regards to attributes
@@ -708,6 +708,16 @@ object Flow {
       .addAttributes(Attributes(SourceLocation.forLambda(create)))
       .mapMaterializedValue(_.flatten)
 
+  import scala.language.implicitConversions
+
+  final case class /*  */LoggingAdapterWrapper(value: /*  */LoggingAdapter)
+  final case class MarkerLoggingAdapterWrapper(value: MarkerLoggingAdapter)
+
+  sealed trait /*  */LoggingAdapterWrapper0 { implicit val fallback: /*  */LoggingAdapterWrapper = /*  */LoggingAdapterWrapper(null) }
+  sealed trait MarkerLoggingAdapterWrapper0 { implicit val fallback: MarkerLoggingAdapterWrapper = MarkerLoggingAdapterWrapper(null) }
+
+  object /*  */LoggingAdapterWrapper extends /*  */LoggingAdapterWrapper0 { implicit def wrap(log: /*  */LoggingAdapter): /*  */LoggingAdapterWrapper = /*  */LoggingAdapterWrapper(log) }
+  object MarkerLoggingAdapterWrapper extends MarkerLoggingAdapterWrapper0 { implicit def wrap(log: MarkerLoggingAdapter): MarkerLoggingAdapterWrapper = MarkerLoggingAdapterWrapper(log) }
 }
 
 object RunnableGraph {
@@ -2600,6 +2610,13 @@ trait FlowOps[+Out, +Mat] {
    */
   def initialDelay(delay: FiniteDuration): Repr[Out] = via(new Timers.DelayInitial[Out](delay))
 
+  def log(name: String)(implicit wrap: Flow.LoggingAdapterWrapper): Repr[Out] =
+    log(name, ConstantFun.scalaIdentityFunction)(wrap.value)
+
+  def logWithMarker(name: String, marker: Out => LogMarker)(
+      implicit wrap: Flow.MarkerLoggingAdapterWrapper): Repr[Out] =
+    logWithMarker(name, marker, ConstantFun.scalaIdentityFunction)(wrap.value)
+
   /**
    * Logs elements flowing through the stream as well as completion and erroring.
    *
@@ -2619,7 +2636,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def log(name: String, extract: Out => Any = ConstantFun.scalaIdentityFunction)(
+  def log(name: String, extract: Out => Any)(
       implicit log: LoggingAdapter = null): Repr[Out] =
     via(Log(name, extract.asInstanceOf[Any => Any], Option(log)))
 
@@ -2642,7 +2659,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def logWithMarker(name: String, marker: Out => LogMarker, extract: Out => Any = ConstantFun.scalaIdentityFunction)(
+  def logWithMarker(name: String, marker: Out => LogMarker, extract: Out => Any)(
       implicit log: MarkerLoggingAdapter = null): Repr[Out] =
     via(LogWithMarker(name, marker, extract.asInstanceOf[Any => Any], Option(log)))
 

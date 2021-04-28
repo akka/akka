@@ -24,7 +24,6 @@ object AkkaSSLConfig extends ExtensionId[AkkaSSLConfig] with ExtensionIdProvider
 
   override def get(system: ActorSystem): AkkaSSLConfig = super.get(system)
   override def get(system: ClassicActorSystemProvider): AkkaSSLConfig = super.get(system)
-  def apply()(implicit system: ActorSystem): AkkaSSLConfig = super.apply(system)
 
   override def lookup = AkkaSSLConfig
 

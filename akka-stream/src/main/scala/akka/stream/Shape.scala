@@ -280,13 +280,39 @@ case class AmorphousShape(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Se
  * A Source [[Shape]] has exactly one output and no inputs, it models a source
  * of data.
  */
-final case class SourceShape[T](out: Outlet[T @uncheckedVariance]) extends Shape {
+final class SourceShape[+T](val out: Outlet[T @uncheckedVariance]) extends Shape with Product with Serializable {
   override val inlets: immutable.Seq[Inlet[_]] = EmptyImmutableSeq
   override val outlets: immutable.Seq[Outlet[_]] = out :: Nil
 
   override def deepCopy(): SourceShape[T] = SourceShape(out.carbonCopy())
+
+  def copy(
+      out: Outlet[T @uncheckedVariance],
+  ): SourceShape[T] = new SourceShape[T](out)
+  override def equals(other: Any): Boolean = (this eq other.asInstanceOf[AnyRef]) || (other match {
+    case that: SourceShape[_] => out == that.out
+    case _                    => false
+  })
+  override def productElement(n: Int): Any = n match {
+    case 0 => out
+    case _ => scala.runtime.Statics.ioobe(n)
+  }
+  override def productElementName(n: Int) = n match {
+    case 0 => "out"
+    case _ => scala.runtime.Statics.ioobe(n)
+  }
+  override def productPrefix       = "SourceShape"
+  override def productArity        = 1
+  override def canEqual(that: Any) = that.isInstanceOf[SourceShape[_]]
+  override def hashCode            = scala.runtime.ScalaRunTime._hashCode(this)
+  override def toString            = scala.runtime.ScalaRunTime._toString(this)
 }
 object SourceShape {
+  def apply[T](out: Outlet[T @uncheckedVariance]): SourceShape[T] =
+    new SourceShape[T](out)
+
+  def unapply[T](x: SourceShape[T @uncheckedVariance]): Some[Outlet[T @uncheckedVariance]] =
+    Some(x.out)
 
   /** Java API */
   def of[T](outlet: Outlet[T @uncheckedVariance]): SourceShape[T] =
@@ -298,13 +324,42 @@ object SourceShape {
  * outside like a pipe (but it can be a complex topology of streams within of
  * course).
  */
-final case class FlowShape[-I, +O](in: Inlet[I @uncheckedVariance], out: Outlet[O @uncheckedVariance]) extends Shape {
+final class FlowShape[-I, +O](val in: Inlet[I @uncheckedVariance], val out: Outlet[O @uncheckedVariance]) extends Shape with Product with Serializable {
   override val inlets: immutable.Seq[Inlet[_]] = in :: Nil
   override val outlets: immutable.Seq[Outlet[_]] = out :: Nil
 
   override def deepCopy(): FlowShape[I, O] = FlowShape(in.carbonCopy(), out.carbonCopy())
+
+  def copy(
+      in: Inlet[I @uncheckedVariance],
+      out: Outlet[O @uncheckedVariance],
+  ): FlowShape[I, O] = new FlowShape(in, out)
+  override def equals(other: Any): Boolean = (this eq other.asInstanceOf[AnyRef]) || (other match {
+    case that: FlowShape[_, _] => in == that.in && out == that.out
+    case _                     => false
+  })
+  override def productElement(n: Int): Any = n match {
+    case 0 => in
+    case 1 => out
+    case _ => scala.runtime.Statics.ioobe(n)
+  }
+  override def productElementName(n: Int) = n match {
+    case 0 => "in"
+    case 1 => "out"
+    case _ => scala.runtime.Statics.ioobe(n)
+  }
+  override def productPrefix       = "FlowShape"
+  override def productArity        = 2
+  override def canEqual(that: Any) = that.isInstanceOf[FlowShape[_, _]]
+  override def hashCode            = scala.runtime.ScalaRunTime._hashCode(this)
+  override def toString            = scala.runtime.ScalaRunTime._toString(this)
 }
 object FlowShape {
+  def apply[I, O](in: Inlet[I @uncheckedVariance], out: Outlet[O @uncheckedVariance]): FlowShape[I, O] =
+    new FlowShape[I, O](in, out)
+
+  def unapply[I, O](x: FlowShape[I @uncheckedVariance, O @uncheckedVariance]): Some[(Inlet[I @uncheckedVariance], Outlet[O @uncheckedVariance])] =
+    Some((x.in, x.out))
 
   /** Java API */
   def of[I, O](inlet: Inlet[I @uncheckedVariance], outlet: Outlet[O @uncheckedVariance]): FlowShape[I, O] =
@@ -314,13 +369,39 @@ object FlowShape {
 /**
  * A Sink [[Shape]] has exactly one input and no outputs, it models a data sink.
  */
-final case class SinkShape[-T](in: Inlet[T @uncheckedVariance]) extends Shape {
+final class SinkShape[-T](val in: Inlet[T @uncheckedVariance]) extends Shape with Product with Serializable {
   override val inlets: immutable.Seq[Inlet[_]] = in :: Nil
   override val outlets: immutable.Seq[Outlet[_]] = EmptyImmutableSeq
 
   override def deepCopy(): SinkShape[T] = SinkShape(in.carbonCopy())
+
+  def copy(
+      in: Inlet[T @uncheckedVariance],
+  ): SinkShape[T] = new SinkShape[T](in)
+  override def equals(other: Any): Boolean = (this eq other.asInstanceOf[AnyRef]) || (other match {
+    case that: SinkShape[_] => in == that.in
+    case _                  => false
+  })
+  override def productElement(n: Int): Any = n match {
+    case 0 => in
+    case _ => scala.runtime.Statics.ioobe(n)
+  }
+  override def productElementName(n: Int) = n match {
+    case 0 => "out"
+    case _ => scala.runtime.Statics.ioobe(n)
+  }
+  override def productPrefix       = "SinkShape"
+  override def productArity        = 1
+  override def canEqual(that: Any) = that.isInstanceOf[SinkShape[_]]
+  override def hashCode            = scala.runtime.ScalaRunTime._hashCode(this)
+  override def toString            = scala.runtime.ScalaRunTime._toString(this)
 }
 object SinkShape {
+  def apply[T](in: Inlet[T @uncheckedVariance]): SinkShape[T] =
+    new SinkShape[T](in)
+
+  def unapply[T](x: SinkShape[T @uncheckedVariance]): Some[Inlet[T @uncheckedVariance]] =
+    Some(x.in)
 
   /** Java API */
   def of[T](inlet: Inlet[T @uncheckedVariance]): SinkShape[T] =
@@ -340,12 +421,12 @@ object SinkShape {
  *        +------+
  * }}}
  */
-final case class BidiShape[-In1, +Out1, -In2, +Out2](
-    in1: Inlet[In1 @uncheckedVariance],
-    out1: Outlet[Out1 @uncheckedVariance],
-    in2: Inlet[In2 @uncheckedVariance],
-    out2: Outlet[Out2 @uncheckedVariance])
-    extends Shape {
+final class BidiShape[-In1, +Out1, -In2, +Out2](
+    val in1: Inlet[In1 @uncheckedVariance],
+    val out1: Outlet[Out1 @uncheckedVariance],
+    val in2: Inlet[In2 @uncheckedVariance],
+    val out2: Outlet[Out2 @uncheckedVariance])
+    extends Shape with Product with Serializable {
   //#implementation-details-elided
   override val inlets: immutable.Seq[Inlet[_]] = in1 :: in2 :: Nil
   override val outlets: immutable.Seq[Outlet[_]] = out1 :: out2 :: Nil
@@ -358,10 +439,54 @@ final case class BidiShape[-In1, +Out1, -In2, +Out2](
   override def deepCopy(): BidiShape[In1, Out1, In2, Out2] =
     BidiShape(in1.carbonCopy(), out1.carbonCopy(), in2.carbonCopy(), out2.carbonCopy())
 
+  def copy(
+      in1: Inlet[In1 @uncheckedVariance],
+      out1: Outlet[Out1 @uncheckedVariance],
+      in2: Inlet[In2 @uncheckedVariance],
+      out2: Outlet[Out2 @uncheckedVariance],
+  ): BidiShape[In1, Out1, In2, Out2] = new BidiShape(in1, out1, in2, out2)
+  override def equals(other: Any): Boolean = (this eq other.asInstanceOf[AnyRef]) || (other match {
+    case that: BidiShape[_, _, _, _] => in1 == that.in1 && out1 == that.out1 && in2 == that.in2 && out2 == that.out2
+    case _                           => false
+  })
+  override def productElement(n: Int): Any = n match {
+    case 0 => in1
+    case 1 => out1
+    case 2 => in2
+    case 3 => out2
+    case _ => scala.runtime.Statics.ioobe(n)
+  }
+  override def productElementName(n: Int) = n match {
+    case 0 => "in1"
+    case 1 => "out1"
+    case 2 => "in2"
+    case 3 => "out2"
+    case _ => scala.runtime.Statics.ioobe(n)
+  }
+  override def productPrefix       = "BidiShape"
+  override def productArity        = 4
+  override def canEqual(that: Any) = that.isInstanceOf[BidiShape[_, _, _, _]]
+  override def hashCode            = scala.runtime.ScalaRunTime._hashCode(this)
+  override def toString            = scala.runtime.ScalaRunTime._toString(this)
   //#implementation-details-elided
 }
 //#bidi-shape
 object BidiShape {
+  def apply[In1, Out1, In2, Out2](
+      in1: Inlet[In1 @uncheckedVariance],
+      out1: Outlet[Out1 @uncheckedVariance],
+      in2: Inlet[In2 @uncheckedVariance],
+      out2: Outlet[Out2 @uncheckedVariance],
+  ): BidiShape[In1, Out1, In2, Out2] =
+    new BidiShape[In1, Out1, In2, Out2](in1, out1, in2, out2)
+
+  def unapply[In1, Out1, In2, Out2](x: BidiShape[In1, Out1, In2, Out2]): Some[(
+      Inlet[In1 @uncheckedVariance],
+      Outlet[Out1 @uncheckedVariance],
+      Inlet[In2 @uncheckedVariance],
+      Outlet[Out2 @uncheckedVariance],
+  )] = Some((x.in1, x.out1, x.in2, x.out2))
+
   def fromFlows[I1, O1, I2, O2](top: FlowShape[I1, O1], bottom: FlowShape[I2, O2]): BidiShape[I1, O1, I2, O2] =
     BidiShape(top.in, top.out, bottom.in, bottom.out)
 

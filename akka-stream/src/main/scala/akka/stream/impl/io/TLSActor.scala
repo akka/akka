@@ -425,7 +425,7 @@ import akka.util.ByteString
       case BUFFER_OVERFLOW =>
         flushToUser()
         transportInChoppingBlock.putBack(transportInBuffer)
-      case s => fail(new IllegalStateException(s"unexpected status $s in doUnwrap()"))
+      case null => fail(new IllegalStateException(s"unexpected status null in doUnwrap()"))
     }
   }
 

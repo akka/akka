@@ -206,8 +206,8 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
       var event = queue.poll()
       while (event ne null) {
         event match {
-          case Register(_, demandCallback) => demandCallback.invoke(MergeHub.Cancel)
-          case _                           =>
+          case Register(_, demandCallback)   => demandCallback.invoke(MergeHub.Cancel)
+          case Element(_, _) | Deregister(_) =>
         }
         event = queue.poll()
       }

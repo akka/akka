@@ -2072,7 +2072,7 @@ private[stream] object Collect {
       override def toString = s"Reduce.Logic(aggregator=$aggregator)"
       
       private var aggregator: T = _
-      private var empty: T = aggregator
+      private val empty: T = aggregator
 
       private def decider =
         inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider

@@ -81,7 +81,7 @@ import akka.util.ByteString
     val foundObject = seekObject()
     if (!foundObject) None
     else
-      (pos: @switch) match {
+      pos match {
         case -1 | 0 => None
         case _ =>
           val (emit, buf) = buffer.splitAt(pos)

@@ -14,7 +14,7 @@ import akka.stream.stage._
  */
 @InternalApi private[akka] object EmptySource extends GraphStage[SourceShape[Nothing]] {
   val out = Outlet[Nothing]("EmptySource.out")
-  override val shape = SourceShape(out)
+  override val shape = SourceShape[Nothing](out)
 
   override protected def initialAttributes = DefaultAttributes.lazySource
 

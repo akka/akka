@@ -282,7 +282,7 @@ private[akka] object ConcurrentAsyncCallbackState {
   // stream is initialized and so no threads can just send events without any synchronization overhead
   case object Initialized extends State[Nothing]
   // Event with feedback promise
-  final case class Event[E](e: E, handlingPromise: Promise[Done])
+  final case class Event[+E](e: E, handlingPromise: Promise[Done])
 
   val NoPendingEvents = Pending[Nothing](Nil)
 }

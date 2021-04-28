@@ -340,7 +340,8 @@ import akka.util.ccompat._
       }
 
       private val callback = getAsyncCallback[Output[T]] {
-        case QueueSink.Pull(pullPromise: Requested[T]) =>
+        case QueueSink.Pull(pullPromise0) =>
+          val pullPromise: Requested[T] = pullPromise0.asInstanceOf[Requested[T]] // Workaround for Scala 3 not unifying Pull's T with Output's T
           if (currentRequests.isFull)
             pullPromise.failure(
               new IllegalStateException(s"Too many concurrent pulls. Specified maximum is $maxConcurrentPulls. " +
@@ -461,17 +462,19 @@ import akka.util.ccompat._
 @InternalApi private[akka] final class MutableCollectorState[T, R](
     collector: java.util.stream.Collector[T, Any, R],
     accumulator: java.util.function.BiConsumer[Any, T],
-    val accumulated: Any)
+    _accumulated: Any)
     extends CollectorState[T, R] {
 
+  def accumulated(): Any = _accumulated
+
   override def update(elem: T): CollectorState[T, R] = {
-    accumulator.accept(accumulated, elem)
+    accumulator.accept(accumulated(), elem)
     this
   }
 
   override def finish(): R = {
     // only called if completed without elements
-    collector.finisher().apply(accumulated)
+    collector.finisher().apply(accumulated())
   }
 }
 

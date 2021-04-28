@@ -315,7 +315,7 @@ object Source {
    */
   def fromGraph[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = g match {
     case s: Source[T, M]                                       => s
-    case s: javadsl.Source[T, M]                               => s.asScala
+    case s: javadsl.Source[T, M] @unchecked                    => s.asScala
     case g: GraphStageWithMaterializedValue[SourceShape[T], M] =>
       // move these from the stage itself to make the returned source
       // behave as it is the stage with regards to attributes

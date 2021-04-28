@@ -1574,7 +1574,7 @@ object GraphDSL extends GraphApply {
      * connected.
      */
     // FIXME source incompatible change for Scala 3 adding the M type parameter
-    def add[S <: Shape, M](graph: Graph[S, M]): S = {
+    def add[S <: Shape, M2](graph: Graph[S, M2]): S = {
       val newShape = graph.shape.deepCopy()
       traversalBuilderInProgress = traversalBuilderInProgress.add(graph.traversalBuilder, newShape, Keep.left)
 
@@ -1590,7 +1590,7 @@ object GraphDSL extends GraphApply {
      * This is only used by the materialization-importing apply methods of Source,
      * Flow, Sink and Graph.
      */
-    private[stream] def add[S <: Shape, A, M](graph: Graph[S, M], transform: (A) => Any): S = {
+    private[stream] def add[S <: Shape, A, M2](graph: Graph[S, M2], transform: (A) => Any): S = {
       val newShape = graph.shape.deepCopy()
       traversalBuilderInProgress =
         traversalBuilderInProgress.add(graph.traversalBuilder.transformMat(transform), newShape, Keep.right)
@@ -1607,7 +1607,7 @@ object GraphDSL extends GraphApply {
      * This is only used by the materialization-importing apply methods of Source,
      * Flow, Sink and Graph.
      */
-    private[stream] def add[S <: Shape, A, B, M](graph: Graph[S, M], combine: (A, B) => Any): S = {
+    private[stream] def add[S <: Shape, A, B, M2](graph: Graph[S, M2], combine: (A, B) => Any): S = {
       val newShape = graph.shape.deepCopy()
       traversalBuilderInProgress = traversalBuilderInProgress.add(graph.traversalBuilder, newShape, combine)
 
