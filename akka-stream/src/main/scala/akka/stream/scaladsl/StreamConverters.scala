@@ -153,7 +153,7 @@ object StreamConverters {
 
           merge.out
             .fold(new FirstReducerState(factory): ReducerState[T, R]) { (state, elem) =>
-              state.update(elem.accumulated())
+              state.update(elem.accumulated)
             }
             .map(state => state.finish()) ~> sink.in
 

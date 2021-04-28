@@ -416,7 +416,7 @@ import akka.util.ccompat._
  * accidentally sharing state between materializations
  */
 @InternalApi private[akka] trait CollectorState[T, R] {
-  def accumulated(): Any
+  def accumulated: Any
   def update(elem: T): CollectorState[T, R]
   def finish(): R
 }
@@ -440,7 +440,7 @@ import akka.util.ccompat._
     new MutableCollectorState(collector, accumulator, accumulated)
   }
 
-  override def accumulated(): Any = {
+  override def accumulated: Any = {
     // only called if it is asked about accumulated before accepting a first element
     val collector = collectorFactory()
     collector.supplier().get()
@@ -461,19 +461,17 @@ import akka.util.ccompat._
 @InternalApi private[akka] final class MutableCollectorState[T, R](
     collector: java.util.stream.Collector[T, Any, R],
     accumulator: java.util.function.BiConsumer[Any, T],
-    _accumulated: Any)
+    val accumulated: Any)
     extends CollectorState[T, R] {
 
-  def accumulated(): Any = _accumulated
-
   override def update(elem: T): CollectorState[T, R] = {
-    accumulator.accept(accumulated(), elem)
+    accumulator.accept(accumulated, elem)
     this
   }
 
   override def finish(): R = {
     // only called if completed without elements
-    collector.finisher().apply(accumulated())
+    collector.finisher().apply(accumulated)
   }
 }
 
