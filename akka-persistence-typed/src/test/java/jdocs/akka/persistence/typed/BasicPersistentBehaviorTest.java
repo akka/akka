@@ -46,8 +46,8 @@ public class BasicPersistentBehaviorTest {
 
       public static class State {}
 
-      public static Behavior<Command> create() {
-        return new MyPersistentBehavior(PersistenceId.ofUniqueId("pid"));
+      public static Behavior<Command> create(PersistenceId persistenceId) {
+        return new MyPersistentBehavior(persistenceId);
       }
 
       private MyPersistentBehavior(PersistenceId persistenceId) {
