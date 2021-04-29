@@ -13,6 +13,8 @@ import sbt._
 import sbt.util.CacheStoreFactory
 import Keys._
 
+import sbtassembly.AssemblyKeys._
+
 object Protobuf {
   val paths = SettingKey[Seq[File]]("protobuf-paths", "The paths that contain *.proto files.")
   val outputPaths =
@@ -29,8 +31,7 @@ object Protobuf {
     outputPaths := Seq((sourceDirectory in Compile).value, (sourceDirectory in Test).value).map(_ / "java"),
     importPath := None,
     // this keeps intellij happy for files that use the shaded protobuf
-    Compile / unmanagedJars ++= Seq(
-        baseDirectory.value / ".." / "akka-protobuf-v3" / "target" / s"scala-${scalaBinaryVersion.value}" / s"akka-protobuf-v3-assembly-${version.value}.jar"),
+    Compile / unmanagedJars += (LocalProject("akka-protobuf-v3") / assembly).value,
     protoc := "protoc",
     protocVersion := "3.11.4",
     generate := {
