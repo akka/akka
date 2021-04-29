@@ -41,6 +41,8 @@ import akka.persistence.Persistence
     val recoveryEventTimeout: FiniteDuration =
       journalConfig.getDuration("recovery-event-timeout", TimeUnit.MILLISECONDS).millis
 
+    val useContextLoggerForInternalLogging = typedConfig.getBoolean("use-context-logger-for-internal-logging")
+
     Persistence.verifyPluginConfigExists(config, snapshotPluginId, "Snapshot store")
 
     EventSourcedSettings(
@@ -49,7 +51,8 @@ import akka.persistence.Persistence
       logOnStashing = logOnStashing,
       recoveryEventTimeout,
       journalPluginId,
-      snapshotPluginId)
+      snapshotPluginId,
+      useContextLoggerForInternalLogging)
   }
 
   private def journalConfigFor(config: Config, journalPluginId: String): Config = {
@@ -76,7 +79,8 @@ private[akka] final case class EventSourcedSettings(
     logOnStashing: Boolean,
     recoveryEventTimeout: FiniteDuration,
     journalPluginId: String,
-    snapshotPluginId: String) {
+    snapshotPluginId: String,
+    useContextLoggerForInternalLogging: Boolean) {
 
   require(journalPluginId != null, "journal plugin id must not be null; use empty string for 'default' journal")
   require(
