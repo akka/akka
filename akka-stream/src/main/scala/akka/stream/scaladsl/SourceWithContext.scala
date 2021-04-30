@@ -4,8 +4,6 @@
 
 package akka.stream.scaladsl
 
-import scala.annotation.unchecked.uncheckedVariance
-
 import akka.stream._
 
 object SourceWithContext {
@@ -28,7 +26,7 @@ object SourceWithContext {
 final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Source[(Out, Ctx), Mat])
     extends GraphDelegate(delegate)
     with FlowWithContextOps[Out, Ctx, Mat] {
-  override type ReprMat[+O, +C, +M] = SourceWithContext[O, C, M @uncheckedVariance]
+  override protected[this] type ReprMat[+O, +C, +M] = SourceWithContext[O, C, M]
 
   override def via[Out2, Ctx2, Mat2](viaFlow: Graph[FlowShape[(Out, Ctx), (Out2, Ctx2)], Mat2]): Repr[Out2, Ctx2] =
     new SourceWithContext(delegate.via(viaFlow))

@@ -214,7 +214,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       }
 
       private def grabSequenced[T](in: Inlet[T]): StreamRefsProtocol.SequencedOnNext[T] = {
-        val onNext = StreamRefsProtocol.SequencedOnNext(remoteCumulativeDemandConsumed, grab(in))
+        val onNext = StreamRefsProtocol.SequencedOnNext(remoteCumulativeDemandConsumed, grab[T](in))
         remoteCumulativeDemandConsumed += 1
         onNext
       }

@@ -34,7 +34,7 @@ object MergeHub {
    * @param perProducerBufferSize Buffer space used per producer.
    */
   def of[T](@unused clazz: Class[T], perProducerBufferSize: Int): Source[T, Sink[T, NotUsed]] = {
-    akka.stream.scaladsl.MergeHub.source[T](perProducerBufferSize).mapMaterializedValue(_.asJava[T]).asJava
+    akka.stream.scaladsl.MergeHub.source[T](perProducerBufferSize).mapMaterializedValue(_.asJava).asJava
   }
 
   /**

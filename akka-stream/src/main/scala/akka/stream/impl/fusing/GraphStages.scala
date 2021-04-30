@@ -6,7 +6,6 @@ package akka.stream.impl.fusing
 
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicReference }
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
@@ -28,7 +27,7 @@ import akka.stream.stage._
  * INTERNAL API
  */
 // TODO: Fix variance issues
-@InternalApi private[akka] final case class GraphStageModule[+S <: Shape @uncheckedVariance, +M](
+@InternalApi private[akka] final case class GraphStageModule[+S <: Shape, +M](
     shape: S,
     attributes: Attributes,
     stage: GraphStageWithMaterializedValue[S, M])

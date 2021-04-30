@@ -58,7 +58,7 @@ private[akka] final class FileOutputStage(path: Path, startPosition: Long, openO
       }
 
       override def onPush(): Unit = {
-        val next = grab(in)
+        val next: ByteString = grab(in)
         try {
           bytesWritten += chan.write(next.asByteBuffer)
           pull(in)

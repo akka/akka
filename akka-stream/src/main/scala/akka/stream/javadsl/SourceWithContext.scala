@@ -6,7 +6,6 @@ package akka.stream.javadsl
 
 import java.util.concurrent.CompletionStage
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
 
 import akka.actor.ClassicActorSystemProvider
@@ -54,7 +53,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    * @see [[akka.stream.javadsl.Flow.via]]
    */
   def via[Out2, Ctx2, Mat2](
-      viaFlow: Graph[FlowShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance], Pair[Out2, Ctx2]], Mat2])
+      viaFlow: Graph[FlowShape[Pair[Out, Ctx], Pair[Out2, Ctx2]], Mat2])
       : SourceWithContext[Out2, Ctx2, Mat] =
     viaScala(_.via(akka.stream.scaladsl.Flow[(Out, Ctx)].map { case (o, c) => Pair(o, c) }.via(viaFlow).map(_.toScala)))
 
@@ -86,7 +85,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    * Stops automatic context propagation from here and converts this to a regular
    * stream of a pair of (data, context).
    */
-  def asSource(): Source[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance], Mat @uncheckedVariance] =
+  def asSource(): Source[Pair[Out, Ctx], Mat] =
     delegate.asSource.map { case (o, c) => Pair(o, c) }.asJava
 
   // remaining operations in alphabetic order
@@ -129,7 +128,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    * @see [[akka.stream.javadsl.Source.grouped]]
    */
   def grouped(
-      n: Int): SourceWithContext[java.util.List[Out @uncheckedVariance], java.util.List[Ctx @uncheckedVariance], Mat] =
+      n: Int): SourceWithContext[java.util.List[_ <: Out], java.util.List[_ <: Ctx], _ <: Mat] =
     viaScala(_.grouped(n).map(_.asJava).mapContext(_.asJava))
 
   /**
@@ -190,7 +189,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    * @see [[akka.stream.javadsl.Source.sliding]]
    */
   def sliding(n: Int, step: Int = 1)
-      : SourceWithContext[java.util.List[Out @uncheckedVariance], java.util.List[Ctx @uncheckedVariance], Mat] =
+      : SourceWithContext[java.util.List[_ <: Out], java.util.List[_ <: Ctx], _ <: Mat] =
     viaScala(_.sliding(n, step).map(_.asJava).mapContext(_.asJava))
 
   /**
@@ -316,7 +315,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    * concatenating the processing steps of both.
    */
   def to[Mat2](
-      sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], Mat2]): javadsl.RunnableGraph[Mat] =
+      sink: Graph[SinkShape[Pair[Out, Ctx]], Mat2]): javadsl.RunnableGraph[Mat] =
     RunnableGraph.fromGraph(asScala.asSource.map { case (o, e) => Pair(o, e) }.to(sink))
 
   /**
@@ -324,7 +323,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    * concatenating the processing steps of both.
    */
   def toMat[Mat2, Mat3](
-      sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], Mat2],
+      sink: Graph[SinkShape[Pair[Out, Ctx]], Mat2],
       combine: function.Function2[Mat, Mat2, Mat3]): javadsl.RunnableGraph[Mat3] =
     RunnableGraph.fromGraph(asScala.asSource.map { case (o, e) => Pair(o, e) }.toMat(sink)(combinerToScala(combine)))
 
@@ -333,7 +332,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    * The returned value is the materialized value of the `Sink`.
    */
   def runWith[M](
-      sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], M],
+      sink: Graph[SinkShape[Pair[Out, Ctx]], M],
       systemProvider: ClassicActorSystemProvider): M =
     toMat(sink, Keep.right[Mat, M]).run(systemProvider.classicSystem)
 
@@ -344,7 +343,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    * Prefer the method taking an ActorSystem unless you have special requirements.
    */
   def runWith[M](
-      sink: Graph[SinkShape[Pair[Out @uncheckedVariance, Ctx @uncheckedVariance]], M],
+      sink: Graph[SinkShape[Pair[Out, Ctx]], M],
       materializer: Materializer): M =
     toMat(sink, Keep.right[Mat, M]).run(materializer)
 

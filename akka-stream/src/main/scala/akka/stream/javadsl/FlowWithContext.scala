@@ -6,7 +6,6 @@ package akka.stream.javadsl
 
 import java.util.concurrent.CompletionStage
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
 
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
@@ -39,7 +38,7 @@ object FlowWithContext {
  * An "empty" flow can be created by calling `FlowWithContext[Ctx, T]`.
  *
  */
-final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
+final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](
     delegate: javadsl.Flow[Pair[In, CtxIn], Pair[Out, CtxOut], Mat])
     extends GraphDelegate(delegate) {
 
@@ -57,7 +56,7 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
    * @see [[akka.stream.javadsl.Flow.via]]
    */
   def via[Out2, CtxOut2, Mat2](
-      viaFlow: Graph[FlowShape[Pair[Out @uncheckedVariance, CtxOut @uncheckedVariance], Pair[Out2, CtxOut2]], Mat2])
+      viaFlow: Graph[FlowShape[Pair[Out, CtxOut], Pair[Out2, CtxOut2]], Mat2])
       : FlowWithContext[In, CtxIn, Out2, CtxOut2, Mat] = {
     val under = asFlow().via(viaFlow)
     FlowWithContext.fromPairs(under)
@@ -90,7 +89,7 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
   /**
    * Creates a regular flow of pairs (data, context).
    */
-  def asFlow(): Flow[Pair[In, CtxIn], Pair[Out, CtxOut], Mat] @uncheckedVariance =
+  def asFlow(): Flow[Pair[In, CtxIn], Pair[Out, CtxOut], Mat] =
     delegate
 
   // remaining operations in alphabetic order
@@ -135,8 +134,8 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
   def grouped(n: Int): FlowWithContext[
     In,
     CtxIn,
-    java.util.List[Out @uncheckedVariance],
-    java.util.List[CtxOut @uncheckedVariance],
+    java.util.List[_ <: Out],
+    java.util.List[_ <: CtxOut],
     Mat] =
     viaScala(_.grouped(n).map(_.asJava).mapContext(_.asJava))
 
@@ -203,8 +202,8 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
   def sliding(n: Int, step: Int = 1): FlowWithContext[
     In,
     CtxIn,
-    java.util.List[Out @uncheckedVariance],
-    java.util.List[CtxOut @uncheckedVariance],
+    java.util.List[_ <: Out],
+    java.util.List[_ <: CtxOut],
     Mat] =
     viaScala(_.sliding(n, step).map(_.asJava).mapContext(_.asJava))
 

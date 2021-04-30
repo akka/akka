@@ -4,7 +4,6 @@
 
 package akka.stream
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 
 object FanOutShape {
@@ -24,7 +23,7 @@ object FanOutShape {
 }
 
 abstract class FanOutShape[-I] private (
-    _in: Inlet[I @uncheckedVariance],
+    _in: Inlet[I],
     _registered: Iterator[Outlet[_]],
     _name: String)
     extends Shape {
@@ -32,13 +31,13 @@ abstract class FanOutShape[-I] private (
 
   def this(init: FanOutShape.Init[I]) = this(init.inlet, init.outlets.iterator, init.name)
 
-  final def in: Inlet[I @uncheckedVariance] = _in
+  final def in: Inlet[I] = _in
 
   /**
    * Not meant for overriding outside of Akka.
    */
   override def outlets: immutable.Seq[Outlet[_]] = _outlets
-  final override def inlets: immutable.Seq[Inlet[I @uncheckedVariance]] = in :: Nil
+  final override def inlets: immutable.Seq[Inlet[I]] = in :: Nil
 
   /**
    * Performance of subclass `UniformFanOutShape` relies on `_outlets` being a `Vector`, not a `List`.
@@ -50,7 +49,7 @@ abstract class FanOutShape[-I] private (
     p
   }
 
-  protected def construct(init: Init[I @uncheckedVariance]): FanOutShape[I]
+  protected def construct[J <: I](init: Init[J]): FanOutShape[J]
 
   def deepCopy(): FanOutShape[I] = construct(Ports[I](_in.carbonCopy(), outlets.map(_.carbonCopy())))
 }

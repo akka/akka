@@ -6,8 +6,6 @@ package akka.stream.javadsl
 
 import java.util
 
-import scala.annotation.unchecked.uncheckedVariance
-
 import akka.NotUsed
 import akka.japi.{ function, Pair }
 import akka.stream._
@@ -648,7 +646,7 @@ object GraphDSL extends GraphCreate {
      *
      * @return The outlet that will emit the materialized value.
      */
-    def materializedValue: Outlet[Mat @uncheckedVariance] = delegate.materializedValue
+    def materializedValue: Outlet[Mat] = delegate.materializedValue
 
     def from[T](out: Outlet[T]): ForwardOps[T] = new ForwardOps(out)
     def from[T](src: SourceShape[T]): ForwardOps[T] = new ForwardOps(src.out)

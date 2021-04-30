@@ -4,27 +4,26 @@
 
 package akka.stream
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 
 object FanInShape {
-  sealed trait Init[O] {
+  sealed trait Init[+O] {
     def outlet: Outlet[O]
     def inlets: immutable.Seq[Inlet[_]]
     def name: String
   }
-  final case class Name[O](override val name: String) extends Init[O] {
+  final case class Name[+O](override val name: String) extends Init[O] {
     override def outlet: Outlet[O] = Outlet(s"$name.out")
     override def inlets: immutable.Seq[Inlet[_]] = Nil
   }
-  final case class Ports[O](override val outlet: Outlet[O], override val inlets: immutable.Seq[Inlet[_]])
+  final case class Ports[+O](override val outlet: Outlet[O], override val inlets: immutable.Seq[Inlet[_]])
       extends Init[O] {
     override def name: String = "FanIn"
   }
 }
 
 abstract class FanInShape[+O] private (
-    _out: Outlet[O @uncheckedVariance],
+    _out: Outlet[O],
     _registered: Iterator[Inlet[_]],
     _name: String)
     extends Shape {
@@ -32,8 +31,8 @@ abstract class FanInShape[+O] private (
 
   def this(init: FanInShape.Init[O]) = this(init.outlet, init.inlets.iterator, init.name)
 
-  final def out: Outlet[O @uncheckedVariance] = _out
-  final override def outlets: immutable.Seq[Outlet[O @uncheckedVariance]] = _out :: Nil
+  final def out: Outlet[O] = _out
+  final override def outlets: immutable.Seq[Outlet[O]] = _out :: Nil
 
   /**
    * Not meant for overriding outside of Akka.
@@ -50,7 +49,7 @@ abstract class FanInShape[+O] private (
     p
   }
 
-  protected def construct(init: Init[O @uncheckedVariance]): FanInShape[O]
+  protected def construct[N >: O](init: Init[N]): FanInShape[N]
 
   def deepCopy(): FanInShape[O] = construct(Ports[O](_out.carbonCopy(), inlets.map(_.carbonCopy())))
 }

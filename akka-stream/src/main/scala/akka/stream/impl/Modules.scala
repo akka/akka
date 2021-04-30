@@ -4,8 +4,6 @@
 
 package akka.stream.impl
 
-import scala.annotation.unchecked.uncheckedVariance
-
 import org.reactivestreams._
 
 import akka.NotUsed
@@ -23,10 +21,7 @@ import akka.stream.impl.StreamLayout.AtomicModule
   protected def label: String = Logging.simpleName(this)
   final override def toString: String = f"$label [${System.identityHashCode(this)}%08x]"
 
-  def create(context: MaterializationContext): (Publisher[Out] @uncheckedVariance, Mat)
-
-  // TODO: Remove this, no longer needed?
-  protected def newInstance(shape: SourceShape[Out] @uncheckedVariance): SourceModule[Out, Mat]
+  def create(context: MaterializationContext): (Publisher[_ <: Out], Mat)
 
   // TODO: Amendshape changed the name of ports. Is it needed anymore?
 
@@ -58,8 +53,6 @@ import akka.stream.impl.StreamLayout.AtomicModule
     (processor, processor)
   }
 
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Subscriber[Out]] =
-    new SubscriberSource[Out](attributes, shape)
   override def withAttributes(attr: Attributes): SourceModule[Out, Subscriber[Out]] =
     new SubscriberSource[Out](attr, amendShape(attr))
 }
@@ -81,8 +74,6 @@ import akka.stream.impl.StreamLayout.AtomicModule
 
   override def create(context: MaterializationContext) = (p, NotUsed)
 
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, NotUsed] =
-    new PublisherSource[Out](p, attributes, shape)
   override def withAttributes(attr: Attributes): SourceModule[Out, NotUsed] =
     new PublisherSource[Out](p, attr, amendShape(attr))
 }

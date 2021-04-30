@@ -9,7 +9,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
@@ -470,7 +469,7 @@ object Sink {
  * A `Sink` is a set of stream processing steps that has one open input.
  * Can be used as a `Subscriber`
  */
-final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[In], Mat] {
+final class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[In], Mat] {
 
   override def shape: SinkShape[In] = delegate.shape
   override def traversalBuilder: LinearTraversalBuilder = delegate.traversalBuilder
@@ -522,7 +521,7 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
    * Note that the `ActorSystem` can be used as the `systemProvider` parameter.
    */
   def preMaterialize(systemProvider: ClassicActorSystemProvider)
-      : japi.Pair[Mat @uncheckedVariance, Sink[In @uncheckedVariance, NotUsed]] = {
+      : japi.Pair[Mat, Sink[In, NotUsed]] = {
     val (mat, sink) = delegate.preMaterialize()(SystemMaterializer(systemProvider.classicSystem).materializer)
     akka.japi.Pair(mat, sink.asJava)
   }
@@ -536,7 +535,7 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
    * Prefer the method taking an ActorSystem unless you have special requirements.
    */
   def preMaterialize(
-      materializer: Materializer): japi.Pair[Mat @uncheckedVariance, Sink[In @uncheckedVariance, NotUsed]] = {
+      materializer: Materializer): japi.Pair[Mat, Sink[In, NotUsed]] = {
     val (mat, sink) = delegate.preMaterialize()(materializer)
     akka.japi.Pair(mat, sink.asJava)
   }

@@ -851,20 +851,20 @@ private final case class SavedIslandData(
 @InternalApi private[akka] final class SourceModulePhase(
     materializer: PhasedFusingActorMaterializer,
     islandName: String)
-    extends PhaseIsland[Publisher[Any]] {
+    extends PhaseIsland[Publisher[_]] {
   override def name: String = s"SourceModule phase"
 
-  override def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (Publisher[Any], Any) = {
+  override def materializeAtomic(mod: AtomicModule[Shape, Any], attributes: Attributes): (Publisher[_], Any) = {
     mod
       .asInstanceOf[SourceModule[Any, Any]]
       .create(MaterializationContext(materializer, attributes, islandName + "-" + attributes.nameOrDefault()))
   }
 
-  override def assignPort(in: InPort, slot: Int, logic: Publisher[Any]): Unit = ()
+  override def assignPort(in: InPort, slot: Int, logic: Publisher[_]): Unit = ()
 
-  override def assignPort(out: OutPort, slot: Int, logic: Publisher[Any]): Unit = ()
+  override def assignPort(out: OutPort, slot: Int, logic: Publisher[_]): Unit = ()
 
-  override def createPublisher(out: OutPort, logic: Publisher[Any]): Publisher[Any] = logic
+  override def createPublisher(out: OutPort, logic: Publisher[_]): Publisher[Any] = logic.asInstanceOf[Publisher[Any]]
 
   override def takePublisher(slot: Int, publisher: Publisher[Any]): Unit =
     throw new UnsupportedOperationException("A Source cannot take a Publisher")

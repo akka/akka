@@ -8,7 +8,6 @@ import java.util.Comparator
 import java.util.concurrent.CompletionStage
 import java.util.function.Supplier
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
@@ -37,11 +36,11 @@ object SubSource {
  * are materialized later, during the runtime of the flow graph processing.
  */
 class SubSource[Out, Mat](
-    delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[Out, Mat]#Repr, scaladsl.RunnableGraph[Mat]]) {
+    delegate: scaladsl.SubFlow[Out, Mat, ({ type Repr[+O] = scaladsl.Source[O, Mat] })#Repr, scaladsl.RunnableGraph[Mat]]) {
 
   /** Converts this Flow to its Scala DSL counterpart */
   def asScala
-      : scaladsl.SubFlow[Out, Mat, scaladsl.Source[Out, Mat]#Repr, scaladsl.RunnableGraph[Mat]] @uncheckedVariance =
+      : scaladsl.SubFlow[Out, Mat, ({ type Repr[+O] = scaladsl.Source[O, Mat] })#Repr, scaladsl.RunnableGraph[Mat]] =
     delegate
 
   /**
@@ -368,7 +367,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  def grouped(n: Int): SubSource[java.util.List[Out @uncheckedVariance], Mat] =
+  def grouped(n: Int): SubSource[java.util.List[Out], Mat] =
     new SubSource(delegate.grouped(n).map(_.asJava)) // TODO optimize to one step
 
   /**
@@ -388,7 +387,7 @@ class SubSource[Out, Mat](
    * '''Cancels when''' downstream cancels
    */
   def groupedWeighted(minWeight: Long)(
-      costFn: function.Function[Out, java.lang.Long]): SubSource[java.util.List[Out @uncheckedVariance], Mat] =
+      costFn: function.Function[Out, java.lang.Long]): SubSource[java.util.List[Out], Mat] =
     new SubSource(delegate.groupedWeighted(minWeight)(costFn.apply).map(_.asJava)) // TODO optimize to one step
 
   /**
@@ -459,7 +458,7 @@ class SubSource[Out, Mat](
     new SubSource(delegate.limitWeighted(n)(costFn.apply))
   }
 
-  def sliding(n: Int, step: Int = 1): SubSource[java.util.List[Out @uncheckedVariance], Mat] =
+  def sliding(n: Int, step: Int = 1): SubSource[java.util.List[Out], Mat] =
     new SubSource(delegate.sliding(n, step).map(_.asJava)) // TODO optimize to one step
 
   /**
@@ -583,7 +582,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  def reduce(f: function.Function2[Out, Out, Out @uncheckedVariance]): SubSource[Out, Mat] =
+  def reduce(f: function.Function2[Out, Out, Out]): SubSource[Out, Mat] =
     new SubSource(delegate.reduce(f.apply))
 
   /**
@@ -665,7 +664,7 @@ class SubSource[Out, Mat](
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def groupedWithin(maxNumber: Int, duration: FiniteDuration): SubSource[java.util.List[Out @uncheckedVariance], Mat] =
+  def groupedWithin(maxNumber: Int, duration: FiniteDuration): SubSource[java.util.List[Out], Mat] =
     new SubSource(delegate.groupedWithin(maxNumber, duration).map(_.asJava)) // TODO optimize to one step
 
   /**
@@ -689,7 +688,7 @@ class SubSource[Out, Mat](
   @nowarn("msg=deprecated")
   def groupedWithin(
       maxNumber: Int,
-      duration: java.time.Duration): SubSource[java.util.List[Out @uncheckedVariance], Mat] =
+      duration: java.time.Duration): SubSource[java.util.List[Out], Mat] =
     groupedWithin(maxNumber, duration.asScala)
 
   /**
@@ -715,7 +714,7 @@ class SubSource[Out, Mat](
   def groupedWeightedWithin(
       maxWeight: Long,
       costFn: function.Function[Out, java.lang.Long],
-      duration: FiniteDuration): javadsl.SubSource[java.util.List[Out @uncheckedVariance], Mat] =
+      duration: FiniteDuration): javadsl.SubSource[java.util.List[Out], Mat] =
     new SubSource(delegate.groupedWeightedWithin(maxWeight, duration)(costFn.apply).map(_.asJava))
 
   /**
@@ -740,7 +739,7 @@ class SubSource[Out, Mat](
   def groupedWeightedWithin(
       maxWeight: Long,
       costFn: function.Function[Out, java.lang.Long],
-      duration: java.time.Duration): javadsl.SubSource[java.util.List[Out @uncheckedVariance], Mat] =
+      duration: java.time.Duration): javadsl.SubSource[java.util.List[Out], Mat] =
     groupedWeightedWithin(maxWeight, costFn, duration.asScala)
 
   /**
@@ -766,7 +765,7 @@ class SubSource[Out, Mat](
       maxWeight: Long,
       maxNumber: Int,
       costFn: function.Function[Out, java.lang.Long],
-      duration: java.time.Duration): javadsl.SubSource[java.util.List[Out @uncheckedVariance], Mat] =
+      duration: java.time.Duration): javadsl.SubSource[java.util.List[Out], Mat] =
     new SubSource(delegate.groupedWeightedWithin(maxWeight, maxNumber, duration.asScala)(costFn.apply).map(_.asJava))
 
   /**
@@ -1321,7 +1320,7 @@ class SubSource[Out, Mat](
    *                    on the original, to be emitted in case downstream signals demand.
    * @see [[#expand]]
    */
-  def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]])
+  def extrapolate(extrapolator: function.Function[Out, java.util.Iterator[Out]])
       : SubSource[Out, Mat] =
     new SubSource(delegate.extrapolate(in => extrapolator(in).asScala))
 
@@ -1351,8 +1350,8 @@ class SubSource[Out, Mat](
    * @see [[#expand]]
    */
   def extrapolate(
-      extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]],
-      initial: Out @uncheckedVariance): SubSource[Out, Mat] =
+      extrapolator: function.Function[Out, java.util.Iterator[Out]],
+      initial: Out): SubSource[Out, Mat] =
     new SubSource(delegate.extrapolate(in => extrapolator(in).asScala, Some(initial)))
 
   /**
@@ -1401,7 +1400,7 @@ class SubSource[Out, Mat](
    * '''Cancels when''' downstream cancels or substream cancels
    */
   def prefixAndTail(n: Int): SubSource[
-    akka.japi.Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance, NotUsed]],
+    akka.japi.Pair[java.util.List[Out], javadsl.Source[Out, NotUsed]],
     Mat] =
     new SubSource(delegate.prefixAndTail(n).map { case (taken, tail) => akka.japi.Pair(taken.asJava, tail.asJava) })
 
@@ -1700,7 +1699,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  def zip[T](source: Graph[SourceShape[T], _]): SubSource[akka.japi.Pair[Out @uncheckedVariance, T], Mat] =
+  def zip[T](source: Graph[SourceShape[T], _]): SubSource[akka.japi.Pair[Out, T], Mat] =
     new SubSource(delegate.zip(source).map { case (o, t) => akka.japi.Pair.create(o, t) })
 
   /**
@@ -1732,7 +1731,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  def zipLatest[T](source: Graph[SourceShape[T], _]): SubSource[akka.japi.Pair[Out @uncheckedVariance, T], Mat] =
+  def zipLatest[T](source: Graph[SourceShape[T], _]): SubSource[akka.japi.Pair[Out, T], Mat] =
     new SubSource(delegate.zipLatest(source).map { case (o, t) => akka.japi.Pair.create(o, t) })
 
   /**
@@ -1782,7 +1781,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  def zipWithIndex: javadsl.SubSource[akka.japi.Pair[Out @uncheckedVariance, Long], Mat] =
+  def zipWithIndex: javadsl.SubSource[akka.japi.Pair[Out, Long], Mat] =
     new SubSource(delegate.zipWithIndex.map { case (elem, index) => akka.japi.Pair(elem, index) })
 
   /**

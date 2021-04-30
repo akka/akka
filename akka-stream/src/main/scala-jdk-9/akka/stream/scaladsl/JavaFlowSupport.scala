@@ -6,8 +6,6 @@ package akka.stream.scaladsl
 
 import java.util.{concurrent => juc}
 
-import scala.annotation.unchecked.uncheckedVariance
-
 import akka.NotUsed
 import akka.stream.impl.JavaFlowAndRsConverters
 import akka.stream.scaladsl
@@ -84,11 +82,11 @@ object JavaFlowSupport {
      *
      * @return A [[RunnableGraph]] that materializes to a Processor when run() is called on it.
      */
-    def toProcessor[In, Out, Mat](self: Flow[In, Out, Mat]): RunnableGraph[juc.Flow.Processor[In @uncheckedVariance, Out @uncheckedVariance]] =
+    def toProcessor[In, Out, Mat](self: Flow[In, Out, Mat]): RunnableGraph[juc.Flow.Processor[_ >: In, _ <: Out]] =
       Source.asSubscriber[In].via(self)
         .toMat(Sink.asPublisher[Out](fanout = false))(Keep.both)
         .mapMaterializedValue {
-          case (sub, pub) => new juc.Flow.Processor[In, Out] {
+          case (sub, pub) => new juc.Flow.Processor[_ >: In, _ <: Out] {
             override def onError(t: Throwable): Unit = sub.onError(t)
             override def onSubscribe(s: juc.Flow.Subscription): Unit = sub.onSubscribe(s)
             override def onComplete(): Unit = sub.onComplete()

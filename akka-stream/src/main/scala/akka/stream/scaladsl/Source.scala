@@ -7,7 +7,6 @@ package akka.stream.scaladsl
 import java.util.concurrent.CompletionStage
 
 import scala.annotation.tailrec
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.{ Future, Promise }
@@ -34,15 +33,12 @@ import akka.util.ConstantFun
  */
 final class Source[+Out, +Mat](
     override val traversalBuilder: LinearTraversalBuilder,
-    override val shape: SourceShape[Out])
-    extends FlowOpsMat[Out, Mat]
-    with Graph[SourceShape[Out], Mat] {
-
-  override type Repr[+O] = Source[O, Mat @uncheckedVariance]
-  override type ReprMat[+O, +M] = Source[O, M]
-
-  override type Closed = RunnableGraph[Mat @uncheckedVariance]
-  override type ClosedMat[+M] = RunnableGraph[M]
+    override val shape: SourceShape[Out]
+) extends FlowOpsMat[Out, Mat] with Graph[SourceShape[Out], Mat] {
+  override protected[this] type Repr[+O]        = Source[O, Mat]
+  override protected[this] type ReprMat[+O, +M] = Source[O, M]
+  override protected[this] type Closed          = RunnableGraph[Mat]
+  override protected[this] type ClosedMat[+M]   = RunnableGraph[M]
 
   override def toString: String = s"Source($shape)"
 
@@ -223,7 +219,7 @@ final class Source[+Out, +Mat](
   /**
    * Converts this Scala DSL element to it's Java DSL counterpart.
    */
-  def asJava: javadsl.Source[Out @uncheckedVariance, Mat @uncheckedVariance] = new javadsl.Source(this)
+  def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(this)
 
   /**
    * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.

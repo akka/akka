@@ -72,7 +72,7 @@ trait Predicate[T] {
  * Additional tuple types for 3 to 22 values are defined in the `akka.japi.tuple` package, e.g. [[akka.japi.tuple.Tuple3]].
  */
 @SerialVersionUID(1L)
-case class Pair[A, B](first: A, second: B) {
+case class Pair[+A, +B](first: A, second: B) {
   def toScala: (A, B) = (first, second)
 }
 object Pair {

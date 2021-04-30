@@ -4,8 +4,6 @@
 
 package akka.stream.scaladsl
 
-import scala.annotation.unchecked.uncheckedVariance
-
 import akka.NotUsed
 import akka.japi.Pair
 import akka.stream._
@@ -40,8 +38,7 @@ object FlowWithContext {
 final class FlowWithContext[-In, -CtxIn, +Out, +CtxOut, +Mat](delegate: Flow[(In, CtxIn), (Out, CtxOut), Mat])
     extends GraphDelegate(delegate)
     with FlowWithContextOps[Out, CtxOut, Mat] {
-  override type ReprMat[+O, +C, +M] =
-    FlowWithContext[In @uncheckedVariance, CtxIn @uncheckedVariance, O, C, M @uncheckedVariance]
+  override protected[this] type ReprMat[+O, +C, +M] = FlowWithContext[In, CtxIn, O, C, M]
 
   override def via[Out2, Ctx2, Mat2](viaFlow: Graph[FlowShape[(Out, CtxOut), (Out2, Ctx2)], Mat2]): Repr[Out2, Ctx2] =
     new FlowWithContext(delegate.via(viaFlow))

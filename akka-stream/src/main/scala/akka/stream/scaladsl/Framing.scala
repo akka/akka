@@ -178,7 +178,7 @@ object Framing {
         setHandlers(in, out, this)
 
         override def onPush(): Unit = {
-          val message = grab(in)
+          val message: ByteString = grab(in)
           val msgSize = message.size
 
           if (msgSize > maximumMessageLength)

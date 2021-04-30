@@ -10,7 +10,6 @@ import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 import java.util.function.Supplier
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
@@ -377,7 +376,7 @@ object Flow {
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
  */
-final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
+final class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
   import akka.util.ccompat.JavaConverters._
 
   override def shape: FlowShape[In, Out] = delegate.shape
@@ -931,7 +930,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def grouped(n: Int): javadsl.Flow[In, java.util.List[Out], Mat] =
+  def grouped(n: Int): javadsl.Flow[In, java.util.List[_ <: Out], Mat] =
     new Flow(delegate.grouped(n).map(_.asJava)) // TODO optimize to one step
 
   /**
@@ -951,7 +950,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * '''Cancels when''' downstream cancels
    */
   def groupedWeighted(minWeight: Long)(
-      costFn: java.util.function.Function[Out, java.lang.Long]): javadsl.Flow[In, java.util.List[Out], Mat] =
+      costFn: java.util.function.Function[_ >: Out, java.lang.Long]): javadsl.Flow[In, java.util.List[_ <: Out], Mat] =
     new Flow(delegate.groupedWeighted(minWeight)(costFn.apply).map(_.asJava)) // TODO optimize to one step
 
   /**
@@ -1007,7 +1006,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * See also [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
    */
-  def limitWeighted(n: Long)(costFn: function.Function[Out, java.lang.Long]): javadsl.Flow[In, Out, Mat] = {
+  def limitWeighted[U >: Out](n: Long)(costFn: function.Function[U, java.lang.Long]): javadsl.Flow[In, U, Mat] = {
     new Flow(delegate.limitWeighted(n)(costFn.apply))
   }
 
@@ -1026,7 +1025,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def sliding(n: Int, step: Int = 1): javadsl.Flow[In, java.util.List[Out], Mat] =
+  def sliding(n: Int, step: Int = 1): javadsl.Flow[In, java.util.List[_ <: Out], Mat] =
     new Flow(delegate.sliding(n, step).map(_.asJava)) // TODO optimize to one step
 
   /**
@@ -1157,7 +1156,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def reduce(f: function.Function2[Out, Out, Out]): javadsl.Flow[In, Out, Mat] =
+  def reduce[U >: Out](f: function.Function2[U, U, U]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.reduce(f.apply))
 
   /**
@@ -1191,7 +1190,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def intersperse(start: Out, inject: Out, end: Out): javadsl.Flow[In, Out, Mat] =
+  def intersperse[U >: Out](start: U, inject: U, end: U): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.intersperse(start, inject, end))
 
   /**
@@ -1216,7 +1215,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def intersperse(inject: Out): javadsl.Flow[In, Out, Mat] =
+  def intersperse[U >: Out](inject: U): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.intersperse(inject))
 
   /**
@@ -1239,7 +1238,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def groupedWithin(maxNumber: Int, duration: FiniteDuration): javadsl.Flow[In, java.util.List[Out], Mat] =
+  def groupedWithin(maxNumber: Int, duration: FiniteDuration): javadsl.Flow[In, java.util.List[_ <: Out], Mat] =
     new Flow(delegate.groupedWithin(maxNumber, duration).map(_.asJava)) // TODO optimize to one step
 
   /**
@@ -1261,7 +1260,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * IllegalArgumentException is thrown.
    */
   @nowarn("msg=deprecated")
-  def groupedWithin(maxNumber: Int, duration: java.time.Duration): javadsl.Flow[In, java.util.List[Out], Mat] =
+  def groupedWithin(maxNumber: Int, duration: java.time.Duration): javadsl.Flow[In, java.util.List[_ <: Out], Mat] =
     groupedWithin(maxNumber, duration.asScala)
 
   /**
@@ -1286,8 +1285,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def groupedWeightedWithin(
       maxWeight: Long,
-      costFn: function.Function[Out, java.lang.Long],
-      duration: FiniteDuration): javadsl.Flow[In, java.util.List[Out], Mat] =
+      costFn: function.Function[_ >: Out, java.lang.Long],
+      duration: FiniteDuration): javadsl.Flow[In, java.util.List[_ <: Out], Mat] =
     new Flow(delegate.groupedWeightedWithin(maxWeight, duration)(costFn.apply).map(_.asJava))
 
   /**
@@ -1311,8 +1310,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   @nowarn("msg=deprecated")
   def groupedWeightedWithin(
       maxWeight: Long,
-      costFn: function.Function[Out, java.lang.Long],
-      duration: java.time.Duration): javadsl.Flow[In, java.util.List[Out], Mat] =
+      costFn: function.Function[_ >: Out, java.lang.Long],
+      duration: java.time.Duration): javadsl.Flow[In, java.util.List[_ <: Out], Mat] =
     groupedWeightedWithin(maxWeight, costFn, duration.asScala)
 
   /**
@@ -1337,8 +1336,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   def groupedWeightedWithin(
       maxWeight: Long,
       maxNumber: Int,
-      costFn: function.Function[Out, java.lang.Long],
-      duration: java.time.Duration): javadsl.Flow[In, java.util.List[Out], Mat] =
+      costFn: function.Function[_ >: Out, java.lang.Long],
+      duration: java.time.Duration): javadsl.Flow[In, java.util.List[_ <: Out], Mat] =
     new Flow(delegate.groupedWeightedWithin(maxWeight, maxNumber, duration.asScala)(costFn.apply).map(_.asJava))
 
   /**
@@ -1432,7 +1431,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @param overFlowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def delayWith(
-      delayStrategySupplier: Supplier[DelayStrategy[Out]],
+      delayStrategySupplier: Supplier[_ <: DelayStrategy[Out]],
       overFlowStrategy: DelayOverflowStrategy): Flow[In, Out, Mat] =
     new Flow(delegate.delayWith(() => DelayStrategy.asScala(delayStrategySupplier.get), overFlowStrategy))
 
@@ -1560,7 +1559,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def recover(pf: PartialFunction[Throwable, Out]): javadsl.Flow[In, Out, Mat] =
+  def recover[U >: Out](pf: PartialFunction[Throwable, U]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.recover(pf))
 
   /**
@@ -1578,7 +1577,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def recover(clazz: Class[_ <: Throwable], supplier: Supplier[Out]): javadsl.Flow[In, Out, Mat] =
+  def recover[U >: Out](clazz: Class[_ <: Throwable], supplier: Supplier[U]): javadsl.Flow[In, U, Mat] =
     recover {
       case elem if clazz.isInstance(elem) => supplier.get()
     }
@@ -1650,7 +1649,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    */
   @nowarn("msg=deprecated")
-  def recoverWith(pf: PartialFunction[Throwable, _ <: Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =
+  def recoverWith[U >: Out](pf: PartialFunction[Throwable, _ <: Graph[SourceShape[U], NotUsed]]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.recoverWith(pf))
 
   /**
@@ -1676,12 +1675,12 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    */
   @Deprecated
   @deprecated("Use recoverWithRetries instead.", "2.6.6")
-  def recoverWith(
+  def recoverWith[U >: Out](
       clazz: Class[_ <: Throwable],
-      supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =
+      supplier: Supplier[Graph[SourceShape[U], NotUsed]]): javadsl.Flow[In, U, Mat] =
     recoverWith({
       case elem if clazz.isInstance(elem) => supplier.get()
-    }: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]])
+    }: PartialFunction[Throwable, Graph[SourceShape[U], NotUsed]])
 
   /**
    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
@@ -1708,9 +1707,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @param attempts Maximum number of retries or -1 to retry indefinitely
    * @param pf Receives the failure cause and returns the new Source to be materialized if any
    */
-  def recoverWithRetries(
+  def recoverWithRetries[U >: Out](
       attempts: Int,
-      pf: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =
+      pf: PartialFunction[Throwable, Graph[SourceShape[U], NotUsed]]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.recoverWithRetries(attempts, pf))
 
   /**
@@ -1739,10 +1738,10 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @param clazz the class object of the failure cause
    * @param supplier supply the new Source to be materialized
    */
-  def recoverWithRetries(
+  def recoverWithRetries[U >: Out](
       attempts: Int,
       clazz: Class[_ <: Throwable],
-      supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =
+      supplier: Supplier[Graph[SourceShape[U], NotUsed]]): javadsl.Flow[In, U, Mat] =
     recoverWithRetries(attempts, {
       case elem if clazz.isInstance(elem) => supplier.get()
     })
@@ -1874,7 +1873,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    *
    */
-  def conflate(aggregate: function.Function2[Out, Out, Out]): javadsl.Flow[In, Out, Mat] =
+  def conflate[U >: Out](aggregate: function.Function2[U, U, U]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.conflate(aggregate.apply))
 
   /**
@@ -1995,9 +1994,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *                     on the original, to be emitted in case downstream signals demand.
    * @see [[#expand]]
    */
-  def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]])
-      : javadsl.Flow[In, Out, Mat] =
-    new Flow(delegate.extrapolate(in => extrapolator(in).asScala))
+  def extrapolate[U >: Out](extrapolator: function.Function[U, java.util.Iterator[U]])
+      : javadsl.Flow[In, U, Mat] =
+    new Flow(delegate.extrapolate[U](in => extrapolator(in).asScala))
 
   /**
    * Allows a faster downstream to progress independent of a slower upstream.
@@ -2024,10 +2023,10 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @param initial      The initial element to be emitted, in case upstream is able to stall the entire stream.
    * @see [[#expand]]
    */
-  def extrapolate(
-      extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]],
-      initial: Out @uncheckedVariance): javadsl.Flow[In, Out, Mat] =
-    new Flow(delegate.extrapolate(in => extrapolator(in).asScala, Some(initial)))
+  def extrapolate[U >: Out](
+      extrapolator: function.Function[U, java.util.Iterator[U]],
+      initial: U): javadsl.Flow[In, U, Mat] =
+    new Flow(delegate.extrapolate[U](in => extrapolator(in).asScala, Some(initial)))
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
@@ -2074,7 +2073,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels or substream cancels
    */
-  def prefixAndTail(n: Int): javadsl.Flow[In, akka.japi.Pair[java.util.List[Out], javadsl.Source[Out, NotUsed]], Mat] =
+  def prefixAndTail(n: Int): javadsl.Flow[In, akka.japi.Pair[java.util.List[_ <: Out], javadsl.Source[_ <: Out, NotUsed]], Mat] =
     new Flow(delegate.prefixAndTail(n).map { case (taken, tail) => akka.japi.Pair(taken.asJava, tail.asJava) })
 
   /**
@@ -2099,7 +2098,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    **/
   def flatMapPrefix[Out2, Mat2](
       n: Int,
-      f: function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]]): javadsl.Flow[In, Out2, Mat] = {
+      f: function.Function[java.lang.Iterable[_ <: Out], javadsl.Flow[Out, Out2, Mat2]]): javadsl.Flow[In, Out2, Mat] = {
     val newDelegate = delegate.flatMapPrefix(n)(seq => f(seq.asJava).asScala)
     new javadsl.Flow(newDelegate)
   }
@@ -2110,7 +2109,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    */
   def flatMapPrefixMat[Out2, Mat2, Mat3](
       n: Int,
-      f: function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]],
+      f: function.Function[java.lang.Iterable[_ <: Out], javadsl.Flow[Out, Out2, Mat2]],
       matF: function.Function2[Mat, CompletionStage[Mat2], Mat3]): javadsl.Flow[In, Out2, Mat3] = {
     val newDelegate = delegate.flatMapPrefixMat(n)(seq => f(seq.asJava).asScala) { (m1, fm2) =>
       matF(m1, fm2.toJava)
@@ -2171,10 +2170,10 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * @param allowClosedSubstreamRecreation enables recreation of already closed substreams if elements with their
    *        corresponding keys arrive after completion
    */
-  def groupBy[K](
+  def groupBy[K, U >: Out](
       maxSubstreams: Int,
-      f: function.Function[Out, K],
-      allowClosedSubstreamRecreation: Boolean): SubFlow[In, Out, Mat] =
+      f: function.Function[U, K],
+      allowClosedSubstreamRecreation: Boolean): SubFlow[In, U, Mat] =
     new SubFlow(delegate.groupBy(maxSubstreams, f.apply, allowClosedSubstreamRecreation))
 
   /**
@@ -2190,7 +2189,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @see [[#groupBy]]
    */
-  def groupBy[K](maxSubstreams: Int, f: function.Function[Out, K]): SubFlow[In, Out, Mat] =
+  def groupBy[K, U >: Out](maxSubstreams: Int, f: function.Function[U, K]): SubFlow[In, U, Mat] =
     new SubFlow(delegate.groupBy(maxSubstreams, f.apply, false))
 
   /**
@@ -2257,7 +2256,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @see [[#splitWhen]]
    */
-  def splitWhen(substreamCancelStrategy: SubstreamCancelStrategy)(p: function.Predicate[Out]): SubFlow[In, Out, Mat] =
+  def splitWhen[U >: Out](substreamCancelStrategy: SubstreamCancelStrategy)(p: function.Predicate[U]): SubFlow[In, U, Mat] =
     new SubFlow(delegate.splitWhen(substreamCancelStrategy)(p.test))
 
   /**
@@ -2315,7 +2314,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @see [[#splitAfter]]
    */
-  def splitAfter(substreamCancelStrategy: SubstreamCancelStrategy)(p: function.Predicate[Out]): SubFlow[In, Out, Mat] =
+  def splitAfter[U >: Out](substreamCancelStrategy: SubstreamCancelStrategy)(p: function.Predicate[U]): SubFlow[In, U, Mat] =
     new SubFlow(delegate.splitAfter(substreamCancelStrategy)(p.test))
 
   /**
@@ -2368,7 +2367,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def concat[M](that: Graph[SourceShape[Out], M]): javadsl.Flow[In, Out, Mat] =
+  def concat[M, U >: Out](that: Graph[SourceShape[U], M]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.concat(that))
 
   /**
@@ -2386,9 +2385,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @see [[#concat]]
    */
-  def concatMat[M, M2](
-      that: Graph[SourceShape[Out], M],
-      matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out, M2] =
+  def concatMat[M, M2, U >: Out](
+      that: Graph[SourceShape[U], M],
+      matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, U, M2] =
     new Flow(delegate.concatMat(that)(combinerToScala(matF)))
 
   /**
@@ -2409,7 +2408,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def prepend[M](that: Graph[SourceShape[Out], M]): javadsl.Flow[In, Out, Mat] =
+  def prepend[M, U >: Out](that: Graph[SourceShape[U], M]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.prepend(that))
 
   /**
@@ -2427,9 +2426,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @see [[#prepend]]
    */
-  def prependMat[M, M2](
-      that: Graph[SourceShape[Out], M],
-      matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out, M2] =
+  def prependMat[M, M2, U >: Out](
+      that: Graph[SourceShape[U], M],
+      matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, U, M2] =
     new Flow(delegate.prependMat(that)(combinerToScala(matF)))
 
   /**
@@ -2454,7 +2453,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * '''Cancels when''' downstream cancels and additionally the alternative is cancelled as soon as an element passes
    *                    by from this stream.
    */
-  def orElse[M](secondary: Graph[SourceShape[Out], M]): javadsl.Flow[In, Out, Mat] =
+  def orElse[M, U >: Out](secondary: Graph[SourceShape[U], M]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.orElse(secondary))
 
   /**
@@ -2467,9 +2466,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @see [[#orElse]]
    */
-  def orElseMat[M2, M3](
-      secondary: Graph[SourceShape[Out], M2],
-      matF: function.Function2[Mat, M2, M3]): javadsl.Flow[In, Out, M3] =
+  def orElseMat[M2, M3, U >: Out](
+      secondary: Graph[SourceShape[U], M2],
+      matF: function.Function2[Mat, M2, M3]): javadsl.Flow[In, U, M3] =
     new Flow(delegate.orElseMat(secondary)(combinerToScala(matF)))
 
   /**
@@ -2596,7 +2595,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def interleave(that: Graph[SourceShape[Out], _], segmentSize: Int): javadsl.Flow[In, Out, Mat] =
+  def interleave[U >: Out](that: Graph[SourceShape[U], _], segmentSize: Int): javadsl.Flow[In, U, Mat] =
     interleave(that, segmentSize, eagerClose = false)
 
   /**
@@ -2619,7 +2618,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def interleave(that: Graph[SourceShape[Out], _], segmentSize: Int, eagerClose: Boolean): javadsl.Flow[In, Out, Mat] =
+  def interleave[U >: Out](that: Graph[SourceShape[U], _], segmentSize: Int, eagerClose: Boolean): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.interleave(that, segmentSize, eagerClose))
 
   /**
@@ -2636,10 +2635,10 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @see [[#interleave]]
    */
-  def interleaveMat[M, M2](
-      that: Graph[SourceShape[Out], M],
+  def interleaveMat[M, M2, U >: Out](
+      that: Graph[SourceShape[U], M],
       segmentSize: Int,
-      matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out, M2] =
+      matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, U, M2] =
     interleaveMat(that, segmentSize, eagerClose = false, matF)
 
   /**
@@ -2658,11 +2657,11 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @see [[#interleave]]
    */
-  def interleaveMat[M, M2](
-      that: Graph[SourceShape[Out], M],
+  def interleaveMat[M, M2, U >: Out](
+      that: Graph[SourceShape[U], M],
       segmentSize: Int,
       eagerClose: Boolean,
-      matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out, M2] =
+      matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, U, M2] =
     new Flow(delegate.interleaveMat(that, segmentSize, eagerClose)(combinerToScala(matF)))
 
   /**
@@ -2677,7 +2676,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def merge(that: Graph[SourceShape[Out], _]): javadsl.Flow[In, Out, Mat] =
+  def merge[U >: Out](that: Graph[SourceShape[U], _]): javadsl.Flow[In, U, Mat] =
     merge(that, eagerComplete = false)
 
   /**
@@ -2692,7 +2691,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def merge(that: Graph[SourceShape[Out], _], eagerComplete: Boolean): javadsl.Flow[In, Out, Mat] =
+  def merge[U >: Out](that: Graph[SourceShape[U], _], eagerComplete: Boolean): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.merge(that, eagerComplete))
 
   /**
@@ -2704,9 +2703,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @see [[#merge]]
    */
-  def mergeMat[M, M2](
-      that: Graph[SourceShape[Out], M],
-      matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out, M2] =
+  def mergeMat[M, M2, U >: Out](
+      that: Graph[SourceShape[U], M],
+      matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, U, M2] =
     mergeMat(that, matF, eagerComplete = false)
 
   /**
@@ -2718,10 +2717,10 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @see [[#merge]]
    */
-  def mergeMat[M, M2](
-      that: Graph[SourceShape[Out], M],
+  def mergeMat[M, M2, U >: Out](
+      that: Graph[SourceShape[U], M],
       matF: function.Function2[Mat, M, M2],
-      eagerComplete: Boolean): javadsl.Flow[In, Out, M2] =
+      eagerComplete: Boolean): javadsl.Flow[In, U, M2] =
     new Flow(delegate.mergeMat(that, eagerComplete)(combinerToScala(matF)))
 
   /**
@@ -2734,9 +2733,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
    */
-  def mergeLatest(
-      that: Graph[SourceShape[Out], _],
-      eagerComplete: Boolean): javadsl.Flow[In, java.util.List[Out], Mat] =
+  def mergeLatest[U >: Out](
+      that: Graph[SourceShape[U], _],
+      eagerComplete: Boolean): javadsl.Flow[In, java.util.List[U], Mat] =
     new Flow(delegate.mergeLatest(that, eagerComplete).map(_.asJava))
 
   /**
@@ -2748,10 +2747,10 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
-  def mergeLatestMat[Mat2, Mat3](
-      that: Graph[SourceShape[Out], Mat2],
+  def mergeLatestMat[Mat2, Mat3, U >: Out](
+      that: Graph[SourceShape[U], Mat2],
       eagerComplete: Boolean,
-      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Flow[In, java.util.List[Out], Mat3] =
+      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Flow[In, java.util.List[U], Mat3] =
     new Flow(delegate.mergeLatestMat(that, eagerComplete)(combinerToScala(matF))).map(_.asJava)
 
   /**
@@ -2763,10 +2762,10 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''completes''' when all upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
    */
-  def mergePreferred(
-      that: Graph[SourceShape[Out], _],
+  def mergePreferred[U >: Out](
+      that: Graph[SourceShape[U], _],
       preferred: Boolean,
-      eagerComplete: Boolean): javadsl.Flow[In, Out, Mat] =
+      eagerComplete: Boolean): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.mergePreferred(that, preferred, eagerComplete))
 
   /**
@@ -2775,11 +2774,11 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
-  def mergePreferredMat[Mat2, Mat3](
-      that: Graph[SourceShape[Out], Mat2],
+  def mergePreferredMat[Mat2, Mat3, U >: Out](
+      that: Graph[SourceShape[U], Mat2],
       preferred: Boolean,
       eagerComplete: Boolean,
-      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Flow[In, Out, Mat3] =
+      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Flow[In, U, Mat3] =
     new Flow(delegate.mergePreferredMat(that, preferred, eagerComplete)(combinerToScala(matF)))
 
   /**
@@ -2791,11 +2790,11 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''completes''' when both upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
    */
-  def mergePrioritized(
-      that: Graph[SourceShape[Out], _],
+  def mergePrioritized[U >: Out](
+      that: Graph[SourceShape[U], _],
       leftPriority: Int,
       rightPriority: Int,
-      eagerComplete: Boolean): javadsl.Flow[In, Out, Mat] =
+      eagerComplete: Boolean): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.mergePrioritized(that, leftPriority, rightPriority, eagerComplete))
 
   /**
@@ -2804,12 +2803,12 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
-  def mergePrioritizedMat[Mat2, Mat3](
-      that: Graph[SourceShape[Out], Mat2],
+  def mergePrioritizedMat[Mat2, Mat3, U >: Out](
+      that: Graph[SourceShape[U], Mat2],
       leftPriority: Int,
       rightPriority: Int,
       eagerComplete: Boolean,
-      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Flow[In, Out, Mat3] =
+      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Flow[In, U, Mat3] =
     new Flow(delegate.mergePrioritizedMat(that, leftPriority, rightPriority, eagerComplete)(combinerToScala(matF)))
 
   /**
@@ -2827,7 +2826,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
-  def mergeSorted[M](that: Graph[SourceShape[Out], M], comp: Comparator[Out]): javadsl.Flow[In, Out, Mat] =
+  def mergeSorted[M, U >: Out](that: Graph[SourceShape[U], M], comp: Comparator[U]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.mergeSorted(that)(Ordering.comparatorToOrdering(comp)))
 
   /**
@@ -2842,10 +2841,10 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @see [[#mergeSorted]].
    */
-  def mergeSortedMat[Mat2, Mat3](
-      that: Graph[SourceShape[Out], Mat2],
-      comp: Comparator[Out],
-      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Flow[In, Out, Mat3] =
+  def mergeSortedMat[Mat2, Mat3, U >: Out](
+      that: Graph[SourceShape[U], Mat2],
+      comp: Comparator[U],
+      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Flow[In, U, Mat3] =
     new Flow(delegate.mergeSortedMat(that)(combinerToScala(matF))(Ordering.comparatorToOrdering(comp)))
 
   /**
@@ -3195,7 +3194,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def keepAlive(maxIdle: FiniteDuration, injectedElem: function.Creator[Out]): javadsl.Flow[In, Out, Mat] =
+  def keepAlive[U >: Out](maxIdle: FiniteDuration, injectedElem: function.Creator[U]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.keepAlive(maxIdle, () => injectedElem.create()))
 
   /**
@@ -3216,7 +3215,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * '''Cancels when''' downstream cancels
    */
   @nowarn("msg=deprecated")
-  def keepAlive(maxIdle: java.time.Duration, injectedElem: function.Creator[Out]): javadsl.Flow[In, Out, Mat] =
+  def keepAlive[U >: Out](maxIdle: java.time.Duration, injectedElem: function.Creator[U]): javadsl.Flow[In, U, Mat] =
     keepAlive(maxIdle.asScala, injectedElem)
 
   /**
@@ -3861,7 +3860,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * @return A [[RunnableGraph]] that materializes to a Processor when run() is called on it.
    */
-  def toProcessor: RunnableGraph[Processor[In, Out]] = {
+  def toProcessor: RunnableGraph[Processor[_ >: In, _ <: Out]] = {
     RunnableGraph.fromGraph(delegate.toProcessor)
   }
 

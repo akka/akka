@@ -9,7 +9,6 @@ import java.util.Optional
 import java.util.concurrent.{ CompletableFuture, CompletionStage }
 import java.util.function.{ BiFunction, Supplier }
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
@@ -887,7 +886,7 @@ object Source {
  * A `Source` is a set of stream processing steps that has one open output and an attached input.
  * Can be used as a `Publisher`
  */
-final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[SourceShape[Out], Mat] {
+final class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[SourceShape[Out], Mat] {
 
   import akka.util.ccompat.JavaConverters._
 
@@ -915,7 +914,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * Note that the `ActorSystem` can be used as the `systemProvider` parameter.
    */
   def preMaterialize(systemProvider: ClassicActorSystemProvider)
-      : Pair[Mat @uncheckedVariance, Source[Out @uncheckedVariance, NotUsed]] = {
+      : Pair[Mat, Source[Out, NotUsed]] = {
     val (mat, src) = delegate.preMaterialize()(SystemMaterializer(systemProvider.classicSystem).materializer)
     Pair(mat, new Source(src))
   }
@@ -927,7 +926,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * Prefer the method taking an `ActorSystem` unless you have special requirements.
    */
   def preMaterialize(
-      materializer: Materializer): Pair[Mat @uncheckedVariance, Source[Out @uncheckedVariance, NotUsed]] = {
+      materializer: Materializer): Pair[Mat, Source[Out, NotUsed]] = {
     val (mat, src) = delegate.preMaterialize()(materializer)
     Pair(mat, new Source(src))
   }
@@ -1128,9 +1127,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * Note that the classic or typed `ActorSystem` can be used as the `systemProvider` parameter.
    */
-  def runReduce(
-      f: function.Function2[Out, Out, Out],
-      systemProvider: ClassicActorSystemProvider): CompletionStage[Out] =
+  def runReduce[U >: Out](
+      f: function.Function2[U, U, U],
+      systemProvider: ClassicActorSystemProvider): CompletionStage[U] =
     runWith(Sink.reduce(f), systemProvider.classicSystem)
 
   /**
@@ -1148,7 +1147,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * Prefer the method taking an `ActorSystem` unless you have special requirements
    */
-  def runReduce(f: function.Function2[Out, Out, Out], materializer: Materializer): CompletionStage[Out] =
+  def runReduce[U >: Out](f: function.Function2[U, U, U], materializer: Materializer): CompletionStage[U] =
     runWith(Sink.reduce(f), materializer)
 
   /**
@@ -1169,7 +1168,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def concat[M](that: Graph[SourceShape[Out], M]): javadsl.Source[Out, Mat] =
+  def concat[M, U >: Out](that: Graph[SourceShape[U], M]): javadsl.Source[U, Mat] =
     new Source(delegate.concat(that))
 
   /**
@@ -1187,9 +1186,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * @see [[#concat]].
    */
-  def concatMat[M, M2](
-      that: Graph[SourceShape[Out], M],
-      matF: function.Function2[Mat, M, M2]): javadsl.Source[Out, M2] =
+  def concatMat[M, M2, U >: Out](
+      that: Graph[SourceShape[U], M],
+      matF: function.Function2[Mat, M, M2]): javadsl.Source[U, M2] =
     new Source(delegate.concatMat(that)(combinerToScala(matF)))
 
   /**
@@ -1210,7 +1209,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def prepend[M](that: Graph[SourceShape[Out], M]): javadsl.Source[Out, Mat] =
+  def prepend[M, U >: Out](that: Graph[SourceShape[U], M]): javadsl.Source[U, Mat] =
     new Source(delegate.prepend(that))
 
   /**
@@ -1228,9 +1227,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * @see [[#prepend]].
    */
-  def prependMat[M, M2](
-      that: Graph[SourceShape[Out], M],
-      matF: function.Function2[Mat, M, M2]): javadsl.Source[Out, M2] =
+  def prependMat[M, M2, U >: Out](
+      that: Graph[SourceShape[U], M],
+      matF: function.Function2[Mat, M, M2]): javadsl.Source[U, M2] =
     new Source(delegate.prependMat(that)(combinerToScala(matF)))
 
   /**
@@ -1255,7 +1254,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Cancels when''' downstream cancels and additionally the alternative is cancelled as soon as an element passes
    *                    by from this stream.
    */
-  def orElse[M](secondary: Graph[SourceShape[Out], M]): javadsl.Source[Out, Mat] =
+  def orElse[M, U >: Out](secondary: Graph[SourceShape[U], M]): javadsl.Source[U, Mat] =
     new Source(delegate.orElse(secondary))
 
   /**
@@ -1268,9 +1267,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * @see [[#orElse]]
    */
-  def orElseMat[M, M2](
-      secondary: Graph[SourceShape[Out], M],
-      matF: function.Function2[Mat, M, M2]): javadsl.Source[Out, M2] =
+  def orElseMat[M, M2, U >: Out](
+      secondary: Graph[SourceShape[U], M],
+      matF: function.Function2[Mat, M, M2]): javadsl.Source[U, M2] =
     new Source(delegate.orElseMat(secondary)(combinerToScala(matF)))
 
   /**
@@ -1368,9 +1367,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * @see [[#wireTap]]
    */
-  def wireTapMat[M2, M3](
-      that: Graph[SinkShape[Out], M2],
-      matF: function.Function2[Mat, M2, M3]): javadsl.Source[Out, M3] =
+  def wireTapMat[M2, M3, U >: Out](
+      that: Graph[SinkShape[U], M2],
+      matF: function.Function2[Mat, M2, M3]): javadsl.Source[U, M3] =
     new Source(delegate.wireTapMat(that)(combinerToScala(matF)))
 
   /**
@@ -1397,7 +1396,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def interleave(that: Graph[SourceShape[Out], _], segmentSize: Int): javadsl.Source[Out, Mat] =
+  def interleave[U >: Out](that: Graph[SourceShape[U], _], segmentSize: Int): javadsl.Source[U, Mat] =
     new Source(delegate.interleave(that, segmentSize))
 
   /**
@@ -1420,7 +1419,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def interleave(that: Graph[SourceShape[Out], _], segmentSize: Int, eagerClose: Boolean): javadsl.Source[Out, Mat] =
+  def interleave[U >: Out](that: Graph[SourceShape[U], _], segmentSize: Int, eagerClose: Boolean): javadsl.Source[U, Mat] =
     new Source(delegate.interleave(that, segmentSize, eagerClose))
 
   /**
@@ -1437,10 +1436,10 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * @see [[#interleave]].
    */
-  def interleaveMat[M, M2](
-      that: Graph[SourceShape[Out], M],
+  def interleaveMat[M, M2, U >: Out](
+      that: Graph[SourceShape[U], M],
       segmentSize: Int,
-      matF: function.Function2[Mat, M, M2]): javadsl.Source[Out, M2] =
+      matF: function.Function2[Mat, M, M2]): javadsl.Source[U, M2] =
     new Source(delegate.interleaveMat(that, segmentSize)(combinerToScala(matF)))
 
   /**
@@ -1459,11 +1458,11 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * @see [[#interleave]]
    */
-  def interleaveMat[M, M2](
-      that: Graph[SourceShape[Out], M],
+  def interleaveMat[M, M2, U >: Out](
+      that: Graph[SourceShape[U], M],
       segmentSize: Int,
       eagerClose: Boolean,
-      matF: function.Function2[Mat, M, M2]): javadsl.Source[Out, M2] =
+      matF: function.Function2[Mat, M, M2]): javadsl.Source[U, M2] =
     new Source(delegate.interleaveMat(that, segmentSize, eagerClose)(combinerToScala(matF)))
 
   /**
@@ -1478,7 +1477,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def merge(that: Graph[SourceShape[Out], _]): javadsl.Source[Out, Mat] =
+  def merge[U >: Out](that: Graph[SourceShape[U], _]): javadsl.Source[U, Mat] =
     new Source(delegate.merge(that))
 
   /**
@@ -1493,7 +1492,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def merge(that: Graph[SourceShape[Out], _], eagerComplete: Boolean): javadsl.Source[Out, Mat] =
+  def merge[U >: Out](that: Graph[SourceShape[U], _], eagerComplete: Boolean): javadsl.Source[U, Mat] =
     new Source(delegate.merge(that, eagerComplete))
 
   /**
@@ -1505,7 +1504,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * @see [[#merge]].
    */
-  def mergeMat[M, M2](that: Graph[SourceShape[Out], M], matF: function.Function2[Mat, M, M2]): javadsl.Source[Out, M2] =
+  def mergeMat[M, M2, U >: Out](that: Graph[SourceShape[U], M], matF: function.Function2[Mat, M, M2]): javadsl.Source[U, M2] =
     new Source(delegate.mergeMat(that)(combinerToScala(matF)))
 
   /**
@@ -1517,10 +1516,10 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * @see [[#merge]]
    */
-  def mergeMat[M, M2](
-      that: Graph[SourceShape[Out], M],
+  def mergeMat[M, M2, U >: Out](
+      that: Graph[SourceShape[U], M],
       matF: function.Function2[Mat, M, M2],
-      eagerComplete: Boolean): javadsl.Source[Out, M2] =
+      eagerComplete: Boolean): javadsl.Source[U, M2] =
     new Source(delegate.mergeMat(that, eagerComplete)(combinerToScala(matF)))
 
   /**
@@ -1533,9 +1532,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
    */
-  def mergeLatest[M](
-      that: Graph[SourceShape[Out], M],
-      eagerComplete: Boolean): javadsl.Source[java.util.List[Out], Mat] =
+  def mergeLatest[M, U >: Out](
+      that: Graph[SourceShape[U], M],
+      eagerComplete: Boolean): javadsl.Source[java.util.List[U], Mat] =
     new Source(delegate.mergeLatest(that, eagerComplete).map(_.asJava))
 
   /**
@@ -1549,11 +1548,11 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
-  def mergeLatestMat[Mat2, Mat3](
-      that: Graph[SourceShape[Out], Mat2],
+  def mergeLatestMat[Mat2, Mat3, U >: Out](
+      that: Graph[SourceShape[U], Mat2],
       eagerComplete: Boolean,
-      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Source[java.util.List[Out], Mat3] =
-    new Source(delegate.mergeLatestMat(that, eagerComplete)(combinerToScala(matF))).map(_.asJava)
+      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Source[java.util.List[_ <: U], Mat3] =
+    new Source(delegate.mergeLatestMat(that, eagerComplete)(combinerToScala(matF))).map((xs: Seq[U]) => xs.asJava)
 
   /**
    * Merge two sources. Prefer one source if both sources have elements ready.
@@ -1564,10 +1563,10 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''completes''' when all upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
    */
-  def mergePreferred[M](
-      that: Graph[SourceShape[Out], M],
+  def mergePreferred[M, U >: Out](
+      that: Graph[SourceShape[U], M],
       preferred: Boolean,
-      eagerComplete: Boolean): javadsl.Source[Out, Mat] =
+      eagerComplete: Boolean): javadsl.Source[U, Mat] =
     new Source(delegate.mergePreferred(that, preferred, eagerComplete))
 
   /**
@@ -1578,11 +1577,11 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
-  def mergePreferredMat[Mat2, Mat3](
-      that: Graph[SourceShape[Out], Mat2],
+  def mergePreferredMat[Mat2, Mat3, U >: Out](
+      that: Graph[SourceShape[U], Mat2],
       preferred: Boolean,
       eagerComplete: Boolean,
-      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Source[Out, Mat3] =
+      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Source[U, Mat3] =
     new Source(delegate.mergePreferredMat(that, preferred, eagerComplete)(combinerToScala(matF)))
 
   /**
@@ -1594,11 +1593,11 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''completes''' when both upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
    */
-  def mergePrioritized[M](
-      that: Graph[SourceShape[Out], M],
+  def mergePrioritized[M, U >: Out](
+      that: Graph[SourceShape[U], M],
       leftPriority: Int,
       rightPriority: Int,
-      eagerComplete: Boolean): javadsl.Source[Out, Mat] =
+      eagerComplete: Boolean): javadsl.Source[U, Mat] =
     new Source(delegate.mergePrioritized(that, leftPriority, rightPriority, eagerComplete))
 
   /**
@@ -1607,12 +1606,12 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
-  def mergePrioritizedMat[Mat2, Mat3](
-      that: Graph[SourceShape[Out], Mat2],
+  def mergePrioritizedMat[Mat2, Mat3, U >: Out](
+      that: Graph[SourceShape[U], Mat2],
       leftPriority: Int,
       rightPriority: Int,
       eagerComplete: Boolean,
-      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Source[Out, Mat3] =
+      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Source[U, Mat3] =
     new Source(delegate.mergePrioritizedMat(that, leftPriority, rightPriority, eagerComplete)(combinerToScala(matF)))
 
   /**
@@ -1630,7 +1629,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def mergeSorted[M](that: Graph[SourceShape[Out], M], comp: util.Comparator[Out]): javadsl.Source[Out, Mat] =
+  def mergeSorted[M, U >: Out](that: Graph[SourceShape[U], M], comp: util.Comparator[U]): javadsl.Source[U, Mat] =
     new Source(delegate.mergeSorted(that)(Ordering.comparatorToOrdering(comp)))
 
   /**
@@ -1645,10 +1644,10 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * @see [[#mergeSorted]].
    */
-  def mergeSortedMat[Mat2, Mat3](
-      that: Graph[SourceShape[Out], Mat2],
-      comp: util.Comparator[Out],
-      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Source[Out, Mat3] =
+  def mergeSortedMat[Mat2, Mat3, U >: Out](
+      that: Graph[SourceShape[U], Mat2],
+      comp: util.Comparator[U],
+      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Source[U, Mat3] =
     new Source(delegate.mergeSortedMat(that)(combinerToScala(matF))(Ordering.comparatorToOrdering(comp)))
 
   /**
@@ -1662,7 +1661,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def zip[T](that: Graph[SourceShape[T], _]): javadsl.Source[Out @uncheckedVariance Pair T, Mat] =
+  def zip[T](that: Graph[SourceShape[T], _]): javadsl.Source[Out Pair T, Mat] =
     zipMat(that, Keep.left)
 
   /**
@@ -1675,7 +1674,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def zipMat[T, M, M2](
       that: Graph[SourceShape[T], M],
-      matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
+      matF: function.Function2[Mat, M, M2]): javadsl.Source[Out Pair T, M2] =
     this.viaMat(Flow.create[Out]().zipMat(that, Keep.right[NotUsed, M]), matF)
 
   /**
@@ -1725,7 +1724,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def zipLatest[T](that: Graph[SourceShape[T], _]): javadsl.Source[Out @uncheckedVariance Pair T, Mat] =
+  def zipLatest[T](that: Graph[SourceShape[T], _]): javadsl.Source[Out Pair T, Mat] =
     zipLatestMat(that, Keep.left)
 
   /**
@@ -1738,7 +1737,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def zipLatestMat[T, M, M2](
       that: Graph[SourceShape[T], M],
-      matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
+      matF: function.Function2[Mat, M, M2]): javadsl.Source[Out Pair T, M2] =
     this.viaMat(Flow.create[Out]().zipLatestMat(that, Keep.right[NotUsed, M]), matF)
 
   /**
@@ -1823,7 +1822,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def zipWithIndex: javadsl.Source[Pair[Out @uncheckedVariance, java.lang.Long], Mat] =
+  def zipWithIndex: javadsl.Source[Pair[Out, java.lang.Long], Mat] =
     new Source(delegate.zipWithIndex.map { case (elem, index) => Pair[Out, java.lang.Long](elem, index) })
 
   /**
@@ -1835,7 +1834,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * Note that the classic or typed `ActorSystem` can be used as the `systemProvider` parameter.
    */
-  def runForeach(f: function.Procedure[Out], systemProvider: ClassicActorSystemProvider): CompletionStage[Done] =
+  def runForeach(f: function.Procedure[_ >: Out], systemProvider: ClassicActorSystemProvider): CompletionStage[Done] =
     runWith(Sink.foreach(f), systemProvider)
 
   /**
@@ -1847,7 +1846,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * Prefer the method taking an `ActorSystem` unless you have special requirements
    */
-  def runForeach(f: function.Procedure[Out], materializer: Materializer): CompletionStage[Done] =
+  def runForeach(f: function.Procedure[_ >: Out], materializer: Materializer): CompletionStage[Done] =
     runWith(Sink.foreach(f), materializer)
 
   // COMMON OPS //
@@ -1889,7 +1888,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels; Note that failures of the `f` function will not cause cancellation
    */
-  def wireTap(f: function.Procedure[Out]): javadsl.Source[Out, Mat] =
+  def wireTap(f: function.Procedure[_ >: Out]): javadsl.Source[Out, Mat] =
     new Source(delegate.wireTap(f(_)))
 
   /**
@@ -1907,7 +1906,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def recover(pf: PartialFunction[Throwable, Out]): javadsl.Source[Out, Mat] =
+  def recover[U >: Out](pf: PartialFunction[Throwable, U]): javadsl.Source[U, Mat] =
     new Source(delegate.recover(pf))
 
   /**
@@ -1925,7 +1924,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def recover(clazz: Class[_ <: Throwable], supplier: Supplier[Out]): javadsl.Source[Out, Mat] =
+  def recover[U >: Out](clazz: Class[_ <: Throwable], supplier: Supplier[U]): javadsl.Source[U, Mat] =
     recover {
       case elem if clazz.isInstance(elem) => supplier.get()
     }
@@ -2000,7 +1999,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   @Deprecated
   @deprecated("Use recoverWithRetries instead.", "2.6.6")
   @nowarn("msg=deprecated")
-  def recoverWith(pf: PartialFunction[Throwable, _ <: Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
+  def recoverWith[U >: Out](pf: PartialFunction[Throwable, Graph[SourceShape[U], NotUsed]]): Source[U, Mat] =
     new Source(delegate.recoverWith(pf))
 
   /**
@@ -2027,12 +2026,12 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   @Deprecated
   @deprecated("Use recoverWithRetries instead.", "2.6.6")
   @nowarn("msg=deprecated")
-  def recoverWith(
+  def recoverWith[U >: Out](
       clazz: Class[_ <: Throwable],
-      supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
+      supplier: Supplier[Graph[SourceShape[U], NotUsed]]): Source[U, Mat] =
     recoverWith({
       case elem if clazz.isInstance(elem) => supplier.get()
-    }: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]])
+    }: PartialFunction[Throwable, Graph[SourceShape[U], NotUsed]])
 
   /**
    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
@@ -2057,9 +2056,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Cancels when''' downstream cancels
    *
    */
-  def recoverWithRetries(
+  def recoverWithRetries[U >: Out](
       attempts: Int,
-      pf: PartialFunction[Throwable, _ <: Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
+      pf: PartialFunction[Throwable, Graph[SourceShape[U], NotUsed]]): Source[U, Mat] =
     new Source(delegate.recoverWithRetries(attempts, pf))
 
   /**
@@ -2088,13 +2087,13 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * @param clazz the class object of the failure cause
    * @param supplier supply the new Source to be materialized
    */
-  def recoverWithRetries(
+  def recoverWithRetries[U >: Out](
       attempts: Int,
       clazz: Class[_ <: Throwable],
-      supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
+      supplier: Supplier[Graph[SourceShape[U], NotUsed]]): Source[U, Mat] =
     recoverWithRetries(attempts, {
       case elem if clazz.isInstance(elem) => supplier.get()
-    }: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]])
+    }: PartialFunction[Throwable, Graph[SourceShape[U], NotUsed]])
 
   /**
    * Transform each input element into an `Iterable` of output elements that is
@@ -2344,7 +2343,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def collect[T](pf: PartialFunction[Out, T]): javadsl.Source[T, Mat] =
+  def collect[T](pf: PartialFunction[_ >: Out, T]): javadsl.Source[T, Mat] =
     new Source(delegate.collect(pf))
 
   /**
@@ -2379,7 +2378,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def grouped(n: Int): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
+  def grouped(n: Int): javadsl.Source[java.util.List[_ <: Out], Mat] =
     new Source(delegate.grouped(n).map(_.asJava))
 
   /**
@@ -2398,8 +2397,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def groupedWeighted(minWeight: Long)(costFn: java.util.function.Function[Out, java.lang.Long])
-      : javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
+  def groupedWeighted(minWeight: Long)(costFn: java.util.function.Function[_ >: Out, java.lang.Long])
+      : javadsl.Source[java.util.List[_ <: Out], Mat] =
     new Source(delegate.groupedWeighted(minWeight)(costFn.apply).map(_.asJava))
 
   /**
@@ -2470,7 +2469,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def sliding(n: Int, step: Int): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
+  def sliding(n: Int, step: Int): javadsl.Source[java.util.List[_ <: Out], Mat] =
     new Source(delegate.sliding(n, step).map(_.asJava))
 
   /**
@@ -2596,7 +2595,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def reduce(f: function.Function2[Out, Out, Out @uncheckedVariance]): javadsl.Source[Out, Mat] =
+  def reduce[U >: Out](f: function.Function2[U, U, U]): javadsl.Source[U, Mat] =
     new Source(delegate.reduce(f.apply))
 
   /**
@@ -2629,7 +2628,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def intersperse(start: Out, inject: Out, end: Out): javadsl.Source[Out, Mat] =
+  def intersperse[U >: Out](start: U, inject: U, end: U): javadsl.Source[U, Mat] =
     new Source(delegate.intersperse(start, inject, end))
 
   /**
@@ -2654,7 +2653,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  def intersperse(inject: Out): javadsl.Source[Out, Mat] =
+  def intersperse[U >: Out](inject: U): javadsl.Source[U, Mat] =
     new Source(delegate.intersperse(inject))
 
   /**
@@ -2679,7 +2678,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def groupedWithin(
       maxNumber: Int,
-      duration: FiniteDuration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
+      duration: FiniteDuration): javadsl.Source[java.util.List[_ <: Out], Mat] =
     new Source(delegate.groupedWithin(maxNumber, duration).map(_.asJava)) // TODO optimize to one step
 
   /**
@@ -2703,7 +2702,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   @nowarn("msg=deprecated")
   def groupedWithin(
       maxNumber: Int,
-      duration: java.time.Duration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
+      duration: java.time.Duration): javadsl.Source[java.util.List[_ <: Out], Mat] =
     groupedWithin(maxNumber, duration.asScala)
 
   /**
@@ -2728,8 +2727,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
   def groupedWeightedWithin(
       maxWeight: Long,
-      costFn: function.Function[Out, java.lang.Long],
-      duration: FiniteDuration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
+      costFn: function.Function[_ >: Out, java.lang.Long],
+      duration: FiniteDuration): javadsl.Source[java.util.List[_ <: Out], Mat] =
     new Source(delegate.groupedWeightedWithin(maxWeight, duration)(costFn.apply).map(_.asJava))
 
   /**
@@ -2753,8 +2752,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   @nowarn("msg=deprecated")
   def groupedWeightedWithin(
       maxWeight: Long,
-      costFn: function.Function[Out, java.lang.Long],
-      duration: java.time.Duration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
+      costFn: function.Function[_ >: Out, java.lang.Long],
+      duration: java.time.Duration): javadsl.Source[java.util.List[_ <: Out], Mat] =
     groupedWeightedWithin(maxWeight, costFn, duration.asScala)
 
   /**
@@ -2779,8 +2778,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def groupedWeightedWithin(
       maxWeight: Long,
       maxNumber: Int,
-      costFn: function.Function[Out, java.lang.Long],
-      duration: java.time.Duration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
+      costFn: function.Function[_ >: Out, java.lang.Long],
+      duration: java.time.Duration): javadsl.Source[java.util.List[_ <: Out], Mat] =
     new Source(delegate.groupedWeightedWithin(maxWeight, maxNumber, duration.asScala)(costFn.apply).map(_.asJava))
 
   /**
@@ -2873,9 +2872,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * @param delayStrategySupplier creates new [[DelayStrategy]] object for each materialization
    * @param overFlowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def delayWith(
-      delayStrategySupplier: Supplier[DelayStrategy[Out]],
-      overFlowStrategy: DelayOverflowStrategy): Source[Out, Mat] =
+  def delayWith[U >: Out](
+      delayStrategySupplier: Supplier[DelayStrategy[U]],
+      overFlowStrategy: DelayOverflowStrategy): Source[U, Mat] =
     new Source(delegate.delayWith(() => DelayStrategy.asScala(delayStrategySupplier.get), overFlowStrategy))
 
   /**
@@ -3105,7 +3104,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    */
-  def conflate(aggregate: function.Function2[Out, Out, Out]): javadsl.Source[Out, Mat] =
+  def conflate[U >: Out](aggregate: function.Function2[U, U, U]): javadsl.Source[U, Mat] =
     new Source(delegate.conflate(aggregate.apply))
 
   /**
@@ -3226,9 +3225,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *                    on the original, to be emitted in case downstream signals demand.
    * @see [[#expand]]
    */
-  def extrapolate(extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]])
-      : Source[Out, Mat] =
-    new Source(delegate.extrapolate(in => extrapolator(in).asScala))
+  def extrapolate[U >: Out](extrapolator: function.Function[U, java.util.Iterator[U]])
+      : Source[U, Mat] =
+    new Source(delegate.extrapolate[U](in => extrapolator(in).asScala))
 
   /**
    * Allows a faster downstream to progress independent of a slower upstream.
@@ -3255,10 +3254,10 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * @param initial      the initial element to be emitted, in case upstream is able to stall the entire stream.
    * @see [[#expand]]
    */
-  def extrapolate(
-      extrapolator: function.Function[Out @uncheckedVariance, java.util.Iterator[Out @uncheckedVariance]],
-      initial: Out @uncheckedVariance): Source[Out, Mat] =
-    new Source(delegate.extrapolate(in => extrapolator(in).asScala, Some(initial)))
+  def extrapolate[U >: Out](
+      extrapolator: function.Function[U, java.util.Iterator[U]],
+      initial: U): Source[U, Mat] =
+    new Source(delegate.extrapolate[U](in => extrapolator(in).asScala, Some(initial)))
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
@@ -3306,7 +3305,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Cancels when''' downstream cancels or substream cancels
    */
   def prefixAndTail(n: Int): javadsl.Source[
-    Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance, NotUsed]],
+    Pair[java.util.List[_ <: Out], javadsl.Source[Out, NotUsed]],
     Mat] =
     new Source(delegate.prefixAndTail(n).map { case (taken, tail) => Pair(taken.asJava, tail.asJava) })
 
@@ -3332,7 +3331,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    **/
   def flatMapPrefix[Out2, Mat2](
       n: Int,
-      f: function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]]): javadsl.Source[Out2, Mat] = {
+      f: function.Function[java.lang.Iterable[_ <: Out], javadsl.Flow[Out, Out2, Mat2]]): javadsl.Source[Out2, Mat] = {
     val newDelegate = delegate.flatMapPrefix(n)(seq => f(seq.asJava).asScala)
     new javadsl.Source(newDelegate)
   }
@@ -3343,7 +3342,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def flatMapPrefixMat[Out2, Mat2, Mat3](
       n: Int,
-      f: function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]],
+      f: function.Function[java.lang.Iterable[_ <: Out], javadsl.Flow[Out, Out2, Mat2]],
       matF: function.Function2[Mat, CompletionStage[Mat2], Mat3]): javadsl.Source[Out2, Mat3] = {
     val newDelegate = delegate.flatMapPrefixMat(n)(seq => f(seq.asJava).asScala) { (m1, fm2) =>
       matF(m1, fm2.toJava)
@@ -3404,10 +3403,10 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * @param allowClosedSubstreamRecreation enables recreation of already closed substreams if elements with their
    *        corresponding keys arrive after completion
    */
-  def groupBy[K](
+  def groupBy[K, U >: Out](
       maxSubstreams: Int,
-      f: function.Function[Out, K],
-      allowClosedSubstreamRecreation: Boolean): SubSource[Out, Mat] =
+      f: function.Function[U, K],
+      allowClosedSubstreamRecreation: Boolean): SubSource[U, _ <: Mat] =
     new SubSource(delegate.groupBy(maxSubstreams, f.apply, allowClosedSubstreamRecreation))
 
   /**
@@ -3451,7 +3450,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * @param maxSubstreams configures the maximum number of substreams (keys)
    *        that are supported; if more distinct keys are encountered then the stream fails
    */
-  def groupBy[K](maxSubstreams: Int, f: function.Function[Out, K]): SubSource[Out @uncheckedVariance, Mat] =
+  def groupBy[K, U >: Out](maxSubstreams: Int, f: function.Function[U, K]): SubSource[U, _ <: Mat] =
     new SubSource(delegate.groupBy(maxSubstreams, f.apply))
 
   /**
@@ -3505,7 +3504,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * See also [[Source.splitAfter]].
    */
-  def splitWhen(p: function.Predicate[Out]): SubSource[Out, Mat] =
+  def splitWhen[U >: Out](p: function.Predicate[U]): SubSource[U, _ <: Mat] =
     new SubSource(delegate.splitWhen(p.test))
 
   /**
@@ -3515,7 +3514,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * @see [[#splitWhen]]
    */
-  def splitWhen(substreamCancelStrategy: SubstreamCancelStrategy)(p: function.Predicate[Out]): SubSource[Out, Mat] =
+  def splitWhen[U >: Out](substreamCancelStrategy: SubstreamCancelStrategy)(p: function.Predicate[U]): SubSource[U, _ <: Mat] =
     new SubSource(delegate.splitWhen(substreamCancelStrategy)(p.test))
 
   /**
@@ -3562,7 +3561,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * See also [[Source.splitWhen]].
    */
-  def splitAfter(p: function.Predicate[Out]): SubSource[Out, Mat] =
+  def splitAfter[U >: Out](p: function.Predicate[U]): SubSource[U, _ <: Mat] =
     new SubSource(delegate.splitAfter(p.test))
 
   /**
@@ -3572,7 +3571,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * @see [[#splitAfter]]
    */
-  def splitAfter(substreamCancelStrategy: SubstreamCancelStrategy)(p: function.Predicate[Out]): SubSource[Out, Mat] =
+  def splitAfter[U >: Out](substreamCancelStrategy: SubstreamCancelStrategy)(p: function.Predicate[U]): SubSource[U, _ <: Mat] =
     new SubSource(delegate.splitAfter(substreamCancelStrategy)(p.test))
 
   /**
@@ -3762,7 +3761,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   @Deprecated
   @deprecated("Use the overloaded one which accepts java.time.Duration instead.", since = "2.5.12")
-  def keepAlive(maxIdle: FiniteDuration, injectedElem: function.Creator[Out]): javadsl.Source[Out, Mat] =
+  def keepAlive[U >: Out](maxIdle: FiniteDuration, injectedElem: function.Creator[U]): javadsl.Source[U, Mat] =
     new Source(delegate.keepAlive(maxIdle, () => injectedElem.create()))
 
   /**
@@ -3783,7 +3782,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Cancels when''' downstream cancels
    */
   @nowarn("msg=deprecated")
-  def keepAlive(maxIdle: java.time.Duration, injectedElem: function.Creator[Out]): javadsl.Source[Out, Mat] =
+  def keepAlive[U >: Out](maxIdle: java.time.Duration, injectedElem: function.Creator[U]): javadsl.Source[U, Mat] =
     keepAlive(maxIdle.asScala, injectedElem)
 
   /**

@@ -4,8 +4,6 @@
 
 package akka.stream
 
-import scala.annotation.unchecked.uncheckedVariance
-
 import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
 import akka.stream.scaladsl.GenericGraph
@@ -17,11 +15,6 @@ import akka.stream.scaladsl.GenericGraph
  */
 trait Graph[+S <: Shape, +M] {
 
-  /**
-   * Type-level accessor for the shape parameter of this graph.
-   */
-  // FIXME deprecate, not used for Scala 3
-  type Shape = S @uncheckedVariance
   /**
    * The shape of a graph is all that is externally visible: its inlets and outlets.
    */

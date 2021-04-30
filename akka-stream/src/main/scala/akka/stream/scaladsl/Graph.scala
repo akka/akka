@@ -7,7 +7,6 @@ package akka.stream.scaladsl
 import java.util.SplittableRandom
 
 import scala.annotation.tailrec
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.Promise
 import scala.util.control.{ NoStackTrace, NonFatal }
@@ -178,7 +177,7 @@ object MergePreferred {
   final class MergePreferredShape[T](val secondaryPorts: Int, _init: Init[T])
       extends UniformFanInShape[T, T](secondaryPorts, _init) {
     def this(secondaryPorts: Int, name: String) = this(secondaryPorts, Name[T](name))
-    override protected def construct(init: Init[T]): FanInShape[T] = new MergePreferredShape(secondaryPorts, init)
+    override protected def construct[N >: T](init: Init[N]): FanInShape[N] = new MergePreferredShape(secondaryPorts, init)
     override def deepCopy(): MergePreferredShape[T] = super.deepCopy().asInstanceOf[MergePreferredShape[T]]
 
     val preferred = newInlet[T]("preferred")
@@ -1631,7 +1630,7 @@ object GraphDSL extends GraphApply {
      *
      * @return The outlet that will emit the materialized value.
      */
-    def materializedValue: Outlet[M @uncheckedVariance] =
+    def materializedValue: Outlet[M] =
       add(Source.maybe[M], { (prev: M, prom: Promise[Option[M]]) =>
         prom.success(Some(prev)); prev
       }).out
@@ -1689,7 +1688,7 @@ object GraphDSL extends GraphApply {
     }
 
     sealed trait CombinerBase[+T] extends Any {
-      def importAndGetPort(b: Builder[_]): Outlet[T @uncheckedVariance]
+      def importAndGetPort(b: Builder[_]): Outlet[T]
 
       def ~>[U >: T](to: Inlet[U])(implicit b: Builder[_]): Unit =
         b.addEdge(importAndGetPort(b), to)
@@ -1779,10 +1778,10 @@ object GraphDSL extends GraphApply {
     trait PortOps[+Out] extends FlowOps[Out, NotUsed] with CombinerBase[Out] {
       override type Repr[+O] = PortOps[O]
       override type Closed = Unit
-      def outlet: Outlet[Out @uncheckedVariance]
+      def outlet: Outlet[Out]
     }
 
-    private class PortOpsImpl[+Out](override val outlet: Outlet[Out @uncheckedVariance], b: Builder[_])
+    private class PortOpsImpl[+Out](override val outlet: Outlet[Out], b: Builder[_])
         extends PortOps[Out] {
 
       override def withAttributes(attr: Attributes): Repr[Out] = throw settingAttrNotSupported
@@ -1793,7 +1792,7 @@ object GraphDSL extends GraphApply {
       private def settingAttrNotSupported =
         new UnsupportedOperationException("Cannot set attributes on chained ops from a junction output port")
 
-      override def importAndGetPort(b: Builder[_]): Outlet[Out @uncheckedVariance] = outlet
+      override def importAndGetPort(b: Builder[_]): Outlet[Out] = outlet
 
       override def via[T, Mat2](flow: Graph[FlowShape[Out, T], Mat2]): Repr[T] =
         super.~>(flow)(b)

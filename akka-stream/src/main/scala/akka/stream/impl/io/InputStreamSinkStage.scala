@@ -77,7 +77,7 @@ private[stream] object InputStreamSinkStage {
       def onPush(): Unit = {
         //1 is buffer for Finished or Failed callback
         require(dataQueue.remainingCapacity() > 1)
-        val bs = grab(in)
+        val bs: ByteString = grab(in)
         if (bs.nonEmpty) {
           dataQueue.add(Data(bs))
         }

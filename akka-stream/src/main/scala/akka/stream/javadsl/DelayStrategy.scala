@@ -14,7 +14,7 @@ import akka.util.JavaDurationConverters.JavaDurationOps
  * Allows to manage delay and can be stateful to compute delay for any sequence of elements,
  * all elements go through nextDelay() updating state and returning delay for each element
  */
-trait DelayStrategy[T] {
+trait DelayStrategy[-T] {
 
   /**
    * Returns delay for ongoing element, `Duration.Zero` means passing without delay
