@@ -34,9 +34,11 @@ class ZipWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[FanInSh
     var pending = ##0
     // Without this field the completion signalling would take one extra pull
     var willShutDown = false
+    // A buffer for the first input to preserve context
+    private val buffer##0 = impl.Buffer[A##1](##1, ##1)
 
     private def pushAll(): Unit = {
-      push(out, zipper([#grab(in0)#]))
+      push(out, zipper(buffer##0.dequeue(), [2..#grab(in0)#]))
       if (willShutDown) completeStage()
       else {
         [#pull(in0)#
@@ -49,7 +51,21 @@ class ZipWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[FanInSh
       ]
     }
 
-    [#setHandler(in0, new InHandler {
+    setHandler(in##0, new InHandler {
+      override def onPush(): Unit = {
+        pending -= ##1
+        buffer##0.enqueue(grab(in##0))
+        if (pending == ##0) pushAll()
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        if (!isAvailable(in##0) && buffer##0.isEmpty) completeStage()
+        willShutDown = true
+      }
+
+    })
+
+    [2..#setHandler(in0, new InHandler {
       override def onPush(): Unit = {
         pending -= ##1
         if (pending == ##0) pushAll()
