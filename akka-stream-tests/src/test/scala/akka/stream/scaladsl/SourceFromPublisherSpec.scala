@@ -20,8 +20,8 @@ class SourceFromPublisherSpec
     // https://github.com/akka/akka/issues/30076
     "consider 'inputBuffer' attributes in a correct way" in {
       val publisher = TestPublisher.probe[Int]()
-      Source.fromPublisher(publisher).addAttributes(Attributes.inputBuffer(1, 1)).runWith(Sink.ignore)
-      publisher.expectRequest() should ===(1L)
+      Source.fromPublisher(publisher).addAttributes(Attributes.inputBuffer(1, 2)).runWith(Sink.ignore)
+      publisher.expectRequest() should ===(2L)
     }
   }
 }
