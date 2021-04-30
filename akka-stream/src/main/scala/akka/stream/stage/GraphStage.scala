@@ -1084,22 +1084,40 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     override def onDownstreamFinish(cause: Throwable): Unit = previous.onDownstreamFinish(cause)
   }
 
-  private class EmittingSingle[T](_out: Outlet[T], elem: T, _previous: OutHandler, _andThen: () => Unit)
+  private class EmittingSingle[T](_out: Outlet[T], _elem: T, _previous: OutHandler, _andThen: () => Unit)
       extends Emitting(_out, _previous, _andThen) {
 
+    // A buffer to preserve context 
+    private val buffer = impl.Buffer[T](1, 1)
+    
+    buffer.enqueue(_elem)
+
     override def onPull(): Unit = {
-      push(out, elem)
+      push(out, buffer.dequeue())
       followUp()
     }
   }
 
-  private class EmittingIterator[T](_out: Outlet[T], elems: Iterator[T], _previous: OutHandler, _andThen: () => Unit)
+  private class EmittingIterator[T](_out: Outlet[T], _elems: Iterator[T], _previous: OutHandler, _andThen: () => Unit)
       extends Emitting(_out, _previous, _andThen) {
 
-    override def onPull(): Unit = {
-      push(out, elems.next())
-      if (!elems.hasNext) {
+    // A buffer to preserve context
+    private val buffer = impl.Buffer[T](1, 1)
+
+    enqueueNext()
+
+    private def enqueueNext(): Unit = {
+      if (_elems.hasNext) {
+        buffer.enqueue(_elems.next())
+      } else {
         followUp()
+      }
+    }
+    
+    override def onPull(): Unit = {
+      if (buffer.nonEmpty) {
+        push(out, buffer.dequeue())
+        enqueueNext()
       }
     }
   }
