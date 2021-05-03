@@ -20,6 +20,8 @@ import akka.testkit.javadsl.EventFilter;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
 import static akka.util.ByteString.emptyByteString;
+
+import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -69,7 +71,7 @@ public class TcpTest extends StreamTest {
             }
           });
 
-  final List<ByteString> testInput = new ArrayList<ByteString>();
+  final List<ByteString> testInput = new ArrayList<>();
 
   {
     for (char c = 'a'; c <= 'z'; c++) {
@@ -127,22 +129,20 @@ public class TcpTest extends StreamTest {
             .occurrences(1)
             .intercept(
                 () -> {
-                  try {
-                    binding
-                        .to(echoHandler)
-                        .run(system)
-                        .toCompletableFuture()
-                        .get(5, TimeUnit.SECONDS);
-                    assertTrue("Expected BindFailedException, but nothing was reported", false);
-                  } catch (ExecutionException e) {
-                    if (e.getCause() instanceof BindFailedException) {
-                    } // all good
-                    else throw new AssertionError("failed", e);
-                    // expected
-                    b.unbind();
-                  } catch (Exception e) {
-                    throw new AssertionError("failed", e);
-                  }
+                  ExecutionException executionException =
+                      Assert.assertThrows(
+                          "CompletableFuture.get() should throw ExecutionException",
+                          ExecutionException.class,
+                          () ->
+                              binding
+                                  .to(echoHandler)
+                                  .run(system)
+                                  .toCompletableFuture()
+                                  .get(5, TimeUnit.SECONDS));
+                  assertTrue(
+                      "The cause of ExecutionException should be instanceof BindFailedException",
+                      executionException.getCause() instanceof BindFailedException);
+                  b.unbind();
                   return null;
                 });
       }
@@ -150,26 +150,27 @@ public class TcpTest extends StreamTest {
   }
 
   @Test
-  public void mustReportClientConnectFailure() throws Throwable {
+  public void mustReportClientConnectFailure() {
     final InetSocketAddress serverAddress = SocketUtil.notBoundServerAddress();
-    try {
-      try {
-        Source.from(testInput)
-            .viaMat(
-                Tcp.get(system)
-                    .outgoingConnection(serverAddress.getHostString(), serverAddress.getPort()),
-                Keep.right())
-            .to(Sink.<ByteString>ignore())
-            .run(system)
-            .toCompletableFuture()
-            .get(5, TimeUnit.SECONDS);
-        assertTrue("Expected StreamTcpException, but nothing was reported", false);
-      } catch (ExecutionException e) {
-        throw e.getCause();
-      }
-    } catch (StreamTcpException e) {
-      // expected
-    }
+    ExecutionException executionException =
+        Assert.assertThrows(
+            "CompletableFuture.get() should throw ExecutionException",
+            ExecutionException.class,
+            () ->
+                Source.from(testInput)
+                    .viaMat(
+                        Tcp.get(system)
+                            .outgoingConnection(
+                                serverAddress.getHostString(), serverAddress.getPort()),
+                        Keep.right())
+                    .to(Sink.ignore())
+                    .run(system)
+                    .toCompletableFuture()
+                    .get(5, TimeUnit.SECONDS));
+    assertEquals(
+        "The cause of ExecutionException should be StreamTcpException",
+        StreamTcpException.class,
+        executionException.getCause().getClass());
   }
 
   // compile only sample
