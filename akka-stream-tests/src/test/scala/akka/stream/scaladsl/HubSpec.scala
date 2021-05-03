@@ -208,14 +208,16 @@ class HubSpec extends StreamSpec {
       draining.drainAndComplete()
 
       downstream.request(10)
-      downstream.expectNextN(10).sorted should ===(1 to 10)
+      val firstBatch = downstream.expectNextN(10)
 
       val upstream = TestPublisher.probe[Int]()
       Source.fromPublisher(upstream).runWith(sink)
       upstream.expectCancellation()
 
       downstream.request(10)
-      downstream.expectNextN(10).sorted should ===(11 to 20)
+      val secondBatch = downstream.expectNextN(10)
+
+      (firstBatch ++ secondBatch).sorted should ===(1 to 20)
 
       downstream.expectComplete()
     }
