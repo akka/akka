@@ -27,7 +27,6 @@ object RememberEntitiesShardStoreSpec {
       akka.remote.classic.netty.tcp.port = 0
       akka.cluster.sharding.state-store-mode = ddata
       akka.cluster.sharding.snapshot-after = 2
-      akka.cluster.sharding.keep-nr-of-batches = 0
       akka.cluster.sharding.remember-entities = on
       # no leaks between test runs thank you
       akka.cluster.sharding.distributed-data.durable.keys = []
@@ -57,31 +56,6 @@ abstract class RememberEntitiesShardStoreSpec
   s"The $storeName" must {
 
     val shardingSettings = ClusterShardingSettings(system)
-
-    "store updates internal state" in {
-      val store = system.actorOf(storeProps("FakeShardIdWithSnapshot", "FakeTypeName", shardingSettings))
-
-      store ! RememberEntitiesShardStore.GetEntities
-      expectMsgType[RememberEntitiesShardStore.RememberedEntities].entities should be(empty)
-
-      store ! RememberEntitiesShardStore.Update(Set("1"), Set.empty)
-      expectMsg(RememberEntitiesShardStore.UpdateDone(Set("1"), Set.empty))
-      store ! RememberEntitiesShardStore.Update(Set("2"), Set.empty)
-      expectMsg(RememberEntitiesShardStore.UpdateDone(Set("2"), Set.empty))
-      store ! RememberEntitiesShardStore.Update(Set("3"), Set.empty)
-      expectMsg(RememberEntitiesShardStore.UpdateDone(Set("3"), Set.empty))
-      store ! RememberEntitiesShardStore.Update(Set("4"), Set.empty)
-      expectMsg(RememberEntitiesShardStore.UpdateDone(Set("4"), Set.empty))
-
-      store ! RememberEntitiesShardStore.GetEntities
-      expectMsgType[RememberEntitiesShardStore.RememberedEntities].entities should ===(Set("1", "2", "3", "4"))
-
-      // the store does not support get after update
-      val storeIncarnation2 = system.actorOf(storeProps("FakeShardIdWithSnapshot", "FakeTypeName", shardingSettings))
-
-      storeIncarnation2 ! RememberEntitiesShardStore.GetEntities
-      expectMsgType[RememberEntitiesShardStore.RememberedEntities].entities should ===(Set("1", "2", "3", "4"))
-    }
 
     "store starts and stops and list remembered entity ids" in {
 
