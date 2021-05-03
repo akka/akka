@@ -68,7 +68,10 @@ This plugin writes events to a local LevelDB instance.
 
 @@@ warning
 The LevelDB plugin cannot be used in an Akka Cluster since the storage is in a local file system.
-@@@ 
+@@@
+
+The LevelDB journal is deprecated and it is not advised to build new applications with it.
+As a replacement we recommend using [Akka Persistence JDBC](https://doc.akka.io/docs/akka-persistence-jdbc/current/index.html).
 
 The LevelDB journal plugin config entry is `akka.persistence.journal.leveldb`. Enable this plugin by
 defining config property:

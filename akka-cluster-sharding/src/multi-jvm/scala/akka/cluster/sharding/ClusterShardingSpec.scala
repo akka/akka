@@ -9,18 +9,20 @@ import scala.language.postfixOps
 import com.typesafe.config.ConfigFactory
 import akka.actor._
 import akka.cluster.Cluster
-import akka.cluster.ddata.{ Replicator, ReplicatorSettings }
-import akka.cluster.sharding.ShardCoordinator.Internal.{ BeginHandOff, BeginHandOffAck, HandOff, ShardStopped }
+import akka.cluster.ddata.{Replicator, ReplicatorSettings}
+import akka.cluster.sharding.ShardCoordinator.Internal.{BeginHandOff, BeginHandOffAck, HandOff, ShardStopped}
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
-import akka.cluster.sharding.ShardRegion.{ CurrentRegions, GetCurrentRegions, Passivate }
-import akka.cluster.sharding.internal.{ DDataRememberEntitiesProvider, EventSourcedRememberEntitiesProvider }
-import akka.cluster.singleton.{ ClusterSingletonManager, ClusterSingletonManagerSettings }
+import akka.cluster.sharding.ShardRegion.{CurrentRegions, GetCurrentRegions, Passivate}
+import akka.cluster.sharding.internal.{DDataRememberEntitiesProvider, EventSourcedRememberEntitiesProvider}
+import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
 import akka.pattern.BackoffOpts
-import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
-import akka.persistence.{ Persistence, PersistentActor }
+import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
+import akka.persistence.{Persistence, PersistentActor}
 import akka.remote.testconductor.RoleName
 import akka.testkit._
 import akka.testkit.TestEvent.Mute
+
+import scala.annotation.nowarn
 
 object ClusterShardingSpec {
   //#counter-actor
@@ -273,6 +275,7 @@ class DDataClusterShardingWithEntityRecoveryMultiJvmNode5 extends DDataClusterSh
 class DDataClusterShardingWithEntityRecoveryMultiJvmNode6 extends DDataClusterShardingWithEntityRecoverySpec
 class DDataClusterShardingWithEntityRecoveryMultiJvmNode7 extends DDataClusterShardingWithEntityRecoverySpec
 
+@nowarn("msg=deprecated")
 abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
     extends MultiNodeClusterShardingSpec(multiNodeConfig)
     with ImplicitSender

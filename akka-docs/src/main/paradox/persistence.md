@@ -44,7 +44,7 @@ recover its state from these messages.
 case of sender and receiver JVM crashes.
  * `AsyncWriteJournal`: A journal stores the sequence of messages sent to a persistent actor. An application can control which messages
 are journaled and which are received by the persistent actor without being journaled. Journal maintains `highestSequenceNr` that is increased on each message.
-The storage backend of a journal is pluggable. The persistence extension comes with a "leveldb" journal plugin, which writes to the local filesystem.
+The storage backend of a journal is pluggable. 
 Replicated journals are available as [Community plugins](https://akka.io/community/).
  * *Snapshot store*: A snapshot store persists snapshots of a persistent actor's state. Snapshots are
 used for optimizing recovery times. The storage backend of a snapshot store is pluggable.
@@ -814,6 +814,9 @@ to the application configuration. If not specified, an exception will be throw w
 For more advanced schema evolution techniques refer to the @ref:[Persistence - Schema Evolution](persistence-schema-evolution.md) documentation.
 
 ## Testing with LevelDB journal
+
+The LevelDB journal is deprecated and it is not advised to build new applications with it.
+As a replacement we recommend using [Akka Persistence JDBC](https://doc.akka.io/docs/akka-persistence-jdbc/current/index.html).
 
 When running tests with LevelDB default settings in `sbt`, make sure to set `fork := true` in your sbt project. Otherwise, you'll see an `UnsatisfiedLinkError`. Alternatively, you can switch to a LevelDB Java port by setting
 
