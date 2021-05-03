@@ -101,7 +101,7 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
           left -= 1
           if (left == 0) {
             sender() ! RememberEntitiesShardStore.UpdateDone(started, stopped)
-            state.copy(state.entities.union(started).diff(stopped))
+            state = state.copy(state.entities.union(started).diff(stopped))
             saveSnapshotWhenNeeded()
           }
         }
