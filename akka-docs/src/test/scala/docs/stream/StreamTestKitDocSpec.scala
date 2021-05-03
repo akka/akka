@@ -19,7 +19,8 @@ class StreamTestKitDocSpec extends AkkaSpec {
 
   "strict collection" in {
     //#strict-collection
-    val sinkUnderTest = Flow[Int].map(_ * 2).toMat(Sink.fold(0)(_ + _))(Keep.right)
+    val sinkUnderTest =
+      Flow[Int].map(_ * 2).toMat(Sink.fold(0)(_ + _))(Keep.right)
 
     val future = Source(1 to 4).runWith(sinkUnderTest)
     val result = Await.result(future, 3.seconds)
