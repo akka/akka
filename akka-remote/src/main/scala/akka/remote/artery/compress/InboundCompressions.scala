@@ -187,7 +187,6 @@ private[remote] final class InboundActorRefCompression(
     if (!InternalActorRef.isTemporaryRef(value)) super.increment(remoteAddress, value, n)
   }
 
-
   override def decompress(tableVersion: Byte, idx: Int): OptionVal[ActorRef] =
     super.decompressInternal(tableVersion, idx, 0)
 
