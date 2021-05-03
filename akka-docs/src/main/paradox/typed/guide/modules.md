@@ -10,9 +10,13 @@ The following capabilities are included with Akka OSS and are introduced later o
 * @ref:[Cluster Sharding](#cluster-sharding)
 * @ref:[Cluster Singleton](#cluster-singleton)
 * @ref:[Persistence](#persistence)
+* @ref:[Projections](#projections)
 * @ref:[Distributed Data](#distributed-data)
 * @ref:[Streams](#streams)
+* @ref:[Alpakka](#alpakka)
 * @ref:[HTTP](#http)
+* @ref:[gRPC](#grpc)
+* [Other Akka modules](https://doc.akka.io/docs/akka/current/common/other-modules.html)
 
 With a [Lightbend Platform Subscription](https://www.lightbend.com/lightbend-subscription), you can use [Akka Enhancements](https://doc.akka.io/docs/akka-enhancements/current/) that includes:
 
@@ -180,6 +184,26 @@ Persistence tackles the following challenges:
 * How to introspect domain events that have led an entity to its current state.
 * How to leverage [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) in your application to support long-running processes while the project continues to evolve.
 
+### Projections
+
+@@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
+  group=com.typesafe.akka
+  artifact=akka-projection-core_$scala.binary.version$
+  version=AkkaVersion
+}
+
+Projections provides a simple API for consuming a stream of events for projection into a variety of downstream options.  The core dependency provides only the API and other provider dependencies are required for different source and sink implementations.
+
+Challenges Projections solve include the following:
+
+* Constructing alternate or aggregate views over an event stream.
+* Propagating an event stream onto another downstream medium such as a Kafka topic.  
+* A simple way of building read-side projections in the context of [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) and [CQRS system](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj591573%28v=pandp.10%29)
+
+
 ### Distributed Data
 
 @@dependency[sbt,Maven,Gradle] {
@@ -229,6 +253,19 @@ Streams solve the following challenges:
 * How to connect asynchronous services in a flexible way to each other with high performance.
 * How to provide or consume Reactive Streams compliant interfaces to interface with a third party library.
 
+### Alpakka
+
+[Alpakka](https://doc.akka.io/docs/alpakka/current/) is a separate module from Akka.
+
+Alpakka is collection of modules built upon the Streams API to provide Reactive Stream connector
+implementations for a variety of technologies common in the cloud and infrastructure landscape.  
+See the [Alpakka overview page](https://doc.akka.io/docs/alpakka/current/overview.html) for more details on the API and the implementation modules available.
+
+Alpakka helps solve the following challenges:
+
+* Connecting various infrastructure or persistence components to Stream based flows.
+* Connecting to legacy systems in a manner that adheres to a Reactive Streams API.
+
 ### HTTP
 
 [Akka HTTP](https://doc.akka.io/docs/akka-http/current/) is a separate module from Akka.
@@ -241,6 +278,22 @@ Some of the challenges that HTTP tackles:
 * How to expose services of a system or cluster to the external world via an HTTP API in a performant way.
 * How to stream large datasets in and out of a system using HTTP.
 * How to stream live events in and out of a system using HTTP.
+
+### gRPC
+
+[Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html) is a separate module from Akka.
+
+This library provides an implementation of gRPC that integrates nicely with the @ref:[HTTP](#http) and @ref:[Streams](#streams) modules.  It is capable of generating both client and server-side artifacts from protobuf service definitions, which can then be exposed using Akka HTTP, and handled using Streams.
+
+Some of the challenges that Akka gRPC tackles:
+
+* Exposing services with all the benefits of gRPC & protobuf:  
+  * Schema-first contract
+  * Schema evolution support
+  * Efficient binary protocol
+  * First-class streaming support
+  * Wide interoperability
+  * Use of HTTP/2 connection multiplexing
 
 ### Example of module use
 

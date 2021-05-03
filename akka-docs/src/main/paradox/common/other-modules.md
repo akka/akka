@@ -1,5 +1,7 @@
 # Other Akka modules
 
+This page describes modules that compliment libraries from the Akka core.  See [this overview](https://doc.akka.io/docs/akka/current/typed/guide/modules.html) instead for a guide on the core modules.
+
 ## [Akka HTTP](https://doc.akka.io/docs/akka-http/current/)
 
 A full server- and client-side HTTP stack on top of akka-actor and akka-stream.
@@ -67,7 +69,7 @@ Akka has a vibrant and passionate user community, the members of which have crea
 
 ### [Play Framework](https://www.playframework.com)
 
-Play Framework provides a complete framework to build modern web applications, including tools for front end pipeline integration, 
+Play Framework provides a complete framework to build modern web applications, including tools for front end pipeline integration,
 a HTML template language etc. It is built on top of Akka HTTP, and integrates well with Akka and Actors.
 
 ### [Lagom](https://www.lagomframework.com)
