@@ -57,7 +57,7 @@ public class StatefulMapConcat {
 
                   return (element) -> {
                     if (element.startsWith("deny:")) {
-                      denyList.add(element.substring(10));
+                      denyList.add(element.substring("deny:".length()));
                       return Collections
                           .emptyList(); // no element downstream when adding a deny listed keyword
                     } else if (denyList.contains(element)) {
