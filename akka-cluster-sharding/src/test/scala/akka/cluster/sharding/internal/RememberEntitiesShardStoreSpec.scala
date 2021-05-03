@@ -19,7 +19,8 @@ import org.scalatest.wordspec.AnyWordSpecLike
  * Covers the interaction between the shard and the remember entities store
  */
 object RememberEntitiesShardStoreSpec {
-  def config = ConfigFactory.parseString(s"""
+  def config =
+    ConfigFactory.parseString(s"""
       akka.loglevel=DEBUG
       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
       akka.actor.provider = cluster
@@ -32,7 +33,9 @@ object RememberEntitiesShardStoreSpec {
       akka.cluster.sharding.distributed-data.durable.keys = []
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-      akka.persistence.snapshot-store.local.dir = "target/${classOf[RememberEntitiesShardStoreSpec].getName}-${UUID.randomUUID().toString}"
+      akka.persistence.snapshot-store.local.dir = "target/${classOf[RememberEntitiesShardStoreSpec].getName}-${UUID
+                                   .randomUUID()
+                                   .toString}"
     """.stripMargin)
 }
 
