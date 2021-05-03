@@ -178,14 +178,13 @@ private[remote] class InboundTestStage(inboundContext: InboundContext, state: Sh
                       log.debug(
                         "inbound message [{}] before handshake completed, cannot check if remote is blackholed, letting through",
                         Logging.messageClassName(env.message))
-                      push(out, env)  // let it through
+                      push(out, env) // let it through
 
                     case anyOther =>
                       log.debug(
                         "dropping inbound message [{}] with UID [{}] because of blackhole",
                         Logging.messageClassName(anyOther),
-                        env.originUid
-                      )
+                        env.originUid)
                       pull(in) // drop message
                   }
                 } else {
