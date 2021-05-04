@@ -1203,11 +1203,14 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] => O)(n: Int) extends GraphStage[U
       // Without this field the completion signalling would take one extra pull
       var willShutDown = false
 
+      // A buffer for the first input to preserve context
+      private val buffer0 = impl.Buffer[A](1, 1)
+
       val grabInlet = grab[A] _
       val pullInlet = pull[A] _
 
       private def pushAll(): Unit = {
-        push(out, zipper(shape.inlets.map(grabInlet)))
+        push(out, zipper(buffer0.dequeue() +: shape.inlets.tail.map(grabInlet)))
         if (willShutDown) completeStage()
         else shape.inlets.foreach(pullInlet)
       }
@@ -1216,7 +1219,22 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] => O)(n: Int) extends GraphStage[U
         shape.inlets.foreach(pullInlet)
       }
 
-      shape.inlets.foreach(in => {
+      shape.inlets.headOption.foreach(in => {
+        setHandler(in, new InHandler {
+          override def onPush(): Unit = {
+            pending -= 1
+            buffer0.enqueue(grab(in))
+            if (pending == 0) pushAll()
+          }
+
+          override def onUpstreamFinish(): Unit = {
+            if (!isAvailable(in) && buffer0.isEmpty) completeStage()
+            willShutDown = true
+          }
+        })
+      })
+      
+      shape.inlets.tail.foreach(in => {
         setHandler(in, new InHandler {
           override def onPush(): Unit = {
             pending -= 1
@@ -1227,7 +1245,6 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] => O)(n: Int) extends GraphStage[U
             if (!isAvailable(in)) completeStage()
             willShutDown = true
           }
-
         })
       })
 
