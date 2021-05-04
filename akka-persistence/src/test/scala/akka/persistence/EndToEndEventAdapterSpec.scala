@@ -111,10 +111,7 @@ object EndToEndEventAdapterSpec {
 
 // needs persistence between actor systems, thus not running with the inmem journal
 // FIXME move to inmem + proxy
-class EndToEndEventAdapterSpec
-    extends AnyWordSpecLike
-    with Matchers
-    with BeforeAndAfterAll {
+class EndToEndEventAdapterSpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll {
   import EndToEndEventAdapterSpec._
 
   val journalName = "leveldb"

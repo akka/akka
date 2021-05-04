@@ -7,15 +7,15 @@ package akka.cluster.sharding
 import java.io.File
 import scala.concurrent.duration._
 import org.apache.commons.io.FileUtils
-import akka.actor.{Actor, ActorIdentity, ActorLogging, ActorRef, ActorSystem, Identify, PoisonPill, Props}
+import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, ActorSystem, Identify, PoisonPill, Props }
 import akka.cluster.MultiNodeClusterSpec
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.persistence.Persistence
-import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
+import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.jackson.CborSerializable
-import akka.testkit.{TestActors, TestProbe}
+import akka.testkit.{ TestActors, TestProbe }
 import akka.util.ccompat._
 
 import scala.annotation.nowarn

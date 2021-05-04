@@ -12,7 +12,7 @@ import org.apache.commons.io.FileUtils
 import org.openjdk.jmh.annotations._
 import akka.actor._
 import akka.persistence.journal.AsyncWriteTarget._
-import akka.persistence.journal.leveldb.{SharedLeveldbJournal, SharedLeveldbStore}
+import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.testkit.TestProbe
 
 import scala.annotation.nowarn

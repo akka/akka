@@ -188,7 +188,7 @@ object AtLeastOnceDeliverySpec {
 }
 
 class AtLeastOnceDeliverySpec
-  extends PersistenceSpec(PersistenceSpec.config("inmem", "AtLeastOnceDeliverySpec"))
+    extends PersistenceSpec(PersistenceSpec.config("inmem", "AtLeastOnceDeliverySpec"))
     with ImplicitSender {
 
   import akka.persistence.AtLeastOnceDeliverySpec._

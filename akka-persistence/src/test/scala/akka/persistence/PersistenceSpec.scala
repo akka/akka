@@ -79,8 +79,7 @@ object PersistenceSpec {
 
 trait Cleanup { this: AkkaSpec =>
   val storageLocations =
-    List(
-      "akka.persistence.snapshot-store.local.dir").map(s => new File(system.settings.config.getString(s)))
+    List("akka.persistence.snapshot-store.local.dir").map(s => new File(system.settings.config.getString(s)))
 
   override protected def atStartup(): Unit = {
     storageLocations.foreach(FileUtils.deleteDirectory)

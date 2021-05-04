@@ -390,8 +390,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
 
       } finally {
         val storageLocations =
-          List(
-            "akka.persistence.snapshot-store.local.dir").map(s => new File(sys2.settings.config.getString(s)))
+          List("akka.persistence.snapshot-store.local.dir").map(s => new File(sys2.settings.config.getString(s)))
         shutdown(sys2)
         storageLocations.foreach(FileUtils.deleteDirectory)
       }
