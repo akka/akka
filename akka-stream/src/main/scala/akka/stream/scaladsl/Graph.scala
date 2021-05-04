@@ -1233,7 +1233,7 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] => O)(n: Int) extends GraphStage[U
           }
         })
       })
-      
+
       shape.inlets.tail.foreach(in => {
         setHandler(in, new InHandler {
           override def onPush(): Unit = {

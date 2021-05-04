@@ -1087,9 +1087,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   private class EmittingSingle[T](_out: Outlet[T], _elem: T, _previous: OutHandler, _andThen: () => Unit)
       extends Emitting(_out, _previous, _andThen) {
 
-    // A buffer to preserve context 
+    // A buffer to preserve context
     private val buffer = impl.Buffer[T](1, 1)
-    
+
     buffer.enqueue(_elem)
 
     override def onPull(): Unit = {
@@ -1113,7 +1113,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         followUp()
       }
     }
-    
+
     override def onPull(): Unit = {
       if (buffer.nonEmpty) {
         push(out, buffer.dequeue())
