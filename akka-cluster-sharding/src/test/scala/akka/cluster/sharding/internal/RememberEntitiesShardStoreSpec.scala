@@ -4,6 +4,8 @@
 
 package akka.cluster.sharding.internal
 
+import java.util.UUID
+
 import akka.actor.Props
 import akka.cluster.ddata.{ Replicator, ReplicatorSettings }
 import akka.cluster.sharding.ClusterShardingSettings
@@ -17,17 +19,23 @@ import org.scalatest.wordspec.AnyWordSpecLike
  * Covers the interaction between the shard and the remember entities store
  */
 object RememberEntitiesShardStoreSpec {
-  def config = ConfigFactory.parseString("""
+  def config =
+    ConfigFactory.parseString(s"""
       akka.loglevel=DEBUG
       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
       akka.actor.provider = cluster
       akka.remote.artery.canonical.port = 0
       akka.remote.classic.netty.tcp.port = 0
       akka.cluster.sharding.state-store-mode = ddata
+      akka.cluster.sharding.snapshot-after = 2
       akka.cluster.sharding.remember-entities = on
       # no leaks between test runs thank you
       akka.cluster.sharding.distributed-data.durable.keys = []
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+      akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
+      akka.persistence.snapshot-store.local.dir = "target/${classOf[RememberEntitiesShardStoreSpec].getName}-${UUID
+                                   .randomUUID()
+                                   .toString}"
     """.stripMargin)
 }
 
