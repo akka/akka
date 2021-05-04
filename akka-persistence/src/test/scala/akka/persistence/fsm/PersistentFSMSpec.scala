@@ -369,7 +369,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
         ConfigFactory.parseString("""
             akka.persistence.fsm.enable-snapshot-after = on
             akka.persistence.fsm.snapshot-after = 3
-          """).withFallback(PersistenceSpec.config("leveldb", "PersistentFSMSpec2")))
+          """).withFallback(PersistenceSpec.config("inmem", "PersistentFSMSpec2")))
 
       try {
         val probe = TestProbe()
@@ -391,8 +391,6 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
       } finally {
         val storageLocations =
           List(
-            "akka.persistence.journal.leveldb.dir",
-            "akka.persistence.journal.leveldb-shared.store.dir",
             "akka.persistence.snapshot-store.local.dir").map(s => new File(sys2.settings.config.getString(s)))
         shutdown(sys2)
         storageLocations.foreach(FileUtils.deleteDirectory)
@@ -653,5 +651,4 @@ object PersistentFSMSpec {
 
 }
 
-class LeveldbPersistentFSMSpec extends PersistentFSMSpec(PersistenceSpec.config("leveldb", "PersistentFSMSpec"))
 class InmemPersistentFSMSpec extends PersistentFSMSpec(PersistenceSpec.config("inmem", "PersistentFSMSpec"))

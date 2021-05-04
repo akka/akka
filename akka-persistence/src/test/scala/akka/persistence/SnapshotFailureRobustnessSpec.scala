@@ -99,7 +99,7 @@ object SnapshotFailureRobustnessSpec {
 class SnapshotFailureRobustnessSpec
     extends PersistenceSpec(
       PersistenceSpec.config(
-        "leveldb",
+        "inmem",
         "SnapshotFailureRobustnessSpec",
         serialization = "off",
         extraConfig = Some(s"""

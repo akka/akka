@@ -80,8 +80,6 @@ object PersistenceSpec {
 trait Cleanup { this: AkkaSpec =>
   val storageLocations =
     List(
-      "akka.persistence.journal.leveldb.dir",
-      "akka.persistence.journal.leveldb-shared.store.dir",
       "akka.persistence.snapshot-store.local.dir").map(s => new File(system.settings.config.getString(s)))
 
   override protected def atStartup(): Unit = {

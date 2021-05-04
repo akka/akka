@@ -109,11 +109,16 @@ object EndToEndEventAdapterSpec {
 
 }
 
-abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Config)
+// needs persistence between actor systems, thus not running with the inmem journal
+// FIXME move to inmem + proxy
+class EndToEndEventAdapterSpec
     extends AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
   import EndToEndEventAdapterSpec._
+
+  val journalName = "leveldb"
+  val journalConfig = PersistenceSpec.config("leveldb", "LeveldbEndToEndEventAdapterSpec")
 
   val storageLocations = List("akka.persistence.journal.leveldb.dir").map(s => new File(journalConfig.getString(s)))
 
@@ -253,7 +258,3 @@ abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Conf
     }
   }
 }
-
-// needs persistence between actor systems, thus not running with the inmem journal
-class LeveldbEndToEndEventAdapterSpec
-    extends EndToEndEventAdapterSpec("leveldb", PersistenceSpec.config("leveldb", "LeveldbEndToEndEventAdapterSpec"))
