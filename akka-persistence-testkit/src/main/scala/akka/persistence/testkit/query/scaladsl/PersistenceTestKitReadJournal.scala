@@ -45,15 +45,15 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
 
   override def eventsByPersistenceId(
       persistenceId: String,
-      fromSequenceNr: Long,
-      toSequenceNr: Long): Source[EventEnvelope, NotUsed] = {
+      fromSequenceNr: Long = 0,
+      toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
     Source.fromGraph(new EventsByPersistenceIdStage(persistenceId, fromSequenceNr, toSequenceNr, storage))
   }
 
   override def currentEventsByPersistenceId(
       persistenceId: String,
-      fromSequenceNr: Long,
-      toSequenceNr: Long): Source[EventEnvelope, NotUsed] = {
+      fromSequenceNr: Long = 0,
+      toSequenceNr: Long = Long.MaxValue): Source[EventEnvelope, NotUsed] = {
     Source(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, Long.MaxValue)).map { pr =>
       EventEnvelope(
         Sequence(pr.sequenceNr),
@@ -65,7 +65,7 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
     }
   }
 
-  override def currentEventsByTag(tag: String, offset: Offset): Source[EventEnvelope, NotUsed] = {
+  override def currentEventsByTag(tag: String, offset: Offset = NoOffset): Source[EventEnvelope, NotUsed] = {
     offset match {
       case NoOffset =>
       case _ =>
