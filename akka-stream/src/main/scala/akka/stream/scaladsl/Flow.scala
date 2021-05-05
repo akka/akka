@@ -5,6 +5,7 @@
 package akka.stream.scaladsl
 
 import scala.annotation.implicitNotFound
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -45,11 +46,11 @@ final class Flow[-In, +Out, +Mat](
   // TODO: debug string
   override def toString: String = s"Flow($shape)"
 
-  override protected[this] type Repr[+O] = Flow[In, O, Mat]
-  override protected[this] type ReprMat[+O, +M] = Flow[In, O, M]
+  override /*protected[this]*/ type Repr[+O] = Flow[In @uncheckedVariance, O, Mat @uncheckedVariance]
+  override /*protected[this]*/ type ReprMat[+O, +M] = Flow[In @uncheckedVariance, O, M]
 
-  override protected[this] type Closed = Sink[In, Mat]
-  override protected[this] type ClosedMat[+M] = Sink[In, M]
+  override /*protected[this]*/ type Closed = Sink[In @uncheckedVariance, Mat @uncheckedVariance]
+  override /*protected[this]*/ type ClosedMat[+M] = Sink[In @uncheckedVariance, M]
 
   private[stream] def isIdentity: Boolean = this.traversalBuilder eq Flow.identityTraversalBuilder
 
@@ -334,7 +335,8 @@ final class Flow[-In, +Out, +Mat](
         .map(e => (e, extractContext(e))))
 
   /** Converts this Scala DSL element to it's Java DSL counterpart. */
-  def asJava: javadsl.Flow[In, Out, Mat] = new javadsl.Flow(this)
+  def asJava: javadsl.Flow[In, Out, Mat] =
+    new javadsl.Flow(this)
 }
 
 object Flow {
@@ -796,13 +798,13 @@ trait FlowOps[+Out, +Mat] {
   import GraphDSL.Implicits._
   import akka.stream.impl.Stages._
 
-  protected[this] type Repr[+O] <: FlowOps[O, Mat] {
+  /*protected[this]*/ type Repr[+O] <: FlowOps[O, Mat] {
     type Repr[+OO] = FlowOps.this.Repr[OO]
     type Closed = FlowOps.this.Closed
   }
 
   // result of closing a Source is RunnableGraph, closing a Flow is Sink
-  protected[this] type Closed
+  /*protected[this]*/ type Closed
 
   /**
    * Transform this [[Flow]] by appending the given processing steps.
@@ -3224,20 +3226,20 @@ trait FlowOps[+Out, +Mat] {
  */
 trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
 
-  protected[this] type Repr[+O] <: ReprMat[O, Mat] {
+  /*protected[this]*/ type Repr[+O] <: ReprMat[O, Mat] {
     type Repr[+OO] = FlowOpsMat.this.Repr[OO]
     type ReprMat[+OO, +MM] = FlowOpsMat.this.ReprMat[OO, MM]
     type Closed = FlowOpsMat.this.Closed
     type ClosedMat[+M] = FlowOpsMat.this.ClosedMat[M]
   }
-  protected[this] type ReprMat[+O, +M] <: FlowOpsMat[O, M] {
-    type Repr[+OO] <: FlowOpsMat.this.ReprMat[OO, M]
+  /*protected[this]*/ type ReprMat[+O, +M] <: FlowOpsMat[O, M] {
+    type Repr[+OO] = FlowOpsMat.this.ReprMat[OO, M @uncheckedVariance]
 
     type ReprMat[+OO, +MM] = FlowOpsMat.this.ReprMat[OO, MM]
-    type Closed <: FlowOpsMat.this.ClosedMat[M]
+    type Closed = FlowOpsMat.this.ClosedMat[M @uncheckedVariance]
     type ClosedMat[+MM] = FlowOpsMat.this.ClosedMat[MM]
   }
-  protected[this] type ClosedMat[+M] <: Graph[_, M]
+  /*protected[this]*/ type ClosedMat[+M] <: Graph[_, M]
 
   /**
    * Transform this [[Flow]] by appending the given processing steps.

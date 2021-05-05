@@ -4,6 +4,7 @@
 
 package akka.stream.scaladsl
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -22,10 +23,10 @@ import ccompat._
  */
 @ccompatUsedUntil213
 trait FlowWithContextOps[+Out, +Ctx, +Mat] {
-  protected[this] type ReprMat[+O, +C, +M] <: FlowWithContextOps[O, C, M] {
+  /*protected[this]*/ type ReprMat[+O, +C, +M] <: FlowWithContextOps[O, C, M] {
     type ReprMat[+OO, +CC, +MatMat] = FlowWithContextOps.this.ReprMat[OO, CC, MatMat]
   }
-  protected[this] type Repr[+O, +C] = ReprMat[O, C, Mat]
+  /*protected[this]*/ type Repr[+O, +C] = ReprMat[O, C, Mat @uncheckedVariance]
 
   /**
    * Transform this flow by the regular flow. The given flow must support manual context propagation by

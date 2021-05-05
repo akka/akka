@@ -7,6 +7,7 @@ package akka.stream.scaladsl
 import java.util.concurrent.CompletionStage
 
 import scala.annotation.tailrec
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
 import scala.concurrent.{ Future, Promise }
@@ -35,10 +36,10 @@ final class Source[+Out, +Mat](
     override val traversalBuilder: LinearTraversalBuilder,
     override val shape: SourceShape[Out]
 ) extends FlowOpsMat[Out, Mat] with Graph[SourceShape[Out], Mat] {
-  override protected[this] type Repr[+O]        = Source[O, Mat]
-  override protected[this] type ReprMat[+O, +M] = Source[O, M]
-  override protected[this] type Closed          = RunnableGraph[Mat]
-  override protected[this] type ClosedMat[+M]   = RunnableGraph[M]
+  override /*protected[this]*/ type Repr[+O]        = Source[O, Mat @uncheckedVariance]
+  override /*protected[this]*/ type ReprMat[+O, +M] = Source[O, M]
+  override /*protected[this]*/ type Closed          = RunnableGraph[Mat @uncheckedVariance]
+  override /*protected[this]*/ type ClosedMat[+M]   = RunnableGraph[M]
 
   override def toString: String = s"Source($shape)"
 

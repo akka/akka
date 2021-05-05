@@ -4,6 +4,8 @@
 
 package akka.stream.scaladsl
 
+import scala.annotation.unchecked.uncheckedVariance
+
 import akka.stream._
 
 /**
@@ -13,8 +15,8 @@ import akka.stream._
  */
 trait SubFlow[+Out, +Mat, +F[+_], +C] extends FlowOps[Out, Mat] {
 
-  override protected[this] type Repr[+T] = SubFlow[T, Mat, F, C]
-  override protected[this] type Closed = C
+  override /*protected[this]*/ type Repr[+T] = SubFlow[T, Mat @uncheckedVariance, F @uncheckedVariance, C @uncheckedVariance]
+  override /*protected[this]*/ type Closed = C @uncheckedVariance
 
   /**
    * Attach a [[Sink]] to each sub-flow, closing the overall Graph that is being
