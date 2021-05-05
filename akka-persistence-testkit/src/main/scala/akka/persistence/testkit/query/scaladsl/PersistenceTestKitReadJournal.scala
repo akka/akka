@@ -73,7 +73,7 @@ final class PersistenceTestKitReadJournal(system: ExtendedActorSystem, @unused c
     }
     Source(storage.tryReadByTag(tag)).map { pr =>
       EventEnvelope(
-        Sequence(pr.timestamp),
+        Sequence(pr.sequenceNr),
         pr.persistenceId,
         pr.sequenceNr,
         unwrapTaggedPayload(pr.payload),
