@@ -4,10 +4,6 @@
 
 package akka.persistence.typed.scaladsl
 
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -16,22 +12,20 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.Sequence
-import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
+import akka.persistence.testkit.PersistenceTestKitPlugin
+import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.EventSeq
 import akka.persistence.typed.PersistenceId
 import akka.serialization.jackson.CborSerializable
 import akka.stream.scaladsl.Sink
 import akka.testkit.JavaSerializable
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.annotation.nowarn
+import java.util.concurrent.atomic.AtomicInteger
 
 object EventSourcedEventAdapterSpec {
-
-  private val conf = ConfigFactory.parseString(s"""
-      akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
-      akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
-    """)
 
   case class Wrapper(event: String) extends CborSerializable
   class WrapperEventAdapter extends EventAdapter[String, Wrapper] {
@@ -82,27 +76,18 @@ object EventSourcedEventAdapterSpec {
 }
 
 class EventSourcedEventAdapterSpec
-    extends ScalaTestWithActorTestKit(EventSourcedEventAdapterSpec.conf)
+    extends ScalaTestWithActorTestKit(ConfigFactory.parseString("""
+          akka.persistence.testkit.events.serialize = true""").withFallback(PersistenceTestKitPlugin.config))
     with AnyWordSpecLike
     with LogCapturing {
-  import EventSourcedBehaviorSpec.{
-    counter,
-    Command,
-    Event,
-    GetValue,
-    Increment,
-    IncrementWithPersistAll,
-    Incremented,
-    State
-  }
+  import EventSourcedBehaviorSpec._
   import EventSourcedEventAdapterSpec._
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
-  @nowarn("msg=deprecated")
-  val queries: LeveldbReadJournal =
-    PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
+  val queries: PersistenceTestKitReadJournal =
+    PersistenceQuery(system).readJournalFor[PersistenceTestKitReadJournal](PersistenceTestKitReadJournal.Identifier)
 
   private def behavior(pid: PersistenceId, probe: ActorRef[String]): EventSourcedBehavior[String, String, String] =
     EventSourcedBehavior(pid, "", commandHandler = { (_, command) =>

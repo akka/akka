@@ -36,6 +36,7 @@ import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 
 object PersistentFsmToTypedMigrationSpec {
+  // cannot be moved to testkit journals as it requires sharing journal content across actor system instances
   val config = ConfigFactory.parseString(s"""
     akka.actor.allow-java-serialization = on
     akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"

@@ -4,30 +4,20 @@
 
 package akka.persistence.typed.scaladsl
 
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
-
-import scala.concurrent.duration._
-
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.typed.PersistenceId
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.duration._
 
 object EventSourcedBehaviorTimersSpec {
 
   val journalId = "event-sourced-behavior-timers-spec"
-
-  def config: Config = ConfigFactory.parseString(s"""
-        akka.loglevel = INFO
-        akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
-        akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
-        """)
 
   def testBehavior(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[String] =
     Behaviors.setup { _ =>
@@ -74,7 +64,7 @@ object EventSourcedBehaviorTimersSpec {
 }
 
 class EventSourcedBehaviorTimersSpec
-    extends ScalaTestWithActorTestKit(EventSourcedBehaviorTimersSpec.config)
+    extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
     with LogCapturing {
 

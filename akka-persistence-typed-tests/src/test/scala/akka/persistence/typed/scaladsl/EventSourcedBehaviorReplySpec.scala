@@ -4,31 +4,20 @@
 
 package akka.persistence.typed.scaladsl
 
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
-
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.Done
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.typed.PersistenceId
 import akka.serialization.jackson.CborSerializable
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.util.concurrent.atomic.AtomicInteger
 
 object EventSourcedBehaviorReplySpec {
-  def conf: Config = ConfigFactory.parseString(s"""
-    akka.loglevel = INFO
-    # akka.persistence.typed.log-stashing = on
-    akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
-    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-    akka.persistence.snapshot-store.local.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
-    """)
 
   sealed trait Command[ReplyMessage] extends CborSerializable
   final case class IncrementWithConfirmation(replyTo: ActorRef[Done]) extends Command[Done]
@@ -75,7 +64,7 @@ object EventSourcedBehaviorReplySpec {
 }
 
 class EventSourcedBehaviorReplySpec
-    extends ScalaTestWithActorTestKit(EventSourcedBehaviorReplySpec.conf)
+    extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
     with LogCapturing {
 

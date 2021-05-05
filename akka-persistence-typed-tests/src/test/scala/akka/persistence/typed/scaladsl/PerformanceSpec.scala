@@ -4,13 +4,6 @@
 
 package akka.persistence.typed.scaladsl
 
-import java.util.UUID
-
-import scala.concurrent.duration._
-
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -18,9 +11,16 @@ import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.testkit.PersistenceTestKitPlugin
+import akka.persistence.testkit.PersistenceTestKitSnapshotPlugin
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.util.UUID
+import scala.concurrent.duration._
 
 object PerformanceSpec {
 
@@ -111,14 +111,17 @@ object PerformanceSpec {
     }
 }
 
-class PerformanceSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseString(s"""
+class PerformanceSpec
+    extends ScalaTestWithActorTestKit(
+      PersistenceTestKitPlugin.config
+        .withFallback(PersistenceTestKitSnapshotPlugin.config)
+        .withFallback(ConfigFactory.parseString(s"""
       akka.persistence.publish-plugin-commands = on
-      akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
-      akka.persistence.journal.leveldb.dir = "target/journal-PerformanceSpec"
-      akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-      akka.persistence.snapshot-store.local.dir = "target/snapshots-PerformanceSpec/"
       akka.actor.testkit.typed.single-expect-default = 10s
-      """).withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with AnyWordSpecLike with LogCapturing {
+      """))
+        .withFallback(ConfigFactory.parseString(PerformanceSpec.config)))
+    with AnyWordSpecLike
+    with LogCapturing {
 
   import PerformanceSpec._
 
@@ -157,7 +160,7 @@ class PerformanceSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseStrin
       stressEventSourcedPersistentActor(None)
     }
     "have some reasonable throughput under failure conditions" in {
-      stressEventSourcedPersistentActor(Some(loadCycles / 10))
+      stressEventSourcedPersistentActor(Some((loadCycles / 10).toLong))
     }
   }
 }

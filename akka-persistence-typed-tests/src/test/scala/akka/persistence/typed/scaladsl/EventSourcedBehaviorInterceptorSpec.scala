@@ -4,19 +4,19 @@
 
 package akka.persistence.typed.scaladsl
 
-import java.util.concurrent.atomic.AtomicInteger
-
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.BehaviorInterceptor
 import akka.actor.typed.TypedActorContext
 import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.typed.PersistenceId
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.util.concurrent.atomic.AtomicInteger
 
 object EventSourcedBehaviorInterceptorSpec {
 
@@ -44,7 +44,7 @@ object EventSourcedBehaviorInterceptorSpec {
 }
 
 class EventSourcedBehaviorInterceptorSpec
-    extends ScalaTestWithActorTestKit(EventSourcedBehaviorTimersSpec.config)
+    extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config)
     with AnyWordSpecLike
     with LogCapturing {
 

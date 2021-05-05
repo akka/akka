@@ -4,17 +4,6 @@
 
 package akka.persistence.typed.scaladsl
 
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 import akka.Done
 import akka.actor.ActorInitializationException
 import akka.actor.testkit.typed.TestException
@@ -26,23 +15,37 @@ import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import akka.persistence.{ SnapshotMetadata => ClassicSnapshotMetadata }
-import akka.persistence.{ SnapshotSelectionCriteria => ClassicSnapshotSelectionCriteria }
 import akka.persistence.SelectedSnapshot
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.query.EventEnvelope
+import akka.persistence.query.Offset
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.Sequence
-import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.snapshot.SnapshotStore
+import akka.persistence.testkit.PersistenceTestKitPlugin
+import akka.persistence.testkit.query.scaladsl.PersistenceTestKitReadJournal
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotMetadata
 import akka.persistence.typed.SnapshotSelectionCriteria
+import akka.persistence.{ SnapshotMetadata => ClassicSnapshotMetadata }
+import akka.persistence.{ SnapshotSelectionCriteria => ClassicSnapshotSelectionCriteria }
 import akka.serialization.jackson.CborSerializable
 import akka.stream.scaladsl.Sink
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 import scala.annotation.nowarn
 
@@ -76,11 +79,9 @@ object EventSourcedBehaviorSpec {
   }
 
   // also used from PersistentActorTest, EventSourcedBehaviorWatchSpec
-  def conf: Config = ConfigFactory.parseString(s"""
+  def conf: Config = PersistenceTestKitPlugin.config.withFallback(ConfigFactory.parseString(s"""
     akka.loglevel = INFO
     # akka.persistence.typed.log-stashing = on
-    akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
     akka.persistence.snapshot-store.local.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
 
@@ -89,7 +90,7 @@ object EventSourcedBehaviorSpec {
       class = "${classOf[InmemJournal].getName}"
       recovery-event-timeout = 10 millis
     }
-    """)
+    """))
 
   sealed trait Command extends CborSerializable
   case object Increment extends Command
@@ -285,9 +286,8 @@ class EventSourcedBehaviorSpec
 
   import EventSourcedBehaviorSpec._
 
-  @nowarn("msg=deprecated")
-  val queries: LeveldbReadJournal =
-    PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
+  val queries: PersistenceTestKitReadJournal =
+    PersistenceQuery(system).readJournalFor[PersistenceTestKitReadJournal](PersistenceTestKitReadJournal.Identifier)
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
@@ -529,7 +529,7 @@ class EventSourcedBehaviorSpec
       c ! GetValue(replyProbe.ref)
       replyProbe.expectMessage(State(1, Vector(0)))
 
-      val events = queries.currentEventsByTag("tag1").runWith(Sink.seq).futureValue
+      val events = queries.currentEventsByTag("tag1", Offset.noOffset).runWith(Sink.seq).futureValue
       events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Incremented(1), 0L))
     }
 
@@ -662,8 +662,7 @@ class EventSourcedBehaviorSpec
       val testkit2 = ActorTestKit(
         ActorTestKitBase.testNameFromCallStack(),
         ConfigFactory.parseString(s"""
-          akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
-          akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
+          akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
           """))
       try {
         LoggingTestKit
@@ -685,8 +684,7 @@ class EventSourcedBehaviorSpec
       val testkit2 = ActorTestKit(
         ActorTestKitBase.testNameFromCallStack(),
         ConfigFactory.parseString(s"""
-          akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
-          akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
+          akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
           """))
       try {
         LoggingTestKit

@@ -4,18 +4,18 @@
 
 package akka.persistence.typed.scaladsl
 
-import scala.concurrent.ExecutionContext
-import scala.concurrent.Future
-import scala.concurrent.duration._
-
-import scala.annotation.nowarn
-
-import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
+
+import scala.annotation.nowarn
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.duration._
 
 // unused names in pattern match can be useful in the docs
 @nowarn

@@ -4,36 +4,34 @@
 
 package akka.persistence.typed.scaladsl
 
-import java.io.File
-import java.util.UUID
-
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.apache.commons.io.FileUtils
-import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.serialization.Snapshot
+import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.typed.PersistenceId
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.apache.commons.io.FileUtils
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.io.File
+import java.util.UUID
 
 object SnapshotRecoveryWithEmptyJournalSpec {
   val survivingSnapshotPath = s"target/survivingSnapshotPath-${UUID.randomUUID().toString}"
 
-  def conf: Config = ConfigFactory.parseString(s"""
+  def conf: Config = PersistenceTestKitPlugin.config.withFallback(ConfigFactory.parseString(s"""
     akka.loglevel = INFO
-    akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
     akka.persistence.snapshot-store.local.dir = "${SnapshotRecoveryWithEmptyJournalSpec.survivingSnapshotPath}"
     akka.actor.allow-java-serialization = on
     akka.actor.warn-about-java-serializer-usage = off
-    """)
+    """))
 
   object TestActor {
     def apply(name: String, probe: ActorRef[Any]): Behavior[String] = {
