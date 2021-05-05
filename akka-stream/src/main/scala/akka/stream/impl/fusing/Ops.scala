@@ -77,7 +77,7 @@ import akka.util.ccompat._
     new GraphStageLogic(shape) with OutHandler with InHandler {
       def decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
 
-      private var buffer: OptionVal[T] = OptionVal.none
+      private val buffer = impl.Buffer[T](1, 1)
 
       override def preStart(): Unit = pull(in)
       override def onPush(): Unit =
@@ -88,7 +88,7 @@ import akka.util.ccompat._
               push(out, elem)
               pull(in)
             } else
-              buffer = OptionVal.Some(elem)
+              buffer.enqueue(elem)
           else pull(in)
         } catch {
           case NonFatal(ex) =>
@@ -98,15 +98,13 @@ import akka.util.ccompat._
             }
         }
 
-      override def onPull(): Unit =
-        buffer match {
-          case OptionVal.Some(value) =>
-            push(out, value)
-            buffer = OptionVal.none
-            if (!isClosed(in)) pull(in)
-            else completeStage()
-          case _ => // already pulled
+      override def onPull(): Unit = {
+        if (buffer.nonEmpty) {
+          push(out, buffer.dequeue())
+          if (!isClosed(in)) pull(in)
+          else completeStage()
         }
+      }
 
       override def onUpstreamFinish(): Unit =
         if (buffer.isEmpty) super.onUpstreamFinish()
