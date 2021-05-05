@@ -15,18 +15,13 @@ import akka.util.ByteString;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.junit.matchers.JUnitMatchers;
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.io.OutputStream;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 
 public class OutputStreamSinkTest extends StreamTest {
   public OutputStreamSinkTest() {
@@ -38,7 +33,7 @@ public class OutputStreamSinkTest extends StreamTest {
       new AkkaJUnitActorSystemResource("OutputStreamSinkTest", Utils.UnboundedMailboxConfig());
 
   @Test
-  public void mustSignalFailureViaFailingFuture() throws Exception {
+  public void mustSignalFailureViaFailingFuture() {
 
     final OutputStream os =
         new OutputStream() {
@@ -54,12 +49,16 @@ public class OutputStreamSinkTest extends StreamTest {
     final CompletionStage<IOResult> resultFuture =
         Source.single(ByteString.fromString("123456"))
             .runWith(StreamConverters.fromOutputStream(() -> os), system);
-    try {
-      resultFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
-      Assert.fail("expected IOIncompleteException");
-    } catch (ExecutionException e) {
-      Assert.assertEquals(e.getCause().getClass(), IOOperationIncompleteException.class);
-      Assert.assertEquals(e.getCause().getCause().getMessage(), "Can't accept more data.");
-    }
+
+    ExecutionException exception =
+        Assert.assertThrows(
+            "CompletableFuture.get() should throw ExecutionException",
+            ExecutionException.class,
+            () -> resultFuture.toCompletableFuture().get(3, TimeUnit.SECONDS));
+    assertEquals(
+        "The cause of ExecutionException should be IOOperationIncompleteException",
+        exception.getCause().getClass(),
+        IOOperationIncompleteException.class);
+    assertEquals(exception.getCause().getCause().getMessage(), "Can't accept more data.");
   }
 }
