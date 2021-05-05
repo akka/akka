@@ -39,8 +39,7 @@ public class SinkTest extends StreamTest {
   public void mustBeAbleToUseFanoutPublisher() throws Exception {
     final Sink<Object, Publisher<Object>> pubSink = Sink.asPublisher(AsPublisher.WITH_FANOUT);
     @SuppressWarnings("unused")
-    final Publisher<Object> publisher =
-        Source.from(new ArrayList<Object>()).runWith(pubSink, system);
+    final Publisher<Object> publisher = Source.from(new ArrayList<>()).runWith(pubSink, system);
   }
 
   @Test
@@ -48,7 +47,7 @@ public class SinkTest extends StreamTest {
     final Sink<Integer, CompletionStage<Integer>> futSink = Sink.head();
     final List<Integer> list = Collections.singletonList(1);
     final CompletionStage<Integer> future = Source.from(list).runWith(futSink, system);
-    assert future.toCompletableFuture().get(1, TimeUnit.SECONDS).equals(1);
+    assertEquals(1, future.toCompletableFuture().get(1, TimeUnit.SECONDS).intValue());
   }
 
   @Test
@@ -127,14 +126,14 @@ public class SinkTest extends StreamTest {
         Sink.<String>head().preMaterialize(system);
 
     CompletableFuture<String> future = pair.first().toCompletableFuture();
-    assertEquals(false, future.isDone()); // not yet, only once actually source attached
+    assertFalse(future.isDone()); // not yet, only once actually source attached
 
     String element = "element";
     Source.single(element).runWith(pair.second(), system);
 
     String got = future.get(3, TimeUnit.SECONDS); // should complete nicely
     assertEquals(element, got);
-    assertEquals(true, future.isDone());
+    assertTrue(future.isDone());
   }
 
   public void mustSuitablyOverrideAttributeHandlingMethods() {

@@ -21,6 +21,9 @@ import akka.io.Tcp.WritingResumed;
 import akka.io.TcpMessage;
 import akka.util.ByteString;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 // #echo-handler
 public class EchoHandler extends AbstractActor {
 
@@ -36,7 +39,7 @@ public class EchoHandler extends AbstractActor {
   private long transferred;
   private int storageOffset = 0;
   private long stored = 0;
-  private Queue<ByteString> storage = new LinkedList<ByteString>();
+  private Queue<ByteString> storage = new LinkedList<>();
 
   private boolean suspended = false;
 
@@ -220,8 +223,8 @@ public class EchoHandler extends AbstractActor {
   }
 
   protected void acknowledge(int ack) {
-    assert ack == storageOffset;
-    assert !storage.isEmpty();
+    assertEquals(storageOffset, ack);
+    assertFalse(storage.isEmpty());
 
     final ByteString acked = storage.remove();
     stored -= acked.size();
