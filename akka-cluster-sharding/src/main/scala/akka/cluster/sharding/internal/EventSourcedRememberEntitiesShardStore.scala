@@ -99,11 +99,14 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
       def persistEventsAndHandleComplete(evts: List[StateChange]): Unit = {
         persistAll(evts) { _ =>
           left -= 1
-          if (left == 0) {
+          val isLastEvent = left == 0
+          if (isLastEvent) {
             sender() ! RememberEntitiesShardStore.UpdateDone(started, stopped)
-            state = state.copy(state.entities.union(started).diff(stopped))
           }
-          saveSnapshotWhenNeeded()
+          if (isLastEvent || isSnapshotNeeded) {
+            state = state.copy(state.entities.union(started).diff(stopped))
+            saveSnapshotWhenNeeded()
+          }
         }
       }
       if (left <= maxUpdatesPerWrite) {
@@ -151,10 +154,13 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
   }
 
   def saveSnapshotWhenNeeded(): Unit = {
-    if (lastSequenceNr % snapshotAfter == 0 && lastSequenceNr != 0) {
+    if (isSnapshotNeeded) {
       log.debug("Saving snapshot, sequence number [{}]", snapshotSequenceNr)
       saveSnapshot(state)
     }
   }
 
+  private def isSnapshotNeeded = {
+    lastSequenceNr % snapshotAfter == 0 && lastSequenceNr != 0
+  }
 }
