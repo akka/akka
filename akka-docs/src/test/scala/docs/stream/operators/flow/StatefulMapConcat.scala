@@ -44,7 +44,7 @@ class StatefulMapConcat {
 
       { element =>
         if (element.startsWith("deny:")) {
-          denyList += element.drop(10)
+          denyList += element.drop("deny:".size)
           Nil // no element downstream when adding a deny listed keyword
         } else if (denyList(element)) {
           Nil // no element downstream if element is deny listed
