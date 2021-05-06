@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.{ AtomicReference => AtomVar }
 import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
@@ -23,7 +22,7 @@ import akka.dispatch._
 import akka.japi.{ Creator, Option => JOption }
 import akka.japi.Util.{ immutableSeq, immutableSingletonSeq }
 import akka.pattern.AskTimeoutException
-import akka.serialization.{ JavaSerializer, SerializationExtension, Serializers }
+import akka.serialization.{ SerializationExtension, Serializers }
 import akka.util.Reflect.instantiator
 import akka.util.Timeout
 
@@ -487,29 +486,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
             }
         }
     }
-    @throws(classOf[ObjectStreamException]) private def writeReplace(): AnyRef =
-      SerializedTypedActorInvocationHandler(actor, timeout.duration)
   }
 
-  /**
-   * INTERNAL API
-   */
-  private[akka] final case class SerializedTypedActorInvocationHandler(
-      val actor: ActorRef,
-      val timeout: FiniteDuration) {
-    @throws(classOf[ObjectStreamException]) private def readResolve(): AnyRef =
-      JavaSerializer.currentSystem.value match {
-        case null =>
-          throw new IllegalStateException(
-            "SerializedTypedActorInvocationHandler.readResolve requires that " +
-            "JavaSerializer.currentSystem.value is set to a non-null value")
-        case some => toTypedActorInvocationHandler(some)
-      }
-
-    @nowarn("msg=deprecated")
-    def toTypedActorInvocationHandler(system: ActorSystem): TypedActorInvocationHandler =
-      new TypedActorInvocationHandler(akka.actor.TypedActor(system), new AtomVar[ActorRef](actor), new Timeout(timeout))
-  }
 }
 
 /**
