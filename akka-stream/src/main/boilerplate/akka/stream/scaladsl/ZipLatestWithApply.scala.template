@@ -5,6 +5,7 @@
 package akka.stream.scaladsl
 
 import akka.stream._
+import akka.stream.impl.ContextPropagation
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 
 trait ZipLatestWithApply {
@@ -34,9 +35,8 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[F
       // Without this field the completion signalling would take one extra pull
       private var willShutDown = false
 
-      // Use buffer for the first input to preserve upstream context
-      val inlet##0 = new ZipLatestInletBuffered(in##0)
-      [2..#val inlet0 = new ZipLatestInlet(in0)#
+      private val contextPropagation = ContextPropagation()
+      [#val inlet0 = new ZipLatestInlet(in0, 0)#
       ]
       private var waitingForTuple = false
       private var staleTupleValues = true
@@ -70,6 +70,7 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[F
       private def hasAllValues = [#inlet0.hasValue#&&]
 
       private def pushOutput(): Unit = {
+        contextPropagation.resumeContext()
         push(out, zipper([#inlet0.value#]))
         if (willShutDown) completeStage()
         staleTupleValues = true
@@ -82,14 +83,13 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[F
         ]
       }
 
-      private abstract class AbstractZipLatestInlet[T](in: Inlet[T]) extends InHandler {
+      private class ZipLatestInlet[T](in: Inlet[T], index: Int) extends InHandler {
+         var value: T = _
          var hasValue = false
 
-         def setValue(v: T): Unit
-         def value: T
-
          override def onPush() = {
-              setValue(outer.grab(in))
+              if (index == ##0) contextPropagation.suspendContext()
+              value = outer.grab(in)
               hasValue = true
               outer.staleTupleValues = false
               if (outer.waitingForTuple && outer.hasAllValues) {
@@ -103,28 +103,6 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[F
            if (!hasValue || outer.staleTupleValues) completeStage()
            else outer.willShutDown = true
          }
-      }
-
-      private class ZipLatestInlet[T](in: Inlet[T]) extends AbstractZipLatestInlet[T](in) {
-         var value: T = _
-
-         def setValue(v: T): Unit = {
-            value = v
-         }
-      }
-
-      private class ZipLatestInletBuffered[T](in: Inlet[T]) extends AbstractZipLatestInlet[T](in) {
-         // A buffer to preserve context
-         val buffer = impl.Buffer[T](##1, ##1)
-
-         def setValue(v: T): Unit = {
-           if (buffer.isFull) {
-             buffer.clear()
-           }
-           buffer.enqueue(v)
-         }
-
-         def value: T = buffer.peek()
        }
     }
 

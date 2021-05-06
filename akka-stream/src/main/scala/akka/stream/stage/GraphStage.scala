@@ -18,8 +18,7 @@ import akka.annotation.InternalApi
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream.Attributes.SourceLocation
 import akka.stream._
-import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
-import akka.stream.impl.ActorSubscriberMessage
+import akka.stream.impl.{ ActorSubscriberMessage, ContextPropagation, ReactiveStreamsCompliance, TraversalBuilder }
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
 import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.util.OptionVal
@@ -1084,40 +1083,31 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     override def onDownstreamFinish(cause: Throwable): Unit = previous.onDownstreamFinish(cause)
   }
 
-  private class EmittingSingle[T](_out: Outlet[T], _elem: T, _previous: OutHandler, _andThen: () => Unit)
+  private class EmittingSingle[T](_out: Outlet[T], elem: T, _previous: OutHandler, _andThen: () => Unit)
       extends Emitting(_out, _previous, _andThen) {
 
-    // A buffer to preserve context
-    private val buffer = impl.Buffer[T](1, 1)
-
-    buffer.enqueue(_elem)
+    private val contextPropagation = ContextPropagation()
+    contextPropagation.suspendContext()
 
     override def onPull(): Unit = {
-      push(out, buffer.dequeue())
+      contextPropagation.resumeContext()
+      push(out, elem)
       followUp()
     }
   }
 
-  private class EmittingIterator[T](_out: Outlet[T], _elems: Iterator[T], _previous: OutHandler, _andThen: () => Unit)
+  private class EmittingIterator[T](_out: Outlet[T], elems: Iterator[T], _previous: OutHandler, _andThen: () => Unit)
       extends Emitting(_out, _previous, _andThen) {
 
-    // A buffer to preserve context
-    private val buffer = impl.Buffer[T](1, 1)
-
-    enqueueNext()
-
-    private def enqueueNext(): Unit = {
-      if (_elems.hasNext) {
-        buffer.enqueue(_elems.next())
-      } else {
-        followUp()
-      }
-    }
+    private val contextPropagation = ContextPropagation()
+    contextPropagation.suspendContext()
 
     override def onPull(): Unit = {
-      if (buffer.nonEmpty) {
-        push(out, buffer.dequeue())
-        enqueueNext()
+      contextPropagation.resumeContext()
+      push(out, elems.next())
+      contextPropagation.suspendContext()
+      if (!elems.hasNext) {
+        followUp()
       }
     }
   }
