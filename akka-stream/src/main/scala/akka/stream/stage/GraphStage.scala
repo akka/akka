@@ -18,7 +18,8 @@ import akka.annotation.InternalApi
 import akka.japi.function.{ Effect, Procedure }
 import akka.stream.Attributes.SourceLocation
 import akka.stream._
-import akka.stream.impl.{ ActorSubscriberMessage, ContextPropagation, ReactiveStreamsCompliance, TraversalBuilder }
+import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
+import akka.stream.impl.ActorSubscriberMessage
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
 import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.util.OptionVal
@@ -1086,11 +1087,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   private class EmittingSingle[T](_out: Outlet[T], elem: T, _previous: OutHandler, _andThen: () => Unit)
       extends Emitting(_out, _previous, _andThen) {
 
-    private val contextPropagation = ContextPropagation()
-    contextPropagation.suspendContext()
-
     override def onPull(): Unit = {
-      contextPropagation.resumeContext()
       push(out, elem)
       followUp()
     }
@@ -1099,13 +1096,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   private class EmittingIterator[T](_out: Outlet[T], elems: Iterator[T], _previous: OutHandler, _andThen: () => Unit)
       extends Emitting(_out, _previous, _andThen) {
 
-    private val contextPropagation = ContextPropagation()
-    contextPropagation.suspendContext()
-
     override def onPull(): Unit = {
-      contextPropagation.resumeContext()
       push(out, elems.next())
-      contextPropagation.suspendContext()
       if (!elems.hasNext) {
         followUp()
       }
