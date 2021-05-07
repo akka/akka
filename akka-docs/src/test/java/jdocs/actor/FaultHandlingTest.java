@@ -22,6 +22,8 @@ import akka.testkit.EventFilter;
 import akka.testkit.TestEvent;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static akka.japi.Util.immutableSeq;
+import static org.junit.Assert.assertEquals;
+
 import scala.concurrent.Await;
 
 // #testkit
@@ -182,14 +184,14 @@ public class FaultHandlingTest extends AbstractJavaTest {
 
     // #resume
     child.tell(42, ActorRef.noSender());
-    assert Await.result(ask(child, "get", 5000), timeout).equals(42);
+    assertEquals(42, Await.result(ask(child, "get", 5000), timeout));
     child.tell(new ArithmeticException(), ActorRef.noSender());
-    assert Await.result(ask(child, "get", 5000), timeout).equals(42);
+    assertEquals(42, Await.result(ask(child, "get", 5000), timeout));
     // #resume
 
     // #restart
     child.tell(new NullPointerException(), ActorRef.noSender());
-    assert Await.result(ask(child, "get", 5000), timeout).equals(0);
+    assertEquals(0, Await.result(ask(child, "get", 5000), timeout));
     // #restart
 
     // #stop
@@ -202,7 +204,7 @@ public class FaultHandlingTest extends AbstractJavaTest {
     // #escalate-kill
     child = (ActorRef) Await.result(ask(supervisor, Props.create(Child.class), 5000), timeout);
     probe.watch(child);
-    assert Await.result(ask(child, "get", 5000), timeout).equals(0);
+    assertEquals(0, Await.result(ask(child, "get", 5000), timeout));
     child.tell(new Exception(), ActorRef.noSender());
     probe.expectMsgClass(Terminated.class);
     // #escalate-kill
@@ -212,9 +214,9 @@ public class FaultHandlingTest extends AbstractJavaTest {
     supervisor = system.actorOf(superprops);
     child = (ActorRef) Await.result(ask(supervisor, Props.create(Child.class), 5000), timeout);
     child.tell(23, ActorRef.noSender());
-    assert Await.result(ask(child, "get", 5000), timeout).equals(23);
+    assertEquals(23, Await.result(ask(child, "get", 5000), timeout));
     child.tell(new Exception(), ActorRef.noSender());
-    assert Await.result(ask(child, "get", 5000), timeout).equals(0);
+    assertEquals(0, Await.result(ask(child, "get", 5000), timeout));
     // #escalate-restart
     // #testkit
   }
