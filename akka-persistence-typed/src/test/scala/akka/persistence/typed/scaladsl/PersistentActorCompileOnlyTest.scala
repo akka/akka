@@ -4,11 +4,11 @@
 
 package akka.persistence.typed.scaladsl
 
+import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 
