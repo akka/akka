@@ -1,0 +1,3 @@
+# internals only
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.TypedActor$SerializedTypedActorInvocationHandler")
+ProblemFilters.exclude[MissingClassProblem]("akka.actor.TypedActor$SerializedTypedActorInvocationHandler$")
