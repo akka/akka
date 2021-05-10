@@ -36,7 +36,7 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[F
       private var willShutDown = false
 
       private val contextPropagation = ContextPropagation()
-      [#val inlet0 = new ZipLatestInlet(in0, 0)#
+      [#val inlet0 = new ZipLatestInlet(in0)#
       ]
       private var waitingForTuple = false
       private var staleTupleValues = true
@@ -83,15 +83,15 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[F
         ]
       }
 
-      private class ZipLatestInlet[T](in: Inlet[T], index: Int) extends InHandler {
+      private class ZipLatestInlet[T](in: Inlet[T]) extends InHandler {
          var value: T = _
          var hasValue = false
 
          override def onPush() = {
-              // Only one context can be propagated. Picked the first element as an arbitrary but deterministic choice.
-              if (index == ##0) contextPropagation.suspendContext()
-              value = outer.grab(in)
               hasValue = true
+              value = outer.grab(in)
+              // Only one context can be propagated.
+              if (outer.hasAllValues) contextPropagation.suspendContext()
               outer.staleTupleValues = false
               if (outer.waitingForTuple && outer.hasAllValues) {
                   outer.pushOutput()
