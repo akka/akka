@@ -1223,6 +1223,7 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] => O)(n: Int) extends GraphStage[U
         case (in, i) =>
           setHandler(in, new InHandler {
             override def onPush(): Unit = {
+              // Only one context can be propagated. Picked the first element as an arbitrary but deterministic choice.
               if (i == 0) contextPropagation.suspendContext()
               pending -= 1
               if (pending == 0) pushAll()

@@ -14,14 +14,18 @@ import akka.annotation.InternalApi
   def resumeContext(): Unit
 }
 
-private[akka] object ContextPropagation {
-  def apply(): ContextPropagation = new ContextPropagationImpl
-}
-
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class ContextPropagationImpl extends ContextPropagation {
+@InternalApi private[akka] object ContextPropagation {
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi def apply(): ContextPropagation = new ContextPropagationImpl
+}
+
+private[akka] final class ContextPropagationImpl extends ContextPropagation {
   private val buffer = Buffer[Unit](1, 1)
   def suspendContext(): Unit = {
     buffer.enqueue(())

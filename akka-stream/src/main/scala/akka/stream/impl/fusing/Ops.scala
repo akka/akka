@@ -91,8 +91,7 @@ import akka.util.ccompat._
             } else {
               buffer = OptionVal.Some(elem)
               contextPropagation.suspendContext()
-            }
-          else pull(in)
+            } else pull(in)
         } catch {
           case NonFatal(ex) =>
             decider(ex) match {
