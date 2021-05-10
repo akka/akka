@@ -1062,6 +1062,7 @@ private[stream] object Collect {
       private var agg: Out = null.asInstanceOf[Out]
       private var left: Long = max
       private var pending: In = null.asInstanceOf[In]
+      private val contextPropagation = ContextPropagation()
 
       private def flush(): Unit = {
         if (agg != null) {
@@ -1092,6 +1093,7 @@ private[stream] object Collect {
       def onPush(): Unit = {
         val elem = grab(in)
         val cost = costFn(elem)
+        contextPropagation.suspendContext()
 
         if (agg == null) {
           try {
@@ -1136,6 +1138,7 @@ private[stream] object Collect {
           if (isClosed(in)) completeStage()
           else if (!hasBeenPulled(in)) pull(in)
         } else if (isClosed(in)) {
+          contextPropagation.resumeContext()
           push(out, agg)
           if (pending == null) completeStage()
           else {
@@ -1154,6 +1157,7 @@ private[stream] object Collect {
             pending = null.asInstanceOf[In]
           }
         } else {
+          contextPropagation.resumeContext()
           flush()
           if (!hasBeenPulled(in)) pull(in)
         }
