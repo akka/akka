@@ -1189,12 +1189,14 @@ private[stream] object Collect {
   override def createLogic(attr: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
     private var iterator: Iterator[Out] = Iterator.empty
     private var expanded = false
+    private val contextPropagation = ContextPropagation()
 
     override def preStart(): Unit = pull(in)
 
     def onPush(): Unit = {
       iterator = extrapolate(grab(in))
       if (iterator.hasNext) {
+        contextPropagation.suspendContext()
         if (isAvailable(out)) {
           expanded = true
           pull(in)
@@ -1210,6 +1212,7 @@ private[stream] object Collect {
 
     def onPull(): Unit = {
       if (iterator.hasNext) {
+        contextPropagation.resumeContext()
         if (!expanded) {
           expanded = true
           if (isClosed(in)) {
