@@ -1775,6 +1775,7 @@ private[stream] object Collect {
       private var totalWeight = 0L
       private var totalNumber = 0
       private var hasElements = false
+      private val contextPropagation = ContextPropagation()
 
       override def preStart() = {
         scheduleWithFixedDelay(GroupedWeightedWithin.groupedWeightedWithinTimer, interval, interval)
@@ -1833,6 +1834,7 @@ private[stream] object Collect {
 
       private def emitGroup(): Unit = {
         groupEmitted = true
+        contextPropagation.resumeContext()
         push(out, buf.result())
         buf.clear()
         if (!finished) startNewGroup()
@@ -1859,6 +1861,7 @@ private[stream] object Collect {
       }
 
       override def onPush(): Unit = {
+        contextPropagation.suspendContext()
         if (pending == null) nextElement(grab(in)) // otherwise keep the element for next round
       }
 
