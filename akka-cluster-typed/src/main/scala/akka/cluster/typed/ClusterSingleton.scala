@@ -52,6 +52,7 @@ final class ClusterSingletonSettings(
     val bufferSize: Int,
     val leaseSettings: Option[LeaseUsageSettings]) {
 
+  // bin compat for 2.6.14
   @deprecated("Use constructor with leaseSettings", "2.6.15")
   def this(
       role: Option[String],
@@ -83,7 +84,7 @@ final class ClusterSingletonSettings(
 
   def withBufferSize(bufferSize: Int): ClusterSingletonSettings = copy(bufferSize = bufferSize)
 
-  def withLeaseSettings(leaseSettings: Option[LeaseUsageSettings]) = copy(leaseSettings = leaseSettings)
+  def withLeaseSettings(leaseSettings: LeaseUsageSettings) = copy(leaseSettings = Option(leaseSettings))
 
   private def copy(
       role: Option[String] = role,
@@ -292,6 +293,7 @@ final class ClusterSingletonManagerSettings(
     val handOverRetryInterval: FiniteDuration,
     val leaseSettings: Option[LeaseUsageSettings]) {
 
+  // bin compat for 2.6.14
   @deprecated("Use constructor with leaseSettings", "2.6.15")
   def this(
       singletonName: String,
@@ -319,7 +321,7 @@ final class ClusterSingletonManagerSettings(
   def withHandOverRetryInterval(retryInterval: java.time.Duration): ClusterSingletonManagerSettings =
     withHandOverRetryInterval(retryInterval.asScala)
 
-  def withLeaseSettings(leaseSettings: Option[LeaseUsageSettings]) = copy(leaseSettings = leaseSettings)
+  def withLeaseSettings(leaseSettings: LeaseUsageSettings) = copy(leaseSettings = Option(leaseSettings))
 
   private def copy(
       singletonName: String = singletonName,

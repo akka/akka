@@ -451,7 +451,7 @@ final class ClusterShardingSettings(
   def withShardRegionQueryTimeout(duration: java.time.Duration): ClusterShardingSettings =
     copy(shardRegionQueryTimeout = duration.asScala)
 
-  def withLeaseSettings(leaseSettings: Option[LeaseUsageSettings]) = copy(leaseSettings = leaseSettings)
+  def withLeaseSettings(leaseSettings: LeaseUsageSettings) = copy(leaseSettings = Option(leaseSettings))
 
   /**
    * The `role` of the `ClusterSingletonManagerSettings` is not used. The `role` of the
