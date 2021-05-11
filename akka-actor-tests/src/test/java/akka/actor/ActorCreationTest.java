@@ -176,21 +176,21 @@ public class ActorCreationTest extends JUnitSuite {
 
   @Test
   public void testWrongAnonymousInPlaceCreator() {
-    try {
-      Props.create(
-          Actor.class,
-          new Creator<Actor>() {
-            @Override
-            public Actor create() throws Exception {
-              return null;
-            }
-          });
-      assert false;
-    } catch (IllegalArgumentException e) {
-      assertEquals(
-          "cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level",
-          e.getMessage());
-    }
+    IllegalArgumentException exception =
+        Assert.assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                Props.create(
+                    Actor.class,
+                    new Creator<Actor>() {
+                      @Override
+                      public Actor create() throws Exception {
+                        return null;
+                      }
+                    }));
+    assertEquals(
+        "cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level",
+        exception.getMessage());
   }
 
   @Test
