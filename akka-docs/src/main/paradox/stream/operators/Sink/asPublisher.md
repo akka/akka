@@ -22,7 +22,7 @@ through @scala[`akka.stream.scaladsl.JavaFlowSupport.Sink#asPublisher`]@java[`ak
 
 ## Example
 
-In the example I'm using a source and then creating a Publisher. After that, we see that when `fanout` is true multiple subscribers can subscribe to it, 
+In the example we are using a source and then creating a Publisher. After that, we see that when `fanout` is true multiple subscribers can subscribe to it, 
 but when it is false only the first subscriber will be able to subscribe and others will be rejected.
 
 Scala
@@ -40,4 +40,3 @@ Java
 **completes** after the source is consumed and materialized publisher is created
 
 @@@
-
