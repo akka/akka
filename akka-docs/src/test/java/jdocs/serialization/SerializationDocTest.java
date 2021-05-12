@@ -4,18 +4,18 @@
 
 package jdocs.serialization;
 
-import java.io.UnsupportedEncodingException;
-
 import akka.actor.typed.javadsl.Behaviors;
 import akka.cluster.Cluster;
 import akka.testkit.javadsl.TestKit;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import java.nio.charset.StandardCharsets;
 
 // #imports
 import akka.actor.*;
 import akka.serialization.*;
+
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 // #imports
 
@@ -86,7 +86,7 @@ public class SerializationDocTest {
 
     private static final String CUSTOMER_MANIFEST = "customer";
     private static final String USER_MANIFEST = "user";
-    private static final String UTF_8 = StandardCharsets.UTF_8.name();
+    private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
     // Pick a unique identifier for your Serializer,
     // you've got a couple of billions to choose from,
@@ -107,13 +107,9 @@ public class SerializationDocTest {
     @Override
     public byte[] toBinary(Object obj) {
       // Put the real code that serializes the object here
-      try {
-        if (obj instanceof Customer) return ((Customer) obj).name.getBytes(UTF_8);
-        else if (obj instanceof User) return ((User) obj).name.getBytes(UTF_8);
-        else throw new IllegalArgumentException("Unknown type: " + obj);
-      } catch (UnsupportedEncodingException e) {
-        throw new RuntimeException(e.getMessage(), e);
-      }
+      if (obj instanceof Customer) return ((Customer) obj).name.getBytes(UTF_8);
+      else if (obj instanceof User) return ((User) obj).name.getBytes(UTF_8);
+      else throw new IllegalArgumentException("Unknown type: " + obj);
     }
 
     // "fromBinary" deserializes the given array,
@@ -121,13 +117,9 @@ public class SerializationDocTest {
     @Override
     public Object fromBinary(byte[] bytes, String manifest) {
       // Put the real code that deserializes here
-      try {
-        if (manifest.equals(CUSTOMER_MANIFEST)) return new Customer(new String(bytes, UTF_8));
-        else if (manifest.equals(USER_MANIFEST)) return new User(new String(bytes, UTF_8));
-        else throw new IllegalArgumentException("Unknown manifest: " + manifest);
-      } catch (UnsupportedEncodingException e) {
-        throw new RuntimeException(e.getMessage(), e);
-      }
+      if (manifest.equals(CUSTOMER_MANIFEST)) return new Customer(new String(bytes, UTF_8));
+      else if (manifest.equals(USER_MANIFEST)) return new User(new String(bytes, UTF_8));
+      else throw new IllegalArgumentException("Unknown manifest: " + manifest);
     }
   }
   // #my-own-serializer2
