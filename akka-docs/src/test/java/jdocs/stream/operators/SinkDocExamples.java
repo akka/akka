@@ -7,11 +7,13 @@ package jdocs.stream.operators;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 
+import akka.stream.javadsl.AsPublisher;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 // #takeLast-operator-example
 import akka.japi.Pair;
+import org.reactivestreams.Publisher;
 // #takeLast-operator-example
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -137,6 +139,26 @@ public class SinkDocExamples {
     Source<UUID, NotUsed> databaseIds = lines.mapAsync(1, line -> saveLineToDatabase(line));
     databaseIds.mapAsync(1, uuid -> writeIdToFile(uuid)).runWith(Sink.ignore(), system);
     // #ignore
+  }
+
+  static void asPublisherExample() {
+    // #asPublisher
+    Source<Integer, NotUsed> source = Source.range(1, 5);
+
+    Publisher<Integer> publisherFalse =
+        source.runWith(Sink.asPublisher(AsPublisher.WITHOUT_FANOUT), system);
+    CompletionStage<Integer> resultFromFirstSubscriberFalse =
+        Source.fromPublisher(publisherFalse)
+            .runWith(Sink.fold(0, (acc, element) -> acc + element), system);
+    CompletionStage<Integer> resultFromSecondSubscriberFalse =
+        Source.fromPublisher(publisherFalse)
+            .runWith(Sink.fold(1, (acc, element) -> acc * element), system);
+
+    resultFromFirstSubscriberFalse.thenAccept(System.out::println); // 15
+    resultFromSecondSubscriberFalse.thenAccept(
+        System.out
+            ::println); // No output, because the source was not able to subscribe to the publisher.
+    // #asPublisher
   }
 
   private static Source<String, NotUsed> readLinesFromFile() {
