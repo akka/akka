@@ -144,40 +144,55 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
   def onSnapshotterResponse(
       response: SnapshotProtocol.Response,
       receivedPoisonPill: Boolean): Behavior[InternalProtocol] = {
+
+    def loadSnapshotResult(snapshot: Option[SelectedSnapshot], toSnr: Long): Behavior[InternalProtocol] = {
+      var state: S = setup.emptyState
+
+      val (seqNr: Long, seenPerReplica, version) = snapshot match {
+        case Some(SelectedSnapshot(metadata, snapshot)) =>
+          state = setup.snapshotAdapter.fromJournal(snapshot)
+          setup.context.log.debug("Loaded snapshot with metadata [{}]", metadata)
+          metadata.metadata match {
+            case Some(rm: ReplicatedSnapshotMetadata) => (metadata.sequenceNr, rm.seenPerReplica, rm.version)
+            case _                                    => (metadata.sequenceNr, Map.empty[ReplicaId, Long].withDefaultValue(0L), VersionVector.empty)
+          }
+        case None => (0L, Map.empty[ReplicaId, Long].withDefaultValue(0L), VersionVector.empty)
+      }
+
+      setup.context.log.debugN("Snapshot recovered from {} {} {}", seqNr, seenPerReplica, version)
+
+      setup.cancelRecoveryTimer()
+
+      ReplayingEvents[C, E, S](
+        setup,
+        ReplayingEvents.ReplayingState(
+          seqNr,
+          state,
+          eventSeenInInterval = false,
+          toSnr,
+          receivedPoisonPill,
+          System.nanoTime(),
+          version,
+          seenPerReplica,
+          eventsReplayed = 0))
+    }
+
     response match {
-      case LoadSnapshotResult(sso, toSnr) =>
-        var state: S = setup.emptyState
-
-        val (seqNr: Long, seenPerReplica, version) = sso match {
-          case Some(SelectedSnapshot(metadata, snapshot)) =>
-            state = setup.snapshotAdapter.fromJournal(snapshot)
-            setup.context.log.debug("Loaded snapshot with metadata [{}]", metadata)
-            metadata.metadata match {
-              case Some(rm: ReplicatedSnapshotMetadata) => (metadata.sequenceNr, rm.seenPerReplica, rm.version)
-              case _                                    => (metadata.sequenceNr, Map.empty[ReplicaId, Long].withDefaultValue(0L), VersionVector.empty)
-            }
-          case None => (0L, Map.empty[ReplicaId, Long].withDefaultValue(0L), VersionVector.empty)
-        }
-
-        setup.context.log.debugN("Snapshot recovered from {} {} {}", seqNr, seenPerReplica, version)
-
-        setup.cancelRecoveryTimer()
-
-        ReplayingEvents[C, E, S](
-          setup,
-          ReplayingEvents.ReplayingState(
-            seqNr,
-            state,
-            eventSeenInInterval = false,
-            toSnr,
-            receivedPoisonPill,
-            System.nanoTime(),
-            version,
-            seenPerReplica,
-            eventsReplayed = 0))
+      case LoadSnapshotResult(snapshot, toSnr) =>
+        loadSnapshotResult(snapshot, toSnr)
 
       case LoadSnapshotFailed(cause) =>
-        onRecoveryFailure(cause)
+        if (Persistence(setup.context.system.classicSystem)
+              .configFor(setup.snapshotStore)
+              .getBoolean("snapshot-is-optional")) {
+          setup.internalLogger.info(
+            "Snapshot load error for persistenceId [{}]. Replaying all events since snapshot-is-optional=true",
+            setup.persistenceId)
+
+          loadSnapshotResult(snapshot = None, setup.recovery.toSequenceNr)
+        } else {
+          onRecoveryFailure(cause)
+        }
 
       case _ =>
         Behaviors.unhandled
