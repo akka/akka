@@ -182,9 +182,7 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
         loadSnapshotResult(snapshot, toSnr)
 
       case LoadSnapshotFailed(cause) =>
-        if (Persistence(setup.context.system.classicSystem)
-              .configFor(setup.snapshotStore)
-              .getBoolean("snapshot-is-optional")) {
+        if (setup.isSnapshotOptional) {
           setup.internalLogger.info(
             "Snapshot load error for persistenceId [{}]. Replaying all events since snapshot-is-optional=true",
             setup.persistenceId)

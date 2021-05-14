@@ -128,6 +128,8 @@ object PersistenceTestKitSnapshotPlugin {
   val config: Config = ConfigFactory.parseMap(
     Map(
       "akka.persistence.snapshot-store.plugin" -> PluginId,
-      s"$PluginId.class" -> classOf[PersistenceTestKitSnapshotPlugin].getName).asJava)
+      s"$PluginId.class" -> classOf[PersistenceTestKitSnapshotPlugin].getName,
+      s"$PluginId.snapshot-is-optional" -> false // fallback isn't used by the testkit
+    ).asJava)
 
 }

@@ -67,6 +67,9 @@ private[akka] final class BehaviorSetup[C, E, S](
   val journal: ClassicActorRef = persistence.journalFor(settings.journalPluginId)
   val snapshotStore: ClassicActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
 
+  val isSnapshotOptional: Boolean =
+    Persistence(context.system.classicSystem).configFor(snapshotStore).getBoolean("snapshot-is-optional")
+
   val replicaId: Option[ReplicaId] = replication.map(_.replicaId)
 
   def selfClassic: ClassicActorRef = context.self.toClassic
