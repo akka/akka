@@ -7,9 +7,7 @@ package akka.pattern
 import java.util.Optional
 import java.util.concurrent.{ Callable, CompletionStage, CopyOnWriteArrayList, ThreadLocalRandom }
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger, AtomicLong }
-import java.util.function.BiFunction
-import java.util.function.Consumer
-
+import java.util.function.{ BiFunction, Consumer, Supplier }
 import scala.compat.java8.FutureConverters
 import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 import scala.concurrent.TimeoutException
@@ -17,11 +15,12 @@ import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
-
 import scala.annotation.nowarn
 import akka.AkkaException
+import akka.actor.ExtendedActorSystem
 import akka.actor.Scheduler
 import akka.dispatch.ExecutionContexts.parasitic
+import akka.pattern.internal.CircuitBreakersPanelInternal
 import akka.util.JavaDurationConverters._
 import akka.util.Unsafe
 
@@ -1074,3 +1073,47 @@ class CircuitBreakerOpenException(
     message: String = "Circuit Breaker is open; calls are failing fast")
     extends AkkaException(message)
     with NoStackTrace
+
+/**
+ * Companion object providing factory methods for Circuit Breaker which runs callbacks in caller's thread
+ */
+object CircuitBreakersPanel {
+  def apply(system: ExtendedActorSystem): CircuitBreakersPanel =
+    new CircuitBreakersPanel(system)
+}
+
+/**
+ * A CircuitBreakersPanel is a central point collecting all circuit breakers in Akka.
+ */
+class CircuitBreakersPanel(system: ExtendedActorSystem) {
+
+  val circuitBreakersInternal: CircuitBreakersPanelInternal = new CircuitBreakersPanelInternal(system)
+
+  /**
+   * Executes `body` in the context of the circuit breaker identified by `id`. Whether `body` is actually invoked is
+   * implementation-dependent, but implementations should call it at most once.
+   *
+   * @param id the unique identifier for the circuit breaker to use
+   * @param body effect to (optionally) execute within the context of the circuit breaker. May throw a
+   *             [[RuntimeException]] to signal failure.
+   * @tparam T the result type
+   * @return a future yielding either the same result as `body`, or failing with an implementation-dependent exception
+   */
+  def withCircuitBreaker[T](id: String)(body: => Future[T]): Future[T] =
+    circuitBreakersInternal.withCircuitBreaker(id)(body)
+
+  /**
+   * Java API.
+   * Executes `body` in the context of the circuit breaker identified by `id`. Whether `body.get()` is actually invoked
+   * is implementation-dependent, but implementations should call it at most once.
+   *
+   * @param id   the unique identifier for the circuit breaker to use
+   * @param body effect to (optionally) execute within the context of the circuit breaker. May throw
+   *             a [[RuntimeException]] to signal failure.
+   * @tparam T the result type
+   * @return a completion stage yielding either the same result as `body.get()`,
+   *         or failing with an implementation-dependent exception.
+   */
+  def withCircuitBreaker[T](id: String, body: Supplier[CompletionStage[T]]): CompletionStage[T] =
+    FutureConverters.toJava[T](circuitBreakersInternal.withCircuitBreaker(id)(FutureConverters.toScala(body.get())))
+}
