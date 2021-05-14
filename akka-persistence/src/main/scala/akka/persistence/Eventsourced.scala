@@ -679,14 +679,14 @@ private[persistence] trait Eventsourced
         changeState(recovering(recoveryBehavior, timeout))
         journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
       }
-      
+
       def isSnapshotOptional: Boolean = {
         try {
           Persistence(context.system).configFor(snapshotStore).getBoolean("snapshot-is-optional")
         } catch {
           case NonFatal(exc) =>
-          log.error(exc, "Invalid snapshot-is-optional configuration.")
-          false // fail recovery
+            log.error(exc, "Invalid snapshot-is-optional configuration.")
+            false // fail recovery
         }
       }
 
