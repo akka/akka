@@ -96,16 +96,17 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
         (if (started.nonEmpty) EntitiesStarted(started) :: Nil else Nil) :::
         (if (stopped.nonEmpty) EntitiesStopped(stopped) :: Nil else Nil)
       var left = events.size
+      var saveSnap = false
       def persistEventsAndHandleComplete(evts: List[StateChange]): Unit = {
         persistAll(evts) { _ =>
           left -= 1
-          val isLastEvent = left == 0
-          if (isLastEvent) {
+          saveSnap = saveSnap || isSnapshotNeeded
+          if (left == 0) {
             sender() ! RememberEntitiesShardStore.UpdateDone(started, stopped)
-          }
-          if (isLastEvent || isSnapshotNeeded) {
             state = state.copy(state.entities.union(started).diff(stopped))
-            saveSnapshotWhenNeeded()
+            if (saveSnap) {
+              saveSnapshot()
+            }
           }
         }
       }
@@ -153,11 +154,9 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
     log.debug("Store stopping")
   }
 
-  def saveSnapshotWhenNeeded(): Unit = {
-    if (isSnapshotNeeded) {
-      log.debug("Saving snapshot, sequence number [{}]", snapshotSequenceNr)
-      saveSnapshot(state)
-    }
+  def saveSnapshot(): Unit = {
+    log.debug("Saving snapshot, sequence number [{}]", snapshotSequenceNr)
+    saveSnapshot(state)
   }
 
   private def isSnapshotNeeded = {
