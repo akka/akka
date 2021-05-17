@@ -569,9 +569,6 @@ class FlowGroupBySpec extends StreamSpec("""
           promise.success(probe)
           (probe, probe)
         }
-        override protected def newInstance(
-            shape: SinkShape[ByteString]): SinkModule[ByteString, TestSubscriber.Probe[ByteString]] =
-          new ProbeSink(attributes, shape)
         override def withAttributes(attr: Attributes): SinkModule[ByteString, TestSubscriber.Probe[ByteString]] =
           new ProbeSink(attr, amendShape(attr))
       }
