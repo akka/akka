@@ -1,0 +1,1 @@
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.*.newInstance")
