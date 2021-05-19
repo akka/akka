@@ -97,7 +97,7 @@ Scala
 Java
 :  @@snip [TypedWatchingClassicTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/TypedWatchingClassicTest.java) { #create }
 
-This classic-typed difference is discussed further in @ref:[the `ActorSystem` section](./from-classic.md#actorsystem) of "Learning Akka Typed from Classic". 
+The above classic-typed difference is further elaborated in @ref:[the `ActorSystem` section](./from-classic.md#actorsystem) of "Learning Akka Typed from Classic". 
 
 ## Typed to classic
 
