@@ -64,8 +64,8 @@ class PropsCreationSpec extends AkkaSpec("""
       val p = Props.create(OneParamActorCreator)
       system.actorOf(p)
     }
-    "work with create(class, param)" in {
-      val p = Props.create(classOf[OneParamActor], null)
+    "work with create(class, creator)" in {
+      val p = Props.create(classOf[Actor], OneParamActorCreator)
       system.actorOf(p)
     }
   }
