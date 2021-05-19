@@ -454,6 +454,7 @@ import akka.stream.stage._
     eventsRemaining
   }
 
+  @InternalStableApi
   def runAsyncInput(logic: GraphStageLogic, evt: Any, promise: Promise[Done], handler: (Any) => Unit): Unit =
     if (!isStageCompleted(logic)) {
       if (GraphInterpreter.Debug) println(s"$Name ASYNC $evt ($handler) [$logic]")
