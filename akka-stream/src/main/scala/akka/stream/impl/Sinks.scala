@@ -5,7 +5,6 @@
 package akka.stream.impl
 
 import java.util.function.BinaryOperator
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -55,10 +54,6 @@ import akka.util.ccompat._
   override def traversalBuilder: TraversalBuilder =
     LinearTraversalBuilder.fromModule(this, attributes).makeIsland(SinkModuleIslandTag)
 
-  // This is okay since we the only caller of this method is right below.
-  // TODO: Remove this, no longer needed
-  protected def newInstance(s: SinkShape[In] @uncheckedVariance): SinkModule[In, Mat]
-
   protected def amendShape(attr: Attributes): SinkShape[In] = {
     val thisN = traversalBuilder.attributes.nameOrDefault(null)
     val thatN = attr.nameOrDefault(null)
@@ -104,8 +99,6 @@ import akka.util.ccompat._
     (proc, proc)
   }
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
-    new PublisherSink[In](attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[In, Publisher[In]] =
     new PublisherSink[In](attr, amendShape(attr))
 }
@@ -124,9 +117,6 @@ import akka.util.ccompat._
     (fanoutProcessor, fanoutProcessor)
   }
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
-    new FanoutPublisherSink[In](attributes, shape)
-
   override def withAttributes(attr: Attributes): SinkModule[In, Publisher[In]] =
     new FanoutPublisherSink[In](attr, amendShape(attr))
 }
@@ -143,8 +133,6 @@ import akka.util.ccompat._
 
   override def create(context: MaterializationContext) = (subscriber, NotUsed)
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] =
-    new SubscriberSink[In](subscriber, attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[In, NotUsed] =
     new SubscriberSink[In](subscriber, attr, amendShape(attr))
 }
@@ -157,8 +145,6 @@ import akka.util.ccompat._
     extends SinkModule[Any, NotUsed](shape) {
   override def create(context: MaterializationContext): (Subscriber[Any], NotUsed) =
     (new CancellingSubscriber[Any], NotUsed)
-  override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, NotUsed] =
-    new CancelSink(attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[Any, NotUsed] = new CancelSink(attr, amendShape(attr))
 }
 

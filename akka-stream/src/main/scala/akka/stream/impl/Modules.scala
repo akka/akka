@@ -25,13 +25,9 @@ import akka.stream.impl.StreamLayout.AtomicModule
 
   def create(context: MaterializationContext): (Publisher[Out] @uncheckedVariance, Mat)
 
-  // TODO: Remove this, no longer needed?
-  protected def newInstance(shape: SourceShape[Out] @uncheckedVariance): SourceModule[Out, Mat]
-
-  // TODO: Amendshape changed the name of ports. Is it needed anymore?
-
   def attributes: Attributes
 
+  // TODO: Amendshape changed the name of ports. Is it needed anymore?
   protected def amendShape(attr: Attributes): SourceShape[Out] = {
     val thisN = traversalBuilder.attributes.nameOrDefault(null)
     val thatN = attr.nameOrDefault(null)
@@ -58,8 +54,6 @@ import akka.stream.impl.StreamLayout.AtomicModule
     (processor, processor)
   }
 
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Subscriber[Out]] =
-    new SubscriberSource[Out](attributes, shape)
   override def withAttributes(attr: Attributes): SourceModule[Out, Subscriber[Out]] =
     new SubscriberSource[Out](attr, amendShape(attr))
 }
@@ -81,8 +75,6 @@ import akka.stream.impl.StreamLayout.AtomicModule
 
   override def create(context: MaterializationContext) = (p, NotUsed)
 
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, NotUsed] =
-    new PublisherSource[Out](p, attributes, shape)
   override def withAttributes(attr: Attributes): SourceModule[Out, NotUsed] =
     new PublisherSource[Out](p, attr, amendShape(attr))
 }
