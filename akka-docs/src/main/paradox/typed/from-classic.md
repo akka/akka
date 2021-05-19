@@ -155,7 +155,10 @@ typically performed from the "outside".
 
 The `actorOf` method of the classic `ActorSystem` is typically used to create a few (or many) top level actors. The
 `ActorSystem` in Typed doesn't have that capability. Instead, such actors are started as children of
-the user guardian actor or children of other actors in the actor hierarchy.
+the user guardian actor or children of other actors in the actor hierarchy. The rationale for this is partly about consistency. 
+In a typed system you can’t create children to an arbitrary actor from anywhere in your app without messaging it, 
+so this will also hold true for the user guardian actor. That noted, in cases where you do need to spawn outside of this guardian 
+then you can use the @ref:[`SpawnProtocol`](./actor-lifecycle.md#spawnprotocol) to spawn as needed.
 
 ## become
 
