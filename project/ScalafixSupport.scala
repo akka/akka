@@ -15,11 +15,11 @@ trait ScalafixSupport {
   protected def ignore(configKey: ConfigKey): Def.Setting[Task[Seq[File]]] = {
     import scalafix.sbt.ScalafixPlugin.autoImport._
 
-    unmanagedSources.in(configKey, scalafix) := {
+    configKey / scalafix / unmanagedSources := {
       val ignoreSupport =
-        new ProjectFileIgnoreSupport((baseDirectory in ThisBuild).value / ignoreConfigFileName, descriptor)
+        new ProjectFileIgnoreSupport((ThisBuild / baseDirectory).value / ignoreConfigFileName, descriptor)
 
-      unmanagedSources.in(configKey, scalafix).value.filterNot(file => ignoreSupport.isIgnoredByFileOrPackages(file))
+      (configKey / scalafix / unmanagedSources).value.filterNot(file => ignoreSupport.isIgnoredByFileOrPackages(file))
     }
   }
 

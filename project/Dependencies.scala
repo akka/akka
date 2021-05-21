@@ -12,6 +12,7 @@ object Dependencies {
   import DependencyHelpers._
 
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
+    .withRank(KeyRanks.Invisible) // avoid 'unused key' warning
 
   val junitVersion = "4.13.2"
   val slf4jVersion = "1.7.30"
