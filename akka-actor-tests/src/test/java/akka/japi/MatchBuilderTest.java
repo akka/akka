@@ -6,10 +6,7 @@ package akka.japi;
 
 import akka.japi.pf.FI;
 import akka.japi.pf.Match;
-import org.junit.Rule;
 import org.junit.Assert;
-import org.junit.function.ThrowingRunnable;
-import org.junit.rules.ExpectedException;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 import scala.MatchError;
@@ -39,21 +36,11 @@ public class MatchBuilderTest extends JUnitSuite {
                       }
                     }));
 
-    assertTrue(
-        "An integer should be multiplied by 10",
-        Double.valueOf(47110).equals(pf.match(Integer.valueOf(4711))));
-    assertTrue(
-        "A double should be multiplied by -10",
-        Double.valueOf(-47110).equals(pf.match(Double.valueOf(4711))));
+    assertEquals("An integer should be multiplied by 10", Double.valueOf(47110), pf.match(4711));
+    assertEquals("A double should be multiplied by -10", Double.valueOf(-47110), pf.match(4711));
 
     Assert.assertThrows(
-        "A string should throw a MatchError",
-        MatchError.class,
-        new ThrowingRunnable() {
-          public void run() {
-            pf.match("4711");
-          }
-        });
+        "A string should throw a MatchError", MatchError.class, () -> pf.match("4711"));
   }
 
   static class GenericClass<T> {
@@ -77,9 +64,10 @@ public class MatchBuilderTest extends JUnitSuite {
                   }
                 }));
 
-    assertTrue(
+    assertEquals(
         "String value should be extract from GenericMessage",
-        "A".equals(pf.match(new GenericClass<String>("A"))));
+        "A",
+        pf.match(new GenericClass<>("A")));
   }
 
   @Test
@@ -104,10 +92,6 @@ public class MatchBuilderTest extends JUnitSuite {
     Assert.assertThrows(
         "empty GenericMessage should throw match error",
         MatchError.class,
-        new ThrowingRunnable() {
-          public void run() {
-            pf.match(new GenericClass<String>(""));
-          }
-        });
+        () -> pf.match(new GenericClass<>("")));
   }
 }
