@@ -36,8 +36,12 @@ public class MatchBuilderTest extends JUnitSuite {
                       }
                     }));
 
-    assertEquals("An integer should be multiplied by 10", Double.valueOf(47110), pf.match(4711));
-    assertEquals("A double should be multiplied by -10", Double.valueOf(-47110), pf.match(4711));
+    assertTrue(
+        "An integer should be multiplied by 10",
+        Double.valueOf(47110).equals(pf.match(Integer.valueOf(4711))));
+    assertTrue(
+        "A double should be multiplied by -10",
+        Double.valueOf(-47110).equals(pf.match(Double.valueOf(4711))));
 
     Assert.assertThrows(
         "A string should throw a MatchError", MatchError.class, () -> pf.match("4711"));
