@@ -26,7 +26,7 @@ class FlowPrependSpec extends AkkaSpec {
       //#prepend
     }
 
-    "work in entrance example" in {
+    "work in lazy entrance example" in {
       //#prependLazy
       val ladies = Source(List("Emma", "Emily"))
       val gentlemen = Source(List("Liam", "William"))
