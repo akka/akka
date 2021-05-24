@@ -1,4 +1,4 @@
-# prepend
+# prependLazy
 
 Prepends the given source to the flow, consuming it until completion before the original source is consumed.
 
@@ -14,25 +14,16 @@ Prepends the given source to the flow, consuming it until completion before the 
 
 Prepends the given source to the flow, consuming it until completion before the original source is consumed.
 
-Both streams will be materialized together.
-
 If materialized values needs to be collected `prependMat` is available.
 
-@@@ note
-
-The `prepend` operator is for backwards compatibility reasons "detached" and will eagerly
-demand an element from both upstreams when the stream is materialized and will then have a
-one element buffer for each of the upstreams, this is not always what you want, if not,
-use @ref(prependLazy)[prependLazy.md]
-
-@@@
+See also @ref[prepend](prepend.md) which is detached.
 
 ## Example
 Scala
-:   @@snip [FlowOrElseSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowPrependSpec.scala) { #prepend }
+:   @@snip [FlowPrependSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowPrependSpec.scala) { #prependLazy }
 
 Java
-:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #prepend }
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #prependLazy }
 
 ## Reactive Streams semantics
 

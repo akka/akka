@@ -219,7 +219,14 @@ abstract class AbstractFlowConcatSpec extends BaseTwoStreamsSetup {
 
       probeSink.expectComplete()
     }
+  }
 
+}
+
+class FlowConcatSpec extends AbstractFlowConcatSpec with ScalaFutures {
+  override def eager: Boolean = true
+
+  "concat" must {
     "work in example" in {
       //#concat
 
@@ -231,11 +238,6 @@ abstract class AbstractFlowConcatSpec extends BaseTwoStreamsSetup {
       //#concat
     }
   }
-
-}
-
-class FlowConcatSpec extends AbstractFlowConcatSpec with ScalaFutures {
-  override def eager: Boolean = true
 }
 
 class FlowConcatLazySpec extends AbstractFlowConcatSpec {
@@ -259,5 +261,15 @@ class FlowConcatLazySpec extends AbstractFlowConcatSpec {
       // would happen it would have happened already
       secondStreamWasMaterialized.get should === (false)
     }
+
+    "work in example" in {
+      //#concatLazy
+      val sourceA = Source(List(1, 2, 3, 4))
+      val sourceB = Source(List(10, 20, 30, 40))
+
+      sourceA.concatLazy(sourceB).runWith(Sink.foreach(println))
+      //#concatLazy
+    }
   }
+
 }

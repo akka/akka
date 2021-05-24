@@ -25,5 +25,15 @@ class FlowPrependSpec extends AkkaSpec {
       // this will print "Emma", "Emily", "Liam", "William"
       //#prepend
     }
+
+    "work in entrance example" in {
+      //#prependLazy
+      val ladies = Source(List("Emma", "Emily"))
+      val gentlemen = Source(List("Liam", "William"))
+
+      gentlemen.prependLazy(ladies).runWith(Sink.foreach(println))
+      // this will print "Emma", "Emily", "Liam", "William"
+      //#prependLazy
+    }
   }
 }
