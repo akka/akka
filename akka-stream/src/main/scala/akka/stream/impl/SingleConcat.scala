@@ -28,18 +28,19 @@ private[akka] final class SingleConcat[E](singleElem: E) extends GraphStage[Flow
 
   override val shape: FlowShape[E, E] = FlowShape(in, out)
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
-    override def onPush(): Unit = {
-      push(out, grab(in))
-    }
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new GraphStageLogic(shape) with InHandler with OutHandler {
+      override def onPush(): Unit = {
+        push(out, grab(in))
+      }
 
-    override def onPull(): Unit = pull(in)
+      override def onPull(): Unit = pull(in)
 
-    override def onUpstreamFinish(): Unit = {
-      emit(out, singleElem, () => completeStage())
+      override def onUpstreamFinish(): Unit = {
+        emit(out, singleElem, () => completeStage())
+      }
+      setHandlers(in, out, this)
     }
-    setHandlers(in, out, this)
-  }
 
   override def toString: String = s"SingleConcat($singleElem)"
 }

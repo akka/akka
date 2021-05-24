@@ -10,21 +10,30 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-import org.reactivestreams.{Processor, Publisher, Subscriber, Subscription}
+import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.annotation.DoNotInherit
-import akka.event.{LogMarker, LoggingAdapter, MarkerLoggingAdapter}
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream.Attributes.SourceLocation
 import akka.stream._
 import akka.stream.impl.SingleConcat
-import akka.stream.impl.{LinearTraversalBuilder, ProcessorModule, SetupFlowStage, SubFlowImpl, Throttle, Timers, TraversalBuilder, fusing}
+import akka.stream.impl.{
+  fusing,
+  LinearTraversalBuilder,
+  ProcessorModule,
+  SetupFlowStage,
+  SubFlowImpl,
+  Throttle,
+  Timers,
+  TraversalBuilder
+}
 import akka.stream.impl.fusing._
 import akka.stream.impl.fusing.FlattenMerge
 import akka.stream.stage._
 import akka.util.OptionVal
-import akka.util.{ConstantFun, Timeout}
+import akka.util.{ ConstantFun, Timeout }
 import akka.util.ccompat._
 
 /**
@@ -3006,7 +3015,8 @@ trait FlowOps[+Out, +Mat] {
     internalConcat(that, detached = true)
 
   protected def concatGraph[U >: Out, Mat2](
-                                             that: Graph[SourceShape[U], Mat2], detached: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
+      that: Graph[SourceShape[U], Mat2],
+      detached: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
     GraphDSL.create(that) { implicit b => r =>
       val merge = b.add(Concat[U](2, detached))
       r ~> merge.in(1)
@@ -3049,6 +3059,7 @@ trait FlowOps[+Out, +Mat] {
           case _ => via(concatGraph(other, detached))
         }
     }
+
   /**
    * Prepend the given [[Source]] to this [[Flow]], meaning that before elements
    * are generated from this Flow, the Source's elements will be produced until it
@@ -3074,7 +3085,9 @@ trait FlowOps[+Out, +Mat] {
   def prepend[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Repr[U] =
     via(prependGraph(that, detached = true))
 
-  protected def prependGraph[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2], detached: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
+  protected def prependGraph[U >: Out, Mat2](
+      that: Graph[SourceShape[U], Mat2],
+      detached: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
     GraphDSL.create(that) { implicit b => r =>
       val merge = b.add(Concat[U](2, detached))
       r ~> merge.in(0)
@@ -3549,7 +3562,8 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
-  def concatLazyMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) => Mat3): ReprMat[U, Mat3] =
+  def concatLazyMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(
+      matF: (Mat, Mat2) => Mat3): ReprMat[U, Mat3] =
     viaMat(concatGraph(that, detached = false))(matF)
 
   /**
@@ -3590,7 +3604,8 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
-  def prependLazyMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(matF: (Mat, Mat2) => Mat3): ReprMat[U, Mat3] =
+  def prependLazyMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2])(
+      matF: (Mat, Mat2) => Mat3): ReprMat[U, Mat3] =
     viaMat(prependGraph(that, detached = true))(matF)
 
   /**

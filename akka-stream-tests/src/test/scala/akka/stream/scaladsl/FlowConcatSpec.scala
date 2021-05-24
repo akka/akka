@@ -64,7 +64,6 @@ abstract class AbstractFlowConcatSpec extends BaseTwoStreamsSetup {
       val (_, res) =
         (if (eager) f2.prepend(s1) else f2.prependLazy(s1)).runWith(s2, subSink)
 
-
       res.subscribe(subs)
       val sub = subs.expectSubscription()
       sub.request(9)
@@ -181,8 +180,7 @@ abstract class AbstractFlowConcatSpec extends BaseTwoStreamsSetup {
       val s2 = Source(6 to 10)
       val testFlow =
         (if (eager) Flow[Int].concatMat(s2)(Keep.both)
-        else Flow[Int].concatLazyMat(s2)(Keep.both))
-          .grouped(1000)
+         else Flow[Int].concatLazyMat(s2)(Keep.both)).grouped(1000)
       Await.result(s1.viaMat(testFlow)(Keep.both).runWith(Sink.head), 3.seconds) should ===(1 to 10)
 
       val sink = testFlow.concatMat(Source(1 to 5))(Keep.both).to(Sink.ignore).mapMaterializedValue[String] {
@@ -222,8 +220,8 @@ abstract class AbstractFlowConcatSpec extends BaseTwoStreamsSetup {
     "optimize away empty concat" in {
       val s1 = Source.single(1)
       val concat = if (eager) s1.concat(Source.empty) else s1.concatLazy(Source.empty)
-      concat should be theSameInstanceAs(s1)
-      concat.runWith(Sink.seq).futureValue should === (Seq(1))
+      (concat should be).theSameInstanceAs(s1)
+      concat.runWith(Sink.seq).futureValue should ===(Seq(1))
     }
 
     "optimize single elem concat" in {
@@ -234,7 +232,7 @@ abstract class AbstractFlowConcatSpec extends BaseTwoStreamsSetup {
       // avoids digging too deap into the traversal builder
       concat.traversalBuilder.pendingBuilder.toString should include("SingleConcat(2)")
 
-      concat.runWith(Sink.seq).futureValue should === (Seq(1, 2))
+      concat.runWith(Sink.seq).futureValue should ===(Seq(1, 2))
     }
   }
 }
@@ -264,10 +262,13 @@ class FlowConcatLazySpec extends AbstractFlowConcatSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.probe[Int]()
       val secondStreamWasMaterialized = new AtomicBoolean(false)
-      Source.fromPublisher(publisher).concatLazy(Source.lazySource { () =>
-        secondStreamWasMaterialized.set(true)
-        Source.single(3)
-      }).runWith(Sink.fromSubscriber(subscriber))
+      Source
+        .fromPublisher(publisher)
+        .concatLazy(Source.lazySource { () =>
+          secondStreamWasMaterialized.set(true)
+          Source.single(3)
+        })
+        .runWith(Sink.fromSubscriber(subscriber))
       subscriber.request(1)
       publisher.sendNext(1)
       subscriber.expectNext(1)
@@ -275,7 +276,7 @@ class FlowConcatLazySpec extends AbstractFlowConcatSpec {
       publisher.expectCancellation()
       // cancellation went all the way upstream across one async boundary so if second source materialization
       // would happen it would have happened already
-      secondStreamWasMaterialized.get should === (false)
+      secondStreamWasMaterialized.get should ===(false)
     }
 
     "work in example" in {

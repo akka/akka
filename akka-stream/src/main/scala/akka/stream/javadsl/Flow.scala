@@ -2441,8 +2441,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
   def concatLazyMat[M, M2](
-                        that: Graph[SourceShape[Out], M],
-                        matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out, M2] =
+      that: Graph[SourceShape[Out], M],
+      matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out, M2] =
     new Flow(delegate.concatMat(that)(combinerToScala(matF)))
 
   /**
@@ -2512,7 +2512,6 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
       matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out, M2] =
     new Flow(delegate.prependMat(that)(combinerToScala(matF)))
 
-
   /**
    * Prepend the given [[Source]] to this [[Flow]], meaning that before elements
    * are generated from this Flow, the Source's elements will be produced until it
@@ -2530,8 +2529,8 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
   def prependLazyMat[M, M2](
-                         that: Graph[SourceShape[Out], M],
-                         matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out, M2] =
+      that: Graph[SourceShape[Out], M],
+      matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out, M2] =
     new Flow(delegate.prependLazyMat(that)(combinerToScala(matF)))
 
   /**

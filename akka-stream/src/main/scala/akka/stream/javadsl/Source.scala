@@ -1242,8 +1242,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
   def concatLazyMat[M, M2](
-                        that: Graph[SourceShape[Out], M],
-                        matF: function.Function2[Mat, M, M2]): javadsl.Source[Out, M2] =
+      that: Graph[SourceShape[Out], M],
+      matF: function.Function2[Mat, M, M2]): javadsl.Source[Out, M2] =
     new Source(delegate.concatLazyMat(that)(combinerToScala(matF)))
 
   /**
@@ -1293,7 +1293,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def prependLazy[M](that: Graph[SourceShape[Out], M]): javadsl.Source[Out, Mat] =
     new Source(delegate.prependLazy(that))
 
-
   /**
    * Prepend the given [[Source]] to this one, meaning that once the given source
    * is exhausted and all result elements have been generated, the current source's
@@ -1331,10 +1330,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
   def prependLazyMat[M, M2](
-                         that: Graph[SourceShape[Out], M],
-                         matF: function.Function2[Mat, M, M2]): javadsl.Source[Out, M2] =
+      that: Graph[SourceShape[Out], M],
+      matF: function.Function2[Mat, M, M2]): javadsl.Source[Out, M2] =
     new Source(delegate.prependLazyMat(that)(combinerToScala(matF)))
-
 
   /**
    * Provides a secondary source that will be consumed if this source completes without any
