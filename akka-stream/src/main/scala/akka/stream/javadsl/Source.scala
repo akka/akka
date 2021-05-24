@@ -1156,10 +1156,13 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * is exhausted and all result elements have been generated,
    * the given source elements will be produced.
    *
-   * Note that given [[Source]] is materialized together with this Flow and just kept
-   * from producing elements by asserting back-pressure until its time comes.
+   * Note that the [[Source]] is materialized together with this Flow and is "detached" meaning it will
+   * in effect behave as a one element buffer in front of both the sources, that eagerly demands an element on start
+   * (so it can not be combined with `Source.lazy` to defer materialization of `that`).
    *
-   * If this [[Source]] gets upstream error - no elements from the given [[Source]] will be pulled.
+   * The second source is then kept from producing elements by asserting back-pressure until its time comes.
+   *
+   * When needing a concat operator that is not detached use [[#concatLazy]]
    *
    * '''Emits when''' element is available from current source or from the given [[Source]] when current is completed
    *
@@ -1173,14 +1176,43 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.concat(that))
 
   /**
+   * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
+   * Flow’s input is exhausted and all result elements have been generated,
+   * the Source’s elements will be produced.
+   *
+   * Note that the [[Source]] is materialized together with this Flow. If `lazy` materialization is what is needed
+   * the operator can be combined with for example `Source.lazySource` to defer materialization of `that` until the
+   * time when this source completes.
+   *
+   * The second source is then kept from producing elements by asserting back-pressure until its time comes.
+   *
+   * For a concat operator that is detached, use [[#concat]]
+   *
+   * If this [[Flow]] gets upstream error - no elements from the given [[Source]] will be pulled.
+   *
+   * '''Emits when''' element is available from current stream or from the given [[Source]] when current is completed
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' given [[Source]] completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def concatLazy[M](that: Graph[SourceShape[Out], M]): javadsl.Source[Out, Mat] =
+    new Source(delegate.concatLazy(that))
+
+  /**
    * Concatenate this [[Source]] with the given one, meaning that once current
    * is exhausted and all result elements have been generated,
    * the given source elements will be produced.
    *
-   * Note that given [[Source]] is materialized together with this Flow and just kept
-   * from producing elements by asserting back-pressure until its time comes.
+   * Note that the [[Source]] is materialized together with this Flow and is "detached" meaning it will
+   * in effect behave as a one element buffer in front of both the sources, that eagerly demands an element on start
+   * (so it can not be combined with `Source.lazy` to defer materialization of `that`).
    *
-   * If this [[Source]] gets upstream error - no elements from the given [[Source]] will be pulled.
+   * The second source is then kept from producing elements by asserting back-pressure until its time comes.
+   *
+   * When needing a concat operator that is not detached use [[#concatLazyMat]]
    *
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
@@ -1193,14 +1225,39 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.concatMat(that)(combinerToScala(matF)))
 
   /**
+   * Concatenate the given [[Source]] to this [[Flow]], meaning that once this
+   * Flow’s input is exhausted and all result elements have been generated,
+   * the Source’s elements will be produced.
+   *
+   * Note that the [[Source]] is materialized together with this Flow, if `lazy` materialization is what is needed
+   * the operator can be combined with `Source.lazy` to defer materialization of `that`.
+   *
+   * The second source is then kept from producing elements by asserting back-pressure until its time comes.
+   *
+   * For a concat operator that is detached, use [[#concatMat]]
+   *
+   * @see [[#concatLazy]].
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def concatLazyMat[M, M2](
+                        that: Graph[SourceShape[Out], M],
+                        matF: function.Function2[Mat, M, M2]): javadsl.Source[Out, M2] =
+    new Source(delegate.concatLazyMat(that)(combinerToScala(matF)))
+
+  /**
    * Prepend the given [[Source]] to this one, meaning that once the given source
    * is exhausted and all result elements have been generated, the current source's
    * elements will be produced.
    *
-   * Note that the current [[Source]] is materialized together with this Flow and just kept
-   * from producing elements by asserting back-pressure until its time comes.
+   * Note that the [[Source]] is materialized together with this Flow and is "detached" meaning
+   * in effect behave as a one element buffer in front of both the sources, that eagerly demands an element on start
+   * (so it can not be combined with `Source.lazy` to defer materialization of `that`).
    *
-   * If the given [[Source]] gets upstream error - no elements from this [[Source]] will be pulled.
+   * This flow will then be kept from producing elements by asserting back-pressure until its time comes.
+   *
+   * When needing a prepend operator that is not detached use [[#prependLazy]]
    *
    * '''Emits when''' element is available from current source or from the given [[Source]] when current is completed
    *
@@ -1214,14 +1271,38 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.prepend(that))
 
   /**
+   * Prepend the given [[Source]] to this [[Flow]], meaning that before elements
+   * are generated from this Flow, the Source's elements will be produced until it
+   * is exhausted, at which point Flow elements will start being produced.
+   *
+   * Note that the [[Source]] is materialized together with this Flow and will then be kept from producing elements
+   * by asserting back-pressure until its time comes.
+   *
+   * When needing a prepend operator that is also detached use [[#prepend]]
+   *
+   * If the given [[Source]] gets upstream error - no elements from this [[Flow]] will be pulled.
+   *
+   * '''Emits when''' element is available from the given [[Source]] or from current stream when the [[Source]] is completed
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' this [[Flow]] completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def prependLazy[M](that: Graph[SourceShape[Out], M]): javadsl.Source[Out, Mat] =
+    new Source(delegate.prependLazy(that))
+
+
+  /**
    * Prepend the given [[Source]] to this one, meaning that once the given source
    * is exhausted and all result elements have been generated, the current source's
    * elements will be produced.
    *
-   * Note that the current [[Source]] is materialized together with this Flow and just kept
+   * Note that this Flow will be materialized together with the [[Source]] and just kept
    * from producing elements by asserting back-pressure until its time comes.
    *
-   * If the given [[Source]] gets upstream error - no elements from this [[Source]] will be pulled.
+   * When needing a prepend operator that is not detached use [[#prependLazyMat]]
    *
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
@@ -1232,6 +1313,28 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
       that: Graph[SourceShape[Out], M],
       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out, M2] =
     new Source(delegate.prependMat(that)(combinerToScala(matF)))
+
+  /**
+   * Prepend the given [[Source]] to this [[Flow]], meaning that before elements
+   * are generated from this Flow, the Source's elements will be produced until it
+   * is exhausted, at which point Flow elements will start being produced.
+   *
+   * Note that the [[Source]] is materialized together with this Flow.
+   *
+   * This flow will then be kept from producing elements by asserting back-pressure until its time comes.
+   *
+   * When needing a prepend operator that is detached use [[#prependMat]]
+   *
+   * @see [[#prependLazy]].
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def prependLazyMat[M, M2](
+                         that: Graph[SourceShape[Out], M],
+                         matF: function.Function2[Mat, M, M2]): javadsl.Source[Out, M2] =
+    new Source(delegate.prependLazyMat(that)(combinerToScala(matF)))
+
 
   /**
    * Provides a secondary source that will be consumed if this source completes without any
