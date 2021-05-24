@@ -10,28 +10,21 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+import org.reactivestreams.{Processor, Publisher, Subscriber, Subscription}
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.annotation.DoNotInherit
-import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
+import akka.event.{LogMarker, LoggingAdapter, MarkerLoggingAdapter}
 import akka.stream.Attributes.SourceLocation
 import akka.stream._
-import akka.stream.impl.{
-  fusing,
-  LinearTraversalBuilder,
-  ProcessorModule,
-  SetupFlowStage,
-  SubFlowImpl,
-  Throttle,
-  Timers,
-  TraversalBuilder
-}
+import akka.stream.impl.SingleConcat
+import akka.stream.impl.{LinearTraversalBuilder, ProcessorModule, SetupFlowStage, SubFlowImpl, Throttle, Timers, TraversalBuilder, fusing}
 import akka.stream.impl.fusing._
 import akka.stream.impl.fusing.FlattenMerge
 import akka.stream.stage._
-import akka.util.{ ConstantFun, Timeout }
+import akka.util.OptionVal
+import akka.util.{ConstantFun, Timeout}
 import akka.util.ccompat._
 
 /**
@@ -3010,7 +3003,7 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def concat[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Repr[U] =
-    via(concatGraph(that, detached = true))
+    internalConcat(that, detached = true)
 
   protected def concatGraph[U >: Out, Mat2](
                                              that: Graph[SourceShape[U], Mat2], detached: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], Mat2] =
@@ -3044,8 +3037,18 @@ trait FlowOps[+Out, +Mat] {
    * '''Cancels when''' downstream cancels
    */
   def concatLazy[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2]): Repr[U] =
-    via(concatGraph(that, detached = false))
+    internalConcat(that, detached = false)
 
+  private def internalConcat[U >: Out, Mat2](that: Graph[SourceShape[U], Mat2], detached: Boolean): Repr[U] =
+    that match {
+      case source if source eq Source.empty => this.asInstanceOf[Repr[U]]
+      case other =>
+        TraversalBuilder.getSingleSource(other) match {
+          case OptionVal.Some(singleSource) =>
+            via(new SingleConcat(singleSource.elem.asInstanceOf[U]))
+          case _ => via(concatGraph(other, detached))
+        }
+    }
   /**
    * Prepend the given [[Source]] to this [[Flow]], meaning that before elements
    * are generated from this Flow, the Source's elements will be produced until it

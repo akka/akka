@@ -219,8 +219,24 @@ abstract class AbstractFlowConcatSpec extends BaseTwoStreamsSetup {
 
       probeSink.expectComplete()
     }
-  }
+    "optimize away empty concat" in {
+      val s1 = Source.single(1)
+      val concat = if (eager) s1.concat(Source.empty) else s1.concatLazy(Source.empty)
+      concat should be theSameInstanceAs(s1)
+      concat.runWith(Sink.seq).futureValue should === (Seq(1))
+    }
 
+    "optimize single elem concat" in {
+      val s1 = Source.single(1)
+      val s2 = Source.single(2)
+      val concat = if (eager) s1.concat(s2) else s1.concatLazy(s2)
+
+      // avoids digging too deap into the traversal builder
+      concat.traversalBuilder.pendingBuilder.toString should include("SingleConcat(2)")
+
+      concat.runWith(Sink.seq).futureValue should === (Seq(1, 2))
+    }
+  }
 }
 
 class FlowConcatSpec extends AbstractFlowConcatSpec with ScalaFutures {
