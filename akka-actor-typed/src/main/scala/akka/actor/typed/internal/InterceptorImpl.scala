@@ -100,7 +100,7 @@ private[akka] final class InterceptorImpl[O, I](
     } else {
       // returned behavior could be nested in setups, so we need to start before we deduplicate
       val duplicateInterceptExists = Behavior.existsInStack(started) {
-        case i: InterceptorImpl[O, I]
+        case i: InterceptorImpl[_, _]
             if interceptor.isSame(i.interceptor.asInstanceOf[BehaviorInterceptor[Any, Any]]) =>
           true
         case _ => false
@@ -181,7 +181,6 @@ private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends B
         case Level.INFO  => logger.info(template, selfPath, messageOrSignal)
         case Level.DEBUG => logger.debug(template, selfPath, messageOrSignal)
         case Level.TRACE => logger.trace(template, selfPath, messageOrSignal)
-        case other       => throw new IllegalArgumentException(s"Unknown log level [$other].")
       }
     }
   }

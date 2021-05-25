@@ -796,7 +796,7 @@ private class ProducerControllerImpl[A: ClassTag](
       case StoreMessageSentCompleted(sent: MessageSent[_]) =>
         receiveStoreMessageSentCompleted(sent.seqNr)
 
-      case f: StoreMessageSentFailed[A] =>
+      case f: StoreMessageSentFailed[A @unchecked] =>
         receiveStoreMessageSentFailed(f)
 
       case Request(newConfirmedSeqNr, newRequestedSeqNr, supportResend, viaTimeout) =>
@@ -817,7 +817,7 @@ private class ProducerControllerImpl[A: ClassTag](
       case ResendFirstUnconfirmed =>
         receiveResendFirstUnconfirmed()
 
-      case start: Start[A] =>
+      case start: Start[A @unchecked] =>
         receiveStart(start)
 
       case RegisterConsumer(consumerController: ActorRef[ConsumerController.Command[A]] @unchecked) =>
