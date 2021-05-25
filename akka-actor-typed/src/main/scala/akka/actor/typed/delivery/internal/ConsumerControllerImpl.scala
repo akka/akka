@@ -257,7 +257,7 @@ import akka.util.ConstantFun.scalaIdentityFunction
   }
 }
 
-private class ConsumerControllerImpl[A](
+private class ConsumerControllerImpl[A] private (
     context: ActorContext[ConsumerControllerImpl.InternalCommand],
     retryTimer: ConsumerControllerImpl.RetryTimer,
     stashBuffer: StashBuffer[ConsumerControllerImpl.InternalCommand],
