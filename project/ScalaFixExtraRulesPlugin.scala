@@ -15,7 +15,7 @@ object ScalaFixExtraRulesPlugin extends AutoPlugin with ScalafixSupport {
   import sbt._
   import scalafix.sbt.ScalafixPlugin.autoImport.scalafixDependencies
   override def projectSettings: Seq[Def.Setting[_]] = super.projectSettings ++ {
-    scalafixDependencies in ThisBuild ++= Seq(
+    ThisBuild / scalafixDependencies ++= Seq(
       "com.nequissimus" %% "sort-imports" % "0.5.5",
       // https://github.com/ohze/scala-rewrites
       // an extended version of https://github.com/scala/scala-rewrites

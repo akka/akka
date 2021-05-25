@@ -28,6 +28,6 @@ public class ActorSystemSetupTest extends JUnitSuite {
         ActorSystemSetup.create().withSetup(javaSetting).get(JavaSetup.class);
 
     assertTrue(result.isPresent());
-    assertEquals(result.get(), javaSetting);
+    assertEquals(javaSetting, result.get());
   }
 }

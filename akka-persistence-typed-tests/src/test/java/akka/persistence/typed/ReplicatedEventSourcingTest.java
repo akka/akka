@@ -180,8 +180,8 @@ public class ReplicatedEventSourcingTest extends JUnitSuite {
           replicaA.tell(new TestBehavior.GetState(probe.ref().narrow()));
           TestBehavior.State reply = probe.expectMessageClass(TestBehavior.State.class);
           assertEquals(
-              reply.texts,
-              new HashSet<String>(Arrays.asList("stored-to-a", "stored-to-b", "stored-to-c")));
+              new HashSet<>(Arrays.asList("stored-to-a", "stored-to-b", "stored-to-c")),
+              reply.texts);
           return null;
         });
     probe.awaitAssert(
@@ -189,8 +189,8 @@ public class ReplicatedEventSourcingTest extends JUnitSuite {
           replicaB.tell(new TestBehavior.GetState(probe.ref().narrow()));
           TestBehavior.State reply = probe.expectMessageClass(TestBehavior.State.class);
           assertEquals(
-              reply.texts,
-              new HashSet<String>(Arrays.asList("stored-to-a", "stored-to-b", "stored-to-c")));
+              new HashSet<>(Arrays.asList("stored-to-a", "stored-to-b", "stored-to-c")),
+              reply.texts);
           return null;
         });
     probe.awaitAssert(
@@ -198,8 +198,8 @@ public class ReplicatedEventSourcingTest extends JUnitSuite {
           replicaC.tell(new TestBehavior.GetState(probe.ref().narrow()));
           TestBehavior.State reply = probe.expectMessageClass(TestBehavior.State.class);
           assertEquals(
-              reply.texts,
-              new HashSet<String>(Arrays.asList("stored-to-a", "stored-to-b", "stored-to-c")));
+              new HashSet<>(Arrays.asList("stored-to-a", "stored-to-b", "stored-to-c")),
+              reply.texts);
           return null;
         });
   }

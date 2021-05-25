@@ -112,16 +112,16 @@ lazy val root = Project(id = "akka", base = file("."))
         akkaScalaNightly,
         docs,
         serialversionRemoverPlugin))
-  .settings(unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get)
+  .settings(Compile / headerCreate / unmanagedSources := (baseDirectory.value / "project").**("*.scala").get)
   .enablePlugins(CopyrightHeaderForBuild)
 
 lazy val actor = akkaModule("akka-actor")
   .settings(Dependencies.actor)
   .settings(OSGi.actor)
   .settings(AutomaticModuleName.settings("akka.actor"))
-  .settings(unmanagedSourceDirectories in Compile += {
+  .settings(Compile / unmanagedSourceDirectories += {
     val ver = scalaVersion.value.take(4)
-    (scalaSource in Compile).value.getParentFile / s"scala-$ver"
+    (Compile / scalaSource).value.getParentFile / s"scala-$ver"
   })
   .settings(VersionGenerator.settings)
   .settings(serialversionRemoverPluginSettings)
@@ -158,7 +158,7 @@ lazy val cluster = akkaModule("akka-cluster")
   .settings(AutomaticModuleName.settings("akka.cluster"))
   .settings(OSGi.cluster)
   .settings(Protobuf.settings)
-  .settings(parallelExecution in Test := false)
+  .settings(Test / parallelExecution := false)
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
 
@@ -172,7 +172,7 @@ lazy val clusterMetrics = akkaModule("akka-cluster-metrics")
   .settings(AutomaticModuleName.settings("akka.cluster.metrics"))
   .settings(Protobuf.settings)
   .settings(SigarLoader.sigarSettings)
-  .settings(parallelExecution in Test := false)
+  .settings(Test / parallelExecution := false)
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
 
@@ -283,7 +283,7 @@ lazy val osgi = akkaModule("akka-osgi")
   .settings(Dependencies.osgi)
   .settings(AutomaticModuleName.settings("akka.osgi"))
   .settings(OSGi.osgi)
-  .settings(parallelExecution in Test := false)
+  .settings(Test / parallelExecution := false)
 
 lazy val persistence = akkaModule("akka-persistence")
   .dependsOn(actor, stream, testkit % "test->test")
@@ -291,21 +291,21 @@ lazy val persistence = akkaModule("akka-persistence")
   .settings(AutomaticModuleName.settings("akka.persistence"))
   .settings(OSGi.persistence)
   .settings(Protobuf.settings)
-  .settings(fork in Test := true)
+  .settings(Test / fork := true)
 
 lazy val persistenceQuery = akkaModule("akka-persistence-query")
   .dependsOn(stream, persistence % "compile->compile;test->test", streamTestkit % "test")
   .settings(Dependencies.persistenceQuery)
   .settings(AutomaticModuleName.settings("akka.persistence.query"))
   .settings(OSGi.persistenceQuery)
-  .settings(fork in Test := true)
+  .settings(Test / fork := true)
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val persistenceShared = akkaModule("akka-persistence-shared")
   .dependsOn(persistence % "test->test", testkit % "test->test", remote % "test")
   .settings(Dependencies.persistenceShared)
   .settings(AutomaticModuleName.settings("akka.persistence.shared"))
-  .settings(fork in Test := true)
+  .settings(Test / fork := true)
   .enablePlugins(NoPublish)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
 
@@ -314,7 +314,7 @@ lazy val persistenceTck = akkaModule("akka-persistence-tck")
   .settings(Dependencies.persistenceTck)
   .settings(AutomaticModuleName.settings("akka.persistence.tck"))
   //.settings(OSGi.persistenceTck) TODO: we do need to export this as OSGi bundle too?
-  .settings(fork in Test := true)
+  .settings(Test / fork := true)
   .disablePlugins(MimaPlugin)
 
 lazy val persistenceTestkit = akkaModule("akka-persistence-testkit")
@@ -349,25 +349,25 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
   .disablePlugins(MimaPlugin)
   .settings(
     libraryDependencies += Dependencies.Compile.Provided.protobufRuntime,
-    assemblyShadeRules in assembly := Seq(
+    assembly / assemblyShadeRules := Seq(
         ShadeRule
           .rename("com.google.protobuf.**" -> "akka.protobufv3.internal.@1")
           // https://github.com/sbt/sbt-assembly/issues/400
           .inLibrary(Dependencies.Compile.Provided.protobufRuntime)
           .inProject),
-    assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, includeBin = false),
+    assembly / assemblyOption := (assembly / assemblyOption).value.copy(includeScala = false, includeBin = false),
     autoScalaLibrary := false, // do not include scala dependency in pom
     exportJars := true, // in dependent projects, use assembled and shaded jar
     makePomConfiguration := makePomConfiguration.value
         .withConfigurations(Vector(Compile)), // prevent original dependency to be added to pom as runtime dep
-    packagedArtifact in (Compile, packageBin) := Scoped.mkTuple2(
-        (artifact in (Compile, packageBin)).value,
+    Compile / packageBin / packagedArtifact := Scoped.mkTuple2(
+        (Compile / packageBin / artifact).value,
         ReproducibleBuildsPlugin.postProcessJar(OsgiKeys.bundle.value)),
-    packageBin in Compile := ReproducibleBuildsPlugin
-        .postProcessJar((assembly in Compile).value), // package by running assembly
+    Compile / packageBin := ReproducibleBuildsPlugin
+        .postProcessJar((Compile / assembly).value), // package by running assembly
     // Prevent cyclic task dependencies, see https://github.com/sbt/sbt-assembly/issues/365
-    fullClasspath in assembly := (managedClasspath in Runtime).value, // otherwise, there's a cyclic dependency between packageBin and assembly
-    test in assembly := {}, // assembly runs tests for unknown reason which introduces another cyclic dependency to packageBin via exportedJars
+    assembly / fullClasspath := (Runtime / managedClasspath).value, // otherwise, there's a cyclic dependency between packageBin and assembly
+    assembly / test := {}, // assembly runs tests for unknown reason which introduces another cyclic dependency to packageBin via exportedJars
     description := "Akka Protobuf V3 is a shaded version of the protobuf runtime. Original POM: https://github.com/protocolbuffers/protobuf/blob/v3.9.0/java/pom.xml")
 
 lazy val pki =
@@ -393,7 +393,7 @@ lazy val remote =
     .settings(AutomaticModuleName.settings("akka.remote"))
     .settings(OSGi.remote)
     .settings(Protobuf.settings)
-    .settings(parallelExecution in Test := false)
+    .settings(Test / parallelExecution := false)
     .enablePlugins(Jdk9)
 
 lazy val remoteTests = akkaModule("akka-remote-tests")
@@ -405,7 +405,7 @@ lazy val remoteTests = akkaModule("akka-remote-tests")
     jackson % "test->test")
   .settings(Dependencies.remoteTests)
   .settings(Protobuf.settings)
-  .settings(parallelExecution in Test := false)
+  .settings(Test / parallelExecution := false)
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest, NoPublish)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
@@ -445,7 +445,7 @@ lazy val streamTestsTck = akkaModule("akka-stream-tests-tck")
     // is causing long GC pauses when running with G1 on
     // the CI build servers. Therefore we fork these tests
     // to run with small heap without G1.
-    fork in Test := true)
+    Test / fork := true)
   .enablePlugins(NoPublish)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
 
@@ -581,14 +581,14 @@ lazy val serialversionRemoverPlugin =
     scalaVersion := akka.Dependencies.scala3Version,
     libraryDependencies += ("org.scala-lang" %% "scala3-compiler" % akka.Dependencies.scala3Version),
     Compile / doc / sources := Nil,
-    publishArtifact in Compile := false)
+    Compile / publishArtifact := false)
 
 lazy val serialversionRemoverPluginSettings = {
   if (akka.Dependencies.getScalaVersion() == akka.Dependencies.scala3Version) {
     Seq(
       autoCompilerPlugins := true,
-      scalacOptions in Compile += (
-          "-Xplugin:" + (Keys.`package` in (serialversionRemoverPlugin, Compile)).value.getAbsolutePath.toString
+      Compile / scalacOptions += (
+          "-Xplugin:" + (serialversionRemoverPlugin / Compile / Keys.`package`).value.getAbsolutePath.toString
         ))
   } else {
     Seq()

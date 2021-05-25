@@ -88,7 +88,17 @@ Java
 
 @scala[That adds some implicit extension methods that are added to classic and typed `ActorSystem`, `ActorContext` and `ActorRef` in both directions.]
 @java[To convert between typed and classic `ActorSystem`, `ActorContext` and `ActorRef` in both directions there are adapter methods in `akka.actor.typed.javadsl.Adapter`.]
-Note the inline comments in the example above.
+Note the inline comments in the example above. 
+
+This method of using a top level classic actor is the suggested path for this type of co-existence. However, if you prefer to start with a typed top level actor then you can use the @scala[implicit `spawn` -method]@java[`Adapter.spawn`] directly from the typed system:
+
+Scala
+:  @@snip [TypedWatchingClassicSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/coexistence/TypedWatchingClassicSpec.scala) { #create }
+
+Java
+:  @@snip [TypedWatchingClassicTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/TypedWatchingClassicTest.java) { #create }
+
+The above classic-typed difference is further elaborated in @ref:[the `ActorSystem` section](./from-classic.md#actorsystem) of "Learning Akka Typed from Classic". 
 
 ## Typed to classic
 
@@ -143,6 +153,5 @@ The default supervision for classic actors is to restart whereas for typed it is
 When combining classic and typed actors the default supervision is based on the default behavior of
 the child, for example if a classic actor creates a typed child, its default supervision will be to stop. If a typed
 actor creates a classic child, its default supervision will be to restart.
-
 
 

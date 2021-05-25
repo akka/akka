@@ -31,12 +31,12 @@ trait CopyrightHeader extends AutoPlugin {
   override def projectSettings: Seq[Def.Setting[_]] = Def.settings(headerMappingSettings, additional)
 
   def additional: Seq[Def.Setting[_]] =
-    Def.settings((compile in Compile) := {
-      (headerCreate in Compile).value
-      (compile in Compile).value
-    }, (compile in Test) := {
-      (headerCreate in Test).value
-      (compile in Test).value
+    Def.settings(Compile / compile := {
+      (Compile / headerCreate).value
+      (Compile / compile).value
+    }, Test / compile := {
+      (Test / headerCreate).value
+      (Test / compile).value
     })
 
   // We hard-code this so PR's created in year X will not suddenly fail in X+1.
@@ -101,5 +101,5 @@ object CopyrightHeader extends CopyrightHeader
 object CopyrightHeaderInPr extends CopyrightHeader {
 
   override val additional =
-    Def.settings(additionalTasks += headerCheck in Compile, additionalTasks += headerCheck in Test)
+    Def.settings(additionalTasks += Compile / headerCheck, additionalTasks += Test / headerCheck)
 }

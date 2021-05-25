@@ -70,7 +70,7 @@ public class ReplicatedAuctionExampleTest extends JUnitSuite {
         () -> {
           replicaA.tell(new GetHighestBid(replyProbe.ref()));
           Bid bid = replyProbe.expectMessageClass(Bid.class);
-          assertEquals(bid.offer, 202);
+          assertEquals(202, bid.offer);
           return bid;
         });
 

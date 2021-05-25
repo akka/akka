@@ -15,7 +15,7 @@ object CopyrightHeaderForBuild extends CopyrightHeader {
     Seq(Compile, Test).flatMap { config =>
       inConfig(config) {
         Seq(
-          headerSources in config ++= (((baseDirectory in config).value / "project") ** "*.scala").get,
+          config / headerSources ++= (((config / baseDirectory).value / "project") ** "*.scala").get,
           headerMappings := headerMappings.value ++ Map(HeaderFileType.scala -> cStyleComment))
       }
     }
