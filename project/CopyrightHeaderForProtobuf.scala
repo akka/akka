@@ -14,8 +14,8 @@ object CopyrightHeaderForProtobuf extends CopyrightHeader {
     Seq(Compile, Test).flatMap { config =>
       inConfig(config) {
         Seq(
-          headerSources in config ++=
-            (((sourceDirectory in config).value / "protobuf") ** "*.proto").get,
+          config / headerSources ++=
+            (((config / sourceDirectory).value / "protobuf") ** "*.proto").get,
           headerMappings := headerMappings.value ++ Map(HeaderFileType("proto") -> cStyleComment))
       }
     }

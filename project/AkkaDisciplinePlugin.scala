@@ -106,7 +106,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
               else Seq.empty
             }
           ),
-        Compile / javacOptions in doc := Seq("-Xdoclint:none"),
+        Compile / doc / javacOptions := Seq("-Xdoclint:none"),
         Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
             case Some((2, 13)) =>
               disciplineScalacOptions -- Set(

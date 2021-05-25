@@ -41,8 +41,8 @@ object SigarLoader {
       sigarFolder := target.value / "native",
       sigarOptions := "-javaagent:" + sigarArtifact.value + "=" + sigarFolderProperty + "=" + sigarFolder.value,
       //
-      fork in Test := true) ++ (// Invoke Sigar agent at JVM init time, to extract and load native Sigar library.
-    if (sigarTestEnabled) Seq(javaOptions in Test += sigarOptions.value)
+      Test / fork := true) ++ (// Invoke Sigar agent at JVM init time, to extract and load native Sigar library.
+    if (sigarTestEnabled) Seq(Test / javaOptions += sigarOptions.value)
     else Seq())
   }
 
