@@ -836,6 +836,7 @@ import akka.util.OptionVal
           case b: BoundaryEvent =>
             // signal to telemetry that this event won't be processed
             b.cancel()
+          case _ => // ignore
         }
       }
     }
