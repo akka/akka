@@ -1007,6 +1007,18 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
         deserialize(serialize(original)) shouldEqual original
       }
     }
+
+    "unsafely wrap and unwrap bytes" in {
+      // optimal case
+      val bytes = Array.fill[Byte](100)(7)
+      val bs = ByteString.fromArrayUnsafe(bytes)
+      val bytes2 = bs.toArrayUnsafe()
+      bytes2 should be theSameInstanceAs(bytes)
+
+      val combinedBs = bs ++ bs
+      val combinedBytes = combinedBs.toArrayUnsafe()
+      combinedBytes should === (bytes ++ bytes)
+    }
   }
 
   "A ByteStringIterator" must {

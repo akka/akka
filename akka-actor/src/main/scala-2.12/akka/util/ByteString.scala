@@ -258,6 +258,7 @@ object ByteString {
       buffer.putByteArrayUnsafe(bytes)
     }
 
+    override def toArrayUnsafe(): Array[Byte] = bytes
   }
 
   /** INTERNAL API: ByteString backed by exactly one array, with start / end markers */
@@ -273,6 +274,7 @@ object ByteString {
 
     def readFromInputStream(is: ObjectInputStream): ByteString1 =
       ByteString1C.readFromInputStream(is).toByteString1
+
   }
 
   /**
@@ -786,6 +788,25 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   override def toArray[B >: Byte](implicit arg0: ClassTag[B]): Array[B] = iterator.toArray
   override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Unit =
     iterator.copyToArray(xs, start, len)
+
+  /**
+   * Unsafe API: Use only in situations you are completely confident that this is what
+   * you need, and that you understand the implications documented below.
+   *
+   * If the ByteString is backed by a single array it is returned without any copy. If it is backed by a rope
+   * of multiple ByteString instances a new array will be allocated and the contents will be copied
+   * into it before returning it.
+   *
+   * This method of exposing the bytes of a ByteString can save one array
+   * copy and allocation in the happy path scenario and which can lead to better performance,
+   * however it also means that one MUST NOT modify the returned in array, or unexpected
+   * immutable data structure contract-breaking behavior will manifest itself.
+   *
+   * This API is intended for users who need to pass the byte array to some other API, which will
+   * only read the bytes and never mutate then. For all other intents and purposes, please use the usual
+   * toArray method - which provide the immutability guarantees by copying the backing array.
+   */
+  def toArrayUnsafe(): Array[Byte] = toArray
 
   override def foreach[@specialized U](f: Byte => U): Unit = iterator.foreach(f)
 

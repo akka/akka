@@ -4,18 +4,16 @@
 
 package akka.util
 
-import java.io.{ ObjectInputStream, ObjectOutputStream }
-import java.lang.{ Iterable => JIterable }
-import java.nio.{ ByteBuffer, ByteOrder }
-import java.nio.charset.{ Charset, StandardCharsets }
+import java.io.{ObjectInputStream, ObjectOutputStream}
+import java.lang.{Iterable => JIterable}
+import java.nio.{ByteBuffer, ByteOrder}
+import java.nio.charset.{Charset, StandardCharsets}
 import java.util.Base64
-
-import scala.annotation.{ tailrec, varargs }
-import scala.collection.{ immutable, mutable }
-import scala.collection.immutable.{ IndexedSeq, IndexedSeqOps, StrictOptimizedSeqOps, VectorBuilder }
-import scala.collection.mutable.{ Builder, WrappedArray }
+import scala.annotation.{tailrec, varargs}
+import scala.collection.{immutable, mutable}
+import scala.collection.immutable.{IndexedSeq, IndexedSeqOps, StrictOptimizedSeqOps, VectorBuilder}
+import scala.collection.mutable.{Builder, WrappedArray}
 import scala.reflect.ClassTag
-
 import scala.annotation.nowarn
 
 object ByteString {
@@ -270,6 +268,8 @@ object ByteString {
       }
       toCopy
     }
+
+    override def toArrayUnsafe(): Array[Byte] = bytes
 
   }
 
@@ -842,6 +842,25 @@ sealed abstract class ByteString
   // optimized in all subclasses, avoiding usage of the iterator to save allocations/transformations
   override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Int =
     throw new UnsupportedOperationException("Method copyToArray is not implemented in ByteString")
+
+  /**
+   * Unsafe API: Use only in situations you are completely confident that this is what
+   * you need, and that you understand the implications documented below.
+   *
+   * If the ByteString is backed by a single array it is returned without any copy. If it is backed by a rope
+   * of multiple ByteString instances a new array will be allocated and the contents will be copied
+   * into it before returning it.
+   *
+   * This method of exposing the bytes of a ByteString can save one array
+   * copy and allocation in the happy path scenario and which can lead to better performance,
+   * however it also means that one MUST NOT modify the returned in array, or unexpected
+   * immutable data structure contract-breaking behavior will manifest itself.
+   *
+   * This API is intended for users who need to pass the byte array to some other API, which will
+   * only read the bytes and never mutate then. For all other intents and purposes, please use the usual
+   * toArray method - which provide the immutability guarantees by copying the backing array.
+   */
+  def toArrayUnsafe(): Array[Byte] = toArray
 
   override def foreach[@specialized U](f: Byte => U): Unit = iterator.foreach(f)
 
