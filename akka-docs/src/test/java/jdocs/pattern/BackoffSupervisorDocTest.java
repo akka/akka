@@ -5,7 +5,6 @@
 package jdocs.pattern;
 
 import akka.actor.*;
-import akka.pattern.Backoff;
 import akka.pattern.BackoffOpts;
 import akka.pattern.BackoffSupervisor;
 import akka.testkit.TestActors.EchoActor;

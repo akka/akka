@@ -29,7 +29,6 @@ import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.cluster.sharding.typed.javadsl.Entity;
 import akka.persistence.typed.javadsl.EventSourcedBehavior;
 import akka.serialization.jackson.CborSerializable;
-import akka.util.Timeout;
 import com.fasterxml.jackson.annotation.JsonCreator;
 // #persistent-entity-usage-import
 

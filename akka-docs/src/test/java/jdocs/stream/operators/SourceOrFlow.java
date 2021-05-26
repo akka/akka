@@ -8,7 +8,6 @@ import akka.Done;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.japi.pf.PFBuilder;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 
 import akka.NotUsed;
@@ -46,10 +45,8 @@ import akka.stream.Attributes;
 // #log
 
 import java.time.Duration;
-import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.IntSupplier;
 
 class SourceOrFlow {
   private static ActorSystem system = null;

@@ -6,8 +6,6 @@ package akka.cluster.ddata;
 
 import java.util.Optional;
 
-import akka.cluster.UniqueAddress;
-
 // different delta type
 public class JavaImplOfDeltaReplicatedData2
     extends AbstractDeltaReplicatedData<

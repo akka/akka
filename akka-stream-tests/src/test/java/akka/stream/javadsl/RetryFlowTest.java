@@ -22,7 +22,6 @@ import scala.util.Try;
 import java.time.Duration;
 import java.util.Optional;
 
-import static akka.NotUsed.notUsed;
 import static org.junit.Assert.assertEquals;
 
 public class RetryFlowTest extends StreamTest {

@@ -8,7 +8,6 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 // #import
 import akka.japi.function.Creator;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.StreamConverters;
 

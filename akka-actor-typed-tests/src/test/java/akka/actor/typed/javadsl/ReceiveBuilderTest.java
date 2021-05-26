@@ -17,7 +17,6 @@ import org.scalatestplus.junit.JUnitSuite;
 import akka.actor.typed.Behavior;
 
 import static akka.actor.typed.javadsl.Behaviors.same;
-import static org.junit.Assert.assertEquals;
 
 /** Test creating [[MutableActor]]s using [[ReceiveBuilder]] */
 public class ReceiveBuilderTest extends JUnitSuite {

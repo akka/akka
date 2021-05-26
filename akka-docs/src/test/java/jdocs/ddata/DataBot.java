@@ -11,7 +11,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.Cancellable;
-import akka.cluster.Cluster;
 import akka.cluster.ddata.DistributedData;
 import akka.cluster.ddata.Key;
 import akka.cluster.ddata.ORSet;

@@ -24,7 +24,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import akka.testkit.AkkaJUnitActorSystemResource;
-import scala.Tuple2;
 
 import java.util.*;
 import java.util.function.Supplier;

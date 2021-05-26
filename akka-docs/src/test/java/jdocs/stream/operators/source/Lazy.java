@@ -4,7 +4,6 @@
 
 package jdocs.stream.operators.source;
 
-import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;

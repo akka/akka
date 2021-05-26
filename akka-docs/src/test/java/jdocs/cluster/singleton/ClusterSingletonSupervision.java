@@ -11,7 +11,6 @@ import akka.actor.SupervisorStrategy;
 
 // #singleton-supervisor-actor-usage-imports
 import akka.actor.PoisonPill;
-import akka.actor.Props;
 import akka.cluster.singleton.ClusterSingletonManager;
 import akka.cluster.singleton.ClusterSingletonManagerSettings;
 // #singleton-supervisor-actor-usage-imports

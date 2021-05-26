@@ -9,7 +9,6 @@ import akka.actor.typed.ActorSystem;
 import akka.stream.javadsl.Source;
 
 import java.util.Arrays;
-import java.util.stream.Collectors;
 
 public class Sliding {
 

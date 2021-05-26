@@ -11,7 +11,6 @@ import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
-import akka.actor.typed.Signal;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Rule;

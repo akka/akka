@@ -6,10 +6,8 @@ package akka.japi;
 
 import akka.japi.pf.FI;
 import akka.japi.pf.Match;
-import org.junit.Rule;
 import org.junit.Assert;
 import org.junit.function.ThrowingRunnable;
-import org.junit.rules.ExpectedException;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 import scala.MatchError;
