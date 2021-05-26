@@ -49,7 +49,8 @@ import akka.annotation.InternalApi
     // so we need to look through the stack and eliminate any MCD already existing
     def loop(next: Behavior[T]): Behavior[T] = {
       next match {
-        case i: InterceptorImpl[_, T @unchecked] if i.interceptor.isSame(this.asInstanceOf[BehaviorInterceptor[Any, Any]]) =>
+        case i: InterceptorImpl[_, T @unchecked]
+            if i.interceptor.isSame(this.asInstanceOf[BehaviorInterceptor[Any, Any]]) =>
           // eliminate that interceptor
           loop(i.nestedBehavior)
 

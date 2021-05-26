@@ -228,7 +228,9 @@ import scala.util.Success
       createRequest: akka.japi.function.Function[ActorRef[Res], Req],
       applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit = {
     import akka.actor.typed.javadsl.AskPattern
-    pipeToSelf[Res](AskPattern.ask(target, ref => createRequest(ref), responseTimeout, system.scheduler), applyToResponse)
+    pipeToSelf[Res](
+      AskPattern.ask(target, ref => createRequest(ref), responseTimeout, system.scheduler),
+      applyToResponse)
   }
 
   override def askWithStatus[Req, Res](
