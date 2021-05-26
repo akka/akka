@@ -1019,6 +1019,32 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       val combinedBytes = combinedBs.toArrayUnsafe()
       combinedBytes should ===(bytes ++ bytes)
     }
+
+    "unsafely fold bytes" in {
+      val bytes = Array.fill[Byte](100)(8)
+      val bs = ByteString.fromArrayUnsafe(bytes)
+      val result1 = bs.foldLeftArrayUnsafe(List.empty[(Array[Byte], Int, Int)])((acc, bytes, start, length) =>
+        (bytes, start, length) :: acc
+      )
+      result1 should have size(1)
+      result1.head._1 should be theSameInstanceAs(bytes)
+      result1.head._2 should === (0)
+      result1.head._3 should === (100)
+
+      val compactBs = ByteString.fromArrayUnsafe(bytes)
+      val offsetBs = ByteString1(bytes, 2, 5)
+      val bs3 = compactBs ++ offsetBs
+      val result2 = bs3.foldLeftArrayUnsafe(List.empty[(Array[Byte], Int, Int)])((acc, bytes, start, length) =>
+        (bytes, start, length) :: acc
+      ).reverse
+      result2 should have size(2)
+      result2(0)._1 should be theSameInstanceAs(bytes)
+      result2(0)._2 should === (0) // offset
+      result2(0)._3 should === (100) // length
+      result2(1)._1 should be theSameInstanceAs(bytes)
+      result2(1)._2 should === (2) // offset
+      result2(1)._3 should === (5) // length
+    }
   }
 
   "A ByteStringIterator" must {

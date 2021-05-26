@@ -271,6 +271,9 @@ object ByteString {
 
     override def toArrayUnsafe(): Array[Byte] = bytes
 
+    override def foldLeftArrayUnsafe[T](zero: T)(f: (T, Array[Byte], Int, Int) => T): T =
+      f(zero, bytes, 0, bytes.length)
+
   }
 
   /** INTERNAL API: ByteString backed by exactly one array, with start / end markers */
@@ -434,6 +437,9 @@ object ByteString {
       }
       toCopy
     }
+
+    def foldLeftArrayUnsafe[T](zero: T)(f: (T, Array[Byte], Int, Int) => T): T =
+      f(zero, bytes, startIndex, length)
 
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
   }
@@ -699,6 +705,16 @@ object ByteString {
     }
 
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
+
+    def foldLeftArrayUnsafe[T](zero: T)(f: (T, Array[Byte], Int, Int) => T): T = {
+      val iterator = bytestrings.iterator
+      var acc = zero
+      while (iterator.hasNext) {
+        val byteString = iterator.next()
+        acc = byteString.foldLeftArrayUnsafe(acc)(f)
+      }
+      acc
+    }
   }
 
   @SerialVersionUID(1L)
@@ -861,6 +877,25 @@ sealed abstract class ByteString
    * toArray method - which provide the immutability guarantees by copying the backing array.
    */
   def toArrayUnsafe(): Array[Byte] = toArray
+
+  /**
+   * Unsafe API: Use only in situations you are completely confident that this is what
+   * you need, and that you understand the implications documented below.
+   *
+   * Allows folding over the contents of the byte string, invoking the given function for each
+   * segment of the rope, with an accumulator, current byte array and any potential starting offset and length in bytes
+   * from the offset, in case of a segmented ByteString, for unsegmented ByteStrings the length and offset will be `-1`
+   *
+   * This method of exposing the bytes of a ByteString can save array copies and allocations
+   * depending on use case and can lead to better performance,
+   * however it also means that one MUST NOT modify the passed in arrays, or unexpected
+   * immutable data structure contract-breaking behavior will manifest itself.
+   *
+   * This API is intended for users who need to pass the byte contents of the ByteString to some other API, which will
+   * only read the bytes and never mutate then. For all other intents and purposes, please use the usual
+   * toArray method - which provide the immutability guarantees by copying the backing array.
+   */
+  def foldLeftArrayUnsafe[T](zero: T)(f: (T, Array[Byte], Int, Int) => T): T
 
   override def foreach[@specialized U](f: Byte => U): Unit = iterator.foreach(f)
 
