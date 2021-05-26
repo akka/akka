@@ -436,6 +436,11 @@ object ByteString {
     }
 
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
+
+    override def toArrayUnsafe(): Array[Byte] = {
+      if (startIndex == 0 && length == bytes.length) bytes
+      else toArray
+    }
   }
 
   private[akka] object ByteStrings extends Companion {
