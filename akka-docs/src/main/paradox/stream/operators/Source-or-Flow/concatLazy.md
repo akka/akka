@@ -14,7 +14,9 @@ After completion of the original upstream the elements of the given source will 
 
 After completion of the original upstream the elements of the given source will be emitted.
 
-Both streams will be materialized together, but the concatenated source materialization can be deferred (and completely avoided if the stream fails or cancels before the first source has completed) by combining with @ref(Source.lazySource)[../Source/lazySource.md].
+Both streams will be materialized together, however, the given stream will be pulled for the first time only after the original upstream was completed. (In contrast, @ref(concat)[concat.md], introduces single-element buffers after both, original and given sources so that the given source is also pulled once immediately.)
+
+To defer the materialization of the given source (or to completely avoid its materialization if the original upstream fails or cancels), wrap it into @ref(Source.lazySource)[../Source/lazySource.md].
 
 ## Example
 Scala
