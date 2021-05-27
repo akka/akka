@@ -1,0 +1,11 @@
+# internal API changes and stream operator additions
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.concatGraph")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.GraphDSL#Implicits#PortOpsImpl.prependGraph")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.concatGraph")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Flow.prependGraph")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.concatGraph")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.prependGraph")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.concatGraph")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.FlowOps.prependGraph")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.SubFlowImpl.concatGraph")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.SubFlowImpl.prependGraph")

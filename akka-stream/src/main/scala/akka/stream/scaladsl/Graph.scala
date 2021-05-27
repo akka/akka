@@ -1244,11 +1244,34 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] => O)(n: Int) extends GraphStage[U
 
 object Concat {
 
+  // two streams is so common that we can re-use a single instance to avoid some allocations
+  private val _concatTwo = new Concat[Any](2)
+  private def concatTwo[T]: GraphStage[UniformFanInShape[T, T]] =
+    _concatTwo.asInstanceOf[GraphStage[UniformFanInShape[T, T]]]
+
   /**
-   * Create a new `Concat`.
+   * Create a new `Concat`. Note that this for historical reasons creates a "detached" Concat which
+   * will eagerly pull each input on materialization and act as a one element buffer for each input.
    */
   def apply[T](inputPorts: Int = 2): Graph[UniformFanInShape[T, T], NotUsed] =
-    GraphStages.withDetachedInputs(new Concat[T](inputPorts))
+    apply(inputPorts, detachedInputs = true)
+
+  /**
+   * Create a new `Concat` operator that will concatenate two or more streams.
+   * @param inputPorts The number of fan-in input ports
+   * @param detachedInputs If the ports should be detached (eagerly pull both inputs) useful to avoid deadlocks in graphs with loops
+   * @return
+   */
+  def apply[T](inputPorts: Int, detachedInputs: Boolean): Graph[UniformFanInShape[T, T], NotUsed] = {
+    val concat = {
+      if (inputPorts == 2) concatTwo[T]
+      else new Concat[T](inputPorts)
+    }
+
+    if (detachedInputs) GraphStages.withDetachedInputs(concat)
+    else concat
+  }
+
 }
 
 /**
