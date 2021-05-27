@@ -195,7 +195,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
   override def decodePdu(raw: ByteString): AkkaPdu = {
     try {
       val pdu = AkkaProtocolMessage.parseFrom(raw.toArrayUnsafe())
-      if (pdu.hasPayload) Payload(ByteStringUtil.fromProtoByteStringUnsafe(pdu.getPayload))
+      if (pdu.hasPayload) Payload(ByteString.fromByteBuffer(pdu.getPayload.asReadOnlyByteBuffer()))
       else if (pdu.hasInstruction) decodeControlPdu(pdu.getInstruction)
       else
         throw new PduCodecException("Error decoding Akka PDU: Neither message nor control message were contained", null)
