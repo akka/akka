@@ -28,7 +28,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
 
   val cfg = ConfigFactory.parseString(s"""
      # for serious measurements you should increase the totalMessagesFactor (80)
-     akka.test.MaxThroughputSpec.totalMessagesFactor = 10.0
+     akka.test.MaxThroughputSpec.totalMessagesFactor = 160.0
      akka.test.MaxThroughputSpec.real-message = off
      akka.test.MaxThroughputSpec.actor-selection = off
      akka {
