@@ -17,7 +17,7 @@ import akka.cluster._
 import akka.cluster.InternalClusterAction._
 import akka.cluster.protobuf.msg.{ ClusterMessages => cm }
 import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
-import akka.protobufv3.internal.{ ByteString, MessageLite }
+import akka.protobufv3.internal.MessageLite
 import akka.remote.ByteStringUtils
 import akka.routing.Pool
 import akka.serialization._

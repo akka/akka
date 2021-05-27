@@ -14,7 +14,7 @@ import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster.metrics._
 import akka.cluster.metrics.protobuf.msg.{ ClusterMetricsMessages => cm }
 import akka.dispatch.Dispatchers
-import akka.protobufv3.internal.{ ByteString, MessageLite }
+import akka.protobufv3.internal.MessageLite
 import akka.remote.ByteStringUtils
 import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest, Serializers }
 import akka.util.ClassLoaderObjectInputStream
