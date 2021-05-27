@@ -22,6 +22,7 @@ import scala.concurrent.ExecutionContext
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.stream.scaladsl.Flow
+import org.scalacheck.Gen.const
 
 object IntegrationDocSpec {
   import TwitterStreamQuickstartDocSpec._
@@ -469,7 +470,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val elementsToProcess = 5
 
     val queue = Source
-      .queue[Int](bufferSize, OverflowStrategy.backpressure)
+      .queue[Int](bufferSize)
       .throttle(elementsToProcess, 3.second)
       .map(x => x * x)
       .toMat(Sink.foreach(x => println(s"completed $x")))(Keep.left)
@@ -479,7 +480,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     implicit val ec = system.dispatcher
     source
-      .mapAsync(1)(x => {
+      .map(x => {
         queue.offer(x).map {
           case QueueOfferResult.Enqueued    => println(s"enqueued $x")
           case QueueOfferResult.Dropped     => println(s"dropped $x")

@@ -656,7 +656,7 @@ class FlowGroupBySpec extends StreamSpec("""
     "not block all substreams when one is blocked but has a buffer in front" in assertAllStagesStopped {
       case class Elem(id: Int, substream: Int, f: () => Any)
       val queue = Source
-        .queue[Elem](3, OverflowStrategy.backpressure)
+        .queue[Elem](3)
         .groupBy(2, _.substream)
         .buffer(2, OverflowStrategy.backpressure)
         .map { _.f() }

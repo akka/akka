@@ -749,8 +749,8 @@ public class IntegrationDocTest extends AbstractJavaTest {
         int bufferSize = 10;
         int elementsToProcess = 5;
 
-        SourceQueueWithComplete<Integer> sourceQueue =
-            Source.<Integer>queue(bufferSize, OverflowStrategy.backpressure())
+        BoundedSourceQueue<Integer> sourceQueue =
+            Source.<Integer>queue(bufferSize)
                 .throttle(elementsToProcess, Duration.ofSeconds(3))
                 .map(x -> x * x)
                 .to(Sink.foreach(x -> System.out.println("got: " + x)))
