@@ -6,16 +6,16 @@ package akka.remote.serialization
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.{ Config, ConfigFactory }
 
-import util.{Failure, Success}
-import akka.actor.{Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope}
+import util.{ Failure, Success }
+import akka.actor.{ Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
 import akka.protobufv3.internal.ByteString
 import akka.remote.ByteStringUtils
 import akka.remote.DaemonMsgCreate
-import akka.remote.WireFormats.{DaemonMsgCreateData, DeployData, PropsData}
-import akka.routing.{NoRouter, RouterConfig}
-import akka.serialization.{BaseSerializer, SerializationExtension, SerializerWithStringManifest}
+import akka.remote.WireFormats.{ DaemonMsgCreateData, DeployData, PropsData }
+import akka.routing.{ NoRouter, RouterConfig }
+import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
 import akka.util.ccompat._
 import akka.util.ccompat.JavaConverters._
 

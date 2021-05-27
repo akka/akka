@@ -15,7 +15,7 @@ import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.cluster.UniqueAddress
 import akka.cluster.ddata.VersionVector
-import akka.cluster.ddata.protobuf.msg.{ReplicatorMessages => dm}
+import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
 import akka.protobufv3.internal.ByteString
 import akka.protobufv3.internal.MessageLite
 import akka.remote.ByteStringUtils

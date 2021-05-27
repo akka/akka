@@ -4,20 +4,20 @@
 
 package akka.cluster.protobuf
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
-import java.util.zip.{GZIPInputStream, GZIPOutputStream}
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
+import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.Deadline
 import scala.annotation.nowarn
-import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions}
-import akka.actor.{Address, ExtendedActorSystem}
+import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
+import akka.actor.{ Address, ExtendedActorSystem }
 import akka.annotation.InternalApi
 import akka.cluster._
 import akka.cluster.InternalClusterAction._
-import akka.cluster.protobuf.msg.{ClusterMessages => cm}
-import akka.cluster.routing.{ClusterRouterPool, ClusterRouterPoolSettings}
-import akka.protobufv3.internal.{ByteString, MessageLite}
+import akka.cluster.protobuf.msg.{ ClusterMessages => cm }
+import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
+import akka.protobufv3.internal.{ ByteString, MessageLite }
 import akka.remote.ByteStringUtils
 import akka.routing.Pool
 import akka.serialization._
@@ -226,7 +226,9 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
   private def poolToProto(pool: Pool): cm.Pool = {
     val builder = cm.Pool.newBuilder()
     val serializer = serialization.findSerializerFor(pool)
-    builder.setSerializerId(serializer.identifier).setData(ByteStringUtils.toProtoByteStringUnsafe(serializer.toBinary(pool)))
+    builder
+      .setSerializerId(serializer.identifier)
+      .setData(ByteStringUtils.toProtoByteStringUnsafe(serializer.toBinary(pool)))
     val manifest = Serializers.manifestFor(serializer, pool)
     builder.setManifest(manifest)
     builder.build()

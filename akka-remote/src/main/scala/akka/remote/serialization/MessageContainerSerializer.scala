@@ -14,7 +14,7 @@ import akka.actor.SelectionPathElement
 import akka.protobufv3.internal.ByteString
 import akka.remote.ByteStringUtils
 import akka.remote.ContainerFormats
-import akka.serialization.{BaseSerializer, SerializationExtension, Serializers}
+import akka.serialization.{ BaseSerializer, SerializationExtension, Serializers }
 import akka.util.ccompat._
 
 @ccompatUsedUntil213

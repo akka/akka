@@ -9,7 +9,7 @@ import akka.event.Logging
 import akka.protobufv3.internal.ByteString
 import akka.remote.ByteStringUtils
 import akka.remote.ContainerFormats
-import akka.serialization.{SerializationExtension, Serializers}
+import akka.serialization.{ SerializationExtension, Serializers }
 import akka.serialization.DisabledJavaSerializer
 
 /**

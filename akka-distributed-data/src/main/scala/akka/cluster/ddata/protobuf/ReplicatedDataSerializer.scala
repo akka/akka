@@ -4,7 +4,7 @@
 
 package akka.cluster.ddata.protobuf
 
-import java.{lang => jl}
+import java.{ lang => jl }
 import java.io.NotSerializableException
 import java.util
 import java.util.ArrayList
@@ -17,8 +17,8 @@ import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.cluster.ddata._
 import akka.cluster.ddata.Replicator.Internal._
-import akka.cluster.ddata.protobuf.msg.{ReplicatedDataMessages => rd}
-import akka.cluster.ddata.protobuf.msg.{ReplicatorMessages => dm}
+import akka.cluster.ddata.protobuf.msg.{ ReplicatedDataMessages => rd }
+import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
 import akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage
 import akka.protobufv3.internal.GeneratedMessageV3
 import akka.remote.ByteStringUtils

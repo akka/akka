@@ -164,11 +164,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
 
   override def constructPayload(payload: ByteString): ByteString =
     ByteString.fromArrayUnsafe(
-      AkkaProtocolMessage
-        .newBuilder()
-        .setPayload(ByteStringUtils.toProtoByteStringUnsafe(payload))
-        .build
-        .toByteArray)
+      AkkaProtocolMessage.newBuilder().setPayload(ByteStringUtils.toProtoByteStringUnsafe(payload)).build.toByteArray)
 
   override def constructAssociate(info: HandshakeInfo): ByteString = {
     val handshakeInfo = AkkaHandshakeInfo.newBuilder.setOrigin(serializeAddress(info.origin)).setUid(info.uid.toLong)

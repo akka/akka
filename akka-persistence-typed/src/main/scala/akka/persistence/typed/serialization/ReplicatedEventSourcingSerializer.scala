@@ -5,13 +5,13 @@
 package akka.persistence.typed.serialization
 
 import java.io.NotSerializableException
-import java.util.{ArrayList, Collections, Comparator}
-import java.{lang => jl}
+import java.util.{ ArrayList, Collections, Comparator }
+import java.{ lang => jl }
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.ReplicaId
-import akka.persistence.typed.crdt.{Counter, ORSet}
+import akka.persistence.typed.crdt.{ Counter, ORSet }
 import akka.persistence.typed.internal.PublishedEventImpl
 import akka.persistence.typed.internal.ReplicatedEventMetadata
 import akka.persistence.typed.internal.ReplicatedSnapshotMetadata
@@ -20,7 +20,7 @@ import akka.persistence.typed.internal.VersionVector
 import akka.remote.ByteStringUtils
 import akka.remote.ContainerFormats.Payload
 import akka.remote.serialization.WrappedPayloadSupport
-import akka.serialization.{BaseSerializer, SerializerWithStringManifest}
+import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 
 import scala.annotation.tailrec
 import akka.util.ccompat.JavaConverters._
