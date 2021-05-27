@@ -14,7 +14,9 @@ Prepends the given source to the flow, consuming it until completion before the 
 
 Prepends the given source to the flow, consuming it until completion before the original source is consumed.
 
-If materialized values needs to be collected `prependMat` is available.
+Both streams will be materialized together, however, the original stream will be pulled for the first time only after the prepended upstream was completed. (In contrast, @ref(prepend)[prepend.md], introduces single-element buffers after both, original and given sources so that the original source is also pulled once immediately.)
+
+If materialized values needs to be collected `prependLazyMat` is available.
 
 See also @ref[prepend](prepend.md) which is detached.
 

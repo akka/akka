@@ -18,6 +18,8 @@ Both streams will be materialized together, however, the given stream will be pu
 
 To defer the materialization of the given source (or to completely avoid its materialization if the original upstream fails or cancels), wrap it into @ref(Source.lazySource)[../Source/lazySource.md].
 
+If materialized values needs to be collected `concatLazyMat` is available.
+
 ## Example
 Scala
 :   @@snip [FlowConcatSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowConcatSpec.scala) { #concatLazy }
