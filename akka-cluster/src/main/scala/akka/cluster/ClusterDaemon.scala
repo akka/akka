@@ -15,7 +15,6 @@ import com.typesafe.config.Config
 
 import akka.Done
 import akka.actor._
-import akka.actor.SupervisorStrategy.Stop
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
@@ -287,7 +286,7 @@ private[cluster] final class ClusterCoreSupervisor(joinConfigCompatChecker: Join
       case NonFatal(e) =>
         Cluster(context.system).ClusterLogger.logError(e, "crashed, [{}] - shutting down...", e.getMessage)
         self ! PoisonPill
-        Stop
+        SupervisorStrategy.stop
     }
 
   override def postStop(): Unit = Cluster(context.system).shutdown()

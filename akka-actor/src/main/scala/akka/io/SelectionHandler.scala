@@ -329,7 +329,7 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings)
   // and log the failure at debug level
   override def supervisorStrategy = {
     def stoppingDecider: SupervisorStrategy.Decider = {
-      case _: Exception => SupervisorStrategy.Stop
+      case _: Exception => SupervisorStrategy.stop(logLevel = Logging.ErrorLevel)
     }
     new OneForOneStrategy()(stoppingDecider) {
       override def logFailure(

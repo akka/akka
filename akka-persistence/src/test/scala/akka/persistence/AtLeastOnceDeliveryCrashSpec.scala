@@ -6,10 +6,9 @@ package akka.persistence
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import akka.actor._
-import akka.actor.SupervisorStrategy.{ Escalate, Stop }
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
+import akka.event.Logging
+import akka.testkit.{AkkaSpec, ImplicitSender, TestProbe}
 
 object AtLeastOnceDeliveryCrashSpec {
 
@@ -17,8 +16,8 @@ object AtLeastOnceDeliveryCrashSpec {
     import scala.concurrent.duration._
 
     override val supervisorStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 10.seconds) {
-      case _: IllegalStateException => Stop
-      case t                        => super.supervisorStrategy.decider.applyOrElse(t, (_: Any) => Escalate)
+      case _: IllegalStateException => SupervisorStrategy.stop
+      case t                        => super.supervisorStrategy.decider.applyOrElse(t, (_: Any) => SupervisorStrategy.Escalate)
     }
 
     val crashingActor = context.actorOf(Props(new CrashingActor(testProbe)), "CrashingActor")

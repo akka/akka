@@ -5,19 +5,13 @@
 package akka.pattern.internal
 
 import scala.concurrent.duration._
-
-import akka.actor.{ OneForOneStrategy, _ }
-import akka.actor.SupervisorStrategy._
+import akka.actor.{OneForOneStrategy, _}
+import akka.actor.SupervisorStrategy
+import akka.actor.SupervisorStrategy.Directive
 import akka.annotation.InternalApi
-import akka.pattern.{
-  BackoffReset,
-  BackoffSupervisor,
-  ForwardDeathLetters,
-  ForwardTo,
-  HandleBackoff,
-  HandlingWhileStopped,
-  ReplyWith
-}
+import akka.pattern.{BackoffReset, BackoffSupervisor, ForwardDeathLetters, ForwardTo, HandleBackoff, HandlingWhileStopped, ReplyWith}
+
+import scala.annotation.nowarn
 
 /**
  * INTERNAL API
@@ -26,6 +20,7 @@ import akka.pattern.{
  * This back-off supervisor is created by using ``akka.pattern.BackoffSupervisor.props``
  * with ``akka.pattern.BackoffOpts.onFailure``.
  */
+@nowarn("msg=deprecated")
 @InternalApi private[pattern] class BackoffOnRestartSupervisor(
     val childProps: Props,
     val childName: String,
@@ -47,12 +42,12 @@ import akka.pattern.{
     OneForOneStrategy(strategy.maxNrOfRetries, strategy.withinTimeRange, strategy.loggingEnabled) {
       case ex =>
         val defaultDirective: Directive =
-          decider.applyOrElse(ex, (_: Any) => Escalate)
+          decider.applyOrElse(ex, (_: Any) => SupervisorStrategy.Escalate)
 
         strategy.decider.applyOrElse(ex, (_: Any) => defaultDirective) match {
           // Whatever the final Directive is, we will translate all Restarts
           // to our own Restarts, which involves stopping the child.
-          case Restart =>
+          case SupervisorStrategy.Restart | _: SupervisorStrategy.Restart =>
             val nextRestartCount = restartCount + 1
 
             if (strategy.withinTimeRange.isFinite && restartCount == 0) {
@@ -74,7 +69,7 @@ import akka.pattern.{
             } else {
               become(waitChildTerminatedBeforeBackoff(childRef).orElse(handleBackoff))
             }
-            Stop
+            SupervisorStrategy.stop
 
           case other => other
         }
