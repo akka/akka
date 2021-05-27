@@ -22,7 +22,7 @@ import akka.serialization.BaseSerializer
 import akka.serialization.SerializerWithStringManifest
 import akka.util.ccompat.JavaConverters._
 import akka.protobufv3.internal.ByteString
-import akka.protobufv3.internal.UnsafeByteOperations
+import akka.remote.ByteStringUtils
 
 /**
  * INTERNAL API
@@ -97,7 +97,7 @@ import akka.protobufv3.internal.UnsafeByteOperations
 
   private def chunkedMessageToProto(chunk: ChunkedMessage): Payload.Builder = {
     val payloadBuilder = ContainerFormats.Payload.newBuilder()
-    payloadBuilder.setEnclosedMessage(UnsafeByteOperations.unsafeWrap(chunk.serialized.toArrayUnsafe()))
+    payloadBuilder.setEnclosedMessage(ByteStringUtils.toProtoByteStringUnsafe(chunk.serialized.toArrayUnsafe()))
     payloadBuilder.setMessageManifest(ByteString.copyFromUtf8(chunk.manifest))
     payloadBuilder.setSerializerId(chunk.serializerId)
     payloadBuilder

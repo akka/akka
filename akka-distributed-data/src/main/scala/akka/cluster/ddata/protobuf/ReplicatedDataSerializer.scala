@@ -4,7 +4,7 @@
 
 package akka.cluster.ddata.protobuf
 
-import java.{ lang => jl }
+import java.{lang => jl}
 import java.io.NotSerializableException
 import java.util
 import java.util.ArrayList
@@ -17,12 +17,11 @@ import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.cluster.ddata._
 import akka.cluster.ddata.Replicator.Internal._
-import akka.cluster.ddata.protobuf.msg.{ ReplicatedDataMessages => rd }
-import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
+import akka.cluster.ddata.protobuf.msg.{ReplicatedDataMessages => rd}
+import akka.cluster.ddata.protobuf.msg.{ReplicatorMessages => dm}
 import akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage
-import akka.protobufv3.internal.ByteString
 import akka.protobufv3.internal.GeneratedMessageV3
-import akka.protobufv3.internal.UnsafeByteOperations
+import akka.remote.ByteStringUtils
 import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
@@ -622,7 +621,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
           rd.GCounter.Entry
             .newBuilder()
             .setNode(uniqueAddressToProto(address))
-            .setValue(UnsafeByteOperations.unsafeWrap(value.toByteArray)))
+            .setValue(ByteStringUtils.toProtoByteStringUnsafe(value.toByteArray)))
     }
     b.build()
   }

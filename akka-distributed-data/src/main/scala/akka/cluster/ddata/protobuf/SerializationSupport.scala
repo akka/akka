@@ -15,10 +15,10 @@ import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.cluster.UniqueAddress
 import akka.cluster.ddata.VersionVector
-import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
+import akka.cluster.ddata.protobuf.msg.{ReplicatorMessages => dm}
 import akka.protobufv3.internal.ByteString
 import akka.protobufv3.internal.MessageLite
-import akka.protobufv3.internal.UnsafeByteOperations
+import akka.remote.ByteStringUtils
 import akka.serialization._
 import akka.util.ccompat._
 import akka.util.ccompat.JavaConverters._
@@ -142,7 +142,7 @@ trait SerializationSupport {
       val msgSerializer = serialization.findSerializerFor(m)
       val builder = dm.OtherMessage
         .newBuilder()
-        .setEnclosedMessage(UnsafeByteOperations.unsafeWrap(msgSerializer.toBinary(m)))
+        .setEnclosedMessage(ByteStringUtils.toProtoByteStringUnsafe(msgSerializer.toBinary(m)))
         .setSerializerId(msgSerializer.identifier)
 
       val ms = Serializers.manifestFor(msgSerializer, m)

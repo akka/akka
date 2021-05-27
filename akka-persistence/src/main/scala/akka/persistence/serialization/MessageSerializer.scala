@@ -10,14 +10,13 @@ import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration
 import scala.concurrent.duration.Duration
 import scala.annotation.nowarn
-import akka.actor.{ ActorPath, ExtendedActorSystem }
+import akka.actor.{ActorPath, ExtendedActorSystem}
 import akka.actor.Actor
 import akka.persistence._
 import akka.persistence.AtLeastOnceDelivery._
-import akka.persistence.fsm.PersistentFSM.{ PersistentFSMSnapshot, StateChangeEvent }
-import akka.persistence.serialization.{ MessageFormats => mf }
+import akka.persistence.fsm.PersistentFSM.{PersistentFSMSnapshot, StateChangeEvent}
+import akka.persistence.serialization.{MessageFormats => mf}
 import akka.protobufv3.internal.ByteString
-import akka.protobufv3.internal.UnsafeByteOperations
 import akka.serialization._
 import akka.util.ccompat._
 
@@ -185,7 +184,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       val ms = Serializers.manifestFor(serializer, payload)
       if (ms.nonEmpty) builder.setPayloadManifest(ByteString.copyFromUtf8(ms))
 
-      builder.setPayload(UnsafeByteOperations.unsafeWrap(serializer.toBinary(payload)))
+      builder.setPayload(ByteStringUtils.toProtoByteStringUnsafe(serializer.toBinary(payload)))
       builder.setSerializerId(serializer.identifier)
       builder
     }

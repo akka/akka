@@ -4,21 +4,21 @@
 
 package akka.cluster.protobuf
 
-import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
-import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
+import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.Deadline
 import scala.annotation.nowarn
-import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
-import akka.actor.{ Address, ExtendedActorSystem }
+import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions}
+import akka.actor.{Address, ExtendedActorSystem}
 import akka.annotation.InternalApi
 import akka.cluster._
 import akka.cluster.InternalClusterAction._
-import akka.cluster.protobuf.msg.{ ClusterMessages => cm }
-import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
-import akka.protobufv3.internal.UnsafeByteOperations
-import akka.protobufv3.internal.{ ByteString, MessageLite }
+import akka.cluster.protobuf.msg.{ClusterMessages => cm}
+import akka.cluster.routing.{ClusterRouterPool, ClusterRouterPoolSettings}
+import akka.protobufv3.internal.{ByteString, MessageLite}
+import akka.remote.ByteStringUtils
 import akka.routing.Pool
 import akka.serialization._
 import akka.util.Version
@@ -226,7 +226,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
   private def poolToProto(pool: Pool): cm.Pool = {
     val builder = cm.Pool.newBuilder()
     val serializer = serialization.findSerializerFor(pool)
-    builder.setSerializerId(serializer.identifier).setData(UnsafeByteOperations.unsafeWrap(serializer.toBinary(pool)))
+    builder.setSerializerId(serializer.identifier).setData(ByteStringUtils.toProtoByteStringUnsafe(serializer.toBinary(pool)))
     val manifest = Serializers.manifestFor(serializer, pool)
     builder.setManifest(manifest)
     builder.build()
@@ -517,7 +517,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
       .newBuilder()
       .setFrom(uniqueAddressToProto(envelope.from))
       .setTo(uniqueAddressToProto(envelope.to))
-      .setSerializedGossip(UnsafeByteOperations.unsafeWrap(compress(gossipToProto(envelope.gossip).build)))
+      .setSerializedGossip(ByteStringUtils.toProtoByteStringUnsafe(compress(gossipToProto(envelope.gossip).build)))
       .build
 
   private def gossipStatusToProto(status: GossipStatus): cm.GossipStatus = {
@@ -528,7 +528,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
       .setFrom(uniqueAddressToProto(status.from))
       .addAllAllHashes(allHashes.asJava)
       .setVersion(vectorClockToProto(status.version, hashMapping))
-      .setSeenDigest(UnsafeByteOperations.unsafeWrap(status.seenDigest))
+      .setSeenDigest(ByteStringUtils.toProtoByteStringUnsafe(status.seenDigest))
       .build()
   }
 

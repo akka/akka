@@ -7,9 +7,7 @@ package akka.remote.transport
 import scala.annotation.nowarn
 import akka.AkkaException
 import akka.actor.{ ActorRef, Address, AddressFromURIString, InternalActorRef }
-import akka.protobufv3.internal.{ ByteString => PByteString }
 import akka.protobufv3.internal.InvalidProtocolBufferException
-import akka.protobufv3.internal.UnsafeByteOperations
 import akka.remote._
 import akka.remote.WireFormats._
 import akka.util.ByteString
@@ -168,7 +166,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     ByteString.fromArrayUnsafe(
       AkkaProtocolMessage
         .newBuilder()
-        .setPayload(UnsafeByteOperations.unsafeWrap(payload.asByteBuffer))
+        .setPayload(ByteStringUtils.toProtoByteStringUnsafe(payload))
         .build
         .toByteArray)
 

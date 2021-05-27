@@ -25,13 +25,12 @@ import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.Replicator.Internal._
 import akka.cluster.ddata.VersionVector
-import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
-import akka.protobufv3.internal.ByteString
-import akka.protobufv3.internal.UnsafeByteOperations
+import akka.cluster.ddata.protobuf.msg.{ReplicatorMessages => dm}
+import akka.remote.ByteStringUtils
 import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
-import akka.util.{ ByteString => AkkaByteString }
+import akka.util.{ByteString => AkkaByteString}
 import akka.util.ccompat._
 import akka.util.ccompat.JavaConverters._
 
@@ -267,7 +266,7 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     status.digests.foreach {
       case (key, digest) =>
         b.addEntries(
-          dm.Status.Entry.newBuilder().setKey(key).setDigest(UnsafeByteOperations.unsafeWrap(digest.toArrayUnsafe())))
+          dm.Status.Entry.newBuilder().setKey(key).setDigest(ByteStringUtils.toProtoByteStringUnsafe(digest.toArrayUnsafe())))
     }
     status.toSystemUid.foreach(b.setToSystemUid) // can be None when sending back to a node of version 2.5.21
     b.setFromSystemUid(status.fromSystemUid.get)

@@ -12,9 +12,9 @@ import akka.actor.SelectChildPattern
 import akka.actor.SelectParent
 import akka.actor.SelectionPathElement
 import akka.protobufv3.internal.ByteString
-import akka.protobufv3.internal.UnsafeByteOperations
+import akka.remote.ByteStringUtils
 import akka.remote.ContainerFormats
-import akka.serialization.{ BaseSerializer, SerializationExtension, Serializers }
+import akka.serialization.{BaseSerializer, SerializationExtension, Serializers}
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
@@ -36,7 +36,7 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSe
     val message = sel.msg.asInstanceOf[AnyRef]
     val serializer = serialization.findSerializerFor(message)
     builder
-      .setEnclosedMessage(UnsafeByteOperations.unsafeWrap(serializer.toBinary(message)))
+      .setEnclosedMessage(ByteStringUtils.toProtoByteStringUnsafe(serializer.toBinary(message)))
       .setSerializerId(serializer.identifier)
       .setWildcardFanOut(sel.wildcardFanOut)
 

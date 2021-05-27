@@ -94,7 +94,7 @@ import akka.util.ByteString
       }
 
       private def createBuffer(bs: ByteString): EnvelopeBuffer = {
-        val buffer = ByteBuffer.wrap(bs.toArrayUnsafe())
+        val buffer = ByteBuffer.wrap(bs.toArray)
         buffer.order(ByteOrder.LITTLE_ENDIAN)
         flightRecorder.tcpInboundReceived(buffer.limit)
         val res = new EnvelopeBuffer(buffer)

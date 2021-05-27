@@ -6,16 +6,16 @@ package akka.remote.serialization
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.{Config, ConfigFactory}
 
-import util.{ Failure, Success }
-import akka.actor.{ Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope }
+import util.{Failure, Success}
+import akka.actor.{Deploy, ExtendedActorSystem, NoScopeGiven, Props, Scope}
 import akka.protobufv3.internal.ByteString
-import akka.protobufv3.internal.UnsafeByteOperations
+import akka.remote.ByteStringUtils
 import akka.remote.DaemonMsgCreate
-import akka.remote.WireFormats.{ DaemonMsgCreateData, DeployData, PropsData }
-import akka.routing.{ NoRouter, RouterConfig }
-import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
+import akka.remote.WireFormats.{DaemonMsgCreateData, DeployData, PropsData}
+import akka.routing.{NoRouter, RouterConfig}
+import akka.serialization.{BaseSerializer, SerializationExtension, SerializerWithStringManifest}
 import akka.util.ccompat._
 import akka.util.ccompat.JavaConverters._
 
@@ -46,21 +46,21 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
           val (serId, _, manifest, bytes) = serialize(d.config)
           builder.setConfigSerializerId(serId)
           builder.setConfigManifest(manifest)
-          builder.setConfig(UnsafeByteOperations.unsafeWrap(bytes))
+          builder.setConfig(ByteStringUtils.toProtoByteStringUnsafe(bytes))
         }
 
         if (d.routerConfig != NoRouter) {
           val (serId, _, manifest, bytes) = serialize(d.routerConfig)
           builder.setRouterConfigSerializerId(serId)
           builder.setRouterConfigManifest(manifest)
-          builder.setRouterConfig(UnsafeByteOperations.unsafeWrap(bytes))
+          builder.setRouterConfig(ByteStringUtils.toProtoByteStringUnsafe(bytes))
         }
 
         if (d.scope != NoScopeGiven) {
           val (serId, _, manifest, bytes) = serialize(d.scope)
           builder.setScopeSerializerId(serId)
           builder.setScopeManifest(manifest)
-          builder.setScope(UnsafeByteOperations.unsafeWrap(bytes))
+          builder.setScope(ByteStringUtils.toProtoByteStringUnsafe(bytes))
         }
 
         if (d.dispatcher != NoDispatcherGiven) {
@@ -76,7 +76,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
         val builder = PropsData.newBuilder.setClazz(props.clazz.getName).setDeploy(deployProto(props.deploy))
         props.args.foreach { arg =>
           val (serializerId, hasManifest, manifest, bytes) = serialize(arg)
-          builder.addArgs(UnsafeByteOperations.unsafeWrap(bytes))
+          builder.addArgs(ByteStringUtils.toProtoByteStringUnsafe(bytes))
           builder.addManifests(manifest)
           builder.addSerializerIds(serializerId)
           builder.addHasManifest(hasManifest)
