@@ -8,10 +8,8 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
-
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeMap
-
 import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
@@ -20,6 +18,7 @@ import akka.cluster.ddata.VersionVector
 import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
 import akka.protobufv3.internal.ByteString
 import akka.protobufv3.internal.MessageLite
+import akka.protobufv3.internal.UnsafeByteOperations
 import akka.serialization._
 import akka.util.ccompat._
 import akka.util.ccompat.JavaConverters._
@@ -143,7 +142,7 @@ trait SerializationSupport {
       val msgSerializer = serialization.findSerializerFor(m)
       val builder = dm.OtherMessage
         .newBuilder()
-        .setEnclosedMessage(ByteString.copyFrom(msgSerializer.toBinary(m)))
+        .setEnclosedMessage(UnsafeByteOperations.unsafeWrap(msgSerializer.toBinary(m)))
         .setSerializerId(msgSerializer.identifier)
 
       val ms = Serializers.manifestFor(msgSerializer, m)

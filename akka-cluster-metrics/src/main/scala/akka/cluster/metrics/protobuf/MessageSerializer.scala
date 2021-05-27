@@ -8,14 +8,13 @@ import java.{ lang => jl }
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectOutputStream }
 import java.io.NotSerializableException
 import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
-
 import scala.annotation.tailrec
 import scala.collection.immutable
-
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster.metrics._
 import akka.cluster.metrics.protobuf.msg.{ ClusterMetricsMessages => cm }
 import akka.dispatch.Dispatchers
+import akka.protobufv3.internal.UnsafeByteOperations
 import akka.protobufv3.internal.{ ByteString, MessageLite }
 import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest, Serializers }
 import akka.util.ClassLoaderObjectInputStream
@@ -122,7 +121,9 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
     val builder = cm.MetricsSelector.newBuilder()
     val serializer = serialization.findSerializerFor(selector)
 
-    builder.setData(ByteString.copyFrom(serializer.toBinary(selector))).setSerializerId(serializer.identifier)
+    builder
+      .setData(UnsafeByteOperations.unsafeWrap(serializer.toBinary(selector)))
+      .setSerializerId(serializer.identifier)
 
     val manifest = Serializers.manifestFor(serializer, selector)
     builder.setManifest(manifest)
@@ -198,7 +199,10 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
           val out = new ObjectOutputStream(bos)
           out.writeObject(number)
           out.close()
-          Number.newBuilder().setType(NumberType.Serialized).setSerialized(ByteString.copyFrom(bos.toByteArray))
+          Number
+            .newBuilder()
+            .setType(NumberType.Serialized)
+            .setSerialized(UnsafeByteOperations.unsafeWrap(bos.toByteArray))
       }
     }
 

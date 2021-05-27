@@ -7,6 +7,7 @@ package akka.remote.serialization
 import akka.actor.ExtendedActorSystem
 import akka.event.Logging
 import akka.protobufv3.internal.ByteString
+import akka.protobufv3.internal.UnsafeByteOperations
 import akka.remote.ContainerFormats
 import akka.serialization.{ SerializationExtension, Serializers }
 import akka.serialization.DisabledJavaSerializer
@@ -41,14 +42,14 @@ private[akka] class WrappedPayloadSupport(system: ExtendedActorSystem) {
           notSerializableException.originalMessage)
         val serializer2 = serialization.findSerializerFor(notSerializableException)
         builder
-          .setEnclosedMessage(ByteString.copyFrom(serializer2.toBinary(notSerializableException)))
+          .setEnclosedMessage(UnsafeByteOperations.unsafeWrap(serializer2.toBinary(notSerializableException)))
           .setSerializerId(serializer2.identifier)
         val manifest = Serializers.manifestFor(serializer2, notSerializableException)
         if (manifest.nonEmpty) builder.setMessageManifest(ByteString.copyFromUtf8(manifest))
 
       case _ =>
         builder
-          .setEnclosedMessage(ByteString.copyFrom(serializer.toBinary(payload)))
+          .setEnclosedMessage(UnsafeByteOperations.unsafeWrap(serializer.toBinary(payload)))
           .setSerializerId(serializer.identifier)
         val manifest = Serializers.manifestFor(serializer, payload)
         if (manifest.nonEmpty) builder.setMessageManifest(ByteString.copyFromUtf8(manifest))

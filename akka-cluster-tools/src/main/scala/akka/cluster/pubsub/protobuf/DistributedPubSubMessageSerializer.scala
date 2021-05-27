@@ -8,15 +8,14 @@ import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import java.io.NotSerializableException
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
-
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeMap
-
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.actor.ActorRef
 import akka.cluster.pubsub.DistributedPubSubMediator._
 import akka.cluster.pubsub.DistributedPubSubMediator.Internal._
 import akka.cluster.pubsub.protobuf.msg.{ DistributedPubSubMessages => dm }
+import akka.protobufv3.internal.UnsafeByteOperations
 import akka.protobufv3.internal.{ ByteString, MessageLite }
 import akka.serialization._
 import akka.util.ccompat._
@@ -230,7 +229,7 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
     val msgSerializer = serialization.findSerializerFor(m)
     val builder = dm.Payload
       .newBuilder()
-      .setEnclosedMessage(ByteString.copyFrom(msgSerializer.toBinary(m)))
+      .setEnclosedMessage(UnsafeByteOperations.unsafeWrap(msgSerializer.toBinary(m)))
       .setSerializerId(msgSerializer.identifier)
 
     val ms = Serializers.manifestFor(msgSerializer, m)

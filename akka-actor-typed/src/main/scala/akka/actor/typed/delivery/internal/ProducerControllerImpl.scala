@@ -346,10 +346,10 @@ object ProducerControllerImpl {
     val manifest = Serializers.manifestFor(ser, mAnyRef)
     val serializerId = ser.identifier
     if (bytes.length <= chunkSize) {
-      ChunkedMessage(ByteString(bytes), firstChunk = true, lastChunk = true, serializerId, manifest) :: Nil
+      ChunkedMessage(ByteString.fromArrayUnsafe(bytes), firstChunk = true, lastChunk = true, serializerId, manifest) :: Nil
     } else {
       val builder = Vector.newBuilder[ChunkedMessage]
-      val chunksIter = ByteString(bytes).grouped(chunkSize)
+      val chunksIter = ByteString.fromArrayUnsafe(bytes).grouped(chunkSize)
       var first = true
       while (chunksIter.hasNext) {
         val chunk = chunksIter.next()

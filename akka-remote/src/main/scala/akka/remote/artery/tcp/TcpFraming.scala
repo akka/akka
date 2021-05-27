@@ -41,18 +41,19 @@ import akka.util.ByteString
    * The streamId` is encoded as 1 byte.
    */
   def encodeConnectionHeader(streamId: Int): ByteString =
-    Magic ++ ByteString(streamId.toByte)
+    Magic ++ ByteString.fromArrayUnsafe(Array(streamId.toByte))
 
   /**
    * Each frame starts with the frame header that contains the length
    * of the frame. The `frameLength` is encoded as 4 bytes (little endian).
    */
   def encodeFrameHeader(frameLength: Int): ByteString =
-    ByteString(
-      (frameLength & 0xff).toByte,
-      ((frameLength & 0xff00) >> 8).toByte,
-      ((frameLength & 0xff0000) >> 16).toByte,
-      ((frameLength & 0xff000000) >> 24).toByte)
+    ByteString.fromArrayUnsafe(
+      Array[Byte](
+        (frameLength & 0xff).toByte,
+        ((frameLength & 0xff00) >> 8).toByte,
+        ((frameLength & 0xff0000) >> 16).toByte,
+        ((frameLength & 0xff000000) >> 24).toByte))
 }
 
 /**
@@ -93,7 +94,7 @@ import akka.util.ByteString
       }
 
       private def createBuffer(bs: ByteString): EnvelopeBuffer = {
-        val buffer = ByteBuffer.wrap(bs.toArray)
+        val buffer = ByteBuffer.wrap(bs.toArrayUnsafe())
         buffer.order(ByteOrder.LITTLE_ENDIAN)
         flightRecorder.tcpInboundReceived(buffer.limit)
         val res = new EnvelopeBuffer(buffer)

@@ -10,12 +10,9 @@ import java.util
 import java.util.ArrayList
 import java.util.Collections
 import java.util.Comparator
-
 import scala.annotation.tailrec
 import scala.collection.immutable
-
 import scala.annotation.nowarn
-
 import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.cluster.ddata._
@@ -25,6 +22,7 @@ import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
 import akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage
 import akka.protobufv3.internal.ByteString
 import akka.protobufv3.internal.GeneratedMessageV3
+import akka.protobufv3.internal.UnsafeByteOperations
 import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
@@ -624,7 +622,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
           rd.GCounter.Entry
             .newBuilder()
             .setNode(uniqueAddressToProto(address))
-            .setValue(ByteString.copyFrom(value.toByteArray)))
+            .setValue(UnsafeByteOperations.unsafeWrap(value.toByteArray)))
     }
     b.build()
   }

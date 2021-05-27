@@ -7,6 +7,7 @@ package akka.stream.serialization
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.protobufv3.internal.ByteString
+import akka.protobufv3.internal.UnsafeByteOperations
 import akka.serialization._
 import akka.stream.StreamRefMessages
 import akka.stream.impl.streamref._
@@ -86,7 +87,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
 
   private def serializeRemoteSinkFailure(
       d: StreamRefsProtocol.RemoteStreamFailure): StreamRefMessages.RemoteStreamFailure = {
-    StreamRefMessages.RemoteStreamFailure.newBuilder().setCause(ByteString.copyFrom(d.msg.getBytes)).build()
+    StreamRefMessages.RemoteStreamFailure.newBuilder().setCause(UnsafeByteOperations.unsafeWrap(d.msg.getBytes)).build()
   }
 
   private def serializeRemoteSinkCompleted(
@@ -108,7 +109,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
 
     val payloadBuilder = StreamRefMessages.Payload
       .newBuilder()
-      .setEnclosedMessage(ByteString.copyFrom(msgSerializer.toBinary(p)))
+      .setEnclosedMessage(UnsafeByteOperations.unsafeWrap(msgSerializer.toBinary(p)))
       .setSerializerId(msgSerializer.identifier)
 
     val ms = Serializers.manifestFor(msgSerializer, p)

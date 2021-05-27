@@ -5,10 +5,10 @@
 package akka.remote
 
 import scala.util.control.NonFatal
-
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.protobufv3.internal.ByteString
+import akka.protobufv3.internal.UnsafeByteOperations
 import akka.remote.WireFormats._
 import akka.remote.artery.{ EnvelopeBuffer, HeaderBuilder, OutboundEnvelope }
 import akka.serialization._
@@ -52,7 +52,7 @@ private[akka] object MessageSerializer {
       if (oldInfo eq null)
         Serialization.currentTransportInformation.value = system.provider.serializationInformation
 
-      builder.setMessage(ByteString.copyFrom(serializer.toBinary(message)))
+      builder.setMessage(UnsafeByteOperations.unsafeWrap(serializer.toBinary(message)))
       builder.setSerializerId(serializer.identifier)
 
       val ms = Serializers.manifestFor(serializer, message)

@@ -5,11 +5,11 @@
 package akka.remote.transport
 
 import scala.annotation.nowarn
-
 import akka.AkkaException
 import akka.actor.{ ActorRef, Address, AddressFromURIString, InternalActorRef }
 import akka.protobufv3.internal.{ ByteString => PByteString }
 import akka.protobufv3.internal.InvalidProtocolBufferException
+import akka.protobufv3.internal.UnsafeByteOperations
 import akka.remote._
 import akka.remote.WireFormats._
 import akka.util.ByteString
@@ -158,19 +158,19 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     envelopeBuilder.setMessage(serializedMessage)
     ackAndEnvelopeBuilder.setEnvelope(envelopeBuilder)
 
-    ByteString.ByteString1C(ackAndEnvelopeBuilder.build.toByteArray) //Reuse Byte Array (naughty!)
+    ByteString.fromArrayUnsafe(ackAndEnvelopeBuilder.build.toByteArray)
   }
 
   override def constructPureAck(ack: Ack): ByteString =
-    ByteString.ByteString1C(AckAndEnvelopeContainer.newBuilder.setAck(ackBuilder(ack)).build().toByteArray) //Reuse Byte Array (naughty!)
+    ByteString.fromArrayUnsafe(AckAndEnvelopeContainer.newBuilder.setAck(ackBuilder(ack)).build().toByteArray)
 
   override def constructPayload(payload: ByteString): ByteString =
-    ByteString.ByteString1C(
+    ByteString.fromArrayUnsafe(
       AkkaProtocolMessage
         .newBuilder()
-        .setPayload(PByteString.copyFrom(payload.asByteBuffer))
+        .setPayload(UnsafeByteOperations.unsafeWrap(payload.asByteBuffer))
         .build
-        .toByteArray) //Reuse Byte Array (naughty!)
+        .toByteArray)
 
   override def constructAssociate(info: HandshakeInfo): ByteString = {
     val handshakeInfo = AkkaHandshakeInfo.newBuilder.setOrigin(serializeAddress(info.origin)).setUid(info.uid.toLong)
@@ -194,8 +194,8 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
 
   override def decodePdu(raw: ByteString): AkkaPdu = {
     try {
-      val pdu = AkkaProtocolMessage.parseFrom(raw.toArray)
-      if (pdu.hasPayload) Payload(ByteString(pdu.getPayload.asReadOnlyByteBuffer()))
+      val pdu = AkkaProtocolMessage.parseFrom(raw.toArrayUnsafe())
+      if (pdu.hasPayload) Payload(ByteStringUtil.fromProtoByteStringUnsafe(pdu.getPayload))
       else if (pdu.hasInstruction) decodeControlPdu(pdu.getInstruction)
       else
         throw new PduCodecException("Error decoding Akka PDU: Neither message nor control message were contained", null)
@@ -208,7 +208,7 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
       raw: ByteString,
       provider: RemoteActorRefProvider,
       localAddress: Address): (Option[Ack], Option[Message]) = {
-    val ackAndEnvelope = AckAndEnvelopeContainer.parseFrom(raw.toArray)
+    val ackAndEnvelope = AckAndEnvelopeContainer.parseFrom(raw.toArrayUnsafe())
 
     val ackOption = if (ackAndEnvelope.hasAck) {
       import akka.util.ccompat.JavaConverters._

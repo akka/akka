@@ -5,7 +5,6 @@
 package akka.cluster.typed.internal.delivery
 
 import java.io.NotSerializableException
-
 import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.delivery.ConsumerController
 import akka.actor.typed.delivery.DurableProducerQueue
@@ -23,6 +22,7 @@ import akka.serialization.BaseSerializer
 import akka.serialization.SerializerWithStringManifest
 import akka.util.ccompat.JavaConverters._
 import akka.protobufv3.internal.ByteString
+import akka.protobufv3.internal.UnsafeByteOperations
 
 /**
  * INTERNAL API
@@ -97,7 +97,7 @@ import akka.protobufv3.internal.ByteString
 
   private def chunkedMessageToProto(chunk: ChunkedMessage): Payload.Builder = {
     val payloadBuilder = ContainerFormats.Payload.newBuilder()
-    payloadBuilder.setEnclosedMessage(ByteString.copyFrom(chunk.serialized.toArray))
+    payloadBuilder.setEnclosedMessage(UnsafeByteOperations.unsafeWrap(chunk.serialized.toArrayUnsafe()))
     payloadBuilder.setMessageManifest(ByteString.copyFromUtf8(chunk.manifest))
     payloadBuilder.setSerializerId(chunk.serializerId)
     payloadBuilder
@@ -207,7 +207,7 @@ import akka.protobufv3.internal.ByteString
         val manifest =
           if (seqMsg.getMessage.hasMessageManifest) seqMsg.getMessage.getMessageManifest.toStringUtf8 else ""
         ChunkedMessage(
-          akka.util.ByteString(seqMsg.getMessage.getEnclosedMessage.toByteArray),
+          akka.util.ByteString.fromArrayUnsafe(seqMsg.getMessage.getEnclosedMessage.toByteArray),
           seqMsg.getFirstChunk,
           seqMsg.getLastChunk,
           seqMsg.getMessage.getSerializerId,
@@ -260,7 +260,7 @@ import akka.protobufv3.internal.ByteString
         val manifest =
           if (sent.getMessage.hasMessageManifest) sent.getMessage.getMessageManifest.toStringUtf8 else ""
         ChunkedMessage(
-          akka.util.ByteString(sent.getMessage.getEnclosedMessage.toByteArray),
+          akka.util.ByteString.fromArrayUnsafe(sent.getMessage.getEnclosedMessage.toByteArray),
           sent.getFirstChunk,
           sent.getLastChunk,
           sent.getMessage.getSerializerId,

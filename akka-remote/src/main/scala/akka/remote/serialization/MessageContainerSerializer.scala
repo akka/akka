@@ -5,7 +5,6 @@
 package akka.remote.serialization
 
 import scala.collection.immutable
-
 import akka.actor.ActorSelectionMessage
 import akka.actor.ExtendedActorSystem
 import akka.actor.SelectChildName
@@ -13,6 +12,8 @@ import akka.actor.SelectChildPattern
 import akka.actor.SelectParent
 import akka.actor.SelectionPathElement
 import akka.protobufv3.internal.ByteString
+import akka.protobufv3.internal.UnsafeByteOperations
+import akka.remote.ByteStringUtil
 import akka.remote.ContainerFormats
 import akka.serialization.{ BaseSerializer, SerializationExtension, Serializers }
 import akka.util.ccompat._
@@ -36,7 +37,7 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSe
     val message = sel.msg.asInstanceOf[AnyRef]
     val serializer = serialization.findSerializerFor(message)
     builder
-      .setEnclosedMessage(ByteString.copyFrom(serializer.toBinary(message)))
+      .setEnclosedMessage(UnsafeByteOperations.unsafeWrap(serializer.toBinary(message)))
       .setSerializerId(serializer.identifier)
       .setWildcardFanOut(sel.wildcardFanOut)
 
