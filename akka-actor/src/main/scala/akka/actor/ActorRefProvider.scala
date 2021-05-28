@@ -5,13 +5,15 @@
 package akka.actor
 
 import java.util.concurrent.atomic.AtomicLong
+
 import scala.annotation.implicitNotFound
-import scala.concurrent.{ExecutionContextExecutor, Future, Promise}
+import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 import scala.util.control.NonFatal
+
 import akka.ConfigurationException
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
-import akka.dispatch.{Mailboxes, RequiresMessageQueue, UnboundedMessageQueueSemantics}
+import akka.dispatch.{ Mailboxes, RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.dispatch.Dispatchers
 import akka.dispatch.sysmsg._
 import akka.event._
@@ -506,7 +508,7 @@ private[akka] class LocalActorRefProvider private[akka] (
   protected def rootGuardianStrategy: SupervisorStrategy = OneForOneStrategy() {
     case ex =>
       log.error(ex, "guardian failed, shutting down system")
-      SupervisorStrategy.stop(logLevel = Logging.ErrorLevel)
+      SupervisorStrategy.Stop
   }
 
   /**

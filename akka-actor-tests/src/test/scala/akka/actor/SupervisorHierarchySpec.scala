@@ -51,7 +51,7 @@ object SupervisorHierarchySpec {
   }
 
   class Resumer extends Actor {
-    override def supervisorStrategy = OneForOneStrategy() { case _ => SupervisorStrategy.resume(Logging.InfoLevel) }
+    override def supervisorStrategy = OneForOneStrategy() { case _ => SupervisorStrategy.Resume }
     def receive = {
       case "spawn" => sender() ! context.actorOf(Props[Resumer]())
       case "fail"  => throw new Exception("expected")
@@ -152,10 +152,9 @@ object SupervisorHierarchySpec {
       context.stop(self)
     }
 
-    @nowarn("msg=deprecated")
     def setFlags(directive: Directive): Unit = directive match {
-      case Restart | _: Restart => failed = true
-      case Resume | _: Resume => suspended = true
+      case Restart => failed = true
+      case Resume  => suspended = true
       case _       =>
     }
 
@@ -444,7 +443,7 @@ object SupervisorHierarchySpec {
       case x =>
         // fail one child
         val pick = ((if (x >= 0.25f) x - 0.25f else x) * 4 * activeChildren.size).toInt
-        Fail(activeChildren(pick), if (x > 0.25) SupervisorStrategy.restart else SupervisorStrategy.resume)
+        Fail(activeChildren(pick), if (x > 0.25) Restart else Resume)
     })
 
     var hierarchy: ActorRef = _

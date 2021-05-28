@@ -4,23 +4,20 @@
 
 package akka.actor
 
-import akka.annotation.InternalApi
 import akka.event.Logging
-
-import java.lang.{Iterable => JIterable}
-import java.lang.reflect.InvocationTargetException
-import java.util.concurrent.TimeUnit
-import scala.collection.immutable
-import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.duration.Duration
-import scala.util.control.NonFatal
-import language.implicitConversions
-import akka.event.Logging.{Error, LogEvent, LogLevel, Warning}
+import akka.event.Logging.{ Error, LogEvent, LogLevel }
 import akka.japi.Util.immutableSeq
 import akka.util.JavaDurationConverters._
 import akka.util.ccompat._
 
-import scala.annotation.nowarn
+import java.lang.reflect.InvocationTargetException
+import java.lang.{ Iterable => JIterable }
+import java.util.concurrent.TimeUnit
+import scala.collection.immutable
+import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.duration.Duration
+import scala.language.implicitConversions
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -49,7 +46,7 @@ final case class ChildRestartStats(
   def requestRestartPermission(retriesWindow: (Option[Int], Option[Int])): Boolean =
     retriesWindow match {
       case (Some(retries), _) if retries < 1 => false
-      case (Some(retries), None)             => { maxNrOfRetriesCount += 1; maxNrOfRetriesCount <= retries }
+      case (Some(retries), None)             => maxNrOfRetriesCount += 1; maxNrOfRetriesCount <= retries
       case (x, Some(window))                 => retriesInWindowOkay(if (x.isDefined) x.get else 1, window)
       case (None, _)                         => true
     }
@@ -105,70 +102,59 @@ trait SupervisorStrategyLowPriorityImplicits { this: SupervisorStrategy.type =>
   // the above would clash with seqThrowable2Decider for empty lists
 }
 
-@nowarn("msg=deprecated")
 object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
-  sealed trait Directive
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[akka] sealed trait DirectiveWithLevel {
-    def logLevel: LogLevel
+  sealed trait Directive {
+    private[akka] def logLevel: LogLevel
   }
 
   /**
    * Resumes message processing for the failed Actor
    */
-  @Deprecated
-  @deprecated("use resume method with log level instead", "2.6.15")
-  case object Resume extends Directive
+  case object Resume extends Resume(Logging.WarningLevel)
 
   /**
    * INTERNAL API
    */
-  private[akka] case class Resume(logLevel: LogLevel) extends Directive with DirectiveWithLevel
+  private[akka] class Resume(private[akka] val logLevel: LogLevel) extends Directive
 
   /**
    * Discards the old Actor instance and replaces it with a new,
    * then resumes message processing.
    */
-  @Deprecated
-  @deprecated("use restart method with log level instead", "2.6.15")
-  case object Restart extends Directive
+  case object Restart extends Restart(Logging.ErrorLevel)
 
   /**
    * INTERNAL API
    */
-  private[akka] case class Restart(logLevel: LogLevel) extends Directive with DirectiveWithLevel
+  private[akka] class Restart(private[akka] val logLevel: LogLevel) extends Directive
 
   /**
    * Stops the Actor
    */
-  @Deprecated
-  @deprecated("use stop method with log level instead", "2.6.15")
-  case object Stop extends Directive
+  case object Stop extends Stop(Logging.ErrorLevel)
 
-  private[akka] case class Stop(logLevel: LogLevel) extends Directive with DirectiveWithLevel
+  private[akka] class Stop(private[akka] val logLevel: LogLevel) extends Directive
 
   /**
    * Escalates the failure to the supervisor of the supervisor,
    * by rethrowing the cause of the failure, i.e. the supervisor fails with
    * the same exception as the child.
    */
-  case object Escalate extends Directive
+  case object Escalate extends Directive {
+    override private[akka] def logLevel = throw new IllegalStateException("Escalate is not logged")
+  }
 
   /**
    * Java API: Returning this directive resumes message processing for the failed Actor
    */
-  def resume = Resume  // switch to return type `Directive` on next binary incompatible release
+  def resume = Resume // switch to return type `Directive` on next binary incompatible release
 
   /**
    * Returning this directive resumes message processing for the failed Actor.
    *
    * @param logLevel Log level which will be used to log the failure
    */
-  def resume(logLevel: LogLevel): Directive = Resume(logLevel)
+  def resume(logLevel: LogLevel): Directive = new Resume(logLevel)
 
   /**
    * Java API: Returning this directive discards the old Actor instance and replaces it with a new,
@@ -182,7 +168,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    *
    * @param logLevel Log level which will be used to log the failure
    */
-  def restart(logLevel: LogLevel): Directive = Restart(logLevel)
+  def restart(logLevel: LogLevel): Directive = new Restart(logLevel)
 
   /**
    * Java API: Returning this directive stops the Actor
@@ -194,7 +180,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    *
    * @param logLevel Log level which will be used to log the failure
    */
-  def stop(logLevel: LogLevel): Directive = Stop(logLevel)
+  def stop(logLevel: LogLevel): Directive = new Stop(logLevel)
 
   /**
    * Java API: Returning this directive escalates the failure to the supervisor of the supervisor,
@@ -212,10 +198,10 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    * The error is escalated if it's a `Throwable`, i.e. `Error`.
    */
   final val defaultDecider: Decider = {
-    case _: ActorInitializationException => Stop(Logging.ErrorLevel)
-    case _: ActorKilledException         => Stop(Logging.ErrorLevel)
-    case _: DeathPactException           => Stop(Logging.ErrorLevel)
-    case _: Exception                    => Restart(Logging.ErrorLevel)
+    case _: ActorInitializationException => Stop
+    case _: ActorKilledException         => Stop
+    case _: DeathPactException           => Stop
+    case _: Exception                    => Restart
   }
 
   /**
@@ -233,7 +219,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    */
   final val stoppingStrategy: SupervisorStrategy = {
     def stoppingDecider: Decider = {
-      case _: Exception => Stop(Logging.ErrorLevel)
+      case _: Exception => Stop
     }
     OneForOneStrategy()(stoppingDecider)
   }
@@ -253,7 +239,7 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
    * the given Throwables matches the cause and restarts, otherwise escalates.
    */
   def makeDecider(trapExit: immutable.Seq[Class[_ <: Throwable]]): Decider = {
-    case x => if (trapExit.exists(_.isInstance(x))) Restart(Logging.ErrorLevel) else Escalate
+    case x => if (trapExit.exists(_.isInstance(x))) Restart else Escalate
   }
 
   /**
@@ -315,7 +301,6 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
  * incorrect implementations may lead to “blocked” actor systems (i.e.
  * permanently suspended actors).
  */
-@nowarn("msg=deprecated")
 abstract class SupervisorStrategy {
 
   import SupervisorStrategy._
@@ -367,15 +352,15 @@ abstract class SupervisorStrategy {
       children: Iterable[ChildRestartStats]): Boolean = {
     val directive = decider.applyOrElse(cause, escalateDefault)
     directive match {
-      case Resume | _: Resume =>
+      case _: Resume =>
         logFailure(context, child, cause, directive)
         resumeChild(child, cause)
         true
-      case Restart | _: Restart =>
+      case _: Restart =>
         logFailure(context, child, cause, directive)
         processFailure(context, true, child, cause, stats, children)
         true
-      case Stop | _: Stop =>
+      case _: Stop =>
         logFailure(context, child, cause, directive)
         processFailure(context, false, child, cause, stats, children)
         true
@@ -409,10 +394,12 @@ abstract class SupervisorStrategy {
         case e => e.getMessage
       }
       decision match {
-        case Resume   => publish(context, Warning(child.path.toString, getClass, logMessage))
         case Escalate => // don't log here
-        case d: DirectiveWithLevel => publish(context, LogEvent(d.logLevel, child.path.toString, getClass, logMessage))
-        case _        => publish(context, Error(cause, child.path.toString, getClass, logMessage))
+        case d =>
+          if (d.logLevel == Logging.ErrorLevel)
+            publish(context, Error(cause, child.path.toString, getClass, logMessage))
+          else
+            publish(context, LogEvent(d.logLevel, child.path.toString, getClass, logMessage))
       }
     }
 

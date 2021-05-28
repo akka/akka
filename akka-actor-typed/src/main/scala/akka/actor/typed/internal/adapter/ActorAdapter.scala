@@ -7,10 +7,13 @@ package internal
 package adapter
 
 import java.lang.reflect.InvocationTargetException
-import scala.annotation.{nowarn, switch, tailrec}
+
+import scala.annotation.switch
+import scala.annotation.tailrec
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
-import akka.{actor => classic}
+
+import akka.{ actor => classic }
 import akka.actor.ActorInitializationException
 import akka.actor.ActorRefWithCell
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
@@ -18,7 +21,6 @@ import akka.actor.typed.internal.BehaviorImpl.StoppedBehavior
 import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
 import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
 import akka.annotation.InternalApi
-import akka.event.Logging
 import akka.util.OptionVal
 
 /**
@@ -42,7 +44,7 @@ import akka.util.OptionVal
 
   private val classicSupervisorDecider: Throwable => classic.SupervisorStrategy.Directive = { exc =>
     // ActorInitializationException => Stop in defaultDecider
-    classic.SupervisorStrategy.defaultDecider.applyOrElse(exc, (_: Throwable) => classic.SupervisorStrategy.restart(Logging.ErrorLevel))
+    classic.SupervisorStrategy.defaultDecider.applyOrElse(exc, (_: Throwable) => classic.SupervisorStrategy.Restart)
   }
 
 }
@@ -223,7 +225,7 @@ import akka.util.OptionVal
         case TypedActorFailedException(cause) =>
           // These have already been optionally logged by typed supervision
           recordChildFailure(cause)
-          classic.SupervisorStrategy.stop
+          classic.SupervisorStrategy.Stop
         case _ =>
           val isTypedActor = sender() match {
             case afwc: ActorRefWithCell =>
@@ -243,7 +245,7 @@ import akka.util.OptionVal
           // log at Error as that is what the supervision strategy would have done.
           ctx.log.error(logMessage, ex)
           if (isTypedActor)
-            classic.SupervisorStrategy.stop
+            classic.SupervisorStrategy.Stop
           else
             ActorAdapter.classicSupervisorDecider(ex)
       } finally {
