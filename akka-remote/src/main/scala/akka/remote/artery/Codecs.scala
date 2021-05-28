@@ -61,6 +61,7 @@ private[remote] class Encoder(
     extends GraphStageWithMaterializedValue[
       FlowShape[OutboundEnvelope, EnvelopeBuffer],
       Encoder.OutboundCompressionAccess] {
+
   import Encoder._
 
   val in: Inlet[OutboundEnvelope] = Inlet("Artery.Encoder.in")
@@ -81,12 +82,12 @@ private[remote] class Encoder(
 
       // lazy init of SerializationExtension to avoid loading serializers before ActorRefProvider has been initialized
       private var _serialization: OptionVal[Serialization] = OptionVal.None
-      private def serialization: Serialization = _serialization match {
-        case OptionVal.Some(s) => s
-        case _ =>
+      private def serialization: Serialization = _serialization.orNull match {
+        case null =>
           val s = SerializationExtension(system)
           _serialization = OptionVal.Some(s)
           s
+        case s => s
       }
 
       private val instruments: RemoteInstruments = RemoteInstruments(system)
@@ -129,14 +130,14 @@ private[remote] class Encoder(
           Serialization.currentTransportInformation.value = serialization.serializationInformation
 
           // internally compression is applied by the builder:
-          outboundEnvelope.recipient match {
-            case OptionVal.Some(r) => headerBuilder.setRecipientActorRef(r)
-            case _                 => headerBuilder.setNoRecipient()
+          outboundEnvelope.recipient.orNull match {
+            case null => headerBuilder.setNoRecipient()
+            case r    => headerBuilder.setRecipientActorRef(r)
           }
 
-          outboundEnvelope.sender match {
-            case OptionVal.Some(s) => headerBuilder.setSenderActorRef(s)
-            case _                 => headerBuilder.setNoSender()
+          outboundEnvelope.sender.orNull match {
+            case null => headerBuilder.setNoSender()
+            case s    => headerBuilder.setSenderActorRef(s)
           }
 
           val startTime: Long = if (instruments.timeSerialization) System.nanoTime else 0
@@ -179,17 +180,17 @@ private[remote] class Encoder(
                   new OversizedPayloadException(reasonText),
                   "Failed to serialize oversized message [{}].",
                   Logging.messageClassName(outboundEnvelope.message))
-                system.eventStream.publish(outboundEnvelope.sender match {
-                  case OptionVal.Some(msgSender) =>
+                system.eventStream.publish(outboundEnvelope.sender.orNull match {
+                  case null =>
+                    Dropped(
+                      outboundEnvelope.message,
+                      reasonText,
+                      outboundEnvelope.recipient.getOrElse(ActorRef.noSender))
+                  case msgSender =>
                     Dropped(
                       outboundEnvelope.message,
                       reasonText,
                       msgSender,
-                      outboundEnvelope.recipient.getOrElse(ActorRef.noSender))
-                  case _ =>
-                    Dropped(
-                      outboundEnvelope.message,
-                      reasonText,
                       outboundEnvelope.recipient.getOrElse(ActorRef.noSender))
                 })
                 pull(in)
@@ -414,13 +415,14 @@ private[remote] class Decoder(
           val originUid = headerBuilder.uid
           val association = inboundContext.association(originUid)
 
-          val recipient: OptionVal[InternalActorRef] = try headerBuilder.recipientActorRef(originUid) match {
-            case OptionVal.Some(ref) =>
-              OptionVal(ref.asInstanceOf[InternalActorRef])
-            case OptionVal.None if headerBuilder.recipientActorRefPath.isDefined =>
-              resolveRecipient(headerBuilder.recipientActorRefPath.get)
-            case _ =>
-              OptionVal.None
+          val recipient: OptionVal[InternalActorRef] = try headerBuilder.recipientActorRef(originUid).orNull match {
+            case null =>
+              headerBuilder.recipientActorRefPath.orNull match {
+                case null => OptionVal.None
+                case path => resolveRecipient(path)
+              }
+            case ref =>
+              OptionVal.Some(ref.asInstanceOf[InternalActorRef])
           } catch {
             case NonFatal(e) =>
               // probably version mismatch due to restarted system
@@ -428,13 +430,14 @@ private[remote] class Decoder(
               OptionVal.None
           }
 
-          val sender: OptionVal[InternalActorRef] = try headerBuilder.senderActorRef(originUid) match {
-            case OptionVal.Some(ref) =>
-              OptionVal(ref.asInstanceOf[InternalActorRef])
-            case OptionVal.None if headerBuilder.senderActorRefPath.isDefined =>
-              OptionVal(actorRefResolver.resolve(headerBuilder.senderActorRefPath.get))
-            case _ =>
-              OptionVal.None
+          val sender: OptionVal[InternalActorRef] = try headerBuilder.senderActorRef(originUid).orNull match {
+            case null =>
+              headerBuilder.senderActorRefPath.orNull match {
+                case null => OptionVal.None
+                case path => OptionVal(actorRefResolver.resolve(path))
+              }
+            case ref =>
+              OptionVal.Some(ref.asInstanceOf[InternalActorRef])
           } catch {
             case NonFatal(e) =>
               // probably version mismatch due to restarted system
@@ -472,27 +475,20 @@ private[remote] class Decoder(
 
             if ((messageCount & heavyHitterMask) == 0) {
               // --- hit refs and manifests for heavy-hitter counting
-              association match {
-                case OptionVal.Some(assoc) =>
-                  val remoteAddress = assoc.remoteAddress
-                  sender match {
-                    case OptionVal.Some(snd) =>
-                      compressions.hitActorRef(originUid, remoteAddress, snd, 1)
-                    case _ =>
-                  }
-
-                  recipient match {
-                    case OptionVal.Some(rcp) =>
-                      compressions.hitActorRef(originUid, remoteAddress, rcp, 1)
-                    case _ =>
-                  }
-
-                  compressions.hitClassManifest(originUid, remoteAddress, classManifest, 1)
-
-                case _ =>
+              association.orNull match {
+                case null =>
                   // we don't want to record hits for compression while handshake is still in progress.
                   log.debug(
                     "Decoded message but unable to record hits for compression as no remoteAddress known. No association yet?")
+                case assoc =>
+                  val remoteAddress = assoc.remoteAddress
+                  if (sender.isDefined)
+                    compressions.hitActorRef(originUid, remoteAddress, sender.get, 1)
+
+                  if (recipient.isDefined)
+                    compressions.hitActorRef(originUid, remoteAddress, recipient.get, 1)
+
+                  compressions.hitClassManifest(originUid, remoteAddress, classManifest, 1)
               }
               // --- end of hit refs and manifests for heavy-hitter counting
             }
@@ -511,7 +507,6 @@ private[remote] class Decoder(
                 lane = 0)
 
             if (recipient.isEmpty && !headerBuilder.isNoRecipient) {
-
               // The remote deployed actor might not be created yet when resolving the
               // recipient for the first message that is sent to it, best effort retry.
               // However, if the retried resolve isn't successful the ref is banned and
@@ -521,19 +516,19 @@ private[remote] class Decoder(
               val recipientActorRefPath = headerBuilder.recipientActorRefPath.get
               if (bannedRemoteDeployedActorRefs.contains(recipientActorRefPath)) {
 
-                headerBuilder.recipientActorRefPath match {
-                  case OptionVal.Some(path) =>
+                headerBuilder.recipientActorRefPath.orNull match {
+                  case null =>
+                    log.warning(
+                      "Dropping message for banned (terminated, unresolved) remote deployed recipient [{}].",
+                      recipientActorRefPath)
+                    pull(in)
+                  case path =>
                     val ref = actorRefResolver.getOrCompute(path)
                     if (ref.isInstanceOf[EmptyLocalActorRef])
                       log.warning(
                         "Message for banned (terminated, unresolved) remote deployed recipient [{}].",
                         recipientActorRefPath)
                     push(out, decoded.withRecipient(ref))
-                  case _ =>
-                    log.warning(
-                      "Dropping message for banned (terminated, unresolved) remote deployed recipient [{}].",
-                      recipientActorRefPath)
-                    pull(in)
                 }
 
               } else
@@ -593,10 +588,8 @@ private[remote] class Decoder(
               .runNextClassManifestAdvertisement() // TODO: optimise these operations, otherwise they stall the hotpath
 
           case RetryResolveRemoteDeployedRecipient(attemptsLeft, recipientPath, inboundEnvelope) =>
-            resolveRecipient(recipientPath) match {
-              case OptionVal.Some(recipient) =>
-                push(out, inboundEnvelope.withRecipient(recipient))
-              case _ =>
+            resolveRecipient(recipientPath).orNull match {
+              case null =>
                 if (attemptsLeft > 0)
                   scheduleOnce(
                     RetryResolveRemoteDeployedRecipient(attemptsLeft - 1, recipientPath, inboundEnvelope),
@@ -615,6 +608,8 @@ private[remote] class Decoder(
                   val recipient = actorRefResolver.getOrCompute(recipientPath)
                   push(out, inboundEnvelope.withRecipient(recipient))
                 }
+              case recipient =>
+                push(out, inboundEnvelope.withRecipient(recipient))
             }
 
           case unknown => throw new IllegalArgumentException(s"Unknown timer key: $unknown")
@@ -648,12 +643,12 @@ private[remote] class Deserializer(
 
       // lazy init of SerializationExtension to avoid loading serializers before ActorRefProvider has been initialized
       private var _serialization: OptionVal[Serialization] = OptionVal.None
-      private def serialization: Serialization = _serialization match {
-        case OptionVal.Some(s) => s
-        case _ =>
+      private def serialization: Serialization = _serialization.orNull match {
+        case null =>
           val s = SerializationExtension(system)
           _serialization = OptionVal.Some(s)
           s
+        case s => s
       }
 
       override protected def logSource = classOf[Deserializer]
@@ -682,9 +677,9 @@ private[remote] class Deserializer(
           push(out, envelopeWithMessage)
         } catch {
           case NonFatal(e) =>
-            val from = envelope.association match {
-              case OptionVal.Some(a) => a.remoteAddress
-              case _                 => "unknown"
+            val from = envelope.association.orNull match {
+              case null  => "unknown"
+              case assoc => assoc.remoteAddress
             }
             log.warning(
               "Failed to deserialize message from [{}] with serializer id [{}] and manifest [{}]. {}",
