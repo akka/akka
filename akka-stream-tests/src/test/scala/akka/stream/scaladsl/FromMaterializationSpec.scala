@@ -5,9 +5,9 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.{Attributes}
+import akka.stream.{ Attributes }
 import akka.stream.Attributes.Attribute
-import akka.stream.scaladsl.AttributesSpec.{WhateverAttribute, whateverAttribute}
+import akka.stream.scaladsl.AttributesSpec.{ whateverAttribute, WhateverAttribute }
 import akka.stream.testkit.StreamSpec
 
 class FromMaterializerSpec extends StreamSpec {
