@@ -23,7 +23,9 @@ import akka.event.Logging
 trait AsyncSerializer {
 
   /**
-   * Serializes the given object into an Array of Byte
+   * Serializes the given object into an Array of Byte.
+   *
+   * Note that the array must not be mutated by the serializer after it has been used to complete the returned `Future`.
    */
   def toBinaryAsync(o: AnyRef): Future[Array[Byte]]
 
