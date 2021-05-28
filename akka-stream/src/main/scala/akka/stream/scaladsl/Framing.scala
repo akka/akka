@@ -83,6 +83,7 @@ object Framing {
    *                           For example, frame can have a shape like this: `[offset bytes][body size bytes][body bytes][footer bytes]`.
    *                           Then computeFrameSize can be used to compute the frame size: `(offset bytes, computed size) => (actual frame size)`.
    *                           ''Actual frame size'' must be equal or bigger than sum of `fieldOffset` and `fieldLength`, the operator fails otherwise.
+   *                           Must not mutate the given byte array.
    *
    */
   def lengthField(
