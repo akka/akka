@@ -4,6 +4,7 @@
 
 package akka.actor
 
+import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.event.Logging.{ Error, LogEvent, LogLevel }
 import akka.japi.Util.immutableSeq
@@ -104,6 +105,9 @@ trait SupervisorStrategyLowPriorityImplicits { this: SupervisorStrategy.type =>
 
 object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
   sealed trait Directive {
+
+    /** INTERNAL API */
+    @InternalApi
     private[akka] def logLevel: LogLevel
   }
 
@@ -115,7 +119,8 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
   /**
    * INTERNAL API
    */
-  private[akka] class Resume(private[akka] val logLevel: LogLevel) extends Directive
+  @InternalApi
+  private[akka] sealed class Resume(private[akka] val logLevel: LogLevel) extends Directive
 
   /**
    * Discards the old Actor instance and replaces it with a new,
@@ -126,14 +131,16 @@ object SupervisorStrategy extends SupervisorStrategyLowPriorityImplicits {
   /**
    * INTERNAL API
    */
-  private[akka] class Restart(private[akka] val logLevel: LogLevel) extends Directive
+  @InternalApi
+  private[akka] sealed class Restart(private[akka] val logLevel: LogLevel) extends Directive
 
   /**
    * Stops the Actor
    */
   case object Stop extends Stop(Logging.ErrorLevel)
 
-  private[akka] class Stop(private[akka] val logLevel: LogLevel) extends Directive
+  @InternalApi
+  private[akka] sealed class Stop(private[akka] val logLevel: LogLevel) extends Directive
 
   /**
    * Escalates the failure to the supervisor of the supervisor,
