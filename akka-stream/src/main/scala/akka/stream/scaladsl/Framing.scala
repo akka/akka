@@ -415,7 +415,7 @@ object Framing {
           } else if (buffSize >= minimumChunkSize) {
             val parsedLength = intDecoder(buffer.iterator.drop(lengthFieldOffset), lengthFieldLength)
             frameSize = computeFrameSize match {
-              case Some(f) => f(buffer.take(lengthFieldOffset).toArray, parsedLength)
+              case Some(f) => f(buffer.take(lengthFieldOffset).toArrayUnsafe(), parsedLength)
               case None    => parsedLength + minimumChunkSize
             }
             if (frameSize > maximumFrameLength) {

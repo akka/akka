@@ -32,7 +32,7 @@ import akka.util.ByteString
     abstract class Inflate(noPostProcessing: Boolean) extends ParseStep[ByteString] {
       override def canWorkWithPartialData = true
       override def parse(reader: ByteStringParser.ByteReader): ParseResult[ByteString] = {
-        inflater.setInput(reader.remainingData.toArray)
+        inflater.setInput(reader.remainingData.toArrayUnsafe())
 
         val read = inflater.inflate(buffer)
 

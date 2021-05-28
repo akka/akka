@@ -64,7 +64,7 @@ import akka.util.ByteString
   }
   private def crc16(data: ByteString) = {
     val crc = new CRC32
-    crc.update(data.toArray)
+    crc.update(data.toArrayUnsafe())
     crc.getValue.toInt & 0xFFFF
   }
 }
