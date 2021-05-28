@@ -43,6 +43,7 @@ import akka.stream.stage.OutHandler
     override def preStart(): Unit = {
       try {
         val sink = factory(materializer, attributes)
+        setKeepGoing(true)
 
         val mat =
           subFusingMaterializer.materialize(Source.fromGraph(subOutlet.source).toMat(sink)(Keep.right), attributes)

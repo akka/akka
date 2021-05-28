@@ -5,9 +5,9 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.Attributes
+import akka.stream.{Attributes}
 import akka.stream.Attributes.Attribute
-import akka.stream.scaladsl.AttributesSpec.{ whateverAttribute, WhateverAttribute }
+import akka.stream.scaladsl.AttributesSpec.{WhateverAttribute, whateverAttribute}
 import akka.stream.testkit.StreamSpec
 
 class FromMaterializerSpec extends StreamSpec {
@@ -255,24 +255,24 @@ class FromMaterializerSpec extends StreamSpec {
       val sink = Sink
         .fromMaterializer { (_, _) =>
           Sink.fromMaterializer { (_, attr) =>
-            Sink.cancelled.mapMaterializedValue(_ => attr.nameLifted)
+            Sink.fold(attr.nameLifted)(Keep.left)
           }
         }
         .named("my-name")
 
-      Source.empty.runWith(sink).flatten.futureValue shouldBe Some("setup-my-name-setup")
+      Source.empty.runWith(sink).flatten.flatten.futureValue shouldBe Some("setup-my-name-setup")
     }
 
     "preserve attributes of inner sink" in {
       val sink = Sink.fromMaterializer { (_, _) =>
         Sink
           .fromMaterializer { (_, attr) =>
-            Sink.cancelled.mapMaterializedValue(_ => attr.get[MyAttribute])
+            Sink.fold(attr.get[MyAttribute])(Keep.left)
           }
           .addAttributes(myAttributes)
       }
 
-      Source.empty.runWith(sink).flatten.futureValue shouldBe Some(MyAttribute())
+      Source.empty.runWith(sink).flatten.flatten.futureValue shouldBe Some(MyAttribute())
     }
 
     "give priority to attributes of inner sink" in {
@@ -280,13 +280,13 @@ class FromMaterializerSpec extends StreamSpec {
         .fromMaterializer { (_, _) =>
           Sink
             .fromMaterializer { (_, attr) =>
-              Sink.cancelled.mapMaterializedValue(_ => attr.get[WhateverAttribute])
+              Sink.fold(attr.get[WhateverAttribute])(Keep.left)
             }
             .addAttributes(whateverAttribute("inner"))
         }
         .addAttributes(whateverAttribute("outer"))
 
-      Source.empty.runWith(sink).flatten.futureValue shouldBe Some(WhateverAttribute("inner"))
+      Source.empty.runWith(sink).flatten.flatten.futureValue shouldBe Some(WhateverAttribute("inner"))
     }
 
     "handle factory failure" in {
