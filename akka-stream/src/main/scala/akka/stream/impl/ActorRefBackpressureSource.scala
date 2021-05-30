@@ -48,9 +48,9 @@ private object ActorRefBackpressureSource {
         inheritedAttributes.get[Attributes.Name].map(_.n).getOrElse(super.stageActorName)
 
       val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillCompatibility = false) {
-        case (_, m) if failureMatcher.isDefinedAt(m) ⇒
+        case (_, m) if failureMatcher.isDefinedAt(m) =>
           failStage(failureMatcher(m))
-        case (_, m) if completionMatcher.isDefinedAt(m) ⇒
+        case (_, m) if completionMatcher.isDefinedAt(m) =>
           completionMatcher(m) match {
             case CompletionStrategy.Draining =>
               isCompleting = true
@@ -58,7 +58,7 @@ private object ActorRefBackpressureSource {
             case CompletionStrategy.Immediately =>
               completeStage()
           }
-        case e: (ActorRef, T) @unchecked ⇒
+        case e: (ActorRef, T) @unchecked =>
           if (element.isDefined) {
             failStage(new IllegalStateException("Received new element before ack was signaled back"))
           } else {
