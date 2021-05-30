@@ -28,7 +28,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   cluster, clusterMetrics, clusterSharding, clusterTools,
   contrib,
   distributedData,
-  docs,
+  //docs,
   multiNodeTestkit,
   osgi,
   persistence, persistenceQuery, persistenceShared, persistenceTck,
