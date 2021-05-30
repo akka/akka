@@ -20,7 +20,7 @@ protected[akka] class ActorClassificationUnsubscriber(bus: ManagedActorClassific
   private var atSeq = 0
   private def nextSeq = atSeq + 1
 
-  override def preStart() {
+  override def preStart(): Unit = {
     super.preStart()
     if (debug) context.system.eventStream.publish(Logging.Debug(simpleName(getClass), getClass, s"will monitor $bus"))
   }

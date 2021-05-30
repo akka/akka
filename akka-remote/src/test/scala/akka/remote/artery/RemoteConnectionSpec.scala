@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 
 class RemoteConnectionSpec extends ArteryMultiNodeSpec("akka.remote.retry-gate-closed-for = 5s") with ImplicitSender {
 
-  def muteSystem(system: ActorSystem) {
+  def muteSystem(system: ActorSystem): Unit = {
     system.eventStream.publish(TestEvent.Mute(
       EventFilter.error(start = "AssociationError"),
       EventFilter.warning(start = "AssociationError"),

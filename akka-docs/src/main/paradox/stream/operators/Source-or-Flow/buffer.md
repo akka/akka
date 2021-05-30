@@ -7,7 +7,7 @@ Allow for a temporarily faster upstream events by buffering `size` elements.
 @@@ div { .group-scala }
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #buffer }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #buffer }
 @@@
 
 

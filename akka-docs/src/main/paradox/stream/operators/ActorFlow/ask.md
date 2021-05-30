@@ -18,7 +18,7 @@ This operator is included in:
 
 ## Signature
 
-@@signature [ActorFlow.scala]($akka$/akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorFlow.scala) { #ask }
+@@signature [ActorFlow.scala](/akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorFlow.scala) { #ask }
 
 @@@
 
@@ -31,8 +31,8 @@ a `IOResult` upon reaching the end of the file or if there is a failure.
 
 
 Scala
-:  @@snip [ask.scala]($akka$/akka-stream-typed/src/test/scala/akka/stream/typed/scaladsl/ActorFlowSpec.scala) { #imports #ask-actor #ask }
+:  @@snip [ask.scala](/akka-stream-typed/src/test/scala/akka/stream/typed/scaladsl/ActorFlowSpec.scala) { #imports #ask-actor #ask }
 
 Java
-:   @@snip [ask.java]($akka$/akka-stream-typed/src/test/java/akka/stream/typed/javadsl/ActorFlowCompileTest.java) { #ask-actor #ask }
+:   @@snip [ask.java](/akka-stream-typed/src/test/java/akka/stream/typed/javadsl/ActorFlowCompileTest.java) { #ask-actor #ask }
 

@@ -293,7 +293,7 @@ as the `GraphStage` itself is a factory of logic instances.
 
 ### SubFlow.zip and SubSource.zip now emit akka.japi.Pair instead of Scala's Pair
 
-The the Java API's `zip` operator on `SubFlow` and `SubSource` has been emiting
+The the Java API's `zip` operator on `SubFlow` and `SubSource` has been emitting
 Scala's `Pair` (`Tuple2`) instead of `akka.japi.Pair`. This is fixed in Akka 2.5 where it emits the proper
 Java DSl type.
 
@@ -424,6 +424,8 @@ and here is a summary of things to consider.
  * [akka.cluster.allow-weakly-up-members](#mig25-weaklyup)
  * [akka.cluster.sharding.state-store-mode](#mig25-sharding-store)
  * [akka.remote.netty.ssl.require-mutual-authentication](#mig25-mutual)
+
+See also the @ref:[rolling update guide](rolling-update.md) for specifics about later patch releases.
 
 #### Limit lookup of routees to nodes tagged with multiple roles
 
@@ -591,7 +593,7 @@ The class is now called `PersistenceIdsQuery`, and the method which used to be `
 
 ### Queries now use `Offset` instead of `Long` for offsets
 
-This change was made to better accomodate the various types of Journals and their understanding what an offset is.
+This change was made to better accommodate the various types of Journals and their understanding what an offset is.
 For example, in some journals an offset is always a time, while in others it is a numeric offset (like a sequence id).
 
 Instead of the previous `Long` offset you can now use the provided `Offset` factories (and types):

@@ -39,7 +39,7 @@ object FSMTransitionSpec {
       case Event("reply", _) ⇒ stay replying "reply"
     }
     initialize()
-    override def preRestart(reason: Throwable, msg: Option[Any]) { target ! "restarted" }
+    override def preRestart(reason: Throwable, msg: Option[Any]): Unit = { target ! "restarted" }
   }
 
   class OtherFSM(target: ActorRef) extends Actor with FSM[Int, Int] {

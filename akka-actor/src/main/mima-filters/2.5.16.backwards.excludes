@@ -1,0 +1,5 @@
+# #25435 - Adding maximum restart attempts to BackoffSupervisor
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withMaxNrOfRetries")
+
+# Change of a method name with ApiMayChange
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.DnsProtocol#Resolve.create")

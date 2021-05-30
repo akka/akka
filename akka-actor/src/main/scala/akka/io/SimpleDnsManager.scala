@@ -43,8 +43,9 @@ class SimpleDnsManager(val ext: DnsExt) extends Actor with RequiresMessageQueue[
     case m: dns.DnsProtocol.Resolve ⇒
       if (inetDnsEnabled) {
         log.error(
-          "Message of [akka.io.dns.DnsProtocol.Protocol] received ({}) while inet-address dns was configured. Dropping DNS resolve request." +
-            "Only use [akka.io.dns.DnsProtocol.resolve] to create resolution requests for the Async DNS resolver.",
+          "Message of [akka.io.dns.DnsProtocol.Protocol] received ({}) while inet-address dns was configured. Dropping DNS resolve request. " +
+            "Only use [akka.io.dns.DnsProtocol] to create resolution requests for the Async DNS resolver (enabled by `akka.io.dns = async-dns`). " +
+            "For the classic (now used) DNS resolver use [akka.io.Dns] messages.",
           Logging.simpleName(m))
       } else resolver.forward(m)
   }

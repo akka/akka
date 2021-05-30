@@ -436,7 +436,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     Address(
       a.getProtocol,
       a.getSystem,
-      // technicaly the presence of hostname and port are guaranteed, see our serializeAddressData
+      // technically the presence of hostname and port are guaranteed, see our serializeAddressData
       if (a.hasHostname) Some(a.getHostname) else None,
       if (a.hasPort) Some(a.getPort) else None
     )
@@ -445,7 +445,7 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     Address(
       a.getProtocol,
       a.getSystem,
-      // technicaly the presence of hostname and port are guaranteed, see our serializeAddressData
+      // technically the presence of hostname and port are guaranteed, see our serializeAddressData
       if (a.hasHostname) Some(a.getHostname) else None,
       if (a.hasPort) Some(a.getPort) else None
     )

@@ -121,7 +121,7 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
     v
   }
 
-  def validateDefaultTrustManager(sslConfig: SSLConfigSettings) {
+  def validateDefaultTrustManager(sslConfig: SSLConfigSettings): Unit = {
     // If we are using a default SSL context, we can't filter out certificates with weak algorithms
     // We ALSO don't have access to the trust manager from the SSLContext without doing horrible things
     // with reflection.

@@ -14,18 +14,18 @@ object ShardingMessageExtractor {
    *
    * This is recommended since it does not force details about sharding into the entity protocol
    */
-  def apply[A](maxNumberOfShards: Int, handOffStopMessage: A): ShardingMessageExtractor[ShardingEnvelope[A], A] =
-    new HashCodeMessageExtractor[A](maxNumberOfShards, handOffStopMessage)
+  def apply[M](numberOfShards: Int): ShardingMessageExtractor[ShardingEnvelope[M], M] =
+    new HashCodeMessageExtractor[M](numberOfShards)
 
   /**
    * Scala API: Create a message extractor for a protocol where the entity id is available in each message.
    */
-  def noEnvelope[A](
-    maxNumberOfShards:  Int,
-    handOffStopMessage: A)(
-    extractEntityId: A ⇒ String): ShardingMessageExtractor[A, A] =
-    new HashCodeNoEnvelopeMessageExtractor[A](maxNumberOfShards, handOffStopMessage) {
-      def entityId(message: A) = extractEntityId(message)
+  def noEnvelope[M](
+    numberOfShards: Int,
+    stopMessage:    M)(
+    extractEntityId: M ⇒ String): ShardingMessageExtractor[M, M] =
+    new HashCodeNoEnvelopeMessageExtractor[M](numberOfShards) {
+      def entityId(message: M) = extractEntityId(message)
     }
 
 }
@@ -34,11 +34,11 @@ object ShardingMessageExtractor {
  * Entirely customizable typed message extractor. Prefer [[HashCodeMessageExtractor]] or
  * [[HashCodeNoEnvelopeMessageExtractor]]if possible.
  *
- * @tparam E Possibly an Envelope around the messages accepted by the entity actor, is the same as `A` if there is no
+ * @tparam E Possibly an Envelope around the messages accepted by the entity actor, is the same as `M` if there is no
  *           envelope.
- * @tparam A The type of message accepted by the entity actor
+ * @tparam M The type of message accepted by the entity actor
  */
-abstract class ShardingMessageExtractor[E, A] {
+abstract class ShardingMessageExtractor[E, M] {
 
   /**
    * Extract the entity id from an incoming `message`. If `null` is returned
@@ -58,13 +58,8 @@ abstract class ShardingMessageExtractor[E, A] {
    * message to support wrapping in message envelope that is unwrapped before
    * sending to the entity actor.
    */
-  def unwrapMessage(message: E): A
+  def unwrapMessage(message: E): M
 
-  /**
-   * Message sent to an entity to tell it to stop, e.g. when rebalanced.
-   * The message defined here is not passed to `entityId`, `shardId` or `unwrapMessage`.
-   */
-  def handOffStopMessage: A
 }
 
 /**
@@ -73,16 +68,15 @@ abstract class ShardingMessageExtractor[E, A] {
  *
  * This is recommended since it does not force details about sharding into the entity protocol
  *
- * @tparam A The type of message accepted by the entity actor
+ * @tparam M The type of message accepted by the entity actor
  */
-final class HashCodeMessageExtractor[A](
-  val maxNumberOfShards:           Int,
-  override val handOffStopMessage: A)
-  extends ShardingMessageExtractor[ShardingEnvelope[A], A] {
+final class HashCodeMessageExtractor[M](
+  val numberOfShards: Int)
+  extends ShardingMessageExtractor[ShardingEnvelope[M], M] {
 
-  override def entityId(envelope: ShardingEnvelope[A]): String = envelope.entityId
-  override def shardId(entityId: String): String = (math.abs(entityId.hashCode) % maxNumberOfShards).toString
-  override def unwrapMessage(envelope: ShardingEnvelope[A]): A = envelope.message
+  override def entityId(envelope: ShardingEnvelope[M]): String = envelope.entityId
+  override def shardId(entityId: String): String = math.abs(entityId.hashCode % numberOfShards).toString
+  override def unwrapMessage(envelope: ShardingEnvelope[M]): M = envelope.message
 }
 
 /**
@@ -91,17 +85,16 @@ final class HashCodeMessageExtractor[A](
  *
  * This is recommended since it does not force details about sharding into the entity protocol
  *
- * @tparam A The type of message accepted by the entity actor
+ * @tparam M The type of message accepted by the entity actor
  */
-abstract class HashCodeNoEnvelopeMessageExtractor[A](
-  val maxNumberOfShards:           Int,
-  override val handOffStopMessage: A)
-  extends ShardingMessageExtractor[A, A] {
+abstract class HashCodeNoEnvelopeMessageExtractor[M](
+  val numberOfShards: Int)
+  extends ShardingMessageExtractor[M, M] {
 
-  override def shardId(entityId: String): String = (math.abs(entityId.hashCode) % maxNumberOfShards).toString
-  override final def unwrapMessage(message: A): A = message
+  override def shardId(entityId: String): String = math.abs(entityId.hashCode % numberOfShards).toString
+  override final def unwrapMessage(message: M): M = message
 
-  override def toString = s"HashCodeNoEnvelopeMessageExtractor($maxNumberOfShards)"
+  override def toString = s"HashCodeNoEnvelopeMessageExtractor($numberOfShards)"
 }
 
 /**
@@ -114,5 +107,5 @@ abstract class HashCodeNoEnvelopeMessageExtractor[A](
  * The alternative way of routing messages through sharding is to not use envelopes,
  * and have the message types themselves carry identifiers.
  */
-final case class ShardingEnvelope[A](entityId: String, message: A) // TODO think if should remain a case class
+final case class ShardingEnvelope[M](entityId: String, message: M) // TODO think if should remain a case class
 

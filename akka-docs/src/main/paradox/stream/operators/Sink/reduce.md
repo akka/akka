@@ -8,7 +8,7 @@ Apply a reduction function on the incoming elements and pass the result to the n
 
 ## Signature
 
-@@signature [Sink.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #reduce }
+@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #reduce }
 
 @@@
 

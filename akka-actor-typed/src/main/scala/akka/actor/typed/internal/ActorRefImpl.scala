@@ -13,7 +13,7 @@ import scala.annotation.unchecked.uncheckedVariance
  * available in the package object, enabling `ref.toImpl` (or `ref.toImplN`
  * for `ActorRef[Nothing]`—Scala refuses to infer `Nothing` as a type parameter).
  */
-private[akka] trait ActorRefImpl[-T] extends ActorRef[T] {
+private[akka] trait ActorRefImpl[-T] extends ActorRef[T] { this: InternalRecipientRef[T] ⇒
   def sendSystem(signal: SystemMessage): Unit
   def isLocal: Boolean
 

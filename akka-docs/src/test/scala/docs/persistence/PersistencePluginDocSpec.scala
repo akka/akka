@@ -234,12 +234,12 @@ object PersistenceTCKDoc {
         new File(system.settings.config.getString("akka.persistence.journal.leveldb.dir")),
         new File(config.getString("akka.persistence.snapshot-store.local.dir")))
 
-      override def beforeAll() {
+      override def beforeAll(): Unit = {
         super.beforeAll()
         storageLocations foreach FileUtils.deleteRecursively
       }
 
-      override def afterAll() {
+      override def afterAll(): Unit = {
         storageLocations foreach FileUtils.deleteRecursively
         super.afterAll()
       }

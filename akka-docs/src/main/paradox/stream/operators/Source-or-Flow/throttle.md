@@ -8,7 +8,7 @@ Limit the throughput to a specific number of elements per time unit, or a specif
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #throttle }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #throttle }
 
 @@@
 

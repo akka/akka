@@ -73,7 +73,7 @@ private[akka] class CachingConfig(_config: Config) extends Config {
     case e ⇒ e
   }
 
-  def checkValid(reference: Config, restrictToPaths: String*) {
+  def checkValid(reference: Config, restrictToPaths: String*): Unit = {
     config.checkValid(reference, restrictToPaths: _*)
   }
 

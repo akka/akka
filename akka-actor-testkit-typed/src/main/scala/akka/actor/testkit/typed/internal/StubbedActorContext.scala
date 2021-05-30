@@ -14,13 +14,14 @@ import akka.event.Logging
 import akka.event.Logging.LogLevel
 import akka.util.{ Helpers, OptionVal }
 import akka.{ actor ⇒ untyped }
-
 import java.util.concurrent.ThreadLocalRandom.{ current ⇒ rnd }
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.ActorRefProvider
 
 /**
  * INTERNAL API
@@ -32,15 +33,22 @@ import scala.concurrent.duration.FiniteDuration
 private[akka] final class FunctionRef[-T](
   override val path: ActorPath,
   send:              (T, FunctionRef[T]) ⇒ Unit)
-  extends ActorRef[T] with ActorRefImpl[T] {
+  extends ActorRef[T] with ActorRefImpl[T] with InternalRecipientRef[T] {
 
   override def tell(msg: T): Unit = {
     if (msg == null) throw InvalidMessageException("[null] is not an allowed message")
     send(msg, this)
   }
 
-  override def sendSystem(signal: SystemMessage): Unit = {}
+  // impl ActorRefImpl
+  override def sendSystem(signal: SystemMessage): Unit = ()
+  // impl ActorRefImpl
   override def isLocal = true
+
+  // impl InternalRecipientRef, ask not supported
+  override def provider: ActorRefProvider = throw new UnsupportedOperationException("no provider")
+  // impl InternalRecipientRef
+  def isTerminated: Boolean = false
 }
 
 final case class CapturedLogEvent(logLevel: LogLevel, message: String,
@@ -176,7 +184,9 @@ final case class CapturedLogEvent(logLevel: LogLevel, message: String,
       "Only direct children of an actor can be stopped through the actor context, " +
         s"but [$child] is not a child of [$self]. Stopping other actors has to be expressed as " +
         "an explicit stop message that the actor accepts.")
-    else ()
+    else {
+      _children -= child.path.name
+    }
   }
   override def watch[U](other: ActorRef[U]): Unit = ()
   override def watchWith[U](other: ActorRef[U], msg: T): Unit = ()

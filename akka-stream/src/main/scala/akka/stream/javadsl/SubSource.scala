@@ -6,8 +6,7 @@ package akka.stream.javadsl
 
 import akka.NotUsed
 import akka.event.LoggingAdapter
-import akka.japi.function
-import akka.japi.Util
+import akka.japi.{ Pair, Util, function }
 import akka.stream._
 import akka.util.ConstantFun
 import akka.util.JavaDurationConverters._
@@ -933,7 +932,7 @@ class SubSource[Out, Mat](delegate: scaladsl.SubFlow[Out, Mat, scaladsl.Source[O
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
    * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
    *
-   * Similarily to [[recover]] throwing an exception inside `mapError` _will_ be logged.
+   * Similarly to [[recover]] throwing an exception inside `mapError` _will_ be logged.
    *
    * '''Emits when''' element is available from the upstream or upstream is failed and pf returns an element
    *

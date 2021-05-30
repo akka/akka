@@ -62,7 +62,7 @@ object TypedBenchmarkActors {
     Behaviors.receive { (ctx, msg) ⇒
       msg match {
         case Start(respondTo) ⇒
-          // note: no protection against accidentally running bench sessions in paralell
+          // note: no protection against accidentally running bench sessions in parallel
           val sessionBehavior = startEchoBenchSession(numMessagesPerActorPair, numActors, dispatcher, batchSize, respondTo)
           ctx.spawnAnonymous(sessionBehavior)
           Behaviors.same

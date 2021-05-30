@@ -8,7 +8,7 @@ Materializes this Sink, immediately returning (1) its materialized value, and (2
 
 ## Signature
 
-@@signature [Sink.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #preMaterialize }
+@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #preMaterialize }
 
 @@@
 

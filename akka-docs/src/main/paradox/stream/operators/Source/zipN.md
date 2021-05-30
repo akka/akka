@@ -8,7 +8,7 @@ Combine the elements of multiple streams into a stream of sequences.
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #zipN }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #zipN }
 
 @@@
 

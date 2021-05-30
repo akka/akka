@@ -226,7 +226,7 @@ abstract class TransitionSpec
       enterBarrier("after-3")
     }
 
-    "perform correct transitions when second becomes unavailble" taggedAs LongRunningTest in {
+    "perform correct transitions when second becomes unavailable" taggedAs LongRunningTest in {
       runOn(third) {
         markNodeAsUnavailable(second)
         reapUnreachable()
@@ -234,7 +234,7 @@ abstract class TransitionSpec
         awaitAssert(seenLatestGossip should ===(Set(third)))
       }
 
-      enterBarrier("after-second-unavailble")
+      enterBarrier("after-second-unavailable")
 
       third gossipTo first
 

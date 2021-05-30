@@ -175,7 +175,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
     val all = Seq(c1, c2, c21)
 
     "find actors by looking up their path" in {
-      def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef) {
+      def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef): Unit = {
         Await.result(looker ? LookupPath(pathOf.path), timeout.duration) should ===(result)
       }
       for {
@@ -185,7 +185,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "find actors by looking up their string representation" in {
-      def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef) {
+      def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef): Unit = {
         Await.result(looker ? LookupString(pathOf.path.toString), timeout.duration) should ===(result)
         // with uid
         Await.result(looker ? LookupString(pathOf.path.toSerializationFormat), timeout.duration) should ===(result)
@@ -199,7 +199,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "find actors by looking up their root-anchored relative path" in {
-      def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef) {
+      def check(looker: ActorRef, pathOf: ActorRef, result: ActorRef): Unit = {
         Await.result(looker ? LookupString(pathOf.path.toStringWithoutAddress), timeout.duration) should ===(result)
         Await.result(looker ? LookupString(pathOf.path.elements.mkString("/", "/", "/")), timeout.duration) should ===(result)
       }
@@ -210,7 +210,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "find actors by looking up their relative path" in {
-      def check(looker: ActorRef, result: ActorRef, elems: String*) {
+      def check(looker: ActorRef, result: ActorRef, elems: String*): Unit = {
         Await.result(looker ? LookupElems(elems), timeout.duration) should ===(result)
         Await.result(looker ? LookupString(elems mkString "/"), timeout.duration) should ===(result)
         Await.result(looker ? LookupString(elems mkString ("", "/", "/")), timeout.duration) should ===(result)
@@ -226,7 +226,7 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "find system-generated actors" in {
-      def check(target: ActorRef) {
+      def check(target: ActorRef): Unit = {
         for (looker ← all) {
           Await.result(looker ? LookupPath(target.path), timeout.duration) should ===(target)
           Await.result(looker ? LookupString(target.path.toString), timeout.duration) should ===(target)
@@ -241,12 +241,12 @@ class ActorLookupSpec extends AkkaSpec with DefaultTimeout {
     "return deadLetters or EmptyLocalActorRef, respectively, for non-existing paths" in {
       import scala.collection.JavaConverters._
 
-      def checkOne(looker: ActorRef, query: Query, result: ActorRef) {
+      def checkOne(looker: ActorRef, query: Query, result: ActorRef): Unit = {
         val lookup = Await.result(looker ? query, timeout.duration)
         lookup.getClass should be(result.getClass)
         lookup should ===(result)
       }
-      def check(looker: ActorRef) {
+      def check(looker: ActorRef): Unit = {
         val lookname = looker.path.elements.mkString("", "/", "/")
         for (
           (l, r) ← Seq(

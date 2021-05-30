@@ -102,11 +102,10 @@ object ParadoxSupport {
           case _                                   => sys.error("Source references are not supported")
         }
         val file =
-          if (source startsWith "$") {
-            val baseKey = source.drop(1).takeWhile(_ != '$')
-            val base = new File(PropertyUrl(s"signature.$baseKey.base_dir", variables.get).base.trim)
-            val effectiveBase = if (base.isAbsolute) base else new File(page.file.getParentFile, base.toString)
-            new File(effectiveBase, source.drop(baseKey.length + 2))
+          if (source startsWith "/") {
+            // snip.build.base_dir defined by Paradox
+            val base = new File(PropertyUrl("snip.build.base_dir", variables.get).base.trim)
+            new File(base, source)
           } else new File(page.file.getParentFile, source)
 
         val Signature = """\s*((def|val|type) (\w+)(?=[:(\[]).*)(\s+\=.*)""".r // stupid approximation to match a signature

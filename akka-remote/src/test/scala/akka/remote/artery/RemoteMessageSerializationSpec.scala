@@ -82,7 +82,7 @@ class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
 
   }
 
-  private def verifySend(msg: Any)(afterSend: ⇒ Unit) {
+  private def verifySend(msg: Any)(afterSend: ⇒ Unit): Unit = {
     val bigBounceId = s"bigBounce-${ThreadLocalRandom.current.nextInt()}"
     val bigBounceOther = remoteSystem.actorOf(Props(new Actor {
       def receive = {

@@ -8,7 +8,7 @@ Combine several sources, using a given strategy such as merge or concat, into on
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #combine }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #combine }
 
 @@@
 
@@ -21,5 +21,13 @@ Combine several sources, using a given strategy such as merge or concat, into on
 **completes** when all sources has completed
 
 @@@
+
+
+## Examples
+
+
+Scala
+:  @@snip [combine.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/SourceSpec.scala) { #imports #combine }
+
 
 

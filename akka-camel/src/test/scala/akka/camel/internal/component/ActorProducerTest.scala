@@ -113,7 +113,7 @@ class ActorProducerTest extends TestKit(ActorSystem("ActorProducerTest")) with W
         "response is not sent by actor" must {
           val latch = TestLatch(1)
           val callback = new AsyncCallback {
-            def done(doneSync: Boolean) {
+            def done(doneSync: Boolean): Unit = {
               latch.countDown()
             }
           }
@@ -339,7 +339,7 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
   var actorEndpointPath: ActorEndpointPath = _
   var actorComponent: ActorComponent = _
 
-  override protected def beforeEach() {
+  override protected def beforeEach(): Unit = {
     asyncCallback = createAsyncCallback
 
     probe = TestProbe()
@@ -380,7 +380,7 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
     message = CamelMessage(null, null)
   }
 
-  override protected def afterAll() {
+  override protected def afterAll(): Unit = {
     shutdown()
   }
 
@@ -396,12 +396,12 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
   class TestAsyncCallback extends AsyncCallback {
     def expectNoCallWithin(duration: Duration): Unit =
       if (callbackReceived.await(duration.length, duration.unit)) fail("NOT expected callback, but received one!")
-    def awaitCalled(timeout: Duration = 1 second) { valueWithin(1 second) }
+    def awaitCalled(timeout: Duration = 1 second): Unit = { valueWithin(1 second) }
 
     val callbackReceived = new CountDownLatch(1)
     val callbackValue = new AtomicBoolean()
 
-    def done(doneSync: Boolean) {
+    def done(doneSync: Boolean): Unit = {
       callbackValue set doneSync
       callbackReceived.countDown()
     }
@@ -422,7 +422,7 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
     endpoint
   }
 
-  def prepareMocks(actor: ActorRef, message: CamelMessage = message, outCapable: Boolean) {
+  def prepareMocks(actor: ActorRef, message: CamelMessage = message, outCapable: Boolean): Unit = {
     when(actorEndpointPath.findActorIn(any[ActorSystem])) thenReturn Option(actor)
     when(exchange.toRequestMessage(any[Map[String, Any]])) thenReturn message
     when(exchange.isOutCapable) thenReturn outCapable

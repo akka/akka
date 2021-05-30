@@ -37,7 +37,7 @@ class ActivationIntegrationTest extends WordSpec with Matchers with SharedCamelS
       def endpointUri = "direct:a3"
       def receive = { case _ ⇒ {} }
 
-      override def postStop() {
+      override def postStop(): Unit = {
         super.postStop()
         latch.countDown()
       }
@@ -69,7 +69,7 @@ class ActivationIntegrationTest extends WordSpec with Matchers with SharedCamelS
   class TestConsumer(uri: String, latch: TestLatch) extends Consumer {
     def endpointUri = uri
 
-    override def preStart() {
+    override def preStart(): Unit = {
       Await.ready(latch, 60 seconds)
       super.preStart()
     }

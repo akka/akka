@@ -133,7 +133,6 @@ public class InDepthPersistentBehaviorTest {
     }
   }
   public static class PassivatePost implements BlogCommand {
-
   }
   public static class PostContent implements BlogCommand {
     final String postId;
@@ -222,7 +221,7 @@ public class InDepthPersistentBehaviorTest {
 
     //#event-handler
     @Override
-    public EventHandler<BlogEvent, BlogState> eventHandler() {
+    public EventHandler<BlogState, BlogEvent> eventHandler() {
       return eventHandlerBuilder()
           .matchEvent(PostAdded.class, (state, event) ->
               new DraftState(event.content, false))

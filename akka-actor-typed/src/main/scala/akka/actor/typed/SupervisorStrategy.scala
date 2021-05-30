@@ -4,8 +4,6 @@
 
 package akka.actor.typed
 
-import java.time
-
 import akka.annotation.InternalApi
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration.Duration
@@ -160,6 +158,8 @@ object SupervisorStrategy {
 
     override def withLoggingEnabled(enabled: Boolean): SupervisorStrategy =
       copy(loggingEnabled = enabled)
+
+    def unlimitedRestarts(): Boolean = maxNrOfRetries == -1
   }
 
   /**

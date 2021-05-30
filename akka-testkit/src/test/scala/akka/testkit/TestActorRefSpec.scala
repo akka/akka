@@ -26,7 +26,7 @@ object TestActorRefSpec {
     def receive = new Receive {
       val recv = receiveT
       def isDefinedAt(o: Any) = recv.isDefinedAt(o)
-      def apply(o: Any) {
+      def apply(o: Any): Unit = {
         if (Thread.currentThread ne thread)
           otherthread = Thread.currentThread
         recv(o)
@@ -170,7 +170,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
     "stop when sent a poison pill" in {
       EventFilter[ActorKilledException]() intercept {
         val a = TestActorRef(Props[WorkerActor])
-        val forwarder = system.actorOf(Props(new Actor {
+        system.actorOf(Props(new Actor {
           context.watch(a)
           def receive = {
             case t: Terminated ⇒ testActor forward WrappedTerminated(t)
@@ -193,8 +193,8 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
         val boss = TestActorRef(Props(new TActor {
           val ref = TestActorRef(Props(new TActor {
             def receiveT = { case _ ⇒ }
-            override def preRestart(reason: Throwable, msg: Option[Any]) { counter -= 1 }
-            override def postRestart(reason: Throwable) { counter -= 1 }
+            override def preRestart(reason: Throwable, msg: Option[Any]): Unit = { counter -= 1 }
+            override def postRestart(reason: Throwable): Unit = { counter -= 1 }
           }), self, "child")
 
           override def supervisorStrategy =

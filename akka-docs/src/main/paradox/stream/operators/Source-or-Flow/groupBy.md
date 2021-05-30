@@ -8,7 +8,7 @@ Demultiplex the incoming stream into separate output streams.
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #groupBy }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #groupBy }
 
 @@@
 

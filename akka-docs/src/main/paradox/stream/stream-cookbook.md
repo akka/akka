@@ -36,19 +36,19 @@ The simplest solution is to use a `map` operation and use `println` to print the
 While this recipe is rather simplistic, it is often suitable for a quick debug session.
 
 Scala
-:   @@snip [RecipeLoggingElements.scala]($code$/scala/docs/stream/cookbook/RecipeLoggingElements.scala) { #println-debug }
+:   @@snip [RecipeLoggingElements.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeLoggingElements.scala) { #println-debug }
 
 Java
-:   @@snip [RecipeLoggingElements.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeLoggingElements.java) { #println-debug }
+:   @@snip [RecipeLoggingElements.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeLoggingElements.java) { #println-debug }
 
 Another approach to logging is to use `log()` operation. This approach gives you more fine-grained control of logging levels for
 elements flowing through the stream, finish and failure of the stream.
 
 Scala
-:   @@snip [RecipeLoggingElements.scala]($code$/scala/docs/stream/cookbook/RecipeLoggingElements.scala) { #log-custom }
+:   @@snip [RecipeLoggingElements.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeLoggingElements.scala) { #log-custom }
 
 Java
-:   @@snip [RecipeLoggingElements.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeLoggingElements.java) { #log-custom }
+:   @@snip [RecipeLoggingElements.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeLoggingElements.java) { #log-custom }
 
 ### Creating a source that continuously evaluates a function
 
@@ -58,10 +58,10 @@ The simplest implementation is to use a `Source.repeat` that produces some arbit
 and then map those elements to the function evaluation. E.g. if we have some `builderFunction()`, we can use:
 
 Scala
-:   @@snip [RecipeSourceFromFunction.scala]($code$/scala/docs/stream/cookbook/RecipeSourceFromFunction.scala) { #source-from-function }
+:   @@snip [RecipeSourceFromFunction.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeSourceFromFunction.scala) { #source-from-function }
 
 Java
-:   @@snip [RecipeSourceFromFunction.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeSourceFromFunction.java) { #source-from-function }
+:   @@snip [RecipeSourceFromFunction.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeSourceFromFunction.java) { #source-from-function }
 
 Note: if the element-builder function touches mutable state, then a guaranteed single-threaded source should be used
 instead; e.g. `Source.unfold` or `Source.unfoldResource`.
@@ -76,10 +76,10 @@ in the form of @scala[`In => immutable.Seq[Out]`] @java[`In -> List<Out>`]. In t
 collection itself, so we can call @scala[`mapConcat(identity)`] @java[`mapConcat(l -> l)`].
 
 Scala
-:   @@snip [RecipeFlattenSeq.scala]($code$/scala/docs/stream/cookbook/RecipeFlattenSeq.scala) { #flattening-seqs }
+:   @@snip [RecipeFlattenSeq.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeFlattenSeq.scala) { #flattening-seqs }
 
 Java
-:   @@snip [RecipeFlattenList.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeFlattenList.java) { #flattening-lists }
+:   @@snip [RecipeFlattenList.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeFlattenList.java) { #flattening-lists }
 
 ### Draining a stream to a strict collection
 
@@ -93,18 +93,18 @@ The function `limit` or `take` should always be used in conjunction in order to 
 For example, this is best avoided:
 
 Scala
-:   @@snip [RecipeSeq.scala]($code$/scala/docs/stream/cookbook/RecipeSeq.scala) { #draining-to-seq-unsafe }
+:   @@snip [RecipeSeq.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeSeq.scala) { #draining-to-seq-unsafe }
 
 Java
-:   @@snip [RecipeSeq.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeSeq.java) { #draining-to-list-unsafe }
+:   @@snip [RecipeSeq.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeSeq.java) { #draining-to-list-unsafe }
 
 Rather, use `limit` or `take` to ensure that the resulting @scala[`Seq`] @java[`List`] will contain only up to @scala[`max`] @java[`MAX_ALLOWED_SIZE`] elements:
 
 Scala
-:   @@snip [RecipeSeq.scala]($code$/scala/docs/stream/cookbook/RecipeSeq.scala) { #draining-to-seq-safe }
+:   @@snip [RecipeSeq.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeSeq.scala) { #draining-to-seq-safe }
 
 Java
-:   @@snip [RecipeSeq.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeSeq.java) { #draining-to-list-safe }
+:   @@snip [RecipeSeq.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeSeq.java) { #draining-to-list-safe }
 
 ### Calculating the digest of a ByteString stream
 
@@ -122,11 +122,11 @@ be no downstream demand. Instead we call `emit` which will temporarily replace t
 demand comes in and then reset the operator state. It will then complete the operator.
 
 Scala
-:   @@snip [RecipeDigest.scala]($code$/scala/docs/stream/cookbook/RecipeDigest.scala) { #calculating-digest }
+:   @@snip [RecipeDigest.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeDigest.scala) { #calculating-digest }
 
 Java
-:   @@snip [RecipeDigest.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeDigest.java) { #calculating-digest }   
-:   @@snip [RecipeDigest.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeDigest.java) { #calculating-digest2 }
+:   @@snip [RecipeDigest.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeDigest.java) { #calculating-digest }   
+:   @@snip [RecipeDigest.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeDigest.java) { #calculating-digest2 }
 
 <a id="cookbook-parse-lines"></a>
 ### Parsing lines from a stream of ByteStrings
@@ -138,10 +138,10 @@ needs to be parsed.
 The `Framing` helper @scala[object] @java[class] contains a convenience method to parse messages from a stream of `ByteString` s:
 
 Scala
-:   @@snip [RecipeParseLines.scala]($code$/scala/docs/stream/cookbook/RecipeParseLines.scala) { #parse-lines }
+:   @@snip [RecipeParseLines.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeParseLines.scala) { #parse-lines }
 
 Java
-:   @@snip [RecipeParseLines.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeParseLines.java) { #parse-lines }
+:   @@snip [RecipeParseLines.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeParseLines.java) { #parse-lines }
 
 ### Dealing with compressed data streams
 
@@ -151,10 +151,10 @@ The `Compression` helper @scala[object] @java[class] contains convenience method
 Gzip or Deflate.
 
 Scala
-:   @@snip [RecipeDecompress.scala]($code$/scala/docs/stream/cookbook/RecipeDecompress.scala) { #decompress-gzip }
+:   @@snip [RecipeDecompress.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeDecompress.scala) { #decompress-gzip }
 
 Java
-:   @@snip [RecipeDecompress.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeDecompress.java) { #decompress-gzip }
+:   @@snip [RecipeDecompress.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeDecompress.java) { #decompress-gzip }
 
 ### Implementing reduce-by-key
 
@@ -184,10 +184,10 @@ number then the stream cannot continue without violating its resource bound, in
 this case `groupBy` will terminate with a failure.
 
 Scala
-:   @@snip [RecipeReduceByKey.scala]($code$/scala/docs/stream/cookbook/RecipeReduceByKey.scala) { #word-count }
+:   @@snip [RecipeReduceByKey.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeReduceByKey.scala) { #word-count }
 
 Java
-:  @@snip [RecipeReduceByKeyTest.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeReduceByKeyTest.java) { #word-count }
+:  @@snip [RecipeReduceByKeyTest.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeReduceByKeyTest.java) { #word-count }
 
 By extracting the parts specific to *wordcount* into
 
@@ -198,11 +198,11 @@ By extracting the parts specific to *wordcount* into
 we get a generalized version below:
 
 Scala
-:   @@snip [RecipeReduceByKey.scala]($code$/scala/docs/stream/cookbook/RecipeReduceByKey.scala) { #reduce-by-key-general }
+:   @@snip [RecipeReduceByKey.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeReduceByKey.scala) { #reduce-by-key-general }
 
 Java
-:   @@snip [RecipeReduceByKeyTest.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeReduceByKeyTest.java) { #reduce-by-key-general }
-:   @@snip [RecipeReduceByKeyTest.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeReduceByKeyTest.java) { #reduce-by-key-general2 }
+:   @@snip [RecipeReduceByKeyTest.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeReduceByKeyTest.java) { #reduce-by-key-general }
+:   @@snip [RecipeReduceByKeyTest.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeReduceByKeyTest.java) { #reduce-by-key-general2 }
 
 
 @@@ note
@@ -227,10 +227,10 @@ will be emitted. This is achieved by using `mapConcat`
 belongs to) and feed it into groupBy, using the topic as the group key.
 
 Scala
-:   @@snip [RecipeMultiGroupBy.scala]($code$/scala/docs/stream/cookbook/RecipeMultiGroupBy.scala) { #multi-groupby }
+:   @@snip [RecipeMultiGroupBy.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeMultiGroupBy.scala) { #multi-groupby }
 
 Java
-:   @@snip [RecipeMultiGroupByTest.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeMultiGroupByTest.java) { #multi-groupby }
+:   @@snip [RecipeMultiGroupByTest.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeMultiGroupByTest.java) { #multi-groupby }
 
 ### Adhoc source
 
@@ -240,10 +240,10 @@ Also, you want to shutdown it down when there is no more demand, and start it up
 You can achieve this behavior by combining `lazily`, `backpressureTimeout` and `recoverWithRetries` as follows:
 
 Scala
-:   @@snip [RecipeAdhocSource.scala]($code$/scala/docs/stream/cookbook/RecipeAdhocSource.scala) { #adhoc-source }
+:   @@snip [RecipeAdhocSource.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeAdhocSource.scala) { #adhoc-source }
 
 Java
-:   @@snip [RecipeAdhocSourceTest.scala]($code$/java/jdocs/stream/javadsl/cookbook/RecipeAdhocSourceTest.java) { #adhoc-source }
+:   @@snip [RecipeAdhocSourceTest.scala](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeAdhocSourceTest.java) { #adhoc-source }
 
 
 ## Working with Operators
@@ -260,10 +260,10 @@ This recipe solves the problem by zipping the stream of `Message` elements with 
 signals. Since `Zip` produces pairs, we map the output stream selecting the first element of the pair.
 
 Scala
-:   @@snip [RecipeManualTrigger.scala]($code$/scala/docs/stream/cookbook/RecipeManualTrigger.scala) { #manually-triggered-stream }
+:   @@snip [RecipeManualTrigger.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeManualTrigger.scala) { #manually-triggered-stream }
     
 Java
-:   @@snip [RecipeManualTrigger.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeManualTrigger.java) { #manually-triggered-stream }
+:   @@snip [RecipeManualTrigger.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeManualTrigger.java) { #manually-triggered-stream }
 
 Alternatively, instead of using a `Zip`, and then using `map` to get the first element of the pairs, we can avoid
 creating the pairs in the first place by using `ZipWith` which takes a two argument function to produce the output
@@ -271,10 +271,10 @@ element. If this function would return a pair of the two argument it would be ex
 `ZipWith` is a generalization of zipping.
 
 Scala
-:   @@snip [RecipeManualTrigger.scala]($code$/scala/docs/stream/cookbook/RecipeManualTrigger.scala) { #manually-triggered-stream-zipwith }
+:   @@snip [RecipeManualTrigger.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeManualTrigger.scala) { #manually-triggered-stream-zipwith }
     
 Java
-:   @@snip [RecipeManualTrigger.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeManualTrigger.java) { #manually-triggered-stream-zipwith }
+:   @@snip [RecipeManualTrigger.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeManualTrigger.java) { #manually-triggered-stream-zipwith }
 
 <a id="cookbook-balance"></a>
 ### Balancing jobs to a fixed pool of workers
@@ -293,11 +293,11 @@ we wire the outputs of these workers to a `Merge` element that will collect the 
 To make the worker operators run in parallel we mark them as asynchronous with *async*.
 
 Scala
-:   @@snip [RecipeWorkerPool.scala]($code$/scala/docs/stream/cookbook/RecipeWorkerPool.scala) { #worker-pool }
+:   @@snip [RecipeWorkerPool.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeWorkerPool.scala) { #worker-pool }
     
 Java
-:   @@snip [RecipeWorkerPool.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeWorkerPool.java) { #worker-pool }
-:   @@snip [RecipeWorkerPool.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeWorkerPool.java) { #worker-pool2 }
+:   @@snip [RecipeWorkerPool.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeWorkerPool.java) { #worker-pool }
+:   @@snip [RecipeWorkerPool.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeWorkerPool.java) { #worker-pool2 }
 
 ## Working with rate
 
@@ -317,10 +317,10 @@ When the upstream is faster, the reducing process of the `conflate` starts. Our 
 the freshest element. This in a simple dropping operation.
 
 Scala
-:   @@snip [RecipeSimpleDrop.scala]($code$/scala/docs/stream/cookbook/RecipeSimpleDrop.scala) { #simple-drop }
+:   @@snip [RecipeSimpleDrop.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeSimpleDrop.scala) { #simple-drop }
     
 Java
-:   @@snip [RecipeSimpleDrop.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeSimpleDrop.java) { #simple-drop }
+:   @@snip [RecipeSimpleDrop.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeSimpleDrop.java) { #simple-drop }
 
 There is a more general version of `conflate` named `conflateWithSeed` that allows to express more complex aggregations, more
 similar to a `fold`.
@@ -338,11 +338,11 @@ between the different consumers (the buffer smooths out small rate variances), b
 progress by dropping from the buffer of the slow consumers if necessary.
 
 Scala
-:   @@snip [RecipeDroppyBroadcast.scala]($code$/scala/docs/stream/cookbook/RecipeDroppyBroadcast.scala) { #droppy-bcast }
+:   @@snip [RecipeDroppyBroadcast.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeDroppyBroadcast.scala) { #droppy-bcast }
     
 Java
-:   @@snip [RecipeDroppyBroadcast.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeDroppyBroadcast.java) { #droppy-bcast }
-:   @@snip [RecipeDroppyBroadcast.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeDroppyBroadcast.java) { #droppy-bcast2 }
+:   @@snip [RecipeDroppyBroadcast.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeDroppyBroadcast.java) { #droppy-bcast }
+:   @@snip [RecipeDroppyBroadcast.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeDroppyBroadcast.java) { #droppy-bcast2 }
 
 ### Collecting missed ticks
 
@@ -362,10 +362,10 @@ As a result, we have a flow of `Int` where the number represents the missed tick
 able to consume the tick fast enough (i.e. zero means: 1 non-missed tick + 0 missed ticks)
 
 Scala
-:   @@snip [RecipeMissedTicks.scala]($code$/scala/docs/stream/cookbook/RecipeMissedTicks.scala) { #missed-ticks }
+:   @@snip [RecipeMissedTicks.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeMissedTicks.scala) { #missed-ticks }
     
 Java
-:   @@snip [RecipeMissedTicks.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeMissedTicks.java) { #missed-ticks }
+:   @@snip [RecipeMissedTicks.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeMissedTicks.java) { #missed-ticks }
 
 ### Create a stream processor that repeats the last element seen
 
@@ -380,10 +380,10 @@ to feed the downstream if no upstream element is ready yet. In the `onPush()` ha
 is very similar, we immediately relieve the downstream by emitting `currentValue`.
 
 Scala
-:   @@snip [RecipeHold.scala]($code$/scala/docs/stream/cookbook/RecipeHold.scala) { #hold-version-1 }
+:   @@snip [RecipeHold.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeHold.scala) { #hold-version-1 }
 
 Java
-:   @@snip [RecipeHold.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeHold.java) { #hold-version-1 }
+:   @@snip [RecipeHold.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeHold.java) { #hold-version-1 }
 
 While it is relatively simple, the drawback of the first version is that it needs an arbitrary initial element which is not
 always possible to provide. Hence, we create a second version where the downstream might need to wait in one single
@@ -397,10 +397,10 @@ first element comes in we must check if there possibly already was demand from d
 push the element directly.
 
 Scala
-:   @@snip [RecipeHold.scala]($code$/scala/docs/stream/cookbook/RecipeHold.scala) { #hold-version-2 }
+:   @@snip [RecipeHold.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeHold.scala) { #hold-version-2 }
     
 Java
-:   @@snip [RecipeHold.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeHold.java) { #hold-version-2 }
+:   @@snip [RecipeHold.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeHold.java) { #hold-version-2 }
 
 ### Globally limiting the rate of a set of streams
 
@@ -421,20 +421,20 @@ message, we increment the pending permits counter and send a reply to each of th
 waiting senders than permits available we will stay in the `closed` state.
 
 Scala
-:   @@snip [RecipeGlobalRateLimit.scala]($code$/scala/docs/stream/cookbook/RecipeGlobalRateLimit.scala) { #global-limiter-actor }
+:   @@snip [RecipeGlobalRateLimit.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeGlobalRateLimit.scala) { #global-limiter-actor }
     
 Java
-:   @@snip [RecipeGlobalRateLimit.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeGlobalRateLimit.java) { #global-limiter-actor }
+:   @@snip [RecipeGlobalRateLimit.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeGlobalRateLimit.java) { #global-limiter-actor }
 
 To create a Flow that uses this global limiter actor we use the `mapAsync` function with the combination of the `ask`
 pattern. We also define a timeout, so if a reply is not received during the configured maximum wait period the returned
 future from `ask` will fail, which will fail the corresponding stream as well.
 
 Scala
-:   @@snip [RecipeGlobalRateLimit.scala]($code$/scala/docs/stream/cookbook/RecipeGlobalRateLimit.scala) { #global-limiter-flow }
+:   @@snip [RecipeGlobalRateLimit.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeGlobalRateLimit.scala) { #global-limiter-flow }
     
 Java
-:   @@snip [RecipeGlobalRateLimit.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeGlobalRateLimit.java) { #global-limiter-flow }
+:   @@snip [RecipeGlobalRateLimit.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeGlobalRateLimit.java) { #global-limiter-flow }
 
 @@@ note
 
@@ -462,11 +462,11 @@ Both `onPush()` and `onPull()` calls `emitChunk()` the only difference is that t
 the incoming chunk by appending to the end of the buffer.
 
 Scala
-:   @@snip [RecipeByteStrings.scala]($code$/scala/docs/stream/cookbook/RecipeByteStrings.scala) { #bytestring-chunker }
+:   @@snip [RecipeByteStrings.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeByteStrings.scala) { #bytestring-chunker }
     
 Java
-:   @@snip [RecipeByteStrings.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeByteStrings.java) { #bytestring-chunker }
-:   @@snip [RecipeByteStrings.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeByteStrings.java) { #bytestring-chunker2 }
+:   @@snip [RecipeByteStrings.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeByteStrings.java) { #bytestring-chunker }
+:   @@snip [RecipeByteStrings.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeByteStrings.java) { #bytestring-chunker2 }
 
 ### Limit the number of bytes passing through a stream of ByteStrings
 
@@ -478,11 +478,11 @@ This recipe uses a @ref[`GraphStage`](stream-customize.md) to implement the desi
 we signal failure, otherwise we forward the chunk we have received.
 
 Scala
-:   @@snip [RecipeByteStrings.scala]($code$/scala/docs/stream/cookbook/RecipeByteStrings.scala) { #bytes-limiter }
+:   @@snip [RecipeByteStrings.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeByteStrings.scala) { #bytes-limiter }
     
 Java
-:   @@snip [RecipeByteStrings.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeByteStrings.java) { #bytes-limiter }
-    @@snip [RecipeByteStrings.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeByteStrings.java) { #bytes-limiter2 }
+:   @@snip [RecipeByteStrings.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeByteStrings.java) { #bytes-limiter }
+    @@snip [RecipeByteStrings.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeByteStrings.java) { #bytes-limiter2 }
         
 ### Compact ByteStrings in a stream of ByteStrings
 
@@ -494,10 +494,10 @@ The recipe is a simple use of map, calling the `compact()` method of the `ByteSt
 copying of the underlying arrays, so this should be the last element of a long chain if used.
 
 Scala
-:   @@snip [RecipeByteStrings.scala]($code$/scala/docs/stream/cookbook/RecipeByteStrings.scala) { #compacting-bytestrings }
+:   @@snip [RecipeByteStrings.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeByteStrings.scala) { #compacting-bytestrings }
     
 Java
-:   @@snip [RecipeByteStrings.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeByteStrings.java) { #compacting-bytestrings }
+:   @@snip [RecipeByteStrings.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeByteStrings.java) { #compacting-bytestrings }
     
 ### Injecting keep-alive messages into a stream of ByteStrings
 
@@ -507,7 +507,7 @@ but only if this does not interfere with normal traffic.
 There is a built-in operation that allows to do this directly:
 
 Scala
-:   @@snip [RecipeKeepAlive.scala]($code$/scala/docs/stream/cookbook/RecipeKeepAlive.scala) { #inject-keepalive }
+:   @@snip [RecipeKeepAlive.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeKeepAlive.scala) { #inject-keepalive }
 
 Java
-:   @@snip [RecipeKeepAlive.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeKeepAlive.java) { #inject-keepalive }
+:   @@snip [RecipeKeepAlive.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeKeepAlive.java) { #inject-keepalive }

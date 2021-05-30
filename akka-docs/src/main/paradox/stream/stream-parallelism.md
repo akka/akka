@@ -36,10 +36,10 @@ completion.
 This is how this setup would look like implemented as a stream:
 
 Scala
-:   @@snip [FlowParallelismDocSpec.scala]($code$/scala/docs/stream/FlowParallelismDocSpec.scala) { #pipelining }
+:   @@snip [FlowParallelismDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowParallelismDocSpec.scala) { #pipelining }
 
 Java
-:   @@snip [FlowParallelismDocTest.java]($code$/java/jdocs/stream/FlowParallelismDocTest.java) { #pipelining }
+:   @@snip [FlowParallelismDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowParallelismDocTest.java) { #pipelining }
 
 The two `map` operators in sequence (encapsulated in the "frying pan" flows) will be executed in a pipelined way,
 the same way that Roland was using his frying pans:
@@ -71,10 +71,10 @@ In essence he parallelizes the same process over multiple pans. This is how this
 using streams:
 
 Scala
-:   @@snip [FlowParallelismDocSpec.scala]($code$/scala/docs/stream/FlowParallelismDocSpec.scala) { #parallelism }
+:   @@snip [FlowParallelismDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowParallelismDocSpec.scala) { #parallelism }
 
 Java
-:   @@snip [FlowParallelismDocTest.java]($code$/java/jdocs/stream/FlowParallelismDocTest.java) { #parallelism }
+:   @@snip [FlowParallelismDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowParallelismDocTest.java) { #parallelism }
 
 The benefit of parallelizing is that it is easy to scale. In the pancake example
 it is easy to add a third frying pan with Patrik's method, but Roland cannot add a third frying pan,
@@ -97,10 +97,10 @@ will employ two chefs, each working using Roland's pipelining method, but we use
 Patrik used the two frying pans. This is how it looks like if expressed as streams:
 
 Scala
-:   @@snip [FlowParallelismDocSpec.scala]($code$/scala/docs/stream/FlowParallelismDocSpec.scala) { #parallel-pipeline }
+:   @@snip [FlowParallelismDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowParallelismDocSpec.scala) { #parallel-pipeline }
 
 Java
-:   @@snip [FlowParallelismDocTest.java]($code$/java/jdocs/stream/FlowParallelismDocTest.java) { #parallel-pipeline }
+:   @@snip [FlowParallelismDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowParallelismDocTest.java) { #parallel-pipeline }
 
 The above pattern works well if there are many independent jobs that do not depend on the results of each other, but
 the jobs themselves need multiple processing steps where each step builds on the result of
@@ -118,10 +118,10 @@ plate.
 This is again straightforward to implement with the streams API:
 
 Scala
-:   @@snip [FlowParallelismDocSpec.scala]($code$/scala/docs/stream/FlowParallelismDocSpec.scala) { #pipelined-parallel }
+:   @@snip [FlowParallelismDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowParallelismDocSpec.scala) { #pipelined-parallel }
 
 Java
-:   @@snip [FlowParallelismDocTest.java]($code$/java/jdocs/stream/FlowParallelismDocTest.java) { #pipelined-parallel }
+:   @@snip [FlowParallelismDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowParallelismDocTest.java) { #pipelined-parallel }
 
 This usage pattern is less common but might be usable if a certain step in the pipeline might take wildly different
 times to finish different jobs. The reason is that there are more balance-merge steps in this pattern

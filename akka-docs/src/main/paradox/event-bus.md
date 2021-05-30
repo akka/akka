@@ -5,10 +5,10 @@ Originally conceived as a way to send messages to groups of actors, the
 implementing a simple interface:
 
 Scala
-:  @@snip [EventBus.scala]($akka$/akka-actor/src/main/scala/akka/event/EventBus.scala) { #event-bus-api }
+:  @@snip [EventBus.scala](/akka-actor/src/main/scala/akka/event/EventBus.scala) { #event-bus-api }
 
 Java
-:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #event-bus-api }
+:  @@snip [EventBusDocTest.java](/akka-docs/src/test/java/jdocs/event/EventBusDocTest.java) { #event-bus-api }
 
 @@@ note
 
@@ -48,18 +48,18 @@ compare subscribers and how exactly to classify.
 The necessary methods to be implemented are illustrated with the following example:
 
 Scala
-:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #lookup-bus }
+:  @@snip [EventBusDocSpec.scala](/akka-docs/src/test/scala/docs/event/EventBusDocSpec.scala) { #lookup-bus }
 
 Java
-:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #lookup-bus }
+:  @@snip [EventBusDocTest.java](/akka-docs/src/test/java/jdocs/event/EventBusDocTest.java) { #lookup-bus }
 
 A test for this implementation may look like this:
 
 Scala
-:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #lookup-bus-test }
+:  @@snip [EventBusDocSpec.scala](/akka-docs/src/test/scala/docs/event/EventBusDocSpec.scala) { #lookup-bus-test }
 
 Java
-:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #lookup-bus-test }
+:  @@snip [EventBusDocTest.java](/akka-docs/src/test/java/jdocs/event/EventBusDocTest.java) { #lookup-bus-test }
 
 This classifier is efficient in case no subscribers exist for a particular event.
 
@@ -76,18 +76,18 @@ classifier hierarchy.
 The necessary methods to be implemented are illustrated with the following example:
 
 Scala
-:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #subchannel-bus }
+:  @@snip [EventBusDocSpec.scala](/akka-docs/src/test/scala/docs/event/EventBusDocSpec.scala) { #subchannel-bus }
 
 Java
-:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #subchannel-bus }
+:  @@snip [EventBusDocTest.java](/akka-docs/src/test/java/jdocs/event/EventBusDocTest.java) { #subchannel-bus }
 
 A test for this implementation may look like this:
 
 Scala
-:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #subchannel-bus-test }
+:  @@snip [EventBusDocSpec.scala](/akka-docs/src/test/scala/docs/event/EventBusDocSpec.scala) { #subchannel-bus-test }
 
 Java
-:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #subchannel-bus-test }
+:  @@snip [EventBusDocTest.java](/akka-docs/src/test/java/jdocs/event/EventBusDocTest.java) { #subchannel-bus-test }
 
 This classifier is also efficient in case no subscribers are found for an
 event, but it uses conventional locking to synchronize an internal classifier
@@ -106,18 +106,18 @@ stations by geographical reachability (for old-school radio-wave transmission).
 The necessary methods to be implemented are illustrated with the following example:
 
 Scala
-:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #scanning-bus }
+:  @@snip [EventBusDocSpec.scala](/akka-docs/src/test/scala/docs/event/EventBusDocSpec.scala) { #scanning-bus }
 
 Java
-:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #scanning-bus }
+:  @@snip [EventBusDocTest.java](/akka-docs/src/test/java/jdocs/event/EventBusDocTest.java) { #scanning-bus }
 
 A test for this implementation may look like this:
 
 Scala
-:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #scanning-bus-test }
+:  @@snip [EventBusDocSpec.scala](/akka-docs/src/test/scala/docs/event/EventBusDocSpec.scala) { #scanning-bus-test }
 
 Java
-:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #scanning-bus-test }
+:  @@snip [EventBusDocTest.java](/akka-docs/src/test/java/jdocs/event/EventBusDocTest.java) { #scanning-bus-test }
 
 This classifier takes always a time which is proportional to the number of
 subscriptions, independent of how many actually match.
@@ -137,18 +137,18 @@ takes care of unsubscribing terminated actors automatically.
 The necessary methods to be implemented are illustrated with the following example:
 
 Scala
-:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #actor-bus }
+:  @@snip [EventBusDocSpec.scala](/akka-docs/src/test/scala/docs/event/EventBusDocSpec.scala) { #actor-bus }
 
 Java
-:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #actor-bus }
+:  @@snip [EventBusDocTest.java](/akka-docs/src/test/java/jdocs/event/EventBusDocTest.java) { #actor-bus }
 
 A test for this implementation may look like this:
 
 Scala
-:  @@snip [EventBusDocSpec.scala]($code$/scala/docs/event/EventBusDocSpec.scala) { #actor-bus-test }
+:  @@snip [EventBusDocSpec.scala](/akka-docs/src/test/scala/docs/event/EventBusDocSpec.scala) { #actor-bus-test }
 
 Java
-:  @@snip [EventBusDocTest.java]($code$/java/jdocs/event/EventBusDocTest.java) { #actor-bus-test }
+:  @@snip [EventBusDocTest.java](/akka-docs/src/test/java/jdocs/event/EventBusDocTest.java) { #actor-bus-test }
 
 This classifier is still is generic in the event type, and it is efficient for
 all use cases.
@@ -165,20 +165,20 @@ how a simple subscription works. Given a simple actor:
 
 @@@ div { .group-scala }
 
-@@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #deadletters }
+@@snip [LoggingDocSpec.scala](/akka-docs/src/test/scala/docs/event/LoggingDocSpec.scala) { #deadletters }
 
 @@@
 
 @@@ div { .group-java }
 
-@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #imports-deadletter }
+@@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #imports-deadletter }
 
-@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #deadletter-actor }
+@@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #deadletter-actor }
 
 it can be subscribed like this:
 It can be subscribed like this:
 
-@@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #deadletters }
+@@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #deadletters }
 
 @@@
 
@@ -188,10 +188,10 @@ is implemented in the event stream, it is possible to subscribe to a group of ev
 subscribing to their common superclass as demonstrated in the following example:
 
 Scala
-:  @@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #superclass-subscription-eventstream }
+:  @@snip [LoggingDocSpec.scala](/akka-docs/src/test/scala/docs/event/LoggingDocSpec.scala) { #superclass-subscription-eventstream }
 
 Java
-:  @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #superclass-subscription-eventstream }
+:  @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #superclass-subscription-eventstream }
 
 Similarly to [Actor Classification](#actor-classification), `EventStream` will automatically remove subscribers when they terminate.
 
@@ -253,18 +253,18 @@ However, in case you find yourself in need of debugging these kinds of low level
 it's still possible to subscribe to them explicitly:
 
 Scala
-:  @@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #suppressed-deadletters }
+:  @@snip [LoggingDocSpec.scala](/akka-docs/src/test/scala/docs/event/LoggingDocSpec.scala) { #suppressed-deadletters }
 
 Java
-:  @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #suppressed-deadletters }
+:  @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #suppressed-deadletters }
 
 or all dead letters (including the suppressed ones):
 
 Scala
-:  @@snip [LoggingDocSpec.scala]($code$/scala/docs/event/LoggingDocSpec.scala) { #all-deadletters }
+:  @@snip [LoggingDocSpec.scala](/akka-docs/src/test/scala/docs/event/LoggingDocSpec.scala) { #all-deadletters }
 
 Java
-:  @@snip [LoggingDocTest.java]($code$/java/jdocs/event/LoggingDocTest.java) { #all-deadletters }
+:  @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #all-deadletters }
 
 ### Other Uses
 

@@ -117,7 +117,7 @@ class StreamPartialGraphDSLDocSpec extends AkkaSpec {
     val actorRef: ActorRef = testActor
     //#sink-combine
     val sendRmotely = Sink.actorRef(actorRef, "Done")
-    val localProcessing = Sink.foreach[Int](_ ⇒ /* do something usefull */ ())
+    val localProcessing = Sink.foreach[Int](_ ⇒ /* do something useful */ ())
 
     val sink = Sink.combine(sendRmotely, localProcessing)(Broadcast[Int](_))
 

@@ -8,7 +8,7 @@ Intersperse stream with provided element similar to `List.mkString`.
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #intersperse }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #intersperse }
 
 @@@
 

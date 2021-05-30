@@ -8,7 +8,10 @@ Integration with Reactive Streams, wraps a `org.reactivestreams.Subscriber` as a
 
 ## Signature
 
-@@signature [Sink.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #fromSubscriber }
+@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #fromSubscriber }
 
 @@@
 
+## Description
+
+TODO: We would welcome help on contributing descriptions and examples, see: https://github.com/akka/akka/issues/25646

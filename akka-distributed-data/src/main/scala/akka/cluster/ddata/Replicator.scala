@@ -1657,7 +1657,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         }
         val chunk = (statusCount % totChunks).toInt
         val status = Status(dataEntries.collect {
-          case (key, (_, _)) if math.abs(key.hashCode) % totChunks == chunk ⇒ (key, getDigest(key))
+          case (key, (_, _)) if math.abs(key.hashCode % totChunks) == chunk ⇒ (key, getDigest(key))
         }, chunk, totChunks)
         to ! status
       }
@@ -1685,7 +1685,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     val otherKeys = otherDigests.keySet
     val myKeys =
       if (totChunks == 1) dataEntries.keySet
-      else dataEntries.keysIterator.filter(key ⇒ math.abs(key.hashCode) % totChunks == chunk).toSet
+      else dataEntries.keysIterator.filter(key ⇒ math.abs(key.hashCode % totChunks) == chunk).toSet
     val otherMissingKeys = myKeys diff otherKeys
     val keys = (otherDifferentKeys ++ otherMissingKeys).take(maxDeltaElements)
     if (keys.nonEmpty) {

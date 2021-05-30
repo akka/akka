@@ -22,7 +22,7 @@ class AkkaConsoleReporter(
 
   private final val ConsoleWidth = 80
 
-  override def report(gauges: util.SortedMap[String, Gauge[_]], counters: util.SortedMap[String, Counter], histograms: util.SortedMap[String, Histogram], meters: util.SortedMap[String, Meter], timers: util.SortedMap[String, Timer]) {
+  override def report(gauges: util.SortedMap[String, Gauge[_]], counters: util.SortedMap[String, Counter], histograms: util.SortedMap[String, Histogram], meters: util.SortedMap[String, Meter], timers: util.SortedMap[String, Timer]): Unit = {
     import collection.JavaConverters._
 
     // default Metrics types
@@ -41,7 +41,7 @@ class AkkaConsoleReporter(
     output.flush()
   }
 
-  def printMetrics[T <: Metric](metrics: Iterable[(String, T)], printer: T ⇒ Unit)(implicit clazz: ClassTag[T]) {
+  def printMetrics[T <: Metric](metrics: Iterable[(String, T)], printer: T ⇒ Unit)(implicit clazz: ClassTag[T]): Unit = {
     if (!metrics.isEmpty) {
       printWithBanner(s"-- ${simpleName(metrics.head._2.getClass)}", '-')
       for ((key, metric) ← metrics) {
@@ -52,7 +52,7 @@ class AkkaConsoleReporter(
     }
   }
 
-  private def printMeter(meter: Meter) {
+  private def printMeter(meter: Meter): Unit = {
     output.print("             count = %d%n".format(meter.getCount))
     output.print("         mean rate = %2.2f events/%s%n".format(convertRate(meter.getMeanRate), getRateUnit))
     output.print("     1-minute rate = %2.2f events/%s%n".format(convertRate(meter.getOneMinuteRate), getRateUnit))
@@ -60,15 +60,15 @@ class AkkaConsoleReporter(
     output.print("    15-minute rate = %2.2f events/%s%n".format(convertRate(meter.getFifteenMinuteRate), getRateUnit))
   }
 
-  private def printCounter(entry: Counter) {
+  private def printCounter(entry: Counter): Unit = {
     output.print("             count = %d%n".format(entry.getCount))
   }
 
-  private def printGauge(entry: Gauge[_]) {
+  private def printGauge(entry: Gauge[_]): Unit = {
     output.print("             value = %s%n".format(entry.getValue))
   }
 
-  private def printHistogram(histogram: Histogram) {
+  private def printHistogram(histogram: Histogram): Unit = {
     val snapshot = histogram.getSnapshot
     output.print("             count = %d%n".format(histogram.getCount))
     output.print("               min = %d%n".format(snapshot.getMin))
@@ -83,7 +83,7 @@ class AkkaConsoleReporter(
     output.print("            99.9%% <= %2.2f%n".format(snapshot.get999thPercentile))
   }
 
-  private def printTimer(timer: Timer) {
+  private def printTimer(timer: Timer): Unit = {
     val snapshot = timer.getSnapshot
     output.print("             count = %d%n".format(timer.getCount))
     output.print("         mean rate = %2.2f calls/%s%n".format(convertRate(timer.getMeanRate), getRateUnit))
@@ -102,7 +102,7 @@ class AkkaConsoleReporter(
     output.print("            99.9%% <= %2.2f %s%n".format(convertDuration(snapshot.get999thPercentile), getDurationUnit))
   }
 
-  private def printKnownOpsInTimespanCounter(counter: KnownOpsInTimespanTimer) {
+  private def printKnownOpsInTimespanCounter(counter: KnownOpsInTimespanTimer): Unit = {
     import concurrent.duration._
     import akka.util.PrettyDuration._
     output.print("               ops = %d%n".format(counter.getCount))
@@ -111,7 +111,7 @@ class AkkaConsoleReporter(
     output.print("               avg = %s%n".format(counter.avgDuration.nanos.pretty))
   }
 
-  private def printHdrHistogram(hist: HdrHistogram) {
+  private def printHdrHistogram(hist: HdrHistogram): Unit = {
     val data = hist.getData
     val unit = hist.unit
     output.print("               min = %d %s%n".format(data.getMinValue, unit))
@@ -128,11 +128,11 @@ class AkkaConsoleReporter(
       data.outputPercentileDistribution(output, 1)
   }
 
-  private def printAveragingGauge(gauge: AveragingGauge) {
+  private def printAveragingGauge(gauge: AveragingGauge): Unit = {
     output.print("                avg = %2.2f%n".format(gauge.getValue))
   }
 
-  private def printWithBanner(s: String, c: Char) {
+  private def printWithBanner(s: String, c: Char): Unit = {
     output.print(s)
     output.print(' ')
     var i: Int = 0

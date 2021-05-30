@@ -62,7 +62,7 @@ object FaultHandlingDocSpec {
       case p: Props ⇒ sender() ! context.actorOf(p)
     }
     // override default to kill all children during restart
-    override def preRestart(cause: Throwable, msg: Option[Any]) {}
+    override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {}
   }
   //#supervisor2
 
@@ -113,7 +113,7 @@ class FaultHandlingDocSpec(_system: ActorSystem) extends TestKit(_system)
       }
       """)))
 
-  override def afterAll {
+  override def afterAll: Unit = {
     TestKit.shutdownActorSystem(system)
   }
 

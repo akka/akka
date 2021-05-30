@@ -8,7 +8,7 @@ Streams the elements of the given future source once it successfully completes.
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromFutureSource }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromFutureSource }
 
 @@@
 

@@ -66,7 +66,7 @@ class FlowConflateSpec extends StreamSpec {
       for (i ← 1 to 100) {
         publisher.sendNext(i)
       }
-      subscriber.expectNoMsg(1.second)
+      subscriber.expectNoMessage(1.second)
       sub.request(1)
       subscriber.expectNext(5050)
       sub.cancel()
@@ -82,7 +82,7 @@ class FlowConflateSpec extends StreamSpec {
       for (i ← 1 to 100) {
         publisher.sendNext(i)
       }
-      subscriber.expectNoMsg(1.second)
+      subscriber.expectNoMessage(1.second)
       sub.request(1)
       subscriber.expectNext(5050)
       sub.cancel()

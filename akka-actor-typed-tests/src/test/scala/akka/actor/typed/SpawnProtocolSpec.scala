@@ -5,11 +5,11 @@
 package akka.actor.typed
 
 import scala.concurrent.duration._
-
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
+import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
 object SpawnProtocolSpec {
   sealed trait Message
@@ -24,7 +24,7 @@ object SpawnProtocolSpec {
     }
 }
 
-class SpawnProtocolSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class SpawnProtocolSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   import SpawnProtocolSpec._
   implicit val testSettings = TestKitSettings(system)
@@ -93,7 +93,7 @@ class SpawnProtocolSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
   }
 }
 
-class StubbedSpawnProtocolSpec extends TypedAkkaSpec {
+class StubbedSpawnProtocolSpec extends WordSpec with Matchers {
 
   import SpawnProtocolSpec._
 

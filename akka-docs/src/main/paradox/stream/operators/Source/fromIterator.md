@@ -8,7 +8,7 @@ Stream the values from an `Iterator`, requesting the next value when there is de
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromIterator }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromIterator }
 
 @@@
 

@@ -8,7 +8,7 @@ Start with first element and then apply the current and next value to the given 
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #reduce }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #reduce }
 
 @@@
 

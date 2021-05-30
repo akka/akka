@@ -8,7 +8,7 @@ If the first element has not passed through this operators before the provided t
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #initialTimeout }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #initialTimeout }
 
 @@@
 

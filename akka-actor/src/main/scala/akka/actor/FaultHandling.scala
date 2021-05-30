@@ -547,6 +547,8 @@ case class OneForOneStrategy(
   def this(decider: SupervisorStrategy.Decider) =
     this()(decider)
 
+  def withMaxNrOfRetries(maxNrOfRetries: Int): OneForOneStrategy = copy(maxNrOfRetries = maxNrOfRetries)(decider)
+
   /*
    *  this is a performance optimization to avoid re-allocating the pairs upon
    *  every call to requestRestartPermission, assuming that strategies are shared

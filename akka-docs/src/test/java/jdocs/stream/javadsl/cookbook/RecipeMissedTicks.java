@@ -82,7 +82,7 @@ public class RecipeMissedTicks extends RecipeTest {
         sub.request(1);
         sub.expectNext(3);
         sub.request(1);
-        sub.expectNoMsg(timeout);
+        sub.expectNoMessage(timeout);
 
         pub.sendNext(Tick);
         sub.expectNext(0);

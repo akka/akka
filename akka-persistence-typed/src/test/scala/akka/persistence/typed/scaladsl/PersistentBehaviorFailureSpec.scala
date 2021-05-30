@@ -7,13 +7,13 @@ package akka.persistence.typed.scaladsl
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy, TypedAkkaSpecWithShutdown }
+import akka.actor.typed.{ ActorRef, Behavior, SupervisorStrategy }
 import akka.actor.testkit.typed.TE
 import akka.persistence.AtomicWrite
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.typed.EventRejectedException
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.concurrent.Eventually
+import com.typesafe.config.ConfigFactory
+import org.scalatest.WordSpecLike
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -62,17 +62,13 @@ object PersistentBehaviorFailureSpec {
     """).withFallback(ConfigFactory.load("reference.conf")).resolve()
 }
 
-class PersistentBehaviorFailureSpec extends ActorTestKit with TypedAkkaSpecWithShutdown with Eventually {
-
-  import PersistentBehaviorSpec._
-
-  override lazy val config: Config = PersistentBehaviorFailureSpec.conf
+class PersistentBehaviorFailureSpec extends ScalaTestWithActorTestKit(PersistentBehaviorFailureSpec.conf) with WordSpecLike {
 
   implicit val testSettings = TestKitSettings(system)
 
   def failingPersistentActor(pid: String, probe: ActorRef[String]): Behavior[String] = PersistentBehaviors.receive[String, String, String](
     pid, "",
-    (ctx, state, cmd) ⇒ {
+    (_, cmd) ⇒ {
       probe.tell("persisting")
       Effect.persist(cmd)
     },
@@ -80,7 +76,7 @@ class PersistentBehaviorFailureSpec extends ActorTestKit with TypedAkkaSpecWithS
       probe.tell(event)
       state + event
     }
-  ).onRecoveryCompleted { (ctx, state) ⇒
+  ).onRecoveryCompleted { state ⇒
       probe.tell("starting")
     }.onPersistFailure(SupervisorStrategy.restartWithBackoff(1.milli, 5.millis, 0.1))
 

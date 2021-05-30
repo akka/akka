@@ -36,12 +36,12 @@ class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
   val logger = logging.Logger.getLogger(classOf[JavaLoggerSpec.LogProducer].getName)
   logger.setUseParentHandlers(false) // turn off output of test LogRecords
   logger.addHandler(new logging.Handler {
-    def publish(record: logging.LogRecord) {
+    def publish(record: logging.LogRecord): Unit = {
       testActor ! record
     }
 
-    def flush() {}
-    def close() {}
+    def flush(): Unit = {}
+    def close(): Unit = {}
   })
 
   val producer = system.actorOf(Props[JavaLoggerSpec.LogProducer], name = "log")

@@ -188,19 +188,38 @@ object Sink {
    * If the stream completes before signaling at least a single element, the Future will be failed with a [[NoSuchElementException]].
    * If the stream signals an error, the Future will be failed with the stream's exception.
    *
-   * See also [[lastOption]].
+   * See also [[lastOption]], [[takeLast]].
    */
-  def last[T]: Sink[T, Future[T]] = Sink.fromGraph(new LastOptionStage[T]).withAttributes(DefaultAttributes.lastSink)
-    .mapMaterializedValue(e ⇒ e.map(_.getOrElse(throw new NoSuchElementException("last of empty stream")))(ExecutionContexts.sameThreadExecutionContext))
+  def last[T]: Sink[T, Future[T]] = {
+    Sink.fromGraph(new TakeLastStage[T](1)).withAttributes(DefaultAttributes.lastSink)
+      .mapMaterializedValue { e ⇒
+        e.map(_.headOption.getOrElse(throw new NoSuchElementException("last of empty stream")))(ExecutionContexts.sameThreadExecutionContext)
+      }
+  }
 
   /**
    * A `Sink` that materializes into a `Future` of the optional last value received.
    * If the stream completes before signaling at least a single element, the value of the Future will be [[None]].
    * If the stream signals an error, the Future will be failed with the stream's exception.
    *
-   * See also [[last]].
+   * See also [[last]], [[takeLast]].
    */
-  def lastOption[T]: Sink[T, Future[Option[T]]] = Sink.fromGraph(new LastOptionStage[T]).withAttributes(DefaultAttributes.lastOptionSink)
+  def lastOption[T]: Sink[T, Future[Option[T]]] = {
+    Sink.fromGraph(new TakeLastStage[T](1)).withAttributes(DefaultAttributes.lastOptionSink)
+      .mapMaterializedValue { e ⇒
+        e.map(_.headOption)(ExecutionContexts.sameThreadExecutionContext)
+      }
+  }
+
+  /**
+   * A `Sink` that materializes into a a `Future` of `immutable.Seq[T]` containing the last `n` collected elements.
+   *
+   * If the stream completes before signaling at least n elements, the `Future` will complete with all elements seen so far.
+   * If the stream never completes, the `Future` will never complete.
+   * If there is a failure signaled in the stream the `Future` will be completed with failure.
+   */
+  def takeLast[T](n: Int): Sink[T, Future[immutable.Seq[T]]] =
+    Sink.fromGraph(new TakeLastStage[T](n)).withAttributes(DefaultAttributes.takeLastSink)
 
   /**
    * A `Sink` that keeps on collecting incoming elements until upstream terminates.
@@ -220,7 +239,7 @@ object Sink {
    * may be used to ensure boundedness.
    * Materializes into a `Future` of `That[T]` containing all the collected elements.
    * `That[T]` is limited to the limitations of the CanBuildFrom associated with it. For example, `Seq` is limited to
-   * `Int.MaxValue` elements. See [The Architecture of Scala Collectionss](https://docs.scala-lang.org/overviews/core/architecture-of-scala-collections.html) for more info.
+   * `Int.MaxValue` elements. See [The Architecture of Scala Collections](https://docs.scala-lang.org/overviews/core/architecture-of-scala-collections.html) for more info.
    * This Sink will cancel the stream after having received that many elements.
    *
    * See also [[Flow.limit]], [[Flow.limitWeighted]], [[Flow.take]], [[Flow.takeWithin]], [[Flow.takeWhile]]
@@ -259,6 +278,15 @@ object Sink {
     Flow[T].map(f).toMat(Sink.ignore)(Keep.right).named("foreachSink")
 
   /**
+   * A `Sink` that will invoke the given procedure asynchronously for each received element. The sink is materialized
+   * into a [[scala.concurrent.Future]] which will be completed with `Success` when reaching the
+   * normal end of the stream, or completed with `Failure` if there is a failure signaled in
+   * the stream.
+   */
+  def foreachAsync[T](parallelism: Int)(f: T ⇒ Future[Unit]): Sink[T, Future[Done]] =
+    Flow[T].mapAsyncUnordered(parallelism)(f).toMat(Sink.ignore)(Keep.right).named("foreachAsyncSink")
+
+  /**
    * Combine several sinks with fan-out strategy like `Broadcast` or `Balance` and returns `Sink`.
    */
   def combine[T, U](first: Sink[U, _], second: Sink[U, _], rest: Sink[U, _]*)(strategy: Int ⇒ Graph[UniformFanOutShape[T, U], NotUsed]): Sink[T, NotUsed] =
@@ -291,6 +319,7 @@ object Sink {
    *
    * See also [[Flow.mapAsyncUnordered]]
    */
+  @deprecated("Use `foreachAsync` instead, it allows you to choose how to run the procedure, by calling some other API returning a Future or spawning a new Future.", since = "2.5.17")
   def foreachParallel[T](parallelism: Int)(f: T ⇒ Unit)(implicit ec: ExecutionContext): Sink[T, Future[Done]] =
     Flow[T].mapAsyncUnordered(parallelism)(t ⇒ Future(f(t))).toMat(Sink.ignore)(Keep.right)
 

@@ -39,7 +39,7 @@ trait MayVerb {
      *
      * @see <a href="https://www.rfc-editor.org/rfc/rfc2119.txt">RFC 2119</a>
      */
-    def may(right: ⇒ Unit)(implicit fun: StringVerbBlockRegistration, pos: Position) {
+    def may(right: ⇒ Unit)(implicit fun: StringVerbBlockRegistration, pos: Position): Unit = {
       fun(leftSideString, "may", pos, right _)
     }
   }

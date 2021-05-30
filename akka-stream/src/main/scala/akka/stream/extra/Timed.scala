@@ -147,7 +147,7 @@ object Timed extends TimedOps with TimedIntervalBetweenOps {
         completeStage()
       }
 
-      private def stopTime() {
+      private def stopTime(): Unit = {
         val d = timedContext.stop()
         _onComplete(d)
       }

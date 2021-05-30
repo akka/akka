@@ -33,10 +33,10 @@ is accessible @scala[through the `IO` entry point]@java[by querying an `ActorSys
 looks up the TCP manager and returns its `ActorRef`:
 
 Scala
-:  @@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #manager }
+:  @@snip [IODocSpec.scala](/akka-docs/src/test/scala/docs/io/IODocSpec.scala) { #manager }
 
 Java
-:  @@snip [EchoManager.java]($code$/java/jdocs/io/japi/EchoManager.java) { #manager }
+:  @@snip [EchoManager.java](/akka-docs/src/test/java/jdocs/io/japi/EchoManager.java) { #manager }
 
 The manager receives I/O command messages and instantiates worker actors in response. The worker actors present
 themselves to the API user in the reply to the command that was sent. For example after a `Connect` command sent to

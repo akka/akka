@@ -16,6 +16,12 @@ object SpawnProtocol {
      */
     def apply[T](behavior: Behavior[T], name: String, props: Props): ActorRef[ActorRef[T]] ⇒ Spawn[T] =
       replyTo ⇒ new Spawn(behavior, name, props, replyTo)
+
+    /**
+     * Special factory to make using Spawn with ask easier. Props defaults to Props.empty
+     */
+    def apply[T](behavior: Behavior[T], name: String): ActorRef[ActorRef[T]] ⇒ Spawn[T] =
+      replyTo ⇒ new Spawn(behavior, name, Props.empty, replyTo)
   }
 
   /**

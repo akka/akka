@@ -187,7 +187,7 @@ class GossipSpec extends WordSpec with Matchers {
       val g2 = (Gossip(members = SortedSet(a1, b1, c1, d1)) :+ vclockNode).seen(a1.uniqueAddress).seen(c1.uniqueAddress)
       val g3 = (g1 copy (version = g2.version)).seen(d1.uniqueAddress)
 
-      def checkMerged(merged: Gossip) {
+      def checkMerged(merged: Gossip): Unit = {
         val seen = merged.overview.seen.toSeq
         seen.length should ===(0)
 

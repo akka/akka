@@ -297,7 +297,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
           new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
           // this already introduces an async boundary here
           .map(identity)
-          // this is now just for map since there already is one inbetween stage and map
+          // this is now just for map since there already is one in-between stage and map
           .async // potential sugar .async("my-dispatcher")
           .addAttributes(ActorAttributes.dispatcher("my-dispatcher"))
           .runWith(Sink.head)
@@ -400,7 +400,7 @@ class AttributesSpec extends StreamSpec(ConfigFactory.parseString(
           new ThreadNameSnitchingStage("akka.stream.default-blocking-io-dispatcher"))
           // this already introduces an async boundary here
           .detach
-          // this is now just for map since there already is one inbetween stage and map
+          // this is now just for map since there already is one in-between stage and map
           .async
           .addAttributes(ActorAttributes.dispatcher("my-dispatcher"))
           .runWith(javadsl.Sink.head(), materializer)

@@ -164,15 +164,19 @@ object StreamRefsSpec {
       actor {
         provider = remote
         serialize-messages = off
+
+        default-mailbox.mailbox-type = "akka.dispatch.UnboundedMailbox"
       }
 
-      remote.netty.tcp {
-        port = ${address.getPort}
-        hostname = "${address.getHostName}"
-      }
-
-      stream.materializer.stream-ref {
-        subscription-timeout = 3 seconds
+      remote {
+        artery {
+          enabled = on
+          transport = aeron-udp
+          canonical.hostname = "${address.getHostName}"
+          canonical.port =  ${address.getPort}
+          log-received-messages = on
+          log-sent-messages = on
+        }
       }
     }
   """).withFallback(ConfigFactory.load())
@@ -283,7 +287,7 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       // the local "remote sink" should cancel, since it should notice the origin target actor is dead
       probe.ensureSubscription()
       val ex = probe.expectError()
-      ex.getMessage should include("has terminated! Tearing down this side of the stream as well.")
+      ex.getMessage should include("has terminated unexpectedly ")
     }
 
     // bug #24626

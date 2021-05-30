@@ -69,7 +69,7 @@ abstract class SnapshotStoreSpec(config: Config) extends PluginSpec(config)
   /**
    * The limit defines a number of bytes persistence plugin can support to store the snapshot.
    * If plugin does not support persistence of the snapshots of 10000 bytes or may support more than default size,
-   * the value can be overriden by the SnapshotStoreSpec implementation with a note in a plugin documentation.
+   * the value can be overridden by the SnapshotStoreSpec implementation with a note in a plugin documentation.
    */
   def snapshotByteSizeLimit = 10000
 

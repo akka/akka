@@ -138,7 +138,7 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
 
   }
 
-  override def beforeTermination() {
+  override def beforeTermination(): Unit = {
     system.eventStream.publish(TestEvent.Mute(
       EventFilter.warning(source = "akka://AkkaProtocolStressTest/user/$a", start = "received dead letter"),
       EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate)")))

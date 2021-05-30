@@ -72,7 +72,7 @@ class ConsumerIntegrationTest extends WordSpec with Matchers with NonSharedCamel
           case m: CamelMessage ⇒ sender() ! "received " + m.bodyAs[String]
         }
 
-        override def postRestart(reason: Throwable) {
+        override def postRestart(reason: Throwable): Unit = {
           restarted.countDown()
         }
       }, "direct-a2")
@@ -182,7 +182,7 @@ class ErrorThrowingConsumer(override val endpointUri: String) extends Consumer {
   def receive = {
     case msg: CamelMessage ⇒ throw new TestException("error: %s" format msg.body)
   }
-  override def preRestart(reason: Throwable, message: Option[Any]) {
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     super.preRestart(reason, message)
     sender() ! Failure(reason)
   }
@@ -197,7 +197,7 @@ class ErrorRespondingConsumer(override val endpointUri: String) extends Consumer
     rd.onException(classOf[TestException]).handled(true).transform(Builder.body.append(" has an error")).end
   }
 
-  final override def preRestart(reason: Throwable, message: Option[Any]) {
+  final override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     super.preRestart(reason, message)
     sender() ! Failure(reason)
   }
@@ -213,7 +213,7 @@ class FailingOnceConsumer(override val endpointUri: String) extends Consumer {
         throw new TestException("rejected: %s" format msg.body)
   }
 
-  final override def preRestart(reason: Throwable, message: Option[Any]) {
+  final override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     super.preRestart(reason, message)
     sender() ! Failure(reason)
   }

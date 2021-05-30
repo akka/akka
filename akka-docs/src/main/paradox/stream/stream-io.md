@@ -25,10 +25,10 @@ In order to implement a simple EchoServer we `bind` to a given address, which re
 which will emit an `IncomingConnection` element for each new connection that the Server should handle:
 
 Scala
-:   @@snip [StreamTcpDocSpec.scala]($code$/scala/docs/stream/io/StreamTcpDocSpec.scala) { #echo-server-simple-bind }
+:   @@snip [StreamTcpDocSpec.scala](/akka-docs/src/test/scala/docs/stream/io/StreamTcpDocSpec.scala) { #echo-server-simple-bind }
 
 Java
-:   @@snip [StreamTcpDocTest.java]($code$/java/jdocs/stream/io/StreamTcpDocTest.java) { #echo-server-simple-bind }
+:   @@snip [StreamTcpDocTest.java](/akka-docs/src/test/java/jdocs/stream/io/StreamTcpDocTest.java) { #echo-server-simple-bind }
 
 ![tcp-stream-bind.png](../images/tcp-stream-bind.png)
 
@@ -40,10 +40,10 @@ argument indicates that we require an explicit line ending even for the last mes
 In this example we add exclamation marks to each incoming text message and push it through the flow:
 
 Scala
-:   @@snip [StreamTcpDocSpec.scala]($code$/scala/docs/stream/io/StreamTcpDocSpec.scala) { #echo-server-simple-handle }
+:   @@snip [StreamTcpDocSpec.scala](/akka-docs/src/test/scala/docs/stream/io/StreamTcpDocSpec.scala) { #echo-server-simple-handle }
 
 Java
-:   @@snip [StreamTcpDocTest.java]($code$/java/jdocs/stream/io/StreamTcpDocTest.java) { #echo-server-simple-handle }
+:   @@snip [StreamTcpDocTest.java](/akka-docs/src/test/java/jdocs/stream/io/StreamTcpDocTest.java) { #echo-server-simple-handle }
 
 ![tcp-stream-run.png](../images/tcp-stream-run.png)
 
@@ -70,10 +70,10 @@ and would like to interact with it using Akka Streams over TCP. To open an outgo
 the `outgoingConnection` method:
 
 Scala
-:   @@snip [StreamTcpDocSpec.scala]($code$/scala/docs/stream/io/StreamTcpDocSpec.scala) { #repl-client }
+:   @@snip [StreamTcpDocSpec.scala](/akka-docs/src/test/scala/docs/stream/io/StreamTcpDocSpec.scala) { #repl-client }
 
 Java
-:   @@snip [StreamTcpDocTest.java]($code$/java/jdocs/stream/io/StreamTcpDocTest.java) { #repl-client }
+:   @@snip [StreamTcpDocTest.java](/akka-docs/src/test/java/jdocs/stream/io/StreamTcpDocTest.java) { #repl-client }
 
 The `repl` flow we use to handle the server interaction first prints the servers response, then awaits on input from
 the command line (this blocking call is used here for the sake of simplicity) and converts it to a
@@ -109,10 +109,10 @@ to the protocol we are trying to implement using Streams. In chat-like applicati
 it makes sense to make the Server initiate the conversation by emitting a "hello" message:
 
 Scala
-:   @@snip [StreamTcpDocSpec.scala]($code$/scala/docs/stream/io/StreamTcpDocSpec.scala) { #welcome-banner-chat-server }
+:   @@snip [StreamTcpDocSpec.scala](/akka-docs/src/test/scala/docs/stream/io/StreamTcpDocSpec.scala) { #welcome-banner-chat-server }
 
 Java
-:   @@snip [StreamTcpDocTest.java]($code$/java/jdocs/stream/io/StreamTcpDocTest.java) { #welcome-banner-chat-server }
+:   @@snip [StreamTcpDocTest.java](/akka-docs/src/test/java/jdocs/stream/io/StreamTcpDocTest.java) { #welcome-banner-chat-server }
 
 To emit the initial message we merge a `Source` with a single element, after the command processing but before the
 framing and transformation to `ByteString` s this way we do not have to repeat such logic.
@@ -138,10 +138,10 @@ for more information.
 @scala[[JsonFraming](http://doc.akka.io/api/akka/current/akka/stream/scaladsl/JsonFraming$.html)]@java[[JsonFraming](http://doc.akka.io/japi/akka/current/akka/stream/javadsl/JsonFraming.html#objectScanner-int-)] separates valid JSON objects from incoming `ByteString` objects:
 
 Scala
-:  @@snip [JsonFramingSpec.scala]($akka$akka-stream-tests/src/test/scala/akka/stream/scaladsl/JsonFramingSpec.scala) { #using-json-framing }
+:  @@snip [JsonFramingSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/JsonFramingSpec.scala) { #using-json-framing }
 
 Java
-:  @@snip [JsonFramingTest.java]($akka$akka-stream-tests/src/test/java/akka/stream/javadsl/JsonFramingTest.java) { #using-json-framing }
+:  @@snip [JsonFramingTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/JsonFramingTest.java) { #using-json-framing }
 
 ### TLS
 
@@ -150,10 +150,10 @@ Similar factories as shown above for raw TCP but where the data is encrypted usi
 Using TLS requires a keystore and a truststore and then a somewhat involved dance of configuring the SSLContext and the details for how the session should be negotiated:
 
 Scala
-:  @@snip [TcpSpec.scala]($akka$akka-stream-tests/src/test/scala/akka/stream/io/TcpSpec.scala) { #setting-up-ssl-context }
+:  @@snip [TcpSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/io/TcpSpec.scala) { #setting-up-ssl-context }
 
 Java
-:  @@snip [TcpTest.java]($akka$akka-stream-tests/src/test/java/akka/stream/javadsl/TcpTest.java) { #setting-up-ssl-context }
+:  @@snip [TcpTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/TcpTest.java) { #setting-up-ssl-context }
 
 
 The `SslContext` and `NegotiateFirstSession` instances can then be used with the binding or outgoing connection factory methods.
@@ -167,10 +167,10 @@ Streaming data from a file is as easy as creating a *FileIO.fromPath* given a ta
 `chunkSize` which determines the buffer size determined as one "element" in such stream:
 
 Scala
-:   @@snip [StreamFileDocSpec.scala]($code$/scala/docs/stream/io/StreamFileDocSpec.scala) { #file-source }
+:   @@snip [StreamFileDocSpec.scala](/akka-docs/src/test/scala/docs/stream/io/StreamFileDocSpec.scala) { #file-source }
 
 Java
-:   @@snip [StreamFileDocTest.java]($code$/java/jdocs/stream/io/StreamFileDocTest.java) { #file-source } 
+:   @@snip [StreamFileDocTest.java](/akka-docs/src/test/java/jdocs/stream/io/StreamFileDocTest.java) { #file-source } 
 
 Please note that these operators are backed by Actors and by default are configured to run on a pre-configured
 threadpool-backed dispatcher dedicated for File IO. This is very important as it isolates the blocking file IO operations from the rest
@@ -179,7 +179,7 @@ dispatcher for file IO operations globally, you can do so by changing the `akka.
 or for a specific operator by specifying a custom Dispatcher in code, like this:
 
 Scala
-:   @@snip [StreamFileDocSpec.scala]($code$/scala/docs/stream/io/StreamFileDocSpec.scala) { #custom-dispatcher-code }
+:   @@snip [StreamFileDocSpec.scala](/akka-docs/src/test/scala/docs/stream/io/StreamFileDocSpec.scala) { #custom-dispatcher-code }
 
 Java
-:   @@snip [StreamFileDocTest.java]($code$/java/jdocs/stream/io/StreamFileDocTest.java) { #custom-dispatcher-code }
+:   @@snip [StreamFileDocTest.java](/akka-docs/src/test/java/jdocs/stream/io/StreamFileDocTest.java) { #custom-dispatcher-code }

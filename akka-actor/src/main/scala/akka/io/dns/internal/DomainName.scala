@@ -17,7 +17,7 @@ private[akka] object DomainName {
     (name.length + 2).toShort
   }
 
-  def write(it: ByteStringBuilder, name: String) {
+  def write(it: ByteStringBuilder, name: String): Unit = {
     for (label ← name.split('.')) {
       it.putByte(label.length.toByte)
       for (c ← label) {

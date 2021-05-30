@@ -42,7 +42,7 @@ object ActorSystemSpec {
         }
     }
 
-    override def preRestart(cause: Throwable, msg: Option[Any]) {
+    override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {
       if (master ne null) {
         master ! "failed with " + cause + " while processing " + msg
       }

@@ -164,10 +164,10 @@ which in this sample corresponds to `sampleActorSystem@127.0.0.1:2553`.
 Once you have configured the properties above you would do the following in code:
 
 Scala
-:   @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #sample-actor }
+:   @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #sample-actor }
 
 Java
-:   @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #sample-actor }
+:   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #sample-actor }
 
 The actor class `SampleActor` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
@@ -209,26 +209,26 @@ precedence.
 With these imports:
 
 Scala
-:   @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #import }
+:   @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #import }
 
 Java
-:   @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #import }
+:   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #import }
 
 and a remote address like this:
 
 Scala
-:   @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #make-address }
+:   @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #make-address }
 
 Java
-:   @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #make-address }
+:   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #make-address }
 
 you can advise the system to create a child on that remote node like so:
 
 Scala
-:   @@snip [RemoteDeploymentDocSpec.scala]($code$/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #deploy }
+:   @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #deploy }
 
 Java
-:   @@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
+:   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
 
 <a id="remote-deployment-whitelist"></a>
 ### Remote deployment whitelist
@@ -244,7 +244,7 @@ The list of allowed classes has to be configured on the "remote" system, in othe
 others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or
 should not allow others to remote deploy onto it. The full settings section may for example look like this:
 
-@@snip [RemoteDeploymentWhitelistSpec.scala]($akka$/akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
+@@snip [RemoteDeploymentWhitelistSpec.scala](/akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
 
 Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
 
@@ -345,25 +345,18 @@ It is absolutely feasible to combine remoting with @ref:[Routing](routing.md).
 
 A pool of remote deployed routees can be configured as:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-pool }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-pool }
 
 This configuration setting will clone the actor defined in the `Props` of the `remotePool` 10
 times and deploy it evenly distributed across the two given target nodes.
 
 A group of remote actors can be configured as:
 
-@@snip [RouterDocSpec.scala]($code$/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-group }
+@@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-group }
 
 This configuration setting will send messages to the defined remote actor paths.
 It requires that you create the destination actors on the remote nodes with matching paths.
 That is not done by the router.
-
-<a id="remote-sample"></a>
-## Remoting Sample
-
-You can download a ready to run @scala[@extref[remoting sample](ecs:akka-samples-remote-scala)]@java[@extref[remoting sample](ecs:akka-samples-remote-java)]
-together with a tutorial for a more hands-on experience. The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-remote-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-remote-java)].
 
 ### Remote Events
 
@@ -469,8 +462,6 @@ akka {
         protocol = "TLSv1.2"
 
         enabled-algorithms = [TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
-
-        random-number-generator = "AES128CounterSecureRNG"
       }
     }
   }
@@ -596,7 +587,7 @@ There are lots of configuration properties that are related to remoting in Akka.
 Setting properties like the listening IP and port number programmatically is
 best done by using something like the following:
 
-@@snip [RemoteDeploymentDocTest.java]($code$/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #programmatic }
+@@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #programmatic }
 
 @@@
 
@@ -629,3 +620,8 @@ Keep in mind that local.address will most likely be in one of private network ra
  * *192.168.0.0 - 192.168.255.255* (network class C)
 
 For further details see [RFC 1597](https://tools.ietf.org/html/rfc1597) and [RFC 1918](https://tools.ietf.org/html/rfc1918).
+
+You can look at the
+@java[@extref[Cluster with docker-compse example project](samples:akka-samples-cluster-docker-compose-java)]
+@scala[@extref[Cluster with docker-compose example project](samples:akka-samples-cluster-docker-compose-scala)]
+to see what this looks like in practice.

@@ -22,11 +22,11 @@ class UnnestedReceives extends Actor {
   //This message processes a message/event
   def process(msg: Any): Unit = println("processing: " + msg)
   //This method subscribes the actor to the event bus
-  def subscribe() {} //Your external stuff
+  def subscribe(): Unit = {} //Your external stuff
   //This method retrieves all prior messages/events
   def allOldMessages() = List()
 
-  override def preStart {
+  override def preStart: Unit = {
     //We override preStart to be sure that the first message the actor gets is
     //'Replay, that message will start to be processed _after_ the actor is started
     self ! 'Replay

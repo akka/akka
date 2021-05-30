@@ -8,7 +8,7 @@ Pass elements downstream as long as a predicate function return true for the ele
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #takeWhile }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #takeWhile }
 
 @@@
 

@@ -145,7 +145,10 @@ object JoinConfigCompatChecker {
 
     // composite checker
     new JoinConfigCompatChecker {
-      override val requiredKeys: im.Seq[String] = checkers.flatMap(_.requiredKeys).to[im.Seq]
+      override val requiredKeys: im.Seq[String] = {
+        // Always include akka.version (used in join logging)
+        "akka.version" +: checkers.flatMap(_.requiredKeys).to[im.Seq]
+      }
       override def check(toValidate: Config, clusterConfig: Config): ConfigValidation =
         checkers.foldLeft(Valid: ConfigValidation) { (acc, checker) ⇒
           acc ++ checker.check(toValidate, clusterConfig)

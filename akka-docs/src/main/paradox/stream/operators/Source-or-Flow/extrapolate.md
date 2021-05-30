@@ -8,7 +8,7 @@ Allow for a faster downstream by expanding the last emitted element to an `Itera
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #extrapolate }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #extrapolate }
 
 @@@
 

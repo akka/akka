@@ -14,7 +14,7 @@ class MySpec() extends TestKit(ActorSystem("MySpec")) with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll {
   //#implicit-sender
 
-  override def afterAll {
+  override def afterAll: Unit = {
     TestKit.shutdownActorSystem(system)
   }
 

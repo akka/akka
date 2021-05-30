@@ -36,7 +36,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
 
   override def initialParticipants = roles.size
 
-  override def afterEach() {
+  override def afterEach(): Unit = {
     runOn(local) {
       testConductor.passThrough(local, remote, Direction.Both).await
     }

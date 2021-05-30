@@ -8,7 +8,7 @@ After completion of the original upstream the elements of the given source will 
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #concat }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #concat }
 
 @@@
 

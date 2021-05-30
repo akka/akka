@@ -523,7 +523,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   var membershipState: MembershipState = emptyMembershipState
   def selfDc = cluster.settings.SelfDataCenter
 
-  override def preRestart(reason: Throwable, message: Option[Any]) {
+  override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     // don't postStop when restarted, no children to stop
   }
 

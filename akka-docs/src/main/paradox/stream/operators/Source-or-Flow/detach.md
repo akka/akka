@@ -8,7 +8,7 @@ Detach upstream demand from downstream demand without detaching the stream rates
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #detach }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #detach }
 
 @@@
 

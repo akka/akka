@@ -91,7 +91,7 @@ trait Player { this: TestConductorExt ⇒
    * Enter the named barriers, one after the other, in the order given. Will
    * throw an exception in case of timeouts or other errors.
    */
-  def enter(timeout: Timeout, name: immutable.Seq[String]) {
+  def enter(timeout: Timeout, name: immutable.Seq[String]): Unit = {
     system.log.debug("entering barriers " + name.mkString("(", ", ", ")"))
     val stop = Deadline.now + timeout.duration
     name foreach { b ⇒

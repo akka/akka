@@ -56,7 +56,8 @@ object TestProbe {
 }
 
 /**
- * Java API: * Create instances through the `create` factories in the [[TestProbe]] companion.
+ * Java API: * Create instances through the `create` factories in the [[TestProbe]] companion
+ * or via [[ActorTestKit#createTestProbe]].
  *
  * A test probe is essentially a queryable mailbox which can be used in place of an actor and the received
  * messages can then be asserted etc.
@@ -164,7 +165,7 @@ abstract class TestProbe[M] {
   def expectNoMessage(): Unit
 
   /**
-   * Expect the given actor to be stopped or stop withing the given timeout or
+   * Expect the given actor to be stopped or stop within the given timeout or
    * throw an [[AssertionError]].
    */
   def expectTerminated[U](actorRef: ActorRef[U], max: Duration): Unit

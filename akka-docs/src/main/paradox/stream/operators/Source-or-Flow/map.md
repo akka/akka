@@ -8,7 +8,7 @@ Transform each element in the stream by calling a mapping function with it and p
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #map }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #map }
 
 @@@
 
@@ -26,5 +26,12 @@ Transform each element in the stream by calling a mapping function with it and p
 **completes** when upstream completes
 
 @@@
+
+## Examples
+
+
+Scala
+:  @@snip [Flow.scala](/akka-docs/src/test/scala/docs/stream/operators/Map.scala) { #imports #map }
+
 
 

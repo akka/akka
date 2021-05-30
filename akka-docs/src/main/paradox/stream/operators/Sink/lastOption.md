@@ -8,7 +8,7 @@ Materialize a @scala[`Future[Option[T]]`] @java[`CompletionStage<Optional<T>>`] 
 
 ## Signature
 
-@@signature [Sink.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #lastOption }
+@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #lastOption }
 
 @@@
 

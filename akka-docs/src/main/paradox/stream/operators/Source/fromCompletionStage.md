@@ -8,7 +8,7 @@ Send the single value of the `CompletionStage` when it completes and there is de
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromCompletionStage }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromCompletionStage }
 
 @@@
 

@@ -43,7 +43,7 @@ public class BasicPersistentBehaviorsTest {
     }
 
     @Override
-    public EventHandler<Event, State> eventHandler() {
+    public EventHandler<State, Event>  eventHandler() {
       return (state, event) -> {
         throw new RuntimeException("TODO: process the event return the next state");
       };

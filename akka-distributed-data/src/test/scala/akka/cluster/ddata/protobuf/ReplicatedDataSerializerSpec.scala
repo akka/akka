@@ -51,7 +51,7 @@ class ReplicatedDataSerializerSpec extends TestKit(ActorSystem(
   val ref2 = system.actorOf(Props.empty, "ref2")
   val ref3 = system.actorOf(Props.empty, "ref3")
 
-  override def afterAll {
+  override def afterAll: Unit = {
     shutdown()
   }
 

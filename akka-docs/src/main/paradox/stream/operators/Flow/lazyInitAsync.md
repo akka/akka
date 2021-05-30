@@ -8,7 +8,7 @@ Creates a real `Flow` upon receiving the first element by calling relevant `flow
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #lazyInitAsync }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #lazyInitAsync }
 
 @@@
 
@@ -23,7 +23,8 @@ completed with @scala[`Some(mat)`]@java[`Optional.of(mat)`] when the internal fl
 @java[an empty optional] when there where no elements. If the flow materialization (including the call of the `flowFactory`) 
 fails then the future is completed with a failure.
 
-Adheres to the `ActorAttributes.SupervisionStrategy` attribute.
+Adheres to the @scala[@scaladoc[`ActorAttributes.SupervisionStrategy`](akka.stream.ActorAttributes$$SupervisionStrategy)]
+@java[`ActorAttributes.SupervisionStrategy`] attribute.
 
 
 @@@div { .callout }

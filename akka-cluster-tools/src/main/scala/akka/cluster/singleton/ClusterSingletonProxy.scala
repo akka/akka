@@ -199,7 +199,7 @@ final class ClusterSingletonProxy(singletonManagerPath: String, settings: Cluste
   /**
    * Discard old singleton ActorRef and send a periodic message to self to identify the singleton.
    */
-  def identifySingleton() {
+  def identifySingleton(): Unit = {
     import context.dispatcher
     log.debug("Creating singleton identification timer...")
     identifyCounter += 1

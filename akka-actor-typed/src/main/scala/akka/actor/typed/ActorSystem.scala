@@ -9,14 +9,14 @@ import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
 import akka.actor.setup.ActorSystemSetup
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.concurrent.{ ExecutionContextExecutor, Future }
+
 import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, PropsAdapter }
 import akka.util.Timeout
 import akka.annotation.DoNotInherit
 import akka.annotation.ApiMayChange
-
 import akka.actor.BootstrapSetup
+import akka.actor.typed.internal.InternalRecipientRef
 import akka.actor.typed.internal.adapter.GuardianActorAdapter
 import akka.actor.typed.receptionist.Receptionist
 
@@ -31,7 +31,7 @@ import akka.actor.typed.receptionist.Receptionist
  */
 @DoNotInherit
 @ApiMayChange
-abstract class ActorSystem[-T] extends ActorRef[T] with Extensions {
+abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: InternalRecipientRef[T] ⇒
   /**
    * The name of this actor system, used to distinguish multiple ones within
    * the same JVM & class loader.

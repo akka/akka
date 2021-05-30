@@ -618,12 +618,12 @@ object ByteString {
 
   @SerialVersionUID(1L)
   private class SerializationProxy(@transient private var orig: ByteString) extends Serializable {
-    private def writeObject(out: ObjectOutputStream) {
+    private def writeObject(out: ObjectOutputStream): Unit = {
       out.writeByte(orig.byteStringCompanion.SerializationIdentity)
       orig.writeToOutputStream(out)
     }
 
-    private def readObject(in: ObjectInputStream) {
+    private def readObject(in: ObjectInputStream): Unit = {
       val serializationId = in.readByte()
 
       orig = Companion(from = serializationId).readFromInputStream(in)

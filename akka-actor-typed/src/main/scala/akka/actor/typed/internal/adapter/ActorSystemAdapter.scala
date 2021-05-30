@@ -12,14 +12,15 @@ import akka.actor
 import akka.actor.ExtendedActorSystem
 import akka.actor.InvalidMessageException
 import akka.{ actor ⇒ a }
-
 import scala.concurrent.ExecutionContextExecutor
+
 import akka.util.Timeout
-
 import scala.concurrent.Future
-import akka.annotation.InternalApi
 
+import akka.annotation.InternalApi
 import scala.compat.java8.FutureConverters
+
+import akka.actor.ActorRefProvider
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting an untyped ActorSystem to a Behavior (via the context).
@@ -29,7 +30,8 @@ import scala.compat.java8.FutureConverters
  * most circumstances.
  */
 @InternalApi private[akka] class ActorSystemAdapter[-T](val untyped: a.ActorSystemImpl)
-  extends ActorSystem[T] with ActorRef[T] with internal.ActorRefImpl[T] with ExtensionsImpl {
+  extends ActorSystem[T] with ActorRef[T] with internal.ActorRefImpl[T] with internal.InternalRecipientRef[T] with ExtensionsImpl {
+
   untyped.assertInitialized()
 
   import ActorRefAdapter.sendSystemMessage
@@ -40,8 +42,15 @@ import scala.compat.java8.FutureConverters
     untyped.guardian ! msg
   }
 
+  // impl ActorRefImpl
   override def isLocal: Boolean = true
+  // impl ActorRefImpl
   override def sendSystem(signal: internal.SystemMessage): Unit = sendSystemMessage(untyped.guardian, signal)
+
+  // impl InternalRecipientRef
+  override def provider: ActorRefProvider = untyped.provider
+  // impl InternalRecipientRef
+  def isTerminated: Boolean = whenTerminated.isCompleted
 
   final override val path: a.ActorPath = a.RootActorPath(a.Address("akka", untyped.name)) / "user"
 

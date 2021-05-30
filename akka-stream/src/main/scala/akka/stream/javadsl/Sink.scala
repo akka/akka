@@ -100,6 +100,15 @@ object Sink {
     new Sink(scaladsl.Sink.foreach(f.apply).toCompletionStage())
 
   /**
+   * A `Sink` that will invoke the given procedure asynchronously for each received element. The sink is materialized
+   * into a [[java.util.concurrent.CompletionStage]] which will be completed with `Success` when reaching the
+   * normal end of the stream, or completed with `Failure` if there is a failure signaled in
+   * the stream.
+   */
+  def foreachAsync[T](parallelism: Int)(f: function.Function[T, CompletionStage[Void]]): Sink[T, CompletionStage[Done]] =
+    new Sink(scaladsl.Sink.foreachAsync(parallelism)((x: T) ⇒ f(x).toScala.map(_ ⇒ ())(ExecutionContexts.sameThreadExecutionContext)).toCompletionStage())
+
+  /**
    * A `Sink` that will invoke the given procedure for each received element in parallel. The sink is materialized
    * into a [[java.util.concurrent.CompletionStage]].
    *
@@ -110,6 +119,7 @@ object Sink {
    * [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]] the
    * element is dropped and the stream continues.
    */
+  @deprecated("Use `foreachAsync` instead, it allows you to choose how to run the procedure, by calling some other API returning a CompletionStage or using CompletableFuture.supplyAsync.", since = "2.5.17")
   def foreachParallel[T](parallel: Int)(f: function.Procedure[T])(ec: ExecutionContext): Sink[T, CompletionStage[Done]] =
     new Sink(scaladsl.Sink.foreachParallel(parallel)(f.apply)(ec).toCompletionStage())
 
@@ -147,7 +157,7 @@ object Sink {
    * If the stream completes before signaling at least a single element, the CompletionStage will be failed with a [[NoSuchElementException]].
    * If the stream signals an error errors before signaling at least a single element, the CompletionStage will be failed with the streams exception.
    *
-   * See also [[lastOption]].
+   * See also [[lastOption]], [[takeLast]].
    */
   def last[In](): Sink[In, CompletionStage[In]] =
     new Sink(scaladsl.Sink.last[In].toCompletionStage())
@@ -157,11 +167,23 @@ object Sink {
    * If the stream completes before signaling at least a single element, the value of the CompletionStage will be an empty [[java.util.Optional]].
    * If the stream signals an error errors before signaling at least a single element, the CompletionStage will be failed with the streams exception.
    *
-   * See also [[head]].
+   * See also [[head]], [[takeLast]].
    */
   def lastOption[In](): Sink[In, CompletionStage[Optional[In]]] =
     new Sink(scaladsl.Sink.lastOption[In].mapMaterializedValue(
       _.map(_.asJava)(ExecutionContexts.sameThreadExecutionContext).toJava))
+
+  /**
+   * A `Sink` that materializes into a a `CompletionStage` of `List<In>` containing the last `n` collected elements.
+   *
+   * If the stream completes before signaling at least n elements, the `CompletionStage` will complete with all elements seen so far.
+   * If the stream never completes the `CompletionStage` will never complete.
+   * If there is a failure signaled in the stream the `CompletionStage` will be completed with failure.
+   */
+  def takeLast[In](n: Int): Sink[In, CompletionStage[java.util.List[In]]] = {
+    import scala.collection.JavaConverters._
+    new Sink(scaladsl.Sink.takeLast[In](n).mapMaterializedValue(fut ⇒ fut.map(sq ⇒ sq.asJava)(ExecutionContexts.sameThreadExecutionContext).toJava))
+  }
 
   /**
    * A `Sink` that keeps on collecting incoming elements until upstream terminates.

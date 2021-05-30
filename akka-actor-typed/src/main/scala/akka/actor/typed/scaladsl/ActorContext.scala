@@ -265,7 +265,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] { this: akka.acto
    *
    * @param createRequest A function that creates a message for the other actor, containing the provided `ActorRef[Res]` that
    *                      the other actor can send a message back through.
-   * @param mapResponse Transforms the response from the `otherActor` into a message this actor understands.
+   * @param mapResponse Transforms the response from the `target` into a message this actor understands.
    *                              Should be a pure function but is executed inside the actor when the response arrives
    *                              so can safely touch the actor internals. If this function throws an exception it is
    *                              just as if the normal message receiving logic would throw.
@@ -273,6 +273,6 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] { this: akka.acto
    * @tparam Req The request protocol, what the other actor accepts
    * @tparam Res The response protocol, what the other actor sends back
    */
-  def ask[Req, Res](otherActor: ActorRef[Req])(createRequest: ActorRef[Res] ⇒ Req)(mapResponse: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
+  def ask[Req, Res](target: RecipientRef[Req])(createRequest: ActorRef[Res] ⇒ Req)(mapResponse: Try[Res] ⇒ T)(implicit responseTimeout: Timeout, classTag: ClassTag[Res]): Unit
 
 }

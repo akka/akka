@@ -8,7 +8,7 @@ Fold over emitted element with a function, where each invocation will get the ne
 
 ## Signature
 
-@@signature [Sink.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #fold }
+@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #fold }
 
 @@@
 

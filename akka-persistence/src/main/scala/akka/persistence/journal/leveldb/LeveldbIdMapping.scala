@@ -69,7 +69,7 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore â
 
   protected def newPersistenceIdAdded(id: String): Unit = ()
 
-  override def preStart() {
+  override def preStart(): Unit = {
     idMap = readIdMap()
     super.preStart()
   }

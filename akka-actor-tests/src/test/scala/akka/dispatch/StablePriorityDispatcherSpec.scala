@@ -51,7 +51,7 @@ class StablePriorityDispatcherSpec extends AkkaSpec(StablePriorityDispatcherSpec
         testOrdering(dispatcherKey)
       }
 
-    def testOrdering(dispatcherKey: String) {
+    def testOrdering(dispatcherKey: String): Unit = {
       val msgs = (1 to 200) toList
       val shuffled = scala.util.Random.shuffle(msgs)
 

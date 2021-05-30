@@ -65,13 +65,13 @@ trait Inbox { this: ActorDSL.type ⇒
     var clientsByTimeout = TreeSet.empty[Query]
     var printedWarning = false
 
-    def enqueueQuery(q: Query) {
+    def enqueueQuery(q: Query): Unit = {
       val query = q withClient sender()
       clients enqueue query
       clientsByTimeout += query
     }
 
-    def enqueueMessage(msg: Any) {
+    def enqueueMessage(msg: Any): Unit = {
       if (messages.size < size) messages enqueue msg
       else {
         if (!printedWarning) {
@@ -215,7 +215,7 @@ trait Inbox { this: ActorDSL.type ⇒
      * Overridden finalizer which will try to stop the actor once this Inbox
      * is no longer referenced.
      */
-    override def finalize() {
+    override def finalize(): Unit = {
       system.stop(receiver)
     }
   }

@@ -5,7 +5,9 @@
 package akka.remote.artery
 package tcp
 
+import java.io.ByteArrayOutputStream
 import java.security.NoSuchAlgorithmException
+import java.util.zip.GZIPOutputStream
 
 import scala.concurrent.duration._
 
@@ -39,9 +41,23 @@ class TlsTcpWithAES128CounterSecureRNGSpec extends TlsTcpSpec(ConfigFactory.pars
     }
     """))
 
+class TlsTcpWithDeprecatedAES128CounterSecureRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
+    akka.remote.artery.ssl.config-ssl-engine {
+      random-number-generator = "DeprecatedAES128CounterSecureRNG"
+      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"]
+    }
+    """))
+
 class TlsTcpWithAES256CounterSecureRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       random-number-generator = "AES256CounterSecureRNG"
+      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"]
+    }
+    """))
+
+class TlsTcpWithDeprecatedAES256CounterSecureRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
+    akka.remote.artery.ssl.config-ssl-engine {
+      random-number-generator = "DeprecatedAES256CounterSecureRNG"
       enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"]
     }
     """))
@@ -86,7 +102,10 @@ abstract class TlsTcpSpec(config: Config)
 
       val rng = provider.createSecureRandom()
       rng.nextInt() // Has to work
-      val sRng = provider.SSLRandomNumberGenerator
+      val sRng = provider.SSLRandomNumberGenerator match {
+        case "AES128CounterSecureRNG" | "AES256CounterSecureRNG" ⇒ ""
+        case other ⇒ other
+      }
       if (rng.getAlgorithm != sRng && sRng != "")
         throw new NoSuchAlgorithmException(sRng)
 
@@ -102,7 +121,7 @@ abstract class TlsTcpSpec(config: Config)
       engine.getSupportedProtocols.contains(provider.SSLProtocol) ||
         (throw new IllegalArgumentException("Protocol not supported: " + provider.SSLProtocol))
     } catch {
-      case e @ ((_: IllegalArgumentException) | (_: NoSuchAlgorithmException)) ⇒
+      case e @ (_: IllegalArgumentException | _: NoSuchAlgorithmException) ⇒
         info(e.toString)
         false
     }
@@ -127,6 +146,41 @@ abstract class TlsTcpSpec(config: Config)
   "Artery with TLS/TCP" must {
 
     if (isSupported) {
+
+      "generate random" in {
+        val provider = new ConfigSSLEngineProvider(system)
+        val rng = provider.createSecureRandom()
+        val bytes = Array.ofDim[Byte](16)
+        // Reproducer of the specific issue described at
+        // https://doc.akka.io/docs/akka/current/security/2018-08-29-aes-rng.html
+        // awaitAssert just in case we are very unlucky to get same sequence more than once
+        awaitAssert {
+          val randomBytes = (1 to 10).map { n ⇒
+            rng.nextBytes(bytes)
+            bytes.toVector
+          }.toSet
+          randomBytes.size should ===(10)
+        }
+      }
+
+      "have random numbers that are not compressable, because then they are not random" in {
+        val provider = new ConfigSSLEngineProvider(system)
+        val rng = provider.createSecureRandom()
+
+        val randomData = new Array[Byte](1024 * 1024)
+        rng.nextBytes(randomData)
+
+        val baos = new ByteArrayOutputStream()
+        val gzipped = new GZIPOutputStream(baos)
+        try gzipped.write(randomData)
+        finally gzipped.close()
+
+        val compressed = baos.toByteArray
+        // random data should not be compressible
+        // Another reproducer of https://doc.akka.io/docs/akka/current/security/2018-08-29-aes-rng.html
+        // with the broken implementation the compressed size was <5k
+        compressed.size should be > randomData.length
+      }
 
       "deliver messages" in {
         systemB.actorOf(TestActors.echoActorProps, "echo")

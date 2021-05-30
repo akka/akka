@@ -309,7 +309,7 @@ public class AdapterTest extends JUnitSuite {
 
     int originalLogLevel = system.eventStream().logLevel();
     try {
-      // supress the logging with stack trace
+      // suppress the logging with stack trace
       system.eventStream().setLogLevel(Integer.MIN_VALUE); // OFF
 
       // only stop supervisorStrategy

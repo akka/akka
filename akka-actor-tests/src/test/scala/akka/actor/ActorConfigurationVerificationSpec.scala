@@ -37,7 +37,7 @@ object ActorConfigurationVerificationSpec {
 class ActorConfigurationVerificationSpec extends AkkaSpec(ActorConfigurationVerificationSpec.config) with DefaultTimeout with BeforeAndAfterEach {
   import ActorConfigurationVerificationSpec._
 
-  override def atStartup {
+  override def atStartup: Unit = {
     system.eventStream.publish(Mute(EventFilter[ConfigurationException]("")))
   }
 

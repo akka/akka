@@ -27,7 +27,7 @@ object PeekMailboxSpec {
         togo -= 1
         PeekMailboxExtension.ack()
     }
-    override def preRestart(cause: Throwable, msg: Option[Any]) {
+    override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {
       for (m ← msg if m == "DIE") context stop self // for testing the case of mailbox.cleanUp
     }
   }
@@ -103,12 +103,12 @@ class MyActor extends Actor {
 
   //#business-logic-elided
   var i = 0
-  def doStuff(m: Any) {
+  def doStuff(m: Any): Unit = {
     if (i == 1) throw new Exception("DONTWANNA")
     i += 1
   }
 
-  override def postStop() {
+  override def postStop(): Unit = {
     context.system.terminate()
   }
   //#business-logic-elided

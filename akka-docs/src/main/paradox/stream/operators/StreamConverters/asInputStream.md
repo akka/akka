@@ -7,7 +7,7 @@ Create a sink which materializes into an `InputStream` that can be read to trigg
 @@@ div { .group-scala }
 ## Signature
 
-@@signature [StreamConverters.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #asInputStream }
+@@signature [StreamConverters.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #asInputStream }
 @@@
 
 ## Description

@@ -18,12 +18,12 @@ trait ProducerSupport extends Actor with CamelSupport {
   private[this] var messages = Vector.empty[(ActorRef, Any)]
   private[this] var producerChild: Option[ActorRef] = None
 
-  override def preStart() {
+  override def preStart(): Unit = {
     super.preStart()
     register()
   }
 
-  private[this] def register() { camel.supervisor ! Register(self, endpointUri) }
+  private[this] def register(): Unit = { camel.supervisor ! Register(self, endpointUri) }
 
   /**
    * CamelMessage headers to copy by default from request message to response-message.

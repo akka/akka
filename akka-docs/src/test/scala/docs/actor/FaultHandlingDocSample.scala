@@ -149,7 +149,7 @@ class CounterService extends Actor {
 
   import context.dispatcher // Use this Actors' Dispatcher as ExecutionContext
 
-  override def preStart() {
+  override def preStart(): Unit = {
     initStorage()
   }
 
@@ -159,7 +159,7 @@ class CounterService extends Actor {
    * failing. When it has been stopped we will schedule a Reconnect after a delay.
    * Watch the child so we receive Terminated message when it has been terminated.
    */
-  def initStorage() {
+  def initStorage(): Unit = {
     storage = Some(context.watch(context.actorOf(Props[Storage], name = "storage")))
     // Tell the counter, if any, to use the new storage
     counter foreach { _ ! UseStorage(storage) }
@@ -197,7 +197,7 @@ class CounterService extends Actor {
       initStorage()
   }
 
-  def forwardOrPlaceInBacklog(msg: Any) {
+  def forwardOrPlaceInBacklog(msg: Any): Unit = {
     // We need the initial value from storage before we can start delegate to
     // the counter. Before that we place the messages in a backlog, to be sent
     // to the counter when it is initialized.
@@ -246,7 +246,7 @@ class Counter(key: String, initialValue: Long) extends Actor {
 
   }
 
-  def storeCount() {
+  def storeCount(): Unit = {
     // Delegate dangerous work, to protect our valuable state.
     // We can continue without storage.
     storage foreach { _ ! Store(Entry(key, count)) }

@@ -8,7 +8,7 @@ Materializes to a `FlowMonitor` that monitors messages flowing through or comple
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #monitor }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #monitor }
 
 @@@
 

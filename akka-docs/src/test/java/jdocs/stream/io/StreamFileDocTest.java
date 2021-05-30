@@ -11,10 +11,12 @@ import java.io.IOException;
 import java.util.concurrent.CompletionStage;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.stream.ActorAttributes;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.FileIO;
+import akka.stream.javadsl.Source;
 import jdocs.AbstractJavaTest;
 import jdocs.stream.SilenceSystemOut;
 import akka.testkit.javadsl.TestKit;
@@ -48,9 +50,16 @@ public class StreamFileDocTest extends AbstractJavaTest {
   final SilenceSystemOut.System System = SilenceSystemOut.get();
 
   {
-    //#file-source
-    final Path file = Paths.get("example.csv");
-    //#file-source
+      // Using 4 spaces here to align with code in try block below.
+      //#file-source
+      final Path file = Paths.get("example.csv");
+      //#file-source
+  }
+
+  {
+      //#file-sink
+      final Path file = Paths.get("greeting.txt");
+      //#file-sink
   }
 
   @Test
@@ -87,5 +96,21 @@ public class StreamFileDocTest extends AbstractJavaTest {
     }
   }
 
+  @Test
+  public void demontrateFileIOWriting() throws IOException {
+    final Path file = Files.createTempFile(getClass().getName(), ".tmp");
 
+    try {
+      //#file-sink
+      Sink<ByteString, CompletionStage<IOResult>> fileSink = FileIO.toPath(file);
+      Source<String, NotUsed> textSource = Source.single("Hello Akka Stream!");
+
+      CompletionStage<IOResult> ioResult = textSource
+        .map(ByteString::fromString)
+        .runWith(fileSink, mat);
+      //#file-sink
+    } finally {
+      Files.delete(file);
+    }
+  }
 }

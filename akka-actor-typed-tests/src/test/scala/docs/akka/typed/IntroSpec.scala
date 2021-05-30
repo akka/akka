@@ -4,21 +4,25 @@
 
 package docs.akka.typed
 
+//#fiddle_code
 //#imports
 import akka.NotUsed
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DispatcherSelector, Terminated }
+import org.scalatest.WordSpecLike
 //#imports
+//#fiddle_code
 
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import akka.actor.typed.TypedAkkaSpecWithShutdown
-
 object IntroSpec {
+  //format: OFF
+  //#fiddle_code
 
   //#hello-world-actor
   object HelloWorld {
@@ -26,7 +30,12 @@ object IntroSpec {
     final case class Greeted(whom: String, from: ActorRef[Greet])
 
     val greeter: Behavior[Greet] = Behaviors.receive { (ctx, msg) ⇒
+  //#fiddle_code
       ctx.log.info("Hello {}!", msg.whom)
+  //#fiddle_code
+  //#hello-world-actor
+      println(s"Hello ${msg.whom}!")
+  //#hello-world-actor
       msg.replyTo ! Greeted(msg.whom, ctx.self)
       Behaviors.same
     }
@@ -39,7 +48,12 @@ object IntroSpec {
     def bot(greetingCounter: Int, max: Int): Behavior[HelloWorld.Greeted] =
       Behaviors.receive { (ctx, msg) ⇒
         val n = greetingCounter + 1
+  //#fiddle_code
         ctx.log.info("Greeting {} for {}", n, msg.whom)
+  //#fiddle_code
+  //#hello-world-bot
+        println(s"Greeting ${n} for ${msg.whom}")
+  //#hello-world-bot
         if (n == max) {
           Behaviors.stopped
         } else {
@@ -67,6 +81,8 @@ object IntroSpec {
       }
   }
   //#hello-world-main
+  //#fiddle_code
+  //format: ON
 
   object CustomDispatchersExample {
     import HelloWorldMain.Start
@@ -155,12 +171,13 @@ object IntroSpec {
 
 }
 
-class IntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   import IntroSpec._
 
   "Hello world" must {
     "say hello" in {
+      //#fiddle_code
       //#hello-world
 
       val system: ActorSystem[HelloWorldMain.Start] =
@@ -170,6 +187,7 @@ class IntroSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
       system ! HelloWorldMain.Start("Akka")
 
       //#hello-world
+      //#fiddle_code
 
       Thread.sleep(500) // it will not fail if too short
       ActorTestKit.shutdown(system)

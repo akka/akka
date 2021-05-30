@@ -40,9 +40,11 @@ class GraphStageDocSpec extends AkkaSpec {
 
   "Demonstrate creation of GraphStage Source" in {
     //#custom-source-example
+    import akka.stream.Attributes
+    import akka.stream.Outlet
     import akka.stream.SourceShape
-    import akka.stream.Graph
     import akka.stream.stage.GraphStage
+    import akka.stream.stage.GraphStageLogic
     import akka.stream.stage.OutHandler
 
     class NumbersSource extends GraphStage[SourceShape[Int]] {

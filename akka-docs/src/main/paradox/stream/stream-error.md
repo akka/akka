@@ -31,10 +31,10 @@ inside an actor, and have the actor restart the entire stream on failure.
 The below stream fails with `ArithmeticException` when the element `0` goes through the `map` operator, 
 
 Scala
-:   @@snip [RecipeLoggingElements.scala]($code$/scala/docs/stream/cookbook/RecipeLoggingElements.scala) { #log-error }
+:   @@snip [RecipeLoggingElements.scala](/akka-docs/src/test/scala/docs/stream/cookbook/RecipeLoggingElements.scala) { #log-error }
 
 Java
-:   @@snip [RecipeLoggingElements.java]($code$/java/jdocs/stream/javadsl/cookbook/RecipeLoggingElements.java) { #log-error }
+:   @@snip [RecipeLoggingElements.java](/akka-docs/src/test/java/jdocs/stream/javadsl/cookbook/RecipeLoggingElements.java) { #log-error }
 
 
 and error messages like below will be logged. 
@@ -57,18 +57,18 @@ Recovering can be useful if you want to gracefully complete a stream on failure 
 downstream know that there was a failure.
 
 Scala
-:   @@snip [FlowErrorDocSpec.scala]($code$/scala/docs/stream/FlowErrorDocSpec.scala) { #recover }
+:   @@snip [FlowErrorDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowErrorDocSpec.scala) { #recover }
 
 Java
-:   @@snip [FlowErrorDocTest.java]($code$/java/jdocs/stream/FlowErrorDocTest.java) { #recover }
+:   @@snip [FlowErrorDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowErrorDocTest.java) { #recover }
 
 This will output:
 
 Scala
-:   @@snip [FlowErrorDocSpec.scala]($code$/scala/docs/stream/FlowErrorDocSpec.scala) { #recover-output }
+:   @@snip [FlowErrorDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowErrorDocSpec.scala) { #recover-output }
 
 Java
-:   @@snip [FlowErrorDocTest.java]($code$/java/jdocs/stream/FlowErrorDocTest.java) { #recover-output }
+:   @@snip [FlowErrorDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowErrorDocTest.java) { #recover-output }
 
 
 ## Recover with retries
@@ -80,19 +80,19 @@ Deciding which exceptions should be recovered is done through a `PartialFunction
 does not have a @scala[matching case] @java[match defined] the stream is failed.
 
 Scala
-:   @@snip [FlowErrorDocSpec.scala]($code$/scala/docs/stream/FlowErrorDocSpec.scala) { #recoverWithRetries }
+:   @@snip [FlowErrorDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowErrorDocSpec.scala) { #recoverWithRetries }
 
 Java
-:   @@snip [FlowErrorDocTest.java]($code$/java/jdocs/stream/FlowErrorDocTest.java) { #recoverWithRetries }
+:   @@snip [FlowErrorDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowErrorDocTest.java) { #recoverWithRetries }
 
 This will output:
 
 
 Scala
-:   @@snip [FlowErrorDocSpec.scala]($code$/scala/docs/stream/FlowErrorDocSpec.scala) { #recoverWithRetries-output }
+:   @@snip [FlowErrorDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowErrorDocSpec.scala) { #recoverWithRetries-output }
 
 Java
-:   @@snip [FlowErrorDocTest.java]($code$/java/jdocs/stream/FlowErrorDocTest.java) { #recoverWithRetries-output }
+:   @@snip [FlowErrorDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowErrorDocTest.java) { #recoverWithRetries-output }
 
 
 <a id="restart-with-backoff"></a>
@@ -116,10 +116,10 @@ be made again, in increasing intervals of 3, 6, 12, 24 and finally 30 seconds (a
 to the `maxBackoff` parameter):
 
 Scala
-:   @@snip [RestartDocSpec.scala]($code$/scala/docs/stream/RestartDocSpec.scala) { #restart-with-backoff-source }
+:   @@snip [RestartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/RestartDocSpec.scala) { #restart-with-backoff-source }
 
 Java
-:   @@snip [RestartDocTest.java]($code$/java/jdocs/stream/RestartDocTest.java) { #restart-with-backoff-source }
+:   @@snip [RestartDocTest.java](/akka-docs/src/test/java/jdocs/stream/RestartDocTest.java) { #restart-with-backoff-source }
 
 Using a `randomFactor` to add a little bit of additional variance to the backoff intervals
 is highly recommended, in order to avoid multiple streams re-start at the exact same point in time,
@@ -132,10 +132,10 @@ The above `RestartSource` will never terminate unless the `Sink` it's fed into c
 it in combination with a @ref:[`KillSwitch`](stream-dynamic.md#kill-switch), so that you can terminate it when needed:
 
 Scala
-:   @@snip [RestartDocSpec.scala]($code$/scala/docs/stream/RestartDocSpec.scala) { #with-kill-switch }
+:   @@snip [RestartDocSpec.scala](/akka-docs/src/test/scala/docs/stream/RestartDocSpec.scala) { #with-kill-switch }
 
 Java
-:   @@snip [RestartDocTest.java]($code$/java/jdocs/stream/RestartDocTest.java) { #with-kill-switch }
+:   @@snip [RestartDocTest.java](/akka-docs/src/test/java/jdocs/stream/RestartDocTest.java) { #with-kill-switch }
 
 Sinks and flows can also be supervised, using @scala[`akka.stream.scaladsl.RestartSink` and `akka.stream.scaladsl.RestartFlow`] 
 @java[`akka.stream.javadsl.RestartSink` and `akka.stream.javadsl.RestartFlow`]. The `RestartSink` is restarted when
@@ -193,18 +193,18 @@ By default the stopping strategy is used for all exceptions, i.e. the stream wil
 failure when an exception is thrown.
 
 Scala
-:   @@snip [FlowErrorDocSpec.scala]($code$/scala/docs/stream/FlowErrorDocSpec.scala) { #stop }
+:   @@snip [FlowErrorDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowErrorDocSpec.scala) { #stop }
 
 Java
-:   @@snip [FlowErrorDocTest.java]($code$/java/jdocs/stream/FlowErrorDocTest.java) { #stop }
+:   @@snip [FlowErrorDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowErrorDocTest.java) { #stop }
 
 The default supervision strategy for a stream can be defined on the settings of the materializer.
 
 Scala
-:   @@snip [FlowErrorDocSpec.scala]($code$/scala/docs/stream/FlowErrorDocSpec.scala) { #resume }
+:   @@snip [FlowErrorDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowErrorDocSpec.scala) { #resume }
 
 Java
-:   @@snip [FlowErrorDocTest.java]($code$/java/jdocs/stream/FlowErrorDocTest.java) { #resume }
+:   @@snip [FlowErrorDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowErrorDocTest.java) { #resume }
 
 Here you can see that all `ArithmeticException` will resume the processing, i.e. the
 elements that cause the division by zero are effectively dropped.
@@ -219,19 +219,19 @@ cycles, as explained in @ref:[Graph cycles, liveness and deadlocks](stream-graph
 The supervision strategy can also be defined for all operators of a flow.
 
 Scala
-:   @@snip [FlowErrorDocSpec.scala]($code$/scala/docs/stream/FlowErrorDocSpec.scala) { #resume-section }
+:   @@snip [FlowErrorDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowErrorDocSpec.scala) { #resume-section }
 
 Java
-:   @@snip [FlowErrorDocTest.java]($code$/java/jdocs/stream/FlowErrorDocTest.java) { #resume-section }
+:   @@snip [FlowErrorDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowErrorDocTest.java) { #resume-section }
 
 `Restart` works in a similar way as `Resume` with the addition that accumulated state,
 if any, of the failing processing operator will be reset.
 
 Scala
-:   @@snip [FlowErrorDocSpec.scala]($code$/scala/docs/stream/FlowErrorDocSpec.scala) { #restart-section }
+:   @@snip [FlowErrorDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowErrorDocSpec.scala) { #restart-section }
 
 Java
-:   @@snip [FlowErrorDocTest.java]($code$/java/jdocs/stream/FlowErrorDocTest.java) { #restart-section }
+:   @@snip [FlowErrorDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowErrorDocTest.java) { #restart-section }
 
 ### Errors from mapAsync
 
@@ -244,18 +244,18 @@ discard those that cannot be found.
 We start with the tweet stream of authors:
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #tweet-authors }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #tweet-authors }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #tweet-authors }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #tweet-authors }
 
 Assume that we can lookup their email address using:
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #email-address-lookup2 }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #email-address-lookup2 }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #email-address-lookup2 }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #email-address-lookup2 }
 
 The @scala[`Future`] @java[`CompletionStage`] is completed @scala[with `Failure`] @java[normally] if the email is not found.
 
@@ -264,10 +264,10 @@ service can be done with `mapAsync` and we use @scala[`Supervision.resumingDecid
 unknown email addresses:
 
 Scala
-:   @@snip [IntegrationDocSpec.scala]($code$/scala/docs/stream/IntegrationDocSpec.scala) { #email-addresses-mapAsync-supervision }
+:   @@snip [IntegrationDocSpec.scala](/akka-docs/src/test/scala/docs/stream/IntegrationDocSpec.scala) { #email-addresses-mapAsync-supervision }
 
 Java
-:   @@snip [IntegrationDocTest.java]($code$/java/jdocs/stream/IntegrationDocTest.java) { #email-addresses-mapAsync-supervision }
+:   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #email-addresses-mapAsync-supervision }
 
 If we would not use `Resume` the default stopping strategy would complete the stream
 with failure on the first @scala[`Future`] @java[`CompletionStage`] that was completed @scala[with `Failure`]@java[exceptionally].

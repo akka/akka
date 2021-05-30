@@ -66,7 +66,7 @@ public class DeviceGroupTest extends JUnitSuite {
     ActorRef groupActor = system.actorOf(DeviceGroup.props("group"));
 
     groupActor.tell(new DeviceManager.RequestTrackDevice("wrongGroup", "device1"), probe.getRef());
-    probe.expectNoMsg();
+    probe.expectNoMessage();
   }
 
   @Test

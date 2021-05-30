@@ -21,7 +21,7 @@ when finite-ness does not matter; this is a supertype of `FiniteDuration`
 In Scala durations are constructable using a mini-DSL and support all expected
 arithmetic operations:
 
-@@snip [Sample.scala]($code$/scala/docs/duration/Sample.scala) { #dsl }
+@@snip [Sample.scala](/akka-docs/src/test/scala/docs/duration/Sample.scala) { #dsl }
 
 @@@ note
 
@@ -37,9 +37,9 @@ might go wrong, depending on what starts the next line.
 Java provides less syntactic sugar, so you have to spell out the operations as
 method calls instead:
 
-@@snip [Java.java]($code$/java/jdocs/duration/Java.java) { #import }
+@@snip [Java.java](/akka-docs/src/test/java/jdocs/duration/Java.java) { #import }
 
-@@snip [Java.java]($code$/java/jdocs/duration/Java.java) { #dsl }
+@@snip [Java.java](/akka-docs/src/test/java/jdocs/duration/Java.java) { #dsl }
 
 ## Deadline
 
@@ -48,8 +48,8 @@ of an absolute point in time, and support deriving a duration from this by calcu
 difference between now and the deadline. This is useful when you want to keep one overall
 deadline without having to take care of the book-keeping wrt. the passing of time yourself:
 
-@@snip [Sample.scala]($code$/scala/docs/duration/Sample.scala) { #deadline }
+@@snip [Sample.scala](/akka-docs/src/test/scala/docs/duration/Sample.scala) { #deadline }
 
 In Java you create these from durations:
 
-@@snip [Java.java]($code$/java/jdocs/duration/Java.java) { #deadline }
+@@snip [Java.java](/akka-docs/src/test/java/jdocs/duration/Java.java) { #deadline }

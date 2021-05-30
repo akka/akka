@@ -13,10 +13,10 @@ the @ref[untyped actor FSM docs](../fsm.md). It demonstrates how to:
 The events the FSM can receive become the type of message the Actor can receive:
 
 Scala
-:  @@snip [FSMSocSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/FSMDocSpec.scala) { #simple-events }
+:  @@snip [FSMSocSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/FSMDocSpec.scala) { #simple-events }
 
 Java
-:  @@snip [FSMSocTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/FSMDocTest.java) { #simple-events }
+:  @@snip [FSMSocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/FSMDocTest.java) { #simple-events }
 
 `SetTarget` is needed for starting it up, setting the destination for the
 `Batches` to be passed on; `Queue` will add to the internal queue while
@@ -26,19 +26,19 @@ Untyped `FSM`s also have a `D` (data) type parameter. Akka Typed doesn't need to
 via defining your behaviors as methods.
 
 Scala
-:  @@snip [FSMSocSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/FSMDocSpec.scala) { #storing-state }
+:  @@snip [FSMSocSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/FSMDocSpec.scala) { #storing-state }
 
 Java
-:  @@snip [FSMSocTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/FSMDocTest.java) { #storing-state }
+:  @@snip [FSMSocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/FSMDocTest.java) { #storing-state }
 
 Each state becomes a distinct behavior. No explicit `goto` is required as Akka Typed
 already requires you return the next behavior.
 
 Scala
-:  @@snip [FSMSocSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/FSMDocSpec.scala) { #simple-state }
+:  @@snip [FSMSocSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/FSMDocSpec.scala) { #simple-state }
 
 Java
-:  @@snip [FSMSocTest.java]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/FSMDocTest.java) { #simple-state}
+:  @@snip [FSMSocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/FSMDocTest.java) { #simple-state}
 
 To set state timeouts use `Behaviors.withTimers` along with a `startSingleTimer`.
 

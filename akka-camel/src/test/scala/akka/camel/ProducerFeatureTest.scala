@@ -27,7 +27,7 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
   import ProducerFeatureTest._
   implicit def camel = CamelExtension(system)
 
-  override protected def afterAll() {
+  override protected def afterAll(): Unit = {
     super.afterAll()
     shutdown()
   }
@@ -37,9 +37,9 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
   camelContext.setUseBreadcrumb(false)
   val timeoutDuration = 1 second
   implicit val timeout = Timeout(timeoutDuration)
-  override protected def beforeAll { camelContext.addRoutes(new TestRoute(system)) }
+  override protected def beforeAll: Unit = { camelContext.addRoutes(new TestRoute(system)) }
 
-  override protected def afterEach { mockEndpoint.reset() }
+  override protected def afterEach: Unit = { mockEndpoint.reset() }
 
   "A Producer on a sync Camel route" must {
 
@@ -279,7 +279,7 @@ object ProducerFeatureTest {
       else msg
     }
 
-    override def postStop() {
+    override def postStop(): Unit = {
       for (msg ← lastMessage; aref ← lastSender) context.parent ! ((aref, msg))
       super.postStop()
     }
@@ -288,7 +288,7 @@ object ProducerFeatureTest {
   class TestProducer(uri: String, upper: Boolean = false) extends Actor with Producer {
     def endpointUri = uri
 
-    override def preRestart(reason: Throwable, message: Option[Any]) {
+    override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
       //overriding on purpose so it doesn't try to deRegister and reRegister at restart,
       // which would cause a deadletter message in the test output.
     }
@@ -339,7 +339,7 @@ object ProducerFeatureTest {
   class TestRoute(system: ActorSystem) extends RouteBuilder {
     val responder = system.actorOf(Props[TestResponder], name = "TestResponder")
 
-    def configure {
+    def configure: Unit = {
       from("direct:forward-test-1").to("mock:mock")
       // for one-way messaging tests
       from("direct:producer-test-1").to("mock:mock")

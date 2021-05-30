@@ -15,19 +15,19 @@ To use TCP, you must add the following dependency in your project:
 The code snippets through-out this section assume the following imports:
 
 Scala
-:  @@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #imports }
+:  @@snip [IODocSpec.scala](/akka-docs/src/test/scala/docs/io/IODocSpec.scala) { #imports }
 
 Java
-:  @@snip [IODocTest.java]($code$/java/jdocs/io/japi/IODocTest.java) { #imports }
+:  @@snip [IODocTest.java](/akka-docs/src/test/java/jdocs/io/japi/IODocTest.java) { #imports }
 
 All of the Akka I/O APIs are accessed through manager objects. When using an I/O API, the first step is to acquire a
 reference to the appropriate manager. The code below shows how to acquire a reference to the `Tcp` manager.
 
 Scala
-:  @@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #manager }
+:  @@snip [IODocSpec.scala](/akka-docs/src/test/scala/docs/io/IODocSpec.scala) { #manager }
 
 Java
-:  @@snip [EchoManager.java]($code$/java/jdocs/io/japi/EchoManager.java) { #manager }
+:  @@snip [EchoManager.java](/akka-docs/src/test/java/jdocs/io/japi/EchoManager.java) { #manager }
 
 The manager is an actor that handles the underlying low level I/O resources (selectors, channels) and instantiates
 workers for specific tasks, such as listening to incoming connections.
@@ -35,10 +35,10 @@ workers for specific tasks, such as listening to incoming connections.
 ## Connecting
 
 Scala
-:  @@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #client }
+:  @@snip [IODocSpec.scala](/akka-docs/src/test/scala/docs/io/IODocSpec.scala) { #client }
 
 Java
-:  @@snip [IODocTest.java]($code$/java/jdocs/io/japi/IODocTest.java) { #client }
+:  @@snip [IODocTest.java](/akka-docs/src/test/java/jdocs/io/japi/IODocTest.java) { #client }
 
 The first step of connecting to a remote address is sending a 
 @scala[`Connect` message]@java[message by the `TcpMessage.connect` method] to the TCP manager; in addition to the simplest form shown above there
@@ -81,10 +81,10 @@ fine-grained connection close events, see [Closing Connections](#closing-connect
 ## Accepting connections
 
 Scala
-:  @@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #server }
+:  @@snip [IODocSpec.scala](/akka-docs/src/test/scala/docs/io/IODocSpec.scala) { #server }
 
 Java
-:  @@snip [IODocTest.java]($code$/java/jdocs/io/japi/IODocTest.java) { #server }
+:  @@snip [IODocTest.java](/akka-docs/src/test/java/jdocs/io/japi/IODocTest.java) { #server }
 
 To create a TCP server and listen for inbound connections, a @scala[`Bind` command]@java[message by the `TcpMessage.bind` method]
 has to be sent to the TCP manager.  This will instruct the TCP manager
@@ -104,10 +104,10 @@ actor in the system to the connection actor (i.e. the actor which sent the
 `Connected` message). The simplistic handler is defined as:
 
 Scala
-:  @@snip [IODocSpec.scala]($code$/scala/docs/io/IODocSpec.scala) { #simplistic-handler }
+:  @@snip [IODocSpec.scala](/akka-docs/src/test/scala/docs/io/IODocSpec.scala) { #simplistic-handler }
 
 Java
-:  @@snip [IODocTest.java]($code$/java/jdocs/io/japi/IODocTest.java) { #simplistic-handler }
+:  @@snip [IODocTest.java](/akka-docs/src/test/java/jdocs/io/japi/IODocTest.java) { #simplistic-handler }
 
 For a more complete sample which also takes into account the possibility of
 failures when sending please see [Throttling Reads and Writes](#throttling-reads-and-writes) below.
@@ -245,18 +245,18 @@ to the client before fully closing the connection. This is enabled using a flag
 upon connection activation (observe the @scala[`Register` message]@java[`TcpMessage.register` method]):
 
 Scala
-:  @@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #echo-manager }
+:  @@snip [EchoServer.scala](/akka-docs/src/test/scala/docs/io/EchoServer.scala) { #echo-manager }
 
 Java
-:  @@snip [EchoManager.java]($code$/java/jdocs/io/japi/EchoManager.java) { #echo-manager }
+:  @@snip [EchoManager.java](/akka-docs/src/test/java/jdocs/io/japi/EchoManager.java) { #echo-manager }
 
 With this preparation let us dive into the handler itself:
 
 Scala
-:  @@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #simple-echo-handler }
+:  @@snip [EchoServer.scala](/akka-docs/src/test/scala/docs/io/EchoServer.scala) { #simple-echo-handler }
 
 Java
-:  @@snip [SimpleEchoHandler.java]($code$/java/jdocs/io/japi/SimpleEchoHandler.java) { #simple-echo-handler }
+:  @@snip [SimpleEchoHandler.java](/akka-docs/src/test/java/jdocs/io/japi/SimpleEchoHandler.java) { #simple-echo-handler }
 
 The principle is simple: when having written a chunk always wait for the
 `Ack` to come back before sending the next chunk. While waiting we switch
@@ -264,10 +264,10 @@ behavior such that new incoming data are buffered. The helper functions used
 are a bit lengthy but not complicated:
 
 Scala
-:  @@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #simple-helpers }
+:  @@snip [EchoServer.scala](/akka-docs/src/test/scala/docs/io/EchoServer.scala) { #simple-helpers }
 
 Java
-:  @@snip [SimpleEchoHandler.java]($code$/java/jdocs/io/japi/SimpleEchoHandler.java) { #simple-helpers }
+:  @@snip [SimpleEchoHandler.java](/akka-docs/src/test/java/jdocs/io/japi/SimpleEchoHandler.java) { #simple-helpers }
 
 The most interesting part is probably the last: an `Ack` removes the oldest
 data chunk from the buffer, and if that was the last chunk then we either close
@@ -289,10 +289,10 @@ how end-to-end back-pressure is realized across a TCP connection.
 ## NACK-Based Write Back-Pressure with Suspending
 
 Scala
-:  @@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #echo-handler }
+:  @@snip [EchoServer.scala](/akka-docs/src/test/scala/docs/io/EchoServer.scala) { #echo-handler }
 
 Java
-:  @@snip [EchoHandler.java]($code$/java/jdocs/io/japi/EchoHandler.java) { #echo-handler }
+:  @@snip [EchoHandler.java](/akka-docs/src/test/java/jdocs/io/japi/EchoHandler.java) { #echo-handler }
 
 The principle here is to keep writing until a `CommandFailed` is
 received, using acknowledgements only to prune the resend buffer. When a such a
@@ -300,10 +300,10 @@ failure was received, transition into a different state for handling and handle
 resending of all queued data:
 
 Scala
-:  @@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #buffering }
+:  @@snip [EchoServer.scala](/akka-docs/src/test/scala/docs/io/EchoServer.scala) { #buffering }
 
 Java
-:  @@snip [EchoHandler.java]($code$/java/jdocs/io/japi/EchoHandler.java) { #buffering }
+:  @@snip [EchoHandler.java](/akka-docs/src/test/java/jdocs/io/japi/EchoHandler.java) { #buffering }
 
 It should be noted that all writes which are currently buffered have also been
 sent to the connection actor upon entering this state, which means that the
@@ -317,10 +317,10 @@ the first ten writes after a failure before resuming the optimistic
 write-through behavior.
 
 Scala
-:  @@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #closing }
+:  @@snip [EchoServer.scala](/akka-docs/src/test/scala/docs/io/EchoServer.scala) { #closing }
 
 Java
-:  @@snip [EchoHandler.java]($code$/java/jdocs/io/japi/EchoHandler.java) { #closing }
+:  @@snip [EchoHandler.java](/akka-docs/src/test/java/jdocs/io/japi/EchoHandler.java) { #closing }
 
 Closing the connection while still sending all data is a bit more involved than
 in the ACK-based approach: the idea is to always send all outstanding messages
@@ -330,10 +330,10 @@ behavior to await the `WritingResumed` event and start over.
 The helper functions are very similar to the ACK-based case:
 
 Scala
-:  @@snip [EchoServer.scala]($code$/scala/docs/io/EchoServer.scala) { #helpers }
+:  @@snip [EchoServer.scala](/akka-docs/src/test/scala/docs/io/EchoServer.scala) { #helpers }
 
 Java
-:  @@snip [EchoHandler.java]($code$/java/jdocs/io/japi/EchoHandler.java) { #helpers }
+:  @@snip [EchoHandler.java](/akka-docs/src/test/java/jdocs/io/japi/EchoHandler.java) { #helpers }
 
 ## Read Back-Pressure with Pull Mode
 
@@ -346,10 +346,10 @@ With the Pull mode this buffer can be completely eliminated as the following sni
 demonstrates:
 
 Scala
-:  @@snip [ReadBackPressure.scala]($code$/scala/docs/io/ReadBackPressure.scala) { #pull-reading-echo }
+:  @@snip [ReadBackPressure.scala](/akka-docs/src/test/scala/docs/io/ReadBackPressure.scala) { #pull-reading-echo }
 
 Java
-:  @@snip [JavaReadBackPressure.java]($code$/java/jdocs/io/JavaReadBackPressure.java) { #pull-reading-echo }
+:  @@snip [JavaReadBackPressure.java](/akka-docs/src/test/java/jdocs/io/JavaReadBackPressure.java) { #pull-reading-echo }
 
 The idea here is that reading is not resumed until the previous write has been
 completely acknowledged by the connection actor. Every pull mode connection
@@ -363,10 +363,10 @@ To enable pull reading on an outbound connection the `pullMode` parameter of
 the @scala[`Connect`]@java[`TcpMessage.connect` method] should be set to `true`:
 
 Scala
-:  @@snip [ReadBackPressure.scala]($code$/scala/docs/io/ReadBackPressure.scala) { #pull-mode-connect }
+:  @@snip [ReadBackPressure.scala](/akka-docs/src/test/scala/docs/io/ReadBackPressure.scala) { #pull-mode-connect }
 
 Java
-:  @@snip [JavaReadBackPressure.java]($code$/java/jdocs/io/JavaReadBackPressure.java) { #pull-mode-connect }
+:  @@snip [JavaReadBackPressure.java](/akka-docs/src/test/java/jdocs/io/JavaReadBackPressure.java) { #pull-mode-connect }
 
 ### Pull Mode Reading for Inbound Connections
 
@@ -375,10 +375,10 @@ connections but it is possible to create a listener actor with this mode of read
 by setting the `pullMode` parameter of the @scala[`Bind` command]@java[`TcpMessage.bind` method] to `true`:
 
 Scala
-:  @@snip [ReadBackPressure.scala]($code$/scala/docs/io/ReadBackPressure.scala) { #pull-mode-bind }
+:  @@snip [ReadBackPressure.scala](/akka-docs/src/test/scala/docs/io/ReadBackPressure.scala) { #pull-mode-bind }
 
 Java
-:  @@snip [JavaReadBackPressure.java]($code$/java/jdocs/io/JavaReadBackPressure.java) { #pull-mode-bind }
+:  @@snip [JavaReadBackPressure.java](/akka-docs/src/test/java/jdocs/io/JavaReadBackPressure.java) { #pull-mode-bind }
 
 One of the effects of this setting is that all connections accepted by this listener
 actor will use pull mode reading.
@@ -392,10 +392,10 @@ Listener actors with pull mode start suspended so to start accepting connections
 a @scala[`ResumeAccepting` command]@java[message by the `TcpMessage.resumeAccepting` method] has to be sent to the listener actor after binding was successful:
 
 Scala
-:  @@snip [ReadBackPressure.scala]($code$/scala/docs/io/ReadBackPressure.scala) { #pull-accepting #pull-accepting-cont }
+:  @@snip [ReadBackPressure.scala](/akka-docs/src/test/scala/docs/io/ReadBackPressure.scala) { #pull-accepting #pull-accepting-cont }
 
 Java
-:  @@snip [JavaReadBackPressure.java]($code$/java/jdocs/io/JavaReadBackPressure.java) { #pull-accepting }
+:  @@snip [JavaReadBackPressure.java](/akka-docs/src/test/java/jdocs/io/JavaReadBackPressure.java) { #pull-accepting }
 
 As shown in the example, after handling an incoming connection we need to resume accepting again.
 

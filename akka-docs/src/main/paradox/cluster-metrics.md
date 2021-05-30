@@ -138,18 +138,18 @@ Let's take a look at this router in action. What can be more demanding than calc
 The backend worker that performs the factorial calculation:
 
 Scala
-:  @@snip [FactorialBackend.scala]($code$/scala/docs/cluster/FactorialBackend.scala) { #backend }
+:  @@snip [FactorialBackend.scala](/akka-docs/src/test/scala/docs/cluster/FactorialBackend.scala) { #backend }
 
 Java
-:  @@snip [FactorialBackend.java]($code$/java/jdocs/cluster/FactorialBackend.java) { #backend }
+:  @@snip [FactorialBackend.java](/akka-docs/src/test/java/jdocs/cluster/FactorialBackend.java) { #backend }
 
 The frontend that receives user jobs and delegates to the backends via the router:
 
 Scala
-:  @@snip [FactorialFrontend.scala]($code$/scala/docs/cluster/FactorialFrontend.scala) { #frontend }
+:  @@snip [FactorialFrontend.scala](/akka-docs/src/test/scala/docs/cluster/FactorialFrontend.scala) { #frontend }
 
 Java
-:  @@snip [FactorialFrontend.java]($code$/java/jdocs/cluster/FactorialFrontend.java) { #frontend }
+:  @@snip [FactorialFrontend.java](/akka-docs/src/test/java/jdocs/cluster/FactorialFrontend.java) { #frontend }
 
 As you can see, the router is defined in the same way as other routers, and in this case it is configured as follows:
 
@@ -180,10 +180,10 @@ other things work in the same way as other routers.
 The same type of router could also have been defined in code:
 
 Scala
-:  @@snip [FactorialFrontend.scala]($code$/scala/docs/cluster/FactorialFrontend.scala) { #router-lookup-in-code #router-deploy-in-code }
+:  @@snip [FactorialFrontend.scala](/akka-docs/src/test/scala/docs/cluster/FactorialFrontend.scala) { #router-lookup-in-code #router-deploy-in-code }
 
 Java
-:  @@snip [FactorialFrontend.java]($code$/java/jdocs/cluster/FactorialFrontend.java) { #router-lookup-in-code #router-deploy-in-code }
+:  @@snip [FactorialFrontend.java](/akka-docs/src/test/java/jdocs/cluster/FactorialFrontend.java) { #router-lookup-in-code #router-deploy-in-code }
 
 The easiest way to run **Adaptive Load Balancing** example yourself is to download the ready to run
 @scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)] @java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
@@ -196,10 +196,10 @@ The source code of this sample can be found in the
 It is possible to subscribe to the metrics events directly to implement other functionality.
 
 Scala
-:  @@snip [MetricsListener.scala]($code$/scala/docs/cluster/MetricsListener.scala) { #metrics-listener }
+:  @@snip [MetricsListener.scala](/akka-docs/src/test/scala/docs/cluster/MetricsListener.scala) { #metrics-listener }
 
 Java
-:  @@snip [MetricsListener.java]($code$/java/jdocs/cluster/MetricsListener.java) { #metrics-listener }
+:  @@snip [MetricsListener.java](/akka-docs/src/test/java/jdocs/cluster/MetricsListener.java) { #metrics-listener }
 
 ## Custom Metrics Collector
 
@@ -217,4 +217,4 @@ Custom metrics collector implementation class must be specified in the
 
 The Cluster metrics extension can be configured with the following properties:
 
-@@snip [reference.conf]($akka$/akka-cluster-metrics/src/main/resources/reference.conf)
+@@snip [reference.conf](/akka-cluster-metrics/src/main/resources/reference.conf)

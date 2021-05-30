@@ -510,7 +510,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
   implicit final def total2pf(transitionHandler: (S, S) ⇒ Unit): TransitionHandler =
     new TransitionHandler {
       def isDefinedAt(in: (S, S)) = true
-      def apply(in: (S, S)) { transitionHandler(in._1, in._2) }
+      def apply(in: (S, S)): Unit = { transitionHandler(in._1, in._2) }
     }
 
   /**
@@ -622,7 +622,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * transition handling
    */
   private var transitionEvent: List[TransitionHandler] = Nil
-  private def handleTransition(prev: S, next: S) {
+  private def handleTransition(prev: S, next: S): Unit = {
     val tuple = (prev, next)
     for (te ← transitionEvent) { if (te.isDefinedAt(tuple)) te(tuple) }
   }
@@ -789,7 +789,7 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
   private var pos = 0
   private var full = false
 
-  private def advance() {
+  private def advance(): Unit = {
     val n = pos + 1
     if (n == logDepth) {
       full = true

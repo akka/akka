@@ -8,7 +8,7 @@ Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #zip }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #zip }
 
 @@@
 

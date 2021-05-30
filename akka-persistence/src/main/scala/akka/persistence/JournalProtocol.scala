@@ -24,7 +24,7 @@ private[persistence] object JournalProtocol {
 
   /**
    * Request to delete all persistent messages with sequence numbers up to `toSequenceNr`
-   * (inclusive).
+   * (inclusive). `Long.MaxValue` may be used as `toSequenceNr` to delete all persistent messages.
    */
   final case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long, persistentActor: ActorRef)
     extends Request

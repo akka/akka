@@ -260,7 +260,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
    *
    * @param createRequest A function that creates a message for the other actor, containing the provided `ActorRef[Res]` that
    *                      the other actor can send a message back through.
-   * @param applyToResponse Transforms the response from the `otherActor` into a message this actor understands.
+   * @param applyToResponse Transforms the response from the `target` into a message this actor understands.
    *                        Will be invoked with either the response message or an AskTimeoutException failed or
    *                        potentially another exception if the remote actor is untyped and sent a
    *                        [[akka.actor.Status.Failure]] as response. The returned message of type `T` is then
@@ -274,7 +274,7 @@ trait ActorContext[T] extends akka.actor.typed.ActorContext[T] {
    */
   def ask[Req, Res](
     resClass:        Class[Res],
-    otherActor:      ActorRef[Req],
+    target:          RecipientRef[Req],
     responseTimeout: Timeout,
     createRequest:   java.util.function.Function[ActorRef[Res], Req],
     applyToResponse: BiFunction[Res, Throwable, T]): Unit

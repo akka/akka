@@ -29,7 +29,7 @@ class JavaLogger extends Actor with RequiresMessageQueue[LoggerMessageQueueSeman
     case InitializeLogger(_)           ⇒ sender() ! LoggerInitialized
   }
 
-  def log(level: logging.Level, cause: Throwable, event: LogEvent) {
+  def log(level: logging.Level, cause: Throwable, event: LogEvent): Unit = {
     val logger = Logger(event.logClass, event.logSource)
     val record = new logging.LogRecord(level, String.valueOf(event.message))
     record.setLoggerName(logger.getName)

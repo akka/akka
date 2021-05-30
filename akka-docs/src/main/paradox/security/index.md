@@ -30,5 +30,6 @@ to ensure that a fix can be provided without delay.
 
 * [2017-02-10-java-serialization](2017-02-10-java-serialization.md)
 * [2017-08-09-camel](2017-08-09-camel.md)
+* [2018-08-29-aes-rng](2018-08-29-aes-rng.md)
 
 @@@

@@ -409,7 +409,7 @@ private[remote] class Association(
                 OrdinaryQueueIndex
               } else {
                 // select lane based on destination, to preserve message order
-                OrdinaryQueueIndex + (math.abs(r.path.uid) % outboundLanes)
+                OrdinaryQueueIndex + (math.abs(r.path.uid % outboundLanes))
               }
             r.cachedSendQueueIndex = idx
             idx
@@ -1013,7 +1013,7 @@ private[remote] class AssociationRegistry(createAssociation: Address ⇒ Associa
           // make sure we don't overwrite same UID with different association
           throw new IllegalArgumentException(s"UID collision old [$previous] new [$a]")
       case _ ⇒
-        // update associationsByUid Map with the uid -> assocation
+        // update associationsByUid Map with the uid -> association
         val newMap = currentMap.updated(peer.uid, a)
         if (associationsByUid.compareAndSet(currentMap, newMap))
           a

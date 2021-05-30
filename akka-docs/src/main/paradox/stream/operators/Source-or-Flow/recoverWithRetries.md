@@ -8,7 +8,7 @@ RecoverWithRetries allows to switch to alternative Source on flow failure.
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #recoverWithRetries }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #recoverWithRetries }
 
 @@@
 

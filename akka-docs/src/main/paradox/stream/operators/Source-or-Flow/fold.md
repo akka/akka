@@ -8,7 +8,7 @@ Start with current value `zero` and then apply the current and next value to the
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #fold }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #fold }
 
 @@@
 

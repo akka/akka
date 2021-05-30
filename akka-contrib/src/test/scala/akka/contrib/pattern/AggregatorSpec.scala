@@ -94,7 +94,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
     //#expect-timeout
 
     //#expect-balance
-    def fetchCheckingAccountsBalance() {
+    def fetchCheckingAccountsBalance(): Unit = {
       context.actorOf(Props[CheckingAccountProxy]) ! GetAccountBalances(id)
       expectOnce {
         case CheckingAccountBalances(balances) ⇒
@@ -104,7 +104,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
     }
     //#expect-balance
 
-    def fetchSavingsAccountsBalance() {
+    def fetchSavingsAccountsBalance(): Unit = {
       context.actorOf(Props[SavingsAccountProxy]) ! GetAccountBalances(id)
       expectOnce {
         case SavingsAccountBalances(balances) ⇒
@@ -113,7 +113,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
       }
     }
 
-    def fetchMoneyMarketAccountsBalance() {
+    def fetchMoneyMarketAccountsBalance(): Unit = {
       context.actorOf(Props[MoneyMarketAccountProxy]) ! GetAccountBalances(id)
       expectOnce {
         case MoneyMarketAccountBalances(balances) ⇒
@@ -122,7 +122,7 @@ class AccountBalanceRetriever extends Actor with Aggregator {
       }
     }
 
-    def collectBalances(force: Boolean = false) {
+    def collectBalances(force: Boolean = false): Unit = {
       if (results.size == types.size || force) {
         originalSender ! results.toList // Make sure it becomes immutable
         context.stop(self)
@@ -167,7 +167,7 @@ class ChainingSample extends Actor with Aggregator {
       case TimedOut ⇒ processList()
     }
 
-    def processList() {
+    def processList(): Unit = {
       unexpect(handle)
 
       if (values.size > 0) {
@@ -179,7 +179,7 @@ class ChainingSample extends Actor with Aggregator {
     }
     //#unexpect-sample
 
-    def processFinal(eval: List[Int]) {
+    def processFinal(eval: List[Int]): Unit = {
       // Select only the entries coming back from eval
       originalSender ! FinalResponse(eval map values)
       context.stop(self)

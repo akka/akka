@@ -25,7 +25,7 @@ trait Consumer extends Actor with CamelSupport {
    * Registers the consumer endpoint. Note: when overriding this method, be sure to
    * call 'super.preRestart', otherwise the consumer endpoint will not be registered.
    */
-  override def preStart() {
+  override def preStart(): Unit = {
     super.preStart()
     // Possible FIXME. registering the endpoint here because of problems
     // with order of execution of trait body in the Java version (UntypedConsumerActor)
@@ -34,7 +34,7 @@ trait Consumer extends Actor with CamelSupport {
     register()
   }
 
-  private[this] def register() {
+  private[this] def register(): Unit = {
     camel.supervisor ! Register(self, endpointUri, Some(ConsumerConfig(activationTimeout, replyTimeout, autoAck, onRouteDefinition)))
   }
 

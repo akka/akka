@@ -1,0 +1,8 @@
+# AES random number generator issue, security was selected over compatibility
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AESCounterBuiltinRNG$AESKey")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AESCounterBuiltinRNG")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AESCounterBuiltinRNG$")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AkkaProvider$")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AES256CounterSecureRNG")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AES128CounterSecureRNG")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AkkaProvider")

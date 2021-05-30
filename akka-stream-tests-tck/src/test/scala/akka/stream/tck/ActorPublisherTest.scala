@@ -30,7 +30,7 @@ object ActorPublisherTest {
       case _ ⇒ // no-op
     }
 
-    def loopDemand() {
+    def loopDemand(): Unit = {
       val loopUntil = math.min(100, totalDemand)
       1 to loopUntil.toInt foreach { _ ⇒ self ! Produce }
       if (loopUntil > 100) self ! Loop

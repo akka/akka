@@ -8,7 +8,7 @@ Injects additional (configured) elements if upstream does not emit for a configu
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #keepAlive }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #keepAlive }
 
 @@@
 

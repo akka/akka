@@ -89,6 +89,9 @@ import scala.util.control.NonFatal
       }
 
       private val callback = getAsyncCallback[Input[T]] {
+        case Offer(_, promise) if terminating ⇒
+          promise.success(QueueOfferResult.Dropped)
+
         case offer @ Offer(elem, promise) ⇒
           if (maxBuffer != 0) {
             bufferElem(offer)

@@ -5,6 +5,7 @@
 @@@ index
 
 * [actors](actors.md)
+* [dispatchers](dispatchers.md)
 * [coexisting](coexisting.md)
 * [actor-lifecycle](actor-lifecycle.md)
 * [interaction patterns](interaction-patterns.md)

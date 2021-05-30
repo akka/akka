@@ -45,10 +45,10 @@ databases). For example, given a library that provides a `akka.persistence.query
 journal is as simple as:
 
 Scala
-:  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #basic-usage }
+:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #basic-usage }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #basic-usage }
+:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #basic-usage }
 
 Journal implementers are encouraged to put this identifier in a variable known to the user, such that one can access it via
 @scala[`readJournalFor[NoopJournal](NoopJournal.identifier)`]@java[`getJournalFor(NoopJournal.class, NoopJournal.identifier)`], however this is not enforced.
@@ -78,18 +78,18 @@ By default this stream should be assumed to be a "live" stream, which means that
 persistence ids as they come into the system:
 
 Scala
-:  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #all-persistence-ids-live }
+:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #all-persistence-ids-live }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #all-persistence-ids-live }
+:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #all-persistence-ids-live }
 
 If your usage does not require a live stream, you can use the `currentPersistenceIds` query:
 
 Scala
-:  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #all-persistence-ids-snap }
+:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #all-persistence-ids-snap }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #all-persistence-ids-snap }
+:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #all-persistence-ids-snap }
 
 #### EventsByPersistenceIdQuery and CurrentEventsByPersistenceIdQuery
 
@@ -98,10 +98,10 @@ however, since it is a stream it is possible to keep it alive and watch for addi
 persistent actor identified by the given `persistenceId`.
 
 Scala
-:  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #events-by-persistent-id }
+:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #events-by-persistent-id }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #events-by-persistent-id }
+:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #events-by-persistent-id }
 
 Most journals will have to revert to polling in order to achieve this, 
 which can typically be configured with a `refresh-interval` configuration property.
@@ -121,10 +121,10 @@ Some journals may support tagging of events via an @ref:[Event Adapters](persist
 how exactly this is implemented depends on the used journal. Here is an example of such a tagging event adapter:
 
 Scala
-:  @@snip [LeveldbPersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #tagger }
+:  @@snip [LeveldbPersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #tagger }
 
 Java
-:  @@snip [LeveldbPersistenceQueryDocTest.java]($code$/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #tagger }
+:  @@snip [LeveldbPersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #tagger }
 
 @@@ note
 
@@ -142,10 +142,10 @@ In the example below we query all events which have been tagged (we assume this 
 tag - for example if the journal stored the events as json it may try to find those with the field `tag` set to this value etc.).
 
 Scala
-:  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #events-by-tag }
+:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #events-by-tag }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #events-by-tag }
+:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #events-by-tag }
 
 As you can see, we can use all the usual stream operators available from @ref:[Streams](stream/index.md) on the resulting query stream,
 including for example taking the first 10 and cancelling the stream. It is worth pointing out that the built-in `EventsByTag`
@@ -166,24 +166,24 @@ is defined as the second type parameter of the returned `Source`, which allows j
 specialised query object, as demonstrated in the sample below:
 
 Scala
-:  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #advanced-journal-query-types }
+:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #advanced-journal-query-types }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #advanced-journal-query-types }
+:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #advanced-journal-query-types }
 
 
 Scala
-:  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #advanced-journal-query-definition }
+:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #advanced-journal-query-definition }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #advanced-journal-query-definition }
+:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #advanced-journal-query-definition }
 
 
 Scala
-:  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #advanced-journal-query-usage }
+:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #advanced-journal-query-usage }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #advanced-journal-query-usage }
+:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #advanced-journal-query-usage }
 
 ## Performance and denormalization
 
@@ -215,10 +215,10 @@ If the read datastore exposes a [Reactive Streams](http://reactive-streams.org) 
 is as simple as, using the read-journal and feeding it into the databases driver interface, for example like so:
 
 Scala
-:  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-rs }
+:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-rs }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-rs }
+:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-rs }
 
 ### Materialize view using mapAsync
 
@@ -229,17 +229,17 @@ In case your write logic is state-less and you need to convert the events from o
 before writing into the alternative datastore, then the projection will look like this:
 
 Scala
-:  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-simple-classes }
+:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-simple-classes }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-simple-classes }
+:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-simple-classes }
 
 
 Scala
-:  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-simple }
+:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-simple }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-simple }
+:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-simple }
 
 ### Resumable projections
 
@@ -252,17 +252,17 @@ you need to do some complex logic that would be best handled inside an Actor bef
 into the other datastore:
 
 Scala
-:  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-actor-run }
+:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-actor-run }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-actor-run }
+:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-actor-run }
 
 
 Scala
-:  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-actor }
+:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-actor }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-actor }
+:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-actor }
 
 <a id="read-journal-plugin-api"></a>
 ## Query plugins
@@ -295,18 +295,18 @@ As illustrated below one of the implementations can delegate to the other.
 Below is a simple journal implementation:
 
 Scala
-:  @@snip [PersistenceQueryDocSpec.scala]($code$/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #my-read-journal }
+:  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #my-read-journal }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java]($code$/java/jdocs/persistence/PersistenceQueryDocTest.java) { #my-read-journal }
+:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #my-read-journal }
 
 And the `eventsByTag` could be backed by such an Actor for example:
 
 Scala
-:  @@snip [MyEventsByTagPublisher.scala]($code$/scala/docs/persistence/query/MyEventsByTagPublisher.scala) { #events-by-tag-publisher }
+:  @@snip [MyEventsByTagPublisher.scala](/akka-docs/src/test/scala/docs/persistence/query/MyEventsByTagPublisher.scala) { #events-by-tag-publisher }
 
 Java
-:  @@snip [MyEventsByTagJavaPublisher.java]($code$/java/jdocs/persistence/query/MyEventsByTagJavaPublisher.java) { #events-by-tag-publisher }
+:  @@snip [MyEventsByTagJavaPublisher.java](/akka-docs/src/test/java/jdocs/persistence/query/MyEventsByTagJavaPublisher.java) { #events-by-tag-publisher }
 
 The `ReadJournalProvider` class must have a constructor with one of these signatures:
 

@@ -8,7 +8,7 @@ Split off elements into a new substream whenever a predicate function return `tr
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #splitWhen }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #splitWhen }
 
 @@@
 

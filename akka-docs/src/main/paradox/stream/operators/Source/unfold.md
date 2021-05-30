@@ -8,7 +8,7 @@ Stream the result of a function as long as it returns a @scala[`Some`] @java[`Op
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #unfold }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #unfold }
 
 @@@
 

@@ -8,7 +8,7 @@ If the completion of the stream does not happen until the provided timeout, the 
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #completionTimeout }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #completionTimeout }
 
 @@@
 

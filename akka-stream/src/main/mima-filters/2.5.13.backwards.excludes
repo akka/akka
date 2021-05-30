@@ -10,3 +10,6 @@ ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObje
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.Space")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.LineBreak2")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.JsonObjectParser.LineBreak")
+
+# Merged impls of Sink.last / Sink.lastOption / Sink.takeLast
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.LastOptionStage")

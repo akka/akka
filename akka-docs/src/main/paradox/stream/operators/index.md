@@ -49,6 +49,7 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |Sink|<a name="combine"></a>@ref[combine](Sink/combine.md)|Combine several sinks into one using a user specified strategy|
 |Sink|<a name="fold"></a>@ref[fold](Sink/fold.md)|Fold over emitted element with a function, where each invocation will get the new element and the result from the previous fold invocation.|
 |Sink|<a name="foreach"></a>@ref[foreach](Sink/foreach.md)|Invoke a given procedure for each element received.|
+|Sink|<a name="foreachasync"></a>@ref[foreachAsync](Sink/foreachAsync.md)|Invoke a given procedure asynchronously for each element received.|
 |Sink|<a name="foreachparallel"></a>@ref[foreachParallel](Sink/foreachParallel.md)|Like `foreach` but allows up to `parallellism` procedure calls to happen in parallel.|
 |Sink|<a name="fromsubscriber"></a>@ref[fromSubscriber](Sink/fromSubscriber.md)|Integration with Reactive Streams, wraps a `org.reactivestreams.Subscriber` as a sink.|
 |Sink|<a name="head"></a>@ref[head](Sink/head.md)|Materializes into a @scala[`Future`] @java[`CompletionStage`] which completes with the first value arriving, after this the stream is canceled.|
@@ -62,6 +63,7 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |Sink|<a name="queue"></a>@ref[queue](Sink/queue.md)|Materialize a `SinkQueue` that can be pulled to trigger demand through the sink.|
 |Sink|<a name="reduce"></a>@ref[reduce](Sink/reduce.md)|Apply a reduction function on the incoming elements and pass the result to the next invocation.|
 |Sink|<a name="seq"></a>@ref[seq](Sink/seq.md)|Collect values emitted from the stream into a collection.|
+|Sink|<a name="takelast"></a>@ref[takeLast](Sink/takeLast.md)|Collect the last `n` values emitted from the stream into a collection.|
 
 ## Additional Sink and Source converters
 
@@ -104,7 +106,9 @@ Sources and sinks for reading and writing files can be found on `FileIO`.
 
 | |Operator|Description|
 |--|--|--|
-|FileIO|<a name="frompath"></a>@ref[fromPath](FileIO/fromPath.md)|Emit the contents of a file.|
+|FileIO|<a name="fromfile"></a>@ref[fromFile](FileIO/fromFile.md)|Emits the contents of a file.|
+|FileIO|<a name="frompath"></a>@ref[fromPath](FileIO/fromPath.md)|Emits the contents of a file from the given path.|
+|FileIO|<a name="tofile"></a>@ref[toFile](FileIO/toFile.md)|Create a sink which will write incoming `ByteString` s to a given file.|
 |FileIO|<a name="topath"></a>@ref[toPath](FileIO/toPath.md)|Create a sink which will write incoming `ByteString` s to a given file path.|
 
 ## Simple operators
@@ -203,7 +207,8 @@ These operators are aware of the backpressure provided by their downstreams and 
 These operators either take a stream and turn it into a stream of streams (nesting) or they take a stream that contains
 nested streams and turn them into a stream of elements instead (flattening).
 
-See the [Substreams](stream-substream.md) page for more detail and code samples.
+See the @ref:[Substreams](../stream-substream.md) page for more detail and code samples.
+
 
 | |Operator|Description|
 |--|--|--|
@@ -371,10 +376,12 @@ Operators meant for inter-operating between Akka Streams and Actors:
 * [headOption](Sink/headOption.md)
 * [last](Sink/last.md)
 * [lastOption](Sink/lastOption.md)
+* [takeLast](Sink/takeLast.md)
 * [seq](Sink/seq.md)
 * [asPublisher](Sink/asPublisher.md)
 * [ignore](Sink/ignore.md)
 * [foreach](Sink/foreach.md)
+* [foreachAsync](Sink/foreachAsync.md)
 * [combine](Sink/combine.md)
 * [foreachParallel](Sink/foreachParallel.md)
 * [fold](Sink/fold.md)
@@ -392,7 +399,9 @@ Operators meant for inter-operating between Akka Streams and Actors:
 * [javaCollectorParallelUnordered](StreamConverters/javaCollectorParallelUnordered.md)
 * [asJavaStream](StreamConverters/asJavaStream.md)
 * [fromJavaStream](StreamConverters/fromJavaStream.md)
+* [fromFile](FileIO/fromFile.md)
 * [fromPath](FileIO/fromPath.md)
+* [toFile](FileIO/toFile.md)
 * [toPath](FileIO/toPath.md)
 * [ask](ActorFlow/ask.md)
 * [actorRef](ActorSink/actorRef.md)

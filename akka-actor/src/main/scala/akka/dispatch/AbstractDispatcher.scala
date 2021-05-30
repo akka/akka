@@ -192,7 +192,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
    *
    * INTERNAL API
    */
-  protected[akka] def register(actor: ActorCell) {
+  protected[akka] def register(actor: ActorCell): Unit = {
     if (debug) actors.put(this, actor.self)
     addInhabitants(+1)
   }
@@ -202,7 +202,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
    *
    * INTERNAL API
    */
-  protected[akka] def unregister(actor: ActorCell) {
+  protected[akka] def unregister(actor: ActorCell): Unit = {
     if (debug) actors.remove(this, actor.self)
     addInhabitants(-1)
     val mailBox = actor.swapMailbox(mailboxes.deadLetterMailbox)
@@ -212,7 +212,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
 
   private val shutdownAction = new Runnable {
     @tailrec
-    final def run() {
+    final def run(): Unit = {
       shutdownSchedule match {
         case SCHEDULED ⇒
           try {
@@ -260,14 +260,14 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
    *
    * INTERNAL API
    */
-  protected[akka] def systemDispatch(receiver: ActorCell, invocation: SystemMessage)
+  protected[akka] def systemDispatch(receiver: ActorCell, invocation: SystemMessage): Unit
 
   /**
    * Will be called when the dispatcher is to queue an invocation for execution
    *
    * INTERNAL API
    */
-  protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope)
+  protected[akka] def dispatch(receiver: ActorCell, invocation: Envelope): Unit
 
   /**
    * Suggest to register the provided mailbox for execution
@@ -295,7 +295,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
   /**
    * INTERNAL API
    */
-  protected[akka] def executeTask(invocation: TaskInvocation)
+  protected[akka] def executeTask(invocation: TaskInvocation): Unit
 
   /**
    * Called one time every time an actor is detached from this dispatcher and this dispatcher has no actors left attached

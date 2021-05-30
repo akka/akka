@@ -8,7 +8,7 @@ Send the single value of the `Future` when it completes and there is demand.
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromFuture }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromFuture }
 
 @@@
 
@@ -25,4 +25,8 @@ If the future fails the stream is failed with that exception.
 **completes** after the future has completed
 
 @@@
+
+## Example
+Scala
+:  @@snip [SourceFromFuture.scala](/akka-docs/src/test/scala/docs/stream/operators/SourceOperators.scala) { #sourceFromFuture }
 

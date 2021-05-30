@@ -56,7 +56,7 @@ class PersistentActorDeleteFailureSpec extends PersistenceSpec(PersistenceSpec.c
     "have default warn logging be triggered, when deletion failed" in {
       val persistentActor = system.actorOf(Props(classOf[DoesNotHandleDeleteFailureActor], name, testActor))
       system.eventStream.subscribe(testActor, classOf[Logging.Warning])
-      persistentActor ! DeleteTo(100)
+      persistentActor ! DeleteTo(Long.MaxValue)
       val message = expectMsgType[Warning].message.toString
       message should include("Failed to deleteMessages")
       message should include("Boom! Unable to delete events!") // the `cause` message
@@ -65,9 +65,9 @@ class PersistentActorDeleteFailureSpec extends PersistenceSpec(PersistenceSpec.c
     "be receive an DeleteMessagesFailure when deletion failed, and the default logging should not be triggered" in {
       val persistentActor = system.actorOf(Props(classOf[HandlesDeleteFailureActor], name, testActor))
       system.eventStream.subscribe(testActor, classOf[Logging.Warning])
-      persistentActor ! DeleteTo(100)
+      persistentActor ! DeleteTo(Long.MaxValue)
       expectMsgType[DeleteMessagesFailure]
-      expectNoMsg(100.millis) // since the actor handled the message, we do not issue warn logging automatically
+      expectNoMessage(100.millis) // since the actor handled the message, we do not issue warn logging automatically
     }
 
   }

@@ -64,6 +64,7 @@ private[stream] final class SourceRefStageImpl[Out](
 
       val SubscriptionTimeoutTimerKey = "SubscriptionTimeoutKey"
       val DemandRedeliveryTimerKey = "DemandRedeliveryTimerKey"
+      val TerminationDeadlineTimerKey = "TerminationDeadlineTimerKey"
 
       // demand management ---
       private var completed = false
@@ -138,6 +139,10 @@ private[stream] final class SourceRefStageImpl[Out](
           log.debug("[{}] Scheduled re-delivery of demand until [{}]", stageActorName, localCumulativeDemand)
           getPartnerRef ! StreamRefsProtocol.CumulativeDemand(localCumulativeDemand)
           scheduleDemandRedelivery()
+
+        case TerminationDeadlineTimerKey ⇒
+          failStage(RemoteStreamRefActorTerminatedException(s"Remote partner [$partnerRef] has terminated unexpectedly and no clean completion/failure message was received " +
+            "(possible reasons: network partition or subscription timeout triggered termination of partner). Tearing down."))
       }
 
       lazy val initialReceive: ((ActorRef, Any)) ⇒ Unit = {
@@ -175,19 +180,23 @@ private[stream] final class SourceRefStageImpl[Out](
         case (_, Terminated(ref)) ⇒
           partnerRef match {
             case OptionVal.Some(`ref`) ⇒
-              failStage(RemoteStreamRefActorTerminatedException(s"The remote partner $ref has terminated! " +
-                s"Tearing down this side of the stream as well."))
+              // we need to start a delayed shutdown in case we were network partitioned and the final signal complete/fail
+              // will never reach us; so after the given timeout we need to forcefully terminate this side of the stream ref
+              // the other (sending) side terminates by default once it gets a Terminated signal so no special handling is needed there.
+              scheduleOnce(TerminationDeadlineTimerKey, settings.finalTerminationSignalDeadline)
+
             case _ ⇒
               // this should not have happened! It should be impossible that we watched some other actor
               failStage(RemoteStreamRefActorTerminatedException(s"Received UNEXPECTED Terminated($ref) message! " +
                 s"This actor was NOT our trusted remote partner, which was: $getPartnerRef. Tearing down."))
-
           }
       }
 
       def tryPush(): Unit =
-        if (receiveBuffer.nonEmpty && isAvailable(out)) push(out, receiveBuffer.dequeue())
-        else if (receiveBuffer.isEmpty && completed) completeStage()
+        if (receiveBuffer.nonEmpty && isAvailable(out)) {
+          val element = receiveBuffer.dequeue()
+          push(out, element)
+        } else if (receiveBuffer.isEmpty && completed) completeStage()
 
       private def onReceiveElement(payload: Out): Unit = {
         localRemainingRequested -= 1
@@ -230,7 +239,6 @@ private[stream] final class SourceRefStageImpl[Out](
 
       setHandler(out, this)
     }
-    //    (logic, MaterializedSinkRef[Out](promise.future))
     (logic, promise.future)
   }
 

@@ -27,7 +27,7 @@ object CustomRoute {
 
     class CustomRouteBuilder(system: ActorSystem, responder: ActorRef)
       extends RouteBuilder {
-      def configure {
+      def configure: Unit = {
         from("jetty:http://localhost:8877/camel/custom").to(responder)
       }
     }
@@ -52,7 +52,7 @@ object CustomRoute {
       override def onRouteDefinition = (rd) ⇒ rd.onException(classOf[Exception]).
         handled(true).transform(Builder.exceptionMessage).end
 
-      final override def preRestart(reason: Throwable, message: Option[Any]) {
+      final override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
         sender() ! Failure(reason)
       }
     }

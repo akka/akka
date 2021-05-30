@@ -30,7 +30,7 @@ public class ByteBufferSerializerDocTest {
 
     @Override
     public byte[] toBinary(Object o) {
-      // in production code, aquire this from a BufferPool
+      // in production code, acquire this from a BufferPool
       final ByteBuffer buf = ByteBuffer.allocate(256);
 
       toBinary(o, buf);

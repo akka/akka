@@ -22,8 +22,8 @@ object ActorLifeCycleSpec {
     def report(msg: Any) = testActor ! message(msg)
     def message(msg: Any): Tuple3[Any, String, Int] = (msg, id, currentGen)
     val currentGen = generationProvider.getAndIncrement()
-    override def preStart() { report("preStart") }
-    override def postStop() { report("postStop") }
+    override def preStart(): Unit = { report("preStart") }
+    override def postStop(): Unit = { report("postStop") }
     def receive = { case "status" ⇒ sender() ! message("OK") }
   }
 
@@ -40,8 +40,8 @@ class ActorLifeCycleSpec extends AkkaSpec("akka.actor.serialize-messages=off") w
         val supervisor = system.actorOf(Props(classOf[Supervisor], OneForOneStrategy(maxNrOfRetries = 3)(List(classOf[Exception]))))
         val gen = new AtomicInteger(0)
         val restarterProps = Props(new LifeCycleTestActor(testActor, id, gen) {
-          override def preRestart(reason: Throwable, message: Option[Any]) { report("preRestart") }
-          override def postRestart(reason: Throwable) { report("postRestart") }
+          override def preRestart(reason: Throwable, message: Option[Any]): Unit = { report("preRestart") }
+          override def postRestart(reason: Throwable): Unit = { report("postRestart") }
         }).withDeploy(Deploy.local)
         val restarter = Await.result((supervisor ? restarterProps).mapTo[ActorRef], timeout.duration)
 
@@ -119,7 +119,7 @@ class ActorLifeCycleSpec extends AkkaSpec("akka.actor.serialize-messages=off") w
     "log failues in postStop" in {
       val a = system.actorOf(Props(new Actor {
         def receive = Actor.emptyBehavior
-        override def postStop { throw new Exception("hurrah") }
+        override def postStop: Unit = { throw new Exception("hurrah") }
       }))
       EventFilter[Exception]("hurrah", occurrences = 1) intercept {
         a ! PoisonPill

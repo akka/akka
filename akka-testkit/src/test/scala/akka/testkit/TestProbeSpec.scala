@@ -79,7 +79,7 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
       }
     }
 
-    def assertFailureMessageContains(expectedHint: String)(block: ⇒ Unit) {
+    def assertFailureMessageContains(expectedHint: String)(block: ⇒ Unit): Unit = {
       Try {
         block
       } match {

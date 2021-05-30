@@ -258,7 +258,7 @@ class ActorEventBusSpec(conf: Config) extends EventBusSpec("ActorEventBus", conf
     disposeSubscriber(system, a2)
   }
 
-  private def expectUnsubscribedByUnsubscriber(p: TestProbe, a: ActorRef) {
+  private def expectUnsubscribedByUnsubscriber(p: TestProbe, a: ActorRef): Unit = {
     val expectedMsg = s"actor $a has terminated, unsubscribing it from $bus"
     p.fishForMessage(1 second, hint = expectedMsg) {
       case Logging.Debug(_, _, msg) if msg equals expectedMsg ⇒ true
@@ -266,7 +266,7 @@ class ActorEventBusSpec(conf: Config) extends EventBusSpec("ActorEventBus", conf
     }
   }
 
-  private def expectUnregisterFromUnsubscriber(p: TestProbe, a: ActorRef) {
+  private def expectUnregisterFromUnsubscriber(p: TestProbe, a: ActorRef): Unit = {
     val expectedMsg = s"unregistered watch of $a in $bus"
     p.fishForMessage(1 second, hint = expectedMsg) {
       case Logging.Debug(_, _, msg) if msg equals expectedMsg ⇒ true

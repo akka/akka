@@ -31,13 +31,13 @@ object TailChoppingSpec {
 class TailChoppingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
   import TailChoppingSpec._
 
-  def oneOfShouldEqual(what: Any, default: Any, ref: ActorRef*)(f: ActorRef ⇒ Any) {
+  def oneOfShouldEqual(what: Any, default: Any, ref: ActorRef*)(f: ActorRef ⇒ Any): Unit = {
     val results = ref.map(p ⇒ f(p))
     results.count(_ == what) should equal(1)
     results.count(_ == default) should equal(results.size - 1)
   }
 
-  def allShouldEqual(what: Any, ref: ActorRef*)(f: ActorRef ⇒ Any) {
+  def allShouldEqual(what: Any, ref: ActorRef*)(f: ActorRef ⇒ Any): Unit = {
     val results = ref.map(p ⇒ f(p))
     results.count(_ == what) should equal(results.size)
   }

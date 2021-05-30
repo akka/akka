@@ -30,7 +30,7 @@ object MovieWatchList {
   }
 
   private val commandHandler: CommandHandler[Command, Event, MovieList] = {
-    (ctx, state, cmd) ⇒
+    (state, cmd) ⇒
       cmd match {
         case AddMovie(movieId) ⇒
           Effect.persist(MovieAdded(movieId))

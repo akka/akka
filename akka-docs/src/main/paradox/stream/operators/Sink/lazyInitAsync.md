@@ -8,7 +8,7 @@ Creates a real `Sink` upon receiving the first element.
 
 ## Signature
 
-@@signature [Sink.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #lazyInitAsync }
+@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #lazyInitAsync }
 
 @@@
 

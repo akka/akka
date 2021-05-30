@@ -37,10 +37,10 @@ The protocol for obtaining the current temperature from the device actor is simp
 We need two messages, one for the request, and one for the reply. Our first attempt might look like the following:
 
 Scala
-:   @@snip [DeviceInProgress.scala]($code$/scala/tutorial_3/DeviceInProgress.scala) { #read-protocol-1 }
+:   @@snip [DeviceInProgress.scala](/akka-docs/src/test/scala/tutorial_3/DeviceInProgress.scala) { #read-protocol-1 }
 
 Java
-:   @@snip [DeviceInProgress.java]($code$/java/jdocs/tutorial_3/DeviceInProgress.java) { #read-protocol-1 }
+:   @@snip [DeviceInProgress.java](/akka-docs/src/test/java/jdocs/tutorial_3/DeviceInProgress.java) { #read-protocol-1 }
 
 These two messages seem to cover the required functionality. However, the approach we choose must take into account the distributed nature of the application. While the basic mechanism is the same for communicating with an actor on the local JVM as with a remote actor, we need to keep the following in mind:
 
@@ -123,20 +123,20 @@ For the full details on delivery guarantees please refer to the @ref:[reference 
 Our first query protocol was correct, but did not take into account distributed application execution. If we want to implement resends in the actor that queries a device actor (because of timed out requests), or if we want to query multiple actors, we need to be able to correlate requests and responses. Hence, we add one more field to our messages, so that an ID can be provided by the requester  (we will add this code to our app in a later step):
 
 Scala
-:   @@snip [DeviceInProgress.scala]($code$/scala/tutorial_3/DeviceInProgress.scala) { #read-protocol-2 }
+:   @@snip [DeviceInProgress.scala](/akka-docs/src/test/scala/tutorial_3/DeviceInProgress.scala) { #read-protocol-2 }
 
 Java
-:   @@snip [DeviceInProgress2.java]($code$/java/jdocs/tutorial_3/inprogress2/DeviceInProgress2.java) { #read-protocol-2 }
+:   @@snip [DeviceInProgress2.java](/akka-docs/src/test/java/jdocs/tutorial_3/inprogress2/DeviceInProgress2.java) { #read-protocol-2 }
 
 ## Defining the device actor and its read protocol
 
 As we learned in the Hello World example, each actor defines the type of messages it will accept. Our device actor has the responsibility to use the same ID parameter for the response of a given query, which would make it look like the following.
 
 Scala
-:   @@snip [DeviceInProgress.scala]($code$/scala/tutorial_3/DeviceInProgress.scala) { #device-with-read }
+:   @@snip [DeviceInProgress.scala](/akka-docs/src/test/scala/tutorial_3/DeviceInProgress.scala) { #device-with-read }
 
 Java
-:   @@snip [DeviceInProgress2.java]($code$/java/jdocs/tutorial_3/inprogress2/DeviceInProgress2.java) { #device-with-read }
+:   @@snip [DeviceInProgress2.java](/akka-docs/src/test/java/jdocs/tutorial_3/inprogress2/DeviceInProgress2.java) { #device-with-read }
 
 Note in the code that:
 
@@ -152,10 +152,10 @@ Based on the simple actor above, we could write a simple test. In the `com.light
 You can run this test @java[by running `mvn test` or] by running `test` at the sbt prompt.
 
 Scala
-:   @@snip [DeviceSpec.scala]($code$/scala/tutorial_3/DeviceSpec.scala) { #device-read-test }
+:   @@snip [DeviceSpec.scala](/akka-docs/src/test/scala/tutorial_3/DeviceSpec.scala) { #device-read-test }
 
 Java
-:   @@snip [DeviceTest.java]($code$/java/jdocs/tutorial_3/DeviceTest.java) { #device-read-test }
+:   @@snip [DeviceTest.java](/akka-docs/src/test/java/jdocs/tutorial_3/DeviceTest.java) { #device-read-test }
 
 Now, the actor needs a way to change the state of the temperature when it receives a message from the sensor.
 
@@ -164,10 +164,10 @@ Now, the actor needs a way to change the state of the temperature when it receiv
 The purpose of the write protocol is to update the `currentTemperature` field when the actor receives a message that contains the temperature. Again, it is tempting to define the write protocol as a very simple message, something like this:
 
 Scala
-:   @@snip [DeviceInProgress.scala]($code$/scala/tutorial_3/DeviceInProgress.scala) { #write-protocol-1 }
+:   @@snip [DeviceInProgress.scala](/akka-docs/src/test/scala/tutorial_3/DeviceInProgress.scala) { #write-protocol-1 }
 
 Java
-:   @@snip [DeviceInProgress3.java]($code$/java/jdocs/tutorial_3/DeviceInProgress3.java) { #write-protocol-1 }
+:   @@snip [DeviceInProgress3.java](/akka-docs/src/test/java/jdocs/tutorial_3/DeviceInProgress3.java) { #write-protocol-1 }
 
 However, this approach does not take into account that the sender of the record temperature message can never be sure if the message was processed or not. We have seen that Akka does not guarantee delivery of these messages and leaves it to the application to provide success notifications. In our case, we would like to send an acknowledgment to the sender once we have updated our last temperature recording, e.g. @scala[`final case class TemperatureRecorded(requestId: Long)`]@java[`TemperatureRecorded`].
 Just like in the case of temperature queries and responses, it is a good idea to include an ID field to provide maximum flexibility.
@@ -177,18 +177,18 @@ Just like in the case of temperature queries and responses, it is a good idea to
 Putting the read and write protocol together, the device actor looks like the following example:
 
 Scala
-:  @@snip [Device.scala]($code$/scala/tutorial_3/Device.scala) { #full-device }
+:  @@snip [Device.scala](/akka-docs/src/test/scala/tutorial_3/Device.scala) { #full-device }
 
 Java
-:  @@snip [Device.java]($code$/java/jdocs/tutorial_3/Device.java) { #full-device }
+:  @@snip [Device.java](/akka-docs/src/test/java/jdocs/tutorial_3/Device.java) { #full-device }
 
 We should also write a new test case now, exercising both the read/query and write/record functionality together:
 
 Scala:
-:   @@snip [DeviceSpec.scala]($code$/scala/tutorial_3/DeviceSpec.scala) { #device-write-read-test }
+:   @@snip [DeviceSpec.scala](/akka-docs/src/test/scala/tutorial_3/DeviceSpec.scala) { #device-write-read-test }
 
 Java:
-:   @@snip [DeviceTest.java]($code$/java/jdocs/tutorial_3/DeviceTest.java) { #device-write-read-test }
+:   @@snip [DeviceTest.java](/akka-docs/src/test/java/jdocs/tutorial_3/DeviceTest.java) { #device-write-read-test }
 
 ## What's Next?
 

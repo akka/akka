@@ -46,7 +46,7 @@ class JavaLogger extends Actor with RequiresMessageQueue[LoggerMessageQueueSeman
   }
 
   @inline
-  def log(level: logging.Level, cause: Throwable, event: LogEvent) {
+  def log(level: logging.Level, cause: Throwable, event: LogEvent): Unit = {
     val logger = logging.Logger.getLogger(event.logSource)
     val record = new logging.LogRecord(level, String.valueOf(event.message))
     record.setLoggerName(logger.getName)
@@ -90,7 +90,7 @@ trait JavaLoggingAdapter extends LoggingAdapter {
     log(logging.Level.CONFIG, null, message)
 
   @inline
-  def log(level: logging.Level, cause: Throwable, message: String) {
+  def log(level: logging.Level, cause: Throwable, message: String): Unit = {
     val record = new logging.LogRecord(level, message)
     record.setLoggerName(logger.getName)
     record.setThrown(cause)
@@ -106,7 +106,7 @@ trait JavaLoggingAdapter extends LoggingAdapter {
   }
 
   // it is unfortunate that this workaround is needed
-  private def updateSource(record: logging.LogRecord) {
+  private def updateSource(record: logging.LogRecord): Unit = {
     val stack = Thread.currentThread.getStackTrace
     val source = stack.find {
       frame ⇒

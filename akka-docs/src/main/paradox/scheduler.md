@@ -53,34 +53,34 @@ by the `akka.scheduler.tick-duration` configuration property.
 ## Some examples
 
 Scala
-:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #imports1 }
+:  @@snip [SchedulerDocSpec.scala](/akka-docs/src/test/scala/docs/actor/SchedulerDocSpec.scala) { #imports1 }
 
 Java
-:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #imports1 }
+:  @@snip [SchedulerDocTest.java](/akka-docs/src/test/java/jdocs/actor/SchedulerDocTest.java) { #imports1 }
 
 Schedule to send the "foo"-message to the testActor after 50ms:
 
 Scala
-:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-message } 
+:  @@snip [SchedulerDocSpec.scala](/akka-docs/src/test/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-message } 
 
 Java
-:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-message }
+:  @@snip [SchedulerDocTest.java](/akka-docs/src/test/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-message }
 
 Schedule a @scala[function]@java[`Runnable`], that sends the current time to the testActor, to be executed after 50ms:
 
 Scala
-:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-thunk }
+:  @@snip [SchedulerDocSpec.scala](/akka-docs/src/test/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-one-off-thunk }
 
 Java
-:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-thunk }
+:  @@snip [SchedulerDocTest.java](/akka-docs/src/test/java/jdocs/actor/SchedulerDocTest.java) { #schedule-one-off-thunk }
 
 Schedule to send the "Tick"-message to the `tickActor` after 0ms repeating every 50ms:
 
 Scala
-:  @@snip [SchedulerDocSpec.scala]($code$/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-recurring }
+:  @@snip [SchedulerDocSpec.scala](/akka-docs/src/test/scala/docs/actor/SchedulerDocSpec.scala) { #schedule-recurring }
 
 Java
-:  @@snip [SchedulerDocTest.java]($code$/java/jdocs/actor/SchedulerDocTest.java) { #schedule-recurring }
+:  @@snip [SchedulerDocTest.java](/akka-docs/src/test/java/jdocs/actor/SchedulerDocTest.java) { #schedule-recurring }
 
 @@@ warning
 
@@ -95,7 +95,7 @@ necessary parameters) and then call the method when the message is received.
 
 ## From `akka.actor.ActorSystem`
 
-@@snip [ActorSystem.scala]($akka$/akka-actor/src/main/scala/akka/actor/ActorSystem.scala) { #scheduler }
+@@snip [ActorSystem.scala](/akka-actor/src/main/scala/akka/actor/ActorSystem.scala) { #scheduler }
 
 @@@ warning
 
@@ -112,10 +112,10 @@ different one using the `akka.scheduler.implementation` configuration
 property. The referenced class must implement the following interface:
 
 Scala
-:  @@snip [Scheduler.scala]($akka$/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #scheduler }
+:  @@snip [Scheduler.scala](/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #scheduler }
 
 Java
-:  @@snip [AbstractScheduler.java]($akka$/akka-actor/src/main/java/akka/actor/AbstractScheduler.java) { #scheduler }
+:  @@snip [AbstractScheduler.java](/akka-actor/src/main/java/akka/actor/AbstractScheduler.java) { #scheduler }
 
 ## The Cancellable interface
 
@@ -131,4 +131,4 @@ scheduled task was canceled or will (eventually) have run.
 
 @@@
 
-@@snip [Scheduler.scala]($akka$/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #cancellable }
+@@snip [Scheduler.scala](/akka-actor/src/main/scala/akka/actor/Scheduler.scala) { #cancellable }

@@ -7,7 +7,7 @@ Create a source that materializes into an `OutputStream`.
 @@@ div { .group-scala }
 ## Signature
 
-@@signature [StreamConverters.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #asOutputStream }
+@@signature [StreamConverters.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #asOutputStream }
 @@@
 
 ## Description

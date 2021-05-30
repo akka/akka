@@ -124,6 +124,7 @@ import akka.stream._
     val headOptionSink = name("headOptionSink") and inputBufferOne
     val lastSink = name("lastSink")
     val lastOptionSink = name("lastOptionSink")
+    val takeLastSink = name("takeLastSink")
     val seqSink = name("seqSink")
     val publisherSink = name("publisherSink")
     val fanoutPublisherSink = name("fanoutPublisherSink")

@@ -12,32 +12,21 @@ import java.security.GeneralSecurityException
 import java.security.KeyStore
 import java.security.SecureRandom
 
-import scala.annotation.tailrec
 import scala.util.Try
 
 import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
 import akka.annotation.ApiMayChange
-import akka.event.LogMarker
 import akka.event.Logging
 import akka.event.MarkerLoggingAdapter
-import akka.japi.Util.immutableSeq
-import akka.remote.RemoteTransport
-import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteTransportException
 import akka.remote.artery.tcp.SecureRandomFactory
-import akka.remote.security.provider.AkkaProvider
-import akka.remote.transport.AbstractTransportAdapter
 import akka.stream.IgnoreComplete
 import akka.stream.TLSClosing
 import akka.stream.TLSRole
-import com.typesafe.config.Config
-import com.typesafe.sslconfig.ssl.SSLConfigSettings
 import javax.net.ssl.KeyManager
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
-import javax.net.ssl.SSLSession
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
 

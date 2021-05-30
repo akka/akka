@@ -39,9 +39,7 @@ class FlowIterableSpec extends AbstractFlowIteratorSpec {
     sub.request(1)
     c.expectNext(1)
     c.expectNoMsg(100.millis)
-    EventFilter[IllegalStateException](message = "not two", occurrences = 1).intercept {
-      sub.request(2)
-    }
+    sub.request(2)
     c.expectError().getMessage should be("not two")
     sub.request(2)
     c.expectNoMsg(100.millis)

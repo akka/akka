@@ -8,7 +8,7 @@ Just like `fold` but receives a function that results in a @scala[`Future`] @jav
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #foldAsync }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #foldAsync }
 
 @@@
 

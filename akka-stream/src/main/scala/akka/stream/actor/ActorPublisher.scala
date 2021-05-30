@@ -330,7 +330,7 @@ trait ActorPublisher[T] extends Actor {
       super.aroundReceive(receive, msg)
   }
 
-  private def cancelSelf() {
+  private def cancelSelf(): Unit = {
     lifecycleState = Canceled
     demand = 0
     subscriber = null

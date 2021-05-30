@@ -8,7 +8,7 @@ Emit its current value, which starts at `zero`, and then apply the current and n
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #scan }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #scan }
 
 @@@
 

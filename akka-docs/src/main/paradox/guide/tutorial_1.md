@@ -40,10 +40,10 @@ The easiest way to see the actor hierarchy in action is to print `ActorRef` inst
 In your Hello World project, navigate to the `com.lightbend.akka.sample` package and create a new @scala[Scala file called `ActorHierarchyExperiments.scala`]@java[Java file called `ActorHierarchyExperiments.java`] here. Copy and paste the code from the snippet below to this new source file. Save your file and run `sbt "runMain com.lightbend.akka.sample.ActorHierarchyExperiments"` to observe the output.
 
 Scala
-:   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #print-refs }
+:   @@snip [ActorHierarchyExperiments.scala](/akka-docs/src/test/scala/tutorial_1/ActorHierarchyExperiments.scala) { #print-refs }
 
 Java
-:   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #print-refs }
+:   @@snip [ActorHierarchyExperiments.java](/akka-docs/src/test/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #print-refs }
 
 Note the way a message asked the first actor to do its work. We sent the message by using the parent's reference: @scala[`firstRef ! "printit"`]@java[`firstRef.tell("printit", ActorRef.noSender())`]. When the code executes, the output includes the references for the first actor and the child it created as part of the `printit` case. Your output should look similar to the following:
 
@@ -79,18 +79,18 @@ The Akka actor API exposes many lifecycle hooks that you can override in an acto
 Let's use the `preStart()` and `postStop()` lifecycle hooks in a simple experiment to observe the behavior when we stop an actor. First, add the following 2 actor classes to your project:
 
 Scala
-:   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #start-stop }
+:   @@snip [ActorHierarchyExperiments.scala](/akka-docs/src/test/scala/tutorial_1/ActorHierarchyExperiments.scala) { #start-stop }
 
 Java
-:   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #start-stop }
+:   @@snip [ActorHierarchyExperiments.java](/akka-docs/src/test/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #start-stop }
 
 And create a 'main' class like above to start the actors and then send them a `"stop"` message:
 
 Scala
-:   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #start-stop-main }
+:   @@snip [ActorHierarchyExperiments.scala](/akka-docs/src/test/scala/tutorial_1/ActorHierarchyExperiments.scala) { #start-stop-main }
 
 Java
-:   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #start-stop-main }
+:   @@snip [ActorHierarchyExperiments.java](/akka-docs/src/test/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #start-stop-main }
 
 You can again use `sbt` to start this program. The output should look like this:
 
@@ -115,18 +115,18 @@ stop and restart the child. If you don't change the default strategy all failure
 Let's observe the default strategy in a simple experiment. Add the following classes to your project, just as you did with the previous ones:
 
 Scala
-:   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #supervise }
+:   @@snip [ActorHierarchyExperiments.scala](/akka-docs/src/test/scala/tutorial_1/ActorHierarchyExperiments.scala) { #supervise }
 
 Java
-:   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #supervise }
+:   @@snip [ActorHierarchyExperiments.java](/akka-docs/src/test/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #supervise }
 
 And run with:
 
 Scala
-:   @@snip [ActorHierarchyExperiments.scala]($code$/scala/tutorial_1/ActorHierarchyExperiments.scala) { #supervise-main }
+:   @@snip [ActorHierarchyExperiments.scala](/akka-docs/src/test/scala/tutorial_1/ActorHierarchyExperiments.scala) { #supervise-main }
 
 Java
-:   @@snip [ActorHierarchyExperiments.java]($code$/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #supervise-main }
+:   @@snip [ActorHierarchyExperiments.java](/akka-docs/src/test/java/jdocs/tutorial_1/ActorHierarchyExperiments.java) { #supervise-main }
 
 You should see output similar to the following:
 

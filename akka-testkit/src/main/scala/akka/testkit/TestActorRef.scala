@@ -54,7 +54,7 @@ class TestActorRef[T <: Actor](
   protected override def newActorCell(system: ActorSystemImpl, ref: InternalActorRef, props: Props,
                                       dispatcher: MessageDispatcher, supervisor: InternalActorRef): ActorCell =
     new ActorCell(system, ref, props, dispatcher, supervisor) {
-      override def autoReceiveMessage(msg: Envelope) {
+      override def autoReceiveMessage(msg: Envelope): Unit = {
         msg.message match {
           case InternalGetActor ⇒ sender() ! actor
           case _                ⇒ super.autoReceiveMessage(msg)

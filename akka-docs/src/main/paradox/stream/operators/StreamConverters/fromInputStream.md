@@ -8,15 +8,10 @@ Create a source that wraps an `InputStream`.
 
 ## Signature
 
-@@signature [Source.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #fromInputStream }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/StreamConverters.scala) { #fromInputStream }
 
 @@@
 
 ## Description
 
-
-
-@@@div { .callout }
-
-@@@
-
+TODO: We would welcome help on contributing descriptions and examples, see: https://github.com/akka/akka/issues/25646

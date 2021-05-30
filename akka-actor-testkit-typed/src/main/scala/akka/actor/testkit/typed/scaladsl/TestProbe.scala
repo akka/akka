@@ -183,7 +183,7 @@ object TestProbe {
   protected def fishForMessage_internal(max: FiniteDuration, hint: String, fisher: M ⇒ FishingOutcome): immutable.Seq[M]
 
   /**
-   * Expect the given actor to be stopped or stop withing the given timeout or
+   * Expect the given actor to be stopped or stop within the given timeout or
    * throw an [[AssertionError]].
    */
   def expectTerminated[U](actorRef: ActorRef[U], max: FiniteDuration): Unit

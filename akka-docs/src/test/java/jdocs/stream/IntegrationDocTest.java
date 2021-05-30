@@ -405,7 +405,6 @@ public class IntegrationDocTest extends AbstractJavaTest {
     //#actorRefWithAck
   }
 
-
   @Test
   public void callingExternalServiceWithMapAsync() throws Exception {
     new TestKit(system) {

@@ -271,7 +271,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    * becomes closed (because of processing a Terminate message), dump all
    * already dequeued message to deadLetters.
    */
-  final def processAllSystemMessages() {
+  final def processAllSystemMessages(): Unit = {
     var interruption: Throwable = null
     var messageList = systemDrain(SystemMessageList.LNil)
     while ((messageList.nonEmpty) && !isClosed) {
@@ -909,7 +909,7 @@ object BoundedControlAwareMailbox {
       }
     }
 
-    private def signalNotFull() {
+    private def signalNotFull(): Unit = {
       putLock.lock()
 
       try {
@@ -919,7 +919,7 @@ object BoundedControlAwareMailbox {
       }
     }
 
-    private final def enqueueWithTimeout(q: Queue[Envelope], receiver: ActorRef, envelope: Envelope) {
+    private final def enqueueWithTimeout(q: Queue[Envelope], receiver: ActorRef, envelope: Envelope): Unit = {
       var remaining = pushTimeOut.toNanos
 
       putLock.lockInterruptibly()

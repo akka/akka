@@ -78,6 +78,9 @@ object PersistentActorSpec {
       case d: DeleteMessagesSuccess ⇒
         val replyTo = askedForDelete.getOrElse(throw new RuntimeException("Received DeleteMessagesSuccess without anyone asking for delete!"))
         replyTo ! d
+      case d: DeleteMessagesFailure ⇒
+        val replyTo = askedForDelete.getOrElse(throw new RuntimeException("Received DeleteMessagesFailure without anyone asking for delete!"))
+        replyTo ! d
     }
 
     override protected def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit =
@@ -919,7 +922,7 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
 
   import PersistentActorSpec._
 
-  override protected def beforeEach() {
+  override protected def beforeEach(): Unit = {
     super.beforeEach()
 
     val persistentActor = behavior1PersistentActor
@@ -1536,6 +1539,18 @@ abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(confi
       expectMsgType[DeleteMessagesSuccess]
       persistentActor ! GetState
       expectMsg(Nil)
+    }
+
+    "not be able to delete higher seqnr than current" in {
+      val persistentActor = behavior1PersistentActor
+      persistentActor ! Cmd("b")
+      persistentActor ! GetState
+      expectMsg(List("a-1", "a-2", "b-1", "b-2"))
+      persistentActor ! Delete(5L) // > current 4
+      persistentActor ! "boom" // restart, recover
+      expectMsgType[DeleteMessagesFailure].cause.getMessage should include("less than or equal to lastSequenceNr")
+      persistentActor ! GetState
+      expectMsg(List("a-1", "a-2", "b-1", "b-2"))
     }
 
     "recover the message which caused the restart" in {

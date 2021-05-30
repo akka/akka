@@ -134,6 +134,9 @@ object ShardRegion {
         case ShardRegion.StartEntity(id) ⇒ id
         case _                           ⇒ entityId(message)
       }
+      // It would be better to have abs(id.hashCode % maxNumberOfShards), see issue #25034
+      // but to avoid getting different values when rolling upgrade we keep the old way,
+      // and it doesn't have any serious consequences
       (math.abs(id.hashCode) % maxNumberOfShards).toString
     }
   }
@@ -480,22 +483,14 @@ private[akka] class ShardRegion(
   def receiveClusterEvent(evt: ClusterDomainEvent): Unit = evt match {
     case MemberUp(m) ⇒
       if (matchingRole(m))
-        changeMembers {
-          // replace, it's possible that the upNumber is changed
-          membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
-          membersByAge += m
-          membersByAge
-        }
+        // replace, it's possible that the upNumber is changed
+        changeMembers(membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress) + m)
 
     case MemberRemoved(m, _) ⇒
       if (m.uniqueAddress == cluster.selfUniqueAddress)
         context.stop(self)
       else if (matchingRole(m))
-        changeMembers {
-          // filter, it's possible that the upNumber is changed
-          membersByAge = membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress)
-          membersByAge
-        }
+        changeMembers(membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress))
 
     case _: MemberEvent ⇒ // these are expected, no need to warn about them
 

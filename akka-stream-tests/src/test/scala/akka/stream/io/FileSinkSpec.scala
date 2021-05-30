@@ -234,7 +234,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
   }
 
-  private def targetFile(block: Path ⇒ Unit, create: Boolean = true) {
+  private def targetFile(block: Path ⇒ Unit, create: Boolean = true): Unit = {
     val targetFile = Files.createTempFile(fs.getPath("/"), "synchronous-file-sink", ".tmp")
     if (!create) Files.delete(targetFile)
     try block(targetFile) finally Files.delete(targetFile)

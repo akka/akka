@@ -6,14 +6,16 @@ package akka.actor.typed.scaladsl
 
 import java.util.concurrent.TimeoutException
 
-import akka.actor.{ Address, InternalActorRef, RootActorPath, Scheduler }
+import akka.actor.{ Address, RootActorPath, Scheduler }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.internal.{ adapter ⇒ adapt }
 import akka.annotation.InternalApi
 import akka.pattern.PromiseActorRef
 import akka.util.Timeout
-
 import scala.concurrent.Future
+
+import akka.actor.typed.RecipientRef
+import akka.actor.typed.internal.InternalRecipientRef
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.
@@ -26,7 +28,7 @@ object AskPattern {
   /**
    * See [[?]]
    */
-  implicit final class Askable[T](val ref: ActorRef[T]) extends AnyVal {
+  implicit final class Askable[T](val ref: RecipientRef[T]) extends AnyVal {
     /**
      * The ask-pattern implements the initiator side of a request–reply protocol.
      * The `?` operator is pronounced as "ask".
@@ -49,36 +51,38 @@ object AskPattern {
      * implicit val scheduler = system.scheduler
      * implicit val timeout = Timeout(3.seconds)
      * val target: ActorRef[Request] = ...
-     * val f: Future[Reply] = target ? ref => (Request("hello", ref))
+     * val f: Future[Reply] = target ? replyTo => (Request("hello", replyTo))
      * }}}
      */
-    def ?[U](f: ActorRef[U] ⇒ T)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] = {
+    def ?[U](replyTo: ActorRef[U] ⇒ T)(implicit timeout: Timeout, scheduler: Scheduler): Future[U] = {
       // We do not currently use the implicit scheduler, but want to require it
       // because it might be needed when we move to a 'native' typed runtime, see #24219
       ref match {
-        case a: adapt.ActorRefAdapter[_]    ⇒ askUntyped(ref, a.untyped, timeout, f)
-        case a: adapt.ActorSystemAdapter[_] ⇒ askUntyped(ref, a.untyped.guardian, timeout, f)
-        case a                              ⇒ throw new IllegalStateException("Only expect actor references to be ActorRefAdapter or ActorSystemAdapter until native system is implemented: " + a.getClass)
+        case a: InternalRecipientRef[_] ⇒ askUntyped(a, timeout, replyTo)
+        case a ⇒ throw new IllegalStateException(
+          "Only expect references to be RecipientRef, ActorRefAdapter or ActorSystemAdapter until " +
+            "native system is implemented: " + a.getClass)
       }
     }
   }
 
   private val onTimeout: String ⇒ Throwable = msg ⇒ new TimeoutException(msg)
 
-  private final class PromiseRef[U](target: ActorRef[_], untyped: InternalActorRef, timeout: Timeout) {
+  private final class PromiseRef[U](target: InternalRecipientRef[_], timeout: Timeout) {
 
     // Note: _promiseRef mustn't have a type pattern, since it can be null
     private[this] val (_ref: ActorRef[U], _future: Future[U], _promiseRef) =
-      if (untyped.isTerminated)
+      if (target.isTerminated)
         (
-          adapt.ActorRefAdapter[U](untyped.provider.deadLetters),
+          adapt.ActorRefAdapter[U](target.provider.deadLetters),
           Future.failed[U](new TimeoutException(s"Recipient[$target] had already been terminated.")), null)
       else if (timeout.duration.length <= 0)
         (
-          adapt.ActorRefAdapter[U](untyped.provider.deadLetters),
+          adapt.ActorRefAdapter[U](target.provider.deadLetters),
           Future.failed[U](new IllegalArgumentException(s"Timeout length must be positive, question not sent to [$target]")), null)
       else {
-        val a = PromiseActorRef(untyped.provider, timeout, target, "unknown", onTimeout = onTimeout)
+        // messageClassName "unknown' is set later, after applying the message factory
+        val a = PromiseActorRef(target.provider, timeout, target, "unknown", onTimeout = onTimeout)
         val b = adapt.ActorRefAdapter[U](a)
         (b, a.result.future.asInstanceOf[Future[U]], a)
       }
@@ -88,8 +92,8 @@ object AskPattern {
     val promiseRef: PromiseActorRef = _promiseRef
   }
 
-  private def askUntyped[T, U](target: ActorRef[T], untyped: InternalActorRef, timeout: Timeout, f: ActorRef[U] ⇒ T): Future[U] = {
-    val p = new PromiseRef[U](target, untyped, timeout)
+  private def askUntyped[T, U](target: InternalRecipientRef[T], timeout: Timeout, f: ActorRef[U] ⇒ T): Future[U] = {
+    val p = new PromiseRef[U](target, timeout)
     val m = f(p.ref)
     if (p.promiseRef ne null) p.promiseRef.messageClassName = m.getClass.getName
     target ! m

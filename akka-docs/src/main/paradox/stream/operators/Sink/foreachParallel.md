@@ -8,7 +8,7 @@ Like `foreach` but allows up to `parallellism` procedure calls to happen in para
 
 ## Signature
 
-@@signature [Sink.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #foreachParallel }
+@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #foreachParallel }
 
 @@@
 

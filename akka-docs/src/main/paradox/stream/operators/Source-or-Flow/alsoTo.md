@@ -7,7 +7,7 @@ Attaches the given `Sink` to this `Flow`, meaning that elements that pass throug
 @@@ div { .group-scala }
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #alsoTo }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #alsoTo }
 @@@
 
 ## Description

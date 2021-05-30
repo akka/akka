@@ -6,6 +6,7 @@ package akka.actor.typed
 package internal
 package adapter
 
+import akka.actor.ActorRefProvider
 import akka.actor.InvalidMessageException
 import akka.{ actor ⇒ a }
 import akka.annotation.InternalApi
@@ -15,7 +16,7 @@ import akka.dispatch.sysmsg
  * INTERNAL API
  */
 @InternalApi private[typed] class ActorRefAdapter[-T](val untyped: a.InternalActorRef)
-  extends ActorRef[T] with internal.ActorRefImpl[T] {
+  extends ActorRef[T] with internal.ActorRefImpl[T] with internal.InternalRecipientRef[T] {
 
   override def path: a.ActorPath = untyped.path
 
@@ -23,9 +24,17 @@ import akka.dispatch.sysmsg
     if (msg == null) throw new InvalidMessageException("[null] is not an allowed message")
     untyped ! msg
   }
+
+  // impl ActorRefImpl
   override def isLocal: Boolean = untyped.isLocal
+  // impl ActorRefImpl
   override def sendSystem(signal: internal.SystemMessage): Unit =
     ActorRefAdapter.sendSystemMessage(untyped, signal)
+
+  // impl InternalRecipientRef
+  override def provider: ActorRefProvider = untyped.provider
+  // impl InternalRecipientRef
+  def isTerminated: Boolean = untyped.isTerminated
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = SerializedActorRef[T](this)

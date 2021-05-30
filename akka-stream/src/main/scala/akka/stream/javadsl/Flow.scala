@@ -1318,6 +1318,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
+  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover(pf: PartialFunction[Throwable, Out]): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.recover(pf))
 
@@ -1336,6 +1337,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    *
    * '''Cancels when''' downstream cancels
    */
+  @deprecated("Use recoverWithRetries instead.", "2.4.4")
   def recover(clazz: Class[_ <: Throwable], supplier: Supplier[Out]): javadsl.Flow[In, Out, Mat] =
     recover {
       case elem if clazz.isInstance(elem) ⇒ supplier.get()
@@ -1349,7 +1351,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
    * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
    *
-   * Similarily to [[recover]] throwing an exception inside `mapError` _will_ be logged.
+   * Similarly to [[recover]] throwing an exception inside `mapError` _will_ be logged.
    *
    * '''Emits when''' element is available from the upstream or upstream is failed and pf returns an element
    *
@@ -2989,10 +2991,36 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
    * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
    * event, and may therefor affect performance.
+   *
    * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
    */
+  @Deprecated
+  @deprecated("Use monitor() or monitorMat(combine) instead", "2.5.17")
   def monitor[M]()(combine: function.Function2[Mat, FlowMonitor[Out], M]): javadsl.Flow[In, Out, M] =
-    new Flow(delegate.monitor()(combinerToScala(combine)))
+    new Flow(delegate.monitorMat(combinerToScala(combine)))
+
+  /**
+   * Materializes to `FlowMonitor[Out]` that allows monitoring of the current flow. All events are propagated
+   * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
+   * event, and may therefor affect performance.
+   *
+   * The `combine` function is used to combine the `FlowMonitor` with this flow's materialized value.
+   */
+  def monitorMat[M](combine: function.Function2[Mat, FlowMonitor[Out], M]): javadsl.Flow[In, Out, M] =
+    new Flow(delegate.monitorMat(combinerToScala(combine)))
+
+  /**
+   * Materializes to `Pair<Mat, FlowMonitor<<Out>>`, which is unlike most other operators (!),
+   * in which usually the default materialized value keeping semantics is to keep the left value
+   * (by passing `Keep.left()` to a `*Mat` version of a method). This operator is an exception from
+   * that rule and keeps both values since dropping its sole purpose is to introduce that materialized value.
+   *
+   * The `FlowMonitor[Out]` allows monitoring of the current flow. All events are propagated
+   * by the monitor unchanged. Note that the monitor inserts a memory barrier every time it processes an
+   * event, and may therefor affect performance.
+   */
+  def monitor(): Flow[In, Out, Pair[Mat, FlowMonitor[Out]]] =
+    monitorMat(Keep.both)
 
   /**
    * Delays the initial element by the specified duration.

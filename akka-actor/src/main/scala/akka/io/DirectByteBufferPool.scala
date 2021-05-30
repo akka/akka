@@ -9,7 +9,7 @@ import scala.util.control.NonFatal
 
 trait BufferPool {
   def acquire(): ByteBuffer
-  def release(buf: ByteBuffer)
+  def release(buf: ByteBuffer): Unit
 }
 
 /**

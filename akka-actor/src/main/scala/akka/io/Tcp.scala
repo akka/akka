@@ -460,8 +460,19 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
       newInstance._cause = Some(cause)
       newInstance
     }
+
     @InternalApi
-    private[akka] def causedByString = _cause.map(c ⇒ s" because of ${c.getMessage}").getOrElse("")
+    private[akka] def causedByString = _cause.map(t ⇒ {
+      val msg =
+        if (t.getCause == null)
+          t.getMessage
+        else if (t.getCause.getCause == null)
+          s"${t.getMessage}, caused by: ${t.getCause}"
+        else
+          s"${t.getMessage}, caused by: ${t.getCause}, caused by: ${t.getCause.getCause}"
+
+      s" because of ${t.getClass.getName}: $msg"
+    }).getOrElse("")
 
     override def toString: String = s"CommandFailed($cmd)$causedByString"
   }

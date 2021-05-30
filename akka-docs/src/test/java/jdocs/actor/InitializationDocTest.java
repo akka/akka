@@ -167,7 +167,7 @@ public class InitializationDocTest extends AbstractJavaTest {
       GenericMessage<String> nonEmptyGenericMessage = new GenericMessage<String>("a");
 
       genericTestActor.tell(emptyGenericMessage, getRef());
-      expectNoMsg();
+      expectNoMessage();
 
       genericTestActor.tell(nonEmptyGenericMessage, getRef());
       expectMsgEquals("A");

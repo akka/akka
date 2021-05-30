@@ -4,7 +4,10 @@
 
 package akka.actor.typed
 
-class PropsSpec extends TypedAkkaSpec {
+import org.scalatest.Matchers
+import org.scalatest.WordSpec
+
+class PropsSpec extends WordSpec with Matchers {
 
   val dispatcherFirst = DispatcherDefault(DispatcherFromConfig("pool"))
 

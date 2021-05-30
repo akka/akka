@@ -58,7 +58,7 @@ private[akka] trait MetricsKitOps extends MetricKeyDSL {
   def forceGcEnabled: Boolean = true
 
   /** Yet another delegate to `System.gc()` */
-  def gc() {
+  def gc(): Unit = {
     if (forceGcEnabled)
       System.gc()
   }

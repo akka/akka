@@ -20,7 +20,7 @@ class MetricsKitSpec extends WordSpec with Matchers with BeforeAndAfter with Bef
     clearMetrics()
   }
 
-  override def afterAll() {
+  override def afterAll(): Unit = {
     shutdownMetrics()
   }
 

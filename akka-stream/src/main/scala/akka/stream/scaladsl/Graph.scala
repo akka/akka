@@ -749,7 +749,7 @@ final class Partition[T](val outputPorts: Int, val partitioner: T ⇒ Int, val e
   def this(outputPorts: Int, partitioner: T ⇒ Int) = this(outputPorts, partitioner, false)
 
   val in: Inlet[T] = Inlet[T]("Partition.in")
-  val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i)) // FIXME BC make this immutable.IndexedSeq as type + Vector as concret impl
+  val out: Seq[Outlet[T]] = Seq.tabulate(outputPorts)(i ⇒ Outlet[T]("Partition.out" + i)) // FIXME BC make this immutable.IndexedSeq as type + Vector as concrete impl
   override val shape: UniformFanOutShape[T, T] = UniformFanOutShape[T, T](in, out: _*)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler {
@@ -883,8 +883,8 @@ final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean,
         if (!isClosed(out)) {
           push(out, grab(in))
           if (!noPending) pull(in)
-        } else {
-          // try to find one output that isn't closed
+        } else if (!noPending) {
+          // if they are pending outlets, try to find one output that isn't closed
           dequeueAndDispatch()
         }
       }

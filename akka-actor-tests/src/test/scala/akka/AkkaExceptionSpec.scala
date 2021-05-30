@@ -26,7 +26,7 @@ class AkkaExceptionSpec extends WordSpec with Matchers {
     }
   }
 
-  def verify(clazz: java.lang.Class[_]) {
+  def verify(clazz: java.lang.Class[_]): Unit = {
     clazz.getConstructor(Array(classOf[String]): _*)
   }
 }

@@ -100,11 +100,11 @@ abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Conf
   val storageLocations = List("akka.persistence.journal.leveldb.dir")
     .map(s ⇒ new File(journalConfig.getString(s)))
 
-  override protected def beforeAll() {
+  override protected def beforeAll(): Unit = {
     storageLocations.foreach(FileUtils.deleteDirectory)
   }
 
-  override protected def afterAll() {
+  override protected def afterAll(): Unit = {
     storageLocations.foreach(FileUtils.deleteDirectory)
   }
 

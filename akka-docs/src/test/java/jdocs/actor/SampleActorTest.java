@@ -50,7 +50,7 @@ public class SampleActorTest extends AbstractJavaTest {
       assertTrue(expectMsgClass(String.class).startsWith("startsWith(guard):"));
       assertTrue(expectMsgClass(String.class).startsWith("contains(guard):"));
       expectMsgEquals(47110);
-      expectNoMsg();
+      expectNoMessage();
     }};
   }
 }

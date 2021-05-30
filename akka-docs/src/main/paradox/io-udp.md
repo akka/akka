@@ -30,10 +30,10 @@ offered using distinct IO extensions described below.
 ### Simple Send
 
 Scala
-:  @@snip [UdpDocSpec.scala]($code$/scala/docs/io/UdpDocSpec.scala) { #sender }
+:  @@snip [UdpDocSpec.scala](/akka-docs/src/test/scala/docs/io/UdpDocSpec.scala) { #sender }
 
 Java
-:  @@snip [UdpDocTest.java]($code$/java/jdocs/io/UdpDocTest.java) { #sender }
+:  @@snip [UdpDocTest.java](/akka-docs/src/test/java/jdocs/io/UdpDocTest.java) { #sender }
 
 The simplest form of UDP usage is to just send datagrams without the need of
 getting a reply. To this end a “simple sender” facility is provided as
@@ -55,10 +55,10 @@ want to close the ephemeral port the sender is bound to.
 ### Bind (and Send)
 
 Scala
-:  @@snip [UdpDocSpec.scala]($code$/scala/docs/io/UdpDocSpec.scala) { #listener }
+:  @@snip [UdpDocSpec.scala](/akka-docs/src/test/scala/docs/io/UdpDocSpec.scala) { #listener }
 
 Java
-:  @@snip [UdpDocTest.java]($code$/java/jdocs/io/UdpDocTest.java) { #listener }
+:  @@snip [UdpDocTest.java](/akka-docs/src/test/java/jdocs/io/UdpDocTest.java) { #listener }
 
 If you want to implement a UDP server which listens on a socket for incoming
 datagrams then you need to use the @scala[`Bind`]@java[`UdpMessage.bind`] message as shown above. The
@@ -84,10 +84,10 @@ connection is only able to send to the `remoteAddress` it was connected to,
 and will receive datagrams only from that address.
 
 Scala
-:  @@snip [UdpDocSpec.scala]($code$/scala/docs/io/UdpDocSpec.scala) { #connected }
+:  @@snip [UdpDocSpec.scala](/akka-docs/src/test/scala/docs/io/UdpDocSpec.scala) { #connected }
 
 Java
-:  @@snip [UdpDocTest.java]($code$/java/jdocs/io/UdpDocTest.java) { #connected }
+:  @@snip [UdpDocTest.java](/akka-docs/src/test/java/jdocs/io/UdpDocTest.java) { #connected }
 
 Consequently the example shown here looks quite similar to the previous one,
 the biggest difference is the absence of remote address information in
@@ -114,23 +114,23 @@ class which @scala[extends]@java[implements] `akka.io.Inet.SocketOption`. Provid
 for opening a datagram channel by overriding `create` method.
 
 Scala
-:  @@snip [ScalaUdpMulticast.scala]($code$/scala/docs/io/ScalaUdpMulticast.scala) { #inet6-protocol-family }
+:  @@snip [ScalaUdpMulticast.scala](/akka-docs/src/test/scala/docs/io/ScalaUdpMulticast.scala) { #inet6-protocol-family }
 
 Java
-:  @@snip [JavaUdpMulticast.java]($code$/java/jdocs/io/JavaUdpMulticast.java) { #inet6-protocol-family }
+:  @@snip [JavaUdpMulticast.java](/akka-docs/src/test/java/jdocs/io/JavaUdpMulticast.java) { #inet6-protocol-family }
 
 Another socket option will be needed to join a multicast group.
 
 Scala
-:  @@snip [ScalaUdpMulticast.scala]($code$/scala/docs/io/ScalaUdpMulticast.scala) { #multicast-group }
+:  @@snip [ScalaUdpMulticast.scala](/akka-docs/src/test/scala/docs/io/ScalaUdpMulticast.scala) { #multicast-group }
 
 Java
-:  @@snip [JavaUdpMulticast.java]($code$/java/jdocs/io/JavaUdpMulticast.java) { #multicast-group }
+:  @@snip [JavaUdpMulticast.java](/akka-docs/src/test/java/jdocs/io/JavaUdpMulticast.java) { #multicast-group }
 
 Socket options must be provided to @scala[`UdpMessage.Bind`]@java[`UdpMessage.bind`] message.
 
 Scala
-:  @@snip [ScalaUdpMulticast.scala]($code$/scala/docs/io/ScalaUdpMulticast.scala) { #bind }
+:  @@snip [ScalaUdpMulticast.scala](/akka-docs/src/test/scala/docs/io/ScalaUdpMulticast.scala) { #bind }
 
 Java
-:  @@snip [JavaUdpMulticast.java]($code$/java/jdocs/io/JavaUdpMulticast.java) { #bind }
+:  @@snip [JavaUdpMulticast.java](/akka-docs/src/test/java/jdocs/io/JavaUdpMulticast.java) { #bind }

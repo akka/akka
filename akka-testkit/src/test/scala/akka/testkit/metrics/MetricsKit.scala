@@ -46,10 +46,10 @@ private[akka] trait MetricsKit extends MetricsKitOps {
 
   initMetricReporters()
 
-  def initMetricReporters() {
+  def initMetricReporters(): Unit = {
     val settings = new MetricsKitSettings(metricsConfig)
 
-    def configureConsoleReporter() {
+    def configureConsoleReporter(): Unit = {
       if (settings.Reporters.contains("console")) {
         val akkaConsoleReporter = new AkkaConsoleReporter(registry, settings.ConsoleReporter.Verbose)
 
@@ -66,7 +66,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
   /**
    * Schedule metric reports execution iterval. Should not be used multiple times
    */
-  def scheduleMetricReports(every: FiniteDuration) {
+  def scheduleMetricReports(every: FiniteDuration): Unit = {
     reporters foreach { _.start(every.toMillis, TimeUnit.MILLISECONDS) }
   }
 
@@ -78,7 +78,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
    *
    * HINT: this operation can be costy, run outside of your tested code, or rely on scheduled reporting.
    */
-  def reportAndClearMetrics() {
+  def reportAndClearMetrics(): Unit = {
     reportMetrics()
     clearMetrics()
   }
@@ -90,7 +90,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
    *
    * HINT: this operation can be costy, run outside of your tested code, or rely on scheduled reporting.
    */
-  def reportMetrics() {
+  def reportMetrics(): Unit = {
     if (reportMetricsEnabled)
       reporters foreach { _.report() }
   }
@@ -100,7 +100,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
    *
    * HINT: this operation can be costy, run outside of your tested code, or rely on scheduled reporting.
    */
-  def reportMemoryMetrics() {
+  def reportMemoryMetrics(): Unit = {
     val gauges = registry.getGauges(MemMetricsFilter)
 
     reporters foreach { _.report(gauges, empty, empty, empty, empty) }
@@ -111,7 +111,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
    *
    * HINT: this operation can be costy, run outside of your tested code, or rely on scheduled reporting.
    */
-  def reportGcMetrics() {
+  def reportGcMetrics(): Unit = {
     val gauges = registry.getGauges(GcMetricsFilter)
 
     reporters foreach { _.report(gauges, empty, empty, empty, empty) }
@@ -122,7 +122,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
    *
    * HINT: this operation can be costy, run outside of your tested code, or rely on scheduled reporting.
    */
-  def reportFileDescriptorMetrics() {
+  def reportFileDescriptorMetrics(): Unit = {
     val gauges = registry.getGauges(FileDescriptorMetricsFilter)
 
     reporters foreach { _.report(gauges, empty, empty, empty, empty) }
@@ -136,14 +136,14 @@ private[akka] trait MetricsKit extends MetricsKitOps {
    * Please note that, if you have registered a `timer("thing")` previously, you will need to call `timer("thing")` again,
    * in order to register a new timer.
    */
-  def clearMetrics(matching: MetricFilter = MetricFilter.ALL) {
+  def clearMetrics(matching: MetricFilter = MetricFilter.ALL): Unit = {
     registry.removeMatching(matching)
   }
 
   /**
    * MUST be called after all tests have finished.
    */
-  def shutdownMetrics() {
+  def shutdownMetrics(): Unit = {
     reporters foreach { _.stop() }
   }
 

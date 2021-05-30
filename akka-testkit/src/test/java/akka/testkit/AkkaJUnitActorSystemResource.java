@@ -41,7 +41,7 @@ import org.junit.rules.ExternalResource;
  * </code>
  *
  *         Note that it is important to not use <code>getSystem</code> from the
- *         constructor of the test, becuase some test runners may create an
+ *         constructor of the test, because some test runners may create an
  *         instance of the class without actually using it later, resulting in
  *         memory leaks because of not shutting down the actor system.
  */

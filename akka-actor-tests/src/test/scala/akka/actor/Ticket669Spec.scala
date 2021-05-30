@@ -19,7 +19,7 @@ class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender 
   import Ticket669Spec._
 
   // TODO: does this really make sense?
-  override def atStartup() {
+  override def atStartup(): Unit = {
     Thread.interrupted() //remove interrupted status.
   }
 
@@ -56,11 +56,11 @@ object Ticket669Spec {
       case msg ⇒ throw new Exception("test")
     }
 
-    override def preRestart(reason: scala.Throwable, msg: Option[Any]) {
+    override def preRestart(reason: scala.Throwable, msg: Option[Any]): Unit = {
       sender() ! "failure1"
     }
 
-    override def postStop() {
+    override def postStop(): Unit = {
       sender() ! "failure2"
     }
   }

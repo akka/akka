@@ -7,7 +7,6 @@ package akka.persistence.typed.scaladsl
 import akka.Done
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior.DeferredBehavior
-import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.typed.EventAdapter
@@ -24,7 +23,7 @@ object PersistentBehaviors {
    * when full function type is used. When defining the handler as a separate function value it can
    * be useful to use the alias for shorter type signature.
    */
-  type CommandHandler[Command, Event, State] = (ActorContext[Command], State, Command) ⇒ Effect[Event, State]
+  type CommandHandler[Command, Event, State] = (State, Command) ⇒ Effect[Event, State]
 
   /**
    * Type alias for the event handler function defines how to act on commands.
@@ -41,7 +40,7 @@ object PersistentBehaviors {
   def receive[Command, Event, State](
     persistenceId:  String,
     emptyState:     State,
-    commandHandler: (ActorContext[Command], State, Command) ⇒ Effect[Event, State],
+    commandHandler: (State, Command) ⇒ Effect[Event, State],
     eventHandler:   (State, Event) ⇒ State): PersistentBehavior[Command, Event, State] =
     PersistentBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler)
 
@@ -50,11 +49,8 @@ object PersistentBehaviors {
    * a function:
    *
    * {{{
-   *   (ActorContext[Command], State, Command) ⇒ Effect[Event, State]
+   *   (State, Command) ⇒ Effect[Event, State]
    * }}}
-   *
-   * Note that you can have different command handlers based on current state by using
-   * [[CommandHandler#byState]].
    *
    * The [[CommandHandler#command]] is useful for simple commands that don't need the state
    * and context.
@@ -66,30 +62,11 @@ object PersistentBehaviors {
      *
      * @see [[Effect]] for possible effects of a command.
      */
-    def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): (ActorContext[Command], State, Command) ⇒ Effect[Event, State] =
-      (_, _, cmd) ⇒ commandHandler(cmd)
-
-    /**
-     * Select different command handlers based on current state.
-     */
-    def byState[Command, Event, State](
-      choice: State ⇒ (ActorContext[Command], State, Command) ⇒ Effect[Event, State]): (ActorContext[Command], State, Command) ⇒ Effect[Event, State] = {
-      new ByStateCommandHandler(choice)
-    }
+    def command[Command, Event, State](commandHandler: Command ⇒ Effect[Event, State]): (State, Command) ⇒ Effect[Event, State] =
+      (_, cmd) ⇒ commandHandler(cmd)
 
   }
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi private[akka] final class ByStateCommandHandler[Command, Event, State](
-    choice: State ⇒ CommandHandler[Command, Event, State])
-    extends CommandHandler[Command, Event, State] {
-
-    override def apply(ctx: ActorContext[Command], state: State, cmd: Command): Effect[Event, State] =
-      choice(state)(ctx, state, cmd)
-
-  }
 }
 
 trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command] {
@@ -97,12 +74,12 @@ trait PersistentBehavior[Command, Event, State] extends DeferredBehavior[Command
    * The `callback` function is called to notify the actor that the recovery process
    * is finished.
    */
-  def onRecoveryCompleted(callback: (ActorContext[Command], State) ⇒ Unit): PersistentBehavior[Command, Event, State]
+  def onRecoveryCompleted(callback: State ⇒ Unit): PersistentBehavior[Command, Event, State]
 
   /**
    * The `callback` function is called to notify when a snapshot is complete.
    */
-  def onSnapshot(callback: (ActorContext[Command], SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State]
+  def onSnapshot(callback: (SnapshotMetadata, Try[Done]) ⇒ Unit): PersistentBehavior[Command, Event, State]
 
   /**
    * Initiates a snapshot if the given function returns true.

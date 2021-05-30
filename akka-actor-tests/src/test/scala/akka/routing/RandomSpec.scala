@@ -24,7 +24,7 @@ class RandomSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
           case "hello" ⇒ sender() ! "world"
         }
 
-        override def postStop() {
+        override def postStop(): Unit = {
           stopLatch.countDown()
         }
       })), "random-shutdown")
@@ -88,7 +88,7 @@ class RandomSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
           case "hello" ⇒ helloLatch.countDown()
         }
 
-        override def postStop() {
+        override def postStop(): Unit = {
           stopLatch.countDown()
         }
       })), "random-broadcast")

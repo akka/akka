@@ -28,19 +28,19 @@ look like?
 In all of the following these imports are assumed:
 
 Scala
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #imports }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #imports }
 
 Java
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #imports }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #imports }
 
 With these in place we can define our first Actor, and it will say
 hello!
 
 Scala
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-actor }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-actor }
 
 Java
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-actor }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-actor }
 
 This small piece of code defines two message types, one for commanding the
 Actor to greet someone and one that the Actor will use to confirm that it has
@@ -80,10 +80,10 @@ of additional greeting messages and collect the replies until a given max number
 of messages have been reached.
 
 Scala
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-bot }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-bot }
 
 Java
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-bot }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-bot }
 
 Note how this Actor manages the counter by changing the behavior for each `Greeted` reply
 rather than using any variables.
@@ -93,21 +93,23 @@ rather than using any variables.
 A third actor spawns the `greeter` and the `bot` and starts the interaction between those.
 
 Scala
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-main }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-main }
 
 Java
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-main }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world-main }
 
 Now we want to try out this Actor, so we must start an ActorSystem to host it:
 
 Scala
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world }
 
 Java
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world }
 
 We start an Actor system from the defined `main` behavior and send two `Start` messages that
 will kick-off the interaction between two separate `bot` actors and the single `greeter` actor.
+
+An application normally consists of a single `ActorSystem`, running many actors, per JVM. 
 
 The console output may look like this:
 
@@ -126,6 +128,15 @@ The console output may look like this:
 [INFO] [03/13/2018 15:50:05.816] [hello-akka.actor.default-dispatcher-6] [akka://hello/user/Akka] Greeting 3 for Akka
 ```
 
+@@@ div { .group-scala }
+
+#### Here is another example that you can edit and run in the browser:
+
+@@fiddle [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #fiddle_code template=Akka layout=v75 minheight=400px }
+
+@@@
+
+
 ## A More Complex Example
 
 The next example is more realistic and demonstrates some important patterns:
@@ -141,10 +152,10 @@ chat room Actor will disseminate all posted messages to all currently connected
 client Actors. The protocol definition could look like the following:
 
 Scala
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-protocol }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-protocol }
 
 Java
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-protocol }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-protocol }
 
 Initially the client Actors only get access to an @scala[`ActorRef[GetSession]`]@java[`ActorRef<GetSession>`]
 which allows them to make the first step. Once a client’s session has been
@@ -161,10 +172,10 @@ full protocol that can involve multiple Actors and that can evolve over
 multiple steps. Here's the implementation of the chat room protocol:
 
 Scala
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-behavior }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-behavior }
 
 Java
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-behavior }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-behavior }
 
 
 The state is managed by changing behavior rather than using any variables.
@@ -204,10 +215,10 @@ problematic, so passing an @scala[`ActorRef[PublishSessionMessage]`]@java[`Actor
 In order to see this chat room in action we need to write a client Actor that can use it:
 
 Scala
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-gabbler }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-gabbler }
 
 Java
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-gabbler }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-gabbler }
 
 From this behavior we can create an Actor that will accept a chat room session,
 post a message, wait to see it published, and then terminate. The last step
@@ -232,10 +243,10 @@ nonsensical) or we start both of them from a third Actor—our only sensible
 choice:
 
 Scala
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-main }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #chatroom-main }
 
 Java
-:  @@snip [IntroSpec.scala]($akka$/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-main }
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-main }
 
 In good tradition we call the `main` Actor what it is, it directly
 corresponds to the `main` method in a traditional Java application. This

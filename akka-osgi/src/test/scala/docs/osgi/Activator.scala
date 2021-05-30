@@ -17,7 +17,7 @@ import akka.osgi.ActorSystemActivator
 
 class Activator extends ActorSystemActivator {
 
-  def configure(context: BundleContext, system: ActorSystem) {
+  def configure(context: BundleContext, system: ActorSystem): Unit = {
     // optionally register the ActorSystem in the OSGi Service Registry
     registerService(context, system)
 

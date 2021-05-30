@@ -146,9 +146,9 @@ private[camel] class Registry(activationTracker: ActorRef) extends Actor with Ca
       }
   }
 
-  private def deRegisterConsumer(actorRef: ActorRef) { consumerRegistrar ! DeRegister(actorRef) }
+  private def deRegisterConsumer(actorRef: ActorRef): Unit = { consumerRegistrar ! DeRegister(actorRef) }
 
-  private def deRegisterProducer(actorRef: ActorRef) { producerRegistrar ! DeRegister(actorRef) }
+  private def deRegisterProducer(actorRef: ActorRef): Unit = { producerRegistrar ! DeRegister(actorRef) }
 }
 
 /**

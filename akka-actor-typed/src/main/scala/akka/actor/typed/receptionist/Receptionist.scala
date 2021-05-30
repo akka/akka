@@ -12,6 +12,7 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
 import akka.actor.typed.ExtensionSetup
+import akka.actor.typed.Props
 import akka.annotation.InternalApi
 
 /**
@@ -47,11 +48,8 @@ abstract class Receptionist extends Extension {
           }.get
       } else LocalReceptionist
 
-    ActorRef(
-      system.systemActorOf(provider.behavior, "receptionist")(
-        // FIXME: where should that timeout be configured? Shouldn't there be a better `Extension`
-        //        implementation that does this dance for us?
-        10.seconds))
+    import akka.actor.typed.scaladsl.adapter._
+    system.internalSystemActorOf(provider.behavior, "receptionist", Props.empty)
   }
 }
 

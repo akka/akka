@@ -16,6 +16,13 @@ To use Akka Cluster, you must add the following dependency in your project:
   version="$akka.version$"
 }
 
+## Sample project
+
+You can look at the
+@java[@extref[Cluster example project](samples:akka-samples-cluster-java)]
+@scala[@extref[Cluster example project](samples:akka-samples-cluster-scala)]
+to see what this looks like in practice.
+
 ## When and where to use Akka Cluster
 
 An architectural choice you have to make is if you are going to use a microservices architecture or
@@ -148,10 +155,10 @@ ip-addresses or host names of the machines in `application.conf` instead of `127
 An actor that uses the cluster extension may look like this:
 
 Scala
-:  @@snip [SimpleClusterListener.scala]($code$/scala/docs/cluster/SimpleClusterListener.scala) { type=scala }
+:  @@snip [SimpleClusterListener.scala](/akka-docs/src/test/scala/docs/cluster/SimpleClusterListener.scala) { type=scala }
 
 Java
-:  @@snip [SimpleClusterListener.java]($code$/java/jdocs/cluster/SimpleClusterListener.java) { type=java }
+:  @@snip [SimpleClusterListener.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener.java) { type=java }
 
 The actor registers itself as subscriber of certain cluster events. It receives events corresponding to the current state
 of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
@@ -168,7 +175,7 @@ The source code of this sample can be found in the
 @@@ note
   When starting clusters on cloud systems such as Kubernetes, AWS, Google Cloud, Azure, Mesos or others which maintain 
   DNS or other ways of discovering nodes, you may want to use the automatic joining process implemented by the open source
-  [Akka Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module.
+  [Akka Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap/index.html) module.
 @@@
 
 ### Joining configured seed nodes
@@ -220,7 +227,7 @@ and don't stop all of them at the same time.
 Instead of manually configuring seed nodes, which is useful in development or statically assigned node IPs, you may want
 to automate the discovery of seed nodes using your cloud providers or cluster orchestrator, or some other form of service
 discovery (such as managed DNS). The open source Akka Management library includes the
-[Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap.html) module which handles
+[Cluster Bootstrap](https://developer.lightbend.com/docs/akka-management/current/bootstrap/index.html) module which handles
 just that. Please refer to its documentation for more details.
 
 ### Programatically joining to seed nodes with `joinSeedNodes`
@@ -232,10 +239,10 @@ supposed to be the first seed node, and that should be placed first in the param
 `joinSeedNodes`.
 
 Scala
-:  @@snip [ClusterDocSpec.scala]($code$/scala/docs/cluster/ClusterDocSpec.scala) { #join-seed-nodes }
+:  @@snip [ClusterDocSpec.scala](/akka-docs/src/test/scala/docs/cluster/ClusterDocSpec.scala) { #join-seed-nodes }
 
 Java
-:  @@snip [ClusterDocTest.java]($code$/java/jdocs/cluster/ClusterDocTest.java) { #join-seed-nodes-imports #join-seed-nodes }
+:  @@snip [ClusterDocTest.java](/akka-docs/src/test/java/jdocs/cluster/ClusterDocTest.java) { #join-seed-nodes-imports #join-seed-nodes }
 
 Unsuccessful attempts to contact seed nodes are automatically retried after the time period defined in
 configuration property `seed-node-timeout`. Unsuccessful attempt to join a specific seed node is
@@ -247,7 +254,7 @@ configured `seed-node-timeout`.
 The joining of given seed nodes will by default be retried indefinitely until
 a successful join. That process can be aborted if unsuccessful by configuring a
 timeout. When aborted it will run @ref:[Coordinated Shutdown](actors.md#coordinated-shutdown),
-which by default will terminated the ActorSystem. CoordinatedShutdown can also be configured to exit
+which by default will terminate the ActorSystem. CoordinatedShutdown can also be configured to exit
 the JVM. It is useful to define this timeout if the `seed-nodes` are assembled
 dynamically and a restart with new seed-nodes should be tried after unsuccessful
 attempts.
@@ -360,10 +367,10 @@ This can be performed using [JMX](#cluster-jmx) or [HTTP](#cluster-http).
 It can also be performed programmatically with:
 
 Scala
-:  @@snip [ClusterDocSpec.scala]($code$/scala/docs/cluster/ClusterDocSpec.scala) { #leave }
+:  @@snip [ClusterDocSpec.scala](/akka-docs/src/test/scala/docs/cluster/ClusterDocSpec.scala) { #leave }
 
 Java
-:  @@snip [ClusterDocTest.java]($code$/java/jdocs/cluster/ClusterDocTest.java) { #leave }
+:  @@snip [ClusterDocTest.java](/akka-docs/src/test/java/jdocs/cluster/ClusterDocTest.java) { #leave }
 
 Note that this command can be issued to any member in the cluster, not necessarily the
 one that is leaving.
@@ -406,18 +413,36 @@ You can subscribe to change notifications of the cluster membership by using
 @scala[`Cluster(system).subscribe`]@java[`Cluster.get(system).subscribe`].
 
 Scala
-:  @@snip [SimpleClusterListener2.scala]($code$/scala/docs/cluster/SimpleClusterListener2.scala) { #subscribe }
+:  @@snip [SimpleClusterListener2.scala](/akka-docs/src/test/scala/docs/cluster/SimpleClusterListener2.scala) { #subscribe }
 
 Java
-:  @@snip [SimpleClusterListener2.java]($code$/java/jdocs/cluster/SimpleClusterListener2.java) { #subscribe }
+:  @@snip [SimpleClusterListener2.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener2.java) { #subscribe }
 
 A snapshot of the full state, `akka.cluster.ClusterEvent.CurrentClusterState`, is sent to the subscriber
 as the first message, followed by events for incremental updates.
 
 Note that you may receive an empty `CurrentClusterState`, containing no members,
+followed by `MemberUp` events from other nodes which already joined,
 if you start the subscription before the initial join procedure has completed.
+This may for example happen when you start the subscription immediately after `cluster.join()` like below.
 This is expected behavior. When the node has been accepted in the cluster you will
 receive `MemberUp` for that node, and other nodes.
+
+Scala
+:  @@snip [SimpleClusterListener2.scala](/akka-docs/src/test/scala/docs/cluster/SimpleClusterListener2.scala) { #join #subscribe }
+
+Java
+:  @@snip [SimpleClusterListener2.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener2.java) { #join #subscribe }
+
+To avoid receiving an empty `CurrentClusterState` at the beginning, you can use it like shown in the following example,
+to defer subscription until the `MemberUp` event for the own node is received:
+
+Scala
+:  @@snip [SimpleClusterListener2.scala](/akka-docs/src/test/scala/docs/cluster/SimpleClusterListener2.scala) { #join #register-on-memberup }
+
+Java
+:  @@snip [SimpleClusterListener2.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener2.java) { #join #register-on-memberup }
+
 
 If you find it inconvenient to handle the `CurrentClusterState` you can use
 @scala[`ClusterEvent.InitialStateAsEvents`] @java[`ClusterEvent.initialStateAsEvents()`] as parameter to `subscribe`.
@@ -427,10 +452,10 @@ listening to the events when they occurred in the past. Note that those initial 
 to the current state and it is not the full history of all changes that actually has occurred in the cluster.
 
 Scala
-:  @@snip [SimpleClusterListener.scala]($code$/scala/docs/cluster/SimpleClusterListener.scala) { #subscribe }
+:  @@snip [SimpleClusterListener.scala](/akka-docs/src/test/scala/docs/cluster/SimpleClusterListener.scala) { #subscribe }
 
 Java
-:  @@snip [SimpleClusterListener.java]($code$/java/jdocs/cluster/SimpleClusterListener.java) { #subscribe }
+:  @@snip [SimpleClusterListener.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener.java) { #subscribe }
 
 The events to track the life-cycle of members are:
 
@@ -466,18 +491,18 @@ added or removed to the cluster dynamically.
 Messages:
 
 Scala
-:  @@snip [TransformationMessages.scala]($code$/scala/docs/cluster/TransformationMessages.scala) { #messages }
+:  @@snip [TransformationMessages.scala](/akka-docs/src/test/scala/docs/cluster/TransformationMessages.scala) { #messages }
 
 Java
-:  @@snip [TransformationMessages.java]($code$/java/jdocs/cluster/TransformationMessages.java) { #messages }
+:  @@snip [TransformationMessages.java](/akka-docs/src/test/java/jdocs/cluster/TransformationMessages.java) { #messages }
 
 The backend worker that performs the transformation job:
 
 Scala
-:  @@snip [TransformationBackend.scala]($code$/scala/docs/cluster/TransformationBackend.scala) { #backend }
+:  @@snip [TransformationBackend.scala](/akka-docs/src/test/scala/docs/cluster/TransformationBackend.scala) { #backend }
 
 Java
-:  @@snip [TransformationBackend.java]($code$/java/jdocs/cluster/TransformationBackend.java) { #backend }
+:  @@snip [TransformationBackend.java](/akka-docs/src/test/java/jdocs/cluster/TransformationBackend.java) { #backend }
 
 Note that the `TransformationBackend` actor subscribes to cluster events to detect new,
 potential, frontend nodes, and send them a registration message so that they know
@@ -486,10 +511,10 @@ that they can use the backend worker.
 The frontend that receives user jobs and delegates to one of the registered backend workers:
 
 Scala
-:  @@snip [TransformationFrontend.scala]($code$/scala/docs/cluster/TransformationFrontend.scala) { #frontend }
+:  @@snip [TransformationFrontend.scala](/akka-docs/src/test/scala/docs/cluster/TransformationFrontend.scala) { #frontend }
 
 Java
-:  @@snip [TransformationFrontend.java]($code$/java/jdocs/cluster/TransformationFrontend.java) { #frontend }
+:  @@snip [TransformationFrontend.java](/akka-docs/src/test/java/jdocs/cluster/TransformationFrontend.java) { #frontend }
 
 Note that the `TransformationFrontend` actor watch the registered backend
 to be able to remove it from its list of available backend workers.
@@ -544,10 +569,10 @@ be invoked when the current member status is changed to 'Up', i.e. the cluster
 has at least the defined number of members.
 
 Scala
-:  @@snip [FactorialFrontend.scala]($code$/scala/docs/cluster/FactorialFrontend.scala) { #registerOnUp }
+:  @@snip [FactorialFrontend.scala](/akka-docs/src/test/scala/docs/cluster/FactorialFrontend.scala) { #registerOnUp }
 
 Java
-:  @@snip [FactorialFrontendMain.java]($code$/java/jdocs/cluster/FactorialFrontendMain.java) { #registerOnUp }
+:  @@snip [FactorialFrontendMain.java](/akka-docs/src/test/java/jdocs/cluster/FactorialFrontendMain.java) { #registerOnUp }
 
 This callback can be used for other things than starting actors.
 
@@ -714,12 +739,12 @@ add the `sbt-multi-jvm` plugin and the dependency to `akka-multi-node-testkit`.
 First, as described in @ref:[Multi Node Testing](multi-node-testing.md), we need some scaffolding to configure the `MultiNodeSpec`.
 Define the participating roles and their [configuration](#cluster-configuration) in an object extending `MultiNodeConfig`:
 
-@@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #MultiNodeConfig }
+@@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #MultiNodeConfig }
 
 Define one concrete test class for each role/node. These will be instantiated on the different nodes (JVMs). They can be
 implemented differently, but often they are the same and extend an abstract test class, as illustrated here.
 
-@@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #concrete-tests }
+@@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #concrete-tests }
 
 Note the naming convention of these classes. The name of the classes must end with `MultiJvmNode1`, `MultiJvmNode2`
 and so on. It is possible to define another suffix to be used by the `sbt-multi-jvm`, but the default should be
@@ -727,18 +752,18 @@ fine in most cases.
 
 Then the abstract `MultiNodeSpec`, which takes the `MultiNodeConfig` as constructor parameter.
 
-@@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #abstract-test }
+@@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #abstract-test }
 
 Most of this can be extracted to a separate trait to avoid repeating this in all your tests.
 
 Typically you begin your test by starting up the cluster and let the members join, and create some actors.
 That can be done like this:
 
-@@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #startup-cluster }
+@@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #startup-cluster }
 
 From the test you interact with the cluster using the `Cluster` extension, e.g. `join`.
 
-@@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #join }
+@@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #join }
 
 Notice how the *testActor* from @ref:[testkit](testing.md) is added as [subscriber](#cluster-subscriber)
 to cluster changes and then waiting for certain events, such as in this case all members becoming 'Up'.
@@ -746,7 +771,7 @@ to cluster changes and then waiting for certain events, such as in this case all
 The above code was running for all roles (JVMs). `runOn` is a convenient utility to declare that a certain block
 of code should only run for a specific role.
 
-@@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #test-statsService }
+@@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #test-statsService }
 
 Once again we take advantage of the facilities in @ref:[testkit](testing.md) to verify expected behavior.
 Here using `testActor` as sender (via `ImplicitSender`) and verifying the reply with `expectMsgPF`.
@@ -754,7 +779,7 @@ Here using `testActor` as sender (via `ImplicitSender`) and verifying the reply 
 In the above code you can see `node(third)`, which is useful facility to get the root actor reference of
 the actor system for a specific role. This can also be used to grab the `akka.actor.Address` of that node.
 
-@@snip [StatsSampleSpec.scala]($akka$/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #addresses }
+@@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #addresses }
 
 @@@
 

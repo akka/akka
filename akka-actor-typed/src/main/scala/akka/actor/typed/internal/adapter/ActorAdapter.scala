@@ -14,7 +14,6 @@ import scala.util.Try
 import akka.{ actor ⇒ a }
 import akka.annotation.InternalApi
 import akka.util.OptionVal
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API

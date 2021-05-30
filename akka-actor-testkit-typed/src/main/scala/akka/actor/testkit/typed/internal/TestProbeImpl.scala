@@ -167,7 +167,7 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
   override def expectNoMessage(): Unit =
     expectNoMessage_internal(settings.ExpectNoMessageDefaultTimeout.dilated)
 
-  private def expectNoMessage_internal(max: FiniteDuration) {
+  private def expectNoMessage_internal(max: FiniteDuration): Unit = {
     val o = receiveOne(max)
     assert(o == null, s"received unexpected message $o")
     lastWasNoMessage = true

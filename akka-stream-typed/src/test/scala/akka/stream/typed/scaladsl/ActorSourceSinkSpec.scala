@@ -5,13 +5,13 @@
 package akka.stream.typed.scaladsl
 
 import akka.actor.typed.ActorRef
-import akka.actor.typed.TypedAkkaSpecWithShutdown
 import akka.actor.typed.scaladsl.Behaviors
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, _ }
+import akka.actor.testkit.typed.scaladsl._
+import org.scalatest.WordSpecLike
 
 object ActorSourceSinkSpec {
 
@@ -22,7 +22,7 @@ object ActorSourceSinkSpec {
   case object Failed extends AckProto
 }
 
-class ActorSourceSinkSpec extends ActorTestKit with TypedAkkaSpecWithShutdown {
+class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
   import ActorSourceSinkSpec._
 
   implicit val mat = ActorMaterializer()

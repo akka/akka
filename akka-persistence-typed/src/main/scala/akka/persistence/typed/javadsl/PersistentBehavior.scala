@@ -8,16 +8,13 @@ import java.util.function.Predicate
 import java.util.{ Collections, Optional }
 
 import akka.actor.typed
-import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior, SupervisorStrategy }
+import akka.actor.typed.{ BackoffSupervisorStrategy, Behavior }
 import akka.actor.typed.Behavior.DeferredBehavior
-import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.persistence.SnapshotMetadata
 import akka.persistence.typed.{ EventAdapter, _ }
 import akka.persistence.typed.internal._
 import scala.util.{ Failure, Success }
-
-import akka.japi.pf.FI
 
 /** Java API */
 @ApiMayChange
@@ -65,7 +62,7 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private (val pe
    * For that reason it is strongly discouraged to perform side-effects in this handler;
    * Side effects should be executed in `andThen` or `recoveryCompleted` blocks.
    */
-  protected def eventHandler(): EventHandler[Event, State]
+  protected def eventHandler(): EventHandler[State, Event]
 
   /**
    * @param stateClass The handlers defined by this builder are used when the state is an instance of the `stateClass`
@@ -85,8 +82,8 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private (val pe
   /**
    * @return A new, mutable, event handler builder
    */
-  protected final def eventHandlerBuilder(): EventHandlerBuilder[Event, State] =
-    EventHandlerBuilder.builder[Event, State]()
+  protected final def eventHandlerBuilder(): EventHandlerBuilder[State, Event] =
+    EventHandlerBuilder.builder[State, Event]()
 
   /**
    * The `callback` function is called to notify the actor that the recovery process
@@ -153,17 +150,17 @@ abstract class PersistentBehavior[Command, Event, State >: Null] private (val pe
     val behavior = scaladsl.PersistentBehaviors.receive[Command, Event, State](
       persistenceId,
       emptyState,
-      (c, state, cmd) ⇒ commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
+      (state, cmd) ⇒ commandHandler()(state, cmd).asInstanceOf[EffectImpl[Event, State]],
       eventHandler()(_, _))
-      .onRecoveryCompleted((ctx, state) ⇒ onRecoveryCompleted(state))
+      .onRecoveryCompleted(onRecoveryCompleted)
       .snapshotWhen(snapshotWhen)
       .withTagger(tagger)
-      .onSnapshot((ctx, meta, result) ⇒ {
+      .onSnapshot((meta, result) ⇒ {
         result match {
           case Success(_) ⇒
-            ctx.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
+            context.asScala.log.debug("Save snapshot successful, snapshot metadata: [{}]", meta)
           case Failure(e) ⇒
-            ctx.log.error(e, "Save snapshot failed, snapshot metadata: [{}]", meta)
+            context.asScala.log.error(e, "Save snapshot failed, snapshot metadata: [{}]", meta)
         }
 
         onSnapshot(meta, result match {

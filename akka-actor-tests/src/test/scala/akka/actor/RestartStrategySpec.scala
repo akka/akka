@@ -18,7 +18,7 @@ import akka.pattern.ask
 
 class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off") with DefaultTimeout {
 
-  override def atStartup {
+  override def atStartup: Unit = {
     system.eventStream.publish(Mute(EventFilter[Exception]("Crashing...")))
   }
 

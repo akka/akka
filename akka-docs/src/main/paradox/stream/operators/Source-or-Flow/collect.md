@@ -8,7 +8,7 @@ Apply a partial function to each incoming element, if the partial function is de
 
 ## Signature
 
-@@signature [Flow.scala]($akka$/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #collect }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #collect }
 
 @@@
 

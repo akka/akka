@@ -7,7 +7,7 @@ package docs.stream.io
 import java.nio.file.{ Files, Paths }
 
 import akka.stream._
-import akka.stream.scaladsl.{ FileIO, Sink }
+import akka.stream.scaladsl.{ FileIO, Sink, Source }
 import akka.stream.testkit.Utils._
 import akka.util.ByteString
 import akka.testkit.AkkaSpec
@@ -39,6 +39,12 @@ class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
     //#file-source
   }
 
+  {
+    //#file-sink
+    val file = Paths.get("greeting.txt")
+    //#file-sink
+  }
+
   "read data from a file" in {
     //#file-source
     def handle(b: ByteString): Unit //#file-source
@@ -57,5 +63,14 @@ class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
     FileIO.fromPath(file)
       .withAttributes(ActorAttributes.dispatcher("custom-blocking-io-dispatcher"))
     //#custom-dispatcher-code
+  }
+
+  "write data into a file" in {
+    //#file-sink
+    val text = Source.single("Hello Akka Stream!")
+    val result: Future[IOResult] = text
+      .map(t ⇒ ByteString(t))
+      .runWith(FileIO.toPath(file))
+    //#file-sink
   }
 }

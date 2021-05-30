@@ -39,12 +39,12 @@ object RemotingSpec {
       case x                     ⇒ target = sender(); sender() ! x
     }
 
-    override def preStart() {}
-    override def preRestart(cause: Throwable, msg: Option[Any]) {
+    override def preStart(): Unit = {}
+    override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {
       target ! "preRestart"
     }
-    override def postRestart(cause: Throwable) {}
-    override def postStop() {
+    override def postRestart(cause: Throwable): Unit = {}
+    override def postStop(): Unit = {
       target ! "postStop"
     }
   }
@@ -122,7 +122,7 @@ object RemotingSpec {
     }
   """)
 
-  def muteSystem(system: ActorSystem) {
+  def muteSystem(system: ActorSystem): Unit = {
     system.eventStream.publish(TestEvent.Mute(
       EventFilter.error(start = "AssociationError"),
       EventFilter.warning(start = "AssociationError"),
@@ -153,7 +153,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
   def getOtherAddress(sys: ActorSystem, proto: String) =
     sys.asInstanceOf[ExtendedActorSystem].provider.getExternalAddressFor(Address(s"akka.$proto", "", "", 0)).get
   def port(sys: ActorSystem, proto: String) = getOtherAddress(sys, proto).port.get
-  def deploy(sys: ActorSystem, d: Deploy) {
+  def deploy(sys: ActorSystem, d: Deploy): Unit = {
     sys.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].deployer.deploy(d)
   }
 
@@ -161,7 +161,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
   val here = system.actorFor("akka.test://remote-sys@localhost:12346/user/echo")
 
-  private def verifySend(msg: Any)(afterSend: ⇒ Unit) {
+  private def verifySend(msg: Any)(afterSend: ⇒ Unit): Unit = {
     val bigBounceId = s"bigBounce-${ThreadLocalRandom.current.nextInt()}"
     val bigBounceOther = remoteSystem.actorOf(Props(new Actor {
       def receive = {
@@ -202,7 +202,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
   val maxPayloadBytes = system.settings.config.getBytes("akka.remote.test.maximum-payload-bytes").toInt
 
-  override def afterTermination() {
+  override def afterTermination(): Unit = {
     shutdown(remoteSystem)
     AssociationRegistry.clear()
   }

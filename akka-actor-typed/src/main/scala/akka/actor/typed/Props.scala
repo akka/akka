@@ -165,6 +165,12 @@ object DispatcherSelector {
   def defaultDispatcher(): DispatcherSelector = default()
 
   /**
+   *  Run the actor on the default blocking dispatcher that is
+   *  configured under default-blocking-io-dispatcher
+   */
+  def blocking(): DispatcherSelector = fromConfig("akka.actor.default-blocking-io-dispatcher")
+
+  /**
    * Look up an executor definition in the [[ActorSystem]] configuration.
    * ExecutorServices created in this fashion will be shut down when the
    * ActorSystem terminates.

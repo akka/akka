@@ -91,6 +91,7 @@ class UntypedWatchingTypedSpec extends WordSpec {
       val system = akka.actor.ActorSystem("UntypedToTypedSystem")
       val typedSystem: ActorSystem[Nothing] = system.toTyped
       //#convert-untyped
+      typedSystem.scheduler // remove compile warning
       TestKit.shutdownActorSystem(system)
     }
   }
