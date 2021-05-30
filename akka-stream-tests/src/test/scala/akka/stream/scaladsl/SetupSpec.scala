@@ -193,7 +193,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      Source.empty.runWith(sink).flatten.futureValue shouldBe Some("setup-my-name")
+      Source.empty.runWith(sink).flatten.futureValue shouldBe Some("my-name-setup")
     }
 
     "propagate attributes when nested" in {
@@ -205,7 +205,7 @@ class SetupSpec extends StreamSpec {
         }
         .named("my-name")
 
-      Source.empty.runWith(sink).flatten.flatten.futureValue shouldBe Some("setup-my-name-setup")
+      Source.empty.runWith(sink).flatten.flatten.futureValue shouldBe Some("my-name-setup-setup")
     }
 
     "handle factory failure" in {

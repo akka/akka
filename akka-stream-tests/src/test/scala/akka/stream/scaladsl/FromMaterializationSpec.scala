@@ -5,10 +5,11 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.{ Attributes }
+import akka.stream.Attributes
 import akka.stream.Attributes.Attribute
 import akka.stream.scaladsl.AttributesSpec.{ whateverAttribute, WhateverAttribute }
 import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class FromMaterializerSpec extends StreamSpec {
 
@@ -17,7 +18,7 @@ class FromMaterializerSpec extends StreamSpec {
 
   "Source.fromMaterializer" should {
 
-    "expose materializer" in {
+    "expose materializer" in assertAllStagesStopped {
       val source = Source.fromMaterializer { (mat, _) =>
         Source.single(mat.isShutdown)
       }
@@ -25,7 +26,7 @@ class FromMaterializerSpec extends StreamSpec {
       source.runWith(Sink.head).futureValue shouldBe false
     }
 
-    "expose attributes" in {
+    "expose attributes" in assertAllStagesStopped {
       val source = Source.fromMaterializer { (_, attr) =>
         Source.single(attr.attributeList)
       }
@@ -33,7 +34,7 @@ class FromMaterializerSpec extends StreamSpec {
       source.runWith(Sink.head).futureValue should not be empty
     }
 
-    "propagate materialized value" in {
+    "propagate materialized value" in assertAllStagesStopped {
       val source = Source.fromMaterializer { (_, _) =>
         Source.maybe[NotUsed]
       }
@@ -43,7 +44,7 @@ class FromMaterializerSpec extends StreamSpec {
       element.futureValue shouldBe NotUsed
     }
 
-    "propagate attributes" in {
+    "propagate attributes" in assertAllStagesStopped {
       val source = Source
         .fromMaterializer { (_, attr) =>
           Source.single(attr.nameLifted)
@@ -53,7 +54,7 @@ class FromMaterializerSpec extends StreamSpec {
       source.runWith(Sink.head).futureValue shouldBe Some("setup-my-name")
     }
 
-    "propagate attributes when nested" in {
+    "propagate attributes when nested" in assertAllStagesStopped {
       val source = Source
         .fromMaterializer { (_, _) =>
           Source.fromMaterializer { (_, attr) =>
@@ -65,7 +66,7 @@ class FromMaterializerSpec extends StreamSpec {
       source.runWith(Sink.head).futureValue shouldBe Some("setup-my-name-setup")
     }
 
-    "preserve attributes of inner source" in {
+    "preserve attributes of inner source" in assertAllStagesStopped {
       val source = Source.fromMaterializer { (_, _) =>
         Source
           .fromMaterializer { (_, attr) =>
@@ -77,7 +78,7 @@ class FromMaterializerSpec extends StreamSpec {
       source.runWith(Sink.head).futureValue shouldBe Some(MyAttribute())
     }
 
-    "give priority to attributes of inner source" in {
+    "give priority to attributes of inner source" in assertAllStagesStopped {
       val source = Source
         .fromMaterializer { (_, _) =>
           Source
@@ -91,7 +92,7 @@ class FromMaterializerSpec extends StreamSpec {
       source.runWith(Sink.head).futureValue shouldBe Some(WhateverAttribute("inner"))
     }
 
-    "handle factory failure" in {
+    "handle factory failure" in assertAllStagesStopped {
       val error = new Error("boom")
       val source = Source.fromMaterializer { (_, _) =>
         throw error
@@ -102,7 +103,7 @@ class FromMaterializerSpec extends StreamSpec {
       completion.failed.futureValue.getCause shouldBe error
     }
 
-    "handle materialization failure" in {
+    "handle materialization failure" in assertAllStagesStopped {
       val error = new Error("boom")
       val source = Source.fromMaterializer { (_, _) =>
         Source.empty.mapMaterializedValue(_ => throw error)
@@ -117,7 +118,7 @@ class FromMaterializerSpec extends StreamSpec {
 
   "Flow.fromMaterializer" should {
 
-    "expose materializer" in {
+    "expose materializer" in assertAllStagesStopped {
       val flow = Flow.fromMaterializer { (mat, _) =>
         Flow.fromSinkAndSource(Sink.ignore, Source.single(mat.isShutdown))
       }
@@ -125,7 +126,7 @@ class FromMaterializerSpec extends StreamSpec {
       Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe false
     }
 
-    "expose attributes" in {
+    "expose attributes" in assertAllStagesStopped {
       val flow = Flow.fromMaterializer { (_, attr) =>
         Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.attributeList))
       }
@@ -133,7 +134,7 @@ class FromMaterializerSpec extends StreamSpec {
       Source.empty.via(flow).runWith(Sink.head).futureValue should not be empty
     }
 
-    "propagate materialized value" in {
+    "propagate materialized value" in assertAllStagesStopped {
       val flow = Flow.fromMaterializer { (_, _) =>
         Flow.fromSinkAndSourceMat(Sink.ignore, Source.maybe[NotUsed])(Keep.right)
       }
@@ -143,7 +144,7 @@ class FromMaterializerSpec extends StreamSpec {
       element.futureValue shouldBe NotUsed
     }
 
-    "propagate attributes" in {
+    "propagate attributes" in assertAllStagesStopped {
       val flow = Flow
         .fromMaterializer { (_, attr) =>
           Flow.fromSinkAndSource(Sink.ignore, Source.single(attr.nameLifted))
@@ -153,7 +154,7 @@ class FromMaterializerSpec extends StreamSpec {
       Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("setup-my-name")
     }
 
-    "propagate attributes when nested" in {
+    "propagate attributes when nested" in assertAllStagesStopped {
       val flow = Flow
         .fromMaterializer { (_, _) =>
           Flow.fromMaterializer { (_, attr) =>
@@ -165,7 +166,7 @@ class FromMaterializerSpec extends StreamSpec {
       Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some("setup-my-name-setup")
     }
 
-    "preserve attributes of inner flow" in {
+    "preserve attributes of inner flow" in assertAllStagesStopped {
       val flow = Flow.fromMaterializer { (_, _) =>
         Flow
           .fromMaterializer { (_, attr) =>
@@ -177,7 +178,7 @@ class FromMaterializerSpec extends StreamSpec {
       Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some(MyAttribute())
     }
 
-    "give priority to attributes of inner flow" in {
+    "give priority to attributes of inner flow" in assertAllStagesStopped {
       val flow = Flow
         .fromMaterializer { (_, _) =>
           Flow
@@ -191,7 +192,7 @@ class FromMaterializerSpec extends StreamSpec {
       Source.empty.via(flow).runWith(Sink.head).futureValue shouldBe Some(WhateverAttribute("inner"))
     }
 
-    "handle factory failure" in {
+    "handle factory failure" in assertAllStagesStopped {
       val error = new Error("boom")
       val flow = Flow.fromMaterializer { (_, _) =>
         throw error
@@ -202,7 +203,7 @@ class FromMaterializerSpec extends StreamSpec {
       completion.failed.futureValue.getCause shouldBe error
     }
 
-    "handle materialization failure" in {
+    "handle materialization failure" in assertAllStagesStopped {
       val error = new Error("boom")
       val flow = Flow.fromMaterializer { (_, _) =>
         Flow[NotUsed].mapMaterializedValue(_ => throw error)
@@ -217,7 +218,7 @@ class FromMaterializerSpec extends StreamSpec {
 
   "Sink.fromMaterializer" should {
 
-    "expose materializer" in {
+    "expose materializer" in assertAllStagesStopped {
       val sink = Sink.fromMaterializer { (mat, _) =>
         Sink.fold(mat.isShutdown)(Keep.left)
       }
@@ -225,7 +226,7 @@ class FromMaterializerSpec extends StreamSpec {
       Source.empty.runWith(sink).flatten.futureValue shouldBe false
     }
 
-    "expose attributes" in {
+    "expose attributes" in assertAllStagesStopped {
       val sink = Sink.fromMaterializer { (_, attr) =>
         Sink.fold(attr.attributeList)(Keep.left)
       }
@@ -233,7 +234,7 @@ class FromMaterializerSpec extends StreamSpec {
       Source.empty.runWith(sink).flatten.futureValue should not be empty
     }
 
-    "propagate materialized value" in {
+    "propagate materialized value" in assertAllStagesStopped {
       val sink = Sink.fromMaterializer { (_, _) =>
         Sink.fold(NotUsed)(Keep.left)
       }
@@ -241,17 +242,17 @@ class FromMaterializerSpec extends StreamSpec {
       Source.empty.runWith(sink).flatten.futureValue shouldBe NotUsed
     }
 
-    "propagate attributes" in {
+    "propagate attributes" in assertAllStagesStopped {
       val sink = Sink
         .fromMaterializer { (_, attr) =>
           Sink.fold(attr.nameLifted)(Keep.left)
         }
         .named("my-name")
 
-      Source.empty.runWith(sink).flatten.futureValue shouldBe Some("setup-my-name")
+      Source.empty.runWith(sink).flatten.futureValue shouldBe Some("my-name-setup")
     }
 
-    "propagate attributes when nested" in {
+    "propagate attributes when nested" in assertAllStagesStopped {
       val sink = Sink
         .fromMaterializer { (_, _) =>
           Sink.fromMaterializer { (_, attr) =>
@@ -260,10 +261,10 @@ class FromMaterializerSpec extends StreamSpec {
         }
         .named("my-name")
 
-      Source.empty.runWith(sink).flatten.flatten.futureValue shouldBe Some("setup-my-name-setup")
+      Source.empty.runWith(sink).flatten.flatten.futureValue shouldBe Some("my-name-setup-setup")
     }
 
-    "preserve attributes of inner sink" in {
+    "preserve attributes of inner sink" in assertAllStagesStopped {
       val sink = Sink.fromMaterializer { (_, _) =>
         Sink
           .fromMaterializer { (_, attr) =>
@@ -275,7 +276,7 @@ class FromMaterializerSpec extends StreamSpec {
       Source.empty.runWith(sink).flatten.flatten.futureValue shouldBe Some(MyAttribute())
     }
 
-    "give priority to attributes of inner sink" in {
+    "give priority to attributes of inner sink" in assertAllStagesStopped {
       val sink = Sink
         .fromMaterializer { (_, _) =>
           Sink
@@ -289,7 +290,7 @@ class FromMaterializerSpec extends StreamSpec {
       Source.empty.runWith(sink).flatten.flatten.futureValue shouldBe Some(WhateverAttribute("inner"))
     }
 
-    "handle factory failure" in {
+    "handle factory failure" in assertAllStagesStopped {
       val error = new Error("boom")
       val sink = Sink.fromMaterializer { (_, _) =>
         throw error
@@ -298,7 +299,7 @@ class FromMaterializerSpec extends StreamSpec {
       Source.empty.runWith(sink).failed.futureValue.getCause shouldBe error
     }
 
-    "handle materialization failure" in {
+    "handle materialization failure" in assertAllStagesStopped {
       val error = new Error("boom")
       val sink = Sink.fromMaterializer { (_, _) =>
         Sink.ignore.mapMaterializedValue(_ => throw error)
