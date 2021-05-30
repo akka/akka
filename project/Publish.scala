@@ -28,6 +28,10 @@ object Publish extends AutoPlugin {
 
   def akkaPomExtra = {
     <inceptionYear>2009</inceptionYear>
+    <scm>
+      <url>git://github.com/akka/akka.git</url>
+      <connection>scm:git:git@github.com:akka/akka.git</connection>
+    </scm>
     <developers>
       <developer>
         <id>akka-contributors</id>
