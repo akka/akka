@@ -1,12 +1,12 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.routing
 
 import scala.concurrent.duration._
 import akka.testkit._
-import akka.actor.{ ActorRef, Props, Actor }
+import akka.actor.{ Actor, ActorRef, Props }
 import akka.actor.Terminated
 import akka.routing.FromConfig
 import akka.routing.RoundRobinPool
@@ -24,6 +24,7 @@ import akka.routing.ScatterGatherFirstCompletedPool
 import akka.routing.BalancingPool
 import akka.routing.TailChoppingGroup
 import akka.routing.TailChoppingPool
+import akka.util.ccompat.JavaConverters._
 
 object RouterDocSpec {
 
@@ -209,7 +210,7 @@ akka.actor.deployment {
   /parent/remotePool {
     router = round-robin-pool
     nr-of-instances = 10
-    target.nodes = ["akka.tcp://app@10.0.0.2:2552", "akka.tcp://app@10.0.0.3:2552"]
+    target.nodes = ["akka://app@10.0.0.2:2552", "akka://app@10.0.0.3:2552"]
   }
 }
 #//#config-remote-round-robin-pool
@@ -229,9 +230,9 @@ akka.actor.deployment {
   /parent/remoteGroup {
     router = round-robin-group
     routees.paths = [
-      "akka.tcp://app@10.0.0.1:2552/user/workers/w1",
-      "akka.tcp://app@10.0.0.2:2552/user/workers/w1",
-      "akka.tcp://app@10.0.0.3:2552/user/workers/w1"]
+      "akka://app@10.0.0.1:2552/user/workers/w1",
+      "akka://app@10.0.0.2:2552/user/workers/w1",
+      "akka://app@10.0.0.3:2552/user/workers/w1"]
   }
 }
 #//#config-remote-round-robin-group
@@ -298,20 +299,20 @@ router-dispatcher {}
   class Master extends Actor {
     var router = {
       val routees = Vector.fill(5) {
-        val r = context.actorOf(Props[Worker])
-        context watch r
+        val r = context.actorOf(Props[Worker]())
+        context.watch(r)
         ActorRefRoutee(r)
       }
       Router(RoundRobinRoutingLogic(), routees)
     }
 
     def receive = {
-      case w: Work ⇒
+      case w: Work =>
         router.route(w, sender())
-      case Terminated(a) ⇒
+      case Terminated(a) =>
         router = router.removeRoutee(a)
-        val r = context.actorOf(Props[Worker])
-        context watch r
+        val r = context.actorOf(Props[Worker]())
+        context.watch(r)
         router = router.addRoutee(r)
     }
   }
@@ -319,20 +320,20 @@ router-dispatcher {}
 
   class Worker extends Actor {
     def receive = {
-      case _ ⇒
+      case _ =>
     }
   }
 
   //#create-worker-actors
   class Workers extends Actor {
-    context.actorOf(Props[Worker], name = "w1")
-    context.actorOf(Props[Worker], name = "w2")
-    context.actorOf(Props[Worker], name = "w3")
+    context.actorOf(Props[Worker](), name = "w1")
+    context.actorOf(Props[Worker](), name = "w2")
+    context.actorOf(Props[Worker](), name = "w3")
     // ...
     //#create-worker-actors
 
     def receive = {
-      case _ ⇒
+      case _ =>
     }
   }
 
@@ -344,12 +345,12 @@ router-dispatcher {}
 
     //#round-robin-pool-1
     val router1: ActorRef =
-      context.actorOf(FromConfig.props(Props[Worker]), "router1")
+      context.actorOf(FromConfig.props(Props[Worker]()), "router1")
     //#round-robin-pool-1
 
     //#round-robin-pool-2
     val router2: ActorRef =
-      context.actorOf(RoundRobinPool(5).props(Props[Worker]), "router2")
+      context.actorOf(RoundRobinPool(5).props(Props[Worker]()), "router2")
     //#round-robin-pool-2
 
     //#round-robin-group-1
@@ -364,12 +365,12 @@ router-dispatcher {}
 
     //#random-pool-1
     val router5: ActorRef =
-      context.actorOf(FromConfig.props(Props[Worker]), "router5")
+      context.actorOf(FromConfig.props(Props[Worker]()), "router5")
     //#random-pool-1
 
     //#random-pool-2
     val router6: ActorRef =
-      context.actorOf(RandomPool(5).props(Props[Worker]), "router6")
+      context.actorOf(RandomPool(5).props(Props[Worker]()), "router6")
     //#random-pool-2
 
     //#random-group-1
@@ -384,42 +385,43 @@ router-dispatcher {}
 
     //#balancing-pool-1
     val router9: ActorRef =
-      context.actorOf(FromConfig.props(Props[Worker]), "router9")
+      context.actorOf(FromConfig.props(Props[Worker]()), "router9")
     //#balancing-pool-1
 
     //#balancing-pool-2
     val router10: ActorRef =
-      context.actorOf(BalancingPool(5).props(Props[Worker]), "router10")
+      context.actorOf(BalancingPool(5).props(Props[Worker]()), "router10")
     //#balancing-pool-2
 
     // #balancing-pool-3
     val router10b: ActorRef =
-      context.actorOf(BalancingPool(20).props(Props[Worker]), "router10b")
+      context.actorOf(BalancingPool(20).props(Props[Worker]()), "router10b")
     //#balancing-pool-3
-    import scala.collection.JavaConversions._
-    for (i ← 1 to 100) router10b ! i
-    val threads10b = Thread.getAllStackTraces.keySet.filter { _.getName contains "router10b" }
+    for (i <- 1 to 100) router10b ! i
+    val threads10b = Thread.getAllStackTraces.keySet.asScala.filter { _.getName contains "router10b" }
     val threads10bNr = threads10b.size
-    require(threads10bNr == 5, s"Expected 5 threads for router10b, had $threads10bNr! Got: ${threads10b.map(_.getName)}")
+    require(
+      threads10bNr == 5,
+      s"Expected 5 threads for router10b, had $threads10bNr! Got: ${threads10b.map(_.getName)}")
 
     //#smallest-mailbox-pool-1
     val router11: ActorRef =
-      context.actorOf(FromConfig.props(Props[Worker]), "router11")
+      context.actorOf(FromConfig.props(Props[Worker]()), "router11")
     //#smallest-mailbox-pool-1
 
     //#smallest-mailbox-pool-2
     val router12: ActorRef =
-      context.actorOf(SmallestMailboxPool(5).props(Props[Worker]), "router12")
+      context.actorOf(SmallestMailboxPool(5).props(Props[Worker]()), "router12")
     //#smallest-mailbox-pool-2
 
     //#broadcast-pool-1
     val router13: ActorRef =
-      context.actorOf(FromConfig.props(Props[Worker]), "router13")
+      context.actorOf(FromConfig.props(Props[Worker]()), "router13")
     //#broadcast-pool-1
 
     //#broadcast-pool-2
     val router14: ActorRef =
-      context.actorOf(BroadcastPool(5).props(Props[Worker]), "router14")
+      context.actorOf(BroadcastPool(5).props(Props[Worker]()), "router14")
     //#broadcast-pool-2
 
     //#broadcast-group-1
@@ -434,13 +436,12 @@ router-dispatcher {}
 
     //#scatter-gather-pool-1
     val router17: ActorRef =
-      context.actorOf(FromConfig.props(Props[Worker]), "router17")
+      context.actorOf(FromConfig.props(Props[Worker]()), "router17")
     //#scatter-gather-pool-1
 
     //#scatter-gather-pool-2
     val router18: ActorRef =
-      context.actorOf(ScatterGatherFirstCompletedPool(5, within = 10.seconds).
-        props(Props[Worker]), "router18")
+      context.actorOf(ScatterGatherFirstCompletedPool(5, within = 10.seconds).props(Props[Worker]()), "router18")
     //#scatter-gather-pool-2
 
     //#scatter-gather-group-1
@@ -450,20 +451,17 @@ router-dispatcher {}
 
     //#scatter-gather-group-2
     val router20: ActorRef =
-      context.actorOf(ScatterGatherFirstCompletedGroup(
-        paths,
-        within = 10.seconds).props(), "router20")
+      context.actorOf(ScatterGatherFirstCompletedGroup(paths, within = 10.seconds).props(), "router20")
     //#scatter-gather-group-2
 
     //#tail-chopping-pool-1
     val router21: ActorRef =
-      context.actorOf(FromConfig.props(Props[Worker]), "router21")
+      context.actorOf(FromConfig.props(Props[Worker]()), "router21")
     //#tail-chopping-pool-1
 
     //#tail-chopping-pool-2
     val router22: ActorRef =
-      context.actorOf(TailChoppingPool(5, within = 10.seconds, interval = 20.millis).
-        props(Props[Worker]), "router22")
+      context.actorOf(TailChoppingPool(5, within = 10.seconds, interval = 20.millis).props(Props[Worker]()), "router22")
     //#tail-chopping-pool-2
 
     //#tail-chopping-group-1
@@ -473,21 +471,17 @@ router-dispatcher {}
 
     //#tail-chopping-group-2
     val router24: ActorRef =
-      context.actorOf(TailChoppingGroup(
-        paths,
-        within = 10.seconds, interval = 20.millis).props(), "router24")
+      context.actorOf(TailChoppingGroup(paths, within = 10.seconds, interval = 20.millis).props(), "router24")
     //#tail-chopping-group-2
 
     //#consistent-hashing-pool-1
     val router25: ActorRef =
-      context.actorOf(FromConfig.props(Props[Worker]), "router25")
+      context.actorOf(FromConfig.props(Props[Worker]()), "router25")
     //#consistent-hashing-pool-1
 
     //#consistent-hashing-pool-2
     val router26: ActorRef =
-      context.actorOf(
-        ConsistentHashingPool(5).props(Props[Worker]),
-        "router26")
+      context.actorOf(ConsistentHashingPool(5).props(Props[Worker]()), "router26")
     //#consistent-hashing-pool-2
 
     //#consistent-hashing-group-1
@@ -502,31 +496,29 @@ router-dispatcher {}
 
     //#resize-pool-1
     val router29: ActorRef =
-      context.actorOf(FromConfig.props(Props[Worker]), "router29")
+      context.actorOf(FromConfig.props(Props[Worker]()), "router29")
     //#resize-pool-1
 
     //#resize-pool-2
     val resizer = DefaultResizer(lowerBound = 2, upperBound = 15)
     val router30: ActorRef =
-      context.actorOf(
-        RoundRobinPool(5, Some(resizer)).props(Props[Worker]),
-        "router30")
+      context.actorOf(RoundRobinPool(5, Some(resizer)).props(Props[Worker]()), "router30")
     //#resize-pool-2
 
     //#optimal-size-exploring-resize-pool
     val router31: ActorRef =
-      context.actorOf(FromConfig.props(Props[Worker]), "router31")
+      context.actorOf(FromConfig.props(Props[Worker]()), "router31")
     //#optimal-size-exploring-resize-pool
 
     def receive = {
-      case _ ⇒
+      case _ =>
     }
 
   }
 
   class Echo extends Actor {
     def receive = {
-      case m ⇒ sender() ! m
+      case m => sender() ! m
     }
   }
 }
@@ -536,11 +528,11 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
   import RouterDocSpec._
 
   //#create-workers
-  system.actorOf(Props[Workers], "workers")
+  system.actorOf(Props[Workers](), "workers")
   //#create-workers
 
   //#create-parent
-  system.actorOf(Props[Parent], "parent")
+  system.actorOf(Props[Parent](), "parent")
   //#create-parent
 
   "demonstrate dispatcher" in {
@@ -548,22 +540,22 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
     val router: ActorRef = system.actorOf(
       // “head” router actor will run on "router-dispatcher" dispatcher
       // Worker routees will run on "pool-dispatcher" dispatcher
-      RandomPool(5, routerDispatcher = "router-dispatcher").props(Props[Worker]),
+      RandomPool(5, routerDispatcher = "router-dispatcher").props(Props[Worker]()),
       name = "poolWithDispatcher")
     //#dispatchers
   }
 
   "demonstrate broadcast" in {
-    val router = system.actorOf(RoundRobinPool(nrOfInstances = 5).props(Props[Echo]))
+    val router = system.actorOf(RoundRobinPool(nrOfInstances = 5).props(Props[Echo]()))
     //#broadcastDavyJonesWarning
     import akka.routing.Broadcast
     router ! Broadcast("Watch out for Davy Jones' locker")
     //#broadcastDavyJonesWarning
-    receiveN(5, 5.seconds.dilated) should have length (5)
+    (receiveN(5, 5.seconds.dilated) should have).length(5)
   }
 
   "demonstrate PoisonPill" in {
-    val router = watch(system.actorOf(RoundRobinPool(nrOfInstances = 5).props(Props[Echo])))
+    val router = watch(system.actorOf(RoundRobinPool(nrOfInstances = 5).props(Props[Echo]())))
     //#poisonPill
     import akka.actor.PoisonPill
     router ! PoisonPill
@@ -572,7 +564,7 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
   }
 
   "demonstrate broadcast of PoisonPill" in {
-    val router = watch(system.actorOf(RoundRobinPool(nrOfInstances = 5).props(Props[Echo])))
+    val router = watch(system.actorOf(RoundRobinPool(nrOfInstances = 5).props(Props[Echo]())))
     //#broadcastPoisonPill
     import akka.actor.PoisonPill
     import akka.routing.Broadcast
@@ -582,7 +574,7 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
   }
 
   "demonstrate Kill" in {
-    val router = watch(system.actorOf(RoundRobinPool(nrOfInstances = 5).props(Props[Echo])))
+    val router = watch(system.actorOf(RoundRobinPool(nrOfInstances = 5).props(Props[Echo]())))
     //#kill
     import akka.actor.Kill
     router ! Kill
@@ -591,7 +583,7 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
   }
 
   "demonstrate broadcast of Kill" in {
-    val router = watch(system.actorOf(RoundRobinPool(nrOfInstances = 5).props(Props[Echo])))
+    val router = watch(system.actorOf(RoundRobinPool(nrOfInstances = 5).props(Props[Echo]())))
     //#broadcastKill
     import akka.actor.Kill
     import akka.routing.Broadcast
@@ -604,11 +596,9 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
     //#remoteRoutees
     import akka.actor.{ Address, AddressFromURIString }
     import akka.remote.routing.RemoteRouterConfig
-    val addresses = Seq(
-      Address("akka.tcp", "remotesys", "otherhost", 1234),
-      AddressFromURIString("akka.tcp://othersys@anotherhost:1234"))
-    val routerRemote = system.actorOf(
-      RemoteRouterConfig(RoundRobinPool(5), addresses).props(Props[Echo]))
+    val addresses =
+      Seq(Address("akka", "remotesys", "otherhost", 1234), AddressFromURIString("akka://othersys@anotherhost:1234"))
+    val routerRemote = system.actorOf(RemoteRouterConfig(RoundRobinPool(5), addresses).props(Props[Echo]()))
     //#remoteRoutees
   }
 
@@ -617,11 +607,9 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
     //#remoteRoutees-artery
     import akka.actor.{ Address, AddressFromURIString }
     import akka.remote.routing.RemoteRouterConfig
-    val addresses = Seq(
-      Address("akka", "remotesys", "otherhost", 1234),
-      AddressFromURIString("akka://othersys@anotherhost:1234"))
-    val routerRemote = system.actorOf(
-      RemoteRouterConfig(RoundRobinPool(5), addresses).props(Props[Echo]))
+    val addresses =
+      Seq(Address("akka", "remotesys", "otherhost", 1234), AddressFromURIString("akka://othersys@anotherhost:1234"))
+    val routerRemote = system.actorOf(RemoteRouterConfig(RoundRobinPool(5), addresses).props(Props[Echo]()))
     //#remoteRoutees-artery
   }
 }

@@ -5,26 +5,15 @@ are provided. Later on you might need to amend the settings to change the defaul
 or adapt for specific runtime environments. Typical examples of settings that you
 might amend:
 
- * log level and logger backend
- * enable remoting
- * message serializers
- * definition of routers
- * tuning of dispatchers
+ * @ref:[log level and logger backend](../typed/logging.md)
+ * @ref:[enable Cluster](../typed/cluster.md)
+ * @ref:[message serializers](../serialization.md)
+ * @ref:[tuning of dispatchers](../typed/dispatchers.md)
 
-Akka uses the [Typesafe Config Library](https://github.com/typesafehub/config), which might also be a good choice
+Akka uses the [Typesafe Config Library](https://github.com/lightbend/config), which might also be a good choice
 for the configuration of your own application or library built with or without
-Akka. This library is implemented in Java with no external dependencies; you
-should have a look at its documentation (in particular about [ConfigFactory](https://lightbend.github.io/config/latest/api/com/typesafe/config/ConfigFactory.html)),
-which is only summarized in the following.
-
-@@@ warning
-
-If you use Akka from the Scala REPL from the 2.9.x series,
-and you do not provide your own ClassLoader to the ActorSystem,
-start the REPL with "-Yrepl-sync" to work around a deficiency in
-the REPLs provided Context ClassLoader.
-
-@@@
+Akka. This library is implemented in Java with no external dependencies;
+This is only a summary of the most important parts for more details see [the config library docs](https://github.com/lightbend/config/blob/master/README.md).
 
 ## Where configuration is read from
 
@@ -58,7 +47,8 @@ to `application`—may be overridden using the `config.resource` property
 If you are writing an Akka application, keep your configuration in
 `application.conf` at the root of the class path. If you are writing an
 Akka-based library, keep its configuration in `reference.conf` at the root
-of the JAR file.
+of the JAR file. It's not supported to override a config property owned by
+one library in a `reference.conf` of another library.
 
 @@@
 
@@ -67,56 +57,15 @@ of the JAR file.
 @@@ warning
 
 Akka's configuration approach relies heavily on the notion of every
-module/jar having its own reference.conf file, all of these will be
+module/jar having its own `reference.conf` file. All of these will be
 discovered by the configuration and loaded. Unfortunately this also means
 that if you put/merge multiple jars into the same jar, you need to merge all the
-reference.confs as well. Otherwise all defaults will be lost and Akka will not function.
+`reference.conf` files as well: otherwise all defaults will be lost.
 
 @@@
 
-If you are using Maven to package your application, you can also make use of
-the [Apache Maven Shade Plugin](http://maven.apache.org/plugins/maven-shade-plugin) support for [Resource
-Transformers](http://maven.apache.org/plugins/maven-shade-plugin/examples/resource-transformers.html#AppendingTransformer)
-to merge all the reference.confs on the build classpath into one. 
-
-The plugin configuration might look like this:
-
-```
-<plugin>
- <groupId>org.apache.maven.plugins</groupId>
- <artifactId>maven-shade-plugin</artifactId>
- <version>1.5</version>
- <executions>
-  <execution>
-   <phase>package</phase>
-   <goals>
-    <goal>shade</goal>
-   </goals>
-   <configuration>
-    <shadedArtifactAttached>true</shadedArtifactAttached>
-    <shadedClassifierName>allinone</shadedClassifierName>
-    <artifactSet>
-     <includes>
-      <include>*:*</include>
-     </includes>
-    </artifactSet>
-    <transformers>
-      <transformer
-       implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-       <resource>reference.conf</resource>
-      </transformer>
-      <transformer
-       implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-       <manifestEntries>
-        <Main-Class>akka.Main</Main-Class>
-       </manifestEntries>
-      </transformer>
-    </transformers>
-   </configuration>
-  </execution>
- </executions>
-</plugin>
-```
+See the @ref[deployment documentation](../additional/deploy.md)
+for information on how to merge the `reference.conf` resources while bundling.
 
 ## Custom application.conf
 
@@ -127,6 +76,9 @@ A custom `application.conf` might look like this:
 # Copy in parts of the reference files and modify as you please.
 
 akka {
+
+  # Logger config for Akka internals and classic actors, the new API relies
+  # directly on SLF4J and your config for the logger backend.
 
   # Loggers to register at boot time (akka.event.Logging$DefaultLogger logs
   # to STDOUT)
@@ -155,9 +107,9 @@ akka {
     }
   }
 
-  remote {
-    # The port clients should connect to. Default is 2552.
-    netty.tcp.port = 4711
+  remote.artery {
+    # The port clients should connect to.
+    canonical.port = 4711
   }
 }
 ```
@@ -189,12 +141,13 @@ If the system or config property `akka.log-config-on-start` is set to `on`, then
 complete configuration is logged at INFO level when the actor system is started. This is
 useful when you are uncertain of what configuration is used.
 
+@@@div { .group-scala }
+
 If in doubt, you can inspect your configuration objects
 before or after using them to construct an actor system:
 
-@@@vars
 ```
-Welcome to Scala $scala.binary_version$ (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0).
+Welcome to Scala 2.12 (Java HotSpot(TM) 64-Bit Server VM, Java 1.8.0).
 Type in expressions to have them evaluated.
 Type :help for more information.
 
@@ -214,6 +167,7 @@ res1: java.lang.String =
     }
 }
 ```
+
 @@@
 
 The comments preceding every item give detailed information about the origin of
@@ -221,11 +175,12 @@ the setting (file & line number) plus possible comments which were present,
 e.g. in the reference configuration. The settings as merged with the reference
 and parsed by the actor system can be displayed like this:
 
-```java
-final ActorSystem system = ActorSystem.create();
-System.out.println(system.settings());
-// this is a shortcut for system.settings().config().root().render()
-```
+Scala
+: @@snip [ConfigDocSpec.scala](/akka-docs/src/test/scala/docs/config/ConfigDocSpec.scala) { #dump-config }
+
+Java
+: @@snip [ConfigDocTest.java](/akka-docs/src/test/java/jdocs/config/ConfigDocTest.java) { #dump-config }
+
 
 ## A Word About ClassLoaders
 
@@ -243,7 +198,7 @@ This implies that putting Akka on the boot class path will yield
 ## Application specific settings
 
 The configuration can also be used for application specific settings.
-A good practice is to place those settings in an @ref:[Extension](../extending-akka.md#extending-akka-settings).
+A good practice is to place those settings in an @ref:[Extension](../extending-akka.md#extending-akka-settings). 
 
 ## Configuring multiple ActorSystem
 
@@ -269,12 +224,11 @@ my.own.setting = 42
 my.other.setting = "hello"
 ```
 
-```scala
-val config = ConfigFactory.load()
-val app1 = ActorSystem("MyApp1", config.getConfig("myapp1").withFallback(config))
-val app2 = ActorSystem("MyApp2",
-  config.getConfig("myapp2").withOnlyPath("akka").withFallback(config))
-```
+Scala
+: @@snip [ConfigDocSpec.scala](/akka-docs/src/test/scala/docs/config/ConfigDocSpec.scala) { #separate-apps }
+
+Java
+: @@snip [ConfigDocTest.java](/akka-docs/src/test/java/jdocs/config/ConfigDocTest.java) { #separate-apps }
 
 These two samples demonstrate different variations of the “lift-a-subtree”
 trick: in the first case, the configuration accessible from within the actor
@@ -310,7 +264,13 @@ substitutions.
 You may also specify and parse the configuration programmatically in other ways when instantiating
 the `ActorSystem`.
 
-@@snip [ConfigDocSpec.scala](/akka-docs/src/test/scala/docs/config/ConfigDocSpec.scala) { #imports #custom-config }
+
+Scala
+: @@snip [ConfigDocSpec.scala](/akka-docs/src/test/scala/docs/config/ConfigDocSpec.scala) { #imports #custom-config }
+
+Java
+: @@snip [ConfigDocTest.java](/akka-docs/src/test/java/jdocs/config/ConfigDocTest.java) { #imports #custom-config }
+
 
 ## Reading configuration from a custom location
 
@@ -353,7 +313,12 @@ you could put a config string in code using
 You can also combine your custom config with the usual config,
 that might look like:
 
-@@snip [ConfigDoc.java](/akka-docs/src/test/java/jdocs/config/ConfigDoc.java) { #java-custom-config }
+Scala
+: @@snip [ConfigDocSpec.scala](/akka-docs/src/test/scala/docs/config/ConfigDocSpec.scala) { #custom-config-2 }
+
+Java
+: @@snip [ConfigDocTest.java](/akka-docs/src/test/java/jdocs/config/ConfigDocTest.java) { #custom-config-2 }
+
 
 When working with `Config` objects, keep in mind that there are
 three "layers" in the cake:
@@ -380,106 +345,7 @@ Includes at the top of `application.conf` will be overridden by
 the rest of `application.conf`, while those at the bottom will
 override the earlier stuff.
 
-## Actor Deployment Configuration
-
-Deployment settings for specific actors can be defined in the `akka.actor.deployment`
-section of the configuration. In the deployment section it is possible to define
-things like dispatcher, mailbox, router settings, and remote deployment.
-Configuration of these features are described in the chapters detailing corresponding
-topics. An example may look like this:
-
-@@snip [ConfigDocSpec.scala](/akka-docs/src/test/scala/docs/config/ConfigDocSpec.scala) { #deployment-section }
-
-@@@ note
-
-The deployment section for a specific actor is identified by the
-path of the actor relative to `/user`.
-
-@@@
-
-You can use asterisks as wildcard matches for the actor path sections, so you could specify:
-`/*/sampleActor` and that would match all `sampleActor` on that level in the hierarchy.
-In addition, please note:
-
- * you can also use wildcards in the last position to match all actors at a certain level: `/someParent/*`
- * you can use double-wildcards in the last position to match all child actors and their children
-recursively: `/someParent/**`
- * non-wildcard matches always have higher priority to match than wildcards, and single wildcard matches
-have higher priority than double-wildcards, so: `/foo/bar` is considered **more specific** than
-`/foo/*`, which is considered **more specific** than `/foo/**`. Only the highest priority match is used
- * wildcards **cannot** be used to partially match section, like this: `/foo*/bar`, `/f*o/bar` etc.
-
-@@@ note
-
-Double-wildcards can only be placed in the last position.
-
-@@@
-
 ## Listing of the Reference Configuration
 
 Each Akka module has a reference configuration file with the default values.
-
-<a id="config-akka-actor"></a>
-### akka-actor
-
-@@snip [reference.conf](/akka-actor/src/main/resources/reference.conf)
-
-<a id="config-akka-agent"></a>
-### akka-agent
-
-@@snip [reference.conf](/akka-agent/src/main/resources/reference.conf)
-
-<a id="config-akka-camel"></a>
-### akka-camel
-
-@@snip [reference.conf](/akka-camel/src/main/resources/reference.conf)
-
-<a id="config-akka-cluster"></a>
-### akka-cluster
-
-@@snip [reference.conf](/akka-cluster/src/main/resources/reference.conf)
-
-<a id="config-akka-multi-node-testkit"></a>
-### akka-multi-node-testkit
-
-@@snip [reference.conf](/akka-multi-node-testkit/src/main/resources/reference.conf)
-
-<a id="config-akka-persistence"></a>
-### akka-persistence
-
-@@snip [reference.conf](/akka-persistence/src/main/resources/reference.conf)
-
-<a id="config-akka-remote"></a>
-### akka-remote
-
-@@snip [reference.conf](/akka-remote/src/main/resources/reference.conf) { #shared #classic type=none }
-
-<a id="config-akka-remote-artery"></a>
-### akka-remote (artery)
-
-@@snip [reference.conf](/akka-remote/src/main/resources/reference.conf) { #shared #artery type=none }
-
-<a id="config-akka-testkit"></a>
-### akka-testkit
-
-@@snip [reference.conf](/akka-testkit/src/main/resources/reference.conf)
-
-<a id="config-cluster-metrics"></a>
-### akka-cluster-metrics
-
-@@snip [reference.conf](/akka-cluster-metrics/src/main/resources/reference.conf)
-
-<a id="config-cluster-tools"></a>
-### akka-cluster-tools
-
-@@snip [reference.conf](/akka-cluster-tools/src/main/resources/reference.conf)
-
-<a id="config-cluster-sharding"></a>
-### akka-cluster-sharding
-
-@@snip [reference.conf](/akka-cluster-sharding/src/main/resources/reference.conf)
-
-<a id="config-distributed-data"></a>
-### akka-distributed-data
-
-@@snip [reference.conf](/akka-distributed-data/src/main/resources/reference.conf)
+Those `reference.conf` files are listed in @ref[Default configuration](configuration-reference.md)

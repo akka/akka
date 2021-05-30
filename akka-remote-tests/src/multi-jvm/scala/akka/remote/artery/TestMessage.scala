@@ -1,27 +1,27 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
 import akka.actor.ExtendedActorSystem
+import akka.protobufv3.internal.ByteString
+import akka.remote.artery.protobuf.{ TestMessages => proto }
 import akka.serialization.SerializerWithStringManifest
-import akka.serialization.ByteBufferSerializer
-import akka.remote.artery.protobuf.{ TestMessages ⇒ proto }
-import akka.protobuf.ByteString
-import java.util.concurrent.locks.LockSupport
+
+import java.io.NotSerializableException
 
 object TestMessage {
   final case class Item(id: Long, name: String)
 }
 
 final case class TestMessage(
-  id:          Long,
-  name:        String,
-  status:      Boolean,
-  description: String,
-  payload:     Array[Byte],
-  items:       Vector[TestMessage.Item])
+    id: Long,
+    name: String,
+    status: Boolean,
+    description: String,
+    payload: Array[Byte],
+    items: Vector[TestMessage.Item])
 
 class TestMessageSerializer(val system: ExtendedActorSystem) extends SerializerWithStringManifest {
 
@@ -31,27 +31,30 @@ class TestMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
 
   override def manifest(o: AnyRef): String =
     o match {
-      case _: TestMessage ⇒ TestMessageManifest
+      case _: TestMessage => TestMessageManifest
+      case _              => throw new NotSerializableException()
     }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
-    case msg: TestMessage ⇒
-      val builder = proto.TestMessage.newBuilder()
+    case msg: TestMessage =>
+      val builder = proto.TestMessage
+        .newBuilder()
         .setId(msg.id)
         .setName(msg.name)
         .setDescription(msg.description)
         .setStatus(msg.status)
         .setPayload(ByteString.copyFrom(msg.payload))
-      msg.items.foreach { item ⇒
+      msg.items.foreach { item =>
         builder.addItems(proto.Item.newBuilder().setId(item.id).setName(item.name))
       }
       builder.build().toByteArray()
+    case _ => throw new NotSerializableException()
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
     val protoMsg = proto.TestMessage.parseFrom(bytes)
-    import scala.collection.JavaConverters._
-    val items = protoMsg.getItemsList.asScala.map { item ⇒
+    import akka.util.ccompat.JavaConverters._
+    val items = protoMsg.getItemsList.asScala.map { item =>
       TestMessage.Item(item.getId, item.getName)
     }.toVector
 

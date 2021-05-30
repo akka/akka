@@ -1,17 +1,19 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.client
+
+import scala.concurrent.duration._
+
+import scala.annotation.nowarn
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.{ ActorPath, ActorRef }
 import akka.cluster.{ Cluster, MultiNodeClusterSpec }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit.{ ImplicitSender, TestActors }
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 object ClusterClientHandoverSpec extends MultiNodeConfig {
   val client = role("client")
@@ -36,7 +38,12 @@ class ClusterClientHandoverSpecMultiJvmNode1 extends ClusterClientHandoverSpec
 class ClusterClientHandoverSpecMultiJvmNode2 extends ClusterClientHandoverSpec
 class ClusterClientHandoverSpecMultiJvmNode3 extends ClusterClientHandoverSpec
 
-class ClusterClientHandoverSpec extends MultiNodeSpec(ClusterClientHandoverSpec) with STMultiNodeSpec with ImplicitSender with MultiNodeClusterSpec {
+@nowarn("msg=deprecated")
+class ClusterClientHandoverSpec
+    extends MultiNodeSpec(ClusterClientHandoverSpec)
+    with STMultiNodeSpec
+    with ImplicitSender
+    with MultiNodeClusterSpec {
 
   import ClusterClientHandoverSpec._
 
@@ -44,13 +51,13 @@ class ClusterClientHandoverSpec extends MultiNodeSpec(ClusterClientHandoverSpec)
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
       ClusterClientReceptionist(system)
     }
     enterBarrier(from.name + "-joined")
   }
 
-  def initialContacts: Set[ActorPath] = Set(first, second).map { r ⇒
+  def initialContacts: Set[ActorPath] = Set(first, second).map { r =>
     node(r) / "system" / "receptionist"
   }
 
@@ -70,8 +77,9 @@ class ClusterClientHandoverSpec extends MultiNodeSpec(ClusterClientHandoverSpec)
 
     "establish connection to first node" in {
       runOn(client) {
-        clusterClient = system.actorOf(ClusterClient.props(
-          ClusterClientSettings(system).withInitialContacts(initialContacts)), "client1")
+        clusterClient = system.actorOf(
+          ClusterClient.props(ClusterClientSettings(system).withInitialContacts(initialContacts)),
+          "client1")
         clusterClient ! ClusterClient.Send("/user/testService", "hello", localAffinity = true)
         expectMsgType[String](3.seconds) should be("hello")
       }
@@ -90,7 +98,7 @@ class ClusterClientHandoverSpec extends MultiNodeSpec(ClusterClientHandoverSpec)
 
     "remove first node from the cluster" in {
       runOn(first) {
-        Cluster(system) leave node(first).address
+        Cluster(system).leave(node(first).address)
       }
 
       runOn(second) {

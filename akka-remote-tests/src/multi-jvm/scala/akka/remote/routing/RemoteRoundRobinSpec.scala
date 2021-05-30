@@ -1,8 +1,15 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.routing
+
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.{ Actor, ActorRef, Address, PoisonPill, Props }
 import akka.pattern.ask
@@ -10,12 +17,6 @@ import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.routing._
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.collection.immutable
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.language.postfixOps
 
 class RemoteRoundRobinConfig(artery: Boolean) extends MultiNodeConfig {
 
@@ -24,9 +25,9 @@ class RemoteRoundRobinConfig(artery: Boolean) extends MultiNodeConfig {
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.remote.artery.enabled = $artery
+      akka.remote.use-unsafe-remote-features-outside-cluster = on
       """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   deployOnAll("""
@@ -64,7 +65,7 @@ class ArteryRemoteRoundRobinMultiJvmNode4 extends RemoteRoundRobinSpec(new Remot
 object RemoteRoundRobinSpec {
   class SomeActor extends Actor {
     def receive = {
-      case "hit" ⇒ sender() ! self
+      case "hit" => sender() ! self
     }
   }
 
@@ -74,8 +75,9 @@ object RemoteRoundRobinSpec {
   }
 }
 
-class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends RemotingMultiNodeSpec(multiNodeConfig)
-  with DefaultTimeout {
+class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig)
+    extends RemotingMultiNodeSpec(multiNodeConfig)
+    with DefaultTimeout {
   import RemoteRoundRobinSpec._
   import multiNodeConfig._
 
@@ -90,29 +92,29 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends Remo
 
       runOn(fourth) {
         enterBarrier("start")
-        val actor = system.actorOf(RoundRobinPool(nrOfInstances = 0).props(Props[SomeActor]), "service-hello")
+        val actor = system.actorOf(RoundRobinPool(nrOfInstances = 0).props(Props[SomeActor]()), "service-hello")
         actor.isInstanceOf[RoutedActorRef] should ===(true)
 
         val connectionCount = 3
         val iterationCount = 10
 
-        for (i ← 0 until iterationCount; k ← 0 until connectionCount) {
+        for (_ <- 0 until iterationCount; _ <- 0 until connectionCount) {
           actor ! "hit"
         }
 
         val replies: Map[Address, Int] = (receiveWhile(5 seconds, messages = connectionCount * iterationCount) {
-          case ref: ActorRef ⇒
+          case ref: ActorRef =>
             info(s"reply from $ref")
             ref.path.address
-        }).foldLeft(Map(node(first).address → 0, node(second).address → 0, node(third).address → 0)) {
-          case (replyMap, address) ⇒ replyMap + (address → (replyMap(address) + 1))
+        }).foldLeft(Map(node(first).address -> 0, node(second).address -> 0, node(third).address -> 0)) {
+          case (replyMap, address) => replyMap + (address -> (replyMap(address) + 1))
         }
 
         enterBarrier("broadcast-end")
         actor ! Broadcast(PoisonPill)
 
         enterBarrier("end")
-        replies.values foreach { _ should ===(iterationCount) }
+        replies.values.foreach { _ should ===(iterationCount) }
         replies.get(node(fourth).address) should ===(None)
 
         // shut down the actor before we let the other node(s) shut down so we don't try to send
@@ -133,9 +135,10 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends Remo
 
       runOn(fourth) {
         enterBarrier("start")
-        val actor = system.actorOf(RoundRobinPool(
-          nrOfInstances = 1,
-          resizer = Some(new TestResizer)).props(Props[SomeActor]), "service-hello2")
+        val actor =
+          system.actorOf(
+            RoundRobinPool(nrOfInstances = 1, resizer = Some(new TestResizer)).props(Props[SomeActor]()),
+            "service-hello2")
         actor.isInstanceOf[RoutedActorRef] should ===(true)
 
         actor ! GetRoutees
@@ -143,7 +146,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends Remo
         expectMsgType[Routees].routees.size should ===(2)
 
         val repliesFrom: Set[ActorRef] =
-          (for (n ← 3 to 9) yield {
+          (for (n <- 3 to 9) yield {
             // each message trigger a resize, incrementing number of routees with 1
             actor ! "hit"
             Await.result(actor ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees.size should ===(n)
@@ -171,7 +174,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends Remo
     "send messages with actor selection to remote paths" in {
 
       runOn(first, second, third) {
-        system.actorOf(Props[SomeActor], name = "target-" + myself.name)
+        system.actorOf(Props[SomeActor](), name = "target-" + myself.name)
         enterBarrier("start", "end")
       }
 
@@ -183,18 +186,18 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig) extends Remo
         val connectionCount = 3
         val iterationCount = 10
 
-        for (i ← 0 until iterationCount; k ← 0 until connectionCount) {
+        for (_ <- 0 until iterationCount; _ <- 0 until connectionCount) {
           actor ! "hit"
         }
 
         val replies: Map[Address, Int] = (receiveWhile(5 seconds, messages = connectionCount * iterationCount) {
-          case ref: ActorRef ⇒ ref.path.address
-        }).foldLeft(Map(node(first).address → 0, node(second).address → 0, node(third).address → 0)) {
-          case (replyMap, address) ⇒ replyMap + (address → (replyMap(address) + 1))
+          case ref: ActorRef => ref.path.address
+        }).foldLeft(Map(node(first).address -> 0, node(second).address -> 0, node(third).address -> 0)) {
+          case (replyMap, address) => replyMap + (address -> (replyMap(address) + 1))
         }
 
         enterBarrier("end")
-        replies.values foreach { _ should ===(iterationCount) }
+        replies.values.foreach { _ should ===(iterationCount) }
         replies.get(node(fourth).address) should ===(None)
       }
 

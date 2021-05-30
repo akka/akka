@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event.jul
@@ -14,19 +14,24 @@ import akka.event.EventStream
 import akka.event.LoggerMessageQueueSemantics
 import akka.event.Logging._
 import akka.event.LoggingFilter
+import akka.util.unused
 
 /**
  * `java.util.logging` logger.
  */
+@deprecated("Use Slf4jLogger instead.", "2.6.0")
 class JavaLogger extends Actor with RequiresMessageQueue[LoggerMessageQueueSemantics] {
   import Logger.mapLevel
 
   def receive = {
-    case event @ Error(cause, _, _, _) ⇒ log(mapLevel(event.level), cause, event)
-    case event: Warning                ⇒ log(mapLevel(event.level), null, event)
-    case event: Info                   ⇒ log(mapLevel(event.level), null, event)
-    case event: Debug                  ⇒ log(mapLevel(event.level), null, event)
-    case InitializeLogger(_)           ⇒ sender() ! LoggerInitialized
+    case event @ Error(cause, _, _, _) => log(mapLevel(event.level), cause, event)
+    case event: Warning                => log(mapLevel(event.level), null, event)
+    case event: Info                   => log(mapLevel(event.level), null, event)
+    case event: Debug                  => log(mapLevel(event.level), null, event)
+    case InitializeLogger(_) =>
+      Logger(this.getClass.getName)
+        .warning(s"${getClass.getName} has been deprecated since Akka 2.6.0. Use SLF4J instead.")
+      sender() ! LoggerInitialized
   }
 
   def log(level: logging.Level, cause: Throwable, event: LogEvent): Unit = {
@@ -44,6 +49,7 @@ class JavaLogger extends Actor with RequiresMessageQueue[LoggerMessageQueueSeman
 /**
  * Base trait for all classes that wants to be able use the JUL logging infrastructure.
  */
+@deprecated("Use SLF4J or direct java.util.logging instead.", "2.6.0")
 trait JavaLogging {
   @transient
   lazy val log: logging.Logger = Logger(this.getClass.getName)
@@ -52,7 +58,9 @@ trait JavaLogging {
 /**
  * Logger is a factory for obtaining JUL Loggers
  */
+@deprecated("Use SLF4J or direct java.util.logging instead.", "2.6.0")
 object Logger {
+
   /**
    * @param logger - which logger
    * @return a Logger that corresponds for the given logger name
@@ -65,8 +73,8 @@ object Logger {
    * @return a Logger for the specified parameters
    */
   def apply(logClass: Class[_], logSource: String): logging.Logger = logClass match {
-    case c if c == classOf[DummyClassForStringSources] ⇒ apply(logSource)
-    case _ ⇒ logging.Logger.getLogger(logClass.getName)
+    case c if c == classOf[DummyClassForStringSources] => apply(logSource)
+    case _                                             => logging.Logger.getLogger(logClass.getName)
   }
 
   /**
@@ -75,11 +83,11 @@ object Logger {
   def root: logging.Logger = logging.Logger.getGlobal()
 
   def mapLevel(level: LogLevel): logging.Level = level.asInt match {
-    case InfoLevel.asInt    ⇒ logging.Level.INFO
-    case DebugLevel.asInt   ⇒ logging.Level.CONFIG
-    case WarningLevel.asInt ⇒ logging.Level.WARNING
-    case ErrorLevel.asInt   ⇒ logging.Level.SEVERE
-    case _                  ⇒ logging.Level.FINE
+    case InfoLevel.asInt    => logging.Level.INFO
+    case DebugLevel.asInt   => logging.Level.CONFIG
+    case WarningLevel.asInt => logging.Level.WARNING
+    case ErrorLevel.asInt   => logging.Level.SEVERE
+    case _                  => logging.Level.FINE
   }
 }
 
@@ -88,7 +96,8 @@ object Logger {
  * backend configuration to filter log events before publishing
  * the log events to the `eventStream`.
  */
-class JavaLoggingFilter(settings: ActorSystem.Settings, eventStream: EventStream) extends LoggingFilter {
+@deprecated("Use Slf4jLoggingFilter instead.", "2.6.0")
+class JavaLoggingFilter(@unused settings: ActorSystem.Settings, eventStream: EventStream) extends LoggingFilter {
   import Logger.mapLevel
 
   def isErrorEnabled(logClass: Class[_], logSource: String) =

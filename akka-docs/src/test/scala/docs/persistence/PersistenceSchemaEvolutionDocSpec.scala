@@ -1,12 +1,10 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.persistence
 
 import java.io.NotSerializableException
-
-import scala.language.reflectiveCalls
 import java.nio.charset.Charset
 
 import akka.actor.ActorSystem
@@ -14,13 +12,13 @@ import akka.persistence.journal.{ EventAdapter, EventSeq }
 import akka.serialization.{ SerializationExtension, SerializerWithStringManifest }
 import akka.testkit.TestKit
 import com.typesafe.config._
-import org.scalatest.WordSpec
+import org.scalatest.wordspec.AnyWordSpec
 import spray.json.JsObject
-
 import scala.concurrent.duration._
+
 import docs.persistence.proto.FlightAppModels
 
-class PersistenceSchemaEvolutionDocSpec extends WordSpec {
+class PersistenceSchemaEvolutionDocSpec extends AnyWordSpec {
 
   val customSerializerConfig =
     """
@@ -53,10 +51,10 @@ class ProtobufReadOptional {
   sealed abstract class SeatType { def code: String }
   object SeatType {
     def fromString(s: String) = s match {
-      case Window.code ⇒ Window
-      case Aisle.code  ⇒ Aisle
-      case Other.code  ⇒ Other
-      case _           ⇒ Unknown
+      case Window.code => Window
+      case Aisle.code  => Aisle
+      case Other.code  => Other
+      case _           => Unknown
     }
     case object Window extends SeatType { override val code = "W" }
     case object Aisle extends SeatType { override val code = "A" }
@@ -82,20 +80,21 @@ class ProtobufReadOptional {
 
     override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
       manifest match {
-        case SeatReservedManifest ⇒
+        case SeatReservedManifest =>
           // use generated protobuf serializer
           seatReserved(FlightAppModels.SeatReserved.parseFrom(bytes))
-        case _ ⇒
+        case _ =>
           throw new NotSerializableException("Unable to handle manifest: " + manifest)
       }
 
     override def toBinary(o: AnyRef): Array[Byte] = o match {
-      case s: SeatReserved ⇒
+      case s: SeatReserved =>
         FlightAppModels.SeatReserved.newBuilder
           .setRow(s.row)
           .setLetter(s.letter)
           .setSeatType(s.seatType.code)
-          .build().toByteArray
+          .build()
+          .toByteArray
     }
 
     // -- fromBinary helpers --
@@ -142,12 +141,13 @@ class RenamePlainJson {
       marshaller.toJson(event)
 
     override def fromJournal(event: Any, manifest: String): EventSeq = event match {
-      case json: JsObject ⇒ EventSeq(marshaller.fromJson(manifest match {
-        case V1      ⇒ rename(json, "code", "seatNr")
-        case V2      ⇒ json // pass-through
-        case unknown ⇒ throw new IllegalArgumentException(s"Unknown manifest: $unknown")
-      }))
-      case _ ⇒
+      case json: JsObject =>
+        EventSeq(marshaller.fromJson(manifest match {
+          case V1      => rename(json, "code", "seatNr")
+          case V2      => json // pass-through
+          case unknown => throw new IllegalArgumentException(s"Unknown manifest: $unknown")
+        }))
+      case _ =>
         val c = event.getClass
         throw new IllegalArgumentException("Can only work with JSON, was: %s".format(c))
     }
@@ -189,20 +189,20 @@ object SimplestCustomSerializer {
 
     // serialize the object
     override def toBinary(obj: AnyRef): Array[Byte] = obj match {
-      case p: Person ⇒ s"""${p.name}|${p.surname}""".getBytes(Utf8)
-      case _ ⇒ throw new IllegalArgumentException(
-        s"Unable to serialize to bytes, clazz was: ${obj.getClass}!")
+      case p: Person => s"""${p.name}|${p.surname}""".getBytes(Utf8)
+      case _         => throw new IllegalArgumentException(s"Unable to serialize to bytes, clazz was: ${obj.getClass}!")
     }
 
     // deserialize the object, using the manifest to indicate which logic to apply
     override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
       manifest match {
-        case PersonManifest ⇒
+        case PersonManifest =>
           val nameAndSurname = new String(bytes, Utf8)
           val Array(name, surname) = nameAndSurname.split("[|]")
           Person(name, surname)
-        case _ ⇒ throw new NotSerializableException(
-          s"Unable to deserialize from bytes, manifest was: $manifest! Bytes length: " +
+        case _ =>
+          throw new NotSerializableException(
+            s"Unable to deserialize from bytes, manifest was: $manifest! Bytes length: " +
             bytes.length)
       }
 
@@ -233,28 +233,26 @@ class PersonSerializerSettingsBox {
 final case class SamplePayload(p: Any)
 
 //#split-events-during-recovery
-trait V1
-trait V2
+trait Version1
+trait Version2
 
 // V1 event:
-final case class UserDetailsChanged(name: String, address: String) extends V1
+final case class UserDetailsChanged(name: String, address: String) extends Version1
 
 // corresponding V2 events:
-final case class UserNameChanged(name: String) extends V2
-final case class UserAddressChanged(address: String) extends V2
+final case class UserNameChanged(name: String) extends Version2
+final case class UserAddressChanged(address: String) extends Version2
 
 // event splitting adapter:
 class UserEventsAdapter extends EventAdapter {
   override def manifest(event: Any): String = ""
 
   override def fromJournal(event: Any, manifest: String): EventSeq = event match {
-    case UserDetailsChanged(null, address) ⇒ EventSeq(UserAddressChanged(address))
-    case UserDetailsChanged(name, null)    ⇒ EventSeq(UserNameChanged(name))
-    case UserDetailsChanged(name, address) ⇒
-      EventSeq(
-        UserNameChanged(name),
-        UserAddressChanged(address))
-    case event: V2 ⇒ EventSeq(event)
+    case UserDetailsChanged(null, address) => EventSeq(UserAddressChanged(address))
+    case UserDetailsChanged(name, null)    => EventSeq(UserNameChanged(name))
+    case UserDetailsChanged(name, address) =>
+      EventSeq(UserNameChanged(name), UserAddressChanged(address))
+    case event: Version2 => EventSeq(event)
   }
 
   override def toJournal(event: Any): Any = event
@@ -270,22 +268,21 @@ class RemovedEventsAwareSerializer extends SerializerWithStringManifest {
   val utf8 = Charset.forName("UTF-8")
   override def identifier: Int = 8337
 
-  val SkipEventManifestsEvents = Set(
-    "docs.persistence.CustomerBlinked" // ...
+  val SkipEventManifestsEvents = Set("docs.persistence.CustomerBlinked" // ...
   )
 
   override def manifest(o: AnyRef): String = o.getClass.getName
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
-    case _ ⇒ o.toString.getBytes(utf8) // example serialization
+    case _ => o.toString.getBytes(utf8) // example serialization
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
     manifest match {
-      case m if SkipEventManifestsEvents.contains(m) ⇒
+      case m if SkipEventManifestsEvents.contains(m) =>
         EventDeserializationSkipped
 
-      case other ⇒ new String(bytes, utf8)
+      case _ => new String(bytes, utf8)
     }
 }
 //#string-serializer-skip-deleved-event-by-manifest
@@ -296,8 +293,8 @@ class SkippedEventsAwareAdapter extends EventAdapter {
   override def toJournal(event: Any) = event
 
   override def fromJournal(event: Any, manifest: String) = event match {
-    case EventDeserializationSkipped ⇒ EventSeq.empty
-    case _                           ⇒ EventSeq(event)
+    case EventDeserializationSkipped => EventSeq.empty
+    case _                           => EventSeq(event)
   }
 }
 //#string-serializer-skip-deleved-event-by-manifest-adapter
@@ -313,15 +310,15 @@ class RenamedEventAwareSerializer extends SerializerWithStringManifest {
   override def manifest(o: AnyRef): String = o.getClass.getName
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
-    case SamplePayload(data) ⇒ s"""$data""".getBytes(Utf8)
+    case SamplePayload(data) => s"""$data""".getBytes(Utf8)
     // previously also handled "old" events here.
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
     manifest match {
-      case OldPayloadClassName ⇒ SamplePayload(new String(bytes, Utf8))
-      case MyPayloadClassName  ⇒ SamplePayload(new String(bytes, Utf8))
-      case other               ⇒ throw new NotSerializableException(s"unexpected manifest [$other]")
+      case OldPayloadClassName => SamplePayload(new String(bytes, Utf8))
+      case MyPayloadClassName  => SamplePayload(new String(bytes, Utf8))
+      case other               => throw new NotSerializableException(s"unexpected manifest [$other]")
     }
 }
 //#string-serializer-handle-rename
@@ -348,11 +345,11 @@ class DetachedModelsAdapter extends EventAdapter {
   override def manifest(event: Any): String = ""
 
   override def toJournal(event: Any): Any = event match {
-    case DomainModel.SeatBooked(code, customer) ⇒
+    case DomainModel.SeatBooked(code, customer) =>
       DataModel.SeatBooked(code, customer.name)
   }
   override def fromJournal(event: Any, manifest: String): EventSeq = event match {
-    case DataModel.SeatBooked(code, customerName) ⇒
+    case DataModel.SeatBooked(code, customerName) =>
       EventSeq(DomainModel.SeatBooked(code, DomainModel.Customer(customerName)))
   }
 }
@@ -374,11 +371,10 @@ class JsonDataModelAdapter extends EventAdapter {
     marshaller.toJson(event)
 
   override def fromJournal(event: Any, manifest: String): EventSeq = event match {
-    case json: JsObject ⇒
+    case json: JsObject =>
       EventSeq(marshaller.fromJson(json))
-    case _ ⇒
-      throw new IllegalArgumentException(
-        "Unable to fromJournal a non-JSON object! Was: " + event.getClass)
+    case _ =>
+      throw new IllegalArgumentException("Unable to fromJournal a non-JSON object! Was: " + event.getClass)
   }
 }
 //#detach-models-adapter-json

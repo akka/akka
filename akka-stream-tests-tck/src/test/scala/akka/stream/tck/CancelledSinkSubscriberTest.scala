@@ -1,12 +1,13 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.tck
 
-import akka.stream.scaladsl._
 import org.reactivestreams.Subscriber
 import org.testng.SkipException
+
+import akka.stream.scaladsl._
 
 class CancelledSinkSubscriberTest extends AkkaSubscriberBlackboxVerification[Int] {
 

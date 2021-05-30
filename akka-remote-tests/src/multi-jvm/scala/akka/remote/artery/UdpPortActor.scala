@@ -1,15 +1,16 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
 import akka.actor.Actor
 import akka.remote.RARP
+import akka.serialization.jackson.CborSerializable
 import akka.testkit.SocketUtil
 
 object UdpPortActor {
-  case object GetUdpPort
+  case object GetUdpPort extends CborSerializable
 }
 
 /**
@@ -18,10 +19,10 @@ object UdpPortActor {
 class UdpPortActor extends Actor {
   import UdpPortActor._
 
-  val port = SocketUtil.temporaryServerAddress(RARP(context.system).provider
-    .getDefaultAddress.host.get, udp = true).getPort
+  val port =
+    SocketUtil.temporaryServerAddress(RARP(context.system).provider.getDefaultAddress.host.get, udp = true).getPort
 
   def receive = {
-    case GetUdpPort ⇒ sender() ! port
+    case GetUdpPort => sender() ! port
   }
 }

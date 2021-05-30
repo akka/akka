@@ -1,11 +1,19 @@
 # Persistence - Building a storage backend 
 
 Storage backends for journals and snapshot stores are pluggable in the Akka persistence extension.
-A directory of persistence journal and snapshot store plugins is available at the Akka Community Projects page, see [Community plugins](http://akka.io/community/)
+A directory of persistence journal and snapshot store plugins is available at the Akka Community Projects page, see [Community plugins](https://akka.io/community/)
 This documentation described how to build a new storage backend.
 
-<a id="journal-plugin-api"></a>
-### Journal plugin API
+Applications can provide their own plugins by implementing a plugin API and activating them by configuration.
+Plugin development requires the following imports:
+
+Scala
+:  @@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #plugin-imports }
+
+Java
+:  @@snip [LambdaPersistencePluginDocTest.java](/akka-docs/src/test/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #plugin-imports }
+
+## Journal plugin API
 
 A journal plugin extends `AsyncWriteJournal`.
 
@@ -55,7 +63,7 @@ The `plugin-dispatcher` is the dispatcher used for the plugin actor. If not spec
 
 Don't run journal tasks/futures on the system default dispatcher, since that might starve other tasks.
 
-### Snapshot store plugin API
+## Snapshot store plugin API
 
 A snapshot store plugin must extend the `SnapshotStore` actor and implement the following methods:
 
@@ -71,7 +79,7 @@ A snapshot store plugin can be activated with the following minimal configuratio
 
 The snapshot store instance is an actor so the methods corresponding to requests from persistent actors
 are executed sequentially. It may delegate to asynchronous libraries, spawn futures, or delegate to other
-actors to achive parallelism.
+actors to achieve parallelism.
 
 The snapshot store plugin class must have a constructor with one of these signatures:
 
@@ -87,16 +95,19 @@ The `plugin-dispatcher` is the dispatcher used for the plugin actor. If not spec
 
 Don't run snapshot store tasks/futures on the system default dispatcher, since that might starve other tasks.
 
-### Plugin TCK
+## Plugin TCK
 
-In order to help developers build correct and high quality storage plugins, we provide a Technology Compatibility Kit ([TCK](http://en.wikipedia.org/wiki/Technology_Compatibility_Kit) for short).
+In order to help developers build correct and high quality storage plugins, we provide a Technology Compatibility Kit ([TCK](https://en.wikipedia.org/wiki/Technology_Compatibility_Kit) for short).
 
 The TCK is usable from Java as well as Scala projects. To test your implementation (independently of language) you need to include the akka-persistence-tck dependency:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-persistence-tck_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-persistence-tck_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 To include the Journal TCK tests in your test suite simply extend the provided @scala[`JournalSpec`]@java[`JavaJournalSpec`]:
@@ -136,12 +147,12 @@ Java
 We *highly recommend* including these specifications in your test suite, as they cover a broad range of cases you
 might have otherwise forgotten to test for when writing a plugin from scratch.
 
-### Corrupt event logs
+## Corrupt event logs
 
 If a journal can't prevent users from running persistent actors with the same `persistenceId` concurrently it is likely that an event log
 will be corrupted by having events with the same sequence number.
 
-It is recommended that journals should still delivery these events during recovery so that a `replay-filter` can be used to decide what to do about it
+It is recommended that journals should still deliver these events during recovery so that a `replay-filter` can be used to decide what to do about it
 in a journal agnostic way.
 
 

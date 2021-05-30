@@ -1,33 +1,28 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.pubsub
 
-import language.postfixOps
+import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.actor.Actor
+import akka.actor.ActorIdentity
 import akka.actor.ActorRef
-import akka.actor.PoisonPill
+import akka.actor.ActorSystem
+import akka.actor.Identify
 import akka.actor.Props
+import akka.actor.RootActorPath
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
-import akka.actor.ActorLogging
-import akka.cluster.pubsub.DistributedPubSubMediator.Internal.Status
-import akka.cluster.pubsub.DistributedPubSubMediator.Internal.Delta
-import akka.actor.ActorSystem
-
-import scala.concurrent.Await
-import akka.actor.Identify
-import akka.actor.RootActorPath
-import akka.actor.ActorIdentity
-import akka.remote.RARP
 
 object DistributedPubSubRestartSpec extends MultiNodeConfig {
   val first = role("first")
@@ -39,14 +34,15 @@ object DistributedPubSubRestartSpec extends MultiNodeConfig {
     akka.cluster.pub-sub.gossip-interval = 500ms
     akka.actor.provider = cluster
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-down-unreachable-after = off
+    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+    akka.cluster.testkit.auto-down-unreachable-after = off
     """))
 
   testTransport(on = true)
 
   class Shutdown extends Actor {
     def receive = {
-      case "shutdown" ⇒ context.system.terminate()
+      case "shutdown" => context.system.terminate()
     }
   }
 
@@ -56,15 +52,18 @@ class DistributedPubSubRestartMultiJvmNode1 extends DistributedPubSubRestartSpec
 class DistributedPubSubRestartMultiJvmNode2 extends DistributedPubSubRestartSpec
 class DistributedPubSubRestartMultiJvmNode3 extends DistributedPubSubRestartSpec
 
-class DistributedPubSubRestartSpec extends MultiNodeSpec(DistributedPubSubRestartSpec) with STMultiNodeSpec with ImplicitSender {
-  import DistributedPubSubRestartSpec._
+class DistributedPubSubRestartSpec
+    extends MultiNodeSpec(DistributedPubSubRestartSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import DistributedPubSubMediator._
+  import DistributedPubSubRestartSpec._
 
   override def initialParticipants = roles.size
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
       createMediator()
     }
     enterBarrier(from.name + "-joined")
@@ -142,10 +141,9 @@ class DistributedPubSubRestartSpec extends MultiNodeSpec(DistributedPubSubRestar
         Await.result(system.whenTerminated, 10.seconds)
         val newSystem = {
           val port = Cluster(system).selfAddress.port.get
-          val config = ConfigFactory.parseString(
-            s"""
+          val config = ConfigFactory.parseString(s"""
               akka.remote.artery.canonical.port=$port
-              akka.remote.netty.tcp.port=$port
+              akka.remote.classic.netty.tcp.port=$port
               """).withFallback(system.settings.config)
 
           ActorSystem(system.name, config)
@@ -160,11 +158,11 @@ class DistributedPubSubRestartSpec extends MultiNodeSpec(DistributedPubSubRestar
           probe.expectMsgType[SubscribeAck]
 
           // let them gossip, but Delta should not be exchanged
-          probe.expectNoMsg(5.seconds)
+          probe.expectNoMessage(5.seconds)
           newMediator.tell(Internal.DeltaCount, probe.ref)
           probe.expectMsg(0L)
 
-          newSystem.actorOf(Props[Shutdown], "shutdown")
+          newSystem.actorOf(Props[Shutdown](), "shutdown")
           Await.ready(newSystem.whenTerminated, 20.seconds)
         } finally newSystem.terminate()
       }

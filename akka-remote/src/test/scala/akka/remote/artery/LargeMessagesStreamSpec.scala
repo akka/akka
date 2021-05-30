@@ -1,17 +1,17 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
-import akka.actor.{ Actor, ActorRef, ActorSelection, Props, RootActorPath }
-import akka.remote.{ RARP, RemoteActorRef }
-import akka.testkit.TestProbe
-import akka.util.ByteString
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.actor.{ Actor, ActorRef, ActorSelection, Props, RootActorPath }
+import akka.remote.{ RARP, RemoteActorRef }
 import akka.testkit.JavaSerializable
+import akka.testkit.TestProbe
+import akka.util.ByteString
 
 object LargeMessagesStreamSpec {
   case class Ping(payload: ByteString = ByteString.empty) extends JavaSerializable
@@ -19,13 +19,12 @@ object LargeMessagesStreamSpec {
 
   class EchoSize extends Actor {
     def receive = {
-      case Ping(bytes) ⇒ sender() ! Pong(bytes.size)
+      case Ping(bytes) => sender() ! Pong(bytes.size)
     }
   }
 }
 
-class LargeMessagesStreamSpec extends ArteryMultiNodeSpec(
-  """
+class LargeMessagesStreamSpec extends ArteryMultiNodeSpec("""
     akka {
       remote.artery.large-message-destinations = [ "/user/large" ]
     }

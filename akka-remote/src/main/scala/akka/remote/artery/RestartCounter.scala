@@ -1,13 +1,14 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
-import scala.concurrent.duration.Deadline
 import java.util.concurrent.atomic.AtomicReference
-import scala.concurrent.duration.FiniteDuration
+
 import scala.annotation.tailrec
+import scala.concurrent.duration.Deadline
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API

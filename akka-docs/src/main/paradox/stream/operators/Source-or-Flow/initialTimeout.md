@@ -4,19 +4,18 @@ If the first element has not passed through this operators before the provided t
 
 @ref[Time aware operators](../index.md#time-aware-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #initialTimeout }
+@apidoc[Source.initialTimeout](Source) { scala="#initialTimeout(timeout:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[Out]" java="#initialTimeout(java.time.Duration)" }
+@apidoc[Flow.initialTimeout](Flow) { scala="#initialTimeout(timeout:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[Out]" java="#initialTimeout(java.time.Duration)" }
 
-@@@
 
 ## Description
 
 If the first element has not passed through this operators before the provided timeout, the stream is failed
 with a `TimeoutException`.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

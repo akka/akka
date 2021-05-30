@@ -1,15 +1,17 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
 import java.net.URLEncoder
+
 import scala.collection.immutable
 
-class RelativeActorPathSpec extends WordSpec with Matchers {
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
+class RelativeActorPathSpec extends AnyWordSpec with Matchers {
 
   def elements(path: String): immutable.Seq[String] = RelativeActorPath.unapply(path).getOrElse(Nil)
 

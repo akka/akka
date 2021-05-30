@@ -1,13 +1,15 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
 
-import java.nio.channels.{ DatagramChannel }
 import java.net.DatagramSocket
 import java.net.ServerSocket
 import java.net.Socket
+import java.nio.channels.DatagramChannel
+
+import akka.util.unused
 
 object Inet {
 
@@ -20,23 +22,22 @@ object Inet {
     /**
      * Action to be taken for this option before bind() is called
      */
-    def beforeDatagramBind(ds: DatagramSocket): Unit = ()
+    def beforeDatagramBind(@unused ds: DatagramSocket): Unit = ()
 
     /**
      * Action to be taken for this option before bind() is called
      */
-    def beforeServerSocketBind(ss: ServerSocket): Unit = ()
+    def beforeServerSocketBind(@unused ss: ServerSocket): Unit = ()
 
     /**
      * Action to be taken for this option before calling connect()
      */
-    def beforeConnect(s: Socket): Unit = ()
+    def beforeConnect(@unused s: Socket): Unit = ()
 
     /**
-     * Action to be taken for this option after connect returned (i.e. on
-     * the slave socket for servers).
+     * Action to be taken for this option after connect returned.
      */
-    def afterConnect(s: Socket): Unit = ()
+    def afterConnect(@unused s: Socket): Unit = ()
   }
 
   /**
@@ -46,23 +47,21 @@ object Inet {
   abstract class AbstractSocketOption extends SocketOption
 
   trait SocketOptionV2 extends SocketOption {
-    /**
-     * Action to be taken for this option after connect returned (i.e. on
-     * the slave socket for servers).
-     */
-    def afterBind(s: DatagramSocket): Unit = ()
 
     /**
-     * Action to be taken for this option after connect returned (i.e. on
-     * the slave socket for servers).
+     * Action to be taken for this option after connect returned.
      */
-    def afterBind(s: ServerSocket): Unit = ()
+    def afterBind(@unused s: DatagramSocket): Unit = ()
 
     /**
-     * Action to be taken for this option after connect returned (i.e. on
-     * the slave socket for servers).
+     * Action to be taken for this option after connect returned.
      */
-    def afterConnect(s: DatagramSocket): Unit = ()
+    def afterBind(@unused s: ServerSocket): Unit = ()
+
+    /**
+     * Action to be taken for this option after connect returned.
+     */
+    def afterConnect(@unused s: DatagramSocket): Unit = ()
 
   }
 
@@ -143,6 +142,7 @@ object Inet {
   }
 
   trait SoForwarders {
+
     /**
      * [[akka.io.Inet.SocketOption]] to set the SO_RCVBUF option
      *
@@ -176,6 +176,7 @@ object Inet {
 
   trait SoJavaFactories {
     import SO._
+
     /**
      * [[akka.io.Inet.SocketOption]] to set the SO_RCVBUF option
      *

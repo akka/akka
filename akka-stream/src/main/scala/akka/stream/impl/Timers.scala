@@ -1,18 +1,18 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
 import java.util.concurrent.{ TimeUnit, TimeoutException }
 
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
-
-import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
  * INTERNAL API
@@ -35,7 +35,9 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
     import scala.concurrent.duration._
     if (timeout > 1.second) 1.second
     else {
-      FiniteDuration(math.min(math.max(timeout.toNanos / 8, 100.millis.toNanos), timeout.toNanos / 2), TimeUnit.NANOSECONDS)
+      FiniteDuration(
+        math.min(math.max(timeout.toNanos / 8, 100.millis.toNanos), timeout.toNanos / 2),
+        TimeUnit.NANOSECONDS)
     }
   }
 
@@ -107,7 +109,8 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
           if (nextDeadline - System.nanoTime < 0)
             failStage(new TimeoutException(s"No elements passed in the last $timeout."))
 
-        override def preStart(): Unit = schedulePeriodically(GraphStageLogicTimer, timeoutCheckInterval(timeout))
+        override def preStart(): Unit =
+          scheduleWithFixedDelay(GraphStageLogicTimer, timeoutCheckInterval(timeout), timeoutCheckInterval(timeout))
       }
 
     override def toString = "IdleTimeout"
@@ -139,7 +142,8 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
           if (waitingDemand && (nextDeadline - System.nanoTime < 0))
             failStage(new TimeoutException(s"No demand signalled in the last $timeout."))
 
-        override def preStart(): Unit = schedulePeriodically(GraphStageLogicTimer, timeoutCheckInterval(timeout))
+        override def preStart(): Unit =
+          scheduleWithFixedDelay(GraphStageLogicTimer, timeoutCheckInterval(timeout), timeoutCheckInterval(timeout))
       }
 
     override def toString = "BackpressureTimeout"
@@ -167,7 +171,8 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
         if (nextDeadline - System.nanoTime < 0)
           failStage(new TimeoutException(s"No elements passed in the last $timeout."))
 
-      override def preStart(): Unit = schedulePeriodically(GraphStageLogicTimer, timeoutCheckInterval(timeout))
+      override def preStart(): Unit =
+        scheduleWithFixedDelay(GraphStageLogicTimer, timeoutCheckInterval(timeout), timeoutCheckInterval(timeout))
 
       class IdleBidiHandler[P](in: Inlet[P], out: Outlet[P]) extends InHandler with OutHandler {
         override def onPush(): Unit = {
@@ -177,7 +182,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
         override def onPull(): Unit = pull(in)
         override def onUpstreamFinish(): Unit = complete(out)
-        override def onDownstreamFinish(): Unit = cancel(in)
+        override def onDownstreamFinish(cause: Throwable): Unit = cancel(in, cause)
       }
     }
 
@@ -213,7 +218,8 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
 
   }
 
-  final class IdleInject[I, O >: I](val timeout: FiniteDuration, val inject: () ⇒ O) extends GraphStage[FlowShape[I, O]] {
+  final class IdleInject[I, O >: I](val timeout: FiniteDuration, val inject: () => O)
+      extends GraphStage[FlowShape[I, O]] {
     val in: Inlet[I] = Inlet("IdleInject.in")
     val out: Outlet[O] = Outlet("IdleInject.out")
 
@@ -249,20 +255,27 @@ import scala.concurrent.duration.{ Duration, FiniteDuration }
             if (isClosed(in)) completeStage()
             else pull(in)
           } else {
-            val time = System.nanoTime
-            if (nextDeadline - time < 0) {
-              nextDeadline = time + timeout.toNanos
+            val now = System.nanoTime()
+            // Idle timeout triggered a while ago and we were just waiting for pull.
+            // In the case of now == deadline, the deadline has not passed strictly, but scheduling another thunk
+            // for that seems wasteful.
+            if (now - nextDeadline >= 0) {
+              nextDeadline = now + timeout.toNanos
               push(out, inject())
-            } else scheduleOnce(GraphStageLogicTimer, FiniteDuration(nextDeadline - time, TimeUnit.NANOSECONDS))
+            } else
+              scheduleOnce(GraphStageLogicTimer, FiniteDuration(nextDeadline - now, TimeUnit.NANOSECONDS))
           }
         }
 
         override protected def onTimer(timerKey: Any): Unit = {
-          val time = System.nanoTime
-          if ((nextDeadline - time < 0) && isAvailable(out)) {
-            push(out, inject())
-            nextDeadline = time + timeout.toNanos
-          }
+          val now = System.nanoTime()
+          // Timer is reliably cancelled if a regular element arrives first. Scheduler rather schedules too late
+          // than too early so the deadline must have passed at this time.
+          assert(
+            now - nextDeadline >= 0,
+            s"Timer should have triggered only after deadline but now is $now and deadline was $nextDeadline diff ${now - nextDeadline}.")
+          push(out, inject())
+          nextDeadline = now + timeout.toNanos
         }
       }
 

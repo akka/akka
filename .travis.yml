@@ -1,13 +1,15 @@
+version: ~> 1.0
+
 language: scala
 
 sudo: false
 
 scala:
-  - "2.12.6"
-  - "2.11.12"
+  - "2.12.11"
+  - "2.13.3"
 
-jdk:
-  - oraclejdk8
+before_install: curl -Ls https://git.io/jabba | bash && . ~/.jabba/jabba.sh
+install: jabba install "adopt@~1.$TRAVIS_JDK.0-0" && jabba use "$_" && java -Xmx32m -version
 
 addons:
   apt:
@@ -20,18 +22,41 @@ before_cache:
 
 cache:
   directories:
+    - $HOME/.cache/coursier
     - $HOME/.ivy2/cache
-    - $HOME/.sbt/boot
+    - $HOME/.sbt
+    - $HOME/.jabba/jdk
 
-script:
-  # need to override as the default is to test
-  - sbt -J-XX:ReservedCodeCacheSize=256m ++$TRAVIS_SCALA_VERSION update mimaReportBinaryIssues
-  # make 'git branch' work again
-  - git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH"
-  # check policies, if on master also upload
-  - if [[ "$TRAVIS_SECURE_ENV_VARS" == "true" ]]; then if [[ "$TRAVIS_BRANCH" == "master" && "$TRAVIS_EVENT_TYPE" == "push" ]]; then sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies whitesourceUpdate; else sbt 'set credentials += Credentials("whitesource", "whitesourcesoftware.com", "", System.getenv("WHITESOURCE_KEY"))' whitesourceCheckPolicies; fi ; fi
+# script for the default 'test' stage:
+script: sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile ;headerCheckAll"
+
+jobs:
+  include:
+    - stage: whitesource
+      name: whitesource
+      script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
+    - stage: scala3
+      name: scala3
+      # separate job since only a few modules compile with Scala 3 yet
+      script: jabba install adopt@1.11-0 && jabba use adopt@1.11-0 && sbt -Dakka.build.scalaVersion=3.0 "akka-actor-tests/test:compile"
+
+stages:
+  - name: whitesource
+    if: repo = akka/akka AND ((branch = master AND type != pull_request) OR tag =~ ^v)
+  - name: test
+    if: type == pull_request OR NOT tag =~ ^v
+  - name: scala3
+    if: type == pull_request OR NOT tag =~ ^v
 
 env:
   global:
-    # encrypt with: travis encrypt WHITESOURCE_KEY=...
-    - secure: "L/wJ7TbgY+oPULgbv+giFZejnQERfv/8/9Ex/nwRni8qnpxw5Q6BqB86Sch6b79irQiOdb+hr2tq3/m3KzXjC58xppRPfnmXsu3yI9XAln9WPi/sPvqUL8WPJmRfGswAw3L8w2JdD9VBP4iv0dWpRghGD27iqgipVRdN62PU+nU="
+    - TRAVIS_JDK=8
+    # encrypt with: travis encrypt --pro WHITESOURCE_PASSWORD=...
+    - secure: "hY52m7mKMUO8Lm4WS2IMIEXyMpHVBC2wt6zGaQg0w3/kTotteQmeUW5PZnbepepUZaOTxrWXMBvnyzLAnGRW6VfmViuTaaT86jsZFqlc1y4hTmG5oB6VWSDHvbXpupUd54l4Ks8IrWNsJ1nQI+rlxYYz8oRAdVSsi59K+KKEFX6Ucff9UK9pgOA6fVftxQsxFPTJaseqb80UVhM37Y582CpH5T31MEpGUPA7URBe486saURRs3OmAeiPgwinY/f2Fr8BwCPrEfaJHv2Ks+yxj7iWFuCKkGbOmd+TJjK3AbFqYmV+uYbSsI9p5wkb0ciW708jbeV7qk5V/OSohxucHF5ivI0yMS8RWscL0TpMRHlZPkvzpPhUCdYBMaiztmaFrYdlkjicNVXnV+4Mk0zAc3sdg3WoV9eRg1JmRxgSGVRJeIKUXy3rWjdVoGjgeG9J4cm7Ge+k3cEgbT11+gY6PhcmMYXwGwXvAtWD4/iGeZOE7JXsSeFdlA+vYIscz4N/mcm27K7BLPpv5+SRJaAp3sAj1hS/ePJWPcbCRdRuxGMfk3X4BxesbR6AL9TinrH6R3L7DkRhH524eE0Ph50Wmc1+oBts3wLvPyNYv6fDN7JyUFnArp2mh+ByAzaf0wX+2FPNoL1C3MC0jtcbbzAhZlQMZ6NbbcGgL1XiRKb0Eks="
+
+# safelist
+branches:
+  only:
+  - master
+  - release-2.5
+  - /^v\d+\.\d+(\.\d+)?(-\S*)?$/

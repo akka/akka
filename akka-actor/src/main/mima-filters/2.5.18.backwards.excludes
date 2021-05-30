@@ -1,0 +1,78 @@
+# Dns discovery custom resolver #25937 - Internal API
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.internal.AsyncDnsManager.ext")
+
+# Replaces DNS TTL primitive types with Duration #25850
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.SimpleDnsCache.put")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.SimpleDnsCache#Cache.put")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.internal.AsyncDnsCache.put")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.ResourceRecord.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.ResourceRecord.ttlInSeconds")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.dns.ResourceRecord.ttl")
+#
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.AAAARecord.apply")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.AAAARecord.copy")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.AAAARecord.parseBody")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.AAAARecord.this")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.dns.AAAARecord.copy$default$2")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.AAAARecord.ttlInSeconds")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.dns.AAAARecord.ttl")
+#
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.ARecord.apply")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.ARecord.copy")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.ARecord.parseBody")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.ARecord.this")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.dns.ARecord.copy$default$2")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.ARecord.ttlInSeconds")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.dns.ARecord.ttl")
+#
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.CNameRecord.apply")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.CNameRecord.copy")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.CNameRecord.parseBody")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.CNameRecord.this")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.dns.CNameRecord.copy$default$2")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.CNameRecord.ttlInSeconds")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.dns.CNameRecord.ttl")
+#
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.SRVRecord.apply")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.SRVRecord.copy")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.SRVRecord.parseBody")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.SRVRecord.this")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.dns.SRVRecord.copy$default$2")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.SRVRecord.ttlInSeconds")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.dns.SRVRecord.ttl")
+#
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.UnknownRecord.apply")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.UnknownRecord.copy")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.UnknownRecord.parseBody")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.io.dns.UnknownRecord.this")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.dns.UnknownRecord.copy$default$2")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.UnknownRecord.ttlInSeconds")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.dns.UnknownRecord.ttl")
+
+# Changes to internal implementation classes
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.TcpConnection.stopWith")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.TcpConnection.closedMessage_=")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.TcpConnection.closedMessage")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.TcpConnection.abort")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.ChannelRegistration.cancel")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.ChannelRegistration.cancelAndClose")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.SelectionHandler#ChannelRegistryImpl.this")
+
+# Excludes for adding an option for backoff supervisor
+# private
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOptionsImpl.this")
+ProblemFilters.exclude[MissingTypesProblem]("akka.pattern.BackoffOptionsImpl$")
+# private
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.BackoffOnRestartSupervisor.this")
+# DoNotInherit (should have been) new method
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.BackoffOptions.withFinalStopMessage")
+# private[akka]
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.finalStopMessageReceived")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.finalStopMessageReceived_=")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.finalStopMessage")
+
+# Scala 2.13.0-M5
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.dungeon.ChildrenContainer#ChildrenIterable.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.actor.dungeon.ChildrenContainer#ChildRestartsIterable.this")

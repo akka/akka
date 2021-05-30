@@ -1,0 +1,7 @@
+# modified state of internal class
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.internal.ReplayingEvents#ReplayingState.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.internal.ReplayingEvents#ReplayingState.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.internal.ReplayingEvents#ReplayingState.apply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.persistence.typed.internal.ReplayingEvents#ReplayingState.unapply")
+# moved constructor of internal class
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.typed.internal.Running.apply")

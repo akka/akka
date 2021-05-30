@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
+import scala.concurrent.duration._
+
 import language.postfixOps
 
+import akka.dispatch.ThreadPoolConfig
 import akka.testkit.AkkaSpec
-import akka.dispatch.{ ThreadPoolConfig }
-import scala.concurrent.duration._
 
 object ConsistencySpec {
   val minThreads = 1
@@ -34,12 +35,11 @@ object ConsistencySpec {
     var right = new CacheMisaligned(0, 0, 0, 0) //var
     var lastStep = -1L
     def receive = {
-      case step: Long ⇒
-
+      case step: Long =>
         if (lastStep != (step - 1))
           sender() ! "Test failed: Last step %s, this step %s".format(lastStep, step)
 
-        var shouldBeFortyTwo = left.value + right.value
+        val shouldBeFortyTwo = left.value + right.value
         if (shouldBeFortyTwo != 42)
           sender() ! "Test failed: 42 failed"
         else {
@@ -48,7 +48,7 @@ object ConsistencySpec {
         }
 
         lastStep = step
-      case "done" ⇒ sender() ! "done"; context.stop(self)
+      case "done" => sender() ! "done"; context.stop(self)
     }
   }
 }
@@ -61,16 +61,16 @@ class ConsistencySpec extends AkkaSpec(ConsistencySpec.config) {
   "The Akka actor model implementation" must {
     "provide memory consistency" in {
       val noOfActors = threads + 1
-      val props = Props[ConsistencyCheckingActor].withDispatcher("consistency-dispatcher")
+      val props = Props[ConsistencyCheckingActor]().withDispatcher("consistency-dispatcher")
       val actors = Vector.fill(noOfActors)(system.actorOf(props))
 
-      for (i ← 0L until 10000L) {
+      for (i <- 0L until 10000L) {
         actors.foreach(_.tell(i, testActor))
       }
 
-      for (a ← actors) { a.tell("done", testActor) }
+      for (a <- actors) { a.tell("done", testActor) }
 
-      for (a ← actors) expectMsg(5 minutes, "done")
+      for (_ <- actors) expectMsg(5 minutes, "done")
     }
   }
 }

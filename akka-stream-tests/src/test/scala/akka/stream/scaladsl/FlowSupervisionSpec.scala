@@ -1,28 +1,26 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import scala.collection.immutable
-import scala.concurrent.duration._
-import akka.stream.ActorMaterializer
-import akka.stream.testkit._
-import scala.util.control.NoStackTrace
 import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
+import akka.NotUsed
+import akka.stream.ActorAttributes
 import akka.stream.Supervision
 import akka.stream.impl.ReactiveStreamsCompliance
-import akka.stream.ActorAttributes
-import akka.NotUsed
+import akka.stream.testkit._
 
 class FlowSupervisionSpec extends StreamSpec {
   import ActorAttributes.supervisionStrategy
 
-  implicit val materializer = ActorMaterializer()(system)
-
   val exc = new RuntimeException("simulated exc") with NoStackTrace
 
-  val failingMap = Flow[Int].map(n ⇒ if (n == 3) throw exc else n)
+  val failingMap = Flow[Int].map(n => if (n == 3) throw exc else n)
 
   def run(f: Flow[Int, Int, NotUsed]): immutable.Seq[Int] =
     Await.result(Source((1 to 5).toSeq ++ (1 to 5)).via(f).limit(1000).runWith(Sink.seq), 3.seconds)
@@ -47,15 +45,15 @@ class FlowSupervisionSpec extends StreamSpec {
 
     "complete stream with NPE failure when null is emitted" in {
       intercept[NullPointerException] {
-        Await.result(Source(List("a", "b")).map(_ ⇒ null).limit(1000).runWith(Sink.seq), 3.seconds)
+        Await.result(Source(List("a", "b")).map(_ => null).limit(1000).runWith(Sink.seq), 3.seconds)
       }.getMessage should be(ReactiveStreamsCompliance.ElementMustNotBeNullMsg)
     }
 
     "resume stream when null is emitted" in {
-      val nullMap = Flow[String].map(elem ⇒ if (elem == "b") null else elem)
+      val nullMap = Flow[String]
+        .map(elem => if (elem == "b") null else elem)
         .withAttributes(supervisionStrategy(Supervision.resumingDecider))
-      val result = Await.result(Source(List("a", "b", "c")).via(nullMap)
-        .limit(1000).runWith(Sink.seq), 3.seconds)
+      val result = Await.result(Source(List("a", "b", "c")).via(nullMap).limit(1000).runWith(Sink.seq), 3.seconds)
       result should be(List("a", "c"))
     }
 

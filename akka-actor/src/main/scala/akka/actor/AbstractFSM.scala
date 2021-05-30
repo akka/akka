@@ -1,17 +1,19 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import akka.util.JavaDurationConverters
 import scala.concurrent.duration.FiniteDuration
+
+import akka.util.JavaDurationConverters._
 
 /**
  * Java API: compatible with lambda expressions
  *
  */
 object AbstractFSM {
+
   /**
    * A partial function value which does not match anything and can be used to
    * “reset” `whenUnhandled` and `onTermination` handlers.
@@ -30,11 +32,12 @@ object AbstractFSM {
  *
  */
 abstract class AbstractFSM[S, D] extends FSM[S, D] {
-  import java.util.{ List ⇒ JList }
+  import java.util.{ List => JList }
 
   import FSM._
-  import akka.japi.pf.FI._
+
   import akka.japi.pf._
+  import akka.japi.pf.FI._
 
   /**
    * Returns this AbstractActor's ActorContext
@@ -93,9 +96,9 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param stateFunctionBuilder partial function builder describing response to input
    */
   final def when(
-    stateName:            S,
-    stateTimeout:         FiniteDuration,
-    stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
+      stateName: S,
+      stateTimeout: FiniteDuration,
+      stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
     super.when(stateName, stateTimeout)(stateFunctionBuilder.build())
 
   /**
@@ -109,10 +112,9 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param stateFunctionBuilder partial function builder describing response to input
    */
   final def when(
-    stateName:            S,
-    stateTimeout:         java.time.Duration,
-    stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit = {
-    import JavaDurationConverters._
+      stateName: S,
+      stateTimeout: java.time.Duration,
+      stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit = {
     when(stateName, stateTimeout.asScala, stateFunctionBuilder)
   }
 
@@ -149,7 +151,6 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param timeout state timeout for the initial state, overriding the default timeout for that state
    */
   final def startWith(stateName: S, stateData: D, timeout: java.time.Duration): Unit = {
-    import JavaDurationConverters._
     startWith(stateName, stateData, timeout.asScala)
   }
 
@@ -170,8 +171,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * <b>Multiple handlers may be installed, and every one of them will be
    * called, not only the first one matching.</b>
    */
-  final def onTransition(transitionHandler: UnitApply2[S, S]): Unit =
-    super.onTransition(transitionHandler(_: S, _: S))
+  final def onTransition(transitionHandler: UnitApply2[S, S]): Unit = {
+    val pf: PartialFunction[(S, S), Unit] = akka.compat.PartialFunction.fromFunction(transitionHandler(_: S, _: S))
+    super.onTransition(pf)
+  }
 
   /**
    * Set handler which is called upon reception of unhandled messages. Calling
@@ -200,7 +203,11 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[ET, DT <: D](eventType: Class[ET], dataType: Class[DT], predicate: TypedPredicate2[ET, DT], apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D] =
+  final def matchEvent[ET, DT <: D](
+      eventType: Class[ET],
+      dataType: Class[DT],
+      predicate: TypedPredicate2[ET, DT],
+      apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D] =
     new FSMStateFunctionBuilder[S, D]().event(eventType, dataType, predicate, apply)
 
   /**
@@ -213,7 +220,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[ET, DT <: D](eventType: Class[ET], dataType: Class[DT], apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D] =
+  final def matchEvent[ET, DT <: D](
+      eventType: Class[ET],
+      dataType: Class[DT],
+      apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D] =
     new FSMStateFunctionBuilder[S, D]().event(eventType, dataType, apply)
 
   /**
@@ -226,7 +236,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[ET](eventType: Class[ET], predicate: TypedPredicate2[ET, D], apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D] =
+  final def matchEvent[ET](
+      eventType: Class[ET],
+      predicate: TypedPredicate2[ET, D],
+      apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D] =
     new FSMStateFunctionBuilder[S, D]().event(eventType, predicate, apply)
 
   /**
@@ -250,7 +263,9 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent(predicate: TypedPredicate2[AnyRef, D], apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D] =
+  final def matchEvent(
+      predicate: TypedPredicate2[AnyRef, D],
+      apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D] =
     new FSMStateFunctionBuilder[S, D]().event(predicate, apply)
 
   /**
@@ -264,7 +279,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[DT <: D](eventMatches: JList[AnyRef], dataType: Class[DT], apply: Apply2[AnyRef, DT, State]): FSMStateFunctionBuilder[S, D] =
+  final def matchEvent[DT <: D](
+      eventMatches: JList[AnyRef],
+      dataType: Class[DT],
+      apply: Apply2[AnyRef, DT, State]): FSMStateFunctionBuilder[S, D] =
     new FSMStateFunctionBuilder[S, D]().event(eventMatches, dataType, apply)
 
   /**
@@ -290,7 +308,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEventEquals[E, DT <: D](event: E, dataType: Class[DT], apply: Apply2[E, DT, State]): FSMStateFunctionBuilder[S, D] =
+  final def matchEventEquals[E, DT <: D](
+      event: E,
+      dataType: Class[DT],
+      apply: Apply2[E, DT, State]): FSMStateFunctionBuilder[S, D] =
     new FSMStateFunctionBuilder[S, D]().eventEquals(event, dataType, apply)
 
   /**
@@ -376,7 +397,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param predicate  a predicate that will be evaluated on the reason if the type matches
    * @return the builder with the case statement added
    */
-  final def matchStop[RT <: Reason](reasonType: Class[RT], predicate: TypedPredicate[RT], apply: UnitApply3[RT, S, D]): FSMStopBuilder[S, D] =
+  final def matchStop[RT <: Reason](
+      reasonType: Class[RT],
+      predicate: TypedPredicate[RT],
+      apply: UnitApply3[RT, S, D]): FSMStopBuilder[S, D] =
     new FSMStopBuilder[S, D]().stop(reasonType, predicate, apply)
 
   /**
@@ -397,7 +421,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the argument if the type and predicate matches
    * @return a builder with the case statement added
    */
-  final def matchData[DT <: D](dataType: Class[DT], predicate: TypedPredicate[DT], apply: UnitApply[DT]): UnitPFBuilder[D] =
+  final def matchData[DT <: D](
+      dataType: Class[DT],
+      predicate: TypedPredicate[DT],
+      apply: UnitApply[DT]): UnitPFBuilder[D] =
     UnitMatch.`match`(dataType, predicate, apply)
 
   /**
@@ -410,6 +437,65 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
   final def goTo(nextStateName: S): State = goto(nextStateName)
 
   /**
+   * Schedules a message to be sent repeatedly to the `self` actor with a
+   * fixed `delay` between messages.
+   *
+   * It will not compensate the delay between messages if scheduling is delayed
+   * longer than specified for some reason. The delay between sending of subsequent
+   * messages will always be (at least) the given `delay`.
+   *
+   * In the long run, the frequency of messages will generally be slightly lower than
+   * the reciprocal of the specified `delay`.
+   *
+   * Each timer has a `name` and if a new timer with same `name` is started
+   * the previous is cancelled. It is guaranteed that a message from the
+   * previous timer is not received, even if it was already enqueued
+   * in the mailbox when the new timer was started.
+   */
+  def startTimerWithFixedDelay(name: String, msg: Any, delay: java.time.Duration): Unit =
+    startTimerWithFixedDelay(name, msg, delay.asScala)
+
+  /**
+   * Schedules a message to be sent repeatedly to the `self` actor with a
+   * given frequency.
+   *
+   * It will compensate the delay for a subsequent message if the sending of previous
+   * message was delayed more than specified. In such cases, the actual message interval
+   * will differ from the interval passed to the method.
+   *
+   * If the execution is delayed longer than the `interval`, the subsequent message will
+   * be sent immediately after the prior one. This also has the consequence that after
+   * long garbage collection pauses or other reasons when the JVM was suspended all
+   * "missed" messages will be sent when the process wakes up again.
+   *
+   * In the long run, the frequency of messages will be exactly the reciprocal of the
+   * specified `interval`.
+   *
+   * Warning: `startTimerAtFixedRate` can result in bursts of scheduled messages after long
+   * garbage collection pauses, which may in worst case cause undesired load on the system.
+   * Therefore `startTimerWithFixedDelay` is often preferred.
+   *
+   * Each timer has a `name` and if a new timer with same `name` is started
+   * the previous is cancelled. It is guaranteed that a message from the
+   * previous timer is not received, even if it was already enqueued
+   * in the mailbox when the new timer was started.
+   */
+  def startTimerAtFixedRate(name: String, msg: Any, interval: java.time.Duration): Unit =
+    startTimerAtFixedRate(name, msg, interval.asScala)
+
+  /**
+   * Start a timer that will send `msg` once to the `self` actor after
+   * the given `delay`.
+   *
+   * Each timer has a `name` and if a new timer with same `name` is started
+   * the previous is cancelled. It is guaranteed that a message from the
+   * previous timer is not received, even if it was already enqueued
+   * in the mailbox when the new timer was started.
+   */
+  def startSingleTimer(name: String, msg: Any, delay: java.time.Duration): Unit =
+    startSingleTimer(name, msg, delay.asScala)
+
+  /**
    * Schedule named timer to deliver message after given delay, possibly repeating.
    * Any existing timer with the same name will automatically be canceled before
    * adding the new timer.
@@ -417,6 +503,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param msg message to be delivered
    * @param timeout delay of first message delivery and between subsequent messages
    */
+  @deprecated("Use startSingleTimer instead.", since = "2.6.0")
   final def setTimer(name: String, msg: Any, timeout: FiniteDuration): Unit =
     setTimer(name, msg, timeout, repeat = false)
 
@@ -428,8 +515,8 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param msg message to be delivered
    * @param timeout delay of first message delivery and between subsequent messages
    */
+  @deprecated("Use startSingleTimer instead.", since = "2.6.0")
   final def setTimer(name: String, msg: Any, timeout: java.time.Duration): Unit = {
-    import JavaDurationConverters._
     setTimer(name, msg, timeout.asScala, false)
   }
 
@@ -442,8 +529,11 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param timeout delay of first message delivery and between subsequent messages
    * @param repeat send once if false, scheduleAtFixedRate if true
    */
+  @deprecated(
+    "Use startSingleTimer, startTimerWithFixedDelay or startTimerAtFixedRate instead. This has the same semantics as " +
+    "startTimerAtFixedRate, but startTimerWithFixedDelay is often preferred.",
+    since = "2.6.0")
   final def setTimer(name: String, msg: Any, timeout: java.time.Duration, repeat: Boolean): Unit = {
-    import JavaDurationConverters._
     setTimer(name, msg, timeout.asScala, repeat)
   }
 

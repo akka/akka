@@ -1,19 +1,22 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.cluster.Cluster
+import akka.cluster.{ Cluster, UniqueAddress }
+import akka.event.Logging
 
 object DistributedData extends ExtensionId[DistributedData] with ExtensionIdProvider {
   override def get(system: ActorSystem): DistributedData = super.get(system)
+  override def get(system: ClassicActorSystemProvider): DistributedData = super.get(system)
 
   override def lookup = DistributedData
 
@@ -28,24 +31,40 @@ object DistributedData extends ExtensionId[DistributedData] with ExtensionIdProv
  */
 class DistributedData(system: ExtendedActorSystem) extends Extension {
 
-  private val config = system.settings.config.getConfig("akka.cluster.distributed-data")
-  private val settings = ReplicatorSettings(config)
+  private val settings = ReplicatorSettings(system)
 
-  /**
-   * Returns true if this member is not tagged with the role configured for the
-   * replicas.
-   */
-  def isTerminated: Boolean = Cluster(system).isTerminated || !settings.roles.subsetOf(Cluster(system).selfRoles)
+  implicit val selfUniqueAddress: SelfUniqueAddress = SelfUniqueAddress(Cluster(system).selfUniqueAddress)
 
   /**
    * `ActorRef` of the [[Replicator]] .
    */
   val replicator: ActorRef =
     if (isTerminated) {
-      system.log.warning("Replicator points to dead letters: Make sure the cluster node is not terminated and has the proper role!")
+      val log = Logging(system, getClass)
+      if (Cluster(system).isTerminated)
+        log.warning("Replicator points to dead letters, because Cluster is terminated.")
+      else
+        log.warning(
+          "Replicator points to dead letters. Make sure the cluster node has the proper role. " +
+          "Node has roles [{}], Distributed Data is configured for roles [{}].",
+          Cluster(system).selfRoles.mkString(","),
+          settings.roles.mkString(","): Any)
       system.deadLetters
     } else {
-      val name = config.getString("name")
-      system.systemActorOf(Replicator.props(settings), name)
+      system.systemActorOf(Replicator.props(settings), ReplicatorSettings.name(system, None))
     }
+
+  /**
+   * Returns true if this member is not tagged with the role configured for the
+   * replicas.
+   */
+  def isTerminated: Boolean =
+    Cluster(system).isTerminated || !settings.roles.subsetOf(Cluster(system).selfRoles)
+
 }
+
+/**
+ * Cluster non-specific (typed vs classic) wrapper for [[akka.cluster.UniqueAddress]].
+ */
+@SerialVersionUID(1L)
+final case class SelfUniqueAddress(uniqueAddress: UniqueAddress)

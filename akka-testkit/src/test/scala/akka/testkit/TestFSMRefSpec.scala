@@ -1,13 +1,14 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
 
+import scala.concurrent.duration._
+
 import language.postfixOps
 
 import akka.actor._
-import scala.concurrent.duration._
 
 class TestFSMRefSpec extends AkkaSpec {
 
@@ -17,11 +18,11 @@ class TestFSMRefSpec extends AkkaSpec {
       val fsm = TestFSMRef(new Actor with FSM[Int, String] {
         startWith(1, "")
         when(1) {
-          case Event("go", _)         ⇒ goto(2) using "go"
-          case Event(StateTimeout, _) ⇒ goto(2) using "timeout"
+          case Event("go", _)         => goto(2).using("go")
+          case Event(StateTimeout, _) => goto(2).using("timeout")
         }
         when(2) {
-          case Event("back", _) ⇒ goto(1) using "back"
+          case Event("back", _) => goto(1).using("back")
         }
       }, "test-fsm-ref-1")
       fsm.stateName should ===(1)
@@ -45,11 +46,11 @@ class TestFSMRefSpec extends AkkaSpec {
       val fsm = TestFSMRef(new Actor with FSM[Int, Null] {
         startWith(1, null)
         when(1) {
-          case x ⇒ stay
+          case _ => stay()
         }
       }, "test-fsm-ref-2")
       fsm.isTimerActive("test") should ===(false)
-      fsm.setTimer("test", 12, 10 millis, true)
+      fsm.startTimerWithFixedDelay("test", 12, 10 millis)
       fsm.isTimerActive("test") should ===(true)
       fsm.cancelTimer("test")
       fsm.isTimerActive("test") should ===(false)
@@ -60,12 +61,12 @@ class TestFSMRefSpec extends AkkaSpec {
 
     val guardian = system.asInstanceOf[ActorSystemImpl].guardian
 
-    val parent = system.actorOf(Props(new Actor { def receive = { case _ ⇒ } }))
+    val parent = system.actorOf(Props(new Actor { def receive = { case _ => } }))
 
     class TestFSMActor extends Actor with FSM[Int, Null] {
       startWith(1, null)
       when(1) {
-        case x ⇒ stay
+        case _ => stay()
       }
       val supervisor = context.parent
       val name = context.self.path.name

@@ -1,26 +1,28 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 package scaladsl
 
+import scala.concurrent.ExecutionContextExecutor
+
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import org.scalatest.WordSpecLike
 
-import scala.concurrent.duration._
+class ReceivePartialSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
-class ReceivePartialSpec extends ScalaTestWithActorTestKit with WordSpecLike {
-
-  implicit val ec = system.executionContext
+  implicit val ec: ExecutionContextExecutor = system.executionContext
 
   "An immutable partial" must {
     "correctly install the receiveMessage handler" in {
       val probe = TestProbe[Command]("probe")
       val behavior =
         Behaviors.receiveMessagePartial[Command] {
-          case Command2 ⇒
+          case Command2 =>
             probe.ref ! Command2
             Behaviors.same
         }
@@ -37,7 +39,7 @@ class ReceivePartialSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val probe = TestProbe[Command]("probe")
       val behavior =
         Behaviors.receivePartial[Command] {
-          case (_, Command2) ⇒
+          case (_, Command2) =>
             probe.ref ! Command2
             Behaviors.same
         }

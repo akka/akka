@@ -1,25 +1,27 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.scaladsl
-
-import akka.actor.typed.{ Behavior, Signal, ActorRef }
-import akka.annotation.DoNotInherit
-import akka.actor.testkit.typed.Effect
-import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
 
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
 
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
+import akka.actor.typed.{ ActorRef, Behavior, Signal, TypedActorContext }
+import akka.actor.typed.receptionist.Receptionist
+import akka.annotation.{ ApiMayChange, DoNotInherit }
+
+@ApiMayChange
 object BehaviorTestKit {
   import akka.actor.testkit.typed.scaladsl.TestInbox.address
 
   def apply[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] = {
     val uid = ThreadLocalRandom.current().nextInt()
-    new BehaviorTestKitImpl(address / name withUid (uid), initialBehavior)
+    new BehaviorTestKitImpl((address / name).withUid(uid), initialBehavior)
   }
   def apply[T](initialBehavior: Behavior[T]): BehaviorTestKit[T] =
     apply(initialBehavior, "testkit")
@@ -35,13 +37,14 @@ object BehaviorTestKit {
  * Not for user extension. See `BehaviorTestKit.apply` factory methods
  */
 @DoNotInherit
+@ApiMayChange
 trait BehaviorTestKit[T] {
 
   // FIXME it is weird that this is public but it is used in BehaviorSpec, could we avoid that?
-  private[akka] def ctx: akka.actor.typed.ActorContext[T]
+  private[akka] def context: TypedActorContext[T]
 
   /**
-   * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.scaladsl.Effects.NoEffects]] if no effects
+   * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.Effect.NoEffects]] if no effects
    * have taken place. The effect is consumed, subsequent calls won't
    * will not include this effect.
    */
@@ -54,19 +57,24 @@ trait BehaviorTestKit[T] {
   def childInbox[U](name: String): TestInbox[U]
 
   /**
+   * Get the child inbox for the child ActorRef, or fail if there is no such child.
+   */
+  def childInbox[U](child: ActorRef[U]): TestInbox[U]
+
+  /**
    * Get the [[akka.actor.typed.Behavior]] testkit for the given child [[akka.actor.typed.ActorRef]].
    */
   def childTestKit[U](child: ActorRef[U]): BehaviorTestKit[U]
 
   /**
-   * The self inbox contains messages the behavior sent to `ctx.self`
+   * The self inbox contains messages the behavior sent to `context.self`
    */
   def selfInbox(): TestInbox[T]
 
   /**
    * The self reference of the actor living inside this testkit.
    */
-  def ref: ActorRef[T] = selfInbox.ref
+  def ref: ActorRef[T] = selfInbox().ref
 
   /**
    * Requests all the effects. The effects are consumed, subsequent calls will only
@@ -103,7 +111,7 @@ trait BehaviorTestKit[T] {
 
   /**
    * Returns the current behavior as it was returned from processing the previous message.
-   * For example if [[Behavior.unhandled]] is returned it will be kept here, but not in
+   * For example if [[Behaviors.unhandled]] is returned it will be kept here, but not in
    * [[currentBehavior]].
    */
   def returnedBehavior: Behavior[T]
@@ -114,9 +122,9 @@ trait BehaviorTestKit[T] {
   def isAlive: Boolean
 
   /**
-   * Send the msg to the behavior and record any [[Effect]]s
+   * Send the message to the behavior and record any [[Effect]]s
    */
-  def run(msg: T): Unit
+  def run(message: T): Unit
 
   /**
    * Send the first message in the selfInbox to the behavior and run it, recording [[Effect]]s.
@@ -124,7 +132,22 @@ trait BehaviorTestKit[T] {
   def runOne(): Unit
 
   /**
-   * Send the signal to the beheavior and record any [[Effect]]s
+   * Send the signal to the behavior and record any [[Effect]]s
    */
   def signal(signal: Signal): Unit
+
+  /**
+   * Returns all the [[CapturedLogEvent]] issued by this behavior(s)
+   */
+  def logEntries(): immutable.Seq[CapturedLogEvent]
+
+  /**
+   * Clear the log entries
+   */
+  def clearLog(): Unit
+
+  /**
+   * The receptionist inbox contains messages sent to `system.receptionist`
+   */
+  def receptionistInbox(): TestInbox[Receptionist.Command]
 }

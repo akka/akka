@@ -1,15 +1,15 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport.netty
 
-import java.security._
-
-import akka.japi.Util._
-import akka.remote.security.provider.DeprecatedAkkaProvider
+import scala.annotation.nowarn
 import com.typesafe.config.Config
 import org.jboss.netty.handler.ssl.SslHandler
+
+import akka.japi.Util._
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -27,7 +27,7 @@ private[akka] class SSLSettings(config: Config) {
 
   val SSLTrustStorePassword = getString("trust-store-password")
 
-  val SSLEnabledAlgorithms = immutableSeq(getStringList("enabled-algorithms")).to[Set]
+  val SSLEnabledAlgorithms = immutableSeq(getStringList("enabled-algorithms")).to(Set)
 
   val SSLProtocol = getString("protocol")
 
@@ -43,10 +43,9 @@ private[akka] class SSLSettings(config: Config) {
  * Used for adding SSL support to Netty pipeline.
  * The `SSLEngine` is created via the configured [[SSLEngineProvider]].
  */
+@ccompatUsedUntil213
+@nowarn("msg=deprecated")
 private[akka] object NettySSLSupport {
-
-  // TODO is this needed in Artery TLS?
-  Security addProvider DeprecatedAkkaProvider
 
   /**
    * Construct a SSLHandler which can be inserted into a Netty server/client pipeline

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -9,7 +9,7 @@ import akka.actor.NoSerializationVerificationNeeded
 /**
  * INTERNAL API.
  *
- * Messages exchanged between persistent actors, views and a journal/snapshot-store.
+ * Messages exchanged between persistent actors and a journal/snapshot-store.
  */
 private[persistence] object Protocol {
 

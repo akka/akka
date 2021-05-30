@@ -1,10 +1,11 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
 
 import java.io.Serializable
+
 import akka.annotation.DoNotInherit
 
 /**
@@ -15,6 +16,7 @@ import akka.annotation.DoNotInherit
 @DoNotInherit sealed abstract class Done extends Serializable
 
 case object Done extends Done {
+
   /**
    * Java API: the singleton instance
    */
@@ -23,7 +25,7 @@ case object Done extends Done {
   /**
    * Java API: the singleton instance
    *
-   * This is equivalent to [[Done#getInstance()]], but can be used with static import.
+   * This is equivalent to [[Done.getInstance]], but can be used with static import.
    */
   def done(): Done = this
 }

@@ -1,0 +1,5 @@
+# Java9+ API's will have to be always filtered until we have these classes in our normal build flow
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.javadsl.JavaFlowSupport*")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.JavaFlowSupport*")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlow*")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.Rs*")

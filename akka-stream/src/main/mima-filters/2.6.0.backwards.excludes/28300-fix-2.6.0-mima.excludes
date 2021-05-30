@@ -1,0 +1,10 @@
+# Incompatibilities against 2.6.0 / Scala 2.13 in implementation classes
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.impl.CompletedTraversalBuilder.curried")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.impl.CompletedTraversalBuilder.tupled")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.impl.CompletedTraversalBuilder.unapply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.impl.CompositeTraversalBuilder.curried")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.impl.CompositeTraversalBuilder.tupled")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.impl.CompositeTraversalBuilder.unapply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.impl.LinearTraversalBuilder.unapply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.impl.VirtualProcessor#Establishing.unapply")
+

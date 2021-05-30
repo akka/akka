@@ -1,25 +1,29 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
 
-import org.scalactic.Constraint
-
-import language.postfixOps
-import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
-import org.scalatest.Matchers
-import akka.actor.ActorSystem
-import akka.event.{ Logging, LoggingAdapter }
-
-import scala.concurrent.duration._
 import scala.concurrent.Future
-import com.typesafe.config.{ Config, ConfigFactory }
-import akka.dispatch.Dispatchers
-import akka.testkit.TestEvent._
-import org.scalactic.ConversionCheckedTripleEquals
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalactic.CanEqual
+import org.scalactic.TypeCheckedTripleEquals
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.Millis
 import org.scalatest.time.Span
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.ActorSystem
+import akka.dispatch.Dispatchers
+import akka.event.Logging
+import akka.event.LoggingAdapter
+import akka.testkit.TestEvent._
 
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
@@ -38,51 +42,48 @@ object AkkaSpec {
           }
         }
       }
-                                                    """)
+      """)
 
   def mapToConfig(map: Map[String, Any]): Config = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     ConfigFactory.parseMap(map.asJava)
-  }
-
-  def getCallerName(clazz: Class[_]): String = {
-    val s = (Thread.currentThread.getStackTrace map (_.getClassName) drop 1)
-      .dropWhile(_ matches "(java.lang.Thread|.*AkkaSpec.*|.*\\.StreamSpec.*|.*MultiNodeSpec.*|.*\\.Abstract.*)")
-    val reduced = s.lastIndexWhere(_ == clazz.getName) match {
-      case -1 ⇒ s
-      case z  ⇒ s drop (z + 1)
-    }
-    reduced.head.replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
   }
 
 }
 
 abstract class AkkaSpec(_system: ActorSystem)
-  extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner
-  with ConversionCheckedTripleEquals with ScalaFutures {
+    extends TestKit(_system)
+    with AnyWordSpecLike
+    with Matchers
+    with BeforeAndAfterAll
+    with WatchedByCoroner
+    with TypeCheckedTripleEquals
+    with ScalaFutures {
 
-  implicit val patience = PatienceConfig(testKitSettings.DefaultTimeout.duration, Span(100, org.scalatest.time.Millis))
+  implicit val patience: PatienceConfig = PatienceConfig(testKitSettings.DefaultTimeout.duration, Span(100, Millis))
 
-  def this(config: Config) = this(ActorSystem(
-    AkkaSpec.getCallerName(getClass),
-    ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
+  def this(config: Config) =
+    this(
+      ActorSystem(
+        TestKitUtils.testNameFromCallStack(classOf[AkkaSpec], "".r),
+        ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
 
   def this(s: String) = this(ConfigFactory.parseString(s))
 
   def this(configMap: Map[String, _]) = this(AkkaSpec.mapToConfig(configMap))
 
-  def this() = this(ActorSystem(AkkaSpec.getCallerName(getClass), AkkaSpec.testConf))
+  def this() = this(ActorSystem(TestKitUtils.testNameFromCallStack(classOf[AkkaSpec], "".r), AkkaSpec.testConf))
 
-  val log: LoggingAdapter = Logging(system, this.getClass)
+  val log: LoggingAdapter = Logging(system, Logging.simpleName(this))
 
   override val invokeBeforeAllAndAfterAllEvenIfNoTestsAreExpected = true
 
-  final override def beforeAll: Unit = {
+  final override def beforeAll(): Unit = {
     startCoroner()
     atStartup()
   }
 
-  final override def afterAll: Unit = {
+  final override def afterAll(): Unit = {
     beforeTermination()
     shutdown()
     afterTermination()
@@ -95,7 +96,7 @@ abstract class AkkaSpec(_system: ActorSystem)
 
   protected def afterTermination(): Unit = {}
 
-  def spawn(dispatcherId: String = Dispatchers.DefaultDispatcherId)(body: ⇒ Unit): Unit =
+  def spawn(dispatcherId: String = Dispatchers.DefaultDispatcherId)(body: => Unit): Unit =
     Future(body)(system.dispatchers.lookup(dispatcherId))
 
   override def expectedTestDuration: FiniteDuration = 60 seconds
@@ -105,17 +106,17 @@ abstract class AkkaSpec(_system: ActorSystem)
       def mute(clazz: Class[_]): Unit =
         sys.eventStream.publish(Mute(DeadLettersFilter(clazz)(occurrences = Int.MaxValue)))
       if (messageClasses.isEmpty) mute(classOf[AnyRef])
-      else messageClasses foreach mute
+      else messageClasses.foreach(mute)
     }
 
   // for ScalaTest === compare of Class objects
-  implicit def classEqualityConstraint[A, B]: Constraint[Class[A], Class[B]] =
-    new Constraint[Class[A], Class[B]] {
+  implicit def classEqualityConstraint[A, B]: CanEqual[Class[A], Class[B]] =
+    new CanEqual[Class[A], Class[B]] {
       def areEqual(a: Class[A], b: Class[B]) = a == b
     }
 
-  implicit def setEqualityConstraint[A, T <: Set[_ <: A]]: Constraint[Set[A], T] =
-    new Constraint[Set[A], T] {
+  implicit def setEqualityConstraint[A, T <: Set[_ <: A]]: CanEqual[Set[A], T] =
+    new CanEqual[Set[A], T] {
       def areEqual(a: Set[A], b: T) = a == b
     }
 }

@@ -4,18 +4,17 @@ Delay every element passed through with a specific duration.
 
 @ref[Timer driven operators](../index.md#timer-driven-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #delay }
+@apidoc[Source.delay](Source) { scala="#delay(of:scala.concurrent.duration.FiniteDuration,strategy:akka.stream.DelayOverflowStrategy):FlowOps.this.Repr[Out]" java="#delay(java.time.Duration,akka.stream.DelayOverflowStrategy)" }
+@apidoc[Flow.delay](Flow) { scala="#delay(of:scala.concurrent.duration.FiniteDuration,strategy:akka.stream.DelayOverflowStrategy):FlowOps.this.Repr[Out]" java="#delay(java.time.Duration,akka.stream.DelayOverflowStrategy)" }
 
-@@@
 
 ## Description
 
 Delay every element passed through with a specific duration.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

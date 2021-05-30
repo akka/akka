@@ -1,12 +1,17 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal.receptionist
 
 import scala.concurrent.Future
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.{ AnyWordSpec, AnyWordSpecLike }
+
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed._
@@ -15,7 +20,6 @@ import akka.actor.typed.receptionist.Receptionist._
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
 object LocalReceptionistSpec {
   trait ServiceA
@@ -27,108 +31,175 @@ object LocalReceptionistSpec {
   val behaviorB = Behaviors.empty[ServiceB]
 
   case object Stop extends ServiceA with ServiceB
-  val stoppableBehavior = Behaviors.receive[Any] { (_, msg) ⇒
-    msg match {
-      case Stop ⇒ Behavior.stopped
-      case _    ⇒ Behavior.same
+  val stoppableBehavior = Behaviors.receive[Any] { (_, message) =>
+    message match {
+      case Stop => Behaviors.stopped
+      case _    => Behaviors.same
     }
   }
 
 }
 
-class LocalReceptionistSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class LocalReceptionistSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
   import LocalReceptionistSpec._
-
-  abstract class TestSetup {
-    val receptionist = spawn(LocalReceptionist.behavior)
-  }
 
   "A local receptionist" must {
 
     "unregister services when they terminate" in {
-      new TestSetup {
-        val regProbe = TestProbe[Any]("regProbe")
+      val receptionist = spawn(LocalReceptionist.behavior)
+      val regProbe = TestProbe[Any]("regProbe")
 
-        val serviceA = spawn(stoppableBehavior.narrow[ServiceA])
-        receptionist ! Register(ServiceKeyA, serviceA, regProbe.ref)
-        regProbe.expectMessage(Registered(ServiceKeyA, serviceA))
+      val serviceA = spawn(stoppableBehavior.narrow[ServiceA])
+      receptionist ! Register(ServiceKeyA, serviceA, regProbe.ref)
+      regProbe.expectMessage(Registered(ServiceKeyA, serviceA))
 
-        val serviceB = spawn(stoppableBehavior.narrow[ServiceB])
-        receptionist ! Register(ServiceKeyB, serviceB, regProbe.ref)
-        regProbe.expectMessage(Registered(ServiceKeyB, serviceB))
+      val serviceB = spawn(stoppableBehavior.narrow[ServiceB])
+      receptionist ! Register(ServiceKeyB, serviceB, regProbe.ref)
+      regProbe.expectMessage(Registered(ServiceKeyB, serviceB))
 
-        val serviceC = spawn(stoppableBehavior)
-        receptionist ! Register(ServiceKeyA, serviceC, regProbe.ref)
-        receptionist ! Register(ServiceKeyB, serviceC, regProbe.ref)
-        regProbe.expectMessage(Registered(ServiceKeyA, serviceC))
-        regProbe.expectMessage(Registered(ServiceKeyB, serviceC))
+      val serviceC = spawn(stoppableBehavior)
+      receptionist ! Register(ServiceKeyA, serviceC, regProbe.ref)
+      receptionist ! Register(ServiceKeyB, serviceC, regProbe.ref)
+      regProbe.expectMessage(Registered(ServiceKeyA, serviceC))
+      regProbe.expectMessage(Registered(ServiceKeyB, serviceC))
 
+      receptionist ! Find(ServiceKeyA, regProbe.ref)
+      regProbe.expectMessage(Listing(ServiceKeyA, Set(serviceA, serviceC)))
+      receptionist ! Find(ServiceKeyB, regProbe.ref)
+      regProbe.expectMessage(Listing(ServiceKeyB, Set(serviceB, serviceC)))
+
+      serviceC ! Stop
+
+      eventually {
         receptionist ! Find(ServiceKeyA, regProbe.ref)
-        regProbe.expectMessage(Listing(ServiceKeyA, Set(serviceA, serviceC)))
+        regProbe.expectMessage(Listing(ServiceKeyA, Set(serviceA)))
         receptionist ! Find(ServiceKeyB, regProbe.ref)
-        regProbe.expectMessage(Listing(ServiceKeyB, Set(serviceB, serviceC)))
-
-        serviceC ! Stop
-
-        eventually {
-          receptionist ! Find(ServiceKeyA, regProbe.ref)
-          regProbe.expectMessage(Listing(ServiceKeyA, Set(serviceA)))
-          receptionist ! Find(ServiceKeyB, regProbe.ref)
-          regProbe.expectMessage(Listing(ServiceKeyB, Set(serviceB)))
-        }
+        regProbe.expectMessage(Listing(ServiceKeyB, Set(serviceB)))
       }
     }
 
+    "unregister programatically" in {
+      val subProbe = TestProbe[Any]()
+      val receptionist = spawn(LocalReceptionist.behavior)
+      receptionist ! Subscribe(ServiceKeyA, subProbe.ref)
+      subProbe.expectMessage(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+      val serviceA = TestProbe[ServiceA]()
+      receptionist ! Register(ServiceKeyA, serviceA.ref)
+      subProbe.expectMessage(Listing(ServiceKeyA, Set(serviceA.ref)))
+      receptionist ! Deregister(ServiceKeyA, serviceA.ref)
+      subProbe.expectMessage(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+    }
+
+    "unregister per service key, not service actor" in {
+      val subProbe = TestProbe[Any]()
+      val receptionist = spawn(LocalReceptionist.behavior)
+
+      // subscribe to 2 keys
+      receptionist ! Subscribe(ServiceKeyA, subProbe.ref)
+      subProbe.expectMessage(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+      receptionist ! Subscribe(ServiceKeyB, subProbe.ref)
+      subProbe.expectMessage(Listing(ServiceKeyB, Set.empty[ActorRef[ServiceB]]))
+
+      // register same service for both 2 keys
+      val service = TestProbe[AnyRef]()
+      receptionist ! Register(ServiceKeyA, service.ref)
+      receptionist ! Register(ServiceKeyB, service.ref)
+      subProbe.expectMessage(Listing(ServiceKeyA, Set(service.ref.narrow[ServiceKeyA.Protocol])))
+      subProbe.expectMessage(Listing(ServiceKeyB, Set(service.ref.narrow[ServiceKeyB.Protocol])))
+
+      // unregister one of the service keys for the service
+      receptionist ! Deregister(ServiceKeyA, service.ref)
+      subProbe.expectMessage(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+      receptionist ! Find(ServiceKeyB, subProbe.ref)
+      subProbe.expectMessage(Listing(ServiceKeyB, Set(service.ref.narrow[ServiceKeyB.Protocol])))
+    }
+
+    "unregister and re-register same service actor" in {
+      val subProbe = TestProbe[Any]()
+      val receptionist = spawn(LocalReceptionist.behavior)
+
+      receptionist ! Subscribe(ServiceKeyA, subProbe.ref)
+      subProbe.expectMessage(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+
+      val serviceA = TestProbe[ServiceA]()
+      receptionist ! Register(ServiceKeyA, serviceA.ref)
+      subProbe.expectMessage(Listing(ServiceKeyA, Set(serviceA.ref)))
+
+      receptionist ! Deregister(ServiceKeyA, serviceA.ref)
+      subProbe.expectMessage(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+
+      receptionist ! Register(ServiceKeyA, serviceA.ref)
+      subProbe.expectMessage(Listing(ServiceKeyA, Set(serviceA.ref)))
+    }
+
     "support subscribing to service changes" in {
-      new TestSetup {
-        val regProbe = TestProbe[Registered]("regProbe")
+      val receptionist = spawn(LocalReceptionist.behavior)
+      val regProbe = TestProbe[Registered]("regProbe")
 
-        val aSubscriber = TestProbe[Listing]("aUser")
-        receptionist ! Subscribe(ServiceKeyA, aSubscriber.ref)
+      val aSubscriber = TestProbe[Listing]("aUser")
+      receptionist ! Subscribe(ServiceKeyA, aSubscriber.ref)
 
-        aSubscriber.expectMessage(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+      aSubscriber.expectMessage(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
 
-        val serviceA: ActorRef[ServiceA] = spawn(stoppableBehavior)
-        receptionist ! Register(ServiceKeyA, serviceA, regProbe.ref)
-        regProbe.expectMessage(Registered(ServiceKeyA, serviceA))
+      val serviceA: ActorRef[ServiceA] = spawn(stoppableBehavior)
+      receptionist ! Register(ServiceKeyA, serviceA, regProbe.ref)
+      regProbe.expectMessage(Registered(ServiceKeyA, serviceA))
 
-        aSubscriber.expectMessage(Listing(ServiceKeyA, Set(serviceA)))
+      aSubscriber.expectMessage(Listing(ServiceKeyA, Set(serviceA)))
 
-        val serviceA2: ActorRef[ServiceA] = spawn(stoppableBehavior)
-        receptionist ! Register(ServiceKeyA, serviceA2, regProbe.ref)
-        regProbe.expectMessage(Registered(ServiceKeyA, serviceA2))
+      val serviceA2: ActorRef[ServiceA] = spawn(stoppableBehavior)
+      receptionist ! Register(ServiceKeyA, serviceA2, regProbe.ref)
+      regProbe.expectMessage(Registered(ServiceKeyA, serviceA2))
 
-        aSubscriber.expectMessage(Listing(ServiceKeyA, Set(serviceA, serviceA2)))
+      aSubscriber.expectMessage(Listing(ServiceKeyA, Set(serviceA, serviceA2)))
 
-        serviceA ! Stop
-        aSubscriber.expectMessage(Listing(ServiceKeyA, Set(serviceA2)))
-        serviceA2 ! Stop
-        aSubscriber.expectMessage(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
-      }
+      serviceA ! Stop
+      aSubscriber.expectMessage(Listing(ServiceKeyA, Set(serviceA2)))
+      serviceA2 ! Stop
+      aSubscriber.expectMessage(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+    }
+
+    "support subscribing to different services with the same subscriber" in {
+      val subProbe = TestProbe[Any]()
+      val receptionist = spawn(LocalReceptionist.behavior)
+      receptionist ! Subscribe(ServiceKeyA, subProbe.ref)
+      receptionist ! Subscribe(ServiceKeyB, subProbe.ref)
+      subProbe.expectMessage(Listing(ServiceKeyA, Set.empty[ActorRef[ServiceA]]))
+      subProbe.expectMessage(Listing(ServiceKeyB, Set.empty[ActorRef[ServiceB]]))
+      val serviceA = TestProbe[ServiceA]()
+      receptionist ! Register(ServiceKeyA, serviceA.ref)
+      subProbe.expectMessage(Listing(ServiceKeyA, Set(serviceA.ref)))
+      val serviceB = TestProbe[ServiceB]()
+      receptionist ! Register(ServiceKeyB, serviceB.ref)
+      subProbe.expectMessage(Listing(ServiceKeyB, Set(serviceB.ref)))
     }
 
     "work with ask" in {
       val receptionist = spawn(LocalReceptionist.behavior)
       val serviceA = spawn(behaviorA)
-      val f: Future[Registered] = receptionist ? (Register(ServiceKeyA, serviceA, _))
+      val f: Future[Registered] = receptionist.ask(Register(ServiceKeyA, serviceA, _))
       f.futureValue should be(Registered(ServiceKeyA, serviceA))
     }
 
     "be present in the system" in {
       val probe = TestProbe[Receptionist.Listing]()
       system.receptionist ! Find(ServiceKeyA, probe.ref)
-      val listing: Listing = probe.expectMessageType[Listing]
+      val listing: Listing = probe.receiveMessage()
       listing.isForKey(ServiceKeyA) should ===(true)
       listing.serviceInstances(ServiceKeyA) should be(Set())
+    }
+
+    "not conflict with the ClusterClient receptionist default name" in {
+      system.systemActorOf(Behaviors.ignore, "receptionist")
     }
   }
 }
 
-class LocalReceptionistBehaviorSpec extends WordSpec with Matchers {
+class LocalReceptionistBehaviorSpec extends AnyWordSpec with Matchers with LogCapturing {
   import LocalReceptionistSpec._
 
   def assertEmpty(inboxes: TestInbox[_]*): Unit = {
-    inboxes foreach (i ⇒ withClue(s"inbox $i had messages")(i.hasMessages should be(false)))
+    inboxes.foreach(i => withClue(s"inbox $i had messages")(i.hasMessages should be(false)))
   }
 
   "A local receptionist behavior" must {

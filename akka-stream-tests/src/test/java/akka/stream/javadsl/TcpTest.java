@@ -1,16 +1,16 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl;
 
 import akka.Done;
-import akka.actor.ActorSystem;
 import akka.japi.function.Function2;
 import akka.japi.function.Procedure;
 import akka.stream.BindFailedException;
 import akka.stream.StreamTcpException;
 import akka.stream.StreamTest;
+
 import akka.stream.javadsl.Tcp.IncomingConnection;
 import akka.stream.javadsl.Tcp.ServerBinding;
 import akka.testkit.AkkaJUnitActorSystemResource;
@@ -19,11 +19,20 @@ import akka.testkit.SocketUtil;
 import akka.testkit.javadsl.EventFilter;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import static akka.util.ByteString.emptyByteString;
+
+import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.net.BindException;
 import java.net.InetSocketAddress;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -33,15 +42,17 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-// #setting-up-ssl-context
+// #setting-up-ssl-engine
 // imports
-import akka.stream.TLSClientAuth;
-import akka.stream.TLSProtocol;
-import com.typesafe.sslconfig.akka.AkkaSSLConfig;
 import java.security.KeyStore;
-import javax.net.ssl.*;
 import java.security.SecureRandom;
-// #setting-up-ssl-context
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.TrustManagerFactory;
+import akka.stream.TLSRole;
+
+// #setting-up-ssl-engine
 
 public class TcpTest extends StreamTest {
   public TcpTest() {
@@ -49,17 +60,19 @@ public class TcpTest extends StreamTest {
   }
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("TcpTest",
-    AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("TcpTest", AkkaSpec.testConf());
 
   final Sink<IncomingConnection, CompletionStage<Done>> echoHandler =
-      Sink.foreach(new Procedure<IncomingConnection>() {
-        public void apply(IncomingConnection conn) {
-          conn.handleWith(Flow.of(ByteString.class), materializer);
-        }
-      });
+      Sink.foreach(
+          new Procedure<IncomingConnection>() {
+            public void apply(IncomingConnection conn) {
+              conn.handleWith(Flow.of(ByteString.class), system);
+            }
+          });
 
-  final List<ByteString> testInput = new ArrayList<ByteString>();
+  final List<ByteString> testInput = new ArrayList<>();
+
   {
     for (char c = 'a'; c <= 'z'; c++) {
       testInput.add(ByteString.fromString(String.valueOf(c)));
@@ -68,26 +81,31 @@ public class TcpTest extends StreamTest {
 
   @Test
   public void mustWorkInHappyCase() throws Exception {
-    final InetSocketAddress serverAddress = SocketUtil.temporaryServerAddress(SocketUtil.RANDOM_LOOPBACK_ADDRESS(), false);
-    final Source<IncomingConnection, CompletionStage<ServerBinding>> binding = Tcp.get(system)
-        .bind(serverAddress.getHostString(), serverAddress.getPort());
+    final InetSocketAddress serverAddress =
+        SocketUtil.temporaryServerAddress(SocketUtil.RANDOM_LOOPBACK_ADDRESS(), false);
+    final Source<IncomingConnection, CompletionStage<ServerBinding>> binding =
+        Tcp.get(system).bind(serverAddress.getHostString(), serverAddress.getPort());
 
-    final CompletionStage<ServerBinding> future = binding.to(echoHandler).run(materializer);
+    final CompletionStage<ServerBinding> future = binding.to(echoHandler).run(system);
     final ServerBinding b = future.toCompletableFuture().get(5, TimeUnit.SECONDS);
     assertEquals(b.localAddress().getPort(), serverAddress.getPort());
 
-    final CompletionStage<ByteString> resultFuture = Source
-        .from(testInput)
-        .via(Tcp.get(system).outgoingConnection(serverAddress.getHostString(), serverAddress.getPort()))
-        .runFold(ByteString.empty(),
-            new Function2<ByteString, ByteString, ByteString>() {
-              public ByteString apply(ByteString acc, ByteString elem) {
-                return acc.concat(elem);
-              }
-            }, materializer);
+    final CompletionStage<ByteString> resultFuture =
+        Source.from(testInput)
+            .via(
+                Tcp.get(system)
+                    .outgoingConnection(serverAddress.getHostString(), serverAddress.getPort()))
+            .runFold(
+                emptyByteString(),
+                new Function2<ByteString, ByteString, ByteString>() {
+                  public ByteString apply(ByteString acc, ByteString elem) {
+                    return acc.concat(elem);
+                  }
+                },
+                system);
 
     final byte[] result = resultFuture.toCompletableFuture().get(5, TimeUnit.SECONDS).toArray();
-    for (int i = 0; i < testInput.size(); i ++) {
+    for (int i = 0; i < testInput.size(); i++) {
       assertEquals(testInput.get(i).head(), result[i]);
     }
 
@@ -96,95 +114,114 @@ public class TcpTest extends StreamTest {
 
   @Test
   public void mustReportServerBindFailure() throws Exception {
-    final InetSocketAddress serverAddress = SocketUtil.temporaryServerAddress(SocketUtil.RANDOM_LOOPBACK_ADDRESS(), false);
-    final Source<IncomingConnection, CompletionStage<ServerBinding>> binding = Tcp.get(system)
-        .bind(serverAddress.getHostString(), serverAddress.getPort());
+    final InetSocketAddress serverAddress =
+        SocketUtil.temporaryServerAddress(SocketUtil.RANDOM_LOOPBACK_ADDRESS(), false);
+    final Source<IncomingConnection, CompletionStage<ServerBinding>> binding =
+        Tcp.get(system).bind(serverAddress.getHostString(), serverAddress.getPort());
 
-    final CompletionStage<ServerBinding> future = binding.to(echoHandler).run(materializer);
+    final CompletionStage<ServerBinding> future = binding.to(echoHandler).run(system);
     final ServerBinding b = future.toCompletableFuture().get(5, TimeUnit.SECONDS);
     assertEquals(b.localAddress().getPort(), serverAddress.getPort());
 
-    new TestKit(system) {{
-      new EventFilter(BindException.class, system).occurrences(1).intercept(() -> {
-        try {
-          binding.to(echoHandler).run(materializer).toCompletableFuture().get(5, TimeUnit.SECONDS);
-          assertTrue("Expected BindFailedException, but nothing was reported", false);
-        } catch (ExecutionException e) {
-          if (e.getCause() instanceof BindFailedException) {} // all good
-          else throw new AssertionError("failed", e);
-          // expected
-          b.unbind();
-        } catch (Exception e) {
-          throw new AssertionError("failed", e);
-        }
-        return null;
-      });
-    }};
+    new TestKit(system) {
+      {
+        new EventFilter(BindException.class, system)
+            .occurrences(1)
+            .intercept(
+                () -> {
+                  ExecutionException executionException =
+                      Assert.assertThrows(
+                          "CompletableFuture.get() should throw ExecutionException",
+                          ExecutionException.class,
+                          () ->
+                              binding
+                                  .to(echoHandler)
+                                  .run(system)
+                                  .toCompletableFuture()
+                                  .get(5, TimeUnit.SECONDS));
+                  assertTrue(
+                      "The cause of ExecutionException should be instanceof BindFailedException",
+                      executionException.getCause() instanceof BindFailedException);
+                  b.unbind();
+                  return null;
+                });
+      }
+    };
   }
 
   @Test
-  public void mustReportClientConnectFailure() throws Throwable {
+  public void mustReportClientConnectFailure() {
     final InetSocketAddress serverAddress = SocketUtil.notBoundServerAddress();
-    try {
-      try {
-        Source.from(testInput)
-            .viaMat(Tcp.get(system).outgoingConnection(serverAddress.getHostString(), serverAddress.getPort()),
-                Keep.right())
-            .to(Sink.<ByteString> ignore()).run(materializer).toCompletableFuture().get(5, TimeUnit.SECONDS);
-        assertTrue("Expected StreamTcpException, but nothing was reported", false);
-      } catch (ExecutionException e) {
-        throw e.getCause();
-      }
-    } catch (StreamTcpException e) {
-      // expected
-    }
+    ExecutionException executionException =
+        Assert.assertThrows(
+            "CompletableFuture.get() should throw ExecutionException",
+            ExecutionException.class,
+            () ->
+                Source.from(testInput)
+                    .viaMat(
+                        Tcp.get(system)
+                            .outgoingConnection(
+                                serverAddress.getHostString(), serverAddress.getPort()),
+                        Keep.right())
+                    .to(Sink.ignore())
+                    .run(system)
+                    .toCompletableFuture()
+                    .get(5, TimeUnit.SECONDS));
+    assertEquals(
+        "The cause of ExecutionException should be StreamTcpException",
+        StreamTcpException.class,
+        executionException.getCause().getClass());
   }
 
   // compile only sample
-  public void constructSslContext() throws Exception {
-    ActorSystem system = null;
+  // #setting-up-ssl-engine
+  // initialize SSLContext once
+  private final SSLContext sslContext;
 
-    // #setting-up-ssl-context
+  {
+    try {
+      // Don't hardcode your password in actual code
+      char[] password = "abcdef".toCharArray();
 
-    // -- setup logic ---
+      // trust store and keys in one keystore
+      KeyStore keyStore = KeyStore.getInstance("PKCS12");
+      keyStore.load(getClass().getResourceAsStream("/tcp-spec-keystore.p12"), password);
 
-    AkkaSSLConfig sslConfig = AkkaSSLConfig.get(system);
+      TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance("SunX509");
+      trustManagerFactory.init(keyStore);
 
-    // Don't hardcode your password in actual code
-    char[] password = "abcdef".toCharArray();
+      KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
+      keyManagerFactory.init(keyStore, password);
 
-    // trust store and keys in one keystore
-    KeyStore keyStore = KeyStore.getInstance("PKCS12");
-    keyStore.load(getClass().getResourceAsStream("/tcp-spec-keystore.p12"), password);
+      // init ssl context
+      SSLContext context = SSLContext.getInstance("TLSv1.2");
+      context.init(
+          keyManagerFactory.getKeyManagers(),
+          trustManagerFactory.getTrustManagers(),
+          new SecureRandom());
 
-    TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-    tmf.init(keyStore);
+      sslContext = context;
 
-    KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
-    keyManagerFactory.init(keyStore, password);
-
-    // initial ssl context
-    SSLContext sslContext = SSLContext.getInstance("TLS");
-    sslContext.init(keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
-
-    // protocols
-    SSLParameters defaultParams = sslContext.getDefaultSSLParameters();
-    String[] defaultProtocols = defaultParams.getProtocols();
-    String[] protocols = sslConfig.configureProtocols(defaultProtocols, sslConfig.config());
-    defaultParams.setProtocols(protocols);
-
-    // ciphers
-    String[] defaultCiphers = defaultParams.getCipherSuites();
-    String[] cipherSuites = sslConfig.configureCipherSuites(defaultCiphers, sslConfig.config());
-    defaultParams.setCipherSuites(cipherSuites);
-
-    TLSProtocol.NegotiateNewSession negotiateNewSession = TLSProtocol.negotiateNewSession()
-        .withCipherSuites(cipherSuites)
-        .withProtocols(protocols)
-        .withParameters(defaultParams)
-        .withClientAuth(TLSClientAuth.none());
-
-    // #setting-up-ssl-context
+    } catch (KeyStoreException
+        | IOException
+        | NoSuchAlgorithmException
+        | CertificateException
+        | UnrecoverableKeyException
+        | KeyManagementException e) {
+      throw new RuntimeException(e);
+    }
   }
+
+  // create new SSLEngine from the SSLContext, which was initialized once
+  public SSLEngine createSSLEngine(TLSRole role) {
+    SSLEngine engine = sslContext.createSSLEngine();
+
+    engine.setUseClientMode(role.equals(akka.stream.TLSRole.client()));
+    engine.setEnabledCipherSuites(new String[] {"TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"});
+    engine.setEnabledProtocols(new String[] {"TLSv1.2"});
+
+    return engine;
+  }
+  // #setting-up-ssl-engine
 
 }

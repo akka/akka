@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -11,20 +11,21 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
+import io.aeron.Aeron
+import io.aeron.driver.MediaDriver
+import org.agrona.IoUtil
+
 import akka.actor.ExtendedActorSystem
 import akka.remote.artery.aeron.AeronSink.GaveUpMessageException
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.SocketUtil
-import io.aeron.Aeron
-import io.aeron.driver.MediaDriver
-import org.agrona.IoUtil
 
-class AeronSinkSpec extends AkkaSpec with ImplicitSender {
+class AeronSinkSpec extends AkkaSpec("""
+    akka.stream.materializer.debug.fuzzing-mode = on
+  """) with ImplicitSender {
 
   val driver = MediaDriver.launchEmbedded()
 
@@ -43,9 +44,6 @@ class AeronSinkSpec extends AkkaSpec with ImplicitSender {
 
   val pool = new EnvelopeBufferPool(1034 * 1024, 128)
 
-  val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
-  implicit val mat = ActorMaterializer(matSettings)(system)
-
   override def afterTermination(): Unit = {
     taskRunner.stop()
     aeron.close()
@@ -60,21 +58,23 @@ class AeronSinkSpec extends AkkaSpec with ImplicitSender {
       val port = SocketUtil.temporaryLocalPort(udp = true)
       val channel = s"aeron:udp?endpoint=localhost:$port"
 
-      Source.fromGraph(new AeronSource(channel, 1, aeron, taskRunner, pool, IgnoreEventSink, 0))
+      Source
+        .fromGraph(new AeronSource(channel, 1, aeron, taskRunner, pool, NoOpRemotingFlightRecorder, 0))
         // fail receiver stream on first message
-        .map(_ ⇒ throw new RuntimeException("stop") with NoStackTrace)
+        .map(_ => throw new RuntimeException("stop") with NoStackTrace)
         .runWith(Sink.ignore)
 
       // use large enough messages to fill up buffers
       val payload = new Array[Byte](100000)
-      val done = Source(1 to 1000).map(_ ⇒ payload)
-        .map { n ⇒
+      val done = Source(1 to 1000)
+        .map(_ => payload)
+        .map { _ =>
           val envelope = pool.acquire()
           envelope.byteBuffer.put(payload)
           envelope.byteBuffer.flip()
           envelope
         }
-        .runWith(new AeronSink(channel, 1, aeron, taskRunner, pool, 500.millis, IgnoreEventSink))
+        .runWith(new AeronSink(channel, 1, aeron, taskRunner, pool, 500.millis, NoOpRemotingFlightRecorder))
 
       // without the give up timeout the stream would not complete/fail
       intercept[GaveUpMessageException] {

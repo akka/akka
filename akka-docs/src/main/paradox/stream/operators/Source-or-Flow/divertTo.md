@@ -2,20 +2,19 @@
 
 Each upstream element will either be diverted to the given sink, or the downstream consumer according to the predicate function applied to the element.
 
-@ref[Simple operators](../index.md#simple-operators)
-
-@@@div { .group-scala }
+@ref[Fan-out operators](../index.md#fan-out-operators)
 
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #divertTo }
+@apidoc[Source.divertTo](Source) { scala="#divertTo(that:akka.stream.Graph[akka.stream.SinkShape[Out],_],when:Out=&gt;Boolean):FlowOps.this.Repr[Out]" java="#divertTo(akka.stream.Graph,akka.japi.function.Predicate)" }
+@apidoc[Flow.divertTo](Flow) { scala="#divertTo(that:akka.stream.Graph[akka.stream.SinkShape[Out],_],when:Out=&gt;Boolean):FlowOps.this.Repr[Out]" java="#divertTo(akka.stream.Graph,akka.japi.function.Predicate)" }
 
-@@@
 
 ## Description
 
 Each upstream element will either be diverted to the given sink, or the downstream consumer according to the predicate function applied to the element.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

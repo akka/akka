@@ -1,20 +1,19 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
 
+import java.util.{ BitSet => ProgrammaticJavaDummy }
+import java.util.{ Date => SerializableDummy }
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.{ BitSet ⇒ ProgrammaticJavaDummy }
-import java.util.{ Date ⇒ SerializableDummy }
 
-import akka.actor.setup.ActorSystemSetup
-import akka.actor.{ ActorSystem, BootstrapSetup, ExtendedActorSystem }
-import akka.testkit.{ AkkaSpec, TestKit, TestProbe }
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.duration._
+import akka.actor.{ ActorSystem, BootstrapSetup, ExtendedActorSystem }
+import akka.actor.setup.ActorSystemSetup
+import akka.testkit.{ AkkaSpec, TestKit }
 
 class ConfigurationDummy
 class ProgrammaticDummy
@@ -49,14 +48,15 @@ object SerializationSetupSpec {
   val programmaticDummySerializer = new FakeSerializer
   val testSerializer = new NoopSerializer
 
-  val serializationSettings = SerializationSetup { _ ⇒
-    List(
-      SerializerDetails("test", programmaticDummySerializer, List(classOf[ProgrammaticDummy])))
+  val serializationSettings = SerializationSetup { _ =>
+    List(SerializerDetails("test", programmaticDummySerializer, List(classOf[ProgrammaticDummy])))
   }
-  val bootstrapSettings = BootstrapSetup(None, Some(ConfigFactory.parseString("""
+  val bootstrapSettings = BootstrapSetup(
+    None,
+    Some(ConfigFactory.parseString("""
     akka {
       actor {
-        serialize-messages = off
+        allow-java-serialization = on
 
         # this is by default on, but tests are running with off, use defaults here
         warn-about-java-serializer-usage = on
@@ -66,11 +66,13 @@ object SerializationSetupSpec {
         }
       }
     }
-    """)), None)
+    """)),
+    None)
   val actorSystemSettings = ActorSystemSetup(bootstrapSettings, serializationSettings)
 
-  val noJavaSerializationSystem = ActorSystem("SerializationSettingsSpec" + "NoJavaSerialization", ConfigFactory.parseString(
-    """
+  val noJavaSerializationSystem = ActorSystem(
+    "SerializationSettingsSpec" + "NoJavaSerialization",
+    ConfigFactory.parseString("""
     akka {
       actor {
         allow-java-serialization = off
@@ -83,10 +85,18 @@ object SerializationSetupSpec {
 
 }
 
-class SerializationSetupSpec extends AkkaSpec(
-  ActorSystem("SerializationSettingsSpec", SerializationSetupSpec.actorSystemSettings)) {
+class SerializationSetupSpec
+    extends AkkaSpec(ActorSystem("SerializationSettingsSpec", SerializationSetupSpec.actorSystemSettings)) {
 
   import SerializationSetupSpec._
+
+  private def verifySerialization(sys: ActorSystem, obj: AnyRef): Unit = {
+    val serialization = SerializationExtension(sys)
+    val bytes = serialization.serialize(obj).get
+    val serializer = serialization.findSerializerFor(obj)
+    val manifest = Serializers.manifestFor(serializer, obj)
+    serialization.deserialize(bytes, serializer.identifier, manifest).get
+  }
 
   "The serialization settings" should {
 
@@ -102,8 +112,7 @@ class SerializationSetupSpec extends AkkaSpec(
 
     "fail during ActorSystem creation when misconfigured" in {
       val config =
-        ConfigFactory.parseString(
-          """
+        ConfigFactory.parseString("""
              akka.loglevel = OFF
              akka.stdout-loglevel = OFF
              akka.actor.serializers.doe = "john.is.not.here"
@@ -121,12 +130,17 @@ class SerializationSetupSpec extends AkkaSpec(
   // that they'd need a different actor system to be able to create it... someone MAY pick a system with
   // allow-java-serialization=on to create the SerializationSetup and use that SerializationSetup
   // in another system with allow-java-serialization=off
-  val addedJavaSerializationSettings = SerializationSetup { _ ⇒
+  val addedJavaSerializationSettings = SerializationSetup { _ =>
     List(
       SerializerDetails("test", programmaticDummySerializer, List(classOf[ProgrammaticDummy])),
-      SerializerDetails("java-manual", new JavaSerializer(system.asInstanceOf[ExtendedActorSystem]), List(classOf[ProgrammaticJavaDummy])))
+      SerializerDetails(
+        "java-manual",
+        new JavaSerializer(system.asInstanceOf[ExtendedActorSystem]),
+        List(classOf[ProgrammaticJavaDummy])))
   }
-  val addedJavaSerializationProgramaticallyButDisabledSettings = BootstrapSetup(None, Some(ConfigFactory.parseString("""
+  val addedJavaSerializationProgramaticallyButDisabledSettings = BootstrapSetup(
+    None,
+    Some(ConfigFactory.parseString("""
     akka {
       loglevel = debug
       actor {
@@ -135,14 +149,13 @@ class SerializationSetupSpec extends AkkaSpec(
         warn-about-java-serializer-usage = on
       }
     }
-    """)), None)
+    """)),
+    None)
 
   val addedJavaSerializationViaSettingsSystem =
     ActorSystem(
       "addedJavaSerializationSystem",
-      ActorSystemSetup(
-        addedJavaSerializationProgramaticallyButDisabledSettings,
-        addedJavaSerializationSettings))
+      ActorSystemSetup(addedJavaSerializationProgramaticallyButDisabledSettings, addedJavaSerializationSettings))
 
   "Disabling java serialization" should {
 
@@ -152,20 +165,25 @@ class SerializationSetupSpec extends AkkaSpec(
       }.getMessage should include("akka.actor.allow-java-serialization = off")
 
       intercept[DisabledJavaSerializer.JavaSerializationException] {
-        SerializationExtension(addedJavaSerializationViaSettingsSystem).findSerializerFor(new ProgrammaticJavaDummy).toBinary(new ProgrammaticJavaDummy)
+        SerializationExtension(addedJavaSerializationViaSettingsSystem)
+          .findSerializerFor(new ProgrammaticJavaDummy)
+          .toBinary(new ProgrammaticJavaDummy)
       }
     }
 
     "have replaced java serializer" in {
-      val p = TestProbe()(addedJavaSerializationViaSettingsSystem) // only receiver has the serialization disabled
+      // allow-java-serialization = on in `system`
+      val serializer = SerializationExtension(system).findSerializerFor(new ProgrammaticJavaDummy)
+      serializer.getClass should ===(classOf[JavaSerializer])
 
-      p.ref ! new ProgrammaticJavaDummy
-      SerializationExtension(system).findSerializerFor(new ProgrammaticJavaDummy).toBinary(new ProgrammaticJavaDummy)
-      // should not receive this one, it would have been java serialization!
-      p.expectNoMsg(100.millis)
+      // should not allow deserialization, it would have been java serialization!
+      val serializer2 =
+        SerializationExtension(addedJavaSerializationViaSettingsSystem).findSerializerFor(new ProgrammaticJavaDummy)
+      serializer2.getClass should ===(classOf[DisabledJavaSerializer])
+      serializer2.identifier should ===(serializer.identifier)
 
-      p.ref ! new ProgrammaticDummy
-      p.expectMsgType[ProgrammaticDummy]
+      verifySerialization(system, new ProgrammaticDummy)
+      verifySerialization(addedJavaSerializationViaSettingsSystem, new ProgrammaticDummy)
     }
 
     "disable java serialization also for incoming messages if serializer id usually would have found the serializer" in {

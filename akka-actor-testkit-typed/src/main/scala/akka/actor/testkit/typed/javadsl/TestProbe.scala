@@ -1,24 +1,26 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
+import java.util.{ List => JList }
 import java.util.function.Supplier
+import akka.japi.function.Creator
 
-import akka.actor.typed.{ ActorRef, ActorSystem }
-import akka.annotation.DoNotInherit
+import akka.actor.testkit.typed.FishingOutcome
+import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.TestProbeImpl
-import akka.actor.testkit.typed.{ FishingOutcome, TestKitSettings }
-import akka.actor.testkit.typed.scaladsl.TestDuration
-import akka.util.JavaDurationConverters._
-import scala.collection.JavaConverters._
-import scala.concurrent.duration.FiniteDuration
-
-import akka.annotation.InternalApi
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.RecipientRef
+import akka.actor.typed.internal.InternalRecipientRef
+import akka.annotation.DoNotInherit
+import akka.util.unused
 
 object FishingOutcomes {
+
   /**
    * Consume this message and continue with the next
    */
@@ -45,13 +47,13 @@ object TestProbe {
   def create[M](system: ActorSystem[_]): TestProbe[M] =
     create(name = "testProbe", system)
 
-  def create[M](clazz: Class[M], system: ActorSystem[_]): TestProbe[M] =
+  def create[M](@unused clazz: Class[M], system: ActorSystem[_]): TestProbe[M] =
     create(system)
 
   def create[M](name: String, system: ActorSystem[_]): TestProbe[M] =
     new TestProbeImpl[M](name, system)
 
-  def create[M](name: String, clazz: Class[M], system: ActorSystem[_]): TestProbe[M] =
+  def create[M](name: String, @unused clazz: Class[M], system: ActorSystem[_]): TestProbe[M] =
     new TestProbeImpl[M](name, system)
 }
 
@@ -65,7 +67,7 @@ object TestProbe {
  * Not for user extension
  */
 @DoNotInherit
-abstract class TestProbe[M] {
+abstract class TestProbe[M] extends RecipientRef[M] { this: InternalRecipientRef[M] =>
 
   implicit protected def settings: TestKitSettings
 
@@ -105,8 +107,8 @@ abstract class TestProbe[M] {
    * take maximum wait times are available in a version which implicitly uses
    * the remaining time governed by the innermost enclosing `within` block.
    *
-   * Note that the timeout is scaled using Duration.dilated, which uses the
-   * configuration entry "akka.actor.testkit.typed.timefactor", while the min Duration is not.
+   * Note that the max timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor",
+   * while the min Duration is not.
    *
    * {{{
    * val ret = within(50 millis) {
@@ -115,22 +117,16 @@ abstract class TestProbe[M] {
    * }
    * }}}
    */
-  def within[T](min: Duration, max: Duration)(f: Supplier[T]): T =
-    within_internal(min.asScala, max.asScala, f.get())
+  def within[T](min: Duration, max: Duration)(f: Supplier[T]): T
 
   /**
    * Same as calling `within(0 seconds, max)(f)`.
    */
-  def within[T](max: Duration)(f: Supplier[T]): T =
-    within_internal(scala.concurrent.duration.Duration.Zero, max.asScala, f.get())
+  def within[T](max: Duration)(f: Supplier[T]): T
 
   /**
-   * INTERNAL API
-   */
-  @InternalApi protected def within_internal[T](min: FiniteDuration, max: FiniteDuration, f: ⇒ T): T
-
-  /**
-   * Same as `expectMessage(remainingOrDefault, obj)`, but correctly treating the timeFactor.
+   * Same as `expectMessage(remainingOrDefault, obj)`, but using the
+   * default timeout as deadline.
    */
   def expectMessage[T <: M](obj: T): T
 
@@ -159,16 +155,86 @@ abstract class TestProbe[M] {
   def expectNoMessage(max: Duration): Unit
 
   /**
-   * Assert that no message is received. Waits for the default period configured as `akka.actor.testkit.typed.expect-no-message-default`
-   * That value is dilated.
+   * Assert that no message is received. Waits for the default period configured as `akka.actor.testkit.typed.expect-no-message-default`.
+   * That timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
    */
   def expectNoMessage(): Unit
 
   /**
+   * Same as `expectMessageType(clazz, remainingOrDefault)`,but using the
+   * default timeout as deadline.
+   */
+  def expectMessageClass[T <: M](clazz: Class[T]): T
+
+  /**
+   * Wait for a message of type M and return it when it arrives, or fail if the `max` timeout is hit.
+   *
+   * Note that the timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
+   */
+  def expectMessageClass[T <: M](clazz: Class[T], max: Duration): T
+
+  /**
+   * Receive one message of type `M` within the default timeout as deadline.
+   */
+  def receiveMessage(): M
+
+  /**
+   * Receive one message of type `M`. Wait time is bounded by the `max` duration,
+   * with an [[AssertionError]] raised in case of timeout.
+   */
+  def receiveMessage(max: Duration): M
+
+  /**
+   * Same as `receiveSeveralMessages(n, remaining)` but using the default timeout as deadline.
+   */
+  def receiveSeveralMessages(n: Int): JList[M]
+
+  /**
+   * Receive `n` messages in a row before the given deadline.
+   *
+   * Note that the timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
+   */
+  def receiveSeveralMessages(n: Int, max: Duration): JList[M]
+
+  /**
+   * Java API: Allows for flexible matching of multiple messages within a timeout, the fisher function is fed each incoming
+   * message, and returns one of the following effects to decide on what happens next:
+   *
+   *  * [[FishingOutcomes.continue]] - continue with the next message given that the timeout has not been reached
+   *  * [[FishingOutcomes.complete]] - successfully complete and return the message
+   *  * [[FishingOutcomes.fail]] - fail the test with a custom message
+   *
+   * Additionally failures includes the list of messages consumed. If a message of type `M` but not of type `T` is
+   * received this will also fail the test, additionally if the `fisher` function throws a match error the error
+   * is decorated with some fishing details and the test is failed (making it convenient to use this method with a
+   * partial function).
+   *
+   * @param max Max total time without the fisher function returning `CompleteFishing` before failing.
+   *            The timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
+   * @return The messages accepted in the order they arrived
+   */
+  def fishForMessage(max: Duration, fisher: java.util.function.Function[M, FishingOutcome]): java.util.List[M]
+
+  /**
+   * Same as the other `fishForMessage` but includes the provided hint in all error messages
+   */
+  def fishForMessage(
+      max: Duration,
+      hint: String,
+      fisher: java.util.function.Function[M, FishingOutcome]): java.util.List[M]
+
+  /**
    * Expect the given actor to be stopped or stop within the given timeout or
    * throw an [[AssertionError]].
+   *
+   * Note that the timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
    */
   def expectTerminated[U](actorRef: ActorRef[U], max: Duration): Unit
+
+  /**
+   * Expect the given actor to be stopped or stop within the default timeout.
+   */
+  def expectTerminated[U](actorRef: ActorRef[U]): Unit
 
   /**
    * Evaluate the given assert every `interval` until it does not throw an exception and return the
@@ -176,9 +242,9 @@ abstract class TestProbe[M] {
    *
    * If the `max` timeout expires the last exception is thrown.
    *
-   * Note that the timeout is scaled using Duration.dilated, which uses the configuration entry "akka.test.timefactor".
+   * Note that the timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
    */
-  def awaitAssert[A](max: Duration, interval: Duration, supplier: Supplier[A]): A
+  def awaitAssert[A](max: Duration, interval: Duration, creator: Creator[A]): A
 
   /**
    * Evaluate the given assert every 100 milliseconds until it does not throw an exception and return the
@@ -186,67 +252,21 @@ abstract class TestProbe[M] {
    *
    * If the `max` timeout expires the last exception is thrown.
    *
-   * Note that the timeout is scaled using Duration.dilated, which uses the configuration entry "akka.test.timefactor".
+   * Note that the timeout is scaled using the configuration entry "akka.actor.testkit.typed.timefactor".
    */
-  def awaitAssert[A](max: Duration, supplier: Supplier[A]): A =
-    awaitAssert(max, Duration.ofMillis(100), supplier)
+  def awaitAssert[A](max: Duration, creator: Creator[A]): A
 
   /**
    * Evaluate the given assert every 100 milliseconds until it does not throw an exception and return the
    * result. A max time is taken it from the innermost enclosing `within` block.
    */
-  def awaitAssert[A](supplier: Supplier[A]): A =
-    awaitAssert(Duration.ZERO, supplier)
+  def awaitAssert[A](creator: Creator[A]): A
 
   // FIXME awaitAssert(Procedure): Unit would be nice for java people to not have to return null
 
   /**
-   * Same as `expectMessageType(clazz, remainingOrDefault)`, but correctly treating the timeFactor.
+   * Stops the [[TestProbe.getRef]], which is useful when testing watch and termination.
    */
-  def expectMessageClass[T](clazz: Class[T]): T =
-    expectMessageClass_internal(getRemainingOrDefault.asScala, clazz)
-
-  /**
-   * Wait for a message of type M and return it when it arrives, or fail if the `max` timeout is hit.
-   * The timeout is dilated.
-   */
-  def expectMessageClass[T](clazz: Class[T], max: Duration): T =
-    expectMessageClass_internal(max.asScala.dilated, clazz)
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi protected def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C
-
-  /**
-   * Java API: Allows for flexible matching of multiple messages within a timeout, the fisher function is fed each incoming
-   * message, and returns one of the following effects to decide on what happens next:
-   *
-   *  * [[FishingOutcomes.continue()]] - continue with the next message given that the timeout has not been reached
-   *  * [[FishingOutcomes.complete()]] - successfully complete and return the message
-   *  * [[FishingOutcomes.fail(errorMsg)]] - fail the test with a custom message
-   *
-   * Additionally failures includes the list of messages consumed. If a message of type `M` but not of type `T` is
-   * received this will also fail the test, additionally if the `fisher` function throws a match error the error
-   * is decorated with some fishing details and the test is failed (making it convenient to use this method with a
-   * partial function).
-   *
-   * @param max Max total time without the fisher function returning `CompleteFishing` before failing
-   *            The timeout is dilated.
-   * @return The messages accepted in the order they arrived
-   */
-  def fishForMessage(max: Duration, fisher: java.util.function.Function[M, FishingOutcome]): java.util.List[M] =
-    fishForMessage(max, "", fisher)
-
-  /**
-   * Same as the other `fishForMessageJava` but includes the provided hint in all error messages
-   */
-  def fishForMessage(max: Duration, hint: String, fisher: java.util.function.Function[M, FishingOutcome]): java.util.List[M] =
-    fishForMessage_internal(max.asScala, hint, fisher.apply).asJava
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi protected def fishForMessage_internal(max: FiniteDuration, hint: String, fisher: M ⇒ FishingOutcome): List[M]
+  def stop(): Unit
 
 }

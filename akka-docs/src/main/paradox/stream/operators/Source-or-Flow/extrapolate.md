@@ -4,13 +4,10 @@ Allow for a faster downstream by expanding the last emitted element to an `Itera
 
 @ref[Backpressure aware operators](../index.md#backpressure-aware-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #extrapolate }
-
-@@@
+@apidoc[Source.extrapolate](Source) { scala="#extrapolate[U&gt;:Out](extrapolator:U=&gt;Iterator[U],initial:Option[U]):FlowOps.this.Repr[U]" java="#extrapolate(akka.japi.function.Function,java.lang.Object)" }
+@apidoc[Flow.extrapolate](Flow) { scala="#extrapolate[U&gt;:Out](extrapolator:U=&gt;Iterator[U],initial:Option[U]):FlowOps.this.Repr[U]" java="#extrapolate(akka.japi.function.Function,java.lang.Object)" }
 
 ## Description
 
@@ -25,6 +22,20 @@ Includes an optional `initial` argument to prevent blocking the entire stream wh
 See @ref:[Understanding extrapolate and expand](../../stream-rate.md#understanding-extrapolate-and-expand) for more information
 and examples.
 
+## Example
+
+Imagine a videoconference client decoding a video feed from a colleague working remotely. It is possible 
+the network bandwidth is a bit unreliable. It's fine, as long as the audio remains fluent, it doesn't matter
+if we can't decode a frame or two (or more). When a frame is dropped, though, we want the UI to show the last 
+frame decoded:
+
+Scala
+:   @@snip [ExtrapolateAndExpand.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/ExtrapolateAndExpand.scala) { #extrapolate }
+
+Java
+:   @@snip [ExtrapolateAndExpand.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/ExtrapolateAndExpand.java) { #extrapolate }
+
+## Reactive Streams semantics
 
 @@@div { .callout }
 
@@ -35,4 +46,3 @@ and examples.
 **completes** when upstream completes
 
 @@@
-

@@ -1,21 +1,24 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.NotUsed
-import akka.stream._
-import akka.stream.Supervision.resumingDecider
-import akka.stream.impl.SubscriptionTimeoutException
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import org.reactivestreams.Publisher
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.stream.StreamSubscriptionTimeoutSettings
+
+import org.reactivestreams.Publisher
+
+import akka.NotUsed
+import akka.stream._
 import akka.stream.StreamSubscriptionTimeoutTerminationMode
+import akka.stream.Supervision.resumingDecider
+import akka.stream.impl.SubscriptionTimeoutException
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 object FlowSplitAfterSpec {
 
@@ -25,14 +28,13 @@ object FlowSplitAfterSpec {
 
 }
 
-class FlowSplitAfterSpec extends StreamSpec {
+class FlowSplitAfterSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+    akka.stream.materializer.subscription-timeout.timeout = 1s
+    akka.stream.materializer.subscription-timeout.mode = cancel
+  """) {
   import FlowSplitAfterSpec._
-
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 2)
-    .withSubscriptionTimeoutSettings(StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 1.second))
-
-  implicit val materializer = ActorMaterializer(settings)
 
   case class StreamPuppet(p: Publisher[Int]) {
     val probe = TestSubscriber.manualProbe[Int]()
@@ -41,16 +43,16 @@ class FlowSplitAfterSpec extends StreamSpec {
 
     def request(demand: Int): Unit = subscription.request(demand)
     def expectNext(elem: Int): Unit = probe.expectNext(elem)
-    def expectNoMsg(max: FiniteDuration): Unit = probe.expectNoMsg(max)
+    def expectNoMessage(max: FiniteDuration): Unit = probe.expectNoMessage(max)
     def expectComplete(): Unit = probe.expectComplete()
     def expectError(e: Throwable) = probe.expectError(e)
     def cancel(): Unit = subscription.cancel()
   }
 
   class SubstreamsSupport(
-    splitAfter:              Int                     = 3,
-    elementCount:            Int                     = 6,
-    substreamCancelStrategy: SubstreamCancelStrategy = SubstreamCancelStrategy.drain) {
+      splitAfter: Int = 3,
+      elementCount: Int = 6,
+      substreamCancelStrategy: SubstreamCancelStrategy = SubstreamCancelStrategy.drain) {
 
     val source = Source(1 to elementCount)
     val groupStream = source.splitAfter(substreamCancelStrategy)(_ == splitAfter).lift.runWith(Sink.asPublisher(false))
@@ -76,7 +78,7 @@ class FlowSplitAfterSpec extends StreamSpec {
     "work in the happy case" in assertAllStagesStopped {
       new SubstreamsSupport(3, elementCount = 5) {
         val s1 = StreamPuppet(expectSubFlow().runWith(Sink.asPublisher(false)))
-        masterSubscriber.expectNoMsg(100.millis)
+        masterSubscriber.expectNoMessage(100.millis)
 
         s1.request(2)
         s1.expectNext(1)
@@ -101,7 +103,7 @@ class FlowSplitAfterSpec extends StreamSpec {
     "work when first element is split-by" in assertAllStagesStopped {
       new SubstreamsSupport(splitAfter = 1, elementCount = 3) {
         val s1 = StreamPuppet(expectSubFlow().runWith(Sink.asPublisher(false)))
-        masterSubscriber.expectNoMsg(100.millis)
+        masterSubscriber.expectNoMessage(100.millis)
 
         s1.request(3)
         s1.expectNext(1)
@@ -121,9 +123,12 @@ class FlowSplitAfterSpec extends StreamSpec {
 
     "work with single elem splits" in assertAllStagesStopped {
       Await.result(
-        Source(1 to 10).splitAfter(_ ⇒ true).lift
+        Source(1 to 10)
+          .splitAfter(_ => true)
+          .lift
           .mapAsync(1)(_.runWith(Sink.head)) // Please note that this line *also* implicitly asserts nonempty substreams
-          .grouped(10).runWith(Sink.head),
+          .grouped(10)
+          .runWith(Sink.head),
         3.second) should ===(1 to 10)
     }
 
@@ -162,8 +167,9 @@ class FlowSplitAfterSpec extends StreamSpec {
     "fail stream when splitAfter function throws" in assertAllStagesStopped {
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val exc = TE("test")
-      val publisher = Source.fromPublisher(publisherProbeProbe)
-        .splitAfter(elem ⇒ if (elem == 3) throw exc else elem % 3 == 0)
+      val publisher = Source
+        .fromPublisher(publisherProbeProbe)
+        .splitAfter(elem => if (elem == 3) throw exc else elem % 3 == 0)
         .lift
         .runWith(Sink.asPublisher(false))
       val subscriber = TestSubscriber.manualProbe[Source[Int, NotUsed]]()
@@ -197,8 +203,9 @@ class FlowSplitAfterSpec extends StreamSpec {
       pending
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val exc = TE("test")
-      val publisher = Source.fromPublisher(publisherProbeProbe)
-        .splitAfter(elem ⇒ if (elem == 3) throw exc else elem % 3 == 0)
+      val publisher = Source
+        .fromPublisher(publisherProbeProbe)
+        .splitAfter(elem => if (elem == 3) throw exc else elem % 3 == 0)
         .lift
         .withAttributes(ActorAttributes.supervisionStrategy(resumingDecider))
         .runWith(Sink.asPublisher(false))
@@ -266,7 +273,7 @@ class FlowSplitAfterSpec extends StreamSpec {
     "work when last element is split-by" in assertAllStagesStopped {
       new SubstreamsSupport(splitAfter = 3, elementCount = 3) {
         val s1 = StreamPuppet(expectSubFlow().runWith(Sink.asPublisher(false)))
-        masterSubscriber.expectNoMsg(100.millis)
+        masterSubscriber.expectNoMessage(100.millis)
 
         s1.request(3)
         s1.expectNext(1)
@@ -280,20 +287,17 @@ class FlowSplitAfterSpec extends StreamSpec {
     }
 
     "fail stream if substream not materialized in time" in assertAllStagesStopped {
-      val tightTimeoutMaterializer =
-        ActorMaterializer(ActorMaterializerSettings(system)
-          .withSubscriptionTimeoutSettings(
-            StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 500.millisecond)))
-
-      val testSource = Source.single(1).concat(Source.maybe).splitAfter(_ ⇒ true)
+      val testSource = Source.single(1).concat(Source.maybe).splitAfter(_ => true)
+      val streamWithTightTimeout =
+        testSource.lift
+          .delay(1.second)
+          .flatMapConcat(identity)
+          .toMat(Sink.ignore)(Keep.right)
+          .withAttributes(ActorAttributes
+            .streamSubscriptionTimeout(500.milliseconds, StreamSubscriptionTimeoutTerminationMode.cancel))
 
       a[SubscriptionTimeoutException] mustBe thrownBy {
-        Await.result(
-          testSource.lift
-            .delay(1.second)
-            .flatMapConcat(identity)
-            .runWith(Sink.ignore)(tightTimeoutMaterializer),
-          3.seconds)
+        Await.result(streamWithTightTimeout.run(), 3.seconds)
       }
     }
 

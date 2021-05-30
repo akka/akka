@@ -4,13 +4,10 @@ If the time between two processed elements exceeds the provided timeout, the str
 
 @ref[Time aware operators](../index.md#time-aware-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #idleTimeout }
-
-@@@
+@apidoc[Source.idleTimeout](Source) { scala="#idleTimeout(timeout:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[Out]" java="#idleTimeout(java.time.Duration)" }
+@apidoc[Flow.idleTimeout](Flow) { scala="#idleTimeout(timeout:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[Out]" java="#idleTimeout(java.time.Duration)" }
 
 ## Description
 
@@ -18,6 +15,7 @@ If the time between two processed elements exceeds the provided timeout, the str
 with a `TimeoutException`. The timeout is checked periodically, so the resolution of the
 check is one period (equals to timeout value).
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

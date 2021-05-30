@@ -1,21 +1,20 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.dispatch
 
-import akka.actor.{ Actor, Props }
-import akka.testkit.{ ImplicitSender, AkkaSpec }
 import com.typesafe.config.ConfigFactory
 
+import akka.actor.{ Actor, Props }
+import akka.testkit.{ AkkaSpec, ImplicitSender }
+
 object ForkJoinPoolStarvationSpec {
-  val config = ConfigFactory.parseString(
-    """
+  val config = ConfigFactory.parseString("""
       |actorhang {
-      |
       |  task-dispatcher {
       |    mailbox-type = "akka.dispatch.SingleConsumerOnlyUnboundedMailbox"
-      |    throughput = 100
+      |    throughput = 5
       |    fork-join-executor {
       |      parallelism-factor = 2
       |      parallelism-max = 2
@@ -29,7 +28,7 @@ object ForkJoinPoolStarvationSpec {
     self ! "tick"
 
     override def receive = {
-      case "tick" ⇒
+      case "tick" =>
         self ! "tick"
     }
   }
@@ -37,8 +36,8 @@ object ForkJoinPoolStarvationSpec {
   class InnocentActor extends Actor {
 
     override def receive = {
-      case "ping" ⇒
-        sender ! "All fine"
+      case "ping" =>
+        sender() ! "All fine"
     }
   }
 
@@ -59,7 +58,7 @@ class ForkJoinPoolStarvationSpec extends AkkaSpec(ForkJoinPoolStarvationSpec.con
 
       val innocentActor = system.actorOf(Props(new InnocentActor).withDispatcher("actorhang.task-dispatcher"))
 
-      for (_ ← 1 to Iterations) {
+      for (_ <- 1 to Iterations) {
         // External task submission via the default dispatcher
         innocentActor ! "ping"
         expectMsg("All fine")

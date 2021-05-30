@@ -1,14 +1,15 @@
 /*
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.{ Actor, Props }
 import akka.event.Logging
 import akka.event.Logging.Warning
 import akka.testkit.{ EventFilter, ImplicitSender, TestEvent }
-import com.typesafe.config.ConfigFactory
 
 object OptionalSnapshotStoreSpec {
 
@@ -17,11 +18,11 @@ object OptionalSnapshotStoreSpec {
 
     override def persistenceId = name
     override def receiveCommand: Receive = {
-      case s: String ⇒
+      case s: String =>
         lastSender = sender()
         saveSnapshot(s)
-      case f: SaveSnapshotFailure ⇒ lastSender ! f
-      case s: SaveSnapshotSuccess ⇒ lastSender ! s
+      case f: SaveSnapshotFailure => lastSender ! f
+      case s: SaveSnapshotSuccess => lastSender ! s
     }
     override def receiveRecover: Receive = Actor.emptyBehavior
   }
@@ -31,8 +32,7 @@ object OptionalSnapshotStoreSpec {
   }
 }
 
-class OptionalSnapshotStoreSpec extends PersistenceSpec(ConfigFactory.parseString(
-  s"""
+class OptionalSnapshotStoreSpec extends PersistenceSpec(ConfigFactory.parseString(s"""
     akka.persistence.publish-plugin-commands = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.persistence.journal.leveldb.dir = "target/journal-${classOf[OptionalSnapshotStoreSpec].getName}"
@@ -67,4 +67,3 @@ class OptionalSnapshotStoreSpec extends PersistenceSpec(ConfigFactory.parseStrin
     }
   }
 }
-

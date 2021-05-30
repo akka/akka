@@ -1,0 +1,245 @@
+# This file contains all excludes added before changing to the subdirectory style
+# Java9 RS APIs and more that was missed in a few earlier versions
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.javadsl.JavaFlowSupport$Source")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.javadsl.JavaFlowSupport")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.javadsl.JavaFlowSupport$Flow")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.javadsl.JavaFlowSupport$Sink")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.JavaFlowSupport$Sink$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.JavaFlowSupport")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.JavaFlowSupport$Source$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.JavaFlowSupport$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.JavaFlowSupport$Flow$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$RsSubscriberConverter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$RsSubscriberConverter$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$RsSubscriptionConverter$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowSubscriptionToRsAdapter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$FlowSubscriberConverter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.RsSubscriptionToJavaFlowAdapter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$RsPublisherConverter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$FlowSubscriptionConverter$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.RsProcessorToJavaFlowAdapter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowProcessorToRsAdapter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowSubscriberToRsAdapter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$RsSubscriptionConverter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$FlowSubscriptionConverter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$RsProcessorConverter$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$RsPublisherConverter$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$FlowPublisherConverter$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowPublisherToRsAdapter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.RsSubscriberToJavaFlowAdapter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$FlowSubscriberConverter$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.RsPublisherToJavaFlowAdapter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$FlowPublisherConverter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$RsProcessorConverter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$FlowProcessorConverter$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.JavaFlowAndRsConverters$Implicits$FlowProcessorConverter")
+
+# divertTo
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.divertToMat")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.divertTo")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.divertToGraph")
+
+# wireTap
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.wireTap")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.wireTapGraph")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.wireTapMat")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.Source.wireTap")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.SubSource.wireTap")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.Flow.wireTap")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.SubFlow.wireTap")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.Source.wireTapMat")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.SubSource.wireTapMat")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.Flow.wireTapMat")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.javadsl.SubFlow.wireTapMat")
+
+# zipLatest
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.zipLatestMat")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOpsMat.zipLatestWithMat")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatestGraph")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatest")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatestWithGraph")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.zipLatestWith")
+
+# dispatcher aliases made internal streams dispatcher resolve superfluous #26775
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorAttributes#Dispatcher.resolve")
+
+# #24372 No Future/CompletionStage in StreamRefs
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.scaladsl.StreamRefs.sinkRef")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.scaladsl.StreamRefs.sourceRef")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.javadsl.StreamRefs.sinkRef")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.javadsl.StreamRefs.sourceRef")
+
+# 26188 remove Timed
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$TimedFlowContext")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$StartTimed")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.TimedOps")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$TimedFlowDsl")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$TimedSourceDsl$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.TimedIntervalBetweenOps")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$TimedSourceDsl")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$TimedFlowDsl$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Implicits$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$TimedInterval")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.extra.Timed$StopTimed")
+
+#26187 Remove ActorPublisher/Subscriber
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisher")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorSubscriber$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorPublisher")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithUnboundedStash")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorPublisher$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorSubscriber")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.UntypedActorSubscriber")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisher$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithUnrestrictedStash")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorSubscriber$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithStash")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.actor.AbstractActorPublisherWithStash")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.InputStreamSource.withAttributes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.InputStreamSource.*")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.io.InputStreamSource")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamSource")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher$Continue$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.ActorRefSinkActor$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.ActorRefSink")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.ActorRefSinkActor")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FileSubscriber$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FileSink")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.FileSubscriber")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Source.actorPublisher")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.javadsl.Sink.actorSubscriber")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.actorPublisher")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Sink.actorSubscriber")
+
+
+
+# #25045 adding Java/Scala interop to SourceQueue and SinkQueue
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.SinkQueueAdapter")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.SourceQueueAdapter")
+
+# Remove deprecated features since 2.5.0 https://github.com/akka/akka/issues/26492
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorMaterializerSettings.withAutoFusing")
+
+# Add attributes to constructor of internal class
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.RestartWithBackoffLogic.this")
+
+# #26910 scheduleWithFixedDelay vs scheduleAtFixedRate
+# Adding methods to Materializer is not compatible but we don't support other Materializer implementations
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.scheduleAtFixedRate")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.scheduleWithFixedDelay")
+
+#26187 - Re-write ActorPublisher/Subscribers as GraphStages
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.InputStreamSource.withAttributes")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.InputStreamSource.*")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.io.InputStreamSource")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamSource")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher$Continue$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.InputStreamPublisher$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.OutputStreamSubscriber")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.OutputStreamSubscriber$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.io.OutputStreamSink")
+
+# #19980 subscription timeouts for streams
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.impl.ActorProcessorImpl.subTimeoutHandling")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.FanoutOutputs.this")
+
+# #24304 stack overflow in StreamConverters
+ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.stream.impl.CollectorState")
+ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.stream.impl.ReducerState")
+
+# Protobuf 3
+ProblemFilters.exclude[Problem]("akka.stream.StreamRefMessages*")
+
+# #27266 changes to streams internals
+ProblemFilters.exclude[Problem]("akka.stream.impl.*")
+
+# #25559 simplifying materialization
+# internals
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorProcessorImpl.settings")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.ActorProcessorImpl.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.FanOut.settings")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.FanOut.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.FanIn.settings")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.FanIn.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.Unzip.props")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.FanoutProcessorImpl.this")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.PhasedFusingActorMaterializer.copy$default$6")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.PhasedFusingActorMaterializer.copy$default$5")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.PhasedFusingActorMaterializer.copy")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.PhasedFusingActorMaterializer.copy$default$4")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.PhasedFusingActorMaterializer.copy$default$3")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.PhasedFusingActorMaterializer.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.PhasedFusingActorMaterializer.apply")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.Unzip.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.FanoutProcessorImpl.props")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.StreamSupervisor.props")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.GraphStageIsland.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.ConnectionSourceStage.ioSettings")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.ConnectionSourceStage.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#Outbound.ioSettings")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#Outbound.copy$default$5")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#Outbound.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#Outbound.this")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.io.TcpConnectionStage$Outbound$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#Outbound.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.OutgoingConnectionStage.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.io.IncomingConnectionStage.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.IncomingConnectionStage.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#Inbound.ioSettings")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.io.TcpConnectionStage#Inbound.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#Inbound.copy")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.TcpConnectionStage#Inbound.copy$default$3")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#Inbound.copy$default$4")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.io.TcpConnectionStage#Inbound.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#Inbound.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#TcpRole.ioSettings")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#TcpStreamLogic.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.io.TcpConnectionStage#Inbound.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.io.TcpConnectionStage#Inbound.apply")
+ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.io.TcpConnectionStage$Inbound$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.PrefixAndTail#PrefixAndTailLogic.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.GraphInterpreterShell.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.ActorProcessorImpl.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.FanoutProcessorImpl.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.FanoutProcessorImpl.props")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.GraphStageIsland.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.fusing.GraphInterpreterShell.this")
+# internal and only used in one test
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.NoMaterializer$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.NoMaterializer")
+# Materializer not for user extension
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.supervisor")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.logger")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.settings")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.actorOf")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.isShutdown")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.system")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.Materializer.shutdown")
+# StageActor was never meant to be constructed by users
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.GraphStageLogic#StageActor.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.stage.GraphStageLogic#StageActor.this")
+
+# Internal class made final #27472
+ProblemFilters.exclude[FinalClassProblem]("akka.stream.scaladsl.CoupledTerminationBidi")
+
+# Rename type parameter for join and joinMat #26828
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.javadsl.Flow.join")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.javadsl.Flow.joinMat")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.scaladsl.Flow.join")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.scaladsl.Flow.joinMat")
+
+# #26187 Remove ActorPublisher, ActorSubscriber
+ProblemFilters.exclude[Problem]("akka.stream.actor.*")
+
+# system materializer guardian #26850
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorMaterializer.systemMaterializer")

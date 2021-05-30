@@ -1,10 +1,11 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
 
-import akka.actor.{ ActorSystem, ExtensionId, ExtensionIdProvider, ExtendedActorSystem }
+import akka.actor.{ ActorSystem, ExtendedActorSystem, ExtensionId, ExtensionIdProvider }
+import akka.actor.ClassicActorSystemProvider
 
 /**
  * SerializationExtension is an Akka Extension to interact with the Serialization
@@ -12,6 +13,7 @@ import akka.actor.{ ActorSystem, ExtensionId, ExtensionIdProvider, ExtendedActor
  */
 object SerializationExtension extends ExtensionId[Serialization] with ExtensionIdProvider {
   override def get(system: ActorSystem): Serialization = super.get(system)
+  override def get(system: ClassicActorSystemProvider): Serialization = super.get(system)
   override def lookup = SerializationExtension
   override def createExtension(system: ExtendedActorSystem): Serialization = new Serialization(system)
 }

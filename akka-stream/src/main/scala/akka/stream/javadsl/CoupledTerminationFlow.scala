@@ -1,11 +1,11 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
 
 /**
- * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow them them.
+ * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
  * Similar to `Flow.fromSinkAndSource` however that API does not connect the completion signals of the wrapped operators.
  */
 object CoupledTerminationFlow {

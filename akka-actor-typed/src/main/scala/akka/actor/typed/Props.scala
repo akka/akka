@@ -1,15 +1,17 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
-import akka.annotation.ApiMayChange
+import scala.annotation.tailrec
+import scala.annotation.varargs
+import scala.reflect.ClassTag
+
+import akka.actor.typed.internal.PropsImpl._
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
-
-import scala.annotation.tailrec
-import scala.reflect.ClassTag
+import akka.util.ccompat.JavaConverters._
 
 object Props {
 
@@ -33,8 +35,8 @@ object Props {
  * Not for user extension.
  */
 @DoNotInherit
-@ApiMayChange
 abstract class Props private[akka] () extends Product with Serializable {
+
   /**
    * Reference to the tail of this Props list.
    *
@@ -70,6 +72,11 @@ abstract class Props private[akka] () extends Product with Serializable {
   def withDispatcherFromConfig(path: String): Props = DispatcherFromConfig(path, this)
 
   /**
+   * Prepend a selection of the same executor as the parent actor to this Props.
+   */
+  def withDispatcherSameAsParent: Props = DispatcherSameAsParent(this)
+
+  /**
    * Find the first occurrence of a configuration node of the given type, falling
    * back to the provided default if none is found.
    *
@@ -79,9 +86,9 @@ abstract class Props private[akka] () extends Product with Serializable {
   private[akka] def firstOrElse[T <: Props: ClassTag](default: T): T = {
     @tailrec def rec(d: Props): T = {
       d match {
-        case EmptyProps ⇒ default
-        case t: T       ⇒ t
-        case _          ⇒ rec(d.next)
+        case EmptyProps => default
+        case t: T       => t
+        case _          => rec(d.next)
       }
     }
     rec(this)
@@ -98,9 +105,9 @@ abstract class Props private[akka] () extends Product with Serializable {
   private[akka] def allOf[T <: Props: ClassTag]: List[Props] = {
     @tailrec def select(d: Props, acc: List[Props]): List[Props] =
       d match {
-        case EmptyProps ⇒ acc.reverse
-        case t: T       ⇒ select(d.next, (d withNext EmptyProps) :: acc)
-        case _          ⇒ select(d.next, acc)
+        case EmptyProps => acc.reverse
+        case _: T       => select(d.next, (d.withNext(EmptyProps)) :: acc)
+        case _          => select(d.next, acc)
       }
     select(this, Nil)
   }
@@ -113,38 +120,28 @@ abstract class Props private[akka] () extends Product with Serializable {
   private[akka] def filterNot[T <: Props: ClassTag]: Props = {
     @tailrec def select(d: Props, acc: List[Props]): List[Props] =
       d match {
-        case EmptyProps ⇒ acc
-        case t: T       ⇒ select(d.next, acc)
-        case _          ⇒ select(d.next, d :: acc)
+        case EmptyProps => acc
+        case _: T       => select(d.next, acc)
+        case _          => select(d.next, d :: acc)
       }
     @tailrec def link(l: List[Props], acc: Props): Props =
       l match {
-        case d :: ds ⇒ link(ds, d withNext acc)
-        case Nil     ⇒ acc
+        case d :: ds => link(ds, d.withNext(acc))
+        case Nil     => acc
       }
     link(select(this, Nil), EmptyProps)
   }
 }
 
 /**
- * The empty configuration node, used as a terminator for the internally linked
- * list of each Props.
- */
-@InternalApi
-private[akka] case object EmptyProps extends Props {
-  override def next = throw new NoSuchElementException("EmptyProps has no next")
-  override def withNext(next: Props): Props = next
-}
-
-/**
  * Not for user extension.
  */
 @DoNotInherit
-sealed abstract class DispatcherSelector extends Props
+abstract class DispatcherSelector extends Props
 
 /**
  * Factories for [[DispatcherSelector]]s which describe which thread pool shall be used to run
- * the actor to which this configuration is applied. Se the individual factory methods for details
+ * the actor to which this configuration is applied. See the individual factory methods for details
  * on the options.
  *
  * The default configuration if none of these options are present is to run
@@ -156,7 +153,7 @@ object DispatcherSelector {
    * Scala API:
    * Run the actor on the default [[ActorSystem]] executor.
    */
-  def default(): DispatcherSelector = DispatcherDefault()
+  def default(): DispatcherSelector = DispatcherDefault.empty
 
   /**
    * Java API:
@@ -176,36 +173,96 @@ object DispatcherSelector {
    * ActorSystem terminates.
    */
   def fromConfig(path: String): DispatcherSelector = DispatcherFromConfig(path)
+
+  /**
+   * Run the actor on the same executor as the parent actor.
+   * @return
+   */
+  def sameAsParent(): DispatcherSelector = DispatcherSameAsParent.empty
 }
 
 /**
- * INTERNAL API
- *
- * Use the [[ActorSystem]] default executor to run the actor.
+ * Not for user extension.
  */
 @DoNotInherit
-@InternalApi
-private[akka] sealed case class DispatcherDefault(next: Props) extends DispatcherSelector {
-  @InternalApi
-  override def withNext(next: Props): Props = copy(next = next)
-}
-object DispatcherDefault {
-  // this is hidden in order to avoid having people match on this object
-  private val empty = DispatcherDefault(EmptyProps)
+abstract class MailboxSelector extends Props
+
+object MailboxSelector {
+
   /**
-   * Retrieve an instance for this configuration node with empty `next` reference.
+   * Scala API: The default mailbox is SingleConsumerOnlyUnboundedMailbox
    */
-  def apply(): DispatcherDefault = empty
+  def default(): MailboxSelector = fromConfig("akka.actor.typed.default-mailbox")
+
+  /**
+   * Java API: The default mailbox is SingleConsumerOnlyUnboundedMailbox
+   */
+  def defaultMailbox(): MailboxSelector = default()
+
+  /**
+   * A mailbox with a max capacity after which new messages are dropped (passed to deadletters).
+   * @param capacity The maximum number of messages in the mailbox before new messages are dropped
+   */
+  def bounded(capacity: Int): MailboxSelector = BoundedMailboxSelector(capacity)
+
+  /**
+   * Select a mailbox from the config file using an absolute config path.
+   *
+   * This is a power user settings default or bounded should be preferred unless you know what you are doing.
+   */
+  def fromConfig(path: String): MailboxSelector = MailboxFromConfigSelector(path)
 }
 
 /**
- * Look up an executor definition in the [[ActorSystem]] configuration.
- * ExecutorServices created in this fashion will be shut down when the
- * ActorSystem terminates.
+ * Actor tags are used to logically group actors. The tags are included in logging as markers
+ * Especially useful for logging from functional style actors and since those may not have a clear logger class.
  *
- * INTERNAL API
+ * Not for user extension.
  */
-@InternalApi
-private[akka] final case class DispatcherFromConfig(path: String, next: Props = Props.empty) extends DispatcherSelector {
-  override def withNext(next: Props): Props = copy(next = next)
+@DoNotInherit
+abstract class ActorTags extends Props {
+
+  /**
+   * Scala API: one or more tags defined for the actor
+   * @return
+   */
+  def tags: Set[String]
+
+  /**
+   * Java API: one or more tags defined for the actor
+   */
+  def getTags(): java.util.Set[String] = tags.asJava
+}
+
+object ActorTags {
+
+  /**
+   * Java API: create a tag props with one or more tags
+   */
+  @varargs
+  def create(tags: String*): ActorTags = apply(tags.toSet)
+
+  /**
+   * Java API: create a multi-tag props
+   *
+   * Set must not be empty.
+   */
+  def create(tags: java.util.Set[String]): ActorTags = ActorTagsImpl(tags.asScala.toSet)
+
+  /**
+   * Scala API: create a tag props with one or more tags
+   */
+  def apply(tag: String, additionalTags: String*): ActorTags = {
+    val tags =
+      if (additionalTags.isEmpty) Set(tag)
+      else Set(tag) ++ additionalTags
+    ActorTagsImpl(tags)
+  }
+
+  /**
+   * Scala API: create a multi-tag props.
+   *
+   * Set must not be empty.
+   */
+  def apply(tags: Set[String]): ActorTags = ActorTagsImpl(tags)
 }

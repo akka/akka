@@ -1,15 +1,22 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.{ BaseTwoStreamsSetup, TestSubscriber }
+import scala.annotation.nowarn
 import org.reactivestreams.Publisher
 
+@nowarn // keep unused imports
 class FlowZipSpec extends BaseTwoStreamsSetup {
+
+//#zip
+  import akka.stream.scaladsl.Source
+  import akka.stream.scaladsl.Sink
+
+//#zip
 
   override type Outputs = (Int, Int)
 
@@ -69,6 +76,16 @@ class FlowZipSpec extends BaseTwoStreamsSetup {
 
       val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
       subscriber2.expectSubscriptionAndError(TestException)
+    }
+
+    "work in fruits example" in {
+      //#zip
+      val sourceFruits = Source(List("apple", "orange", "banana"))
+      val sourceFirstLetters = Source(List("A", "O", "B"))
+      sourceFruits.zip(sourceFirstLetters).runWith(Sink.foreach(println))
+      // this will print ('apple', 'A'), ('orange', 'O'), ('banana', 'B')
+      //#zip
+
     }
   }
 }

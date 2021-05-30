@@ -1,14 +1,18 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns.internal
 
+import scala.collection.GenTraversableOnce
+import scala.collection.immutable.Seq
+import scala.util.{ Failure, Success, Try }
+
+import scala.annotation.nowarn
+
 import akka.annotation.InternalApi
 import akka.io.dns.ResourceRecord
 import akka.util.{ ByteString, ByteStringBuilder }
-
-import scala.collection.immutable.Seq
 
 /**
  * INTERNAL API
@@ -74,11 +78,16 @@ private[internal] case class MessageFlags(flags: Short) extends AnyVal {
  */
 @InternalApi
 private[internal] object MessageFlags {
-  def apply(answer: Boolean = false, opCode: OpCode.Value = OpCode.QUERY, authoritativeAnswer: Boolean = false,
-            truncated: Boolean = false, recursionDesired: Boolean = true, recursionAvailable: Boolean = false,
-            responseCode: ResponseCode.Value = ResponseCode.SUCCESS): MessageFlags = {
-    new MessageFlags((
-      (if (answer) 0x8000 else 0) |
+  def apply(
+      answer: Boolean = false,
+      opCode: OpCode.Value = OpCode.QUERY,
+      authoritativeAnswer: Boolean = false,
+      truncated: Boolean = false,
+      recursionDesired: Boolean = true,
+      recursionAvailable: Boolean = false,
+      responseCode: ResponseCode.Value = ResponseCode.SUCCESS): MessageFlags = {
+    new MessageFlags(
+      ((if (answer) 0x8000 else 0) |
       (opCode.id << 11) |
       (if (authoritativeAnswer) 1 << 10 else 0) |
       (if (truncated) 1 << 9 else 0) |
@@ -93,12 +102,12 @@ private[internal] object MessageFlags {
  */
 @InternalApi
 private[internal] case class Message(
-  id:             Short,
-  flags:          MessageFlags,
-  questions:      Seq[Question]       = Seq.empty,
-  answerRecs:     Seq[ResourceRecord] = Seq.empty,
-  authorityRecs:  Seq[ResourceRecord] = Seq.empty,
-  additionalRecs: Seq[ResourceRecord] = Seq.empty) {
+    id: Short,
+    flags: MessageFlags,
+    questions: Seq[Question] = Seq.empty,
+    answerRecs: Seq[ResourceRecord] = Seq.empty,
+    authorityRecs: Seq[ResourceRecord] = Seq.empty,
+    additionalRecs: Seq[ResourceRecord] = Seq.empty) {
   def write(): ByteString = {
     val ret = ByteString.newBuilder
     write(ret)
@@ -106,17 +115,16 @@ private[internal] case class Message(
   }
 
   def write(ret: ByteStringBuilder): Unit = {
-    ret.putShort(id)
+    ret
+      .putShort(id)
       .putShort(flags.flags)
       .putShort(questions.size)
-      .putShort(answerRecs.size)
-      .putShort(authorityRecs.size)
-      .putShort(additionalRecs.size)
+      // We only send questions, never answers with resource records in
+      .putShort(0)
+      .putShort(0)
+      .putShort(0)
 
     questions.foreach(_.write(ret))
-    answerRecs.foreach(_.write(ret))
-    authorityRecs.foreach(_.write(ret))
-    additionalRecs.foreach(_.write(ret))
   }
 }
 
@@ -128,17 +136,36 @@ private[internal] object Message {
   def parse(msg: ByteString): Message = {
     val it = msg.iterator
     val id = it.getShort
-    val flags = it.getShort
+    val flags = new MessageFlags(it.getShort)
+
     val qdCount = it.getShort
     val anCount = it.getShort
     val nsCount = it.getShort
     val arCount = it.getShort
 
-    val qs = (0 until qdCount) map { i ⇒ Question.parse(it, msg) }
-    val ans = (0 until anCount) map { i ⇒ ResourceRecord.parse(it, msg) }
-    val nss = (0 until nsCount) map { i ⇒ ResourceRecord.parse(it, msg) }
-    val ars = (0 until arCount) map { i ⇒ ResourceRecord.parse(it, msg) }
+    val qs = (0 until qdCount).map { _ =>
+      Try(Question.parse(it, msg))
+    }
+    val ans = (0 until anCount).map { _ =>
+      Try(ResourceRecord.parse(it, msg))
+    }
+    val nss = (0 until nsCount).map { _ =>
+      Try(ResourceRecord.parse(it, msg))
+    }
+    val ars = (0 until arCount).map { _ =>
+      Try(ResourceRecord.parse(it, msg))
+    }
 
-    new Message(id, new MessageFlags(flags), qs, ans, nss, ars)
+    import scala.language.implicitConversions
+    @nowarn("msg=deprecated")
+    implicit def flattener[T](tried: Try[T]): GenTraversableOnce[T] =
+      if (flags.isTruncated) tried.toOption
+      else
+        tried match {
+          case Success(value)  => Some(value)
+          case Failure(reason) => throw reason
+        }
+
+    new Message(id, flags, qs.flatten, ans.flatten, nss.flatten, ars.flatten)
   }
 }

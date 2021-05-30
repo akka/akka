@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -13,6 +13,7 @@ package akka
 sealed abstract class NotUsed
 
 case object NotUsed extends NotUsed {
+
   /**
    * Java API: the singleton instance
    */
@@ -21,7 +22,7 @@ case object NotUsed extends NotUsed {
   /**
    * Java API: the singleton instance
    *
-   * This is equivalent to [[NotUsed#getInstance()]], but can be used with static import.
+   * This is equivalent to [[NotUsed.getInstance]], but can be used with static import.
    */
   def notUsed(): NotUsed = this
 }

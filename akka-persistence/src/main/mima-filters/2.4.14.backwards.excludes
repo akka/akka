@@ -1,6 +1,0 @@
-# #21394 remove static config path of levelDBJournal and localSnapshotStore
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.snapshot.local.LocalSnapshotStore.this")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbStore.configPath")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbJournal.configPath")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.leveldb.SharedLeveldbStore.configPath")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbStore.prepareConfig")

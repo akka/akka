@@ -1,4 +1,7 @@
-# Cluster Aware Routers
+# Classic Cluster Aware Routers
+
+@@include[includes.md](includes.md) { #actor-api }
+For the full documentation of this feature and for new projects see @ref:[routers](typed/routers.md).
 
 All @ref:[routers](routing.md) can be made aware of member nodes in the cluster, i.e.
 deploying new routees or looking up routees on nodes in the cluster.
@@ -7,7 +10,7 @@ automatically unregistered from the router. When new nodes join the cluster, add
 routees are added to the router, according to the configuration. Routees are also added
 when a node becomes reachable again, after having been unreachable.
 
-Cluster aware routers make use of members with status [WeaklyUp](#weakly-up) if that feature
+Cluster aware routers make use of members with status @ref:[WeaklyUp](typed/cluster-membership.md#weakly-up) if that feature
 is enabled.
 
 There are two distinct types of routers.
@@ -29,9 +32,12 @@ on other nodes in the cluster.
 To use Cluster aware routers, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-cluster_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-cluster_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Router with Group of Routees
@@ -60,8 +66,8 @@ the router will try to use them as soon as the member status is changed to 'Up'.
 
 @@@
 
-The actor paths without address information that are defined in `routees.paths` are used for selecting the
-actors to which the messages will be forwarded to by the router.
+The actor paths that are defined in `routees.paths` are used for selecting the
+actors to which the messages will be forwarded to by the router. The path should not contain protocol and address information because they are retrieved dynamically from the cluster membership. 
 Messages will be forwarded to the routees using @ref:[ActorSelection](actors.md#actorselection), so the same delivery semantics should be expected.
 It is possible to limit the lookup of routees to member nodes tagged with a particular set of roles by specifying `use-roles`.
 
@@ -77,7 +83,7 @@ Scala
 Java
 :  @@snip [StatsService.java](/akka-docs/src/test/java/jdocs/cluster/StatsService.java) { #router-lookup-in-code }
 
-See [configuration](#cluster-configuration) section for further descriptions of the settings.
+See @ref:[reference configuration](general/configuration-reference.md#config-akka-cluster) for further descriptions of the settings.
 
 ### Router Example with Group of Routees
 
@@ -142,14 +148,7 @@ akka.actor.deployment {
 
 This means that user requests can be sent to `StatsService` on any node and it will use
 `StatsWorker` on all nodes.
-
-The easiest way to run **Router Example with Group of Routees** example yourself is to download the ready to run
-@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)]
-@java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
-together with the tutorial. It contains instructions on how to run the **Router Example with Group of Routees** sample.
-The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
-
+ 
 ## Router with Pool of Remote Deployed Routees
 
 When using a `Pool` with routees created and deployed on the cluster member nodes
@@ -185,7 +184,10 @@ Scala
 Java
 :  @@snip [StatsService.java](/akka-docs/src/test/java/jdocs/cluster/StatsService.java) { #router-deploy-in-code }
 
-See [configuration](#cluster-configuration) section for further descriptions of the settings.
+See @ref:[reference configuration](general/configuration-reference.md#config-akka-cluster) for further descriptions of the settings.
+
+When using a pool of remote deployed routees you must ensure that all parameters of the `Props` can
+be @ref:[serialized](serialization.md).
 
 ### Router Example with Pool of Remote Deployed Routees
 
@@ -243,11 +245,6 @@ akka.actor.deployment {
   }
 }
 ```
-
-The easiest way to run **Router Example with Pool of Remote Deployed Routees** example yourself is to download the ready to run
-@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)]
-@java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
-together with the tutorial. It contains instructions on how to run the **Router Example with Pool of Remote Deployed Routees** sample.
-The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
-
+The easiest way to run **Router Example with Pool of Routees** example yourself is to try the
+@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
+It contains instructions on how to run the **Router Example with Pool of Routees** sample.

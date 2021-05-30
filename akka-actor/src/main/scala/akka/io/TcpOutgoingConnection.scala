@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -7,13 +7,16 @@ package akka.io
 import java.net.{ ConnectException, InetSocketAddress }
 import java.nio.channels.{ SelectionKey, SocketChannel }
 
-import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.concurrent.duration._
+import scala.util.control.{ NoStackTrace, NonFatal }
+
 import akka.actor.{ ActorRef, ReceiveTimeout }
+import akka.actor.Status.Failure
 import akka.annotation.InternalApi
-import akka.io.TcpConnection.CloseInformation
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
+import akka.io.TcpConnection.CloseInformation
+import akka.io.dns.DnsProtocol
 
 /**
  * An actor handling the connection state machine for an outgoing connection
@@ -22,61 +25,71 @@ import akka.io.Tcp._
  * INTERNAL API
  */
 private[io] class TcpOutgoingConnection(
-  _tcp:            TcpExt,
-  channelRegistry: ChannelRegistry,
-  commander:       ActorRef,
-  connect:         Connect)
-  extends TcpConnection(_tcp, SocketChannel.open().configureBlocking(false).asInstanceOf[SocketChannel], connect.pullMode) {
+    _tcp: TcpExt,
+    channelRegistry: ChannelRegistry,
+    commander: ActorRef,
+    connect: Connect)
+    extends TcpConnection(
+      _tcp,
+      SocketChannel.open().configureBlocking(false).asInstanceOf[SocketChannel],
+      connect.pullMode) {
 
   import TcpOutgoingConnection._
-  import context._
   import connect._
+  import context._
 
   signDeathPact(commander)
 
   options.foreach(_.beforeConnect(channel.socket))
   localAddress.foreach(channel.socket.bind)
   channelRegistry.register(channel, 0)
-  timeout foreach context.setReceiveTimeout //Initiate connection timeout if supplied
+  timeout.foreach(context.setReceiveTimeout) //Initiate connection timeout if supplied
 
-  private def stop(cause: Throwable): Unit = stopWith(CloseInformation(Set(commander), connect.failureMessage.withCause(cause)))
+  private def stop(cause: Throwable): Unit =
+    stopWith(CloseInformation(Set(commander), CommandFailed(connect).withCause(cause)), shouldAbort = true)
 
-  private def reportConnectFailure(thunk: ⇒ Unit): Unit = {
+  private def reportConnectFailure(thunk: => Unit): Unit = {
     try {
       thunk
     } catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         log.debug("Could not establish connection to [{}] due to {}", remoteAddress, e)
         stop(e)
     }
   }
 
   def receive: Receive = {
-    case registration: ChannelRegistration ⇒
+    case registration: ChannelRegistration =>
+      setRegistration(registration)
       reportConnectFailure {
         if (remoteAddress.isUnresolved) {
           log.debug("Resolving {} before connecting", remoteAddress.getHostName)
-          Dns.resolve(remoteAddress.getHostName)(system, self) match {
-            case None ⇒
+          Dns.resolve(DnsProtocol.Resolve(remoteAddress.getHostName), system, self) match {
+            case None =>
               context.become(resolving(registration))
-            case Some(resolved) ⇒
-              register(new InetSocketAddress(resolved.addr, remoteAddress.getPort), registration)
+            case Some(resolved) =>
+              register(new InetSocketAddress(resolved.address(), remoteAddress.getPort), registration)
           }
         } else {
           register(remoteAddress, registration)
         }
       }
-    case ReceiveTimeout ⇒
+    case ReceiveTimeout =>
       connectionTimeout()
   }
 
   def resolving(registration: ChannelRegistration): Receive = {
-    case resolved: Dns.Resolved ⇒
+    case resolved: DnsProtocol.Resolved =>
       reportConnectFailure {
-        register(new InetSocketAddress(resolved.addr, remoteAddress.getPort), registration)
+        register(new InetSocketAddress(resolved.address(), remoteAddress.getPort), registration)
       }
-    case ReceiveTimeout ⇒
+    case ReceiveTimeout =>
       connectionTimeout()
+    case Failure(ex) =>
+      // async-dns responds with a Failure on DNS server lookup failure
+      reportConnectFailure {
+        throw new RuntimeException(ex)
+      }
   }
 
   def register(address: InetSocketAddress, registration: ChannelRegistration): Unit = {
@@ -93,7 +106,7 @@ private[io] class TcpOutgoingConnection(
 
   def connecting(registration: ChannelRegistration, remainingFinishConnectRetries: Int): Receive = {
     {
-      case ChannelConnectable ⇒
+      case ChannelConnectable =>
         reportConnectFailure {
           if (channel.finishConnect()) {
             if (timeout.isDefined) context.setReceiveTimeout(Duration.Undefined) // Clear the timeout
@@ -106,13 +119,14 @@ private[io] class TcpOutgoingConnection(
               }(context.dispatcher)
               context.become(connecting(registration, remainingFinishConnectRetries - 1))
             } else {
-              log.debug("Could not establish connection because finishConnect " +
+              log.debug(
+                "Could not establish connection because finishConnect " +
                 "never returned true (consider increasing akka.io.tcp.finish-connect-retries)")
               stop(FinishConnectNeverReturnedTrueException)
             }
           }
         }
-      case ReceiveTimeout ⇒
+      case ReceiveTimeout =>
         connectionTimeout()
     }
   }

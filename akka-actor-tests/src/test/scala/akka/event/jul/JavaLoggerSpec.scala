@@ -1,15 +1,19 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event.jul
 
-import com.typesafe.config.ConfigFactory
-import akka.actor.{ Actor, ActorLogging, Props }
-import akka.testkit.AkkaSpec
 import java.util.logging
+
 import scala.util.control.NoStackTrace
 
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.{ Actor, ActorLogging, Props }
+import akka.testkit.AkkaSpec
+
+@deprecated("Use SLF4J instead.", "2.6.0")
 object JavaLoggerSpec {
 
   val config = ConfigFactory.parseString("""
@@ -21,9 +25,9 @@ object JavaLoggerSpec {
 
   class LogProducer extends Actor with ActorLogging {
     def receive = {
-      case e: Exception ⇒
+      case e: Exception =>
         log.error(e, e.getMessage)
-      case (s: String, x: Int) ⇒
+      case (s: String, x: Int) =>
         log.info(s, x)
     }
   }
@@ -31,6 +35,7 @@ object JavaLoggerSpec {
   class SimulatedExc extends RuntimeException("Simulated error") with NoStackTrace
 }
 
+@deprecated("Use SLF4J instead.", "2.6.0")
 class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
 
   val logger = logging.Logger.getLogger(classOf[JavaLoggerSpec.LogProducer].getName)
@@ -44,7 +49,7 @@ class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
     def close(): Unit = {}
   })
 
-  val producer = system.actorOf(Props[JavaLoggerSpec.LogProducer], name = "log")
+  val producer = system.actorOf(Props[JavaLoggerSpec.LogProducer](), name = "log")
 
   "JavaLogger" must {
 

@@ -1,4 +1,4 @@
-# Event Bus
+# Classic Event Bus
 
 Originally conceived as a way to send messages to groups of actors, the
 `EventBus` has been generalized into a set of @scala[composable traits] @java[abstract base classes]
@@ -18,7 +18,7 @@ you have to provide it inside the message.
 
 @@@
 
-This mechanism is used in different places within Akka, e.g. the [Event Stream](#event-stream).
+This mechanism is used in different places within Akka, e.g. the @ref:[Event Stream](#event-stream).
 Implementations can make use of the specific building blocks presented below.
 
 An event bus must define the following three @scala[abstract types]@java[type parameters]:
@@ -43,7 +43,7 @@ The simplest classification is just to extract an arbitrary classifier from
 each event and maintaining a set of subscribers for each possible classifier.
 This can be compared to tuning in on a radio station. The trait
 `LookupClassification` is still generic in that it abstracts over how to
-compare subscribers and how exactly to classify.
+compare subscribers and how exactly to classify them.
 
 The necessary methods to be implemented are illustrated with the following example:
 
@@ -122,7 +122,6 @@ Java
 This classifier takes always a time which is proportional to the number of
 subscriptions, independent of how many actually match.
 
-<a id="actor-classification"></a>
 ### Actor Classification
 
 This classification was originally developed specifically for implementing
@@ -153,12 +152,11 @@ Java
 This classifier is still is generic in the event type, and it is efficient for
 all use cases.
 
-<a id="event-stream"></a>
 ## Event Stream
 
 The event stream is the main event bus of each actor system: it is used for
-carrying @ref:[log messages](logging.md) and [Dead Letters](#dead-letters) and may be
-used by the user code for other purposes as well. It uses [Subchannel
+carrying @ref:[log messages](logging.md) and @ref:[Dead Letters](#dead-letters) and may be
+used by the user code for other purposes as well. It uses @ref:[Subchannel
 Classification](#subchannel-classification) which enables registering to related sets of channels (as is
 used for `RemotingLifecycleEvent`). The following example demonstrates
 how a simple subscription works. Given a simple actor:
@@ -176,7 +174,6 @@ how a simple subscription works. Given a simple actor:
 @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #deadletter-actor }
 
 it can be subscribed like this:
-It can be subscribed like this:
 
 @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #deadletters }
 
@@ -193,7 +190,7 @@ Scala
 Java
 :  @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #superclass-subscription-eventstream }
 
-Similarly to [Actor Classification](#actor-classification), `EventStream` will automatically remove subscribers when they terminate.
+Similarly to @ref:[Actor Classification](#actor-classification), `EventStream` will automatically remove subscribers when they terminate.
 
 @@@ note
 

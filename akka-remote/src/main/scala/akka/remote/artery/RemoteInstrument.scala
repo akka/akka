@@ -1,15 +1,27 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
-import akka.actor.{ ActorRef, ExtendedActorSystem }
-import akka.event.{ Logging, LoggingAdapter }
-import akka.util.OptionVal
 import java.nio.ByteBuffer
+import java.util.concurrent.ConcurrentHashMap
+
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
+
+import akka.actor.ActorSystem
+import akka.actor.WrappedMessage
+import akka.actor.ActorRef
+import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
+import akka.event.Logging
+import akka.event.LoggingAdapter
+import akka.remote.RemoteActorRefProvider
+import akka.util.ccompat._
+import akka.util.OptionVal
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -23,7 +35,9 @@ import scala.util.control.NonFatal
  * will be created for each encoder and decoder. It's only called from the operator, so if it doesn't
  * delegate to any shared instance it doesn't have to be thread-safe.
  */
+@ccompatUsedUntil213
 abstract class RemoteInstrument {
+
   /**
    * Instrument identifier.
    *
@@ -73,6 +87,71 @@ abstract class RemoteInstrument {
 
 /**
  * INTERNAL API
+ */
+@InternalApi private[akka] class LoggingRemoteInstrument(system: ActorSystem) extends RemoteInstrument {
+
+  private val settings = system
+    .asInstanceOf[ExtendedActorSystem]
+    .provider
+    .asInstanceOf[RemoteActorRefProvider]
+    .transport
+    .asInstanceOf[ArteryTransport]
+    .settings
+  private val logFrameSizeExceeding = settings.LogFrameSizeExceeding.get
+
+  private val log = Logging(system, this.getClass)
+
+  private val maxPayloadBytes: ConcurrentHashMap[Class[_], Integer] = new ConcurrentHashMap
+
+  override def identifier: Byte = 1 // Cinnamon is using 0
+
+  override def remoteWriteMetadata(recipient: ActorRef, message: Object, sender: ActorRef, buffer: ByteBuffer): Unit =
+    ()
+
+  override def remoteMessageSent(
+      recipient: ActorRef,
+      message: Object,
+      sender: ActorRef,
+      size: Int,
+      time: Long): Unit = {
+    if (size >= logFrameSizeExceeding) {
+      val clazz = message match {
+        case x: WrappedMessage => x.message.getClass
+        case _                 => message.getClass
+      }
+
+      // 10% threshold until next log
+      def newMax = (size * 1.1).toInt
+
+      @tailrec def check(): Unit = {
+        val max = maxPayloadBytes.get(clazz)
+        if (max eq null) {
+          if (maxPayloadBytes.putIfAbsent(clazz, newMax) eq null)
+            log.info("Payload size for [{}] is [{}] bytes. Sent to {}", clazz.getName, size, recipient)
+          else check()
+        } else if (size > max) {
+          if (maxPayloadBytes.replace(clazz, max, newMax))
+            log.info("New maximum payload size for [{}] is [{}] bytes. Sent to {}.", clazz.getName, size, recipient)
+          else check()
+        }
+      }
+      check()
+    }
+  }
+
+  override def remoteReadMetadata(recipient: ActorRef, message: Object, sender: ActorRef, buffer: ByteBuffer): Unit =
+    ()
+
+  override def remoteMessageReceived(
+      recipient: ActorRef,
+      message: Object,
+      sender: ActorRef,
+      size: Int,
+      time: Long): Unit = ()
+}
+
+/**
+ * INTERNAL API
  *
  * The metadata section is stored as raw bytes (prefixed with an Int length field,
  * the same way as any other literal), however the internal structure of it is as follows:
@@ -91,9 +170,9 @@ abstract class RemoteInstrument {
  *
  */
 private[remote] final class RemoteInstruments(
-  private val system: ExtendedActorSystem,
-  private val log:    LoggingAdapter,
-  _instruments:       Vector[RemoteInstrument]) {
+    private val system: ExtendedActorSystem,
+    private val log: LoggingAdapter,
+    _instruments: Vector[RemoteInstrument]) {
   import RemoteInstruments._
 
   def this(system: ExtendedActorSystem, log: LoggingAdapter) = this(system, log, RemoteInstruments.create(system, log))
@@ -118,10 +197,11 @@ private[remote] final class RemoteInstruments(
           try {
             serializeInstrument(instrument, oe, buffer)
           } catch {
-            case NonFatal(t) ⇒
+            case NonFatal(t) =>
               log.debug(
                 "Skipping serialization of RemoteInstrument {} since it failed with {}",
-                instrument.identifier, t.getMessage)
+                instrument.identifier,
+                t.getMessage)
               buffer.position(rewindPos)
           }
           i += 1
@@ -135,18 +215,25 @@ private[remote] final class RemoteInstruments(
           buffer.putInt(startPos, endPos - dataPos)
         }
       } catch {
-        case NonFatal(t) ⇒
+        case NonFatal(t) =>
           log.debug("Skipping serialization of all RemoteInstruments due to unhandled failure {}", t)
           buffer.position(startPos)
       }
     }
   }
 
-  private def serializeInstrument(instrument: RemoteInstrument, outboundEnvelope: OutboundEnvelope, buffer: ByteBuffer): Unit = {
+  private def serializeInstrument(
+      instrument: RemoteInstrument,
+      outboundEnvelope: OutboundEnvelope,
+      buffer: ByteBuffer): Unit = {
     val startPos = buffer.position()
     buffer.putInt(0)
     val dataPos = buffer.position()
-    instrument.remoteWriteMetadata(outboundEnvelope.recipient.orNull, outboundEnvelope.message, outboundEnvelope.sender.orNull, buffer)
+    instrument.remoteWriteMetadata(
+      outboundEnvelope.recipient.orNull,
+      outboundEnvelope.message,
+      outboundEnvelope.sender.orNull,
+      buffer)
     val endPos = buffer.position()
     if (endPos == dataPos) {
       // if the instrument didn't write anything, then rewind to the start
@@ -184,10 +271,11 @@ private[remote] final class RemoteInstruments(
             try {
               deserializeInstrument(instrument, inboundEnvelope, buffer)
             } catch {
-              case NonFatal(t) ⇒
+              case NonFatal(t) =>
                 log.debug(
                   "Skipping deserialization of RemoteInstrument {} since it failed with {}",
-                  instrument.identifier, t.getMessage)
+                  instrument.identifier,
+                  t.getMessage)
             }
             i += 1
           } else if (key > identifier) {
@@ -202,20 +290,28 @@ private[remote] final class RemoteInstruments(
           buffer.position(nextPos)
         }
       } else {
-        if (log.isDebugEnabled) log.debug(
-          "Skipping serialized data in message for RemoteInstrument(s) {} that has no local match",
-          remoteInstrumentIdIteratorRaw(buffer, endPos).mkString("[", ", ", "]"))
+        if (log.isDebugEnabled)
+          log.debug(
+            "Skipping serialized data in message for RemoteInstrument(s) {} that has no local match",
+            remoteInstrumentIdIteratorRaw(buffer, endPos).mkString("[", ", ", "]"))
       }
     } catch {
-      case NonFatal(t) ⇒
+      case NonFatal(t) =>
         log.debug("Skipping further deserialization of remaining RemoteInstruments due to unhandled failure {}", t)
     } finally {
       buffer.position(endPos)
     }
   }
 
-  private def deserializeInstrument(instrument: RemoteInstrument, inboundEnvelope: InboundEnvelope, buffer: ByteBuffer): Unit = {
-    instrument.remoteReadMetadata(inboundEnvelope.recipient.orNull, inboundEnvelope.message, inboundEnvelope.sender.orNull, buffer)
+  private def deserializeInstrument(
+      instrument: RemoteInstrument,
+      inboundEnvelope: InboundEnvelope,
+      buffer: ByteBuffer): Unit = {
+    instrument.remoteReadMetadata(
+      inboundEnvelope.recipient.orNull,
+      inboundEnvelope.message,
+      inboundEnvelope.sender.orNull,
+      buffer)
   }
 
   def messageSent(outboundEnvelope: OutboundEnvelope, size: Int, time: Long): Unit = {
@@ -225,7 +321,7 @@ private[remote] final class RemoteInstruments(
         try {
           messageSentInstrument(instrument, outboundEnvelope, size, time)
         } catch {
-          case NonFatal(t) ⇒
+          case NonFatal(t) =>
             log.debug("Message sent in RemoteInstrument {} failed with {}", instrument.identifier, t.getMessage)
         }
         messageSent(pos + 1)
@@ -234,8 +330,17 @@ private[remote] final class RemoteInstruments(
     messageSent(0)
   }
 
-  private def messageSentInstrument(instrument: RemoteInstrument, outboundEnvelope: OutboundEnvelope, size: Int, time: Long): Unit = {
-    instrument.remoteMessageSent(outboundEnvelope.recipient.orNull, outboundEnvelope.message, outboundEnvelope.sender.orNull, size, time)
+  private def messageSentInstrument(
+      instrument: RemoteInstrument,
+      outboundEnvelope: OutboundEnvelope,
+      size: Int,
+      time: Long): Unit = {
+    instrument.remoteMessageSent(
+      outboundEnvelope.recipient.orNull,
+      outboundEnvelope.message,
+      outboundEnvelope.sender.orNull,
+      size,
+      time)
   }
 
   def messageReceived(inboundEnvelope: InboundEnvelope, size: Int, time: Long): Unit = {
@@ -245,7 +350,7 @@ private[remote] final class RemoteInstruments(
         try {
           messageReceivedInstrument(instrument, inboundEnvelope, size, time)
         } catch {
-          case NonFatal(t) ⇒
+          case NonFatal(t) =>
             log.debug("Message received in RemoteInstrument {} failed with {}", instrument.identifier, t.getMessage)
         }
         messageRecieved(pos + 1)
@@ -254,8 +359,17 @@ private[remote] final class RemoteInstruments(
     messageRecieved(0)
   }
 
-  private def messageReceivedInstrument(instrument: RemoteInstrument, inboundEnvelope: InboundEnvelope, size: Int, time: Long): Unit = {
-    instrument.remoteMessageReceived(inboundEnvelope.recipient.orNull, inboundEnvelope.message, inboundEnvelope.sender.orNull, size, time)
+  private def messageReceivedInstrument(
+      instrument: RemoteInstrument,
+      inboundEnvelope: InboundEnvelope,
+      size: Int,
+      time: Long): Unit = {
+    instrument.remoteMessageReceived(
+      inboundEnvelope.recipient.orNull,
+      inboundEnvelope.message,
+      inboundEnvelope.sender.orNull,
+      size,
+      time)
   }
 
   private def remoteInstrumentIdIteratorRaw(buffer: ByteBuffer, endPos: Int): Iterator[Int] = {
@@ -271,7 +385,7 @@ private[remote] final class RemoteInstruments(
 
   def isEmpty: Boolean = instruments.isEmpty
   def nonEmpty: Boolean = instruments.nonEmpty
-  def timeSerialization = serializationTimingEnabled
+  def timeSerialization: Boolean = serializationTimingEnabled
 }
 
 /** INTERNAL API */
@@ -287,15 +401,35 @@ private[remote] object RemoteInstruments {
   def getKey(kl: Int): Byte = (kl >>> 26).toByte
   def getLength(kl: Int): Int = kl & lengthMask
 
-  def create(system: ExtendedActorSystem, log: LoggingAdapter): Vector[RemoteInstrument] = {
+  @InternalStableApi
+  def create(system: ExtendedActorSystem, @unused log: LoggingAdapter): Vector[RemoteInstrument] = {
     val c = system.settings.config
     val path = "akka.remote.artery.advanced.instruments"
-    import scala.collection.JavaConverters._
-    c.getStringList(path).asScala.map { fqcn ⇒
-      system
-        .dynamicAccess.createInstanceFor[RemoteInstrument](fqcn, Nil)
-        .orElse(system.dynamicAccess.createInstanceFor[RemoteInstrument](fqcn, List(classOf[ExtendedActorSystem] → system)))
-        .get
-    }(collection.breakOut)
+    import akka.util.ccompat.JavaConverters._
+    val configuredInstruments = c
+      .getStringList(path)
+      .asScala
+      .iterator
+      .map { fqcn =>
+        system.dynamicAccess
+          .createInstanceFor[RemoteInstrument](fqcn, Nil)
+          .orElse(system.dynamicAccess
+            .createInstanceFor[RemoteInstrument](fqcn, List(classOf[ExtendedActorSystem] -> system)))
+          .get
+      }
+      .toVector
+
+    system.provider match {
+      case rarp: RemoteActorRefProvider =>
+        rarp.transport match {
+          case artery: ArteryTransport =>
+            artery.settings.LogFrameSizeExceeding match {
+              case Some(_) => configuredInstruments :+ new LoggingRemoteInstrument(system)
+              case None    => configuredInstruments
+            }
+          case _ => configuredInstruments
+        }
+      case _ => configuredInstruments
+    }
   }
 }

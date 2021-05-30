@@ -1,17 +1,20 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
+import java.io.File
+
+import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import org.apache.commons.io.FileUtils
 import org.openjdk.jmh.annotations._
+import org.openjdk.jmh.annotations.Scope
+
 import akka.actor._
 import akka.testkit.TestProbe
-import java.io.File
-import org.apache.commons.io.FileUtils
-import org.openjdk.jmh.annotations.Scope
-import scala.concurrent.Await
 
 /*
   # OS:   OSX 10.9.3
@@ -30,11 +33,11 @@ class PersistentActorDeferBenchmark {
 
   val config = PersistenceSpec.config("leveldb", "benchmark")
 
-  lazy val storageLocations = List(
-    "akka.persistence.journal.leveldb.dir",
-    "akka.persistence.journal.leveldb-shared.store.dir",
-    "akka.persistence.snapshot-store.local.dir"
-  ).map(s ⇒ new File(system.settings.config.getString(s)))
+  lazy val storageLocations =
+    List(
+      "akka.persistence.journal.leveldb.dir",
+      "akka.persistence.journal.leveldb-shared.store.dir",
+      "akka.persistence.snapshot-store.local.dir").map(s => new File(system.settings.config.getString(s)))
 
   var system: ActorSystem = _
 
@@ -52,7 +55,8 @@ class PersistentActorDeferBenchmark {
 
     storageLocations.foreach(FileUtils.deleteDirectory)
     persistAsync_defer = system.actorOf(Props(classOf[`persistAsync, defer`], data10k.last), "a-1")
-    persistAsync_defer_replyASAP = system.actorOf(Props(classOf[`persistAsync, defer, respond ASAP`], data10k.last), "a-2")
+    persistAsync_defer_replyASAP =
+      system.actorOf(Props(classOf[`persistAsync, defer, respond ASAP`], data10k.last), "a-2")
   }
 
   @TearDown
@@ -66,7 +70,7 @@ class PersistentActorDeferBenchmark {
   @Benchmark
   @OperationsPerInvocation(10000)
   def tell_persistAsync_defer_persistAsync_reply(): Unit = {
-    for (i ← data10k) persistAsync_defer.tell(i, probe.ref)
+    for (i <- data10k) persistAsync_defer.tell(i, probe.ref)
 
     probe.expectMsg(data10k.last)
   }
@@ -74,7 +78,7 @@ class PersistentActorDeferBenchmark {
   @Benchmark
   @OperationsPerInvocation(10000)
   def tell_persistAsync_defer_persistAsync_replyASAP(): Unit = {
-    for (i ← data10k) persistAsync_defer_replyASAP.tell(i, probe.ref)
+    for (i <- data10k) persistAsync_defer_replyASAP.tell(i, probe.ref)
 
     probe.expectMsg(data10k.last)
   }
@@ -86,12 +90,15 @@ class `persistAsync, defer`(respondAfter: Int) extends PersistentActor {
   override def persistenceId: String = self.path.name
 
   override def receiveCommand = {
-    case n: Int ⇒
-      persistAsync(Evt(n)) { e ⇒ }
-      deferAsync(Evt(n)) { e ⇒ if (e.i == respondAfter) sender() ! e.i }
+    case n: Int =>
+      persistAsync(Evt(n)) { _ =>
+      }
+      deferAsync(Evt(n)) { e =>
+        if (e.i == respondAfter) sender() ! e.i
+      }
   }
   override def receiveRecover = {
-    case _ ⇒ // do nothing
+    case _ => // do nothing
   }
 }
 class `persistAsync, defer, respond ASAP`(respondAfter: Int) extends PersistentActor {
@@ -99,12 +106,14 @@ class `persistAsync, defer, respond ASAP`(respondAfter: Int) extends PersistentA
   override def persistenceId: String = self.path.name
 
   override def receiveCommand = {
-    case n: Int ⇒
-      persistAsync(Evt(n)) { e ⇒ }
-      deferAsync(Evt(n)) { e ⇒ }
+    case n: Int =>
+      persistAsync(Evt(n)) { _ =>
+      }
+      deferAsync(Evt(n)) { _ =>
+      }
       if (n == respondAfter) sender() ! n
   }
   override def receiveRecover = {
-    case _ ⇒ // do nothing
+    case _ => // do nothing
   }
 }

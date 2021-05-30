@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -7,38 +7,25 @@ package akka.persistence
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
 
+import scala.annotation.tailrec
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.actor._
+import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 import akka.event.{ Logging, LoggingAdapter }
 import akka.persistence.journal.{ EventAdapters, IdentityEventAdapters }
 import akka.util.Collections.EmptyImmutableSeq
 import akka.util.Helpers.ConfigOps
-import com.typesafe.config.{ Config, ConfigFactory }
-
-import scala.annotation.tailrec
-import scala.concurrent.duration._
 import akka.util.Reflect
-
-import scala.util.control.NonFatal
-import akka.annotation.InternalApi
 
 /**
  * Persistence configuration.
  */
 final class PersistenceSettings(config: Config) {
-
-  object view {
-    val autoUpdate: Boolean =
-      config.getBoolean("view.auto-update")
-
-    val autoUpdateInterval: FiniteDuration =
-      config.getMillisDuration("view.auto-update-interval")
-
-    val autoUpdateReplayMax: Long =
-      posMax(config.getLong("view.auto-update-replay-max"))
-
-    private def posMax(v: Long) =
-      if (v < 0) Long.MaxValue else v
-  }
 
   object atLeastOnceDelivery {
 
@@ -116,6 +103,7 @@ trait PersistenceRecovery {
 }
 
 trait PersistenceStash extends Stash with StashFactory {
+
   /**
    * The returned [[StashOverflowStrategy]] object determines how to handle the message failed to stash
    * when the internal Stash capacity exceeded.
@@ -125,6 +113,7 @@ trait PersistenceStash extends Stash with StashFactory {
 }
 
 trait RuntimePluginConfig {
+
   /**
    * Additional configuration of the journal plugin servicing this persistent actor.
    * When empty, the whole configuration of the journal plugin will be taken from the [[Config]] loaded into the
@@ -152,22 +141,54 @@ trait RuntimePluginConfig {
  * Persistence extension provider.
  */
 object Persistence extends ExtensionId[Persistence] with ExtensionIdProvider {
+
   /** Java API. */
   override def get(system: ActorSystem): Persistence = super.get(system)
 
+  override def get(system: ClassicActorSystemProvider): Persistence = super.get(system)
+
   def createExtension(system: ExtendedActorSystem): Persistence = new Persistence(system)
 
-  def lookup() = Persistence
+  def lookup = Persistence
 
   /** INTERNAL API. */
-  private[persistence] case class PluginHolder(actor: ActorRef, adapters: EventAdapters, config: Config)
-    extends Extension
+  private[persistence] case class PluginHolder(actorFactory: () => ActorRef, adapters: EventAdapters, config: Config)
+      extends Extension {
+    // lazy creation of actor so that it's not started when only looking up adapters
+    lazy val actor: ActorRef = actorFactory()
+  }
 
   /** Config path to fall-back to if a setting is not defined in a specific plugin's config section */
   val JournalFallbackConfigPath = "akka.persistence.journal-plugin-fallback"
 
   /** Config path to fall-back to if a setting is not defined in a specific snapshot plugin's config section */
   val SnapshotStoreFallbackConfigPath = "akka.persistence.snapshot-store-plugin-fallback"
+
+  /**
+   * INTERNAL API
+   * @throws IllegalArgumentException if config path for the `pluginId` doesn't exist
+   */
+  @InternalApi private[akka] def verifyPluginConfigExists(
+      config: Config,
+      pluginId: String,
+      pluginType: String): Unit = {
+    if (!isEmpty(pluginId) && !config.hasPath(pluginId))
+      throw new IllegalArgumentException(s"$pluginType plugin [$pluginId] configuration doesn't exist.")
+  }
+
+  /**
+   * INTERNAL API
+   * @throws IllegalArgumentException if `pluginId` is empty (undefined)
+   */
+  @InternalApi private[akka] def verifyPluginConfigIsDefined(pluginId: String, pluginType: String): Unit = {
+    if (isEmpty(pluginId))
+      throw new IllegalArgumentException(s"$pluginType plugin is not configured, see 'reference.conf'")
+  }
+
+  /** Check for default or missing identity. */
+  private def isEmpty(text: String) = {
+    text == null || text.length == 0
+  }
 }
 
 /**
@@ -177,7 +198,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
 
   import Persistence._
 
-  private def log: LoggingAdapter = Logging(system, getClass.getName)
+  private def log: LoggingAdapter = Logging(system, getClass)
 
   private val NoSnapshotStorePluginId = "akka.persistence.no-snapshot-store"
 
@@ -196,7 +217,8 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   // Lazy, so user is not forced to configure defaults when she is not using them.
   private lazy val defaultJournalPluginId = {
     val configPath = config.getString("journal.plugin")
-    require(!isEmpty(configPath), "default journal plugin is not configured, see 'reference.conf'")
+    verifyPluginConfigIsDefined(configPath, "Default journal")
+    verifyJournalPluginConfigExists(ConfigFactory.empty, configPath)
     configPath
   }
 
@@ -205,39 +227,59 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     val configPath = config.getString("snapshot-store.plugin")
 
     if (isEmpty(configPath)) {
-      log.warning("No default snapshot store configured! " +
+      log.warning(
+        "No default snapshot store configured! " +
         "To configure a default snapshot-store plugin set the `akka.persistence.snapshot-store.plugin` key. " +
         "For details see 'reference.conf'")
       NoSnapshotStorePluginId
-    } else configPath
+    } else {
+      verifySnapshotPluginConfigExists(ConfigFactory.empty, configPath)
+      configPath
+    }
   }
 
   // Lazy, so user is not forced to configure defaults when she is not using them.
   lazy val defaultInternalStashOverflowStrategy: StashOverflowStrategy =
-    system.dynamicAccess.createInstanceFor[StashOverflowStrategyConfigurator](config.getString(
-      "internal-stash-overflow-strategy"), EmptyImmutableSeq)
-      .map(_.create(system.settings.config)).get
+    system.dynamicAccess
+      .createInstanceFor[StashOverflowStrategyConfigurator](
+        config.getString("internal-stash-overflow-strategy"),
+        EmptyImmutableSeq)
+      .map(_.create(system.settings.config))
+      .get
 
   val settings = new PersistenceSettings(config)
-
-  /** Check for default or missing identity. */
-  private def isEmpty(text: String) = text == null || text.length == 0
 
   /** Discovered persistence journal and snapshot store plugins. */
   private val pluginExtensionId = new AtomicReference[Map[String, ExtensionId[PluginHolder]]](Map.empty)
 
-  config.getStringList("journal.auto-start-journals").forEach(new Consumer[String] {
-    override def accept(id: String): Unit = {
-      log.info(s"Auto-starting journal plugin `$id`")
-      journalFor(id)
-    }
-  })
-  config.getStringList("snapshot-store.auto-start-snapshot-stores").forEach(new Consumer[String] {
-    override def accept(id: String): Unit = {
-      log.info(s"Auto-starting snapshot store `$id`")
-      snapshotStoreFor(id)
-    }
-  })
+  config
+    .getStringList("journal.auto-start-journals")
+    .forEach(new Consumer[String] {
+      override def accept(id: String): Unit = {
+        log.info(s"Auto-starting journal plugin `$id`")
+        journalFor(id)
+      }
+    })
+  config
+    .getStringList("snapshot-store.auto-start-snapshot-stores")
+    .forEach(new Consumer[String] {
+      override def accept(id: String): Unit = {
+        log.info(s"Auto-starting snapshot store `$id`")
+        snapshotStoreFor(id)
+      }
+    })
+
+  /**
+   * @throws IllegalArgumentException if `configPath` doesn't exist
+   */
+  private def verifyJournalPluginConfigExists(pluginConfig: Config, configPath: String): Unit =
+    verifyPluginConfigExists(pluginConfig.withFallback(system.settings.config), configPath, "Journal")
+
+  /**
+   * @throws IllegalArgumentException if `configPath` doesn't exist
+   */
+  private def verifySnapshotPluginConfigExists(pluginConfig: Config, configPath: String): Unit =
+    verifyPluginConfigExists(pluginConfig.withFallback(system.settings.config), configPath, "Snapshot store")
 
   /**
    * Returns an [[akka.persistence.journal.EventAdapters]] object which serves as a per-journal collection of bound event adapters.
@@ -257,6 +299,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    */
   final def adaptersFor(journalPluginId: String, journalPluginConfig: Config): EventAdapters = {
     val configPath = if (isEmpty(journalPluginId)) defaultJournalPluginId else journalPluginId
+    verifyJournalPluginConfigExists(journalPluginConfig, configPath)
     pluginHolderFor(configPath, JournalFallbackConfigPath, journalPluginConfig).adapters
   }
 
@@ -265,11 +308,11 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * Looks up [[akka.persistence.journal.EventAdapters]] by journal plugin's ActorRef.
    */
   private[akka] final def adaptersFor(journalPluginActor: ActorRef): EventAdapters = {
-    pluginExtensionId.get().values collectFirst {
-      case ext if ext(system).actor == journalPluginActor ⇒ ext(system).adapters
+    pluginExtensionId.get().values.collectFirst {
+      case ext if ext(system).actor == journalPluginActor => ext(system).adapters
     } match {
-      case Some(adapters) ⇒ adapters
-      case _              ⇒ IdentityEventAdapters
+      case Some(adapters) => adapters
+      case _              => IdentityEventAdapters
     }
   }
 
@@ -279,8 +322,11 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * When empty, looks in `akka.persistence.journal.plugin` to find configuration entry path.
    * When configured, uses `journalPluginId` as absolute path to the journal configuration entry.
    */
-  private[akka] final def journalConfigFor(journalPluginId: String, journalPluginConfig: Config = ConfigFactory.empty): Config = {
+  private[akka] final def journalConfigFor(
+      journalPluginId: String,
+      journalPluginConfig: Config = ConfigFactory.empty): Config = {
     val configPath = if (isEmpty(journalPluginId)) defaultJournalPluginId else journalPluginId
+    verifyJournalPluginConfigExists(journalPluginConfig, configPath)
     pluginHolderFor(configPath, JournalFallbackConfigPath, journalPluginConfig).config
   }
 
@@ -290,10 +336,10 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    */
   private[akka] final def configFor(journalPluginActor: ActorRef): Config =
     pluginExtensionId.get().values.collectFirst {
-      case ext if ext(system).actor == journalPluginActor ⇒ ext(system).config
+      case ext if ext(system).actor == journalPluginActor => ext(system).config
     } match {
-      case Some(conf) ⇒ conf
-      case None       ⇒ throw new IllegalArgumentException(s"Unknown plugin actor $journalPluginActor")
+      case Some(conf) => conf
+      case None       => throw new IllegalArgumentException(s"Unknown plugin actor $journalPluginActor")
     }
 
   /**
@@ -303,8 +349,12 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * When configured, uses `journalPluginId` as absolute path to the journal configuration entry.
    * Configuration entry must contain few required fields, such as `class`. See `src/main/resources/reference.conf`.
    */
-  private[akka] final def journalFor(journalPluginId: String, journalPluginConfig: Config = ConfigFactory.empty): ActorRef = {
+  @InternalStableApi
+  private[akka] final def journalFor(
+      journalPluginId: String,
+      journalPluginConfig: Config = ConfigFactory.empty): ActorRef = {
     val configPath = if (isEmpty(journalPluginId)) defaultJournalPluginId else journalPluginId
+    verifyJournalPluginConfigExists(journalPluginConfig, configPath)
     pluginHolderFor(configPath, JournalFallbackConfigPath, journalPluginConfig).actor
   }
 
@@ -316,17 +366,24 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * When configured, uses `snapshotPluginId` as absolute path to the snapshot store configuration entry.
    * Configuration entry must contain few required fields, such as `class`. See `src/main/resources/reference.conf`.
    */
-  private[akka] final def snapshotStoreFor(snapshotPluginId: String, snapshotPluginConfig: Config = ConfigFactory.empty): ActorRef = {
+  @InternalStableApi
+  private[akka] final def snapshotStoreFor(
+      snapshotPluginId: String,
+      snapshotPluginConfig: Config = ConfigFactory.empty): ActorRef = {
     val configPath = if (isEmpty(snapshotPluginId)) defaultSnapshotPluginId else snapshotPluginId
+    verifySnapshotPluginConfigExists(snapshotPluginConfig, configPath)
     pluginHolderFor(configPath, SnapshotStoreFallbackConfigPath, snapshotPluginConfig).actor
   }
 
-  @tailrec private def pluginHolderFor(configPath: String, fallbackPath: String, additionalConfig: Config): PluginHolder = {
+  @tailrec private def pluginHolderFor(
+      configPath: String,
+      fallbackPath: String,
+      additionalConfig: Config): PluginHolder = {
     val extensionIdMap = pluginExtensionId.get
     extensionIdMap.get(configPath) match {
-      case Some(extensionId) ⇒
+      case Some(extensionId) =>
         extensionId(system)
-      case None ⇒
+      case None =>
         val extensionId = new PluginHolderExtensionId(configPath, fallbackPath, additionalConfig)
         pluginExtensionId.compareAndSet(extensionIdMap, extensionIdMap.updated(configPath, extensionId))
         pluginHolderFor(configPath, fallbackPath, additionalConfig) // Recursive invocation.
@@ -335,24 +392,22 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
 
   private def createPlugin(configPath: String, pluginConfig: Config): ActorRef = {
     val pluginActorName = configPath
-    val pluginClassName = pluginConfig.getString("class") match {
-      case "" ⇒ throw new IllegalArgumentException("Plugin class name must be defined in config property " +
-        s"[$configPath.class]")
-      case className ⇒ className
-    }
+    val pluginClassName = pluginConfig.getString("class")
+    if (isEmpty(pluginClassName))
+      throw new IllegalArgumentException(s"Plugin class name must be defined in config property [$configPath.class]")
     log.debug(s"Create plugin: $pluginActorName $pluginClassName")
     val pluginClass = system.dynamicAccess.getClassFor[Any](pluginClassName).get
     val pluginDispatcherId = pluginConfig.getString("plugin-dispatcher")
-    val pluginActorArgs = try {
+    val pluginActorArgs: List[AnyRef] = try {
       Reflect.findConstructor(pluginClass, List(pluginConfig, configPath)) // will throw if not found
       List(pluginConfig, configPath)
     } catch {
-      case NonFatal(_) ⇒
+      case NonFatal(_) =>
         try {
           Reflect.findConstructor(pluginClass, List(pluginConfig)) // will throw if not found
           List(pluginConfig)
         } catch {
-          case NonFatal(_) ⇒ Nil
+          case NonFatal(_) => Nil
         } // otherwise use empty constructor
     }
     val pluginActorProps = Props(Deploy(dispatcher = pluginDispatcherId), pluginClass, pluginActorArgs)
@@ -369,7 +424,8 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
 
   private def id(ref: ActorRef) = ref.path.toStringWithoutAddress
 
-  private class PluginHolderExtensionId(configPath: String, fallbackPath: String, additionalConfig: Config) extends ExtensionId[PluginHolder] {
+  private class PluginHolderExtensionId(configPath: String, fallbackPath: String, additionalConfig: Config)
+      extends ExtensionId[PluginHolder] {
     def this(configPath: String, fallbackPath: String) = this(configPath, fallbackPath, ConfigFactory.empty)
 
     override def createExtension(system: ExtendedActorSystem): PluginHolder = {
@@ -377,12 +433,11 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
       require(
         !isEmpty(configPath) && mergedConfig.hasPath(configPath),
         s"'reference.conf' is missing persistence plugin config path: '$configPath'")
-      val config: Config = mergedConfig.getConfig(configPath)
-        .withFallback(mergedConfig.getConfig(fallbackPath))
-      val plugin: ActorRef = createPlugin(configPath, config)
+      val config: Config = mergedConfig.getConfig(configPath).withFallback(mergedConfig.getConfig(fallbackPath))
+      val pluginActorFactory = () => createPlugin(configPath, config)
       val adapters: EventAdapters = createAdapters(configPath, mergedConfig)
 
-      PluginHolder(plugin, adapters, config)
+      PluginHolder(pluginActorFactory, adapters, config)
     }
   }
 

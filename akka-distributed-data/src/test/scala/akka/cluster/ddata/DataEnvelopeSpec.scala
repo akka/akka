@@ -1,19 +1,20 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.Address
 import akka.cluster.UniqueAddress
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
 import akka.cluster.ddata.Replicator.Internal.DataEnvelope
 
-class DataEnvelopeSpec extends WordSpec with Matchers {
+class DataEnvelopeSpec extends AnyWordSpec with Matchers {
   import PruningState._
 
-  val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1L)
+  val node1 = UniqueAddress(Address("akka", "Sys", "localhost", 2551), 1L)
   val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2L)
   val node3 = UniqueAddress(node1.address.copy(port = Some(2553)), 3L)
   val node4 = UniqueAddress(node1.address.copy(port = Some(2554)), 4L)

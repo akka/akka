@@ -1,11 +1,14 @@
-# Clustering
+# Classic Clustering
+
+@@include[includes.md](includes.md) { #actor-api }
+For the new API see @ref[Cluster](typed/index-cluster.md). 
 
 @@toc { depth=2 }
 
 @@@ index
 
-* [common/cluster](common/cluster.md)
-* [cluster-usage](cluster-usage.md)
+* [cluster-usage](cluster-usage.md)   
+* [cluster-routing](cluster-routing.md)
 * [cluster-singleton](cluster-singleton.md)
 * [distributed-pub-sub](distributed-pub-sub.md)
 * [cluster-client](cluster-client.md)
@@ -13,7 +16,6 @@
 * [cluster-metrics](cluster-metrics.md)
 * [distributed-data](distributed-data.md)
 * [cluster-dc](cluster-dc.md)
-* [multi-jvm-testing](multi-jvm-testing.md)
-* [multi-node-testing](multi-node-testing.md)
+* [serialization](serialization-classic.md)
 
 @@@

@@ -5,9 +5,12 @@
 To use Akka Stream TestKit, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream-testkit_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream-testkit_$scala.binary.version$"
+  version=AkkaVersion
   scope="test"
 }
 
@@ -67,7 +70,7 @@ used for writing stream tests that use familiar `TestProbe` from the
 `akka-testkit` API.
 
 One of the more straightforward tests would be to materialize stream to a
-@scala[`Future`]@java[`CompletionStage`] and then use @scala[`pipe`]@java[`PatternsCS.pipe`] pattern to pipe the result of that future
+@scala[`Future`]@java[`CompletionStage`] and then use @scala[`pipe`]@java[`Patterns.pipe`] pattern to pipe the result of that future
 to the probe.
 
 Scala

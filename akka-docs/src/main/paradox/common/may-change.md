@@ -11,7 +11,7 @@ Concretely **may change** means that an API or module is in early access mode an
  * may have its API change in breaking ways in minor releases
  * may be entirely dropped from Akka in a minor release
 
-Complete modules can be marked as **may change**, this will can be found in their module description and in the docs.
+Complete modules can be marked as **may change**, which will be stated in the module's description and in the docs.
 
 Individual public APIs can be annotated with `akka.api.annotation.ApiMayChange` to signal that it has less
 guarantees than the rest of the module it lives in. For example, when while introducing "new" Java 8 APIs into
@@ -29,6 +29,8 @@ that the module or API wasn't useful.
 These are the current complete modules marked as **may change**:
 
 * @ref:[Multi Node Testing](../multi-node-testing.md)
-* @ref:[Akka Typed](../typed/actors.md)
+* @ref:[Reliable Delivery](../typed/reliable-delivery.md)
+* @ref:[Sharded Daemon Process](../typed/cluster-sharded-daemon-process.md)
+* @ref:[Replicated Event Sourcing](../typed/replicated-eventsourcing.md)
 
 

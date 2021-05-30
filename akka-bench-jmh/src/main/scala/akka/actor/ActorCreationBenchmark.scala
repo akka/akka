@@ -1,13 +1,15 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
-import org.openjdk.jmh.annotations._
+
 import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import org.openjdk.jmh.annotations._
 
 /*
 regex checking:
@@ -17,7 +19,7 @@ hand checking:
 [info] a.a.ActorCreationBenchmark.synchronousStarting       ss    120000       21.496        0.502       us
 
 
-*/
+ */
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.SingleShotTime))
 @Fork(5)
@@ -26,7 +28,7 @@ hand checking:
 class ActorCreationBenchmark {
   implicit val system: ActorSystem = ActorSystem()
 
-  final val props = Props[MyActor]
+  final val props = Props[MyActor]()
 
   var i = 1
   def name = {
@@ -48,6 +50,6 @@ class ActorCreationBenchmark {
 
 class MyActor extends Actor {
   override def receive: Receive = {
-    case _ ⇒
+    case _ =>
   }
 }

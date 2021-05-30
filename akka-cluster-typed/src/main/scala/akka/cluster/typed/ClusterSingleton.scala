@@ -1,35 +1,33 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
 
-import akka.actor.NoSerializationVerificationNeeded
+import scala.concurrent.duration.{ Duration, FiniteDuration, _ }
+
+import akka.actor.typed._
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.ClusterSettings.DataCenter
-import akka.cluster.singleton.{ ClusterSingletonProxySettings, ClusterSingletonManagerSettings ⇒ UntypedClusterSingletonManagerSettings }
+import akka.cluster.singleton.{
+  ClusterSingletonProxySettings,
+  ClusterSingletonManagerSettings => ClassicClusterSingletonManagerSettings
+}
 import akka.cluster.typed.internal.AdaptedClusterSingletonImpl
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Extension, ExtensionId, Props }
+import akka.coordination.lease.LeaseUsageSettings
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.Config
-import scala.concurrent.duration._
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-
-import akka.actor.typed.ExtensionSetup
 
 object ClusterSingletonSettings {
-  def apply(
-    system: ActorSystem[_]
-  ): ClusterSingletonSettings = fromConfig(system.settings.config.getConfig("akka.cluster"))
+  def apply(system: ActorSystem[_]): ClusterSingletonSettings =
+    fromConfig(system.settings.config.getConfig("akka.cluster"))
 
   /**
    * Java API
    */
   def create(system: ActorSystem[_]): ClusterSingletonSettings = apply(system)
 
-  def fromConfig(
-    config: Config
-  ): ClusterSingletonSettings = {
+  def fromConfig(config: Config): ClusterSingletonSettings = {
     // TODO introduce a config namespace for typed singleton and read that?
     // currently singleton name is required and then discarded, for example
     val mgrSettings = ClusterSingletonManagerSettings(config.getConfig("singleton"))
@@ -40,18 +38,30 @@ object ClusterSingletonSettings {
       proxySettings.singletonIdentificationInterval,
       mgrSettings.removalMargin,
       mgrSettings.handOverRetryInterval,
-      proxySettings.bufferSize
-    )
+      proxySettings.bufferSize,
+      mgrSettings.leaseSettings)
   }
 }
 
 final class ClusterSingletonSettings(
-  val role:                            Option[String],
-  val dataCenter:                      Option[DataCenter],
-  val singletonIdentificationInterval: FiniteDuration,
-  val removalMargin:                   FiniteDuration,
-  val handOverRetryInterval:           FiniteDuration,
-  val bufferSize:                      Int) extends NoSerializationVerificationNeeded {
+    val role: Option[String],
+    val dataCenter: Option[DataCenter],
+    val singletonIdentificationInterval: FiniteDuration,
+    val removalMargin: FiniteDuration,
+    val handOverRetryInterval: FiniteDuration,
+    val bufferSize: Int,
+    val leaseSettings: Option[LeaseUsageSettings]) {
+
+  // bin compat for 2.6.14
+  @deprecated("Use constructor with leaseSettings", "2.6.15")
+  def this(
+      role: Option[String],
+      dataCenter: Option[DataCenter],
+      singletonIdentificationInterval: FiniteDuration,
+      removalMargin: FiniteDuration,
+      handOverRetryInterval: FiniteDuration,
+      bufferSize: Int) =
+    this(role, dataCenter, singletonIdentificationInterval, removalMargin, handOverRetryInterval, bufferSize, None)
 
   def withRole(role: String): ClusterSingletonSettings = copy(role = Some(role))
 
@@ -62,28 +72,43 @@ final class ClusterSingletonSettings(
   def withNoDataCenter(): ClusterSingletonSettings = copy(dataCenter = None)
 
   def withRemovalMargin(removalMargin: FiniteDuration): ClusterSingletonSettings = copy(removalMargin = removalMargin)
-  def withRemovalMargin(removalMargin: java.time.Duration): ClusterSingletonSettings = withRemovalMargin(removalMargin.asScala)
 
-  def withHandoverRetryInterval(handOverRetryInterval: FiniteDuration): ClusterSingletonSettings = copy(handOverRetryInterval = handOverRetryInterval)
-  def withHandoverRetryInterval(handOverRetryInterval: java.time.Duration): ClusterSingletonSettings = withHandoverRetryInterval(handOverRetryInterval.asScala)
+  def withRemovalMargin(removalMargin: java.time.Duration): ClusterSingletonSettings =
+    withRemovalMargin(removalMargin.asScala)
+
+  def withHandoverRetryInterval(handOverRetryInterval: FiniteDuration): ClusterSingletonSettings =
+    copy(handOverRetryInterval = handOverRetryInterval)
+
+  def withHandoverRetryInterval(handOverRetryInterval: java.time.Duration): ClusterSingletonSettings =
+    withHandoverRetryInterval(handOverRetryInterval.asScala)
 
   def withBufferSize(bufferSize: Int): ClusterSingletonSettings = copy(bufferSize = bufferSize)
 
+  def withLeaseSettings(leaseSettings: LeaseUsageSettings) = copy(leaseSettings = Option(leaseSettings))
+
   private def copy(
-    role:                            Option[String]     = role,
-    dataCenter:                      Option[DataCenter] = dataCenter,
-    singletonIdentificationInterval: FiniteDuration     = singletonIdentificationInterval,
-    removalMargin:                   FiniteDuration     = removalMargin,
-    handOverRetryInterval:           FiniteDuration     = handOverRetryInterval,
-    bufferSize:                      Int                = bufferSize) =
-    new ClusterSingletonSettings(role, dataCenter, singletonIdentificationInterval, removalMargin, handOverRetryInterval, bufferSize)
+      role: Option[String] = role,
+      dataCenter: Option[DataCenter] = dataCenter,
+      singletonIdentificationInterval: FiniteDuration = singletonIdentificationInterval,
+      removalMargin: FiniteDuration = removalMargin,
+      handOverRetryInterval: FiniteDuration = handOverRetryInterval,
+      bufferSize: Int = bufferSize,
+      leaseSettings: Option[LeaseUsageSettings] = leaseSettings) =
+    new ClusterSingletonSettings(
+      role,
+      dataCenter,
+      singletonIdentificationInterval,
+      removalMargin,
+      handOverRetryInterval,
+      bufferSize,
+      leaseSettings)
 
   /**
    * INTERNAL API:
    */
   @InternalApi
-  private[akka] def toManagerSettings(singletonName: String): UntypedClusterSingletonManagerSettings =
-    new UntypedClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval)
+  private[akka] def toManagerSettings(singletonName: String): ClassicClusterSingletonManagerSettings =
+    new ClassicClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval, leaseSettings)
 
   /**
    * INTERNAL API:
@@ -100,10 +125,11 @@ final class ClusterSingletonSettings(
   @InternalApi
   private[akka] def shouldRunManager(cluster: Cluster): Boolean = {
     (role.isEmpty || cluster.selfMember.roles(role.get)) &&
-      (dataCenter.isEmpty || dataCenter.contains(cluster.selfMember.dataCenter))
+    (dataCenter.isEmpty || dataCenter.contains(cluster.selfMember.dataCenter))
   }
 
-  override def toString = s"ClusterSingletonSettings($role, $dataCenter, $singletonIdentificationInterval, $removalMargin, $handOverRetryInterval, $bufferSize)"
+  override def toString =
+    s"ClusterSingletonSettings($role, $dataCenter, $singletonIdentificationInterval, $removalMargin, $handOverRetryInterval, $bufferSize, $leaseSettings)"
 }
 
 object ClusterSingleton extends ExtensionId[ClusterSingleton] {
@@ -124,6 +150,57 @@ private[akka] object ClusterSingletonImpl {
   def managerNameFor(singletonName: String) = s"singletonManager$singletonName"
 }
 
+object SingletonActor {
+
+  /**
+   * @param name Unique name for the singleton
+   * @param behavior Behavior for the singleton
+   */
+  def apply[M](behavior: Behavior[M], name: String): SingletonActor[M] =
+    new SingletonActor[M](behavior, name, Props.empty, None, None)
+
+  /**
+   * Java API
+   *
+   * @param name Unique name for the singleton
+   * @param behavior Behavior for the singleton
+   */
+  def of[M](behavior: Behavior[M], name: String): SingletonActor[M] = apply(behavior, name)
+}
+
+final class SingletonActor[M] private (
+    val behavior: Behavior[M],
+    val name: String,
+    val props: Props,
+    val stopMessage: Option[M],
+    val settings: Option[ClusterSingletonSettings]) {
+
+  /**
+   * [[akka.actor.typed.Props]] of the singleton actor, such as dispatcher settings.
+   */
+  def withProps(props: Props): SingletonActor[M] = copy(props = props)
+
+  /**
+   * Message sent to the singleton to tell it to stop, e.g. when being migrated.
+   * If this is not defined it will be stopped automatically.
+   * It can be useful to define a custom stop message if the singleton needs to perform
+   * some asynchronous cleanup or interactions before stopping.
+   */
+  def withStopMessage(msg: M): SingletonActor[M] = copy(stopMessage = Option(msg))
+
+  /**
+   * Additional settings, typically loaded from configuration.
+   */
+  def withSettings(settings: ClusterSingletonSettings): SingletonActor[M] = copy(settings = Option(settings))
+
+  private def copy(
+      behavior: Behavior[M] = behavior,
+      props: Props = props,
+      stopMessage: Option[M] = stopMessage,
+      settings: Option[ClusterSingletonSettings] = settings): SingletonActor[M] =
+    new SingletonActor[M](behavior, name, props, stopMessage, settings)
+}
+
 /**
  * This class is not intended for user extension other than for test purposes (e.g.
  * stub implementation). More methods may be added in the future and that may break
@@ -132,28 +209,18 @@ private[akka] object ClusterSingletonImpl {
 @DoNotInherit
 abstract class ClusterSingleton extends Extension {
 
-  // FIXME align with ClusterSharding API, issue #25480
-
   /**
    * Start if needed and provide a proxy to a named singleton
    *
    * If there already is a manager running for the given `singletonName` on this node, no additional manager is started.
    * If there already is a proxy running for the given `singletonName` on this node, an [[ActorRef]] to that is returned.
    *
-   * @param singletonName A cluster global unique name for this singleton
    * @return A proxy actor that can be used to communicate with the singleton in the cluster
    */
-  def spawn[A](
-    behavior:           Behavior[A],
-    singletonName:      String,
-    props:              Props,
-    settings:           ClusterSingletonSettings,
-    terminationMessage: A
-  ): ActorRef[A]
+  def init[M](singleton: SingletonActor[M]): ActorRef[M]
 }
 
 object ClusterSingletonManagerSettings {
-  import akka.actor.typed.scaladsl.adapter._
 
   /**
    * Create settings from the default configuration
@@ -161,18 +228,25 @@ object ClusterSingletonManagerSettings {
    */
   def apply(system: ActorSystem[_]): ClusterSingletonManagerSettings =
     apply(system.settings.config.getConfig("akka.cluster.singleton"))
-      .withRemovalMargin(akka.cluster.Cluster(system.toUntyped).settings.DownRemovalMargin)
+      .withRemovalMargin(akka.cluster.Cluster(system).downingProvider.downRemovalMargin)
 
   /**
    * Create settings from a configuration with the same layout as
    * the default configuration `akka.cluster.singleton`.
    */
-  def apply(config: Config): ClusterSingletonManagerSettings =
+  def apply(config: Config): ClusterSingletonManagerSettings = {
+    val lease = config.getString("use-lease") match {
+      case s if s.isEmpty => None
+      case leaseConfigPath =>
+        Some(new LeaseUsageSettings(leaseConfigPath, config.getDuration("lease-retry-interval").asScala))
+    }
     new ClusterSingletonManagerSettings(
       singletonName = config.getString("singleton-name"),
       role = roleOption(config.getString("role")),
-      removalMargin = Duration.Zero, // defaults to ClusterSettins.DownRemovalMargin
-      handOverRetryInterval = config.getDuration("hand-over-retry-interval", MILLISECONDS).millis)
+      removalMargin = Duration.Zero, // defaults to ClusterSettings.DownRemovalMargin
+      handOverRetryInterval = config.getDuration("hand-over-retry-interval", MILLISECONDS).millis,
+      lease)
+  }
 
   /**
    * Java API: Create settings from the default configuration
@@ -195,60 +269,72 @@ object ClusterSingletonManagerSettings {
 }
 
 /**
- * @param singletonName The actor name of the child singleton actor.
- *
- * @param role Singleton among the nodes tagged with specified role.
- *   If the role is not specified it's a singleton among all nodes in
- *   the cluster.
- *
- * @param removalMargin Margin until the singleton instance that belonged to
- *   a downed/removed partition is created in surviving partition. The purpose of
- *   this margin is that in case of a network partition the singleton actors
- *   in the non-surviving partitions must be stopped before corresponding actors
- *   are started somewhere else. This is especially important for persistent
- *   actors.
- *
+ * @param singletonName         The actor name of the child singleton actor.
+ * @param role                  Singleton among the nodes tagged with specified role.
+ *                              If the role is not specified it's a singleton among all nodes in
+ *                              the cluster.
+ * @param removalMargin         Margin until the singleton instance that belonged to
+ *                              a downed/removed partition is created in surviving partition. The purpose of
+ *                              this margin is that in case of a network partition the singleton actors
+ *                              in the non-surviving partitions must be stopped before corresponding actors
+ *                              are started somewhere else. This is especially important for persistent
+ *                              actors.
  * @param handOverRetryInterval When a node is becoming oldest it sends hand-over
- *   request to previous oldest, that might be leaving the cluster. This is
- *   retried with this interval until the previous oldest confirms that the hand
- *   over has started or the previous oldest member is removed from the cluster
- *   (+ `removalMargin`).
+ *                              request to previous oldest, that might be leaving the cluster. This is
+ *                              retried with this interval until the previous oldest confirms that the hand
+ *                              over has started or the previous oldest member is removed from the cluster
+ *                              (+ `removalMargin`).
+ * @param leaseSettings         LeaseSettings for acquiring before creating the singleton actor
  */
 final class ClusterSingletonManagerSettings(
-  val singletonName:         String,
-  val role:                  Option[String],
-  val removalMargin:         FiniteDuration,
-  val handOverRetryInterval: FiniteDuration) extends NoSerializationVerificationNeeded {
+    val singletonName: String,
+    val role: Option[String],
+    val removalMargin: FiniteDuration,
+    val handOverRetryInterval: FiniteDuration,
+    val leaseSettings: Option[LeaseUsageSettings]) {
+
+  // bin compat for 2.6.14
+  @deprecated("Use constructor with leaseSettings", "2.6.15")
+  def this(
+      singletonName: String,
+      role: Option[String],
+      removalMargin: FiniteDuration,
+      handOverRetryInterval: FiniteDuration) =
+    this(singletonName, role, removalMargin, handOverRetryInterval, None)
 
   def withSingletonName(name: String): ClusterSingletonManagerSettings = copy(singletonName = name)
 
-  def withRole(role: String): ClusterSingletonManagerSettings = copy(role = UntypedClusterSingletonManagerSettings.roleOption(role))
+  def withRole(role: String): ClusterSingletonManagerSettings =
+    copy(role = ClassicClusterSingletonManagerSettings.roleOption(role))
 
   def withRole(role: Option[String]): ClusterSingletonManagerSettings = copy(role = role)
 
   def withRemovalMargin(removalMargin: FiniteDuration): ClusterSingletonManagerSettings =
     copy(removalMargin = removalMargin)
+
   def withRemovalMargin(removalMargin: java.time.Duration): ClusterSingletonManagerSettings =
     withRemovalMargin(removalMargin.asScala)
 
   def withHandOverRetryInterval(retryInterval: FiniteDuration): ClusterSingletonManagerSettings =
     copy(handOverRetryInterval = retryInterval)
+
   def withHandOverRetryInterval(retryInterval: java.time.Duration): ClusterSingletonManagerSettings =
     withHandOverRetryInterval(retryInterval.asScala)
 
+  def withLeaseSettings(leaseSettings: LeaseUsageSettings) = copy(leaseSettings = Option(leaseSettings))
+
   private def copy(
-    singletonName:         String         = singletonName,
-    role:                  Option[String] = role,
-    removalMargin:         FiniteDuration = removalMargin,
-    handOverRetryInterval: FiniteDuration = handOverRetryInterval): ClusterSingletonManagerSettings =
-    new ClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval)
+      singletonName: String = singletonName,
+      role: Option[String] = role,
+      removalMargin: FiniteDuration = removalMargin,
+      handOverRetryInterval: FiniteDuration = handOverRetryInterval,
+      leaseSettings: Option[LeaseUsageSettings] = leaseSettings): ClusterSingletonManagerSettings =
+    new ClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval, leaseSettings)
 }
 
 object ClusterSingletonSetup {
-  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ ClusterSingleton): ClusterSingletonSetup =
-    new ClusterSingletonSetup(new java.util.function.Function[ActorSystem[_], ClusterSingleton] {
-      override def apply(sys: ActorSystem[_]): ClusterSingleton = createExtension(sys)
-    }) // TODO can be simplified when compiled only with Scala >= 2.12
+  def apply[T <: Extension](createExtension: ActorSystem[_] => ClusterSingleton): ClusterSingletonSetup =
+    new ClusterSingletonSetup(createExtension(_))
 
 }
 
@@ -258,4 +344,4 @@ object ClusterSingletonSetup {
  * for tests that need to replace extension with stub/mock implementations.
  */
 final class ClusterSingletonSetup(createExtension: java.util.function.Function[ActorSystem[_], ClusterSingleton])
-  extends ExtensionSetup[ClusterSingleton](ClusterSingleton, createExtension)
+    extends ExtensionSetup[ClusterSingleton](ClusterSingleton, createExtension)

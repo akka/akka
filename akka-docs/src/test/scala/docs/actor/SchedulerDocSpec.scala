@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.actor
@@ -13,8 +13,6 @@ import scala.concurrent.duration._
 
 //#imports1
 
-import org.scalatest.{ BeforeAndAfterAll, WordSpec }
-import org.scalatest.Matchers
 import akka.testkit._
 
 class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
@@ -44,7 +42,7 @@ class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       val Tick = "tick"
       class TickActor extends Actor {
         def receive = {
-          case Tick ⇒ //Do something
+          case Tick => //Do something
         }
       }
       val tickActor = system.actorOf(Props(classOf[TickActor], this))
@@ -54,11 +52,7 @@ class SchedulerDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
       //This will schedule to send the Tick-message
       //to the tickActor after 0ms repeating every 50ms
       val cancellable =
-        system.scheduler.schedule(
-          0 milliseconds,
-          50 milliseconds,
-          tickActor,
-          Tick)
+        system.scheduler.scheduleWithFixedDelay(Duration.Zero, 50.milliseconds, tickActor, Tick)
 
       //This cancels further Ticks to be sent
       cancellable.cancel()

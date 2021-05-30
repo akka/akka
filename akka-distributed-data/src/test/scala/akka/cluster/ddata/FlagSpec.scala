@@ -1,14 +1,15 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
-import akka.cluster.ddata.Replicator.Changed
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class FlagSpec extends WordSpec with Matchers {
+import akka.cluster.ddata.Replicator.Changed
+
+class FlagSpec extends AnyWordSpec with Matchers {
 
   "A Flag" must {
 
@@ -24,9 +25,9 @@ class FlagSpec extends WordSpec with Matchers {
     "merge by picking true" in {
       val f1 = Flag()
       val f2 = f1.switchOn
-      val m1 = f1 merge f2
+      val m1 = f1.merge(f2)
       m1.enabled should be(true)
-      val m2 = f2 merge f1
+      val m2 = f2.merge(f1)
       m2.enabled should be(true)
     }
 
@@ -34,11 +35,15 @@ class FlagSpec extends WordSpec with Matchers {
       val f1 = Flag.Disabled.switchOn
       val Flag(value1) = f1
       val value2: Boolean = value1
+      value2 should be(true)
+
       Changed(FlagKey("key"))(f1) match {
-        case c @ Changed(FlagKey("key")) ⇒
+        case c @ Changed(FlagKey("key")) =>
           val Flag(value3) = c.dataValue
           val value4: Boolean = value3
           value4 should be(true)
+        case changed =>
+          fail(s"Failed to match [$changed]")
       }
     }
   }

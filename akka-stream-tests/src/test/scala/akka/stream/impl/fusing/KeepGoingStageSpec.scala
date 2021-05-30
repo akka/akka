@@ -1,32 +1,39 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.fusing
 
-import akka.actor.{ NoSerializationVerificationNeeded, ActorRef }
-import akka.stream.scaladsl.{ Keep, Source }
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+
+import akka.actor.ActorRef
+import akka.actor.NoSerializationVerificationNeeded
+import akka.stream.Attributes
+import akka.stream.Inlet
+import akka.stream.SinkShape
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Source
+import akka.stream.stage.AsyncCallback
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.GraphStageWithMaterializedValue
+import akka.stream.stage.InHandler
 import akka.stream.testkit.StreamSpec
-import akka.stream.{ Attributes, Inlet, SinkShape, ActorMaterializer }
-import akka.stream.stage.{ InHandler, AsyncCallback, GraphStageLogic, GraphStageWithMaterializedValue }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 
-import scala.concurrent.{ Await, Promise, Future }
-import scala.concurrent.duration._
-
 class KeepGoingStageSpec extends StreamSpec {
 
-  implicit val materializer = ActorMaterializer()
-
-  trait PingCmd extends NoSerializationVerificationNeeded
+  sealed trait PingCmd extends NoSerializationVerificationNeeded
   case class Register(probe: ActorRef) extends PingCmd
   case object Ping extends PingCmd
   case object CompleteStage extends PingCmd
   case object FailStage extends PingCmd
   case object Throw extends PingCmd
 
-  trait PingEvt extends NoSerializationVerificationNeeded
+  sealed trait PingEvt extends NoSerializationVerificationNeeded
   case object Pong extends PingEvt
   case object PostStop extends PingEvt
   case object UpstreamCompleted extends PingEvt
@@ -43,7 +50,8 @@ class KeepGoingStageSpec extends StreamSpec {
   class PingableSink(keepAlive: Boolean) extends GraphStageWithMaterializedValue[SinkShape[Int], Future[PingRef]] {
     val shape = SinkShape[Int](Inlet("ping.in"))
 
-    override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[PingRef]) = {
+    override def createLogicAndMaterializedValue(
+        inheritedAttributes: Attributes): (GraphStageLogic, Future[PingRef]) = {
       val promise = Promise[PingRef]()
 
       val logic = new GraphStageLogic(shape) {
@@ -55,15 +63,15 @@ class KeepGoingStageSpec extends StreamSpec {
         }
 
         private def onCommand(cmd: PingCmd): Unit = cmd match {
-          case Register(probe) ⇒ listener = Some(probe)
-          case Ping            ⇒ listener.foreach(_ ! Pong)
-          case CompleteStage ⇒
+          case Register(probe) => listener = Some(probe)
+          case Ping            => listener.foreach(_ ! Pong)
+          case CompleteStage =>
             completeStage()
             listener.foreach(_ ! EndOfEventHandler)
-          case FailStage ⇒
+          case FailStage =>
             failStage(TE("test"))
             listener.foreach(_ ! EndOfEventHandler)
-          case Throw ⇒
+          case Throw =>
             try {
               throw TE("test")
             } finally listener.foreach(_ ! EndOfEventHandler)
@@ -101,7 +109,7 @@ class KeepGoingStageSpec extends StreamSpec {
       maybePromise.trySuccess(None)
       expectMsg(UpstreamCompleted)
 
-      expectNoMsg(200.millis)
+      expectNoMessage(200.millis)
 
       pinger.ping()
       expectMsg(Pong)
@@ -132,7 +140,7 @@ class KeepGoingStageSpec extends StreamSpec {
       maybePromise.trySuccess(None)
       expectMsg(UpstreamCompleted)
 
-      expectNoMsg(200.millis)
+      expectNoMessage(200.millis)
 
       pinger.ping()
       expectMsg(Pong)
@@ -163,7 +171,7 @@ class KeepGoingStageSpec extends StreamSpec {
       maybePromise.trySuccess(None)
       expectMsg(UpstreamCompleted)
 
-      expectNoMsg(200.millis)
+      expectNoMessage(200.millis)
 
       pinger.ping()
       expectMsg(Pong)

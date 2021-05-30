@@ -1,23 +1,23 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
- * Copyright (C) 2012-2016 Eligotech BV.
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.snapshot
 
-import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+import scala.concurrent.duration._
+
 import akka.actor._
+import akka.pattern.CircuitBreaker
 import akka.pattern.pipe
 import akka.persistence._
-import akka.pattern.CircuitBreaker
 
 /**
  * Abstract snapshot store.
  */
 trait SnapshotStore extends Actor with ActorLogging {
   import SnapshotProtocol._
-  import context.dispatcher
 
   private val extension = Persistence(context.system)
   private val publish = extension.settings.internal.publishPluginCommands
@@ -33,60 +33,88 @@ trait SnapshotStore extends Actor with ActorLogging {
   final def receive = receiveSnapshotStore.orElse[Any, Unit](receivePluginInternal)
 
   final val receiveSnapshotStore: Actor.Receive = {
-    case LoadSnapshot(persistenceId, criteria, toSequenceNr) ⇒
-      if (criteria == SnapshotSelectionCriteria.None) {
-        senderPersistentActor() ! LoadSnapshotResult(snapshot = None, toSequenceNr)
-      } else {
-        breaker.withCircuitBreaker(loadAsync(persistenceId, criteria.limit(toSequenceNr))) map {
-          sso ⇒ LoadSnapshotResult(sso, toSequenceNr)
-        } recover {
-          case e ⇒ LoadSnapshotFailed(e)
-        } pipeTo senderPersistentActor()
-      }
+    val eventStream = context.system.eventStream // used from Future callbacks
+    implicit val ec: ExecutionContext = context.dispatcher
 
-    case SaveSnapshot(metadata, snapshot) ⇒
-      val md = metadata.copy(timestamp = System.currentTimeMillis)
-      breaker.withCircuitBreaker(saveAsync(md, snapshot)) map {
-        _ ⇒ SaveSnapshotSuccess(md)
-      } recover {
-        case e ⇒ SaveSnapshotFailure(metadata, e)
-      } to (self, senderPersistentActor())
+    {
+      case LoadSnapshot(persistenceId, criteria, toSequenceNr) =>
+        if (criteria == SnapshotSelectionCriteria.None) {
+          senderPersistentActor() ! LoadSnapshotResult(snapshot = None, toSequenceNr)
+        } else {
+          breaker
+            .withCircuitBreaker(loadAsync(persistenceId, criteria.limit(toSequenceNr)))
+            .map { sso =>
+              LoadSnapshotResult(sso, toSequenceNr)
+            }
+            .recover {
+              case e => LoadSnapshotFailed(e)
+            }
+            .pipeTo(senderPersistentActor())
+        }
 
-    case evt: SaveSnapshotSuccess ⇒
-      try tryReceivePluginInternal(evt) finally senderPersistentActor ! evt // sender is persistentActor
-    case evt @ SaveSnapshotFailure(metadata, _) ⇒
-      try {
-        tryReceivePluginInternal(evt)
-        breaker.withCircuitBreaker(deleteAsync(metadata))
-      } finally senderPersistentActor() ! evt // sender is persistentActor
+      case SaveSnapshot(metadata, snapshot) =>
+        val md = metadata.copy(timestamp = System.currentTimeMillis)
+        breaker
+          .withCircuitBreaker(saveAsync(md, snapshot))
+          .map { _ =>
+            SaveSnapshotSuccess(md)
+          }
+          .recover {
+            case e => SaveSnapshotFailure(metadata, e)
+          }
+          .to(self, senderPersistentActor())
 
-    case d @ DeleteSnapshot(metadata) ⇒
-      breaker.withCircuitBreaker(deleteAsync(metadata)).map {
-        case _ ⇒ DeleteSnapshotSuccess(metadata)
-      }.recover {
-        case e ⇒ DeleteSnapshotFailure(metadata, e)
-      }.pipeTo(self)(senderPersistentActor()).onComplete {
-        case _ ⇒ if (publish) context.system.eventStream.publish(d)
-      }
+      case evt: SaveSnapshotSuccess =>
+        try tryReceivePluginInternal(evt)
+        finally senderPersistentActor() ! evt // sender is persistentActor
+      case evt @ SaveSnapshotFailure(metadata, _) =>
+        try {
+          tryReceivePluginInternal(evt)
+          breaker.withCircuitBreaker(deleteAsync(metadata))
+        } finally senderPersistentActor() ! evt // sender is persistentActor
 
-    case evt: DeleteSnapshotSuccess ⇒
-      try tryReceivePluginInternal(evt) finally senderPersistentActor() ! evt
-    case evt: DeleteSnapshotFailure ⇒
-      try tryReceivePluginInternal(evt) finally senderPersistentActor() ! evt
+      case d @ DeleteSnapshot(metadata) =>
+        breaker
+          .withCircuitBreaker(deleteAsync(metadata))
+          .map {
+            case _ => DeleteSnapshotSuccess(metadata)
+          }
+          .recover {
+            case e => DeleteSnapshotFailure(metadata, e)
+          }
+          .pipeTo(self)(senderPersistentActor())
+          .onComplete {
+            case _ => if (publish) eventStream.publish(d)
+          }
 
-    case d @ DeleteSnapshots(persistenceId, criteria) ⇒
-      breaker.withCircuitBreaker(deleteAsync(persistenceId, criteria)).map {
-        case _ ⇒ DeleteSnapshotsSuccess(criteria)
-      }.recover {
-        case e ⇒ DeleteSnapshotsFailure(criteria, e)
-      }.pipeTo(self)(senderPersistentActor()).onComplete {
-        case _ ⇒ if (publish) context.system.eventStream.publish(d)
-      }
+      case evt: DeleteSnapshotSuccess =>
+        try tryReceivePluginInternal(evt)
+        finally senderPersistentActor() ! evt
+      case evt: DeleteSnapshotFailure =>
+        try tryReceivePluginInternal(evt)
+        finally senderPersistentActor() ! evt
 
-    case evt: DeleteSnapshotsFailure ⇒
-      try tryReceivePluginInternal(evt) finally senderPersistentActor() ! evt // sender is persistentActor
-    case evt: DeleteSnapshotsSuccess ⇒
-      try tryReceivePluginInternal(evt) finally senderPersistentActor() ! evt
+      case d @ DeleteSnapshots(persistenceId, criteria) =>
+        breaker
+          .withCircuitBreaker(deleteAsync(persistenceId, criteria))
+          .map {
+            case _ => DeleteSnapshotsSuccess(criteria)
+          }
+          .recover {
+            case e => DeleteSnapshotsFailure(criteria, e)
+          }
+          .pipeTo(self)(senderPersistentActor())
+          .onComplete {
+            case _ => if (publish) eventStream.publish(d)
+          }
+
+      case evt: DeleteSnapshotsFailure =>
+        try tryReceivePluginInternal(evt)
+        finally senderPersistentActor() ! evt // sender is persistentActor
+      case evt: DeleteSnapshotsSuccess =>
+        try tryReceivePluginInternal(evt)
+        finally senderPersistentActor() ! evt
+    }
   }
 
   /** Documents intent that the sender() is expected to be the PersistentActor */

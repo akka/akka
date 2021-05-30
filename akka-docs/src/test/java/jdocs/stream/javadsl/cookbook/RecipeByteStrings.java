@@ -1,5 +1,5 @@
-/**
- *  Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream.javadsl.cookbook;
@@ -13,6 +13,7 @@ import akka.stream.javadsl.Source;
 import akka.stream.stage.*;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
+import static akka.util.ByteString.emptyByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,34 +30,32 @@ import static org.junit.Assert.assertTrue;
 
 public class RecipeByteStrings extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeByteStrings");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
-
-  final Source<ByteString, NotUsed> rawBytes = Source.from(Arrays.asList(
-    ByteString.fromArray(new byte[] { 1, 2 }),
-    ByteString.fromArray(new byte[] { 3 }),
-    ByteString.fromArray(new byte[] { 4, 5, 6 }),
-    ByteString.fromArray(new byte[] { 7, 8, 9 })));
+  final Source<ByteString, NotUsed> rawBytes =
+      Source.from(
+          Arrays.asList(
+              ByteString.fromArray(new byte[] {1, 2}),
+              ByteString.fromArray(new byte[] {3}),
+              ByteString.fromArray(new byte[] {4, 5, 6}),
+              ByteString.fromArray(new byte[] {7, 8, 9})));
 
   @Test
   public void chunker() throws Exception {
     new TestKit(system) {
       final int CHUNK_LIMIT = 2;
 
-      //#bytestring-chunker
+      // #bytestring-chunker
       class Chunker extends GraphStage<FlowShape<ByteString, ByteString>> {
 
         private final int chunkSize;
@@ -77,39 +76,45 @@ public class RecipeByteStrings extends RecipeTest {
         @Override
         public GraphStageLogic createLogic(Attributes inheritedAttributes) {
           return new GraphStageLogic(shape) {
-            private ByteString buffer = ByteString.empty();
+            private ByteString buffer = emptyByteString();
 
             {
-              setHandler(out, new AbstractOutHandler(){
-                @Override
-                public void onPull() throws Exception {
-                  emitChunk();
-                }
-              });
+              setHandler(
+                  out,
+                  new AbstractOutHandler() {
+                    @Override
+                    public void onPull() throws Exception {
+                      emitChunk();
+                    }
+                  });
 
-              setHandler(in, new AbstractInHandler() {
+              setHandler(
+                  in,
+                  new AbstractInHandler() {
 
-                @Override
-                public void onPush() throws Exception {
-                  ByteString elem = grab(in);
-                  buffer = buffer.concat(elem);
-                  emitChunk();
-                }
+                    @Override
+                    public void onPush() throws Exception {
+                      ByteString elem = grab(in);
+                      buffer = buffer.concat(elem);
+                      emitChunk();
+                    }
 
-                @Override
-                public void onUpstreamFinish() throws Exception {
-                  if (buffer.isEmpty()) completeStage();
-                  else {
-                    // There are elements left in buffer, so
-                    // we keep accepting downstream pulls and push from buffer until emptied.
-                    //
-                    // It might be though, that the upstream finished while it was pulled, in which
-                    // case we will not get an onPull from the downstream, because we already had one.
-                    // In that case we need to emit from the buffer.
-                    if (isAvailable(out)) emitChunk();
-                  }
-                }
-              });
+                    @Override
+                    public void onUpstreamFinish() throws Exception {
+                      if (buffer.isEmpty()) completeStage();
+                      else {
+                        // There are elements left in buffer, so
+                        // we keep accepting downstream pulls and push from buffer until emptied.
+                        //
+                        // It might be though, that the upstream finished while it was pulled, in
+                        // which
+                        // case we will not get an onPull from the downstream, because we already
+                        // had one.
+                        // In that case we need to emit from the buffer.
+                        if (isAvailable(out)) emitChunk();
+                      }
+                    }
+                  });
             }
 
             private void emitChunk() {
@@ -125,17 +130,16 @@ public class RecipeByteStrings extends RecipeTest {
             }
           };
         }
-
       }
-      //#bytestring-chunker
+      // #bytestring-chunker
 
       {
-        //#bytestring-chunker2
-        Source<ByteString, NotUsed> chunksStream =
-          rawBytes.via(new Chunker(CHUNK_LIMIT));
-        //#bytestring-chunker2
+        // #bytestring-chunker2
+        Source<ByteString, NotUsed> chunksStream = rawBytes.via(new Chunker(CHUNK_LIMIT));
+        // #bytestring-chunker2
 
-        CompletionStage<List<ByteString>> chunksFuture = chunksStream.limit(10).runWith(Sink.seq(), mat);
+        CompletionStage<List<ByteString>> chunksFuture =
+            chunksStream.limit(10).runWith(Sink.seq(), system);
 
         List<ByteString> chunks = chunksFuture.toCompletableFuture().get(3, TimeUnit.SECONDS);
 
@@ -143,13 +147,12 @@ public class RecipeByteStrings extends RecipeTest {
           assertTrue(chunk.size() <= 2);
         }
 
-        ByteString sum = ByteString.empty();
+        ByteString sum = emptyByteString();
         for (ByteString chunk : chunks) {
           sum = sum.concat(chunk);
         }
-        assertEquals(sum, ByteString.fromArray(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }));
+        assertEquals(sum, ByteString.fromArray(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9}));
       }
-
     };
   }
 
@@ -158,7 +161,7 @@ public class RecipeByteStrings extends RecipeTest {
     new TestKit(system) {
       final int SIZE_LIMIT = 9;
 
-      //#bytes-limiter
+      // #bytes-limiter
       class ByteLimiter extends GraphStage<FlowShape<ByteString, ByteString>> {
 
         final long maximumBytes;
@@ -175,71 +178,89 @@ public class RecipeByteStrings extends RecipeTest {
         public FlowShape<ByteString, ByteString> shape() {
           return shape;
         }
+
         @Override
         public GraphStageLogic createLogic(Attributes inheritedAttributes) {
           return new GraphStageLogic(shape) {
             private int count = 0;
 
             {
-              setHandler(out, new AbstractOutHandler() {
-                @Override
-                public void onPull() throws Exception {
-                  pull(in);
-                }
-              });
-              setHandler(in, new AbstractInHandler() {
-                @Override
-                public void onPush() throws Exception {
-                  ByteString chunk = grab(in);
-                  count += chunk.size();
-                  if (count > maximumBytes) {
-                    failStage(new IllegalStateException("Too much bytes"));
-                  } else {
-                    push(out, chunk);
-                  }
-                }
-              });
+              setHandler(
+                  out,
+                  new AbstractOutHandler() {
+                    @Override
+                    public void onPull() throws Exception {
+                      pull(in);
+                    }
+                  });
+              setHandler(
+                  in,
+                  new AbstractInHandler() {
+                    @Override
+                    public void onPush() throws Exception {
+                      ByteString chunk = grab(in);
+                      count += chunk.size();
+                      if (count > maximumBytes) {
+                        failStage(new IllegalStateException("Too much bytes"));
+                      } else {
+                        push(out, chunk);
+                      }
+                    }
+                  });
             }
-
           };
         }
       }
-      //#bytes-limiter
+      // #bytes-limiter
 
       {
-        //#bytes-limiter2
+        // #bytes-limiter2
         Flow<ByteString, ByteString, NotUsed> limiter =
-          Flow.of(ByteString.class).via(new ByteLimiter(SIZE_LIMIT));
-        //#bytes-limiter2
+            Flow.of(ByteString.class).via(new ByteLimiter(SIZE_LIMIT));
+        // #bytes-limiter2
 
-        final Source<ByteString, NotUsed> bytes1 = Source.from(Arrays.asList(
-          ByteString.fromArray(new byte[] { 1, 2 }),
-          ByteString.fromArray(new byte[] { 3 }),
-          ByteString.fromArray(new byte[] { 4, 5, 6 }),
-          ByteString.fromArray(new byte[] { 7, 8, 9 })));
+        final Source<ByteString, NotUsed> bytes1 =
+            Source.from(
+                Arrays.asList(
+                    ByteString.fromArray(new byte[] {1, 2}),
+                    ByteString.fromArray(new byte[] {3}),
+                    ByteString.fromArray(new byte[] {4, 5, 6}),
+                    ByteString.fromArray(new byte[] {7, 8, 9})));
 
-        final Source<ByteString, NotUsed> bytes2 = Source.from(Arrays.asList(
-          ByteString.fromArray(new byte[] { 1, 2 }),
-          ByteString.fromArray(new byte[] { 3 }),
-          ByteString.fromArray(new byte[] { 4, 5, 6 }),
-          ByteString.fromArray(new byte[] { 7, 8, 9, 10 })));
+        final Source<ByteString, NotUsed> bytes2 =
+            Source.from(
+                Arrays.asList(
+                    ByteString.fromArray(new byte[] {1, 2}),
+                    ByteString.fromArray(new byte[] {3}),
+                    ByteString.fromArray(new byte[] {4, 5, 6}),
+                    ByteString.fromArray(new byte[] {7, 8, 9, 10})));
 
-        List<ByteString> got = bytes1.via(limiter).limit(10).runWith(Sink.seq(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
-        ByteString acc = ByteString.empty();
+        List<ByteString> got =
+            bytes1
+                .via(limiter)
+                .limit(10)
+                .runWith(Sink.seq(), system)
+                .toCompletableFuture()
+                .get(3, TimeUnit.SECONDS);
+        ByteString acc = emptyByteString();
         for (ByteString b : got) {
           acc = acc.concat(b);
         }
-        assertEquals(acc, ByteString.fromArray(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }));
+        assertEquals(acc, ByteString.fromArray(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9}));
 
         boolean thrown = false;
         try {
-          bytes2.via(limiter).limit(10).runWith(Sink.seq(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
+          bytes2
+              .via(limiter)
+              .limit(10)
+              .runWith(Sink.seq(), system)
+              .toCompletableFuture()
+              .get(3, TimeUnit.SECONDS);
         } catch (ExecutionException ex) {
           assertEquals(ex.getCause().getClass(), IllegalStateException.class);
           thrown = true;
         }
         assertTrue("Expected IllegalStateException to be thrown", thrown);
-
       }
     };
   }
@@ -248,17 +269,24 @@ public class RecipeByteStrings extends RecipeTest {
   public void compacting() throws Exception {
     new TestKit(system) {
       {
-        final Source<ByteString, NotUsed> rawBytes = Source.from(Arrays.asList(
-          ByteString.fromArray(new byte[] { 1, 2 }),
-          ByteString.fromArray(new byte[] { 3 }),
-          ByteString.fromArray(new byte[] { 4, 5, 6 }),
-          ByteString.fromArray(new byte[] { 7, 8, 9 })));
+        final Source<ByteString, NotUsed> rawBytes =
+            Source.from(
+                Arrays.asList(
+                    ByteString.fromArray(new byte[] {1, 2}),
+                    ByteString.fromArray(new byte[] {3}),
+                    ByteString.fromArray(new byte[] {4, 5, 6}),
+                    ByteString.fromArray(new byte[] {7, 8, 9})));
 
-        //#compacting-bytestrings
+        // #compacting-bytestrings
         Source<ByteString, NotUsed> compacted = rawBytes.map(ByteString::compact);
-        //#compacting-bytestrings
+        // #compacting-bytestrings
 
-        List<ByteString> got = compacted.limit(10).runWith(Sink.seq(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
+        List<ByteString> got =
+            compacted
+                .limit(10)
+                .runWith(Sink.seq(), system)
+                .toCompletableFuture()
+                .get(3, TimeUnit.SECONDS);
 
         for (ByteString byteString : got) {
           assertTrue(byteString.isCompact());
@@ -266,5 +294,4 @@ public class RecipeByteStrings extends RecipeTest {
       }
     };
   }
-
 }

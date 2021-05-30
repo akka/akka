@@ -4,13 +4,11 @@ If the primary source completes without emitting any elements, the elements from
 
 @ref[Fan-in operators](../index.md#fan-in-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #orElse }
+@apidoc[Source.orElse](Source) { scala="#orElse[U&gt;:Out,Mat2](secondary:akka.stream.Graph[akka.stream.SourceShape[U],Mat2]):FlowOps.this.Repr[U]" java="#orElse(akka.stream.Graph)" }
+@apidoc[Flow.orElse](Flow) { scala="#orElse[U&gt;:Out,Mat2](secondary:akka.stream.Graph[akka.stream.SourceShape[U],Mat2]):FlowOps.this.Repr[U]" java="#orElse(akka.stream.Graph)" }
 
-@@@
 
 ## Description
 
@@ -22,6 +20,14 @@ the source of elements or is cancelled.
 
 Signal errors downstream, regardless which of the two sources emitted the error.
 
+## Example
+Scala
+:   @@snip [FlowOrElseSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowOrElseSpec.scala) { #or-else }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #or-else }
+
+## Reactive Streams semantics
 
 @@@div { .callout }
 
@@ -34,4 +40,3 @@ is available from the second stream
 without emitting and the secondary stream already has completed or when the secondary stream completes
 
 @@@
-

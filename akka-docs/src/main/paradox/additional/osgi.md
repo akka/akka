@@ -5,20 +5,17 @@
 To use Akka in OSGi, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-osgi_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-osgi_$scala.binary.version$
+  version=AkkaVersion
 }
-
-## Sample project
-
-You can look at the
-@extref[OSGi Dining Hakkers example project](samples:akka-samples-osgi-dining-hakkers)
-to see what this looks like in practice.
 
 ## Background
 
-[OSGi](http://www.osgi.org/developer) is a mature packaging and deployment standard for component-based systems. It
+[OSGi](https://www.osgi.org/developer/where-to-start/) is a mature packaging and deployment standard for component-based systems. It
 has similar capabilities as Project Jigsaw (originally scheduled for JDK 1.8), but has far stronger facilities to
 support legacy Java code. This is to say that while Jigsaw-ready modules require significant changes to most source files
 and on occasion to the structure of the overall application, OSGi can be used to modularize almost any Java code as far
@@ -86,7 +83,7 @@ in an application composed of multiple JARs to reside under a single package nam
 might scan all classes from `com.example.plugins` for specific service implementations with that package existing in
 several contributed JARs.
    While it is possible to support overlapping packages with complex manifest headers, it's much better to use non-overlapping
-package spaces and facilities such as @ref:[Akka Cluster](../common/cluster.md)
+package spaces and facilities such as @ref:[Akka Cluster](../typed/cluster-concepts.md)
 for service discovery. Stylistically, many organizations opt to use the root package path as the name of the bundle
 distribution file.
 

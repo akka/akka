@@ -1,13 +1,14 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
-import language.implicitConversions
-
 import java.util.concurrent.TimeUnit
+
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+
+import language.implicitConversions
 
 @SerialVersionUID(1L)
 case class Timeout(duration: FiniteDuration) {

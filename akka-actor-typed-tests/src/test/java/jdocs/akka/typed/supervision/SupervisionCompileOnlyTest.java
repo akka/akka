@@ -1,81 +1,178 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.typed.supervision;
 
-import akka.actor.typed.ActorRef;
-import akka.actor.typed.Behavior;
-import akka.actor.typed.SupervisorStrategy;
+import akka.actor.typed.*;
 import akka.actor.typed.javadsl.Behaviors;
-import scala.concurrent.duration.FiniteDuration;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 public class SupervisionCompileOnlyTest {
-  //#wrap
-  interface CounterMessage { }
+  // #wrap
+  public static class Counter {
+    public interface Command {}
 
-  public static final class Increase implements CounterMessage { }
+    public static final class Increase implements Command {}
 
-  public static final class Get implements CounterMessage {
-    final ActorRef<Got> sender;
+    public static final class Get implements Command {
+      public final ActorRef<Got> replyTo;
 
-    public Get(ActorRef<Got> sender) {
-      this.sender = sender;
+      public Get(ActorRef<Got> replyTo) {
+        this.replyTo = replyTo;
+      }
+    }
+
+    public static final class Got {
+      public final int n;
+
+      public Got(int n) {
+        this.n = n;
+      }
+    }
+
+    // #top-level
+    public static Behavior<Command> create() {
+      return Behaviors.supervise(counter(1)).onFailure(SupervisorStrategy.restart());
+    }
+    // #top-level
+
+    private static Behavior<Command> counter(int currentValue) {
+      return Behaviors.receive(Command.class)
+          .onMessage(Increase.class, o -> onIncrease(currentValue))
+          .onMessage(Get.class, command -> onGet(currentValue, command))
+          .build();
+    }
+
+    private static Behavior<Command> onIncrease(int currentValue) {
+      return counter(currentValue + 1);
+    }
+
+    private static Behavior<Command> onGet(int currentValue, Get command) {
+      command.replyTo.tell(new Got(currentValue));
+      return Behaviors.same();
     }
   }
-
-  public static final class Got {
-    final int n;
-
-    public Got(int n) {
-      this.n = n;
-    }
-  }
-
-  public static Behavior<CounterMessage> counter(int currentValue) {
-    return Behaviors.receive(CounterMessage.class)
-      .onMessage(Increase.class, (ctx, o) -> {
-        return counter(currentValue + 1);
-      })
-      .onMessage(Get.class, (ctx, o) -> {
-        o.sender.tell(new Got(currentValue));
-        return Behaviors.same();
-      })
-      .build();
-  }
-  //#wrap
+  // #wrap
 
   public static Behavior<String> behavior = Behaviors.empty();
 
   public void supervision() {
-    //#restart
+    // #restart
     Behaviors.supervise(behavior)
-      .onFailure(IllegalStateException.class, SupervisorStrategy.restart());
-    //#restart
+        .onFailure(IllegalStateException.class, SupervisorStrategy.restart());
+    // #restart
 
-    //#resume
+    // #resume
     Behaviors.supervise(behavior)
-      .onFailure(IllegalStateException.class, SupervisorStrategy.resume());
-    //#resume
+        .onFailure(IllegalStateException.class, SupervisorStrategy.resume());
+    // #resume
 
-    //#restart-limit
+    // #restart-limit
     Behaviors.supervise(behavior)
-      .onFailure(IllegalStateException.class, SupervisorStrategy.restartWithLimit(
-        10, FiniteDuration.apply(10, TimeUnit.SECONDS)
-      ));
-    //#restart-limit
+        .onFailure(
+            IllegalStateException.class,
+            SupervisorStrategy.restart().withLimit(10, Duration.ofSeconds(10)));
+    // #restart-limit
 
-    //#multiple
-    Behaviors.supervise(Behaviors.supervise(behavior)
-      .onFailure(IllegalStateException.class, SupervisorStrategy.restart()))
-      .onFailure(IllegalArgumentException.class, SupervisorStrategy.stop());
-    //#multiple
+    // #multiple
+    Behaviors.supervise(
+            Behaviors.supervise(behavior)
+                .onFailure(IllegalStateException.class, SupervisorStrategy.restart()))
+        .onFailure(IllegalArgumentException.class, SupervisorStrategy.stop());
+    // #multiple
 
+  }
 
-    //#top-level
-    Behaviors.supervise(counter(1));
-    //#top-level
+  // #restart-stop-children
+  static Behavior<String> child(long size) {
+    return Behaviors.receiveMessage(msg -> child(size + msg.length()));
+  }
+
+  static Behavior<String> parent() {
+    return Behaviors.<String>supervise(
+            Behaviors.setup(
+                ctx -> {
+                  final ActorRef<String> child1 = ctx.spawn(child(0), "child1");
+                  final ActorRef<String> child2 = ctx.spawn(child(0), "child2");
+
+                  return Behaviors.receiveMessage(
+                      msg -> {
+                        // message handling that might throw an exception
+                        String[] parts = msg.split(" ");
+                        child1.tell(parts[0]);
+                        child2.tell(parts[1]);
+                        return Behaviors.same();
+                      });
+                }))
+        .onFailure(SupervisorStrategy.restart());
+  }
+  // #restart-stop-children
+
+  // #restart-keep-children
+  static Behavior<String> parent2() {
+    return Behaviors.setup(
+        ctx -> {
+          final ActorRef<String> child1 = ctx.spawn(child(0), "child1");
+          final ActorRef<String> child2 = ctx.spawn(child(0), "child2");
+
+          // supervision strategy inside the setup to not recreate children on restart
+          return Behaviors.<String>supervise(
+                  Behaviors.receiveMessage(
+                      msg -> {
+                        // message handling that might throw an exception
+                        String[] parts = msg.split(" ");
+                        child1.tell(parts[0]);
+                        child2.tell(parts[1]);
+                        return Behaviors.same();
+                      }))
+              .onFailure(SupervisorStrategy.restart().withStopChildren(false));
+        });
+  }
+  // #restart-keep-children
+
+  interface Resource {
+    void close();
+
+    void process(String[] parts);
+  }
+
+  public static Resource claimResource() {
+    return null;
+  }
+
+  static void prerestartBehavior() {
+    // #restart-PreRestart-signal
+    Behaviors.supervise(
+            Behaviors.<String>setup(
+                ctx -> {
+                  final Resource resource = claimResource();
+
+                  return Behaviors.receive(String.class)
+                      .onMessage(
+                          String.class,
+                          msg -> {
+                            // message handling that might throw an exception
+                            String[] parts = msg.split(" ");
+                            resource.process(parts);
+                            return Behaviors.same();
+                          })
+                      .onSignal(
+                          PreRestart.class,
+                          signal -> {
+                            resource.close();
+                            return Behaviors.same();
+                          })
+                      .onSignal(
+                          PostStop.class,
+                          signal -> {
+                            resource.close();
+                            return Behaviors.same();
+                          })
+                      .build();
+                }))
+        .onFailure(Exception.class, SupervisorStrategy.restart());
+    // #restart-PreRestart-signal
   }
 }

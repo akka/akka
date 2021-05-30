@@ -5,9 +5,12 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -46,7 +49,7 @@ C: 3
 
 Note that the order is *not* `A:1, B:1, C:1, A:2, B:2, C:2,` which would correspond to the normal fused synchronous
 execution model of flows where an element completely passes through the processing pipeline before the next element
-enters the flow. The next element is processed by an asynchronous operator as soon as it is emitted the previous one.
+enters the flow. The next element is processed by an asynchronous operator as soon as it has emitted the previous one.
 
 While pipelining in general increases throughput, in practice there is a cost of passing an element through the
 asynchronous (and therefore thread crossing) boundary which is significant. To amortize this cost Akka Streams uses
@@ -75,16 +78,8 @@ can be set through configuration:
 akka.stream.materializer.max-input-buffer-size = 16
 ```
 
-Alternatively they can be set by passing a 
-@scala[@scaladoc[`ActorMaterializerSettings`](akka.stream.ActorMaterializerSettings)]@java[@javadoc[`ActorMaterializerSettings`](akka.stream.ActorMaterializerSettings)] to the materializer:
-
-Scala
-:   @@snip [StreamBuffersRateSpec.scala](/akka-docs/src/test/scala/docs/stream/StreamBuffersRateSpec.scala) { #materializer-buffer }
-
-Java
-:   @@snip [StreamBuffersRateDocTest.java](/akka-docs/src/test/java/jdocs/stream/StreamBuffersRateDocTest.java) { #materializer-buffer }
-
-If the buffer size needs to be set for segments of a @scala[@scaladoc[`Flow`](akka.stream.scaladsl.Flow)]@java[@javadoc[`Flow`](akka.stream.javadsl.Flow)] only, it is possible by defining a separate
+Alternatively they can be set per stream by adding an attribute to the complete `RunnableGraph` or on smaller segments
+of the stream it is possible by defining a separate
 @scala[@scaladoc[`Flow`](akka.stream.scaladsl.Flow)]@java[@javadoc[`Flow`](akka.stream.javadsl.Flow)] with these attributes:
 
 Scala
@@ -215,6 +210,9 @@ Scala
 Java
 :   @@snip [RateTransformationDocTest.java](/akka-docs/src/test/java/jdocs/stream/RateTransformationDocTest.java) { #conflate-sample }
 
+See also @ref:[`conflate`](operators/Source-or-Flow/conflate.md) and @ref:[conflateWithSeed`](operators/Source-or-Flow/conflateWithSeed.md) for more information and examples.
+
+
 ### Understanding extrapolate and expand
 
 Now we will discuss two operators, `extrapolate` and `expand`, helping to deal with slow producers that are unable to keep 
@@ -239,7 +237,7 @@ Scala
 Java
 :   @@snip [RateTransformationDocTest.java](/akka-docs/src/test/java/jdocs/stream/RateTransformationDocTest.java) { #extrapolate-seed }
 
-`extrapolate` and `expand` also allow to produce metainformation based on demand signalled from the downstream. 
+`extrapolate` and `expand` also allow to produce meta-information based on demand signalled from the downstream. 
 Leveraging this, here is a flow that tracks and reports a drift between a fast consumer and a slow producer. 
 
 Scala
@@ -265,3 +263,5 @@ This makes `expand` able to transform or even filter out (by providing an empty 
  
 Regardless, since we provide a non-empty `Iterator` in both examples, this means that the
 output of this flow is going to report a drift of zero if the producer is fast enough - or a larger drift otherwise.
+
+See also @ref:[`extrapolate`](operators/Source-or-Flow/extrapolate.md) and @ref:[`expand`](operators/Source-or-Flow/expand.md) for more information and examples.

@@ -1,19 +1,21 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import language.postfixOps
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
 import java.lang.management.ManagementFactory
+
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 import javax.management.InstanceNotFoundException
 import javax.management.ObjectName
+import language.postfixOps
+
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.util.Try
 
 object MBeanMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -24,6 +26,7 @@ object MBeanMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
     akka.cluster.jmx.enabled = on
     akka.cluster.roles = [testNode]
+    akka.cluster.app-version = "1.2.3"
     """)).withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
@@ -33,12 +36,9 @@ class MBeanMultiJvmNode2 extends MBeanSpec
 class MBeanMultiJvmNode3 extends MBeanSpec
 class MBeanMultiJvmNode4 extends MBeanSpec
 
-abstract class MBeanSpec
-  extends MultiNodeSpec(MBeanMultiJvmSpec)
-  with MultiNodeClusterSpec {
+abstract class MBeanSpec extends MultiNodeSpec(MBeanMultiJvmSpec) with MultiNodeClusterSpec {
 
   import MBeanMultiJvmSpec._
-  import ClusterEvent._
 
   val mbeanName = new ObjectName("akka:type=Cluster")
   lazy val mbeanServer = ManagementFactory.getPlatformMBeanServer
@@ -46,15 +46,14 @@ abstract class MBeanSpec
   "Cluster MBean" must {
     "expose attributes" taggedAs LongRunningTest in {
       val info = mbeanServer.getMBeanInfo(mbeanName)
-      info.getAttributes.map(_.getName).toSet should ===(Set(
-        "ClusterStatus", "Members", "Unreachable", "MemberStatus", "Leader", "Singleton", "Available"))
+      info.getAttributes.map(_.getName).toSet should ===(
+        Set("ClusterStatus", "Members", "Unreachable", "MemberStatus", "Leader", "Singleton", "Available"))
       enterBarrier("after-1")
     }
 
     "expose operations" taggedAs LongRunningTest in {
       val info = mbeanServer.getMBeanInfo(mbeanName)
-      info.getOperations.map(_.getName).toSet should ===(Set(
-        "join", "leave", "down"))
+      info.getOperations.map(_.getName).toSet should ===(Set("join", "leave", "down"))
       enterBarrier("after-2")
     }
 
@@ -124,7 +123,8 @@ abstract class MBeanSpec
              |        "dc-default",
              |        "testNode"
              |      ],
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "app-version": "1.2.3"
              |    },
              |    {
              |      "address": "${sortedNodes(1)}",
@@ -132,7 +132,8 @@ abstract class MBeanSpec
              |        "dc-default",
              |        "testNode"
              |      ],
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "app-version": "1.2.3"
              |    },
              |    {
              |      "address": "${sortedNodes(2)}",
@@ -140,7 +141,8 @@ abstract class MBeanSpec
              |        "dc-default",
              |        "testNode"
              |      ],
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "app-version": "1.2.3"
              |    },
              |    {
              |      "address": "${sortedNodes(3)}",
@@ -148,7 +150,8 @@ abstract class MBeanSpec
              |        "dc-default",
              |        "testNode"
              |      ],
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "app-version": "1.2.3"
              |    }
              |  ],
              |  "self-address": "${address(first)}",

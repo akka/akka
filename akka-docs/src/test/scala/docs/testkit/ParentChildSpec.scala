@@ -1,17 +1,16 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.testkit
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import akka.testkit.TestKitBase
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.actor.Actor
 import akka.actor.ActorRef
-import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import akka.actor.ActorRefFactory
 import akka.testkit.TestKit
@@ -20,21 +19,20 @@ import org.scalatest.BeforeAndAfterAll
 /**
  * Parent-Child examples
  */
-
 //#test-example
 class Parent extends Actor {
-  val child = context.actorOf(Props[Child], "child")
+  val child = context.actorOf(Props[Child](), "child")
   var ponged = false
 
   def receive = {
-    case "pingit" ⇒ child ! "ping"
-    case "pong"   ⇒ ponged = true
+    case "pingit" => child ! "ping"
+    case "pong"   => ponged = true
   }
 }
 
 class Child extends Actor {
   def receive = {
-    case "ping" ⇒ context.parent ! "pong"
+    case "ping" => context.parent ! "pong"
   }
 }
 //#test-example
@@ -42,7 +40,7 @@ class Child extends Actor {
 //#test-dependentchild
 class DependentChild(parent: ActorRef) extends Actor {
   def receive = {
-    case "ping" ⇒ parent ! "pong"
+    case "ping" => parent ! "pong"
   }
 }
 //#test-dependentchild
@@ -52,18 +50,18 @@ class DependentParent(childProps: Props, probe: ActorRef) extends Actor {
   val child = context.actorOf(childProps, "child")
 
   def receive = {
-    case "pingit" ⇒ child ! "ping"
-    case "pong"   ⇒ probe ! "ponged"
+    case "pingit" => child ! "ping"
+    case "pong"   => probe ! "ponged"
   }
 }
 
-class GenericDependentParent(childMaker: ActorRefFactory ⇒ ActorRef) extends Actor {
+class GenericDependentParent(childMaker: ActorRefFactory => ActorRef) extends Actor {
   val child = childMaker(context)
   var ponged = false
 
   def receive = {
-    case "pingit" ⇒ child ! "ping"
-    case "pong"   ⇒ ponged = true
+    case "pingit" => child ! "ping"
+    case "pong"   => ponged = true
   }
 }
 //#test-dependentparent
@@ -71,15 +69,14 @@ class GenericDependentParent(childMaker: ActorRefFactory ⇒ ActorRef) extends A
 /**
  * Test specification
  */
-
 class MockedChild extends Actor {
   def receive = {
-    case "ping" ⇒ sender ! "pong"
+    case "ping" => sender() ! "pong"
   }
 }
 
-class ParentChildSpec extends WordSpec with Matchers with TestKitBase with BeforeAndAfterAll {
-  implicit lazy val system = ActorSystem("ParentChildSpec")
+class ParentChildSpec extends AnyWordSpec with Matchers with TestKitBase with BeforeAndAfterAll {
+  implicit lazy val system: ActorSystem = ActorSystem("ParentChildSpec")
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
@@ -109,7 +106,7 @@ class ParentChildSpec extends WordSpec with Matchers with TestKitBase with Befor
     "be tested with a child probe" in {
       val probe = TestProbe()
       //#child-maker-test
-      val maker = (_: ActorRefFactory) ⇒ probe.ref
+      val maker = (_: ActorRefFactory) => probe.ref
       val parent = system.actorOf(Props(new GenericDependentParent(maker)))
       //#child-maker-test
       probe.send(parent, "pingit")
@@ -118,7 +115,7 @@ class ParentChildSpec extends WordSpec with Matchers with TestKitBase with Befor
 
     "demonstrate production version of child creator" in {
       //#child-maker-prod
-      val maker = (f: ActorRefFactory) ⇒ f.actorOf(Props(new Child))
+      val maker = (f: ActorRefFactory) => f.actorOf(Props(new Child))
       val parent = system.actorOf(Props(new GenericDependentParent(maker)))
       //#child-maker-prod
     }
@@ -142,8 +139,8 @@ class ParentChildSpec extends WordSpec with Matchers with TestKitBase with Befor
       val parent = system.actorOf(Props(new Actor {
         val child = context.actorOf(Props(new Child), "child")
         def receive = {
-          case x if sender == child ⇒ proxy.ref forward x
-          case x                    ⇒ child forward x
+          case x if sender() == child => proxy.ref.forward(x)
+          case x                      => child.forward(x)
         }
       }))
 

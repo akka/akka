@@ -1,54 +1,64 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.javadsl;
 
-import akka.actor.Scheduler;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.Scheduler;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.persistence.typed.EventAdapter;
+import akka.japi.function.Procedure;
+import akka.persistence.typed.*;
 import akka.actor.testkit.typed.javadsl.TestInbox;
-import akka.persistence.typed.SideEffect;
-import akka.util.Timeout;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 import static akka.actor.typed.javadsl.AskPattern.ask;
 
 public class PersistentActorCompileOnlyTest {
 
+  public abstract static class Simple {
 
-  public static abstract class Simple {
-
-    //#event-wrapper
+    // #event-wrapper
     public static class Wrapper<T> {
-      private final T t;
-      public Wrapper(T t) {
-        this.t = t;
+      private final T event;
+
+      public Wrapper(T event) {
+        this.event = event;
       }
-      public T getT() {
-        return t;
+
+      public T getEvent() {
+        return event;
       }
     }
 
-    public static class EventAdapterExample extends EventAdapter<SimpleEvent, Wrapper<SimpleEvent>> {
+    public static class EventAdapterExample
+        extends EventAdapter<SimpleEvent, Wrapper<SimpleEvent>> {
       @Override
       public Wrapper<SimpleEvent> toJournal(SimpleEvent simpleEvent) {
         return new Wrapper<>(simpleEvent);
       }
+
       @Override
-      public SimpleEvent fromJournal(Wrapper<SimpleEvent> simpleEventWrapper) {
-        return simpleEventWrapper.getT();
+      public String manifest(SimpleEvent event) {
+        return "";
+      }
+
+      @Override
+      public EventSeq<SimpleEvent> fromJournal(
+          Wrapper<SimpleEvent> simpleEventWrapper, String manifest) {
+        return EventSeq.single(simpleEventWrapper.getEvent());
       }
     }
-    //#event-wrapper
+    // #event-wrapper
 
-    //#command
+    // try varargs
+    private EventSeq<SimpleEvent> many = EventSeq.many(new SimpleEvent("a"), new SimpleEvent("b"));
+
     public static class SimpleCommand {
       public final String data;
 
@@ -56,9 +66,7 @@ public class PersistentActorCompileOnlyTest {
         this.data = data;
       }
     }
-    //#command
 
-    //#event
     static class SimpleEvent {
       private final String data;
 
@@ -66,9 +74,7 @@ public class PersistentActorCompileOnlyTest {
         this.data = data;
       }
     }
-    //#event
 
-    //#state
     static class SimpleState {
       private final List<String> events;
 
@@ -80,66 +86,112 @@ public class PersistentActorCompileOnlyTest {
         this.events = new ArrayList<>();
       }
 
-
       SimpleState addEvent(SimpleEvent event) {
         List<String> newEvents = new ArrayList<>(events);
         newEvents.add(event.data);
         return new SimpleState(newEvents);
       }
     }
-    //#state
 
+    public static EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState> pb =
+        new EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState>(
+            PersistenceId.ofUniqueId("p1")) {
 
-    //#behavior
-    public static PersistentBehavior<SimpleCommand, SimpleEvent, SimpleState> pb = new PersistentBehavior<SimpleCommand, SimpleEvent, SimpleState>("p1") {
+          @Override
+          public SimpleState emptyState() {
+            return new SimpleState();
+          }
+
+          @Override
+          public CommandHandler<SimpleCommand, SimpleEvent, SimpleState> commandHandler() {
+            return (state, cmd) -> Effect().persist(new SimpleEvent(cmd.data));
+          }
+
+          @Override
+          public EventHandler<SimpleState, SimpleEvent> eventHandler() {
+            return SimpleState::addEvent;
+          }
+
+          // #install-event-adapter
+          @Override
+          public EventAdapter<SimpleEvent, Wrapper<SimpleEvent>> eventAdapter() {
+            return new EventAdapterExample();
+          }
+          // #install-event-adapter
+
+          @Override
+          public SnapshotAdapter<SimpleState> snapshotAdapter() {
+            return new SnapshotAdapter<SimpleState>() {
+
+              @Override
+              public Object toJournal(SimpleState simpleState) {
+                return simpleState;
+              }
+
+              @Override
+              public SimpleState fromJournal(Object from) {
+                return (SimpleState) from;
+              }
+            };
+          }
+        };
+
+    static class AdditionalSettings
+        extends EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState> {
+
+      public AdditionalSettings(PersistenceId persistenceId) {
+        super(PersistenceId.ofUniqueId("p1"));
+      }
+
       @Override
       public SimpleState emptyState() {
         return new SimpleState();
       }
 
-      //#command-handler
       @Override
       public CommandHandler<SimpleCommand, SimpleEvent, SimpleState> commandHandler() {
         return (state, cmd) -> Effect().persist(new SimpleEvent(cmd.data));
       }
-      //#command-handler
 
-      //#event-handler
       @Override
       public EventHandler<SimpleState, SimpleEvent> eventHandler() {
-        return (state, event) -> state.addEvent(event);
+        return SimpleState::addEvent;
       }
-      //#event-handler
 
-      //#install-event-adapter
       @Override
-      public EventAdapter<SimpleEvent, Wrapper<SimpleEvent>> eventAdapter() {
-        return new EventAdapterExample();
+      public Recovery recovery() {
+        return Recovery.withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none());
       }
-      //#install-event-adapter
-    };
 
-    //#behavior
+      @Override
+      public String journalPluginId() {
+        return "other.journal";
+      }
+
+      @Override
+      public String snapshotPluginId() {
+        return "other.snapshot-store";
+      }
+    }
   }
 
-  static abstract class WithAck {
-    public static class Ack {
-    }
+  abstract static class WithAck {
+    public static class Ack {}
 
-    interface MyCommand {
-    }
+    interface MyCommand {}
+
     public static class Cmd implements MyCommand {
       private final String data;
-      private final ActorRef<Ack> sender;
+      private final ActorRef<Ack> replyTo;
 
-      public Cmd(String data, ActorRef<Ack> sender) {
+      public Cmd(String data, ActorRef<Ack> replyTo) {
         this.data = data;
-        this.sender = sender;
+        this.replyTo = replyTo;
       }
     }
 
-    interface MyEvent {
-    }
+    interface MyEvent {}
+
     public static class Evt implements MyEvent {
       private final String data;
 
@@ -152,46 +204,55 @@ public class PersistentActorCompileOnlyTest {
       private List<String> events = new ArrayList<>();
     }
 
-    //#commonChainedEffects
-    // Factored out Chained effect
-    static final SideEffect<ExampleState>  commonChainedEffect = SideEffect.create(s -> System.out.println("Command handled!"));
+    // #commonChainedEffects
+    // Example factoring out a chained effect to use in several places with `thenRun`
+    static final Procedure<ExampleState> commonChainedEffect =
+        state -> System.out.println("Command handled!");
 
-    //#commonChainedEffects
+    // #commonChainedEffects
 
-    private PersistentBehavior<MyCommand, MyEvent, ExampleState> pa = new PersistentBehavior<MyCommand, MyEvent, ExampleState>("pa") {
-      @Override
-      public ExampleState emptyState() {
-        return new ExampleState();
-      }
+    private EventSourcedBehavior<MyCommand, MyEvent, ExampleState> pa =
+        new EventSourcedBehavior<MyCommand, MyEvent, ExampleState>(PersistenceId.ofUniqueId("pa")) {
 
-      @Override
-      public CommandHandler<MyCommand, MyEvent, ExampleState> commandHandler() {
+          @Override
+          public ExampleState emptyState() {
+            return new ExampleState();
+          }
 
-     //#commonChainedEffects
-     return commandHandlerBuilder(ExampleState.class)
-       .matchCommand(Cmd.class, (state, cmd) -> Effect().persist(new Evt(cmd.data))
-         .andThen(() -> cmd.sender.tell(new Ack()))
-         .andThen(commonChainedEffect)
-       )
-       .build();
-     //#commonChainedEffects
-      }
+          // #commonChainedEffects
+          @Override
+          public CommandHandler<MyCommand, MyEvent, ExampleState> commandHandler() {
+            return newCommandHandlerBuilder()
+                .forStateType(ExampleState.class)
+                .onCommand(
+                    Cmd.class,
+                    (state, cmd) ->
+                        Effect()
+                            .persist(new Evt(cmd.data))
+                            .thenRun(() -> cmd.replyTo.tell(new Ack()))
+                            .thenRun(commonChainedEffect))
+                .build();
+          }
+          // #commonChainedEffects
 
-      @Override
-      public EventHandler<ExampleState, MyEvent> eventHandler() {
-        return eventHandlerBuilder()
-          .matchEvent(Evt.class, (state, event) -> {
-            state.events.add(event.data);
-            return state;
-          })
-          .build();
-      }
-    };
+          @Override
+          public EventHandler<ExampleState, MyEvent> eventHandler() {
+            return newEventHandlerBuilder()
+                .forStateType(ExampleState.class)
+                .onEvent(
+                    Evt.class,
+                    (state, event) -> {
+                      state.events.add(event.data);
+                      return state;
+                    })
+                .build();
+          }
+        };
   }
 
-  static abstract class RecoveryComplete {
-    interface Command {
-    }
+  abstract static class RecoveryComplete {
+    interface Command {}
+
     static class DoSideEffect implements Command {
       final String data;
 
@@ -208,8 +269,7 @@ public class PersistentActorCompileOnlyTest {
       }
     }
 
-    interface Event {
-    }
+    interface Event {}
 
     static class IntentRecord implements Event {
       final int correlationId;
@@ -260,32 +320,36 @@ public class PersistentActorCompileOnlyTest {
     }
 
     static ActorRef<Request> sideEffectProcessor = TestInbox.<Request>create().getRef();
-    static Timeout timeout = new Timeout(1, TimeUnit.SECONDS);
+    static Duration timeout = Duration.ofSeconds(1);
 
-    private static void performSideEffect(ActorRef<AcknowledgeSideEffect> sender, int correlationId, String data, Scheduler scheduler) {
-      CompletionStage<Response> what = ask(sideEffectProcessor, (ActorRef<Response> ar) -> new Request(correlationId, data, ar), timeout, scheduler);
-      what.thenApply(r -> new AcknowledgeSideEffect(r.correlationId))
-        .thenAccept(sender::tell);
+    private static void performSideEffect(
+        ActorRef<AcknowledgeSideEffect> sender,
+        int correlationId,
+        String data,
+        Scheduler scheduler) {
+      CompletionStage<Response> what =
+          ask(
+              sideEffectProcessor,
+              (ActorRef<Response> ar) -> new Request(correlationId, data, ar),
+              timeout,
+              scheduler);
+      what.thenApply(r -> new AcknowledgeSideEffect(r.correlationId)).thenAccept(sender::tell);
     }
 
-    // #actor-context
-    public Behavior<Command> behavior(String persistenceId) {
+    public Behavior<Command> behavior(PersistenceId persistenceId) {
       return Behaviors.setup(ctx -> new MyPersistentBehavior(persistenceId, ctx));
     }
 
-    // #actor-context
-
-    // #actor-context
-    class MyPersistentBehavior extends PersistentBehavior<Command, Event, RecoveryComplete.EventsInFlight> {
+    class MyPersistentBehavior
+        extends EventSourcedBehavior<Command, Event, RecoveryComplete.EventsInFlight> {
 
       // this makes the context available to the command handler etc.
       private final ActorContext<Command> ctx;
 
-      public MyPersistentBehavior(String persistenceId, ActorContext<Command> ctx) {
+      public MyPersistentBehavior(PersistenceId persistenceId, ActorContext<Command> ctx) {
         super(persistenceId);
         this.ctx = ctx;
       }
-      // #actor-context
 
       @Override
       public EventsInFlight emptyState() {
@@ -294,31 +358,48 @@ public class PersistentActorCompileOnlyTest {
 
       @Override
       public CommandHandler<Command, Event, EventsInFlight> commandHandler() {
-        return commandHandlerBuilder(EventsInFlight.class)
-          .matchCommand(DoSideEffect.class,
-            (state, cmd) -> Effect().persist(new IntentRecord(state.nextCorrelationId, cmd.data))
-              .andThen(() -> performSideEffect(ctx.getSelf().narrow(), state.nextCorrelationId, cmd.data, ctx.getSystem().scheduler())))
-          .matchCommand(AcknowledgeSideEffect.class, (state, command) -> Effect().persist(new SideEffectAcknowledged(command.correlationId)))
-          .build();
+        return newCommandHandlerBuilder()
+            .forAnyState()
+            .onCommand(
+                DoSideEffect.class,
+                (state, cmd) ->
+                    Effect()
+                        .persist(new IntentRecord(state.nextCorrelationId, cmd.data))
+                        .thenRun(
+                            () ->
+                                performSideEffect(
+                                    ctx.getSelf().narrow(),
+                                    state.nextCorrelationId,
+                                    cmd.data,
+                                    ctx.getSystem().scheduler())))
+            .onCommand(
+                AcknowledgeSideEffect.class,
+                (state, command) ->
+                    Effect().persist(new SideEffectAcknowledged(command.correlationId)))
+            .build();
       }
 
       @Override
       public EventHandler<EventsInFlight, Event> eventHandler() {
-        return eventHandlerBuilder()
-          .matchEvent(IntentRecord.class, (state, event) -> {
-            int nextCorrelationId = event.correlationId;
-            Map<Integer, String> newOutstanding = new HashMap<>(state.dataByCorrelationId);
-            newOutstanding.put(event.correlationId, event.data);
-            return new EventsInFlight(nextCorrelationId, newOutstanding);
-          })
-          .matchEvent(SideEffectAcknowledged.class, (state, event) -> {
-            Map<Integer, String> newOutstanding = new HashMap<>(state.dataByCorrelationId);
-            newOutstanding.remove(event.correlationId);
-            return new EventsInFlight(state.nextCorrelationId, newOutstanding);
-          })
-          .build();
+        return newEventHandlerBuilder()
+            .forAnyState()
+            .onEvent(
+                IntentRecord.class,
+                (state, event) -> {
+                  int nextCorrelationId = event.correlationId;
+                  Map<Integer, String> newOutstanding = new HashMap<>(state.dataByCorrelationId);
+                  newOutstanding.put(event.correlationId, event.data);
+                  return new EventsInFlight(nextCorrelationId, newOutstanding);
+                })
+            .onEvent(
+                SideEffectAcknowledged.class,
+                (state, event) -> {
+                  Map<Integer, String> newOutstanding = new HashMap<>(state.dataByCorrelationId);
+                  newOutstanding.remove(event.correlationId);
+                  return new EventsInFlight(state.nextCorrelationId, newOutstanding);
+                })
+            .build();
       }
     }
   }
-
 }

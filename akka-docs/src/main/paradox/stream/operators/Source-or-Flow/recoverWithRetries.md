@@ -2,15 +2,13 @@
 
 RecoverWithRetries allows to switch to alternative Source on flow failure.
 
-@ref[Simple operators](../index.md#simple-operators)
-
-@@@div { .group-scala }
+@ref[Error handling](../index.md#error-handling)
 
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #recoverWithRetries }
+@apidoc[Source.recoverWithRetries](Source) { scala="#recoverWithRetries[T&gt;:Out](attempts:Int,pf:PartialFunction[Throwable,akka.stream.Graph[akka.stream.SourceShape[T],akka.NotUsed]]):FlowOps.this.Repr[T]" java="#recoverWithRetries(int,java.lang.Class,java.util.function.Supplier)" }
+@apidoc[Flow.recoverWithRetries](Flow) { scala="#recoverWithRetries[T&gt;:Out](attempts:Int,pf:PartialFunction[Throwable,akka.stream.Graph[akka.stream.SourceShape[T],akka.NotUsed]]):FlowOps.this.Repr[T]" java="#recoverWithRetries(int,java.lang.Class,java.util.function.Supplier)" }
 
-@@@
 
 ## Description
 
@@ -22,6 +20,7 @@ attempt to recover at all. A negative `attempts` number is interpreted as "infin
 Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
 This operators can recover the failure signal, but not the skipped elements, which will be dropped.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

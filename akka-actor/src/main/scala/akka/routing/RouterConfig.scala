@@ -1,21 +1,25 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
 
 import scala.collection.immutable
+
+import scala.annotation.nowarn
+
 import akka.ConfigurationException
 import akka.actor.ActorContext
 import akka.actor.ActorPath
+import akka.actor.ActorSystem
 import akka.actor.AutoReceivedMessage
 import akka.actor.OneForOneStrategy
 import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.actor.Terminated
 import akka.dispatch.Dispatchers
-import akka.actor.ActorSystem
 import akka.japi.Util.immutableSeq
+import akka.util.unused
 
 /**
  * This trait represents a router factory: it produces the actual router actor
@@ -35,6 +39,7 @@ import akka.japi.Util.immutableSeq
  * someone tries sending a message to that reference before the constructor of
  * RoutedActorRef has returned, there will be a `NullPointerException`!
  */
+@nowarn("msg=@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 trait RouterConfig extends Serializable {
 
@@ -58,15 +63,15 @@ trait RouterConfig extends Serializable {
    * Management messages not handled by the "head" actor are
    * delegated to this controller actor.
    */
-  def routingLogicController(routingLogic: RoutingLogic): Option[Props] = None
+  def routingLogicController(@unused routingLogic: RoutingLogic): Option[Props] = None
 
   /**
    * Is the message handled by the router head actor or the
    * [[#routingLogicController]] actor.
    */
   def isManagementMessage(msg: Any): Boolean = msg match {
-    case _: AutoReceivedMessage | _: Terminated | _: RouterManagementMesssage ⇒ true
-    case _ ⇒ false
+    case _: AutoReceivedMessage | _: Terminated | _: RouterManagementMesssage => true
+    case _                                                                    => false
   }
 
   /*
@@ -78,12 +83,12 @@ trait RouterConfig extends Serializable {
   /**
    * Overridable merge strategy, by default completely prefers `this` (i.e. no merge).
    */
-  def withFallback(other: RouterConfig): RouterConfig = this
+  def withFallback(@unused other: RouterConfig): RouterConfig = this
 
   /**
    * Check that everything is there which is needed. Called in constructor of RoutedActorRef to fail early.
    */
-  def verifyConfig(path: ActorPath): Unit = ()
+  def verifyConfig(@unused path: ActorPath): Unit = ()
 
   /**
    * INTERNAL API
@@ -105,10 +110,10 @@ private[akka] trait PoolOverrideUnsetConfig[T <: Pool] extends Pool {
     else {
 
       other match {
-        case p: Pool ⇒
+        case p: Pool =>
           val wssConf: PoolOverrideUnsetConfig[T] =
             if ((this.supervisorStrategy eq Pool.defaultSupervisorStrategy)
-              && (p.supervisorStrategy ne Pool.defaultSupervisorStrategy))
+                && (p.supervisorStrategy ne Pool.defaultSupervisorStrategy))
               this.withSupervisorStrategy(p.supervisorStrategy).asInstanceOf[PoolOverrideUnsetConfig[T]]
             else this
 
@@ -116,7 +121,7 @@ private[akka] trait PoolOverrideUnsetConfig[T <: Pool] extends Pool {
             wssConf.withResizer(p.resizer.get)
           else
             wssConf
-        case _ ⇒ this
+        case _ => this
       }
     }
 
@@ -165,7 +170,7 @@ trait Group extends RouterConfig {
 
 object Pool {
   val defaultSupervisorStrategy: SupervisorStrategy = OneForOneStrategy() {
-    case _ ⇒ SupervisorStrategy.Escalate
+    case _ => SupervisorStrategy.Escalate
   }
 }
 
@@ -203,7 +208,8 @@ trait Pool extends RouterConfig {
    */
   private[akka] def enrichWithPoolDispatcher(routeeProps: Props, context: ActorContext): Props =
     if (usePoolDispatcher && routeeProps.dispatcher == Dispatchers.DefaultDispatcherId)
-      routeeProps.withDispatcher("akka.actor.deployment." + context.self.path.elements.drop(1).mkString("/", "/", "")
+      routeeProps.withDispatcher(
+        "akka.actor.deployment." + context.self.path.elements.drop(1).mkString("/", "/", "")
         + ".pool-dispatcher")
     else
       routeeProps
@@ -239,8 +245,8 @@ trait Pool extends RouterConfig {
    */
   private[akka] override def createRouterActor(): RouterActor =
     resizer match {
-      case None    ⇒ new RouterPoolActor(supervisorStrategy)
-      case Some(r) ⇒ new ResizablePoolActor(supervisorStrategy)
+      case None    => new RouterPoolActor(supervisorStrategy)
+      case Some(_) => new ResizablePoolActor(supervisorStrategy)
     }
 
 }
@@ -250,6 +256,7 @@ trait Pool extends RouterConfig {
  * a [[Pool]] it may extend this base class.
  */
 abstract class CustomRouterConfig extends RouterConfig {
+
   /**
    * INTERNAL API
    */
@@ -264,14 +271,15 @@ abstract class CustomRouterConfig extends RouterConfig {
  * in the configuration.
  */
 case object FromConfig extends FromConfig {
+
   /**
    * Java API: get the singleton instance
    */
   def getInstance = this
   @inline final def apply(
-    resizer:            Option[Resizer]    = None,
-    supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-    routerDispatcher:   String             = Dispatchers.DefaultDispatcherId) =
+      resizer: Option[Resizer] = None,
+      supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
+      routerDispatcher: String = Dispatchers.DefaultDispatcherId) =
     new FromConfig(resizer, supervisorStrategy, routerDispatcher)
 
   @inline final def unapply(fc: FromConfig): Option[String] = Some(fc.routerDispatcher)
@@ -287,9 +295,10 @@ case object FromConfig extends FromConfig {
  */
 @SerialVersionUID(1L)
 class FromConfig(
-  override val resizer:            Option[Resizer],
-  override val supervisorStrategy: SupervisorStrategy,
-  override val routerDispatcher:   String) extends Pool {
+    override val resizer: Option[Resizer],
+    override val supervisorStrategy: SupervisorStrategy,
+    override val routerDispatcher: String)
+    extends Pool {
 
   def this() = this(None, Pool.defaultSupervisorStrategy, Dispatchers.DefaultDispatcherId)
 
@@ -344,7 +353,9 @@ class FromConfig(
 abstract class NoRouter extends RouterConfig
 
 case object NoRouter extends NoRouter {
-  override def createRouter(system: ActorSystem): Router = throw new UnsupportedOperationException("NoRouter has no Router")
+  override def createRouter(system: ActorSystem): Router =
+    throw new UnsupportedOperationException("NoRouter has no Router")
+
   /**
    * INTERNAL API
    */
@@ -365,16 +376,21 @@ case object NoRouter extends NoRouter {
 /**
  * INTERNAL API
  */
-@SerialVersionUID(1L) private[akka] trait RouterManagementMesssage
+@nowarn("msg=@SerialVersionUID has no effect")
+@SerialVersionUID(1L)
+private[akka] trait RouterManagementMesssage
 
 /**
  * Sending this message to a router will make it send back its currently used routees.
  * A [[Routees]] message is sent asynchronously to the "requester" containing information
  * about what routees the router is routing over.
  */
-@SerialVersionUID(1L) abstract class GetRoutees extends RouterManagementMesssage
+@nowarn("msg=@SerialVersionUID has no effect")
+@SerialVersionUID(1L)
+abstract class GetRoutees extends RouterManagementMesssage
 
 @SerialVersionUID(1L) case object GetRoutees extends GetRoutees {
+
   /**
    * Java API: get the singleton instance
    */
@@ -386,11 +402,12 @@ case object NoRouter extends NoRouter {
  */
 @SerialVersionUID(1L)
 final case class Routees(routees: immutable.IndexedSeq[Routee]) {
+
   /**
    * Java API
    */
   def getRoutees: java.util.List[Routee] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     routees.asJava
   }
 }

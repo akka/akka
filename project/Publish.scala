@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -8,6 +8,7 @@ import sbt._
 import sbt.Keys._
 import java.io.File
 import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
+import com.lightbend.sbt.publishrsync.PublishRsyncPlugin.autoImport.publishRsyncHost
 
 object Publish extends AutoPlugin {
 
@@ -16,79 +17,44 @@ object Publish extends AutoPlugin {
   override def trigger = allRequirements
 
   override lazy val projectSettings = Seq(
-    crossPaths := false,
-    pomExtra := akkaPomExtra,
-    publishTo := akkaPublishTo.value,
+    publishTo := Some(akkaPublishTo.value),
+    publishRsyncHost := "akkarepo@gustav.akka.io",
     credentials ++= akkaCredentials,
     organizationName := "Lightbend Inc.",
-    organizationHomepage := Some(url("http://www.lightbend.com")),
+    organizationHomepage := Some(url("https://www.lightbend.com")),
+    startYear := Some(2009),
+    developers := List(
+        Developer(
+          "akka-contributors",
+          "Akka Contributors",
+          "akka.official@gmail.com",
+          url("https://github.com/akka/akka/graphs/contributors"))),
     publishMavenStyle := true,
-    pomIncludeRepository := { x ⇒ false },
-    defaultPublishTo := crossTarget.value / "repository")
-
-  def akkaPomExtra = {
-    <inceptionYear>2009</inceptionYear>
-    <developers>
-      <developer>
-        <id>akka-contributors</id>
-        <name>Akka Contributors</name>
-        <email>akka-dev@googlegroups.com</email>
-        <url>https://github.com/akka/akka/graphs/contributors</url>
-      </developer>
-    </developers>
-  }
+    pomIncludeRepository := { x =>
+      false
+    },
+    defaultPublishTo := target.value / "repository")
 
   private def akkaPublishTo = Def.setting {
-    sonatypeRepo(version.value) orElse localRepo(defaultPublishTo.value)
+    val key = new java.io.File(
+      Option(System.getProperty("akka.gustav.key"))
+        .getOrElse(System.getProperty("user.home") + "/.ssh/id_rsa_gustav.pem"))
+    if (isSnapshot.value)
+      Resolver.sftp("Akka snapshots", "gustav.akka.io", "/home/akkarepo/www/snapshots").as("akkarepo", key)
+    else
+      Opts.resolver.sonatypeStaging
   }
 
-  private def sonatypeRepo(version: String): Option[Resolver] =
-    Option(sys.props("publish.maven.central")) filter (_.toLowerCase == "true") map { _ ⇒
-      val nexus = "https://oss.sonatype.org/"
-      if (version endsWith "-SNAPSHOT") "snapshots" at nexus + "content/repositories/snapshots"
-      else "releases" at nexus + "service/local/staging/deploy/maven2"
-    }
-
-  private def localRepo(repository: File) =
-    Some(Resolver.file("Default Local Repository", repository))
-
   private def akkaCredentials: Seq[Credentials] =
-    Option(System.getProperty("akka.publish.credentials", null)).map(f ⇒ Credentials(new File(f))).toSeq
+    Option(System.getProperty("akka.publish.credentials")).map(f => Credentials(new File(f))).toSeq
 }
 
 /**
-  * For projects that are not to be published.
-  */
+ * For projects that are not to be published.
+ */
 object NoPublish extends AutoPlugin {
   override def requires = plugins.JvmPlugin
 
-  override def projectSettings = Seq(
-    skip in publish := true,
-    sources in (Compile, doc) := Seq.empty,
-    whitesourceIgnore := true
-  )
-}
-
-object DeployRsync extends AutoPlugin {
-  import scala.sys.process._
-  import sbt.complete.DefaultParsers._
-
-  override def requires = plugins.JvmPlugin
-
-  trait Keys {
-    val deployRsyncArtifact = taskKey[Seq[(File, String)]]("File or directory and a path to deploy to")
-    val deployRsync = inputKey[Unit]("Deploy using SCP")
-  }
-
-  object autoImport extends Keys
-  import autoImport._
-
-  override def projectSettings = Seq(
-    deployRsync := {
-      val (_, host) = (Space ~ StringBasic).parsed
-      deployRsyncArtifact.value.foreach {
-        case (from, to) ⇒ s"rsync -rvz $from/ $host:$to"!
-      }
-    }
-  )
+  override def projectSettings =
+    Seq(publish / skip := true, Compile / doc / sources := Seq.empty, whitesourceIgnore := true)
 }

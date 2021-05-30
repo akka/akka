@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import java.util.{ concurrent ⇒ juc }
+import java.util.{concurrent => juc}
+
+import scala.annotation.unchecked.uncheckedVariance
 
 import akka.NotUsed
 import akka.stream.impl.JavaFlowAndRsConverters
 import akka.stream.scaladsl
-
-import scala.annotation.unchecked.uncheckedVariance
 
 /**
  * For use only with `JDK 9+`.
@@ -37,8 +37,11 @@ object JavaFlowSupport {
      * @see See also [[Source.fromPublisher]] if wanting to integrate with [[org.reactivestreams.Publisher]] instead
      *      (which carries the same semantics, however existed before RS's inclusion in Java 9).
      */
-    final def fromPublisher[T](publisher: juc.Flow.Publisher[T]): Source[T, NotUsed] =
-      scaladsl.Source.fromPublisher(publisher.asRs)
+    final
+    //#fromPublisher
+    def fromPublisher[T](publisher: java.util.concurrent.Flow.Publisher[T]): Source[T, NotUsed] =
+    //#fromPublisher
+    scaladsl.Source.fromPublisher(publisher.asRs)
 
     /**
      * Creates a `Source` that is materialized as a [[java.util.concurrent.Flow.Subscriber]]
@@ -46,7 +49,10 @@ object JavaFlowSupport {
      * @see See also [[Source.asSubscriber]] if wanting to integrate with [[org.reactivestreams.Subscriber]] instead
      *      (which carries the same semantics, however existed before RS's inclusion in Java 9).
      */
-    final def asSubscriber[T]: Source[T, juc.Flow.Subscriber[T]] =
+    final
+    //#asSubscriber
+    def asSubscriber[T]: Source[T, java.util.concurrent.Flow.Subscriber[T]] =
+    //#asSubscriber
       scaladsl.Source.asSubscriber[T].mapMaterializedValue(_.asJava)
   }
 
@@ -58,15 +64,15 @@ object JavaFlowSupport {
     /**
      * Creates a Flow from a Reactive Streams [[org.reactivestreams.Processor]]
      */
-    def fromProcessor[I, O](processorFactory: () ⇒ juc.Flow.Processor[I, O]): Flow[I, O, NotUsed] = {
-      fromProcessorMat(() ⇒ (processorFactory(), NotUsed))
+    def fromProcessor[I, O](processorFactory: () => juc.Flow.Processor[I, O]): Flow[I, O, NotUsed] = {
+      fromProcessorMat(() => (processorFactory(), NotUsed))
     }
 
     /**
      * Creates a Flow from a Reactive Streams [[java.util.concurrent.Flow.Processor]] and returns a materialized value.
      */
-    def fromProcessorMat[I, O, M](processorFactory: () ⇒ (juc.Flow.Processor[I, O], M)): Flow[I, O, M] =
-      scaladsl.Flow.fromProcessorMat { () ⇒
+    def fromProcessorMat[I, O, M](processorFactory: () => (juc.Flow.Processor[I, O], M)): Flow[I, O, M] =
+      scaladsl.Flow.fromProcessorMat { () =>
         val (processor, mat) = processorFactory()
         (processor.asRs, mat)
       }
@@ -82,7 +88,7 @@ object JavaFlowSupport {
       Source.asSubscriber[In].via(self)
         .toMat(Sink.asPublisher[Out](fanout = false))(Keep.both)
         .mapMaterializedValue {
-          case (sub, pub) ⇒ new juc.Flow.Processor[In, Out] {
+          case (sub, pub) => new juc.Flow.Processor[In, Out] {
             override def onError(t: Throwable): Unit = sub.onError(t)
             override def onSubscribe(s: juc.Flow.Subscription): Unit = sub.onSubscribe(s)
             override def onComplete(): Unit = sub.onComplete()

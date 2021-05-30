@@ -1,0 +1,8 @@
+# Incompatibilities against Akka < 2.5.17 where extra static bridge methods were generated that
+# Mima now wrongly correlates with the new ones added in the PR
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.javadsl.Tcp.get")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.scaladsl.Tcp.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.scaladsl.Tcp.get")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("com.typesafe.sslconfig.akka.AkkaSSLConfig.apply")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("com.typesafe.sslconfig.akka.AkkaSSLConfig.get")
+

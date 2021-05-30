@@ -1,0 +1,6 @@
+# 23712 Internals for EventSourcedBehaviorTestKit
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.persistence.typed.internal.RequestingRecoveryPermit.stashInternal")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.persistence.typed.internal.ReplayingSnapshot.stashInternal")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.persistence.typed.internal.ReplayingEvents.stashInternal")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.persistence.typed.internal.StashManagement.stashInternal")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.persistence.typed.internal.Running.stashInternal")

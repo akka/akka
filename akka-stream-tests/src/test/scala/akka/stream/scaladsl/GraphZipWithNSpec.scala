@@ -1,21 +1,22 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
-import scala.concurrent.duration._
-import akka.stream._
-import akka.testkit.EventFilter
 import scala.collection.immutable
+import scala.concurrent.duration._
+
+import akka.stream._
+import akka.stream.testkit._
+import akka.testkit.EventFilter
 
 class GraphZipWithNSpec extends TwoStreamsSetup {
   import GraphDSL.Implicits._
 
   override type Outputs = Int
 
-  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
+  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture {
     val zip = b.add(ZipWithN((_: immutable.Seq[Int]).sum)(2))
     override def left: Inlet[Int] = zip.in(0)
     override def right: Inlet[Int] = zip.in(1)
@@ -27,15 +28,17 @@ class GraphZipWithNSpec extends TwoStreamsSetup {
     "work in the happy case" in {
       val probe = TestSubscriber.manualProbe[Outputs]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val zip = b.add(ZipWithN((_: immutable.Seq[Int]).sum)(2))
-        Source(1 to 4) ~> zip.in(0)
-        Source(10 to 40 by 10) ~> zip.in(1)
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val zip = b.add(ZipWithN((_: immutable.Seq[Int]).sum)(2))
+          Source(1 to 4) ~> zip.in(0)
+          Source(10 to 40 by 10) ~> zip.in(1)
 
-        zip.out ~> Sink.fromSubscriber(probe)
+          zip.out ~> Sink.fromSubscriber(probe)
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       val subscription = probe.expectSubscription()
 
@@ -54,16 +57,18 @@ class GraphZipWithNSpec extends TwoStreamsSetup {
     "work in the sad case" in {
       val probe = TestSubscriber.manualProbe[Outputs]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val zip = b.add(ZipWithN((_: immutable.Seq[Int]).foldLeft(1)(_ / _))(2))
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val zip = b.add(ZipWithN((_: immutable.Seq[Int]).foldLeft(1)(_ / _))(2))
 
-        Source(1 to 4) ~> zip.in(0)
-        Source(-2 to 2) ~> zip.in(1)
+          Source(1 to 4) ~> zip.in(0)
+          Source(-2 to 2) ~> zip.in(1)
 
-        zip.out ~> Sink.fromSubscriber(probe)
+          zip.out ~> Sink.fromSubscriber(probe)
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       val subscription = probe.expectSubscription()
 
@@ -75,9 +80,10 @@ class GraphZipWithNSpec extends TwoStreamsSetup {
         subscription.request(2)
       }
       probe.expectError() match {
-        case a: java.lang.ArithmeticException ⇒ a.getMessage should be("/ by zero")
+        case a: java.lang.ArithmeticException => a.getMessage should be("/ by zero")
+        case unexpected                       => throw new RuntimeException(s"Unexpected: $unexpected")
       }
-      probe.expectNoMsg(200.millis)
+      probe.expectNoMessage(200.millis)
     }
 
     commonTests()
@@ -111,23 +117,25 @@ class GraphZipWithNSpec extends TwoStreamsSetup {
       subscriber1.expectSubscriptionAndError(TestException)
 
       val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
-      val subscription2 = subscriber2.expectSubscriptionAndError(TestException)
+      subscriber2.expectSubscriptionAndError(TestException)
     }
 
     "work with 3 inputs" in {
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val zip = b.add(ZipWithN((_: immutable.Seq[Int]).sum)(3))
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val zip = b.add(ZipWithN((_: immutable.Seq[Int]).sum)(3))
 
-        Source.single(1) ~> zip.in(0)
-        Source.single(2) ~> zip.in(1)
-        Source.single(3) ~> zip.in(2)
+          Source.single(1) ~> zip.in(0)
+          Source.single(2) ~> zip.in(1)
+          Source.single(3) ~> zip.in(2)
 
-        zip.out ~> Sink.fromSubscriber(probe)
+          zip.out ~> Sink.fromSubscriber(probe)
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       val subscription = probe.expectSubscription()
 
@@ -140,17 +148,19 @@ class GraphZipWithNSpec extends TwoStreamsSetup {
     "work with 30 inputs" in {
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val zip = b.add(ZipWithN((_: immutable.Seq[Int]).sum)(30))
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val zip = b.add(ZipWithN((_: immutable.Seq[Int]).sum)(30))
 
-        (0 to 29).foreach {
-          n ⇒ Source.single(n) ~> zip.in(n)
-        }
+          (0 to 29).foreach { n =>
+            Source.single(n) ~> zip.in(n)
+          }
 
-        zip.out ~> Sink.fromSubscriber(probe)
+          zip.out ~> Sink.fromSubscriber(probe)
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       val subscription = probe.expectSubscription()
 

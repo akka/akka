@@ -4,19 +4,18 @@ Take up to *n* elements from the stream (less than *n* only if the upstream comp
 
 @ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #prefixAndTail }
+@apidoc[Source.prefixAndTail](Source) { scala="#prefixAndTail[U&gt;:Out](n:Int):FlowOps.this.Repr[(scala.collection.immutable.Seq[Out],akka.stream.scaladsl.Source[U,akka.NotUsed])]" java="#prefixAndTail(int)" }
+@apidoc[Flow.prefixAndTail](Flow) { scala="#prefixAndTail[U&gt;:Out](n:Int):FlowOps.this.Repr[(scala.collection.immutable.Seq[Out],akka.stream.scaladsl.Source[U,akka.NotUsed])]" java="#prefixAndTail(int)" }
 
-@@@
 
 ## Description
 
 Take up to *n* elements from the stream (less than *n* only if the upstream completes before emitting *n* elements)
 and returns a pair containing a strict sequence of the taken element and a stream representing the remaining elements.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

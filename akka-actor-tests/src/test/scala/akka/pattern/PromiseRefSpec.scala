@@ -1,14 +1,14 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
 
-import akka.actor._
-import akka.testkit.{ AkkaSpec, TestProbe, ImplicitSender }
-
-import scala.concurrent.Promise
+import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration._
+
+import akka.actor._
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 
 object PromiseRefSpec {
   case class Request(replyTo: ActorRef)
@@ -20,6 +20,7 @@ object PromiseRefSpec {
 
 class PromiseRefSpec extends AkkaSpec with ImplicitSender {
   import PromiseRefSpec._
+
   import akka.pattern._
 
   "The PromiseRef" must {
@@ -27,11 +28,11 @@ class PromiseRefSpec extends AkkaSpec with ImplicitSender {
       val promiseRef = PromiseRef(5.seconds)
 
       val target = system.actorOf(Props(new Actor {
-        def receive = { case Request(replyTo) ⇒ replyTo ! Response }
+        def receive = { case Request(replyTo) => replyTo ! Response }
       }))
 
       target ! Request(promiseRef.ref)
-      promiseRef.future.futureValue should ===(Response)
+      Await.result(promiseRef.future, 5.seconds) should ===(Response)
     }
 
     "throw IllegalArgumentException on negative timeout" in {
@@ -47,7 +48,7 @@ class PromiseRefSpec extends AkkaSpec with ImplicitSender {
       val promiseRef = PromiseRef(5.seconds)
 
       promiseRef.ref ! FirstMessage
-      promiseRef.future.futureValue should ===(FirstMessage)
+      Await.result(promiseRef.future, 5.seconds) should ===(FirstMessage)
 
       promiseRef.ref ! SecondMessage
       deadListener.expectMsgType[DeadLetter].message should ===(SecondMessage)
@@ -57,13 +58,13 @@ class PromiseRefSpec extends AkkaSpec with ImplicitSender {
       val promise = Promise[Int]()
 
       val alice = system.actorOf(Props(new Actor {
-        def receive = { case Response ⇒ promise.success(42) }
+        def receive = { case Response => promise.success(42) }
       }))
 
       val promiseRef = PromiseRef.wrap(alice, promise)
 
       val bob = system.actorOf(Props(new Actor {
-        def receive = { case Request(replyTo) ⇒ replyTo ! Response }
+        def receive = { case Request(replyTo) => replyTo ! Response }
       }))
 
       bob ! Request(promiseRef.ref)

@@ -1,64 +1,68 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.serialization
 
 import java.nio.charset.StandardCharsets
-
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import akka.actor.ActorIdentity
-import akka.serialization.Serialization
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.Identify
 import akka.actor.RootActorPath
 import akka.remote.RARP
+import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
+import akka.testkit.JavaSerializable
 import akka.testkit.TestActors
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+
+import java.io.NotSerializableException
 
 object SerializationTransportInformationSpec {
 
   final case class TestMessage(from: ActorRef, to: ActorRef)
-  final case class JavaSerTestMessage(from: ActorRef, to: ActorRef)
+  final case class JavaSerTestMessage(from: ActorRef, to: ActorRef) extends JavaSerializable
 
   class TestSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
     def identifier: Int = 666
     def manifest(o: AnyRef): String = o match {
-      case _: TestMessage ⇒ "A"
+      case _: TestMessage => "A"
+      case _              => throw new NotSerializableException()
     }
     def toBinary(o: AnyRef): Array[Byte] = o match {
-      case TestMessage(from, to) ⇒
+      case TestMessage(from, to) =>
         verifyTransportInfo()
         val fromStr = Serialization.serializedActorPath(from)
         val toStr = Serialization.serializedActorPath(to)
         s"$fromStr,$toStr".getBytes(StandardCharsets.UTF_8)
+      case _ => throw new NotSerializableException()
     }
     def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
       verifyTransportInfo()
       manifest match {
-        case "A" ⇒
+        case "A" =>
           val parts = new String(bytes, StandardCharsets.UTF_8).split(',')
           val fromStr = parts(0)
           val toStr = parts(1)
           val from = system.provider.resolveActorRef(fromStr)
           val to = system.provider.resolveActorRef(toStr)
           TestMessage(from, to)
+        case _ => throw new NotSerializableException()
       }
     }
 
     private def verifyTransportInfo(): Unit = {
       Serialization.currentTransportInformation.value match {
-        case null ⇒
+        case null =>
           throw new IllegalStateException("currentTransportInformation was not set")
-        case t ⇒
+        case t =>
           if (t.system ne system)
-            throw new IllegalStateException(
-              s"wrong system in currentTransportInformation, ${t.system} != $system")
+            throw new IllegalStateException(s"wrong system in currentTransportInformation, ${t.system} != $system")
           if (t.address != system.provider.getDefaultAddress)
             throw new IllegalStateException(
               s"wrong address in currentTransportInformation, ${t.address} != ${system.provider.getDefaultAddress}")
@@ -67,25 +71,24 @@ object SerializationTransportInformationSpec {
   }
 }
 
-abstract class AbstractSerializationTransportInformationSpec(config: Config) extends AkkaSpec(
-  config.withFallback(ConfigFactory.parseString(
-    """
+abstract class AbstractSerializationTransportInformationSpec(config: Config)
+    extends AkkaSpec(config.withFallback(
+      ConfigFactory.parseString("""
     akka {
       loglevel = info
       actor {
         provider = remote
         warn-about-java-serializer-usage = off
-        serialize-creators = off
         serializers {
           test = "akka.remote.serialization.SerializationTransportInformationSpec$TestSerializer"
         }
         serialization-bindings {
           "akka.remote.serialization.SerializationTransportInformationSpec$TestMessage" = test
-          "akka.remote.serialization.SerializationTransportInformationSpec$JavaSerTestMessage" = java
         }
       }
     }
-  """))) with ImplicitSender {
+  """)))
+    with ImplicitSender {
 
   import SerializationTransportInformationSpec._
 
@@ -127,9 +130,11 @@ abstract class AbstractSerializationTransportInformationSpec(config: Config) ext
   }
 }
 
-class SerializationTransportInformationSpec extends AbstractSerializationTransportInformationSpec(ConfigFactory.parseString("""
-  akka.remote.netty.tcp {
+class SerializationTransportInformationSpec
+    extends AbstractSerializationTransportInformationSpec(ConfigFactory.parseString("""
+  akka.remote.artery.enabled = off
+  akka.remote.classic.netty.tcp {
     hostname = localhost
     port = 0
- }
+  }
 """))

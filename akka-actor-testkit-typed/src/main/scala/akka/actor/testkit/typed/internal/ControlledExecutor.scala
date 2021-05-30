@@ -1,14 +1,14 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.internal
 
 import java.util.LinkedList
 
-import akka.annotation.InternalApi
-
 import scala.concurrent.ExecutionContextExecutor
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

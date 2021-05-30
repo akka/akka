@@ -1,26 +1,29 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
 
+import java.util.concurrent.TimeoutException
+
 import scala.collection.immutable
-import akka.dispatch.Dispatchers
-import com.typesafe.config.Config
-import akka.actor.SupervisorStrategy
-import akka.japi.Util.immutableSeq
-import akka.actor.ActorRef
+import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration.FiniteDuration
+
+import com.typesafe.config.Config
+
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.SupervisorStrategy
+import akka.dispatch.Dispatchers
+import akka.dispatch.ExecutionContexts
+import akka.japi.Util.immutableSeq
 import akka.pattern.ask
 import akka.pattern.pipe
-import akka.dispatch.ExecutionContexts
-import scala.concurrent.duration.FiniteDuration
-import akka.util.Timeout
 import akka.util.Helpers.ConfigOps
 import akka.util.JavaDurationConverters._
-import akka.actor.ActorSystem
-import scala.concurrent.Future
-import java.util.concurrent.TimeoutException
+import akka.util.Timeout
 
 /**
  * Broadcasts the message to all routees, and replies with the first response.
@@ -39,27 +42,29 @@ final case class ScatterGatherFirstCompletedRoutingLogic(within: FiniteDuration)
  */
 @SerialVersionUID(1L)
 private[akka] final case class ScatterGatherFirstCompletedRoutees(
-  routees: immutable.IndexedSeq[Routee], within: FiniteDuration) extends Routee {
+    routees: immutable.IndexedSeq[Routee],
+    within: FiniteDuration)
+    extends Routee {
 
-  override def send(message: Any, sender: ActorRef): Unit =
+  override def send(message: Any, sender: ActorRef): Unit = {
+    implicit val ec = ExecutionContexts.parasitic
     if (routees.isEmpty) {
-      implicit val ec = ExecutionContexts.sameThreadExecutionContext
       val reply = Future.failed(new TimeoutException("Timeout due to no routees"))
       reply.pipeTo(sender)
     } else {
-      implicit val ec = ExecutionContexts.sameThreadExecutionContext
       implicit val timeout = Timeout(within)
       val promise = Promise[Any]()
       routees.foreach {
-        case ActorRefRoutee(ref) ⇒
-          promise.tryCompleteWith(ref.ask(message))
-        case ActorSelectionRoutee(sel) ⇒
-          promise.tryCompleteWith(sel.ask(message))
-        case _ ⇒
+        case ActorRefRoutee(ref) =>
+          promise.completeWith(ref.ask(message))
+        case ActorSelectionRoutee(sel) =>
+          promise.completeWith(sel.ask(message))
+        case _ =>
       }
 
       promise.future.pipeTo(sender)
     }
+  }
 }
 
 /**
@@ -97,12 +102,14 @@ private[akka] final case class ScatterGatherFirstCompletedRoutees(
  */
 @SerialVersionUID(1L)
 final case class ScatterGatherFirstCompletedPool(
-  val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
-  within:                          FiniteDuration,
-  override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-  override val routerDispatcher:   String             = Dispatchers.DefaultDispatcherId,
-  override val usePoolDispatcher:  Boolean            = false)
-  extends Pool with PoolOverrideUnsetConfig[ScatterGatherFirstCompletedPool] {
+    nrOfInstances: Int,
+    override val resizer: Option[Resizer] = None,
+    within: FiniteDuration,
+    override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
+    override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+    override val usePoolDispatcher: Boolean = false)
+    extends Pool
+    with PoolOverrideUnsetConfig[ScatterGatherFirstCompletedPool] {
 
   def this(config: Config) =
     this(
@@ -134,7 +141,8 @@ final case class ScatterGatherFirstCompletedPool(
   /**
    * Setting the supervisor strategy to be used for the “head” Router actor.
    */
-  def withSupervisorStrategy(strategy: SupervisorStrategy): ScatterGatherFirstCompletedPool = copy(supervisorStrategy = strategy)
+  def withSupervisorStrategy(strategy: SupervisorStrategy): ScatterGatherFirstCompletedPool =
+    copy(supervisorStrategy = strategy)
 
   /**
    * Setting the resizer to be used.
@@ -174,15 +182,13 @@ final case class ScatterGatherFirstCompletedPool(
  */
 @SerialVersionUID(1L)
 final case class ScatterGatherFirstCompletedGroup(
-  val paths:                     immutable.Iterable[String],
-  within:                        FiniteDuration,
-  override val routerDispatcher: String                     = Dispatchers.DefaultDispatcherId)
-  extends Group {
+    paths: immutable.Iterable[String],
+    within: FiniteDuration,
+    override val routerDispatcher: String = Dispatchers.DefaultDispatcherId)
+    extends Group {
 
   def this(config: Config) =
-    this(
-      paths = immutableSeq(config.getStringList("routees.paths")),
-      within = config.getMillisDuration("within"))
+    this(paths = immutableSeq(config.getStringList("routees.paths")), within = config.getMillisDuration("within"))
 
   /**
    * Java API

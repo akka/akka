@@ -1,15 +1,20 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
-import akka.stream.testkit.StreamSpec
-import akka.stream.ActorMaterializerSettings
+import scala.annotation.nowarn
 
+import akka.stream.ActorAttributes
+import akka.stream.ActorAttributes.MaxFixedBufferSize
+import akka.stream.ActorMaterializerSettings
+import akka.stream.testkit.StreamSpec
+
+@nowarn("msg=deprecated")
 class FixedBufferSpec extends StreamSpec {
 
-  for (size ← List(1, 3, 4)) {
+  for (size <- List(1, 3, 4)) {
 
     s"FixedSizeBuffer of size $size" must {
 
@@ -28,7 +33,7 @@ class FixedBufferSpec extends StreamSpec {
 
       "become full after size elements are enqueued" in {
         val buf = FixedSizeBuffer[String](size)
-        for (_ ← 1 to size) buf.enqueue("test")
+        for (_ <- 1 to size) buf.enqueue("test")
         buf.isEmpty should be(false)
         buf.isFull should be(true)
       }
@@ -51,21 +56,21 @@ class FixedBufferSpec extends StreamSpec {
 
       "drop head properly" in {
         val buf = FixedSizeBuffer[Int](size)
-        for (elem ← 1 to size) buf.enqueue(elem)
+        for (elem <- 1 to size) buf.enqueue(elem)
         buf.dropHead()
-        for (elem ← 2 to size) buf.dequeue() should be(elem)
+        for (elem <- 2 to size) buf.dequeue() should be(elem)
       }
 
       "drop tail properly" in {
         val buf = FixedSizeBuffer[Int](size)
-        for (elem ← 1 to size) buf.enqueue(elem)
+        for (elem <- 1 to size) buf.enqueue(elem)
         buf.dropTail()
-        for (elem ← 1 to size - 1) buf.dequeue() should be(elem)
+        for (elem <- 1 to size - 1) buf.dequeue() should be(elem)
       }
 
       "become non-full after tail dropped from full buffer" in {
         val buf = FixedSizeBuffer[String](size)
-        for (_ ← 1 to size) buf.enqueue("test")
+        for (_ <- 1 to size) buf.enqueue("test")
         buf.dropTail()
         buf.isEmpty should be(size == 1)
         buf.isFull should be(false)
@@ -73,7 +78,7 @@ class FixedBufferSpec extends StreamSpec {
 
       "become non-full after head dropped from full buffer" in {
         val buf = FixedSizeBuffer[String](size)
-        for (_ ← 1 to size) buf.enqueue("test")
+        for (_ <- 1 to size) buf.enqueue("test")
         buf.dropHead()
         buf.isEmpty should be(size == 1)
         buf.isFull should be(false)
@@ -82,13 +87,13 @@ class FixedBufferSpec extends StreamSpec {
       "work properly with full-range filling/draining cycles" in {
         val buf = FixedSizeBuffer[Int](size)
 
-        for (_ ← 1 to 10) {
+        for (_ <- 1 to 10) {
           buf.isEmpty should be(true)
           buf.isFull should be(false)
-          for (elem ← 1 to size) buf.enqueue(elem)
+          for (elem <- 1 to size) buf.enqueue(elem)
           buf.isEmpty should be(false)
           buf.isFull should be(true)
-          for (elem ← 1 to size) buf.dequeue() should be(elem)
+          for (elem <- 1 to size) buf.dequeue() should be(elem)
         }
       }
 
@@ -100,13 +105,13 @@ class FixedBufferSpec extends StreamSpec {
         cheat.readIdx_=(Int.MaxValue)
         cheat.writeIdx_=(Int.MaxValue)
 
-        for (_ ← 1 to 10) {
+        for (_ <- 1 to 10) {
           buf.isEmpty should be(true)
           buf.isFull should be(false)
-          for (elem ← 1 to size) buf.enqueue(elem)
+          for (elem <- 1 to size) buf.enqueue(elem)
           buf.isEmpty should be(false)
           buf.isFull should be(true)
-          for (elem ← 1 to size) buf.dequeue() should be(elem)
+          for (elem <- 1 to size) buf.dequeue() should be(elem)
         }
       }
 
@@ -114,10 +119,10 @@ class FixedBufferSpec extends StreamSpec {
   }
 
   "Buffer factory" must {
-    val default = ActorMaterializerSettings(system)
+    val default = ActorMaterializerSettings(system).toAttributes
 
     "default to one billion for maxFixedBufferSize" in {
-      default.maxFixedBufferSize should ===(1000000000)
+      default.mandatoryAttribute[MaxFixedBufferSize].size should ===(1000000000)
     }
 
     "produce BoundedBuffers when capacity > max-fixed-buffer-size" in {
@@ -130,10 +135,10 @@ class FixedBufferSpec extends StreamSpec {
     }
 
     "produce FixedSizeBuffers when max-fixed-buffer-size < BoundedBufferSize" in {
-      val settings = default.withMaxFixedBufferSize(9)
-      Buffer(5, default) shouldBe a[FixedSizeBuffer.ModuloFixedSizeBuffer[_]]
-      Buffer(10, default) shouldBe a[FixedSizeBuffer.ModuloFixedSizeBuffer[_]]
-      Buffer(16, default) shouldBe a[FixedSizeBuffer.PowerOfTwoFixedSizeBuffer[_]]
+      val settings = default and ActorAttributes.maxFixedBufferSize(9)
+      Buffer(5, settings) shouldBe a[FixedSizeBuffer.ModuloFixedSizeBuffer[_]]
+      Buffer(10, settings) shouldBe a[FixedSizeBuffer.ModuloFixedSizeBuffer[_]]
+      Buffer(16, settings) shouldBe a[FixedSizeBuffer.PowerOfTwoFixedSizeBuffer[_]]
     }
 
   }

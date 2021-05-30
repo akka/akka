@@ -1,35 +1,35 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import java.util.concurrent.ThreadLocalRandom.{ current => random }
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom.{ current ⇒ random }
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
-import akka.stream.actor.ActorSubscriberMessage.OnComplete
-import akka.stream.actor.ActorSubscriberMessage.OnNext
+
+import akka.stream.impl.ActorSubscriberMessage.OnComplete
+import akka.stream.impl.ActorSubscriberMessage.OnNext
 import akka.stream.impl.RequestMore
 import akka.stream.testkit._
 
-class FlowTakeSpec extends StreamSpec with ScriptedTest {
+class FlowTakeSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) with ScriptedTest {
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
-
-  muteDeadLetters(classOf[OnNext], OnComplete.getClass, classOf[RequestMore])()
+  muteDeadLetters(classOf[OnNext], OnComplete.getClass, classOf[RequestMore[_]])()
 
   "A Take" must {
 
     "take" in {
-      def script(d: Int) = Script(TestConfig.RandomTestRange map { n ⇒ Seq(n) → (if (n > d) Nil else Seq(n)) }: _*)
-      TestConfig.RandomTestRange foreach { _ ⇒
+      def script(d: Int) =
+        Script(TestConfig.RandomTestRange.map { n =>
+          Seq(n) -> (if (n > d) Nil else Seq(n))
+        }: _*)
+      TestConfig.RandomTestRange.foreach { _ =>
         val d = Math.min(Math.max(random.nextInt(-10, 60), 0), 50)
-        runScript(script(d), settings)(_.take(d))
+        runScript(script(d))(_.take(d))
       }
     }
 

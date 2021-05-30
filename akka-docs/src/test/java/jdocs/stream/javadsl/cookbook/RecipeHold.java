@@ -1,5 +1,5 @@
-/**
- *  Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream.javadsl.cookbook;
@@ -16,7 +16,6 @@ import akka.stream.testkit.TestSubscriber;
 import akka.stream.testkit.javadsl.TestSink;
 import akka.stream.testkit.javadsl.TestSource;
 import akka.testkit.javadsl.TestKit;
-import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -26,22 +25,19 @@ import java.util.concurrent.TimeUnit;
 
 public class RecipeHold extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeHold");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
-  //#hold-version-1
+  // #hold-version-1
   class HoldWithInitial<T> extends GraphStage<FlowShape<T, T>> {
 
     public Inlet<T> in = Inlet.<T>create("HoldWithInitial.in");
@@ -65,19 +61,23 @@ public class RecipeHold extends RecipeTest {
         private T currentValue = initial;
 
         {
-          setHandler(in, new AbstractInHandler() {
-            @Override
-            public void onPush() throws Exception {
-              currentValue = grab(in);
-              pull(in);
-            }
-          });
-          setHandler(out, new AbstractOutHandler() {
-            @Override
-            public void onPull() throws Exception {
-              push(out, currentValue);
-            }
-          });
+          setHandler(
+              in,
+              new AbstractInHandler() {
+                @Override
+                public void onPush() throws Exception {
+                  currentValue = grab(in);
+                  pull(in);
+                }
+              });
+          setHandler(
+              out,
+              new AbstractOutHandler() {
+                @Override
+                public void onPull() throws Exception {
+                  push(out, currentValue);
+                }
+              });
         }
 
         @Override
@@ -87,9 +87,9 @@ public class RecipeHold extends RecipeTest {
       };
     }
   }
-  //#hold-version-1
+  // #hold-version-1
 
-  //#hold-version-2
+  // #hold-version-2
   class HoldWithWait<T> extends GraphStage<FlowShape<T, T>> {
     public Inlet<T> in = Inlet.<T>create("HoldWithInitial.in");
     public Outlet<T> out = Outlet.<T>create("HoldWithInitial.out");
@@ -107,34 +107,37 @@ public class RecipeHold extends RecipeTest {
         private boolean waitingFirstValue = true;
 
         {
-          setHandler(in, new AbstractInHandler() {
-            @Override
-            public void onPush() throws Exception {
-              currentValue = grab(in);
-              if (waitingFirstValue) {
-                waitingFirstValue = false;
-                if (isAvailable(out)) push(out, currentValue);
-              }
-              pull(in);
-            }
-          });
-          setHandler(out, new AbstractOutHandler() {
-            @Override
-            public void onPull() throws Exception {
-              if (!waitingFirstValue) push(out, currentValue);
-            }
-          });
+          setHandler(
+              in,
+              new AbstractInHandler() {
+                @Override
+                public void onPush() throws Exception {
+                  currentValue = grab(in);
+                  if (waitingFirstValue) {
+                    waitingFirstValue = false;
+                    if (isAvailable(out)) push(out, currentValue);
+                  }
+                  pull(in);
+                }
+              });
+          setHandler(
+              out,
+              new AbstractOutHandler() {
+                @Override
+                public void onPull() throws Exception {
+                  if (!waitingFirstValue) push(out, currentValue);
+                }
+              });
         }
 
         @Override
         public void preStart() {
           pull(in);
         }
-
       };
     }
   }
-  //#hold-version-2
+  // #hold-version-2
 
   @Test
   public void workForVersion1() throws Exception {
@@ -144,7 +147,7 @@ public class RecipeHold extends RecipeTest {
         final Sink<Integer, TestSubscriber.Probe<Integer>> sink = TestSink.probe(system);
 
         Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Integer>> pubSub =
-          source.via(new HoldWithInitial<>(0)).toMat(sink, Keep.both()).run(mat);
+            source.via(new HoldWithInitial<>(0)).toMat(sink, Keep.both()).run(system);
         TestPublisher.Probe<Integer> pub = pubSub.first();
         TestSubscriber.Probe<Integer> sub = pubSub.second();
 
@@ -172,7 +175,7 @@ public class RecipeHold extends RecipeTest {
         final Sink<Integer, TestSubscriber.Probe<Integer>> sink = TestSink.probe(system);
 
         Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Integer>> pubSub =
-          source.via(new HoldWithWait<>()).toMat(sink, Keep.both()).run(mat);
+            source.via(new HoldWithWait<>()).toMat(sink, Keep.both()).run(system);
         TestPublisher.Probe<Integer> pub = pubSub.first();
         TestSubscriber.Probe<Integer> sub = pubSub.second();
 
@@ -196,5 +199,4 @@ public class RecipeHold extends RecipeTest {
       }
     };
   }
-
 }

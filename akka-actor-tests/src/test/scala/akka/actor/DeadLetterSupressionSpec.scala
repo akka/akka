@@ -1,16 +1,16 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
+
+import scala.concurrent.duration._
 
 import akka.event.Logging
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
-
-import scala.concurrent.duration._
 
 object DeadLetterSupressionSpec {
 
@@ -42,14 +42,23 @@ class DeadLetterSupressionSpec extends AkkaSpec with ImplicitSender {
     deadActor ! NormalMsg
 
     deadListener.expectMsg(DeadLetter(NormalMsg, testActor, deadActor))
-    deadListener.expectNoMsg(200.millis)
+    deadListener.expectNoMessage()
 
     suppressedListener.expectMsg(SuppressedDeadLetter(SuppressedMsg, testActor, system.deadLetters))
-    suppressedListener.expectNoMsg(200.millis)
+    suppressedListener.expectNoMessage()
 
     allListener.expectMsg(SuppressedDeadLetter(SuppressedMsg, testActor, system.deadLetters))
     allListener.expectMsg(DeadLetter(NormalMsg, testActor, deadActor))
-    allListener.expectNoMsg(200.millis)
+    allListener.expectNoMessage()
+
+    // unwrap for ActorSelection
+    system.actorSelection(deadActor.path) ! SuppressedMsg
+    system.actorSelection(deadActor.path) ! NormalMsg
+
+    // the recipient ref isn't the same as deadActor here so only checking the message
+    deadListener.expectMsgType[DeadLetter].message should ===(NormalMsg)
+    suppressedListener.expectMsgType[SuppressedDeadLetter].message should ===(SuppressedMsg)
+    deadListener.expectNoMessage()
   }
 
   s"must suppress message from default dead-letters logging (sent to dead: ${Logging.simpleName(system.deadLetters)})" in {
@@ -73,9 +82,16 @@ class DeadLetterSupressionSpec extends AkkaSpec with ImplicitSender {
     allListener.expectMsg(200.millis, DeadLetter(NormalMsg, testActor, system.deadLetters))
 
     Thread.sleep(200)
-    deadListener.expectNoMsg(Duration.Zero)
-    suppressedListener.expectNoMsg(Duration.Zero)
-    allListener.expectNoMsg(Duration.Zero)
+    deadListener.expectNoMessage(Duration.Zero)
+    suppressedListener.expectNoMessage(Duration.Zero)
+    allListener.expectNoMessage(Duration.Zero)
+
+    // unwrap for ActorSelection
+    system.actorSelection(system.deadLetters.path) ! SuppressedMsg
+    system.actorSelection(system.deadLetters.path) ! NormalMsg
+
+    deadListener.expectMsg(DeadLetter(NormalMsg, testActor, system.deadLetters))
+    suppressedListener.expectMsg(SuppressedDeadLetter(SuppressedMsg, testActor, system.deadLetters))
+    deadListener.expectNoMessage()
   }
 }
-

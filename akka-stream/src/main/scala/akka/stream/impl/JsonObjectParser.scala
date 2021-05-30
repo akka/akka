@@ -1,14 +1,14 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
+import scala.annotation.switch
+
 import akka.annotation.InternalApi
 import akka.stream.scaladsl.Framing.FramingException
 import akka.util.ByteString
-
-import scala.annotation.switch
 
 /**
  * INTERNAL API: Use [[akka.stream.scaladsl.JsonFraming]] instead.
@@ -29,11 +29,11 @@ import scala.annotation.switch
   final val Space = 32 // ' '
 
   def isWhitespace(b: Byte): Boolean = (b: @switch) match {
-    case Space      ⇒ true
-    case LineBreak  ⇒ true
-    case LineBreak2 ⇒ true
-    case Tab        ⇒ true
-    case _          ⇒ false
+    case Space      => true
+    case LineBreak  => true
+    case LineBreak2 => true
+    case Tab        => true
+    case _          => false
   }
 
 }
@@ -56,7 +56,6 @@ import scala.annotation.switch
   private var trimFront = 0 // number of chars to drop from the front of the bytestring before emitting (skip whitespace etc)
   private var depth = 0 // counter of object-nesting depth, once hits 0 an object should be emitted
 
-  private var charsInObject = 0
   private var completedObject = false
   private var inStringExpression = false
   private var isStartOfEscapeSequence = false
@@ -71,6 +70,9 @@ import scala.annotation.switch
 
   def isEmpty: Boolean = buffer.isEmpty
 
+  /** `true` if the buffer is in a valid state to end framing. */
+  def canComplete: Boolean = !insideObject
+
   /**
    * Attempt to locate next complete JSON object in buffered ByteString and returns `Some(it)` if found.
    * May throw a [[akka.stream.scaladsl.Framing.FramingException]] if the contained JSON is invalid or max object size is exceeded.
@@ -80,8 +82,8 @@ import scala.annotation.switch
     if (!foundObject) None
     else
       (pos: @switch) match {
-        case -1 | 0 ⇒ None
-        case _ ⇒
+        case -1 | 0 => None
+        case _ =>
           val (emit, buf) = buffer.splitAt(pos)
           buffer = buf.compact
           pos = 0
@@ -102,8 +104,7 @@ import scala.annotation.switch
   private def seekObject(): Boolean = {
     completedObject = false
     val bufSize = buffer.size
-    while (pos != -1 && (pos < bufSize && pos < maximumObjectLength) && !completedObject)
-      proceed(buffer(pos))
+    while (pos != -1 && (pos < bufSize && pos < maximumObjectLength) && !completedObject) proceed(buffer(pos))
 
     if (pos >= maximumObjectLength)
       throw new FramingException(s"""JSON element exceeded maximumObjectLength ($maximumObjectLength bytes)!""")
@@ -118,7 +119,8 @@ import scala.annotation.switch
       trimFront += 1
     } else if (input == SquareBraceEnd && outsideObject) {
       // outer array completed!
-      pos = -1
+      pos += 1
+      trimFront += 1
     } else if (input == Comma && outsideObject) {
       // do nothing
       pos += 1
@@ -139,10 +141,7 @@ import scala.annotation.switch
       isStartOfEscapeSequence = false
       depth -= 1
       pos += 1
-      if (depth == 0) {
-        charsInObject = 0
-        completedObject = true
-      }
+      if (depth == 0) completedObject = true
     } else if (isWhitespace(input) && !inStringExpression) {
       pos += 1
       if (depth == 0) trimFront += 1

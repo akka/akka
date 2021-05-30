@@ -1,21 +1,21 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.Done
-import akka.stream.testkit.StreamSpec
-import akka.stream.{ ActorMaterializer, ClosedShape, KillSwitches }
-import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.Utils.TE
-
 import scala.concurrent.duration._
 
-class FlowKillSwitchSpec extends StreamSpec {
+import akka.Done
+import akka.stream.ClosedShape
+import akka.stream.KillSwitches
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
 
-  implicit val mat = ActorMaterializer()
+class FlowKillSwitchSpec extends StreamSpec {
 
   "A UniqueKillSwitch" must {
 
@@ -47,11 +47,13 @@ class FlowKillSwitchSpec extends StreamSpec {
 
     "work if used multiple times in a flow" in {
       val (((upstream, switch1), switch2), downstream) =
-        TestSource.probe[Int]
+        TestSource
+          .probe[Int]
           .viaMat(KillSwitches.single)(Keep.both)
-          .recover { case TE(_) ⇒ -1 }
+          .recover { case TE(_) => -1 }
           .viaMat(KillSwitches.single)(Keep.both)
-          .toMat(TestSink.probe)(Keep.both).run()
+          .toMat(TestSink.probe)(Keep.both)
+          .run()
 
       downstream.request(1)
       upstream.sendNext(1)
@@ -78,8 +80,8 @@ class FlowKillSwitchSpec extends StreamSpec {
       downstream.expectComplete()
 
       switch.abort(TE("Won't happen"))
-      upstream.expectNoMsg(100.millis)
-      downstream.expectNoMsg(100.millis)
+      upstream.expectNoMessage(100.millis)
+      downstream.expectNoMessage(100.millis)
     }
 
   }
@@ -176,12 +178,12 @@ class FlowKillSwitchSpec extends StreamSpec {
       downstream.expectComplete()
 
       switch.shutdown()
-      upstream.expectNoMsg(100.millis)
-      downstream.expectNoMsg(100.millis)
+      upstream.expectNoMessage(100.millis)
+      downstream.expectNoMessage(100.millis)
 
       switch.abort(TE("Abort"))
-      upstream.expectNoMsg(100.millis)
-      downstream.expectNoMsg(100.millis)
+      upstream.expectNoMessage(100.millis)
+      downstream.expectNoMessage(100.millis)
     }
 
     "ignore subsequent aborts and shutdowns after abort" in assertAllStagesStopped {
@@ -198,12 +200,12 @@ class FlowKillSwitchSpec extends StreamSpec {
       downstream.expectError(TE("Abort"))
 
       switch.shutdown()
-      upstream.expectNoMsg(100.millis)
-      downstream.expectNoMsg(100.millis)
+      upstream.expectNoMessage(100.millis)
+      downstream.expectNoMessage(100.millis)
 
       switch.abort(TE("Abort_Late"))
-      upstream.expectNoMsg(100.millis)
-      downstream.expectNoMsg(100.millis)
+      upstream.expectNoMessage(100.millis)
+      downstream.expectNoMessage(100.millis)
     }
 
     "complete immediately flows materialized after switch shutdown" in assertAllStagesStopped {
@@ -260,12 +262,12 @@ class FlowKillSwitchSpec extends StreamSpec {
       switch1.shutdown()
       upstream1.expectCancellation()
       downstream1.expectComplete()
-      upstream2.expectNoMsg(100.millis)
-      downstream2.expectNoMsg(100.millis)
+      upstream2.expectNoMessage(100.millis)
+      downstream2.expectNoMessage(100.millis)
 
       switch2.abort(TE("Abort"))
-      upstream1.expectNoMsg(100.millis)
-      downstream1.expectNoMsg(100.millis)
+      upstream1.expectNoMessage(100.millis)
+      downstream1.expectNoMessage(100.millis)
       upstream2.expectCancellation()
       downstream2.expectError(TE("Abort"))
     }
@@ -274,21 +276,23 @@ class FlowKillSwitchSpec extends StreamSpec {
       val switch1 = KillSwitches.shared("switch")
       val switch2 = KillSwitches.shared("switch")
 
-      val downstream = RunnableGraph.fromGraph(GraphDSL.create(TestSink.probe[Int]) { implicit b ⇒ snk ⇒
-        import GraphDSL.Implicits._
-        val merge = b.add(Merge[Int](2))
+      val downstream = RunnableGraph
+        .fromGraph(GraphDSL.create(TestSink.probe[Int]) { implicit b => snk =>
+          import GraphDSL.Implicits._
+          val merge = b.add(Merge[Int](2))
 
-        Source.maybe[Int].via(switch1.flow) ~> merge ~> snk
-        Source.maybe[Int].via(switch2.flow) ~> merge
+          Source.maybe[Int].via(switch1.flow) ~> merge ~> snk
+          Source.maybe[Int].via(switch2.flow) ~> merge
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       downstream.ensureSubscription()
-      downstream.expectNoMsg(100.millis)
+      downstream.expectNoMessage(100.millis)
 
       switch1.shutdown()
-      downstream.expectNoMsg(100.millis)
+      downstream.expectNoMessage(100.millis)
 
       switch2.shutdown()
       downstream.expectComplete()

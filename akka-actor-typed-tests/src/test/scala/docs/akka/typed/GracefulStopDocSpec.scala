@@ -1,18 +1,22 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed
 
 //#imports
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorSystem, Logger, PostStop }
-import org.scalatest.WordSpecLike
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import akka.actor.typed.{ ActorSystem, PostStop }
 
 //#imports
+
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.typed.ActorRef
+import scala.concurrent.duration._
+import scala.concurrent.Await
+import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor.typed.Terminated
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 
@@ -20,36 +24,31 @@ object GracefulStopDocSpec {
 
   //#master-actor
 
-  object MasterControlProgramActor {
-    sealed trait JobControlLanguage
-    final case class SpawnJob(name: String) extends JobControlLanguage
-    final case object GracefulShutdown extends JobControlLanguage
+  object MasterControlProgram {
+    sealed trait Command
+    final case class SpawnJob(name: String) extends Command
+    case object GracefulShutdown extends Command
 
-    // Predefined cleanup operation
-    def cleanup(log: Logger): Unit = log.info("Cleaning up!")
-
-    val mcpa = Behaviors.receive[JobControlLanguage] { (ctx, msg) ⇒
-      msg match {
-        case SpawnJob(jobName) ⇒
-          ctx.log.info("Spawning job {}!", jobName)
-          ctx.spawn(Job.job(jobName), name = jobName)
-          Behaviors.same
-        case GracefulShutdown ⇒
-          ctx.log.info("Initiating graceful shutdown...")
-          // perform graceful stop, executing cleanup before final system termination
-          // behavior executing cleanup is passed as a parameter to Actor.stopped
-          Behaviors.stopped {
-            Behaviors.receiveSignal {
-              case (context, PostStop) ⇒
-                cleanup(context.system.log)
-                Behaviors.same
-            }
+    def apply(): Behavior[Command] = {
+      Behaviors
+        .receive[Command] { (context, message) =>
+          message match {
+            case SpawnJob(jobName) =>
+              context.log.info("Spawning job {}!", jobName)
+              context.spawn(Job(jobName), name = jobName)
+              Behaviors.same
+            case GracefulShutdown =>
+              context.log.info("Initiating graceful shutdown...")
+              // Here it can perform graceful stop (possibly asynchronous) and when completed
+              // return `Behaviors.stopped` here or after receiving another message.
+              Behaviors.stopped
           }
-      }
-    }.receiveSignal {
-      case (ctx, PostStop) ⇒
-        ctx.log.info("MCPA stopped")
-        Behaviors.same
+        }
+        .receiveSignal {
+          case (context, PostStop) =>
+            context.log.info("Master Control Program stopped")
+            Behaviors.same
+        }
     }
   }
   //#master-actor
@@ -57,19 +56,77 @@ object GracefulStopDocSpec {
   //#worker-actor
 
   object Job {
-    import GracefulStopDocSpec.MasterControlProgramActor.JobControlLanguage
+    sealed trait Command
 
-    def job(name: String) = Behaviors.receiveSignal[JobControlLanguage] {
-      case (ctx, PostStop) ⇒
-        ctx.log.info("Worker {} stopped", name)
-        Behaviors.same
+    def apply(name: String): Behavior[Command] = {
+      Behaviors.receiveSignal[Command] {
+        case (context, PostStop) =>
+          context.log.info("Worker {} stopped", name)
+          Behaviors.same
+      }
     }
   }
   //#worker-actor
 
+  object IllustrateWatch {
+    //#master-actor-watch
+
+    object MasterControlProgram {
+      sealed trait Command
+      final case class SpawnJob(name: String) extends Command
+
+      def apply(): Behavior[Command] = {
+        Behaviors
+          .receive[Command] { (context, message) =>
+            message match {
+              case SpawnJob(jobName) =>
+                context.log.info("Spawning job {}!", jobName)
+                val job = context.spawn(Job(jobName), name = jobName)
+                context.watch(job)
+                Behaviors.same
+            }
+          }
+          .receiveSignal {
+            case (context, Terminated(ref)) =>
+              context.log.info("Job stopped: {}", ref.path.name)
+              Behaviors.same
+          }
+      }
+    }
+    //#master-actor-watch
+  }
+
+  object IllustrateWatchWith {
+    //#master-actor-watchWith
+
+    object MasterControlProgram {
+      sealed trait Command
+      final case class SpawnJob(name: String, replyToWhenDone: ActorRef[JobDone]) extends Command
+      final case class JobDone(name: String)
+      private final case class JobTerminated(name: String, replyToWhenDone: ActorRef[JobDone]) extends Command
+
+      def apply(): Behavior[Command] = {
+        Behaviors.receive { (context, message) =>
+          message match {
+            case SpawnJob(jobName, replyToWhenDone) =>
+              context.log.info("Spawning job {}!", jobName)
+              val job = context.spawn(Job(jobName), name = jobName)
+              context.watchWith(job, JobTerminated(jobName, replyToWhenDone))
+              Behaviors.same
+            case JobTerminated(jobName, replyToWhenDone) =>
+              context.log.info("Job stopped: {}", jobName)
+              replyToWhenDone ! JobDone(jobName)
+              Behaviors.same
+          }
+        }
+      }
+    }
+    //#master-actor-watchWith
+  }
+
 }
 
-class GracefulStopDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class GracefulStopDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   import GracefulStopDocSpec._
 
@@ -77,9 +134,9 @@ class GracefulStopDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     "start some workers" in {
       //#start-workers
-      import MasterControlProgramActor._
+      import MasterControlProgram._
 
-      val system: ActorSystem[JobControlLanguage] = ActorSystem(mcpa, "B6700")
+      val system: ActorSystem[Command] = ActorSystem(MasterControlProgram(), "B6700")
 
       system ! SpawnJob("a")
       system ! SpawnJob("b")
@@ -95,11 +152,9 @@ class GracefulStopDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     }
 
     "gracefully stop workers and master" in {
-      //#graceful-shutdown
+      import MasterControlProgram._
 
-      import MasterControlProgramActor._
-
-      val system: ActorSystem[JobControlLanguage] = ActorSystem(mcpa, "B7700")
+      val system: ActorSystem[Command] = ActorSystem(MasterControlProgram(), "B7700")
 
       system ! SpawnJob("a")
       system ! SpawnJob("b")
@@ -112,7 +167,6 @@ class GracefulStopDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       Thread.sleep(100)
 
       Await.result(system.whenTerminated, 3.seconds)
-      //#graceful-shutdown
     }
   }
 }

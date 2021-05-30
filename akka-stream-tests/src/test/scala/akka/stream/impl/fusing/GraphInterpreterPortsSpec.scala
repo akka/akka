@@ -1,12 +1,12 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.fusing
 
+import akka.stream.SubscriptionWithCancelException
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit {
 
@@ -14,7 +14,7 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
 
     // FIXME test failure scenarios
 
-    for (chasing ← List(false, true)) {
+    for (chasing <- List(false, true)) {
 
       s"properly transition on push and pull (chasing = $chasing)" in new PortTestSetup(chasing) {
         lastEvents() should be(Set.empty)
@@ -338,7 +338,8 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
         an[IllegalArgumentException] should be thrownBy { in.grab() }
       }
 
-      s"propagate complete while push is in flight and keep ungrabbed element (chasing = $chasing)" in new PortTestSetup(chasing) {
+      s"propagate complete while push is in flight and keep ungrabbed element (chasing = $chasing)" in new PortTestSetup(
+        chasing) {
         in.pull()
         stepAll()
         clearEvents()
@@ -359,7 +360,8 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
         in.grab() should ===(0)
       }
 
-      s"propagate complete while push is in flight and pulled after the push (chasing = $chasing)" in new PortTestSetup(chasing) {
+      s"propagate complete while push is in flight and pulled after the push (chasing = $chasing)" in new PortTestSetup(
+        chasing) {
         in.pull()
         stepAll()
         clearEvents()
@@ -425,7 +427,7 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
 
         stepAll()
 
-        lastEvents() should be(Set(Cancel(out)))
+        lastEvents() should be(Set(Cancel(out, SubscriptionWithCancelException.NoMoreElementsNeeded)))
         out.isAvailable should be(false)
         out.isClosed should be(true)
         in.isAvailable should be(false)
@@ -486,7 +488,7 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
 
         stepAll()
 
-        lastEvents() should be(Set(Cancel(out)))
+        lastEvents() should be(Set(Cancel(out, SubscriptionWithCancelException.NoMoreElementsNeeded)))
         out.isAvailable should be(false)
         out.isClosed should be(true)
         in.isAvailable should be(false)
@@ -547,7 +549,7 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
 
         stepAll()
 
-        lastEvents() should be(Set(Cancel(out)))
+        lastEvents() should be(Set(Cancel(out, SubscriptionWithCancelException.NoMoreElementsNeeded)))
         out.isAvailable should be(false)
         out.isClosed should be(true)
         in.isAvailable should be(false)
@@ -610,7 +612,7 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
 
         stepAll()
 
-        lastEvents() should be(Set(Cancel(out)))
+        lastEvents() should be(Set(Cancel(out, SubscriptionWithCancelException.NoMoreElementsNeeded)))
         out.isAvailable should be(false)
         out.isClosed should be(true)
         in.isAvailable should be(false)
@@ -659,7 +661,7 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
 
         stepAll()
 
-        lastEvents() should be(Set(Cancel(out)))
+        lastEvents() should be(Set(Cancel(out, SubscriptionWithCancelException.NoMoreElementsNeeded)))
         out.isAvailable should be(false)
         out.isClosed should be(true)
         in.isAvailable should be(false)
@@ -691,7 +693,7 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
         an[IllegalArgumentException] should be thrownBy { in.grab() }
 
         stepAll()
-        lastEvents() should be(Set(Cancel(out)))
+        lastEvents() should be(Set(Cancel(out, SubscriptionWithCancelException.NoMoreElementsNeeded)))
         out.isAvailable should be(false)
         out.isClosed should be(true)
         in.isAvailable should be(false)
@@ -719,7 +721,8 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
         an[IllegalArgumentException] should be thrownBy { in.grab() }
       }
 
-      s"ignore any completion if they are concurrent (complete first) (chasing = $chasing)" in new PortTestSetup(chasing) {
+      s"ignore any completion if they are concurrent (complete first) (chasing = $chasing)" in new PortTestSetup(
+        chasing) {
         out.complete()
         in.cancel()
 
@@ -736,7 +739,8 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
         an[IllegalArgumentException] should be thrownBy { in.grab() }
       }
 
-      s"ignore completion from a push-complete if cancelled while in flight (chasing = $chasing)" in new PortTestSetup(chasing) {
+      s"ignore completion from a push-complete if cancelled while in flight (chasing = $chasing)" in new PortTestSetup(
+        chasing) {
         in.pull()
         stepAll()
         clearEvents()
@@ -758,7 +762,8 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
         an[IllegalArgumentException] should be thrownBy { in.grab() }
       }
 
-      s"ignore completion from a push-complete if cancelled after onPush (chasing = $chasing)" in new PortTestSetup(chasing) {
+      s"ignore completion from a push-complete if cancelled after onPush (chasing = $chasing)" in new PortTestSetup(
+        chasing) {
         in.pull()
         stepAll()
         clearEvents()
@@ -1050,7 +1055,8 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
         an[IllegalArgumentException] should be thrownBy { in.grab() }
       }
 
-      s"propagate failure while push is in flight and keep ungrabbed element (chasing = $chasing)" in new PortTestSetup(chasing) {
+      s"propagate failure while push is in flight and keep ungrabbed element (chasing = $chasing)" in new PortTestSetup(
+        chasing) {
         in.pull()
         stepAll()
         clearEvents()
@@ -1089,7 +1095,8 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
         an[IllegalArgumentException] should be thrownBy { in.grab() }
       }
 
-      s"ignore any failure completion if they are concurrent (cancel first) (chasing = $chasing)" in new PortTestSetup(chasing) {
+      s"ignore any failure completion if they are concurrent (cancel first) (chasing = $chasing)" in new PortTestSetup(
+        chasing) {
         in.cancel()
         out.fail(TE("test"))
 
@@ -1106,7 +1113,8 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
         an[IllegalArgumentException] should be thrownBy { in.grab() }
       }
 
-      s"ignore any failure completion if they are concurrent (complete first) (chasing = $chasing)" in new PortTestSetup(chasing) {
+      s"ignore any failure completion if they are concurrent (complete first) (chasing = $chasing)" in new PortTestSetup(
+        chasing) {
         out.fail(TE("test"))
         in.cancel()
 
@@ -1123,7 +1131,8 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
         an[IllegalArgumentException] should be thrownBy { in.grab() }
       }
 
-      s"ignore failure from a push-then-fail if cancelled while in flight (chasing = $chasing)" in new PortTestSetup(chasing) {
+      s"ignore failure from a push-then-fail if cancelled while in flight (chasing = $chasing)" in new PortTestSetup(
+        chasing) {
         in.pull()
         stepAll()
         clearEvents()
@@ -1145,7 +1154,8 @@ class GraphInterpreterPortsSpec extends StreamSpec with GraphInterpreterSpecKit 
         an[IllegalArgumentException] should be thrownBy { in.grab() }
       }
 
-      s"ignore failure from a push-then-fail if cancelled after onPush (chasing = $chasing)" in new PortTestSetup(chasing) {
+      s"ignore failure from a push-then-fail if cancelled after onPush (chasing = $chasing)" in new PortTestSetup(
+        chasing) {
         in.pull()
         stepAll()
         clearEvents()

@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor;
@@ -7,12 +7,9 @@ package akka.actor;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import akka.testkit.TestProbe;
-import akka.testkit.javadsl.TestKit;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 public class AbstractFSMActorTest extends JUnitSuite {
 
@@ -24,9 +21,7 @@ public class AbstractFSMActorTest extends JUnitSuite {
       this.probe = probe;
       onTransition(this::logTransition);
       startWith("start", "data");
-      when("start", matchEventEquals("next", (newState, data) ->
-        goTo(newState)
-      ));
+      when("start", matchEventEquals("next", (newState, data) -> goTo(newState)));
       when("next", AbstractFSM.NullFunction());
       initialize();
     }
@@ -36,10 +31,9 @@ public class AbstractFSMActorTest extends JUnitSuite {
     }
   }
 
-
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("AbstractFSMActorTest",
-      AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource =
+      new AkkaJUnitActorSystemResource("AbstractFSMActorTest", AkkaSpec.testConf());
 
   private final ActorSystem system = actorSystemResource.getSystem();
 
@@ -55,6 +49,4 @@ public class AbstractFSMActorTest extends JUnitSuite {
 
     probe.expectMsg("Transitioning from start to next.");
   }
-
-
 }

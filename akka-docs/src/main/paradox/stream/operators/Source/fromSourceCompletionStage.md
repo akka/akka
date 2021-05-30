@@ -1,6 +1,6 @@
-# fromSourceCompletionStage
+# Source.fromSourceCompletionStage
 
-Streams the elements of an asynchronous source once its given *completion* operator completes.
+Deprecated by @ref:[`Source.completionStageSource`](completionStageSource.md).
 
 @ref[Source operators](../index.md#source-operators)
 
@@ -8,9 +8,12 @@ Streams the elements of an asynchronous source once its given *completion* opera
 
 ## Description
 
+`fromSourceCompletionStage` has been deprecated in 2.6.0, use @ref:[completionStageSource](completionStageSource.md) instead.
+
 Streams the elements of an asynchronous source once its given *completion* operator completes.
 If the *completion* fails the stream is failed with that exception.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

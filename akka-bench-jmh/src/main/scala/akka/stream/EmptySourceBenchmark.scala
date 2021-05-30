@@ -1,25 +1,24 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.ActorSystem
-import akka.stream.scaladsl._
-import org.openjdk.jmh.annotations._
-
 import scala.concurrent._
 import scala.concurrent.duration._
+
+import org.openjdk.jmh.annotations._
+
+import akka.actor.ActorSystem
+import akka.stream.scaladsl._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
 class EmptySourceBenchmark {
-  implicit val system = ActorSystem("EmptySourceBenchmark")
-  val materializerSettings = ActorMaterializerSettings(system).withDispatcher("akka.test.stream-dispatcher")
-  implicit val materializer = ActorMaterializer(materializerSettings)
+  implicit val system: ActorSystem = ActorSystem("EmptySourceBenchmark")
 
   @TearDown
   def shutdown(): Unit = {
@@ -40,5 +39,5 @@ class EmptySourceBenchmark {
     Rewrite to GraphStage:
      [info] EmptySourceBenchmark.empty  thrpt   10  17.556 ± 2.865  ops/ms
 
-   */
+ */
 }

@@ -1,12 +1,14 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
 import scala.collection.immutable._
+
 import akka.AkkaException
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object SeqNo {
 
   implicit val ord: Ordering[SeqNo] = new Ordering[SeqNo] {
@@ -21,6 +23,7 @@ object SeqNo {
 /**
  * Implements a 64 bit sequence number with proper wrap-around ordering.
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 final case class SeqNo(rawValue: Long) extends Ordered[SeqNo] {
 
   /**
@@ -42,6 +45,7 @@ final case class SeqNo(rawValue: Long) extends Ordered[SeqNo] {
   override def toString = String.valueOf(rawValue)
 }
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object HasSequenceNumber {
   implicit def seqOrdering[T <: HasSequenceNumber]: Ordering[T] = new Ordering[T] {
     def compare(x: T, y: T) = x.seq.compare(y.seq)
@@ -52,6 +56,7 @@ object HasSequenceNumber {
  * Messages that are to be buffered in [[akka.remote.AckedSendBuffer]] or [[akka.remote.AckedReceiveBuffer]] has
  * to implement this interface to provide the sequence needed by the buffers.
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 trait HasSequenceNumber {
 
   /**
@@ -66,16 +71,20 @@ trait HasSequenceNumber {
  * @param cumulativeAck Represents the highest sequence number received.
  * @param nacks Set of sequence numbers between the last delivered one and cumulativeAck that has been not yet received.
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 final case class Ack(cumulativeAck: SeqNo, nacks: Set[SeqNo] = Set.empty) {
   override def toString = s"ACK[$cumulativeAck, ${nacks.mkString("{", ", ", "}")}]"
 }
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class ResendBufferCapacityReachedException(c: Int)
-  extends AkkaException(s"Resend buffer capacity of [$c] has been reached.")
+    extends AkkaException(s"Resend buffer capacity of [$c] has been reached.")
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class ResendUnfulfillableException
-  extends AkkaException("Unable to fulfill resend request since negatively acknowledged payload is no longer in buffer. " +
-    "The resend states between two systems are compromised and cannot be recovered.")
+    extends AkkaException(
+      "Unable to fulfill resend request since negatively acknowledged payload is no longer in buffer. " +
+      "The resend states between two systems are compromised and cannot be recovered.")
 
 /**
  * Implements an immutable resend buffer that buffers messages until they have been acknowledged. Properly removes messages
@@ -88,11 +97,12 @@ class ResendUnfulfillableException
  * @param maxSeq The maximum sequence number that has been stored in this buffer. Messages having lower sequence number
  *               will be not stored but rejected with [[java.lang.IllegalArgumentException]]
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 final case class AckedSendBuffer[T <: HasSequenceNumber](
-  capacity: Int,
-  nonAcked: IndexedSeq[T] = Vector.empty[T],
-  nacked:   IndexedSeq[T] = Vector.empty[T],
-  maxSeq:   SeqNo         = SeqNo(-1)) {
+    capacity: Int,
+    nonAcked: IndexedSeq[T] = Vector.empty[T],
+    nacked: IndexedSeq[T] = Vector.empty[T],
+    maxSeq: SeqNo = SeqNo(-1)) {
 
   /**
    * Processes an incoming acknowledgement and returns a new buffer with only unacknowledged elements remaining.
@@ -104,11 +114,15 @@ final case class AckedSendBuffer[T <: HasSequenceNumber](
       throw new IllegalArgumentException(s"Highest SEQ so far was $maxSeq but cumulative ACK is ${ack.cumulativeAck}")
     val newNacked =
       if (ack.nacks.isEmpty) Vector.empty
-      else (nacked ++ nonAcked) filter { m ⇒ ack.nacks(m.seq) }
+      else
+        (nacked ++ nonAcked).filter { m =>
+          ack.nacks(m.seq)
+        }
     if (newNacked.size < ack.nacks.size) throw new ResendUnfulfillableException
-    else this.copy(
-      nonAcked = nonAcked.filter { m ⇒ m.seq > ack.cumulativeAck },
-      nacked = newNacked)
+    else
+      this.copy(nonAcked = nonAcked.filter { m =>
+        m.seq > ack.cumulativeAck
+      }, nacked = newNacked)
   }
 
   /**
@@ -118,8 +132,10 @@ final case class AckedSendBuffer[T <: HasSequenceNumber](
    * @return The updated buffer
    */
   def buffer(msg: T): AckedSendBuffer[T] = {
-    if (msg.seq <= maxSeq) throw new IllegalArgumentException(s"Sequence number must be monotonic. Received [${msg.seq}] " +
-      s"which is smaller than [$maxSeq]")
+    if (msg.seq <= maxSeq)
+      throw new IllegalArgumentException(
+        s"Sequence number must be monotonic. Received [${msg.seq}] " +
+        s"which is smaller than [$maxSeq]")
 
     if (nonAcked.size == capacity) throw new ResendBufferCapacityReachedException(capacity)
 
@@ -137,10 +153,11 @@ final case class AckedSendBuffer[T <: HasSequenceNumber](
  * @param cumulativeAck The highest sequence number received so far.
  * @param buf Buffer of messages that are waiting for delivery
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 final case class AckedReceiveBuffer[T <: HasSequenceNumber](
-  lastDelivered: SeqNo        = SeqNo(-1),
-  cumulativeAck: SeqNo        = SeqNo(-1),
-  buf:           SortedSet[T] = TreeSet.empty[T])(implicit val seqOrdering: Ordering[T]) {
+    lastDelivered: SeqNo = SeqNo(-1),
+    cumulativeAck: SeqNo = SeqNo(-1),
+    buf: SortedSet[T] = TreeSet.empty[T])(implicit val seqOrdering: Ordering[T]) {
 
   import SeqNo.ord.max
 
@@ -166,7 +183,7 @@ final case class AckedReceiveBuffer[T <: HasSequenceNumber](
     var updatedLastDelivered = lastDelivered
     var prev = lastDelivered
 
-    for (bufferedMsg ← buf) {
+    for (bufferedMsg <- buf) {
       if (bufferedMsg.seq.isSuccessor(updatedLastDelivered)) {
         deliver :+= bufferedMsg
         updatedLastDelivered = updatedLastDelivered.inc
@@ -199,7 +216,7 @@ final case class AckedReceiveBuffer[T <: HasSequenceNumber](
     this.copy(
       lastDelivered = mergedLastDelivered,
       cumulativeAck = max(this.cumulativeAck, that.cumulativeAck),
-      buf = (this.buf union that.buf).filter { _.seq > mergedLastDelivered })
+      buf = this.buf.union(that.buf).filter { _.seq > mergedLastDelivered })
   }
 
   override def toString = buf.map { _.seq }.mkString("[", ", ", "]")

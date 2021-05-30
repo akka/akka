@@ -1,13 +1,14 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import akka.actor.{ ActorContext, ActorSystem, ExtendedActorSystem }
 import com.typesafe.config.Config
-import akka.event.EventStream
+
 import akka.ConfigurationException
+import akka.actor.{ ActorContext, ActorSystem, ExtendedActorSystem }
+import akka.event.EventStream
 
 /**
  * Interface for a registry of Akka failure detectors. New resources are implicitly registered when heartbeat is first
@@ -65,13 +66,17 @@ private[akka] object FailureDetectorLoader {
    * @return A configured instance of the given [[FailureDetector]] implementation
    */
   def load(fqcn: String, config: Config, system: ActorSystem): FailureDetector = {
-    system.asInstanceOf[ExtendedActorSystem].dynamicAccess.createInstanceFor[FailureDetector](
-      fqcn, List(
-      classOf[Config] → config,
-      classOf[EventStream] → system.eventStream)).recover({
-      case e ⇒ throw new ConfigurationException(
-        s"Could not create custom failure detector [$fqcn] due to: ${e.toString}", e)
-    }).get
+    system
+      .asInstanceOf[ExtendedActorSystem]
+      .dynamicAccess
+      .createInstanceFor[FailureDetector](
+        fqcn,
+        List(classOf[Config] -> config, classOf[EventStream] -> system.eventStream))
+      .recover({
+        case e =>
+          throw new ConfigurationException(s"Could not create custom failure detector [$fqcn] due to: ${e.toString}", e)
+      })
+      .get
   }
 
   /**

@@ -1,4 +1,0 @@
-# #22374 introduce fishForSpecificMessage in TestKit
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.fishForSpecificMessage$default$1")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.fishForSpecificMessage")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.testkit.TestKitBase.fishForSpecificMessage$default$2")

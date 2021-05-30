@@ -1,16 +1,14 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
 
 import akka.NotUsed
 import akka.actor.{ Actor, Props }
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
-import scala.concurrent.Future
 
 class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
 
@@ -23,31 +21,28 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
     case class LogsOffer(streamId: Int, sourceRef: SourceRef[String])
 
     class DataSource extends Actor {
-      import context.dispatcher
-      implicit val mat = ActorMaterializer()(context)
 
       def receive = {
-        case RequestLogs(streamId) ⇒
+        case RequestLogs(streamId) =>
           // obtain the source you want to offer:
           val source: Source[String, NotUsed] = streamLogs(streamId)
 
           // materialize the SourceRef:
-          val ref: Future[SourceRef[String]] = source.runWith(StreamRefs.sourceRef())
+          val ref: SourceRef[String] = source.runWith(StreamRefs.sourceRef())
 
           // wrap the SourceRef in some domain message, such that the sender knows what source it is
-          val reply: Future[LogsOffer] = ref.map(LogsOffer(streamId, _))
+          val reply = LogsOffer(streamId, ref)
 
           // reply to sender
-          reply pipeTo sender()
+          sender() ! reply
       }
 
       def streamLogs(streamId: Long): Source[String, NotUsed] = ???
     }
     //#offer-source
 
-    implicit val mat = ActorMaterializer()
     //#offer-source-use
-    val sourceActor = system.actorOf(Props[DataSource], "dataSource")
+    val sourceActor = system.actorOf(Props[DataSource](), "dataSource")
 
     sourceActor ! RequestLogs(1337)
     val offer = expectMsgType[LogsOffer]
@@ -62,7 +57,6 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
 
   "offer a sink ref" in compileOnlySpec {
     //#offer-sink
-    import akka.pattern.pipe
     import akka.stream.SinkRef
 
     case class PrepareUpload(id: String)
@@ -70,22 +64,19 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
 
     class DataReceiver extends Actor {
 
-      import context.dispatcher
-      implicit val mat = ActorMaterializer()(context)
-
       def receive = {
-        case PrepareUpload(nodeId) ⇒
+        case PrepareUpload(nodeId) =>
           // obtain the source you want to offer:
           val sink: Sink[String, NotUsed] = logsSinkFor(nodeId)
 
           // materialize the SinkRef (the remote is like a source of data for us):
-          val ref: Future[SinkRef[String]] = StreamRefs.sinkRef[String]().to(sink).run()
+          val ref: SinkRef[String] = StreamRefs.sinkRef[String]().to(sink).run()
 
           // wrap the SinkRef in some domain message, such that the sender knows what source it is
-          val reply: Future[MeasurementsSinkReady] = ref.map(MeasurementsSinkReady(nodeId, _))
+          val reply = MeasurementsSinkReady(nodeId, ref)
 
           // reply to sender
-          reply pipeTo sender()
+          sender() ! reply
       }
 
       def logsSinkFor(nodeId: String): Sink[String, NotUsed] = ???
@@ -93,11 +84,10 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
 
     //#offer-sink
 
-    implicit val mat = ActorMaterializer()
     def localMetrics(): Source[String, NotUsed] = Source.single("")
 
     //#offer-sink-use
-    val receiver = system.actorOf(Props[DataReceiver], "receiver")
+    val receiver = system.actorOf(Props[DataReceiver](), "receiver")
 
     receiver ! PrepareUpload("system-42-tmp")
     val ready = expectMsgType[MeasurementsSinkReady]
@@ -108,19 +98,20 @@ class FlowStreamRefsDocSpec extends AkkaSpec with CompileOnlySpec {
   }
 
   "show how to configure timeouts with attrs" in compileOnlySpec {
-
-    implicit val mat: ActorMaterializer = null
     //#attr-sub-timeout
     // configure the timeout for source
     import scala.concurrent.duration._
     import akka.stream.StreamRefAttributes
 
     // configuring Sink.sourceRef (notice that we apply the attributes to the Sink!):
-    Source.repeat("hello")
+    Source
+      .repeat("hello")
       .runWith(StreamRefs.sourceRef().addAttributes(StreamRefAttributes.subscriptionTimeout(5.seconds)))
 
     // configuring SinkRef.source:
-    StreamRefs.sinkRef().addAttributes(StreamRefAttributes.subscriptionTimeout(5.seconds))
+    StreamRefs
+      .sinkRef()
+      .addAttributes(StreamRefAttributes.subscriptionTimeout(5.seconds))
       .runWith(Sink.ignore) // not very interesting Sink, just an example
     //#attr-sub-timeout
   }

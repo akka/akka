@@ -1,10 +1,16 @@
-# Behaviors as Finite state machines
+---
+project.description: Finite State Machines (FSM) with Akka Actors.
+---
+# Behaviors as finite state machines
 
-With untyped actors there is explicit support for building @ref[Finite State Machines](../fsm.md). No support
-is needed in Akka Typed as it is straightforward to represent FSMs with behaviors. 
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic FSM](../fsm.md).
 
-To see how the Akka Typed API can be used to model FSMs here's the Buncher example ported from
-the @ref[untyped actor FSM docs](../fsm.md). It demonstrates how to:
+An actor can be used to model a Finite State Machine (FSM).
+
+To demonstrate this, consider an actor which shall receive and queue messages while they arrive in a burst and
+send them on after the burst ended or a flush request is received.
+
+This example demonstrates how to:
 
 * Model states using different behaviors
 * Model storing data at each state by representing the behavior as a method 
@@ -22,17 +28,14 @@ Java
 `Batches` to be passed on; `Queue` will add to the internal queue while
 `Flush` will mark the end of a burst.
 
-Untyped `FSM`s also have a `D` (data) type parameter. Akka Typed doesn't need to be aware of this and it can be stored
-via defining your behaviors as methods.
-
 Scala
 :  @@snip [FSMSocSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/FSMDocSpec.scala) { #storing-state }
 
 Java
 :  @@snip [FSMSocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/FSMDocTest.java) { #storing-state }
 
-Each state becomes a distinct behavior. No explicit `goto` is required as Akka Typed
-already requires you return the next behavior.
+Each state becomes a distinct behavior and after processing a message the next state in the form of a `Behavior`
+is returned.
 
 Scala
 :  @@snip [FSMSocSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/FSMDocSpec.scala) { #simple-state }
@@ -40,14 +43,24 @@ Scala
 Java
 :  @@snip [FSMSocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/FSMDocTest.java) { #simple-state}
 
+@@@ div { .group-scala }
+The method `idle` above makes use of `Behaviors.unhandled` which advises the system to reuse the previous behavior, 
+including the hint that the message has not been handled.
+There are two related behaviors:
+
+- return `Behaviors.empty` as next behavior in case you reached a state where you don't expect messages any more. 
+  For instance if an actor only waits until all spawned child actors stopped. 
+  Unhandled messages are still logged with this behavior.
+- return `Behaviors.ignore` as next behavior in case you don't care about unhandled messages. 
+  All messages sent to an actor with such a behavior are simply dropped and ignored (without logging)
+@@@
+
 To set state timeouts use `Behaviors.withTimers` along with a `startSingleTimer`.
 
-Any side effects that were previously done in a `onTransition` block go directly into the behaviors.
+## Example project
 
+@java[@extref[FSM example project](samples:akka-samples-fsm-java)]
+@scala[@extref[FSM example project](samples:akka-samples-fsm-scala)]
+is an example project that can be downloaded, and with instructions of how to run.
 
-
-
-
-
-
-
+This project contains a Dining Hakkers sample illustrating how to model a Finite State Machine (FSM) with actors.

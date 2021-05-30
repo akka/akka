@@ -1,15 +1,15 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton.protobuf
 
 import akka.actor.ExtendedActorSystem
-import akka.testkit.AkkaSpec
 import akka.cluster.singleton.ClusterSingletonManager.Internal.HandOverDone
 import akka.cluster.singleton.ClusterSingletonManager.Internal.HandOverInProgress
 import akka.cluster.singleton.ClusterSingletonManager.Internal.HandOverToMe
 import akka.cluster.singleton.ClusterSingletonManager.Internal.TakeOverFromMe
+import akka.testkit.AkkaSpec
 
 class ClusterSingletonMessageSerializerSpec extends AkkaSpec {
 

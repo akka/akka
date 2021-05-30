@@ -1,19 +1,20 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
 
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor._
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
 
 /**
  * A spec that verified that the AkkaException has at least a single argument constructor of type String.
  *
  * This is required to make Akka Exceptions be friends with serialization/deserialization.
  */
-class AkkaExceptionSpec extends WordSpec with Matchers {
+class AkkaExceptionSpec extends AnyWordSpec with Matchers {
 
   "AkkaException" must {
     "have a AkkaException(String msg) constructor to be serialization friendly" in {

@@ -1,20 +1,25 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
+import akka.annotation.InternalStableApi
+
 /**
  * INTERNAL API
  */
+@InternalStableApi
 private[akka] object OptionVal {
 
-  def apply[A >: Null](x: A): OptionVal[A] = new OptionVal(x)
+  def apply[A](x: A): OptionVal[A] = new OptionVal(x)
 
   object Some {
-    def apply[A >: Null](x: A): OptionVal[A] = new OptionVal(x)
-    def unapply[A >: Null](x: OptionVal[A]): OptionVal[A] = x
+    def apply[A](x: A): OptionVal[A] = new OptionVal(x)
+    def unapply[A](x: OptionVal[A]): OptionVal[A] = x
   }
+
+  def none[A]: OptionVal[A] = None.asInstanceOf[OptionVal[A]]
 
   /**
    * Represents non-existent values, `null` values.
@@ -31,7 +36,8 @@ private[akka] object OptionVal {
  * because it has name based extractor using methods `isEmpty` and `get`.
  * See https://hseeberger.wordpress.com/2013/10/04/name-based-extractors-in-scala-2-11/
  */
-private[akka] final class OptionVal[+A >: Null](val x: A) extends AnyVal {
+@InternalStableApi
+private[akka] final class OptionVal[+A](val x: A) extends AnyVal {
 
   /**
    * Returns true if the option is `OptionVal.None`, false otherwise.
@@ -51,13 +57,19 @@ private[akka] final class OptionVal[+A >: Null](val x: A) extends AnyVal {
   def getOrElse[B >: A](default: B): B =
     if (x == null) default else x
 
+  /**
+   * Convert to `scala.Option`
+   */
+  def toOption: Option[A] =
+    Option(x)
+
   def contains[B >: A](it: B): Boolean =
     x != null && x == it
 
   /**
    *  Returns the option's value if it is nonempty, or `null` if it is empty.
    */
-  def orNull[A1 >: A](implicit ev: Null <:< A1): A1 = this getOrElse ev(null)
+  def orNull[A1 >: A](implicit ev: Null <:< A1): A1 = this.getOrElse(ev(null))
 
   /**
    * Returns the option's value.

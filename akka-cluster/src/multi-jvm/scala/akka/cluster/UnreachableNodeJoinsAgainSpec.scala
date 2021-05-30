@@ -1,36 +1,36 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import language.postfixOps
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
+import akka.actor.Props
+import akka.cluster.MultiNodeClusterSpec.EndActor
+import akka.remote.RARP
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.actor.RootActorPath
-import akka.cluster.MultiNodeClusterSpec.EndActor
-import akka.remote.RARP
+import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object UnreachableNodeJoinsAgainMultiNodeConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(ConfigFactory.parseString(
-    """
+  commonConfig(ConfigFactory.parseString("""
       akka.remote.log-remote-lifecycle-events = off
     """).withFallback(debugConfig(on = false).withFallback(MultiNodeClusterSpec.clusterConfig)))
 
@@ -44,8 +44,8 @@ class UnreachableNodeJoinsAgainMultiJvmNode3 extends UnreachableNodeJoinsAgainSp
 class UnreachableNodeJoinsAgainMultiJvmNode4 extends UnreachableNodeJoinsAgainSpec
 
 abstract class UnreachableNodeJoinsAgainSpec
-  extends MultiNodeSpec(UnreachableNodeJoinsAgainMultiNodeConfig)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(UnreachableNodeJoinsAgainMultiNodeConfig)
+    with MultiNodeClusterSpec {
 
   import UnreachableNodeJoinsAgainMultiNodeConfig._
 
@@ -79,7 +79,7 @@ abstract class UnreachableNodeJoinsAgainSpec
 
       runOn(first) {
         // pull network for victim node from all nodes
-        allBut(victim).foreach { roleName ⇒
+        allBut(victim).foreach { roleName =>
           testConductor.blackhole(victim, roleName, Direction.Both).await
         }
       }
@@ -92,10 +92,9 @@ abstract class UnreachableNodeJoinsAgainSpec
         within(30 seconds) {
           // victim becomes all alone
           awaitAssert {
-            val members = clusterView.members
             clusterView.unreachableMembers.size should ===(roles.size - 1)
           }
-          clusterView.unreachableMembers.map(_.address) should ===((allButVictim map address).toSet)
+          clusterView.unreachableMembers.map(_.address) should ===(allButVictim.map(address).toSet)
         }
       }
 
@@ -104,10 +103,9 @@ abstract class UnreachableNodeJoinsAgainSpec
         within(30 seconds) {
           // victim becomes unreachable
           awaitAssert {
-            val members = clusterView.members
             clusterView.unreachableMembers.size should ===(1)
           }
-          awaitSeenSameState(allButVictim map address: _*)
+          awaitSeenSameState(allButVictim.map(address): _*)
           // still one unreachable
           clusterView.unreachableMembers.size should ===(1)
           clusterView.unreachableMembers.head.address should ===(node(victim).address)
@@ -120,7 +118,7 @@ abstract class UnreachableNodeJoinsAgainSpec
 
     "mark the node as DOWN" taggedAs LongRunningTest in {
       runOn(master) {
-        cluster down victim
+        cluster.down(victim)
       }
 
       val allButVictim = allBut(victim, roles)
@@ -128,7 +126,7 @@ abstract class UnreachableNodeJoinsAgainSpec
         // eventually removed
         awaitMembersUp(roles.size - 1, Set(victim))
         awaitAssert(clusterView.unreachableMembers should ===(Set.empty), 15 seconds)
-        awaitAssert(clusterView.members.map(_.address) should ===((allButVictim map address).toSet))
+        awaitAssert(clusterView.members.map(_.address) should ===(allButVictim.map(address).toSet))
 
       }
 
@@ -148,7 +146,7 @@ abstract class UnreachableNodeJoinsAgainSpec
 
       runOn(first) {
         // put the network back in
-        allBut(victim).foreach { roleName ⇒
+        allBut(victim).foreach { roleName =>
           testConductor.passThrough(victim, roleName, Direction.Both).await
         }
       }
@@ -163,20 +161,21 @@ abstract class UnreachableNodeJoinsAgainSpec
       runOn(victim) {
         val victimAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
         val freshConfig =
-          ConfigFactory.parseString(
-            if (RARP(system).provider.remoteSettings.Artery.Enabled)
-              s"""
+          ConfigFactory
+            .parseString(
+              if (RARP(system).provider.remoteSettings.Artery.Enabled)
+                s"""
                 akka.remote.artery.canonical {
                   hostname = ${victimAddress.host.get}
                   port = ${victimAddress.port.get}
                 }
                """
-            else s"""
-              akka.remote.netty.tcp {
+              else s"""
+              akka.remote.classic.netty.tcp {
                 hostname = ${victimAddress.host.get}
                 port = ${victimAddress.port.get}
-              }"""
-          ).withFallback(system.settings.config)
+              }""")
+            .withFallback(system.settings.config)
 
         Await.ready(system.whenTerminated, 10 seconds)
 
@@ -188,7 +187,7 @@ abstract class UnreachableNodeJoinsAgainSpec
           within(30 seconds) {
             awaitAssert(Cluster(freshSystem).readView.members.map(_.address) should contain(victimAddress))
             awaitAssert(Cluster(freshSystem).readView.members.size should ===(expectedNumberOfMembers))
-            awaitAssert(Cluster(freshSystem).readView.members.map(_.status) should ===(Set(MemberStatus.Up)))
+            awaitAssert(Cluster(freshSystem).readView.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up)))
           }
 
           // signal to master node that victim is done

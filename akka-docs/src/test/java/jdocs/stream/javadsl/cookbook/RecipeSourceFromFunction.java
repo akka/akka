@@ -1,13 +1,11 @@
-/**
- *  Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream.javadsl.cookbook;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -23,19 +21,20 @@ import java.util.concurrent.TimeUnit;
 
 public class RecipeSourceFromFunction extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
-    system = ActorSystem.create("RecipeSourceFromFunction", ConfigFactory.parseString("akka.loglevel=DEBUG\nakka.loggers = [akka.testkit.TestEventListener]"));
-    mat = ActorMaterializer.create(system);
+    system =
+        ActorSystem.create(
+            "RecipeSourceFromFunction",
+            ConfigFactory.parseString(
+                "akka.loglevel=DEBUG\nakka.loggers = [akka.testkit.TestEventListener]"));
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   @Test
@@ -46,16 +45,17 @@ public class RecipeSourceFromFunction extends RecipeTest {
       }
 
       {
-        //#source-from-function
-        final Source<String, NotUsed> source = Source
-          .repeat(NotUsed.getInstance())
-          .map(elem -> builderFunction());
-        //#source-from-function
+        // #source-from-function
+        final Source<String, NotUsed> source =
+            Source.repeat(NotUsed.getInstance()).map(elem -> builderFunction());
+        // #source-from-function
 
-        final List<String> result = source
-          .take(2)
-          .runWith(Sink.seq(), mat)
-          .toCompletableFuture().get(3, TimeUnit.SECONDS);
+        final List<String> result =
+            source
+                .take(2)
+                .runWith(Sink.seq(), system)
+                .toCompletableFuture()
+                .get(3, TimeUnit.SECONDS);
 
         Assert.assertEquals(2, result.size());
       }

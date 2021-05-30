@@ -1,13 +1,13 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit._
 import org.reactivestreams.Publisher
+
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class FlowMergeSpec extends BaseTwoStreamsSetup {
 
@@ -28,13 +28,12 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       val source3 = Source(4 to 9)
       val probe = TestSubscriber.manualProbe[Int]()
 
-      source1.merge(source2).merge(source3)
-        .map(_ * 2).map(_ / 2).map(_ + 1).runWith(Sink.fromSubscriber(probe))
+      source1.merge(source2).merge(source3).map(_ * 2).map(_ / 2).map(_ + 1).runWith(Sink.fromSubscriber(probe))
 
       val subscription = probe.expectSubscription()
 
       var collected = Set.empty[Int]
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         subscription.request(1)
         collected += probe.expectNext()
       }
@@ -88,8 +87,11 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       val up2 = TestPublisher.manualProbe[Int]()
       val down = TestSubscriber.manualProbe[Int]()
 
-      val (graphSubscriber1, graphSubscriber2) = Source.asSubscriber[Int]
-        .mergeMat(Source.asSubscriber[Int])((_, _)).toMat(Sink.fromSubscriber(down))(Keep.left).run
+      val (graphSubscriber1, graphSubscriber2) = Source
+        .asSubscriber[Int]
+        .mergeMat(Source.asSubscriber[Int])((_, _))
+        .toMat(Sink.fromSubscriber(down))(Keep.left)
+        .run()
 
       val downstream = down.expectSubscription()
       downstream.cancel()
@@ -105,10 +107,11 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       val up2 = TestPublisher.probe[Int]()
       val down = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(up1)
+      Source
+        .fromPublisher(up1)
         .merge(Source.fromPublisher(up2), eagerComplete = true)
         .to(Sink.fromSubscriber(down))
-        .run
+        .run()
 
       up1.ensureSubscription()
       up2.ensureSubscription()
@@ -124,6 +127,66 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       down.request(1)
       down.expectNext()
 
+    }
+
+    "works in number example for mergePreferred" in {
+      //#mergePreferred
+      import akka.stream.scaladsl.{ Sink, Source }
+
+      val sourceA = Source(List(1, 2, 3, 4))
+      val sourceB = Source(List(10, 20, 30, 40))
+
+      sourceA.mergePreferred(sourceB, false).runWith(Sink.foreach(println))
+      // prints 1, 10, ... since both sources have their first element ready and the left source is preferred
+
+      sourceA.mergePreferred(sourceB, true).runWith(Sink.foreach(println))
+      // prints 10, 1, ... since both sources have their first element ready and the right source is preferred
+      //#mergePreferred
+    }
+
+    "works in number example for mergePrioritized" in {
+      //#mergePrioritized
+      import akka.stream.scaladsl.{ Sink, Source }
+
+      val sourceA = Source(List(1, 2, 3, 4))
+      val sourceB = Source(List(10, 20, 30, 40))
+
+      sourceA.mergePrioritized(sourceB, 99, 1).runWith(Sink.foreach(println))
+      // prints e.g. 1, 10, 2, 3, 4, 20, 30, 40 since both sources have their first element ready and the left source
+      // has higher priority – if both sources have elements ready, sourceA has a 99% chance of being picked next
+      // while sourceB has a 1% chance
+      //#mergePrioritized
+    }
+
+    "works in number example for merge sorted" in {
+      //#merge-sorted
+      import akka.stream.scaladsl.Sink
+      import akka.stream.scaladsl.Source
+
+      val sourceA = Source(List(1, 3, 5, 7))
+      val sourceB = Source(List(2, 4, 6, 8))
+
+      sourceA.mergeSorted(sourceB).runWith(Sink.foreach(println))
+      //prints 1, 2, 3, 4, 5, 6, 7, 8
+
+      val sourceC = Source(List(20, 1, 1, 1))
+
+      sourceA.mergeSorted(sourceC).runWith(Sink.foreach(println))
+      //prints 1, 3, 5, 7, 20, 1, 1, 1
+      //#merge-sorted
+    }
+
+    "works in number example for merge" in {
+      //#merge
+      import akka.stream.scaladsl.Sink
+      import akka.stream.scaladsl.Source
+
+      val sourceA = Source(List(1, 2, 3, 4))
+      val sourceB = Source(List(10, 20, 30, 40))
+
+      sourceA.merge(sourceB).runWith(Sink.foreach(println))
+      // merging is not deterministic, can for example print 1, 2, 3, 4, 10, 20, 30, 40
+      //#merge
     }
   }
 }

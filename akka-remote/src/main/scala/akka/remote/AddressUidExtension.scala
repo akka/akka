@@ -1,11 +1,13 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
 import java.util.concurrent.ThreadLocalRandom
+
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
@@ -21,6 +23,7 @@ import akka.actor.ExtensionIdProvider
  */
 object AddressUidExtension extends ExtensionId[AddressUidExtension] with ExtensionIdProvider {
   override def get(system: ActorSystem): AddressUidExtension = super.get(system)
+  override def get(system: ClassicActorSystemProvider): AddressUidExtension = super.get(system)
 
   override def lookup = AddressUidExtension
 

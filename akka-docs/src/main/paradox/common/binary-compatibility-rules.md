@@ -1,3 +1,6 @@
+---
+project.description: Binary compatibility across Akka versions.
+---
 # Binary Compatibility Rules
 
 Akka maintains and verifies *backwards binary compatibility* across versions of modules.
@@ -8,11 +11,14 @@ In the rest of this document whenever *binary compatibility* is mentioned "*back
 This means that the new JARs are a drop-in replacement for the old one 
 (but not the other way around) as long as your build does not enable the inliner (Scala-only restriction).
 
+Because of this approach applications can upgrade to the latest version of Akka
+even when @ref[intermediate satellite projects are not yet upgraded](../project/downstream-upgrade-strategy.md)
+
 ## Binary compatibility rules explained
 
 Binary compatibility is maintained between:
 
- * **minor** and **patch** versions - please note that the meaning of "minor" has shifted to be more restrictive with Akka `2.4.0`, read [Change in versioning scheme](#24versioningchange) for details.
+ * **minor** and **patch** versions - please note that the meaning of "minor" has shifted to be more restrictive with Akka `2.4.0`, read @ref:[Change in versioning scheme](#24versioningchange) for details.
 
 Binary compatibility is **NOT** maintained between:
 
@@ -20,7 +26,7 @@ Binary compatibility is **NOT** maintained between:
  * any versions of **may change** modules – read @ref:[Modules marked "May Change"](may-change.md) for details
  * a few notable exclusions explained below
 
-Specific examples (please read [Change in versioning scheme](#24versioningchange) to understand the difference in "before 2.4 era" and "after 2.4 era"):
+Specific examples (please read @ref:[Change in versioning scheme](#24versioningchange) to understand the difference in "before 2.4 era" and "after 2.4 era"):
 
 ```
 # [epoch.major.minor] era
@@ -42,6 +48,10 @@ OK:  3.1.n --> 3.2.0 ...
 
 If a security vulnerability is reported in Akka or a transient dependency of Akka and it cannot be solved without breaking binary compatibility then fixing the security issue is more important. In such cases binary compatibility might not be retained when releasing a minor version. Such exception is always noted in the release announcement.
 
+We do not guarantee binary compatibility with versions that are EOL, though in
+practice this does not make a big difference: only in rare cases would a change
+be binary compatible with recent previous releases but not with older ones.
+
 Some modules are excluded from the binary compatibility guarantees, such as:
 
  * `*-testkit` modules - since these are to be used only in tests, which usually are re-compiled and run on demand
@@ -59,7 +69,7 @@ Once a method has been deprecated then the guideline* is that it will be kept, a
 
 Since the release of Akka `2.4.0` a new versioning scheme is in effect.
 
-Historically, Akka has been following the Java or Scala style of versioning where as the first number would mean "**epoch**",
+Historically, Akka has been following the Java or Scala style of versioning in which the first number would mean "**epoch**",
 the second one would mean **major**, and third be the **minor**, thus: `epoch.major.minor` (versioning scheme followed until and during `2.3.x`).
 
 **Currently**, since Akka `2.4.0`, the new versioning applies which is closer to semantic versioning many have come to expect, 
@@ -72,12 +82,27 @@ so there is no reason to remain on Akka 2.3.x, since upgrading is completely com
 ## Mixed versioning is not allowed
 
 Modules that are released together under the Akka project are intended to be upgraded together.
-For example, it is not legal to mix Akka Actor `2.4.2` with Akka Cluster `2.4.5` even though
-"Akka `2.4.2`" and "Akka `2.4.5`" *are* binary compatible. 
+For example, it is not legal to mix Akka Actor `2.6.2` with Akka Cluster `2.6.5` even though
+"Akka `2.6.2`" and "Akka `2.6.5`" *are* binary compatible. 
 
 This is because modules may assume internals changes across module boundaries, for example some feature
 in Clustering may have required an internals change in Actor, however it is not public API, 
 thus such change is considered safe.
+
+If you accidentally mix Akka versions, for example through transitive
+dependencies, you might get a warning at run time such as:
+
+```
+You are using version 2.6.6 of Akka, but it appears you (perhaps indirectly) also depend on older versions 
+of related artifacts. You can solve this by adding an explicit dependency on version 2.6.6 of the 
+[akka-persistence-query] artifacts to your project. Here's a complete collection of detected 
+artifacts: (2.5.3, [akka-persistence-query]), (2.6.6, [akka-actor, akka-cluster]).
+See also: https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html#mixed-versioning-is-not-allowed
+```
+
+The fix is typically to pick the highest Akka version, and add explicit
+dependencies to your project as needed. For example, in the example above
+you might want to add `akka-persistence-query` dependency for 2.6.6.
 
 @@@ note
 
@@ -85,6 +110,12 @@ We recommend keeping an `akkaVersion` variable in your build file, and re-use it
 included modules, so when you upgrade you can simply change it in this one place.
 
 @@@
+
+The warning includes a full list of Akka runtime dependencies in the classpath, and the version detected. 
+You can use that information to include an explicit list of Akka artifacts you depend on into your build. If you use
+Maven or Gradle, you can include the @ref:[Akka Maven BOM](../typed/guide/modules.md#actor-library) (bill 
+of materials) to help you keep all the versions of your Akka dependencies in sync. 
+
 
 ## The meaning of "may change"
 
@@ -110,7 +141,7 @@ No compatibility guarantees are given about these classes. They may change or ev
 and user code is not supposed to call them.
 
 Side-note on JVM representation details of the Scala `private[akka]` pattern that Akka is using extensively in 
-it's internals: Such methods or classes, which act as "accessible only from the given package" in Scala, are compiled
+its internals: Such methods or classes, which act as "accessible only from the given package" in Scala, are compiled
 down to `public` (!) in raw Java bytecode. The access restriction, that Scala understands is carried along
 as metadata stored in the classfile. Thus, such methods are safely guarded from being accessed from Scala,
 however Java users will not be warned about this fact by the `javac` compiler. Please be aware of this and do not call
@@ -132,8 +163,8 @@ possible, however these markers allow to experiment, gather feedback and stabili
 
 ## Binary Compatibility Checking Toolchain
 
-Akka uses the Lightbend maintained [Migration Manager](https://github.com/typesafehub/migration-manager), 
-called `MiMa` for short, for enforcing binary compatibility is kept where it was promised.
+Akka uses the Lightbend maintained [MiMa](https://github.com/lightbend/mima),
+for enforcing binary compatibility is kept where it was promised.
 
 All Pull Requests must pass MiMa validation (which happens automatically), and if failures are detected,
 manual exception overrides may be put in place if the change happened to be in an Internal API for example.
@@ -142,7 +173,3 @@ manual exception overrides may be put in place if the change happened to be in a
 
 Scala does not maintain serialization compatibility across major versions. This means that if Java serialization is used
 there is no guarantee objects can be cleanly deserialized if serialized with a different version of Scala.
-
-The internal Akka Protobuf serializers that can be enabled explicitly with `enable-additional-serialization-bindings`
-or implicitly with `akka.actor.allow-java-serialization = off` (which is preferable from a security standpoint)
-does not suffer from this problem.

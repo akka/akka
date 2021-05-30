@@ -1,12 +1,13 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.japi.journal
 
+import com.typesafe.config.Config
+
 import akka.persistence.CapabilityFlag
 import akka.persistence.journal.JournalSpec
-import com.typesafe.config.Config
 
 /**
  * JAVA API
@@ -21,7 +22,7 @@ import com.typesafe.config.Config
  * @param config configures the Journal plugin to be tested
  */
 class JavaJournalSpec(config: Config) extends JournalSpec(config) {
-  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = CapabilityFlag.on
+  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = CapabilityFlag.on()
 
-  override protected def supportsSerialization: CapabilityFlag = CapabilityFlag.on
+  override protected def supportsSerialization: CapabilityFlag = CapabilityFlag.on()
 }

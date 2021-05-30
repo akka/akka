@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -7,23 +7,24 @@ package aeron
 
 import java.util.concurrent.TimeUnit.{ MICROSECONDS, MILLISECONDS }
 
-import akka.Done
-import akka.actor.ExtendedActorSystem
-import akka.dispatch.{ AbstractNodeQueue, MonitorableThreadFactory }
-import akka.event.Logging
-import org.agrona.concurrent.{ BackoffIdleStrategy, BusySpinIdleStrategy, IdleStrategy, SleepingIdleStrategy }
-
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
+
+import org.agrona.concurrent.{ BackoffIdleStrategy, BusySpinIdleStrategy, IdleStrategy, SleepingIdleStrategy }
+
+import akka.Done
+import akka.actor.ExtendedActorSystem
+import akka.dispatch.{ AbstractNodeQueue, MonitorableThreadFactory }
+import akka.event.Logging
 
 /**
  * INTERNAL API
  */
 private[akka] object TaskRunner {
 
-  type Task = () ⇒ Boolean
+  type Task = () => Boolean
   sealed trait Command
   case object Shutdown extends Command
   final case class Add(task: Task) extends Command
@@ -126,9 +127,9 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
 
   def start(): Unit = {
     val tf = system.threadFactory match {
-      case m: MonitorableThreadFactory ⇒
+      case m: MonitorableThreadFactory =>
         m.withName(m.name + "-taskrunner")
-      case other ⇒ other
+      case other => other
     }
     val thread = tf.newThread(this)
     thread.start()
@@ -158,7 +159,7 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
         }
       }
     } catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         log.error(e, e.getMessage)
     }
   }
@@ -175,7 +176,7 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
           reset = true
         }
       } catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           log.error(e, "Task failed")
           tasks.remove(task)
       }
@@ -185,10 +186,10 @@ private[akka] class TaskRunner(system: ExtendedActorSystem, val idleCpuLevel: In
 
   private def processCommand(cmd: Command): Unit = {
     cmd match {
-      case null         ⇒ // no command
-      case Add(task)    ⇒ tasks.add(task)
-      case Remove(task) ⇒ tasks.remove(task)
-      case Shutdown ⇒
+      case null         => // no command
+      case Add(task)    => tasks.add(task)
+      case Remove(task) => tasks.remove(task)
+      case Shutdown =>
         running = false
         tasks.removeAll() // gc friendly
         while (cmdQueue.poll() != null) () // gc friendly

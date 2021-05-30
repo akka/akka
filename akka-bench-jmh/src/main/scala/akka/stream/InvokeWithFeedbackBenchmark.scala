@@ -1,24 +1,24 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.ActorSystem
-import akka.stream.scaladsl._
-import org.openjdk.jmh.annotations._
-
 import scala.concurrent._
 import scala.concurrent.duration._
+
+import org.openjdk.jmh.annotations._
+
+import akka.actor.ActorSystem
+import akka.stream.scaladsl._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
 class InvokeWithFeedbackBenchmark {
-  implicit val system = ActorSystem("InvokeWithFeedbackBenchmark")
-  val materializerSettings = ActorMaterializerSettings(system).withDispatcher("akka.test.stream-dispatcher")
+  implicit val system: ActorSystem = ActorSystem("InvokeWithFeedbackBenchmark")
 
   var sourceQueue: SourceQueueWithComplete[Int] = _
   var sinkQueue: SinkQueueWithCancel[Int] = _
@@ -27,13 +27,10 @@ class InvokeWithFeedbackBenchmark {
 
   @Setup
   def setup(): Unit = {
-    val settings = ActorMaterializerSettings(system)
-
-    implicit val materializer = ActorMaterializer(settings)
-
     // these are currently the only two built in stages using invokeWithFeedback
     val (in, out) =
-      Source.queue[Int](bufferSize = 1, overflowStrategy = OverflowStrategies.Backpressure)
+      Source
+        .queue[Int](bufferSize = 1, overflowStrategy = OverflowStrategy.backpressure)
         .toMat(Sink.queue[Int]())(Keep.both)
         .run()
 
@@ -45,7 +42,7 @@ class InvokeWithFeedbackBenchmark {
   @OperationsPerInvocation(100000)
   @Benchmark
   def pass_through_100k_elements(): Unit = {
-    (0 to 100000).foreach { n ⇒
+    (0 to 100000).foreach { n =>
       val f = sinkQueue.pull()
       Await.result(sourceQueue.offer(n), waitForResult)
       Await.result(f, waitForResult)

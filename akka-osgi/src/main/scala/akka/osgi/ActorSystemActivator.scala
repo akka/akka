@@ -1,14 +1,17 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.osgi
 
-import akka.actor.ActorSystem
 import java.util.{ Dictionary, Properties }
+
+import com.typesafe.config.{ Config, ConfigFactory }
 import org.osgi.framework._
 import org.osgi.service.log.LogService
-import com.typesafe.config.{ ConfigFactory, Config }
+
+import akka.actor.{ ActorRefFactory, ActorSystem }
+import akka.util.unused
 
 /**
  * Abstract bundle activator implementation to bootstrap and configure an actor system in an
@@ -40,9 +43,11 @@ abstract class ActorSystemActivator extends BundleActivator {
    * @param context the BundleContext
    */
   def start(context: BundleContext): Unit = {
-    system = Some(OsgiActorSystemFactory(context, getActorSystemConfiguration(context)).createActorSystem(Option(getActorSystemName(context))))
-    system foreach (addLogServiceListener(context, _))
-    system foreach (configure(context, _))
+    system = Some(
+      OsgiActorSystemFactory(context, getActorSystemConfiguration(context))
+        .createActorSystem(Option(getActorSystemName(context))))
+    system.foreach(addLogServiceListener(context, _))
+    system.foreach(configure(context, _))
   }
 
   /**
@@ -55,9 +60,9 @@ abstract class ActorSystemActivator extends BundleActivator {
     val logServiceListner = new ServiceListener {
       def serviceChanged(event: ServiceEvent): Unit = {
         event.getType match {
-          case ServiceEvent.REGISTERED ⇒
+          case ServiceEvent.REGISTERED =>
             system.eventStream.publish(serviceForReference[LogService](context, event.getServiceReference))
-          case ServiceEvent.UNREGISTERING ⇒ system.eventStream.publish(UnregisteringLogService)
+          case ServiceEvent.UNREGISTERING => system.eventStream.publish(UnregisteringLogService)
         }
       }
     }
@@ -65,7 +70,7 @@ abstract class ActorSystemActivator extends BundleActivator {
     context.addServiceListener(logServiceListner, filter)
 
     //Small trick to create an event if the service is registered before this start listing for
-    Option(context.getServiceReference(classOf[LogService].getName)).foreach(x ⇒ {
+    Option(context.getServiceReference(classOf[LogService].getName)).foreach(x => {
       logServiceListner.serviceChanged(new ServiceEvent(ServiceEvent.REGISTERED, x))
     })
   }
@@ -82,8 +87,8 @@ abstract class ActorSystemActivator extends BundleActivator {
    * @param context the BundleContext
    */
   def stop(context: BundleContext): Unit = {
-    registration foreach (_.unregister())
-    system foreach (_.terminate())
+    registration.foreach(_.unregister())
+    system.foreach(_.terminate())
   }
 
   /**
@@ -99,8 +104,11 @@ abstract class ActorSystemActivator extends BundleActivator {
     registration.foreach(_.unregister()) //Cleanup
     val properties = new Properties()
     properties.put("name", system.name)
-    registration = Some(context.registerService(classOf[ActorSystem].getName, system,
-      properties.asInstanceOf[Dictionary[String, Any]]))
+    registration = Some(
+      context.registerService(
+        Array(classOf[ActorSystem].getName, classOf[ActorRefFactory].getName),
+        system,
+        properties.asInstanceOf[Dictionary[String, Any]]))
   }
 
   /**
@@ -110,7 +118,7 @@ abstract class ActorSystemActivator extends BundleActivator {
    * @param context the bundle context
    * @return the actor system name
    */
-  def getActorSystemName(context: BundleContext): String = null
+  def getActorSystemName(@unused context: BundleContext): String = null
 
   /**
    * Override this method to define a configuration for your [[akka.actor.ActorSystem]] instance.
@@ -122,6 +130,6 @@ abstract class ActorSystemActivator extends BundleActivator {
    * @param context the bundle context
    * @return the actor system specific configuration, ConfigFactory.empty by default
    */
-  def getActorSystemConfiguration(context: BundleContext): Config = ConfigFactory.empty
+  def getActorSystemConfiguration(@unused context: BundleContext): Config = ConfigFactory.empty
 
 }

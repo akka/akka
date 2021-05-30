@@ -1,19 +1,21 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import akka.dispatch.MailboxType
-import akka.dispatch.ProducesMessageQueue
-import akka.dispatch.BoundedNodeMessageQueue
-import com.typesafe.config.Config
-import akka.dispatch.MessageQueue
-import akka.dispatch.BoundedMessageQueueSemantics
-import scala.concurrent.duration.Duration
-import akka.dispatch.Envelope
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import scala.annotation.tailrec
+import scala.concurrent.duration.Duration
+
+import com.typesafe.config.Config
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
+
+import akka.dispatch.BoundedMessageQueueSemantics
+import akka.dispatch.BoundedNodeMessageQueue
+import akka.dispatch.Envelope
+import akka.dispatch.MailboxType
+import akka.dispatch.MessageQueue
+import akka.dispatch.ProducesMessageQueue
 
 /**
  * ManyToOneArrayMailbox is a high-performance, multiple-producer single-consumer, bounded MailboxType,
@@ -23,7 +25,9 @@ import scala.annotation.tailrec
  *
  * NOTE: ManyToOneArrayMailbox does not use `mailbox-push-timeout-time` as it is non-blocking.
  */
-case class ManyToOneArrayMailbox(val capacity: Int) extends MailboxType with ProducesMessageQueue[BoundedNodeMessageQueue] {
+case class ManyToOneArrayMailbox(val capacity: Int)
+    extends MailboxType
+    with ProducesMessageQueue[BoundedNodeMessageQueue] {
 
   def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"))
 
@@ -45,9 +49,11 @@ class ManyToOneArrayMessageQueue(capacity: Int) extends MessageQueue with Bounde
 
   final def enqueue(receiver: ActorRef, handle: Envelope): Unit =
     if (!queue.add(handle))
-      receiver.asInstanceOf[InternalActorRef].provider.deadLetters.tell(
-        DeadLetter(handle.message, handle.sender, receiver), handle.sender
-      )
+      receiver
+        .asInstanceOf[InternalActorRef]
+        .provider
+        .deadLetters
+        .tell(DeadLetter(handle.message, handle.sender, receiver), handle.sender)
 
   final def dequeue(): Envelope = queue.poll()
 

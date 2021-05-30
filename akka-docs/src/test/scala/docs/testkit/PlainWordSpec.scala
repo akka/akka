@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.testkit
@@ -7,14 +7,20 @@ package docs.testkit
 //#plain-spec
 import akka.actor.ActorSystem
 import akka.testkit.{ ImplicitSender, TestActors, TestKit }
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 //#implicit-sender
-class MySpec() extends TestKit(ActorSystem("MySpec")) with ImplicitSender
-  with WordSpecLike with Matchers with BeforeAndAfterAll {
+class MySpec()
+    extends TestKit(ActorSystem("MySpec"))
+    with ImplicitSender
+    with AnyWordSpecLike
+    with Matchers
+    with BeforeAndAfterAll {
   //#implicit-sender
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
   }
 

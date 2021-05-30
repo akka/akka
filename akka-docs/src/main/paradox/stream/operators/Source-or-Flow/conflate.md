@@ -4,13 +4,11 @@ Allow for a slower downstream by passing incoming elements and a summary into an
 
 @ref[Backpressure aware operators](../index.md#backpressure-aware-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #conflate }
+@apidoc[Source.conflate](Source) { scala="#conflate[O2&gt;:Out](aggregate:(O2,O2)=&gt;O2):FlowOps.this.Repr[O2]" java="#conflate(akka.japi.function.Function2)" }
+@apidoc[Flow.conflate](Flow) { scala="#conflate[O2&gt;:Out](aggregate:(O2,O2)=&gt;O2):FlowOps.this.Repr[O2]" java="#conflate(akka.japi.function.Function2)" }
 
-@@@
 
 ## Description
 
@@ -21,12 +19,14 @@ average of incoming numbers, if aggregation should lead to a different type `con
 ## Example
 
 Scala
-:   @@snip [SourceOrFlow.scala](/akka-docs/src/test/scala/docs/stream/operators/SourceOrFlow.scala) { #conflate }
+:   @@snip [SourceOrFlow.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Conflate.scala) { #conflate }
 
 Java
 :   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #conflate }
 
-If downstream is slower the elements is conflated by summing them. This means that upstream can continue producing elements while downstream is applying backpressure. For example: downstream is backpressuring while 1, 10 and 100 arrives from upstream, then backpressure stops and the conflated 111 is emitted downstream.
+If downstream is slower the elements are conflated by summing them. This means that upstream can continue producing elements while downstream is applying backpressure. For example: downstream is backpressuring while 1, 10 and 100 arrives from upstream, then backpressure stops and the conflated 111 is emitted downstream.
+
+See @ref:[Rate transformation](../../stream-rate.md#rate-transformation) for more information and examples.
 
 ## Reactive Streams semantics 
 

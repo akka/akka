@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 // Protocol Buffers - Google's data interchange format
@@ -57,7 +57,13 @@ import java.util.TreeMap;
  * the Message interface directly.
  *
  * @author kenton@google.com Kenton Varda
+ *
+ * @deprecated akka-protobuf was never intended to be used by end users.
+ *   It is deprecated since 2.6.0 in favor of using Protobuf v3.
+ *   Applications should use standard Protobuf dependency instead of
+ *   akka-protobuf or akka-protobuf-v3.
  */
+@Deprecated
 public abstract class GeneratedMessage extends AbstractMessage
     implements Serializable {
   private static final long serialVersionUID = 1L;

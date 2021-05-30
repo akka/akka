@@ -1,26 +1,27 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.Attributes.inputBuffer
-import akka.stream.Supervision.{ resumingDecider, restartingDecider }
-import akka.stream.testkit.Utils.TE
-import akka.testkit.TestLatch
+import java.util.concurrent.ThreadLocalRandom
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
+
 import akka.stream._
+import akka.stream.ActorAttributes.supervisionStrategy
+import akka.stream.Attributes.inputBuffer
+import akka.stream.Supervision.restartingDecider
+import akka.stream.Supervision.resumingDecider
 import akka.stream.testkit._
+import akka.stream.testkit.Utils.TE
+import akka.testkit.TestLatch
 
-class FlowConflateSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 2)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowConflateSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+  """) {
 
   "Conflate" must {
 
@@ -28,10 +29,14 @@ class FlowConflateSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source.fromPublisher(publisher).conflateWithSeed(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i).to(Sink.fromSubscriber(subscriber)).run()
+      Source
+        .fromPublisher(publisher)
+        .conflateWithSeed(seed = i => i)(aggregate = (sum, i) => sum + i)
+        .to(Sink.fromSubscriber(subscriber))
+        .run()
       val sub = subscriber.expectSubscription()
 
-      for (i ← 1 to 100) {
+      for (i <- 1 to 100) {
         sub.request(1)
         publisher.sendNext(i)
         subscriber.expectNext(i)
@@ -47,7 +52,7 @@ class FlowConflateSpec extends StreamSpec {
       Source.fromPublisher(publisher).conflate(_ + _).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
-      for (i ← 1 to 100) {
+      for (i <- 1 to 100) {
         sub.request(1)
         publisher.sendNext(i)
         subscriber.expectNext(i)
@@ -60,10 +65,14 @@ class FlowConflateSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source.fromPublisher(publisher).conflateWithSeed(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i).to(Sink.fromSubscriber(subscriber)).run()
+      Source
+        .fromPublisher(publisher)
+        .conflateWithSeed(seed = i => i)(aggregate = (sum, i) => sum + i)
+        .to(Sink.fromSubscriber(subscriber))
+        .run()
       val sub = subscriber.expectSubscription()
 
-      for (i ← 1 to 100) {
+      for (i <- 1 to 100) {
         publisher.sendNext(i)
       }
       subscriber.expectNoMessage(1.second)
@@ -79,7 +88,7 @@ class FlowConflateSpec extends StreamSpec {
       Source.fromPublisher(publisher).conflate(_ + _).to(Sink.fromSubscriber(subscriber)).run()
       val sub = subscriber.expectSubscription()
 
-      for (i ← 1 to 100) {
+      for (i <- 1 to 100) {
         publisher.sendNext(i)
       }
       subscriber.expectNoMessage(1.second)
@@ -90,8 +99,10 @@ class FlowConflateSpec extends StreamSpec {
 
     "work on a variable rate chain" in {
       val future = Source(1 to 1000)
-        .conflateWithSeed(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i)
-        .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
+        .conflateWithSeed(seed = i => i)(aggregate = (sum, i) => sum + i)
+        .map { i =>
+          if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i
+        }
         .runFold(0)(_ + _)
       Await.result(future, 10.seconds) should be(500500)
     }
@@ -99,7 +110,9 @@ class FlowConflateSpec extends StreamSpec {
     "work on a variable rate chain (simple conflate)" in {
       val future = Source(1 to 1000)
         .conflate(_ + _)
-        .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
+        .map { i =>
+          if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i
+        }
         .runFold(0)(_ + _)
       Await.result(future, 10.seconds) should be(500500)
     }
@@ -108,7 +121,11 @@ class FlowConflateSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      Source.fromPublisher(publisher).conflateWithSeed(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i).to(Sink.fromSubscriber(subscriber)).run()
+      Source
+        .fromPublisher(publisher)
+        .conflateWithSeed(seed = i => i)(aggregate = (sum, i) => sum + i)
+        .to(Sink.fromSubscriber(subscriber))
+        .run()
       val sub = subscriber.expectSubscription()
 
       sub.request(1)
@@ -116,26 +133,26 @@ class FlowConflateSpec extends StreamSpec {
       subscriber.expectNext(1)
 
       sub.request(1)
-      subscriber.expectNoMsg(500.millis)
+      subscriber.expectNoMessage(500.millis)
       publisher.sendNext(2)
       subscriber.expectNext(2)
 
       publisher.sendNext(3)
       publisher.sendNext(4)
       // The request can be in race with the above onNext(4) so the result would be either 3 or 7.
-      subscriber.expectNoMsg(500.millis)
+      subscriber.expectNoMessage(500.millis)
       sub.request(1)
       subscriber.expectNext(7)
 
       sub.request(1)
-      subscriber.expectNoMsg(500.millis)
+      subscriber.expectNoMessage(500.millis)
       sub.cancel()
 
     }
 
     "work with a buffer and fold" in {
       val future = Source(1 to 50)
-        .conflateWithSeed(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i)
+        .conflateWithSeed(seed = i => i)(aggregate = (sum, i) => sum + i)
         .buffer(50, OverflowStrategy.backpressure)
         .runFold(0)(_ + _)
       Await.result(future, 3.seconds) should be((1 to 50).sum)
@@ -146,13 +163,14 @@ class FlowConflateSpec extends StreamSpec {
       val sinkProbe = TestSubscriber.probe[Int]()
       val exceptionLatch = TestLatch()
 
-      val future = Source.fromPublisher(sourceProbe)
-        .conflateWithSeed { i ⇒
+      Source
+        .fromPublisher(sourceProbe)
+        .conflateWithSeed { i =>
           if (i % 2 == 0) {
             exceptionLatch.open()
             throw TE("I hate even seed numbers")
           } else i
-        } { (sum, i) ⇒
+        } { (sum, i) =>
           sum + i
         }
         .withAttributes(supervisionStrategy(restartingDecider))
@@ -190,7 +208,7 @@ class FlowConflateSpec extends StreamSpec {
     "restart when `aggregate` throws and a restartingDecider is used" in {
       val latch = TestLatch()
       val conflate = Flow[String]
-        .conflateWithSeed(seed = i ⇒ i)((state, elem) ⇒
+        .conflateWithSeed(seed = i => i)((state, elem) =>
           if (elem == "two") {
             latch.open()
             throw TE("two is a three letter word")
@@ -200,7 +218,8 @@ class FlowConflateSpec extends StreamSpec {
       val sourceProbe = TestPublisher.probe[String]()
       val sinkProbe = TestSubscriber.probe[String]()
 
-      Source.fromPublisher(sourceProbe)
+      Source
+        .fromPublisher(sourceProbe)
         .via(conflate)
         .to(Sink.fromSubscriber(sinkProbe))
         .withAttributes(inputBuffer(initial = 4, max = 4))
@@ -226,8 +245,9 @@ class FlowConflateSpec extends StreamSpec {
       val sinkProbe = TestSubscriber.probe[Vector[Int]]()
       val saw4Latch = TestLatch()
 
-      val future = Source.fromPublisher(sourceProbe)
-        .conflateWithSeed(seed = i ⇒ Vector(i))((state, elem) ⇒
+      Source
+        .fromPublisher(sourceProbe)
+        .conflateWithSeed(seed = i => Vector(i))((state, elem) =>
           if (elem == 2) {
             throw TE("three is a four letter word")
           } else {

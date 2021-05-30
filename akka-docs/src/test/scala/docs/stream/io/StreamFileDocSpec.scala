@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.io
@@ -13,11 +13,11 @@ import akka.util.ByteString
 import akka.testkit.AkkaSpec
 
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
 
 class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
-  implicit val ec = system.dispatcher
-  implicit val materializer = ActorMaterializer()
+  implicit val ec: ExecutionContext = system.dispatcher
 
   // silence sysout
   def println(s: String) = ()
@@ -52,25 +52,20 @@ class StreamFileDocSpec extends AkkaSpec(UnboundedMailboxConfig) {
 
     //#file-source
 
-    val foreach: Future[IOResult] = FileIO.fromPath(file)
-      .to(Sink.ignore)
-      .run()
+    val foreach: Future[IOResult] = FileIO.fromPath(file).to(Sink.ignore).run()
     //#file-source
   }
 
   "configure dispatcher in code" in {
     //#custom-dispatcher-code
-    FileIO.fromPath(file)
-      .withAttributes(ActorAttributes.dispatcher("custom-blocking-io-dispatcher"))
+    FileIO.fromPath(file).withAttributes(ActorAttributes.dispatcher("custom-blocking-io-dispatcher"))
     //#custom-dispatcher-code
   }
 
   "write data into a file" in {
     //#file-sink
     val text = Source.single("Hello Akka Stream!")
-    val result: Future[IOResult] = text
-      .map(t ⇒ ByteString(t))
-      .runWith(FileIO.toPath(file))
+    val result: Future[IOResult] = text.map(t => ByteString(t)).runWith(FileIO.toPath(file))
     //#file-sink
   }
 }

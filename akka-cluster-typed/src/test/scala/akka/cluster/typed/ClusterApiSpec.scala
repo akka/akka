@@ -1,33 +1,32 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.Address
+import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import com.typesafe.config.ConfigFactory
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.WordSpecLike
 
 object ClusterApiSpec {
-  val config = ConfigFactory.parseString(
-    """
+  val config =
+    ConfigFactory.parseString("""
       akka.actor.provider = cluster
-      akka.remote.artery.enabled = true
-      akka.remote.netty.tcp.port = 0
+      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
       akka.coordinated-shutdown.terminate-actor-system = off
-      akka.actor {
-        serialize-messages = off
-        allow-java-serialization = off
-      }
+      akka.coordinated-shutdown.run-by-actor-system-terminate = off
       # generous timeout for cluster forming probes
       akka.actor.testkit.typed.default-timeout = 10s
       # disable this or we cannot be sure to observe node end state on the leaving side
@@ -35,13 +34,19 @@ object ClusterApiSpec {
     """)
 }
 
-class ClusterApiSpec extends ScalaTestWithActorTestKit(ClusterApiSpec.config) with WordSpecLike {
+class ClusterApiSpec extends ScalaTestWithActorTestKit(ClusterApiSpec.config) with AnyWordSpecLike with LogCapturing {
 
   val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)
-  val untypedSystem1 = system.toUntyped
+  val classicSystem1 = system.toClassic
 
   "A typed Cluster" must {
+
+    "fail fast in a join attempt if invalid chars are in host names, e.g. docker host given name" in {
+      val address = Address("akka", "sys", Some("in_valid"), Some(0))
+      intercept[IllegalArgumentException](Join(address))
+      intercept[IllegalArgumentException](JoinSeedNodes(scala.collection.immutable.Seq(address)))
+    }
 
     "join a cluster and observe events from both sides" in {
 
@@ -51,8 +56,8 @@ class ClusterApiSpec extends ScalaTestWithActorTestKit(ClusterApiSpec.config) wi
       try {
         val clusterNode2 = Cluster(adaptedSystem2)
 
-        val node1Probe = TestProbe[AnyRef]()(system)
-        val node2Probe = TestProbe[AnyRef]()(adaptedSystem2)
+        val node1Probe = TestProbe[ClusterDomainEvent]()(system)
+        val node2Probe = TestProbe[ClusterDomainEvent]()(adaptedSystem2)
 
         // initial cached selfMember
         clusterNode1.selfMember.status should ===(MemberStatus.Removed)

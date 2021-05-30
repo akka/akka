@@ -1,27 +1,63 @@
-# Remoting
+# Classic Remoting (Deprecated)
 
-## Dependency
+@@@ warning
+
+Classic remoting has been deprecated and will be removed in Akka 2.7.0. Please use @ref[Artery](remoting-artery.md) instead.
+
+@@@
+
+@@@ note
+
+Remoting is the mechanism by which Actors on different nodes talk to each
+other internally.
+
+When building an Akka application, you would usually not use the Remoting concepts
+directly, but instead use the more high-level
+@ref[Akka Cluster](index-cluster.md) utilities or technology-agnostic protocols
+such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
+[gRPC](https://doc.akka.io/docs/akka-grpc/current/) etc.
+
+
+@@@
+
+## Module info
 
 To use Akka Remoting, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-remote_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-remote_$scala.binary.version$
+  version=AkkaVersion
+}
+
+@@project-info{ projectId="akka-remote" }
+
+Classic remoting depends on Netty. This needs to be explicitly added as a dependency so that users
+not using classic remoting do not have to have Netty on the classpath:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=io.netty
+  artifact=netty
+  version=$netty_version$
 }
 
 ## Configuration
 
-To enable remote capabilities in your Akka project you should, at a minimum, add the following changes
+To enable classic remoting in your Akka project you should, at a minimum, add the following changes
 to your `application.conf` file:
 
 ```
 akka {
   actor {
-    provider = remote
+    # provider=remote is possible, but prefer cluster
+    provider = cluster
   }
-  remote {
-    enabled-transports = ["akka.remote.netty.tcp"]
+  remote.artery.enabled = false
+  remote.classic {
+    enabled-transports = ["akka.remote.classic.netty.tcp"]
     netty.tcp {
       hostname = "127.0.0.1"
       port = 2552
@@ -32,7 +68,8 @@ akka {
 
 As you can see in the example above there are four things you need to add to get started:
 
- * Change provider from `local` to `remote`
+ * Change provider from `local`. We recommend using @ref:[Akka Cluster](cluster-usage.md) over using remoting directly.
+ * Disable artery remoting. Artery is the default remoting implementation since `2.6.0`
  * Add host name - the machine you want to run the actor system on; this host
 name is exactly what is passed to remote systems in order to identify this
 system and consequently used for connecting back to this system if need be,
@@ -49,7 +86,7 @@ listening for connections and handling messages as not to interfere with other a
 @@@
 
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
-All settings are described in [Remote Configuration](#remote-configuration).
+All settings are described in @ref:[Remote Configuration](#remote-configuration).
 
 ## Introduction
 
@@ -68,6 +105,10 @@ network and/or Akka configuration will have to be changed as described in
 [Akka behind NAT or in a Docker container](#remote-configuration-nat).
 
 @@@
+
+You need to enable @ref:[serialization](serialization.md) for your actor messages.
+@ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
 
 ## Types of Remote Interaction
 
@@ -116,7 +157,7 @@ To acquire an `ActorRef` for an `ActorSelection` you need to
 send a message to the selection and use the `sender` reference of the reply from
 the actor. There is a built-in `Identify` message that all Actors will understand
 and automatically reply to with a `ActorIdentity` message containing the
-`ActorRef`. This can also be done with the @scala[`resolveOne`]@java[`resolveOneCS`] method of
+`ActorRef`. This can also be done with the `resolveOne` method of
 the `ActorSelection`, which returns a @scala[`Future`]@java[`CompletionStage`] of the matching
 `ActorRef`.
 
@@ -171,6 +212,9 @@ Java
 
 The actor class `SampleActor` has to be available to the runtimes using it, i.e. the classloader of the
 actor systems has to have a JAR containing the class.
+
+When using remote deployment of actors you must ensure that all parameters of the `Props` can
+be @ref:[serialized](serialization.md).
 
 @@@ note
 
@@ -230,23 +274,22 @@ Scala
 Java
 :   @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
 
-<a id="remote-deployment-whitelist"></a>
-### Remote deployment whitelist
+### Remote deployment allow list
 
-As remote deployment can potentially be abused by both users and even attackers a whitelist feature
+As remote deployment can potentially be abused by both users and even attackers an allow list feature
 is available to guard the ActorSystem from deploying unexpected actors. Please note that remote deployment
 is *not* remote code loading, the Actors class to be deployed onto a remote system needs to be present on that
 remote system. This still however may pose a security risk, and one may want to restrict remote deployment to
-only a specific set of known actors by enabling the whitelist feature.
+only a specific set of known actors by enabling the allow list feature.
 
-To enable remote deployment whitelisting set the `akka.remote.deployment.enable-whitelist` value to `on`.
+To enable remote deployment allow list set the `akka.remote.deployment.enable-allow-list` value to `on`.
 The list of allowed classes has to be configured on the "remote" system, in other words on the system onto which
 others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or
 should not allow others to remote deploy onto it. The full settings section may for example look like this:
 
-@@snip [RemoteDeploymentWhitelistSpec.scala](/akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
+@@snip [RemoteDeploymentAllowListSpec.scala](/akka-remote/src/test/scala/akka/remote/classic/RemoteDeploymentAllowListSpec.scala) { #allow-list-config }
 
-Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
+Actor classes not included in the allow list will not be allowed to be remote deployed onto this system.
 
 ## Lifecycle and Failure Recovery Model
 
@@ -275,69 +318,31 @@ Watching a remote actor is not different than watching a local actor, as describ
 
 ### Failure Detector
 
-Under the hood remote death watch uses heartbeat messages and a failure detector to generate `Terminated`
-message from network failures and JVM crashes, in addition to graceful termination of watched
-actor.
+Please see:
 
-The heartbeat arrival times is interpreted by an implementation of
-[The Phi Accrual Failure Detector](http://www.jaist.ac.jp/~defago/files/pdf/IS_RR_2004_010.pdf).
+* @ref:[Phi Accrual Failure Detector](typed/failure-detector.md) implementation for details
+* @ref:[Using the Failure Detector](#using-the-failure-detector) below for usage 
 
-The suspicion level of failure is given by a value called *phi*.
-The basic idea of the phi failure detector is to express the value of *phi* on a scale that
-is dynamically adjusted to reflect current network conditions.
-
-The value of *phi* is calculated as:
+### Using the Failure Detector
+ 
+Remoting uses the `akka.remote.PhiAccrualFailureDetector` failure detector by default, or you can provide your by
+implementing the `akka.remote.FailureDetector` and configuring it:
 
 ```
-phi = -log10(1 - F(timeSinceLastHeartbeat))
-```
+akka.remote.watch-failure-detector.implementation-class = "com.example.CustomFailureDetector"
+``` 
+ 
+In the @ref:[Remote Configuration](#remote-configuration) you may want to adjust these
+depending on you environment:
 
-where F is the cumulative distribution function of a normal distribution with mean
-and standard deviation estimated from historical heartbeat inter-arrival times.
-
-In the [Remote Configuration](#remote-configuration) you can adjust the `akka.remote.watch-failure-detector.threshold`
-to define when a *phi* value is considered to be a failure.
-
-A low `threshold` is prone to generate many false positives but ensures
-a quick detection in the event of a real crash. Conversely, a high `threshold`
-generates fewer mistakes but needs more time to detect actual crashes. The
-default `threshold` is 10 and is appropriate for most situations. However in
-cloud environments, such as Amazon EC2, the value could be increased to 12 in
-order to account for network issues that sometimes occur on such platforms.
-
-The following chart illustrates how *phi* increase with increasing time since the
-previous heartbeat.
-
-![phi1.png](./images/phi1.png)
-
-Phi is calculated from the mean and standard deviation of historical
-inter arrival times. The previous chart is an example for standard deviation
-of 200 ms. If the heartbeats arrive with less deviation the curve becomes steeper,
-i.e. it is possible to determine failure more quickly. The curve looks like this for
-a standard deviation of 100 ms.
-
-![phi2.png](./images/phi2.png)
-
-To be able to survive sudden abnormalities, such as garbage collection pauses and
-transient network failures the failure detector is configured with a margin,
-`akka.remote.watch-failure-detector.acceptable-heartbeat-pause`. You may want to
-adjust the [Remote Configuration](#remote-configuration) of this depending on you environment.
-This is how the curve looks like for `acceptable-heartbeat-pause` configured to
-3 seconds.
-
-![phi3.png](./images/phi3.png)
-
+* When a *phi* value is considered to be a failure `akka.remote.watch-failure-detector.threshold`
+* Margin of error for sudden abnormalities `akka.remote.watch-failure-detector.acceptable-heartbeat-pause`  
+ 
 ## Serialization
 
-When using remoting for actors you must ensure that the `props` and `messages` used for
-those actors are serializable. Failing to do so will cause the system to behave in an unintended way.
-
-For more information please see @ref:[Serialization](serialization.md).
-
-<a id="disable-java-serializer"></a>
-### Disabling the Java Serializer
-
-It is highly recommended that you @ref[disable Java serialization](serialization.md#disable-java-serializer).
+You need to enable @ref:[serialization](serialization.md) for your actor messages.
+@ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
 
 ## Routers with Remote Destinations
 
@@ -349,6 +354,9 @@ A pool of remote deployed routees can be configured as:
 
 This configuration setting will clone the actor defined in the `Props` of the `remotePool` 10
 times and deploy it evenly distributed across the two given target nodes.
+
+When using a pool of remote deployed routees you must ensure that all parameters of the `Props` can
+be @ref:[serialized](serialization.md).
 
 A group of remote actors can be configured as:
 
@@ -388,8 +396,8 @@ finished.
 
 @@@ note
 
-In order to switch off the logging, set
-`akka.remote.log-remote-lifecycle-events = off` in your
+In order to disable the logging, set
+`akka.remote.classic.log-remote-lifecycle-events = off` in your
 `application.conf`.
 
 @@@
@@ -414,7 +422,6 @@ To be notified  when the remoting subsystem has been shut down, listen to `Remot
 
 To intercept generic remoting related errors, listen to `RemotingErrorEvent` which holds the `Throwable` cause.
 
-<a id="remote-security"></a>
 ## Remote Security
 
 An `ActorSystem` should not be exposed via Akka Remote over plain TCP to an untrusted network (e.g. Internet).
@@ -425,19 +432,20 @@ Best practice is that Akka remoting nodes should only be accessible from the adj
 enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate by
 compromising any node with certificates issued by the same internal PKI tree.
 
-It is also security best-practice to [disable the Java serializer](#disable-java-serializer) because of
-its multiple [known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
+By default, @ref[Java serialization](serialization.md#java-serialization) is disabled in Akka.
+That is also security best-practice because of its multiple
+[known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
 
 <a id="remote-tls"></a>
 ### Configuring SSL/TLS for Akka Remoting
 
-SSL can be used as the remote transport by adding `akka.remote.netty.ssl` to the `enabled-transport` configuration section.
+SSL can be used as the remote transport by adding `akka.remote.classic.netty.ssl` to the `enabled-transport` configuration section.
 An example of setting up the default Netty based SSL driver as default:
 
 ```
 akka {
-  remote {
-    enabled-transports = [akka.remote.netty.ssl]
+  remote.classic {
+    enabled-transports = [akka.remote.classic.netty.ssl]
   }
 }
 ```
@@ -446,7 +454,7 @@ Next the actual SSL/TLS parameters have to be configured:
 
 ```
 akka {
-  remote {
+  remote.classic {
     netty.ssl {
       hostname = "127.0.0.1"
       port = "3553"
@@ -481,13 +489,13 @@ According to [RFC 7525](https://tools.ietf.org/html/rfc7525) the recommended alg
 You should always check the latest information about security and algorithm recommendations though before you configure your system.
 
 Creating and working with keystores and certificates is well documented in the
-[Generating X.509 Certificates](http://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
+[Generating X.509 Certificates](https://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
 section of Lightbend's SSL-Config library.
 
 Since an Akka remoting is inherently @ref:[peer-to-peer](general/remoting.md#symmetric-communication) both the key-store as well as trust-store
 need to be configured on each remoting node participating in the cluster.
 
-The official [Java Secure Socket Extension documentation](http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html)
+The official [Java Secure Socket Extension documentation](https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html)
 as well as the [Oracle documentation on creating KeyStore and TrustStores](https://docs.oracle.com/cd/E19509-01/820-3503/6nf1il6er/index.html)
 are both great resources to research when setting up security on the JVM. Please consult those resources when troubleshooting
 and configuring SSL.
@@ -520,7 +528,7 @@ that system down. This is not always desired, and it can be disabled with the
 following setting:
 
 ```
-akka.remote.untrusted-mode = on
+akka.remote.classic.untrusted-mode = on
 ```
 
 This disallows sending of system messages (actor life-cycle commands,
@@ -535,9 +543,10 @@ as a marker trait to user-defined messages.
 
 Untrusted mode does not give full protection against attacks by itself.
 It makes it slightly harder to perform malicious or unintended actions but
-it should be complemented with [disabled Java serializer](#disable-java-serializer).
+it should be noted that @ref:[Java serialization](serialization.md#java-serialization)
+should still not be enabled.
 Additional protection can be achieved when running in an untrusted network by
-network security (e.g. firewalls) and/or enabling [TLS with mutual authentication](#remote-tls).
+network security (e.g. firewalls) and/or enabling @ref:[TLS with mutual authentication](#remote-tls).
 
 @@@
 
@@ -546,7 +555,7 @@ permission to receive actor selection messages can be granted to specific actors
 defined in configuration:
 
 ```
-akka.remote.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
+akka.remote.classic.trusted-selection-paths = ["/user/receptionist", "/user/namingService"]
 ```
 
 The actual message must still not be of type `PossiblyHarmful`.
@@ -576,11 +585,10 @@ marking them `PossiblyHarmful` so that a client cannot forge them.
 
 @@@
 
-<a id="remote-configuration"></a>
 ## Remote Configuration
 
 There are lots of configuration properties that are related to remoting in Akka. We refer to the
-@ref:[reference configuration](general/configuration.md#config-akka-remote) for more information.
+@ref:[reference configuration](general/configuration-reference.md#config-akka-remote) for more information.
 
 @@@ note
 
@@ -599,17 +607,13 @@ containers the hostname and port pair that Akka binds to will be different than 
 host name and port pair that is used to connect to the system from the outside. This requires
 special configuration that sets both the logical and the bind pairs for remoting.
 
-```ruby
-akka {
-  remote {
-    netty.tcp {
+```
+akka.remote.classic.netty.tcp {
       hostname = my.domain.com      # external (logical) hostname
       port = 8000                   # external (logical) port
 
       bind-hostname = local.address # internal (bind) hostname
       bind-port = 2552              # internal (bind) port
-    }
- }
 }
 ```
 
@@ -620,8 +624,3 @@ Keep in mind that local.address will most likely be in one of private network ra
  * *192.168.0.0 - 192.168.255.255* (network class C)
 
 For further details see [RFC 1597](https://tools.ietf.org/html/rfc1597) and [RFC 1918](https://tools.ietf.org/html/rfc1918).
-
-You can look at the
-@java[@extref[Cluster with docker-compse example project](samples:akka-samples-cluster-docker-compose-java)]
-@scala[@extref[Cluster with docker-compose example project](samples:akka-samples-cluster-docker-compose-scala)]
-to see what this looks like in practice.

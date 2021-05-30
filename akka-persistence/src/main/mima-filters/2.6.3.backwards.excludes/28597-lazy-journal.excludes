@@ -1,0 +1,2 @@
+# #28597 Don't start journal when accessing event adapters
+ProblemFilters.exclude[Problem]("akka.persistence.Persistence#PluginHolder*")

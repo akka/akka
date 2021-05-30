@@ -1,2 +1,0 @@
-ProblemFilters.exclude[Problem]("akka.remote.artery.*")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.MessageSerializer.serializeForArtery")

@@ -1,16 +1,10 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.cookbook
 
-import akka.stream.{ ActorMaterializerSettings, ActorMaterializer }
-
-import scala.collection.immutable
-import scala.concurrent.Await
-
 class RecipeCollectingMetrics extends RecipeSpec {
-  implicit val m2 = ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(1, 1))
 
   "Recipe for periodically collecting metrics" must {
 
@@ -39,7 +33,7 @@ class RecipeCollectingMetrics extends RecipeSpec {
       //      }
       //      //#periodic-metrics-collection
       //
-      //      val reports = graph.run().get(futureSink)
+      //      val reports = graph.withAttributes(Attributes.inputBuffer(1, 1).run().get(futureSink)
       //      val manualLoad = new StreamTestKit.AutoPublisher(loadPub)
       //      val manualTick = new StreamTestKit.AutoPublisher(tickPub)
       //

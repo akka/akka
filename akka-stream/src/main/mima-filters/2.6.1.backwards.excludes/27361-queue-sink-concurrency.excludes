@@ -1,0 +1,2 @@
+# disable compatibility check for @InternalApi private[akka] class
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.QueueSink.this")

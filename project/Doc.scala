@@ -1,17 +1,20 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
 
 import sbt._
-import sbtunidoc.BaseUnidocPlugin.autoImport.{ unidoc, unidocProjectFilter }
+import sbtunidoc.BaseUnidocPlugin.autoImport.{ unidoc, unidocAllSources, unidocProjectFilter }
 import sbtunidoc.JavaUnidocPlugin.autoImport.JavaUnidoc
 import sbtunidoc.ScalaUnidocPlugin.autoImport.ScalaUnidoc
 import sbtunidoc.GenJavadocPlugin.autoImport._
 import sbt.Keys._
 import sbt.File
 import scala.annotation.tailrec
+import com.lightbend.sbt.publishrsync.PublishRsyncPlugin.autoImport.publishRsyncArtifacts
+
+import sbt.ScopeFilter.ProjectFilter
 
 object Scaladoc extends AutoPlugin {
 
@@ -26,23 +29,36 @@ object Scaladoc extends AutoPlugin {
   val validateDiagrams = settingKey[Boolean]("Validate generated scaladoc diagrams")
 
   override lazy val projectSettings = {
-    inTask(doc)(Seq(
-      scalacOptions in Compile ++= scaladocOptions(version.value, (baseDirectory in ThisBuild).value),
-      // -release caused build failures when generating javadoc:
-      scalacOptions in Compile --= Seq("-release", "8"),
-      autoAPIMappings := CliOptions.scaladocAutoAPI.get)) ++
-      Seq(validateDiagrams in Compile := true) ++
-      CliOptions.scaladocDiagramsEnabled.ifTrue(doc in Compile := {
-        val docs = (doc in Compile).value
-        if ((validateDiagrams in Compile).value)
-          scaladocVerifier(docs)
-        docs
-      })
+    inTask(doc)(
+      Seq(
+        Compile / scalacOptions ++= scaladocOptions(version.value, (ThisBuild / baseDirectory).value),
+        // -release caused build failures when generating javadoc:
+        Compile / scalacOptions --= Seq("-release", "8"),
+        autoAPIMappings := CliOptions.scaladocAutoAPI.get)) ++
+    Seq(Compile / validateDiagrams := true) ++
+    CliOptions.scaladocDiagramsEnabled.ifTrue(Compile / doc := {
+      val docs = (Compile / doc).value
+      if ((Compile / validateDiagrams).value)
+        scaladocVerifier(docs)
+      docs
+    })
   }
 
   def scaladocOptions(ver: String, base: File): List[String] = {
-    val urlString = GitHub.url(ver) + "/€{FILE_PATH}.scala"
-    val opts = List("-implicits", "-groups", "-doc-source-url", urlString, "-sourcepath", base.getAbsolutePath)
+    val urlString = GitHub.url(ver) + "/€{FILE_PATH_EXT}#L€{FILE_LINE}"
+    val opts = List(
+      "-implicits",
+      "-groups",
+      "-doc-source-url",
+      urlString,
+      "-sourcepath",
+      base.getAbsolutePath,
+      "-doc-title",
+      "Akka",
+      "-doc-version",
+      ver,
+      "-doc-canonical-base-url",
+      "https://doc.akka.io/api/akka/current/")
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
 
@@ -54,14 +70,21 @@ object Scaladoc extends AutoPlugin {
         val curr = dirs.head
         val (newDirs, files) = curr.listFiles.partition(_.isDirectory)
         val rest = dirs.tail ++ newDirs
-        val hasDiagram = files exists { f ⇒
+        val hasDiagram = files.exists { f =>
           val name = f.getName
           if (name.endsWith(".html") && !name.startsWith("index-") &&
-            !name.equals("index.html") && !name.equals("package.html")) {
+              !name.equals("index.html") && !name.equals("package.html")) {
             val source = scala.io.Source.fromFile(f)(scala.io.Codec.UTF8)
-            val hd = try source.getLines().exists(_.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">"))
+            val hd = try source
+              .getLines()
+              .exists(
+                lines =>
+                  lines.contains(
+                    "<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">") ||
+                  lines.contains("<svg id=\"graph"))
             catch {
-              case e: Exception ⇒ throw new IllegalStateException("Scaladoc verification failed for file '" + f + "'", e)
+              case e: Exception =>
+                throw new IllegalStateException("Scaladoc verification failed for file '" + f + "'", e)
             } finally source.close()
             hd
           } else false
@@ -86,8 +109,7 @@ object ScaladocNoVerificationOfDiagrams extends AutoPlugin {
   override def trigger = noTrigger
   override def requires = Scaladoc
 
-  override lazy val projectSettings = Seq(
-    Scaladoc.validateDiagrams in Compile := false)
+  override lazy val projectSettings = Seq(Compile / Scaladoc.validateDiagrams := false)
 }
 
 /**
@@ -100,26 +122,49 @@ object UnidocRoot extends AutoPlugin {
   }
 
   object autoImport {
-    val unidocRootIgnoreProjects = settingKey[Seq[Project]]("Projects to ignore when generating unidoc")
+    val unidocRootIgnoreProjects = settingKey[Seq[ProjectReference]]("Projects to ignore when generating unidoc")
   }
   import autoImport._
 
   override def trigger = noTrigger
   override def requires =
-    UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(sbtunidoc.ScalaUnidocPlugin && sbtunidoc.JavaUnidocPlugin && sbtunidoc.GenJavadocPlugin)
+    UnidocRoot.CliOptions.genjavadocEnabled
+      .ifTrue(sbtunidoc.ScalaUnidocPlugin && sbtunidoc.JavaUnidocPlugin && sbtunidoc.GenJavadocPlugin)
       .getOrElse(sbtunidoc.ScalaUnidocPlugin)
 
-  val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
-    Seq(javacOptions in (JavaUnidoc, unidoc) := Seq("-Xdoclint:none"))).getOrElse(Nil)
+  val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled
+    .ifTrue(Seq(
+      JavaUnidoc / unidoc / javacOptions := {
+        if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
+        else Seq("-Xdoclint:none", "--ignore-source-errors", "--no-module-directories")
+      },
+      publishRsyncArtifacts ++= {
+        val releaseVersion = if (isSnapshot.value) "snapshot" else version.value
+        (Compile / unidoc).value match {
+          case Seq(japi, api) =>
+            Seq((japi -> s"www/japi/akka/$releaseVersion"), (api -> s"www/api/akka/$releaseVersion"))
+        }
+      }))
+    .getOrElse(Nil)
 
   override lazy val projectSettings = {
-    def unidocRootProjectFilter(ignoreProjects: Seq[Project]) =
+    def unidocRootProjectFilter(ignoreProjects: Seq[ProjectReference]): ProjectFilter =
       ignoreProjects.foldLeft(inAnyProject) { _ -- inProjects(_) }
 
-    inTask(unidoc)(Seq(
-      unidocProjectFilter in ScalaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
-      unidocProjectFilter in JavaUnidoc := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
-      apiMappings in ScalaUnidoc := (apiMappings in (Compile, doc)).value))
+    inTask(unidoc)(
+      Seq(
+        ScalaUnidoc / unidocProjectFilter := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
+        JavaUnidoc / unidocProjectFilter := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
+        ScalaUnidoc / apiMappings := (Compile / doc / apiMappings).value) ++
+      UnidocRoot.CliOptions.genjavadocEnabled
+        .ifTrue(
+          Seq(
+            // akka.stream.scaladsl.GraphDSL.Implicits.ReversePortsOps contains code that
+            // genjavadoc turns into (probably incorrect) Java code that in turn confuses the javadoc tool.
+            JavaUnidoc / unidocAllSources ~= { v =>
+              v.map(_.filterNot(_.getAbsolutePath.endsWith("scaladsl/GraphDSL.java")))
+            }))
+        .getOrElse(Nil))
   }
 }
 
@@ -129,13 +174,18 @@ object UnidocRoot extends AutoPlugin {
 object BootstrapGenjavadoc extends AutoPlugin {
 
   override def trigger = allRequirements
-  override def requires = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(sbtunidoc.GenJavadocPlugin)
-    .getOrElse(plugins.JvmPlugin)
+  override def requires =
+    UnidocRoot.CliOptions.genjavadocEnabled
+      .ifTrue {
+        // require 11, fail fast for 8, 9, 10
+        require(JdkOptions.isJdk11orHigher, "Javadoc generation requires at least jdk 11")
+        sbtunidoc.GenJavadocPlugin
+      }
+      .getOrElse(plugins.JvmPlugin)
 
-  override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled.ifTrue(
-    Seq(
-      unidocGenjavadocVersion := "0.11",
-      scalacOptions in Compile ++= Seq("-P:genjavadoc:fabricateParams=true", "-P:genjavadoc:suppressSynthetic=false")
-    )
-  ).getOrElse(Nil)
+  override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled
+    .ifTrue(Seq(
+      unidocGenjavadocVersion := "0.17",
+      Compile / scalacOptions ++= Seq("-P:genjavadoc:fabricateParams=false", "-P:genjavadoc:suppressSynthetic=false")))
+    .getOrElse(Nil)
 }

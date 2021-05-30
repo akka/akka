@@ -1,32 +1,23 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
 
-import language.postfixOps
-import scala.collection.immutable
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
-import akka.actor.ActorLogging
 import akka.actor.ActorRef
-import akka.actor.Address
 import akka.actor.Props
-import akka.actor.PoisonPill
-import akka.actor.RootActorPath
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent._
-import akka.cluster.Member
+import akka.cluster.MemberStatus
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
-import akka.testkit.TestEvent._
-import akka.actor.Terminated
-import akka.actor.ActorSelection
-import akka.cluster.MemberStatus
 
 object ClusterSingletonManagerLeaveSpec extends MultiNodeConfig {
   val first = role("first")
@@ -37,10 +28,12 @@ object ClusterSingletonManagerLeaveSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-down-unreachable-after = off
+    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+    akka.cluster.testkit.auto-down-unreachable-after = off
     """))
 
   case object EchoStarted
+
   /**
    * The singleton actor
    */
@@ -53,10 +46,10 @@ object ClusterSingletonManagerLeaveSpec extends MultiNodeConfig {
     }
 
     def receive = {
-      case "stop" ⇒
+      case "stop" =>
         testActor ! "stop"
         context.stop(self)
-      case _ ⇒
+      case _ =>
         sender() ! self
     }
   }
@@ -66,7 +59,10 @@ class ClusterSingletonManagerLeaveMultiJvmNode1 extends ClusterSingletonManagerL
 class ClusterSingletonManagerLeaveMultiJvmNode2 extends ClusterSingletonManagerLeaveSpec
 class ClusterSingletonManagerLeaveMultiJvmNode3 extends ClusterSingletonManagerLeaveSpec
 
-class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonManagerLeaveSpec) with STMultiNodeSpec with ImplicitSender {
+class ClusterSingletonManagerLeaveSpec
+    extends MultiNodeSpec(ClusterSingletonManagerLeaveSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterSingletonManagerLeaveSpec._
 
   override def initialParticipants = roles.size
@@ -75,7 +71,7 @@ class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonMan
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
       createSingleton()
     }
   }
@@ -92,11 +88,11 @@ class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonMan
   val echoProxyTerminatedProbe = TestProbe()
 
   lazy val echoProxy: ActorRef = {
-    echoProxyTerminatedProbe.watch(system.actorOf(
-      ClusterSingletonProxy.props(
-        singletonManagerPath = "/user/echo",
-        settings = ClusterSingletonProxySettings(system)),
-      name = "echoProxy"))
+    echoProxyTerminatedProbe.watch(
+      system.actorOf(
+        ClusterSingletonProxy
+          .props(singletonManagerPath = "/user/echo", settings = ClusterSingletonProxySettings(system)),
+        name = "echoProxy"))
   }
 
   "Leaving ClusterSingletonManager" must {
@@ -116,14 +112,14 @@ class ClusterSingletonManagerLeaveSpec extends MultiNodeSpec(ClusterSingletonMan
       join(second, first)
       runOn(first, second) {
         within(10.seconds) {
-          awaitAssert(cluster.state.members.count(m ⇒ m.status == MemberStatus.Up) should be(2))
+          awaitAssert(cluster.state.members.count(m => m.status == MemberStatus.Up) should be(2))
         }
       }
       enterBarrier("second-up")
 
       join(third, first)
       within(10.seconds) {
-        awaitAssert(cluster.state.members.count(m ⇒ m.status == MemberStatus.Up) should be(3))
+        awaitAssert(cluster.state.members.count(m => m.status == MemberStatus.Up) should be(3))
       }
       enterBarrier("all-up")
 

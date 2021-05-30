@@ -1,12 +1,12 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.event
 
 import scala.concurrent.duration._
 import akka.testkit.AkkaSpec
-import akka.actor.{ ActorSystem, ActorRef }
+import akka.actor.{ ActorRef, ActorSystem }
 import akka.testkit.TestProbe
 
 object EventBusDocSpec {
@@ -42,7 +42,7 @@ object EventBusDocSpec {
 
     // determines the initial size of the index data structure
     // used internally (i.e. the expected number of different classifiers)
-    override protected def mapSize: Int = 128
+    override protected def mapSize(): Int = 128
 
   }
 
@@ -127,7 +127,10 @@ object EventBusDocSpec {
 
   final case class Notification(ref: ActorRef, id: Int)
 
-  class ActorBusImpl(val system: ActorSystem) extends ActorEventBus with ActorClassifier with ManagedActorClassification {
+  class ActorBusImpl(val system: ActorSystem)
+      extends ActorEventBus
+      with ActorClassifier
+      with ManagedActorClassification {
     type Event = Notification
 
     // is used for extracting the classifier from the incoming events
@@ -196,7 +199,7 @@ class EventBusDocSpec extends AkkaSpec {
     probe2.expectMsg(Notification(observer1, 100))
     actorBus.publish(Notification(observer2, 101))
     probe2.expectMsg(Notification(observer2, 101))
-    probe1.expectNoMsg(500.millis)
+    probe1.expectNoMessage(500.millis)
     //#actor-bus-test
   }
 }

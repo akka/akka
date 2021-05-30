@@ -1,25 +1,27 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
 
-import language.postfixOps
+import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.collection.immutable
-import akka.ConfigurationException
-import akka.actor.{ Props, Deploy, Actor, ActorRef }
-import akka.actor.UnstartedCell
-import akka.testkit.{ ImplicitSender, DefaultTimeout, AkkaSpec }
-import akka.pattern.gracefulStop
+
+import scala.annotation.nowarn
 import com.typesafe.config.Config
-import akka.actor.ActorSystem
-import akka.testkit.TestProbe
-import akka.testkit.TestProbe
-import akka.actor.ExtendedActorSystem
-import akka.testkit.TestActors.echoActorProps
+import language.postfixOps
+
+import akka.ConfigurationException
+import akka.actor.{ Actor, ActorRef, Deploy, Props }
 import akka.actor.ActorPath
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
+import akka.actor.UnstartedCell
+import akka.pattern.gracefulStop
+import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender }
+import akka.testkit.TestActors.echoActorProps
+import akka.testkit.TestProbe
 
 object ConfiguredLocalRoutingSpec {
   val config = """
@@ -82,37 +84,42 @@ object ConfiguredLocalRoutingSpec {
 
   class EchoProps extends Actor {
     def receive = {
-      case "get" ⇒ sender() ! context.props
+      case "get" => sender() ! context.props
     }
   }
 
   class SendRefAtStartup(testActor: ActorRef) extends Actor {
     testActor ! self
-    def receive = { case _ ⇒ }
+    def receive = { case _ => }
   }
 
   class Parent extends Actor {
     def receive = {
-      case (p: Props, name: String) ⇒
+      case (p: Props, name: String) =>
         sender() ! context.actorOf(p, name)
     }
   }
 
 }
 
-class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.config) with DefaultTimeout with ImplicitSender {
+class ConfiguredLocalRoutingSpec
+    extends AkkaSpec(ConfiguredLocalRoutingSpec.config)
+    with DefaultTimeout
+    with ImplicitSender {
   import ConfiguredLocalRoutingSpec._
 
   def routerConfig(ref: ActorRef): akka.routing.RouterConfig = ref match {
-    case r: RoutedActorRef ⇒
+    case r: RoutedActorRef =>
       r.underlying match {
-        case c: RoutedActorCell ⇒ c.routerConfig
-        case _: UnstartedCell   ⇒ awaitCond(r.isStarted, 1 second, 10 millis); routerConfig(ref)
+        case c: RoutedActorCell => c.routerConfig
+        case _: UnstartedCell   => awaitCond(r.isStarted, 1 second, 10 millis); routerConfig(ref)
+        case _                  => throw new IllegalArgumentException(s"Unexpected underlying cell ${r.underlying}")
       }
+    case _ => throw new IllegalArgumentException(s"Unexpected actorref $ref")
   }
 
   def collectRouteePaths(probe: TestProbe, router: ActorRef, n: Int): immutable.Seq[ActorPath] = {
-    for (i ← 1 to n) yield {
+    for (i <- 1 to n) yield {
       val msg = i.toString
       router.tell(msg, probe.ref)
       probe.expectMsg(msg)
@@ -123,33 +130,35 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
   "RouterConfig" must {
 
     "be picked up from Props" in {
-      val actor = system.actorOf(RoundRobinPool(12).props(routeeProps = Props[EchoProps]), "someOther")
+      val actor = system.actorOf(RoundRobinPool(12).props(routeeProps = Props[EchoProps]()), "someOther")
       routerConfig(actor) should ===(RoundRobinPool(12))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "be overridable in config" in {
-      val actor = system.actorOf(RoundRobinPool(12).props(routeeProps = Props[EchoProps]), "config")
+      val actor = system.actorOf(RoundRobinPool(12).props(routeeProps = Props[EchoProps]()), "config")
       routerConfig(actor) should ===(RandomPool(nrOfInstances = 4, usePoolDispatcher = true))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "use routees.paths from config" in {
-      val actor = system.actorOf(RandomPool(12).props(routeeProps = Props[EchoProps]), "paths")
+      val actor = system.actorOf(RandomPool(12).props(routeeProps = Props[EchoProps]()), "paths")
       routerConfig(actor) should ===(RandomGroup(List("/user/service1", "/user/service2")))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "be overridable in explicit deployment" in {
-      val actor = system.actorOf(FromConfig.props(routeeProps = Props[EchoProps]).
-        withDeploy(Deploy(routerConfig = RoundRobinPool(12))), "someOther")
+      val actor = system.actorOf(
+        FromConfig.props(routeeProps = Props[EchoProps]()).withDeploy(Deploy(routerConfig = RoundRobinPool(12))),
+        "someOther")
       routerConfig(actor) should ===(RoundRobinPool(12))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "be overridable in config even with explicit deployment" in {
-      val actor = system.actorOf(FromConfig.props(routeeProps = Props[EchoProps]).
-        withDeploy(Deploy(routerConfig = RoundRobinPool(12))), "config")
+      val actor = system.actorOf(
+        FromConfig.props(routeeProps = Props[EchoProps]()).withDeploy(Deploy(routerConfig = RoundRobinPool(12))),
+        "config")
       routerConfig(actor) should ===(RandomPool(nrOfInstances = 4, usePoolDispatcher = true))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
@@ -161,11 +170,12 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
     }
 
     "not get confused when trying to wildcard-configure children" in {
-      val router = system.actorOf(FromConfig.props(routeeProps = Props(classOf[SendRefAtStartup], testActor)), "weird")
-      val recv = Set() ++ (for (_ ← 1 to 3) yield expectMsgType[ActorRef])
-      val expc = Set('a', 'b', 'c') map (i ⇒ system.actorFor("/user/weird/$" + i))
+      system.actorOf(FromConfig.props(routeeProps = Props(classOf[SendRefAtStartup], testActor)), "weird")
+      val recv = (for (_ <- 1 to 3) yield expectMsgType[ActorRef].path.elements.mkString("/", "/", "")).toSet
+      @nowarn
+      val expc = Set('a', 'b', 'c').map(i => "/user/weird/$" + i)
       recv should ===(expc)
-      expectNoMsg(1 second)
+      expectNoMessage(1 second)
     }
 
     "support custom router" in {
@@ -178,7 +188,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
       // we don't really support deployment configuration of system actors, but
       // it's used for the pool of the SimpleDnsManager "/IO-DNS/inet-address"
       val probe = TestProbe()
-      val parent = system.asInstanceOf[ExtendedActorSystem].systemActorOf(Props[Parent], "sys-parent")
+      val parent = system.asInstanceOf[ExtendedActorSystem].systemActorOf(Props[Parent](), "sys-parent")
       parent.tell((FromConfig.props(echoActorProps), "round"), probe.ref)
       val router = probe.expectMsgType[ActorRef]
       val replies = collectRouteePaths(probe, router, 10)

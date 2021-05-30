@@ -1,16 +1,18 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.actor.testkit.typed.javadsl;
 
-//#manual-scheduling-simple
+// #manual-scheduling-simple
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.typed.Behavior;
 import akka.actor.testkit.typed.javadsl.ManualTime;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import org.junit.ClassRule;
-import org.scalatest.junit.JUnitSuite;
+import org.junit.Rule;
+import org.scalatestplus.junit.JUnitSuite;
 import java.time.Duration;
 
 import akka.actor.typed.javadsl.Behaviors;
@@ -24,21 +26,31 @@ public class ManualTimerExampleTest extends JUnitSuite {
   @ClassRule
   public static final TestKitJunitResource testKit = new TestKitJunitResource(ManualTime.config());
 
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
+
   private final ManualTime manualTime = ManualTime.get(testKit.system());
 
-  static final class Tick {}
+  static final class Tick {
+    private Tick() {}
+
+    static final Tick INSTANCE = new Tick();
+  }
+
   static final class Tock {}
 
   @Test
   public void testScheduleNonRepeatedTicks() {
     TestProbe<Tock> probe = testKit.createTestProbe();
-    Behavior<Tick> behavior = Behaviors.withTimers(timer -> {
-      timer.startSingleTimer("T", new Tick(), Duration.ofMillis(10));
-      return Behaviors.receive( (ctx, tick) -> {
-        probe.ref().tell(new Tock());
-        return Behaviors.same();
-      });
-    });
+    Behavior<Tick> behavior =
+        Behaviors.withTimers(
+            timer -> {
+              timer.startSingleTimer(Tick.INSTANCE, Duration.ofMillis(10));
+              return Behaviors.receiveMessage(
+                  tick -> {
+                    probe.ref().tell(new Tock());
+                    return Behaviors.same();
+                  });
+            });
 
     testKit.spawn(behavior);
 
@@ -49,7 +61,5 @@ public class ManualTimerExampleTest extends JUnitSuite {
 
     manualTime.expectNoMessageFor(Duration.ofSeconds(10), probe);
   }
-
-
 }
-//#manual-scheduling-simple
+// #manual-scheduling-simple

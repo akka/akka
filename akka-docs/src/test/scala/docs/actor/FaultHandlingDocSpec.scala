@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.actor
@@ -7,12 +7,13 @@ package docs.actor
 import language.postfixOps
 import akka.actor.{ ActorRef, ActorSystem, Props, Terminated }
 import FaultHandlingDocSpec._
-import org.scalatest.{ WordSpec, WordSpecLike }
 
 //#testkit
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.{ Matchers, BeforeAndAfterAll }
-import akka.testkit.{ TestActors, TestKit, ImplicitSender, EventFilter }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import akka.testkit.{ EventFilter, ImplicitSender, TestKit }
 
 //#testkit
 object FaultHandlingDocSpec {
@@ -29,15 +30,15 @@ object FaultHandlingDocSpec {
 
     override val supervisorStrategy =
       OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-        case _: ArithmeticException      ⇒ Resume
-        case _: NullPointerException     ⇒ Restart
-        case _: IllegalArgumentException ⇒ Stop
-        case _: Exception                ⇒ Escalate
+        case _: ArithmeticException      => Resume
+        case _: NullPointerException     => Restart
+        case _: IllegalArgumentException => Stop
+        case _: Exception                => Escalate
       }
     //#strategy
 
     def receive = {
-      case p: Props ⇒ sender() ! context.actorOf(p)
+      case p: Props => sender() ! context.actorOf(p)
     }
   }
   //#supervisor
@@ -51,15 +52,15 @@ object FaultHandlingDocSpec {
 
     override val supervisorStrategy =
       OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-        case _: ArithmeticException      ⇒ Resume
-        case _: NullPointerException     ⇒ Restart
-        case _: IllegalArgumentException ⇒ Stop
-        case _: Exception                ⇒ Escalate
+        case _: ArithmeticException      => Resume
+        case _: NullPointerException     => Restart
+        case _: IllegalArgumentException => Stop
+        case _: Exception                => Escalate
       }
     //#strategy2
 
     def receive = {
-      case p: Props ⇒ sender() ! context.actorOf(p)
+      case p: Props => sender() ! context.actorOf(p)
     }
     // override default to kill all children during restart
     override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {}
@@ -74,9 +75,9 @@ object FaultHandlingDocSpec {
 
     override val supervisorStrategy =
       OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-        case _: ArithmeticException ⇒ Resume
-        case t ⇒
-          super.supervisorStrategy.decider.applyOrElse(t, (_: Any) ⇒ Escalate)
+        case _: ArithmeticException => Resume
+        case t =>
+          super.supervisorStrategy.decider.applyOrElse(t, (_: Any) => Escalate)
       }
     //#default-strategy-fallback
 
@@ -87,9 +88,9 @@ object FaultHandlingDocSpec {
   class Child extends Actor {
     var state = 0
     def receive = {
-      case ex: Exception ⇒ throw ex
-      case x: Int        ⇒ state = x
-      case "get"         ⇒ sender() ! state
+      case ex: Exception => throw ex
+      case x: Int        => state = x
+      case "get"         => sender() ! state
     }
   }
   //#child
@@ -101,19 +102,25 @@ object FaultHandlingDocSpec {
   """)
 }
 //#testkit
-class FaultHandlingDocSpec(_system: ActorSystem) extends TestKit(_system)
-  with ImplicitSender with WordSpecLike with Matchers with BeforeAndAfterAll {
+class FaultHandlingDocSpec(_system: ActorSystem)
+    extends TestKit(_system)
+    with ImplicitSender
+    with AnyWordSpecLike
+    with Matchers
+    with BeforeAndAfterAll {
 
-  def this() = this(ActorSystem(
-    "FaultHandlingDocSpec",
-    ConfigFactory.parseString("""
+  def this() =
+    this(
+      ActorSystem(
+        "FaultHandlingDocSpec",
+        ConfigFactory.parseString("""
       akka {
         loggers = ["akka.testkit.TestEventListener"]
         loglevel = "WARNING"
       }
       """)))
 
-  override def afterAll: Unit = {
+  override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
   }
 
@@ -122,12 +129,12 @@ class FaultHandlingDocSpec(_system: ActorSystem) extends TestKit(_system)
       //#testkit
 
       //#create
-      val supervisor = system.actorOf(Props[Supervisor], "supervisor")
+      val supervisor = system.actorOf(Props[Supervisor](), "supervisor")
 
-      supervisor ! Props[Child]
+      supervisor ! Props[Child]()
       val child = expectMsgType[ActorRef] // retrieve answer from TestKit’s testActor
       //#create
-      EventFilter.warning(occurrences = 1) intercept {
+      EventFilter.warning(occurrences = 1).intercept {
         //#resume
         child ! 42 // set state to 42
         child ! "get"
@@ -138,23 +145,23 @@ class FaultHandlingDocSpec(_system: ActorSystem) extends TestKit(_system)
         expectMsg(42)
         //#resume
       }
-      EventFilter[NullPointerException](occurrences = 1) intercept {
+      EventFilter[NullPointerException](occurrences = 1).intercept {
         //#restart
         child ! new NullPointerException // crash it harder
         child ! "get"
         expectMsg(0)
         //#restart
       }
-      EventFilter[IllegalArgumentException](occurrences = 1) intercept {
+      EventFilter[IllegalArgumentException](occurrences = 1).intercept {
         //#stop
         watch(child) // have testActor watch “child”
         child ! new IllegalArgumentException // break it
-        expectMsgPF() { case Terminated(`child`) ⇒ () }
+        expectMsgPF() { case Terminated(`child`) => () }
         //#stop
       }
-      EventFilter[Exception]("CRASH", occurrences = 2) intercept {
+      EventFilter[Exception]("CRASH", occurrences = 2).intercept {
         //#escalate-kill
-        supervisor ! Props[Child] // create new child
+        supervisor ! Props[Child]() // create new child
         val child2 = expectMsgType[ActorRef]
         watch(child2)
         child2 ! "get" // verify it is alive
@@ -162,13 +169,13 @@ class FaultHandlingDocSpec(_system: ActorSystem) extends TestKit(_system)
 
         child2 ! new Exception("CRASH") // escalate failure
         expectMsgPF() {
-          case t @ Terminated(`child2`) if t.existenceConfirmed ⇒ ()
+          case t @ Terminated(`child2`) if t.existenceConfirmed => ()
         }
         //#escalate-kill
         //#escalate-restart
-        val supervisor2 = system.actorOf(Props[Supervisor2], "supervisor2")
+        val supervisor2 = system.actorOf(Props[Supervisor2](), "supervisor2")
 
-        supervisor2 ! Props[Child]
+        supervisor2 ! Props[Child]()
         val child3 = expectMsgType[ActorRef]
 
         child3 ! 23

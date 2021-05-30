@@ -1,18 +1,20 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
-import akka.annotation.DoNotInherit
-import akka.japi.pf.ReceiveBuilder
-
-import scala.runtime.BoxedUnit
 import java.util.Optional
 
-import akka.util.JavaDurationConverters
-
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
+import scala.runtime.BoxedUnit
+
+import scala.annotation.nowarn
+
+import akka.annotation.DoNotInherit
+import akka.japi.pf.ReceiveBuilder
+import akka.util.JavaDurationConverters
 
 /**
  * Java API: compatible with lambda expressions
@@ -28,6 +30,7 @@ object AbstractActor {
    * extending `AbstractPartialFunction`.
    */
   final class Receive(val onMessage: PartialFunction[Any, BoxedUnit]) {
+
     /**
      * Composes this `Receive` with a fallback which gets applied
      * where this partial function is not defined.
@@ -51,19 +54,36 @@ object AbstractActor {
   trait ActorContext extends akka.actor.ActorContext {
 
     /**
+     * The ActorRef representing this actor
+     *
+     * This method is thread-safe and can be called from other threads than the ordinary
+     * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
+     */
+    def getSelf(): ActorRef
+
+    /**
+     * Retrieve the Props which were used to create this actor.
+     *
+     * This method is thread-safe and can be called from other threads than the ordinary
+     * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
+     */
+    def getProps(): Props
+
+    /**
+     * Returns the sender 'ActorRef' of the current message.
+     *
+     * *Warning*: This method is not thread-safe and must not be accessed from threads other
+     * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
+     */
+    def getSender(): ActorRef = sender()
+
+    /**
      * Returns an unmodifiable Java Collection containing the linked actors
      *
      * *Warning*: This method is not thread-safe and must not be accessed from threads other
      * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
      */
     def getChildren(): java.lang.Iterable[ActorRef]
-
-    /**
-     * Returns a reference to the named child or null if no child with
-     * that name exists.
-     */
-    @deprecated("Use findChild instead", "2.5.0")
-    def getChild(name: String): ActorRef
 
     /**
      * Returns a reference to the named child if it exists.
@@ -94,6 +114,14 @@ object AbstractActor {
     def getSystem(): ActorSystem
 
     /**
+     * Returns the dispatcher (MessageDispatcher) that is used for this Actor.
+     *
+     * This method is thread-safe and can be called from other threads than the ordinary
+     * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
+     */
+    def getDispatcher(): ExecutionContextExecutor
+
+    /**
      * Changes the Actor's behavior to become the new 'Receive' handler.
      * Replaces the current behavior on the top of the behavior stack.
      *
@@ -119,6 +147,18 @@ object AbstractActor {
      */
     def become(behavior: Receive, discardOld: Boolean): Unit =
       become(behavior.onMessage.asInstanceOf[PartialFunction[Any, Unit]], discardOld)
+
+    /**
+     * Gets the current receive timeout.
+     * When specified, the receive method should be able to handle a [[akka.actor.ReceiveTimeout]] message.
+     *
+     * *Warning*: This method is not thread-safe and must not be accessed from threads other
+     * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] and [[scala.concurrent.Future]] callbacks.
+     */
+    def getReceiveTimeout(): java.time.Duration = {
+      import JavaDurationConverters._
+      receiveTimeout.asJava
+    }
 
     /**
      * Defines the inactivity timeout after which the sending of a [[akka.actor.ReceiveTimeout]] message is triggered.
@@ -233,6 +273,7 @@ abstract class AbstractActor extends Actor {
   // TODO In 2.6.0 we can remove deprecation and make the method final
   @deprecated("Override preRestart with message parameter with Optional type instead", "2.5.0")
   @throws(classOf[Exception])
+  @nowarn("msg=deprecated")
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     import scala.compat.java8.OptionConverters._
     preRestart(reason, message.asJava)
@@ -288,7 +329,7 @@ abstract class UntypedAbstractActor extends AbstractActor {
   final override def createReceive(): AbstractActor.Receive =
     throw new UnsupportedOperationException("createReceive should not be used by UntypedAbstractActor")
 
-  override def receive: PartialFunction[Any, Unit] = { case msg ⇒ onReceive(msg) }
+  override def receive: PartialFunction[Any, Unit] = { case msg => onReceive(msg) }
 
   /**
    * To be implemented by concrete UntypedAbstractActor, this defines the behavior of the

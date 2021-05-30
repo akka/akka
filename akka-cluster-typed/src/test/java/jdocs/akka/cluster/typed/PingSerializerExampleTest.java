@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.cluster.typed;
@@ -25,7 +25,7 @@ public class PingSerializerExampleTest {
     }
   }
 
-  //#serializer
+  // #serializer
   public class PingSerializer extends SerializerWithStringManifest {
 
     final ExtendedActorSystem system;
@@ -46,26 +46,35 @@ public class PingSerializerExampleTest {
 
     @Override
     public String manifest(Object obj) {
-      if (obj instanceof Ping)
-        return PING_MANIFEST;
-      else if (obj instanceof Pong)
-        return PONG_MANIFEST;
+      if (obj instanceof Ping) return PING_MANIFEST;
+      else if (obj instanceof Pong) return PONG_MANIFEST;
       else
-        throw new IllegalArgumentException("Unknown type: " + obj);
+        throw new IllegalArgumentException(
+            "Can't serialize object of type "
+                + obj.getClass()
+                + " in ["
+                + getClass().getName()
+                + "]");
     }
 
     @Override
     public byte[] toBinary(Object obj) {
       if (obj instanceof Ping)
-        return actorRefResolver.toSerializationFormat(((Ping) obj).replyTo).getBytes(StandardCharsets.UTF_8);
-      else if (obj instanceof Pong)
-        return new byte[0];
+        return actorRefResolver
+            .toSerializationFormat(((Ping) obj).replyTo)
+            .getBytes(StandardCharsets.UTF_8);
+      else if (obj instanceof Pong) return new byte[0];
       else
-        throw new IllegalArgumentException("Unknown type: " + obj);
+        throw new IllegalArgumentException(
+            "Can't serialize object of type "
+                + obj.getClass()
+                + " in ["
+                + getClass().getName()
+                + "]");
     }
 
     @Override
-    public Object fromBinary(byte[] bytes, String manifest) throws NotSerializableException {
+    public Object fromBinary(byte[] bytes, String manifest) {
       if (PING_MANIFEST.equals(manifest)) {
         String str = new String(bytes, StandardCharsets.UTF_8);
         ActorRef<Pong> ref = actorRefResolver.resolveActorRef(str);
@@ -73,9 +82,9 @@ public class PingSerializerExampleTest {
       } else if (PONG_MANIFEST.equals(manifest)) {
         return new Pong();
       } else {
-        throw new NotSerializableException("Unable to handle manifest: " + manifest);
+        throw new IllegalArgumentException("Unable to handle manifest: " + manifest);
       }
     }
   }
-  //#serializer
+  // #serializer
 }

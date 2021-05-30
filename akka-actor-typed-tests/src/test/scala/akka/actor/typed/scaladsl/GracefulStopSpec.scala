@@ -1,17 +1,19 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 package scaladsl
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.NotUsed
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import org.scalatest.WordSpecLike
 
-final class GracefulStopSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+final class GracefulStopSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   "Graceful stop" must {
 
@@ -19,27 +21,24 @@ final class GracefulStopSpec extends ScalaTestWithActorTestKit with WordSpecLike
       val probe = TestProbe[String]("probe")
 
       val behavior =
-        Behaviors.setup[akka.NotUsed] { context ⇒
+        Behaviors.setup[akka.NotUsed] { context =>
           context.spawn[NotUsed](Behaviors.receiveSignal {
-            case (_, PostStop) ⇒
+            case (_, PostStop) =>
               probe.ref ! "child-done"
               Behaviors.stopped
           }, "child1")
 
           context.spawn[NotUsed](Behaviors.receiveSignal {
-            case (_, PostStop) ⇒
+            case (_, PostStop) =>
               probe.ref ! "child-done"
               Behaviors.stopped
           }, "child2")
 
-          Behaviors.stopped {
-            Behaviors.receiveSignal {
-              case (_, PostStop) ⇒
-                // cleanup function body
-                probe.ref ! "parent-done"
-                Behaviors.same
-            }
+          Behaviors.stopped { () =>
+            // cleanup function body
+            probe.ref ! "parent-done"
           }
+
         }
 
       spawn(behavior)
@@ -52,15 +51,11 @@ final class GracefulStopSpec extends ScalaTestWithActorTestKit with WordSpecLike
       val probe = TestProbe[Done]("probe")
 
       val behavior =
-        Behaviors.setup[akka.NotUsed] { _ ⇒
+        Behaviors.setup[akka.NotUsed] { _ =>
           // do not spawn any children
-          Behaviors.stopped {
-            Behaviors.receiveSignal {
-              case (_, PostStop) ⇒
-                // cleanup function body
-                probe.ref ! Done
-                Behaviors.same
-            }
+          Behaviors.stopped { () =>
+            // cleanup function body
+            probe.ref ! Done
           }
         }
 

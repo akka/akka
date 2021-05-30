@@ -1,13 +1,17 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
-import akka.actor.ActorSystem
-
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import akka.Done
+import akka.actor.ActorSystem
+import akka.actor.Address
+import akka.dispatch.ExecutionContexts
 import akka.remote.UniqueAddress
 import akka.stream.Attributes
 import akka.stream.FlowShape
@@ -15,10 +19,7 @@ import akka.stream.Inlet
 import akka.stream.Outlet
 import akka.stream.stage._
 import akka.util.OptionVal
-import akka.Done
-
-import scala.concurrent.Future
-import akka.actor.Address
+import akka.util.unused
 
 /**
  * INTERNAL API
@@ -50,14 +51,14 @@ private[remote] object OutboundHandshake {
  * INTERNAL API
  */
 private[remote] class OutboundHandshake(
-  system:                  ActorSystem,
-  outboundContext:         OutboundContext,
-  outboundEnvelopePool:    ObjectPool[ReusableOutboundEnvelope],
-  timeout:                 FiniteDuration,
-  retryInterval:           FiniteDuration,
-  injectHandshakeInterval: FiniteDuration,
-  livenessProbeInterval:   Duration)
-  extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
+    @unused system: ActorSystem,
+    outboundContext: OutboundContext,
+    outboundEnvelopePool: ObjectPool[ReusableOutboundEnvelope],
+    timeout: FiniteDuration,
+    retryInterval: FiniteDuration,
+    injectHandshakeInterval: FiniteDuration,
+    livenessProbeInterval: Duration)
+    extends GraphStage[FlowShape[OutboundEnvelope, OutboundEnvelope]] {
 
   val in: Inlet[OutboundEnvelope] = Inlet("OutboundHandshake.in")
   val out: Outlet[OutboundEnvelope] = Outlet("OutboundHandshake.out")
@@ -71,14 +72,30 @@ private[remote] class OutboundHandshake(
       private var pendingMessage: OptionVal[OutboundEnvelope] = OptionVal.None
       private var injectHandshakeTickScheduled = false
 
+      private val uniqueRemoteAddressAsyncCallback = getAsyncCallback[UniqueAddress] { _ =>
+        if (handshakeState != Completed) {
+          handshakeCompleted()
+          if (isAvailable(out))
+            pull(in)
+        }
+      }
+      // this must be a `val` because function equality is used when removing in postStop
+      private val uniqueRemoteAddressListener: UniqueAddress => Unit =
+        peer => uniqueRemoteAddressAsyncCallback.invoke(peer)
+
       override protected def logSource: Class[_] = classOf[OutboundHandshake]
 
       override def preStart(): Unit = {
         scheduleOnce(HandshakeTimeout, timeout)
         livenessProbeInterval match {
-          case d: FiniteDuration ⇒ schedulePeriodically(LivenessProbeTick, d)
-          case _                 ⇒ // only used in control stream
+          case d: FiniteDuration => scheduleWithFixedDelay(LivenessProbeTick, d, d)
+          case _                 => // only used in control stream
         }
+      }
+
+      override def postStop(): Unit = {
+        outboundContext.associationState.removeUniqueRemoteAddressListener(uniqueRemoteAddressListener)
+        super.postStop()
       }
 
       // InHandler
@@ -106,43 +123,34 @@ private[remote] class OutboundHandshake(
       // OutHandler
       override def onPull(): Unit = {
         handshakeState match {
-          case Completed ⇒
+          case Completed =>
             pendingMessage match {
-              case OptionVal.None ⇒
-                if (!hasBeenPulled(in))
-                  pull(in)
-              case OptionVal.Some(p) ⇒
+              case OptionVal.Some(p) =>
                 push(out, p)
                 pendingMessage = OptionVal.None
+              case _ =>
+                if (!hasBeenPulled(in))
+                  pull(in)
             }
 
-          case Start ⇒
-            val uniqueRemoteAddress = outboundContext.associationState.uniqueRemoteAddress
-            if (uniqueRemoteAddress.isCompleted) {
-              handshakeCompleted()
-            } else {
-              // will pull when handshake reply is received (uniqueRemoteAddress completed)
-              handshakeState = ReqInProgress
-              schedulePeriodically(HandshakeRetryTick, retryInterval)
+          case Start =>
+            outboundContext.associationState.uniqueRemoteAddress() match {
+              case Some(_) =>
+                handshakeCompleted()
+              case None =>
+                // will pull when handshake reply is received (uniqueRemoteAddress populated)
+                handshakeState = ReqInProgress
+                scheduleWithFixedDelay(HandshakeRetryTick, retryInterval, retryInterval)
 
-              // The InboundHandshake stage will complete the uniqueRemoteAddress future
-              // when it receives the HandshakeRsp reply
-              implicit val ec = materializer.executionContext
-              uniqueRemoteAddress.foreach {
-                getAsyncCallback[UniqueAddress] { a ⇒
-                  if (handshakeState != Completed) {
-                    handshakeCompleted()
-                    if (isAvailable(out))
-                      pull(in)
-                  }
-                }.invoke
-              }
+                // The InboundHandshake stage will complete the AssociationState.uniqueRemoteAddress
+                // when it receives the HandshakeRsp reply
+                outboundContext.associationState.addUniqueRemoteAddressListener(uniqueRemoteAddressListener)
             }
 
             // always push a HandshakeReq as the first message
             pushHandshakeReq()
 
-          case ReqInProgress ⇒ // will pull when handshake reply is received
+          case ReqInProgress => // will pull when handshake reply is received
         }
       }
 
@@ -163,15 +171,20 @@ private[remote] class OutboundHandshake(
           if (lastUsedDuration >= livenessProbeInterval) {
             log.info(
               "Association to [{}] has been idle for [{}] seconds, sending HandshakeReq to validate liveness",
-              outboundContext.remoteAddress, lastUsedDuration.toSeconds)
+              outboundContext.remoteAddress,
+              lastUsedDuration.toSeconds)
             push(out, createHandshakeReqEnvelope())
           }
         }
       }
 
       private def createHandshakeReqEnvelope(): OutboundEnvelope = {
-        outboundEnvelopePool.acquire().init(
-          recipient = OptionVal.None, message = HandshakeReq(outboundContext.localAddress, outboundContext.remoteAddress), sender = OptionVal.None)
+        outboundEnvelopePool
+          .acquire()
+          .init(
+            recipient = OptionVal.None,
+            message = HandshakeReq(outboundContext.localAddress, outboundContext.remoteAddress),
+            sender = OptionVal.None)
       }
 
       private def handshakeCompleted(): Unit = {
@@ -182,17 +195,20 @@ private[remote] class OutboundHandshake(
 
       override protected def onTimer(timerKey: Any): Unit =
         timerKey match {
-          case InjectHandshakeTick ⇒
+          case InjectHandshakeTick =>
             // next onPush message will trigger sending of HandshakeReq
             injectHandshakeTickScheduled = false
-          case LivenessProbeTick ⇒
+          case LivenessProbeTick =>
             pushLivenessProbeReq()
-          case HandshakeRetryTick ⇒
+          case HandshakeRetryTick =>
             if (isAvailable(out))
               pushHandshakeReq()
-          case HandshakeTimeout ⇒
-            failStage(new HandshakeTimeoutException(
-              s"Handshake with [${outboundContext.remoteAddress}] did not complete within ${timeout.toMillis} ms"))
+          case HandshakeTimeout =>
+            failStage(
+              new HandshakeTimeoutException(
+                s"Handshake with [${outboundContext.remoteAddress}] did not complete within ${timeout.toMillis} ms"))
+          case unknown =>
+            throw new IllegalArgumentException(s"Unknown timer key: $unknown")
         }
 
       setHandlers(in, out, this)
@@ -203,7 +219,8 @@ private[remote] class OutboundHandshake(
 /**
  * INTERNAL API
  */
-private[remote] class InboundHandshake(inboundContext: InboundContext, inControlStream: Boolean) extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
+private[remote] class InboundHandshake(inboundContext: InboundContext, inControlStream: Boolean)
+    extends GraphStage[FlowShape[InboundEnvelope, InboundEnvelope]] {
   val in: Inlet[InboundEnvelope] = Inlet("InboundHandshake.in")
   val out: Outlet[InboundEnvelope] = Outlet("InboundHandshake.out")
   override val shape: FlowShape[InboundEnvelope, InboundEnvelope] = FlowShape(in, out)
@@ -212,34 +229,40 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
     new TimerGraphStageLogic(shape) with OutHandler with StageLogging {
       import OutboundHandshake._
 
+      private val runInStage = getAsyncCallback[() => Unit] { thunk =>
+        thunk()
+      }
+
       // InHandler
       if (inControlStream)
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            val env = grab(in)
-            env.message match {
-              case HandshakeReq(from, to) ⇒ onHandshakeReq(from, to)
-              case HandshakeRsp(from) ⇒
-                // Touch the lastUsedTimestamp here also because when sending the extra low frequency HandshakeRsp
-                // the timestamp is not supposed to be updated when sending but when receiving reply, which confirms
-                // that the other system is alive.
-                inboundContext.association(from.address).associationState.lastUsedTimestamp.set(System.nanoTime())
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              val env = grab(in)
+              env.message match {
+                case HandshakeReq(from, to) => onHandshakeReq(from, to)
+                case HandshakeRsp(from)     =>
+                  // Touch the lastUsedTimestamp here also because when sending the extra low frequency HandshakeRsp
+                  // the timestamp is not supposed to be updated when sending but when receiving reply, which confirms
+                  // that the other system is alive.
+                  inboundContext.association(from.address).associationState.lastUsedTimestamp.set(System.nanoTime())
 
-                after(inboundContext.completeHandshake(from)) {
-                  pull(in)
-                }
-              case _ ⇒
-                onMessage(env)
+                  after(inboundContext.completeHandshake(from)) { () =>
+                    pull(in)
+                  }
+                case _ =>
+                  onMessage(env)
+              }
             }
-          }
-        })
+          })
       else
         setHandler(in, new InHandler {
           override def onPush(): Unit = {
             val env = grab(in)
             env.message match {
-              case HandshakeReq(from, to) ⇒ onHandshakeReq(from, to)
-              case _ ⇒
+              case HandshakeReq(from, to) => onHandshakeReq(from, to)
+              case _ =>
                 onMessage(env)
             }
           }
@@ -247,35 +270,34 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
 
       private def onHandshakeReq(from: UniqueAddress, to: Address): Unit = {
         if (to == inboundContext.localAddress.address) {
-          after(inboundContext.completeHandshake(from)) {
+          after(inboundContext.completeHandshake(from)) { () =>
             inboundContext.sendControl(from.address, HandshakeRsp(inboundContext.localAddress))
             pull(in)
           }
         } else {
           log.warning(
             "Dropping Handshake Request from [{}] addressed to unknown local address [{}]. " +
-              "Local address is [{}]. Check that the sending system uses the same " +
-              "address to contact recipient system as defined in the " +
-              "'akka.remote.artery.canonical.hostname' of the recipient system. " +
-              "The name of the ActorSystem must also match.",
-            from, to, inboundContext.localAddress.address)
+            "Local address is [{}]. Check that the sending system uses the same " +
+            "address to contact recipient system as defined in the " +
+            "'akka.remote.artery.canonical.hostname' of the recipient system. " +
+            "The name of the ActorSystem must also match.",
+            from,
+            to,
+            inboundContext.localAddress.address)
 
           pull(in)
         }
       }
 
-      private def after(first: Future[Done])(thenInside: ⇒ Unit): Unit = {
+      private def after(first: Future[Done])(thenInside: () => Unit): Unit = {
         first.value match {
-          case Some(_) ⇒
+          case Some(_) =>
             // This in the normal case (all but the first). The future will be completed
             // because handshake was already completed. Note that we send those HandshakeReq
             // periodically.
-            thenInside
-          case None ⇒
-            implicit val ec = materializer.executionContext
-            first.onComplete { _ ⇒
-              getAsyncCallback[Done](_ ⇒ thenInside).invoke(Done)
-            }
+            thenInside()
+          case None =>
+            first.onComplete(_ => runInStage.invoke(thenInside))(ExecutionContexts.parasitic)
         }
 
       }
@@ -284,12 +306,10 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
         if (isKnownOrigin(env))
           push(out, env)
         else {
-          if (log.isDebugEnabled)
-            log.debug(
-              s"Dropping message [{}] from unknown system with UID [{}]. " +
-                "This system with UID [{}] was probably restarted. " +
-                "Messages will be accepted when new handshake has been completed.",
-              env.message.getClass.getName, env.originUid, inboundContext.localAddress.uid)
+          val dropReason = s"Unknown system with UID [${env.originUid}]. " +
+            s"This system with UID [${inboundContext.localAddress.uid}] was probably restarted. " +
+            "Messages will be accepted when new handshake has been completed."
+          inboundContext.publishDropped(env, dropReason)
           pull(in)
         }
       }

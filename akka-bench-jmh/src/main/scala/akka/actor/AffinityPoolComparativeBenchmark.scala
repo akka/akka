@@ -1,15 +1,16 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
 
 import java.util.concurrent.TimeUnit
 
-import akka.actor.BenchmarkActors._
-import akka.actor.ForkJoinActorBenchmark.cores
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
+
+import akka.actor.BenchmarkActors._
+import akka.actor.ForkJoinActorBenchmark.cores
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
@@ -40,13 +41,14 @@ class AffinityPoolComparativeBenchmark {
     requireRightNumberOfCores(cores)
 
     val mailboxConf = mailbox match {
-      case "default" ⇒ ""
-      case "SingleConsumerOnlyUnboundedMailbox" ⇒
+      case "default" => ""
+      case "SingleConsumerOnlyUnboundedMailbox" =>
         s"""default-mailbox.mailbox-type = "${classOf[akka.dispatch.SingleConsumerOnlyUnboundedMailbox].getName}""""
     }
 
-    system = ActorSystem("AffinityPoolComparativeBenchmark", ConfigFactory.parseString(
-      s"""| akka {
+    system = ActorSystem(
+      "AffinityPoolComparativeBenchmark",
+      ConfigFactory.parseString(s"""| akka {
           |   log-dead-letters = off
           |   actor {
           |     default-fj-dispatcher {
@@ -82,8 +84,7 @@ class AffinityPoolComparativeBenchmark {
           |     $mailboxConf
           |   }
           | }
-      """.stripMargin
-    ))
+      """.stripMargin))
   }
 
   @TearDown(Level.Trial)

@@ -1,23 +1,24 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.singleton
 
-import language.postfixOps
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorRef
-import akka.actor.Props
 import akka.actor.PoisonPill
+import akka.actor.Props
 import akka.cluster.Cluster
+import akka.cluster.MemberStatus
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
-import akka.cluster.MemberStatus
 
 object ClusterSingletonManagerStartupSpec extends MultiNodeConfig {
   val first = role("first")
@@ -28,16 +29,18 @@ object ClusterSingletonManagerStartupSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-down-unreachable-after = 0s
+    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+    akka.cluster.testkit.auto-down-unreachable-after = 0s
     """))
 
   case object EchoStarted
+
   /**
    * The singleton actor
    */
-  class Echo(testActor: ActorRef) extends Actor {
+  class Echo extends Actor {
     def receive = {
-      case _ ⇒
+      case _ =>
         sender() ! self
     }
   }
@@ -47,14 +50,17 @@ class ClusterSingletonManagerStartupMultiJvmNode1 extends ClusterSingletonManage
 class ClusterSingletonManagerStartupMultiJvmNode2 extends ClusterSingletonManagerStartupSpec
 class ClusterSingletonManagerStartupMultiJvmNode3 extends ClusterSingletonManagerStartupSpec
 
-class ClusterSingletonManagerStartupSpec extends MultiNodeSpec(ClusterSingletonManagerStartupSpec) with STMultiNodeSpec with ImplicitSender {
+class ClusterSingletonManagerStartupSpec
+    extends MultiNodeSpec(ClusterSingletonManagerStartupSpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
   import ClusterSingletonManagerStartupSpec._
 
   override def initialParticipants = roles.size
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      Cluster(system) join node(to).address
+      Cluster(system).join(node(to).address)
       createSingleton()
     }
   }
@@ -62,7 +68,7 @@ class ClusterSingletonManagerStartupSpec extends MultiNodeSpec(ClusterSingletonM
   def createSingleton(): ActorRef = {
     system.actorOf(
       ClusterSingletonManager.props(
-        singletonProps = Props(classOf[Echo], testActor),
+        singletonProps = Props(classOf[Echo]),
         terminationMessage = PoisonPill,
         settings = ClusterSingletonManagerSettings(system)),
       name = "echo")
@@ -70,9 +76,8 @@ class ClusterSingletonManagerStartupSpec extends MultiNodeSpec(ClusterSingletonM
 
   lazy val echoProxy: ActorRef = {
     system.actorOf(
-      ClusterSingletonProxy.props(
-        singletonManagerPath = "/user/echo",
-        settings = ClusterSingletonProxySettings(system)),
+      ClusterSingletonProxy
+        .props(singletonManagerPath = "/user/echo", settings = ClusterSingletonProxySettings(system)),
       name = "echoProxy")
   }
 

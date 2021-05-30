@@ -1,33 +1,34 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import scala.collection.immutable.{ TreeMap, SortedSet }
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
+import scala.collection.immutable.{ SortedSet, TreeMap }
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object VectorClockPerfSpec {
   import VectorClock._
 
   def createVectorClockOfSize(size: Int): (VectorClock, SortedSet[Node]) =
-    ((VectorClock(), SortedSet.empty[Node]) /: (1 to size)) {
-      case ((vc, nodes), i) ⇒
+    (1 to size).foldLeft((VectorClock(), SortedSet.empty[Node])) {
+      case ((vc, nodes), i) =>
         val node = Node(i.toString)
         (vc :+ node, nodes + node)
     }
 
   def copyVectorClock(vc: VectorClock): VectorClock = {
-    val versions = (TreeMap.empty[Node, Long] /: vc.versions) {
-      case (versions, (n, t)) ⇒ versions.updated(Node.fromHash(n), t)
+    val versions = vc.versions.foldLeft(TreeMap.empty[Node, Long]) {
+      case (versions, (n, t)) => versions.updated(Node.fromHash(n), t)
     }
     vc.copy(versions = versions)
   }
 
 }
 
-class VectorClockPerfSpec extends WordSpec with Matchers {
+class VectorClockPerfSpec extends AnyWordSpec with Matchers {
   import VectorClock._
   import VectorClockPerfSpec._
 
@@ -46,19 +47,19 @@ class VectorClockPerfSpec extends WordSpec with Matchers {
   val vcAfterMiddle = vcBaseMiddle :+ firstNode
   val vcConcurrentMiddle = vcBaseMiddle :+ middleNode
 
-  def checkThunkFor(vc1: VectorClock, vc2: VectorClock, thunk: (VectorClock, VectorClock) ⇒ Unit, times: Int): Unit = {
+  def checkThunkFor(vc1: VectorClock, vc2: VectorClock, thunk: (VectorClock, VectorClock) => Unit, times: Int): Unit = {
     val vcc1 = copyVectorClock(vc1)
     val vcc2 = copyVectorClock(vc2)
-    for (i ← 1 to times) {
+    for (_ <- 1 to times) {
       thunk(vcc1, vcc2)
     }
   }
 
   def compareTo(order: Ordering)(vc1: VectorClock, vc2: VectorClock): Unit = {
-    vc1 compareTo vc2 should ===(order)
+    vc1.compareTo(vc2) should ===(order)
   }
 
-  def !==(vc1: VectorClock, vc2: VectorClock): Unit = {
+  def notEqual(vc1: VectorClock, vc2: VectorClock): Unit = {
     vc1 == vc2 should ===(false)
   }
 
@@ -97,15 +98,15 @@ class VectorClockPerfSpec extends WordSpec with Matchers {
     }
 
     s"compare !== Before (middle) $iterations times" in {
-      checkThunkFor(vcBefore, vcBaseMiddle, !==, iterations)
+      checkThunkFor(vcBefore, vcBaseMiddle, notEqual, iterations)
     }
 
     s"compare !== After (middle) $iterations times" in {
-      checkThunkFor(vcAfterMiddle, vcBaseMiddle, !==, iterations)
+      checkThunkFor(vcAfterMiddle, vcBaseMiddle, notEqual, iterations)
     }
 
     s"compare !== Concurrent (middle) $iterations times" in {
-      checkThunkFor(vcAfterMiddle, vcConcurrentMiddle, !==, iterations)
+      checkThunkFor(vcAfterMiddle, vcConcurrentMiddle, notEqual, iterations)
     }
 
   }

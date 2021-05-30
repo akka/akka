@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.io.compression
@@ -13,7 +13,7 @@ import akka.util.ByteString
 
 /** INTERNAL API */
 @InternalApi private[akka] abstract class DeflateDecompressorBase(maxBytesPerChunk: Int)
-  extends ByteStringParser[ByteString] {
+    extends ByteStringParser[ByteString] {
 
   abstract class DecompressorParsingLogic extends ParsingLogic {
     val inflater: Inflater
@@ -21,12 +21,19 @@ import akka.util.ByteString
     def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit
     def inflating: Inflate
 
+    /**
+     * Pre-allocated buffer to read from inflater. ByteString.fromArray below
+     * will always create a copy of the read data. Keeping this fixed
+     * buffer around avoids reallocating a buffer that may be too big in many
+     * cases for every call of `parse`.
+     */
+    private[this] val buffer = new Array[Byte](maxBytesPerChunk)
+
     abstract class Inflate(noPostProcessing: Boolean) extends ParseStep[ByteString] {
       override def canWorkWithPartialData = true
       override def parse(reader: ByteStringParser.ByteReader): ParseResult[ByteString] = {
         inflater.setInput(reader.remainingData.toArray)
 
-        val buffer = new Array[Byte](maxBytesPerChunk)
         val read = inflater.inflate(buffer)
 
         reader.skip(reader.remainingSize - inflater.getRemaining)

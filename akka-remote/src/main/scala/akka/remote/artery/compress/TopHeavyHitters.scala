@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery.compress
@@ -18,16 +18,19 @@ import scala.reflect.ClassTag
  *
  * See also Section 5.2 of http://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf
  * for a discussion about the assumptions made and guarantees about the Heavy Hitters made in this model.
- * We assume the Cash Register model in which there are only additions, which simplifies HH detecion significantly.
+ * We assume the Cash Register model in which there are only additions, which simplifies HH detection significantly.
  *
  * This class is a hybrid data structure containing a hashmap and a heap pointing to slots in the hashmap. The capacity
  * of the hashmap is twice that of the heap to reduce clumping of entries on collisions.
  */
-private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit classTag: ClassTag[T]) { self ⇒
+private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit classTag: ClassTag[T]) { self =>
 
-  require((max & (max - 1)) == 0, "Maximum numbers of heavy hitters should be in form of 2^k for any natural k")
+  private val adjustedMax = if (max == 0) 1 else max // need at least one
+  require(
+    (adjustedMax & (adjustedMax - 1)) == 0,
+    "Maximum numbers of heavy hitters should be in form of 2^k for any natural k")
 
-  val capacity = max * 2
+  val capacity = adjustedMax * 2
   val mask = capacity - 1
 
   import TopHeavyHitters._
@@ -44,7 +47,7 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
   private[this] val weights: Array[Long] = new Array(capacity)
 
   // Heap structure containing indices to slots in the hashmap
-  private[this] val heap: Array[Int] = Array.fill(max)(-1)
+  private[this] val heap: Array[Int] = Array.fill(adjustedMax)(-1)
 
   /*
    * Invariants (apart from heap and hashmap invariants):
@@ -104,8 +107,10 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
     new Iterator[T] {
       var i = 0
 
-      @tailrec override final def hasNext: Boolean =
+      @tailrec override final def hasNext: Boolean = {
+        // note that this is using max and not adjustedMax so will be empty if disabled (max=0)
         (i < self.max) && ((value != null) || { next(); hasNext })
+      }
 
       override final def next(): T = {
         val v = value
@@ -169,7 +174,7 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
           true
         } else {
           // The entry exists, let's update it.
-          updateExistingHeavyHitter(actualIdx, hashCode, item, count)
+          updateExistingHeavyHitter(actualIdx, count)
           // not a "new" heavy hitter, since we only replaced it (so it was signaled as new once before)
           false
         }
@@ -220,9 +225,10 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
    * Replace existing heavy hitter – give it a new `count` value. This will also restore the heap property, so this
    * might make a previously lowest hitter no longer be one.
    */
-  private def updateExistingHeavyHitter(foundHashIndex: Int, hashCode: HashCodeVal, item: T, count: Long): Unit = {
+  private def updateExistingHeavyHitter(foundHashIndex: Int, count: Long): Unit = {
     if (weights(foundHashIndex) > count)
-      throw new IllegalArgumentException(s"Weights can be only incremented or kept the same, not decremented. " +
+      throw new IllegalArgumentException(
+        s"Weights can be only incremented or kept the same, not decremented. " +
         s"Previous weight was [${weights(foundHashIndex)}], attempted to modify it to [$count].")
     weights(foundHashIndex) = count // we don't need to change `hashCode`, `heapIndex` or `item`, those remain the same
     // Position in the heap might have changed as count was incremented
@@ -257,7 +263,7 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
     val leftIndex = index * 2 + 1
     val rightIndex = index * 2 + 2
     val currentWeight: Long = weights(heap(index))
-    if (rightIndex < max) {
+    if (rightIndex < adjustedMax) {
       val leftValueIndex: Int = heap(leftIndex)
       val rightValueIndex: Int = heap(rightIndex)
       if (leftValueIndex < 0) {
@@ -281,7 +287,7 @@ private[remote] final class TopHeavyHitters[T >: Null](val max: Int)(implicit cl
           }
         }
       }
-    } else if (leftIndex < max) {
+    } else if (leftIndex < adjustedMax) {
       val leftValueIndex: Int = heap(leftIndex)
       if (leftValueIndex < 0) {
         swapHeapNode(index, leftIndex)

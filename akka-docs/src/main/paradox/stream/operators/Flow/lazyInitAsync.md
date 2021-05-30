@@ -1,31 +1,20 @@
 # Flow.lazyInitAsync
 
-Creates a real `Flow` upon receiving the first element by calling relevant `flowFactory` given as an argument.
+Deprecated by @ref:[`Flow.lazyFutureFlow`](lazyFutureFlow.md) in combination with @ref:[`prefixAndTail`](../Source-or-Flow/prefixAndTail.md).
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #lazyInitAsync }
-
-@@@
+@apidoc[Flow.lazyInitAsync](Flow$) { scala="#lazyInitAsync[I,O,M](flowFactory:()=&gt;scala.concurrent.Future[akka.stream.scaladsl.Flow[I,O,M]]):akka.stream.scaladsl.Flow[I,O,scala.concurrent.Future[Option[M]]]" java="#lazyInitAsync(akka.japi.function.Creator)" }
 
 ## Description
 
-Creates a real `Flow` upon receiving the first element by calling relevant `flowFactory` given as an argument.
-Internal `Flow` will not be created if there are no elements, because of completion or error.
-The materialized value of the `Flow` will be the materialized value of the created internal flow.
+`fromCompletionStage` has been deprecated in 2.6.0 use @ref:[lazyFutureFlow](lazyFutureFlow.md) in combination with @ref:[`prefixAndTail`](../Source-or-Flow/prefixAndTail.md)) instead.
 
-The materialized value of the `Flow` is a @scala[`Future[Option[M]]`]@java[`CompletionStage<Optional<M>>`] that is 
-completed with @scala[`Some(mat)`]@java[`Optional.of(mat)`] when the internal flow gets materialized or with @scala[`None`]
-@java[an empty optional] when there where no elements. If the flow materialization (including the call of the `flowFactory`) 
-fails then the future is completed with a failure.
+Defers creation until a first element arrives.
 
-Adheres to the @scala[@scaladoc[`ActorAttributes.SupervisionStrategy`](akka.stream.ActorAttributes$$SupervisionStrategy)]
-@java[`ActorAttributes.SupervisionStrategy`] attribute.
-
+## Reactive Streams semantics
 
 @@@div { .callout }
 
@@ -37,5 +26,9 @@ Adheres to the @scala[@scaladoc[`ActorAttributes.SupervisionStrategy`](akka.stre
 
 **completes** when upstream completes and all futures have been completed and all elements have been emitted
 
+**cancels** when downstream cancels (keep reading)
+    The operator's default behaviour in case of downstream cancellation before nested flow materialization (future completion) is to cancel immediately.
+     This behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy.PropagateToNested]] attribute,
+    this will delay downstream cancellation until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
 @@@
 

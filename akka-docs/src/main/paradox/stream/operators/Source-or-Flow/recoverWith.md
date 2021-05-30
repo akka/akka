@@ -2,15 +2,13 @@
 
 Allow switching to alternative Source when a failure has happened upstream.
 
-@ref[Simple operators](../index.md#simple-operators)
-
-@@@div { .group-scala }
+@ref[Error handling](../index.md#error-handling)
 
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #recoverWith }
+@apidoc[Source.recoverWith](Source) { scala="#recoverWith[T&gt;:Out](pf:PartialFunction[Throwable,akka.stream.Graph[akka.stream.SourceShape[T],akka.NotUsed]]):FlowOps.this.Repr[T]" java="#recoverWith(java.lang.Class,java.util.function.Supplier)" }
+@apidoc[Flow.recoverWith](Flow) { scala="#recoverWith[T&gt;:Out](pf:PartialFunction[Throwable,akka.stream.Graph[akka.stream.SourceShape[T],akka.NotUsed]]):FlowOps.this.Repr[T]" java="#recoverWith(java.lang.Class,java.util.function.Supplier)" }
 
-@@@
 
 ## Description
 
@@ -18,6 +16,7 @@ Allow switching to alternative Source when a failure has happened upstream.
 
 Throwing an exception inside `recoverWith` _will_ be logged on ERROR level automatically.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

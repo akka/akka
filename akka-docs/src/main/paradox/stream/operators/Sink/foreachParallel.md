@@ -1,21 +1,16 @@
-# foreachParallel
+# Sink.foreachParallel
 
 Like `foreach` but allows up to `parallellism` procedure calls to happen in parallel.
 
 @ref[Sink operators](../index.md#sink-operators)
 
-@@@div { .group-scala }
+@@@warning { title="Deprecated" }
 
-## Signature
-
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #foreachParallel }
+Use @ref[`foreachAsync`](foreachAsync.md) instead (this is deprecated since Akka 2.5.17).
 
 @@@
 
-## Description
-
-Like `foreach` but allows up to `parallellism` procedure calls to happen in parallel.
-
+## Reactive Streams semantics
 
 @@@div { .callout }
 

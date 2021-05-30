@@ -1,38 +1,38 @@
-/**
- * Copyright (C) 2009-${YEAR} Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed.internal
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.ExtendedActorSystem
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.Behavior
 import akka.cluster.typed.internal.receptionist.ClusterReceptionist
 import akka.serialization.SerializationExtension
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.WordSpecLike
 
-class AkkaClusterTypedSerializerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class AkkaClusterTypedSerializerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
-  val ref = spawn(Behavior.empty[String])
-  val untypedSystem = system.toUntyped
-  val serializer = new AkkaClusterTypedSerializer(untypedSystem.asInstanceOf[ExtendedActorSystem])
+  val ref = spawn(Behaviors.empty[String])
+  val classicSystem = system.toClassic
+  val serializer = new AkkaClusterTypedSerializer(classicSystem.asInstanceOf[ExtendedActorSystem])
 
   "AkkaClusterTypedSerializer" must {
 
-    Seq(
-      "ReceptionistEntry" → ClusterReceptionist.Entry(ref, 666L)
-    ).foreach {
-        case (scenario, item) ⇒
-          s"resolve serializer for $scenario" in {
-            val serializer = SerializationExtension(untypedSystem)
-            serializer.serializerFor(item.getClass).getClass should be(classOf[AkkaClusterTypedSerializer])
-          }
+    Seq("ReceptionistEntry" -> ClusterReceptionist.Entry(ref, 666L)(System.currentTimeMillis())).foreach {
+      case (scenario, item) =>
+        s"resolve serializer for $scenario" in {
+          val serializer = SerializationExtension(classicSystem)
+          serializer.serializerFor(item.getClass).getClass should be(classOf[AkkaClusterTypedSerializer])
+        }
 
-          s"serialize and de-serialize $scenario" in {
-            verifySerialization(item)
-          }
-      }
+        s"serialize and de-serialize $scenario" in {
+          verifySerialization(item)
+        }
+    }
   }
 
   def verifySerialization(msg: AnyRef): Unit = {

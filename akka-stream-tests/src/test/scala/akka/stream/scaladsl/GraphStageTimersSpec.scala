@@ -1,21 +1,23 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.actor.ActorRef
-import akka.stream.{ Attributes, ActorMaterializer }
-import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.stage.{ TimerGraphStageLogic, OutHandler, AsyncCallback, InHandler }
-import akka.testkit.TestDuration
-
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 
+import akka.actor.ActorRef
+import akka.stream.Attributes
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
+import akka.stream.stage.AsyncCallback
+import akka.stream.stage.InHandler
+import akka.stream.stage.OutHandler
+import akka.stream.stage.TimerGraphStageLogic
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.TestDuration
 
 object GraphStageTimersSpec {
   case object TestSingleTimer
@@ -40,11 +42,9 @@ object GraphStageTimersSpec {
 class GraphStageTimersSpec extends StreamSpec {
   import GraphStageTimersSpec._
 
-  implicit val materializer = ActorMaterializer()
-
   class TestStage(probe: ActorRef, sideChannel: SideChannel) extends SimpleLinearGraphStage[Int] {
     override def createLogic(inheritedAttributes: Attributes) = new TimerGraphStageLogic(shape) {
-      val tickCount = Iterator from 1
+      val tickCount = Iterator.from(1)
 
       setHandler(in, new InHandler {
         override def onPush() = push(out, grab(in))
@@ -68,18 +68,19 @@ class GraphStageTimersSpec extends StreamSpec {
       }
 
       private def onTestEvent(event: Any): Unit = event match {
-        case TestSingleTimer ⇒
+        case TestSingleTimer =>
           scheduleOnce("TestSingleTimer", 500.millis.dilated)
-        case TestSingleTimerResubmit ⇒
+        case TestSingleTimerResubmit =>
           scheduleOnce("TestSingleTimerResubmit", 500.millis.dilated)
-        case TestCancelTimer ⇒
+        case TestCancelTimer =>
           scheduleOnce("TestCancelTimer", 1.milli.dilated)
           // Likely in mailbox but we cannot guarantee
           cancelTimer("TestCancelTimer")
           probe ! TestCancelTimerAck
           scheduleOnce("TestCancelTimer", 500.milli.dilated)
-        case TestRepeatedTimer ⇒
-          schedulePeriodically("TestRepeatedTimer", 100.millis.dilated)
+        case TestRepeatedTimer =>
+          scheduleWithFixedDelay("TestRepeatedTimer", 100.millis.dilated, 100.millis.dilated)
+        case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
       }
     }
   }
@@ -101,7 +102,7 @@ class GraphStageTimersSpec extends StreamSpec {
           driver ! TestSingleTimer
           expectMsg(Tick(1))
         }
-        expectNoMsg(1.second)
+        expectNoMessage(1.second)
       }
 
       driver.stopStage()
@@ -118,7 +119,7 @@ class GraphStageTimersSpec extends StreamSpec {
         within(1.second) {
           expectMsg(Tick(2))
         }
-        expectNoMsg(1.second)
+        expectNoMessage(1.second)
       }
 
       driver.stopStage()
@@ -134,7 +135,7 @@ class GraphStageTimersSpec extends StreamSpec {
       within(300.millis, 1.second) {
         expectMsg(Tick(1))
       }
-      expectNoMsg(1.second)
+      expectNoMessage(1.second)
 
       driver.stopStage()
     }
@@ -144,10 +145,10 @@ class GraphStageTimersSpec extends StreamSpec {
 
       driver ! TestRepeatedTimer
       val seq = receiveWhile(2.seconds) {
-        case t: Tick ⇒ t
+        case t: Tick => t
       }
-      seq should have length 5
-      expectNoMsg(1.second)
+      (seq should have).length(5)
+      expectNoMessage(1.second)
 
       driver.stopStage()
     }
@@ -156,11 +157,11 @@ class GraphStageTimersSpec extends StreamSpec {
       override def createLogic(inheritedAttributes: Attributes) = new TimerGraphStageLogic(shape) {
         var tickCount = 0
 
-        override def preStart(): Unit = schedulePeriodically("tick", 100.millis)
+        override def preStart(): Unit = scheduleWithFixedDelay("tick", 100.millis, 100.millis)
 
         setHandler(out, new OutHandler {
           override def onPull() = () // Do nothing
-          override def onDownstreamFinish() = completeStage()
+          override def onDownstreamFinish(cause: Throwable) = completeStage()
         })
 
         setHandler(in, new InHandler {
@@ -188,7 +189,7 @@ class GraphStageTimersSpec extends StreamSpec {
       downstream.expectNext(2)
       downstream.expectNext(3)
 
-      downstream.expectNoMsg(1.second)
+      downstream.expectNoMessage(1.second)
 
       upstream.sendComplete()
       downstream.expectComplete()
@@ -199,21 +200,24 @@ class GraphStageTimersSpec extends StreamSpec {
       val upstream = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(upstream).via(new SimpleLinearGraphStage[Int] {
-        override def createLogic(inheritedAttributes: Attributes) = new TimerGraphStageLogic(shape) {
-          override def preStart(): Unit = scheduleOnce("tick", 100.millis)
+      Source
+        .fromPublisher(upstream)
+        .via(new SimpleLinearGraphStage[Int] {
+          override def createLogic(inheritedAttributes: Attributes) = new TimerGraphStageLogic(shape) {
+            override def preStart(): Unit = scheduleOnce("tick", 100.millis)
 
-          setHandler(in, new InHandler {
-            override def onPush() = () // Ingore
-          })
+            setHandler(in, new InHandler {
+              override def onPush() = () // Ignore
+            })
 
-          setHandler(out, new OutHandler {
-            override def onPull(): Unit = pull(in)
-          })
+            setHandler(out, new OutHandler {
+              override def onPull(): Unit = pull(in)
+            })
 
-          override def onTimer(timerKey: Any) = throw exception
-        }
-      }).runWith(Sink.fromSubscriber(downstream))
+            override def onTimer(timerKey: Any) = throw exception
+          }
+        })
+        .runWith(Sink.fromSubscriber(downstream))
 
       downstream.request(1)
       downstream.expectError(exception)

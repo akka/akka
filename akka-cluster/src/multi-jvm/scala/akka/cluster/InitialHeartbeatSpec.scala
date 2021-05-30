@@ -1,14 +1,14 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import language.postfixOps
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
-import akka.actor.Actor
-import akka.actor.Props
+import language.postfixOps
+
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -20,10 +20,9 @@ object InitialHeartbeatMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
-      akka.cluster.failure-detector.threshold = 4""")).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(
+    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+      akka.cluster.failure-detector.threshold = 4""")).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)
 }
@@ -32,9 +31,7 @@ class InitialHeartbeatMultiJvmNode1 extends InitialHeartbeatSpec
 class InitialHeartbeatMultiJvmNode2 extends InitialHeartbeatSpec
 class InitialHeartbeatMultiJvmNode3 extends InitialHeartbeatSpec
 
-abstract class InitialHeartbeatSpec
-  extends MultiNodeSpec(InitialHeartbeatMultiJvmSpec)
-  with MultiNodeClusterSpec {
+abstract class InitialHeartbeatSpec extends MultiNodeSpec(InitialHeartbeatMultiJvmSpec) with MultiNodeClusterSpec {
 
   import InitialHeartbeatMultiJvmSpec._
 

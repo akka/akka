@@ -1,26 +1,29 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
 
-import akka.testkit._
-
-import scala.util.control.NoStackTrace
-import scala.concurrent.duration._
-import com.typesafe.config.{ Config, ConfigFactory }
-import akka.actor._
 import java.nio.charset.StandardCharsets
+import java.text.SimpleDateFormat
+import java.time.{ LocalDateTime, ZoneOffset }
 import java.util.{ Calendar, Date, GregorianCalendar, TimeZone }
+import java.util.concurrent.TimeUnit
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
-import akka.serialization.SerializationExtension
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor._
 import akka.event.Logging._
-import akka.util.Helpers
 import akka.event.Logging.InitializeLogger
 import akka.event.Logging.Warning
-import java.text.SimpleDateFormat
+import akka.serialization.SerializationExtension
+import akka.testkit._
+import akka.util.Helpers
 
 object LoggerSpec {
 
@@ -48,7 +51,8 @@ object LoggerSpec {
       }
     """).withFallback(AkkaSpec.testConf)
 
-  val multipleConfig = ConfigFactory.parseString("""
+  val multipleConfig =
+    ConfigFactory.parseString("""
       akka {
         stdout-loglevel = "OFF"
         loglevel = "WARNING"
@@ -63,6 +67,7 @@ object LoggerSpec {
         loggers = ["akka.event.LoggerSpec$$TestLogger1"]
         actor {
           serialize-messages = on
+          no-serialization-verification-needed-class-prefix = []
           serialization-bindings {
             "akka.event.Logging$$LogEvent" = bytes
             "java.io.Serializable" = java
@@ -76,9 +81,6 @@ object LoggerSpec {
         stdout-loglevel = "WARNING"
         loglevel = "WARNING"
         loggers = ["akka.event.LoggerSpec$TestLogger1"]
-        actor {
-          serialize-messages = off
-        }
       }
     """).withFallback(AkkaSpec.testConf)
 
@@ -89,29 +91,29 @@ object LoggerSpec {
   abstract class TestLogger(qualifier: Int) extends Actor with Logging.StdOutLogger {
     var target: Option[ActorRef] = None
     override def receive: Receive = {
-      case InitializeLogger(bus) ⇒
+      case InitializeLogger(bus) =>
         bus.subscribe(context.self, classOf[SetTarget])
         sender() ! LoggerInitialized
-      case SetTarget(ref, `qualifier`) ⇒
+      case SetTarget(ref, `qualifier`) =>
         target = Some(ref)
         ref ! ("OK")
-      case event: LogEvent if !event.mdc.isEmpty ⇒
+      case event: LogEvent if !event.mdc.isEmpty =>
         print(event)
-        target foreach { _ ! event }
-      case event: LogEvent ⇒
+        target.foreach { _ ! event }
+      case event: LogEvent =>
         print(event)
-        target foreach { _ ! event.message }
+        target.foreach { _ ! event.message }
     }
   }
 
   class SlowLogger extends Logging.DefaultLogger {
     override def aroundReceive(r: Receive, msg: Any): Unit = {
       msg match {
-        case event: LogEvent ⇒
+        case event: LogEvent =>
           if (event.message.toString.startsWith("msg1"))
             Thread.sleep(500) // slow
           super.aroundReceive(r, msg)
-        case _ ⇒ super.aroundReceive(r, msg)
+        case _ => super.aroundReceive(r, msg)
       }
 
     }
@@ -122,23 +124,23 @@ object LoggerSpec {
 
     override def mdc(currentMessage: Any): MDC = {
       reqId += 1
-      val always = Map("requestId" → reqId)
+      val always = Map("requestId" -> reqId)
       val cmim = "Current Message in MDC"
       val perMessage = currentMessage match {
-        case `cmim` ⇒ Map[String, Any]("currentMsg" → cmim, "currentMsgLength" → cmim.length)
-        case _      ⇒ Map()
+        case `cmim` => Map[String, Any]("currentMsg" -> cmim, "currentMsgLength" -> cmim.length)
+        case _      => Map()
       }
       always ++ perMessage
     }
 
     def receive: Receive = {
-      case m: String ⇒ log.warning(m)
+      case m: String => log.warning(m)
     }
   }
 
 }
 
-class LoggerSpec extends WordSpec with Matchers {
+class LoggerSpec extends AnyWordSpec with Matchers {
 
   import LoggerSpec._
 
@@ -154,11 +156,11 @@ class LoggerSpec extends WordSpec with Matchers {
         // since logging is asynchronous ensure that it propagates
         if (shouldLog) {
           probe.fishForMessage(0.5.seconds.dilated) {
-            case "Danger! Danger!" ⇒ true
-            case _                 ⇒ false
+            case "Danger! Danger!" => true
+            case _                 => false
           }
         } else {
-          probe.expectNoMsg(0.5.seconds.dilated)
+          probe.expectNoMessage(0.5.seconds.dilated)
         }
       } finally {
         TestKit.shutdownActorSystem(system)
@@ -234,29 +236,30 @@ class LoggerSpec extends WordSpec with Matchers {
         system.eventStream.publish(SetTarget(probe.ref, qualifier = 1))
         probe.expectMsg("OK")
 
-        val ref = system.actorOf(Props[ActorWithMDC])
+        val ref = system.actorOf(Props[ActorWithMDC]())
 
         ref ! "Processing new Request"
         probe.expectMsgPF(max = 3.seconds) {
-          case w @ Warning(_, _, "Processing new Request") if w.mdc.size == 1 && w.mdc("requestId") == 1 ⇒
+          case w @ Warning(_, _, "Processing new Request") if w.mdc.size == 1 && w.mdc("requestId") == 1 =>
         }
 
         ref ! "Processing another Request"
         probe.expectMsgPF(max = 3.seconds) {
-          case w @ Warning(_, _, "Processing another Request") if w.mdc.size == 1 && w.mdc("requestId") == 2 ⇒
+          case w @ Warning(_, _, "Processing another Request") if w.mdc.size == 1 && w.mdc("requestId") == 2 =>
         }
 
         ref ! "Current Message in MDC"
         probe.expectMsgPF(max = 3.seconds) {
-          case w @ Warning(_, _, "Current Message in MDC") if w.mdc.size == 3 &&
-            w.mdc("requestId") == 3 &&
-            w.mdc("currentMsg") == "Current Message in MDC" &&
-            w.mdc("currentMsgLength") == 22 ⇒
+          case w @ Warning(_, _, "Current Message in MDC")
+              if w.mdc.size == 3 &&
+              w.mdc("requestId") == 3 &&
+              w.mdc("currentMsg") == "Current Message in MDC" &&
+              w.mdc("currentMsgLength") == 22 =>
         }
 
         ref ! "Current Message removed from MDC"
         probe.expectMsgPF(max = 3.seconds) {
-          case w @ Warning(_, _, "Current Message removed from MDC") if w.mdc.size == 1 && w.mdc("requestId") == 4 ⇒
+          case w @ Warning(_, _, "Current Message removed from MDC") if w.mdc.size == 1 && w.mdc("requestId") == 4 =>
         }
 
       } finally {
@@ -275,6 +278,30 @@ class LoggerSpec extends WordSpec with Matchers {
       val minutes = c.get(Calendar.MINUTE)
       val seconds = c.get(Calendar.SECOND)
       val ms = c.get(Calendar.MILLISECOND)
+      Helpers.currentTimeMillisToUTCString(timestamp) should ===(f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC")
+    }
+  }
+
+  "currentTimeMillisToUTCString" must {
+    "add trailing zeros" in {
+      val hours = 0
+      val minutes = 0
+      val seconds = 0
+      val ms = 0
+      val dt = LocalDateTime.of(2019, 5, 5, hours, minutes, seconds, TimeUnit.MILLISECONDS.toNanos(ms).toInt)
+      val timestamp = dt.toInstant(ZoneOffset.UTC).toEpochMilli
+
+      Helpers.currentTimeMillisToUTCString(timestamp) should ===(f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC")
+    }
+
+    "not add trailing zeros" in {
+      val hours = 23
+      val minutes = 59
+      val seconds = 59
+      val ms = 999
+      val dt = LocalDateTime.of(2019, 5, 5, hours, minutes, seconds, TimeUnit.MILLISECONDS.toNanos(ms).toInt)
+      val timestamp = dt.toInstant(ZoneOffset.UTC).toEpochMilli
+
       Helpers.currentTimeMillisToUTCString(timestamp) should ===(f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC")
     }
   }

@@ -1,14 +1,16 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.testconductor
 
-import akka.actor.{ Extension, ExtensionId, ExtensionIdProvider, ExtendedActorSystem, ActorContext, ActorSystem }
+import com.typesafe.config.Config
+
+import akka.actor.{ ActorContext, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.ClassicActorSystemProvider
+import akka.dispatch.ThreadPoolConfig
 import akka.remote.RemoteActorRefProvider
 import akka.util.Timeout
-import com.typesafe.config.Config
-import akka.dispatch.ThreadPoolConfig
 
 /**
  * Access to the [[akka.remote.testconductor.TestConductorExt]] extension:
@@ -30,6 +32,7 @@ object TestConductor extends ExtensionId[TestConductorExt] with ExtensionIdProvi
    * Java API: retrieve the TestConductor extension for the given system.
    */
   override def get(system: ActorSystem): TestConductorExt = super.get(system)
+  override def get(system: ClassicActorSystemProvider): TestConductorExt = super.get(system)
 
   def apply()(implicit ctx: ActorContext): TestConductorExt = apply(ctx.system)
 
@@ -60,8 +63,8 @@ class TestConductorExt(val system: ExtendedActorSystem) extends Extension with C
     val ClientReconnects = config.getInt("client-reconnects")
     val ReconnectBackoff = config.getMillisDuration("reconnect-backoff")
 
-    implicit val BarrierTimeout = Timeout(config.getMillisDuration("barrier-timeout"))
-    implicit val QueryTimeout = Timeout(config.getMillisDuration("query-timeout"))
+    implicit val BarrierTimeout: Timeout = Timeout(config.getMillisDuration("barrier-timeout"))
+    implicit val QueryTimeout: Timeout = Timeout(config.getMillisDuration("query-timeout"))
     val PacketSplitThreshold = config.getMillisDuration("packet-split-threshold")
 
     private def computeWPS(config: Config): Int =

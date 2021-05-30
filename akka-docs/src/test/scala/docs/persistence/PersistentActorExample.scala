@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package scala.docs.persistence
@@ -29,20 +29,20 @@ class ExamplePersistentActor extends PersistentActor {
     state.size
 
   val receiveRecover: Receive = {
-    case evt: Evt                                 ⇒ updateState(evt)
-    case SnapshotOffer(_, snapshot: ExampleState) ⇒ state = snapshot
+    case evt: Evt                                 => updateState(evt)
+    case SnapshotOffer(_, snapshot: ExampleState) => state = snapshot
   }
 
   val snapShotInterval = 1000
   val receiveCommand: Receive = {
-    case Cmd(data) ⇒
-      persist(Evt(s"${data}-${numEvents}")) { event ⇒
+    case Cmd(data) =>
+      persist(Evt(s"${data}-${numEvents}")) { event =>
         updateState(event)
         context.system.eventStream.publish(event)
         if (lastSequenceNr % snapShotInterval == 0 && lastSequenceNr != 0)
           saveSnapshot(state)
       }
-    case "print" ⇒ println(state)
+    case "print" => println(state)
   }
 
 }
@@ -51,7 +51,7 @@ class ExamplePersistentActor extends PersistentActor {
 object PersistentActorExample extends App {
 
   val system = ActorSystem("example")
-  val persistentActor = system.actorOf(Props[ExamplePersistentActor], "persistentActor-4-scala")
+  val persistentActor = system.actorOf(Props[ExamplePersistentActor](), "persistentActor-4-scala")
 
   persistentActor ! Cmd("foo")
   persistentActor ! Cmd("baz")

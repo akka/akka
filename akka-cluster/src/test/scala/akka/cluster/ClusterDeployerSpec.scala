@@ -1,20 +1,22 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import akka.testkit._
-import akka.actor._
-import akka.routing._
 import com.typesafe.config._
-import akka.cluster.routing.ClusterRouterPool
+
+import akka.actor._
 import akka.cluster.routing.ClusterRouterGroup
-import akka.cluster.routing.ClusterRouterPoolSettings
 import akka.cluster.routing.ClusterRouterGroupSettings
+import akka.cluster.routing.ClusterRouterPool
+import akka.cluster.routing.ClusterRouterPoolSettings
+import akka.routing._
+import akka.testkit._
 
 object ClusterDeployerSpec {
-  val deployerConf = ConfigFactory.parseString("""
+  val deployerConf = ConfigFactory.parseString(
+    """
       akka.actor.provider = "cluster"
       akka.actor.deployment {
         /user/service1 {
@@ -34,12 +36,13 @@ object ClusterDeployerSpec {
           cluster.allow-local-routees = off
         }
       }
-      akka.remote.netty.tcp.port = 0
+      akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
-      """, ConfigParseOptions.defaults)
+      """,
+    ConfigParseOptions.defaults)
 
   class RecipeActor extends Actor {
-    def receive = { case _ ⇒ }
+    def receive = { case _ => }
   }
 
 }
@@ -53,12 +56,13 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
       deployment should not be (None)
 
-      deployment should ===(Some(
-        Deploy(
+      deployment should ===(
+        Some(Deploy(
           service,
           deployment.get.config,
-          ClusterRouterPool(RoundRobinPool(20), ClusterRouterPoolSettings(
-            totalInstances = 20, maxInstancesPerNode = 3, allowLocalRoutees = false)),
+          ClusterRouterPool(
+            RoundRobinPool(20),
+            ClusterRouterPoolSettings(totalInstances = 20, maxInstancesPerNode = 3, allowLocalRoutees = false)),
           ClusterScope,
           Deploy.NoDispatcherGiven,
           Deploy.NoMailboxGiven)))
@@ -69,12 +73,16 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
       deployment should not be (None)
 
-      deployment should ===(Some(
-        Deploy(
+      deployment should ===(
+        Some(Deploy(
           service,
           deployment.get.config,
-          ClusterRouterGroup(RoundRobinGroup(List("/user/myservice")), ClusterRouterGroupSettings(
-            totalInstances = 20, routeesPaths = List("/user/myservice"), allowLocalRoutees = false)),
+          ClusterRouterGroup(
+            RoundRobinGroup(List("/user/myservice")),
+            ClusterRouterGroupSettings(
+              totalInstances = 20,
+              routeesPaths = List("/user/myservice"),
+              allowLocalRoutees = false)),
           ClusterScope,
           "mydispatcher",
           "mymailbox")))

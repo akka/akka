@@ -1,19 +1,22 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
 import java.io.File
 import java.util.concurrent.TimeUnit
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import org.apache.commons.io.FileUtils
+import org.openjdk.jmh.annotations._
+
 import akka.actor._
 import akka.persistence.journal.AsyncWriteTarget._
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.testkit.TestProbe
-import org.apache.commons.io.FileUtils
-import org.openjdk.jmh.annotations._
 
 /*
   # OS:   OSX 10.9.3
@@ -52,7 +55,7 @@ class LevelDbBatchingBenchmark {
     SharedLeveldbJournal.setStore(store, sys)
 
     probe = TestProbe()(sys)
-    store = sys.actorOf(Props[SharedLeveldbStore], "store")
+    store = sys.actorOf(Props[SharedLeveldbStore](), "store")
   }
 
   @TearDown(Level.Trial)
@@ -99,11 +102,11 @@ class LevelDbBatchingBenchmark {
   // TOOLS
 
   private def deleteStorage(sys: ActorSystem): Unit = {
-    val storageLocations = List(
-      "akka.persistence.journal.leveldb.dir",
-      "akka.persistence.journal.leveldb-shared.store.dir",
-      "akka.persistence.snapshot-store.local.dir"
-    ).map(s ⇒ new File(sys.settings.config.getString(s)))
+    val storageLocations =
+      List(
+        "akka.persistence.journal.leveldb.dir",
+        "akka.persistence.journal.leveldb-shared.store.dir",
+        "akka.persistence.snapshot-store.local.dir").map(s => new File(sys.settings.config.getString(s)))
 
     storageLocations.foreach(FileUtils.deleteDirectory)
   }

@@ -1,17 +1,18 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.typed.scaladsl
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
-import akka.stream.OverflowStrategy
+import akka.stream.{ CompletionStrategy, OverflowStrategy }
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import akka.actor.testkit.typed.scaladsl._
-import org.scalatest.WordSpecLike
 
 object ActorSourceSinkSpec {
 
@@ -22,10 +23,8 @@ object ActorSourceSinkSpec {
   case object Failed extends AckProto
 }
 
-class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
   import ActorSourceSinkSpec._
-
-  implicit val mat = ActorMaterializer()
 
   "ActorSink" should {
 
@@ -33,9 +32,10 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val p = TestProbe[String]()
 
       val in =
-        Source.queue[String](10, OverflowStrategy.dropBuffer)
+        Source
+          .queue[String](10)
           .map(_ + "!")
-          .to(ActorSink.actorRef(p.ref, "DONE", ex ⇒ "FAILED: " + ex.getMessage))
+          .to(ActorSink.actorRef(p.ref, "DONE", ex => "FAILED: " + ex.getMessage))
           .run()
 
       val msg = "Zug zug"
@@ -47,28 +47,63 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "obey protocol" in {
       val p = TestProbe[AckProto]()
 
-      val autoPilot = Behaviors.receive[AckProto] {
-        (ctx, msg) ⇒
-          msg match {
-            case m @ Init(sender) ⇒
-              p.ref ! m
-              sender ! "ACK"
-              Behaviors.same
-            case m @ Msg(sender, _) ⇒
-              p.ref ! m
-              sender ! "ACK"
-              Behaviors.same
-            case m ⇒
-              p.ref ! m
-              Behaviors.same
-          }
+      val autoPilot = Behaviors.receiveMessage[AckProto] {
+        case m @ Init(sender) =>
+          p.ref ! m
+          sender ! "ACK"
+          Behaviors.same
+        case m @ Msg(sender, _) =>
+          p.ref ! m
+          sender ! "ACK"
+          Behaviors.same
+        case m =>
+          p.ref ! m
+          Behaviors.same
       }
 
       val pilotRef: ActorRef[AckProto] = spawn(autoPilot)
 
       val in =
-        Source.queue[String](10, OverflowStrategy.dropBuffer)
-          .to(ActorSink.actorRefWithAck(pilotRef, Msg.apply, Init.apply, "ACK", Complete, _ ⇒ Failed))
+        Source
+          .queue[String](10)
+          .to(ActorSink.actorRefWithBackpressure(pilotRef, Msg.apply, Init.apply, "ACK", Complete, _ => Failed))
+          .run()
+
+      p.expectMessageType[Init]
+
+      in.offer("Dabu!")
+      p.expectMessageType[Msg].msg shouldBe "Dabu!"
+
+      in.offer("Lok'tar!")
+      p.expectMessageType[Msg].msg shouldBe "Lok'tar!"
+
+      in.offer("Swobu!")
+      p.expectMessageType[Msg].msg shouldBe "Swobu!"
+    }
+
+    "obey protocol without specific ack message" in {
+      val p = TestProbe[AckProto]()
+
+      val autoPilot = Behaviors.receiveMessage[AckProto] {
+        case m @ Init(sender) =>
+          p.ref ! m
+          sender ! "ACK"
+          Behaviors.same
+        case m @ Msg(sender, _) =>
+          p.ref ! m
+          sender ! "ACK"
+          Behaviors.same
+        case m =>
+          p.ref ! m
+          Behaviors.same
+      }
+
+      val pilotRef: ActorRef[AckProto] = spawn(autoPilot)
+
+      val in =
+        Source
+          .queue[String](10)
+          .to(ActorSink.actorRefWithBackpressure(pilotRef, Msg.apply, Init.apply, Complete, _ => Failed))
           .run()
 
       p.expectMessageType[Init]
@@ -86,7 +121,8 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   "ActorSource" should {
     "send messages and complete" in {
-      val (in, out) = ActorSource.actorRef[String]({ case "complete" ⇒ }, PartialFunction.empty, 10, OverflowStrategy.dropBuffer)
+      val (in, out) = ActorSource
+        .actorRef[String]({ case "complete" => }, PartialFunction.empty, 10, OverflowStrategy.dropBuffer)
         .toMat(Sink.seq)(Keep.both)
         .run()
 
@@ -98,7 +134,8 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     }
 
     "fail the stream" in {
-      val (in, out) = ActorSource.actorRef[String](PartialFunction.empty, { case msg ⇒ new Error(msg) }, 10, OverflowStrategy.dropBuffer)
+      val (in, out) = ActorSource
+        .actorRef[String](PartialFunction.empty, { case msg => new Error(msg) }, 10, OverflowStrategy.dropBuffer)
         .toMat(Sink.seq)(Keep.both)
         .run()
 
@@ -106,6 +143,25 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
       out.failed.futureValue.getCause.getMessage shouldBe "boom!"
     }
-  }
 
+    "send message and ack" in {
+      val p = TestProbe[String]()
+
+      val (in, out) = ActorSource
+        .actorRefWithBackpressure[String, String](
+          p.ref,
+          "ack", { case "complete" => CompletionStrategy.draining },
+          PartialFunction.empty)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      in ! "one"
+      p.expectMessage("ack")
+      in ! "two"
+      p.expectMessage("ack")
+      in ! "complete"
+
+      out.futureValue should contain theSameElementsAs Seq("one", "two")
+    }
+  }
 }

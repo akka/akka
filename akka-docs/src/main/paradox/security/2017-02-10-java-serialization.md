@@ -20,14 +20,14 @@ Java deserialization is [known to be vulnerable](https://community.hpe.com/t5/Se
 Akka Remoting uses Java serialiser as default configuration which makes it vulnerable in its default form. The documentation of how to disable Java serializer was not complete. The documentation of how to enable mutual authentication was missing (only described in reference.conf).
 
 To protect against such attacks the system should be updated to Akka *2.4.17* or later and be configured with 
-@ref:[disabled Java serializer](../remoting.md#disable-java-serializer). Additional protection can be achieved when running in an 
+[disabled Java serializer](https://doc.akka.io/docs/akka/2.5/remoting.html#disable-java-serializer). Additional protection can be achieved when running in an
 untrusted network by enabling @ref:[TLS with mutual authentication](../remoting.md#remote-tls).
 
 Please subscribe to the [akka-security](https://groups.google.com/forum/#!forum/akka-security) mailing list to be notified promptly about future security issues.
 
 ### Severity
 
-The [CVSS](https://en.wikipedia.org/wiki/CVSS) score of this vulnerability is 6.8 (Medium), based on vector [AV:A/AC:M/Au:N/C:C/I:C/A:C/E:F/RL:TF/RC:C](https://nvd.nist.gov/cvss.cfm?calculator&version=2&vector=\(AV:A/AC:M/Au:N/C:C/I:C/A:C/E:F/RL:TF/RC:C\)).
+The [CVSS](https://en.wikipedia.org/wiki/CVSS) score of this vulnerability is 6.8 (Medium), based on vector [AV:A/AC:M/Au:N/C:C/I:C/A:C/E:F/RL:TF/RC:C](https://nvd.nist.gov/vuln-metrics/cvss/v2-calculator?calculator&amp;version=2&amp;vector=%5C(AV:A/AC:M/Au:N/C:C/I:C/A:C/E:F/RL:TF/RC:C%5C)).
 
 Rationale for the score:
 

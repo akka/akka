@@ -1,8 +1,0 @@
-# #19133 change in internal actor
-ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.gated")
-
-# #18758 report invalid association events
-ProblemFilters.exclude[MissingTypesProblem]("akka.remote.InvalidAssociation$")
-ProblemFilters.exclude[MissingMethodProblem]("akka.remote.InvalidAssociation.apply")
-ProblemFilters.exclude[MissingMethodProblem]("akka.remote.InvalidAssociation.copy")
-ProblemFilters.exclude[MissingMethodProblem]("akka.remote.InvalidAssociation.this")

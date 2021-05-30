@@ -1,45 +1,58 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import language.postfixOps
+import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.actor._
-import scala.concurrent.duration._
-import scala.collection.immutable
 
-final case class LeaderDowningNodeThatIsUnreachableMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
+final case class LeaderDowningNodeThatIsUnreachableMultiNodeConfig(failureDetectorPuppet: Boolean)
+    extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("akka.cluster.auto-down-unreachable-after = 2s")).
-    withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
+      akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+      akka.cluster.testkit.auto-down-unreachable-after = 2s"""))
+      .withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
 }
 
-class LeaderDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode1 extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
-class LeaderDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode2 extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
-class LeaderDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode3 extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
-class LeaderDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode4 extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
+class LeaderDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode1
+    extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
+class LeaderDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode2
+    extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
+class LeaderDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode3
+    extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
+class LeaderDowningNodeThatIsUnreachableWithFailureDetectorPuppetMultiJvmNode4
+    extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = true)
 
-class LeaderDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode1 extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
-class LeaderDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode2 extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
-class LeaderDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode3 extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
-class LeaderDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode4 extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
+class LeaderDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode1
+    extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
+class LeaderDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode2
+    extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
+class LeaderDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode3
+    extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
+class LeaderDowningNodeThatIsUnreachableWithAccrualFailureDetectorMultiJvmNode4
+    extends LeaderDowningNodeThatIsUnreachableSpec(failureDetectorPuppet = false)
 
-abstract class LeaderDowningNodeThatIsUnreachableSpec(multiNodeConfig: LeaderDowningNodeThatIsUnreachableMultiNodeConfig)
-  extends MultiNodeSpec(multiNodeConfig)
-  with MultiNodeClusterSpec {
+abstract class LeaderDowningNodeThatIsUnreachableSpec(
+    multiNodeConfig: LeaderDowningNodeThatIsUnreachableMultiNodeConfig)
+    extends MultiNodeSpec(multiNodeConfig)
+    with MultiNodeClusterSpec {
 
-  def this(failureDetectorPuppet: Boolean) = this(LeaderDowningNodeThatIsUnreachableMultiNodeConfig(failureDetectorPuppet))
+  def this(failureDetectorPuppet: Boolean) =
+    this(LeaderDowningNodeThatIsUnreachableMultiNodeConfig(failureDetectorPuppet))
 
   import multiNodeConfig._
 

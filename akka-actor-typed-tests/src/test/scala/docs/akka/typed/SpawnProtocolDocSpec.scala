@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed
@@ -9,13 +9,16 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import docs.akka.typed.IntroSpec.HelloWorld
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
+import scala.annotation.nowarn
 
 //#imports1
 import akka.actor.typed.Behavior
 import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.LoggerOps
 
 //#imports1
 
@@ -24,26 +27,27 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Props
 import akka.util.Timeout
-import akka.actor.Scheduler
 
 //#imports2
 
 object SpawnProtocolDocSpec {
 
+  // Silent because we want to name the unused 'context' parameter
+  @nowarn("msg=never used")
   //#main
   object HelloWorldMain {
-    val main: Behavior[SpawnProtocol] =
-      Behaviors.setup { ctx ⇒
+    def apply(): Behavior[SpawnProtocol.Command] =
+      Behaviors.setup { context =>
         // Start initial tasks
-        // ctx.spawn(...)
+        // context.spawn(...)
 
-        SpawnProtocol.behavior
+        SpawnProtocol()
       }
   }
   //#main
 }
 
-class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   import SpawnProtocolDocSpec._
 
@@ -51,27 +55,26 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "be able to spawn actors" in {
       //#system-spawn
 
-      val system: ActorSystem[SpawnProtocol] =
-        ActorSystem(HelloWorldMain.main, "hello")
+      implicit val system: ActorSystem[SpawnProtocol.Command] =
+        ActorSystem(HelloWorldMain(), "hello")
 
       // needed in implicit scope for ask (?)
       import akka.actor.typed.scaladsl.AskPattern._
       implicit val ec: ExecutionContext = system.executionContext
       implicit val timeout: Timeout = Timeout(3.seconds)
-      implicit val scheduler: Scheduler = system.scheduler
 
       val greeter: Future[ActorRef[HelloWorld.Greet]] =
-        system ? SpawnProtocol.Spawn(behavior = HelloWorld.greeter, name = "greeter", props = Props.empty)
+        system.ask(SpawnProtocol.Spawn(behavior = HelloWorld(), name = "greeter", props = Props.empty, _))
 
-      val greetedBehavior = Behaviors.receive[HelloWorld.Greeted] { (ctx, msg) ⇒
-        ctx.log.info("Greeting for {} from {}", msg.whom, msg.from)
+      val greetedBehavior = Behaviors.receive[HelloWorld.Greeted] { (context, message) =>
+        context.log.info2("Greeting for {} from {}", message.whom, message.from)
         Behaviors.stopped
       }
 
       val greetedReplyTo: Future[ActorRef[HelloWorld.Greeted]] =
-        system ? SpawnProtocol.Spawn(greetedBehavior, name = "", props = Props.empty)
+        system.ask(SpawnProtocol.Spawn(greetedBehavior, name = "", props = Props.empty, _))
 
-      for (greeterRef ← greeter; replyToRef ← greetedReplyTo) {
+      for (greeterRef <- greeter; replyToRef <- greetedReplyTo) {
         greeterRef ! HelloWorld.Greet("Akka", replyToRef)
       }
 

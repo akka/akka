@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -7,19 +7,28 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings }
+
+import akka.stream.AbruptTerminationException
+import akka.stream.Materializer
 import akka.stream.testkit._
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 
-class HeadSinkSpec extends StreamSpec with ScriptedTest {
-
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
+class HeadSinkSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) with ScriptedTest {
 
   "A Flow with Sink.head" must {
+
+    "yield the first value for simple source" in {
+      implicit val ec = system.dispatcher
+      //#head-operator-example
+      val source = Source(1 to 10)
+      val result: Future[Int] = source.runWith(Sink.head)
+      result.map(println)
+      // 1
+      //#head-operator-example
+      result.futureValue shouldEqual 1
+    }
 
     "yield the first value" in assertAllStagesStopped {
       val p = TestPublisher.manualProbe[Int]()
@@ -47,9 +56,9 @@ class HeadSinkSpec extends StreamSpec with ScriptedTest {
 
     "yield the first error" in assertAllStagesStopped {
       val ex = new RuntimeException("ex")
-      intercept[RuntimeException] {
+      (intercept[RuntimeException] {
         Await.result(Source.failed[Int](ex).runWith(Sink.head), 1.second)
-      } should be theSameInstanceAs (ex)
+      } should be).theSameInstanceAs(ex)
     }
 
     "yield NoSuchElementException for empty stream" in assertAllStagesStopped {
@@ -73,9 +82,9 @@ class HeadSinkSpec extends StreamSpec with ScriptedTest {
 
     "yield the first error" in assertAllStagesStopped {
       val ex = new RuntimeException("ex")
-      intercept[RuntimeException] {
+      (intercept[RuntimeException] {
         Await.result(Source.failed[Int](ex).runWith(Sink.head), 1.second)
-      } should be theSameInstanceAs (ex)
+      } should be).theSameInstanceAs(ex)
     }
 
     "yield None for empty stream" in assertAllStagesStopped {
@@ -83,10 +92,9 @@ class HeadSinkSpec extends StreamSpec with ScriptedTest {
     }
 
     "fail on abrupt termination" in {
-      val mat = ActorMaterializer()
+      val mat = Materializer(system)
       val source = TestPublisher.probe()
-      val f = Source.fromPublisher(source)
-        .runWith(Sink.headOption)(mat)
+      val f = Source.fromPublisher(source).runWith(Sink.headOption)(mat)
       mat.shutdown()
 
       // this one always fails with the AbruptTerminationException rather than the

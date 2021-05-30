@@ -1,0 +1,5 @@
+# Remove the default reschedule=true arg to internal checkReceiveTimeout #28399
+# class akka.actor.ActorCell does not have a correspondent in current version
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.checkReceiveTimeout$default$1")
+# interface akka.actor.dungeon.ReceiveTimeout does not have a correspondent in current version
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.dungeon.ReceiveTimeout.checkReceiveTimeout$default$1")

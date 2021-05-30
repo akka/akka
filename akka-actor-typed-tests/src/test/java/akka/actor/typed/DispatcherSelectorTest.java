@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed;
@@ -10,4 +10,5 @@ public class DispatcherSelectorTest {
 
   private DispatcherSelector def = DispatcherSelector.defaultDispatcher();
   private DispatcherSelector conf = DispatcherSelector.fromConfig("somepath");
+  private DispatcherSelector parent = DispatcherSelector.sameAsParent();
 }

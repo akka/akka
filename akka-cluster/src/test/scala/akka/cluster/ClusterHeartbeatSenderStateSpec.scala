@@ -1,20 +1,22 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
-import akka.actor.Address
-import akka.remote.FailureDetector
-import akka.remote.DefaultFailureDetectorRegistry
 import java.util.concurrent.ThreadLocalRandom
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.Address
+import akka.remote.DefaultFailureDetectorRegistry
+import akka.remote.FailureDetector
 
 object ClusterHeartbeatSenderStateSpec {
   class FailureDetectorStub extends FailureDetector {
 
-    trait Status
+    sealed trait Status
     object Up extends Status
     object Down extends Status
     object Unknown extends Status
@@ -26,8 +28,8 @@ object ClusterHeartbeatSenderStateSpec {
     def markNodeAsAvailable(): Unit = status = Up
 
     override def isAvailable: Boolean = status match {
-      case Unknown | Up ⇒ true
-      case Down         ⇒ false
+      case Unknown | Up => true
+      case Down         => false
     }
 
     override def isMonitoring: Boolean = status != Unknown
@@ -37,25 +39,29 @@ object ClusterHeartbeatSenderStateSpec {
   }
 }
 
-class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
+class ClusterHeartbeatSenderStateSpec extends AnyWordSpec with Matchers {
   import ClusterHeartbeatSenderStateSpec._
 
-  val aa = UniqueAddress(Address("akka.tcp", "sys", "aa", 2552), 1L)
-  val bb = UniqueAddress(Address("akka.tcp", "sys", "bb", 2552), 2L)
-  val cc = UniqueAddress(Address("akka.tcp", "sys", "cc", 2552), 3L)
-  val dd = UniqueAddress(Address("akka.tcp", "sys", "dd", 2552), 4L)
-  val ee = UniqueAddress(Address("akka.tcp", "sys", "ee", 2552), 5L)
+  val aa = UniqueAddress(Address("akka", "sys", "aa", 2552), 1L)
+  val bb = UniqueAddress(Address("akka", "sys", "bb", 2552), 2L)
+  val cc = UniqueAddress(Address("akka", "sys", "cc", 2552), 3L)
+  val dd = UniqueAddress(Address("akka", "sys", "dd", 2552), 4L)
+  val ee = UniqueAddress(Address("akka", "sys", "ee", 2552), 5L)
 
   private def emptyState: ClusterHeartbeatSenderState = emptyState(aa)
 
-  private def emptyState(selfUniqueAddress: UniqueAddress) = ClusterHeartbeatSenderState(
-    ring = HeartbeatNodeRing(selfUniqueAddress, Set(selfUniqueAddress), Set.empty, monitoredByNrOfMembers = 3),
-    oldReceiversNowUnreachable = Set.empty[UniqueAddress],
-    failureDetector = new DefaultFailureDetectorRegistry[Address](() ⇒ new FailureDetectorStub))
+  private def emptyState(selfUniqueAddress: UniqueAddress) =
+    ClusterHeartbeatSenderState(
+      ring = HeartbeatNodeRing(selfUniqueAddress, Set(selfUniqueAddress), Set.empty, monitoredByNrOfMembers = 3),
+      oldReceiversNowUnreachable = Set.empty[UniqueAddress],
+      failureDetector = new DefaultFailureDetectorRegistry[Address](() => new FailureDetectorStub))
 
   private def fd(state: ClusterHeartbeatSenderState, node: UniqueAddress): FailureDetectorStub =
-    state.failureDetector.asInstanceOf[DefaultFailureDetectorRegistry[Address]].failureDetector(node.address).
-      get.asInstanceOf[FailureDetectorStub]
+    state.failureDetector
+      .asInstanceOf[DefaultFailureDetectorRegistry[Address]]
+      .failureDetector(node.address)
+      .get
+      .asInstanceOf[FailureDetectorStub]
 
   "A ClusterHeartbeatSenderState" must {
 
@@ -94,7 +100,12 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
 
     "use specified number of members + unreachable" in {
       // they are sorted by the hash (uid) of the UniqueAddress
-      emptyState.addMember(cc).addMember(dd).addMember(bb).addMember(ee).unreachableMember(cc)
+      emptyState
+        .addMember(cc)
+        .addMember(dd)
+        .addMember(bb)
+        .addMember(ee)
+        .unreachableMember(cc)
         .activeReceivers should ===(Set(bb, cc, dd, ee))
     }
 
@@ -142,8 +153,8 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
 
     "behave correctly for random operations" in {
       val rnd = ThreadLocalRandom.current
-      val nodes = (1 to rnd.nextInt(10, 200)).map(n ⇒
-        UniqueAddress(Address("akka.tcp", "sys", "n" + n, 2552), n.toLong)).toVector
+      val nodes =
+        (1 to rnd.nextInt(10, 200)).map(n => UniqueAddress(Address("akka", "sys", "n" + n, 2552), n.toLong)).toVector
       def rndNode() = nodes(rnd.nextInt(0, nodes.size))
       val selfUniqueAddress = rndNode()
       var state = emptyState(selfUniqueAddress)
@@ -151,37 +162,36 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
       val Remove = 1
       val Unreachable = 2
       val HeartbeatRsp = 3
-      for (i ← 1 to 100000) {
+      for (i <- 1 to 100000) {
         val operation = rnd.nextInt(Add, HeartbeatRsp + 1)
         val node = rndNode()
         try {
           operation match {
-            case Add ⇒
+            case Add =>
               if (node != selfUniqueAddress && !state.ring.nodes.contains(node)) {
                 val oldUnreachable = state.oldReceiversNowUnreachable
                 state = state.addMember(node)
                 // keep unreachable
-                (oldUnreachable diff state.activeReceivers) should ===(Set.empty)
+                (oldUnreachable.diff(state.activeReceivers)) should ===(Set.empty)
                 state.failureDetector.isMonitoring(node.address) should ===(false)
                 state.failureDetector.isAvailable(node.address) should ===(true)
               }
 
-            case Remove ⇒
+            case Remove =>
               if (node != selfUniqueAddress && state.ring.nodes.contains(node)) {
                 val oldUnreachable = state.oldReceiversNowUnreachable
                 state = state.removeMember(node)
                 // keep unreachable, unless it was the removed
-                if (oldUnreachable(node))
-                  (oldUnreachable diff state.activeReceivers) should ===(Set(node))
+                if (oldUnreachable(node))(oldUnreachable.diff(state.activeReceivers)) should ===(Set(node))
                 else
-                  (oldUnreachable diff state.activeReceivers) should ===(Set.empty)
+                  (oldUnreachable.diff(state.activeReceivers)) should ===(Set.empty)
 
                 state.failureDetector.isMonitoring(node.address) should ===(false)
                 state.failureDetector.isAvailable(node.address) should ===(true)
                 state.activeReceivers should not contain (node)
               }
 
-            case Unreachable ⇒
+            case Unreachable =>
               if (node != selfUniqueAddress && state.activeReceivers(node)) {
                 state.failureDetector.heartbeat(node.address) // make sure the fd is created
                 fd(state, node).markNodeAsUnavailable()
@@ -190,10 +200,9 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
                 state = state.unreachableMember(node)
               }
 
-            case HeartbeatRsp ⇒
+            case HeartbeatRsp =>
               if (node != selfUniqueAddress && state.ring.nodes.contains(node)) {
                 val oldUnreachable = state.oldReceiversNowUnreachable
-                val oldReceivers = state.activeReceivers
                 val oldRingReceivers = state.ring.myReceivers
                 state = state.heartbeatRsp(node)
 
@@ -211,10 +220,12 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
 
               }
 
+            case _ => throw new RuntimeException()
           }
         } catch {
-          case e: Throwable ⇒
-            println(s"Failure context: i=$i, node=$node, op=$operation, " +
+          case e: Throwable =>
+            println(
+              s"Failure context: i=$i, node=$node, op=$operation, " +
               s"oldReceiversNowUnreachable=${state.oldReceiversNowUnreachable}, " +
               s"ringReceivers=${state.ring.myReceivers}, ringNodes=${state.ring.nodes}")
             throw e
@@ -225,4 +236,3 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
 
   }
 }
-

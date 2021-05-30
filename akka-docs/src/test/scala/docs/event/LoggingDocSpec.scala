@@ -1,10 +1,10 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.event
 
-import akka.actor.{ Actor, Props, DeadLetter }
+import akka.actor.{ Actor, DeadLetter, Props }
 import akka.testkit.AkkaSpec
 
 object LoggingDocSpec {
@@ -18,12 +18,11 @@ object LoggingDocSpec {
       log.debug("Starting")
     }
     override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-      log.error(reason, "Restarting due to [{}] when processing [{}]",
-        reason.getMessage, message.getOrElse(""))
+      log.error(reason, "Restarting due to [{}] when processing [{}]", reason.getMessage, message.getOrElse(""))
     }
     def receive = {
-      case "test" ⇒ log.info("Received test")
-      case x      ⇒ log.warning("Received unknown message: {}", x)
+      case "test" => log.info("Received test")
+      case x      => log.warning("Received unknown message: {}", x)
     }
   }
   //#my-actor
@@ -34,7 +33,7 @@ object LoggingDocSpec {
     val log = Logging(this)
     def receive = {
 
-      case _ ⇒ {
+      case _ => {
         //#mdc
         val mdc = Map("requestId" -> 1234, "visitorId" -> 5678)
         log.mdc(mdc)
@@ -60,14 +59,14 @@ object LoggingDocSpec {
       reqId += 1
       val always = Map("requestId" -> reqId)
       val perMessage = currentMessage match {
-        case r: Req ⇒ Map("visitorId" -> r.visitorId)
-        case _      ⇒ Map()
+        case r: Req => Map("visitorId" -> r.visitorId)
+        case _      => Map()
       }
       always ++ perMessage
     }
 
     def receive: Receive = {
-      case r: Req ⇒ {
+      case r: Req => {
         log.info(s"Starting new request: ${r.work}")
       }
     }
@@ -85,11 +84,11 @@ object LoggingDocSpec {
 
   class MyEventListener extends Actor {
     def receive = {
-      case InitializeLogger(_)                        ⇒ sender() ! LoggerInitialized
-      case Error(cause, logSource, logClass, message) ⇒ // ...
-      case Warning(logSource, logClass, message)      ⇒ // ...
-      case Info(logSource, logClass, message)         ⇒ // ...
-      case Debug(logSource, logClass, message)        ⇒ // ...
+      case InitializeLogger(_)                        => sender() ! LoggerInitialized
+      case Error(cause, logSource, logClass, message) => // ...
+      case Warning(logSource, logClass, message)      => // ...
+      case Info(logSource, logClass, message)         => // ...
+      case Debug(logSource, logClass, message)        => // ...
     }
   }
   //#my-event-listener
@@ -121,7 +120,7 @@ object LoggingDocSpec {
 
     class DeadLetterListener extends Actor {
       def receive = {
-        case d: DeadLetter ⇒ println(d)
+        case d: DeadLetter => println(d)
       }
     }
     //#deadletters
@@ -133,8 +132,8 @@ object LoggingDocSpec {
 
     class Listener extends Actor {
       def receive = {
-        case m: Jazz       ⇒ println(s"${self.path.name} is listening to: ${m.artist}")
-        case m: Electronic ⇒ println(s"${self.path.name} is listening to: ${m.artist}")
+        case m: Jazz       => println(s"${self.path.name} is listening to: ${m.artist}")
+        case m: Electronic => println(s"${self.path.name} is listening to: ${m.artist}")
       }
     }
     //#superclass-subscription-eventstream
@@ -147,17 +146,17 @@ class LoggingDocSpec extends AkkaSpec {
   import LoggingDocSpec.{ MdcActor, MdcActorMixin, MyActor, Req }
 
   "use a logging actor" in {
-    val myActor = system.actorOf(Props[MyActor])
+    val myActor = system.actorOf(Props[MyActor]())
     myActor ! "test"
   }
 
   "use a MDC logging actor" in {
-    val mdcActor = system.actorOf(Props[MdcActor])
+    val mdcActor = system.actorOf(Props[MdcActor]())
     mdcActor ! "some request"
   }
 
   "use a MDC logging actor by mixin" in {
-    val mdcActor = system.actorOf(Props[MdcActorMixin])
+    val mdcActor = system.actorOf(Props[MdcActorMixin]())
     mdcActor ! Req("some request", 5678)
   }
 
@@ -165,7 +164,7 @@ class LoggingDocSpec extends AkkaSpec {
     import LoggingDocSpec.Listeners._
     //#deadletters
 
-    val listener = system.actorOf(Props[DeadLetterListener])
+    val listener = system.actorOf(Props[DeadLetterListener]())
     system.eventStream.subscribe(listener, classOf[DeadLetter])
     //#deadletters
   }
@@ -174,8 +173,8 @@ class LoggingDocSpec extends AkkaSpec {
     import LoggingDocSpec.Listeners._
     //#superclass-subscription-eventstream
 
-    val jazzListener = system.actorOf(Props[Listener])
-    val musicListener = system.actorOf(Props[Listener])
+    val jazzListener = system.actorOf(Props[Listener]())
+    val musicListener = system.actorOf(Props[Listener]())
     system.eventStream.subscribe(jazzListener, classOf[Jazz])
     system.eventStream.subscribe(musicListener, classOf[AllKindsOfMusic])
 
@@ -189,7 +188,7 @@ class LoggingDocSpec extends AkkaSpec {
 
   "allow registration to suppressed dead letters" in {
     import akka.actor.Props
-    val listener = system.actorOf(Props[MyActor])
+    val listener = system.actorOf(Props[MyActor]())
 
     //#suppressed-deadletters
     import akka.actor.SuppressedDeadLetter

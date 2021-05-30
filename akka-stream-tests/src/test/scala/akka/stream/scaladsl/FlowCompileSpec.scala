@@ -1,19 +1,19 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.NotUsed
-import akka.stream.testkit.StreamSpec
-import org.reactivestreams.Publisher
-
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
+import scala.annotation.nowarn
+import org.reactivestreams.Publisher
 
+import akka.NotUsed
+import akka.stream.testkit.StreamSpec
+
+@nowarn // unused vars are used in shouldNot compile tests
 class FlowCompileSpec extends StreamSpec {
 
   val intSeq = Source(Seq(1, 2, 3))
@@ -21,7 +21,6 @@ class FlowCompileSpec extends StreamSpec {
 
   import scala.concurrent.ExecutionContext.Implicits.global
   val intFut = Source.fromFuture(Future { 3 })
-  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system))
 
   "Flow" should {
     "not run" in {
@@ -41,8 +40,6 @@ class FlowCompileSpec extends StreamSpec {
       "open3.run()" shouldNot compile
 
       val closedSource: Source[Int, _] = intSeq.via(open3)
-      "closedSource.run()" shouldNot compile
-
       val closedSink: Sink[Int, _] = open3.to(Sink.asPublisher[Int](false))
       "closedSink.run()" shouldNot compile
 
@@ -55,15 +52,14 @@ class FlowCompileSpec extends StreamSpec {
       val appended: Sink[Int, _] = open.to(closedSink)
       "appended.run()" shouldNot compile
       "appended.to(Sink.head[Int])" shouldNot compile
-      intSeq.to(appended).run
+      intSeq.to(appended).run()
     }
     "be appended to Source" in {
       val open: Flow[Int, String, _] = Flow[Int].map(_.toString)
       val closedSource: Source[Int, _] = strSeq.via(Flow[String].map(_.hashCode))
       val closedSource2: Source[String, _] = closedSource.via(open)
-      "closedSource2.run()" shouldNot compile
       "strSeq.to(closedSource2)" shouldNot compile
-      closedSource2.to(Sink.asPublisher[String](false)).run
+      closedSource2.to(Sink.asPublisher[String](false)).run()
     }
   }
 
@@ -89,9 +85,6 @@ class FlowCompileSpec extends StreamSpec {
     }
     "not be accepted by Source" in {
       "openSource.to(intSeq)" shouldNot compile
-    }
-    "not run()" in {
-      "openSource.run()" shouldNot compile
     }
   }
 

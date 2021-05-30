@@ -1,11 +1,12 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
 import akka.actor.ActorSystem
 import akka.actor.Address
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
@@ -17,6 +18,7 @@ import akka.remote.artery.ArteryTransport
  */
 object BoundAddressesExtension extends ExtensionId[BoundAddressesExtension] with ExtensionIdProvider {
   override def get(system: ActorSystem): BoundAddressesExtension = super.get(system)
+  override def get(system: ClassicActorSystemProvider): BoundAddressesExtension = super.get(system)
 
   override def lookup = BoundAddressesExtension
 
@@ -25,12 +27,13 @@ object BoundAddressesExtension extends ExtensionId[BoundAddressesExtension] with
 }
 
 class BoundAddressesExtension(val system: ExtendedActorSystem) extends Extension {
+
   /**
    * Returns a mapping from a protocol to a set of bound addresses.
    */
-  def boundAddresses: Map[String, Set[Address]] = system.provider
-    .asInstanceOf[RemoteActorRefProvider].transport match {
-      case artery: ArteryTransport ⇒ Map(ArteryTransport.ProtocolName → Set(artery.bindAddress.address))
-      case remoting: Remoting      ⇒ remoting.boundAddresses
-    }
+  def boundAddresses: Map[String, Set[Address]] = system.provider.asInstanceOf[RemoteActorRefProvider].transport match {
+    case artery: ArteryTransport => Map(ArteryTransport.ProtocolName -> Set(artery.bindAddress.address))
+    case remoting: Remoting      => remoting.boundAddresses
+    case other                   => throw new IllegalStateException(s"Unexpected transport type: ${other.getClass}")
+  }
 }

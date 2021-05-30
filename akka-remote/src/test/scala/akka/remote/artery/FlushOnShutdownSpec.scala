@@ -1,14 +1,14 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
-import akka.actor.{ Actor, ActorIdentity, Identify, Props }
-import akka.testkit.TestProbe
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.actor.{ Actor, ActorIdentity, Identify, Props }
+import akka.testkit.TestProbe
 
 class FlushOnShutdownSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultConfig) {
 
@@ -23,16 +23,16 @@ class FlushOnShutdownSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defaultC
 
       localSystem.actorOf(Props(new Actor {
         def receive = {
-          case msg ⇒ probeRef ! msg
+          case msg => probeRef ! msg
         }
       }), "receiver")
 
       val actorOnSystemB = remoteSystem.actorOf(Props(new Actor {
         def receive = {
-          case "start" ⇒
+          case "start" =>
             context.actorSelection(rootActorPath(localSystem) / "user" / "receiver") ! Identify(None)
 
-          case ActorIdentity(_, Some(receiverRef)) ⇒
+          case ActorIdentity(_, Some(receiverRef)) =>
             receiverRef ! "msg1"
             receiverRef ! "msg2"
             receiverRef ! "msg3"

@@ -1,34 +1,34 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
+import scala.collection.immutable.SortedSet
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.Address
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus.Up
-import org.scalatest.{ Matchers, WordSpec }
 
-import scala.collection.immutable.SortedSet
+class GossipTargetSelectorSpec extends AnyWordSpec with Matchers {
 
-class GossipTargetSelectorSpec extends WordSpec with Matchers {
+  val aDc1 = TestMember(Address("akka", "sys", "a", 2552), Up, Set.empty, dataCenter = "dc1")
+  val bDc1 = TestMember(Address("akka", "sys", "b", 2552), Up, Set.empty, dataCenter = "dc1")
+  val cDc1 = TestMember(Address("akka", "sys", "c", 2552), Up, Set.empty, dataCenter = "dc1")
 
-  val aDc1 = TestMember(Address("akka.tcp", "sys", "a", 2552), Up, Set.empty, dataCenter = "dc1")
-  val bDc1 = TestMember(Address("akka.tcp", "sys", "b", 2552), Up, Set.empty, dataCenter = "dc1")
-  val cDc1 = TestMember(Address("akka.tcp", "sys", "c", 2552), Up, Set.empty, dataCenter = "dc1")
+  val eDc2 = TestMember(Address("akka", "sys", "e", 2552), Up, Set.empty, dataCenter = "dc2")
+  val fDc2 = TestMember(Address("akka", "sys", "f", 2552), Up, Set.empty, dataCenter = "dc2")
 
-  val eDc2 = TestMember(Address("akka.tcp", "sys", "e", 2552), Up, Set.empty, dataCenter = "dc2")
-  val fDc2 = TestMember(Address("akka.tcp", "sys", "f", 2552), Up, Set.empty, dataCenter = "dc2")
+  val gDc3 = TestMember(Address("akka", "sys", "g", 2552), Up, Set.empty, dataCenter = "dc3")
+  val hDc3 = TestMember(Address("akka", "sys", "h", 2552), Up, Set.empty, dataCenter = "dc3")
 
-  val gDc3 = TestMember(Address("akka.tcp", "sys", "g", 2552), Up, Set.empty, dataCenter = "dc3")
-  val hDc3 = TestMember(Address("akka.tcp", "sys", "h", 2552), Up, Set.empty, dataCenter = "dc3")
+  val iDc4 = TestMember(Address("akka", "sys", "i", 2552), Up, Set.empty, dataCenter = "dc4")
 
-  val iDc4 = TestMember(Address("akka.tcp", "sys", "i", 2552), Up, Set.empty, dataCenter = "dc4")
-
-  val defaultSelector = new GossipTargetSelector(
-    reduceGossipDifferentViewProbability = 400,
-    crossDcGossipProbability = 0.2
-  )
+  val defaultSelector =
+    new GossipTargetSelector(reduceGossipDifferentViewProbability = 400, crossDcGossipProbability = 0.2)
 
   "The gossip target selection" should {
 
@@ -46,7 +46,8 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
         override protected def selectDcLocalNodes(s: MembershipState): Boolean = true
       }
 
-      val state = MembershipState(Gossip(SortedSet(aDc1, bDc1, eDc2, fDc2)), aDc1, aDc1.dataCenter, crossDcConnections = 5)
+      val state =
+        MembershipState(Gossip(SortedSet(aDc1, bDc1, eDc2, fDc2)), aDc1, aDc1.dataCenter, crossDcConnections = 5)
       val gossipTo = alwaysLocalSelector.gossipTargets(state)
 
       // only one other local node
@@ -58,11 +59,12 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
         override protected def selectDcLocalNodes(s: MembershipState): Boolean = false
       }
 
-      val state = MembershipState(Gossip(SortedSet(aDc1, bDc1, eDc2, fDc2)), aDc1, aDc1.dataCenter, crossDcConnections = 5)
+      val state =
+        MembershipState(Gossip(SortedSet(aDc1, bDc1, eDc2, fDc2)), aDc1, aDc1.dataCenter, crossDcConnections = 5)
       val gossipTo = alwaysCrossDcSelector.gossipTargets(state)
 
       // only one other local node
-      gossipTo should (contain(eDc2.uniqueAddress) or contain(fDc2.uniqueAddress))
+      gossipTo should (contain(eDc2.uniqueAddress).or(contain(fDc2.uniqueAddress)))
     }
 
     "select local nodes that hasn't seen the gossip when chance says so" in {
@@ -70,12 +72,8 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
         override protected def preferNodesWithDifferentView(s: MembershipState): Boolean = true
       }
 
-      val state = MembershipState(
-        Gossip(SortedSet(aDc1, bDc1, cDc1)).seen(bDc1),
-        aDc1,
-        aDc1.dataCenter,
-        crossDcConnections = 5
-      )
+      val state =
+        MembershipState(Gossip(SortedSet(aDc1, bDc1, cDc1)).seen(bDc1), aDc1, aDc1.dataCenter, crossDcConnections = 5)
       val gossipTo = alwaysLocalSelector.gossipTargets(state)
 
       // a1 is self, b1 has seen so only option is c1
@@ -87,12 +85,8 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
         override protected def preferNodesWithDifferentView(s: MembershipState): Boolean = false
       }
 
-      val state = MembershipState(
-        Gossip(SortedSet(aDc1, bDc1, cDc1)).seen(bDc1),
-        aDc1,
-        aDc1.dataCenter,
-        crossDcConnections = 5
-      )
+      val state =
+        MembershipState(Gossip(SortedSet(aDc1, bDc1, cDc1)).seen(bDc1), aDc1, aDc1.dataCenter, crossDcConnections = 5)
       val gossipTo = alwaysLocalSelector.gossipTargets(state)
 
       // a1 is self, b1 is the only that has seen
@@ -107,14 +101,32 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
       val state = MembershipState(
         Gossip(
           members = SortedSet(aDc1, bDc1, cDc1),
-          overview = GossipOverview(
-            reachability = Reachability.empty.unreachable(aDc1, bDc1))),
+          overview = GossipOverview(reachability = Reachability.empty.unreachable(aDc1, bDc1))),
         aDc1,
         aDc1.dataCenter,
         crossDcConnections = 5)
       val gossipTo = alwaysLocalSelector.gossipTargets(state)
 
       // a1 cannot reach b1 so only option is c1
+      gossipTo should ===(Vector[UniqueAddress](cDc1))
+    }
+
+    "select among unreachable nodes if marked as unreachable by someone else" in {
+      val alwaysLocalSelector = new GossipTargetSelector(400, 0.2) {
+        override protected def preferNodesWithDifferentView(s: MembershipState): Boolean = false
+      }
+
+      val state = MembershipState(
+        Gossip(
+          members = SortedSet(aDc1, bDc1, cDc1),
+          overview = GossipOverview(reachability = Reachability.empty.unreachable(aDc1, bDc1).unreachable(bDc1, cDc1))),
+        aDc1,
+        aDc1.dataCenter,
+        crossDcConnections = 5)
+      val gossipTo = alwaysLocalSelector.gossipTargets(state)
+
+      // a1 marked b as unreachable so will not pick b
+      // b marked c as unreachable so that is ok as target
       gossipTo should ===(Vector[UniqueAddress](cDc1))
     }
 
@@ -127,10 +139,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
       val state = MembershipState(
         Gossip(
           members = SortedSet(aDc1, bDc1, eDc2, fDc2, gDc3, hDc3),
-          overview = GossipOverview(
-            reachability = Reachability.empty
-              .unreachable(aDc1, eDc2)
-              .unreachable(aDc1, fDc2))),
+          overview = GossipOverview(reachability = Reachability.empty.unreachable(aDc1, eDc2).unreachable(aDc1, fDc2))),
         aDc1,
         aDc1.dataCenter,
         crossDcConnections = 5)
@@ -145,9 +154,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
       }
 
       val state = MembershipState(
-        Gossip(
-          members = SortedSet(aDc1, bDc1, eDc2, fDc2, gDc3, hDc3)
-        ).seen(fDc2).seen(hDc3),
+        Gossip(members = SortedSet(aDc1, bDc1, eDc2, fDc2, gDc3, hDc3)).seen(fDc2).seen(hDc3),
         aDc1,
         aDc1.dataCenter,
         crossDcConnections = 5)
@@ -162,8 +169,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
       }
 
       val state = MembershipState(
-        Gossip(
-          members = SortedSet(aDc1, bDc1, eDc2, fDc2, gDc3, hDc3)),
+        Gossip(members = SortedSet(aDc1, bDc1, eDc2, fDc2, gDc3, hDc3)),
         aDc1,
         aDc1.dataCenter,
         crossDcConnections = 1)
@@ -173,8 +179,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
 
     "select N random local nodes when single dc" in {
       val state = MembershipState(
-        Gossip(
-          members = SortedSet(aDc1, bDc1, cDc1)),
+        Gossip(members = SortedSet(aDc1, bDc1, cDc1)),
         aDc1,
         aDc1.dataCenter,
         crossDcConnections = 1) // means only a e and g are oldest
@@ -186,8 +191,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
 
     "select N random local nodes when not self among oldest" in {
       val state = MembershipState(
-        Gossip(
-          members = SortedSet(aDc1, bDc1, cDc1, eDc2, fDc2, gDc3, hDc3)),
+        Gossip(members = SortedSet(aDc1, bDc1, cDc1, eDc2, fDc2, gDc3, hDc3)),
         bDc1,
         bDc1.dataCenter,
         crossDcConnections = 1) // means only a, e and g are oldest
@@ -199,8 +203,7 @@ class GossipTargetSelectorSpec extends WordSpec with Matchers {
 
     "select N-1 random local nodes plus one cross dc oldest node when self among oldest" in {
       val state = MembershipState(
-        Gossip(
-          members = SortedSet(aDc1, bDc1, cDc1, eDc2, fDc2)),
+        Gossip(members = SortedSet(aDc1, bDc1, cDc1, eDc2, fDc2)),
         aDc1,
         aDc1.dataCenter,
         crossDcConnections = 1) // means only a and e are oldest

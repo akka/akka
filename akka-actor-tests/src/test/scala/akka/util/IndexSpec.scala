@@ -1,22 +1,27 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
 import java.util.Comparator
-import org.scalatest.Matchers
-import scala.concurrent.Future
-import akka.testkit.AkkaSpec
+
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.Future
 import scala.util.Random
+
+import org.scalatest.matchers.should.Matchers
+
+import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 
 class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
-  implicit val ec = system.dispatcher
-  private def emptyIndex = new Index[String, Int](100, new Comparator[Int] {
-    override def compare(a: Int, b: Int): Int = Integer.compare(a, b)
-  })
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
+  private def emptyIndex =
+    new Index[String, Int](100, new Comparator[Int] {
+      override def compare(a: Int, b: Int): Int = Integer.compare(a, b)
+    })
 
   private def indexWithValues = {
     val index = emptyIndex
@@ -59,8 +64,8 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
       index.valueIterator("s1").toSet should ===(Set(2))
       //Remove key
       index.remove("s2") match {
-        case Some(iter) ⇒ iter.toSet should ===(Set(1, 2))
-        case None       ⇒ fail()
+        case Some(iter) => iter.toSet should ===(Set(1, 2))
+        case None       => fail()
       }
       index.remove("s2") should ===(None)
       index.valueIterator("s2").toSet should ===(Set.empty[Int])
@@ -83,7 +88,7 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
       val index = indexWithValues
 
       var valueCount = 0
-      index.foreach((key, value) ⇒ {
+      index.foreach((key, value) => {
         valueCount = valueCount + 1
         index.findValue(key)(_ == value) should ===(Some(value))
       })
@@ -103,7 +108,7 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
       val nrOfKeys = 10
       val nrOfValues = 10
       //Fill index
-      for (key ← 0 until nrOfKeys; value ← 0 until nrOfValues)
+      for (key <- 0 until nrOfKeys; value <- 0 until nrOfValues)
         index.put(key, value)
       //Tasks to be executed in parallel
       def putTask() = Future {
@@ -124,13 +129,13 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
       }
 
       def executeRandomTask() = Random.nextInt(4) match {
-        case 0 ⇒ putTask()
-        case 1 ⇒ removeTask1()
-        case 2 ⇒ removeTask2()
-        case 3 ⇒ readTask()
+        case 0 => putTask()
+        case 1 => removeTask1()
+        case 2 => removeTask2()
+        case 3 => readTask()
       }
 
-      val tasks = List.fill(nrOfTasks)(executeRandomTask)
+      val tasks = List.fill(nrOfTasks)(executeRandomTask())
 
       tasks.foreach(Await.result(_, timeout.duration))
     }

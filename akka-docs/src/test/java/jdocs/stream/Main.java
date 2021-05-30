@@ -1,13 +1,16 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.stream;
 
-//#main-app
+import akka.actor.ActorSystem;
+
+// #main-app
 public class Main {
   public static void main(String[] argv) {
+    final ActorSystem system = ActorSystem.create("QuickStart");
     // Code here
   }
 }
-//#main-app
+// #main-app

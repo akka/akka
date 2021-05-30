@@ -1,23 +1,6 @@
-# Rolling Updates
+# Rolling Updates and Versions
 
-## Introduction
-
-A rolling update is the process of replacing one version of the system with another without downtime.
-The changes can be new code, changed dependencies such as new Akka version, or modified configuration.
-Rolling updates are typically used for a stateful Akka Cluster where you can't run two separate clusters in
-parallel during the update as in blue green deployments.
-
-There are two parts of Akka that need careful consideration when performing an rolling update.
-
-1. Compatibility of remote message protocols. Old nodes may send messages to new nodes and vice versa.
-1. Serialization format of persisted events and snapshots. New nodes must be able to read old data, and
-   during the update old nodes must be able to read data stored by new nodes.
-
-There are many more application specific aspects. It's important to have a strategy for serialization
-format that can be evolved and you can find advice in
-@ref:[Persistence - Schema Evolution](../persistence-schema-evolution.md), which also applies to
-remote messages when deploying with rolling updates.
-
+## Akka upgrades
 Akka supports rolling updates between two consecutive patch versions unless an exception is
 mentioned on this page. For example updating Akka version from 2.5.15 to 2.5.16. Many times
 it is also possible to skip several versions and exceptions to that are also described here.
@@ -26,18 +9,18 @@ For example it's possible to update from 2.5.14 to 2.5.16 without intermediate 2
 It's not supported to have a cluster with more than two different versions. Roll out the first
 update completely before starting next update.
 
-## Shutdown order
+@@@ note
 
-It's best to keep the node that has been running the longest until last. That is because
-Cluster Singletons (including Cluster Sharding coordinators) are running on the oldest nodes. It's more
-efficient to avoid moving the singletons more than necessary since those typically have to recover
-their state and it might introduce unnecessary delays in for example access to new sharded actors.
+@ref:[Rolling update from classic remoting to Artery](../additional/rolling-updates.md#migrating-from-classic-remoting-to-artery) is not supported since the protocol
+is completely different. It will require a full cluster shutdown and new startup.
+
+@@@
 
 ## Change log
 
 ### 2.5.0 Several changes in minor release
 
-See @ref:[migration guide](migration-guide-2.4.x-2.5.x.md#rolling-update) when updating from 2.4.x to 2.5.x.
+See [migration guide](https://doc.akka.io/docs/akka/2.5/project/migration-guide-2.4.x-2.5.x.html#rolling-update) when updating from 2.4.x to 2.5.x.
 
 ### 2.5.10 Joining regression
 
@@ -71,5 +54,64 @@ This change required a two phase update where the data was duplicated to be comp
 This means that you can't update from 2.5.13 directly to 2.5.17. You must first update to one of the intermediate
 versions 2.5.14, 2.5.15, or 2.5.16.
 
+### 2.5.22 ClusterSharding serializer for `ShardRegionStats`
 
+Issue: [#25348](https://github.com/akka/akka/issues/25348)
 
+Intentional change was done in 2.5.22.
+
+Changed serializer for classes: `GetShardRegionStats`, `ShardRegionStats`, `GetShardStats`, `ShardStats`
+
+This change required a two phase update where new serializer was introduced but not enabled in an earlier version.
+
+* 2.5.18 - serializer was added but not enabled, `JavaSerializer` still used
+* 2.5.22 - `ClusterShardingMessageSerializer` was enabled for these classes
+
+This means that you can't update from 2.5.17 directly to 2.5.22. You must first update to one of the intermediate
+versions 2.5.18, 2.5.19, 2.5.20 or 2.5.21.
+
+### 2.6.0 Several changes in minor release
+
+See @ref:[migration guide](migration-guide-2.5.x-2.6.x.md) when updating from 2.5.x to 2.6.x.
+
+### 2.6.2 ClusterMessageSerializer manifests change
+
+Issue: [#23654](https://github.com/akka/akka/issues/13654)
+
+In preparation of switching away from class based manifests to more efficient letter codes the `ClusterMessageSerializer`
+has been prepared to accept those shorter forms but still emits the old long manifests.
+
+* 2.6.2 - shorter manifests accepted
+* 2.6.5 - shorter manifests emitted
+
+This means that a rolling update will have to go through at least one of 2.6.2, 2.6.3 or 2.6.4 when upgrading to
+2.6.5 or higher or else cluster nodes will not be able to communicate during the rolling update.
+
+### 2.6.5 JacksonCborSerializer
+
+Issue: [#28918](https://github.com/akka/akka/issues/28918). JacksonCborSerializer was using plain JSON format
+instead of CBOR.
+
+If you have `jackson-cbor` in your `serialization-bindings` a rolling update will have to go through 2.6.5 when
+upgrading to 2.6.5 or higher.
+
+In Akka 2.6.5 the `jackson-cbor` binding will still serialize to JSON format to support rolling update from 2.6.4.
+It also adds a new binding to be able to deserialize CBOR format when rolling update from 2.6.5 to 2.6.6.
+In Akka 2.6.6 the `jackson-cbor` binding will serialize to CBOR and that can be deserialized by 2.6.5. Old
+data, such as persistent events, can still be deserialized.
+
+You can start using CBOR format already with Akka 2.6.5 without waiting for the 2.6.6 release. First, perform
+a rolling update to Akka 2.6.5 using default configuration. Then change the configuration to:
+
+```
+akka.actor {
+  serializers {
+    jackson-cbor = "akka.serialization.jackson.JacksonCborSerializer"
+  }
+  serialization-identifiers {
+    jackson-cbor = 33
+  }
+}
+```
+
+Perform a second rolling update with the new configuration.

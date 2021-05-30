@@ -1,3 +1,6 @@
+---
+project.description: Multi JVM testing of distributed systems built with Akka.
+---
 # Multi JVM Testing
 
 Supports running applications (objects with main methods) and ScalaTest tests in multiple JVMs at the same time.
@@ -23,8 +26,6 @@ setting the `MultiJvm` config.
     
 **Please note** that by default MultiJvm test sources are located in `src/multi-jvm/...`, 
 and not in `src/test/...`.
-
-Here is an example of a @extref[sample project](samples:akka-sample-multi-node-scala) that uses the `sbt-multi-jvm` plugin.
 
 ## Running tests
 
@@ -177,10 +178,10 @@ classpath. Here is a similar example to the one above but using ScalaTest:
 ```scala
 package sample
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.must.Matchers
 
-class SpecMultiJvmNode1 extends WordSpec with MustMatchers {
+class SpecMultiJvmNode1 extends AnyWordSpec with Matchers {
   "A node" should {
     "be able to say hello" in {
       val message = "Hello from node 1"
@@ -189,7 +190,7 @@ class SpecMultiJvmNode1 extends WordSpec with MustMatchers {
   }
 }
 
-class SpecMultiJvmNode2 extends WordSpec with MustMatchers {
+class SpecMultiJvmNode2 extends AnyWordSpec with Matchers {
   "A node" should {
     "be able to say hello" in {
       val message = "Hello from node 2"
@@ -207,3 +208,10 @@ the sbt prompt.
 There has also been some additions made to the `SbtMultiJvm` plugin to accommodate the
 @ref:[may change](common/may-change.md) module @ref:[multi node testing](multi-node-testing.md),
 described in that section.
+
+## Example project
+
+@extref[Cluster example project](samples:akka-samples-cluster-scala)
+is an example project that can be downloaded, and with instructions of how to run.
+
+This project illustrates Cluster features and also includes Multi JVM Testing with the `sbt-multi-jvm` plugin.

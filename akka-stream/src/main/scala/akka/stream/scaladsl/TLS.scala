@@ -1,21 +1,23 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import java.util.Collections
 import javax.net.ssl.{ SNIHostName, SSLContext, SSLEngine, SSLSession }
+import javax.net.ssl.SSLParameters
 
-import akka.stream.impl.io.{ TlsModule, TlsUtils }
+import scala.util.{ Failure, Success, Try }
+
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.TLSProtocol._
+import akka.stream.impl.io.{ TlsModule, TlsUtils }
 import akka.util.ByteString
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-
-import scala.util.{ Failure, Success, Try }
 
 /**
  * Stream cipher support based upon JSSE.
@@ -30,14 +32,12 @@ import scala.util.{ Failure, Success, Try }
  * documentation. The philosophy of this integration into Akka Streams is to
  * expose all knobs and dials to client code and therefore not limit the
  * configuration possibilities. In particular the client code will have to
- * provide the SSLContext from which the SSLEngine is then created. Handshake
- * parameters are set using [[NegotiateNewSession]] messages, the settings for
- * the initial handshake need to be provided up front using the same class;
- * please refer to the method documentation below.
+ * provide the SSLEngine, which is typically created from a SSLContext. Handshake
+ * parameters and other parameters are defined when creating the SSLEngine.
  *
  * '''IMPORTANT NOTE'''
  *
- * The TLS specification does not permit half-closing of the user data session
+ * The TLS specification until version 1.2 did not permit half-closing of the user data session
  * that it transports—to be precise a half-close will always promptly lead to a
  * full close. This means that canceling the plaintext output or completing the
  * plaintext input of the SslTls operator will lead to full termination of the
@@ -51,7 +51,8 @@ import scala.util.{ Failure, Success, Try }
  * order to terminate the connection the client will then need to cancel the
  * plaintext output as soon as all expected bytes have been received. When
  * ignoring both types of events the operator will shut down once both events have
- * been received. See also [[TLSClosing]].
+ * been received. See also [[TLSClosing]]. For now, half-closing is also not
+ * supported with TLS 1.3 where the spec allows it.
  */
 object TLS {
 
@@ -71,27 +72,31 @@ object TLS {
    * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
    * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
    */
+  @deprecated("Use apply that takes a SSLEngine factory instead. Setup the SSLEngine with needed parameters.", "2.6.0")
   def apply(
-    sslContext:   SSLContext,
-    sslConfig:    Option[AkkaSSLConfig],
-    firstSession: NegotiateNewSession, role: TLSRole,
-    closing: TLSClosing = IgnoreComplete, hostInfo: Option[(String, Int)] = None): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] = {
+      sslContext: SSLContext,
+      sslConfig: Option[AkkaSSLConfig],
+      firstSession: NegotiateNewSession,
+      role: TLSRole,
+      closing: TLSClosing = IgnoreComplete,
+      hostInfo: Option[(String, Int)] = None)
+      : scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] = {
     def theSslConfig(system: ActorSystem): AkkaSSLConfig =
       sslConfig.getOrElse(AkkaSSLConfig(system))
 
-    val createSSLEngine = { system: ActorSystem ⇒
+    val createSSLEngine = { (system: ActorSystem) =>
       val config = theSslConfig(system)
 
       val engine = hostInfo match {
-        case Some((hostname, port)) if !config.config.loose.disableSNI ⇒
+        case Some((hostname, port)) if !config.config.loose.disableSNI =>
           sslContext.createSSLEngine(hostname, port)
-        case _ ⇒ sslContext.createSSLEngine()
+        case _ => sslContext.createSSLEngine()
       }
 
       config.sslEngineConfigurator.configure(engine, sslContext)
       engine.setUseClientMode(role == Client)
 
-      val finalSessionParameters =
+      val paramsWithSni =
         if (firstSession.sslParameters.isDefined && hostInfo.isDefined && !config.config.loose.disableSNI) {
           val newParams = TlsUtils.cloneParameters(firstSession.sslParameters.get)
           // In Java 7, SNI was automatically enabled by enabling "jsse.enableSNIExtension" and using
@@ -99,23 +104,31 @@ object TLS {
           // In Java 8, SNI is only enabled if the server names are added to the parameters.
           // See https://github.com/akka/akka/issues/19287.
           newParams.setServerNames(Collections.singletonList(new SNIHostName(hostInfo.get._1)))
+
           firstSession.copy(sslParameters = Some(newParams))
         } else
           firstSession
 
-      TlsUtils.applySessionParameters(engine, finalSessionParameters)
+      val paramsWithHostnameVerification = if (hostInfo.isDefined && config.useJvmHostnameVerification) {
+        val newParams = paramsWithSni.sslParameters.map(TlsUtils.cloneParameters).getOrElse(new SSLParameters)
+        newParams.setEndpointIdentificationAlgorithm("HTTPS")
+        paramsWithSni.copy(sslParameters = Some(newParams))
+      } else
+        paramsWithSni
+
+      TlsUtils.applySessionParameters(engine, paramsWithHostnameVerification)
       engine
     }
-    def verifySession: (ActorSystem, SSLSession) ⇒ Try[Unit] =
+    def verifySession: (ActorSystem, SSLSession) => Try[Unit] =
       hostInfo match {
-        case Some((hostname, _)) ⇒ { (system, session) ⇒
-          val hostnameVerifier = theSslConfig(system).hostnameVerifier
-          if (!hostnameVerifier.verify(hostname, session))
-            Failure(new ConnectionException(s"Hostname verification failed! Expected session to be for $hostname"))
-          else
+        case Some((hostname, _)) => { (system, session) =>
+          val config = theSslConfig(system)
+          if (config.useJvmHostnameVerification || config.hostnameVerifier.verify(hostname, session))
             Success(())
+          else
+            Failure(new ConnectionException(s"Hostname verification failed! Expected session to be for $hostname"))
         }
-        case None ⇒ (_, _) ⇒ Success(())
+        case None => (_, _) => Success(())
       }
 
     scaladsl.BidiFlow.fromGraph(TlsModule(Attributes.none, createSSLEngine, verifySession, closing))
@@ -137,10 +150,14 @@ object TLS {
    * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
    * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
    */
+  @deprecated("Use apply that takes a SSLEngine factory instead. Setup the SSLEngine with needed parameters.", "2.6.0")
   def apply(
-    sslContext:   SSLContext,
-    firstSession: NegotiateNewSession, role: TLSRole,
-    closing: TLSClosing, hostInfo: Option[(String, Int)]): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+      sslContext: SSLContext,
+      firstSession: NegotiateNewSession,
+      role: TLSRole,
+      closing: TLSClosing,
+      hostInfo: Option[(String, Int)])
+      : scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
     apply(sslContext, None, firstSession, role, closing, hostInfo)
 
   /**
@@ -152,15 +169,17 @@ object TLS {
    * that is not a requirement and depends entirely on the application
    * protocol.
    */
+  @deprecated("Use apply that takes a SSLEngine factory instead. Setup the SSLEngine with needed parameters.", "2.6.0")
   def apply(
-    sslContext:   SSLContext,
-    firstSession: NegotiateNewSession, role: TLSRole): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+      sslContext: SSLContext,
+      firstSession: NegotiateNewSession,
+      role: TLSRole): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
     apply(sslContext, None, firstSession, role, IgnoreComplete, None)
 
   /**
-   * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]]. This is a low-level interface.
+   * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]].
    *
-   * You can specify a constructor to create an SSLEngine that must already be configured for
+   * You specify a factory to create an SSLEngine that must already be configured for
    * client and server mode and with all the parameters for the first session.
    *
    * You can specify a verification function that will be called after every successful handshake
@@ -169,25 +188,24 @@ object TLS {
    * For a description of the `closing` parameter please refer to [[TLSClosing]].
    */
   def apply(
-    createSSLEngine: () ⇒ SSLEngine, // we don't offer the internal `ActorSystem => SSLEngine` API here, see #21753
-    verifySession:   SSLSession ⇒ Try[Unit], // we don't offer the internal API that provides `ActorSystem` here, see #21753
-    closing:         TLSClosing
-  ): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
-    scaladsl.BidiFlow.fromGraph(TlsModule(Attributes.none, _ ⇒ createSSLEngine(), (_, session) ⇒ verifySession(session), closing))
+      createSSLEngine: () => SSLEngine, // we don't offer the internal `ActorSystem => SSLEngine` API here, see #21753
+      verifySession: SSLSession => Try[Unit], // we don't offer the internal API that provides `ActorSystem` here, see #21753
+      closing: TLSClosing): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+    scaladsl.BidiFlow.fromGraph(
+      TlsModule(Attributes.none, _ => createSSLEngine(), (_, session) => verifySession(session), closing))
 
   /**
-   * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]]. This is a low-level interface.
+   * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]].
    *
-   * You can specify a constructor to create an SSLEngine that must already be configured for
+   * You specify a factory to create an SSLEngine that must already be configured for
    * client and server mode and with all the parameters for the first session.
    *
    * For a description of the `closing` parameter please refer to [[TLSClosing]].
    */
   def apply(
-    createSSLEngine: () ⇒ SSLEngine, // we don't offer the internal `ActorSystem => SSLEngine` API here, see #21753
-    closing:         TLSClosing
-  ): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
-    apply(createSSLEngine, _ ⇒ Success(()), closing)
+      createSSLEngine: () => SSLEngine, // we don't offer the internal `ActorSystem => SSLEngine` API here, see #21753
+      closing: TLSClosing): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+    apply(createSSLEngine, _ => Success(()), closing)
 }
 
 /**
@@ -203,8 +221,8 @@ object TLSPlacebo {
   def apply(): scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, NotUsed] = instance
 
   private val instance: scaladsl.BidiFlow[SslTlsOutbound, ByteString, ByteString, SessionBytes, NotUsed] =
-    scaladsl.BidiFlow.fromGraph(scaladsl.GraphDSL.create() { implicit b ⇒
-      val top = b.add(scaladsl.Flow[SslTlsOutbound].collect { case SendBytes(bytes) ⇒ bytes })
+    scaladsl.BidiFlow.fromGraph(scaladsl.GraphDSL.create() { implicit b =>
+      val top = b.add(scaladsl.Flow[SslTlsOutbound].collect { case SendBytes(bytes) => bytes })
       val bottom = b.add(scaladsl.Flow[ByteString].map(SessionBytes(dummySession, _)))
       BidiShape.fromFlows(top, bottom)
     })
@@ -228,11 +246,13 @@ trait ScalaSessionAPI {
    * certificates were used.
    */
   def localCertificates: List[Certificate] = Option(session.getLocalCertificates).map(_.toList).getOrElse(Nil)
+
   /**
    * Scala API: Extract the Principal that was actually used by this engine
    * during this session’s negotiation.
    */
   def localPrincipal: Option[Principal] = Option(session.getLocalPrincipal)
+
   /**
    * Scala API: Extract the certificates that were used by the peer engine
    * during this session’s negotiation. The list is empty if no certificates
@@ -240,17 +260,19 @@ trait ScalaSessionAPI {
    */
   def peerCertificates: List[Certificate] =
     try Option(session.getPeerCertificates).map(_.toList).getOrElse(Nil)
-    catch { case e: SSLPeerUnverifiedException ⇒ Nil }
+    catch { case _: SSLPeerUnverifiedException => Nil }
+
   /**
    * Scala API: Extract the Principal that the peer engine presented during
    * this session’s negotiation.
    */
   def peerPrincipal: Option[Principal] =
     try Option(session.getPeerPrincipal)
-    catch { case e: SSLPeerUnverifiedException ⇒ None }
+    catch { case _: SSLPeerUnverifiedException => None }
 }
 
 object ScalaSessionAPI {
+
   /** Constructs a ScalaSessionAPI instance from an SSLSession */
   def apply(_session: SSLSession): ScalaSessionAPI =
     new ScalaSessionAPI {

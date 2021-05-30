@@ -1,14 +1,15 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
 
 import scala.util.Random
 
-class ImmutableIntMapSpec extends WordSpec with Matchers {
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
+class ImmutableIntMapSpec extends AnyWordSpec with Matchers {
 
   "ImmutableIntMap" must {
 
@@ -44,8 +45,7 @@ class ImmutableIntMapSpec extends WordSpec with Matchers {
       val m1 = ImmutableIntMap.empty.updated(10, 10).updated(10, 11)
       m1.keysIterator.map(m1.get).toList should be(List(11))
 
-      val m2 = m1.updated(20, 20).updated(30, 30)
-        .updated(20, 21).updated(30, 31)
+      val m2 = m1.updated(20, 20).updated(30, 30).updated(20, 21).updated(30, 31)
       m2.keysIterator.map(m2.get).toList should be(List(11, 21, 31))
     }
 
@@ -58,14 +58,12 @@ class ImmutableIntMapSpec extends WordSpec with Matchers {
     "have toString" in {
       ImmutableIntMap.empty.toString should be("ImmutableIntMap()")
       ImmutableIntMap.empty.updated(10, 10).toString should be("ImmutableIntMap(10 -> 10)")
-      ImmutableIntMap.empty.updated(10, 10).updated(20, 20).toString should be(
-        "ImmutableIntMap(10 -> 10, 20 -> 20)")
+      ImmutableIntMap.empty.updated(10, 10).updated(20, 20).toString should be("ImmutableIntMap(10 -> 10, 20 -> 20)")
     }
 
     "have equals and hashCode" in {
       ImmutableIntMap.empty.updated(10, 10) should be(ImmutableIntMap.empty.updated(10, 10))
-      ImmutableIntMap.empty.updated(10, 10).hashCode should be(
-        ImmutableIntMap.empty.updated(10, 10).hashCode)
+      ImmutableIntMap.empty.updated(10, 10).hashCode should be(ImmutableIntMap.empty.updated(10, 10).hashCode)
 
       ImmutableIntMap.empty.updated(10, 10).updated(20, 20).updated(30, 30) should be(
         ImmutableIntMap.empty.updated(10, 10).updated(20, 20).updated(30, 30))
@@ -75,10 +73,10 @@ class ImmutableIntMapSpec extends WordSpec with Matchers {
       ImmutableIntMap.empty.updated(10, 10).updated(20, 20) should not be ImmutableIntMap.empty.updated(10, 10)
 
       ImmutableIntMap.empty.updated(10, 10).updated(20, 20).updated(30, 30) should not be
-        ImmutableIntMap.empty.updated(10, 10).updated(20, 20).updated(30, 31)
+      ImmutableIntMap.empty.updated(10, 10).updated(20, 20).updated(30, 31)
 
       ImmutableIntMap.empty.updated(10, 10).updated(20, 20).updated(30, 30) should not be
-        ImmutableIntMap.empty.updated(10, 10).updated(20, 20).updated(31, 30)
+      ImmutableIntMap.empty.updated(10, 10).updated(20, 20).updated(31, 30)
 
       ImmutableIntMap.empty should be(ImmutableIntMap.empty)
       ImmutableIntMap.empty.hashCode should be(ImmutableIntMap.empty.hashCode)
@@ -126,20 +124,20 @@ class ImmutableIntMapSpec extends WordSpec with Matchers {
       var reference = Map.empty[Long, Int]
 
       def verify(): Unit = {
-        val m = longMap.keysIterator.map(key ⇒ key → longMap.get(key)).toMap
+        val m = longMap.keysIterator.map(key => key -> longMap.get(key)).toMap
 
         m should be(reference)
       }
 
-      (1 to 1000).foreach { i ⇒
+      (1 to 1000).foreach { i =>
         withClue(s"seed=$seed, iteration=$i") {
           val key = rnd.nextInt(100)
           val value = rnd.nextPrintableChar()
           rnd.nextInt(3) match {
-            case 0 | 1 ⇒
+            case 0 | 1 =>
               longMap = longMap.updated(key, value)
               reference = reference.updated(key, value)
-            case 2 ⇒
+            case 2 =>
               longMap = longMap.remove(key)
               reference = reference - key
           }

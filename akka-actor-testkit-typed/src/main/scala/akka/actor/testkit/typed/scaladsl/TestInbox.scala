@@ -1,23 +1,23 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.scaladsl
-
-import akka.actor.{ Address, RootActorPath }
-import akka.actor.typed.ActorRef
-import akka.annotation.{ ApiMayChange, DoNotInherit }
-import akka.actor.testkit.typed.internal.TestInboxImpl
 
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.immutable
 
+import akka.actor.{ Address, RootActorPath }
+import akka.actor.testkit.typed.internal.TestInboxImpl
+import akka.actor.typed.ActorRef
+import akka.annotation.{ ApiMayChange, DoNotInherit }
+
 @ApiMayChange
 object TestInbox {
   def apply[T](name: String = "inbox"): TestInbox[T] = {
     val uid = ThreadLocalRandom.current().nextInt()
-    new TestInboxImpl(address / name withUid uid)
+    new TestInboxImpl((address / name).withUid(uid))
   }
 
   private[akka] val address = RootActorPath(Address("akka.actor.typed.inbox", "anonymous"))
@@ -35,7 +35,9 @@ object TestInbox {
  * Not for user extension
  */
 @DoNotInherit
+@ApiMayChange
 trait TestInbox[T] {
+
   /**
    * The actor ref of the inbox
    */

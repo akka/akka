@@ -1,11 +1,11 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
-import java.lang.reflect.{ Array ⇒ JArray }
-import java.lang.{ Float ⇒ JFloat, Double ⇒ JDouble }
+import java.lang.{ Float => JFloat, Double => JDouble }
+import java.lang.reflect.{ Array => JArray }
 
 /**
  * Set of methods which allow easy implementation of <code>hashCode</code>.
@@ -26,20 +26,22 @@ object HashCode {
   val SEED = 23
 
   def hash(seed: Int, any: Any): Int = any match {
-    case value: Boolean ⇒ hash(seed, value)
-    case value: Char    ⇒ hash(seed, value)
-    case value: Short   ⇒ hash(seed, value)
-    case value: Int     ⇒ hash(seed, value)
-    case value: Long    ⇒ hash(seed, value)
-    case value: Float   ⇒ hash(seed, value)
-    case value: Double  ⇒ hash(seed, value)
-    case value: Byte    ⇒ hash(seed, value)
-    case value: AnyRef ⇒
+    case value: Boolean => hash(seed, value)
+    case value: Char    => hash(seed, value)
+    case value: Short   => hash(seed, value)
+    case value: Int     => hash(seed, value)
+    case value: Long    => hash(seed, value)
+    case value: Float   => hash(seed, value)
+    case value: Double  => hash(seed, value)
+    case value: Byte    => hash(seed, value)
+    case value: AnyRef =>
       var result = seed
       if (value eq null) result = hash(result, 0)
       else if (!isArray(value)) result = hash(result, value.hashCode())
-      else for (id ← 0 until JArray.getLength(value)) result = hash(result, JArray.get(value, id)) // is an array
+      else for (id <- 0 until JArray.getLength(value)) result = hash(result, JArray.get(value, id)) // is an array
       result
+    case unexpected =>
+      throw new IllegalArgumentException(s"Unexpected hash parameter: $unexpected") // will not happen, for exhaustiveness check
   }
   def hash(seed: Int, value: Boolean): Int = firstTerm(seed) + (if (value) 1 else 0)
   def hash(seed: Int, value: Char): Int = firstTerm(seed) + value.asInstanceOf[Int]
@@ -52,4 +54,3 @@ object HashCode {
   private def isArray(anyRef: AnyRef): Boolean = anyRef.getClass.isArray
   private val PRIME = 37
 }
-

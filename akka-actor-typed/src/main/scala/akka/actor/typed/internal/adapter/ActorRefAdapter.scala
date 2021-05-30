@@ -1,67 +1,72 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 package internal
 package adapter
 
+import akka.{ actor => classic }
 import akka.actor.ActorRefProvider
 import akka.actor.InvalidMessageException
-import akka.{ actor ⇒ a }
 import akka.annotation.InternalApi
 import akka.dispatch.sysmsg
 
 /**
  * INTERNAL API
  */
-@InternalApi private[typed] class ActorRefAdapter[-T](val untyped: a.InternalActorRef)
-  extends ActorRef[T] with internal.ActorRefImpl[T] with internal.InternalRecipientRef[T] {
+@InternalApi private[typed] class ActorRefAdapter[-T](val classicRef: classic.InternalActorRef)
+    extends ActorRef[T]
+    with internal.ActorRefImpl[T]
+    with internal.InternalRecipientRef[T] {
 
-  override def path: a.ActorPath = untyped.path
+  override def path: classic.ActorPath = classicRef.path
 
   override def tell(msg: T): Unit = {
     if (msg == null) throw new InvalidMessageException("[null] is not an allowed message")
-    untyped ! msg
+    classicRef ! msg
   }
 
   // impl ActorRefImpl
-  override def isLocal: Boolean = untyped.isLocal
+  override def isLocal: Boolean = classicRef.isLocal
   // impl ActorRefImpl
   override def sendSystem(signal: internal.SystemMessage): Unit =
-    ActorRefAdapter.sendSystemMessage(untyped, signal)
+    ActorRefAdapter.sendSystemMessage(classicRef, signal)
 
   // impl InternalRecipientRef
-  override def provider: ActorRefProvider = untyped.provider
+  override def provider: ActorRefProvider = classicRef.provider
   // impl InternalRecipientRef
-  def isTerminated: Boolean = untyped.isTerminated
+  def isTerminated: Boolean = classicRef.isTerminated
+
+  override def refPrefix: String = path.name
 
   @throws(classOf[java.io.ObjectStreamException])
   private def writeReplace(): AnyRef = SerializedActorRef[T](this)
 }
 
 private[akka] object ActorRefAdapter {
-  def apply[T](untyped: a.ActorRef): ActorRef[T] = new ActorRefAdapter(untyped.asInstanceOf[a.InternalActorRef])
+  def apply[T](ref: classic.ActorRef): ActorRef[T] = new ActorRefAdapter(ref.asInstanceOf[classic.InternalActorRef])
 
-  def toUntyped[U](ref: ActorRef[U]): akka.actor.InternalActorRef =
+  def toClassic[U](ref: ActorRef[U]): akka.actor.InternalActorRef =
     ref match {
-      case adapter: ActorRefAdapter[_]   ⇒ adapter.untyped
-      case system: ActorSystemAdapter[_] ⇒ system.untyped.guardian
-      case _ ⇒
-        throw new UnsupportedOperationException("only adapted untyped ActorRefs permissible " +
+      case adapter: ActorRefAdapter[_]    => adapter.classicRef
+      case adapter: ActorSystemAdapter[_] => adapter.system.guardian
+      case _ =>
+        throw new UnsupportedOperationException(
+          "Only adapted classic ActorRefs permissible " +
           s"($ref of class ${ref.getClass.getName})")
     }
 
-  def sendSystemMessage(untyped: akka.actor.InternalActorRef, signal: internal.SystemMessage): Unit =
+  def sendSystemMessage(classicRef: akka.actor.InternalActorRef, signal: internal.SystemMessage): Unit =
     signal match {
-      case internal.Create()    ⇒ throw new IllegalStateException("WAT? No, seriously.")
-      case internal.Terminate() ⇒ untyped.stop()
-      case internal.Watch(watchee, watcher) ⇒ untyped.sendSystemMessage(
-        sysmsg.Watch(
-          toUntyped(watchee),
-          toUntyped(watcher)))
-      case internal.Unwatch(watchee, watcher)          ⇒ untyped.sendSystemMessage(sysmsg.Unwatch(toUntyped(watchee), toUntyped(watcher)))
-      case internal.DeathWatchNotification(ref, cause) ⇒ untyped.sendSystemMessage(sysmsg.DeathWatchNotification(toUntyped(ref), true, false))
-      case internal.NoMessage                          ⇒ // just to suppress the warning
+      case internal.Create()    => throw new IllegalStateException("WAT? No, seriously.")
+      case internal.Terminate() => classicRef.stop()
+      case internal.Watch(watchee, watcher) =>
+        classicRef.sendSystemMessage(sysmsg.Watch(toClassic(watchee), toClassic(watcher)))
+      case internal.Unwatch(watchee, watcher) =>
+        classicRef.sendSystemMessage(sysmsg.Unwatch(toClassic(watchee), toClassic(watcher)))
+      case internal.DeathWatchNotification(ref, _) =>
+        classicRef.sendSystemMessage(sysmsg.DeathWatchNotification(toClassic(ref), true, false))
+      case internal.NoMessage => // just to suppress the warning
     }
 }

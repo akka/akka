@@ -1,32 +1,38 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io.compression
-
-import akka.stream.Materializer
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
 
 import scala.annotation.tailrec
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration.Duration
 import scala.util.{ Failure, Success }
 
+import akka.stream.Materializer
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
+import akka.util.ccompat._
+
 // a few useful helpers copied over from akka-http
+@ccompatUsedUntil213
 object CompressionTestingTools {
   implicit class AddFutureAwaitResult[T](val future: Future[T]) extends AnyVal {
+
     /** "Safe" Await.result that doesn't throw away half of the stacktrace */
     def awaitResult(atMost: Duration): T = {
       Await.ready(future, atMost)
       future.value.get match {
-        case Success(t)  ⇒ t
-        case Failure(ex) ⇒ throw new RuntimeException("Trying to await result of failed Future, see the cause for the original problem.", ex)
+        case Success(t) => t
+        case Failure(ex) =>
+          throw new RuntimeException(
+            "Trying to await result of failed Future, see the cause for the original problem.",
+            ex)
       }
     }
   }
-  implicit class EnhancedByteStringTraversableOnce(val byteStrings: TraversableOnce[ByteString]) extends AnyVal {
-    def join: ByteString = byteStrings.foldLeft(ByteString.empty)(_ ++ _)
+  implicit class EnhancedByteStringTraversableOnce(val byteStrings: IterableOnce[ByteString]) extends AnyVal {
+    def join: ByteString = byteStrings.iterator.foldLeft(ByteString.empty)(_ ++ _)
   }
   implicit class EnhancedByteStringSource[Mat](val byteStringStream: Source[ByteString, Mat]) extends AnyVal {
     def join(implicit materializer: Materializer): Future[ByteString] =

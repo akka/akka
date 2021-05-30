@@ -1,0 +1,2 @@
+# new method/field on provider
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ActorRefProvider.addressString")

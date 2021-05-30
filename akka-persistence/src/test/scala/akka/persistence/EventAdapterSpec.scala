@@ -1,17 +1,18 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
+import scala.collection.immutable
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.actor._
 import akka.event.Logging
 import akka.persistence.EventAdapterSpec.{ Tagged, UserDataChanged }
-import akka.persistence.journal.{ SingleEventSeq, EventSeq, EventAdapter }
+import akka.persistence.journal.{ EventAdapter, EventSeq, SingleEventSeq }
 import akka.testkit.ImplicitSender
-import com.typesafe.config.{ Config, ConfigFactory }
-
-import scala.collection.immutable
 
 object EventAdapterSpec {
 
@@ -35,13 +36,14 @@ object EventAdapterSpec {
     val Minor = Set("minor")
 
     override def toJournal(event: Any): Any = event match {
-      case e @ UserDataChanged(_, age) if age > 18 ⇒ Tagged(e, Adult)
-      case e @ UserDataChanged(_, age)             ⇒ Tagged(e, Minor)
-      case e                                       ⇒ NotTagged(e)
+      case e: UserDataChanged if e.age > 18 => Tagged(e, Adult)
+      case e @ UserDataChanged(_, _)        => Tagged(e, Minor)
+      case e                                => NotTagged(e)
     }
     override def fromJournal(event: Any, manifest: String): EventSeq = EventSeq.single {
       event match {
-        case m: JournalModel ⇒ m.payload
+        case m: JournalModel => m.payload
+        case _               => throw new RuntimeException()
       }
     }
 
@@ -51,7 +53,8 @@ object EventAdapterSpec {
   class ReplayPassThroughAdapter extends UserAgeTaggingAdapter {
     override def fromJournal(event: Any, manifest: String): EventSeq = EventSeq.single {
       event match {
-        case m: JournalModel ⇒ event // don't unpack, just pass through the JournalModel
+        case m: JournalModel => m // don't unpack, just pass through the JournalModel
+        case _               => throw new RuntimeException()
       }
     }
   }
@@ -71,23 +74,24 @@ object EventAdapterSpec {
   }
 
   class PersistAllIncomingActor(name: String, override val journalPluginId: String)
-    extends NamedPersistentActor(name) with PersistentActor {
+      extends NamedPersistentActor(name)
+      with PersistentActor {
 
     var state: List[Any] = Nil
 
     val persistIncoming: Receive = {
-      case GetState ⇒
+      case GetState =>
         state.reverse.foreach { sender() ! _ }
-      case in ⇒
-        persist(in) { e ⇒
+      case in =>
+        persist(in) { e =>
           state ::= e
           sender() ! e
         }
     }
 
     override def receiveRecover = {
-      case RecoveryCompleted ⇒ // ignore
-      case e                 ⇒ state ::= e
+      case RecoveryCompleted => // ignore
+      case e                 => state ::= e
     }
     override def receiveCommand = persistIncoming
   }
@@ -95,13 +99,16 @@ object EventAdapterSpec {
 }
 
 abstract class EventAdapterSpec(journalName: String, journalConfig: Config, adapterConfig: Config)
-  extends PersistenceSpec(journalConfig.withFallback(adapterConfig)) with ImplicitSender {
+    extends PersistenceSpec(journalConfig.withFallback(adapterConfig))
+    with ImplicitSender {
 
   import EventAdapterSpec._
 
-  def this(journalName: String) {
-    this("inmem", PersistenceSpec.config("inmem", "InmemPersistentTaggingSpec"), ConfigFactory.parseString(
-      s"""
+  def this(journalName: String) =
+    this(
+      "inmem",
+      PersistenceSpec.config("inmem", "InmemPersistentTaggingSpec"),
+      ConfigFactory.parseString(s"""
          |akka.persistence.journal {
          |
          |  common-event-adapters {
@@ -146,7 +153,6 @@ abstract class EventAdapterSpec(journalName: String, journalConfig: Config, adap
          |  }
          |}
       """.stripMargin))
-  }
 
   def persister(name: String, journalId: String = journalName) =
     system.actorOf(Props(classOf[PersistAllIncomingActor], name, "akka.persistence.journal." + journalId))
@@ -181,7 +187,7 @@ abstract class EventAdapterSpec(journalName: String, journalConfig: Config, adap
 
 }
 
-trait ReplayPassThrough { this: EventAdapterSpec ⇒
+trait ReplayPassThrough { this: EventAdapterSpec =>
   "EventAdapter" must {
 
     "store events after applying adapter" in {
@@ -208,7 +214,7 @@ trait ReplayPassThrough { this: EventAdapterSpec ⇒
 
 }
 
-trait NoAdapters { this: EventAdapterSpec ⇒
+trait NoAdapters { this: EventAdapterSpec =>
   "EventAdapter" must {
     "work when plugin defines no adapter" in {
       val p2 = persister("p2", journalId = "no-adapter")

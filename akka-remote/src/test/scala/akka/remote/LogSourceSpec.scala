@@ -1,43 +1,42 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import akka.testkit.AkkaSpec
 import akka.actor.Actor
 import akka.actor.ActorLogging
+import akka.actor.Deploy
+import akka.actor.ExtendedActorSystem
 import akka.actor.Props
 import akka.event.Logging
-import akka.testkit.TestProbe
-import akka.actor.Deploy
 import akka.event.Logging.Info
-import akka.actor.ExtendedActorSystem
+import akka.testkit.AkkaSpec
+import akka.testkit.TestProbe
 
 object LogSourceSpec {
   class Reporter extends Actor with ActorLogging {
     def receive = {
-      case s: String ⇒
+      case s: String =>
         log.info(s)
     }
   }
 }
 
-class LogSourceSpec extends AkkaSpec(
-  """
+class LogSourceSpec extends AkkaSpec("""
     akka.loglevel = INFO
     akka.actor.provider = remote
-    akka.remote.netty.tcp.port = 0
+    akka.remote.classic.netty.tcp.port = 0
   """) {
 
   import LogSourceSpec._
 
-  val reporter = system.actorOf(Props[Reporter], "reporter")
+  val reporter = system.actorOf(Props[Reporter](), "reporter")
   val logProbe = TestProbe()
   system.eventStream.subscribe(system.actorOf(Props(new Actor {
     def receive = {
-      case i @ Info(_, _, msg: String) if msg contains "hello" ⇒ logProbe.ref ! i
-      case _ ⇒
+      case i @ Info(_, _, msg: String) if msg contains "hello" => logProbe.ref ! i
+      case _                                                   =>
     }
   }).withDeploy(Deploy.local), "logSniffer"), classOf[Logging.Info])
 

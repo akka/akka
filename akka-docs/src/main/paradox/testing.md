@@ -1,25 +1,34 @@
-# Testing Actor Systems
+# Testing Classic Actors
 
-## Dependency
+@@include[includes.md](includes.md) { #actor-api }
+For the new API see @ref[testing](typed/testing.md).
+
+## Module info
 
 To use Akka Testkit, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-testkit_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-testkit_$scala.binary.version$"
+  version=AkkaVersion
   scope="test"
 }
+
+@@project-info{ projectId="akka-testkit" }
 
 ## Introduction
 
 As with any piece of software, automated tests are a very important part of the
 development cycle. The actor model presents a different view on how units of
-code are delimited and how they interact, which has an influence on how to
+code are delimited and how they interact, which influences how to
 perform tests.
 
 Akka comes with a dedicated module `akka-testkit` for supporting tests.
 
+<a id="async-integration-testing"></a>
 ## Asynchronous Testing: `TestKit`
 
 Testkit allows you to test your actors in a controlled but realistic
@@ -49,12 +58,12 @@ assertions detailed below. @scala[When mixing in the trait `ImplicitSender` this
 test actor is implicitly used as sender reference when dispatching messages
 from the test procedure.] @java[The test actor’s reference is obtained using the
 `getRef()` method as demonstrated above.] The `testActor` may also be passed to
-other actors as usual, usually subscribing it as notification listener. There
+other actors, as usual, usually subscribing it as notification listener. There
 is a whole set of examination methods, e.g. receiving all consecutive messages
 matching certain criteria, receiving a whole sequence of fixed messages or
 classes, receiving nothing for some time, etc.
 
-The ActorSystem passed in to the constructor of TestKit is accessible via the
+The ActorSystem passed to the constructor of TestKit is accessible via the
 @scala[`system` member]@java[`getSystem()` method].
 
 @@@ note
@@ -67,7 +76,7 @@ actor—are stopped.
 
 ### Built-In Assertions
 
-The above mentioned @scala[`expectMsg`]@java[`expectMsgEquals`] is not the only method for formulating
+The above-mentioned @scala[`expectMsg`]@java[`expectMsgEquals`] is not the only method for formulating
 assertions concerning received messages, the full set is this:
 
 Scala
@@ -77,19 +86,19 @@ Java
 :   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-expect }
 
 In these examples, the maximum durations you will find mentioned below are left
-out, in which case they use the default value from configuration item
+out, in which case they use the default value from the configuration item
 `akka.test.single-expect-default` which itself defaults to 3 seconds (or they
-obey the innermost enclosing `Within` as detailed [below](#testkit-within)). The full signatures are:
+obey the innermost enclosing `Within` as detailed @ref:[below](#testkit-within)). The full signatures are:
 
 * @scala[`expectMsg[T](d: Duration, msg: T): T`]@java[`public <T> T expectMsgEquals(Duration max, T msg)`]
    The given message object must be received within the specified time; the
 object will be returned.
 * @scala[`expectMsgPF[T](d: Duration)(pf: PartialFunction[Any, T]): T`]@java[`public <T> T expectMsgPF(Duration max, String hint, Function<Object, T> f)`]
-   Within the given time period, a message must be received and the given
+   Within the given time, a message must be received and the given
 @scala[partial] function must be defined for that message; the result from applying
 the @scala[partial] function to the received message is returned. @scala[The duration may
 be left unspecified (empty parentheses are required in this case) to use
-the deadline from the innermost enclosing [within](#testkit-within)
+the deadline from the innermost enclosing @ref:[within](#testkit-within)
 block instead.]
 * @scala[`expectMsgClass[T](d: Duration, c: Class[T]): T`]@java[`public <T> T expectMsgClass(Duration max, Class<T> c)`]
    An object which is an instance of the given `Class` must be received
@@ -117,7 +126,7 @@ instance of at least one of the supplied `Class` objects; the
 received object will be returned. Note that this does a conformance check,
 if you need the class to be equal you need to verify that afterwards.
 * @scala[`expectMsgAllOf[T](d: Duration, obj: T*): Seq[T]`]@java[`public List<Object> expectMsgAllOf(Duration max, Object... msg)`]
-   A number of objects matching the size of the supplied object array must be
+   Several objects matching the size of the supplied object array must be
 received within the given time, and for each of the given objects there
 must exist at least one among the received ones which equals (compared with
 @scala[`==`]@java[`equals()`]) it. The full sequence of received objects is returned in
@@ -126,13 +135,13 @@ the order received.
 @@@ div { .group-scala }
 
 * `expectMsgAllClassOf[T](d: Duration, c: Class[_ <: T]*): Seq[T]`
-   A number of objects matching the size of the supplied `Class` array
+   Several objects matching the size of the supplied `Class` array
 must be received within the given time, and for each of the given classes
 there must exist at least one among the received objects whose class equals
 (compared with `==`) it (this is *not* a conformance check). The full
 sequence of received objects is returned.
 * `expectMsgAllConformingOf[T](d: Duration, c: Class[_ <: T]*): Seq[T]`
-   A number of objects matching the size of the supplied `Class` array
+   Several objects matching the size of the supplied `Class` array
 must be received within the given time, and for each of the given classes
 there must exist at least one among the received objects which is an
 instance of this class. The full sequence of received objects is returned.
@@ -175,9 +184,9 @@ Collect messages as long as
     * the next message is received within the idle timeout
     * the number of messages has not yet reached the maximum
 All collected messages are returned. @scala[The maximum duration defaults to the
-time remaining in the innermost enclosing [within](#testkit-within)
+time remaining in the innermost enclosing @ref:[within](#testkit-within)
 block and the idle duration defaults to infinity (thereby disabling the
-idle timeout feature). The number of expected messages defaults to
+idle-timeout feature). The number of expected messages defaults to
 `Int.MaxValue`, which effectively disables this limit.]
 
 * @scala[`awaitCond(p: => Boolean, max: Duration, interval: Duration)`]@java[`public void awaitCond(Duration max, Duration interval, Supplier<Boolean> p)`]
@@ -190,9 +199,9 @@ maximum defaults to the time remaining in the innermost enclosing
 Poll the given assert function every `interval` until it does not throw
 an exception or the `max` duration is used up. If the timeout expires the
 last exception is thrown. @scala[The interval defaults to 100 ms and the maximum defaults
-to the time remaining in the innermost enclosing [within](#testkit-within)
+to the time remaining in the innermost enclosing @ref:[within](#testkit-within)
 block. The interval defaults to 100 ms and the maximum defaults to the time
-remaining in the innermost enclosing [within](#testkit-within) block.] Return an arbitrary value that would be returned from awaitAssert if successful, if not interested in such value you can return null.
+remaining in the innermost enclosing @ref:[within](#testkit-within) block.] Return an arbitrary value that would be returned from awaitAssert if successful, if not interested in such value you can return null.
 
 * @scala[`ignoreMsg(pf: PartialFunction[AnyRef, Boolean])`]@java[`public void ignoreMsg(Function<Object, Boolean> f)`]
 @scala[`ignoreMsg`]@java[`public void ignoreMsg()`]
@@ -209,7 +218,7 @@ to ignore regular messages and are only interested in your specific ones.]
 
 ### Expecting Log Messages
 
-Since an integration test does not allow to the internal processing of the
+Since an integration test does not allow observing the internal processing of the
 participating actors, verifying expected exceptions cannot be done directly.
 Instead, use the logging system for this purpose: replacing the normal event
 handler with the `TestEventListener` and using an `EventFilter`
@@ -222,7 +231,7 @@ Scala
 Java
 :   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-event-filter }
 
-If a number of occurrences is specific—as demonstrated above—then `intercept`
+If the number of occurrences is specific—as demonstrated above—then `intercept`
 will block until that number of matching messages have been received or the
 timeout configured in `akka.test.filter-leeway` is used up (time starts
 counting after the passed-in block of code returns). In case of a timeout the
@@ -243,7 +252,7 @@ akka.loggers = [akka.testkit.TestEventListener]
 ### Overriding behavior
 
 Sometimes you want to 'hook into' your actor to be able to test some internals.
-Usually it is better to test an actors' external interface, but for example if
+Usually, it is better to test an actors' external interface, but for example if
 you want to test timing-sensitive behavior this can come in handy. Say for
 instance you want to test an actor that schedules a task:
 
@@ -277,7 +286,7 @@ Scala
 Java
 :   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-within }
 
-The block @scala[given to]@java[in] `within` must complete after a @ref:[Duration](common/duration.md) which
+The block @scala[given to]@java[in] `within` must complete after a duration which
 is between `min` and `max`, where the former defaults to zero. The
 deadline calculated by adding the `max` parameter to the block's start
 time is implicitly available within the block to all examination methods, if
@@ -286,7 +295,7 @@ you do not specify it, it is inherited from the innermost enclosing
 
 It should be noted that if the last message-receiving assertion of the block is
 `expectNoMessage` or `receiveWhile`, the final check of the
-`within` is skipped in order to avoid false positives due to wake-up
+`within` is skipped to avoid false positives due to wake-up
 latencies. This means that while individual contained assertions still use the
 maximum time bound, the overall block may take arbitrarily longer in this case.
 
@@ -311,7 +320,7 @@ His full example is also available @ref:[here](testing.md#example).
 The tight timeouts you use during testing on your lightning-fast notebook will
 invariably lead to spurious test failures on the heavily loaded Jenkins server
 (or similar). To account for this situation, all maximum durations are
-internally scaled by a factor taken from the @ref:[Configuration](general/configuration.md#config-akka-testkit),
+internally scaled by a factor taken from the @ref:[Configuration](general/configuration-reference.md#config-akka-testkit),
 `akka.test.timefactor`, which defaults to 1.
 
 You can scale other durations with the same factor by using the @scala[implicit conversion
@@ -339,7 +348,7 @@ If you want the sender of messages inside your TestKit-based tests to be the `te
 When the actors under test are supposed to send various messages to different
 destinations, it may be difficult distinguishing the message streams arriving
 at the `testActor` when using the `TestKit` as @scala[a mixin]@java[shown until now]. Another
-approach is to use it for creation of simple probe actors to be inserted in the
+approach is to use it for the creation of simple probe actors to be inserted in the
 message flows. @scala[To make this more powerful and convenient, there is a concrete
 implementation called `TestProbe`.] The functionality is best explained
 using a small example:
@@ -356,8 +365,8 @@ Java
 supposed to mirror its input to two outputs. Attaching two test probes enables
 verification of the (simplistic) behavior]@java[This simple test verifies an equally simple Forwarder actor by injecting a
 probe as the forwarder’s target]. Another example would be two actors
-A and B which collaborate by A sending messages to B. In order to verify this
-message flow, a `TestProbe` could be inserted as target of A, using the
+A and B which collaborate by A sending messages to B. To verify this
+message flow, a `TestProbe` could be inserted as a target of A, using the
 forwarding capabilities or auto-pilot described below to include a real B in
 the test setup.
 
@@ -380,16 +389,16 @@ Java
 :   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-special-probe }
 
 You have complete flexibility here in mixing and matching the `TestKit`
-facilities with your own checks and choosing an intuitive name for it. In real
+facilities with your checks and choosing an intuitive name for it. In real
 life your code will probably be a bit more complicated than the example given
 above; just use the power!
 
 @@@ warning
 
 Any message sent from a `TestProbe` to another actor which runs on the
-CallingThreadDispatcher runs the risk of dead-lock, if that other actor might
+CallingThreadDispatcher runs the risk of dead-lock if that other actor might
 also send to this probe. The implementation of `TestProbe.watch` and
-`TestProbe.unwatch` will also send a message to the watchee, which
+`TestProbe.unwatch` will also send a message to the actor being watched, which
 means that it is dangerous to try watching e.g. `TestActorRef` from a
 `TestProbe`.
 
@@ -440,7 +449,7 @@ had intervened.]
 
 #### Auto-Pilot
 
-Receiving messages in a queue for later inspection is nice, but in order to
+Receiving messages in a queue for later inspection is nice, but to
 keep a test running and verify traces later you can also install an
 `AutoPilot` in the participating test probes (actually in any
 `TestKit`) which is invoked before enqueueing to the inspection queue.
@@ -454,7 +463,7 @@ Java
 :   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-auto-pilot }
 
 The `run` method must return the auto-pilot for the next message, @scala[which
-may be `KeepRunning` to retain the current one or `NoAutoPilot`
+can be `KeepRunning` to retain the current one or `NoAutoPilot`
 to switch it off]@java[wrapped
 in an `Option`; setting it to `None` terminates the auto-pilot].
 
@@ -462,8 +471,8 @@ in an `Option`; setting it to `None` terminates the auto-pilot].
 
 The behavior of `within` blocks when using test probes might be perceived
 as counter-intuitive: you need to remember that the nicely scoped deadline as
-described [above](#testkit-within) is local to each probe. Hence, probes
-do not react to each other's deadlines or to the deadline set in an enclosing
+described @ref:[above](#testkit-within) is local to each probe. Hence, probes
+do not react to each other's deadlines or the deadline set in an enclosing
 `TestKit` instance:
 
 Scala
@@ -478,7 +487,7 @@ Here, the @scala[`expectMsg`]@java[`expectMsgEquals`] call will use the default 
 
 The parent of an actor is always the actor that created it. At times this leads to
 a coupling between the two that may not be straightforward to test.
-There are several approaches to improve testability of a child actor that
+There are several approaches to improve the testability of a child actor that
 needs to refer to its parent:
 
  1. when creating a child, pass an explicit reference to its parent
@@ -497,9 +506,9 @@ Scala
 Java
 :   @@snip [ParentChildTest.java](/akka-docs/src/test/java/jdocs/testkit/ParentChildTest.java) { #test-example }
 
-#### Introduce child to its parent
+#### Introduce a child to its parent
 
-The first option is to avoid use of the `context.parent` function and create
+The first option is to avoid the use of the `context.parent` function and create
 a child with a custom parent by passing an explicit reference to its parent instead.
 
 Scala
@@ -510,7 +519,7 @@ Java
 
 #### Create the child using @scala[TestProbe]@java[TestKit]
 
-The @scala[`TestProbe`]@java[`TestKit`] class can in fact create actors that will run with the test probe as parent.
+The @scala[`TestProbe`]@java[`TestKit`] class can create actors that will run with the test probe as a parent.
 This will cause any messages the child actor sends to @scala[*context.parent*]@java[*getContext().getParent()*] to
 end up in the test probe.
 
@@ -566,11 +575,13 @@ Which of these methods is the best depends on what is most important to test. Th
 most generic option is to create the parent actor by passing it a function that is
 responsible for the Actor creation, but @scala[the]@java[using `TestProbe` or having a] fabricated parent is often sufficient.
 
-<a id="callingthreaddispatcher"></a>
 ## CallingThreadDispatcher
 
-The `CallingThreadDispatcher` serves good purposes in unit testing, as
-described above, but originally it was conceived in order to allow contiguous
+The `CallingThreadDispatcher` runs invocations on the current thread only. This
+dispatcher does not create any new threads.
+
+It is possible to use the `CallingThreadDispatcher` in unit testing, as
+described above, but originally it was conceived to allow uninterrupted
 stack traces to be generated in case of an error. As this special dispatcher
 runs everything which would normally be queued directly on the current thread,
 the full history of a message's processing chain is recorded on the call stack,
@@ -590,7 +601,7 @@ Java
 
 When receiving an invocation, the `CallingThreadDispatcher` checks
 whether the receiving actor is already active on the current thread. The
-simplest example for this situation is an actor which sends a message to
+simplest example of this situation is an actor which sends a message to
 itself. In this case, processing cannot continue immediately as that would
 violate the actor model, so the invocation is queued and will be processed when
 the active invocation on that actor finishes its processing; thus, it will be
@@ -602,12 +613,12 @@ also executed immediately.
 This scheme makes the `CallingThreadDispatcher` work like a general
 purpose dispatcher for any actors which never block on external events.
 
-In the presence of multiple threads it may happen that two invocations of an
+In the presence of multiple threads, it may happen that two invocations of an
 actor running on this dispatcher happen on two different threads at the same
 time. In this case, both will be processed directly on their respective
 threads, where both compete for the actor's lock and the loser has to wait.
-Thus, the actor model is left intact, but the price is loss of concurrency due
-to limited scheduling. In a sense this is equivalent to traditional mutex style
+Thus, the actor model is left intact, but the price is the loss of concurrency due
+to limited scheduling. In a sense, this is equivalent to traditional mutex style
 concurrency.
 
 The other remaining difficulty is correct handling of suspend and resume: when
@@ -617,24 +628,23 @@ queues (the same ones used for queuing in the normal case). The call to
 in the system will probably not be executing this specific actor, which leads
 to the problem that the thread-local queues cannot be emptied by their native
 threads. Hence, the thread calling `resume` will collect all currently
-queued invocations from all threads into its own queue and process them.
+queued invocations from all threads into its queue and process them.
 
 ### Limitations
 
 @@@ warning
 
-In case the CallingThreadDispatcher is used for top-level actors, but
+In case the CallingThreadDispatcher is used for top-level actors,
 without going through TestActorRef, then there is a time window during which
 the actor is awaiting construction by the user guardian actor. Sending
-messages to the actor during this time period will result in them being
+messages to the actor during this time will result in them being
 enqueued and then executed on the guardian’s thread instead of the caller’s
 thread. To avoid this, use TestActorRef.
 
 @@@
 
-If an actor's behavior blocks on a something which would normally be affected
-by the calling actor after having sent the message, this will obviously
-dead-lock when using this dispatcher. This is a common scenario in actor tests
+If an actor's behavior blocks on something which would normally be affected
+by the calling actor after having sent the message, this will dead-lock when using this dispatcher. This is a common scenario in actor tests
 based on `CountDownLatch` for synchronization:
 
 ```scala
@@ -649,21 +659,11 @@ the second line and never reach the fourth line, which would unblock it on a
 normal dispatcher.
 
 Thus, keep in mind that the `CallingThreadDispatcher` is not a
-general-purpose replacement for the normal dispatchers. On the other hand it
-may be quite useful to run your actor network on it for testing, because if it
-runs without dead-locking chances are very high that it will not dead-lock in
-production.
-
-@@@ warning
-
-The above sentence is unfortunately not a strong guarantee, because your
-code might directly or indirectly change its behavior when running on a
-different dispatcher. If you are looking for a tool to help you debug
-dead-locks, the `CallingThreadDispatcher` may help with certain error
-scenarios, but keep in mind that it has may give false negatives as well as
+general-purpose replacement for the normal dispatchers. If you are looking 
+for a tool to help you debug dead-locks,
+the `CallingThreadDispatcher` may help with some error
+scenarios, but keep in mind that it may give false negatives as well as
 false positives.
-
-@@@
 
 ### Thread Interruptions
 
@@ -681,7 +681,7 @@ thread’s interrupted flag will be set and processing continues normally.
 
 @@@ note
 
-The summary of these two paragraphs is that if the current thread is
+In summary, if the current thread is
 interrupted while doing work under the CallingThreadDispatcher, then that
 will result in the `isInterrupted` flag to be `true` when the message
 send returns and no `InterruptedException` will be thrown.
@@ -690,7 +690,7 @@ send returns and no `InterruptedException` will be thrown.
 
 ### Benefits
 
-To summarize, these are the features with the `CallingThreadDispatcher`
+To summarize, these are the features that `CallingThreadDispatcher`
 has to offer:
 
  * Deterministic execution of single-threaded tests while retaining nearly full
@@ -709,20 +709,20 @@ by debuggers as well as logging, where the Akka toolkit offers the following
 options:
 
 * *Logging of exceptions thrown within Actor instances*
-   This is always on; in contrast to the other logging mechanisms, this logs at
+   It is always on; in contrast to the other logging mechanisms, this logs at
 `ERROR` level.
 
 @@@ div { .group-scala }
 * *Logging of message invocations on certain actors*
-   This is enabled by a setting in the @ref:[Configuration](general/configuration.md#config-akka-actor) — namely
+   This is enabled by a setting in the @ref:[Configuration](general/configuration-reference.md#config-akka-actor) — namely
 `akka.actor.debug.receive` — which enables the `loggable`
 statement to be applied to an actor’s `receive` function:
 
 @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #logging-receive }
 
-If the aforementioned setting is not given in the @ref:[Configuration](general/configuration.md#config-akka-actor), this method will
+If the aforementioned setting is not given in the @ref:[Configuration](general/configuration-reference.md#config-akka-actor), this method will
 pass through the given `Receive` function unmodified, meaning that
-there is no runtime cost unless actually enabled.
+there is no runtime cost unless enabled.
 
 The logging feature is coupled to this specific local mark-up because
 enabling it uniformly on all actors is not usually what you need, and it
@@ -740,7 +740,7 @@ actors.
 enabling the setting `akka.actor.debug.lifecycle`; this, too, is enabled
 uniformly on all actors.
 
-All these messages are logged at `DEBUG` level. To summarize, you can enable
+Logging of these messages is at `DEBUG` level. To summarize, you can enable
 full logging of actor activities using this configuration fragment:
 
 ```
@@ -760,13 +760,13 @@ akka {
 
 ## Different Testing Frameworks
 
-Akka’s own test suite is written using [ScalaTest](http://scalatest.org),
+Akka’s test suite is written using [ScalaTest](http://www.scalatest.org),
 which also shines through in documentation examples. However, the TestKit and
-its facilities do not depend on that framework, you can essentially use
+its facilities do not depend on that framework, so you can essentially use
 whichever suits your development style best.
 
 This section contains a collection of known gotchas with some other frameworks,
-which is by no means exhaustive and does not imply endorsement or special
+which is by no means exhaustive and does not imply an endorsement or special
 support.
 
 ### When you need it to be a trait
@@ -785,31 +785,27 @@ backwards compatibility in the future, use at own risk.
 
 ### Specs2
 
-Some [Specs2](http://specs2.org) users have contributed examples of how to work around some clashes which may arise:
+Some [Specs2](https://etorreborre.github.io/specs2/) users have contributed examples of how to work around some clashes which may arise:
 
  * Mixing TestKit into `org.specs2.mutable.Specification` results in a
-name clash involving the `end` method (which is a private variable in
-TestKit and an abstract method in Specification); if mixing in TestKit first,
-the code may compile but might then fail at runtime. The work-around—which is
-actually beneficial also for the third point—is to apply the TestKit together
-with `org.specs2.specification.Scope`.
- * The Specification traits provide a `Duration` DSL which uses partly
-the same method names as `scala.concurrent.duration.Duration`, resulting in ambiguous
-implicits if `scala.concurrent.duration._` is imported. There are two workarounds:
-    * either use the Specification variant of Duration and supply an implicit
-conversion to the Akka Duration. This conversion is not supplied with the
-Akka distribution because that would mean that our JAR files would depend on
-Specs2, which is not justified by this little feature.
-    * or mix `org.specs2.time.NoTimeConversions` into the Specification.
- * Specifications are by default executed concurrently, which requires some care
-when writing the tests or alternatively the `sequential` keyword.
+ name clash involving the `end` method (which is a private variable in
+ TestKit and an abstract method in Specification); if mixing in TestKit first,
+ the code may compile but might then fail at runtime. The workaround—which is
+ beneficial also for the third point—is to apply the TestKit together
+ with `org.specs2.specification.Scope`.
+  * The Specification traits provide a `Duration` DSL which uses partly the same method names as `scala.concurrent.duration.Duration`, resulting in ambiguous implicits if `scala.concurrent.duration._` is imported. There are two workarounds:
+     * either use the Specification variant of Duration and supply an implicit conversion to the Akka Duration. This conversion is not supplied with the
+ Akka distribution because that would mean that our JAR files would depend on
+ Specs2, which is not justified by this little feature.
+     * or mix `org.specs2.time.NoTimeConversions` into the Specification.
+  * Specifications are by default executed concurrently, which requires some care when writing the tests or the `sequential` keyword.
 
 @@@
 
 ## Configuration
 
 There are several configuration properties for the TestKit module, please refer
-to the @ref:[reference configuration](general/configuration.md#config-akka-testkit).
+to the @ref:[reference configuration](general/configuration-reference.md#config-akka-testkit).
 
 @@@ div { .group-scala }
 
@@ -823,6 +819,7 @@ adapted to work with Akka 2.x.
 
 @@@
 
+<a id="sync-testing"></a>
 ## Synchronous Testing: `TestActorRef`
 
 Testing the business logic inside `Actor` classes can be divided into
@@ -834,12 +831,11 @@ integration tests.
 
 Normally, the `ActorRef` shields the underlying `Actor` instance
 from the outside, the only communications channel is the actor's mailbox. This
-restriction is an impediment to unit testing, which led to the inception of the
+restriction impedes unit testing, which led to the inception of the
 `TestActorRef`. This special type of reference is designed specifically
 for test purposes and allows access to the actor in two ways: either by
-obtaining a reference to the underlying actor instance, or by invoking or
-querying the actor's behavior (`receive`). Each one warrants its own
-section below.
+obtaining a reference to the underlying actor instance or by invoking or
+querying the actor's behavior (`receive`). Each one warrants its section below.
 
 @@@ note
 
@@ -851,16 +847,16 @@ instead of using `TestActorRef` whenever possible.
 
 @@@ warning
 
-Due to the synchronous nature of `TestActorRef` it will **not** work with some support
+Due to the synchronous nature of `TestActorRef`, it will **not** work with some support
 traits that Akka provides as they require asynchronous behaviors to function properly.
-Examples of traits that do not mix well with test actor refs are @ref:[PersistentActor](persistence.md#event-sourcing)
+Examples of traits that do not mix well with test actor refs are @ref:[PersistentActor](persistence.md#example)
 and @ref:[AtLeastOnceDelivery](persistence.md#at-least-once-delivery) provided by @ref:[Akka Persistence](persistence.md).
 
 @@@
 
 ### Obtaining a Reference to an `Actor`
 
-Having access to the actual `Actor` object allows application of all
+Having access to the actual `Actor` object allows the application of all
 traditional unit testing techniques on the contained methods. Obtaining a
 reference is done like this:
 
@@ -880,9 +876,9 @@ any unit testing tool to bear on your actor as usual.
 <a id="testfsmref"></a>
 ### Testing Finite State Machines
 
-If your actor under test is a `FSM`, you may use the special
+If your actor under test is an `FSM`, you may use the special
 `TestFSMRef` which offers all features of a normal `TestActorRef`
-and in addition allows access to the internal state:
+and besides allows access to the internal state:
 
 @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #test-fsm-ref }
 
@@ -892,7 +888,7 @@ instead of the hypothetical `ActorRef`-inspired `TestFSMRef[MyFSM]`.
 All methods shown above directly access the FSM state without any
 synchronization; this is perfectly alright if the `CallingThreadDispatcher`
 is used and no other threads are involved, but it may lead to surprises if you
-were to actually exercise timer events, because those are executed on the
+were to exercise timer events, because those are executed on the
 `Scheduler` thread.
 
 @@@
@@ -900,8 +896,8 @@ were to actually exercise timer events, because those are executed on the
 ### Testing the Actor's Behavior
 
 When the dispatcher invokes the processing behavior of an actor on a message,
-it actually calls `apply` on the current behavior registered for the
-actor. This starts out with the return value of the declared `receive`
+it calls `apply` on the current behavior registered for the
+actor. This starts with the return value of the declared `receive`
 method, but it may also be changed using `become` and `unbecome` in
 response to external messages. All of this contributes to the overall actor
 behavior and it does not lend itself to easy testing on the `Actor`
@@ -910,7 +906,7 @@ operation to complement the `Actor` testing: it supports all operations
 also valid on normal `ActorRef`. Messages sent to the actor are
 processed synchronously on the current thread and answers may be sent back as
 usual. This trick is made possible by the `CallingThreadDispatcher`
-described below (see [CallingThreadDispatcher](#callingthreaddispatcher)); this dispatcher is set
+described below (see @ref:[CallingThreadDispatcher](#callingthreaddispatcher)); this dispatcher is set
 implicitly for any actor instantiated into a `TestActorRef`.
 
 Scala
@@ -941,7 +937,7 @@ dispatcher to `CallingThreadDispatcher.global` and it sets the
 
 ### The Way In-Between: Expecting Exceptions
 
-If you want to test the actor behavior, including hotswapping, but without
+If you want to test the actor behavior, including hot swapping, but without
 involving a dispatcher and without having the `TestActorRef` swallow
 any thrown exceptions, then there is another mode available for you: use
 the `receive` method on `TestActorRef`, which will be forwarded to the

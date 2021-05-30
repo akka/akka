@@ -1,13 +1,13 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.ConfigurationException
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Props }
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API
@@ -21,12 +21,12 @@ private[cluster] object DowningProvider {
    */
   def load(fqcn: String, system: ActorSystem): DowningProvider = {
     val eas = system.asInstanceOf[ExtendedActorSystem]
-    eas.dynamicAccess.createInstanceFor[DowningProvider](
-      fqcn,
-      List((classOf[ActorSystem], system))).recover {
-        case e ⇒ throw new ConfigurationException(
-          s"Could not create cluster downing provider [$fqcn]", e)
-      }.get
+    eas.dynamicAccess
+      .createInstanceFor[DowningProvider](fqcn, List((classOf[ActorSystem], system)))
+      .recover {
+        case e => throw new ConfigurationException(s"Could not create cluster downing provider [$fqcn]", e)
+      }
+      .get
   }
 
 }
@@ -34,6 +34,13 @@ private[cluster] object DowningProvider {
 /**
  * API for plugins that will handle downing of cluster nodes. Concrete plugins must subclass and
  * have a public one argument constructor accepting an [[akka.actor.ActorSystem]].
+ *
+ * A custom `DowningProvider` can be configured with `akka.cluster.downing-provider-class`
+ *
+ * When implementing a downing provider you should make sure that it will not split the cluster into
+ * several separate clusters in case of network problems or system overload (long GC pauses). This
+ * is much more difficult than it might be perceived at first, so carefully read the concerns and scenarios
+ * described in https://doc.akka.io/docs/akka/current/split-brain-resolver.html
  */
 abstract class DowningProvider {
 
@@ -60,8 +67,7 @@ abstract class DowningProvider {
 }
 
 /**
- * Default downing provider used when no provider is configured and 'auto-down-unreachable-after'
- * is not enabled.
+ * Default downing provider used when no provider is configured.
  */
 final class NoDowning(system: ActorSystem) extends DowningProvider {
   override def downRemovalMargin: FiniteDuration = Cluster(system).settings.DownRemovalMargin

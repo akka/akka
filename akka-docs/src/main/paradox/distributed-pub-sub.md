@@ -1,14 +1,22 @@
-# Distributed Publish Subscribe in Cluster
+# Classic Distributed Publish Subscribe in Cluster
 
-## Dependency
+@@include[includes.md](includes.md) { #actor-api }
+For the new API see @ref[Distributed Publish Subscribe in Cluster](./typed/distributed-pub-sub.md) 
+
+## Module info
 
 To use Distributed Publish Subscribe you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-cluster-tools_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-cluster-tools_$scala.binary.version$"
+  version=AkkaVersion
 }
+
+@@project-info{ projectId="akka-cluster-tools" }
 
 ## Introduction
 
@@ -31,7 +39,7 @@ a few seconds. Changes are only performed in the own part of the registry and th
 changes are versioned. Deltas are disseminated in a scalable way to other nodes with
 a gossip protocol.
 
-Cluster members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up),
+Cluster members with status @ref:[WeaklyUp](typed/cluster-membership.md#weakly-up),
 will participate in Distributed Publish Subscribe, i.e. subscribers on nodes with
 `WeaklyUp` status will receive published messages if the publisher and subscriber are on
 same side of a network partition.
@@ -40,7 +48,7 @@ You can send messages via the mediator on any node to registered actors on
 any other node.
 
 There a two different modes of message delivery, explained in the sections
-[Publish](#distributed-pub-sub-publish) and [Send](#distributed-pub-sub-send) below.
+@ref:[Publish](#distributed-pub-sub-publish) and @ref:[Send](#distributed-pub-sub-send) below.
 
 @@@ div { .group-scala }
 
@@ -228,4 +236,4 @@ akka.extensions = ["akka.cluster.pubsub.DistributedPubSub"]
 As in @ref:[Message Delivery Reliability](general/message-delivery-reliability.md) of Akka, message delivery guarantee in distributed pub sub modes is **at-most-once delivery**.
 In other words, messages can be lost over the wire.
 
-If you are looking for at-least-once delivery guarantee, we recommend [Kafka Akka Streams integration](http://doc.akka.io/docs/akka-stream-kafka/current/home.html).
+If you are looking for at-least-once delivery guarantee, we recommend [Alpakka Kafka](https://doc.akka.io/docs/alpakka-kafka/current/).

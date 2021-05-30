@@ -1,22 +1,24 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event.slf4j
 
-import akka.testkit.AkkaSpec
-import akka.actor.{ Actor, ActorLogging, Props }
 import scala.concurrent.duration._
-import akka.event.Logging
+
 import org.scalatest.BeforeAndAfterEach
+
+import akka.actor.{ Actor, ActorLogging, Props }
 import akka.actor.ActorRef
-import akka.event.Logging.InitializeLogger
-import akka.event.Logging.LoggerInitialized
-import akka.event.Logging.LogEvent
-import akka.testkit.TestProbe
-import akka.event.Logging.Warning
-import akka.event.Logging.Info
+import akka.event.Logging
 import akka.event.Logging.Debug
+import akka.event.Logging.Info
+import akka.event.Logging.InitializeLogger
+import akka.event.Logging.LogEvent
+import akka.event.Logging.LoggerInitialized
+import akka.event.Logging.Warning
+import akka.testkit.AkkaSpec
+import akka.testkit.TestProbe
 
 object Slf4jLoggingFilterSpec {
 
@@ -35,21 +37,21 @@ object Slf4jLoggingFilterSpec {
   class TestLogger extends Actor {
     var target: Option[ActorRef] = None
     override def receive: Receive = {
-      case InitializeLogger(bus) ⇒
+      case InitializeLogger(bus) =>
         bus.subscribe(context.self, classOf[SetTarget])
         sender() ! LoggerInitialized
-      case SetTarget(ref) ⇒
+      case SetTarget(ref) =>
         target = Some(ref)
         ref ! ("OK")
-      case event: LogEvent ⇒
+      case event: LogEvent =>
         println("# event: " + event)
-        target foreach { _ ! event }
+        target.foreach { _ ! event }
     }
   }
 
   class DebugLevelProducer extends Actor with ActorLogging {
     def receive = {
-      case s: String ⇒
+      case s: String =>
         log.warning(s)
         log.info(s)
         println("# DebugLevelProducer: " + log.isDebugEnabled)
@@ -59,7 +61,7 @@ object Slf4jLoggingFilterSpec {
 
   class WarningLevelProducer extends Actor with ActorLogging {
     def receive = {
-      case s: String ⇒
+      case s: String =>
         log.warning(s)
         log.info(s)
         log.debug(s)
@@ -93,7 +95,7 @@ class Slf4jLoggingFilterSpec extends AkkaSpec(Slf4jLoggingFilterSpec.config) wit
       val probe = TestProbe()
       system.eventStream.publish(SetTarget(probe.ref))
       probe.expectMsg("OK")
-      val debugLevelProducer = system.actorOf(Props[DebugLevelProducer], name = "debugLevelProducer")
+      val debugLevelProducer = system.actorOf(Props[DebugLevelProducer](), name = "debugLevelProducer")
       debugLevelProducer ! "test1"
       probe.expectMsgType[Warning].message should be("test1")
       probe.expectMsgType[Info].message should be("test1")
@@ -104,10 +106,10 @@ class Slf4jLoggingFilterSpec extends AkkaSpec(Slf4jLoggingFilterSpec.config) wit
       val probe = TestProbe()
       system.eventStream.publish(SetTarget(probe.ref))
       probe.expectMsg("OK")
-      val debugLevelProducer = system.actorOf(Props[WarningLevelProducer], name = "warningLevelProducer")
+      val debugLevelProducer = system.actorOf(Props[WarningLevelProducer](), name = "warningLevelProducer")
       debugLevelProducer ! "test2"
       probe.expectMsgType[Warning].message should be("test2")
-      probe.expectNoMsg(500.millis)
+      probe.expectNoMessage(500.millis)
     }
   }
 

@@ -1,28 +1,40 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
-import akka.actor.{ Actor, ActorRef, Deploy, Props }
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.stream.{ ActorMaterializerSettings, Attributes }
 import org.reactivestreams.Subscriber
+
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.Deploy
+import akka.actor.Props
+import akka.annotation.InternalApi
+import akka.stream.ActorAttributes.StreamSubscriptionTimeout
+import akka.stream.Attributes
+import akka.stream.StreamSubscriptionTimeoutTerminationMode
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
  */
-@DoNotInherit private[akka] abstract class FanoutOutputs(
-  val maxBufferSize:     Int,
-  val initialBufferSize: Int,
-  self:                  ActorRef,
-  val pump:              Pump)
-  extends DefaultOutputTransferStates
-  with SubscriberManagement[Any] {
+@InternalApi private[akka] abstract class FanoutOutputs(
+    val maxBufferSize: Int,
+    val initialBufferSize: Int,
+    self: ActorRef,
+    val pump: Pump)
+    extends DefaultOutputTransferStates
+    with SubscriberManagement[Any] {
+
+  private var _subscribed = false
+  def subscribed: Boolean = _subscribed
 
   override type S = ActorSubscriptionWithCursor[_ >: Any]
-  override def createSubscription(subscriber: Subscriber[_ >: Any]): S =
+  override def createSubscription(subscriber: Subscriber[_ >: Any]): S = {
+    _subscribed = true
     new ActorSubscriptionWithCursor(self, subscriber)
+  }
 
   protected var exposedPublisher: ActorPublisher[Any] = _
 
@@ -62,7 +74,7 @@ import org.reactivestreams.Subscriber
   override protected def requestFromUpstream(elements: Long): Unit = downstreamBufferSpace += elements
 
   private def subscribePending(): Unit =
-    exposedPublisher.takePendingSubscribers() foreach registerSubscriber
+    exposedPublisher.takePendingSubscribers().foreach(registerSubscriber)
 
   override protected def shutdown(completed: Boolean): Unit = {
     if (exposedPublisher ne null) {
@@ -77,20 +89,20 @@ import org.reactivestreams.Subscriber
   }
 
   protected def waitingExposedPublisher: Actor.Receive = {
-    case ExposedPublisher(publisher) ⇒
+    case ExposedPublisher(publisher) =>
       exposedPublisher = publisher
       subreceive.become(downstreamRunning)
-    case other ⇒
+    case other =>
       throw new IllegalStateException(s"The first message must be ExposedPublisher but was [$other]")
   }
 
   protected def downstreamRunning: Actor.Receive = {
-    case SubscribePending ⇒
+    case SubscribePending =>
       subscribePending()
-    case RequestMore(subscription, elements) ⇒
+    case RequestMore(subscription, elements) =>
       moreRequested(subscription.asInstanceOf[ActorSubscriptionWithCursor[Any]], elements)
       pump.pump()
-    case Cancel(subscription) ⇒
+    case Cancel(subscription) =>
       unregisterSubscription(subscription.asInstanceOf[ActorSubscriptionWithCursor[Any]])
       pump.pump()
   }
@@ -101,14 +113,20 @@ import org.reactivestreams.Subscriber
  * INTERNAL API
  */
 @InternalApi private[akka] object FanoutProcessorImpl {
-  def props(attributes: Attributes, actorMaterializerSettings: ActorMaterializerSettings): Props =
-    Props(new FanoutProcessorImpl(attributes, actorMaterializerSettings)).withDeploy(Deploy.local)
+  def props(attributes: Attributes): Props =
+    Props(new FanoutProcessorImpl(attributes)).withDeploy(Deploy.local)
 }
+
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes, _settings: ActorMaterializerSettings)
-  extends ActorProcessorImpl(attributes, _settings) {
+@InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes) extends ActorProcessorImpl(attributes) {
+
+  val StreamSubscriptionTimeout(timeout, timeoutMode) = attributes.mandatoryAttribute[StreamSubscriptionTimeout]
+  val timeoutTimer = if (timeoutMode != StreamSubscriptionTimeoutTerminationMode.noop) {
+    import context.dispatcher
+    OptionVal.Some(context.system.scheduler.scheduleOnce(timeout, self, ActorProcessorImpl.SubscriptionTimeout))
+  } else OptionVal.None
 
   override val primaryOutputs: FanoutOutputs = {
     val inputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer]
@@ -117,16 +135,8 @@ import org.reactivestreams.Subscriber
     }
   }
 
-  val running: TransferPhase = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
+  val running: TransferPhase = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () =>
     primaryOutputs.enqueueOutputElement(primaryInputs.dequeueInputElement())
-  }
-
-  override def fail(e: Throwable): Unit = {
-    if (settings.debugLogging)
-      log.debug("fail due to: {}", e.getMessage)
-    primaryInputs.cancel()
-    primaryOutputs.error(e)
-    // Stopping will happen after flush
   }
 
   override def pumpFinished(): Unit = {
@@ -134,7 +144,30 @@ import org.reactivestreams.Subscriber
     primaryOutputs.complete()
   }
 
+  override def postStop(): Unit = {
+    super.postStop()
+    timeoutTimer match {
+      case OptionVal.Some(timer) => timer.cancel()
+      case _                     =>
+    }
+  }
+
   def afterFlush(): Unit = context.stop(self)
 
   initialPhase(1, running)
+
+  def subTimeoutHandling: Receive = {
+    case ActorProcessorImpl.SubscriptionTimeout =>
+      import StreamSubscriptionTimeoutTerminationMode._
+      if (!primaryOutputs.subscribed) {
+        timeoutMode match {
+          case CancelTermination =>
+            primaryInputs.cancel()
+            context.stop(self)
+          case WarnTermination =>
+            log.warning("Subscription timeout for {}", this)
+          case NoopTermination => // won't happen
+        }
+      }
+  }
 }

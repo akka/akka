@@ -1,0 +1,3 @@
+# #27411 changes not caught by previous mima versions
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.*Extension.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.ActorRefResolveThreadLocalCache.get")

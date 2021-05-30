@@ -1,0 +1,2 @@
+# Java11+ API's will have to be always filtered until we have these classes in our normal build flow
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.artery.jfr.*")

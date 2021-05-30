@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -11,28 +11,30 @@ import java.util.function.Consumer
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 
-import akka.remote.RemoteSettings
-import akka.remote.artery.ArterySettings
-import akka.remote.artery.aeron.TaskRunner
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
 import com.typesafe.config.ConfigFactory
+import io.aeron.CommonContext
 import io.aeron.driver.MediaDriver
 import io.aeron.driver.ThreadingMode
 import org.agrona.IoUtil
-import io.aeron.CommonContext
+
+import akka.remote.RemoteSettings
+import akka.remote.artery.ArterySettings
+import akka.remote.artery.ArterySettings.AeronUpd
+import akka.remote.artery.aeron.TaskRunner
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.testkit.MultiNodeSpec
 
 object SharedMediaDriverSupport {
 
   private val mediaDriver = new AtomicReference[Option[MediaDriver]](None)
 
   def loadArterySettings(config: MultiNodeConfig): ArterySettings =
-    (new RemoteSettings(ConfigFactory.load(config.config))).Artery
+    new RemoteSettings(ConfigFactory.load(config.config)).Artery
 
   def startMediaDriver(config: MultiNodeConfig): Unit = {
     val arterySettings = loadArterySettings(config)
-    if (arterySettings.Enabled) {
-      val aeronDir = arterySettings.Advanced.AeronDirectoryName
+    if (arterySettings.Enabled && arterySettings.Transport == AeronUpd) {
+      val aeronDir = arterySettings.Advanced.Aeron.AeronDirectoryName
       require(aeronDir.nonEmpty, "aeron-dir must be defined")
 
       // Check if the media driver is already started by another multi-node jvm.
@@ -45,9 +47,10 @@ object SharedMediaDriverSupport {
             override def accept(msg: String): Unit = {
               println(msg)
             }
-          }) catch {
-            case NonFatal(e) ⇒
-              println(e.getMessage)
+          })
+          catch {
+            case NonFatal(e) =>
+              println("Exception checking isDriverActive: " + e.getMessage)
               false
           }
           if (active) false
@@ -62,10 +65,11 @@ object SharedMediaDriverSupport {
         if (isDriverInactive(MultiNodeSpec.selfIndex)) {
           val driverContext = new MediaDriver.Context
           driverContext.aeronDirectoryName(aeronDir)
-          driverContext.clientLivenessTimeoutNs(arterySettings.Advanced.ClientLivenessTimeout.toNanos)
-          driverContext.imageLivenessTimeoutNs(arterySettings.Advanced.ImageLivenessTimeout.toNanos)
-          driverContext.driverTimeoutMs(arterySettings.Advanced.DriverTimeout.toMillis)
-          val idleCpuLevel = arterySettings.Advanced.IdleCpuLevel
+          driverContext.clientLivenessTimeoutNs(arterySettings.Advanced.Aeron.ClientLivenessTimeout.toNanos)
+          driverContext.publicationUnblockTimeoutNs(arterySettings.Advanced.Aeron.PublicationUnblockTimeout.toNanos)
+          driverContext.imageLivenessTimeoutNs(arterySettings.Advanced.Aeron.ImageLivenessTimeout.toNanos)
+          driverContext.driverTimeoutMs(arterySettings.Advanced.Aeron.DriverTimeout.toMillis)
+          val idleCpuLevel = arterySettings.Advanced.Aeron.IdleCpuLevel
           driverContext
             .threadingMode(ThreadingMode.SHARED)
             .sharedIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
@@ -77,7 +81,7 @@ object SharedMediaDriverSupport {
           }
         }
       } catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           println(s"Failed to start media driver in [${aeronDir}]: ${e.getMessage}")
       }
     }
@@ -87,7 +91,7 @@ object SharedMediaDriverSupport {
 
   def stopMediaDriver(config: MultiNodeConfig): Unit = {
     val maybeDriver = mediaDriver.getAndSet(None)
-    maybeDriver.foreach { driver ⇒
+    maybeDriver.foreach { driver =>
       val arterySettings = loadArterySettings(config)
 
       // let other nodes shutdown first
@@ -96,14 +100,14 @@ object SharedMediaDriverSupport {
       driver.close()
 
       try {
-        if (arterySettings.Advanced.DeleteAeronDirectory) {
+        if (arterySettings.Advanced.Aeron.DeleteAeronDirectory) {
           IoUtil.delete(new File(driver.aeronDirectoryName), false)
         }
       } catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           println(
             s"Couldn't delete Aeron embedded media driver files in [${driver.aeronDirectoryName}] " +
-              s"due to [${e.getMessage}]")
+            s"due to [${e.getMessage}]")
       }
     }
   }

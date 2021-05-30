@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -16,20 +16,6 @@ import java.util.concurrent.locks.LockSupport
 
 import scala.concurrent.duration._
 
-import akka.Done
-import akka.actor._
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
-import akka.stream.ActorMaterializer
-import akka.stream.KillSwitches
-import akka.stream.ThrottleMode
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.Source
-import akka.testkit._
-import akka.util.ByteString
 import com.typesafe.config.ConfigFactory
 import io.aeron.Aeron
 import io.aeron.CncFileDescriptor
@@ -38,14 +24,26 @@ import org.HdrHistogram.Histogram
 import org.agrona.IoUtil
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 
+import akka.Done
+import akka.actor._
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.STMultiNodeSpec
+import akka.stream.KillSwitches
+import akka.stream.ThrottleMode
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Source
+import akka.testkit._
+import akka.util.ByteString
+
 object AeronStreamLatencySpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
   val barrierTimeout = 5.minutes
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
        # for serious measurements you should increase the totalMessagesFactor (10) and repeatCount (3)
        akka.test.AeronStreamLatencySpec.totalMessagesFactor = 1.0
        akka.test.AeronStreamLatencySpec.repeatCount = 1
@@ -54,21 +52,19 @@ object AeronStreamLatencySpec extends MultiNodeConfig {
          testconductor.barrier-timeout = ${barrierTimeout.toSeconds}s
          actor {
            provider = remote
-           serialize-creators = false
-           serialize-messages = false
          }
          remote.artery {
            enabled = off
-           advanced.idle-cpu-level=8
+           advanced.aeron.idle-cpu-level=8
          }
        }
        """)))
 
   final case class TestSettings(
-    testName:    String,
-    messageRate: Int, // msg/s
-    payloadSize: Int,
-    repeat:      Int)
+      testName: String,
+      messageRate: Int, // msg/s
+      payloadSize: Int,
+      repeat: Int)
 
 }
 
@@ -76,8 +72,9 @@ class AeronStreamLatencySpecMultiJvmNode1 extends AeronStreamLatencySpec
 class AeronStreamLatencySpecMultiJvmNode2 extends AeronStreamLatencySpec
 
 abstract class AeronStreamLatencySpec
-  extends MultiNodeSpec(AeronStreamLatencySpec)
-  with STMultiNodeSpec with ImplicitSender {
+    extends MultiNodeSpec(AeronStreamLatencySpec)
+    with STMultiNodeSpec
+    with ImplicitSender {
 
   import AeronStreamLatencySpec._
 
@@ -100,14 +97,12 @@ abstract class AeronStreamLatencySpec
     Aeron.connect(ctx)
   }
 
-  val idleCpuLevel = system.settings.config.getInt("akka.remote.artery.advanced.idle-cpu-level")
+  val idleCpuLevel = system.settings.config.getInt("akka.remote.artery.advanced.aeron.idle-cpu-level")
   val taskRunner = {
     val r = new TaskRunner(system.asInstanceOf[ExtendedActorSystem], idleCpuLevel)
     r.start()
     r
   }
-
-  lazy implicit val mat = ActorMaterializer()(system)
 
   override def initialParticipants = roles.size
 
@@ -143,11 +138,12 @@ abstract class AeronStreamLatencySpec
     super.afterAll()
   }
 
-  def printTotal(testName: String, payloadSize: Long, histogram: Histogram, totalDurationNanos: Long, lastRepeat: Boolean): Unit = {
+  def printTotal(testName: String, histogram: Histogram, totalDurationNanos: Long, lastRepeat: Boolean): Unit = {
     def percentile(p: Double): Double = histogram.getValueAtPercentile(p) / 1000.0
     val throughput = 1000.0 * histogram.getTotalCount / totalDurationNanos.nanos.toMillis
 
-    println(s"=== AeronStreamLatency $testName: RTT " +
+    println(
+      s"=== AeronStreamLatency $testName: RTT " +
       f"50%%ile: ${percentile(50.0)}%.0f µs, " +
       f"90%%ile: ${percentile(90.0)}%.0f µs, " +
       f"99%%ile: ${percentile(99.0)}%.0f µs, " +
@@ -173,31 +169,11 @@ abstract class AeronStreamLatencySpec
     pending.foreach(system.deadLetters ! _)
 
   val scenarios = List(
-    TestSettings(
-      testName = "rate-100-size-100",
-      messageRate = 100,
-      payloadSize = 100,
-      repeat = repeatCount),
-    TestSettings(
-      testName = "rate-1000-size-100",
-      messageRate = 1000,
-      payloadSize = 100,
-      repeat = repeatCount),
-    TestSettings(
-      testName = "rate-10000-size-100",
-      messageRate = 10000,
-      payloadSize = 100,
-      repeat = repeatCount),
-    TestSettings(
-      testName = "rate-20000-size-100",
-      messageRate = 20000,
-      payloadSize = 100,
-      repeat = repeatCount),
-    TestSettings(
-      testName = "rate-1000-size-1k",
-      messageRate = 1000,
-      payloadSize = 1000,
-      repeat = repeatCount))
+    TestSettings(testName = "rate-100-size-100", messageRate = 100, payloadSize = 100, repeat = repeatCount),
+    TestSettings(testName = "rate-1000-size-100", messageRate = 1000, payloadSize = 100, repeat = repeatCount),
+    TestSettings(testName = "rate-10000-size-100", messageRate = 10000, payloadSize = 100, repeat = repeatCount),
+    TestSettings(testName = "rate-20000-size-100", messageRate = 20000, payloadSize = 100, repeat = repeatCount),
+    TestSettings(testName = "rate-1000-size-1k", messageRate = 1000, payloadSize = 1000, repeat = repeatCount))
 
   def test(testSettings: TestSettings): Unit = {
     import testSettings._
@@ -217,9 +193,10 @@ abstract class AeronStreamLatencySpec
       val killSwitch = KillSwitches.shared(testName)
       val started = TestProbe()
       val startMsg = "0".getBytes("utf-8")
-      Source.fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
+      Source
+        .fromGraph(new AeronSource(channel(first), streamId, aeron, taskRunner, pool, NoOpRemotingFlightRecorder, 0))
         .via(killSwitch.flow)
-        .runForeach { envelope ⇒
+        .runForeach { envelope =>
           val bytes = ByteString.fromByteBuffer(envelope.byteBuffer)
           if (bytes.length == 1 && bytes(0) == startMsg(0))
             started.ref ! Done
@@ -231,7 +208,7 @@ abstract class AeronStreamLatencySpec
             histogram.recordValue(d)
             if (c == totalMessages) {
               val totalDurationNanos = System.nanoTime() - startTime.get
-              printTotal(testName, bytes.length, histogram, totalDurationNanos, lastRepeat.get)
+              printTotal(testName, histogram, totalDurationNanos, lastRepeat.get)
               barrier.await() // this is always the last party
             }
           }
@@ -239,33 +216,50 @@ abstract class AeronStreamLatencySpec
         }
 
       within(10.seconds) {
-        Source(1 to 50).map { _ ⇒
-          val envelope = pool.acquire()
-          envelope.byteBuffer.put(startMsg)
-          envelope.byteBuffer.flip()
-          envelope
-        }
+        Source(1 to 50)
+          .map { _ =>
+            val envelope = pool.acquire()
+            envelope.byteBuffer.put(startMsg)
+            envelope.byteBuffer.flip()
+            envelope
+          }
           .throttle(1, 200.milliseconds, 1, ThrottleMode.Shaping)
-          .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
+          .runWith(
+            new AeronSink(
+              channel(second),
+              streamId,
+              aeron,
+              taskRunner,
+              pool,
+              giveUpMessageAfter,
+              NoOpRemotingFlightRecorder))
         started.expectMsg(Done)
       }
 
-      for (rep ← 1 to repeat) {
+      for (rep <- 1 to repeat) {
         histogram.reset()
         count.set(0)
         lastRepeat.set(rep == repeat)
 
-        val sendFlow = Flow[Unit]
-          .map { _ ⇒
-            val envelope = pool.acquire()
-            envelope.byteBuffer.put(payload)
-            envelope.byteBuffer.flip()
-            envelope
-          }
+        val sendFlow = Flow[Unit].map { _ =>
+          val envelope = pool.acquire()
+          envelope.byteBuffer.put(payload)
+          envelope.byteBuffer.flip()
+          envelope
+        }
 
-        val queueValue = Source.fromGraph(new SendQueue[Unit](sendToDeadLetters))
+        val queueValue = Source
+          .fromGraph(new SendQueue[Unit](sendToDeadLetters))
           .via(sendFlow)
-          .to(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
+          .to(
+            new AeronSink(
+              channel(second),
+              streamId,
+              aeron,
+              taskRunner,
+              pool,
+              giveUpMessageAfter,
+              NoOpRemotingFlightRecorder))
           .run()
 
         val queue = new ManyToOneConcurrentArrayQueue[Unit](1024)
@@ -312,20 +306,29 @@ abstract class AeronStreamLatencySpec
   "Latency of Aeron Streams" must {
 
     "start upd port" in {
-      system.actorOf(Props[UdpPortActor], "updPort")
+      system.actorOf(Props[UdpPortActor](), "updPort")
       enterBarrier("udp-port-started")
     }
 
     "start echo" in {
       runOn(second) {
         // just echo back
-        Source.fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
-          .runWith(new AeronSink(channel(first), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
+        Source
+          .fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, NoOpRemotingFlightRecorder, 0))
+          .runWith(
+            new AeronSink(
+              channel(first),
+              streamId,
+              aeron,
+              taskRunner,
+              pool,
+              giveUpMessageAfter,
+              NoOpRemotingFlightRecorder))
       }
       enterBarrier("echo-started")
     }
 
-    for (s ← scenarios) {
+    for (s <- scenarios) {
       s"be low for ${s.testName}, at ${s.messageRate} msg/s, payloadSize = ${s.payloadSize}" in test(s)
     }
 

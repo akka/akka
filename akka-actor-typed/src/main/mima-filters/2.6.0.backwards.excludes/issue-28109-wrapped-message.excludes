@@ -1,0 +1,3 @@
+# 28109 WrappedMessage for better dead letter logging
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.typed.internal.AdaptMessage.msg")

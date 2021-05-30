@@ -1,0 +1,3 @@
+# Fix for 2.13 performance regression #28419
+ProblemFilters.exclude[FinalMethodProblem]("akka.util.ByteString.copyToArray")
+ProblemFilters.exclude[FinalMethodProblem]("akka.util.ByteString.toArray")

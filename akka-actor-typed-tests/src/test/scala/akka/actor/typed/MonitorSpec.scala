@@ -1,24 +1,24 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.WordSpecLike
 
-class MonitorSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class MonitorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   "The monitor behavior" should {
 
     "monitor messages" in {
       val probe = TestProbe[String]()
 
-      val beh: Behavior[String] = Behaviors.monitor(probe.ref, Behaviors.receiveMessage(msg ⇒
-        Behaviors.same
-      ))
+      val beh: Behavior[String] = Behaviors.monitor(probe.ref, Behaviors.receiveMessage(_ => Behaviors.same))
       val ref: ActorRef[String] = spawn(beh)
 
       ref ! "message"
@@ -33,13 +33,7 @@ class MonitorSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         Behaviors.monitor(probe.ref, beh)
 
       val beh: Behavior[String] =
-        monitor(
-          monitor(
-            Behaviors.receiveMessage(msg ⇒
-              Behaviors.same
-            )
-          )
-        )
+        monitor(monitor(Behaviors.receiveMessage(_ => Behaviors.same)))
       val ref: ActorRef[String] = spawn(beh)
 
       ref ! "message 1"
@@ -55,7 +49,7 @@ class MonitorSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         Behaviors.monitor(probe.ref, beh)
 
       def next: Behavior[String] =
-        monitor(Behaviors.receiveMessage(msg ⇒ next))
+        monitor(Behaviors.receiveMessage(_ => next))
       val ref: ActorRef[String] = spawn(next)
 
       ref ! "message 1"

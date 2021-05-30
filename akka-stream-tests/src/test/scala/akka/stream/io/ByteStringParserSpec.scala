@@ -1,22 +1,27 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io
 
-import akka.stream.impl.io.ByteStringParser
-import akka.stream.impl.io.ByteStringParser.{ ByteReader, ParseResult, ParseStep }
-import akka.stream.scaladsl.{ Sink, Source }
-import akka.stream.stage.GraphStageLogic
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.stream.{ ActorMaterializer, Attributes, ThrottleMode }
-import akka.util.ByteString
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import akka.stream.Attributes
+import akka.stream.ThrottleMode
+import akka.stream.impl.io.ByteStringParser
+import akka.stream.impl.io.ByteStringParser.ByteReader
+import akka.stream.impl.io.ByteStringParser.ParseResult
+import akka.stream.impl.io.ByteStringParser.ParseStep
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
+import akka.stream.stage.GraphStageLogic
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
+import akka.util.ByteString
+
 class ByteStringParserSpec extends StreamSpec {
-  implicit val materializer = ActorMaterializer()
 
   "ByteStringParser" must {
 
@@ -42,7 +47,8 @@ class ByteStringParserSpec extends StreamSpec {
       // The Chunker produces two frames for one incoming 4 byte chunk. Hence, the rate in the incoming
       // side of the Chunker should only be half than on its outgoing side.
 
-      val result = Source.repeat(ByteString("abcd"))
+      val result = Source
+        .repeat(ByteString("abcd"))
         .take(500)
         .throttle(1000, 1.second, 10, ThrottleMode.Enforcing)
         .via(new Chunker)
@@ -73,10 +79,8 @@ class ByteStringParserSpec extends StreamSpec {
 
       def run(data: ByteString*): ByteString =
         Await.result(
-          Source[ByteString](data.toVector)
-            .via(MultistepParsing)
-            .fold(ByteString.empty)(_ ++ _)
-            .runWith(Sink.head), 5.seconds)
+          Source[ByteString](data.toVector).via(MultistepParsing).fold(ByteString.empty)(_ ++ _).runWith(Sink.head),
+          5.seconds)
 
       run(ByteString(0xca), ByteString(0xfe), ByteString(0xef, 0x12)) shouldEqual ByteString(0xef, 0x12)
       run(ByteString(0xca), ByteString(0xfe, 0xef, 0x12)) shouldEqual ByteString(0xef, 0x12)
@@ -103,12 +107,10 @@ class ByteStringParserSpec extends StreamSpec {
       }
 
       (the[IllegalStateException] thrownBy Await.result(
-        Source.single(ByteString("abc"))
-          .via(SpinningLogic)
-          .runWith(Sink.ignore),
+        Source.single(ByteString("abc")).via(SpinningLogic).runWith(Sink.ignore),
         3.seconds)).getMessage shouldBe "Parsing logic didn't produce result after 10 steps. " +
-        "Aborting processing to avoid infinite cycles. In the unlikely case that the parsing logic needs more recursion, " +
-        "override ParsingLogic.recursionLimit."
+      "Aborting processing to avoid infinite cycles. In the unlikely case that the parsing logic needs more recursion, " +
+      "override ParsingLogic.recursionLimit."
     }
 
     "complete eagerly" in {
@@ -150,7 +152,7 @@ class ByteStringParserSpec extends StreamSpec {
       out.request(1L)
       in.expectRequest()
       in.sendNext(ByteString("aha!"))
-      out.expectNoMsg(100.millis)
+      out.expectNoMessage(100.millis)
       // no new pull
       in.sendComplete()
       out.expectError() shouldBe an[IllegalStateException]

@@ -1,20 +1,23 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import scala.annotation.nowarn
+import org.scalacheck.Gen
+import org.scalacheck.Shrink
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+
 import akka.stream._
 import akka.stream.testkit.TwoStreamsSetup
-import org.scalacheck.Gen
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
-import org.scalacheck.Shrink
 
-class GraphMergeSortedSpec extends TwoStreamsSetup with GeneratorDrivenPropertyChecks {
+@nowarn // tests deprecated apis
+class GraphMergeSortedSpec extends TwoStreamsSetup with ScalaCheckPropertyChecks {
 
   override type Outputs = Int
 
-  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
+  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture {
     val merge = b.add(new MergeSorted[Outputs])
 
     override def left: Inlet[Outputs] = merge.in0
@@ -22,17 +25,19 @@ class GraphMergeSortedSpec extends TwoStreamsSetup with GeneratorDrivenPropertyC
     override def out: Outlet[Outputs] = merge.out
   }
 
-  implicit def noShrink[T] = Shrink[T](_ ⇒ Stream.empty) // do not shrink failures, it only destroys evidence
+  implicit def noShrink[T]: Shrink[T] =
+    Shrink[T](_ => Stream.empty) // do not shrink failures, it only destroys evidence
 
   "MergeSorted" must {
 
     "work in the nominal case" in {
       val gen = Gen.listOf(Gen.oneOf(false, true))
 
-      forAll(gen) { picks ⇒
+      forAll(gen) { picks =>
         val N = picks.size
         val (left, right) = picks.zipWithIndex.partition(_._1)
-        Source(left.map(_._2)).mergeSorted(Source(right.map(_._2)))
+        Source(left.map(_._2))
+          .mergeSorted(Source(right.map(_._2)))
           .grouped(N max 1)
           .concat(Source.single(Nil))
           .runWith(Sink.head)

@@ -1,14 +1,15 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed;
 
 import akka.actor.setup.ActorSystemSetup;
+import akka.actor.typed.javadsl.Behaviors;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.util.function.Function;
 
@@ -18,15 +19,13 @@ import static org.junit.Assert.assertTrue;
 
 public class ExtensionsTest extends JUnitSuite {
 
-  public static class MyExtImpl implements Extension {
-  }
+  public static class MyExtImpl implements Extension {}
 
   public static class MyExtension extends ExtensionId<MyExtImpl> {
 
-    private final static MyExtension instance = new MyExtension();
+    private static final MyExtension instance = new MyExtension();
 
-    private MyExtension() {
-    }
+    private MyExtension() {}
 
     public static MyExtension getInstance() {
       return instance;
@@ -41,8 +40,7 @@ public class ExtensionsTest extends JUnitSuite {
     }
   }
 
-  public static class MyExtImplViaSetup extends MyExtImpl {
-  }
+  public static class MyExtImplViaSetup extends MyExtImpl {}
 
   public static class MyExtensionSetup extends ExtensionSetup<MyExtImpl> {
     public MyExtensionSetup(Function<ActorSystem<?>, MyExtImpl> createExtension) {
@@ -50,15 +48,14 @@ public class ExtensionsTest extends JUnitSuite {
     }
   }
 
-
   @Test
   public void loadJavaExtensionsFromConfig() {
-    Config cfg = ConfigFactory.parseString(
-        "akka.actor.typed.extensions += \"akka.actor.typed.ExtensionsTest$MyExtension\"").resolve();
-    final ActorSystem<Object> system = ActorSystem.create(
-        Behavior.empty(),
-        "loadJavaExtensionsFromConfig",
-        cfg);
+    Config cfg =
+        ConfigFactory.parseString(
+                "akka.actor.typed.extensions += \"akka.actor.typed.ExtensionsTest$MyExtension\"")
+            .resolve();
+    final ActorSystem<Object> system =
+        ActorSystem.create(Behaviors.empty(), "loadJavaExtensionsFromConfig", cfg);
 
     try {
       // note that this is not the intended end user way to access it
@@ -75,7 +72,7 @@ public class ExtensionsTest extends JUnitSuite {
 
   @Test
   public void loadScalaExtension() {
-    final ActorSystem<Object> system = ActorSystem.create(Behavior.empty(), "loadScalaExtension");
+    final ActorSystem<Object> system = ActorSystem.create(Behaviors.empty(), "loadScalaExtension");
     try {
       DummyExtension1 instance1 = DummyExtension1.get(system);
       DummyExtension1 instance2 = DummyExtension1.get(system);
@@ -88,10 +85,11 @@ public class ExtensionsTest extends JUnitSuite {
 
   @Test
   public void overrideExtensionsViaActorSystemSetup() {
-        final ActorSystem<Object> system = ActorSystem.create(
-        Behavior.empty(),
-        "overrideExtensionsViaActorSystemSetup",
-        ActorSystemSetup.create(new MyExtensionSetup(sys -> new MyExtImplViaSetup())));
+    final ActorSystem<Object> system =
+        ActorSystem.create(
+            Behaviors.empty(),
+            "overrideExtensionsViaActorSystemSetup",
+            ActorSystemSetup.create(new MyExtensionSetup(sys -> new MyExtImplViaSetup())));
 
     try {
       MyExtImpl instance1 = MyExtension.get(system);
@@ -104,5 +102,4 @@ public class ExtensionsTest extends JUnitSuite {
       system.terminate();
     }
   }
-
 }

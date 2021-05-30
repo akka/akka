@@ -1,2 +1,0 @@
-# incompatibility on Scala 2.12
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.testkit.TestKitBase.awaitAssert")

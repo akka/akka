@@ -1,0 +1,28 @@
+# Typo in Akka internal method - PR #26352
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.AskableActorRef.recipientTerminatedExcpetion")
+# No longer needed, package private implicit #26350
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.ccompat.package.fromCanBuildFrom")
+# Add optional field to ApiMayChange annotation #26409
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.annotation.ApiMayChange.issue")
+
+# Simplify backoff supervision API #19016
+ProblemFilters.exclude[MissingClassProblem]("akka.pattern.BackoffOnRestartSupervisor")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.internal.BackoffOnRestartSupervisor.replyWhileStopped")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.internal.BackoffOnRestartSupervisor.finalStopMessage")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.internal.BackoffOnRestartSupervisor.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.HandleBackoff.replyWhileStopped")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.HandleBackoff.finalStopMessage")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.pattern.HandleBackoff.handleMessageToChild")
+
+# Internal helpers for 2.13 compatibility
+ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package$SortedSetOps")
+ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package$SortedSetOps$")
+ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package$")
+ProblemFilters.exclude[MissingClassProblem]("akka.util.ccompat.imm.package")
+
+# Fix memory leak in watchWith - PR #26625
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.terminatedQueuedFor")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.dungeon.DeathWatch.terminatedQueuedFor")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$terminatedQueued")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.akka$actor$dungeon$DeathWatch$$terminatedQueued_=")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.DeathWatch.terminatedQueuedFor")

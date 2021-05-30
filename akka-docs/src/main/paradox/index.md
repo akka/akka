@@ -5,18 +5,17 @@
 @@@ index
 
 * [security/index](security/index.md)
-* [guide/index](guide/index.md)
+* [guide/index](typed/guide/index.md)
 * [general/index](general/index.md)
-* [index-actors](index-actors.md)
-* [index-typed](typed/index.md)
-* [index-cluster](index-cluster.md)
+* [index-actors](typed/index.md)
+* [index-cluster](typed/index-cluster.md)
+* [index-persistence](typed/index-persistence.md)
 * [stream/index](stream/index.md)
-* [index-network](index-network.md)
-* [index-futures](index-futures.md)
+* [discovery](discovery/index.md)
 * [index-utilities](index-utilities.md)
 * [common/other-modules](common/other-modules.md)
-* [howto](howto.md)
+* [additional/deploy](additional/deploy.md)
 * [project/index](project/index.md)
-* [additional/index](additional/index.md)
+* [classic](index-classic.md)
 
 @@@

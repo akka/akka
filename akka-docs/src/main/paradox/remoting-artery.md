@@ -1,13 +1,46 @@
-# Remoting (codename Artery)
+---
+project.description: Details about the underlying remoting module for Akka Cluster.
+---
+# Artery Remoting
+
+@@@ note
+
+Remoting is the mechanism by which Actors on different nodes talk to each
+other internally.
+
+When building an Akka application, you would usually not use the Remoting concepts
+directly, but instead use the more high-level
+@ref[Akka Cluster](index-cluster.md) utilities or technology-agnostic protocols
+such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
+[gRPC](https://doc.akka.io/docs/akka-grpc/current/) etc.
+
+@@@
+
+If migrating from classic remoting see @ref:[what's new in Artery](#what-is-new-in-artery)
 
 ## Dependency
 
-To use Remoting (codename Artery), you must add the following dependency in your project:
+To use Artery Remoting, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-remote_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-remote_$scala.binary.version$
+  version=AkkaVersion
+}
+
+One option is to use Artery with Aeron, see @ref:[Selecting a transport](#selecting-a-transport).
+The Aeron dependency needs to be explicitly added if using the `aeron-udp` transport:
+
+@@dependency[sbt,Maven,Gradle] {
+  group=io.aeron
+  artifact=aeron-driver
+  version="$aeron_version$"
+  group2=io.aeron
+  artifact2=aeron-client
+  version2="$aeron_version$"
 }
 
 ## Configuration
@@ -18,12 +51,12 @@ to your `application.conf` file:
 ```
 akka {
   actor {
-    provider = remote
+    # provider=remote is possible, but prefer cluster
+    provider = cluster 
   }
   remote {
     artery {
-      enabled = on
-      transport = aeron-udp
+      transport = tcp # See Selecting a transport below
       canonical.hostname = "127.0.0.1"
       canonical.port = 25520
     }
@@ -33,7 +66,7 @@ akka {
 
 As you can see in the example above there are four things you need to add to get started:
 
- * Change provider from `local` to `remote`
+ * Change provider from `local`. We recommend using @ref:[Akka Cluster](cluster-usage.md) over using remoting directly.
  * Enable Artery to use it as the remoting implementation
  * Add host name - the machine you want to run the actor system on; this host
 name is exactly what is passed to remote systems in order to identify this
@@ -60,11 +93,8 @@ underlying module that allows for Cluster, it is still useful to understand deta
 
 @@@ note
 
-This page describes the remoting subsystem, codenamed *Artery* that will eventually replace the
-@ref:[old remoting implementation](remoting.md). Artery with the Aeron transport is ready
-to use in production. The TCP based transport is not ready for use in production yet. The module is
-marked @ref:[may change](common/may-change.md) because some configuration will be changed when the API
-becomes stable.
+This page describes the remoting subsystem, codenamed *Artery* that has replaced the
+@ref:[classic remoting implementation](remoting.md).
 
 @@@
 
@@ -76,61 +106,51 @@ sent messages to, watched, etc.
 Every `ActorRef` contains hostname and port information and can be passed around even on the network. This means
 that on a network every `ActorRef` is a unique identifier of an actor on that network.
 
+You need to enable @ref:[serialization](serialization.md) for your actor messages.
+@ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
+
 Remoting is not a server-client technology. All systems using remoting can contact any other system on the network
 if they possess an `ActorRef` pointing to those system. This means that every system that is remoting enabled
 acts as a "server" to which arbitrary systems on the same network can connect to.
 
-## What is new in Artery
-
-Artery is a reimplementation of the old remoting module aimed at improving performance and stability. It is mostly
-source compatible with the old implementation and it is a drop-in replacement in many cases. Main features
-of Artery compared to the previous implementation:
-
- * Based on [Aeron](https://github.com/real-logic/Aeron) (UDP) and Akka Streams TCP/TLS instead of Netty TCP
- * Focused on high-throughput, low-latency communication
- * Isolation of internal control messages from user messages improving stability and reducing false failure detection
-in case of heavy traffic by using a dedicated subchannel.
- * Mostly allocation-free operation
- * Support for a separate subchannel for large messages to avoid interference with smaller messages
- * Compression of actor paths on the wire to reduce overhead for smaller messages
- * Support for faster serialization/deserialization using ByteBuffers directly
- * Built-in Flight-Recorder to help debugging implementation issues without polluting users logs with implementation
-specific events
- * Providing protocol stability across major Akka versions to support rolling updates of large-scale systems
-
-The main incompatible change from the previous implementation that the protocol field of the string representation of an
-`ActorRef` is always *akka* instead of the previously used *akka.tcp* or *akka.ssl.tcp*. Configuration properties
-are also different.
-
-### Selecting transport
+## Selecting a transport
 
 There are three alternatives of which underlying transport to use. It is configured by property
 `akka.remote.artery.transport` with the possible values:
 
-* `aeron-udp` - Based on [Aeron (UDP)](https://github.com/real-logic/aeron)
-* `tcp` - Based on @ref:[Akka Streams TCP](stream/stream-io.md#streaming-tcp)
+* `tcp` - Based on @ref:[Akka Streams TCP](stream/stream-io.md#streaming-tcp) (default if other not configured)
 * `tls-tcp` - Same as `tcp` with encryption using @ref:[Akka Streams TLS](stream/stream-io.md#tls)
+* `aeron-udp` - Based on [Aeron (UDP)](https://github.com/real-logic/aeron)
+
+If you are uncertain of what to select a good choice is to use the default, which is `tcp`.
 
 The Aeron (UDP) transport is a high performance transport and should be used for systems
-that require high throughput and low latency. It is using more CPU than TCP when the system
+that require high throughput and low latency. It uses more CPU than TCP when the system
 is idle or at low message rates. There is no encryption for Aeron.
 
 The TCP and TLS transport is implemented using Akka Streams TCP/TLS. This is the choice
 when encryption is needed, but it can also be used with plain TCP without TLS. It's also
 the obvious choice when UDP can't be used.
 It has very good performance (high throughput and low latency) but latency at high throughput
-might not be as good as the Aeron transport.
-
-@@@ note
+might not be as good as the Aeron transport. It has less operational complexity than the
+Aeron transport and less risk of trouble in container environments.
 
 Aeron requires 64bit JVM to work reliably and is only officially supported on Linux, Mac and Windows.
 It may work on other Unixes e.g. Solaris but insufficient testing has taken place for it to be
-officially supported. If you're on a Big Endian processor, such as Sparc, it is recommended to use
- TCP.
+officially supported. If you're on a Big Endian processor, such as Sparc, it is recommended to use TCP.
+
+@@@ note
+
+@ref:[Rolling update](additional/rolling-updates.md) is not supported when changing from one transport to another.
 
 @@@
 
-### Canonical address
+## Migrating from classic remoting
+
+See @ref:[migrating from classic remoting](project/migration-guide-2.5.x-2.6.x.md#classic-to-artery)
+
+## Canonical address
 
 In order to remoting to work properly, where each system can send messages to any other system on the same network
 (for example a system forwards a message to a third system, and the third replies directly to the sender system)
@@ -146,7 +166,7 @@ real network.
 
 In cases, where Network Address Translation (NAT) is used or other network bridging is involved, it is important
 to configure the system so that it understands that there is a difference between his externally visible, canonical
-address and between the host-port pair that is used to listen for connections. See [Akka behind NAT or in a Docker container](#remote-configuration-nat-artery)
+address and between the host-port pair that is used to listen for connections. See @ref:[Akka behind NAT or in a Docker container](#remote-configuration-nat-artery)
 for details.
 
 ## Acquiring references to remote actors
@@ -235,121 +255,19 @@ be delivered just fine.
 
 @@@
 
-### Creating Actors Remotely
-
-If you want to use the creation functionality in Akka remoting you have to further amend the
-`application.conf` file in the following way (only showing deployment section):
-
-```
-akka {
-  actor {
-    deployment {
-      /sampleActor {
-        remote = "akka://sampleActorSystem@127.0.0.1:2553"
-      }
-    }
-  }
-}
-```
-
-The configuration above instructs Akka to react when an actor with path `/sampleActor` is created, i.e.
-using `system.actorOf(Props(...), "sampleActor")`. This specific actor will not be directly instantiated,
-but instead the remote daemon of the remote system will be asked to create the actor,
-which in this sample corresponds to `sampleActorSystem@127.0.0.1:2553`.
-
-Once you have configured the properties above you would do the following in code:
-
-Scala
-:  @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #sample-actor }
-
-Java
-:  @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #sample-actor }
-
-The actor class `SampleActor` has to be available to the runtimes using it, i.e. the classloader of the
-actor systems has to have a JAR containing the class.
-
-@@@ note
-
-In order to ensure serializability of `Props` when passing constructor
-arguments to the actor being created, do not make the factory an inner class:
-this will inherently capture a reference to its enclosing object, which in
-most cases is not serializable. It is best to create a factory method in the
-companion object of the actor’s class.
-
-Serializability of all Props can be tested by setting the configuration item
-`akka.actor.serialize-creators=on`. Only Props whose `deploy` has
-`LocalScope` are exempt from this check.
-
-@@@
-
-You can use asterisks as wildcard matches for the actor paths, so you could specify:
-`/*/sampleActor` and that would match all `sampleActor` on that level in the hierarchy.
-You can also use wildcard in the last position to match all actors at a certain level:
-`/someParent/*`. Non-wildcard matches always have higher priority to match than wildcards, so:
-`/foo/bar` is considered **more specific** than `/foo/*` and only the highest priority match is used.
-Please note that it **cannot** be used to partially match section, like this: `/foo*/bar`, `/f*o/bar` etc.
-
-### Programmatic Remote Deployment
-
-To allow dynamically deployed systems, it is also possible to include
-deployment configuration in the `Props` which are used to create an
-actor: this information is the equivalent of a deployment section from the
-configuration file, and if both are given, the external configuration takes
-precedence.
-
-With these imports:
-
-Scala
-:  @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #import }
-
-Java
-:  @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #import }
-
-and a remote address like this:
-
-Scala
-:  @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #make-address-artery }
-
-Java
-:  @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #make-address-artery }
-
-you can advise the system to create a child on that remote node like so:
-
-Scala
-:  @@snip [RemoteDeploymentDocSpec.scala](/akka-docs/src/test/scala/docs/remoting/RemoteDeploymentDocSpec.scala) { #deploy }
-
-Java
-:  @@snip [RemoteDeploymentDocTest.java](/akka-docs/src/test/java/jdocs/remoting/RemoteDeploymentDocTest.java) { #deploy }
-
-### Remote deployment whitelist
-
-As remote deployment can potentially be abused by both users and even attackers a whitelist feature
-is available to guard the ActorSystem from deploying unexpected actors. Please note that remote deployment
-is *not* remote code loading, the Actors class to be deployed onto a remote system needs to be present on that
-remote system. This still however may pose a security risk, and one may want to restrict remote deployment to
-only a specific set of known actors by enabling the whitelist feature.
-
-To enable remote deployment whitelisting set the `akka.remote.deployment.enable-whitelist` value to `on`.
-The list of allowed classes has to be configured on the "remote" system, in other words on the system onto which
-others will be attempting to remote deploy Actors. That system, locally, knows best which Actors it should or
-should not allow others to remote deploy onto it. The full settings section may for example look like this:
-
-@@snip [RemoteDeploymentWhitelistSpec.scala](/akka-remote/src/test/scala/akka/remote/RemoteDeploymentWhitelistSpec.scala) { #whitelist-config }
-
-Actor classes not included in the whitelist will not be allowed to be remote deployed onto this system.
-
 ## Remote Security
 
 An `ActorSystem` should not be exposed via Akka Remote (Artery) over plain Aeron/UDP or TCP to an untrusted
 network (e.g. Internet). It should be protected by network security, such as a firewall. If that is not considered
-as enough protection [TLS with mutual authentication](#remote-tls) should be enabled.
+as enough protection @ref:[TLS with mutual authentication](#remote-tls) should be enabled.
 
 Best practice is that Akka remoting nodes should only be accessible from the adjacent network. Note that if TLS is
 enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate by
 compromising any node with certificates issued by the same internal PKI tree.
 
-It is also security best-practice to @ref[disable the Java serializer](serialization.md#disable-java-serializer) because of
-its multiple [known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
+By default, @ref[Java serialization](serialization.md#java-serialization) is disabled in Akka.
+That is also security best-practice because of its multiple
+[known attack surfaces](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995).
 
 <a id="remote-tls"></a>
 ### Configuring SSL/TLS for Akka Remoting
@@ -396,13 +314,13 @@ According to [RFC 7525](https://tools.ietf.org/html/rfc7525) the recommended alg
 You should always check the latest information about security and algorithm recommendations though before you configure your system.
 
 Creating and working with keystores and certificates is well documented in the
-[Generating X.509 Certificates](http://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
+[Generating X.509 Certificates](https://lightbend.github.io/ssl-config/CertificateGeneration.html#using-keytool)
 section of Lightbend's SSL-Config library.
 
 Since an Akka remoting is inherently @ref:[peer-to-peer](general/remoting.md#symmetric-communication) both the key-store as well as trust-store
 need to be configured on each remoting node participating in the cluster.
 
-The official [Java Secure Socket Extension documentation](http://docs.oracle.com/javase/7/docs/technotes/guides/security/jsse/JSSERefGuide.html)
+The official [Java Secure Socket Extension documentation](https://docs.oracle.com/javase/8/docs/technotes/guides/security/jsse/JSSERefGuide.html)
 as well as the [Oracle documentation on creating KeyStore and TrustStores](https://docs.oracle.com/cd/E19509-01/820-3503/6nf1il6er/index.html)
 are both great resources to research when setting up security on the JVM. Please consult those resources when troubleshooting
 and configuring SSL.
@@ -418,6 +336,8 @@ valid certificate by compromising any node with certificates issued by the same 
 It's recommended that you enable hostname verification with
 `akka.remote.artery.ssl.config-ssl-engine.hostname-verification=on`.
 When enabled it will verify that the destination hostname matches the hostname in the peer's certificate.
+
+In deployments where hostnames are dynamic and not known up front it can make sense to leave the hostname verification off.
 
 You have a few choices how to set up certificates and hostname verification:
 
@@ -482,9 +402,10 @@ as a marker trait to user-defined messages.
 
 Untrusted mode does not give full protection against attacks by itself.
 It makes it slightly harder to perform malicious or unintended actions but
-it should be complemented with @ref:[disabled Java serializer](#disabling-the-java-serializer)
+it should be noted that @ref:[Java serialization](serialization.md#java-serialization)
+should still not be enabled.
 Additional protection can be achieved when running in an untrusted network by
-network security (e.g. firewalls).
+network security (e.g. firewalls) and/or enabling @ref:[TLS with mutual authentication](#remote-tls).
 
 @@@
 
@@ -526,13 +447,13 @@ marking them `PossiblyHarmful` so that a client cannot forge them.
 
 ## Quarantine
 
-Akka remoting is using Aeron as underlying message transport. Aeron is using UDP and adds
+Akka remoting is using TCP or Aeron as underlying message transport. Aeron is using UDP and adds
 among other things reliable delivery and session semantics, very similar to TCP. This means that
 the order of the messages are preserved, which is needed for the @ref:[Actor message ordering guarantees](general/message-delivery-reliability.md#message-ordering).
 Under normal circumstances all messages will be delivered but there are cases when messages
 may not be delivered to the destination:
 
- * during a network partition and the Aeron session is broken, this automatically recovered once the partition is over
+ * during a network partition when the TCP connection or the Aeron session is broken, this automatically recovered once the partition is over
  * when sending too many messages without flow control and thereby filling up the outbound send queue (`outbound-message-queue-size` config)
  * if serialization or deserialization of a message fails (only that message will be dropped)
  * if an unexpected exception occurs in the remoting infrastructure
@@ -640,10 +561,9 @@ This is how the curve looks like for `acceptable-heartbeat-pause` configured to
 
 ## Serialization
 
-When using remoting for actors you must ensure that the `props` and `messages` used for
-those actors are serializable. Failing to do so will cause the system to behave in an unintended way.
-
-For more information please see @ref:[Serialization](serialization.md).
+You need to enable @ref:[serialization](serialization.md) for your actor messages.
+@ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
 
 <a id="remote-bytebuffer-serialization"></a>
 ### ByteBuffer based serialization
@@ -682,11 +602,6 @@ Scala
 Java
 :  @@snip [ByteBufferSerializerDocTest.java](/akka-docs/src/test/java/jdocs/actor/ByteBufferSerializerDocTest.java) { #bytebufserializer-with-manifest }
 
-<a id="disable-java-serializer"></a>
-### Disabling the Java Serializer
-
-It is highly recommended that you @ref[disable Java serialization](serialization.md#disable-java-serializer).
-
 ## Routers with Remote Destinations
 
 It is absolutely feasible to combine remoting with @ref:[Routing](routing.md).
@@ -698,6 +613,9 @@ A pool of remote deployed routees can be configured as:
 This configuration setting will clone the actor defined in the `Props` of the `remotePool` 10
 times and deploy it evenly distributed across the two given target nodes.
 
+When using a pool of remote deployed routees you must ensure that all parameters of the `Props` can
+be @ref:[serialized](serialization.md).
+
 A group of remote actors can be configured as:
 
 @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-remote-round-robin-group-artery }
@@ -705,6 +623,29 @@ A group of remote actors can be configured as:
 This configuration setting will send messages to the defined remote actor paths.
 It requires that you create the destination actors on the remote nodes with matching paths.
 That is not done by the router.
+
+## What is new in Artery
+
+Artery is a reimplementation of the old remoting module aimed at improving performance and stability. It is mostly
+source compatible with the old implementation and it is a drop-in replacement in many cases. Main features
+of Artery compared to the previous implementation:
+
+ * Based on Akka Streams TCP/TLS or [Aeron](https://github.com/real-logic/Aeron) (UDP) instead of Netty TCP
+ * Focused on high-throughput, low-latency communication
+ * Isolation of internal control messages from user messages improving stability and reducing false failure detection
+in case of heavy traffic by using a dedicated subchannel.
+ * Mostly allocation-free operation
+ * Support for a separate subchannel for large messages to avoid interference with smaller messages
+ * Compression of actor paths on the wire to reduce overhead for smaller messages
+ * Support for faster serialization/deserialization using ByteBuffers directly
+ * Built-in Java Flight Recorder (JFR) to help debugging implementation issues without polluting users logs with implementation
+specific events
+ * Providing protocol stability across major Akka versions to support rolling updates of large-scale systems
+
+The main incompatible change from the previous implementation that the protocol field of the string representation of an
+`ActorRef` is always *akka* instead of the previously used *akka.tcp* or *akka.ssl.tcp*. Configuration properties
+are also different.
+
 
 ## Performance tuning
 
@@ -718,13 +659,13 @@ Note that lowest latency can be achieved with `inbound-lanes=1` and `outbound-la
 
 Also note that the total amount of parallel tasks are bound by the `remote-dispatcher` and the thread pool size should not exceed the number of CPU cores minus headroom for actually processing the messages in the application, i.e. in practice the the pool size should be less than half of the number of cores.
 
-See `inbound-lanes` and `outbound-lanes` in the @ref:[reference configuration](general/configuration.md#config-akka-remote-artery) for default values.
+See `inbound-lanes` and `outbound-lanes` in the @ref:[reference configuration](general/configuration-reference.md#config-akka-remote-artery) for default values.
 
 ### Dedicated subchannel for large messages
 
 All the communication between user defined remote actors are isolated from the channel of Akka internal messages so
 a large user message cannot block an urgent system message. While this provides good isolation for Akka services, all
-user communications by default happen through a shared network connection (an Aeron stream). When some actors
+user communications by default happen through a shared network connection. When some actors
 send large messages this can cause other messages to suffer higher latency as they need to wait until the full
 message has been transported on the shared channel (and hence, shared bottleneck). In these cases it is usually
 helpful to separate actors that have different QoS requirements: large messages vs. low latency.
@@ -755,6 +696,27 @@ This means that all messages sent to the following actors will pass through the 
 
 Messages destined for actors not matching any of these patterns are sent using the default channel as before.
 
+To notice large messages you can enable logging of message types with payload size in bytes larger than the
+configured `log-frame-size-exceeding`.
+
+```
+akka.remote.artery {
+  log-frame-size-exceeding = 10000b
+}
+```
+
+Example log messages:
+
+```
+[INFO] Payload size for [java.lang.String] is [39068] bytes. Sent to Actor[akka://Sys@localhost:53039/user/destination#-1908386800]
+[INFO] New maximum payload size for [java.lang.String] is [44068] bytes. Sent to Actor[akka://Sys@localhost:53039/user/destination#-1908386800].
+```
+
+The large messages channel can still not be used for extremely large messages, a few MB per message at most.
+An alternative is to use the @ref:[Reliable delivery](typed/reliable-delivery.md) that has support for 
+automatically @ref[splitting up large messages](typed/reliable-delivery.md#chunk-large-messages) and assemble
+them again on the receiving side.
+
 ### External, shared Aeron media driver
 
 The Aeron transport is running in a so called [media driver](https://github.com/real-logic/Aeron/wiki/Media-Driver-Operation).
@@ -779,7 +741,7 @@ The needed classpath:
 Agrona-0.5.4.jar:aeron-driver-1.0.1.jar:aeron-client-1.0.1.jar
 ```
 
-You find those jar files on [Maven Central](http://search.maven.org/), or you can create a
+You find those jar files on [Maven Central](https://search.maven.org/), or you can create a
 package with your preferred build tool.
 
 You can pass [Aeron properties](https://github.com/real-logic/Aeron/wiki/Configuration-Options) as
@@ -823,7 +785,7 @@ To use the external media driver from the Akka application you need to define th
 configuration properties:
 
 ```
-akka.remote.artery.advanced {
+akka.remote.artery.advanced.aeron {
   embedded-media-driver = off
   aeron-dir = /dev/shm/aeron
 }
@@ -849,7 +811,7 @@ usage and latency with the following configuration:
 ```
 # Values can be from 1 to 10, where 10 strongly prefers low latency
 # and 1 strongly prefers less CPU usage
-akka.remote.artery.advanced.idle-cpu-level = 1
+akka.remote.artery.advanced.aeron.idle-cpu-level = 1
 ```
 
 By setting this value to a lower number, it tells Akka to do longer "sleeping" periods on its thread dedicated
@@ -859,50 +821,11 @@ to be noted though that during a continuously high-throughput period this settin
 as the thread mostly has tasks to execute. This also means that under high throughput (but below maximum capacity)
 the system might have less latency than at low message rates.
 
-## Internal Event Log for Debugging (Flight Recorder)
-
-@@@ note
-
-In this version ($akka.version$) the flight-recorder is disabled by default because there is no automatic
-file name and path calculation implemented to make it possible to reuse the same file for every restart of
-the same actor system without clashing with files produced by other systems (possibly running on the same machine).
-Currently, you have to set the path and file names yourself to avoid creating an unbounded number
-of files and enable flight recorder manually by adding *akka.remote.artery.advanced.flight-recorder.enabled=on* to
-your configuration file. This a limitation of the current version and will not be necessary in the future.
-
-@@@
-
-Emitting event information (logs) from internals is always a trade off. The events that are usable for
-the Akka developers are usually too low level to be of any use for users and usually need to be fine-grained enough
-to provide enough information to be able to debug issues in the internal implementation. This usually means that
-these logs are hidden behind special flags and emitted at low log levels to not clutter the log output of the user
-system. Unfortunately this means that during production or integration testing these flags are usually off and
-events are not available when an actual failure happens - leaving maintainers in the dark about details of the event.
-To solve this contradiction, remoting has an internal, high-performance event store for debug events which is always on.
-This log and the events that it contains are highly specialized and not directly exposed to users, their primary purpose
-is to help the maintainers of Akka to identify and solve issues discovered during daily usage. When you encounter
-production issues involving remoting, you can include the flight recorder log file in your bug report to give us
-more insight into the nature of the failure.
-
-There are various important features of this event log:
-
- * Flight Recorder produces a fixed size file completely encapsulating log rotation. This means that this
-file will never grow in size and will not cause any unexpected disk space shortage in production.
- * This file is crash resistant, i.e. its contents can be recovered even if the JVM hosting the `ActorSystem`
-crashes unexpectedly.
- * Very low overhead, specialized, binary logging that has no significant overhead and can be safely left enabled
-for production systems.
-
-The location of the file can be controlled via the *akka.remote.artery.advanced.flight-recorder.destination* setting (see
-@ref:[akka-remote (artery)](general/configuration.md#config-akka-remote-artery) for details). By default, a file with the *.afr* extension is produced in the temporary
-directory of the operating system. In cases where the flight recorder casuses issues, it can be disabled by adding the
-setting *akka.remote.artery.advanced.flight-recorder.enabled=off*, although this is not recommended.
-
 <a id="remote-configuration-artery"></a>
 ## Remote Configuration
 
 There are lots of configuration properties that are related to remoting in Akka. We refer to the
-@ref:[reference configuration](general/configuration.md#config-akka-remote-artery) for more information.
+@ref:[reference configuration](general/configuration-reference.md#config-akka-remote-artery) for more information.
 
 @@@ note
 
@@ -936,6 +859,44 @@ akka {
 ```
 
 You can look at the
-@java[@extref[Cluster with docker-compse example project](samples:akka-samples-cluster-docker-compose-java)]
-@scala[@extref[Cluster with docker-compose example project](samples:akka-samples-cluster-docker-compose-scala)]
+@java[@extref[Cluster with docker-compse example project](samples:akka-sample-cluster-docker-compose-java)]
+@scala[@extref[Cluster with docker-compose example project](samples:akka-sample-cluster-docker-compose-scala)]
 to see what this looks like in practice.
+
+### Running in Docker/Kubernetes
+
+When using `aeron-udp` in a containerized environment special care must be taken that the media driver runs on a ram disk.
+This by default is located in `/dev/shm` which on most physical Linux machines will be mounted as half the size of the system memory.
+
+Docker and Kubernetes mount a 64Mb ram disk. This is unlikely to be large enough. For docker this can be overridden with `--shm-size="512mb"`.
+
+In Kubernetes there is no direct support (yet) for setting `shm` size. Instead mount an `EmptyDir` with type `Memory` to `/dev/shm` for example in a
+deployment.yml:
+
+```
+spec:
+  containers:
+  - name: artery-udp-cluster
+    // rest of container spec...
+    volumeMounts:
+    - mountPath: /dev/shm
+      name: media-driver
+  volumes:
+  - name: media-driver
+    emptyDir:
+      medium: Memory
+      name: media-driver
+```
+
+There is currently no way to limit the size of a memory empty dir but there is a [pull request](https://github.com/kubernetes/kubernetes/pull/63641) for adding it.
+
+Any space used in the mount will count towards your container's memory usage.
+
+
+### Flight Recorder
+
+When running on JDK 11 Artery specific flight recording is available through the [Java Flight Recorder (JFR)](https://openjdk.java.net/jeps/328).
+The flight recorder is automatically enabled by detecting JDK 11 but can be disabled if needed by setting `akka.java-flight-recorder.enabled = false`.
+
+Low overhead Artery specific events are emitted by default when JFR is enabled, higher overhead events needs a custom settings template and are not enabled automatically with the `profiling` JFR template.
+To enable those create a copy of the `profiling` template and enable all `Akka` sub category events, for example through the JMC GUI. 

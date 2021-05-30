@@ -1,18 +1,19 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
 
+import java.util.Arrays
+
 import scala.collection.immutable
 import scala.reflect.ClassTag
-import java.util.Arrays
 
 /**
  * Consistent Hashing node ring implementation.
  *
  * A good explanation of Consistent Hashing:
- * http://weblogs.java.net/blog/tomwhite/archive/2007/11/consistent_hash.html
+ * https://tom-e-white.com/2007/11/consistent-hashing.html
  *
  * Note that toString of the ring nodes are used for the node
  * hash, i.e. make sure it is different for different nodes.
@@ -39,9 +40,9 @@ class ConsistentHash[T: ClassTag] private (nodes: immutable.SortedMap[Int, T], v
    */
   def :+(node: T): ConsistentHash[T] = {
     val nodeHash = hashFor(node.toString)
-    new ConsistentHash(
-      nodes ++ ((1 to virtualNodesFactor) map { r ⇒ (concatenateNodeHash(nodeHash, r) → node) }),
-      virtualNodesFactor)
+    new ConsistentHash(nodes ++ ((1 to virtualNodesFactor).map { r =>
+      (concatenateNodeHash(nodeHash, r) -> node)
+    }), virtualNodesFactor)
   }
 
   /**
@@ -58,9 +59,9 @@ class ConsistentHash[T: ClassTag] private (nodes: immutable.SortedMap[Int, T], v
    */
   def :-(node: T): ConsistentHash[T] = {
     val nodeHash = hashFor(node.toString)
-    new ConsistentHash(
-      nodes -- ((1 to virtualNodesFactor) map { r ⇒ concatenateNodeHash(nodeHash, r) }),
-      virtualNodesFactor)
+    new ConsistentHash(nodes -- ((1 to virtualNodesFactor).map { r =>
+      concatenateNodeHash(nodeHash, r)
+    }), virtualNodesFactor)
   }
 
   /**
@@ -87,7 +88,7 @@ class ConsistentHash[T: ClassTag] private (nodes: immutable.SortedMap[Int, T], v
    * otherwise throws `IllegalStateException`
    */
   def nodeFor(key: Array[Byte]): T = {
-    if (isEmpty) throw new IllegalStateException("Can't get node for [%s] from an empty node ring" format key)
+    if (isEmpty) throw new IllegalStateException("Can't get node for [%s] from an empty node ring".format(key))
 
     nodeRing(idx(Arrays.binarySearch(nodeHashRing, hashFor(key))))
   }
@@ -98,7 +99,7 @@ class ConsistentHash[T: ClassTag] private (nodes: immutable.SortedMap[Int, T], v
    * otherwise throws `IllegalStateException`
    */
   def nodeFor(key: String): T = {
-    if (isEmpty) throw new IllegalStateException("Can't get node for [%s] from an empty node ring" format key)
+    if (isEmpty) throw new IllegalStateException("Can't get node for [%s] from an empty node ring".format(key))
 
     nodeRing(idx(Arrays.binarySearch(nodeHashRing, hashFor(key))))
   }
@@ -114,11 +115,11 @@ object ConsistentHash {
   def apply[T: ClassTag](nodes: Iterable[T], virtualNodesFactor: Int): ConsistentHash[T] = {
     new ConsistentHash(
       immutable.SortedMap.empty[Int, T] ++
-        (for {
-          node ← nodes
-          nodeHash = hashFor(node.toString)
-          vnode ← 1 to virtualNodesFactor
-        } yield (concatenateNodeHash(nodeHash, vnode) → node)),
+      (for {
+        node <- nodes
+        nodeHash = hashFor(node.toString)
+        vnode <- 1 to virtualNodesFactor
+      } yield (concatenateNodeHash(nodeHash, vnode) -> node)),
       virtualNodesFactor)
   }
 
@@ -126,7 +127,7 @@ object ConsistentHash {
    * Java API: Factory method to create a ConsistentHash
    */
   def create[T](nodes: java.lang.Iterable[T], virtualNodesFactor: Int): ConsistentHash[T] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     apply(nodes.asScala, virtualNodesFactor)(ClassTag(classOf[Any].asInstanceOf[Class[T]]))
   }
 

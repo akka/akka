@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -22,9 +22,25 @@ import akka.util.OptionVal
 
   final case class Timer(key: Any, msg: Any, repeat: Boolean, generation: Int, task: Cancellable)
   final case class InfluenceReceiveTimeoutTimerMsg(key: Any, generation: Int, owner: TimerSchedulerImpl)
-    extends TimerMsg with NoSerializationVerificationNeeded
+      extends TimerMsg
+      with NoSerializationVerificationNeeded
   final case class NotInfluenceReceiveTimeoutTimerMsg(key: Any, generation: Int, owner: TimerSchedulerImpl)
-    extends TimerMsg with NoSerializationVerificationNeeded with NotInfluenceReceiveTimeout
+      extends TimerMsg
+      with NoSerializationVerificationNeeded
+      with NotInfluenceReceiveTimeout
+
+  private sealed trait TimerMode {
+    def repeat: Boolean
+  }
+  private case class FixedRateMode(initialDelay: FiniteDuration) extends TimerMode {
+    override def repeat: Boolean = true
+  }
+  private case class FixedDelayMode(initialDelay: FiniteDuration) extends TimerMode {
+    override def repeat: Boolean = true
+  }
+  private case object SingleMode extends TimerMode {
+    override def repeat: Boolean = false
+  }
 }
 
 /**
@@ -41,16 +57,28 @@ import akka.util.OptionVal
     timerGen
   }
 
+  override def startTimerAtFixedRate(key: Any, msg: Any, interval: FiniteDuration): Unit =
+    startTimer(key, msg, interval, FixedRateMode(interval))
+
+  override def startTimerAtFixedRate(key: Any, msg: Any, initialDelay: FiniteDuration, interval: FiniteDuration): Unit =
+    startTimer(key, msg, interval, FixedRateMode(initialDelay))
+
+  override def startTimerWithFixedDelay(key: Any, msg: Any, delay: FiniteDuration): Unit =
+    startTimer(key, msg, delay, FixedDelayMode(delay))
+
+  override def startTimerWithFixedDelay(key: Any, msg: Any, initialDelay: FiniteDuration, delay: FiniteDuration): Unit =
+    startTimer(key, msg, delay, FixedDelayMode(initialDelay))
+
   override def startPeriodicTimer(key: Any, msg: Any, interval: FiniteDuration): Unit =
-    startTimer(key, msg, interval, repeat = true)
+    startTimerAtFixedRate(key, msg, interval)
 
   override def startSingleTimer(key: Any, msg: Any, timeout: FiniteDuration): Unit =
-    startTimer(key, msg, timeout, repeat = false)
+    startTimer(key, msg, timeout, SingleMode)
 
-  private def startTimer(key: Any, msg: Any, timeout: FiniteDuration, repeat: Boolean): Unit = {
+  private def startTimer(key: Any, msg: Any, timeout: FiniteDuration, mode: TimerMode): Unit = {
     timers.get(key) match {
-      case Some(t) ⇒ cancelTimer(t)
-      case None    ⇒
+      case Some(t) => cancelTimer(t)
+      case None    =>
     }
     val nextGen = nextTimerGen()
 
@@ -60,14 +88,16 @@ import akka.util.OptionVal
       else
         InfluenceReceiveTimeoutTimerMsg(key, nextGen, this)
 
-    val task =
-      if (repeat)
-        ctx.system.scheduler.schedule(timeout, timeout, ctx.self, timerMsg)(ctx.dispatcher)
-      else
+    val task = mode match {
+      case SingleMode =>
         ctx.system.scheduler.scheduleOnce(timeout, ctx.self, timerMsg)(ctx.dispatcher)
+      case m: FixedDelayMode =>
+        ctx.system.scheduler.scheduleWithFixedDelay(m.initialDelay, timeout, ctx.self, timerMsg)(ctx.dispatcher)
+      case m: FixedRateMode =>
+        ctx.system.scheduler.scheduleAtFixedRate(m.initialDelay, timeout, ctx.self, timerMsg)(ctx.dispatcher)
+    }
 
-    val nextTimer = Timer(key, msg, repeat, nextGen, task)
-    log.debug("Start timer [{}] with generation [{}]", key, nextGen)
+    val nextTimer = Timer(key, msg, mode.repeat, nextGen, task)
     timers = timers.updated(key, nextTimer)
   }
 
@@ -76,8 +106,8 @@ import akka.util.OptionVal
 
   override def cancel(key: Any): Unit = {
     timers.get(key) match {
-      case None    ⇒ // already removed/canceled
-      case Some(t) ⇒ cancelTimer(t)
+      case None    => // already removed/canceled
+      case Some(t) => cancelTimer(t)
     }
   }
 
@@ -89,7 +119,7 @@ import akka.util.OptionVal
 
   override def cancelAll(): Unit = {
     log.debug("Cancel all timers")
-    timers.valuesIterator.foreach { timer ⇒
+    timers.valuesIterator.foreach { timer =>
       timer.task.cancel()
     }
     timers = Map.empty
@@ -97,11 +127,11 @@ import akka.util.OptionVal
 
   def interceptTimerMsg(timerMsg: TimerMsg): OptionVal[AnyRef] = {
     timers.get(timerMsg.key) match {
-      case None ⇒
+      case None =>
         // it was from canceled timer that was already enqueued in mailbox
         log.debug("Received timer [{}] that has been removed, discarding", timerMsg.key)
         OptionVal.None // message should be ignored
-      case Some(t) ⇒
+      case Some(t) =>
         if (timerMsg.owner ne this) {
           // after restart, it was from an old instance that was enqueued in mailbox before canceled
           log.debug("Received timer [{}] from old restarted instance, discarding", timerMsg.key)
@@ -115,7 +145,9 @@ import akka.util.OptionVal
           // it was from an old timer that was enqueued in mailbox before canceled
           log.debug(
             "Received timer [{}] from from old generation [{}], expected generation [{}], discarding",
-            timerMsg.key, timerMsg.generation, t.generation)
+            timerMsg.key,
+            timerMsg.generation,
+            t.generation)
           OptionVal.None // message should be ignored
         }
     }

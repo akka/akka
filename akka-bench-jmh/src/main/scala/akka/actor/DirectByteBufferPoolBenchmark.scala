@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -8,8 +8,9 @@ import java.nio.ByteBuffer
 import java.util.Random
 import java.util.concurrent.TimeUnit
 
-import akka.io.DirectByteBufferPool
 import org.openjdk.jmh.annotations._
+
+import akka.io.DirectByteBufferPool
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))
@@ -23,7 +24,7 @@ class DirectByteBufferPoolBenchmark {
 
   val random = new Random
 
-  var arteryPool: DirectByteBufferPool = _
+  private[akka] var arteryPool: DirectByteBufferPool = _
 
   @Setup(Level.Trial)
   def setup(): Unit = {

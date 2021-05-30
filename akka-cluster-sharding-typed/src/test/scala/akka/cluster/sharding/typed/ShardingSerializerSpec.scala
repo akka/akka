@@ -1,28 +1,30 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.cluster.sharding.typed.internal.ShardingSerializer
 import akka.serialization.SerializationExtension
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.WordSpecLike
 
-class ShardingSerializerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class ShardingSerializerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   "The typed ShardingSerializer" must {
 
-    val serialization = SerializationExtension(ActorSystemAdapter.toUntyped(system))
+    val serialization = SerializationExtension(ActorSystemAdapter.toClassic(system))
 
     def checkSerialization(obj: AnyRef): Unit = {
       serialization.findSerializerFor(obj) match {
-        case serializer: ShardingSerializer ⇒
+        case serializer: ShardingSerializer =>
           val blob = serializer.toBinary(obj)
           val ref = serializer.fromBinary(blob, serializer.manifest(obj))
           ref should ===(obj)
-        case s ⇒
+        case s =>
           throw new IllegalStateException(s"Wrong serializer ${s.getClass} for ${obj.getClass}")
       }
     }

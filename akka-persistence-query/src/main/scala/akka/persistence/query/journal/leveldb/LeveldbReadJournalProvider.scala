@@ -1,12 +1,13 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.journal.leveldb
 
+import com.typesafe.config.Config
+
 import akka.actor.ExtendedActorSystem
 import akka.persistence.query.ReadJournalProvider
-import com.typesafe.config.Config
 
 class LeveldbReadJournalProvider(system: ExtendedActorSystem, config: Config) extends ReadJournalProvider {
 

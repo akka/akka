@@ -1,23 +1,27 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.StashBufferImpl
-import akka.annotation.DoNotInherit
+import akka.annotation.{ DoNotInherit, InternalApi }
 
-object StashBuffer {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object StashBuffer {
 
   /**
+   * INTERNAL API
    * Create an empty message buffer.
    *
    * @param capacity the buffer can hold at most this number of messages
    * @return an empty message buffer
    */
-  def apply[T](capacity: Int): StashBuffer[T] =
-    StashBufferImpl[T](capacity)
+  @InternalApi private[akka] def apply[T](ctx: ActorContext[T], capacity: Int): StashBuffer[T] =
+    StashBufferImpl[T](ctx, capacity)
 }
 
 /**
@@ -29,6 +33,7 @@ object StashBuffer {
  * Not for user extension.
  */
 @DoNotInherit trait StashBuffer[T] {
+
   /**
    * Check if the message buffer is empty.
    *
@@ -49,6 +54,13 @@ object StashBuffer {
    * @return the number of elements in the message buffer
    */
   def size: Int
+
+  /**
+   * What is the capacity of this buffer.
+   *
+   * @return the capacity of this buffer
+   */
+  def capacity: Int
 
   /**
    * @return `true` if no more messages can be added, i.e. size equals the capacity of the stash buffer
@@ -78,7 +90,28 @@ object StashBuffer {
    *
    * @param f the function to apply to each element
    */
-  def foreach(f: T ⇒ Unit): Unit
+  def foreach(f: T => Unit): Unit
+
+  /**
+   * Tests whether this [[StashBuffer]] contains a given message.
+   *
+   * @param message the message to test
+   * @return true if the buffer contains the message, false otherwise.
+   */
+  def contains[U >: T](message: U): Boolean
+
+  /**
+   * Tests whether a predicate holds for at least one element of this [[StashBuffer]].
+   *
+   * @param predicate the predicate used to test
+   * @return true if the predicate holds for at least one message, false otherwise.
+   */
+  def exists(predicate: T => Boolean): Boolean
+
+  /**
+   * Removes all messages from the buffer.
+   */
+  def clear(): Unit
 
   /**
    * Process all stashed messages with the `behavior` and the returned
@@ -93,8 +126,10 @@ object StashBuffer {
    * It's allowed to stash messages while unstashing. Those newly added
    * messages will not be processed by this call and have to be unstashed
    * in another call.
+   *
+   * The initial `behavior` passed to `unstashAll` must not be `unhandled`.
    */
-  def unstashAll(ctx: ActorContext[T], behavior: Behavior[T]): Behavior[T]
+  def unstashAll(behavior: Behavior[T]): Behavior[T]
 
   /**
    * Process `numberOfMessages` of the stashed messages with the `behavior`
@@ -114,8 +149,10 @@ object StashBuffer {
    * It's allowed to stash messages while unstashing. Those newly added
    * messages will not be processed by this call and have to be unstashed
    * in another call.
+   *
+   * The `behavior` passed to `unstash` must not be `unhandled`.
    */
-  def unstash(ctx: ActorContext[T], behavior: Behavior[T], numberOfMessages: Int, wrap: T ⇒ T): Behavior[T]
+  def unstash(behavior: Behavior[T], numberOfMessages: Int, wrap: T => T): Behavior[T]
 
 }
 

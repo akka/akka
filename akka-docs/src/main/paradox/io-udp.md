@@ -1,3 +1,6 @@
+---
+project.description: Low level API for using UDP with classic actors.
+---
 # Using UDP
 
 ## Dependency
@@ -5,9 +8,12 @@
 To use UDP, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-actor_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-actor_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction

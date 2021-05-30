@@ -1,35 +1,36 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.io
 
-import java.nio.channels.NonWritableChannelException
-import java.nio.file.StandardOpenOption.{ CREATE, READ, WRITE }
 import java.nio.file._
-
-import akka.actor.ActorSystem
-import akka.dispatch.ExecutionContexts
-import akka.stream.impl.PhasedFusingActorMaterializer
-import akka.stream.impl.StreamSupervisor
-import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.scaladsl.{ FileIO, Sink, Source }
-import akka.stream.testkit._
-import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream._
-import akka.util.ByteString
-import com.google.common.jimfs.{ Configuration, Jimfs }
+import java.nio.file.StandardOpenOption.{ CREATE, WRITE }
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Success
 
-class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
+import scala.annotation.nowarn
+import com.google.common.jimfs.{ Configuration, Jimfs }
+import org.scalatest.concurrent.ScalaFutures
+
+import akka.dispatch.ExecutionContexts
+import akka.stream._
+import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
+import akka.stream.impl.StreamSupervisor.Children
+import akka.stream.scaladsl.{ FileIO, Keep, Sink, Source }
+import akka.stream.testkit._
+import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.util.ByteString
+
+@nowarn
+class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
   val fs = Jimfs.newFileSystem("FileSinkSpec", Configuration.unix())
 
   val TestLines = {
@@ -47,9 +48,8 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   "FileSink" must {
     "write lines to a file" in assertAllStagesStopped {
-      targetFile { f ⇒
-        val completion = Source(TestByteStrings)
-          .runWith(FileIO.toPath(f))
+      targetFile { f =>
+        val completion = Source(TestByteStrings).runWith(FileIO.toPath(f))
 
         val result = Await.result(completion, 3.seconds)
         result.count should equal(6006)
@@ -58,9 +58,8 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "create new file if not exists" in assertAllStagesStopped {
-      targetFile({ f ⇒
-        val completion = Source(TestByteStrings)
-          .runWith(FileIO.toPath(f))
+      targetFile({ f =>
+        val completion = Source(TestByteStrings).runWith(FileIO.toPath(f))
 
         val result = Await.result(completion, 3.seconds)
         result.count should equal(6006)
@@ -69,7 +68,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "write into existing file without wiping existing data" in assertAllStagesStopped {
-      targetFile { f ⇒
+      targetFile { f =>
         def write(lines: List[String]) =
           Source(lines)
             .map(ByteString(_))
@@ -82,17 +81,15 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
         val completion2 = write(lastWrite)
         val result = Await.result(completion2, 3.seconds)
 
-        result.count should ===(lastWrite.flatten.length)
+        result.count should ===(lastWrite.flatten.length.toLong)
         checkFileContents(f, lastWrite.mkString("") + TestLines.mkString("").drop(100))
       }
     }
 
     "by default replace the existing file" in assertAllStagesStopped {
-      targetFile { f ⇒
+      targetFile { f =>
         def write(lines: List[String]) =
-          Source(lines)
-            .map(ByteString(_))
-            .runWith(FileIO.toPath(f))
+          Source(lines).map(ByteString(_)).runWith(FileIO.toPath(f))
 
         val completion1 = write(TestLines)
         Await.result(completion1, 3.seconds)
@@ -101,17 +98,15 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
         val completion2 = write(lastWrite)
         val result = Await.result(completion2, 3.seconds)
 
-        result.count should ===(lastWrite.flatten.length)
+        result.count should ===(lastWrite.flatten.length.toLong)
         checkFileContents(f, lastWrite.mkString(""))
       }
     }
 
     "allow appending to file" in assertAllStagesStopped {
-      targetFile { f ⇒
+      targetFile { f =>
         def write(lines: List[String] = TestLines) =
-          Source(lines)
-            .map(ByteString(_))
-            .runWith(FileIO.toPath(f, Set(StandardOpenOption.APPEND)))
+          Source(lines).map(ByteString(_)).runWith(FileIO.toPath(f, Set(StandardOpenOption.APPEND)))
 
         val completion1 = write()
         val result1 = Await.result(completion1, 3.seconds)
@@ -126,7 +121,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "allow writing from specific position to the file" in assertAllStagesStopped {
-      targetFile { f ⇒
+      targetFile { f =>
         val TestLinesCommon = {
           val b = ListBuffer[String]()
           b.append("a" * 1000 + "\n")
@@ -136,7 +131,8 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
           b.toList
         }
 
-        val commonByteString = TestLinesCommon.map(ByteString(_)).foldLeft[ByteString](ByteString.empty)((acc, line) ⇒ acc ++ line).compact
+        val commonByteString =
+          TestLinesCommon.map(ByteString(_)).foldLeft[ByteString](ByteString.empty)((acc, line) => acc ++ line).compact
         val startPosition = commonByteString.size
 
         val testLinesPart2: List[String] = {
@@ -152,7 +148,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
             .runWith(FileIO.toPath(f, options = Set(WRITE, CREATE), startPosition = startPosition))
 
         val completion1 = write()
-        val result1 = Await.result(completion1, 3.seconds)
+        Await.result(completion1, 3.seconds)
 
         val completion2 = write(testLinesPart2, startPosition)
         val result2 = Await.result(completion2, 3.seconds)
@@ -163,81 +159,91 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
-      targetFile { f ⇒
-        val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
-        val materializer = ActorMaterializer()(sys)
+      targetFile { f =>
+        val forever = Source.maybe.toMat(FileIO.toPath(f))(Keep.left).run()
         try {
-          Source.fromIterator(() ⇒ Iterator.continually(TestByteStrings.head)).runWith(FileIO.toPath(f))(materializer)
-
-          materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
-          val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSink").get
-          assertDispatcher(ref, "akka.stream.default-blocking-io-dispatcher")
-        } finally shutdown(sys)
+          materializer
+            .asInstanceOf[PhasedFusingActorMaterializer]
+            .supervisor
+            .tell(StreamSupervisor.GetChildren, testActor)
+          val children = expectMsgType[Children]
+          val ref = withClue(children) {
+            val fileSink = children.children.find(_.path.toString contains "fileSink")
+            fileSink shouldBe defined
+            fileSink.get
+          }
+          assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
+        } finally {
+          forever.complete(Success(None))
+        }
       }
     }
 
     "allow overriding the dispatcher using Attributes" in assertAllStagesStopped {
-      targetFile { f ⇒
-        val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
-        val materializer = ActorMaterializer()(sys)
-
+      targetFile { f =>
+        val forever = Source.maybe
+          .toMat(FileIO.toPath(f).addAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher")))(Keep.left)
+          .run()
         try {
-          Source.fromIterator(() ⇒ Iterator.continually(TestByteStrings.head))
-            .to(FileIO.toPath(f).addAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher")))
-            .run()(materializer)
-
-          materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+          materializer
+            .asInstanceOf[PhasedFusingActorMaterializer]
+            .supervisor
+            .tell(StreamSupervisor.GetChildren, testActor)
           val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSink").get
           assertDispatcher(ref, "akka.actor.default-dispatcher")
-        } finally shutdown(sys)
+        } finally {
+          forever.complete(Success(None))
+        }
       }
     }
 
     "write single line to a file from lazy sink" in assertAllStagesStopped {
       //LazySink must wait for result of initialization even if got upstreamComplete
-      targetFile { f ⇒
-        val completion = Source(List(TestByteStrings.head))
-          .runWith(Sink.lazyInitAsync(
-            () ⇒ Future.successful(FileIO.toPath(f)))
+      targetFile { f =>
+        val completion = Source(List(TestByteStrings.head)).runWith(
+          Sink
+            .lazyInitAsync(() => Future.successful(FileIO.toPath(f)))
             // map a Future[Option[Future[IOResult]]] into a Future[Option[IOResult]]
             .mapMaterializedValue(_.flatMap {
-              case Some(future) ⇒ future.map(Some(_))(ExecutionContexts.sameThreadExecutionContext)
-              case None         ⇒ Future.successful(None)
-            }(ExecutionContexts.sameThreadExecutionContext)))
+              case Some(future) => future.map(Some(_))(ExecutionContexts.parasitic)
+              case None         => Future.successful(None)
+            }(ExecutionContexts.parasitic)))
 
         Await.result(completion, 3.seconds)
-
         checkFileContents(f, TestLines.head)
       }
     }
 
     "complete materialized future with an exception when upstream fails" in assertAllStagesStopped {
-      targetFile { f ⇒
+      val te = TE("oh no")
+      targetFile { f =>
         val completion = Source(TestByteStrings)
-          .map { bytes ⇒
-            if (bytes.contains('b')) throw new Error("bees!")
+          .map { bytes =>
+            if (bytes.contains('b')) throw te
             bytes
           }
           .runWith(FileIO.toPath(f))
 
-        val ex = intercept[AbruptIOTerminationException] { Await.result(completion, 3.seconds) }
-        ex.ioResult.count should equal(1001)
+        val ex = intercept[IOOperationIncompleteException] { Await.result(completion, 3.seconds) }
+        ex.count should equal(1001)
+        ex.getCause should equal(te)
         checkFileContents(f, TestLines.takeWhile(!_.contains('b')).mkString(""))
       }
     }
 
     "complete with failure when file cannot be open" in {
-      val completion = Source.single(ByteString("42"))
-        .runWith(FileIO.toPath(fs.getPath("/I/hope/this/file/doesnt/exist.txt")))
+      val completion =
+        Source.single(ByteString("42")).runWith(FileIO.toPath(fs.getPath("/I/hope/this/file/doesnt/exist.txt")))
 
-      completion.failed.futureValue shouldBe an[NoSuchFileException]
+      completion.failed.futureValue.getCause shouldBe an[NoSuchFileException]
     }
   }
 
-  private def targetFile(block: Path ⇒ Unit, create: Boolean = true): Unit = {
+  private def targetFile(block: Path => Unit, create: Boolean = true): Unit = {
     val targetFile = Files.createTempFile(fs.getPath("/"), "synchronous-file-sink", ".tmp")
     if (!create) Files.delete(targetFile)
-    try block(targetFile) finally Files.delete(targetFile)
+    try block(targetFile)
+    finally Files.delete(targetFile)
   }
 
   def checkFileContents(f: Path, contents: String): Unit = {

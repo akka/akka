@@ -1,26 +1,25 @@
-# FSM
+# Classic FSM
+
+@@include[includes.md](includes.md) { #actor-api }
+For the documentation of the new API of this feature and for new projects see @ref:[fsm](typed/fsm.md).
 
 ## Dependency
 
 To use Finite State Machine actors, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-actor_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-actor_$scala.binary.version$"
+  version=AkkaVersion
 }
-
-## Sample project
-
-You can look at the
-@java[@extref[FSM example project](samples:akka-samples-fsm-java)]
-@scala[@extref[FSM example project](samples:akka-samples-fsm-scala)]
-to see what this looks like in practice.
 
 ## Overview
 
 The FSM (Finite State Machine) is available as @scala[a mixin for the] @java[an abstract base class that implements an] Akka Actor and
-is best described in the [Erlang design principles](http://www.erlang.org/documentation/doc-4.8.2/doc/design_principles/fsm.html)
+is best described in the [Erlang design principles](https://www.erlang.org/documentation/doc-4.8.2/doc/design_principles/fsm.html)
 
 A FSM can be described as a set of relations of the form:
 
@@ -285,7 +284,7 @@ Within this handler the state of the FSM may be queried using the
 ### Initiating Transitions
 
 The result of any `stateFunction` must be a definition of the next state
-unless terminating the FSM, which is described in [Termination from Inside](#termination-from-inside).
+unless terminating the FSM, which is described in @ref:[Termination from Inside](#termination-from-inside).
 The state definition can either be the current state, as described by the
 `stay` directive, or it is a different state as given by
 `goto(state)`. The resulting object allows further qualification by way
@@ -304,7 +303,7 @@ use `Duration.Inf`.
  * 
    `using(data)`
    This modifier replaces the old state data with the new data given. If you
-follow the advice [above](#fsm-philosophy), this is the only place where
+follow the advice @ref:[above](#defining-states), this is the only place where
 internal state data are ever modified.
  * 
    `replying(msg)`
@@ -447,14 +446,19 @@ Besides state timeouts, FSM manages timers identified by `String` names.
 You may set a timer using
 
 ```
-setTimer(name, msg, interval, repeat)
+startSingleTimer(name, msg, interval)
+startTimerWithFixedDelay(name, msg, interval)
 ```
 
 where `msg` is the message object which will be sent after the duration
-`interval` has elapsed. If `repeat` is `true`, then the timer is
-scheduled at fixed rate given by the `interval` parameter.
+`interval` has elapsed.
+
 Any existing timer with the same name will automatically be canceled before
 adding the new timer.
+
+The @ref:[Scheduler](scheduler.md#schedule-periodically) documentation describes the difference between
+`fixed-delay` and `fixed-rate` scheduling. If you are uncertain of which one to use you should pick
+`startTimerWithFixedDelay`.
 
 Timers may be canceled using
 
@@ -583,10 +587,3 @@ by `logDepth` after the buffer has been allocated.
 The contents of the event log are available using method `getLog`, which
 returns an `IndexedSeq[LogEntry]` where the oldest entry is at index
 zero.
-
-## Examples
-
-A bigger FSM example contrasted with Actor's `become`/`unbecome` can be
-downloaded as a ready to run @scala[@extref[Akka FSM sample](ecs:akka-samples-fsm-scala)]@java[@extref[Akka FSM sample](ecs:akka-samples-fsm-java)]
-together with a tutorial. The source code of this sample can be found in the
-@scala[@extref[Akka Samples Repository](samples:akka-sample-fsm-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-fsm-java)].

@@ -1,11 +1,13 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.extension
 
 import java.util.concurrent.atomic.AtomicLong
+
 import akka.actor.Actor
+import akka.actor.ClassicActorSystemProvider
 import akka.testkit.AkkaSpec
 
 //#extension
@@ -27,9 +29,7 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.ExtendedActorSystem
 
-object CountExtension
-  extends ExtensionId[CountExtensionImpl]
-  with ExtensionIdProvider {
+object CountExtension extends ExtensionId[CountExtensionImpl] with ExtensionIdProvider {
   //The lookup method is required by ExtensionIdProvider,
   // so we return ourselves here, this allows us
   // to configure our extension to be loaded when
@@ -44,6 +44,7 @@ object CountExtension
    * Java API: retrieve the Count extension for the given system.
    */
   override def get(system: ActorSystem): CountExtensionImpl = super.get(system)
+  override def get(system: ClassicActorSystemProvider): CountExtensionImpl = super.get(system)
 }
 //#extensionid
 
@@ -61,7 +62,7 @@ object ExtensionDocSpec {
 
   class MyActor extends Actor {
     def receive = {
-      case someMessage ⇒
+      case someMessage =>
         CountExtension(context.system).increment()
     }
   }
@@ -69,12 +70,12 @@ object ExtensionDocSpec {
 
   //#extension-usage-actor-trait
 
-  trait Counting { self: Actor ⇒
+  trait Counting { self: Actor =>
     def increment() = CountExtension(context.system).increment()
   }
   class MyCounterActor extends Actor with Counting {
     def receive = {
-      case someMessage ⇒ increment()
+      case someMessage => increment()
     }
   }
   //#extension-usage-actor-trait
@@ -84,7 +85,7 @@ class ExtensionDocSpec extends AkkaSpec(ExtensionDocSpec.config) {
 
   "demonstrate how to create an extension in Scala" in {
     //#extension-usage
-    CountExtension(system).increment
+    CountExtension(system).increment()
     //#extension-usage
   }
 

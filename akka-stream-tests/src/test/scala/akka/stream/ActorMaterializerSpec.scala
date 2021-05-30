@@ -1,24 +1,87 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.{ Failure, Try }
+
+import scala.annotation.nowarn
+import com.typesafe.config.ConfigFactory
+
 import akka.Done
 import akka.actor.{ Actor, ActorSystem, PoisonPill, Props }
+import akka.actor.ExtendedActorSystem
+import akka.actor.Extension
+import akka.actor.ExtensionId
+import akka.actor.ExtensionIdProvider
 import akka.stream.ActorMaterializerSpec.ActorWithMaterializer
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import akka.testkit.{ ImplicitSender, TestActor, TestProbe }
+import akka.testkit.{ ImplicitSender, TestProbe }
+import akka.testkit.TestKit
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.util.{ Failure, Try }
+object IndirectMaterializerCreation extends ExtensionId[IndirectMaterializerCreation] with ExtensionIdProvider {
+  def createExtension(system: ExtendedActorSystem): IndirectMaterializerCreation =
+    new IndirectMaterializerCreation(system)
 
+  def lookup: ExtensionId[IndirectMaterializerCreation] = this
+}
+
+@nowarn
+class IndirectMaterializerCreation(ex: ExtendedActorSystem) extends Extension {
+  // extension instantiation blocked on materializer (which has Await.result inside)
+  implicit val mat: ActorMaterializer = ActorMaterializer()(ex)
+
+  def futureThing(n: Int): Future[Int] = {
+    Source.single(n).runWith(Sink.head)
+  }
+
+}
+
+@nowarn
 class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 
   "ActorMaterializer" must {
+
+    "not suffer from deadlock" in {
+      val n = 4
+      implicit val deadlockSystem = ActorSystem(
+        "ActorMaterializerSpec-deadlock",
+        ConfigFactory.parseString(s"""
+          akka.actor.default-dispatcher {
+            executor = "fork-join-executor"
+            fork-join-executor {
+              parallelism-min = $n
+              parallelism-factor = 0.5
+              parallelism-max = $n
+            }
+          }
+          # undo stream testkit specific dispatcher and run "normally"
+          akka.actor.default-mailbox.mailbox-type = "akka.dispatch.UnboundedMailbox"
+          akka.stream.materializer.dispatcher = "akka.actor.default-dispatcher"
+          """))
+      try {
+        import deadlockSystem.dispatcher
+
+        // tricky part here is that the concurrent access is to the extension
+        // so the threads are indirectly blocked and not waiting for the Await.result(ask) directly.
+        val result = Future.sequence((1 to (n + 1)).map(n =>
+          Future {
+            IndirectMaterializerCreation(deadlockSystem).mat
+          }))
+
+        // with starvation these fail
+        result.futureValue.size should ===(n + 1)
+
+      } finally {
+        TestKit.shutdownActorSystem(deadlockSystem)
+      }
+    }
 
     "report shutdown status properly" in {
       val m = ActorMaterializer.create(system)
@@ -41,21 +104,23 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
     "refuse materialization after shutdown" in {
       val m = ActorMaterializer.create(system)
       m.shutdown()
-      the[IllegalStateException] thrownBy {
+      (the[IllegalStateException] thrownBy {
         Source(1 to 5).runWith(Sink.ignore)(m)
-      } should have message "Trying to materialize stream after materializer has been shutdown"
+      } should have).message("Trying to materialize stream after materializer has been shutdown")
     }
 
     "refuse materialization when shutdown while materializing" in {
       val m = ActorMaterializer.create(system)
 
-      the[IllegalStateException] thrownBy {
-        Source(1 to 5).mapMaterializedValue { _ ⇒
-          // shutdown while materializing
-          m.shutdown()
-          Thread.sleep(100)
-        }.runWith(Sink.ignore)(m)
-      } should have message "Materializer shutdown while materializing stream"
+      (the[IllegalStateException] thrownBy {
+        Source(1 to 5)
+          .mapMaterializedValue { _ =>
+            // shutdown while materializing
+            m.shutdown()
+            Thread.sleep(100)
+          }
+          .runWith(Sink.ignore)(m)
+      } should have).message("Materializer shutdown while materializing stream")
     }
 
     "shut down the supervisor actor it encapsulates" in {
@@ -77,15 +142,7 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 
       p.expectMsg("hello")
       a ! PoisonPill
-      val Failure(ex) = p.expectMsgType[Try[Done]]
-    }
-
-    "handle properly broken Props" in {
-      val m = ActorMaterializer.create(system)
-      an[IllegalArgumentException] should be thrownBy
-        Await.result(
-          Source.actorPublisher(Props(classOf[TestActor], "wrong", "arguments")).runWith(Sink.head)(m),
-          3.seconds)
+      val Failure(_) = p.expectMsgType[Try[Done]]
     }
 
     "report correctly if it has been shut down from the side" in {
@@ -99,15 +156,19 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 }
 
 object ActorMaterializerSpec {
-  class ActorWithMaterializer(p: TestProbe) extends Actor {
-    private val settings: ActorMaterializerSettings = ActorMaterializerSettings(context.system).withDispatcher("akka.test.stream-dispatcher")
-    implicit val mat = ActorMaterializer(settings)(context)
 
-    Source.repeat("hello")
+  @nowarn("msg=deprecated")
+  class ActorWithMaterializer(p: TestProbe) extends Actor {
+    private val settings: ActorMaterializerSettings =
+      ActorMaterializerSettings(context.system).withDispatcher("akka.test.stream-dispatcher")
+    implicit val mat: ActorMaterializer = ActorMaterializer(settings)(context)
+
+    Source
+      .repeat("hello")
       .take(1)
       .concat(Source.maybe)
       .map(p.ref ! _)
-      .runWith(Sink.onComplete(signal ⇒ {
+      .runWith(Sink.onComplete(signal => {
         p.ref ! signal
       }))
 

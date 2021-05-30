@@ -1,13 +1,21 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.protobuf
 
+import scala.concurrent.duration._
+import akka.actor.Address
 import akka.actor.ExtendedActorSystem
-import akka.testkit.AkkaSpec
 import akka.actor.Props
-import akka.cluster.sharding.{ Shard, ShardCoordinator, ShardRegion }
+import akka.cluster.sharding.Shard
+import akka.cluster.sharding.ShardCoordinator
+import akka.cluster.sharding.ShardRegion
+import akka.cluster.sharding.ShardRegion.ShardId
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesShardStore
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesShardStore.EntitiesStarted
+import akka.serialization.SerializationExtension
+import akka.testkit.AkkaSpec
 
 class ClusterShardingMessageSerializerSpec extends AkkaSpec {
   import ShardCoordinator.Internal._
@@ -21,6 +29,7 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
   val regionProxy2 = system.actorOf(Props.empty, "regionProxy2")
 
   def checkSerialization(obj: AnyRef): Unit = {
+    SerializationExtension(system).findSerializerFor(obj).identifier should ===(serializer.identifier)
     val blob = serializer.toBinary(obj)
     val ref = serializer.fromBinary(blob, serializer.manifest(obj))
     ref should ===(obj)
@@ -30,8 +39,8 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
 
     "be able to serialize ShardCoordinator snapshot State" in {
       val state = State(
-        shards = Map("a" → region1, "b" → region2, "c" → region2),
-        regions = Map(region1 → Vector("a"), region2 → Vector("b", "c"), region3 → Vector.empty[String]),
+        shards = Map("a" -> region1, "b" -> region2, "c" -> region2),
+        regions = Map(region1 -> Vector("a"), region2 -> Vector("b", "c"), region3 -> Vector.empty[String]),
         regionProxies = Set(regionProxy1, regionProxy2),
         unallocatedShards = Set("d"))
       checkSerialization(state)
@@ -62,12 +71,19 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
     }
 
     "be able to serialize PersistentShard snapshot state" in {
-      checkSerialization(Shard.State(Set("e1", "e2", "e3")))
+      checkSerialization(EventSourcedRememberEntitiesShardStore.State(Set("e1", "e2", "e3")))
     }
 
     "be able to serialize PersistentShard domain events" in {
-      checkSerialization(Shard.EntityStarted("e1"))
-      checkSerialization(Shard.EntityStopped("e1"))
+      checkSerialization(EventSourcedRememberEntitiesShardStore.EntitiesStarted(Set("e1", "e2")))
+      checkSerialization(EventSourcedRememberEntitiesShardStore.EntitiesStopped(Set("e1", "e2")))
+    }
+
+    "be able to deserialize old entity started event into entities started" in {
+      import akka.cluster.sharding.protobuf.msg.{ ClusterShardingMessages => sm }
+
+      val asBytes = sm.EntityStarted.newBuilder().setEntityId("e1").build().toByteArray
+      SerializationExtension(system).deserialize(asBytes, 13, "CB").get shouldEqual EntitiesStarted(Set("e1"))
     }
 
     "be able to serialize GetShardStats" in {
@@ -78,9 +94,32 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
       checkSerialization(Shard.ShardStats("a", 23))
     }
 
+    "be able to serialize GetShardRegionStats" in {
+      checkSerialization(ShardRegion.GetShardRegionStats)
+    }
+
+    "be able to serialize ShardRegionStats" in {
+      checkSerialization(ShardRegion.ShardRegionStats(Map.empty[ShardId, Int], Set.empty[ShardId]))
+      checkSerialization(ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23), Set("b")))
+    }
+
     "be able to serialize StartEntity" in {
       checkSerialization(ShardRegion.StartEntity("42"))
       checkSerialization(ShardRegion.StartEntityAck("13", "37"))
+    }
+
+    "be able to serialize GetCurrentRegions" in {
+      checkSerialization(ShardRegion.GetCurrentRegions)
+      checkSerialization(
+        ShardRegion.CurrentRegions(Set(Address("akka", "sys", "a", 2552), Address("akka", "sys", "b", 2552))))
+    }
+
+    "be able to serialize GetClusterShardingStats" in {
+      checkSerialization(ShardRegion.GetClusterShardingStats(3.seconds))
+      checkSerialization(
+        ShardRegion.ClusterShardingStats(Map(
+          Address("akka", "sys", "a", 2552) -> ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23), Set("b")),
+          Address("akka", "sys", "b", 2552) -> ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23), Set("b")))))
     }
   }
 }

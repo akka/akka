@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -7,6 +7,9 @@ package akka.io
 import java.net.Inet4Address
 import java.net.Inet6Address
 import java.net.InetAddress
+
+import scala.annotation.nowarn
+
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testkit.MultiNodeConfig
 
@@ -17,16 +20,20 @@ object DnsSpec extends MultiNodeConfig {
 class DnsSpecMultiJvmNode1 extends DnsSpec
 
 // This is a multi-jvm tests because it is modifying global System.properties
+@nowarn("msg=deprecated")
 class DnsSpec extends RemotingMultiNodeSpec(DnsSpec) {
 
   def initialParticipants = roles.size
 
   val ip4Address = InetAddress.getByAddress("localhost", Array[Byte](127, 0, 0, 1)) match {
-    case address: Inet4Address ⇒ address
+    case address: Inet4Address => address
+    case _                     => fail()
   }
-  val ipv6Address = InetAddress.getByAddress("localhost", Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)) match {
-    case address: Inet6Address ⇒ address
-  }
+  val ipv6Address =
+    InetAddress.getByAddress("localhost", Array[Byte](0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1)) match {
+      case address: Inet6Address => address
+      case _                     => fail()
+    }
 
   var temporaryValue: Option[String] = None
 
@@ -36,8 +43,8 @@ class DnsSpec extends RemotingMultiNodeSpec(DnsSpec) {
 
   override def afterTermination(): Unit = {
     temporaryValue match {
-      case Some(value) ⇒ sys.props.put("java.net.preferIPv6Addresses", value)
-      case _           ⇒ sys.props.remove("java.net.preferIPv6Addresses")
+      case Some(value) => sys.props.put("java.net.preferIPv6Addresses", value)
+      case _           => sys.props.remove("java.net.preferIPv6Addresses")
     }
   }
 

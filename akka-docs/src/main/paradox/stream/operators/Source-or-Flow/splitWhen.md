@@ -4,18 +4,31 @@ Split off elements into a new substream whenever a predicate function return `tr
 
 @ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #splitWhen }
+@apidoc[Source.splitWhen](Source) { scala="#splitWhen(substreamCancelStrategy:akka.stream.SubstreamCancelStrategy)(p:Out=&gt;Boolean):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#splitWhen(akka.stream.SubstreamCancelStrategy,akka.japi.function.Predicate)" }
+@apidoc[Flow.splitWhen](Flow) { scala="#splitWhen(substreamCancelStrategy:akka.stream.SubstreamCancelStrategy)(p:Out=&gt;Boolean):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#splitWhen(akka.stream.SubstreamCancelStrategy,akka.japi.function.Predicate)" }
 
-@@@
 
 ## Description
 
 Split off elements into a new substream whenever a predicate function return `true`.
 
+## Example
+
+Given some time series data source we would like to split the stream into sub-streams for each second.
+We need to compare the timestamp of the previous and current element to decide when to split. This
+decision can be implemented in a `statefulMapConcat` operator preceding the `splitWhen`.  
+
+Scala
+:  @@snip [Scan.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Split.scala) { #splitWhen }
+
+Java
+:  @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/Split.java) { #splitWhen }
+
+An alternative way of implementing this is shown in @ref:[splitAfter example](splitAfter.md#example).
+
+## Reactive Streams semantics
 
 @@@div { .callout }
 

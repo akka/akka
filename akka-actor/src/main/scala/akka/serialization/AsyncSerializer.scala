@@ -1,14 +1,16 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization
 
 import java.util.concurrent.CompletionStage
 
-import akka.actor.ExtendedActorSystem
-import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration.Duration
+
+import akka.actor.ExtendedActorSystem
+import akka.event.Logging
 
 /**
  * Serializer that supports async serialization.
@@ -19,6 +21,7 @@ import scala.concurrent.{ Await, Future }
  * [[AsyncSerializerWithStringManifestCS]] that delegates synchronous calls to their async equivalents.
  */
 trait AsyncSerializer {
+
   /**
    * Serializes the given object into an Array of Byte
    */
@@ -34,14 +37,23 @@ trait AsyncSerializer {
  * Scala API: Async serializer with string manifest that delegates synchronous calls to the asynchronous calls
  * and blocks.
  */
-abstract class AsyncSerializerWithStringManifest(system: ExtendedActorSystem) extends SerializerWithStringManifest with AsyncSerializer {
+abstract class AsyncSerializerWithStringManifest(system: ExtendedActorSystem)
+    extends SerializerWithStringManifest
+    with AsyncSerializer {
+
+  private val log = Logging(system, classOf[AsyncSerializerWithStringManifest])
+
   final override def toBinary(o: AnyRef): Array[Byte] = {
-    system.log.warning("Async serializer called synchronously. This will block. Async serializers should only be used for akka persistence plugins that support them. Class: {}", o.getClass)
+    log.warning(
+      "Async serializer called synchronously. This will block. Async serializers should only be used for akka persistence plugins that support them. Class: {}",
+      o.getClass)
     Await.result(toBinaryAsync(o), Duration.Inf)
   }
 
   final override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
-    system.log.warning("Async serializer called synchronously. This will block. Async serializers should only be used for akka persistence plugins that support them. Manifest: [{}]", manifest)
+    log.warning(
+      "Async serializer called synchronously. This will block. Async serializers should only be used for akka persistence plugins that support them. Manifest: [{}]",
+      manifest)
     Await.result(fromBinaryAsync(bytes, manifest), Duration.Inf)
   }
 }
@@ -50,7 +62,8 @@ abstract class AsyncSerializerWithStringManifest(system: ExtendedActorSystem) ex
  * Java API: Async serializer with string manifest that delegates synchronous calls to the asynchronous calls
  * and blocks.
  */
-abstract class AsyncSerializerWithStringManifestCS(system: ExtendedActorSystem) extends AsyncSerializerWithStringManifest(system) {
+abstract class AsyncSerializerWithStringManifestCS(system: ExtendedActorSystem)
+    extends AsyncSerializerWithStringManifest(system) {
   import scala.compat.java8.FutureConverters._
 
   def toBinaryAsyncCS(o: AnyRef): CompletionStage[Array[Byte]]
@@ -69,4 +82,3 @@ abstract class AsyncSerializerWithStringManifestCS(system: ExtendedActorSystem) 
   def fromBinaryAsync(bytes: Array[Byte], manifest: String): Future[AnyRef] =
     fromBinaryAsyncCS(bytes, manifest).toScala
 }
-

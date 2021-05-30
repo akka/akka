@@ -1,10 +1,10 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.fusing
 
-import akka.stream.Supervision
+import akka.stream.SubscriptionWithCancelException
 import akka.stream.testkit.StreamSpec
 import akka.testkit.LongRunningTest
 import akka.util.ConstantFun
@@ -15,7 +15,7 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
   val halfLength = chainLength / 2
   val repetition = 100
 
-  val map = Map((x: Int) ⇒ x + 1)
+  val map = Map((x: Int) => x + 1)
 
   // GraphStages can be reused
   val dropOne = Drop(1)
@@ -24,7 +24,8 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
 
   "Interpreter" must {
 
-    "work with a massive chain of maps" taggedAs LongRunningTest in new OneBoundedSetup[Int](Vector.fill(chainLength)(map): _*) {
+    "work with a massive chain of maps" taggedAs LongRunningTest in new OneBoundedSetup[Int](
+      Vector.fill(chainLength)(map): _*) {
       lastEvents() should be(Set.empty)
       val tstamp = System.nanoTime()
 
@@ -48,8 +49,8 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
 
     "work with a massive chain of maps with early complete" taggedAs LongRunningTest in new OneBoundedSetup[Int](
       Vector.fill(halfLength)(map) ++
-        Seq(takeHalfOfRepetition) ++
-        Vector.fill(halfLength)(map): _*) {
+      Seq(takeHalfOfRepetition) ++
+      Vector.fill(halfLength)(map): _*) {
 
       lastEvents() should be(Set.empty)
       val tstamp = System.nanoTime()
@@ -68,7 +69,8 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(RequestOne))
 
       upstream.onNext(0)
-      lastEvents() should be(Set(Cancel, OnComplete, OnNext(0 + chainLength)))
+      lastEvents() should be(
+        Set(Cancel(SubscriptionWithCancelException.StageWasCompleted), OnComplete, OnNext(0 + chainLength)))
 
       val time = (System.nanoTime() - tstamp) / (1000.0 * 1000.0 * 1000.0)
       // Not a real benchmark, just for sanity check
@@ -82,7 +84,7 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
       lastEvents() should be(Set(RequestOne))
 
       upstream.onNext(0)
-      lastEvents() should be(Set(Cancel, OnNext(0), OnComplete))
+      lastEvents() should be(Set(Cancel(SubscriptionWithCancelException.StageWasCompleted), OnNext(0), OnComplete))
 
     }
 
@@ -106,11 +108,7 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
 
     "work with a massive chain of batches by overflowing to the heap" in {
 
-      val batch = Batch(
-        0L,
-        ConstantFun.zeroLong,
-        (in: Int) ⇒ in,
-        (agg: Int, in: Int) ⇒ agg + in)
+      val batch = Batch(0L, ConstantFun.zeroLong, (in: Int) => in, (agg: Int, in: Int) => agg + in)
 
       new OneBoundedSetup[Int](Vector.fill(chainLength / 10)(batch): _*) {
 
@@ -127,4 +125,3 @@ class InterpreterStressSpec extends StreamSpec with GraphInterpreterSpecKit {
   }
 
 }
-

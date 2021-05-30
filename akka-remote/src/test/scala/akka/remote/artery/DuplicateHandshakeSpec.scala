@@ -1,17 +1,15 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
-
-import scala.concurrent.duration._
 
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.remote.UniqueAddress
 import akka.remote.artery.OutboundHandshake.HandshakeReq
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
+import akka.serialization.SerializationExtension
+import akka.serialization.SerializerWithStringManifest
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
@@ -20,38 +18,46 @@ import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.util.OptionVal
-import akka.serialization.SerializationExtension
-import akka.serialization.SerializerWithStringManifest
 
-class DuplicateHandshakeSpec extends AkkaSpec with ImplicitSender {
+class DuplicateHandshakeSpec extends AkkaSpec("""
+      akka.stream.materializer.debug.fuzzing-mode = on
+  """) with ImplicitSender {
 
-  val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
-  implicit val mat = ActorMaterializer(matSettings)(system)
   val pool = new EnvelopeBufferPool(1034 * 1024, 128)
   val serialization = SerializationExtension(system)
 
   val addressA = UniqueAddress(Address("akka", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)
 
-  private def setupStream(inboundContext: InboundContext, timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
-    TestSource.probe[AnyRef]
-      .map { msg ⇒
+  private def setupStream(inboundContext: InboundContext): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
+    TestSource
+      .probe[AnyRef]
+      .map { msg =>
         val association = inboundContext.association(addressA.uid)
         val ser = serialization.serializerFor(msg.getClass)
         val serializerId = ser.identifier
         val manifest = ser match {
-          case s: SerializerWithStringManifest ⇒ s.manifest(msg)
-          case _                               ⇒ ""
+          case s: SerializerWithStringManifest => s.manifest(msg)
+          case _                               => ""
         }
 
         val env = new ReusableInboundEnvelope
-        env.init(recipient = OptionVal.None, sender = OptionVal.None, originUid = addressA.uid,
-          serializerId, manifest, flags = 0, envelopeBuffer = null, association, lane = 0)
+        env
+          .init(
+            recipient = OptionVal.None,
+            sender = OptionVal.None,
+            originUid = addressA.uid,
+            serializerId,
+            manifest,
+            flags = 0,
+            envelopeBuffer = null,
+            association,
+            lane = 0)
           .withMessage(msg)
         env
       }
       .via(new DuplicateHandshakeReq(numberOfLanes = 3, inboundContext, system.asInstanceOf[ExtendedActorSystem], pool))
-      .map { case env: InboundEnvelope ⇒ (env.message -> env.lane) }
+      .map { case env: InboundEnvelope => (env.message -> env.lane) }
       .toMat(TestSink.probe[Any])(Keep.both)
       .run()
   }

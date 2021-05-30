@@ -1,19 +1,20 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
 
+import scala.concurrent.{ Future, Promise }
+
 import akka.actor._
 import akka.util.Timeout
-
-import scala.concurrent.{ Future, Promise }
 
 /**
  * A combination of a Future and an ActorRef associated with it, which points
  * to an actor performing a task which will eventually resolve the Future.
  */
 trait FutureRef[T] {
+
   /**
    * ActorRef associated with this FutureRef.
    */
@@ -29,7 +30,8 @@ trait FutureRef[T] {
  * A combination of a Promise and an ActorRef associated with it, which points
  * to an actor performing a task which will eventually resolve the Promise.
  */
-trait PromiseRef[T] { this: FutureRef[T] ⇒
+trait PromiseRef[T] { this: FutureRef[T] =>
+
   /**
    * ActorRef associated with this PromiseRef.
    */
@@ -52,6 +54,7 @@ trait PromiseRef[T] { this: FutureRef[T] ⇒
 }
 
 object PromiseRef {
+
   /**
    * Wraps an ActorRef and a Promise into a PromiseRef.
    */
@@ -95,6 +98,7 @@ object PromiseRef {
 }
 
 object FutureRef {
+
   /**
    * Wraps an ActorRef and a Future into a FutureRef.
    */
@@ -137,24 +141,24 @@ object FutureRef {
 }
 
 private[akka] class PromiseRefImpl[T](val ref: ActorRef, val promise: Promise[T])
-  extends PromiseRef[T] with FutureRef[T] {
+    extends PromiseRef[T]
+    with FutureRef[T] {
   def toFutureRef: FutureRef[T] = this
 }
 
-private[akka] final class FutureRefImpl[T](val ref: ActorRef, val future: Future[T])
-  extends FutureRef[T]
+private[akka] final class FutureRefImpl[T](val ref: ActorRef, val future: Future[T]) extends FutureRef[T]
 
 private[akka] final class AskPromiseRef private (promiseActorRef: PromiseActorRef)
-  extends PromiseRefImpl[Any](promiseActorRef, promiseActorRef.result)
+    extends PromiseRefImpl[Any](promiseActorRef, promiseActorRef.result)
 
 private[akka] object AskPromiseRef {
   def apply(provider: ActorRefProvider, timeout: Timeout): AskPromiseRef = {
     if (timeout.duration.length > 0) {
-      val promiseActorRef = PromiseActorRef(provider, timeout, "unknown", "unknown", provider.deadLetters)
+      val promiseActorRef =
+        PromiseActorRef(provider, timeout, "unknown", "unknown", "deadLetters", provider.deadLetters)
       new AskPromiseRef(promiseActorRef)
     } else {
       throw new IllegalArgumentException(s"Timeout length must not be negative, was: $timeout")
     }
   }
 }
-

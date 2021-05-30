@@ -1,33 +1,37 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.TimeoutException
+import scala.concurrent.duration._
+import scala.util.Success
+import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
-import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.EventFilter
-import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.pattern.StatusReply
+import akka.testkit.TestException
 import akka.util.Timeout
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, TimeoutException }
-import scala.util.Success
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.WordSpecLike
 
 object AskSpec {
   sealed trait Msg
-  final case class Foo(s: String)(val replyTo: ActorRef[String]) extends Msg
+  final case class Foo(s: String, replyTo: ActorRef[String]) extends Msg
   final case class Stop(replyTo: ActorRef[Unit]) extends Msg
 }
 
-class AskSpec extends ScalaTestWithActorTestKit(
-  "akka.loggers = [ akka.testkit.TestEventListener ]") with WordSpecLike {
+class AskSpec extends ScalaTestWithActorTestKit("""
+    akka.loglevel=DEBUG
+    akka.actor.debug.event-stream = on
+    """) with AnyWordSpecLike with LogCapturing {
 
   import AskSpec._
 
@@ -35,81 +39,101 @@ class AskSpec extends ScalaTestWithActorTestKit(
     system.executionContext
 
   val behavior: Behavior[Msg] = receive[Msg] {
-    case (_, foo: Foo) ⇒
+    case (_, foo: Foo) =>
       foo.replyTo ! "foo"
       Behaviors.same
-    case (_, Stop(r)) ⇒
-      r ! ()
+    case (_, Stop(r)) =>
+      r ! (())
       Behaviors.stopped
   }
 
   "Ask pattern" must {
-    "must fail the future if the actor is already terminated" in {
+    "fail the future if the actor is already terminated" in {
       val ref = spawn(behavior)
-      (ref ? Stop).futureValue
+      val stopResult: Future[Unit] = ref.ask(Stop)
+      stopResult.futureValue
+
       val probe = createTestProbe()
       probe.expectTerminated(ref, probe.remainingOrDefault)
-      val answer = ref ? Foo("bar")
+      val answer: Future[String] = ref.ask(Foo("bar", _))
       val result = answer.failed.futureValue
       result shouldBe a[TimeoutException]
       result.getMessage should include("had already been terminated.")
     }
 
-    "must succeed when the actor is alive" in {
+    "succeed when the actor is alive" in {
       val ref = spawn(behavior)
-      val response = ref ? Foo("bar")
+      val response: Future[String] = ref.ask(Foo("bar", _))
       response.futureValue should ===("foo")
     }
 
-    "must fail the future if the actor doesn't reply in time" in {
+    "provide a symbolic alias that works the same" in {
+      val ref = spawn(behavior)
+      val response: Future[String] = ref ? (Foo("bar", _))
+      response.futureValue should ===("foo")
+    }
+
+    "fail the future if the actor doesn't reply in time" in {
+      val unhandledProbe = createUnhandledMessageProbe()
+
       val actor = spawn(Behaviors.empty[Foo])
       implicit val timeout: Timeout = 10.millis
-      val answer = actor ? Foo("bar")
+
+      val answer: Future[String] = actor.ask(Foo("bar", _))
+      unhandledProbe.receiveMessage()
       val result = answer.failed.futureValue
       result shouldBe a[TimeoutException]
       result.getMessage should startWith("Ask timed out on")
     }
 
-    /** See issue #19947 (MatchError with adapted ActorRef) */
-    "must fail the future if the actor doesn't exist" in {
+    "fail the future if the actor doesn't exist" in {
       val noSuchActor: ActorRef[Msg] = system match {
-        case adaptedSys: ActorSystemAdapter[_] ⇒
+        case adaptedSys: ActorSystemAdapter[_] =>
           import akka.actor.typed.scaladsl.adapter._
-          adaptedSys.untyped.provider.resolveActorRef("/foo/bar")
-        case _ ⇒
+          adaptedSys.system.provider.resolveActorRef("/foo/bar")
+        case _ =>
           fail("this test must only run in an adapted actor system")
       }
 
-      val answer = noSuchActor ? Foo("bar")
+      val deadLetterProbe = createDeadLetterProbe()
+
+      val answer: Future[String] = noSuchActor.ask(Foo("bar", _))
       val result = answer.failed.futureValue
       result shouldBe a[TimeoutException]
       result.getMessage should include("had already been terminated")
+
+      val deadLetter = deadLetterProbe.receiveMessage()
+      deadLetter.message match {
+        case Foo(s, _) => s should ===("bar")
+        case _         => fail(s"unexpected DeadLetter: $deadLetter")
+      }
     }
 
-    "must transform a replied akka.actor.Status.Failure to a failed future" in {
+    "transform a replied akka.actor.Status.Failure to a failed future" in {
       // It's unlikely but possible that this happens, since the receiving actor would
       // have to accept a message with an actoref that accepts AnyRef or be doing crazy casting
       // For completeness sake though
-      implicit val untypedSystem = akka.actor.ActorSystem("AskSpec-untyped-1")
+      implicit val classicSystem = akka.actor.ActorSystem("AskSpec-classic-1")
       try {
         case class Ping(respondTo: ActorRef[AnyRef])
         val ex = new RuntimeException("not good!")
 
         class LegacyActor extends akka.actor.Actor {
           def receive = {
-            case Ping(respondTo) ⇒ respondTo ! akka.actor.Status.Failure(ex)
+            case Ping(respondTo) => respondTo ! akka.actor.Status.Failure(ex)
           }
         }
 
-        val legacyActor = untypedSystem.actorOf(akka.actor.Props(new LegacyActor))
+        val legacyActor = classicSystem.actorOf(akka.actor.Props(new LegacyActor))
 
         import scaladsl.AskPattern._
+
+        import akka.actor.typed.scaladsl.adapter._
         implicit val timeout: Timeout = 3.seconds
-        implicit val scheduler = untypedSystem.toTyped.scheduler
         val typedLegacy: ActorRef[AnyRef] = legacyActor
-        (typedLegacy ? Ping).failed.futureValue should ===(ex)
+        (typedLegacy.ask(Ping)).failed.futureValue should ===(ex)
       } finally {
-        akka.testkit.TestKit.shutdownActorSystem(untypedSystem)
+        akka.testkit.TestKit.shutdownActorSystem(classicSystem)
       }
     }
 
@@ -119,19 +143,21 @@ class AskSpec extends ScalaTestWithActorTestKit(
       val probe = TestProbe[AnyRef]("probe")
       val behv =
         Behaviors.receive[String] {
-          case (ctx, "start-ask") ⇒
-            ctx.ask[Question, Long](probe.ref)(Question(_)) {
-              case Success(42L) ⇒
+          case (context, "start-ask") =>
+            context.ask[Question, Long](probe.ref, Question(_)) {
+              case Success(42L) =>
                 throw new RuntimeException("Unsupported number")
-              case _ ⇒ "test"
+              case _ => "test"
             }
-            Behavior.same
-          case (ctx, "test") ⇒
+            Behaviors.same
+          case (_, "test") =>
             probe.ref ! "got-test"
-            Behavior.same
-          case (ctx, "get-state") ⇒
+            Behaviors.same
+          case (_, "get-state") =>
             probe.ref ! "running"
-            Behavior.same
+            Behaviors.same
+          case (_, _) =>
+            Behaviors.unhandled
         }
 
       val ref = spawn(behv)
@@ -147,11 +173,41 @@ class AskSpec extends ScalaTestWithActorTestKit(
       ref ! "start-ask"
       val Question(replyRef2) = probe.expectMessageType[Question]
 
-      EventFilter[RuntimeException](message = "Exception thrown out of adapter. Stopping myself.", occurrences = 1).intercept {
-        replyRef2 ! 42L
-      }(system.toUntyped)
+      LoggingTestKit
+        .error("Unsupported number")
+        .expect {
+          replyRef2 ! 42L
+        }(system)
 
       probe.expectTerminated(ref, probe.remainingOrDefault)
     }
+  }
+
+  case class Request(replyTo: ActorRef[StatusReply[String]])
+
+  "askWithStatus pattern" must {
+    "unwrap nested response a successful response" in {
+      val probe = createTestProbe[Request]()
+      val result: Future[String] = probe.ref.askWithStatus(Request(_))
+      probe.expectMessageType[Request].replyTo ! StatusReply.success("goodie")
+      result.futureValue should ===("goodie")
+    }
+    "fail future for a fail response with text" in {
+      val probe = createTestProbe[Request]()
+      val result: Future[String] = probe.ref.askWithStatus(Request(_))
+      probe.expectMessageType[Request].replyTo ! StatusReply.error("boom")
+      val exception = result.failed.futureValue
+      exception should be(a[StatusReply.ErrorMessage])
+      exception.getMessage should ===("boom")
+    }
+    "fail future for a fail response with custom exception" in {
+      val probe = createTestProbe[Request]()
+      val result: Future[String] = probe.ref.askWithStatus(Request(_))
+      probe.expectMessageType[Request].replyTo ! StatusReply.error(TestException("boom"))
+      val exception = result.failed.futureValue
+      exception should be(a[TestException])
+      exception.getMessage should ===("boom")
+    }
+
   }
 }

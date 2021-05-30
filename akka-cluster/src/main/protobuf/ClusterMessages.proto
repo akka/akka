@@ -1,6 +1,8 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
+
+syntax = "proto2";
 
 option java_package = "akka.cluster.protobuf.msg";
 option optimize_for = SPEED;
@@ -29,6 +31,7 @@ option optimize_for = SPEED;
 message Join {
   required UniqueAddress node = 1;
   repeated string roles = 2;
+  optional string appVersion = 3;
 }
 
 /**
@@ -55,8 +58,6 @@ message InitJoinAck {
 }
 
 message ConfigCheck {
-  extensions 100 to 102;
-
   enum Type {
     UncheckedConfig = 1;
     IncompatibleConfig = 2;
@@ -65,25 +66,6 @@ message ConfigCheck {
   required Type type = 1;
 
   optional string clusterConfig = 2;
-}
-
-message UncheckedConfig {
-  extend ConfigCheck {
-    required UncheckedConfig checkConfig = 100;
-  }
-}
-
-message IncompatibleConfig {
-  extend ConfigCheck {
-    required IncompatibleConfig checkConfig = 101;
-  }
-}
-
-message CompatibleConfig {
-  extend ConfigCheck {
-    required CompatibleConfig checkConfig = 102;
-  }
-  required string clusterConfig = 2;
 }
 
 /**
@@ -97,14 +79,26 @@ message CompatibleConfig {
  ****************************************/
 
 /**
- * Heartbeat
- * Sends an Address
+ * Prior to version 2.5.24
+ * Heartbeat sends an Address
+ * Version 2.5.24 can deserialize this message but does not send it.
  */
+message Heartbeat {
+  required Address from = 1;
+  optional int64 sequenceNr = 2;
+  optional sint64 creationTime = 3;
+}
 
 /**
- * HeartbeatRsp
- * Sends an UniqueAddress
+ * Prior to version 2.5.24
+ * HeartbeatRsp Sends an UniqueAddress
+ * Version 2.5.24 can deserialize this message but does not send it.
  */
+message HeartBeatResponse {
+  required UniqueAddress from = 1;
+  optional int64 sequenceNr = 2;
+  optional int64 creationTime = 3;
+}
 
 /****************************************
  * Cluster Gossip Messages
@@ -126,6 +120,7 @@ message GossipStatus {
   required UniqueAddress from = 1;
   repeated string allHashes = 2;
   required VectorClock version = 3;
+  optional bytes seenDigest = 4;
 }
 
 /**
@@ -139,6 +134,7 @@ message Gossip {
   required GossipOverview overview = 5;
   required VectorClock version = 6;
   repeated Tombstone tombstones = 7;
+  repeated string allAppVersions = 8;
 }
 
 /**
@@ -188,6 +184,7 @@ message Member {
   required int32 upNumber = 2;
   required MemberStatus status = 3;
   repeated int32 rolesIndexes = 4 [packed = true];
+  optional int32 appVersionIndex = 5;
 }
 
 /**
@@ -201,6 +198,8 @@ enum MemberStatus {
   Down = 4;
   Removed = 5;
   WeaklyUp = 6;
+  PreparingForShutdown = 7;
+  ReadyForShutdown = 8;
 }
 
 /**

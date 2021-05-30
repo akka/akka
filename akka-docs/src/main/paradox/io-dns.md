@@ -2,7 +2,15 @@
 
 @@@ warning
 
-`async-dns` does not currently support TCP fallback and so DNS repsonses may be truncated. See [#25460](https://github.com/akka/akka/issues/25460)
+`async-dns` does not support:
+
+* [Local hosts file](https://github.com/akka/akka/issues/25846) e.g. `/etc/hosts` on Unix systems
+* The [nsswitch.conf](https://linux.die.net/man/5/nsswitch.conf) file (no plan to support)
+
+Additionally, while search domains are supported through configuration, detection of the system configured
+[Search domains](https://github.com/akka/akka/issues/25825) is only supported on systems that provide this 
+configuration through a `/etc/resolv.conf` file, i.e. it isn't supported on Windows or OSX, and none of the 
+environment variables that are usually supported on most \*nix OSes are supported.
 
 @@@
 
@@ -12,8 +20,21 @@ The `async-dns` API is marked as `ApiMayChange` as more information is expected 
 
 @@@
 
+@@@ warning
+
+The ability to plugin in a custom DNS implementation is expected to be removed in future versions of Akka.
+Users should pick one of the built in extensions.
+
+@@@
+
 Akka DNS is a pluggable way to interact with DNS. Implementations much implement `akka.io.DnsProvider` and provide a configuration
 block that specifies the implementation via `provider-object`.
+
+@@@ note { title="DNS via Akka Discovery" }
+
+@ref[Akka Discovery](discovery/index.md) can be backed by the Akka DNS implementation and provides a more general API for service lookups which is not limited to domain name lookup.
+
+@@@
 
 To select which `DnsProvider` to use set `akka.io.dns.resolver ` to the location of the configuration.
 
@@ -33,7 +54,7 @@ Java
 :  @@snip [DnsCompileOnlyDocTest.java](/akka-docs/src/test/java/jdocs/actor/io/dns/DnsCompileOnlyDocTest.java) { #resolve }
 
 Alternatively the `IO(Dns)` actor can be interacted with directly. However this exposes the different protocols of the DNS provider.
-`inet-adddress` uses `Dns.Resolved` and `Dns.Resolved` where as the `async-dns` uses `DnsProtocol.Resolve` and `DnsProtocol.Resolved`. 
+`inet-adddress` uses `Dns.Resolve` and `Dns.Resolved` where as the `async-dns` uses `DnsProtocol.Resolve` and `DnsProtocol.Resolved`. 
 The reason for the difference is `inet-address` predates `async-dns` and `async-dns` exposes additional information such as SRV records 
 and it wasn't possible to evolve the original API in a backward compatible way.
 

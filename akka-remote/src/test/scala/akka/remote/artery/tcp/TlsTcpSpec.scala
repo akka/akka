@@ -1,82 +1,67 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 package tcp
 
-import java.io.ByteArrayOutputStream
 import java.security.NoSuchAlgorithmException
-import java.util.zip.GZIPOutputStream
 
-import scala.concurrent.duration._
-
-import akka.actor.ActorRef
-import akka.actor.ActorPath
-import akka.actor.ActorIdentity
-import akka.actor.ExtendedActorSystem
-import akka.actor.Identify
-import akka.actor.RootActorPath
+import akka.actor.{ ActorIdentity, ActorPath, ActorRef, Identify, RootActorPath }
 import akka.actor.setup.ActorSystemSetup
+import akka.remote.artery.tcp.ssl.CipherSuiteSupportCheck
+import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import javax.net.ssl.SSLEngine
+import javax.net.ssl.SSLSession
+import org.scalatest.matchers.should.Matchers
+
+import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
 
 class TlsTcpWithDefaultConfigSpec extends TlsTcpSpec(ConfigFactory.empty())
 
-class TlsTcpWithSHA1PRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
+class TlsTcpWithSHA1PRNGSpec
+    extends TlsTcpSpec(ConfigFactory.parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       random-number-generator = "SHA1PRNG"
-      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA"]
+      enabled-algorithms = ["TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"]
     }
     """))
 
-class TlsTcpWithAES128CounterSecureRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
-    akka.remote.artery.ssl.config-ssl-engine {
-      random-number-generator = "AES128CounterSecureRNG"
-      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"]
-    }
-    """))
-
-class TlsTcpWithDeprecatedAES128CounterSecureRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
-    akka.remote.artery.ssl.config-ssl-engine {
-      random-number-generator = "DeprecatedAES128CounterSecureRNG"
-      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"]
-    }
-    """))
-
-class TlsTcpWithAES256CounterSecureRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
-    akka.remote.artery.ssl.config-ssl-engine {
-      random-number-generator = "AES256CounterSecureRNG"
-      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"]
-    }
-    """))
-
-class TlsTcpWithDeprecatedAES256CounterSecureRNGSpec extends TlsTcpSpec(ConfigFactory.parseString("""
-    akka.remote.artery.ssl.config-ssl-engine {
-      random-number-generator = "DeprecatedAES256CounterSecureRNG"
-      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_256_CBC_SHA"]
-    }
-    """))
-
-class TlsTcpWithDefaultRNGSecureSpec extends TlsTcpSpec(ConfigFactory.parseString("""
+class TlsTcpWithDefaultRNGSecureSpec
+    extends TlsTcpSpec(ConfigFactory.parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       random-number-generator = ""
-      enabled-algorithms = ["TLS_RSA_WITH_AES_128_CBC_SHA"]
+      enabled-algorithms = ["TLS_DHE_RSA_WITH_AES_256_GCM_SHA384"]
     }
     """))
 
-class TlsTcpWithCrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec extends TlsTcpSpec(ConfigFactory.parseString("""
+class TlsTcpWithCrappyRSAWithMD5OnlyHereToMakeSureThingsWorkSpec
+    extends TlsTcpSpec(ConfigFactory.parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       random-number-generator = ""
       enabled-algorithms = [""SSL_RSA_WITH_NULL_MD5""]
     }
     """))
 
+class TlsTcpWithRotatingKeysSSLEngineSpec extends TlsTcpSpec(ConfigFactory.parseString(s"""
+    akka.remote.artery.ssl {
+       ssl-engine-provider = akka.remote.artery.tcp.ssl.RotatingKeysSSLEngineProvider
+       rotating-keys-engine {
+         key-file = ${TlsTcpSpec.resourcePath("ssl/node.example.com.pem")}
+         cert-file = ${TlsTcpSpec.resourcePath("ssl/node.example.com.crt")}
+         ca-cert-file = ${TlsTcpSpec.resourcePath("ssl/exampleca.crt")}
+       }
+    }
+    """))
+
 object TlsTcpSpec {
+  def resourcePath(name: String): String = getClass.getClassLoader.getResource(name).getPath
 
   lazy val config: Config = {
     ConfigFactory.parseString(s"""
@@ -90,40 +75,32 @@ object TlsTcpSpec {
 }
 
 abstract class TlsTcpSpec(config: Config)
-  extends ArteryMultiNodeSpec(config.withFallback(TlsTcpSpec.config)) with ImplicitSender {
+    extends ArteryMultiNodeSpec(config.withFallback(TlsTcpSpec.config))
+    with ImplicitSender
+    with Matchers {
 
   val systemB = newRemoteSystem(name = Some("systemB"))
   val addressB = address(systemB)
   val rootB = RootActorPath(addressB)
 
   def isSupported: Boolean = {
-    try {
-      val provider = new ConfigSSLEngineProvider(system)
-
-      val rng = provider.createSecureRandom()
-      rng.nextInt() // Has to work
-      val sRng = provider.SSLRandomNumberGenerator match {
-        case "AES128CounterSecureRNG" | "AES256CounterSecureRNG" ⇒ ""
-        case other ⇒ other
-      }
-      if (rng.getAlgorithm != sRng && sRng != "")
-        throw new NoSuchAlgorithmException(sRng)
-
-      val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-      val host = address.host.get
-      val port = address.port.get
-
-      val engine = provider.createServerSSLEngine(host, port)
-      val gotAllSupported = provider.SSLEnabledAlgorithms diff engine.getSupportedCipherSuites.toSet
-      val gotAllEnabled = provider.SSLEnabledAlgorithms diff engine.getEnabledCipherSuites.toSet
-      gotAllSupported.isEmpty || (throw new IllegalArgumentException("Cipher Suite not supported: " + gotAllSupported))
-      gotAllEnabled.isEmpty || (throw new IllegalArgumentException("Cipher Suite not enabled: " + gotAllEnabled))
-      engine.getSupportedProtocols.contains(provider.SSLProtocol) ||
-        (throw new IllegalArgumentException("Protocol not supported: " + provider.SSLProtocol))
-    } catch {
-      case e @ (_: IllegalArgumentException | _: NoSuchAlgorithmException) ⇒
+    val checked = system.settings.config.getString("akka.remote.artery.ssl.ssl-engine-provider") match {
+      case "akka.remote.artery.tcp.ConfigSSLEngineProvider" =>
+        CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.config-ssl-engine")
+      case "akka.remote.artery.tcp.ssl.RotatingKeysSSLEngineProvider" =>
+        CipherSuiteSupportCheck.isSupported(system, "akka.remote.artery.ssl.rotating-keys-engine")
+      case other =>
+        fail(
+          s"Don't know how to determine whether the crypto building blocks in [$other] are available on this platform")
+    }
+    checked match {
+      case Success(()) =>
+        true
+      case Failure(e @ (_: IllegalArgumentException | _: NoSuchAlgorithmException)) =>
         info(e.toString)
         false
+      case Failure(other) =>
+        fail("Unexpected failure checking whether the crypto building blocks are available on this platform.", other)
     }
   }
 
@@ -137,50 +114,15 @@ abstract class TlsTcpSpec(config: Config)
     expectMsg("ping-1")
 
     // and some more
-    (2 to 10).foreach { n ⇒
+    (2 to 10).foreach { n =>
       echoRef ! s"ping-$n"
     }
-    receiveN(9) should equal((2 to 10).map(n ⇒ s"ping-$n"))
+    receiveN(9) should equal((2 to 10).map(n => s"ping-$n"))
   }
 
   "Artery with TLS/TCP" must {
 
     if (isSupported) {
-
-      "generate random" in {
-        val provider = new ConfigSSLEngineProvider(system)
-        val rng = provider.createSecureRandom()
-        val bytes = Array.ofDim[Byte](16)
-        // Reproducer of the specific issue described at
-        // https://doc.akka.io/docs/akka/current/security/2018-08-29-aes-rng.html
-        // awaitAssert just in case we are very unlucky to get same sequence more than once
-        awaitAssert {
-          val randomBytes = (1 to 10).map { n ⇒
-            rng.nextBytes(bytes)
-            bytes.toVector
-          }.toSet
-          randomBytes.size should ===(10)
-        }
-      }
-
-      "have random numbers that are not compressable, because then they are not random" in {
-        val provider = new ConfigSSLEngineProvider(system)
-        val rng = provider.createSecureRandom()
-
-        val randomData = new Array[Byte](1024 * 1024)
-        rng.nextBytes(randomData)
-
-        val baos = new ByteArrayOutputStream()
-        val gzipped = new GZIPOutputStream(baos)
-        try gzipped.write(randomData)
-        finally gzipped.close()
-
-        val compressed = baos.toByteArray
-        // random data should not be compressible
-        // Another reproducer of https://doc.akka.io/docs/akka/current/security/2018-08-29-aes-rng.html
-        // with the broken implementation the compressed size was <5k
-        compressed.size should be > randomData.length
-      }
 
       "deliver messages" in {
         systemB.actorOf(TestActors.echoActorProps, "echo")
@@ -203,48 +145,99 @@ abstract class TlsTcpSpec(config: Config)
 
 }
 
-class TlsTcpWithHostnameVerificationSpec extends ArteryMultiNodeSpec(
-  ConfigFactory.parseString("""
+class TlsTcpWithHostnameVerificationSpec
+    extends ArteryMultiNodeSpec(ConfigFactory.parseString("""
     akka.remote.artery.ssl.config-ssl-engine {
       hostname-verification = on
     }
-    """).withFallback(TlsTcpSpec.config)) with ImplicitSender {
+    akka.remote.use-unsafe-remote-features-outside-cluster = on
 
-  val systemB = newRemoteSystem(name = Some("systemB"))
-  val addressB = address(systemB)
-  val rootB = RootActorPath(addressB)
+    akka.loggers = ["akka.testkit.TestEventListener"]
+    """).withFallback(TlsTcpSpec.config))
+    with ImplicitSender {
 
   "Artery with TLS/TCP and hostname-verification=on" must {
-    "reject invalid" in {
+    "fail when the name in the server certificate does not match" in {
       // this test only makes sense with tls-tcp transport
       if (!arteryTcpTlsEnabled())
         pending
 
+      val systemB = newRemoteSystem(
+        // The subjectAltName is 'localhost', so connecting to '127.0.0.1' should not
+        // work when using hostname verification:
+        extraConfig = Some("""akka.remote.artery.canonical.hostname = "127.0.0.1""""),
+        name = Some("systemB"))
+
+      val addressB = address(systemB)
+      val rootB = RootActorPath(addressB)
+
+      systemB.actorOf(TestActors.echoActorProps, "echo")
+      // The detailed warning message is either 'General SSLEngine problem'
+      // or 'No subject alternative names matching IP address 127.0.0.1 found'
+      // depending on JRE version.
+      EventFilter
+        .warning(
+          pattern =
+            "outbound connection to \\[akka://systemB@127.0.0.1:.*" +
+            "Upstream failed, cause: SSLHandshakeException: .*",
+          occurrences = 3)
+        .intercept {
+          system.actorSelection(rootB / "user" / "echo") ! Identify("echo")
+        }
+      expectNoMessage(2.seconds)
+      systemB.terminate()
+    }
+    "succeed when the name in the server certificate matches" in {
+      if (!arteryTcpTlsEnabled())
+        pending
+
+      val systemB = newRemoteSystem(
+        extraConfig = Some("""
+          // The subjectAltName is 'localhost', so this is how we want to be known:
+          akka.remote.artery.canonical.hostname = "localhost"
+
+          // Though we will still bind to 127.0.0.1 (make sure it's not ipv6)
+          akka.remote.artery.bind.hostname = "127.0.0.1"
+        """),
+        name = Some("systemB"))
+
+      val addressB = address(systemB)
+      val rootB = RootActorPath(addressB)
+
       systemB.actorOf(TestActors.echoActorProps, "echo")
       system.actorSelection(rootB / "user" / "echo") ! Identify("echo")
-      expectNoMessage(2.seconds)
+      val id = expectMsgType[ActorIdentity]
+
+      id.ref.get ! "42"
+      expectMsg("42")
+
+      systemB.terminate()
     }
   }
 }
 
-class TlsTcpWithActorSystemSetupSpec
-  extends ArteryMultiNodeSpec(TlsTcpSpec.config) with ImplicitSender {
+class TlsTcpWithActorSystemSetupSpec extends ArteryMultiNodeSpec(TlsTcpSpec.config) with ImplicitSender {
 
   val sslProviderServerProbe = TestProbe()
   val sslProviderClientProbe = TestProbe()
 
-  val sslProviderSetup = SSLEngineProviderSetup(sys ⇒ new ConfigSSLEngineProvider(sys) {
-    override def createServerSSLEngine(hostname: String, port: Int): SSLEngine = {
-      sslProviderServerProbe.ref ! "createServerSSLEngine"
-      super.createServerSSLEngine(hostname, port)
-    }
+  val sslProviderSetup = SSLEngineProviderSetup(sys =>
+    new SSLEngineProvider {
+      val delegate = new ConfigSSLEngineProvider(sys)
+      override def createServerSSLEngine(hostname: String, port: Int): SSLEngine = {
+        sslProviderServerProbe.ref ! "createServerSSLEngine"
+        delegate.createServerSSLEngine(hostname, port)
+      }
 
-    override def createClientSSLEngine(hostname: String, port: Int): SSLEngine = {
-      sslProviderClientProbe.ref ! "createClientSSLEngine"
-      super.createClientSSLEngine(hostname, port)
-    }
-
-  })
+      override def createClientSSLEngine(hostname: String, port: Int): SSLEngine = {
+        sslProviderClientProbe.ref ! "createClientSSLEngine"
+        delegate.createClientSSLEngine(hostname, port)
+      }
+      override def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable] =
+        delegate.verifyClientSession(hostname, session)
+      override def verifyServerSession(hostname: String, session: SSLSession): Option[Throwable] =
+        delegate.verifyServerSession(hostname, session)
+    })
 
   val systemB = newRemoteSystem(name = Some("systemB"), setup = Some(ActorSystemSetup(sslProviderSetup)))
   val addressB = address(systemB)

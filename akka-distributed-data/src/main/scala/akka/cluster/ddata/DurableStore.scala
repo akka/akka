@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
@@ -8,10 +8,16 @@ import java.io.File
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
 
-import scala.collection.JavaConverters._
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NonFatal
+
+import com.typesafe.config.Config
+import org.lmdbjava.Dbi
+import org.lmdbjava.DbiFlags
+import org.lmdbjava.Env
+import org.lmdbjava.EnvFlags
+import org.lmdbjava.Txn
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
@@ -27,12 +33,7 @@ import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
 import akka.util.ByteString
 import akka.util.OptionVal
-import com.typesafe.config.Config
-import org.lmdbjava.DbiFlags
-import org.lmdbjava.Env
-import org.lmdbjava.EnvFlags
-import org.lmdbjava.Txn
-import org.lmdbjava.Dbi
+import akka.util.ccompat.JavaConverters._
 
 /**
  * An actor implementing the durable store for the Distributed Data `Replicator`
@@ -81,8 +82,8 @@ object DurableStore {
    * the wrapped `ReplicatedData` including its serializerId and
    * manifest.
    */
-  final class DurableDataEnvelope private[akka] (
-    private[akka] val dataEnvelope: DataEnvelope) extends ReplicatorMessage {
+  final class DurableDataEnvelope private[akka] (private[akka] val dataEnvelope: DataEnvelope)
+      extends ReplicatorMessage {
 
     def this(data: ReplicatedData) = this(DataEnvelope(data))
 
@@ -91,8 +92,8 @@ object DurableStore {
     override def toString(): String = s"DurableDataEnvelope($data)"
     override def hashCode(): Int = data.hashCode
     override def equals(o: Any): Boolean = o match {
-      case other: DurableDataEnvelope ⇒ data == other.data
-      case _                          ⇒ false
+      case other: DurableDataEnvelope => data == other.data
+      case _                          => false
     }
   }
 }
@@ -104,30 +105,30 @@ object LmdbDurableStore {
   private case object WriteBehind extends DeadLetterSuppression
 
   private final case class Lmdb(
-    env:         Env[ByteBuffer],
-    db:          Dbi[ByteBuffer],
-    keyBuffer:   ByteBuffer,
-    valueBuffer: ByteBuffer)
+      env: Env[ByteBuffer],
+      db: Dbi[ByteBuffer],
+      keyBuffer: ByteBuffer,
+      valueBuffer: ByteBuffer)
 }
 
 final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
   import DurableStore._
-  import LmdbDurableStore.WriteBehind
   import LmdbDurableStore.Lmdb
+  import LmdbDurableStore.WriteBehind
 
   val serialization = SerializationExtension(context.system)
   val serializer = serialization.serializerFor(classOf[DurableDataEnvelope]).asInstanceOf[SerializerWithStringManifest]
   val manifest = serializer.manifest(new DurableDataEnvelope(Replicator.Internal.DeletedData))
 
   val writeBehindInterval = config.getString("lmdb.write-behind-interval").toLowerCase match {
-    case "off" ⇒ Duration.Zero
-    case _     ⇒ config.getDuration("lmdb.write-behind-interval", MILLISECONDS).millis
+    case "off" => Duration.Zero
+    case _     => config.getDuration("lmdb.write-behind-interval", MILLISECONDS).millis
   }
 
   val dir = config.getString("lmdb.dir") match {
-    case path if path.endsWith("ddata") ⇒
+    case path if path.endsWith("ddata") =>
       new File(s"$path-${context.system.name}-${self.path.parent.name}-${Cluster(context.system).selfAddress.port.get}")
-    case path ⇒
+    case path =>
       new File(path)
   }
 
@@ -135,17 +136,14 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
   private var _lmdb: OptionVal[Lmdb] = OptionVal.None
 
   private def lmdb(): Lmdb = _lmdb match {
-    case OptionVal.Some(l) ⇒ l
-    case OptionVal.None ⇒
+    case OptionVal.Some(l) => l
+    case _ =>
       val t0 = System.nanoTime()
       log.info("Using durable data in LMDB directory [{}]", dir.getCanonicalPath)
       val env = {
         val mapSize = config.getBytes("lmdb.map-size")
         dir.mkdirs()
-        Env.create()
-          .setMapSize(mapSize)
-          .setMaxDbs(1)
-          .open(dir, EnvFlags.MDB_NOLOCK)
+        Env.create().setMapSize(mapSize).setMaxDbs(1).open(dir, EnvFlags.MDB_NOLOCK)
       }
 
       val db = env.openDbi("ddata", DbiFlags.MDB_CREATE)
@@ -154,7 +152,9 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
       val valueBuffer = ByteBuffer.allocateDirect(100 * 1024) // will grow when needed
 
       if (log.isDebugEnabled)
-        log.debug("Init of LMDB in directory [{}] took [{} ms]", dir.getCanonicalPath,
+        log.debug(
+          "Init of LMDB in directory [{}] took [{} ms]",
+          dir.getCanonicalPath,
           TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
       val l = Lmdb(env, db, keyBuffer, valueBuffer)
       _lmdb = OptionVal.Some(l)
@@ -167,7 +167,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
     val valueBuffer = lmdb().valueBuffer
     if (valueBuffer.remaining < size) {
       DirectByteBufferPool.tryCleanDirectByteBuffer(valueBuffer)
-      _lmdb = OptionVal.Some(lmdb.copy(valueBuffer = ByteBuffer.allocateDirect(size * 2)))
+      _lmdb = OptionVal.Some(lmdb().copy(valueBuffer = ByteBuffer.allocateDirect(size * 2)))
     }
   }
 
@@ -192,10 +192,10 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
     }
   }
 
-  def receive = init
+  def receive: Receive = init
 
   def init: Receive = {
-    case LoadAll ⇒
+    case LoadAll =>
       if (dir.exists && dir.list().length > 0) {
         val l = lmdb()
         val t0 = System.nanoTime()
@@ -204,7 +204,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
           val iter = l.db.iterate(tx)
           try {
             var n = 0
-            val loadData = LoadData(iter.asScala.map { entry ⇒
+            val loadData = LoadData(iter.asScala.map { entry =>
               n += 1
               val keyArray = new Array[Byte](entry.key.remaining)
               entry.key.get(keyArray)
@@ -212,20 +212,19 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
               val valArray = new Array[Byte](entry.`val`.remaining)
               entry.`val`.get(valArray)
               val envelope = serializer.fromBinary(valArray, manifest).asInstanceOf[DurableDataEnvelope]
-              key → envelope
+              key -> envelope
             }.toMap)
             if (loadData.data.nonEmpty)
               sender() ! loadData
             sender() ! LoadAllCompleted
             if (log.isDebugEnabled)
-              log.debug("load all of [{}] entries took [{} ms]", n,
-                TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
+              log.debug("load all of [{}] entries took [{} ms]", n, TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
             context.become(active)
           } finally {
             Try(iter.close())
           }
         } catch {
-          case NonFatal(e) ⇒
+          case NonFatal(e) =>
             throw new LoadFailed("failed to load durable distributed-data", e)
         } finally {
           Try(tx.close())
@@ -238,32 +237,32 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
   }
 
   def active: Receive = {
-    case Store(key, data, reply) ⇒
+    case Store(key, data, reply) =>
       try {
         lmdb() // init
         if (writeBehindInterval.length == 0) {
           dbPut(OptionVal.None, key, data)
         } else {
           if (pending.isEmpty)
-            context.system.scheduler.scheduleOnce(writeBehindInterval, self, WriteBehind)(context.system.dispatcher)
+            context.system.scheduler.scheduleOnce(writeBehindInterval, self, WriteBehind)(context.dispatcher)
           pending.put(key, data)
         }
         reply match {
-          case Some(StoreReply(successMsg, _, replyTo)) ⇒
+          case Some(StoreReply(successMsg, _, replyTo)) =>
             replyTo ! successMsg
-          case None ⇒
+          case None =>
         }
       } catch {
-        case NonFatal(e) ⇒
+        case NonFatal(e) =>
           log.error(e, "failed to store [{}]", key)
           reply match {
-            case Some(StoreReply(_, failureMsg, replyTo)) ⇒
+            case Some(StoreReply(_, failureMsg, replyTo)) =>
               replyTo ! failureMsg
-            case None ⇒
+            case None =>
           }
       }
 
-    case WriteBehind ⇒
+    case WriteBehind =>
       writeBehind()
   }
 
@@ -275,8 +274,8 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
       l.keyBuffer.put(key.getBytes(ByteString.UTF_8)).flip()
       l.valueBuffer.put(value).flip()
       tx match {
-        case OptionVal.None    ⇒ l.db.put(l.keyBuffer, l.valueBuffer)
-        case OptionVal.Some(t) ⇒ l.db.put(t, l.keyBuffer, l.valueBuffer)
+        case OptionVal.Some(t) => l.db.put(t, l.keyBuffer, l.valueBuffer)
+        case _                 => l.db.put(l.keyBuffer, l.valueBuffer)
       }
     } finally {
       val l = lmdb()
@@ -297,11 +296,13 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
         }
         tx.commit()
         if (log.isDebugEnabled)
-          log.debug("store and commit of [{}] entries took [{} ms]", pending.size,
+          log.debug(
+            "store and commit of [{}] entries took [{} ms]",
+            pending.size,
             TimeUnit.NANOSECONDS.toMillis(System.nanoTime - t0))
       } catch {
-        case NonFatal(e) ⇒
-          import scala.collection.JavaConverters._
+        case NonFatal(e) =>
+          import akka.util.ccompat.JavaConverters._
           log.error(e, "failed to store [{}]", pending.keySet.asScala.mkString(","))
           tx.abort()
       } finally {
@@ -311,4 +312,3 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
   }
 
 }
-

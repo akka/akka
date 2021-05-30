@@ -5,9 +5,12 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -131,11 +134,11 @@ An end-of-frame marker, e.g. end line `\n`, can do framing via `Framing.delimite
 Or a length-field can be used to build a framing protocol.
 There is a bidi implementing this protocol provided by `Framing.simpleFramingProtocol`,
 see
-@scala[[ScalaDoc](http://doc.akka.io/api/akka/current/akka/stream/scaladsl/Framing$.html)]
-@java[[Javadoc](http://doc.akka.io/japi/akka/current/akka/stream/javadsl/Framing.html#simpleFramingProtocol-int-)]
+@scala[[ScalaDoc](https://doc.akka.io/api/akka/current/akka/stream/scaladsl/Framing$.html)]
+@java[[Javadoc](https://doc.akka.io/japi/akka/current/akka/stream/javadsl/Framing.html#simpleFramingProtocol-int-)]
 for more information.
 
-@scala[[JsonFraming](http://doc.akka.io/api/akka/current/akka/stream/scaladsl/JsonFraming$.html)]@java[[JsonFraming](http://doc.akka.io/japi/akka/current/akka/stream/javadsl/JsonFraming.html#objectScanner-int-)] separates valid JSON objects from incoming `ByteString` objects:
+@scala[[JsonFraming](https://doc.akka.io/api/akka/current/akka/stream/scaladsl/JsonFraming$.html)]@java[[JsonFraming](https://doc.akka.io/japi/akka/current/akka/stream/javadsl/JsonFraming.html#objectScanner-int-)] separates valid JSON objects from incoming `ByteString` objects:
 
 Scala
 :  @@snip [JsonFramingSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/JsonFramingSpec.scala) { #using-json-framing }
@@ -145,18 +148,20 @@ Java
 
 ### TLS
 
-Similar factories as shown above for raw TCP but where the data is encrypted using TLS are available from `Tcp` through `outgoingTlsConnection`, `bindTls` and `bindAndHandleTls`, see the @scala[@scaladoc[`Tcp Scaladoc`](akka.stream.scaladsl.Tcp)]@java[@javadoc[`Tcp Javadoc`](akka.stream.javadsl.Tcp)]  for details.
+Similar factories as shown above for raw TCP but where the data is encrypted using TLS are available from `Tcp`
+through `outgoingConnectionWithTls`, `bindWithTls` and `bindAndHandleWithTls`,
+see the @scala[@scaladoc[`Tcp Scaladoc`](akka.stream.scaladsl.Tcp)]@java[@javadoc[`Tcp Javadoc`](akka.stream.javadsl.Tcp)]  for details.
 
-Using TLS requires a keystore and a truststore and then a somewhat involved dance of configuring the SSLContext and the details for how the session should be negotiated:
+Using TLS requires a keystore and a truststore and then a somewhat involved dance of configuring the SSLEngine and the details for how the session should be negotiated:
 
 Scala
-:  @@snip [TcpSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/io/TcpSpec.scala) { #setting-up-ssl-context }
+:  @@snip [TcpSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/io/TcpSpec.scala) { #setting-up-ssl-engine }
 
 Java
-:  @@snip [TcpTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/TcpTest.java) { #setting-up-ssl-context }
+:  @@snip [TcpTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/TcpTest.java) { #setting-up-ssl-engine }
 
 
-The `SslContext` and `NegotiateFirstSession` instances can then be used with the binding or outgoing connection factory methods.
+The `SSLEngine` instance can then be used with the binding or outgoing connection factory methods.
 
 ## Streaming File IO
 

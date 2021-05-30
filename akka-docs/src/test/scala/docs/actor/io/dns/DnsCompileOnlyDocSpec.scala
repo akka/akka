@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.actor.io.dns
@@ -16,8 +16,8 @@ import scala.concurrent.duration._
 
 object DnsCompileOnlyDocSpec {
 
-  implicit val system = ActorSystem()
-  implicit val timeout = Timeout(1.second)
+  implicit val system: ActorSystem = ActorSystem()
+  implicit val timeout: Timeout = Timeout(1.second)
 
   val actorRef: ActorRef = ???
   //#resolve
@@ -34,16 +34,16 @@ object DnsCompileOnlyDocSpec {
 
   {
     //#actor-api-async
-    val resolved: Future[DnsProtocol.Resolved] = (IO(Dns) ? DnsProtocol.Resolve("google.com")).mapTo[DnsProtocol.Resolved]
+    val resolved: Future[DnsProtocol.Resolved] =
+      (IO(Dns) ? DnsProtocol.Resolve("google.com")).mapTo[DnsProtocol.Resolved]
     //#actor-api-async
   }
 
   {
     //#srv
-    val resolved: Future[DnsProtocol.Resolved] = (IO(Dns) ? DnsProtocol.Resolve("your-service", Srv))
-      .mapTo[DnsProtocol.Resolved]
+    val resolved: Future[DnsProtocol.Resolved] =
+      (IO(Dns) ? DnsProtocol.Resolve("your-service", Srv)).mapTo[DnsProtocol.Resolved]
     //#srv
   }
 
 }
-

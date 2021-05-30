@@ -1,24 +1,24 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.actor
 
 import akka.actor.{ Actor, Props }
 import docs.CompileOnlySpec
-import org.scalatest.WordSpec
+import org.scalatest.wordspec.AnyWordSpec
 
 //#props-edge-cases-value-class
 case class MyValueClass(v: Int) extends AnyVal
 
 //#props-edge-cases-value-class
 
-class PropsEdgeCaseSpec extends WordSpec with CompileOnlySpec {
+class PropsEdgeCaseSpec extends AnyWordSpec with CompileOnlySpec {
   "value-class-edge-case-example" in compileOnlySpec {
     //#props-edge-cases-value-class-example
     class ValueActor(value: MyValueClass) extends Actor {
       def receive = {
-        case multiplier: Long ⇒ sender() ! (value.v * multiplier)
+        case multiplier: Long => sender() ! (value.v * multiplier)
       }
     }
     val valueClassProp = Props(classOf[ValueActor], MyValueClass(5)) // Unsupported
@@ -27,7 +27,7 @@ class PropsEdgeCaseSpec extends WordSpec with CompileOnlySpec {
     //#props-edge-cases-default-values
     class DefaultValueActor(a: Int, b: Int = 5) extends Actor {
       def receive = {
-        case x: Int ⇒ sender() ! ((a + x) * b)
+        case x: Int => sender() ! ((a + x) * b)
       }
     }
 
@@ -35,10 +35,10 @@ class PropsEdgeCaseSpec extends WordSpec with CompileOnlySpec {
 
     class DefaultValueActor2(b: Int = 5) extends Actor {
       def receive = {
-        case x: Int ⇒ sender() ! (x * b)
+        case x: Int => sender() ! (x * b)
       }
     }
-    val defaultValueProp2 = Props[DefaultValueActor2] // Unsupported
+    val defaultValueProp2 = Props[DefaultValueActor2]() // Unsupported
     val defaultValueProp3 = Props(classOf[DefaultValueActor2]) // Unsupported
     //#props-edge-cases-default-values
   }

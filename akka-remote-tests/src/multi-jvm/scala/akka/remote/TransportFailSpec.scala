@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -7,7 +7,10 @@ package akka.remote
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
+
+import scala.annotation.nowarn
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 import akka.actor.Actor
 import akka.actor.ActorIdentity
@@ -19,17 +22,16 @@ import akka.event.EventStream
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+import akka.util.unused
 
 object TransportFailConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.loglevel = INFO
-      akka.remote {
+      akka.remote.use-unsafe-remote-features-outside-cluster = on
+      akka.remote.classic {
         transport-failure-detector {
           implementation-class = "akka.remote.TransportFailSpec$$TestFailureDetector"
           heartbeat-interval = 1 s
@@ -52,14 +54,14 @@ class TransportFailMultiJvmNode2 extends TransportFailSpec
 object TransportFailSpec {
   class Subject extends Actor {
     def receive = {
-      case msg ⇒ sender() ! msg
+      case msg => sender() ! msg
     }
   }
 
   private val fdAvailable = new AtomicBoolean(true)
 
   // FD that will fail when `fdAvailable` flag is false
-  class TestFailureDetector(config: Config, ev: EventStream) extends FailureDetector {
+  class TestFailureDetector(@unused config: Config, @unused ev: EventStream) extends FailureDetector {
     @volatile private var active = false
 
     override def heartbeat(): Unit = {
@@ -96,6 +98,7 @@ object TransportFailSpec {
  * This was fixed by not stopping the ReliableDeliverySupervisor so that the
  * receive buffer was preserved.
  */
+@nowarn("msg=deprecated")
 abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConfig) {
   import TransportFailConfig._
   import TransportFailSpec._
@@ -112,7 +115,6 @@ abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConf
 
     "reconnect" taggedAs LongRunningTest in {
       runOn(first) {
-        val secondAddress = node(second).address
         enterBarrier("actors-started")
 
         val subject = identify(second, "subject")
@@ -122,7 +124,7 @@ abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConf
       }
 
       runOn(second) {
-        system.actorOf(Props[Subject], "subject")
+        system.actorOf(Props[Subject](), "subject")
         enterBarrier("actors-started")
       }
 
@@ -146,7 +148,7 @@ abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConf
           }
         }, max = 5.seconds)
         watch(subject2)
-        quarantineProbe.expectNoMsg(1.seconds)
+        quarantineProbe.expectNoMessage(1.seconds)
         subject2 ! "hello2"
         expectMsg("hello2")
         enterBarrier("watch-established2")
@@ -154,7 +156,7 @@ abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConf
       }
 
       runOn(second) {
-        val subject2 = system.actorOf(Props[Subject], "subject2")
+        val subject2 = system.actorOf(Props[Subject](), "subject2")
         enterBarrier("actors-started2")
         enterBarrier("watch-established2")
         subject2 ! PoisonPill

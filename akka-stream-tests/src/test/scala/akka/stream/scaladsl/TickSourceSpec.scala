@@ -1,19 +1,17 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import scala.concurrent.duration._
-import akka.stream.{ ClosedShape, ActorMaterializer }
+
+import akka.stream.ClosedShape
 import akka.stream.testkit._
-import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TimingTest
 
 class TickSourceSpec extends StreamSpec {
-
-  implicit val materializer = ActorMaterializer()
 
   "A Flow based on tick publisher" must {
     "produce ticks" taggedAs TimingTest in assertAllStagesStopped {
@@ -22,10 +20,10 @@ class TickSourceSpec extends StreamSpec {
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext("tick")
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       c.expectNext("tick")
       sub.cancel()
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
     }
 
     "drop ticks when not requested" taggedAs TimingTest in {
@@ -34,15 +32,15 @@ class TickSourceSpec extends StreamSpec {
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext("tick")
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       c.expectNext("tick")
-      c.expectNoMsg(1400.millis)
+      c.expectNoMessage(1400.millis)
       sub.request(2)
       c.expectNext("tick")
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       c.expectNext("tick")
       sub.cancel()
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
     }
 
     "reject multiple subscribers, but keep the first" taggedAs TimingTest in {
@@ -55,7 +53,7 @@ class TickSourceSpec extends StreamSpec {
       c2.expectSubscriptionAndError()
       sub1.request(1)
       c1.expectNext("tick")
-      c1.expectNoMsg(200.millis)
+      c1.expectNoMessage(200.millis)
       sub1.request(2)
       c1.expectNext("tick")
       sub1.cancel()
@@ -64,21 +62,23 @@ class TickSourceSpec extends StreamSpec {
     "be usable with zip for a simple form of rate limiting" taggedAs TimingTest in {
       val c = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        import GraphDSL.Implicits._
-        val zip = b.add(Zip[Int, String]())
-        Source(1 to 100) ~> zip.in0
-        Source.tick(1.second, 1.second, "tick") ~> zip.in1
-        zip.out ~> Flow[(Int, String)].map { case (n, _) ⇒ n } ~> Sink.fromSubscriber(c)
-        ClosedShape
-      }).run()
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          import GraphDSL.Implicits._
+          val zip = b.add(Zip[Int, String]())
+          Source(1 to 100) ~> zip.in0
+          Source.tick(1.second, 1.second, "tick") ~> zip.in1
+          zip.out ~> Flow[(Int, String)].map { case (n, _) => n } ~> Sink.fromSubscriber(c)
+          ClosedShape
+        })
+        .run()
 
       val sub = c.expectSubscription()
       sub.request(1000)
       c.expectNext(1)
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       c.expectNext(2)
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       sub.cancel()
     }
 
@@ -88,9 +88,9 @@ class TickSourceSpec extends StreamSpec {
       val cancellable = tickSource.to(Sink.fromSubscriber(c)).run()
       val sub = c.expectSubscription()
       sub.request(2)
-      c.expectNoMsg(600.millis)
+      c.expectNoMessage(600.millis)
       c.expectNext("tick")
-      c.expectNoMsg(200.millis)
+      c.expectNoMessage(200.millis)
       c.expectNext("tick")
       cancellable.cancel()
       awaitCond(cancellable.isCancelled)

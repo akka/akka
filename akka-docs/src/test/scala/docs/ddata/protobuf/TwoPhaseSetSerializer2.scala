@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.ddata.protobuf
@@ -7,25 +7,20 @@ package docs.ddata.protobuf
 //#serializer
 import akka.actor.ExtendedActorSystem
 import akka.cluster.ddata.GSet
-import akka.cluster.ddata.protobuf.ReplicatedDataSerializer
 import akka.cluster.ddata.protobuf.SerializationSupport
 import akka.serialization.Serializer
 import docs.ddata.TwoPhaseSet
 import docs.ddata.protobuf.msg.TwoPhaseSetMessages
 
-class TwoPhaseSetSerializer2(val system: ExtendedActorSystem)
-  extends Serializer with SerializationSupport {
+class TwoPhaseSetSerializer2(val system: ExtendedActorSystem) extends Serializer with SerializationSupport {
 
   override def includeManifest: Boolean = false
 
   override def identifier = 99999
 
-  val replicatedDataSerializer = new ReplicatedDataSerializer(system)
-
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: TwoPhaseSet ⇒ twoPhaseSetToProto(m).toByteArray
-    case _ ⇒ throw new IllegalArgumentException(
-      s"Can't serialize object of type ${obj.getClass}")
+    case m: TwoPhaseSet => twoPhaseSetToProto(m).toByteArray
+    case _              => throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass}")
   }
 
   override def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {

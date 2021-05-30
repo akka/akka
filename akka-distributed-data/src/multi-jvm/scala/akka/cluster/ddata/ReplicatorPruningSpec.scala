@@ -1,10 +1,12 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.InitialStateAsEvents
@@ -13,7 +15,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 
 object ReplicatorPruningSpec extends MultiNodeConfig {
   val first = role("first")
@@ -22,6 +23,9 @@ object ReplicatorPruningSpec extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString("""
     akka.loglevel = INFO
+    # we use 3s as write timeouts in test, make sure we see that
+    # and not time out the expectMsg at the same time
+    akka.test.single-expect-default = 5s
     akka.actor.provider = "cluster"
     akka.log-dead-letters-during-shutdown = off
     """))
@@ -33,16 +37,20 @@ class ReplicatorPruningSpecMultiJvmNode2 extends ReplicatorPruningSpec
 class ReplicatorPruningSpecMultiJvmNode3 extends ReplicatorPruningSpec
 
 class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with STMultiNodeSpec with ImplicitSender {
-  import ReplicatorPruningSpec._
   import Replicator._
+  import ReplicatorPruningSpec._
 
   override def initialParticipants = roles.size
 
-  implicit val cluster = Cluster(system)
+  val cluster = Cluster(system)
+  implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
   val maxPruningDissemination = 3.seconds
-  val replicator = system.actorOf(Replicator.props(
-    ReplicatorSettings(system).withGossipInterval(1.second)
-      .withPruning(pruningInterval = 1.second, maxPruningDissemination)), "replicator")
+  val replicator = system.actorOf(
+    Replicator.props(
+      ReplicatorSettings(system)
+        .withGossipInterval(1.second)
+        .withPruning(pruningInterval = 1.second, maxPruningDissemination)),
+    "replicator")
   val timeout = 3.seconds.dilated
 
   val KeyA = GCounterKey("A")
@@ -53,7 +61,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
-      cluster join node(to).address
+      cluster.join(node(to).address)
     }
     enterBarrier(from.name + "-joined")
   }
@@ -76,26 +84,33 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       val memberProbe = TestProbe()
       cluster.subscribe(memberProbe.ref, initialStateMode = InitialStateAsEvents, classOf[MemberUp])
       val thirdUniqueAddress = {
-        val member = memberProbe.fishForMessage(3.seconds) {
-          case MemberUp(m) if m.address == node(third).address ⇒ true
-          case _ ⇒ false
-        }.asInstanceOf[MemberUp].member
+        val member = memberProbe
+          .fishForMessage(3.seconds) {
+            case MemberUp(m) if m.address == node(third).address => true
+            case _                                               => false
+          }
+          .asInstanceOf[MemberUp]
+          .member
         member.uniqueAddress
       }
 
-      replicator ! Update(KeyA, GCounter(), WriteAll(timeout))(_ + 3)
+      replicator ! Update(KeyA, GCounter(), WriteAll(timeout))(_ :+ 3)
       expectMsg(UpdateSuccess(KeyA, None))
 
-      replicator ! Update(KeyB, ORSet(), WriteAll(timeout))(_ + "a" + "b" + "c")
+      replicator ! Update(KeyB, ORSet(), WriteAll(timeout))(_ :+ "a" :+ "b" :+ "c")
       expectMsg(UpdateSuccess(KeyB, None))
 
-      replicator ! Update(KeyC, PNCounterMap.empty[String], WriteAll(timeout)) { _ increment "x" increment "y" }
+      replicator ! Update(KeyC, PNCounterMap.empty[String], WriteAll(timeout)) {
+        _.incrementBy("x", 1).incrementBy("y", 1)
+      }
       expectMsg(UpdateSuccess(KeyC, None))
 
-      replicator ! Update(KeyD, ORMultiMap.empty[String, String], WriteAll(timeout)) { _ + ("a" → Set("A")) }
+      replicator ! Update(KeyD, ORMultiMap.empty[String, String], WriteAll(timeout)) { _ :+ ("a" -> Set("A")) }
       expectMsg(UpdateSuccess(KeyD, None))
 
-      replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteAll(timeout)) { _ + ("a" → GSet.empty[String].add("A")) }
+      replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteAll(timeout)) {
+        _ :+ ("a" -> GSet.empty[String].add("A"))
+      }
       expectMsg(UpdateSuccess(KeyE, None))
 
       enterBarrier("updates-done")
@@ -125,7 +140,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
       enterBarrier("get-old")
 
       runOn(third) {
-        replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteLocal) { _ - "a" }
+        replicator ! Update(KeyE, ORMap.empty[String, GSet[String]], WriteLocal) { _.remove("a") }
         expectMsg(UpdateSuccess(KeyE, None))
       }
 
@@ -151,7 +166,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
           awaitAssert {
             replicator ! Get(KeyA, ReadLocal)
             expectMsgPF() {
-              case g @ GetSuccess(KeyA, _) ⇒
+              case g @ GetSuccess(KeyA, _) =>
                 val value = g.get(KeyA).value.toInt
                 values += value
                 value should be(9)
@@ -164,7 +179,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
           awaitAssert {
             replicator ! Get(KeyB, ReadLocal)
             expectMsgPF() {
-              case g @ GetSuccess(KeyB, _) ⇒
+              case g @ GetSuccess(KeyB, _) =>
                 g.get(KeyB).elements should be(Set("a", "b", "c"))
                 g.get(KeyB).needPruningFrom(thirdUniqueAddress) should be(false)
             }
@@ -174,8 +189,8 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
           awaitAssert {
             replicator ! Get(KeyC, ReadLocal)
             expectMsgPF() {
-              case g @ GetSuccess(KeyC, _) ⇒
-                g.get(KeyC).entries should be(Map("x" → 3L, "y" → 3L))
+              case g @ GetSuccess(KeyC, _) =>
+                g.get(KeyC).entries should be(Map("x" -> 3L, "y" -> 3L))
                 g.get(KeyC).needPruningFrom(thirdUniqueAddress) should be(false)
             }
           }
@@ -184,7 +199,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
           awaitAssert {
             replicator ! Get(KeyD, ReadLocal)
             expectMsgPF() {
-              case g @ GetSuccess(KeyD, _) ⇒
+              case g @ GetSuccess(KeyD, _) =>
                 g.get(KeyD).entries("a") should be(Set("A"))
                 g.get(KeyD).needPruningFrom(thirdUniqueAddress) should be(false)
             }
@@ -194,7 +209,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
           awaitAssert {
             replicator ! Get(KeyE, ReadLocal)
             expectMsgPF() {
-              case g @ GetSuccess(KeyE, _) ⇒
+              case g @ GetSuccess(KeyE, _) =>
                 g.get(KeyE).needPruningFrom(thirdUniqueAddress) should be(false)
             }
           }
@@ -204,12 +219,12 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
 
       // after pruning performed we should not be able to update with data from removed node
       def updateAfterPruning(expectedValue: Int): Unit = {
-        replicator ! Update(KeyA, GCounter(), WriteAll(timeout), None) { existing ⇒
+        replicator ! Update(KeyA, GCounter(), WriteAll(timeout), None) { existing =>
           // inject data from removed node to simulate bad data
-          existing.merge(oldCounter) + 1
+          existing.merge(oldCounter) :+ 1
         }
         expectMsgPF() {
-          case UpdateSuccess(KeyA, _) ⇒
+          case UpdateSuccess(KeyA, _) =>
             replicator ! Get(KeyA, ReadLocal)
             val retrieved = expectMsgType[GetSuccess[GCounter]].dataValue
             retrieved.value should be(expectedValue)
@@ -228,7 +243,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
 
       // after full replication should still not be able to update with data from removed node
       // but it would not work after removal of the PruningPerformed markers
-      expectNoMsg(maxPruningDissemination + 3.seconds)
+      expectNoMessage(maxPruningDissemination + 3.seconds)
 
       runOn(first) {
         updateAfterPruning(expectedValue = 12)
@@ -245,4 +260,3 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
   }
 
 }
-

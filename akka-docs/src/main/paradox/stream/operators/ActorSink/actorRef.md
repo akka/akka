@@ -1,36 +1,35 @@
 # ActorSink.actorRef
 
-Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`].
+Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`] of the new actors API, without considering backpressure.
 
 @ref[Actor interop operators](../index.md#actor-interop-operators)
-
-@@@div { .group-scala }
 
 ## Dependency
 
 This operator is included in:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream-typed_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream-typed_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Signature
 
-@@signature [ActorSink.scala](/akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorSink.scala) { #actorRef }
-
-@@@
+@apidoc[ActorSink.actorRef](ActorSink$) { scala="#actorRef[T](ref:akka.actor.typed.ActorRef[T],onCompleteMessage:T,onFailureMessage:Throwable=&gt;T):akka.stream.scaladsl.Sink[T,akka.NotUsed]" java="#actorRef(akka.actor.typed.ActorRef,java.lang.Object,akka.japi.function.Function)" }
 
 ## Description
 
 Sends the elements of the stream to the given `ActorRef`.
 If the target actor terminates the stream will be canceled.
-When the stream is completed successfully the given `onCompleteMessage`
+When the stream completes successfully the given `onCompleteMessage`
 will be sent to the destination actor.
-When the stream is completed with failure a the throwable that was signaled
-to the stream is adapted to the Actors protocol using `onFailureMessage` and
-then then sent to the destination actor.
+When the stream completes with failure the throwable that was signaled
+to the stream is adapted to the Actor's protocol using `onFailureMessage` and
+then sent to the destination actor.
 
 It will request at most `maxInputBufferSize` number of elements from
 upstream, but there is no back-pressure signal from the destination actor,
@@ -39,6 +38,18 @@ of the actor will grow. For potentially slow consumer actors it is recommended
 to use a bounded mailbox with zero `mailbox-push-timeout-time` or use a rate
 limiting operator in front of this `Sink`.
 
-## Examples
+See also:
 
-TODO (in progress)
+* @ref[`ActorSink.actorRefWithBackpressure`](../ActorSink/actorRefWithBackpressure.md) Send elements to an actor of the new actors API supporting backpressure
+* @ref[`Sink.actorRef`](../Sink/actorRef.md) The corresponding operator for the classic actors API
+* @ref[`Sink.actorRefWithBackpressue`](../Sink/actorRefWithBackpressure.md) Send elements to an actor of the classic actors API supporting backpressure
+
+## Reactive Streams semantics
+
+@@@div { .callout }
+
+**cancels** when the actor terminates
+
+**backpressures** never
+
+@@@

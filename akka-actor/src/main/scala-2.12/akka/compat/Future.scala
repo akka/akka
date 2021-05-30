@@ -1,38 +1,47 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.compat
 
-import akka.annotation.InternalApi
-import scala.concurrent.{ ExecutionContext, Future ⇒ SFuture }
 import scala.collection.immutable
+import scala.concurrent.{ ExecutionContext, Future => SFuture }
+
+import scala.annotation.nowarn
+
+import akka.annotation.InternalApi
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
  *
  * Compatibility wrapper for `scala.concurrent.Future` to be able to compile the same code
- * against Scala 2.11, 2.12, 2.13
+ * against Scala 2.12, 2.13
  *
- * Remove these classes as soon as support for Scala 2.11 is dropped!
+ * Remove these classes as soon as support for Scala 2.12 is dropped!
  */
-@InternalApi private[akka] object Future {
-  def fold[T, R](futures: TraversableOnce[SFuture[T]])(zero: R)(op: (R, T) ⇒ R)(implicit executor: ExecutionContext): SFuture[R] =
+@nowarn @InternalApi private[akka] object Future {
+  def fold[T, R](futures: IterableOnce[SFuture[T]])(zero: R)(op: (R, T) => R)(
+      implicit executor: ExecutionContext): SFuture[R] =
     SFuture.fold[T, R](futures)(zero)(op)(executor)
 
-  def fold[T, R](futures: immutable.Iterable[SFuture[T]])(zero: R)(op: (R, T) ⇒ R)(implicit executor: ExecutionContext): SFuture[R] =
+  def fold[T, R](futures: immutable.Iterable[SFuture[T]])(zero: R)(op: (R, T) => R)(
+      implicit executor: ExecutionContext): SFuture[R] =
     SFuture.foldLeft[T, R](futures)(zero)(op)(executor)
 
-  def reduce[T, R >: T](futures: TraversableOnce[SFuture[T]])(op: (R, T) ⇒ R)(implicit executor: ExecutionContext): SFuture[R] =
+  def reduce[T, R >: T](futures: IterableOnce[SFuture[T]])(op: (R, T) => R)(
+      implicit executor: ExecutionContext): SFuture[R] =
     SFuture.reduce[T, R](futures)(op)(executor)
 
-  def reduce[T, R >: T](futures: immutable.Iterable[SFuture[T]])(op: (R, T) ⇒ R)(implicit executor: ExecutionContext): SFuture[R] =
+  def reduce[T, R >: T](futures: immutable.Iterable[SFuture[T]])(op: (R, T) => R)(
+      implicit executor: ExecutionContext): SFuture[R] =
     SFuture.reduceLeft[T, R](futures)(op)(executor)
 
-  def find[T](futures: TraversableOnce[SFuture[T]])(p: T ⇒ Boolean)(implicit executor: ExecutionContext): SFuture[Option[T]] =
+  def find[T](futures: IterableOnce[SFuture[T]])(p: T => Boolean)(
+      implicit executor: ExecutionContext): SFuture[Option[T]] =
     SFuture.find[T](futures)(p)(executor)
 
-  def find[T](futures: immutable.Iterable[SFuture[T]])(p: T ⇒ Boolean)(implicit executor: ExecutionContext): SFuture[Option[T]] =
+  def find[T](futures: immutable.Iterable[SFuture[T]])(p: T => Boolean)(
+      implicit executor: ExecutionContext): SFuture[Option[T]] =
     SFuture.find[T](futures)(p)(executor)
 }
-

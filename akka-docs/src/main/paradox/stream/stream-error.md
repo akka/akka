@@ -5,9 +5,12 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -56,6 +59,10 @@ does not have a @scala[matching case] @java[match defined] the stream is failed.
 Recovering can be useful if you want to gracefully complete a stream on failure while letting 
 downstream know that there was a failure.
 
+Throwing an exception inside `recover` _will_ be logged on ERROR level automatically.
+
+More details in @ref[recover](./operators/Source-or-Flow/recover.md#recover)
+
 Scala
 :   @@snip [FlowErrorDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowErrorDocSpec.scala) { #recover }
 
@@ -99,8 +106,7 @@ Java
 
 ## Delayed restarts with a backoff operator
 
-Just as Akka provides the @ref:[backoff supervision pattern for actors](../general/supervision.md#backoff-supervisor), Akka streams
-also provides a `RestartSource`, `RestartSink` and `RestartFlow` for implementing the so-called *exponential backoff 
+Akka streams provides a `RestartSource`, `RestartSink` and `RestartFlow` for implementing the so-called *exponential backoff 
 supervision strategy*, starting an operator again when it fails or completes, each time with a growing time delay between restarts.
 
 This pattern is useful when the operator fails or completes because some external resource is not available
@@ -108,6 +114,15 @@ and we need to give it some time to start-up again. One of the prime examples wh
 when a WebSocket connection fails due to the HTTP server it's running on going down, perhaps because it is overloaded. 
 By using an exponential backoff, we avoid going into a tight reconnect loop, which both gives the HTTP server some time
 to recover, and it avoids using needless resources on the client side.
+
+The various restart shapes mentioned all expect an `akka.stream.RestartSettings` which configures the restart behaviour.
+Configurable parameters are:
+
+* `minBackoff` is the initial duration until the underlying stream is restarted
+* `maxBackoff` caps the exponential backoff
+* `randomFactor` allows addition of a random delay following backoff calculation
+* `maxRestarts` caps the total number of restarts
+* `maxRestartsWithin` sets a timeframe during which restarts are counted towards the same total for `maxRestarts`
 
 The following snippet shows how to create a backoff supervisor using @scala[`akka.stream.scaladsl.RestartSource`] 
 @java[`akka.stream.javadsl.RestartSource`] which will supervise the given `Source`. The `Source` in this case is a 
@@ -198,7 +213,7 @@ Scala
 Java
 :   @@snip [FlowErrorDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowErrorDocTest.java) { #stop }
 
-The default supervision strategy for a stream can be defined on the settings of the materializer.
+The default supervision strategy for a stream can be defined on the complete `RunnableGraph`.
 
 Scala
 :   @@snip [FlowErrorDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowErrorDocSpec.scala) { #resume }

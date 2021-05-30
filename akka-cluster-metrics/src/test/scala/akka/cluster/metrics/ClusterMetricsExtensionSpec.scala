@@ -1,18 +1,20 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.metrics
 
-import scala.language.postfixOps
 import scala.concurrent.duration._
-import akka.actor._
-import akka.testkit._
-import akka.cluster.metrics.StandardMetrics._
-import akka.cluster.Cluster
+import scala.language.postfixOps
 
-class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock)
-  with ImplicitSender with RedirectLogging {
+import akka.cluster.Cluster
+import akka.cluster.metrics.StandardMetrics._
+import akka.testkit._
+
+class ClusterMetricsExtensionSpec
+    extends AkkaSpec(MetricsConfig.clusterSigarMock)
+    with ImplicitSender
+    with RedirectLogging {
 
   val cluster = Cluster(system)
 
@@ -50,7 +52,7 @@ class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock)
       extension.supervisor ! CollectionStopMessage
       awaitSample()
       metricsNodeCount should ===(nodeCount)
-      metricsHistorySize should be >= (sampleCount)
+      metricsHistorySize should be >= sampleCount
     }
 
     "verify sigar mock data matches expected ewma data" in {
@@ -71,14 +73,16 @@ class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock)
 
       expected.size should ===(sampleCount)
 
-      history.zip(expected) foreach {
-        case (mockMetrics, expectedData) ⇒
+      history.zip(expected).foreach {
+        case (mockMetrics, expectedData) =>
           (mockMetrics, expectedData) match {
-            case (Cpu(_, _, loadAverageMock, cpuCombinedMock, cpuStolenMock, _),
-              (loadAverageEwma, cpuCombinedEwma, cpuStolenEwma)) ⇒
+            case (
+                Cpu(_, _, loadAverageMock, cpuCombinedMock, cpuStolenMock, _),
+                (loadAverageEwma, cpuCombinedEwma, cpuStolenEwma)) =>
               loadAverageMock.get should ===(loadAverageEwma +- epsilon)
               cpuCombinedMock.get should ===(cpuCombinedEwma +- epsilon)
               cpuStolenMock.get should ===(cpuStolenEwma +- epsilon)
+            case _ => fail()
           }
       }
     }
@@ -95,12 +99,12 @@ class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock)
         extension.supervisor ! CollectionStartMessage
         awaitSample()
         val size3 = metricsHistorySize
-        size3 should be > (size2)
+        size3 should be > size2
 
         extension.supervisor ! CollectionStopMessage
         awaitSample()
         val size4 = metricsHistorySize
-        size4 should be >= (size3)
+        size4 should be >= size3
 
         awaitSample()
         val size5 = metricsHistorySize
@@ -108,7 +112,9 @@ class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock)
 
       }
 
-      (1 to 3) foreach { step ⇒ cycle() }
+      (1 to 3).foreach { _ =>
+        cycle()
+      }
 
     }
 

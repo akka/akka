@@ -1,17 +1,17 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
+import scala.concurrent.duration.{ FiniteDuration, _ }
+
 import akka.annotation.InternalApi
+import akka.stream._
 import akka.stream.ThrottleMode.{ Enforcing, Shaping }
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
-import akka.stream._
 import akka.util.NanoTimeTokenBucket
-
-import scala.concurrent.duration.{ FiniteDuration, _ }
 
 /**
  * INTERNAL API
@@ -24,12 +24,12 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
  * INTERNAL API
  */
 @InternalApi private[akka] class Throttle[T](
-  val cost:            Int,
-  val per:             FiniteDuration,
-  val maximumBurst:    Int,
-  val costCalculation: (T) ⇒ Int,
-  val mode:            ThrottleMode)
-  extends SimpleLinearGraphStage[T] {
+    val cost: Int,
+    val per: FiniteDuration,
+    val maximumBurst: Int,
+    val costCalculation: (T) => Int,
+    val mode: ThrottleMode)
+    extends SimpleLinearGraphStage[T] {
   require(cost > 0, "cost must be > 0")
   require(per.toNanos > 0, "per time must be > 0")
   require(per.toNanos >= cost, "Rates larger than 1 unit / nanosecond are not supported")
@@ -53,8 +53,8 @@ import scala.concurrent.duration.{ FiniteDuration, _ }
     var willStop = false
     var currentElement: T = _
     val enforcing = mode match {
-      case Enforcing ⇒ true
-      case Shaping   ⇒ false
+      case Enforcing => true
+      case Shaping   => false
     }
 
     override def preStart(): Unit = tokenBucket.init()

@@ -1,14 +1,15 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream
 
 import java.util.concurrent.TimeUnit
 
+import org.openjdk.jmh.annotations._
+
 import akka.stream.impl.JsonObjectParser
 import akka.util.ByteString
-import org.openjdk.jmh.annotations._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)
@@ -16,23 +17,18 @@ import org.openjdk.jmh.annotations._
 class JsonFramingBenchmark {
 
   val json =
-    ByteString(
-      """{"fname":"Frank","name":"Smith","age":42,"id":1337,"boardMember":false}"""
-    )
+    ByteString("""{"fname":"Frank","name":"Smith","age":42,"id":1337,"boardMember":false}""")
 
   val json5 =
-    ByteString(
-      """|{"fname":"Frank","name":"Smith","age":42,"id":1337,"boardMember":false},
+    ByteString("""|{"fname":"Frank","name":"Smith","age":42,"id":1337,"boardMember":false},
          |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
          |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
          |{"fname":"Bob","name":"Smith","age":42,"id":1337,"boardMember":false},
-         |{"fname":"Hank","name":"Smith","age":42,"id":1337,"boardMember":false}""".stripMargin
-    )
+         |{"fname":"Hank","name":"Smith","age":42,"id":1337,"boardMember":false}""".stripMargin)
 
   val jsonLong =
     ByteString(
-      s"""{"fname":"Frank","name":"Smith","age":42,"id":1337,"boardMember":false,"description":"${"a" * 1000000}"}"""
-    )
+      s"""{"fname":"Frank","name":"Smith","age":42,"id":1337,"boardMember":false,"description":"${"a" * 1000000}"}""")
 
   val bracket = new JsonObjectParser
 

@@ -1,2 +1,0 @@
-# #21775 - overrode ByteString.stringPrefix and made it final
-ProblemFilters.exclude[FinalMethodProblem]("akka.util.ByteString.stringPrefix")

@@ -1,23 +1,22 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.testkit
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
-import akka.stream.scaladsl._
-import org.reactivestreams.Publisher
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
+
+import org.reactivestreams.Publisher
+
+import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.AkkaSpec
 
-abstract class BaseTwoStreamsSetup extends AkkaSpec {
-
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 2)
-
-  implicit val materializer = ActorMaterializer(settings)
+abstract class BaseTwoStreamsSetup extends AkkaSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+  """) {
 
   val TestException = new RuntimeException("test") with NoStackTrace
 
@@ -27,7 +26,7 @@ abstract class BaseTwoStreamsSetup extends AkkaSpec {
 
   def failedPublisher[T]: Publisher[T] = TestPublisher.error[T](TestException)
 
-  def completedPublisher[T]: Publisher[T] = TestPublisher.empty[T]
+  def completedPublisher[T]: Publisher[T] = TestPublisher.empty[T]()
 
   def nonemptyPublisher[T](elems: immutable.Iterable[T]): Publisher[T] = Source(elems).runWith(Sink.asPublisher(false))
 

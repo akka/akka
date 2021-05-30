@@ -1,19 +1,22 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport
 
 import scala.concurrent.{ Future, Promise }
-import akka.actor.{ ActorRef, Address, NoSerializationVerificationNeeded }
-import akka.util.ByteString
-import akka.remote.transport.AssociationHandle.HandleEventListener
-import akka.AkkaException
-
 import scala.util.control.NoStackTrace
+
+import scala.annotation.nowarn
+
+import akka.AkkaException
+import akka.actor.{ ActorRef, Address, NoSerializationVerificationNeeded }
 import akka.actor.DeadLetterSuppression
 import akka.event.LoggingAdapter
+import akka.remote.transport.AssociationHandle.HandleEventListener
+import akka.util.{ unused, ByteString }
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object Transport {
 
   trait AssociationEvent extends NoSerializationVerificationNeeded
@@ -23,7 +26,9 @@ object Transport {
    * hostname, etc.).
    */
   @SerialVersionUID(1L)
-  final case class InvalidAssociationException(msg: String, cause: Throwable = null) extends AkkaException(msg, cause) with NoStackTrace
+  final case class InvalidAssociationException(msg: String, cause: Throwable = null)
+      extends AkkaException(msg, cause)
+      with NoStackTrace
 
   /**
    * Message sent to a [[akka.remote.transport.Transport.AssociationEventListener]] registered to a transport
@@ -64,6 +69,7 @@ object Transport {
  * Transport implementations that are loaded dynamically by the remoting must have a constructor that accepts a
  * [[com.typesafe.config.Config]] and an [[akka.actor.ExtendedActorSystem]] as parameters.
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 trait Transport {
   import akka.remote.transport.Transport._
 
@@ -143,10 +149,11 @@ trait Transport {
    * @param cmd Command message to the transport
    * @return Future that succeeds when the command was handled or dropped
    */
-  def managementCommand(cmd: Any): Future[Boolean] = { Future.successful(false) }
+  def managementCommand(@unused cmd: Any): Future[Boolean] = { Future.successful(false) }
 
 }
 
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object AssociationHandle {
 
   /**
@@ -187,6 +194,7 @@ object AssociationHandle {
    * to listen to association events.
    */
   trait HandleEventListener {
+
     /**
      * Called by the transport to notify the listener about a HandleEvent
      * @param ev The HandleEvent of the handle
@@ -212,6 +220,7 @@ object AssociationHandle {
  * returned by [[akka.remote.transport.AssociationHandle#readHandlerPromise]]. Incoming data is not processed until
  * this registration takes place.
  */
+@deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 trait AssociationHandle {
 
   /**
@@ -264,7 +273,9 @@ trait AssociationHandle {
    * could be called arbitrarily many times.
    *
    */
-  @deprecated(message = "Use method that states reasons to make sure disassociation reasons are logged.", since = "2.5.3")
+  @deprecated(
+    message = "Use method that states reasons to make sure disassociation reasons are logged.",
+    since = "2.5.3")
   def disassociate(): Unit
 
   /**
@@ -273,13 +284,15 @@ trait AssociationHandle {
    * be notified, but this is not guaranteed. The Transport that provides the handle MUST guarantee that disassociate()
    * could be called arbitrarily many times.
    */
+  @nowarn("msg=deprecated")
   def disassociate(reason: String, log: LoggingAdapter): Unit = {
     if (log.isDebugEnabled)
       log.debug(
         "Association between local [{}] and remote [{}] was disassociated because {}",
-        localAddress, remoteAddress, reason)
+        localAddress,
+        remoteAddress,
+        reason)
 
     disassociate()
   }
 }
-

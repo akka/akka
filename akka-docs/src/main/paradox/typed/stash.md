@@ -1,13 +1,18 @@
 # Stash
 
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Actors](../actors.md#stash).
+
 ## Dependency
 
 To use Akka Actor Typed, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-actor-typed_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-actor-typed_$scala.binary.version$
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -15,11 +20,11 @@ To use Akka Actor Typed, you must add the following dependency in your project:
 Stashing enables an actor to temporarily buffer all or some messages that cannot or should not
 be handled using the actor's current behavior.
 
-A typical example when this is useful is if the actor has too load some initial state or initialize
+A typical example when this is useful is if the actor has to load some initial state or initialize
 some resources before it can accept the first real message. Another example is when the actor
-is waiting for something to complete before processing next message.
+is waiting for something to complete before processing the next message.
 
-Let's illustrate these two with an example. It's an actor that is used like a single access point
+Let's illustrate these two with an example. The `DataAccess` actor below is used like a single access point
 to a value stored in a database. When it's started it loads current state from the database, and
 while waiting for that initial value all incoming messages are stashed.
 
@@ -30,7 +35,7 @@ Scala
 :  @@snip [StashDocSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StashDocSpec.scala) { #stashing }
 
 Java
-:  @@snip [StashDocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StashDocTest.java) {
+:  @@snip [StashDocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StashDocSample.java) {
   #import
   #db
   #stashing
@@ -53,6 +58,6 @@ stashed messages low. Actors that hog the message processing thread for too long
 of other actors.
 
 That can be mitigated by using the `StashBuffer.unstash` with `numberOfMessages` parameter and then send a
-message to @scala[`ctx.self`]@java[`ctx.getSelf`] before continuing unstashing more. That means that other
+message to @scala[`context.self`]@java[`context.getSelf`] before continuing unstashing more. That means that other
 new messages may arrive in-between and those must be stashed to keep the original order of messages. It
 becomes more complicated, so better keep the number of stashed messages low.

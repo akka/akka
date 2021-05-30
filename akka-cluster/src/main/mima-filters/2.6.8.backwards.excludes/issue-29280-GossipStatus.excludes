@@ -1,0 +1,3 @@
+# #29280
+ProblemFilters.exclude[Problem]("akka.cluster.GossipStatus*")
+ProblemFilters.exclude[Problem]("akka.cluster.protobuf.msg.ClusterMessages*")

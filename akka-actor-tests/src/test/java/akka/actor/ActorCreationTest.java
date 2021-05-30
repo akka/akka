@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor;
@@ -10,14 +10,12 @@ import static java.util.stream.Collectors.toCollection;
 import java.util.ArrayList;
 import java.util.stream.IntStream;
 
-import akka.testkit.TestActors;
 import org.junit.Assert;
 import org.junit.Test;
 
 import akka.japi.Creator;
-import akka.japi.pf.ReceiveBuilder;
 
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 public class ActorCreationTest extends JUnitSuite {
 
@@ -42,8 +40,7 @@ public class ActorCreationTest extends JUnitSuite {
     }
   }
 
-  static interface I<T> extends Creator<AbstractActor> {
-  }
+  static interface I<T> extends Creator<AbstractActor> {}
 
   static class F implements I<Object> {
     @Override
@@ -52,7 +49,6 @@ public class ActorCreationTest extends JUnitSuite {
     }
   }
 
-
   static class G implements Creator {
     public Object create() {
       return null;
@@ -60,8 +56,7 @@ public class ActorCreationTest extends JUnitSuite {
   }
 
   abstract class H extends AbstractActor {
-    public H(String a) {
-    }
+    public H(String a) {}
   }
 
   static class P implements Creator<AbstractActor> {
@@ -84,6 +79,7 @@ public class ActorCreationTest extends JUnitSuite {
       return Props.create(TestActor.class, () -> new TestActor(magicNumber));
     }
 
+    @Deprecated
     public static Props propsUsingLamdaWithoutClass(Integer magicNumber) {
       return Props.create(() -> new TestActor(magicNumber));
     }
@@ -99,7 +95,6 @@ public class ActorCreationTest extends JUnitSuite {
     public Receive createReceive() {
       return receiveBuilder().build();
     }
-
   }
 
   public static class TestActor2 extends UntypedAbstractActor {
@@ -107,41 +102,44 @@ public class ActorCreationTest extends JUnitSuite {
     public static Props propsUsingCreator(final int magicNumber) {
       // You need to specify the actual type of the returned actor
       // since runtime type information erased
-      return Props.create(TestActor2.class, new Creator<TestActor2>() {
-        private static final long serialVersionUID = 1L;
+      return Props.create(
+          TestActor2.class,
+          new Creator<TestActor2>() {
+            private static final long serialVersionUID = 1L;
 
-        @Override
-        public TestActor2 create() throws Exception {
-          return new TestActor2(magicNumber);
-        }
-      });
+            @Override
+            public TestActor2 create() throws Exception {
+              return new TestActor2(magicNumber);
+            }
+          });
     }
 
     public static Props propsUsingCreatorWithoutClass(final int magicNumber) {
-      return Props.create(new Creator<TestActor2>() {
-        private static final long serialVersionUID = 1L;
+      return Props.create(
+          TestActor2.class,
+          new Creator<TestActor2>() {
+            private static final long serialVersionUID = 1L;
 
-        @Override
-        public TestActor2 create() throws Exception {
-          return new TestActor2(magicNumber);
-        }
-      });
+            @Override
+            public TestActor2 create() throws Exception {
+              return new TestActor2(magicNumber);
+            }
+          });
     }
 
-    private static final Creator<TestActor2> staticCreator = new Creator<TestActor2>() {
-      private static final long serialVersionUID = 1L;
+    private static final Creator<TestActor2> staticCreator =
+        new Creator<TestActor2>() {
+          private static final long serialVersionUID = 1L;
 
-      @Override
-      public TestActor2 create() throws Exception {
-        return new TestActor2(12);
-      }
-    };
+          @Override
+          public TestActor2 create() throws Exception {
+            return new TestActor2(12);
+          }
+        };
 
     public static Props propsUsingStaticCreator(final int magicNumber) {
 
-
-
-      return Props.create(staticCreator);
+      return Props.create(TestActor2.class, staticCreator);
     }
 
     final int magicNumber;
@@ -151,8 +149,7 @@ public class ActorCreationTest extends JUnitSuite {
     }
 
     @Override
-    public void onReceive(Object msg) {
-    }
+    public void onReceive(Object msg) {}
   }
 
   public static class Issue20537Reproducer extends UntypedAbstractActor {
@@ -171,41 +168,44 @@ public class ActorCreationTest extends JUnitSuite {
       }
     }
 
-    public Issue20537Reproducer(boolean create) {
-    }
+    public Issue20537Reproducer(boolean create) {}
 
     @Override
-    public void onReceive(Object message) throws Exception {
-    }
+    public void onReceive(Object message) throws Exception {}
   }
 
   @Test
   public void testWrongAnonymousInPlaceCreator() {
-    try {
-      Props.create(new Creator<Actor>() {
-        @Override
-        public Actor create() throws Exception {
-          return null;
-        }
-      });
-      assert false;
-    } catch (IllegalArgumentException e) {
-      assertEquals("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level", e.getMessage());
-    }
+    IllegalArgumentException exception =
+        Assert.assertThrows(
+            IllegalArgumentException.class,
+            () ->
+                Props.create(
+                    Actor.class,
+                    new Creator<Actor>() {
+                      @Override
+                      public Actor create() throws Exception {
+                        return null;
+                      }
+                    }));
+    assertEquals(
+        "cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level",
+        exception.getMessage());
   }
 
   @Test
   @SuppressWarnings("unchecked")
+  @Deprecated
   public void testWrongErasedStaticCreator() {
-    try {
-      Props.create(new G());
-      assert false;
-    } catch (IllegalArgumentException e) {
-      assertEquals("erased Creator types are unsupported, use Props.create(actorClass, creator) instead", e.getMessage());
-    }
+    IllegalArgumentException exception =
+        Assert.assertThrows(IllegalArgumentException.class, () -> Props.create(new G()));
+    assertEquals(
+        "erased Creator types (e.g. lambdas) are unsupported, use Props.create(actorClass, creator) instead",
+        exception.getMessage());
     Props.create(AbstractActor.class, new G());
   }
 
+  @Deprecated
   @Test
   public void testRightStaticCreator() {
     final Props p = Props.create(new C());
@@ -213,35 +213,43 @@ public class ActorCreationTest extends JUnitSuite {
   }
 
   @Test
+  @Deprecated
   public void testWrongAnonymousClassStaticCreator() {
-    try {
-      Props.create(new C() {}); // has implicit reference to outer class
-      org.junit.Assert.fail("Should have detected this is not a real static class, and thrown");
-    } catch (IllegalArgumentException e) {
-      assertEquals("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level", e.getMessage());
-    }
+    IllegalArgumentException exception =
+        Assert.assertThrows(
+            "Should have detected this is not a real static class, and thrown",
+            IllegalArgumentException.class,
+            () -> {
+              Props.create(new C() {}); // has implicit reference to outer class
+            });
+    assertEquals(
+        "cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level",
+        exception.getMessage());
   }
 
   @Test
   public void testRightTopLevelNonStaticCreator() {
     final Creator<UntypedAbstractActor> nonStatic = new NonStaticCreator();
-    final Props p = Props.create(nonStatic);
+    final Props p = Props.create(UntypedAbstractActor.class, nonStatic);
     assertEquals(UntypedAbstractActor.class, p.actorClass());
   }
 
   @Test
+  @Deprecated
   public void testRightStaticParametricCreator() {
     final Props p = Props.create(new D<AbstractActor>());
     assertEquals(Actor.class, p.actorClass());
   }
 
   @Test
+  @Deprecated
   public void testRightStaticBoundedCreator() {
     final Props p = Props.create(new E<AbstractActor>());
     assertEquals(AbstractActor.class, p.actorClass());
   }
 
   @Test
+  @Deprecated
   public void testRightStaticSuperinterface() {
     final Props p = Props.create(new F());
     assertEquals(AbstractActor.class, p.actorClass());
@@ -249,12 +257,11 @@ public class ActorCreationTest extends JUnitSuite {
 
   @Test
   public void testWrongAbstractActorClass() {
-    try {
-      Props.create(H.class, "a");
-      assert false;
-    } catch (IllegalArgumentException e) {
-      assertEquals(String.format("Actor class [%s] must not be abstract", H.class.getName()), e.getMessage());
-    }
+    IllegalArgumentException exception =
+        Assert.assertThrows(IllegalArgumentException.class, () -> Props.create(H.class, "a"));
+    assertEquals(
+        String.format("Actor class [%s] must not be abstract", H.class.getName()),
+        exception.getMessage());
   }
 
   private static Creator<AbstractActor> createAnonymousCreatorInStaticMethod() {
@@ -267,28 +274,36 @@ public class ActorCreationTest extends JUnitSuite {
   }
 
   @Test
+  @Deprecated
   public void testAnonymousClassCreatedInStaticMethodCreator() {
-    final Creator<AbstractActor> anonymousCreatorFromStaticMethod = createAnonymousCreatorInStaticMethod();
+    final Creator<AbstractActor> anonymousCreatorFromStaticMethod =
+        createAnonymousCreatorInStaticMethod();
     Props.create(anonymousCreatorFromStaticMethod);
   }
 
   @Test
+  @Deprecated
   public void testClassCreatorWithArguments() {
     final Creator<AbstractActor> anonymousCreatorFromStaticMethod = new P("hello");
     Props.create(anonymousCreatorFromStaticMethod);
   }
 
   @Test
+  @Deprecated
   public void testAnonymousClassCreatorWithArguments() {
-    try {
-      final Creator<AbstractActor> anonymousCreatorFromStaticMethod = new P("hello") {
-        // captures enclosing class
-      };
-      Props.create(anonymousCreatorFromStaticMethod);
-      org.junit.Assert.fail("Should have detected this is not a real static class, and thrown");
-    } catch (IllegalArgumentException e) {
-      assertEquals("cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level", e.getMessage());
-    }
+    IllegalArgumentException exception =
+        Assert.assertThrows(
+            "Should have detected this is not a real static class, and thrown",
+            IllegalArgumentException.class,
+            () -> {
+              final Creator<AbstractActor> anonymousCreatorFromStaticMethod = new P("hello") {
+                    // captures enclosing class
+                  };
+              Props.create(anonymousCreatorFromStaticMethod);
+            });
+    assertEquals(
+        "cannot use non-static local Creator to create actors; make it static (e.g. local to a static method) or top-level",
+        exception.getMessage());
   }
 
   @Test
@@ -298,16 +313,19 @@ public class ActorCreationTest extends JUnitSuite {
   }
 
   @Test
+  @Deprecated
   public void testWrongPropsUsingLambdaWithoutClass() {
     final Props p = TestActor.propsUsingLamda(17);
     assertEquals(TestActor.class, p.actorClass());
-    try {
-      TestActor.propsUsingLamdaWithoutClass(17);
-      org.junit.Assert.fail("Should have detected lambda erasure, and thrown");
-    } catch (IllegalArgumentException e) {
-      assertEquals("erased Creator types are unsupported, use Props.create(actorClass, creator) instead",
-          e.getMessage());
-    }
+
+    IllegalArgumentException exception =
+        Assert.assertThrows(
+            "Should have detected lambda erasure, and thrown",
+            IllegalArgumentException.class,
+            () -> TestActor.propsUsingLamdaWithoutClass(17));
+    assertEquals(
+        "erased Creator types (e.g. lambdas) are unsupported, use Props.create(actorClass, creator) instead",
+        exception.getMessage());
   }
 
   @Test
@@ -324,16 +342,17 @@ public class ActorCreationTest extends JUnitSuite {
 
   @Test
   public void testIssue20537Reproducer() {
-    final Issue20537Reproducer.ReproducerCreator creator = new Issue20537Reproducer.ReproducerCreator(false);
-    final Props p = Props.create(creator);
+    final Issue20537Reproducer.ReproducerCreator creator =
+        new Issue20537Reproducer.ReproducerCreator(false);
+    final Props p = Props.create(Issue20537Reproducer.class, creator);
     assertEquals(Issue20537Reproducer.class, p.actorClass());
 
-    ArrayList<Props> pList = IntStream.range(0, 4).mapToObj(i -> Props.create(creator))
-        .collect(toCollection(ArrayList::new));
+    ArrayList<Props> pList =
+        IntStream.range(0, 4)
+            .mapToObj(i -> Props.create(Issue20537Reproducer.class, creator))
+            .collect(toCollection(ArrayList::new));
     for (Props each : pList) {
       assertEquals(Issue20537Reproducer.class, each.actorClass());
     }
   }
-
-
 }

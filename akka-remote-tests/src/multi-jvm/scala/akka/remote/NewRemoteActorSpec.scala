@@ -1,38 +1,39 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import akka.actor.Terminated
+import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
 import language.postfixOps
+import testkit.MultiNodeConfig
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
-import testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
+import akka.actor.Terminated
+import akka.util.unused
 
 class NewRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString(s"""
+  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.artery.enabled = $artery
+      akka.remote.use-unsafe-remote-features-outside-cluster = on
       """).withFallback(RemotingMultiNodeSpec.commonConfig)))
 
-  val master = role("master")
-  val slave = role("slave")
+  val leader = role("leader")
+  val follower = role("follower")
 
-  deployOn(master, """
-    /service-hello.remote = "@slave@"
-    /service-hello-null.remote = "@slave@"
-    /service-hello3.remote = "@slave@"
+  deployOn(leader, """
+    /service-hello.remote = "@follower@"
+    /service-hello-null.remote = "@follower@"
+    /service-hello3.remote = "@follower@"
     """)
 
-  deployOnAll("""/service-hello2.remote = "@slave@" """)
+  deployOnAll("""/service-hello2.remote = "@follower@" """)
 }
 
 class NewRemoteActorMultiJvmNode1 extends NewRemoteActorSpec(new NewRemoteActorMultiJvmSpec(artery = false))
@@ -44,21 +45,21 @@ class ArteryNewRemoteActorMultiJvmNode2 extends NewRemoteActorSpec(new NewRemote
 object NewRemoteActorSpec {
   class SomeActor extends Actor {
     def receive = {
-      case "identify" ⇒ sender() ! self
+      case "identify" => sender() ! self
     }
   }
 
-  class SomeActorWithParam(ignored: String) extends Actor {
+  class SomeActorWithParam(@unused ignored: String) extends Actor {
     def receive = {
-      case "identify" ⇒ sender() ! self
+      case "identify" => sender() ! self
     }
   }
 }
 
 abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
-  extends RemotingMultiNodeSpec(multiNodeConfig) {
-  import multiNodeConfig._
+    extends RemotingMultiNodeSpec(multiNodeConfig) {
   import NewRemoteActorSpec._
+  import multiNodeConfig._
 
   def initialParticipants = roles.size
 
@@ -68,14 +69,14 @@ abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
   "A new remote actor" must {
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
 
-      runOn(master) {
-        val actor = system.actorOf(Props[SomeActor], "service-hello")
+      runOn(leader) {
+        val actor = system.actorOf(Props[SomeActor](), "service-hello")
         actor.isInstanceOf[RemoteActorRef] should ===(true)
-        actor.path.address should ===(node(slave).address)
+        actor.path.address should ===(node(follower).address)
 
-        val slaveAddress = testConductor.getAddressFor(slave).await
+        val followerAddress = testConductor.getAddressFor(follower).await
         actor ! "identify"
-        expectMsgType[ActorRef].path.address should ===(slaveAddress)
+        expectMsgType[ActorRef].path.address should ===(followerAddress)
       }
 
       enterBarrier("done")
@@ -83,14 +84,14 @@ abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
 
     "be locally instantiated on a remote node (with null parameter) and be able to communicate through its RemoteActorRef" in {
 
-      runOn(master) {
+      runOn(leader) {
         val actor = system.actorOf(Props(classOf[SomeActorWithParam], null), "service-hello-null")
         actor.isInstanceOf[RemoteActorRef] should ===(true)
-        actor.path.address should ===(node(slave).address)
+        actor.path.address should ===(node(follower).address)
 
-        val slaveAddress = testConductor.getAddressFor(slave).await
+        val followerAddress = testConductor.getAddressFor(follower).await
         actor ! "identify"
-        expectMsgType[ActorRef].path.address should ===(slaveAddress)
+        expectMsgType[ActorRef].path.address should ===(followerAddress)
       }
 
       enterBarrier("done")
@@ -98,24 +99,24 @@ abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
 
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef (with deployOnAll)" in {
 
-      runOn(master) {
-        val actor = system.actorOf(Props[SomeActor], "service-hello2")
+      runOn(leader) {
+        val actor = system.actorOf(Props[SomeActor](), "service-hello2")
         actor.isInstanceOf[RemoteActorRef] should ===(true)
-        actor.path.address should ===(node(slave).address)
+        actor.path.address should ===(node(follower).address)
 
-        val slaveAddress = testConductor.getAddressFor(slave).await
+        val followerAddress = testConductor.getAddressFor(follower).await
         actor ! "identify"
-        expectMsgType[ActorRef].path.address should ===(slaveAddress)
+        expectMsgType[ActorRef].path.address should ===(followerAddress)
       }
 
       enterBarrier("done")
     }
 
     "be able to shutdown system when using remote deployed actor" in within(20 seconds) {
-      runOn(master) {
-        val actor = system.actorOf(Props[SomeActor], "service-hello3")
+      runOn(leader) {
+        val actor = system.actorOf(Props[SomeActor](), "service-hello3")
         actor.isInstanceOf[RemoteActorRef] should ===(true)
-        actor.path.address should ===(node(slave).address)
+        actor.path.address should ===(node(follower).address)
         // This watch is in race with the shutdown of the watched system. This race should remain, as the test should
         // handle both cases:
         //  - remote system receives watch, replies with DeathWatchNotification
@@ -125,12 +126,12 @@ abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
 
         enterBarrier("deployed")
 
-        // master system is supposed to be shutdown after slave
-        // this should be triggered by slave system.terminate
-        expectMsgPF() { case Terminated(`actor`) ⇒ true }
+        // master system is supposed to be shutdown after follower
+        // this should be triggered by follower system.terminate
+        expectMsgPF() { case Terminated(`actor`) => true }
       }
 
-      runOn(slave) {
+      runOn(follower) {
         enterBarrier("deployed")
       }
 

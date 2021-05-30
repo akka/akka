@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.javadsl
@@ -26,6 +26,13 @@ trait EventsByTagQuery extends ReadJournal {
    * support those semantics and they may use a weaker meaning. For example it may be a
    * timestamp (taken when the event was created or stored). Timestamps are not unique and
    * not strictly ordered, since clocks on different machines may not be synchronized.
+   *
+   * In strongly consistent stores, where the `offset` is unique and strictly ordered, the
+   * stream should start from the next event after the `offset`. Otherwise, the read journal
+   * should ensure that between an invocation that returned an event with the given
+   * `offset` and this invocation, no events are missed. Depending on the journal
+   * implementation, this may mean that this invocation will return events that were already
+   * returned by the previous invocation, including the event with the passed in `offset`.
    *
    * The returned event stream should be ordered by `offset` if possible, but this can also be
    * difficult to fulfill for a distributed data store. The order must be documented by the

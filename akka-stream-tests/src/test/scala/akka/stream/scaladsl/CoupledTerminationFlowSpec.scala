@@ -1,27 +1,31 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.{ Done, NotUsed }
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+import scala.xml.Node
+
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
+import org.scalatest.Assertion
+
+import akka.Done
+import akka.NotUsed
 import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.TestProbe
-import org.reactivestreams.{ Publisher, Subscriber, Subscription }
-import org.scalatest.Assertion
 
-import scala.concurrent.Future
-import scala.util.{ Failure, Success, Try }
-import scala.xml.Node
+class CoupledTerminationFlowSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) with ScriptedTest {
 
-class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
-
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
   import system.dispatcher
 
   /**
@@ -63,7 +67,7 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
     </table>
 
   "Completion" must {
-    (effectsTable \ "tr").foreach { testCase ⇒
+    (effectsTable \ "tr").foreach { testCase =>
       val rules = testCase \\ "td"
       val outerRule = rules.head.toString()
       val innerSinkRule = rules.drop(1).head.toString()
@@ -86,9 +90,7 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
 
     "completed out:Source => complete in:Sink" in {
       val probe = TestProbe()
-      val f = Flow.fromSinkAndSourceCoupledMat(
-        Sink.onComplete(d ⇒ probe.ref ! "done"),
-        Source.empty)(Keep.none) // completes right away, should complete the sink as well
+      val f = Flow.fromSinkAndSourceCoupledMat(Sink.onComplete(_ => probe.ref ! "done"), Source.empty)(Keep.none) // completes right away, should complete the sink as well
 
       f.runWith(Source.maybe, Sink.ignore) // these do nothing.
 
@@ -97,17 +99,15 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
 
     "cancel in:Sink => cancel out:Source" in {
       val probe = TestProbe()
-      val f = Flow.fromSinkAndSourceCoupledMat(
-        Sink.cancelled,
-        Source.fromPublisher(new Publisher[String] {
-          override def subscribe(subscriber: Subscriber[_ >: String]): Unit = {
-            subscriber.onSubscribe(new Subscription {
-              override def cancel(): Unit = probe.ref ! "cancelled"
+      val f = Flow.fromSinkAndSourceCoupledMat(Sink.cancelled, Source.fromPublisher(new Publisher[String] {
+        override def subscribe(subscriber: Subscriber[_ >: String]): Unit = {
+          subscriber.onSubscribe(new Subscription {
+            override def cancel(): Unit = probe.ref ! "cancelled"
 
-              override def request(l: Long): Unit = () // do nothing
-            })
-          }
-        }))(Keep.none) // completes right away, should complete the sink as well
+            override def request(l: Long): Unit = () // do nothing
+          })
+        }
+      }))(Keep.none) // completes right away, should complete the sink as well
 
       f.runWith(Source.maybe, Sink.ignore) // these do nothing.
 
@@ -117,7 +117,7 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
     "error wrapped Sink when wrapped Source errors " in {
       val probe = TestProbe()
       val f = Flow.fromSinkAndSourceCoupledMat(
-        Sink.onComplete(e ⇒ probe.ref ! e.failed.get.getMessage),
+        Sink.onComplete(e => probe.ref ! e.failed.get.getMessage),
         Source.failed(new Exception("BOOM!")))(Keep.none) // completes right away, should complete the sink as well
 
       f.runWith(Source.maybe, Sink.ignore) // these do nothing.
@@ -131,7 +131,7 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
 
       val flow = Flow.fromSinkAndSourceCoupledMat(sink, source)(Keep.right)
 
-      val (source1, source2) = TestSource.probe[Int].viaMat(flow)(Keep.both).toMat(Sink.ignore)(Keep.left).run
+      val (source1, source2) = TestSource.probe[Int].viaMat(flow)(Keep.both).toMat(Sink.ignore)(Keep.left).run()
 
       source1.sendComplete()
       source2.expectCancellation()
@@ -139,51 +139,52 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
 
   }
 
-  def interpretOuter(rule: String): (Source[String, NotUsed], Sink[String, NotUsed], () ⇒ Any) = {
+  def interpretOuter(rule: String): (Source[String, NotUsed], Sink[String, NotUsed], () => Any) = {
     val probe = TestProbe()
     val causeUpstreamCompletes = Source.empty[String]
     val causeUpstreamErrors = Source.failed(new Exception("Boom"))
     val causeDownstreamCancels = Sink.cancelled[String]
 
-    val downstreamEffect = Sink.onComplete(s ⇒ probe.ref ! s)
+    val downstreamEffect = Sink.onComplete(s => probe.ref ! s)
     val upstreamEffect = Source.fromPublisher(new Publisher[String] {
-      override def subscribe(s: Subscriber[_ >: String]): Unit = s.onSubscribe(new Subscription {
-        override def cancel(): Unit = probe.ref ! "cancel-received"
+      override def subscribe(s: Subscriber[_ >: String]): Unit =
+        s.onSubscribe(new Subscription {
+          override def cancel(): Unit = probe.ref ! "cancel-received"
 
-        override def request(n: Long): Unit = ()
-      })
+          override def request(n: Long): Unit = ()
+        })
     })
-    val assertCancel = () ⇒ {
+    val assertCancel = () => {
       val m = probe.expectMsgType[String]
       m should ===("cancel-received")
     }
-    val assertComplete = () ⇒ {
+    val assertComplete = () => {
       val m = probe.expectMsgType[Try[Done]]
       m.isFailure should ===(false)
     }
-    val assertCompleteAndCancel = () ⇒ {
+    val assertCompleteAndCancel = () => {
       probe.expectMsgPF() {
-        case Success(v)        ⇒ // good
-        case "cancel-received" ⇒ // good
+        case Success(_)        => // good
+        case "cancel-received" => // good
       }
       probe.expectMsgPF() {
-        case Success(v)        ⇒ // good
-        case "cancel-received" ⇒ // good
+        case Success(_)        => // good
+        case "cancel-received" => // good
       }
     }
-    val assertError = () ⇒ {
+    val assertError = () => {
       val m = probe.expectMsgType[Try[Done]]
       m.isFailure should ===(true)
       m.failed.get.getMessage should include("Boom")
     }
-    val assertErrorAndCancel = () ⇒ {
+    val assertErrorAndCancel = () => {
       probe.expectMsgPF() {
-        case Failure(ex)       ⇒ // good
-        case "cancel-received" ⇒ // good
+        case Failure(_)        => // good
+        case "cancel-received" => // good
       }
       probe.expectMsgPF() {
-        case Failure(ex)       ⇒ // good
-        case "cancel-received" ⇒ // good
+        case Failure(_)        => // good
+        case "cancel-received" => // good
       }
     }
 
@@ -205,21 +206,21 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
     } else throw UnableToInterpretRule(rule)
   }
 
-  def interpretInnerSink(rule: String): (Sink[String, NotUsed], () ⇒ Assertion) = {
+  def interpretInnerSink(rule: String): (Sink[String, NotUsed], () => Assertion) = {
     val probe = TestProbe()
     val causeCancel = Sink.cancelled[String]
 
-    val catchEffect = Sink.onComplete(s ⇒ probe.ref ! s)
-    val assertComplete = () ⇒ {
+    val catchEffect = Sink.onComplete(s => probe.ref ! s)
+    val assertComplete = () => {
       val m = probe.expectMsgType[Try[Done]]
       m.isFailure should ===(false)
     }
-    val assertError = () ⇒ {
+    val assertError = () => {
       val m = probe.expectMsgType[Try[Done]]
       m.isFailure should ===(true)
       m.failed.get.getMessage should include("Boom")
     }
-    val assertionOK = () ⇒ 1 should ===(1)
+    val assertionOK = () => 1 should ===(1)
 
     if (rule contains "cause") {
       if (rule.contains("cancels")) (causeCancel, assertionOK)
@@ -231,21 +232,23 @@ class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
     } else throw UnableToInterpretRule(rule)
   }
 
-  def interpretInnerSource(rule: String): (Source[String, NotUsed], () ⇒ Assertion) = {
+  def interpretInnerSource(rule: String): (Source[String, NotUsed], () => Assertion) = {
     val probe = TestProbe()
     val causeComplete = Source.empty[String]
     val causeError = Source.failed(new Exception("Boom"))
 
-    val catchEffect = Source.maybe[String].mapMaterializedValue(p ⇒ {
-      p.future.onComplete(t ⇒ probe.ref ! t)
-      NotUsed
-    })
-    val assertCancel = () ⇒ {
+    val catchEffect = Source
+      .maybe[String]
+      .mapMaterializedValue(p => {
+        p.future.onComplete(t => probe.ref ! t)
+        NotUsed
+      })
+    val assertCancel = () => {
       val m = probe.expectMsgType[Try[Option[String]]]
       m.isFailure should ===(false)
       m.get should ===(None) // downstream cancelled
     }
-    val assertionOK = () ⇒ 1 should ===(1)
+    val assertionOK = () => 1 should ===(1)
 
     if (rule contains "cause") {
       if (rule.contains("complete")) (causeComplete, assertionOK)

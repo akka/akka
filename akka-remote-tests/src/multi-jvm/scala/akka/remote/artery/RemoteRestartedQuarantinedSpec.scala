@@ -1,35 +1,41 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
-
-import akka.actor.{ ActorIdentity, Identify, _ }
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.{ AddressUidExtension, RARP, RemotingMultiNodeSpec, ThisActorSystemQuarantinedEvent }
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.{ ActorIdentity, Identify, _ }
+import akka.remote.{ AddressUidExtension, RARP, RemotingMultiNodeSpec }
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.MultiNodeConfig
+import akka.testkit._
+
 object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(
-    ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       akka.loglevel = WARNING
       akka.remote.log-remote-lifecycle-events = WARNING
       akka.remote.artery.enabled = on
-      """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+      # test is using Java serialization and not priority to rewrite
+      akka.actor.allow-java-serialization = on
+      akka.actor.warn-about-java-serializer-usage = off
+      """))
+      .withFallback(RemotingMultiNodeSpec.commonConfig))
 
   class Subject extends Actor {
     def receive = {
-      case "shutdown" ⇒ context.system.terminate()
-      case "identify" ⇒ sender() ! (AddressUidExtension(context.system).longAddressUid → self)
+      case "shutdown" => context.system.terminate()
+      case "identify" => sender() ! (AddressUidExtension(context.system).longAddressUid -> self)
     }
   }
 
@@ -44,7 +50,10 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
 
   override def initialParticipants = 2
 
-  def identifyWithUid(role: RoleName, actorName: String, timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
+  def identifyWithUid(
+      role: RoleName,
+      actorName: String,
+      timeout: FiniteDuration = remainingOrDefault): (Long, ActorRef) = {
     within(timeout) {
       system.actorSelection(node(role) / "user" / actorName) ! "identify"
       expectMsgType[(Long, ActorRef)]
@@ -55,13 +64,13 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
 
     "should not crash the other system (#17213)" taggedAs LongRunningTest in {
 
-      system.actorOf(Props[Subject], "subject")
+      system.actorOf(Props[Subject](), "subject")
       enterBarrier("subject-started")
 
       runOn(first) {
         val secondAddress = node(second).address
 
-        val (uid, ref) = identifyWithUid(second, "subject", 5.seconds)
+        val (uid, _) = identifyWithUid(second, "subject", 5.seconds)
 
         enterBarrier("before-quarantined")
         RARP(system).provider.transport.quarantine(node(second).address, Some(uid), "test")
@@ -86,13 +95,13 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
         val firstAddress = node(first).address
         system.eventStream.subscribe(testActor, classOf[ThisActorSystemQuarantinedEvent])
 
-        val (firstUid, ref) = identifyWithUid(first, "subject", 5.seconds)
+        val (firstUid, _) = identifyWithUid(first, "subject", 5.seconds)
 
         enterBarrier("before-quarantined")
         enterBarrier("quarantined")
 
         expectMsgPF(10 seconds) {
-          case ThisActorSystemQuarantinedEvent(local, remote) ⇒
+          case ThisActorSystemQuarantinedEvent(_, _) =>
         }
 
         // check that we quarantine back
@@ -106,17 +115,21 @@ abstract class RemoteRestartedQuarantinedSpec extends RemotingMultiNodeSpec(Remo
 
         Await.result(system.whenTerminated, 10.seconds)
 
-        val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
+        val freshSystem = ActorSystem(
+          system.name,
+          ConfigFactory.parseString(s"""
               akka.remote.artery.canonical.port = ${address.port.get}
               """).withFallback(system.settings.config))
 
         val probe = TestProbe()(freshSystem)
 
-        freshSystem.actorSelection(RootActorPath(firstAddress) / "user" / "subject").tell(Identify("subject"), probe.ref)
+        freshSystem
+          .actorSelection(RootActorPath(firstAddress) / "user" / "subject")
+          .tell(Identify("subject"), probe.ref)
         probe.expectMsgType[ActorIdentity](5.seconds).ref should not be (None)
 
         // Now the other system will be able to pass, too
-        freshSystem.actorOf(Props[Subject], "subject")
+        freshSystem.actorOf(Props[Subject](), "subject")
 
         Await.ready(freshSystem.whenTerminated, 10.seconds)
       }

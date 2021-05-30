@@ -1,15 +1,14 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
 
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.stream.{ ActorMaterializer, SubstreamCancelStrategy }
+import akka.stream.{ SubstreamCancelStrategy }
 import akka.testkit.AkkaSpec
 
 class SubstreamDocSpec extends AkkaSpec {
-  implicit val materializer = ActorMaterializer()
 
   "generate substreams by groupBy" in {
     //#groupBy1
@@ -21,23 +20,14 @@ class SubstreamDocSpec extends AkkaSpec {
     //#groupBy2
 
     //#groupBy3
-    Source(1 to 10)
-      .groupBy(3, _ % 3)
-      .mergeSubstreams
-      .runWith(Sink.ignore)
+    Source(1 to 10).groupBy(3, _ % 3).mergeSubstreams.runWith(Sink.ignore)
     //#groupBy3
 
     //#groupBy4
-    Source(1 to 10)
-      .groupBy(3, _ % 3)
-      .mergeSubstreamsWithParallelism(2)
-      .runWith(Sink.ignore)
+    Source(1 to 10).groupBy(3, _ % 3).mergeSubstreamsWithParallelism(2).runWith(Sink.ignore)
 
     //concatSubstreams is equivalent to mergeSubstreamsWithParallelism(1)
-    Source(1 to 10)
-      .groupBy(3, _ % 3)
-      .concatSubstreams
-      .runWith(Sink.ignore)
+    Source(1 to 10).groupBy(3, _ % 3).concatSubstreams.runWith(Sink.ignore)
     //#groupBy4
   }
 
@@ -51,13 +41,13 @@ class SubstreamDocSpec extends AkkaSpec {
     //#wordCount
     val text =
       "This is the first line.\n" +
-        "The second line.\n" +
-        "There is also the 3rd line\n"
+      "The second line.\n" +
+      "There is also the 3rd line\n"
 
     val charCount = Source(text.toList)
       .splitAfter { _ == '\n' }
       .filter(_ != '\n')
-      .map(_ ⇒ 1)
+      .map(_ => 1)
       .reduce(_ + _)
       .to(Sink.foreach(println))
       .run()
@@ -66,15 +56,11 @@ class SubstreamDocSpec extends AkkaSpec {
 
   "generate substreams by flatMapConcat and flatMapMerge" in {
     //#flatMapConcat
-    Source(1 to 2)
-      .flatMapConcat(i ⇒ Source(List.fill(3)(i)))
-      .runWith(Sink.ignore)
+    Source(1 to 2).flatMapConcat(i => Source(List.fill(3)(i))).runWith(Sink.ignore)
     //#flatMapConcat
 
     //#flatMapMerge
-    Source(1 to 2)
-      .flatMapMerge(2, i ⇒ Source(List.fill(3)(i)))
-      .runWith(Sink.ignore)
+    Source(1 to 2).flatMapMerge(2, i => Source(List.fill(3)(i))).runWith(Sink.ignore)
     //#flatMapMerge
   }
 }

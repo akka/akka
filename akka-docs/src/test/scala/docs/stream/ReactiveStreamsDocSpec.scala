@@ -1,31 +1,26 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
 
 import akka.NotUsed
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit._
-import org.reactivestreams.Processor
 import akka.testkit.AkkaSpec
 
 class ReactiveStreamsDocSpec extends AkkaSpec {
   import TwitterStreamQuickstartDocSpec._
 
-  implicit val materializer = ActorMaterializer()
-
   //#imports
   import org.reactivestreams.Publisher
   import org.reactivestreams.Subscriber
+  import org.reactivestreams.Processor
   //#imports
 
   trait Fixture {
     //#authors
-    val authors = Flow[Tweet]
-      .filter(_.hashtags.contains(akkaTag))
-      .map(_.author)
+    val authors = Flow[Tweet].filter(_.hashtags.contains(akkaTag)).map(_.author)
 
     //#authors
 
@@ -46,9 +41,9 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
     override def tweets: Publisher[Tweet] =
       TwitterStreamQuickstartDocSpec.tweets.runWith(Sink.asPublisher(fanout = false))
 
-    override def storage = TestSubscriber.manualProbe[Author]
+    override def storage = TestSubscriber.manualProbe[Author]()
 
-    override def alert = TestSubscriber.manualProbe[Author]
+    override def alert = TestSubscriber.manualProbe[Author]()
   }
 
   def assertResult(storage: TestSubscriber.ManualProbe[Author]): Unit = {
@@ -110,8 +105,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
 
     //#source-fanoutPublisher
     val authorPublisher: Publisher[Author] =
-      Source.fromPublisher(tweets).via(authors)
-        .runWith(Sink.asPublisher(fanout = true))
+      Source.fromPublisher(tweets).via(authors).runWith(Sink.asPublisher(fanout = true))
 
     authorPublisher.subscribe(storage)
     authorPublisher.subscribe(alert)
@@ -142,7 +136,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
     // An example Processor factory
     def createProcessor: Processor[Int, Int] = Flow[Int].toProcessor.run()
 
-    val flow: Flow[Int, Int, NotUsed] = Flow.fromProcessor(() ⇒ createProcessor)
+    val flow: Flow[Int, Int, NotUsed] = Flow.fromProcessor(() => createProcessor)
     //#use-processor
 
   }

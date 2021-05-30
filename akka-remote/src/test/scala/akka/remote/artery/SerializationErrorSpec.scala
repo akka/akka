@@ -1,13 +1,13 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
 import akka.actor.{ ActorIdentity, Identify, RootActorPath }
+import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
-import akka.testkit.EventFilter
 
 object SerializationErrorSpec {
 
@@ -58,10 +58,11 @@ class SerializationErrorSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defau
       remoteRef ! "ping"
       expectMsg("ping")
 
-      EventFilter.warning(
-        pattern = """Failed to deserialize message from \[.*\] with serializer id \[4\]""", occurrences = 1).intercept {
-        remoteRef ! "boom".getBytes("utf-8")
-      }(systemB)
+      EventFilter
+        .warning(pattern = """Failed to deserialize message from \[.*\] with serializer id \[4\]""", occurrences = 1)
+        .intercept {
+          remoteRef ! "boom".getBytes("utf-8")
+        }(systemB)
 
       remoteRef ! "ping2"
       expectMsg("ping2")

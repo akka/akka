@@ -1,21 +1,23 @@
-/**
- * Copyright (C) 2015–2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
-import scala.collection.immutable
 import java.io.IOException
-import java.util.Arrays
 import java.util.jar.Attributes
 import java.util.jar.Manifest
 
+import scala.collection.immutable
+
+import scala.annotation.nowarn
+
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.annotation.InternalApi
 import akka.event.Logging
 
 /**
@@ -37,12 +39,12 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
     "Lightbend Inc.",
     "Lightbend",
     "com.lightbend.lagom",
-    "com.typesafe.play"
-  )
+    "com.typesafe.play")
 
   override def get(system: ActorSystem): ManifestInfo = super.get(system)
+  override def get(system: ClassicActorSystemProvider): ManifestInfo = super.get(system)
 
-  override def lookup(): ManifestInfo.type = ManifestInfo
+  override def lookup: ManifestInfo.type = ManifestInfo
 
   override def createExtension(system: ExtendedActorSystem): ManifestInfo = new ManifestInfo(system)
 
@@ -50,61 +52,49 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
    * Comparable version information
    */
   final class Version(val version: String) extends Comparable[Version] {
-    private val (numbers: Array[Int], rest: String) = {
-      val numbers = new Array[Int](3)
-      val segments: Array[String] = version.split("[.-]")
-      var segmentPos = 0
-      var numbersPos = 0
-      while (numbersPos < 3) {
-        if (segmentPos < segments.length) try {
-          numbers(numbersPos) = segments(segmentPos).toInt
-          segmentPos += 1
-        } catch {
-          case e: NumberFormatException ⇒
-            // This means that we have a trailing part on the version string and
-            // less than 3 numbers, so we assume that this is a "newer" version
-            numbers(numbersPos) = Integer.MAX_VALUE
-        }
-        numbersPos += 1
-      }
+    private val impl = new akka.util.Version(version)
 
-      val rest: String =
-        if (segmentPos >= segments.length) ""
-        else String.join("-", Arrays.asList(Arrays.copyOfRange(segments, segmentPos, segments.length): _*))
-
-      (numbers, rest)
-    }
-
-    override def compareTo(other: Version): Int = {
-      var diff = 0
-      diff = numbers(0) - other.numbers(0)
-      if (diff == 0) {
-        diff = numbers(1) - other.numbers(1)
-        if (diff == 0) {
-          diff = numbers(2) - other.numbers(2)
-          if (diff == 0) {
-            diff = rest.compareTo(other.rest)
-          }
-        }
-      }
-      diff
-    }
+    override def compareTo(other: Version): Int =
+      impl.compareTo(other.impl)
 
     override def equals(o: Any): Boolean = o match {
-      case v: Version ⇒ compareTo(v) == 0
-      case _          ⇒ false
+      case v: Version => impl.equals(v.impl)
+      case _          => false
     }
 
-    override def hashCode(): Int = {
-      var result = HashCode.SEED
-      result = HashCode.hash(result, numbers(0))
-      result = HashCode.hash(result, numbers(1))
-      result = HashCode.hash(result, numbers(2))
-      result = HashCode.hash(result, rest)
-      result
-    }
+    override def hashCode(): Int =
+      impl.hashCode()
 
-    override def toString: String = version
+    override def toString: String =
+      impl.toString
+  }
+
+  /** INTERNAL API */
+  private[util] def checkSameVersion(
+      productName: String,
+      dependencies: immutable.Seq[String],
+      versions: Map[String, Version]): Option[String] = {
+    @nowarn("msg=deprecated")
+    val filteredVersions = versions.filterKeys(dependencies.toSet)
+    val values = filteredVersions.values.toSet
+    if (values.size > 1) {
+      val highestVersion = values.max
+      val toBeUpdated = filteredVersions.collect { case (k, v) if v != highestVersion => s"$k" }.mkString(", ")
+      val groupedByVersion = filteredVersions.toSeq
+        .groupBy { case (_, v) => v }
+        .toSeq
+        .sortBy(_._1)
+        .map { case (k, v) => k -> v.map(_._1).sorted.mkString("[", ", ", "]") }
+        .map { case (k, v) => s"($k, $v)" }
+        .mkString(", ")
+      Some(
+        s"You are using version $highestVersion of $productName, but it appears " +
+        s"you (perhaps indirectly) also depend on older versions of related artifacts. " +
+        s"You can solve this by adding an explicit dependency on version $highestVersion " +
+        s"of the [$toBeUpdated] artifacts to your project. " +
+        s"Here's a complete collection of detected artifacts: ${groupedByVersion}. " +
+        "See also: https://doc.akka.io/docs/akka/current/common/binary-compatibility-rules.html#mixed-versioning-is-not-allowed")
+    } else None
   }
 }
 
@@ -131,22 +121,22 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
           val manifest = new Manifest(ios)
           val attributes = manifest.getMainAttributes
           val title = attributes.getValue(new Attributes.Name(ImplTitle)) match {
-            case null ⇒ attributes.getValue(new Attributes.Name(BundleName))
-            case t    ⇒ t
+            case null => attributes.getValue(new Attributes.Name(BundleName))
+            case t    => t
           }
           val version = attributes.getValue(new Attributes.Name(ImplVersion)) match {
-            case null ⇒ attributes.getValue(new Attributes.Name(BundleVersion))
-            case v    ⇒ v
+            case null => attributes.getValue(new Attributes.Name(BundleVersion))
+            case v    => v
           }
           val vendor = attributes.getValue(new Attributes.Name(ImplVendor)) match {
-            case null ⇒ attributes.getValue(new Attributes.Name(BundleVendor))
-            case v    ⇒ v
+            case null => attributes.getValue(new Attributes.Name(BundleVendor))
+            case v    => v
           }
 
           if (title != null
-            && version != null
-            && vendor != null
-            && knownVendors(vendor)) {
+              && version != null
+              && vendor != null
+              && knownVendors(vendor)) {
             manifests = manifests.updated(title, new Version(version))
           }
         } finally {
@@ -154,34 +144,47 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
         }
       }
     } catch {
-      case ioe: IOException ⇒
-        Logging(system, getClass).warning("Could not read manifest information. {}", ioe)
+      case ioe: IOException =>
+        Logging(system, classOf[ManifestInfo]).warning("Could not read manifest information. {}", ioe)
     }
     manifests
   }
 
   /**
    * Verify that the version is the same for all given artifacts.
+   *
+   * If configuration `akka.fail-mixed-versions=on` it will throw an `IllegalStateException` if the
+   * versions are not the same for all given artifacts.
+   *
+   * @return `true` if versions are the same
    */
   def checkSameVersion(productName: String, dependencies: immutable.Seq[String], logWarning: Boolean): Boolean = {
-    val filteredVersions = versions.filterKeys(dependencies.toSet)
-    val values = filteredVersions.values.toSet
-    if (values.size > 1) {
-      if (logWarning) {
-        val conflictingVersions = values.mkString(", ")
-        val fullInfo = filteredVersions.map { case (k, v) ⇒ s"$k:$v" }.mkString(", ")
-        val highestVersion = values.max
-        Logging(system, getClass).warning(
-          "Detected possible incompatible versions on the classpath. " +
-            s"Please note that a given $productName version MUST be the same across all modules of $productName " +
-            "that you are using, e.g. if you use [{}] all other modules that are released together MUST be of the " +
-            "same version. Make sure you're using a compatible set of libraries." +
-            "Possibly conflicting versions [{}] in libraries [{}]",
-          highestVersion, conflictingVersions, fullInfo)
-      }
-      false
-    } else
-      true
+    checkSameVersion(productName, dependencies, logWarning, throwException = system.settings.FailMixedVersions)
   }
 
+  /**
+   * Verify that the version is the same for all given artifacts.
+   *
+   * If `throwException` is `true` it will throw an `IllegalStateException` if the versions are not the same
+   * for all given artifacts.
+   *
+   * @return `true` if versions are the same
+   */
+  def checkSameVersion(
+      productName: String,
+      dependencies: immutable.Seq[String],
+      logWarning: Boolean,
+      throwException: Boolean): Boolean = {
+    ManifestInfo.checkSameVersion(productName, dependencies, versions) match {
+      case Some(message) =>
+        if (logWarning)
+          Logging(system, classOf[ManifestInfo]).warning(message)
+
+        if (throwException)
+          throw new IllegalStateException(message)
+        else
+          false
+      case None => true
+    }
+  }
 }

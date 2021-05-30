@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster;
@@ -17,10 +17,8 @@ public class ClusterJavaCompileTest {
   final ActorSystem system = null;
   final Cluster cluster = null;
 
-
   public void compileJoinSeedNodesInJava() {
-    final List<Address> addresses = Collections.singletonList(new Address("akka.tcp", "MySystem"));
+    final List<Address> addresses = Collections.singletonList(new Address("akka", "MySystem"));
     cluster.joinSeedNodes(addresses);
   }
-
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
@@ -8,14 +8,15 @@ import java.util.Optional
 import java.util.function.{ Consumer, Supplier }
 import javax.net.ssl.{ SSLContext, SSLEngine, SSLSession }
 
-import akka.{ NotUsed, japi }
+import scala.compat.java8.OptionConverters
+import scala.util.Try
+
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
+
+import akka.{ japi, NotUsed }
 import akka.stream._
 import akka.stream.TLSProtocol._
 import akka.util.ByteString
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-
-import scala.compat.java8.OptionConverters
-import scala.util.Try
 
 /**
  * Stream cipher support based upon JSSE.
@@ -30,14 +31,12 @@ import scala.util.Try
  * documentation. The philosophy of this integration into Akka Streams is to
  * expose all knobs and dials to client code and therefore not limit the
  * configuration possibilities. In particular the client code will have to
- * provide the SSLContext from which the SSLEngine is then created. Handshake
- * parameters are set using [[NegotiateNewSession]] messages, the settings for
- * the initial handshake need to be provided up front using the same class;
- * please refer to the method documentation below.
+ * provide the SSLEngine, which is typically created from a SSLContext. Handshake
+ * parameters and other parameters are defined when creating the SSLEngine.
  *
  * '''IMPORTANT NOTE'''
  *
- * The TLS specification does not permit half-closing of the user data session
+ * The TLS specification until version 1.2 did not permit half-closing of the user data session
  * that it transports—to be precise a half-close will always promptly lead to a
  * full close. This means that canceling the plaintext output or completing the
  * plaintext input of the SslTls operator will lead to full termination of the
@@ -51,7 +50,8 @@ import scala.util.Try
  * order to terminate the connection the client will then need to cancel the
  * plaintext output as soon as all expected bytes have been received. When
  * ignoring both types of events the operator will shut down once both events have
- * been received. See also [[TLSClosing]].
+ * been received. See also [[TLSClosing]]. For now, half-closing is also not
+ * supported with TLS 1.3 where the spec allows it.
  */
 object TLS {
 
@@ -66,7 +66,12 @@ object TLS {
    *
    * This method uses the default closing behavior or [[IgnoreComplete]].
    */
-  def create(sslContext: SSLContext, sslConfig: Optional[AkkaSSLConfig], firstSession: NegotiateNewSession, role: TLSRole): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+  @deprecated("Use create that takes a SSLEngine factory instead. Setup the SSLEngine with needed parameters.", "2.6.0")
+  def create(
+      sslContext: SSLContext,
+      sslConfig: Optional[AkkaSSLConfig],
+      firstSession: NegotiateNewSession,
+      role: TLSRole): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
     new javadsl.BidiFlow(scaladsl.TLS.apply(sslContext, OptionConverters.toScala(sslConfig), firstSession, role))
 
   /**
@@ -80,7 +85,11 @@ object TLS {
    *
    * This method uses the default closing behavior or [[IgnoreComplete]].
    */
-  def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: TLSRole): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+  @deprecated("Use create that takes a SSLEngine factory instead. Setup the SSLEngine with needed parameters.", "2.6.0")
+  def create(
+      sslContext: SSLContext,
+      firstSession: NegotiateNewSession,
+      role: TLSRole): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
     new javadsl.BidiFlow(scaladsl.TLS.apply(sslContext, None, firstSession, role))
 
   /**
@@ -99,8 +108,22 @@ object TLS {
    * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
    * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
    */
-  def create(sslContext: SSLContext, sslConfig: Optional[AkkaSSLConfig], firstSession: NegotiateNewSession, role: TLSRole, hostInfo: Optional[japi.Pair[String, java.lang.Integer]], closing: TLSClosing): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
-    new javadsl.BidiFlow(scaladsl.TLS.apply(sslContext, OptionConverters.toScala(sslConfig), firstSession, role, closing, OptionConverters.toScala(hostInfo).map(e ⇒ (e.first, e.second))))
+  @deprecated("Use create that takes a SSLEngine factory instead. Setup the SSLEngine with needed parameters.", "2.6.0")
+  def create(
+      sslContext: SSLContext,
+      sslConfig: Optional[AkkaSSLConfig],
+      firstSession: NegotiateNewSession,
+      role: TLSRole,
+      hostInfo: Optional[japi.Pair[String, java.lang.Integer]],
+      closing: TLSClosing): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+    new javadsl.BidiFlow(
+      scaladsl.TLS.apply(
+        sslContext,
+        OptionConverters.toScala(sslConfig),
+        firstSession,
+        role,
+        closing,
+        OptionConverters.toScala(hostInfo).map(e => (e.first, e.second))))
 
   /**
    * Create a StreamTls [[akka.stream.javadsl.BidiFlow]] in client mode. The
@@ -118,13 +141,26 @@ object TLS {
    * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
    * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
    */
-  def create(sslContext: SSLContext, firstSession: NegotiateNewSession, role: TLSRole, hostInfo: Optional[japi.Pair[String, java.lang.Integer]], closing: TLSClosing): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
-    new javadsl.BidiFlow(scaladsl.TLS.apply(sslContext, None, firstSession, role, closing, OptionConverters.toScala(hostInfo).map(e ⇒ (e.first, e.second))))
+  @deprecated("Use create that takes a SSLEngine factory instead. Setup the SSLEngine with needed parameters.", "2.6.0")
+  def create(
+      sslContext: SSLContext,
+      firstSession: NegotiateNewSession,
+      role: TLSRole,
+      hostInfo: Optional[japi.Pair[String, java.lang.Integer]],
+      closing: TLSClosing): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+    new javadsl.BidiFlow(
+      scaladsl.TLS.apply(
+        sslContext,
+        None,
+        firstSession,
+        role,
+        closing,
+        OptionConverters.toScala(hostInfo).map(e => (e.first, e.second))))
 
   /**
    * Create a StreamTls [[akka.stream.javadsl.BidiFlow]]. This is a low-level interface.
    *
-   * You can specify a constructor `sslEngineCreator` to create an SSLEngine that must already be configured for
+   * You specify a factory `sslEngineCreator` to create an SSLEngine that must already be configured for
    * client and server mode and with all the parameters for the first session.
    *
    * You can specify a verification function `sessionVerifier` that will be called
@@ -132,24 +168,25 @@ object TLS {
    *
    * For a description of the `closing` parameter please refer to [[TLSClosing]].
    */
-  def create(sslEngineCreator: Supplier[SSLEngine], sessionVerifier: Consumer[SSLSession], closing: TLSClosing): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
-    new javadsl.BidiFlow(scaladsl.TLS.apply(
-      () ⇒ sslEngineCreator.get(),
-      session ⇒ Try(sessionVerifier.accept(session)),
-      closing))
+  def create(
+      sslEngineCreator: Supplier[SSLEngine],
+      sessionVerifier: Consumer[SSLSession],
+      closing: TLSClosing): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+    new javadsl.BidiFlow(
+      scaladsl.TLS.apply(() => sslEngineCreator.get(), session => Try(sessionVerifier.accept(session)), closing))
 
   /**
    * Create a StreamTls [[akka.stream.javadsl.BidiFlow]]. This is a low-level interface.
    *
-   * You can specify a constructor `sslEngineCreator` to create an SSLEngine that must already be configured for
+   * You specify a factory `sslEngineCreator` to create an SSLEngine that must already be configured for
    * client and server mode and with all the parameters for the first session.
    *
    * For a description of the `closing` parameter please refer to [[TLSClosing]].
    */
-  def create(sslEngineCreator: Supplier[SSLEngine], closing: TLSClosing): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
-    new javadsl.BidiFlow(scaladsl.TLS.apply(
-      () ⇒ sslEngineCreator.get(),
-      closing))
+  def create(
+      sslEngineCreator: Supplier[SSLEngine],
+      closing: TLSClosing): BidiFlow[SslTlsOutbound, ByteString, ByteString, SslTlsInbound, NotUsed] =
+    new javadsl.BidiFlow(scaladsl.TLS.apply(() => sslEngineCreator.get(), closing))
 }
 
 /**

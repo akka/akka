@@ -5,9 +5,12 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -175,7 +178,7 @@ Java
 
 The resulting Flow now has a type of `Flow[String, String, UniqueKillSwitch]` representing a publish-subscribe
 channel which can be used any number of times to attach new producers or consumers. In addition, it materializes
-to a `UniqueKillSwitch` (see [UniqueKillSwitch](#unique-kill-switch)) that can be used to deregister a single user externally:
+to a `UniqueKillSwitch` (see @ref:[UniqueKillSwitch](#unique-kill-switch)) that can be used to deregister a single user externally:
 
 Scala
 :   @@snip [HubsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-4 }

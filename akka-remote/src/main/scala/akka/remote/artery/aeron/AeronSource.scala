@@ -1,66 +1,70 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 package aeron
 
 import scala.annotation.tailrec
+import scala.concurrent.{ Future, Promise }
+import scala.util.control.NonFatal
+
+import io.aeron.{ Aeron, FragmentAssembler, Subscription }
+import io.aeron.exceptions.DriverTimeoutException
+import io.aeron.logbuffer.FragmentHandler
+import io.aeron.logbuffer.Header
+import org.agrona.DirectBuffer
+import org.agrona.hints.ThreadHints
+
 import akka.stream.Attributes
 import akka.stream.Outlet
 import akka.stream.SourceShape
 import akka.stream.stage.AsyncCallback
 import akka.stream.stage.GraphStageLogic
-import akka.stream.stage.OutHandler
-import io.aeron.{ Aeron, FragmentAssembler, Subscription }
-import io.aeron.logbuffer.FragmentHandler
-import io.aeron.logbuffer.Header
-import org.agrona.DirectBuffer
-import org.agrona.hints.ThreadHints
 import akka.stream.stage.GraphStageWithMaterializedValue
-
-import scala.util.control.NonFatal
+import akka.stream.stage.OutHandler
 import akka.stream.stage.StageLogging
-import io.aeron.exceptions.DriverTimeoutException
-
-import scala.concurrent.{ Future, Promise }
 
 /**
  * INTERNAL API
  */
 private[remote] object AeronSource {
 
-  private def pollTask(sub: Subscription, handler: MessageHandler, onMessage: AsyncCallback[EnvelopeBuffer]): () ⇒ Boolean = {
-    () ⇒
-      {
-        handler.reset
-        val fragmentsRead = sub.poll(handler.fragmentsHandler, 1)
-        val msg = handler.messageReceived
-        handler.reset() // for GC
-        if (msg ne null) {
-          onMessage.invoke(msg)
-          true
-        } else
-          false
-      }
+  private def pollTask(
+      sub: Subscription,
+      handler: MessageHandler,
+      onMessage: AsyncCallback[EnvelopeBuffer]): () => Boolean = { () =>
+    {
+      handler.reset()
+      sub.poll(handler.fragmentsHandler, 1)
+      val msg = handler.messageReceived
+      handler.reset() // for GC
+      if (msg ne null) {
+        onMessage.invoke(msg)
+        true
+      } else
+        false
+    }
   }
 
   class MessageHandler(pool: EnvelopeBufferPool) {
     def reset(): Unit = messageReceived = null
 
-    private[remote] var messageReceived: EnvelopeBuffer = null // private to avoid scalac warning about exposing EnvelopeBuffer
+    private[remote] var messageReceived
+        : EnvelopeBuffer = null // private to avoid scalac warning about exposing EnvelopeBuffer
 
-    val fragmentsHandler = new Fragments(data ⇒ messageReceived = data, pool)
+    val fragmentsHandler = new Fragments(data => messageReceived = data, pool)
   }
 
-  class Fragments(onMessage: EnvelopeBuffer ⇒ Unit, pool: EnvelopeBufferPool) extends FragmentAssembler(new FragmentHandler {
-    override def onFragment(aeronBuffer: DirectBuffer, offset: Int, length: Int, header: Header): Unit = {
-      val envelope = pool.acquire()
-      aeronBuffer.getBytes(offset, envelope.byteBuffer, length)
-      envelope.byteBuffer.flip()
-      onMessage(envelope)
-    }
-  })
+  class Fragments(onMessage: EnvelopeBuffer => Unit, pool: EnvelopeBufferPool)
+      extends FragmentAssembler(new FragmentHandler {
+        override def onFragment(aeronBuffer: DirectBuffer, offset: Int, length: Int, header: Header): Unit = {
+          val envelope = pool.acquire()
+          aeronBuffer.getBytes(offset, envelope.byteBuffer, length)
+          envelope.byteBuffer.flip()
+          onMessage(envelope)
+        }
+      })
 
   trait AeronLifecycle {
     def onUnavailableImage(sessionId: Int): Unit
@@ -76,18 +80,17 @@ private[remote] object AeronSource {
  *                 when waiting for data
  */
 private[remote] class AeronSource(
-  channel:        String,
-  streamId:       Int,
-  aeron:          Aeron,
-  taskRunner:     TaskRunner,
-  pool:           EnvelopeBufferPool,
-  flightRecorder: EventSink,
-  spinning:       Int)
-  extends GraphStageWithMaterializedValue[SourceShape[EnvelopeBuffer], AeronSource.AeronLifecycle] {
+    channel: String,
+    streamId: Int,
+    aeron: Aeron,
+    taskRunner: TaskRunner,
+    pool: EnvelopeBufferPool,
+    flightRecorder: RemotingFlightRecorder,
+    spinning: Int)
+    extends GraphStageWithMaterializedValue[SourceShape[EnvelopeBuffer], AeronSource.AeronLifecycle] {
 
   import AeronSource._
   import TaskRunner._
-  import FlightRecorderEvents._
 
   val out: Outlet[EnvelopeBuffer] = Outlet("AeronSource")
   override val shape: SourceShape[EnvelopeBuffer] = SourceShape(out)
@@ -104,33 +107,31 @@ private[remote] class AeronSource(
       private val messageHandler = new MessageHandler(pool)
       private val addPollTask: Add = Add(pollTask(subscription, messageHandler, getAsyncCallback(taskOnMessage)))
 
-      private val channelMetadata = channel.getBytes("US-ASCII")
-
       private var delegatingToTaskRunner = false
 
       private var pendingUnavailableImages: List[Int] = Nil
-      private val onUnavailableImageCb = getAsyncCallback[Int] { sessionId ⇒
+      private val onUnavailableImageCb = getAsyncCallback[Int] { sessionId =>
         pendingUnavailableImages = sessionId :: pendingUnavailableImages
         freeSessionBuffers()
       }
-      private val getStatusCb = getAsyncCallback[Promise[Long]] { promise ⇒
+      private val getStatusCb = getAsyncCallback[Promise[Long]] { promise =>
         promise.success(subscription.channelStatus())
       }
 
       override protected def logSource = classOf[AeronSource]
 
       override def preStart(): Unit = {
-        flightRecorder.loFreq(AeronSource_Started, channelMetadata)
+        flightRecorder.aeronSourceStarted(channel, streamId)
       }
 
       override def postStop(): Unit = {
         taskRunner.command(Remove(addPollTask.task))
-        try subscription.close() catch {
-          case e: DriverTimeoutException ⇒
+        try subscription.close()
+        catch {
+          case e: DriverTimeoutException =>
             // media driver was shutdown
             log.debug("DriverTimeout when closing subscription. {}", e)
-        } finally
-          flightRecorder.loFreq(AeronSource_Stopped, channelMetadata)
+        } finally flightRecorder.aeronSourceStopped(channel, streamId)
       }
 
       // OutHandler
@@ -157,7 +158,7 @@ private[remote] class AeronSource(
             subscriberLoop() // recursive
           } else {
             // delegate backoff to shared TaskRunner
-            flightRecorder.hiFreq(AeronSource_DelegateToTaskRunner, countBeforeDelegate)
+            flightRecorder.aeronSourceDelegateToTaskRunner(countBeforeDelegate)
             delegatingToTaskRunner = true
             delegateTaskStartTime = System.nanoTime()
             taskRunner.command(addPollTask)
@@ -166,7 +167,7 @@ private[remote] class AeronSource(
       }
 
       override def channelEndpointStatus(): Future[Long] = {
-        val promise = Promise[Long]
+        val promise = Promise[Long]()
         getStatusCb.invoke(promise)
         promise.future
       }
@@ -174,13 +175,14 @@ private[remote] class AeronSource(
       private def taskOnMessage(data: EnvelopeBuffer): Unit = {
         countBeforeDelegate = 0
         delegatingToTaskRunner = false
-        flightRecorder.hiFreq(AeronSource_ReturnFromTaskRunner, System.nanoTime() - delegateTaskStartTime)
+        // FIXME push calculation to JFR?
+        flightRecorder.aeronSourceReturnFromTaskRunner(System.nanoTime() - delegateTaskStartTime)
         freeSessionBuffers()
         onMessage(data)
       }
 
       private def onMessage(data: EnvelopeBuffer): Unit = {
-        flightRecorder.hiFreq(AeronSource_Received, data.byteBuffer.limit)
+        flightRecorder.aeronSourceReceived(data.byteBuffer.limit())
         push(out, data)
       }
 
@@ -188,8 +190,8 @@ private[remote] class AeronSource(
         if (!delegatingToTaskRunner) {
           def loop(remaining: List[Int]): Unit = {
             remaining match {
-              case Nil ⇒
-              case sessionId :: tail ⇒
+              case Nil =>
+              case sessionId :: tail =>
                 messageHandler.fragmentsHandler.freeSessionBuffer(sessionId)
                 loop(tail)
             }
@@ -204,7 +206,7 @@ private[remote] class AeronSource(
         try {
           onUnavailableImageCb.invoke(sessionId)
         } catch {
-          case NonFatal(_) ⇒ // just in case it's called before stage is initialized, ignore
+          case NonFatal(_) => // just in case it's called before stage is initialized, ignore
         }
 
       setHandler(out, this)

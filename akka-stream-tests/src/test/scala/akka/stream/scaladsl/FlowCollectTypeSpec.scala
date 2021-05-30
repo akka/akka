@@ -1,16 +1,12 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import akka.stream.testkit.StreamSpec
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 
 class FlowCollectTypeSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system)
-  implicit val materializer = ActorMaterializer(settings)
 
   sealed class Fruit
   class Orange extends Fruit

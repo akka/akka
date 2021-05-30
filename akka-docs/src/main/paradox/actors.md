@@ -1,18 +1,29 @@
-# Actors
+# Classic Actors
 
-## Dependency
+@@include[includes.md](includes.md) { #actor-api }
 
-To use Actors, you must add the following dependency in your project:
+## Module info
+
+To use Classic Actors, add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-actor_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-actor_$scala.binary.version$"
+  version=AkkaVersion
+  group2="com.typesafe.akka"
+  artifact2="akka-testkit_$scala.binary.version$"
+  scope2=test
+  version2=AkkaVersion
 }
+
+@@project-info{ projectId="akka-actor" }
 
 ## Introduction
 
-The [Actor Model](http://en.wikipedia.org/wiki/Actor_model) provides a higher level of abstraction for writing concurrent
+The [Actor Model](https://en.wikipedia.org/wiki/Actor_model) provides a higher level of abstraction for writing concurrent
 and distributed systems. It alleviates the developer from having to deal with
 explicit locking and thread management, making it easier to write correct
 concurrent and parallel systems. Actors were defined in the 1973 paper by Carl
@@ -28,9 +39,10 @@ its syntax from Erlang.
 @@@ note
 
 Since Akka enforces parental supervision every actor is supervised and
-(potentially) the supervisor of its children, it is advisable that you
-familiarize yourself with @ref:[Actor Systems](general/actor-systems.md) and @ref:[supervision](general/supervision.md)
-and it may also help to read @ref:[Actor References, Paths and Addresses](general/addressing.md).
+(potentially) the supervisor of its children, it is advisable to
+familiarize yourself with @ref:[Actor Systems](general/actor-systems.md), @ref:[supervision](general/supervision.md)
+and @ref:[handling exceptions](general/supervision.md#actors-and-exceptions)
+as well as @ref:[Actor References, Paths and Addresses](general/addressing.md).
 
 @@@
 
@@ -81,7 +93,7 @@ as explained below.
 The result of the @scala[`receive` method is a partial function object, which is]
 @java[`createReceive` method is `AbstractActor.Receive` which is a wrapper around partial 
 scala function object. It is] stored within the actor as its “initial behavior”, 
-see [Become/Unbecome](#become-unbecome) for
+see @ref:[Become/Unbecome](#become-unbecome) for
 further information on changing the behavior of an actor after its
 construction.
 
@@ -89,7 +101,7 @@ construction.
 
 #### Here is another example that you can edit and run in the browser:
 
-@@fiddle [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code template=Akka layout=v75 minheight=400px }
+@@fiddle [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #fiddle_code template="Akka" layout="v75" minheight="400px" }
 
 @@@
 
@@ -265,7 +277,7 @@ calling the constructor manually:
 ### Dependency Injection
 
 If your `Actor` has a constructor that takes parameters then those need to
-be part of the `Props` as well, as described [above](Props_). But there
+be part of the `Props` as well, as described @ref:[above](#props). But there
 are cases when a factory method must be used, for example when the actual
 constructor arguments are determined by a dependency injection framework.
 
@@ -289,44 +301,8 @@ singleton scope.
 
 Techniques for dependency injection and integration with dependency injection frameworks
 are described in more depth in the
-[Using Akka with Dependency Injection](http://letitcrash.com/post/55958814293/akka-dependency-injection)
+[Using Akka with Dependency Injection](https://letitcrash.com/post/55958814293/akka-dependency-injection)
 guideline and the [Akka Java Spring](https://github.com/typesafehub/activator-akka-java-spring) tutorial.
-
-### The Inbox
-
-When writing code outside of actors which shall communicate with actors, the
-`ask` pattern can be a solution (see below), but there are two things it
-cannot do: receiving multiple replies (e.g. by subscribing an `ActorRef`
-to a notification service) and watching other actors’ lifecycle. For these
-purposes there is the `Inbox` class:
-
-Scala
-:  @@snip [ActorDSLSpec.scala](/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #inbox }
-
-Java
-:  @@snip [InboxDocTest.java](/akka-docs/src/test/java/jdocs/actor/InboxDocTest.java) { #inbox }
-
-
-@@@ div { .group-scala }
-
-There is an implicit conversion from inbox to actor reference which means that
-in this example the sender reference will be that of the actor hidden away
-within the inbox. This allows the reply to be received on the last line.
-Watching an actor is quite simple as well:
-
-@@snip [ActorDSLSpec.scala](/akka-actor-tests/src/test/scala/akka/actor/ActorDSLSpec.scala) { #watch }
-
-@@@
-
-@@@ div { .group-java }
-
-The `send` method wraps a normal `tell` and supplies the internal
-actor’s reference as the sender. This allows the reply to be received on the
-last line.  Watching an actor is quite simple as well:
-
-@@snip [InboxDocTest.java](/akka-docs/src/test/java/jdocs/actor/InboxDocTest.java) { #watch }
-
-@@@
 
 ## Actor API
 
@@ -386,7 +362,6 @@ Java
 
 The implementations shown above are the defaults provided by the @scala[`Actor` trait.] @java[`AbstractActor` class.]
 
-<a id="actor-lifecycle"></a>
 ### Actor Lifecycle
 
 ![actor_lifecycle.png](./images/actor_lifecycle.png)
@@ -417,7 +392,7 @@ are notified of the termination. After the incarnation is stopped, the path can
 be reused again by creating an actor with `actorOf()`. In this case the
 name of the new incarnation will be the same as the previous one but the
 UIDs will differ. An actor can be stopped by the actor itself, another actor
-or the `ActorSystem` (see [Stopping actors](#stopping-actors)).
+or the `ActorSystem` (see @ref:[Stopping actors](#stopping-actors)).
 
 @@@ note
 
@@ -439,7 +414,7 @@ occupying it. `ActorSelection` cannot be watched for this reason. It is
 possible to resolve the current incarnation's `ActorRef` living under the
 path by sending an `Identify` message to the `ActorSelection` which
 will be replied to with an `ActorIdentity` containing the correct reference
-(see [ActorSelection](#actorselection)). This can also be done with the `resolveOne`
+(see @ref:[ActorSelection](#actorselection)). This can also be done with the `resolveOne`
 method of the `ActorSelection`, which returns a `Future` of the matching
 `ActorRef`.
 
@@ -449,7 +424,7 @@ method of the `ActorSelection`, which returns a `Future` of the matching
 In order to be notified when another actor terminates (i.e. stops permanently,
 not temporary failure and restart), an actor may register itself for reception
 of the `Terminated` message dispatched by the other actor upon
-termination (see [Stopping Actors](#stopping-actors)). This service is provided by the
+termination (see @ref:[Stopping Actors](#stopping-actors)). This service is provided by the
 `DeathWatch` component of the actor system.
 
 Registering a monitor is easy:
@@ -478,7 +453,6 @@ using `context.unwatch(target)`. This works even if the `Terminated`
 message has already been enqueued in the mailbox; after calling `unwatch`
 no `Terminated` message for that actor will be processed anymore.
 
-<a id="start-hook"></a>
 ### Start Hook
 
 Right after starting the actor, its `preStart` method is invoked.
@@ -505,8 +479,7 @@ handling strategy. Actors may be restarted in case an exception is thrown while
 processing a message (see @ref:[supervision](general/supervision.md)). This restart involves the hooks
 mentioned above:
 
- 1.
-    The old actor is informed by calling `preRestart` with the exception
+ 1. The old actor is informed by calling `preRestart` with the exception
 which caused the restart and the message which triggered that exception; the
 latter may be `None` if the restart was not caused by processing a
 message, e.g. when a supervisor does not trap the exception and is restarted
@@ -538,7 +511,6 @@ See @ref:[Discussion: Message Ordering](general/message-delivery-reliability.md#
 
 @@@
 
-<a id="stop-hook"></a>
 ### Stop Hook
 
 After stopping an actor, its `postStop` hook is called, which may be used
@@ -620,8 +592,7 @@ Java
 
 You can also acquire an `ActorRef` for an `ActorSelection` with
 the `resolveOne` method of the `ActorSelection`. It returns a `Future`
-of the matching `ActorRef` if such an actor exists. @java[(see also
-@ref:[Java 8 Compatibility](java8-compat.md) for Java compatibility).] It is completed with
+of the matching `ActorRef` if such an actor exists. It is completed with
 failure `akka.actor.ActorNotFound` if no such actor exists or the identification
 didn't complete within the supplied `timeout`.
 
@@ -633,7 +604,7 @@ Scala
 Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #selection-remote }
 
-An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting.md#remote-sample).
+An example demonstrating actor look-up is given in @ref:[Remoting Sample](remoting-artery.md#looking-up-remote-actors).
 
 ## Messages and immutability
 
@@ -662,7 +633,7 @@ Messages are sent to an Actor through one of the following methods.
 
  * @scala[`!`] @java[`tell` ] means “fire-and-forget”, e.g. send a message asynchronously and return
 immediately. @scala[Also known as `tell`.]
- * @scala[`?`] @java[`ask`] sends a message asynchronously and returns a `Future`
+ * @scala[`?`] @java[`ask`] sends a message asynchronously and returns a @scala[`Future`]@java[`CompletionStage`]
 representing a possible reply. @scala[Also known as `ask`.]
 
 Message ordering is guaranteed on a per-sender basis.
@@ -737,32 +708,25 @@ Java
 This example demonstrates `ask` together with the `pipeTo` pattern on
 futures, because this is likely to be a common combination. Please note that
 all of the above is completely non-blocking and asynchronous: `ask` produces
-a `Future`, @scala[three] @java[two] of which are composed into a new future using the
-@scala[for-comprehension and then `pipeTo` installs an `onComplete`-handler on the future to affect]
-@java[`Futures.sequence` and `map` methods and then `pipe` installs an `onComplete`-handler on the future to effect]
+a @scala[`Future`]@java[`CompletionStage`], @scala[three] @java[two] of which are composed into a new future using the
+@scala[for-comprehension and then `pipeTo` installs an `onComplete`-handler on the `Future` to affect]
+@java[`CompletableFuture.allOf` and `thenApply` methods and then `pipe` installs a handler on the `CompletionStage` to effect]
 the submission of the aggregated `Result` to another actor.
 
 Using `ask` will send a message to the receiving Actor as with `tell`, and
 the receiving actor must reply with @scala[`sender() ! reply`] @java[`getSender().tell(reply, getSelf())` ] in order to
-complete the returned `Future` with a value. The `ask` operation involves creating
+complete the returned @scala[`Future`]@java[`CompletionStage`] with a value. The `ask` operation involves creating
 an internal actor for handling this reply, which needs to have a timeout after
 which it is destroyed in order not to leak resources; see more below.
 
-@@@ note { .group-java }
-
-A variant of the `ask` pattern that returns a `CompletionStage` instead of a Scala `Future`
-is available in the `akka.pattern.PatternsCS` object.
-
-@@@
-
 @@@ warning
 
-To complete the future with an exception you need to send an `akka.actor.Status.Failure` message to the sender.
+To complete the @scala[`Future`]@java[`CompletionStage`] with an exception you need to send an `akka.actor.Status.Failure` message to the sender.
 This is *not done automatically* when an actor throws an exception while processing a message. 
 
-Please note that Scala's `Try` sub types `scala.util.Failure` and `scala.util.Success` are not treated 
-specially, and would complete the ask Future with the given value - only the `akka.actor.Status` messages 
-are treated specially by the ask pattern.
+@scala[Please note that Scala's `Try` sub types `scala.util.Failure` and `scala.util.Success` are not treated
+specially, and would complete the ask @scala[`Future`]@java[`CompletionStage`] with the given value - only the `akka.actor.Status` messages
+are treated specially by the ask pattern.]
 
 @@@
 
@@ -772,9 +736,9 @@ Scala
 Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #reply-exception }
 
-If the actor does not complete the future, it will expire after the timeout period,
+If the actor does not complete the @scala[`Future`]@java[`CompletionStage`], it will expire after the timeout period,
 @scala[completing it with an `AskTimeoutException`. The timeout is taken from one of the following locations in order of precedence:]
-@java[specified as parameter to the `ask` method; this will complete the `Future` with an `AskTimeoutException`.]
+@java[specified as parameter to the `ask` method; this will complete the `CompletionStage` with an `AskTimeoutException`.]
 
 @@@ div { .group-scala }
 
@@ -788,16 +752,13 @@ If the actor does not complete the future, it will expire after the timeout peri
 
 @@@
 
-See @ref:[Futures](futures.md) for more information on how to await or query a
-future.
-
-The `onComplete`, `onSuccess`, or `onFailure` methods of the `Future` can be
-used to register a callback to get a notification when the Future completes, giving
+The @scala[`onComplete` method of the `Future`]@java[`thenRun` method of the `CompletionStage`] can be
+used to register a callback to get a notification when the @scala[`Future`]@java[`CompletionStage`] completes, giving
 you a way to avoid blocking.
 
 @@@ warning
 
-When using future callbacks, @scala[such as `onComplete`, `onSuccess`, and `onFailure`,]
+When using future callbacks, @scala[such as `onComplete`, or `map`]@scala[such as `thenRun`, or `thenApply`]
 inside actors you need to carefully avoid closing over
 the containing actor’s reference, i.e. do not call methods or access mutable state
 on the enclosing actor from within the callback. This would break the actor
@@ -822,7 +783,6 @@ Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #forward }
 
 ## Receive messages
-
 
 An Actor has to
 @scala[implement the `receive` method to receive messages:]
@@ -879,7 +839,7 @@ That has benefits such as:
 The `Receive` can be implemented in other ways than using the `ReceiveBuilder` since it in the
 end is just a wrapper around a Scala `PartialFunction`. In Java, you can implement `PartialFunction` by
 extending `AbstractPartialFunction`. For example, one could implement an adapter
-to [Vavr Pattern Matching DSL](http://www.vavr.io/vavr-docs/#_pattern_matching). See the @extref[Akka Vavr sample project](samples:akka-sample-vavr) for more details.
+to [Vavr Pattern Matching DSL](https://www.vavr.io/vavr-docs/#_pattern_matching). See the [Akka Vavr sample project](https://github.com/akka/akka-samples/tree/2.5/akka-sample-vavr) for more details.
 
 If the validation of the `ReceiveBuilder` match logic turns out to be a bottleneck for some of your
 actors you can consider to implement it at lower level by extending `UntypedAbstractActor` instead
@@ -948,6 +908,10 @@ Scala
 Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/TimerDocTest.java) { #timers }
 
+The @ref:[Scheduler](scheduler.md#schedule-periodically) documentation describes the difference between
+`fixed-delay` and `fixed-rate` scheduling. If you are uncertain of which one to use you should pick
+`startTimerWithFixedDelay`.
+
 Each timer has a key and can be replaced or cancelled. It's guaranteed that a message from the
 previous incarnation of the timer with the same key is not received, even though it might already
 be enqueued in the mailbox when it was cancelled or the new timer was started.
@@ -956,7 +920,6 @@ The timers are bound to the lifecycle of the actor that owns it, and thus are ca
 automatically when it is restarted or stopped. Note that the `TimerScheduler` is not thread-safe, 
 i.e. it must only be used within the actor that owns it.
 
-<a id="stopping-actors"></a>
 ## Stopping actors
 
 Actors are stopped by invoking the `stop` method of a `ActorRefFactory`,
@@ -981,7 +944,7 @@ Termination of an actor proceeds in two steps: first the actor suspends its
 mailbox processing and sends a stop command to all its children, then it keeps
 processing the internal termination notifications from its children until the last one is
 gone, finally terminating itself (invoking `postStop`, dumping mailbox,
-publishing `Terminated` on the [DeathWatch](#deathwatch), telling
+publishing `Terminated` on the @ref:[DeathWatch](#deathwatch), telling
 its supervisor). This procedure ensures that actor system sub-trees terminate
 in an orderly fashion, propagating the stop command to the leaves and
 collecting their confirmation back to the stopped supervisor. If one of the
@@ -991,7 +954,7 @@ stuck.
 
 Upon `ActorSystem.terminate()`, the system guardian actors will be
 stopped, and the aforementioned process will ensure proper termination of the
-whole system.
+whole system. See @ref:[Coordinated Shutdown](coordinated-shutdown.md).
 
 The `postStop()` hook is invoked after an actor is fully stopped. This
 enables cleaning up of resources:
@@ -1079,100 +1042,6 @@ message, i.e. not for top-level actors.
 
 @@@
 
-<a id="coordinated-shutdown"></a>
-### Coordinated Shutdown
-
-There is an extension named `CoordinatedShutdown` that will stop certain actors and
-services in a specific order and perform registered tasks during the shutdown process.
-
-The order of the shutdown phases is defined in configuration `akka.coordinated-shutdown.phases`.
-The default phases are defined as:
-
-@@snip [reference.conf](/akka-actor/src/main/resources/reference.conf) { #coordinated-shutdown-phases }
-
-More phases can be added in the application's configuration if needed by overriding a phase with an
-additional `depends-on`. Especially the phases `before-service-unbind`, `before-cluster-shutdown` and
-`before-actor-system-terminate` are intended for application specific phases or tasks.
-
-The default phases are defined in a single linear order, but the phases can be ordered as a
-directed acyclic graph (DAG) by defining the dependencies between the phases.
-The phases are ordered with [topological](https://en.wikipedia.org/wiki/Topological_sorting) sort of the DAG.
-
-Tasks can be added to a phase with:
-
-Scala
-:  @@snip [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #coordinated-shutdown-addTask }
-
-Java
-:  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-addTask }
-
-The returned @scala[`Future[Done]`] @java[`CompletionStage<Done>`] should be completed when the task is completed. The task name parameter
-is only used for debugging/logging.
-
-Tasks added to the same phase are executed in parallel without any ordering assumptions.
-Next phase will not start until all tasks of previous phase have been completed.
-
-If tasks are not completed within a configured timeout (see @ref:[reference.conf](general/configuration.md#config-akka-actor))
-the next phase will be started anyway. It is possible to configure `recover=off` for a phase
-to abort the rest of the shutdown process if a task fails or is not completed within the timeout.
-
-Tasks should typically be registered as early as possible after system startup. When running
-the coordinated shutdown tasks that have been registered will be performed but tasks that are
-added too late will not be run.
-
-To start the coordinated shutdown process you can invoke @scala[`run`] @java[`runAll`] on the `CoordinatedShutdown`
-extension:
-
-Scala
-:  @@snip [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #coordinated-shutdown-run }
-
-Java
-:  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-run }
-
-It's safe to call the @scala[`run`] @java[`runAll`] method multiple times. It will only run once.
-
-That also means that the `ActorSystem` will be terminated in the last phase. By default, the
-JVM is not forcefully stopped (it will be stopped if all non-daemon threads have been terminated).
-To enable a hard `System.exit` as a final action you can configure:
-
-```
-akka.coordinated-shutdown.exit-jvm = on
-```
-
-When using @ref:[Akka Cluster](cluster-usage.md) the `CoordinatedShutdown` will automatically run
-when the cluster node sees itself as `Exiting`, i.e. leaving from another node will trigger
-the shutdown process on the leaving node. Tasks for graceful leaving of cluster including graceful
-shutdown of Cluster Singletons and Cluster Sharding are added automatically when Akka Cluster is used,
-i.e. running the shutdown process will also trigger the graceful leaving if it's not already in progress.
-
-By default, the `CoordinatedShutdown` will be run when the JVM process exits, e.g.
-via `kill SIGTERM` signal (`SIGINT` ctrl-c doesn't work). This behavior can be disabled with:
-
-```
-akka.coordinated-shutdown.run-by-jvm-shutdown-hook=off
-```
-
-If you have application specific JVM shutdown hooks it's recommended that you register them via the
-`CoordinatedShutdown` so that they are running before Akka internal shutdown hooks, e.g.
-those shutting down Akka Remoting (Artery).
-
-Scala
-:  @@snip [ActorDocSpec.scala](/akka-docs/src/test/scala/docs/actor/ActorDocSpec.scala) { #coordinated-shutdown-jvm-hook }
-
-Java
-:  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #coordinated-shutdown-jvm-hook }
-
-For some tests it might be undesired to terminate the `ActorSystem` via `CoordinatedShutdown`.
-You can disable that by adding the following to the configuration of the `ActorSystem` that is
-used in the test:
-
-```
-# Don't terminate ActorSystem via CoordinatedShutdown in tests
-akka.coordinated-shutdown.terminate-actor-system = off
-akka.coordinated-shutdown.run-by-jvm-shutdown-hook = off
-akka.cluster.run-coordinated-shutdown-when-down = off
-```
-
 <a id="actor-hotswap"></a>
 ## Become/Unbecome
 
@@ -1199,9 +1068,7 @@ Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #hot-swap-actor }
 
 This variant of the `become` method is useful for many different things,
-such as to implement a Finite State Machine (FSM, for an example see @scala[[Dining
-Hakkers](http://www.lightbend.com/activator/template/akka-sample-fsm-scala)).] @java[[Dining
-Hakkers](http://www.lightbend.com/activator/template/akka-sample-fsm-java-lambda)).] It will replace the current behavior (i.e. the top of the behavior
+such as to implement a Finite State Machine (FSM). It will replace the current behavior (i.e. the top of the behavior
 stack), which means that you do not use `unbecome`, instead always the
 next behavior is explicitly installed.
 
@@ -1221,7 +1088,6 @@ Java
 
 See this @extref[Unnested receive example](github:akka-docs/src/test/scala/docs/actor/UnnestedReceives.scala).
 
-<a id="stash"></a>
 ## Stash
 
 The @scala[`Stash` trait] @java[`AbstractActorWithStash` class] enables an actor to temporarily stash away messages
@@ -1295,9 +1161,16 @@ callback. This means it's not possible to write
 
 Note that the stash is part of the ephemeral actor state, unlike the
 mailbox. Therefore, it should be managed like other parts of the
-actor's state which have the same property. The @scala[`Stash` trait’s] @java[`AbstractActorWithStash`]
-implementation of `preRestart` will call `unstashAll()`, which is
-usually the desired behavior.
+actor's state which have the same property.
+
+However, the @scala[`Stash` trait’s] @java[`AbstractActorWithStash`]
+implementation of `preRestart` will call `unstashAll()`. This means
+that prior to the actor restarting, it will transfer all stashed 
+messages back to the actor's mailbox.
+
+The result of this is that when an actor is restarted, any stashed 
+messages will be delivered to the new incarnation of the actor. 
+This is usually the desired behavior.
 
 @@@ note
 
@@ -1305,35 +1178,6 @@ If you want to enforce that your actor can only work with an unbounded stash,
 then you should use the @scala[`UnboundedStash` trait] @java[`AbstractActorWithUnboundedStash` class] instead.
 
 @@@
-
-
-## Actors and exceptions
-
-It can happen that while a message is being processed by an actor, that some
-kind of exception is thrown, e.g. a database exception.
-
-### What happens to the Message
-
-If an exception is thrown while a message is being processed (i.e. taken out of
-its mailbox and handed over to the current behavior), then this message will be
-lost. It is important to understand that it is not put back on the mailbox. So
-if you want to retry processing of a message, you need to deal with it yourself
-by catching the exception and retry your flow. Make sure that you put a bound
-on the number of retries since you don't want a system to livelock (so
-consuming a lot of cpu cycles without making progress).
-
-### What happens to the mailbox
-
-If an exception is thrown while a message is being processed, nothing happens to
-the mailbox. If the actor is restarted, the same mailbox will be there. So all
-messages on that mailbox will be there as well.
-
-### What happens to the actor
-
-If code within an actor throws an exception, that actor is suspended and the
-supervision process is started (see @ref:[supervision](general/supervision.md)). Depending on the
-supervisor’s decision the actor is resumed (as if nothing happened), restarted
-(wiping out its internal state and starting from scratch) or terminated.
 
 @@@ div { .group-scala }
 

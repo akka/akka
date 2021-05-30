@@ -1,8 +1,11 @@
 /*
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
+
+import akka.actor.{ InvalidMessageException, WrappedMessage }
+import akka.util.unused
 
 object ShardingMessageExtractor {
 
@@ -20,14 +23,11 @@ object ShardingMessageExtractor {
   /**
    * Scala API: Create a message extractor for a protocol where the entity id is available in each message.
    */
-  def noEnvelope[M](
-    numberOfShards: Int,
-    stopMessage:    M)(
-    extractEntityId: M ⇒ String): ShardingMessageExtractor[M, M] =
+  def noEnvelope[M](numberOfShards: Int, @unused stopMessage: M)(
+      extractEntityId: M => String): ShardingMessageExtractor[M, M] =
     new HashCodeNoEnvelopeMessageExtractor[M](numberOfShards) {
       def entityId(message: M) = extractEntityId(message)
     }
-
 }
 
 /**
@@ -70,12 +70,12 @@ abstract class ShardingMessageExtractor[E, M] {
  *
  * @tparam M The type of message accepted by the entity actor
  */
-final class HashCodeMessageExtractor[M](
-  val numberOfShards: Int)
-  extends ShardingMessageExtractor[ShardingEnvelope[M], M] {
+final class HashCodeMessageExtractor[M](val numberOfShards: Int)
+    extends ShardingMessageExtractor[ShardingEnvelope[M], M] {
 
+  import akka.cluster.sharding.ShardRegion.HashCodeMessageExtractor
   override def entityId(envelope: ShardingEnvelope[M]): String = envelope.entityId
-  override def shardId(entityId: String): String = math.abs(entityId.hashCode % numberOfShards).toString
+  override def shardId(entityId: String): String = HashCodeMessageExtractor.shardId(entityId, numberOfShards)
   override def unwrapMessage(envelope: ShardingEnvelope[M]): M = envelope.message
 }
 
@@ -87,11 +87,10 @@ final class HashCodeMessageExtractor[M](
  *
  * @tparam M The type of message accepted by the entity actor
  */
-abstract class HashCodeNoEnvelopeMessageExtractor[M](
-  val numberOfShards: Int)
-  extends ShardingMessageExtractor[M, M] {
+abstract class HashCodeNoEnvelopeMessageExtractor[M](val numberOfShards: Int) extends ShardingMessageExtractor[M, M] {
 
-  override def shardId(entityId: String): String = math.abs(entityId.hashCode % numberOfShards).toString
+  import akka.cluster.sharding.ShardRegion.HashCodeMessageExtractor
+  override def shardId(entityId: String): String = HashCodeMessageExtractor.shardId(entityId, numberOfShards)
   override final def unwrapMessage(message: M): M = message
 
   override def toString = s"HashCodeNoEnvelopeMessageExtractor($numberOfShards)"
@@ -106,6 +105,11 @@ abstract class HashCodeNoEnvelopeMessageExtractor[M](
  *
  * The alternative way of routing messages through sharding is to not use envelopes,
  * and have the message types themselves carry identifiers.
+ *
+ * @param entityId The business domain identifier of the entity.
+ * @param message The message to be send to the entity.
+ * @throws `InvalidMessageException` if message is null.
  */
-final case class ShardingEnvelope[M](entityId: String, message: M) // TODO think if should remain a case class
-
+final case class ShardingEnvelope[M](entityId: String, message: M) extends WrappedMessage {
+  if (message == null) throw InvalidMessageException("[null] is not an allowed message")
+}

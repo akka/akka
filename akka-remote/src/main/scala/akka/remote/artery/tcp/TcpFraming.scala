@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -9,7 +9,6 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 import akka.annotation.InternalApi
-import akka.remote.artery.FlightRecorderEvents.TcpInbound_Received
 import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.impl.io.ByteStringParser.ByteReader
@@ -53,15 +52,17 @@ import akka.util.ByteString
       (frameLength & 0xff).toByte,
       ((frameLength & 0xff00) >> 8).toByte,
       ((frameLength & 0xff0000) >> 16).toByte,
-      ((frameLength & 0xff000000) >> 24).toByte
-    )
+      ((frameLength & 0xff000000) >> 24).toByte)
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class TcpFraming(flightRecorder: EventSink) extends ByteStringParser[EnvelopeBuffer] {
+@InternalApi private[akka] class TcpFraming(flightRecorder: RemotingFlightRecorder = NoOpRemotingFlightRecorder)
+    extends ByteStringParser[EnvelopeBuffer] {
+
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new ParsingLogic {
+
     abstract class Step extends ParseStep[EnvelopeBuffer]
     startWith(ReadMagic)
 
@@ -71,8 +72,9 @@ import akka.util.ByteString
         if (magic == TcpFraming.Magic)
           ParseResult(None, ReadStreamId)
         else
-          throw new FramingException("Stream didn't start with expected magic bytes, " +
-            s"got [${(magic ++ reader.remainingData).take(10).map(_ formatted "%02x").mkString(" ")}] " +
+          throw new FramingException(
+            "Stream didn't start with expected magic bytes, " +
+            s"got [${(magic ++ reader.remainingData).take(10).map(_.formatted("%02x")).mkString(" ")}] " +
             "Connection is rejected. Probably invalid accidental access.")
       }
     }
@@ -93,7 +95,7 @@ import akka.util.ByteString
       private def createBuffer(bs: ByteString): EnvelopeBuffer = {
         val buffer = ByteBuffer.wrap(bs.toArray)
         buffer.order(ByteOrder.LITTLE_ENDIAN)
-        flightRecorder.hiFreq(TcpInbound_Received, buffer.limit)
+        flightRecorder.tcpInboundReceived(buffer.limit)
         val res = new EnvelopeBuffer(buffer)
         res.setStreamId(streamId)
         res

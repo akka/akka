@@ -9,7 +9,7 @@ exec scala "$0" "$@"
  * or if on non unixy os:
  *    scala authors.scala tag1 tag2
  *
- * requires scala 2.11.x+ and command line git on path
+ * requires scala 2.13.x+ and command line git on path
  */
 
 import scala.sys.process._
@@ -25,7 +25,7 @@ val FilesExp = """(\d+)\sfile[s]? changed""".r
 val InsertionsExp = """(\d+)\sinsertion[s]?\(\+\)""".r
 val DeletionsExp = """(\d+)\sdeletion[s]?\(-\)""".r
 
-val entries = gitCmd.lines_!.foldLeft("")(_ + "\n" + _).split('\0')
+val entries = gitCmd.lazyLines_!.foldLeft("")(_ + "\n" + _).split('\u0000')
 
 val map = entries.foldLeft(Map.empty[String, Stats]) { (map, entry) =>
   val lines = entry.trim.split('\n')

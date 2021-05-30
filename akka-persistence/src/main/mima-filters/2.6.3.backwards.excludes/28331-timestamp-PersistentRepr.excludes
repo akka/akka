@@ -1,0 +1,3 @@
+# PersistenceSettings.view
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.PersistenceSettings.view")
+ProblemFilters.exclude[MissingClassProblem]("akka.persistence.PersistenceSettings$view$")

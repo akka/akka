@@ -1,0 +1,5 @@
+# configuration for https://github.com/probot/autolabeler
+
+dependency-change: "/project/Dependencies.scala"
+
+'t:stream': ["/akka-stream", "/akka-stream-testkit", "/akka-stream-tests", "/akka-stream-tests-tck", "/akka-stream-typed"]

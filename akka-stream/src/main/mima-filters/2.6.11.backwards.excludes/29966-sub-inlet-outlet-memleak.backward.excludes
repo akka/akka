@@ -1,0 +1,7 @@
+# small optimization of ConcurrentAsyncCallback internal state
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.GraphStageLogic$ConcurrentAsyncCallback$Event$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.GraphStageLogic$ConcurrentAsyncCallback$State")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.GraphStageLogic$ConcurrentAsyncCallback$Pending$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.GraphStageLogic$ConcurrentAsyncCallback$Event")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.GraphStageLogic$ConcurrentAsyncCallback$Initialized$")
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.stage.GraphStageLogic$ConcurrentAsyncCallback$Pending")

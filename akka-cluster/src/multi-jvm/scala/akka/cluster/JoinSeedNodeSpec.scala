@@ -1,17 +1,18 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import scala.collection.immutable
+
 import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfter
+
+import akka.actor.Address
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.duration._
-import akka.actor.Address
+import akka.util.Version
 
 object JoinSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val seed1 = role("seed1")
@@ -20,8 +21,12 @@ object JoinSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val ordinary1 = role("ordinary1")
   val ordinary2 = role("ordinary2")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(MultiNodeClusterSpec.clusterConfig))
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""akka.cluster.app-version="1.0""""))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
+
+  nodeConfig(ordinary1, ordinary2)(ConfigFactory.parseString("""akka.cluster.app-version="2.0""""))
 }
 
 class JoinSeedNodeMultiJvmNode1 extends JoinSeedNodeSpec
@@ -30,9 +35,7 @@ class JoinSeedNodeMultiJvmNode3 extends JoinSeedNodeSpec
 class JoinSeedNodeMultiJvmNode4 extends JoinSeedNodeSpec
 class JoinSeedNodeMultiJvmNode5 extends JoinSeedNodeSpec
 
-abstract class JoinSeedNodeSpec
-  extends MultiNodeSpec(JoinSeedNodeMultiJvmSpec)
-  with MultiNodeClusterSpec {
+abstract class JoinSeedNodeSpec extends MultiNodeSpec(JoinSeedNodeMultiJvmSpec) with MultiNodeClusterSpec {
 
   import JoinSeedNodeMultiJvmSpec._
 
@@ -62,6 +65,14 @@ abstract class JoinSeedNodeSpec
         cluster.joinSeedNodes(seedNodes)
       }
       awaitMembersUp(roles.size)
+
+      seedNodes.foreach { a =>
+        cluster.state.members.find(_.address == a).get.appVersion should ===(Version("1.0"))
+      }
+      List(address(ordinary1), address(ordinary2)).foreach { a =>
+        cluster.state.members.find(_.address == a).get.appVersion should ===(Version("2.0"))
+      }
+
       enterBarrier("after-2")
     }
   }

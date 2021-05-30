@@ -1,14 +1,13 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.Attributes._
-import akka.stream.ActorAttributes._
-import akka.stream.ActorMaterializer
-import akka.stream.testkit.StreamSpec
 import akka.actor.ActorRef
+import akka.stream.ActorAttributes._
+import akka.stream.Attributes._
+import akka.stream.testkit.StreamSpec
 import akka.testkit.TestProbe
 
 object FlowSectionSpec {
@@ -21,9 +20,7 @@ object FlowSectionSpec {
 
 class FlowSectionSpec extends StreamSpec(FlowSectionSpec.config) {
 
-  implicit val materializer = ActorMaterializer()
-
-  "A flow" can {
+  "A flow".can {
 
     "have an op with a different dispatcher" in {
       val flow = Flow[Int].map(sendThreadNameTo(testActor)).withAttributes(dispatcher("my-dispatcher1"))
@@ -34,8 +31,11 @@ class FlowSectionSpec extends StreamSpec(FlowSectionSpec.config) {
     }
 
     "have a nested flow with a different dispatcher" in {
-      Source.single(1).via(
-        Flow[Int].map(sendThreadNameTo(testActor)).withAttributes(dispatcher("my-dispatcher1"))).to(Sink.ignore).run()
+      Source
+        .single(1)
+        .via(Flow[Int].map(sendThreadNameTo(testActor)).withAttributes(dispatcher("my-dispatcher1")))
+        .to(Sink.ignore)
+        .run()
 
       expectMsgType[String] should include("my-dispatcher1")
     }
@@ -70,17 +70,21 @@ class FlowSectionSpec extends StreamSpec(FlowSectionSpec.config) {
       val customDispatcher = TestProbe()
 
       val f1 = Flow[Int].map(sendThreadNameTo(defaultDispatcher.ref))
-      val f2 = Flow[Int].map(sendThreadNameTo(customDispatcher.ref)).map(x ⇒ x)
+      val f2 = Flow[Int]
+        .map(sendThreadNameTo(customDispatcher.ref))
+        .map(x => x)
         .withAttributes(dispatcher("my-dispatcher1") and name("separate-disptacher"))
 
       Source(0 to 2).via(f1).via(f2).runWith(Sink.ignore)
 
       defaultDispatcher.receiveN(3).foreach {
-        case s: String ⇒ s should include("akka.test.stream-dispatcher")
+        case s: String  => s should include("akka.test.stream-dispatcher")
+        case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
       }
 
       customDispatcher.receiveN(3).foreach {
-        case s: String ⇒ s should include("my-dispatcher1")
+        case s: String  => s should include("my-dispatcher1")
+        case unexpected => throw new RuntimeException(s"Unexpected: $unexpected")
       }
     }
 

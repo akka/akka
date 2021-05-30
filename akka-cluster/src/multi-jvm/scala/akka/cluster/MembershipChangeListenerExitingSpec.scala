@@ -1,20 +1,16 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import scala.collection.immutable.SortedSet
-import org.scalatest.BeforeAndAfter
-import com.typesafe.config.ConfigFactory
+import akka.actor.Actor
+import akka.actor.Deploy
+import akka.actor.Props
+import akka.cluster.MemberStatus._
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.duration._
-import akka.actor.Props
-import akka.actor.Actor
-import akka.cluster.MemberStatus._
-import akka.actor.Deploy
 
 object MembershipChangeListenerExitingMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -29,11 +25,11 @@ class MembershipChangeListenerExitingMultiJvmNode2 extends MembershipChangeListe
 class MembershipChangeListenerExitingMultiJvmNode3 extends MembershipChangeListenerExitingSpec
 
 abstract class MembershipChangeListenerExitingSpec
-  extends MultiNodeSpec(MembershipChangeListenerExitingMultiJvmSpec)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(MembershipChangeListenerExitingMultiJvmSpec)
+    with MultiNodeClusterSpec {
 
-  import MembershipChangeListenerExitingMultiJvmSpec._
   import ClusterEvent._
+  import MembershipChangeListenerExitingMultiJvmSpec._
 
   "A registered MembershipChangeListener" must {
     "be notified when new node is EXITING" taggedAs LongRunningTest in {
@@ -49,18 +45,20 @@ abstract class MembershipChangeListenerExitingSpec
         val exitingLatch = TestLatch()
         val removedLatch = TestLatch()
         val secondAddress = address(second)
-        cluster.subscribe(system.actorOf(Props(new Actor {
-          def receive = {
-            case state: CurrentClusterState ⇒
-              if (state.members.exists(m ⇒ m.address == secondAddress && m.status == Exiting))
+        cluster.subscribe(
+          system.actorOf(Props(new Actor {
+            def receive = {
+              case state: CurrentClusterState =>
+                if (state.members.exists(m => m.address == secondAddress && m.status == Exiting))
+                  exitingLatch.countDown()
+              case MemberExited(m) if m.address == secondAddress =>
                 exitingLatch.countDown()
-            case MemberExited(m) if m.address == secondAddress ⇒
-              exitingLatch.countDown()
-            case MemberRemoved(m, Exiting) if m.address == secondAddress ⇒
-              removedLatch.countDown()
-            case _ ⇒ // ignore
-          }
-        }).withDeploy(Deploy.local)), classOf[MemberEvent])
+              case MemberRemoved(m, Exiting) if m.address == secondAddress =>
+                removedLatch.countDown()
+              case _ => // ignore
+            }
+          }).withDeploy(Deploy.local)),
+          classOf[MemberEvent])
         enterBarrier("registered-listener")
         exitingLatch.await
         removedLatch.await
@@ -69,16 +67,18 @@ abstract class MembershipChangeListenerExitingSpec
       runOn(third) {
         val exitingLatch = TestLatch()
         val secondAddress = address(second)
-        cluster.subscribe(system.actorOf(Props(new Actor {
-          def receive = {
-            case state: CurrentClusterState ⇒
-              if (state.members.exists(m ⇒ m.address == secondAddress && m.status == Exiting))
+        cluster.subscribe(
+          system.actorOf(Props(new Actor {
+            def receive = {
+              case state: CurrentClusterState =>
+                if (state.members.exists(m => m.address == secondAddress && m.status == Exiting))
+                  exitingLatch.countDown()
+              case MemberExited(m) if m.address == secondAddress =>
                 exitingLatch.countDown()
-            case MemberExited(m) if m.address == secondAddress ⇒
-              exitingLatch.countDown()
-            case _ ⇒ // ignore
-          }
-        }).withDeploy(Deploy.local)), classOf[MemberEvent])
+              case _ => // ignore
+            }
+          }).withDeploy(Deploy.local)),
+          classOf[MemberEvent])
         enterBarrier("registered-listener")
         exitingLatch.await
       }

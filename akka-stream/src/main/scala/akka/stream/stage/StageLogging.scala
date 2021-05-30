@@ -1,15 +1,16 @@
 /*
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.stage
 
-import akka.event.{ LoggingAdapter, NoLogging }
+import akka.event.LoggingAdapter
+import akka.event.NoLogging
 import akka.stream.MaterializerLoggingProvider
 
 /**
- * Simple way to obtain a [[LoggingAdapter]] when used together with an [[ActorMaterializer]].
- * If used with a different materializer [[NoLogging]] will be returned.
+ * Simple way to obtain a [[akka.event.LoggingAdapter]] when used together with an [[akka.stream.Materializer]].
+ * If used with a different materializer [[akka.event.NoLogging]] will be returned.
  *
  * Make sure to only access `log` from GraphStage callbacks (such as `pull`, `push` or the async-callback).
  *
@@ -18,7 +19,7 @@ import akka.stream.MaterializerLoggingProvider
  * itself would not know if you're calling it from a "on element" context or not, which is why
  * these decisions have to be handled by the operator itself.
  */
-trait StageLogging { self: GraphStageLogic ⇒
+trait StageLogging { self: GraphStageLogic =>
   private[this] var _log: LoggingAdapter = _
 
   /** Override to customise reported log source */
@@ -28,9 +29,9 @@ trait StageLogging { self: GraphStageLogic ⇒
     // only used in StageLogic, i.e. thread safe
     if (_log eq null) {
       materializer match {
-        case p: MaterializerLoggingProvider ⇒
+        case p: MaterializerLoggingProvider =>
           _log = p.makeLogger(logSource)
-        case _ ⇒
+        case _ =>
           _log = NoLogging
       }
     }

@@ -4,18 +4,17 @@ Pass elements downstream within a timeout and then complete.
 
 @ref[Timer driven operators](../index.md#timer-driven-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #takeWithin }
+@apidoc[Source.takeWithin](Source) { scala="#takeWithin(d:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[Out]" java="#takeWithin(java.time.Duration)" }
+@apidoc[Flow.takeWithin](Flow) { scala="#takeWithin(d:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[Out]" java="#takeWithin(java.time.Duration)" }
 
-@@@
 
 ## Description
 
 Pass elements downstream within a timeout and then complete.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

@@ -1,22 +1,17 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
 
-import java.io.File
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 
 import akka.actor._
-import akka.cluster.{ Cluster, MemberStatus, MultiNodeClusterSpec }
-import akka.persistence.Persistence
-import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
+import akka.cluster.{ Cluster, MemberStatus }
+import akka.persistence.journal.leveldb.SharedLeveldbJournal
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import org.apache.commons.io.FileUtils
-
-import scala.concurrent.duration._
 
 object ClusterShardingRememberEntitiesNewExtractorSpec {
 
@@ -29,70 +24,51 @@ object ClusterShardingRememberEntitiesNewExtractorSpec {
     probe.foreach(_ ! Started(self))
 
     def receive = {
-      case m ⇒ sender() ! m
+      case m => sender() ! m
     }
   }
 
   val shardCount = 5
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
-    case id: Int ⇒ (id.toString, id)
+    case id: Int => (id.toString, id)
   }
 
   val extractShardId1: ShardRegion.ExtractShardId = {
-    case id: Int                     ⇒ (id % shardCount).toString
-    case ShardRegion.StartEntity(id) ⇒ extractShardId1(id.toInt)
+    case id: Int                     => (id % shardCount).toString
+    case ShardRegion.StartEntity(id) => extractShardId1(id.toInt)
+    case _                           => throw new IllegalArgumentException()
   }
 
   val extractShardId2: ShardRegion.ExtractShardId = {
     // always bump it one shard id
-    case id: Int                     ⇒ ((id + 1) % shardCount).toString
-    case ShardRegion.StartEntity(id) ⇒ extractShardId2(id.toInt)
+    case id: Int                     => ((id + 1) % shardCount).toString
+    case ShardRegion.StartEntity(id) => extractShardId2(id.toInt)
+    case _                           => throw new IllegalArgumentException()
   }
 
 }
 
-abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(val mode: String) extends MultiNodeConfig {
+abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(mode: String)
+    extends MultiNodeClusterShardingConfig(
+      mode,
+      additionalConfig = "akka.persistence.journal.leveldb-shared.store.native = off") {
   val first = role("first")
   val second = role("second")
   val third = role("third")
 
-  commonConfig(ConfigFactory.parseString(s"""
-    akka.actor.provider = "cluster"
-    akka.cluster.auto-down-unreachable-after = 0s
-    akka.remote.log-remote-lifecycle-events = off
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
-    akka.persistence.journal.leveldb-shared {
-      timeout = 5s
-      store {
-        native = off
-        dir = "target/ShardingRememberEntitiesNewExtractorSpec/journal"
-      }
-    }
-    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-    akka.persistence.snapshot-store.local.dir = "target/ShardingRememberEntitiesNewExtractorSpec/snapshots"
-    akka.cluster.sharding.state-store-mode = "$mode"
-    akka.cluster.sharding.distributed-data.durable.lmdb {
-      dir = target/ShardingRememberEntitiesNewExtractorSpec/sharding-ddata
-      map-size = 10 MiB
-    }
-    """).withFallback(MultiNodeClusterSpec.clusterConfig))
-
-  val roleConfig = ConfigFactory.parseString(
-    """
+  val roleConfig = ConfigFactory.parseString("""
       akka.cluster.roles = [sharding]
     """)
 
   // we pretend node 4 and 5 are new incarnations of node 2 and 3 as they never run in parallel
   // so we can use the same lmdb store for them and have node 4 pick up the persisted data of node 2
-  val ddataNodeAConfig = ConfigFactory.parseString(
-    """
+  val ddataNodeAConfig = ConfigFactory.parseString("""
       akka.cluster.sharding.distributed-data.durable.lmdb {
         dir = target/ShardingRememberEntitiesNewExtractorSpec/sharding-node-a
       }
     """)
-  val ddataNodeBConfig = ConfigFactory.parseString(
-    """
+  val ddataNodeBConfig = ConfigFactory.parseString("""
       akka.cluster.sharding.distributed-data.durable.lmdb {
         dir = target/ShardingRememberEntitiesNewExtractorSpec/sharding-node-b
       }
@@ -103,98 +79,68 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(val mode: S
 
 }
 
-object PersistentClusterShardingRememberEntitiesSpecNewExtractorConfig extends ClusterShardingRememberEntitiesNewExtractorSpecConfig(
-  ClusterShardingSettings.StateStoreModePersistence)
-object DDataClusterShardingRememberEntitiesNewExtractorSpecConfig extends ClusterShardingRememberEntitiesNewExtractorSpecConfig(
-  ClusterShardingSettings.StateStoreModeDData)
+object PersistentClusterShardingRememberEntitiesSpecNewExtractorConfig
+    extends ClusterShardingRememberEntitiesNewExtractorSpecConfig(ClusterShardingSettings.StateStoreModePersistence)
+object DDataClusterShardingRememberEntitiesNewExtractorSpecConfig
+    extends ClusterShardingRememberEntitiesNewExtractorSpecConfig(ClusterShardingSettings.StateStoreModeDData)
 
-class PersistentClusterShardingRememberEntitiesNewExtractorSpec extends ClusterShardingRememberEntitiesNewExtractorSpec(
-  PersistentClusterShardingRememberEntitiesSpecNewExtractorConfig)
+class PersistentClusterShardingRememberEntitiesNewExtractorSpec
+    extends ClusterShardingRememberEntitiesNewExtractorSpec(
+      PersistentClusterShardingRememberEntitiesSpecNewExtractorConfig)
 
-class PersistentClusterShardingRememberEntitiesNewExtractorMultiJvmNode1 extends PersistentClusterShardingRememberEntitiesNewExtractorSpec
-class PersistentClusterShardingRememberEntitiesNewExtractorMultiJvmNode2 extends PersistentClusterShardingRememberEntitiesNewExtractorSpec
-class PersistentClusterShardingRememberEntitiesNewExtractorMultiJvmNode3 extends PersistentClusterShardingRememberEntitiesNewExtractorSpec
+class PersistentClusterShardingRememberEntitiesNewExtractorMultiJvmNode1
+    extends PersistentClusterShardingRememberEntitiesNewExtractorSpec
+class PersistentClusterShardingRememberEntitiesNewExtractorMultiJvmNode2
+    extends PersistentClusterShardingRememberEntitiesNewExtractorSpec
+class PersistentClusterShardingRememberEntitiesNewExtractorMultiJvmNode3
+    extends PersistentClusterShardingRememberEntitiesNewExtractorSpec
 
-class DDataClusterShardingRememberEntitiesNewExtractorSpec extends ClusterShardingRememberEntitiesNewExtractorSpec(
-  DDataClusterShardingRememberEntitiesNewExtractorSpecConfig)
+class DDataClusterShardingRememberEntitiesNewExtractorSpec
+    extends ClusterShardingRememberEntitiesNewExtractorSpec(DDataClusterShardingRememberEntitiesNewExtractorSpecConfig)
 
-class DDataClusterShardingRememberEntitiesNewExtractorMultiJvmNode1 extends DDataClusterShardingRememberEntitiesNewExtractorSpec
-class DDataClusterShardingRememberEntitiesNewExtractorMultiJvmNode2 extends DDataClusterShardingRememberEntitiesNewExtractorSpec
-class DDataClusterShardingRememberEntitiesNewExtractorMultiJvmNode3 extends DDataClusterShardingRememberEntitiesNewExtractorSpec
+class DDataClusterShardingRememberEntitiesNewExtractorMultiJvmNode1
+    extends DDataClusterShardingRememberEntitiesNewExtractorSpec
+class DDataClusterShardingRememberEntitiesNewExtractorMultiJvmNode2
+    extends DDataClusterShardingRememberEntitiesNewExtractorSpec
+class DDataClusterShardingRememberEntitiesNewExtractorMultiJvmNode3
+    extends DDataClusterShardingRememberEntitiesNewExtractorSpec
 
-abstract class ClusterShardingRememberEntitiesNewExtractorSpec(config: ClusterShardingRememberEntitiesNewExtractorSpecConfig) extends MultiNodeSpec(config) with STMultiNodeSpec with ImplicitSender {
+abstract class ClusterShardingRememberEntitiesNewExtractorSpec(
+    multiNodeConfig: ClusterShardingRememberEntitiesNewExtractorSpecConfig)
+    extends MultiNodeClusterShardingSpec(multiNodeConfig)
+    with ImplicitSender {
   import ClusterShardingRememberEntitiesNewExtractorSpec._
-  import config._
+  import multiNodeConfig._
 
   val typeName = "Entity"
 
-  override def initialParticipants = roles.size
-
-  val storageLocations = List(new File(system.settings.config.getString(
-    "akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
-
-  override protected def atStartup(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
-    enterBarrier("startup")
-  }
-
-  override protected def afterTermination(): Unit = {
-    storageLocations.foreach(dir ⇒ if (dir.exists) FileUtils.deleteQuietly(dir))
-  }
-
-  def join(from: RoleName, to: RoleName): Unit = {
-    runOn(from) {
-      Cluster(system) join node(to).address
-    }
-    enterBarrier(from.name + "-joined")
-  }
-
-  val cluster = Cluster(system)
-
   def startShardingWithExtractor1(): Unit = {
-    ClusterSharding(system).start(
+    startSharding(
+      system,
       typeName = typeName,
       entityProps = ClusterShardingRememberEntitiesNewExtractorSpec.props(None),
-      settings = ClusterShardingSettings(system).withRememberEntities(true).withRole("sharding"),
+      settings = settings.withRole("sharding"),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId1)
   }
 
   def startShardingWithExtractor2(sys: ActorSystem, probe: ActorRef): Unit = {
-    ClusterSharding(sys).start(
+    startSharding(
+      sys,
       typeName = typeName,
       entityProps = ClusterShardingRememberEntitiesNewExtractorSpec.props(Some(probe)),
-      settings = ClusterShardingSettings(system).withRememberEntities(true).withRole("sharding"),
+      settings = ClusterShardingSettings(sys).withRememberEntities(config.rememberEntities).withRole("sharding"),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId2)
   }
 
   def region(sys: ActorSystem = system) = ClusterSharding(sys).shardRegion(typeName)
 
-  def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
-
   s"Cluster with min-nr-of-members using sharding ($mode)" must {
 
-    if (!isDdataMode) {
-      "setup shared journal" in {
-        // start the Persistence extension
-        Persistence(system)
-        runOn(first) {
-          system.actorOf(Props[SharedLeveldbStore], "store")
-        }
-        enterBarrier("persistence-started")
-
-        runOn(second, third) {
-          system.actorSelection(node(first) / "user" / "store") ! Identify(None)
-          val sharedStore = expectMsgType[ActorIdentity](10.seconds).ref.get
-          SharedLeveldbJournal.setStore(sharedStore, system)
-        }
-
-        enterBarrier("after-1")
-      }
-    }
-
     "start up first cluster and sharding" in within(15.seconds) {
+      startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(second, third))
+
       join(first, first)
       join(second, first)
       join(third, first)
@@ -213,7 +159,7 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(config: ClusterSh
 
       runOn(second, third) {
         // one entity for each shard id
-        (1 to 10).foreach { n ⇒
+        (1 to 10).foreach { n =>
           region() ! n
           expectMsg(n)
         }
@@ -256,7 +202,7 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(config: ClusterSh
         val sys2 = ActorSystem(system.name, system.settings.config)
         val probe2 = TestProbe()(sys2)
 
-        if (!isDdataMode) {
+        if (persistenceIsNeeded) {
           sys2.actorSelection(node(first) / "user" / "store").tell(Identify(None), probe2.ref)
           val sharedStore = probe2.expectMsgType[ActorIdentity](10.seconds).ref.get
           SharedLeveldbJournal.setStore(sharedStore, sys2)
@@ -277,8 +223,8 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(config: ClusterSh
         }
 
         for {
-          shardState ← stats.shards
-          entityId ← shardState.entityIds
+          shardState <- stats.shards
+          entityId <- shardState.entityIds
         } {
           val calculatedShardId = extractShardId2(entityId.toInt)
           calculatedShardId should ===(shardState.shardId)
@@ -297,4 +243,3 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpec(config: ClusterSh
 
   }
 }
-

@@ -1,19 +1,20 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
 
-import akka.NotUsed
-
 import scala.concurrent.duration._
+
+import akka.Done
+import akka.NotUsed
 import akka.testkit.AkkaSpec
 import akka.stream.scaladsl._
 import akka.stream._
 
 import scala.concurrent.Future
 import akka.testkit.TestProbe
-import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Status }
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
 import com.typesafe.config.ConfigFactory
 import akka.util.Timeout
 
@@ -21,9 +22,7 @@ import scala.concurrent.ExecutionContext
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.stream.scaladsl.Flow
-import akka.Done
-import akka.actor.Status.Status
-import akka.stream.QueueOfferResult.{ Dropped, Enqueued }
+import org.scalacheck.Gen.const
 
 object IntegrationDocSpec {
   import TwitterStreamQuickstartDocSpec._
@@ -88,11 +87,11 @@ object IntegrationDocSpec {
   }
 
   final case class Save(tweet: Tweet)
-  final case object SaveDone
+  case object SaveDone
 
   class DatabaseService(probe: ActorRef) extends Actor {
     override def receive = {
-      case Save(tweet: Tweet) ⇒
+      case Save(tweet: Tweet) =>
         probe ! tweet.author.handle
         sender() ! SaveDone
     }
@@ -123,7 +122,7 @@ object IntegrationDocSpec {
   //#ask-actor
   class Translator extends Actor {
     def receive = {
-      case word: String ⇒
+      case word: String =>
         // ... process message
         val reply = word.toUpperCase
         sender() ! reply // reply to the ask
@@ -137,8 +136,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
   import TwitterStreamQuickstartDocSpec._
   import IntegrationDocSpec._
 
-  implicit val materializer = ActorMaterializer()
-  val ref: ActorRef = system.actorOf(Props[Translator])
+  val ref: ActorRef = system.actorOf(Props[Translator]())
 
   "ask" in {
     //#ask
@@ -161,24 +159,21 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     //#tweet-authors
     val authors: Source[Author, NotUsed] =
-      tweets
-        .filter(_.hashtags.contains(akkaTag))
-        .map(_.author)
+      tweets.filter(_.hashtags.contains(akkaTag)).map(_.author)
     //#tweet-authors
 
     //#email-addresses-mapAsync
     val emailAddresses: Source[String, NotUsed] =
-      authors
-        .mapAsync(4)(author ⇒ addressSystem.lookupEmail(author.handle))
-        .collect { case Some(emailAddress) ⇒ emailAddress }
+      authors.mapAsync(4)(author => addressSystem.lookupEmail(author.handle)).collect {
+        case Some(emailAddress) => emailAddress
+      }
     //#email-addresses-mapAsync
 
     //#send-emails
     val sendEmails: RunnableGraph[NotUsed] =
       emailAddresses
-        .mapAsync(4)(address ⇒ {
-          emailServer.send(
-            Email(to = address, title = "Akka", body = "I like your tweet"))
+        .mapAsync(4)(address => {
+          emailServer.send(Email(to = address, title = "Akka", body = "I like your tweet"))
         })
         .to(Sink.ignore)
 
@@ -194,8 +189,8 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     probe.expectMsg("akkateam@somewhere.com")
   }
 
-  "actorRefWithAck" in {
-    //#actorRefWithAck
+  "actorRefWithBackpressure" in {
+    //#actorRefWithBackpressure
     val words: Source[String, NotUsed] =
       Source(List("hello", "hi"))
 
@@ -205,31 +200,27 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     // sent from stream to actor to indicate start, end or failure of stream:
     val InitMessage = AckingReceiver.StreamInitialized
     val OnCompleteMessage = AckingReceiver.StreamCompleted
-    val onErrorMessage = (ex: Throwable) ⇒ AckingReceiver.StreamFailure(ex)
+    val onErrorMessage = (ex: Throwable) => AckingReceiver.StreamFailure(ex)
 
     val probe = TestProbe()
-    val receiver = system.actorOf(
-      Props(new AckingReceiver(probe.ref, ackWith = AckMessage)))
-    val sink = Sink.actorRefWithAck(
+    val receiver = system.actorOf(Props(new AckingReceiver(probe.ref, ackWith = AckMessage)))
+    val sink = Sink.actorRefWithBackpressure(
       receiver,
       onInitMessage = InitMessage,
       ackMessage = AckMessage,
       onCompleteMessage = OnCompleteMessage,
-      onFailureMessage = onErrorMessage
-    )
+      onFailureMessage = onErrorMessage)
 
-    words
-      .map(_.toLowerCase)
-      .runWith(sink)
+    words.map(_.toLowerCase).runWith(sink)
 
     probe.expectMsg("Stream initialized!")
     probe.expectMsg("hello")
     probe.expectMsg("hi")
     probe.expectMsg("Stream completed!")
-    //#actorRefWithAck
+    //#actorRefWithBackpressure
   }
 
-  //#actorRefWithAck-actor
+  //#actorRefWithBackpressure-actor
   object AckingReceiver {
     case object Ack
 
@@ -242,24 +233,24 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     import AckingReceiver._
 
     def receive: Receive = {
-      case StreamInitialized ⇒
+      case StreamInitialized =>
         log.info("Stream initialized!")
         probe ! "Stream initialized!"
         sender() ! Ack // ack to allow the stream to proceed sending more elements
 
-      case el: String ⇒
+      case el: String =>
         log.info("Received element: {}", el)
         probe ! el
         sender() ! Ack // ack to allow the stream to proceed sending more elements
 
-      case StreamCompleted ⇒
+      case StreamCompleted =>
         log.info("Stream completed!")
         probe ! "Stream completed!"
-      case StreamFailure(ex) ⇒
+      case StreamFailure(ex) =>
         log.error(ex, "Stream failed!")
     }
   }
-  //#actorRefWithAck-actor
+  //#actorRefWithBackpressure-actor
 
   "lookup email with mapAsync and supervision" in {
     val addressSystem = new AddressSystem2
@@ -272,7 +263,8 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     val emailAddresses: Source[String, NotUsed] =
       authors.via(
-        Flow[Author].mapAsync(4)(author ⇒ addressSystem.lookupEmail(author.handle))
+        Flow[Author]
+          .mapAsync(4)(author => addressSystem.lookupEmail(author.handle))
           .withAttributes(supervisionStrategy(resumingDecider)))
     //#email-addresses-mapAsync-supervision
   }
@@ -287,29 +279,29 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
       tweets.filter(_.hashtags.contains(akkaTag)).map(_.author)
 
     val emailAddresses: Source[String, NotUsed] =
-      authors
-        .mapAsyncUnordered(4)(author ⇒ addressSystem.lookupEmail(author.handle))
-        .collect { case Some(emailAddress) ⇒ emailAddress }
+      authors.mapAsyncUnordered(4)(author => addressSystem.lookupEmail(author.handle)).collect {
+        case Some(emailAddress) => emailAddress
+      }
 
     val sendEmails: RunnableGraph[NotUsed] =
       emailAddresses
-        .mapAsyncUnordered(4)(address ⇒ {
-          emailServer.send(
-            Email(to = address, title = "Akka", body = "I like your tweet"))
+        .mapAsyncUnordered(4)(address => {
+          emailServer.send(Email(to = address, title = "Akka", body = "I like your tweet"))
         })
         .to(Sink.ignore)
 
     sendEmails.run()
     //#external-service-mapAsyncUnordered
 
-    probe.receiveN(7).toSet should be(Set(
-      "rolandkuhn@somewhere.com",
-      "patriknw@somewhere.com",
-      "bantonsson@somewhere.com",
-      "drewhk@somewhere.com",
-      "ktosopl@somewhere.com",
-      "mmartynas@somewhere.com",
-      "akkateam@somewhere.com"))
+    probe.receiveN(7).toSet should be(
+      Set(
+        "rolandkuhn@somewhere.com",
+        "patriknw@somewhere.com",
+        "bantonsson@somewhere.com",
+        "drewhk@somewhere.com",
+        "ktosopl@somewhere.com",
+        "mmartynas@somewhere.com",
+        "akkateam@somewhere.com"))
   }
 
   "careful managed blocking with mapAsync" in {
@@ -320,18 +312,18 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val authors = tweets.filter(_.hashtags.contains(akkaTag)).map(_.author)
 
     val phoneNumbers =
-      authors.mapAsync(4)(author ⇒ addressSystem.lookupPhoneNumber(author.handle))
-        .collect { case Some(phoneNo) ⇒ phoneNo }
+      authors.mapAsync(4)(author => addressSystem.lookupPhoneNumber(author.handle)).collect {
+        case Some(phoneNo) => phoneNo
+      }
 
     //#blocking-mapAsync
     val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
 
     val sendTextMessages: RunnableGraph[NotUsed] =
       phoneNumbers
-        .mapAsync(4)(phoneNo ⇒ {
+        .mapAsync(4)(phoneNo => {
           Future {
-            smsServer.send(
-              TextMessage(to = phoneNo, body = "I like your tweet"))
+            smsServer.send(TextMessage(to = phoneNo, body = "I like your tweet"))
           }(blockingExecutionContext)
         })
         .to(Sink.ignore)
@@ -339,14 +331,15 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     sendTextMessages.run()
     //#blocking-mapAsync
 
-    probe.receiveN(7).toSet should be(Set(
-      "rolandkuhn".hashCode.toString,
-      "patriknw".hashCode.toString,
-      "bantonsson".hashCode.toString,
-      "drewhk".hashCode.toString,
-      "ktosopl".hashCode.toString,
-      "mmartynas".hashCode.toString,
-      "akkateam".hashCode.toString))
+    probe.receiveN(7).toSet should be(
+      Set(
+        "rolandkuhn".hashCode.toString,
+        "patriknw".hashCode.toString,
+        "bantonsson".hashCode.toString,
+        "drewhk".hashCode.toString,
+        "ktosopl".hashCode.toString,
+        "mmartynas".hashCode.toString,
+        "akkateam".hashCode.toString))
   }
 
   "careful managed blocking with map" in {
@@ -357,12 +350,13 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val authors = tweets.filter(_.hashtags.contains(akkaTag)).map(_.author)
 
     val phoneNumbers =
-      authors.mapAsync(4)(author ⇒ addressSystem.lookupPhoneNumber(author.handle))
-        .collect { case Some(phoneNo) ⇒ phoneNo }
+      authors.mapAsync(4)(author => addressSystem.lookupPhoneNumber(author.handle)).collect {
+        case Some(phoneNo) => phoneNo
+      }
 
     //#blocking-map
     val send = Flow[String]
-      .map { phoneNo ⇒
+      .map { phoneNo =>
         smsServer.send(TextMessage(to = phoneNo, body = "I like your tweet"))
       }
       .withAttributes(ActorAttributes.dispatcher("blocking-dispatcher"))
@@ -392,9 +386,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     implicit val timeout = Timeout(3.seconds)
     val saveTweets: RunnableGraph[NotUsed] =
-      akkaTweets
-        .mapAsync(4)(tweet ⇒ database ? Save(tweet))
-        .to(Sink.ignore)
+      akkaTweets.mapAsync(4)(tweet => database ? Save(tweet)).to(Sink.ignore)
     //#save-tweets
 
     saveTweets.run()
@@ -419,13 +411,12 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
     val service = new SometimesSlowService
 
-    implicit val materializer = ActorMaterializer(
-      ActorMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
-
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
-      .map(elem ⇒ { println(s"before: $elem"); elem })
+      .map(elem => { println(s"before: $elem"); elem })
       .mapAsync(4)(service.convert)
-      .runForeach(elem ⇒ println(s"after: $elem"))
+      .to(Sink.foreach(elem => println(s"after: $elem")))
+      .withAttributes(Attributes.inputBuffer(initial = 4, max = 4))
+      .run()
     //#sometimes-slow-mapAsync
 
     probe.expectMsg("after: A")
@@ -451,52 +442,109 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
     val service = new SometimesSlowService
 
-    implicit val materializer = ActorMaterializer(
-      ActorMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
-
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
-      .map(elem ⇒ { println(s"before: $elem"); elem })
+      .map(elem => { println(s"before: $elem"); elem })
       .mapAsyncUnordered(4)(service.convert)
-      .runForeach(elem ⇒ println(s"after: $elem"))
+      .to(Sink.foreach(elem => println(s"after: $elem")))
+      .withAttributes(Attributes.inputBuffer(initial = 4, max = 4))
+      .run()
     //#sometimes-slow-mapAsyncUnordered
 
-    probe.receiveN(10).toSet should be(Set(
-      "after: A",
-      "after: B",
-      "after: C",
-      "after: D",
-      "after: E",
-      "after: F",
-      "after: G",
-      "after: H",
-      "after: I",
-      "after: J"))
+    probe.receiveN(10).toSet should be(
+      Set(
+        "after: A",
+        "after: B",
+        "after: C",
+        "after: D",
+        "after: E",
+        "after: F",
+        "after: G",
+        "after: H",
+        "after: I",
+        "after: J"))
   }
 
   "illustrate use of source queue" in {
     //#source-queue
-    val bufferSize = 5
-    val elementsToProcess = 3
+    val bufferSize = 10
+    val elementsToProcess = 5
 
     val queue = Source
-      .queue[Int](bufferSize, OverflowStrategy.backpressure)
+      .queue[Int](bufferSize)
       .throttle(elementsToProcess, 3.second)
-      .map(x ⇒ x * x)
-      .toMat(Sink.foreach(x ⇒ println(s"completed $x")))(Keep.left)
+      .map(x => x * x)
+      .toMat(Sink.foreach(x => println(s"completed $x")))(Keep.left)
       .run()
 
     val source = Source(1 to 10)
 
     implicit val ec = system.dispatcher
-    source.mapAsync(1)(x ⇒ {
-      queue.offer(x).map {
-        case QueueOfferResult.Enqueued    ⇒ println(s"enqueued $x")
-        case QueueOfferResult.Dropped     ⇒ println(s"dropped $x")
-        case QueueOfferResult.Failure(ex) ⇒ println(s"Offer failed ${ex.getMessage}")
-        case QueueOfferResult.QueueClosed ⇒ println("Source Queue closed")
-      }
-    }).runWith(Sink.ignore)
+    source
+      .map(x => {
+        queue.offer(x).map {
+          case QueueOfferResult.Enqueued    => println(s"enqueued $x")
+          case QueueOfferResult.Dropped     => println(s"dropped $x")
+          case QueueOfferResult.Failure(ex) => println(s"Offer failed ${ex.getMessage}")
+          case QueueOfferResult.QueueClosed => println("Source Queue closed")
+        }
+      })
+      .runWith(Sink.ignore)
     //#source-queue
   }
 
+  "illustrate use of synchronous source queue" in {
+    //#source-queue-synchronous
+    val bufferSize = 1000
+
+    //#source-queue-synchronous
+    // format: OFF
+    //#source-queue-synchronous
+    val queue = Source
+      .queue[Int](bufferSize)
+      .map(x => x * x)
+      .toMat(Sink.foreach(x => println(s"completed $x")))(Keep.left)
+      .run()
+    //#source-queue-synchronous
+    // format: OFF
+    //#source-queue-synchronous
+
+    val fastElements = 1 to 10
+
+    implicit val ec = system.dispatcher
+    fastElements.foreach { x =>
+      queue.offer(x) match {
+        case QueueOfferResult.Enqueued    => println(s"enqueued $x")
+        case QueueOfferResult.Dropped     => println(s"dropped $x")
+        case QueueOfferResult.Failure(ex) => println(s"Offer failed ${ex.getMessage}")
+        case QueueOfferResult.QueueClosed => println("Source Queue closed")
+      }
+    }
+    //#source-queue-synchronous
+  }
+
+  "illustrate use of source actor ref" in {
+    //#source-actorRef
+    val bufferSize = 10
+
+    val cm: PartialFunction[Any, CompletionStrategy] = {
+      case Done =>
+        CompletionStrategy.immediately
+    }
+
+    val ref = Source
+      .actorRef[Int](
+        completionMatcher = cm,
+        failureMatcher = PartialFunction.empty[Any, Throwable],
+        bufferSize = bufferSize,
+        overflowStrategy = OverflowStrategy.fail) // note: backpressure is not supported
+      .map(x => x * x)
+      .toMat(Sink.foreach((x: Int) => println(s"completed $x")))(Keep.left)
+      .run()
+
+    ref ! 1
+    ref ! 2
+    ref ! 3
+    ref ! Done
+    //#source-actorRef
+  }
 }

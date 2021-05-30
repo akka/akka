@@ -1,2 +1,0 @@
-# internal classes
-ProblemFilters.exclude[Problem]("akka.remote.artery.*")

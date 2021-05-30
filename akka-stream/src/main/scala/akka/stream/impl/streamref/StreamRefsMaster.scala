@@ -1,12 +1,12 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.streamref
 
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.ClassicActorSystemProvider
 import akka.annotation.InternalApi
-import akka.event.Logging
 import akka.stream.impl.SeqActorName
 
 /** INTERNAL API */
@@ -14,18 +14,17 @@ import akka.stream.impl.SeqActorName
 private[stream] object StreamRefsMaster extends ExtensionId[StreamRefsMaster] with ExtensionIdProvider {
 
   override def createExtension(system: ExtendedActorSystem): StreamRefsMaster =
-    new StreamRefsMaster(system)
+    new StreamRefsMaster
 
-  override def lookup(): StreamRefsMaster.type = this
+  override def lookup: StreamRefsMaster.type = this
 
   override def get(system: ActorSystem): StreamRefsMaster = super.get(system)
+  override def get(system: ClassicActorSystemProvider): StreamRefsMaster = super.get(system)
 }
 
 /** INTERNAL API */
 @InternalApi
-private[stream] final class StreamRefsMaster(system: ExtendedActorSystem) extends Extension {
-
-  private val log = Logging(system, getClass)
+private[stream] final class StreamRefsMaster extends Extension {
 
   private[this] val sourceRefStageNames = SeqActorName("SourceRef") // "local target"
   private[this] val sinkRefStageNames = SeqActorName("SinkRef") // "remote sender"

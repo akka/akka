@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.extension
@@ -10,9 +10,12 @@ import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.ExtendedActorSystem
+
 import scala.concurrent.duration.Duration
 import com.typesafe.config.Config
 import java.util.concurrent.TimeUnit
+
+import akka.actor.ClassicActorSystemProvider
 
 //#imports
 
@@ -23,9 +26,7 @@ import akka.testkit.AkkaSpec
 class SettingsImpl(config: Config) extends Extension {
   val DbUri: String = config.getString("myapp.db.uri")
   val CircuitBreakerTimeout: Duration =
-    Duration(
-      config.getMilliseconds("myapp.circuit-breaker.timeout"),
-      TimeUnit.MILLISECONDS)
+    Duration(config.getDuration("myapp.circuit-breaker.timeout", TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
 }
 //#extension
 
@@ -41,6 +42,7 @@ object Settings extends ExtensionId[SettingsImpl] with ExtensionIdProvider {
    * Java API: retrieve the Settings extension for the given system.
    */
   override def get(system: ActorSystem): SettingsImpl = super.get(system)
+  override def get(system: ClassicActorSystemProvider): SettingsImpl = super.get(system)
 }
 //#extensionid
 
@@ -67,7 +69,7 @@ object SettingsExtensionDocSpec {
 
     //#extension-usage-actor
     def receive = {
-      case someMessage ⇒
+      case someMessage =>
     }
 
     def connect(dbUri: String, circuitBreakerTimeout: Duration) = {

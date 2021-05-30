@@ -1,15 +1,16 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.testkit.typed.javadsl
 
-import akka.actor.typed.{ Behavior, Signal, ActorRef }
-import akka.annotation.DoNotInherit
-import akka.actor.testkit.typed.Effect
-import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
-
 import java.util.concurrent.ThreadLocalRandom
+
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
+import akka.actor.typed.{ ActorRef, Behavior, Signal }
+import akka.actor.typed.receptionist.Receptionist
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 
 object BehaviorTestKit {
   import akka.actor.testkit.typed.scaladsl.TestInbox.address
@@ -17,13 +18,16 @@ object BehaviorTestKit {
   /**
    * JAVA API
    */
+  @ApiMayChange
   def create[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] = {
     val uid = ThreadLocalRandom.current().nextInt()
-    new BehaviorTestKitImpl(address / name withUid (uid), initialBehavior)
+    new BehaviorTestKitImpl((address / name).withUid(uid), initialBehavior)
   }
+
   /**
    * JAVA API
    */
+  @ApiMayChange
   def create[T](initialBehavior: Behavior[T]): BehaviorTestKit[T] =
     create(initialBehavior, "testkit")
 
@@ -38,7 +42,9 @@ object BehaviorTestKit {
  * For asynchronous testing of `Behavior`s running see [[ActorTestKit]]
  */
 @DoNotInherit
+@ApiMayChange
 abstract class BehaviorTestKit[T] {
+
   /**
    * Requests the oldest [[Effect]] or [[akka.actor.testkit.typed.javadsl.Effects.noEffects]] if no effects
    * have taken place. The effect is consumed, subsequent calls won't
@@ -53,19 +59,25 @@ abstract class BehaviorTestKit[T] {
   def childInbox[U](name: String): TestInbox[U]
 
   /**
+   * Get the child inbox for the child with the given name, or fail if there is no child with the given name
+   * spawned
+   */
+  def childInbox[U](child: ActorRef[U]): TestInbox[U]
+
+  /**
    * Get the [[akka.actor.typed.Behavior]] testkit for the given child [[akka.actor.typed.ActorRef]].
    */
   def childTestKit[U](child: ActorRef[U]): BehaviorTestKit[U]
 
   /**
-   * The self inbox contains messages the behavior sent to `ctx.self`
+   * The self inbox contains messages the behavior sent to `context.self`
    */
   def selfInbox(): TestInbox[T]
 
   /**
    * The self reference of the actor living inside this testkit.
    */
-  def getRef(): ActorRef[T] = selfInbox.getRef()
+  def getRef(): ActorRef[T] = selfInbox().getRef()
 
   /**
    * Requests all the effects. The effects are consumed, subsequent calls will only
@@ -97,7 +109,7 @@ abstract class BehaviorTestKit[T] {
 
   /**
    * Returns the current behavior as it was returned from processing the previous message.
-   * For example if [[Behavior.unhandled]] is returned it will be kept here, but not in
+   * For example if [[Behaviors.unhandled]] is returned it will be kept here, but not in
    * [[currentBehavior]].
    */
   def returnedBehavior: Behavior[T]
@@ -108,9 +120,9 @@ abstract class BehaviorTestKit[T] {
   def isAlive: Boolean
 
   /**
-   * Send the msg to the behavior and record any [[Effect]]s
+   * Send the message to the behavior and record any [[Effect]]s
    */
-  def run(msg: T): Unit
+  def run(message: T): Unit
 
   /**
    * Send the first message in the selfInbox to the behavior and run it, recording [[Effect]]s.
@@ -121,4 +133,19 @@ abstract class BehaviorTestKit[T] {
    * Send the signal to the beheavior and record any [[Effect]]s
    */
   def signal(signal: Signal): Unit
+
+  /**
+   * Returns all the [[CapturedLogEvent]] issued by this behavior(s)
+   */
+  def getAllLogEntries(): java.util.List[CapturedLogEvent]
+
+  /**
+   * Clear the log entries
+   */
+  def clearLog(): Unit
+
+  /**
+   * The receptionist inbox contains messages sent to `system.receptionist`
+   */
+  def receptionistInbox(): TestInbox[Receptionist.Command]
 }

@@ -1,14 +1,18 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
 
+import java.util.concurrent.atomic.AtomicReference
+
+import scala.annotation.tailrec
+
+import scala.annotation.nowarn
+
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.event.Logging.simpleName
 import akka.util.Subclassification
-import java.util.concurrent.atomic.AtomicReference
-import scala.annotation.tailrec
 
 /**
  * An Akka EventStream is a pub-sub stream of events both system and user generated,
@@ -23,27 +27,30 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
 
   def this(sys: ActorSystem) = this(sys, debug = false)
 
-  type Event = AnyRef
+  type Event = Any
   type Classifier = Class[_]
 
   /** Either the list of subscribed actors, or a ref to an [[akka.event.EventStreamUnsubscriber]] */
   private val initiallySubscribedOrUnsubscriber = new AtomicReference[Either[Set[ActorRef], ActorRef]](Left(Set.empty))
 
-  protected implicit val subclassification = new Subclassification[Class[_]] {
+  protected implicit val subclassification: Subclassification[Classifier] = new Subclassification[Class[_]] {
     def isEqual(x: Class[_], y: Class[_]) = x == y
-    def isSubclass(x: Class[_], y: Class[_]) = y isAssignableFrom x
+    def isSubclass(x: Class[_], y: Class[_]) = y.isAssignableFrom(x)
   }
 
-  protected def classify(event: AnyRef): Class[_] = event.getClass
+  protected def classify(event: Any): Class[_] = event.getClass
 
-  protected def publish(event: AnyRef, subscriber: ActorRef) = {
+  // TODO consider avoiding the deprecated `isTerminated`?
+  @nowarn("msg=deprecated")
+  protected def publish(event: Any, subscriber: ActorRef) = {
     if (sys == null && subscriber.isTerminated) unsubscribe(subscriber)
     else subscriber ! event
   }
 
   override def subscribe(subscriber: ActorRef, channel: Class[_]): Boolean = {
     if (subscriber eq null) throw new IllegalArgumentException("subscriber is null")
-    if (debug) publish(Logging.Debug(simpleName(this), this.getClass, "subscribing " + subscriber + " to channel " + channel))
+    if (debug)
+      publish(Logging.Debug(simpleName(this), this.getClass, "subscribing " + subscriber + " to channel " + channel))
     registerWithUnsubscriber(subscriber)
     super.subscribe(subscriber, channel)
   }
@@ -51,7 +58,9 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
   override def unsubscribe(subscriber: ActorRef, channel: Class[_]): Boolean = {
     if (subscriber eq null) throw new IllegalArgumentException("subscriber is null")
     val ret = super.unsubscribe(subscriber, channel)
-    if (debug) publish(Logging.Debug(simpleName(this), this.getClass, "unsubscribing " + subscriber + " from channel " + channel))
+    if (debug)
+      publish(
+        Logging.Debug(simpleName(this), this.getClass, "unsubscribing " + subscriber + " from channel " + channel))
     unregisterIfNoMoreSubscribedChannels(subscriber)
     ret
   }
@@ -59,7 +68,8 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
   override def unsubscribe(subscriber: ActorRef): Unit = {
     if (subscriber eq null) throw new IllegalArgumentException("subscriber is null")
     super.unsubscribe(subscriber)
-    if (debug) publish(Logging.Debug(simpleName(this), this.getClass, "unsubscribing " + subscriber + " from all channels"))
+    if (debug)
+      publish(Logging.Debug(simpleName(this), this.getClass, "unsubscribing " + subscriber + " from all channels"))
     unregisterIfNoMoreSubscribedChannels(subscriber)
   }
 
@@ -78,22 +88,33 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
   final private[akka] def initUnsubscriber(unsubscriber: ActorRef): Boolean = {
     // sys may be null for backwards compatibility reasons
     if (sys eq null) false
-    else initiallySubscribedOrUnsubscriber.get match {
-      case value @ Left(subscribers) ⇒
-        if (initiallySubscribedOrUnsubscriber.compareAndSet(value, Right(unsubscriber))) {
-          if (debug) publish(Logging.Debug(simpleName(this), this.getClass, "initialized unsubscriber to: " + unsubscriber + ", registering " + subscribers.size + " initial subscribers with it"))
-          subscribers foreach registerWithUnsubscriber
-          true
-        } else {
-          // recurse, because either new subscribers have been registered since `get` (retry Left case),
-          // or another thread has succeeded in setting it's unsubscriber (end on Right case)
-          initUnsubscriber(unsubscriber)
-        }
+    else
+      initiallySubscribedOrUnsubscriber.get match {
+        case value @ Left(subscribers) =>
+          if (initiallySubscribedOrUnsubscriber.compareAndSet(value, Right(unsubscriber))) {
+            if (debug)
+              publish(
+                Logging.Debug(
+                  simpleName(this),
+                  this.getClass,
+                  "initialized unsubscriber to: " + unsubscriber + ", registering " + subscribers.size + " initial subscribers with it"))
+            subscribers.foreach(registerWithUnsubscriber)
+            true
+          } else {
+            // recurse, because either new subscribers have been registered since `get` (retry Left case),
+            // or another thread has succeeded in setting it's unsubscriber (end on Right case)
+            initUnsubscriber(unsubscriber)
+          }
 
-      case Right(presentUnsubscriber) ⇒
-        if (debug) publish(Logging.Debug(simpleName(this), this.getClass, s"not using unsubscriber $unsubscriber, because already initialized with $presentUnsubscriber"))
-        false
-    }
+        case Right(presentUnsubscriber) =>
+          if (debug)
+            publish(
+              Logging.Debug(
+                simpleName(this),
+                this.getClass,
+                s"not using unsubscriber $unsubscriber, because already initialized with $presentUnsubscriber"))
+          false
+      }
   }
 
   /**
@@ -103,11 +124,11 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
   private def registerWithUnsubscriber(subscriber: ActorRef): Unit = {
     // sys may be null for backwards compatibility reasons
     if (sys ne null) initiallySubscribedOrUnsubscriber.get match {
-      case value @ Left(subscribers) ⇒
+      case value @ Left(subscribers) =>
         if (!initiallySubscribedOrUnsubscriber.compareAndSet(value, Left(subscribers + subscriber)))
           registerWithUnsubscriber(subscriber)
 
-      case Right(unsubscriber) ⇒
+      case Right(unsubscriber) =>
         unsubscriber ! EventStreamUnsubscriber.Register(subscriber)
     }
   }
@@ -123,11 +144,11 @@ class EventStream(sys: ActorSystem, private val debug: Boolean) extends LoggingB
   private def unregisterIfNoMoreSubscribedChannels(subscriber: ActorRef): Unit = {
     // sys may be null for backwards compatibility reasons
     if (sys ne null) initiallySubscribedOrUnsubscriber.get match {
-      case value @ Left(subscribers) ⇒
+      case value @ Left(subscribers) =>
         if (!initiallySubscribedOrUnsubscriber.compareAndSet(value, Left(subscribers - subscriber)))
           unregisterIfNoMoreSubscribedChannels(subscriber)
 
-      case Right(unsubscriber) ⇒
+      case Right(unsubscriber) =>
         unsubscriber ! EventStreamUnsubscriber.UnregisterIfNoMoreSubscribedChannels(subscriber)
     }
   }

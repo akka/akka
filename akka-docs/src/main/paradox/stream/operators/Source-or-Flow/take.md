@@ -4,18 +4,26 @@ Pass `n` incoming elements downstream and then complete
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #take }
+@apidoc[Source.take](Source) { scala="#take(n:Long):FlowOps.this.Repr[Out]" java="#take(long)" }
+@apidoc[Flow.take](Flow) { scala="#take(n:Long):FlowOps.this.Repr[Out]" java="#take(long)" }
 
-@@@
 
 ## Description
 
 Pass `n` incoming elements downstream and then complete
 
+## Example
+
+Scala
+:  @@snip [Take.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Take.scala) { #take }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #take }
+
+
+## Reactive Streams semantics
 
 @@@div { .callout }
 

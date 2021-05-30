@@ -1,25 +1,25 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.actor.{ Actor, PoisonPill, Props }
-import akka.stream.ActorMaterializer
-import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit._
-import akka.testkit.TestActors
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.actor.Actor
+import akka.actor.PoisonPill
+import akka.actor.Props
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.TestActors
 
 object FlowWatchSpec {
   case class Reply(payload: Int)
 
   class Replier extends Actor {
     override def receive: Receive = {
-      case msg: Int ⇒ sender() ! Reply(msg)
+      case msg: Int => sender() ! Reply(msg)
     }
   }
 
@@ -28,20 +28,16 @@ object FlowWatchSpec {
 class FlowWatchSpec extends StreamSpec {
   import FlowWatchSpec._
 
-  implicit val materializer = ActorMaterializer()
-
   "A Flow with watch" must {
 
-    implicit val timeout = akka.util.Timeout(10.seconds)
-
-    val replyOnInts = system.actorOf(Props(classOf[Replier]).withDispatcher("akka.test.stream-dispatcher"), "replyOnInts")
+    val replyOnInts =
+      system.actorOf(Props(classOf[Replier]).withDispatcher("akka.test.stream-dispatcher"), "replyOnInts")
 
     val dontReply = system.actorOf(TestActors.blackholeProps.withDispatcher("akka.test.stream-dispatcher"), "dontReply")
 
     "pass through elements while actor is alive" in assertAllStagesStopped {
       val c = TestSubscriber.manualProbe[Int]()
-      implicit val ec = system.dispatcher
-      val p = Source(1 to 3).watch(replyOnInts).runWith(Sink.fromSubscriber(c))
+      Source(1 to 3).watch(replyOnInts).runWith(Sink.fromSubscriber(c))
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext(1)
@@ -59,7 +55,8 @@ class FlowWatchSpec extends StreamSpec {
       intercept[RuntimeException] {
         r ! PoisonPill
         Await.result(done, remainingOrDefault)
-      }.getMessage should startWith("Actor watched by [Watch] has terminated! Was: Actor[akka://FlowWatchSpec/user/wanna-fail#")
+      }.getMessage should startWith(
+        "Actor watched by [Watch] has terminated! Was: Actor[akka://FlowWatchSpec/user/wanna-fail#")
     }
 
     "should handle cancel properly" in assertAllStagesStopped {

@@ -1,0 +1,11 @@
+# #25978 Remove deprecated AES random number generators
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AESCounterBuiltinRNGReSeeder")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.CounterRNGConstants$")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.CounterRNGConstants")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.DeprecatedAES256CounterSecureRNG")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.DeprecatedAESCounterBuiltinRNG$AESKey")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.DeprecatedAkkaProvider")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.DeprecatedAES128CounterSecureRNG")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.DeprecatedAESCounterBuiltinRNG$")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.DeprecatedAESCounterBuiltinRNG")
+ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.DeprecatedAkkaProvider$")

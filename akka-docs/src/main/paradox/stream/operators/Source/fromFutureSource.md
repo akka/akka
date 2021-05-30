@@ -1,22 +1,22 @@
-# fromFutureSource
+# Source.fromFutureSource
 
-Streams the elements of the given future source once it successfully completes.
+Deprecated by @ref:[`Source.futureSource`](futureSource.md).
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromFutureSource }
+@apidoc[Source.fromFutureSource](Source$) { scala="#fromFutureSource[T,M](future:scala.concurrent.Future[akka.stream.Graph[akka.stream.SourceShape[T],M]]):akka.stream.scaladsl.Source[T,scala.concurrent.Future[M]]" }
 
-@@@
 
 ## Description
 
-Streams the elements of the given future source once it successfully completes. 
+`fromFutureSource` has been deprecated in 2.6.0, use @ref:[futureSource](futureSource.md) instead.
+
+Streams the elements of the given future source once it successfully completes.
 If the future fails the stream is failed.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

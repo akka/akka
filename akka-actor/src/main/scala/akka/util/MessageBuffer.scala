@@ -1,18 +1,17 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
-import akka.actor.ActorRef
+import akka.actor.{ ActorRef, Dropped }
+import akka.annotation.InternalApi
 import akka.japi.function.Procedure2
 
 /**
  * A non thread safe mutable message buffer that can be used to buffer messages inside actors.
  */
-final class MessageBuffer private (
-  private var _head: MessageBuffer.Node,
-  private var _tail: MessageBuffer.Node) {
+final class MessageBuffer private (private var _head: MessageBuffer.Node, private var _tail: MessageBuffer.Node) {
   import MessageBuffer._
 
   private var _size: Int = if (_head eq null) 0 else 1
@@ -95,7 +94,7 @@ final class MessageBuffer private (
    *
    * @param f the function to apply to each element
    */
-  def foreach(f: (Any, ActorRef) ⇒ Unit): Unit = {
+  def foreach(f: (Any, ActorRef) => Unit): Unit = {
     var node = _head
     while (node ne null) {
       node(f)
@@ -110,14 +109,52 @@ final class MessageBuffer private (
    *
    * @param f the function to apply to each element
    */
-  def forEach(f: Procedure2[Any, ActorRef]): Unit = foreach { case (message, ref) ⇒ f(message, ref) }
+  def forEach(f: Procedure2[Any, ActorRef]): Unit = foreach { case (message, ref) => f(message, ref) }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def filterNot(p: (Any, ActorRef) => Boolean): Unit = {
+    // easiest to collect a new list, and then re-link the nodes
+    var result = Vector.empty[Node]
+    var node = _head
+    while (node ne null) {
+      if (!p(node.message, node.ref)) {
+        result :+= node
+      }
+      node = node.next
+    }
+
+    _size = result.size
+    if (_size == 0) {
+      _head = null
+      _tail = null
+    } else if (_size == 1) {
+      _head = result.head
+      _tail = result.head
+      _tail.next = null
+    } else {
+      _head = result.head
+      _tail = result.last
+      _tail.next = null
+      var i = 0
+      while (i < result.size) {
+        val node = result(i)
+        if (node ne _tail)
+          node.next = result(i + 1)
+        i += 1
+      }
+    }
+  }
 }
 
 object MessageBuffer {
   private final class Node(var next: Node, val message: Any, val ref: ActorRef) {
-    def apply(f: (Any, ActorRef) ⇒ Unit): Unit = {
+    def apply(f: (Any, ActorRef) => Unit): Unit = {
       f(message, ref)
     }
+
+    override def toString: String = s"Node($message,$ref)"
   }
 
   /**
@@ -134,7 +171,7 @@ object MessageBuffer {
  * @tparam I (Id type)
  */
 final class MessageBufferMap[I] {
-  import java.{ util ⇒ jutil }
+  import java.{ util => jutil }
 
   private val bufferMap = new jutil.HashMap[I, MessageBuffer]
 
@@ -211,6 +248,19 @@ final class MessageBufferMap[I] {
   }
 
   /**
+   * Remove the buffer for an id, but publish a [[akka.actor.Dropped]] for each dropped buffered message
+   * @return how many buffered messages were dropped
+   */
+  def drop(id: I, reason: String, deadLetters: ActorRef): Int = {
+    val entries = bufferMap.get(id)
+    if (entries.nonEmpty) {
+      entries.foreach((msg, ref) => deadLetters ! Dropped(msg, reason, ref, ActorRef.noSender))
+    }
+    remove(id)
+    entries.size
+  }
+
+  /**
    * Check if the buffer map contains an id.
    *
    * @param id the id to check for
@@ -236,7 +286,7 @@ final class MessageBufferMap[I] {
    *
    * @param f the function to apply to each element
    */
-  def foreach(f: (I, MessageBuffer) ⇒ Unit): Unit = {
+  def foreach(f: (I, MessageBuffer) => Unit): Unit = {
     val entries = bufferMap.entrySet().iterator()
     while (entries.hasNext) {
       val entry = entries.next()
@@ -251,5 +301,5 @@ final class MessageBufferMap[I] {
    *
    * @param f the function to apply to each element
    */
-  def forEach(f: Procedure2[I, MessageBuffer]): Unit = foreach { case (id, buffer) ⇒ f(id, buffer) }
+  def forEach(f: Procedure2[I, MessageBuffer]): Unit = foreach { case (id, buffer) => f(id, buffer) }
 }

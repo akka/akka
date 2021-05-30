@@ -31,7 +31,7 @@ One important consequence of offering only features that can be relied upon is t
 
 This means that sending JVM objects into a stream that need to be cleaned up will require the user to ensure that this happens outside of the Akka Streams facilities (e.g. by cleaning them up after a timeout or when their results are observed on the stream output, or by using other means like finalizers etc.).
 
-### Resulting Implementation Constraints
+### Resulting Implementation Considerations
 
 Compositionality entails reusability of partial stream topologies, which led us to the lifted approach of describing data flows as (partial) graphs that can act as composite sources, flows (a.k.a. pipes) and sinks of data. These building blocks shall then be freely shareable, with the ability to combine them freely to form larger graphs. The representation of these pieces must therefore be an immutable blueprint that is materialized in an explicit step in order to start the stream processing. The resulting stream processing engine is then also immutable in the sense of having a fixed topology that is prescribed by the blueprint. Dynamic networks need to be modeled by explicitly using the Reactive Streams interfaces for plugging different engines together.
 
@@ -53,7 +53,7 @@ Akka Streams was designed during the development of Reactive Streams, so they bo
 It may be enlightening to learn that even within the Reactive Specification the types had initially attempted to hide `Publisher`, `Subscriber` and the other SPI types from users of the API.
 Though since those internal SPI types would end up surfacing to end users of the standard in some cases, it was decided to [remove the API types, and only keep the SPI types](https://github.com/reactive-streams/reactive-streams-jvm/pull/25) which are the `Publisher`, `Subscriber` et al.
 
-With this historical knowledge and context about the purpose of the standard – being an internal detail of interoperable libraries - we can with certainty say that it can't be really said that an direct _inheritance_ relationship with these types can be considered some form of advantage or meaningful differentiator between libraries.
+With this historical knowledge and context about the purpose of the standard – being an internal detail of interoperable libraries - we can with certainty say that it can't be really said that a direct _inheritance_ relationship with these types can be considered some form of advantage or meaningful differentiator between libraries.
 Rather, it could be seen that APIs which expose those SPI types to end-users are leaking internal implementation details accidentally. 
 
 The `Source`, `Sink` and `Flow` types which are part of Akka Streams have the purpose of providing the fluent DSL, as well as to be "factories" for running those streams.
@@ -65,7 +65,7 @@ Another not obvious gain from hiding the Reactive Streams interfaces comes from 
 Libraries which selected to expose and directly extend the Reactive Streams types will now have a tougher time to adapt the JDK9+ types -- all their classes that extend Subscriber and friends will need to be copied or changed to extend the exact same interface,
 but from a different package. In Akka we simply expose the new type when asked to -- already supporting JDK9 types, from the day JDK9 was released.
 
-The other, and perhaps more important reason for hiding the Reactive streams interfaces comes back to the first points of this explanation: the fact of Reactive Streams being an SPI, and as such is hard to "get right" in ad-hoc implementations. Thus Akka Streams discourages, the use of the hard to implement pieces of the underlying infrastructure, and offers simpler, more type-safe, yet more powerful abstractions for users to work with: GraphStages and operators. It is of course still (and easily) possible to accept or obtain Reactive Streams (or JDK+ Flow) representations of the stream operators by using methods like `asPublisher` or `fromSubscriber`.
+The other, and perhaps more important reason for hiding the Reactive Streams interfaces comes back to the first points of this explanation: the fact of Reactive Streams being an SPI, and as such is hard to "get right" in ad-hoc implementations. Thus Akka Streams discourages the use of the hard to implement pieces of the underlying infrastructure, and offers simpler, more type-safe, yet more powerful abstractions for users to work with: GraphStages and operators. It is of course still (and easily) possible to accept or obtain Reactive Streams (or JDK+ Flow) representations of the stream operators by using methods like `asPublisher` or `fromSubscriber`.
 
 ## What shall users of streaming libraries expect?
 
@@ -104,7 +104,7 @@ A source that emits a stream of streams is still a normal Source, the kind of el
 
 ## The difference between Error and Failure
 
-The starting point for this discussion is the [definition given by the Reactive Manifesto](http://www.reactivemanifesto.org/glossary#Failure). Translated to streams this means that an error is accessible within the stream as a normal data element, while a failure means that the stream itself has failed and is collapsing. In concrete terms, on the Reactive Streams interface level data elements (including errors) are signaled via `onNext` while failures raise the `onError` signal.
+The starting point for this discussion is the [definition given by the Reactive Manifesto](https://www.reactivemanifesto.org/glossary#Failure). Translated to streams this means that an error is accessible within the stream as a normal data element, while a failure means that the stream itself has failed and is collapsing. In concrete terms, on the Reactive Streams interface level data elements (including errors) are signaled via `onNext` while failures raise the `onError` signal.
 
 @@@ note
 

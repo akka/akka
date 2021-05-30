@@ -1,15 +1,16 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.cluster.MemberStatus.Up
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 class MultiDcSpecConfig(crossDcConnections: Int = 5) extends MultiNodeConfig {
   val first = role("first")
@@ -18,18 +19,15 @@ class MultiDcSpecConfig(crossDcConnections: Int = 5) extends MultiNodeConfig {
   val fourth = role("fourth")
   val fifth = role("fifth")
 
-  commonConfig(ConfigFactory.parseString(
-    s"""
+  commonConfig(ConfigFactory.parseString(s"""
       akka.cluster.multi-data-center.cross-data-center-connections = $crossDcConnections
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
-  nodeConfig(first, second)(ConfigFactory.parseString(
-    """
+  nodeConfig(first, second)(ConfigFactory.parseString("""
       akka.cluster.multi-data-center.self-data-center = "dc1"
     """))
 
-  nodeConfig(third, fourth, fifth)(ConfigFactory.parseString(
-    """
+  nodeConfig(third, fourth, fifth)(ConfigFactory.parseString("""
       akka.cluster.multi-data-center.self-data-center = "dc2"
     """))
 
@@ -52,9 +50,7 @@ class MultiDcFewCrossDcMultiJvmNode3 extends MultiDcSpec(MultiDcFewCrossDcConnec
 class MultiDcFewCrossDcMultiJvmNode4 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
 class MultiDcFewCrossDcMultiJvmNode5 extends MultiDcSpec(MultiDcFewCrossDcConnectionsConfig)
 
-abstract class MultiDcSpec(config: MultiDcSpecConfig)
-  extends MultiNodeSpec(config)
-  with MultiNodeClusterSpec {
+abstract class MultiDcSpec(config: MultiDcSpecConfig) extends MultiNodeSpec(config) with MultiNodeClusterSpec {
 
   import config._
 
@@ -127,7 +123,8 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
       enterBarrier("inter-data-center unreachability end")
     }
 
-    "be able to have data center member changes while there is unreachability in another data center" in within(20.seconds) {
+    "be able to have data center member changes while there is unreachability in another data center" in within(
+      20.seconds) {
       runOn(first) {
         testConductor.blackhole(first, second, Direction.Both).await
       }
@@ -141,7 +138,8 @@ abstract class MultiDcSpec(config: MultiDcSpecConfig)
         cluster.leave(fourth)
 
         awaitAssert(clusterView.members.map(_.address) should not contain address(fourth))
-        awaitAssert(clusterView.members.collect { case m if m.status == Up ⇒ m.address } should contain(address(fifth)))
+        awaitAssert(
+          clusterView.members.collect { case m if m.status == Up => m.address } should contain(address(fifth)))
       }
 
       enterBarrier("other-data-center-internal-unreachable changed")

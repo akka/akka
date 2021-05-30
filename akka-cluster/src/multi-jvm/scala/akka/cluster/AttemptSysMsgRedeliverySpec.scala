@@ -1,19 +1,20 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
 import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
 import akka.actor.Identify
+import akka.actor.PoisonPill
 import akka.actor.Props
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import akka.remote.testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
-import akka.actor.PoisonPill
 
 object AttemptSysMsgRedeliveryMultiJvmSpec extends MultiNodeConfig {
 
@@ -27,7 +28,7 @@ object AttemptSysMsgRedeliveryMultiJvmSpec extends MultiNodeConfig {
 
   class Echo extends Actor {
     def receive = {
-      case m ⇒ sender ! m
+      case m => sender() ! m
     }
   }
 }
@@ -36,8 +37,11 @@ class AttemptSysMsgRedeliveryMultiJvmNode1 extends AttemptSysMsgRedeliverySpec
 class AttemptSysMsgRedeliveryMultiJvmNode2 extends AttemptSysMsgRedeliverySpec
 class AttemptSysMsgRedeliveryMultiJvmNode3 extends AttemptSysMsgRedeliverySpec
 
-class AttemptSysMsgRedeliverySpec extends MultiNodeSpec(AttemptSysMsgRedeliveryMultiJvmSpec)
-  with MultiNodeClusterSpec with ImplicitSender with DefaultTimeout {
+class AttemptSysMsgRedeliverySpec
+    extends MultiNodeSpec(AttemptSysMsgRedeliveryMultiJvmSpec)
+    with MultiNodeClusterSpec
+    with ImplicitSender
+    with DefaultTimeout {
   import AttemptSysMsgRedeliveryMultiJvmSpec._
 
   "AttemptSysMsgRedelivery" must {
@@ -48,7 +52,7 @@ class AttemptSysMsgRedeliverySpec extends MultiNodeSpec(AttemptSysMsgRedeliveryM
     }
 
     "redeliver system message after inactivity" taggedAs LongRunningTest in {
-      system.actorOf(Props[Echo], "echo")
+      system.actorOf(Props[Echo](), "echo")
       enterBarrier("echo-started")
 
       system.actorSelection(node(first) / "user" / "echo") ! Identify(None)

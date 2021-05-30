@@ -1,19 +1,19 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
 
-import akka.actor.Address
-import akka.annotation.DoNotInherit
-import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState }
-import akka.cluster._
-import akka.japi.Util
-import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
-import akka.cluster.typed.internal.AdapterClusterImpl
 import scala.collection.immutable
 
+import akka.actor.Address
+import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
 import akka.actor.typed.ExtensionSetup
+import akka.annotation.DoNotInherit
+import akka.cluster._
+import akka.cluster.ClusterEvent.{ ClusterDomainEvent, CurrentClusterState }
+import akka.cluster.typed.internal.AdapterClusterImpl
+import akka.japi.Util
 
 /**
  * Messages for subscribing to changes in the cluster state
@@ -32,11 +32,11 @@ sealed trait ClusterStateSubscription
  *                   `ReachabilityEvent` or one of the common supertypes, such as `MemberEvent` to get
  *                   all the subtypes of events.
  */
-final case class Subscribe[A <: ClusterDomainEvent](
-  subscriber: ActorRef[A],
-  eventClass: Class[A]) extends ClusterStateSubscription
+final case class Subscribe[A <: ClusterDomainEvent](subscriber: ActorRef[A], eventClass: Class[A])
+    extends ClusterStateSubscription
 
 object Subscribe {
+
   /**
    * Java API
    */
@@ -81,9 +81,12 @@ sealed trait ClusterCommand
  * The name of the [[akka.actor.ActorSystem]] must be the same for all members of a
  * cluster.
  */
-final case class Join(address: Address) extends ClusterCommand
+final case class Join(address: Address) extends ClusterCommand {
+  address.checkHostCharacters()
+}
 
 object Join {
+
   /**
    * Java API
    */
@@ -99,6 +102,7 @@ object Join {
  * cluster or to join the same cluster again.
  */
 final case class JoinSeedNodes(seedNodes: immutable.Seq[Address]) extends ClusterCommand {
+  seedNodes.foreach(_.checkHostCharacters())
 
   /**
    * Java API: Join the specified seed nodes without defining them in config.
@@ -129,6 +133,7 @@ final case class JoinSeedNodes(seedNodes: immutable.Seq[Address]) extends Cluste
 final case class Leave(address: Address) extends ClusterCommand
 
 object Leave {
+
   /**
    * Java API
    */
@@ -144,6 +149,26 @@ object Leave {
  * this method.
  */
 final case class Down(address: Address) extends ClusterCommand
+
+/**
+ * Initiate a full cluster shutdown. This stops:
+ * - New members joining the cluster
+ * - New rebalances in Cluster Sharding
+ * - Singleton handovers
+ *
+ * However, it does not stop the nodes. That is expected to be signalled externally.
+ *
+ * Not for user extension
+ */
+@DoNotInherit sealed trait PrepareForFullClusterShutdown extends ClusterCommand
+
+case object PrepareForFullClusterShutdown extends PrepareForFullClusterShutdown {
+
+  /**
+   * Java API
+   */
+  def prepareForFullClusterShutdown(): PrepareForFullClusterShutdown = this
+}
 
 /**
  * Akka Typed Cluster API entry point
@@ -188,10 +213,8 @@ abstract class Cluster extends Extension {
 }
 
 object ClusterSetup {
-  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ Cluster): ClusterSetup =
-    new ClusterSetup(new java.util.function.Function[ActorSystem[_], Cluster] {
-      override def apply(sys: ActorSystem[_]): Cluster = createExtension(sys)
-    }) // TODO can be simplified when compiled only with Scala >= 2.12
+  def apply[T <: Extension](createExtension: ActorSystem[_] => Cluster): ClusterSetup =
+    new ClusterSetup(createExtension(_))
 
 }
 
@@ -201,4 +224,4 @@ object ClusterSetup {
  * for tests that need to replace extension with stub/mock implementations.
  */
 final class ClusterSetup(createExtension: java.util.function.Function[ActorSystem[_], Cluster])
-  extends ExtensionSetup[Cluster](Cluster, createExtension)
+    extends ExtensionSetup[Cluster](Cluster, createExtension)

@@ -1,13 +1,15 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.testkit
 
-import scala.concurrent.duration.Duration
 import java.util.concurrent.{ CyclicBarrier, TimeUnit, TimeoutException }
-import akka.actor.ActorSystem
+
+import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.ActorSystem
 
 class TestBarrierTimeoutException(message: String) extends RuntimeException(message)
 
@@ -32,9 +34,9 @@ class TestBarrier(count: Int) {
     try {
       barrier.await(timeout.dilated.toNanos, TimeUnit.NANOSECONDS)
     } catch {
-      case e: TimeoutException ⇒
-        throw new TestBarrierTimeoutException("Timeout of %s and time factor of %s"
-          format (timeout.toString, TestKitExtension(system).TestTimeFactor))
+      case _: TimeoutException =>
+        throw new TestBarrierTimeoutException(
+          "Timeout of %s and time factor of %s".format(timeout.toString, TestKitExtension(system).TestTimeFactor))
     }
   }
 

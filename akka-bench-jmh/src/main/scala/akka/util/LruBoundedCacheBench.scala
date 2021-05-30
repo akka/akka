@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -7,10 +7,11 @@ package akka.util
 import java.util
 import java.util.concurrent.TimeUnit
 
-import akka.remote.artery.LruBoundedCache
+import scala.util.Random
+
 import org.openjdk.jmh.annotations.{ Param, _ }
 
-import scala.util.Random
+import akka.remote.artery.LruBoundedCache
 
 @State(Scope.Benchmark)
 @Measurement(timeUnit = TimeUnit.MICROSECONDS)
@@ -46,7 +47,7 @@ class LruBoundedCacheBench {
     }
 
     // Loading
-    for (i ← 1 to threshold) {
+    for (i <- 1 to threshold) {
       val value = random.nextString(stringSize)
       if (i == 1) toGet = value
       toRemove = value

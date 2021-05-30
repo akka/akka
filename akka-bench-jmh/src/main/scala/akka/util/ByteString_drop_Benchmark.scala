@@ -1,15 +1,16 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
 import java.util.concurrent.TimeUnit
 
-import akka.util.ByteString.{ ByteString1, ByteStrings }
+import scala.util.Random
+
 import org.openjdk.jmh.annotations._
 
-import scala.util.Random
+import akka.util.ByteString.{ ByteString1, ByteStrings }
 
 @State(Scope.Benchmark)
 @Measurement(timeUnit = TimeUnit.MILLISECONDS)

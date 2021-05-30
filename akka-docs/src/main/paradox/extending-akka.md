@@ -1,7 +1,10 @@
-# Akka Extensions
+---
+project.description: How to extend Akka with Akka Extensions.
+---
+# Classic Akka Extensions
 
 If you want to add features to Akka, there is a very elegant, but powerful mechanism for doing so.
-It's called Akka Extensions and is comprised of 2 basic components: an `Extension` and an `ExtensionId`.
+It's called Akka Extensions and comprises 2 basic components: an `Extension` and an `ExtensionId`.
 
 Extensions will only be loaded once per `ActorSystem`, which will be managed by Akka.
 You can choose to have your Extension loaded on-demand or at `ActorSystem` creation time through the Akka configuration.
@@ -80,7 +83,7 @@ Java
 ## Applicability
 
 The sky is the limit!
-By the way, did you know that Akka's `Typed Actors`, `Serialization` and other features are implemented as Akka Extensions?
+By the way, did you know that Akka `Cluster`, `Serialization` and other features are implemented as Akka Extensions?
 
 <a id="extending-akka-settings"></a>
 ### Application specific settings
@@ -109,7 +112,7 @@ Java
 
 ## Library extensions
 
-A third part library may register it's extension for auto-loading on actor system startup by appending it to
+A third part library may register its extension for auto-loading on actor system startup by appending it to
 `akka.library-extensions` in its `reference.conf`.
 
 ```

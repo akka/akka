@@ -1,3 +1,6 @@
+---
+project.description: Low level API for using TCP with classic actors.
+---
 # Using TCP
 
 ## Dependency
@@ -5,9 +8,12 @@
 To use TCP, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-actor_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-actor_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -76,7 +82,7 @@ observed in that state. For a discussion on `CommandFailed` see
 [Throttling Reads and Writes](#throttling-reads-and-writes) below. `ConnectionClosed` is a trait,
 which marks the different connection close events. The last line handles all
 connection close events in the same way. It is possible to listen for more
-fine-grained connection close events, see [Closing Connections](#closing-connections) below.
+fine-grained connection close events, see @ref:[Closing Connections](#closing-connections) below.
 
 ## Accepting connections
 
@@ -110,7 +116,7 @@ Java
 :  @@snip [IODocTest.java](/akka-docs/src/test/java/jdocs/io/japi/IODocTest.java) { #simplistic-handler }
 
 For a more complete sample which also takes into account the possibility of
-failures when sending please see [Throttling Reads and Writes](#throttling-reads-and-writes) below.
+failures when sending please see @ref:[Throttling Reads and Writes](#throttling-reads-and-writes) below.
 
 The only difference to outgoing connections is that the internal actor managing
 the listen port—the sender of the `Bound` message—watches the actor

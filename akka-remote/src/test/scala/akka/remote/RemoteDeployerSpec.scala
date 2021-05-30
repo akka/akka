@@ -1,17 +1,19 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import akka.testkit._
+import com.typesafe.config._
+
+import akka.ConfigurationException
 import akka.actor._
 import akka.routing._
-import com.typesafe.config._
-import akka.ConfigurationException
+import akka.testkit._
 
 object RemoteDeployerSpec {
-  val deployerConf = ConfigFactory.parseString("""
+  val deployerConf = ConfigFactory.parseString(
+    """
       akka.actor.provider = remote
       akka.actor.deployment {
         /service2 {
@@ -21,11 +23,12 @@ object RemoteDeployerSpec {
           dispatcher = mydispatcher
         }
       }
-      akka.remote.netty.tcp.port = 0
-      """, ConfigParseOptions.defaults)
+      akka.remote.classic.netty.tcp.port = 0
+      """,
+    ConfigParseOptions.defaults)
 
   class RecipeActor extends Actor {
-    def receive = { case _ ⇒ }
+    def receive = { case _ => }
   }
 
 }
@@ -38,19 +41,21 @@ class RemoteDeployerSpec extends AkkaSpec(RemoteDeployerSpec.deployerConf) {
       val service = "/service2"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
 
-      deployment should ===(Some(
-        Deploy(
-          service,
-          deployment.get.config,
-          RoundRobinPool(3),
-          RemoteScope(Address("akka", "sys", "wallace", 2552)),
-          "mydispatcher")))
+      deployment should ===(
+        Some(
+          Deploy(
+            service,
+            deployment.get.config,
+            RoundRobinPool(3),
+            RemoteScope(Address("akka", "sys", "wallace", 2552)),
+            "mydispatcher")))
     }
 
     "reject remote deployment when the source requires LocalScope" in {
       intercept[ConfigurationException] {
         system.actorOf(Props.empty.withDeploy(Deploy.local), "service2")
-      }.getMessage should ===("configuration requested remote deployment for local-only Props at [akka://RemoteDeployerSpec/user/service2]")
+      }.getMessage should ===(
+        "configuration requested remote deployment for local-only Props at [akka://RemoteDeployerSpec/user/service2]")
     }
 
   }

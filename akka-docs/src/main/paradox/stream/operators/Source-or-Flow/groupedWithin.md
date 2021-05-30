@@ -4,13 +4,11 @@ Chunk up this stream into groups of elements received within a time window, or l
 
 @ref[Timer driven operators](../index.md#timer-driven-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #groupedWithin }
+@apidoc[Source.groupedWithin](Source) { scala="#groupedWithin(n:Int,d:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[scala.collection.immutable.Seq[Out]]" java="#groupedWithin(int,java.time.Duration)" }
+@apidoc[Flow.groupedWithin](Flow) { scala="#groupedWithin(n:Int,d:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[scala.collection.immutable.Seq[Out]]" java="#groupedWithin(int,java.time.Duration)" }
 
-@@@
 
 ## Description
 
@@ -18,6 +16,13 @@ Chunk up this stream into groups of elements received within a time window, or l
 whatever happens first. Empty groups will not be emitted if no elements are received from upstream.
 The last group before end-of-stream will contain the buffered elements since the previously emitted group.
 
+See also:
+
+* @ref[grouped](grouped.md) for a variant that groups based on number of elements
+* @ref[groupedWeighted](groupedWeighted.md) for a variant that groups based on element weight
+* @ref[groupedWeightedWithin](groupedWeightedWithin.md) for a variant that groups based on element weight and a time window
+
+## Reactive Streams semantics
 
 @@@div { .callout }
 

@@ -5,14 +5,16 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
 
-<a id="core-concepts"></a>
 ## Core concepts
 
 Akka Streams is a library to process and transfer a sequence of elements using bounded buffer space. This
@@ -57,7 +59,6 @@ This way they can slow down a fast producer without blocking its thread. This is
 design, since entities that need to wait (a fast producer waiting on a slow consumer) will not block the thread but
 can hand it back for further use to an underlying thread-pool.
 
-<a id="defining-and-running-streams"></a>
 ## Defining and running streams
 
 Linear processing pipelines can be expressed in Akka Streams using the following core abstractions:
@@ -79,7 +80,7 @@ RunnableGraph
 
 
 It is possible to attach a `Flow` to a `Source` resulting in a composite source, and it is also possible to prepend
-a `Flow` to a `Sink` to get a new sink. After a stream is properly terminated by having both a source and a sink,
+a `Flow` to a `Sink` to get a new sink. After a stream is properly constructed by having both a source and a sink,
 it will be represented by the `RunnableGraph` type, indicating that it is ready to be executed.
 
 It is important to remember that even after constructing the `RunnableGraph` by connecting all the source, sink and
@@ -192,7 +193,7 @@ of absence of a value we recommend using @scala[`scala.Option` or `scala.util.Ei
 
 ## Back-pressure explained
 
-Akka Streams implement an asynchronous non-blocking back-pressure protocol standardised by the [Reactive Streams](http://reactive-streams.org/)
+Akka Streams implement an asynchronous non-blocking back-pressure protocol standardised by the [Reactive Streams](https://www.reactive-streams.org/)
 specification, which Akka is a founding member of.
 
 The user of the library does not have to write any explicit back-pressure handling code — it is built in
@@ -214,7 +215,7 @@ different Reactive Streams implementations.
 
 Akka Streams implements these concepts as `Source`, `Flow` (referred to as `Processor` in Reactive Streams)
 and `Sink` without exposing the Reactive Streams interfaces directly.
-If you need to integrate with other Reactive Stream libraries, read @ref:[Integrating with Reactive Streams](stream-integrations.md#reactive-streams-integration).
+If you need to integrate with other Reactive Stream libraries, read @ref:[Integrating with Reactive Streams](reactive-streams-interop.md).
 
 @@@
 
@@ -256,7 +257,6 @@ it will have to abide to this back-pressure by applying one of the below strateg
 As we can see, this scenario effectively means that the `Subscriber` will *pull* the elements from the Publisher –
 this mode of operation is referred to as pull-based back-pressure.
 
-<a id="stream-materialization"></a>
 ## Stream Materialization
 
 When constructing flows and graphs in Akka Streams think of them as preparing a blueprint, an execution plan.
@@ -269,10 +269,10 @@ and `runWith()` methods defined on `Source` and `Flow` elements as well as a sma
 well-known sinks, such as @scala[`runForeach(el => ...)`]@java[`runForeach(el -> ...)`]
 (being an alias to @scala[`runWith(Sink.foreach(el => ...))`]@java[`runWith(Sink.foreach(el -> ...))`]).
 
-Materialization is currently performed synchronously on the materializing thread.
+Materialization is performed synchronously on the materializing thread by an `ActorSystem` global `Materializer`.
 The actual stream processing is handled by actors started up during the streams materialization,
 which will be running on the thread pools they have been configured to run on - which defaults to the dispatcher set in
-`MaterializationSettings` while constructing the `ActorMaterializer`.
+the `ActorSystem` config or provided as attributes on the stream that is getting materialized.
 
 @@@ note
 
@@ -281,7 +281,6 @@ yet will materialize that operator multiple times.
 
 @@@
 
-<a id="operator-fusion"></a>
 ### Operator Fusion
 
 By default, Akka Streams will fuse the stream operators. This means that the processing steps of a flow or
@@ -312,7 +311,7 @@ by adding information to the flow graph that has been constructed up to this poi
 
 This means that everything that is inside the red bubble will be executed by one actor and everything outside of it
 by another. This scheme can be applied successively, always having one such boundary enclose the previous ones plus all
-operators that have been added since them.
+operators that have been added since then.
 
 @@@ warning
 
@@ -380,26 +379,26 @@ merge is performed.
 
 ## Actor Materializer Lifecycle
 
-An important aspect of working with streams and actors is understanding an `ActorMaterializer`'s life-cycle.
+The `Materializer` is a component that is responsible for turning the stream blueprint into a running stream
+and emitting the "materialized value". An `ActorSystem` wide `Materializer` is provided by the Akka `Extension` 
+`SystemMaterializer` by @scala[having an implicit `ActorSystem` in scope]@java[passing the `ActorSystem` to the 
+various `run` methods] this way there is no need to worry about the `Materializer` unless there are special requirements.
+
+The use case that may require a custom instance of `Materializer` is when all streams materialized in an actor should be tied to the Actor lifecycle and stop if the Actor stops or crashes. 
+
+An important aspect of working with streams and actors is understanding a `Materializer`'s life-cycle.
 The materializer is bound to the lifecycle of the `ActorRefFactory` it is created from, which in practice will
-be either an `ActorSystem` or `ActorContext` (when the materializer is created within an `Actor`).
+be either an `ActorSystem` or `ActorContext` (when the materializer is created within an `Actor`). 
 
-The usual way of creating an `ActorMaterializer` is to create it next to your `ActorSystem`,
-which likely is in a "main" class of your application:
+Tying it to the `ActorSystem` should be replaced with using the system materializer from Akka 2.6 and on.
 
-Scala
-:   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #materializer-from-system }
-
-Java
-:   @@snip [FlowDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowDocTest.java) { #materializer-from-system }
-
-In this case the streams run by the materializer will run until it is shut down. When the materializer is shut down
+When run by the system materializer the streams will run until the `ActorSystem` is shut down. When the materializer is shut down
 *before* the streams have run to completion, they will be terminated abruptly. This is a little different than the
 usual way to terminate streams, which is by cancelling/completing them. The stream lifecycles are bound to the materializer
 like this to prevent leaks, and in normal operations you should not rely on the mechanism and rather use `KillSwitch` or
 normal completion signals to manage the lifecycles of your streams.  
 
-If we look at the following example, where we create the `ActorMaterializer` within an `Actor`:
+If we look at the following example, where we create the `Materializer` within an `Actor`:
 
 Scala
 :   @@snip [FlowDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowDocSpec.scala) { #materializer-from-actor-context }
@@ -410,7 +409,7 @@ Java
 In the above example we used the `ActorContext` to create the materializer. This binds its lifecycle to the surrounding `Actor`. In other words, while the stream we started there would under normal circumstances run forever, if we stop the Actor it would terminate the stream as well. We have *bound the stream's lifecycle to the surrounding actor's lifecycle*.
 This is a very useful technique if the stream is closely related to the actor, e.g. when the actor represents a user or other entity, that we continuously query using the created stream -- and it would not make sense to keep the stream alive when the actor has terminated already. The streams termination will be signalled by an "Abrupt termination exception" signaled by the stream.
 
-You may also cause an `ActorMaterializer` to shut down by explicitly calling `shutdown()` on it, resulting in abruptly terminating all of the streams it has been running then. 
+You may also cause a `Materializer` to shut down by explicitly calling `shutdown()` on it, resulting in abruptly terminating all of the streams it has been running then. 
 
 Sometimes, however, you may want to explicitly create a stream that will out-last the actor's life.
 For example, you are using an Akka stream to push some large stream of data to an external service.
@@ -428,7 +427,7 @@ for example because of the materializer's settings etc.
 @@@ warning
 
 Do not create new actor materializers inside actors by passing the `context.system` to it. 
-This will cause a new `ActorMaterializer` to be created and potentially leaked (unless you shut it down explicitly) for each such actor.
+This will cause a new `Materializer` to be created and potentially leaked (unless you shut it down explicitly) for each such actor.
 It is instead recommended to either pass-in the Materializer or create one using the actor's `context`.
 
 @@@

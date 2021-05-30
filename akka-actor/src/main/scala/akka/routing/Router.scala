@@ -1,15 +1,17 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
 
 import scala.collection.immutable
+
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
 import akka.actor.InternalActorRef
-import akka.japi.Util.immutableSeq
 import akka.actor.NoSerializationVerificationNeeded
+import akka.actor.WrappedMessage
+import akka.japi.Util.immutableSeq
 
 /**
  * The interface of the routing logic that is used in a [[Router]] to select
@@ -18,6 +20,7 @@ import akka.actor.NoSerializationVerificationNeeded
  * The implementation must be thread safe.
  */
 trait RoutingLogic extends NoSerializationVerificationNeeded {
+
   /**
    * Pick the destination for a given message. Normally it picks one of the
    * passed `routees`, but in the end it is up to the implementation to
@@ -77,7 +80,7 @@ final case class SeveralRoutees(routees: immutable.IndexedSeq[Routee]) extends R
    * Java API
    */
   def getRoutees(): java.util.List[Routee] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     routees.asJava
   }
 
@@ -93,7 +96,7 @@ final case class SeveralRoutees(routees: immutable.IndexedSeq[Routee]) extends R
  *
  * A `Router` is immutable and the [[RoutingLogic]] must be thread safe.
  */
-final case class Router(val logic: RoutingLogic, val routees: immutable.IndexedSeq[Routee] = Vector.empty) {
+final case class Router(logic: RoutingLogic, routees: immutable.IndexedSeq[Routee] = Vector.empty) {
 
   /**
    * Java API
@@ -113,8 +116,8 @@ final case class Router(val logic: RoutingLogic, val routees: immutable.IndexedS
    */
   def route(message: Any, sender: ActorRef): Unit =
     message match {
-      case akka.routing.Broadcast(msg) ⇒ SeveralRoutees(routees).send(msg, sender)
-      case msg                         ⇒ send(logic.select(msg, routees), message, sender)
+      case akka.routing.Broadcast(msg) => SeveralRoutees(routees).send(msg, sender)
+      case msg                         => send(logic.select(msg, routees), message, sender)
     }
 
   private def send(routee: Routee, msg: Any, sender: ActorRef): Unit = {
@@ -125,8 +128,8 @@ final case class Router(val logic: RoutingLogic, val routees: immutable.IndexedS
   }
 
   private def unwrap(msg: Any): Any = msg match {
-    case env: RouterEnvelope ⇒ env.message
-    case _                   ⇒ msg
+    case env: RouterEnvelope => env.message
+    case _                   => msg
   }
 
   /**
@@ -182,7 +185,6 @@ final case class Broadcast(message: Any) extends RouterEnvelope
  * Only the contained message will be forwarded to the
  * destination, i.e. the envelope will be stripped off.
  */
-trait RouterEnvelope {
+trait RouterEnvelope extends WrappedMessage {
   def message: Any
 }
-

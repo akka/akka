@@ -1,0 +1,3 @@
+# Diverging, only companion (which yields class) but ever emitted and not meant for user extension
+# so no user code compiled against 2.5 will ever refer to it
+ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.stream.SubscriptionWithCancelException")

@@ -1,21 +1,21 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings }
-
 import scala.collection.immutable
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
+import scala.concurrent.Future
 
-class CollectionSinkSpec extends StreamSpec {
+import akka.stream.AbruptTerminationException
+import akka.stream.Materializer
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
 
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val mat = ActorMaterializer(settings)
+class CollectionSinkSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) {
 
   "Sink.collection" when {
     "using Seq as Collection" must {
@@ -28,15 +28,15 @@ class CollectionSinkSpec extends StreamSpec {
 
       "return an empty Seq[T] from an empty Source" in {
         val input: immutable.Seq[Int] = Nil
-        val future: Future[immutable.Seq[Int]] = Source.fromIterator(() ⇒ input.iterator).runWith(Sink.collection)
+        val future: Future[immutable.Seq[Int]] = Source.fromIterator(() => input.iterator).runWith(Sink.collection)
         val result: immutable.Seq[Int] = Await.result(future, remainingOrDefault)
         result should be(input)
       }
 
       "fail the future on abrupt termination" in {
-        val mat = ActorMaterializer()
+        val mat = Materializer(system)
         val probe = TestPublisher.probe()
-        val future = Source.fromPublisher(probe).runWith(Sink.collection[Nothing, Seq[Nothing]])(mat)
+        val future = Source.fromPublisher(probe).runWith(Sink.collection[Unit, Seq[Unit]])(mat)
         mat.shutdown()
         future.failed.futureValue shouldBe an[AbruptTerminationException]
       }
@@ -51,19 +51,11 @@ class CollectionSinkSpec extends StreamSpec {
 
       "return an empty Vector[T] from an empty Source" in {
         val input = Nil
-        val future: Future[immutable.Vector[Int]] = Source.fromIterator(() ⇒ input.iterator).runWith(Sink.collection[Int, Vector[Int]])
+        val future: Future[immutable.Vector[Int]] =
+          Source.fromIterator(() => input.iterator).runWith(Sink.collection[Int, Vector[Int]])
         val result: immutable.Vector[Int] = Await.result(future, remainingOrDefault)
         result should be(Vector.empty[Int])
-      }
-
-      "fail the future on abrupt termination" in {
-        val mat = ActorMaterializer()
-        val probe = TestPublisher.probe()
-        val future = Source.fromPublisher(probe).runWith(Sink.collection[Nothing, Seq[Nothing]])(mat)
-        mat.shutdown()
-        future.failed.futureValue shouldBe an[AbruptTerminationException]
       }
     }
   }
 }
-

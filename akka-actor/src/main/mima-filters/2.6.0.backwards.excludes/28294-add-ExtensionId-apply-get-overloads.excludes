@@ -1,0 +1,12 @@
+# Incompatibilities against Akka < 2.5.17 where extra static bridge methods were generated that
+# Mima now wrongly correlates with the new ones added in the PR
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.util.ManifestInfo.get")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.CoordinatedShutdown.get")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.TypedActor.get")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.event.AddressTerminatedTopic.get")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.Dns.get")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.Tcp.get")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.Udp.get")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.io.UdpConnected.get")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.serialization.SerializationExtension.get")
+

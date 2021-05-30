@@ -1,14 +1,18 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
-import java.time.{ Duration ⇒ JDuration }
+import java.time.{ Duration => JDuration }
 
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+
+import akka.annotation.InternalStableApi
+
 /**
  * INTERNAL API
  */
+@InternalStableApi
 private[akka] object JavaDurationConverters {
   def asFiniteDuration(duration: JDuration): FiniteDuration = duration.asScala
 

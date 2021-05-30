@@ -1,12 +1,14 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
-import akka.cluster.UniqueAddress
-import scala.compat.java8.OptionConverters._
 import java.util.Optional
+
+import scala.compat.java8.OptionConverters._
+
+import akka.cluster.UniqueAddress
 
 /**
  * Interface for implementing a state based convergent
@@ -30,6 +32,7 @@ import java.util.Optional
  * it has support for delta-CRDT replication.
  */
 trait ReplicatedData {
+
   /**
    * The type of the concrete implementation, e.g. `GSet[A]`.
    * To be specified by subclass.
@@ -51,7 +54,7 @@ trait ReplicatedData {
  * receiving side, resulting in set {'a', 'b', 'c', 'd'}.
  *
  * Learn more about this in the paper
- * <a href="paper http://arxiv.org/abs/1603.01529">Delta State Replicated Data Types</a>.
+ * <a href="http://arxiv.org/abs/1603.01529">Delta State Replicated Data Types</a>.
  */
 trait DeltaReplicatedData extends ReplicatedData {
 
@@ -97,6 +100,7 @@ trait DeltaReplicatedData extends ReplicatedData {
  * The delta must implement this type.
  */
 trait ReplicatedDelta extends ReplicatedData {
+
   /**
    * The empty full state. This is used when a delta is received
    * and no existing full state exists on the receiving side. Then
@@ -159,7 +163,8 @@ abstract class AbstractReplicatedData[A <: AbstractReplicatedData[A]] extends Re
  * E.g. `class TwoPhaseSet extends AbstractDeltaReplicatedData&lt;TwoPhaseSet, TwoPhaseSet&gt;`
  */
 abstract class AbstractDeltaReplicatedData[A <: AbstractDeltaReplicatedData[A, B], B <: ReplicatedDelta]
-  extends AbstractReplicatedData[A] with DeltaReplicatedData {
+    extends AbstractReplicatedData[A]
+    with DeltaReplicatedData {
 
   override type D = ReplicatedDelta
 
@@ -239,4 +244,3 @@ trait RemovedNodePruning extends ReplicatedData {
  * [[akka.cluster.ddata.protobuf.ReplicatedDataSerializer]].
  */
 trait ReplicatedDataSerialization extends Serializable
-

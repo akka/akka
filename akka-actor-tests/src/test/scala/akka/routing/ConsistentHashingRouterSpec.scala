@@ -1,23 +1,29 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
 
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContextExecutor
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.pattern.ask
+import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
-import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
-import akka.testkit.AkkaSpec
 import akka.testkit._
+import akka.testkit.AkkaSpec
 
 object ConsistentHashingRouterSpec {
 
   val config = """
+    akka.actor {
+      # consistent hashing is serializing the hash key, unless it's bytes or string
+      allow-java-serialization = on
+    }
     akka.actor.deployment {
       /router1 {
         router = consistent-hashing-pool
@@ -33,8 +39,8 @@ object ConsistentHashingRouterSpec {
 
   class Echo extends Actor {
     def receive = {
-      case x: ConsistentHashableEnvelope ⇒ sender() ! s"Unexpected envelope: $x"
-      case _                             ⇒ sender() ! self
+      case x: ConsistentHashableEnvelope => sender() ! s"Unexpected envelope: $x"
+      case _                             => sender() ! self
     }
   }
 
@@ -47,11 +53,14 @@ object ConsistentHashingRouterSpec {
   final case class Msg2(key: Any, data: String)
 }
 
-class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.config) with DefaultTimeout with ImplicitSender {
+class ConsistentHashingRouterSpec
+    extends AkkaSpec(ConsistentHashingRouterSpec.config)
+    with DefaultTimeout
+    with ImplicitSender {
   import ConsistentHashingRouterSpec._
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
 
-  val router1 = system.actorOf(FromConfig.props(Props[Echo]), "router1")
+  val router1 = system.actorOf(FromConfig.props(Props[Echo]()), "router1")
 
   "consistent hashing router" must {
     "create routees from configuration" in {
@@ -78,10 +87,12 @@ class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.c
 
     "select destination with defined hashMapping" in {
       def hashMapping: ConsistentHashMapping = {
-        case Msg2(key, data) ⇒ key
+        case Msg2(key, _) => key
       }
-      val router2 = system.actorOf(ConsistentHashingPool(nrOfInstances = 1, hashMapping = hashMapping).
-        props(Props[Echo]), "router2")
+      val router2 =
+        system.actorOf(
+          ConsistentHashingPool(nrOfInstances = 1, hashMapping = hashMapping).props(Props[Echo]()),
+          "router2")
 
       router2 ! Msg2("a", "A")
       val destinationA = expectMsgType[ActorRef]

@@ -1,18 +1,22 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
-import akka.event.Logging.Warning
-import akka.remote.FailureDetector.Clock
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
-import scala.collection.immutable
+
 import com.typesafe.config.Config
+
 import akka.event.EventStream
+import akka.event.Logging
+import akka.event.Logging.Warning
+import akka.remote.FailureDetector.Clock
 import akka.util.Helpers.ConfigOps
 
 /**
@@ -51,26 +55,26 @@ import akka.util.Helpers.ConfigOps
  *   purposes. It is only used for measuring intervals (duration).
  */
 class PhiAccrualFailureDetector(
-  val threshold:                Double,
-  val maxSampleSize:            Int,
-  val minStdDeviation:          FiniteDuration,
-  val acceptableHeartbeatPause: FiniteDuration,
-  val firstHeartbeatEstimate:   FiniteDuration,
-  eventStream:                  Option[EventStream])(
-  implicit
-  clock: Clock) extends FailureDetector {
+    val threshold: Double,
+    val maxSampleSize: Int,
+    val minStdDeviation: FiniteDuration,
+    val acceptableHeartbeatPause: FiniteDuration,
+    val firstHeartbeatEstimate: FiniteDuration,
+    eventStream: Option[EventStream])(
+    implicit
+    clock: Clock)
+    extends FailureDetector {
 
   /**
    * Constructor without eventStream to support backwards compatibility
    */
   def this(
-    threshold:                Double,
-    maxSampleSize:            Int,
-    minStdDeviation:          FiniteDuration,
-    acceptableHeartbeatPause: FiniteDuration,
-    firstHeartbeatEstimate:   FiniteDuration)(implicit clock: Clock) =
-    this(
-      threshold, maxSampleSize, minStdDeviation, acceptableHeartbeatPause, firstHeartbeatEstimate, None)(clock)
+      threshold: Double,
+      maxSampleSize: Int,
+      minStdDeviation: FiniteDuration,
+      acceptableHeartbeatPause: FiniteDuration,
+      firstHeartbeatEstimate: FiniteDuration)(implicit clock: Clock) =
+    this(threshold, maxSampleSize, minStdDeviation, acceptableHeartbeatPause, firstHeartbeatEstimate, None)(clock)
 
   /**
    * Constructor that reads parameters from config.
@@ -110,8 +114,10 @@ class PhiAccrualFailureDetector(
   /**
    * Implement using optimistic lockless concurrency, all state is represented
    * by this immutable case class and managed by an AtomicReference.
+   *
+   * Cannot be final due to https://github.com/scala/bug/issues/4440
    */
-  private final case class State(history: HeartbeatHistory, timestamp: Option[Long])
+  private case class State(history: HeartbeatHistory, timestamp: Option[Long])
 
   private val state = new AtomicReference[State](State(history = firstHeartbeat, timestamp = None))
 
@@ -128,22 +134,29 @@ class PhiAccrualFailureDetector(
     val oldState = state.get
 
     val newHistory = oldState.timestamp match {
-      case None ⇒
+      case None =>
         // this is heartbeat from a new resource
         // add starter records for this new resource
         firstHeartbeat
-      case Some(latestTimestamp) ⇒
+      case Some(latestTimestamp) =>
         // this is a known connection
         val interval = timestamp - latestTimestamp
         // don't use the first heartbeat after failure for the history, since a long pause will skew the stats
         if (isAvailable(timestamp)) {
           if (interval >= (acceptableHeartbeatPauseMillis / 3 * 2) && eventStream.isDefined)
-            eventStream.get.publish(Warning(this.toString, getClass, s"heartbeat interval is growing too large for address $address: $interval millis"))
+            eventStream.get.publish(
+              Warning(
+                this.toString,
+                getClass,
+                s"heartbeat interval is growing too large for address $address: $interval millis",
+                Logging.emptyMDC,
+                RemoteLogMarker.failureDetectorGrowing(address)))
           oldState.history :+ interval
         } else oldState.history
     }
 
-    val newState = oldState.copy(history = newHistory, timestamp = Some(timestamp)) // record new timestamp
+    // record new timestamp and possibly-amended history
+    val newState = oldState.copy(history = newHistory, timestamp = Some(timestamp))
 
     // if we won the race then update else try again
     if (!state.compareAndSet(oldState, newState)) heartbeat() // recur
@@ -191,7 +204,7 @@ class PhiAccrualFailureDetector(
       -math.log10(1.0 - 1.0 / (1.0 + e))
   }
 
-  private val minStdDeviationMillis = minStdDeviation.toMillis
+  private val minStdDeviationMillis = minStdDeviation.toMillis.toDouble
 
   private def ensureValidStdDeviation(stdDeviation: Double): Double = math.max(stdDeviation, minStdDeviationMillis)
 
@@ -205,11 +218,12 @@ private[akka] object HeartbeatHistory {
    * The stats (mean, variance, stdDeviation) are not defined for
    * for empty HeartbeatHistory, i.e. throws ArithmeticException.
    */
-  def apply(maxSampleSize: Int): HeartbeatHistory = HeartbeatHistory(
-    maxSampleSize = maxSampleSize,
-    intervals = immutable.IndexedSeq.empty,
-    intervalSum = 0L,
-    squaredIntervalSum = 0L)
+  def apply(maxSampleSize: Int): HeartbeatHistory =
+    HeartbeatHistory(
+      maxSampleSize = maxSampleSize,
+      intervals = immutable.IndexedSeq.empty,
+      intervalSum = 0L,
+      squaredIntervalSum = 0L)
 
 }
 
@@ -221,10 +235,10 @@ private[akka] object HeartbeatHistory {
  * for empty HeartbeatHistory, i.e. throws ArithmeticException.
  */
 private[akka] final case class HeartbeatHistory private (
-  maxSampleSize:      Int,
-  intervals:          immutable.IndexedSeq[Long],
-  intervalSum:        Long,
-  squaredIntervalSum: Long) {
+    maxSampleSize: Int,
+    intervals: immutable.IndexedSeq[Long],
+    intervalSum: Long,
+    squaredIntervalSum: Long) {
 
   // Heartbeat histories are created trough the firstHeartbeat variable of the PhiAccrualFailureDetector
   // which always have intervals.size > 0.
@@ -253,11 +267,12 @@ private[akka] final case class HeartbeatHistory private (
       dropOldest :+ interval // recur
   }
 
-  private def dropOldest: HeartbeatHistory = HeartbeatHistory(
-    maxSampleSize,
-    intervals = intervals drop 1,
-    intervalSum = intervalSum - intervals.head,
-    squaredIntervalSum = squaredIntervalSum - pow2(intervals.head))
+  private def dropOldest: HeartbeatHistory =
+    HeartbeatHistory(
+      maxSampleSize,
+      intervals = intervals.drop(1),
+      intervalSum = intervalSum - intervals.head,
+      squaredIntervalSum = squaredIntervalSum - pow2(intervals.head))
 
   private def pow2(x: Long) = x * x
 }

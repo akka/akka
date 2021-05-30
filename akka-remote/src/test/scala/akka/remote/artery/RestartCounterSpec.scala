@@ -1,15 +1,15 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
 import scala.concurrent.duration._
 
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class RestartCounterSpec extends WordSpec with Matchers {
+class RestartCounterSpec extends AnyWordSpec with Matchers {
 
   "RestartCounter" must {
 
@@ -24,7 +24,7 @@ class RestartCounterSpec extends WordSpec with Matchers {
 
     "allow sporadic restarts" in {
       val counter = new RestartCounter(3, 10.millis)
-      for (_ ← 1 to 10) {
+      for (_ <- 1 to 10) {
         counter.restart() should ===(true)
         Thread.sleep(20)
       }

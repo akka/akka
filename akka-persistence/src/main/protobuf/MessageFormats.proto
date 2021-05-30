@@ -1,6 +1,8 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
+
+syntax = "proto2";
 
 option java_package = "akka.persistence.serialization";
 option optimize_for = SPEED;
@@ -18,6 +20,8 @@ message PersistentMessage {
   optional string sender = 11; // not stored in journal, needed for remote serialization 
   optional string manifest = 12;
   optional string writerUuid = 13;
+  optional sint64 timestamp = 14;
+  optional PersistentPayload metadata = 15;
 }
 
 message PersistentPayload {

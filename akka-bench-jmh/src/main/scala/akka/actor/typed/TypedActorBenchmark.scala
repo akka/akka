@@ -1,16 +1,17 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import java.util.concurrent.TimeUnit
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import akka.actor.typed.scaladsl.AskPattern._
 
 object TypedActorBenchmark {
@@ -39,7 +40,7 @@ class TypedActorBenchmark {
   @Param(Array("50"))
   var batchSize = 0
 
-  @Param(Array("akka.actor.ManyToOneArrayMailbox")) //  @Param(Array("akka.dispatch.SingleConsumerOnlyUnboundedMailbox", "akka.actor.ManyToOneArrayMailbox"))
+  @Param(Array("akka.dispatch.SingleConsumerOnlyUnboundedMailbox", "akka.dispatch.UnboundedMailbox"))
   var mailbox = ""
 
   @Param(Array("fjp-dispatcher")) //  @Param(Array("fjp-dispatcher", "affinity-dispatcher"))
@@ -47,17 +48,15 @@ class TypedActorBenchmark {
 
   implicit var system: ActorSystem[Start] = _
 
-  implicit val askTimeout = akka.util.Timeout(timeout)
-  implicit def scheduler = system.scheduler
+  implicit val askTimeout: akka.util.Timeout = akka.util.Timeout(timeout)
 
   @Setup(Level.Trial)
   def setup(): Unit = {
     akka.actor.BenchmarkActors.requireRightNumberOfCores(threads)
     system = ActorSystem(
-      TypedBenchmarkActors.echoActorsSupervisor(numMessagesPerActorPair, numActors, dispatcher, batchSize, timeout),
+      TypedBenchmarkActors.echoActorsSupervisor(numMessagesPerActorPair, numActors, dispatcher, batchSize),
       "TypedActorBenchmark",
-      ConfigFactory.parseString(
-        s"""
+      ConfigFactory.parseString(s"""
        akka.actor {
 
          default-mailbox.mailbox-capacity = 512
@@ -86,8 +85,7 @@ class TypedActorBenchmark {
             mailbox-type = "$mailbox"
          }
        }
-      """
-      ))
+      """))
   }
 
   @TearDown(Level.Trial)
@@ -99,8 +97,7 @@ class TypedActorBenchmark {
   @Benchmark
   @OperationsPerInvocation(totalMessages)
   def echo(): Unit = {
-    Await.result(system ? Start, timeout)
+    Await.result(system.ask(Start), timeout)
   }
 
 }
-

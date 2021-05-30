@@ -1,44 +1,44 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
 
-import akka.actor.typed.internal.adapter.AbstractLogger
-import akka.actor.typed.{ ActorContext, Behavior, BehaviorInterceptor, Signal }
-import akka.annotation.InternalApi
+import scala.reflect.ClassTag
 
-import scala.collection.immutable.HashMap
+import org.slf4j.MDC
+
+import akka.actor.typed.{ Behavior, BehaviorInterceptor, Signal, TypedActorContext }
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] object WithMdcBehaviorInterceptor {
-  val noMdcPerMessage = (_: Any) ⇒ Map.empty[String, Any]
+  val noMdcPerMessage = (_: Any) => Map.empty[String, String]
 
-  def apply[T](
-    staticMdc:     Map[String, Any],
-    mdcForMessage: T ⇒ Map[String, Any],
-    behavior:      Behavior[T]): Behavior[T] = {
-
-    val interceptor = new WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage)
-    BehaviorImpl.intercept(interceptor)(behavior)
+  def apply[T: ClassTag](
+      staticMdc: Map[String, String],
+      mdcForMessage: T => Map[String, String],
+      behavior: Behavior[T]): Behavior[T] = {
+    BehaviorImpl.intercept(() => new WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage))(behavior)
   }
 
 }
 
 /**
- * Support for Mapped Dagnostic Context for logging
+ * Support for Mapped Diagnostic Context for logging
  *
  * INTERNAL API
  */
-@InternalApi private[akka] final class WithMdcBehaviorInterceptor[T] private (
-  staticMdc:     Map[String, Any],
-  mdcForMessage: T ⇒ Map[String, Any]) extends BehaviorInterceptor[T, T] {
+@InternalApi private[akka] final class WithMdcBehaviorInterceptor[T: ClassTag] private (
+    staticMdc: Map[String, String],
+    mdcForMessage: T => Map[String, String])
+    extends BehaviorInterceptor[T, T] {
 
   import BehaviorInterceptor._
 
-  override def aroundStart(ctx: ActorContext[T], target: PreStartTarget[T]): Behavior[T] = {
+  override def aroundStart(ctx: TypedActorContext[T], target: PreStartTarget[T]): Behavior[T] = {
     // when declaring we expect the outermost to win
     // for example with
     // val behavior = ...
@@ -49,58 +49,57 @@ import scala.collection.immutable.HashMap
     // so we need to look through the stack and eliminate any MCD already existing
     def loop(next: Behavior[T]): Behavior[T] = {
       next match {
-        case i: InterceptorImpl[T, T] if i.interceptor.isSame(this.asInstanceOf[BehaviorInterceptor[Any, Any]]) ⇒
+        case i: InterceptorImpl[T, T] if i.interceptor.isSame(this.asInstanceOf[BehaviorInterceptor[Any, Any]]) =>
           // eliminate that interceptor
-          loop(i.nestedBehavior.asInstanceOf[Behavior[T]])
+          loop(i.nestedBehavior)
 
-        case w: WrappingBehavior[T, T] ⇒
-          val nested = w.nestedBehavior
+        case i: InterceptorImpl[T, T] =>
+          val nested = i.nestedBehavior
           val inner = loop(nested)
-          if (inner eq nested) w
-          else w.replaceNested(inner)
+          if (inner eq nested) i
+          else i.replaceNested(inner)
 
-        case b ⇒ b
+        case b => b
       }
     }
-
-    loop(target.start(ctx)).asInstanceOf[Behavior[T]]
+    try {
+      setMdcValues(Map.empty)
+      loop(target.start(ctx))
+    } finally {
+      MDC.clear()
+    }
   }
 
   // in the normal case, a new withMDC replaces the previous one
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
-    case _: WithMdcBehaviorInterceptor[_] ⇒ true
-    case _                                ⇒ false
+    case _: WithMdcBehaviorInterceptor[_] => true
+    case _                                => false
   }
 
-  override def aroundReceive(ctx: ActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
-    val mdc = merge(staticMdc, mdcForMessage(msg))
-    ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = mdc
-    val next =
-      try {
-        target(ctx, msg)
-      } finally {
-        ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = Map.empty
-      }
-    next
-  }
-
-  override def aroundSignal(ctx: ActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
-    ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = staticMdc
+  override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
     try {
-      target(ctx, signal)
+      setMdcValues(mdcForMessage(msg))
+      target(ctx, msg)
     } finally {
-      ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = Map.empty
+      MDC.clear()
     }
   }
 
-  private def merge(staticMdc: Map[String, Any], mdcForMessage: Map[String, Any]): Map[String, Any] = {
-    if (staticMdc.isEmpty) mdcForMessage
-    else if (mdcForMessage.isEmpty) staticMdc
-    else if (staticMdc.isInstanceOf[HashMap[String, Any]] && mdcForMessage.isInstanceOf[HashMap[String, Any]]) {
-      // merged is more efficient than ++
-      mdcForMessage.asInstanceOf[HashMap[String, Any]].merged(staticMdc.asInstanceOf[HashMap[String, Any]])(null)
-    } else {
-      staticMdc ++ mdcForMessage
+  override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
+    try {
+      setMdcValues(Map.empty)
+      target(ctx, signal)
+    } finally {
+      MDC.clear()
+    }
+  }
+
+  private def setMdcValues(dynamicMdc: Map[String, String]): Unit = {
+    if (staticMdc.nonEmpty) staticMdc.foreach {
+      case (key, value) => MDC.put(key, value)
+    }
+    if (dynamicMdc.nonEmpty) dynamicMdc.foreach {
+      case (key, value) => MDC.put(key, value)
     }
   }
 

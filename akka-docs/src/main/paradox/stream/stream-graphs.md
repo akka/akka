@@ -5,9 +5,12 @@
 To use Akka Streams, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-stream_$scala.binary.version$"
+  version=AkkaVersion
 }
 
 ## Introduction
@@ -45,6 +48,7 @@ Akka Streams currently provide these junctions (for a detailed list see the @ref
     * @scala[`MergePreferred[In]`]@java[`MergePreferred<In>`] – like `Merge` but if elements are available on `preferred` port, it picks from it, otherwise randomly from `others`
     * @scala[`MergePrioritized[In]`]@java[`MergePrioritized<In>`] – like `Merge` but if elements are available on all input ports, it picks from them randomly based on their `priority`
     * @scala[`MergeLatest[In]`]@java[`MergeLatest<In>`] – *(N inputs, 1 output)* emits `List[In]`, when i-th input stream emits element, then i-th element in emitted list is updated
+    * @scala[`MergeSequence[In]`]@java[`MergeSequence<In>`] – *(N inputs, 1 output)* emits `List[In]`, where the input streams must represent a partitioned sequence that must be merged back together in order
     * @scala[`ZipWith[A,B,...,Out]`]@java[`ZipWith<A,B,...,Out>`] – *(N inputs, 1 output)* which takes a function of N inputs that given a value for each input emits 1 output element
     * @scala[`Zip[A,B]`]@java[`Zip<A,B>`] – *(2 inputs, 1 output)* is a `ZipWith` specialised to zipping input streams of `A` and `B` into a @scala[`(A,B)`]@java[`Pair(A,B)`] tuple stream
     * @scala[`Concat[A]`]@java[`Concat<A>`] – *(2 inputs, 1 output)* concatenates two streams (first consume one, then the second one)
@@ -118,7 +122,7 @@ Sometimes it is not possible (or needed) to construct the entire computation gra
 all of its different phases in different places and in the end connect them all into a complete graph and run it.
 
 This can be achieved by @scala[returning a different `Shape` than `ClosedShape`, for example `FlowShape(in, out)`, from the
-function given to `GraphDSL.create`. See [Predefined shapes](#predefined-shapes) for a list of such predefined shapes.
+function given to `GraphDSL.create`. See @ref:[Predefined shapes](#predefined-shapes) for a list of such predefined shapes.
 Making a `Graph` a `RunnableGraph`]@java[using the returned `Graph` from `GraphDSL.create()` rather than
 passing it to `RunnableGraph.fromGraph()` to wrap it in a `RunnableGraph`.The reason of representing it as a different type is that a
 `RunnableGraph`] requires all ports to be connected, and if they are not
@@ -245,7 +249,6 @@ Scala
 
 
 
-<a id="predefined-shapes"></a>
 ## Predefined shapes
 
 In general a custom `Shape` needs to be able to provide all its input and output ports, be able to copy itself, and also be

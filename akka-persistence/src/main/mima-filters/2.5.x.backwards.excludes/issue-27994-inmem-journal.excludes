@@ -1,0 +1,5 @@
+# #27994 changes to internal inmem journal
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.inmem.InmemMessages.update")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.journal.inmem.InmemMessages.akka$persistence$journal$inmem$InmemMessages$$highestSequenceNumbers")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.journal.inmem.InmemMessages.akka$persistence$journal$inmem$InmemMessages$$highestSequenceNumbers_=")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.inmem.InmemJournal.update")

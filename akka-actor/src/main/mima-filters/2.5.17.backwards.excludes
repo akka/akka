@@ -1,0 +1,28 @@
+# #25848 - TTL seconds used when TTL milliseconds expected
+# Change of a field name with ApiMayChange
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.UnknownRecord.ttl")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.ARecord.ttl")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.CNameRecord.ttl")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.AAAARecord.ttl")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.ResourceRecord.ttl")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.SRVRecord.ttl")
+
+# Removal of internal methods #25760
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.UnknownRecord.write")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.ARecord.write")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.CNameRecord.write")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.AAAARecord.write")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.ResourceRecord.write")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.SRVRecord.write")
+
+# #27411 changes not caught by previous mima versions
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.CoordinatedShutdown.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.TypedActor.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.event.AddressTerminatedTopic.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.Tcp.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.UdpConnected.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.Dns.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.Udp.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.CircuitBreaker.convertJavaFailureFnToScala")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.serialization.SerializationExtension.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.ManifestInfo.get")

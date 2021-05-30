@@ -1,15 +1,17 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
 
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class PropsSpec extends WordSpec with Matchers {
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 
-  val dispatcherFirst = DispatcherDefault(DispatcherFromConfig("pool"))
+class PropsSpec extends AnyWordSpec with Matchers with LogCapturing {
+
+  val dispatcherFirst = Props.empty.withDispatcherFromConfig("pool").withDispatcherDefault
 
   "A Props" must {
 
@@ -18,7 +20,8 @@ class PropsSpec extends WordSpec with Matchers {
     }
 
     "yield all configs of some type" in {
-      dispatcherFirst.allOf[DispatcherSelector] should ===(DispatcherSelector.default() :: DispatcherSelector.fromConfig("pool") :: Nil)
+      dispatcherFirst.allOf[DispatcherSelector] should ===(
+        DispatcherSelector.default() :: DispatcherSelector.fromConfig("pool") :: Nil)
     }
   }
 }

@@ -1,14 +1,14 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.ActorMaterializer
 import akka.stream.impl.JsonObjectParser
 import akka.stream.scaladsl.Framing.FramingException
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.stream.scaladsl.JsonFraming.PartialObjectException
 import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
@@ -17,8 +17,6 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class JsonFramingSpec extends AkkaSpec {
-
-  implicit val mat = ActorMaterializer()
 
   "collecting multiple json" should {
     "parse json array" in {
@@ -32,18 +30,40 @@ class JsonFramingSpec extends AkkaSpec {
           |]
           |""".stripMargin // also should complete once notices end of array
 
-      val result = Source.single(ByteString(input))
-        .via(JsonFraming.objectScanner(Int.MaxValue))
-        .runFold(Seq.empty[String]) {
-          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+      val result =
+        Source.single(ByteString(input)).via(JsonFraming.objectScanner(Int.MaxValue)).runFold(Seq.empty[String]) {
+          case (acc, entry) => acc ++ Seq(entry.utf8String)
         }
       // #using-json-framing
 
       result.futureValue shouldBe Seq(
         """{ "name" : "john" }""",
         """{ "name" : "Ég get etið gler án þess að meiða mig" }""",
-        """{ "name" : "jack" }"""
-      )
+        """{ "name" : "jack" }""")
+    }
+
+    "parse multiple arrays" in {
+      val input1 =
+        """
+          |[
+          | { "name" : "john" }
+          |]
+          |""".stripMargin
+
+      val input2 =
+        """
+          |[
+          | { "name" : "jack" }
+          |]
+          |""".stripMargin
+
+      val result = Source(List(ByteString(input1), ByteString(input2)))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) => acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq("""{ "name" : "john" }""", """{ "name" : "jack" }""")
     }
 
     "emit single json element from string" in {
@@ -52,11 +72,12 @@ class JsonFramingSpec extends AkkaSpec {
            | { "name": "jack" }
         """.stripMargin
 
-      val result = Source.single(ByteString(input))
+      val result = Source
+        .single(ByteString(input))
         .via(JsonFraming.objectScanner(Int.MaxValue))
         .take(1)
         .runFold(Seq.empty[String]) {
-          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+          case (acc, entry) => acc ++ Seq(entry.utf8String)
         }
 
       Await.result(result, 3.seconds) shouldBe Seq("""{ "name": "john" }""")
@@ -69,10 +90,9 @@ class JsonFramingSpec extends AkkaSpec {
            | { "name": "katie" }
         """.stripMargin
 
-      val result = Source.single(ByteString(input))
-        .via(JsonFraming.objectScanner(Int.MaxValue))
-        .runFold(Seq.empty[String]) {
-          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+      val result =
+        Source.single(ByteString(input)).via(JsonFraming.objectScanner(Int.MaxValue)).runFold(Seq.empty[String]) {
+          case (acc, entry) => acc ++ Seq(entry.utf8String)
         }
 
       Await.result(result, 3.seconds) shouldBe Seq(
@@ -85,16 +105,12 @@ class JsonFramingSpec extends AkkaSpec {
       val input =
         """  { "name": "john" }, { "name": "jack" }, { "name": "katie" }  """
 
-      val result = Source.single(ByteString(input))
-        .via(JsonFraming.objectScanner(Int.MaxValue))
-        .runFold(Seq.empty[String]) {
-          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
+      val result =
+        Source.single(ByteString(input)).via(JsonFraming.objectScanner(Int.MaxValue)).runFold(Seq.empty[String]) {
+          case (acc, entry) => acc ++ Seq(entry.utf8String)
         }
 
-      result.futureValue shouldBe Seq(
-        """{ "name": "john" }""",
-        """{ "name": "jack" }""",
-        """{ "name": "katie" }""")
+      result.futureValue shouldBe Seq("""{ "name": "john" }""", """{ "name": "jack" }""", """{ "name": "katie" }""")
     }
 
     "parse chunks successfully" in {
@@ -109,11 +125,9 @@ class JsonFramingSpec extends AkkaSpec {
         """me": "jack""",
         """"}]"""").map(ByteString(_))
 
-      val result = Source.apply(input)
-        .via(JsonFraming.objectScanner(Int.MaxValue))
-        .runFold(Seq.empty[String]) {
-          case (acc, entry) ⇒ acc ++ Seq(entry.utf8String)
-        }
+      val result = Source.apply(input).via(JsonFraming.objectScanner(Int.MaxValue)).runFold(Seq.empty[String]) {
+        case (acc, entry) => acc ++ Seq(entry.utf8String)
+      }
 
       result.futureValue shouldBe Seq(
         """{ "name": "john"
@@ -126,7 +140,8 @@ class JsonFramingSpec extends AkkaSpec {
       val input = TestPublisher.probe[ByteString]()
       val output = TestSubscriber.probe[String]()
 
-      val result = Source.fromPublisher(input)
+      Source
+        .fromPublisher(input)
         .via(JsonFraming.objectScanner(Int.MaxValue))
         .map(_.utf8String)
         .runWith(Sink.fromSubscriber(output))
@@ -158,7 +173,7 @@ class JsonFramingSpec extends AkkaSpec {
       }
     }
 
-    "valid json is supplied" which {
+    "valid json is supplied".which {
       "has one object" should {
         "successfully parse empty object" in {
           val buffer = new JsonObjectParser()
@@ -225,8 +240,7 @@ class JsonFramingSpec extends AkkaSpec {
 
         "successfully parse single field having nested object" in {
           val buffer = new JsonObjectParser()
-          buffer.offer(ByteString(
-            """
+          buffer.offer(ByteString("""
               |{  "name": "john",
               |   "age": 101,
               |   "address": {
@@ -246,8 +260,7 @@ class JsonFramingSpec extends AkkaSpec {
 
         "successfully parse single field having multiple level of nested object" in {
           val buffer = new JsonObjectParser()
-          buffer.offer(ByteString(
-            """
+          buffer.offer(ByteString("""
               |{  "name": "john",
               |   "age": 101,
               |   "address": {
@@ -273,13 +286,11 @@ class JsonFramingSpec extends AkkaSpec {
 
         "successfully parse an escaped backslash followed by a double quote" in {
           val buffer = new JsonObjectParser()
-          buffer.offer(ByteString(
-            """
+          buffer.offer(ByteString("""
               |{
               | "key": "\\"
               | }
-              | """.stripMargin
-          ))
+              | """.stripMargin))
 
           buffer.poll().get.utf8String shouldBe """{
                                           | "key": "\\"
@@ -288,13 +299,11 @@ class JsonFramingSpec extends AkkaSpec {
 
         "successfully parse a string that contains an escaped quote" in {
           val buffer = new JsonObjectParser()
-          buffer.offer(ByteString(
-            """
+          buffer.offer(ByteString("""
               |{
               | "key": "\""
               | }
-              | """.stripMargin
-          ))
+              | """.stripMargin))
 
           buffer.poll().get.utf8String shouldBe """{
                                                   | "key": "\""
@@ -303,13 +312,11 @@ class JsonFramingSpec extends AkkaSpec {
 
         "successfully parse a string that contains escape sequence" in {
           val buffer = new JsonObjectParser()
-          buffer.offer(ByteString(
-            """
+          buffer.offer(ByteString("""
               |{
               | "key": "\\\""
               | }
-              | """.stripMargin
-          ))
+              | """.stripMargin))
 
           buffer.poll().get.utf8String shouldBe """{
                                                   | "key": "\\\""
@@ -320,8 +327,7 @@ class JsonFramingSpec extends AkkaSpec {
       "has nested array" should {
         "successfully parse" in {
           val buffer = new JsonObjectParser()
-          buffer.offer(ByteString(
-            """
+          buffer.offer(ByteString("""
               |{  "name": "john",
               |   "things": [
               |     1,
@@ -345,8 +351,7 @@ class JsonFramingSpec extends AkkaSpec {
       "has complex object graph" should {
         "successfully parse" in {
           val buffer = new JsonObjectParser()
-          buffer.offer(ByteString(
-            """
+          buffer.offer(ByteString("""
               |{
               |  "name": "john",
               |  "addresses": [
@@ -405,14 +410,13 @@ class JsonFramingSpec extends AkkaSpec {
 
         "parse successfully despite valid whitespaces around json" in {
           val buffer = new JsonObjectParser()
-          buffer.offer(ByteString(
-            """
+          buffer.offer(ByteString("""
               |
               |
               |{"name":   "john"
               |, "age": 101}""".stripMargin))
           buffer.poll().get.utf8String shouldBe
-            """{"name":   "john"
+          """{"name":   "john"
               |, "age": 101}""".stripMargin
         }
       }
@@ -435,12 +439,12 @@ class JsonFramingSpec extends AkkaSpec {
           buffer.offer(ByteString(input))
 
           buffer.poll().get.utf8String shouldBe
-            """{
+          """{
               |    "name": "john",
               |    "age": 32
               |  }""".stripMargin
           buffer.poll().get.utf8String shouldBe
-            """{
+          """{
               |    "name": "katie",
               |    "age": 25
               |  }""".stripMargin
@@ -457,10 +461,9 @@ class JsonFramingSpec extends AkkaSpec {
       "returns none until valid json is encountered" in {
         val buffer = new JsonObjectParser()
 
-        """{ "name": "john"""".foreach {
-          c ⇒
-            buffer.offer(ByteString(c))
-            buffer.poll() should ===(None)
+        """{ "name": "john"""".foreach { c =>
+          buffer.offer(ByteString(c))
+          buffer.poll() should ===(None)
         }
 
         buffer.offer(ByteString("}"))
@@ -489,10 +492,12 @@ class JsonFramingSpec extends AkkaSpec {
           | { "name": "john" }, { "name": "jack" }
         """.stripMargin
 
-      val result = Source.single(ByteString(input))
-        .via(JsonFraming.objectScanner(5)).map(_.utf8String)
+      val result = Source
+        .single(ByteString(input))
+        .via(JsonFraming.objectScanner(5))
+        .map(_.utf8String)
         .runFold(Seq.empty[String]) {
-          case (acc, entry) ⇒ acc ++ Seq(entry)
+          case (acc, entry) => acc ++ Seq(entry)
         }
 
       a[FramingException] shouldBe thrownBy {
@@ -504,20 +509,35 @@ class JsonFramingSpec extends AkkaSpec {
       val input = List(
         """{ "name": "john" }""",
         """{ "name": "jack" }""",
-        """{ "name": "very very long name somehow. how did this happen?" }""").map(s ⇒ ByteString(s))
+        """{ "name": "very very long name somehow. how did this happen?" }""").map(s => ByteString(s))
 
-      val probe = Source(input)
-        .via(JsonFraming.objectScanner(48))
-        .runWith(TestSink.probe)
+      val probe = Source(input).via(JsonFraming.objectScanner(48)).runWith(TestSink.probe)
 
       probe.ensureSubscription()
       probe
+        .requestNext(ByteString("""{ "name": "john" }"""))
+        .requestNext(ByteString("""{ "name": "jack" }"""))
         .request(1)
-        .expectNext(ByteString("""{ "name": "john" }"""))
-        .request(1)
-        .expectNext(ByteString("""{ "name": "jack" }"""))
-        .request(1)
-        .expectError().getMessage should include("exceeded")
+        .expectError()
+        .getMessage should include("exceeded")
+    }
+
+    "fail when completing inside an object" in {
+      val input = ByteString("{")
+      val probe = Source.single(input).via(JsonFraming.objectScanner(48)).runWith(TestSink.probe)
+
+      probe.ensureSubscription()
+      probe.request(1).expectError() shouldBe a[PartialObjectException]
+    }
+
+    "fail when pushing and inside an object" in {
+      val input = """  { "name": "john" }, {  """
+      Source
+        .single(ByteString(input))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runWith(Sink.last)
+        .failed
+        .futureValue shouldBe a[PartialObjectException]
     }
   }
 }

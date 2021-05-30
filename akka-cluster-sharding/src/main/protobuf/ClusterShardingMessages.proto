@@ -1,6 +1,8 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
+
+syntax = "proto2";
 
 option java_package = "akka.cluster.sharding.protobuf.msg";
 option optimize_for = SPEED;
@@ -40,18 +42,67 @@ message EntityState {
   repeated string entities = 1;
 }
 
+// not written anymore but kept for backwards compatibility
 message EntityStarted {
   required string entityId = 1;
 }
 
+message EntitiesStarted {
+    repeated string entityId = 1;
+}
+
+// not written anymore but kept for backwards compatibility
 message EntityStopped {
   required string entityId = 1;
+}
+
+message EntitiesStopped {
+  repeated string entityId = 1;
 }
 
 message ShardStats {
     required string shard = 1;
     required int32 entityCount = 2;
 }
+
+message ShardRegionStats {
+  repeated MapFieldEntry stats = 1;
+  repeated string failed = 2;
+}
+
+message MapFieldEntry {
+    optional string key = 1;
+    optional int32 value = 2;
+}
+
+message GetClusterShardingStats {
+  required int64 timeoutNanos = 1;
+}
+
+message ClusterShardingStats {
+  repeated ClusterShardingStatsEntry stats = 1;
+}
+
+message ClusterShardingStatsEntry {
+    required Address address = 1;
+    required ShardRegionStats stats = 2;
+}
+
+message CurrentRegions {
+  repeated Address regions = 1;
+}
+
+/**
+ * Defines a remote address.
+ */
+message Address {
+  required string protocol = 1;
+  required string system = 2;
+  required string hostname = 3;
+  required uint32 port = 4;
+}
+
+
 
 message StartEntity {
     required string entityId = 1;
@@ -60,4 +111,24 @@ message StartEntity {
 message StartEntityAck {
     required string entityId = 1;
     required string shardId = 2;
+}
+
+message CurrentShardState {
+    required string shardId = 1;
+    repeated string entityIds = 2;
+}
+
+message ShardState {
+    required string shardId = 1;
+    repeated string entityIds = 2;
+}
+
+message CurrentShardRegionState {
+  repeated ShardState shards = 1;
+  repeated string failed = 2;
+}
+
+message RememberedShardState {
+    repeated string shardId = 1;
+    optional bool marker = 2;
 }

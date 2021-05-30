@@ -1,29 +1,33 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal.receptionist
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.ActorRefSerializationSpec
 import akka.actor.typed.receptionist.ServiceKey
-import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializationExtension
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.WordSpecLike
 
-class ServiceKeySerializationSpec extends ScalaTestWithActorTestKit(ActorRefSerializationSpec.config) with WordSpecLike {
+class ServiceKeySerializationSpec
+    extends ScalaTestWithActorTestKit(ActorRefSerializationSpec.config)
+    with AnyWordSpecLike
+    with LogCapturing {
 
-  val serialization = SerializationExtension(system.toUntyped)
+  val serialization = SerializationExtension(system)
 
   "ServiceKey[T]" must {
     "be serialized and deserialized by ServiceKeySerializer" in {
       val obj = ServiceKey[Int]("testKey")
       serialization.findSerializerFor(obj) match {
-        case serializer: ServiceKeySerializer ⇒
+        case serializer: ServiceKeySerializer =>
           val blob = serializer.toBinary(obj)
           val ref = serializer.fromBinary(blob, serializer.manifest(obj))
           ref should be(obj)
-        case s ⇒
+        case s =>
           throw new IllegalStateException(s"Wrong serializer ${s.getClass} for ${obj.getClass}")
       }
     }

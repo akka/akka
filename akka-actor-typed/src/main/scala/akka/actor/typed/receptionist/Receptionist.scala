@@ -1,21 +1,19 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.receptionist
 
-import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId }
-import akka.actor.typed.internal.receptionist._
-import akka.annotation.DoNotInherit
-import scala.collection.JavaConverters._
-import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
-import akka.actor.typed.ExtensionSetup
-import akka.actor.typed.Props
-import akka.annotation.InternalApi
+import akka.actor.typed.{ ActorRef, ActorSystem, Extension, ExtensionId, ExtensionSetup }
+import akka.actor.typed.internal.receptionist._
+import akka.annotation.DoNotInherit
+import akka.util.ccompat.JavaConverters._
 
 /**
+ * Register and discover actors that implement a service with a protocol defined by a [[ServiceKey]].
+ *
  * This class is not intended for user extension other than for test purposes (e.g.
  * stub implementation). More methods may be added in the future and that may break
  * such implementations.
@@ -25,35 +23,8 @@ abstract class Receptionist extends Extension {
   def ref: ActorRef[Receptionist.Command]
 }
 
-/**
- * INTERNAL API
- */
-@InternalApi private[akka] class ReceptionistImpl(system: ActorSystem[_]) extends Receptionist {
-
-  private def hasCluster: Boolean = {
-    // FIXME: replace with better indicator that cluster is enabled
-    val provider = system.settings.untyped.ProviderClass
-    provider == "akka.cluster.ClusterActorRefProvider"
-  }
-
-  override val ref: ActorRef[Receptionist.Command] = {
-    val provider: ReceptionistBehaviorProvider =
-      if (hasCluster) {
-        system.dynamicAccess
-          .getObjectFor[ReceptionistBehaviorProvider]("akka.cluster.typed.internal.receptionist.ClusterReceptionist")
-          .recover {
-            case e ⇒
-              throw new RuntimeException("ClusterReceptionist could not be loaded dynamically. Make sure you have " +
-                "'akka-cluster-typed' in the classpath.", e)
-          }.get
-      } else LocalReceptionist
-
-    import akka.actor.typed.scaladsl.adapter._
-    system.internalSystemActorOf(provider.behavior, "receptionist", Props.empty)
-  }
-}
-
 object ServiceKey {
+
   /**
    * Scala API: Creates a service key. The given ID should uniquely define a service with a given protocol.
    */
@@ -77,13 +48,25 @@ object ServiceKey {
  * Not for user extension, see factories in companion object: [[ServiceKey#create]] and [[ServiceKey#apply]]
  */
 @DoNotInherit
-abstract class ServiceKey[T] extends AbstractServiceKey { key ⇒
+abstract class ServiceKey[T] extends AbstractServiceKey { key =>
   type Protocol = T
   def id: String
   def asServiceKey: ServiceKey[T] = this
 
   /**
-   * Scala API: Provides a type safe pattern match for listings
+   * Scala API: Provides a type safe pattern match for listings.
+   *
+   * Using it for pattern match like this will return the reachable service instances:
+   *
+   * ```
+   *   case MyServiceKey.Listing(reachable) =>
+   * ```
+   *
+   * In a non-clustered `ActorSystem` this will always be all registered instances
+   * for a service key. For a clustered environment services on nodes that have
+   * been observed unreachable are not among these (note that they could have
+   * become unreachable between this message being sent and the receiving actor
+   * processing it).
    */
   object Listing {
     def unapply(l: Receptionist.Listing): Option[Set[ActorRef[T]]] =
@@ -122,9 +105,11 @@ object Receptionist extends ExtensionId[Receptionist] {
   @DoNotInherit abstract class Command
 
   /**
-   * Associate the given [[akka.actor.typed.ActorRef]] with the given [[ServiceKey]]. Multiple
-   * registrations can be made for the same key. De-registration is implied by
-   * the end of the referenced Actor’s lifecycle.
+   * `Register` message. Associate the given [[akka.actor.typed.ActorRef]] with the given [[ServiceKey]]
+   * by sending this command to the [[Receptionist.ref]].
+   *
+   * Multiple registrations can be made for the same key. De-registration is implied by
+   * the end of the referenced Actor’s lifecycle, but it can also be explicitly deregistered before termination.
    *
    * Registration will be acknowledged with the [[Registered]] message to the given replyTo actor
    * if there is one.
@@ -136,18 +121,33 @@ object Receptionist extends ExtensionId[Receptionist] {
      */
     def apply[T](key: ServiceKey[T], service: ActorRef[T]): Command =
       new ReceptionistMessages.Register[T](key, service, None)
+
     /**
      * Create a Register with an actor that will get an ack that the service was registered
      */
     def apply[T](key: ServiceKey[T], service: ActorRef[T], replyTo: ActorRef[Registered]): Command =
       new ReceptionistMessages.Register[T](key, service, Some(replyTo))
   }
+
   /**
-   * Java API: A Register message without Ack that the service was registered
+   * Java API: A Register message without Ack that the service was registered.
+   * Associate the given [[akka.actor.typed.ActorRef]] with the given [[ServiceKey]]
+   * by sending this command to the [[Receptionist.ref]].
+   *
+   * Multiple registrations can be made for the same key. De-registration is implied by
+   * the end of the referenced Actor’s lifecycle, but it can also be explicitly deregistered before termination.
    */
   def register[T](key: ServiceKey[T], service: ActorRef[T]): Command = Register(key, service)
+
   /**
-   * Java API: A Register message with Ack that the service was registered
+   * Java API: A `Register` message with Ack that the service was registered.
+   * Associate the given [[akka.actor.typed.ActorRef]] with the given [[ServiceKey]]
+   * by sending this command to the [[Receptionist.ref]].
+   *
+   * Multiple registrations can be made for the same key. De-registration is implied by
+   * the end of the referenced Actor’s lifecycle, but it can also be explicitly deregistered before termination.
+   *
+   * Registration will be acknowledged with the [[Registered]] message to the given replyTo actor.
    */
   def register[T](key: ServiceKey[T], service: ActorRef[T], replyTo: ActorRef[Registered]): Command =
     Register(key, service, replyTo)
@@ -166,14 +166,17 @@ object Receptionist extends ExtensionId[Receptionist] {
 
     /** Scala API */
     def key: ServiceKey[_]
+
     /** Java API */
     def getKey: ServiceKey[_] = key
+
     /**
      * Scala API
      *
      * Also, see [[ServiceKey.Listing]] for more convenient pattern matching
      */
     def serviceInstance[T](key: ServiceKey[T]): ActorRef[T]
+
     /** Java API */
     def getServiceInstance[T](key: ServiceKey[T]): ActorRef[T]
   }
@@ -182,6 +185,7 @@ object Receptionist extends ExtensionId[Receptionist] {
    * Sent by the receptionist, available here for easier testing
    */
   object Registered {
+
     /**
      * Scala API
      */
@@ -189,6 +193,7 @@ object Receptionist extends ExtensionId[Receptionist] {
       new ReceptionistMessages.Registered(key, serviceInstance)
 
   }
+
   /**
    * Java API: Sent by the receptionist, available here for easier testing
    */
@@ -196,13 +201,97 @@ object Receptionist extends ExtensionId[Receptionist] {
     Registered(key, serviceInstance)
 
   /**
-   * Subscribe the given actor to service updates. When new instances are registered or unregistered to the given key
-   * the given subscriber will be sent a [[Listing]] with the new set of instances for that service.
+   * Remove association between the given [[akka.actor.typed.ActorRef]] and the given [[ServiceKey]].
+   *
+   * Deregistration can be acknowledged with the [[Deregistered]] message if the deregister message is created with a
+   * `replyTo` actor.
+   *
+   * Note that getting the [[Deregistered]] confirmation does not mean all service key subscribers has seen the fact
+   * that the actor has been deregistered yet (especially in a clustered context) so it will be possible that messages
+   * sent to the actor in the role of service provider arrive even after getting the confirmation.
+   */
+  object Deregister {
+
+    /**
+     * Create a Deregister without Ack that the service was deregistered
+     */
+    def apply[T](key: ServiceKey[T], service: ActorRef[T]): Command =
+      new ReceptionistMessages.Deregister[T](key, service, None)
+
+    /**
+     * Create a Deregister with an actor that will get an ack that the service was unregistered
+     */
+    def apply[T](key: ServiceKey[T], service: ActorRef[T], replyTo: ActorRef[Deregistered]): Command =
+      new ReceptionistMessages.Deregister[T](key, service, Some(replyTo))
+  }
+
+  /**
+   * Java API: A Deregister message without Ack that the service was unregistered
+   */
+  def deregister[T](key: ServiceKey[T], service: ActorRef[T]): Command = Deregister(key, service)
+
+  /**
+   * Java API: A Deregister message with an actor that will get an ack that the service was unregistered
+   */
+  def deregister[T](key: ServiceKey[T], service: ActorRef[T], replyTo: ActorRef[Deregistered]): Command =
+    Deregister(key, service, replyTo)
+
+  /**
+   * Confirmation that the given [[akka.actor.typed.ActorRef]] no more associated with the [[ServiceKey]] in the local receptionist.
+   * Note that this does not guarantee that subscribers has yet seen that the service is deregistered.
+   *
+   * Not for user extension
+   */
+  @DoNotInherit
+  trait Deregistered {
+
+    def isForKey(key: ServiceKey[_]): Boolean
+
+    /** Scala API */
+    def key: ServiceKey[_]
+
+    /** Java API */
+    def getKey: ServiceKey[_] = key
+
+    /**
+     * Scala API
+     *
+     * Also, see [[ServiceKey.Listing]] for more convenient pattern matching
+     */
+    def serviceInstance[T](key: ServiceKey[T]): ActorRef[T]
+
+    /** Java API */
+    def getServiceInstance[T](key: ServiceKey[T]): ActorRef[T]
+  }
+
+  /**
+   * Sent by the receptionist, available here for easier testing
+   */
+  object Deregistered {
+
+    /**
+     * Scala API
+     */
+    def apply[T](key: ServiceKey[T], serviceInstance: ActorRef[T]): Deregistered =
+      new ReceptionistMessages.Deregistered(key, serviceInstance)
+  }
+
+  /**
+   * Java API: Sent by the receptionist, available here for easier testing
+   */
+  def deregistered[T](key: ServiceKey[T], serviceInstance: ActorRef[T]): Deregistered =
+    Deregistered(key, serviceInstance)
+
+  /**
+   * `Subscribe` message. The given actor will subscribe to service updates when this command is sent to
+   * the [[Receptionist.ref]]. When the set of instances registered for the given key changes
+   * the subscriber will be sent a [[Listing]] with the new set of instances for that service.
    *
    * The subscription will be acknowledged by sending out a first [[Listing]]. The subscription automatically ends
    * with the termination of the subscriber.
    */
   object Subscribe {
+
     /**
      * Scala API:
      */
@@ -212,8 +301,9 @@ object Receptionist extends ExtensionId[Receptionist] {
   }
 
   /**
-   * Java API: Subscribe the given actor to service updates. When new instances are registered or unregistered to the given key
-   * the given subscriber will be sent a [[Listing]] with the new set of instances for that service.
+   * Java API: `Subscribe` message. The given actor to service updates when this command is sent to
+   * the [[Receptionist.ref]]. When the set of instances registered for the given key changes
+   * the subscriber will be sent a [[Listing]] with the new set of instances for that service.
    *
    * The subscription will be acknowledged by sending out a first [[Listing]]. The subscription automatically ends
    * with the termination of the subscriber.
@@ -221,10 +311,11 @@ object Receptionist extends ExtensionId[Receptionist] {
   def subscribe[T](key: ServiceKey[T], subscriber: ActorRef[Listing]): Command = Subscribe(key, subscriber)
 
   /**
-   * Query the Receptionist for a list of all Actors implementing the given
-   * protocol at one point in time.
+   * `Find` message. Query the Receptionist for a list of all Actors implementing the given
+   * protocol at one point in time by sending this command to the [[Receptionist.ref]].
    */
   object Find {
+
     /** Scala API: */
     def apply[T](key: ServiceKey[T], replyTo: ActorRef[Listing]): Command =
       new ReceptionistMessages.Find(key, replyTo)
@@ -232,12 +323,12 @@ object Receptionist extends ExtensionId[Receptionist] {
     /**
      * Special factory to make using Find with ask easier
      */
-    def apply[T](key: ServiceKey[T]): ActorRef[Listing] ⇒ Command = ref ⇒ new ReceptionistMessages.Find(key, ref)
+    def apply[T](key: ServiceKey[T]): ActorRef[Listing] => Command = ref => new ReceptionistMessages.Find(key, ref)
   }
 
   /**
-   * Java API: Query the Receptionist for a list of all Actors implementing the given
-   * protocol at one point in time.
+   * Java API: `Find` message. Query the Receptionist for a list of all Actors implementing the given
+   * protocol at one point in time by sending this command to the [[Receptionist.ref]].
    */
   def find[T](key: ServiceKey[T], replyTo: ActorRef[Listing]): Command =
     Find(key, replyTo)
@@ -251,22 +342,77 @@ object Receptionist extends ExtensionId[Receptionist] {
    */
   @DoNotInherit
   trait Listing {
+
     /** Scala API */
     def key: ServiceKey[_]
+
     /** Java API */
     def getKey: ServiceKey[_] = key
 
     def isForKey(key: ServiceKey[_]): Boolean
 
     /**
-     * Scala API
+     * Scala API: Return the reachable service instances.
+     *
+     * In a non-clustered `ActorSystem` this will always be all registered instances
+     * for a service key.
+     *
+     * For a clustered `ActorSystem` it only contain services on nodes that
+     * are not seen as unreachable (note that they could have still have become
+     * unreachable between this message being sent and the receiving actor processing it).
+     *
+     * For a list including both reachable and unreachable instances see [[#allServiceInstances]]
      *
      * Also, see [[ServiceKey.Listing]] for more convenient pattern matching
      */
     def serviceInstances[T](key: ServiceKey[T]): Set[ActorRef[T]]
 
-    /** Java API */
+    /**
+     * Java API: Return the reachable service instances.
+     *
+     * In a non-clustered `ActorSystem` this will always be all registered instances
+     * for a service key.
+     *
+     * For a clustered `ActorSystem` it only contain services on nodes that has
+     * are not seen as unreachable (note that they could have still have become
+     * unreachable between this message being sent and the receiving actor processing it).
+     *
+     * For a list including both reachable and unreachable instances see [[#getAllServiceInstances]]
+     */
     def getServiceInstances[T](key: ServiceKey[T]): java.util.Set[ActorRef[T]]
+
+    /**
+     * Scala API: Return both the reachable and the unreachable service instances.
+     *
+     * In a non-clustered `ActorSystem` this will always be the same as [[#serviceInstances]].
+     *
+     * For a clustered `ActorSystem` this include both services on nodes that are reachable
+     * and nodes that are unreachable.
+     */
+    def allServiceInstances[T](key: ServiceKey[T]): Set[ActorRef[T]]
+
+    /**
+     * Java API: Return both the reachable and the unreachable service instances.
+     *
+     * In a non-clustered `ActorSystem` this will always be the same as [[#getServiceInstances]].
+     *
+     * For a clustered `ActorSystem` this include both services on nodes that are reachable
+     * and nodes that are unreachable.
+     */
+    def getAllServiceInstances[T](key: ServiceKey[T]): java.util.Set[ActorRef[T]]
+
+    /**
+     * Returns `true` only if this `Listing` was sent triggered by new actors added or removed to the receptionist.
+     * When `false` the event is only about reachability changes - meaning that the full set of actors
+     * ([[#allServiceInstances]] or [[#getAllServiceInstances]]) is the same as the previous `Listing`.
+     *
+     * knowing this is useful for subscribers only concerned with [[#allServiceInstances]] or [[#getAllServiceInstances]]
+     * that can then ignore `Listing`s related to reachability.
+     *
+     * In a non-clustered `ActorSystem` this will be `true` for all listings.
+     * For `Find` queries and the initial listing for a `Subscribe` this will always be `true`.
+     */
+    def servicesWereAddedOrRemoved: Boolean
 
   }
 
@@ -274,25 +420,41 @@ object Receptionist extends ExtensionId[Receptionist] {
    * Sent by the receptionist, available here for easier testing
    */
   object Listing {
+
     /** Scala API: */
     def apply[T](key: ServiceKey[T], serviceInstances: Set[ActorRef[T]]): Listing =
-      new ReceptionistMessages.Listing[T](key, serviceInstances)
+      apply(key, serviceInstances, serviceInstances, servicesWereAddedOrRemoved = true)
 
+    /** Scala API: */
+    def apply[T](
+        key: ServiceKey[T],
+        serviceInstances: Set[ActorRef[T]],
+        allServiceInstances: Set[ActorRef[T]],
+        servicesWereAddedOrRemoved: Boolean): Listing =
+      new ReceptionistMessages.Listing[T](key, serviceInstances, allServiceInstances, servicesWereAddedOrRemoved)
   }
 
   /**
    * Java API: Sent by the receptionist, available here for easier testing
    */
   def listing[T](key: ServiceKey[T], serviceInstances: java.util.Set[ActorRef[T]]): Listing =
-    Listing(key, Set[ActorRef[T]](serviceInstances.asScala.toSeq: _*))
+    Listing(key, serviceInstances.asScala.toSet)
+
+  /**
+   * Java API: Sent by the receptionist, available here for easier testing
+   */
+  def listing[T](
+      key: ServiceKey[T],
+      serviceInstances: java.util.Set[ActorRef[T]],
+      allServiceInstances: java.util.Set[ActorRef[T]],
+      servicesWereAddedOrRemoved: Boolean): Listing =
+    Listing(key, serviceInstances.asScala.toSet, allServiceInstances.asScala.toSet, servicesWereAddedOrRemoved)
 
 }
 
 object ReceptionistSetup {
-  def apply[T <: Extension](createExtension: ActorSystem[_] ⇒ Receptionist): ReceptionistSetup =
-    new ReceptionistSetup(new java.util.function.Function[ActorSystem[_], Receptionist] {
-      override def apply(sys: ActorSystem[_]): Receptionist = createExtension(sys)
-    }) // TODO can be simplified when compiled only with Scala >= 2.12
+  def apply[T <: Extension](createExtension: ActorSystem[_] => Receptionist): ReceptionistSetup =
+    new ReceptionistSetup(createExtension(_))
 
 }
 
@@ -302,4 +464,4 @@ object ReceptionistSetup {
  * for tests that need to replace extension with stub/mock implementations.
  */
 final class ReceptionistSetup(createExtension: java.util.function.Function[ActorSystem[_], Receptionist])
-  extends ExtensionSetup[Receptionist](Receptionist, createExtension)
+    extends ExtensionSetup[Receptionist](Receptionist, createExtension)

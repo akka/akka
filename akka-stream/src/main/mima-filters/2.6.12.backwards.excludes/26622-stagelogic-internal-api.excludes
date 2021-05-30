@@ -1,0 +1,2 @@
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.GraphStageLogic.getEagerStageActor")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.stage.GraphStageLogic#StageActor.this")

@@ -4,12 +4,10 @@ Allow for a temporarily faster upstream events by buffering `size` elements.
 
 @ref[Backpressure aware operators](../index.md#backpressure-aware-operators)
 
-@@@ div { .group-scala }
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #buffer }
-@@@
-
+@apidoc[Source.buffer](Source) { scala="#buffer(size:Int,overflowStrategy:akka.stream.OverflowStrategy):FlowOps.this.Repr[Out]" java="#buffer(int,akka.stream.OverflowStrategy)" }
+@apidoc[Flow.buffer](Flow) { scala="#buffer(size:Int,overflowStrategy:akka.stream.OverflowStrategy):FlowOps.this.Repr[Out]" java="#buffer(int,akka.stream.OverflowStrategy)" }
 
 ## Description
 
@@ -23,7 +21,7 @@ handled according to the specified `OverflowStrategy`:
  * `dropNew` drops the new element
  * `fail` fails the flow with a `BufferOverflowException`
 
-
+## Reactive Streams semantics
 
 @@@div { .callout }
 

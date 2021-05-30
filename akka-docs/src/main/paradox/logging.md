@@ -1,14 +1,22 @@
-# Logging
+# Classic Logging
 
-## Dependency
+@@include[includes.md](includes.md) { #actor-api }
+For the new API see @ref[Logging](typed/logging.md).
 
-To use Logging, you must at least use the Akka actors dependency in your project, and will most likely want to configure logging via the SLF4J module (@ref:[see below](#slf4j)), or use `java.util.logging` (@ref:[see below](#java-util-logging)).
+## Module info
+
+To use Logging, you must at least use the Akka actors dependency in your project, and will most likely want to configure logging via the SLF4J module (@ref:[see below](#slf4j)).
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-actor_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-actor_$scala.binary.version$"
+  version=AkkaVersion
 }
+
+@@project-info{ projectId="akka-slf4j" }
 
 ## Introduction
 
@@ -45,21 +53,23 @@ class MyActor extends Actor with akka.actor.ActorLogging {
 @@@
 
 The first parameter to @scala[`Logging`] @java[`Logging.getLogger`] could also be any
-`LoggingBus`, specifically @scala[`system.eventStream`] @scala[`system.eventStream()`]; in the demonstrated
-case, the actor system's address is included in the `akkaSource`
-representation of the log source (see @ref:[Logging Thread, Akka Source and Actor System in MDC](#logging-thread-akka-source-and-actor-system-in-mdc))
+`LoggingBus`, specifically @scala[`system.eventStream`] @scala[`system.eventStream()`]. 
+In the demonstrated case, the actor system's address is included in the `akkaSource`
+representation of the log source (see @ref:[Logging Thread, Akka Source and Actor System in MDC](#logging-thread-akka-source-and-actor-system-in-mdc)),
 while in the second case this is not automatically done.
 The second parameter to @scala[`Logging`] @java[`Logging.getLogger`] is the source of this logging channel.
 The source object is translated to a String according to the following rules:
 
  * if it is an Actor or ActorRef, its path is used
  * in case of a String it is used as is
- * in case of a class an approximation of its simpleName
- * and in all other cases @scala[a compile error occurs unless an implicit
-`LogSource[T]` is in scope for the type in question] @java[the simpleName of its class]
+ * in case of a Class an approximation of its `simpleName` is used
+ * in all other cases @scala[a compile error occurs unless an implicit
+`LogSource[T]` is in scope for the type in question] @java[the `simpleName` of its class] is used
 
 The log message may contain argument placeholders `{}`, which will be
-substituted if the log level is enabled. Giving more arguments than
+substituted if the log level is enabled. Compared to constructing a full string
+for the log message this has the advantage of avoiding superfluous string concatenation
+and object allocations when the log level is disabled. Giving more arguments than
 placeholders results in a warning being appended to the log statement (i.e. on
 the same line with the same severity). You may pass an array as the only
 substitution argument to have its elements be treated individually:
@@ -79,7 +89,7 @@ use.
 
 ### Logging of Dead Letters
 
-By default messages sent to dead letters are logged at info level. Existence of dead letters
+By default messages sent to dead letters are logged at `INFO` level. Existence of dead letters
 does not necessarily indicate a problem, but they are logged by default for the sake of caution.
 After a few messages this logging is turned off, to avoid flooding the logs.
 You can disable this logging completely or adjust how many dead letters are
@@ -101,7 +111,7 @@ to the @ref:[Event Stream](event-bus.md#event-stream).
 
 Akka has a few configuration options for very low level debugging. These make more sense in development than in production.
 
-You almost definitely need to have logging set to DEBUG to use any of the options below:
+You almost definitely need to have logging set to `DEBUG` to use any of the options below:
 
 ```ruby
 akka {
@@ -165,7 +175,7 @@ akka {
 }
 ```
 
-If you want unhandled messages logged at DEBUG:
+If you want unhandled messages logged at `DEBUG`:
 
 ```ruby
 akka {
@@ -204,46 +214,26 @@ akka {
 }
 ```
 
+<a id="logging-remote"></a>
 ### Auxiliary remote logging options
 
-If you want to see all messages that are sent through remoting at DEBUG log level, use the following config option. Note that this logs the messages as they are sent by the transport layer, not by an actor.
+If you want to see all messages that are sent through remoting at `DEBUG` log level, use the following config option. Note that this logs the messages as they are sent by the transport layer, not by an actor.
 
 ```ruby
-akka {
-  remote {
-    # If this is "on", Akka will log all outbound messages at DEBUG level,
-    # if off then they are not logged
-    log-sent-messages = on
-  }
+akka.remote.artery {
+  # If this is "on", Akka will log all outbound messages at DEBUG level,
+  # if off then they are not logged
+  log-sent-messages = on
 }
 ```
 
-If you want to see all messages that are received through remoting at DEBUG log level, use the following config option. Note that this logs the messages as they are received by the transport layer, not by an actor.
+If you want to see all messages that are received through remoting at `DEBUG` log level, use the following config option. Note that this logs the messages as they are received by the transport layer, not by an actor.
 
 ```ruby
-akka {
-  remote {
-    # If this is "on", Akka will log all inbound messages at DEBUG level,
-    # if off then they are not logged
-    log-received-messages = on
-  }
-}
-```
-
-If you want to see message types with payload size in bytes larger than
-a specified limit at INFO log level:
-
-```ruby
-akka {
-  remote {
-    # Logging of message types with payload size in bytes larger than
-    # this value. Maximum detected size per message type is logged once,
-    # with an increase threshold of 10%.
-    # By default this feature is turned off. Activate it by setting the property to
-    # a value in bytes, such as 1000b. Note that for all messages larger than this
-    # limit there will be extra performance and scalability cost.
-    log-frame-size-exceeding = 1000b
-  }
+akka.remote.artery {
+  # If this is "on", Akka will log all inbound messages at DEBUG level,
+  # if off then they are not logged
+  log-received-messages = on
 }
 ```
 
@@ -305,7 +295,7 @@ that receives the log events in the same order they were emitted.
 
 The event handler actor does not have a bounded inbox and is run on the default dispatcher. This means
 that logging extreme amounts of data may affect your application badly. This can be somewhat mitigated by
-using an async logging backend though. (See [Using the SLF4J API directly](#slf4j-directly))
+using an async logging backend though. (See @ref:[Using the SLF4J API directly](#slf4j-directly))
 
 @@@
 
@@ -345,19 +335,21 @@ Instead log messages are printed to stdout (System.out). The default log level f
 stdout logger is `WARNING` and it can be silenced completely by setting
 `akka.stdout-loglevel=OFF`.
 
-<a id="slf4j"></a>
 ## SLF4J
 
 Akka provides a logger for [SLF4J](http://www.slf4j.org/). This module is available in the 'akka-slf4j.jar'.
 It has a single dependency: the slf4j-api jar. In your runtime, you also need a SLF4J backend. We recommend [Logback](http://logback.qos.ch/):
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group="com.typesafe.akka"
-  artifact="akka-slf4j_$scala.binary_version$"
-  version="$akka.version$"
+  artifact="akka-slf4j_$scala.binary.version$"
+  version=AkkaVersion
   group2="ch.qos.logback"
   artifact2="logback-classic"
-  version2="1.2.3"
+  version2="$logback_version$"
 }
 
 You need to enable the Slf4jLogger in the `loggers` element in
@@ -369,9 +361,12 @@ configuration (e.g. logback.xml) before they are published to the event bus.
 
 @@@ warning
 
-If you set the `loglevel` to a higher level than "DEBUG", any DEBUG events will be filtered
+If you set the `loglevel` to a higher level than `DEBUG`, any `DEBUG` events will be filtered
 out already at the source and will never reach the logging backend, regardless of how the backend
 is configured.
+
+You can enable `DEBUG` level for `akka.loglevel` and control the actual level in the SLF4J backend
+without any significant overhead, also for production.
 
 @@@
 
@@ -407,8 +402,8 @@ val log = Logging(system.eventStream, "my.nice.string")
 
 Java
 :   ```java
-    final LoggingAdapter log = Logging.getLogger(system.eventStream(), "my.string");
-    ```
+final LoggingAdapter log = Logging.getLogger(system.eventStream(), "my.string");
+```
 
 <a id="slf4j-directly"></a>
 ### Using the SLF4J API directly
@@ -418,22 +413,52 @@ while the underlying infrastructure writes the log statements.
 
 This can be avoided by configuring the logging implementation to use
 a non-blocking appender. Logback provides [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender)
-that does this. It also contains a feature which will drop `INFO` and `DEBUG` messages if the logging
+that does this.
+
+### Logback configuration
+
+Logback has flexible configuration options and details can be found in the
+[Logback manual](https://logback.qos.ch/manual/configuration.html) and other external resources.
+
+One part that is important to highlight is the importance of configuring an [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender),
+because it offloads rendering of logging events to a background thread, increasing performance. It doesn't block
+the threads of the `ActorSystem` while the underlying infrastructure writes the log messages to disk or other configured
+destination. It also contains a feature which will drop `INFO` and `DEBUG` messages if the logging
 load is high.
+
+A starting point for configuration of `logback.xml` for production:
+
+@@snip [logback.xml](/akka-actor-typed-tests/src/test/resources/logback-doc-prod.xml)
+
+For development you might want to log to standard out, but also have all `DEBUG` level logging to file, like
+in this example:
+
+@@snip [logback.xml](/akka-actor-typed-tests/src/test/resources/logback-doc-dev.xml)
+
+Place the `logback.xml` file in `src/main/resources/logback.xml`. For tests you can define different
+logging configuration in `src/test/resources/logback-test.xml`.
+
+MDC properties can be included in the Logback output with for example `%X{akkaSource}` specifier within the
+[pattern layout configuration](http://logback.qos.ch/manual/layouts.html#mdc):
+
+```
+  <encoder>
+    <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
+  </encoder>
+```
+
+All MDC properties as key-value entries can be included with `%mdc`:
+
+```
+  <encoder>
+    <pattern>%date{ISO8601} %-5level %logger{36} - %msg MDC: {%mdc}%n</pattern>
+  </encoder>
+```
 
 ### Logging Thread, Akka Source and Actor System in MDC
 
 Since the logging is done asynchronously the thread in which the logging was performed is captured in
 Mapped Diagnostic Context (MDC) with attribute name `sourceThread`.
-With Logback the thread name is available with `%X{sourceThread}` specifier within the pattern layout configuration:
-
-```
-<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-  <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} %X{sourceThread} - %msg%n</pattern>
-  </encoder>
-</appender>
-```
 
 @@@ note
 
@@ -446,26 +471,12 @@ available in the logs.
 Another helpful facility is that Akka captures the actor’s address when
 instantiating a logger within it, meaning that the full instance identification
 is available for associating log messages e.g. with members of a router. This
-information is available in the MDC with attribute name `akkaSource`:
+information is available in the MDC with attribute name `akkaSource`.
 
-```
-<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-  <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
-  </encoder>
-</appender>
-```
+The address of the actor system, containing host and port if the system is using cluster, is available through `akkaAddress`.
 
 Finally, the actor system in which the logging was performed
-is available in the MDC with attribute name `sourceActorSystem`:
-
-```
-<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-  <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} %X{sourceActorSystem} - %msg%n</pattern>
-  </encoder>
-</appender>
-```
+is available in the MDC with attribute name `sourceActorSystem`.
 
 For more details on what this attribute contains—also for non-actors—please see
 [How to Log](#how-to-log).
@@ -474,15 +485,7 @@ For more details on what this attribute contains—also for non-actors—please 
 
 Akka's logging is asynchronous which means that the timestamp of a log entry is taken from
 when the underlying logger implementation is called, which can be surprising at first.
-If you want to more accurately output the timestamp, use the MDC attribute `akkaTimestamp`:
-
-```
-<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-  <encoder>
-    <pattern>%X{akkaTimestamp} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
-  </encoder>
-</appender>
-```
+If you want to more accurately output the timestamp, use the MDC attribute `akkaTimestamp`.
 
 ### MDC values defined by the application
 
@@ -499,9 +502,9 @@ val log: DiagnosticLoggingAdapter = Logging(this);
 
 Java
 :   ```java
-    // Within your AbstractActor
-    final DiagnosticLoggingAdapter log = Logging.getLogger(this);
-    ```
+// Within your AbstractActor
+final DiagnosticLoggingAdapter log = Logging.getLogger(this);
+```
 
 Once you have the logger, you need to add the custom values before you log something.
 This way, the values will be put in the SLF4J MDC right before appending the log and removed after.
@@ -543,6 +546,14 @@ Now, the values will be available in the MDC, so you can use them in the layout 
 </appender>
 ```
 
+All MDC properties as key-value entries can be included with `%mdc`:
+
+```
+  <encoder>
+    <pattern>%date{ISO8601} %-5level %logger{36} - %msg MDC: {%mdc}%n</pattern>
+  </encoder>
+```
+
 ### Using Markers
 
 Some logging libraries allow, in addition to MDC data, attaching so called "markers" to log statements.
@@ -553,17 +564,24 @@ trigger emails and other notifications immediately.
 Markers are available through the LoggingAdapters, when obtained via `Logging.withMarker`.
 The first argument passed into all log calls then should be a `akka.event.LogMarker`.
 
-The slf4j bridge provided by akka in `akka-slf4j` will automatically pick up this marker value and make it available to SLF4J.
-For example you could use it like this:
+The slf4j bridge provided by Akka in `akka-slf4j` will automatically pick up this marker value and make it available to SLF4J.
+
+Akka is logging some events with markers. Some of these events also include structured MDC properties. 
+
+* The "SECURITY" marker is used for highlighting security related events or incidents.
+* Akka Actor is using the markers defined in @apidoc[akka.actor.ActorLogMarker$].
+* Akka Cluster is using the markers defined in @apidoc[akka.cluster.ClusterLogMarker$].
+* Akka Remoting is using the markers defined in @apidoc[akka.remote.RemoteLogMarker$].
+* Akka Cluster Sharding is using the markers defined in @apidoc[akka.cluster.sharding.ShardingLogMarker$].
+
+Markers and MDC properties are automatically picked up by the [Logstash Logback encoder](https://github.com/logstash/logstash-logback-encoder).
+
+The marker can be included in the Logback output with `%marker` and all MDC properties as key-value entries with `%mdc`.
 
 ```
-<pattern>%date{ISO8601} [%marker][%level] [%msg]%n</pattern>
-```
-
-A more advanced (including most Akka added information) example pattern would be:
-
-```
-<pattern>%date{ISO8601} level=[%level] marker=[%marker] logger=[%logger] akkaSource=[%X{akkaSource}] sourceActorSystem=[%X{sourceActorSystem}] sourceThread=[%X{sourceThread}] mdc=[ticket-#%X{ticketNumber}: %X{ticketDesc}] - msg=[%msg]%n----%n</pattern>
+  <encoder>
+    <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg MDC: {%mdc}%n</pattern>
+  </encoder>
 ```
 
 #### Using SLF4J's Markers
@@ -571,62 +589,6 @@ A more advanced (including most Akka added information) example pattern would be
 It is also possible to use the `org.slf4j.Marker` with the `LoggingAdapter` when using slf4j.
 
 Since the akka-actor library avoids depending on any specific logging library, the support for this is included in `akka-slf4j`,
-which provides the `Slf4jLogMarker` type which can be passed in as first argument instead of the logging framework agnostic LogMarker 
+which provides the `Slf4jLogMarker` type which can be passed in as first argument instead of the logging framework agnostic LogMarker
 type from `akka-actor`. The most notable difference between the two is that slf4j's Markers can have child markers, so one can
 rely more information using them rather than just a single string.
-
-
-<a id="jul"></a>
-## java.util.logging
-
-Akka includes a logger for [java.util.logging](https://docs.oracle.com/javase/8/docs/api/java/util/logging/package-summary.html#package.description).
-
-You need to enable the `akka.event.jul.JavaLogger` in the `loggers` element in
-the @ref:[configuration](general/configuration.md). Here you can also define the log level of the event bus.
-More fine grained log levels can be defined in the configuration of the logging backend.
-You should also define `akka.event.jul.JavaLoggingFilter` in
-the `logging-filter` configuration property. It will filter the log events using the backend
-configuration before they are published to the event bus.
-
-@@@ warning
-
-If you set the `loglevel` to a higher level than "DEBUG", any DEBUG events will be filtered
-out already at the source and will never reach the logging backend, regardless of how the backend
-is configured.
-
-@@@
-
-```ruby
-akka {
-  loglevel = DEBUG
-  loggers = ["akka.event.jul.JavaLogger"]
-  logging-filter = "akka.event.jul.JavaLoggingFilter"
-}
-```
-
-One gotcha is that the timestamp is attributed in the event handler, not when actually doing the logging.
-
-The `java.util.logging.Logger` selected for each log event is chosen based on the
-@scala[`Class[_]`]@java[`Class`] of the log source specified when creating the
-`LoggingAdapter`, unless that was given directly as a string in which
-case that string is used (i.e. @scala[`LoggerFactory.getLogger(c: Class[_])`] @java[`LoggerFactory.getLogger(Class c)`] is used in
-the first case and @scala[`LoggerFactory.getLogger(s: String)`] @java[`LoggerFactory.getLogger(String s)`] in the second).
-
-@@@ note
-
-Beware that the actor system’s name is appended to a `String` log
-source if the LoggingAdapter was created giving an `ActorSystem` to
-the factory. If this is not intended, give a `LoggingBus` instead as
-shown below:
-
-@@@
-
-Scala
-:   ```scala
-val log = Logging(system.eventStream, "my.nice.string")
-```
-
-Java
-:   ```java
-    final LoggingAdapter log = Logging.getLogger(system.eventStream(), "my.string");
-    ```

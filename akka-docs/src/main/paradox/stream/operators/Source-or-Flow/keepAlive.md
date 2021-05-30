@@ -4,18 +4,17 @@ Injects additional (configured) elements if upstream does not emit for a configu
 
 @ref[Time aware operators](../index.md#time-aware-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #keepAlive }
+@apidoc[Source.keepAlive](Source) { scala="#keepAlive[U&gt;:Out](maxIdle:scala.concurrent.duration.FiniteDuration,injectedElem:()=&gt;U):FlowOps.this.Repr[U]" java="#keepAlive(java.time.Duration,akka.japi.function.Creator)" }
+@apidoc[Flow.keepAlive](Flow) { scala="#keepAlive[U&gt;:Out](maxIdle:scala.concurrent.duration.FiniteDuration,injectedElem:()=&gt;U):FlowOps.this.Repr[U]" java="#keepAlive(java.time.Duration,akka.japi.function.Creator)" }
 
-@@@
 
 ## Description
 
 Injects additional (configured) elements if upstream does not emit for a configured amount of time.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

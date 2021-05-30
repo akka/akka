@@ -4,18 +4,30 @@ End the current substream whenever a predicate returns `true`, starting a new su
 
 @ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #splitAfter }
+@apidoc[Source.splitAfter](Source) { scala="#splitAfter(substreamCancelStrategy:akka.stream.SubstreamCancelStrategy)(p:Out=&gt;Boolean):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#splitAfter(akka.stream.SubstreamCancelStrategy,akka.japi.function.Predicate)" }
+@apidoc[Flow.splitAfter](Flow) { scala="#splitAfter(substreamCancelStrategy:akka.stream.SubstreamCancelStrategy)(p:Out=&gt;Boolean):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#splitAfter(akka.stream.SubstreamCancelStrategy,akka.japi.function.Predicate)" }
 
-@@@
 
 ## Description
 
 End the current substream whenever a predicate returns `true`, starting a new substream for the next element.
 
+## Example
+
+Given some time series data source we would like to split the stream into sub-streams for each second.
+By using `sliding` we can compare the timestamp of the current and next element to decide when to split.
+
+Scala
+:  @@snip [Scan.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Split.scala) { #splitAfter }
+
+Java
+:  @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/Split.java) { #splitAfter }
+
+An alternative way of implementing this is shown in @ref:[splitWhen example](splitWhen.md#example).
+
+## Reactive Streams semantics
 
 @@@div { .callout }
 

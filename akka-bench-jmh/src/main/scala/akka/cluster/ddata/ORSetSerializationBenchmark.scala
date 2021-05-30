@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
@@ -9,13 +9,8 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.Props
-import akka.cluster.Cluster
-import akka.serialization.SerializationExtension
-import akka.serialization.Serializers
 import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations.{ Scope => JmhScope }
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.BenchmarkMode
 import org.openjdk.jmh.annotations.Fork
@@ -25,7 +20,13 @@ import org.openjdk.jmh.annotations.OutputTimeUnit
 import org.openjdk.jmh.annotations.State
 import org.openjdk.jmh.annotations.TearDown
 import org.openjdk.jmh.annotations.Warmup
-import org.openjdk.jmh.annotations.{ Scope ⇒ JmhScope }
+
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.Props
+import akka.cluster.Cluster
+import akka.serialization.SerializationExtension
+import akka.serialization.Serializers
 
 @Fork(2)
 @State(JmhScope.Benchmark)
@@ -35,27 +36,23 @@ import org.openjdk.jmh.annotations.{ Scope ⇒ JmhScope }
 @OutputTimeUnit(TimeUnit.SECONDS)
 class ORSetSerializationBenchmark {
 
-  private val config = ConfigFactory.parseString(
-    """
+  private val config = ConfigFactory.parseString("""
     akka.actor.provider=cluster
-    akka.remote.netty.tcp.port=0
+    akka.remote.classic.netty.tcp.port=0
     akka.remote.artery.canonical.port = 0
-    akka.actor {
-      serialize-messages = off
-      allow-java-serialization = off
-    }
-    """
-  )
+    """)
 
   private val system1 = ActorSystem("ORSetSerializationBenchmark", config)
   private val system2 = ActorSystem("ORSetSerializationBenchmark", config)
 
-  private val ref1 = (1 to 10).map(n ⇒ system1.actorOf(Props.empty, s"ref1-$n"))
-  private val ref2 = (1 to 10).map(n ⇒ system2.actorOf(Props.empty, s"ref2-$n"))
+  private val ref1 = (1 to 10).map(n => system1.actorOf(Props.empty, s"ref1-$n"))
+  private val ref2 = (1 to 10).map(n => system2.actorOf(Props.empty, s"ref2-$n"))
 
   private val orSet = {
-    val set1 = ref1.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) ⇒ acc.add(Cluster(system1), r) }
-    val set2 = ref2.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) ⇒ acc.add(Cluster(system2), r) }
+    val selfUniqueAddress1 = SelfUniqueAddress(Cluster(system1).selfUniqueAddress)
+    val selfUniqueAddress2 = SelfUniqueAddress(Cluster(system2).selfUniqueAddress)
+    val set1 = ref1.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) => acc.add(selfUniqueAddress1, r) }
+    val set2 = ref2.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) => acc.add(selfUniqueAddress2, r) }
     set1.merge(set2)
   }
 

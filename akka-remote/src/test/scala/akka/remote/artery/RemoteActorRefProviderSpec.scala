@@ -1,14 +1,14 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
 import akka.actor.{ EmptyLocalActorRef, InternalActorRef }
+import akka.actor.ActorRefScope
+import akka.actor.ExtendedActorSystem
 import akka.remote.RemoteActorRef
 import akka.testkit.{ EventFilter, TestActors }
-import akka.actor.ExtendedActorSystem
-import akka.actor.ActorRefScope
 
 class RemoteActorRefProviderSpec extends ArteryMultiNodeSpec {
 
@@ -40,7 +40,7 @@ class RemoteActorRefProviderSpec extends ArteryMultiNodeSpec {
       ref1.asInstanceOf[ActorRefScope].isLocal should ===(true)
 
       val ref2 = provider.resolveActorRef(path)
-      ref1 should be theSameInstanceAs (ref2)
+      (ref1 should be).theSameInstanceAs(ref2)
     }
 
     "not cache resolveActorRef for unresolved ref" in {
@@ -60,12 +60,13 @@ class RemoteActorRefProviderSpec extends ArteryMultiNodeSpec {
       ref1.getClass should ===(classOf[RemoteActorRef])
 
       val ref2 = provider.resolveActorRef(path)
-      ref1 should be theSameInstanceAs (ref2)
+      (ref1 should be).theSameInstanceAs(ref2)
     }
 
     "detect wrong protocol" in {
       EventFilter[IllegalArgumentException](start = "No root guardian at", occurrences = 1).intercept {
-        val sel = system.actorSelection(s"akka.tcp://${systemB.name}@${addressB.host.get}:${addressB.port.get}/user/echo")
+        val sel =
+          system.actorSelection(s"akka.tcp://${systemB.name}@${addressB.host.get}:${addressB.port.get}/user/echo")
         sel.anchor.getClass should ===(classOf[EmptyLocalActorRef])
       }
     }

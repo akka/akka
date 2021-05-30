@@ -1,15 +1,16 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
+import scala.collection.{ immutable => im }
+
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-import scala.collection.{ immutable ⇒ im }
-
-class JoinConfigCompatPreDefinedChecksSpec extends WordSpec with Matchers {
+class JoinConfigCompatPreDefinedChecksSpec extends AnyWordSpec with Matchers {
 
   // Test for some of the pre-build helpers we offer
   "JoinConfigCompatChecker.exists" must {
@@ -17,43 +18,40 @@ class JoinConfigCompatPreDefinedChecksSpec extends WordSpec with Matchers {
     val requiredKeys = im.Seq(
       "akka.cluster.min-nr-of-members",
       "akka.cluster.retry-unsuccessful-join-after",
-      "akka.cluster.allow-weakly-up-members"
-    )
+      "akka.cluster.allow-weakly-up-members")
 
     "pass when all required keys are provided" in {
 
       val result =
         JoinConfigCompatChecker.exists(
           requiredKeys,
-          config(
-            """
+          config("""
               |{
               | akka.cluster.min-nr-of-members = 1
               | akka.cluster.retry-unsuccessful-join-after = 10s
               | akka.cluster.allow-weakly-up-members = on
               |}
-            """.stripMargin)
-        )
+            """.stripMargin))
 
       result shouldBe Valid
     }
 
     "fail when some required keys are NOT provided" in {
 
-      val Invalid(incompatibleKeys) =
-        JoinConfigCompatChecker.exists(
-          requiredKeys,
-          config(
-            """
-              |{
-              | akka.cluster.min-nr-of-members = 1
-              |}
-            """.stripMargin)
-        )
-
-      incompatibleKeys should have size 2
-      incompatibleKeys should contain("akka.cluster.retry-unsuccessful-join-after is missing")
-      incompatibleKeys should contain("akka.cluster.allow-weakly-up-members is missing")
+      JoinConfigCompatChecker.exists(
+        requiredKeys,
+        config("""
+            |{
+            | akka.cluster.min-nr-of-members = 1
+            |}
+          """.stripMargin)) match {
+        case Valid =>
+          fail()
+        case Invalid(incompatibleKeys) =>
+          incompatibleKeys should have size 2
+          incompatibleKeys should contain("akka.cluster.retry-unsuccessful-join-after is missing")
+          incompatibleKeys should contain("akka.cluster.allow-weakly-up-members is missing")
+      }
     }
   }
 
@@ -62,12 +60,10 @@ class JoinConfigCompatPreDefinedChecksSpec extends WordSpec with Matchers {
     val requiredKeys = im.Seq(
       "akka.cluster.min-nr-of-members",
       "akka.cluster.retry-unsuccessful-join-after",
-      "akka.cluster.allow-weakly-up-members"
-    )
+      "akka.cluster.allow-weakly-up-members")
 
     val clusterConfig =
-      config(
-        """
+      config("""
           |{
           | akka.cluster.min-nr-of-members = 1
           | akka.cluster.retry-unsuccessful-join-after = 10s
@@ -80,78 +76,76 @@ class JoinConfigCompatPreDefinedChecksSpec extends WordSpec with Matchers {
       val result =
         JoinConfigCompatChecker.fullMatch(
           requiredKeys,
-          config(
-            """
+          config("""
               |{
               | akka.cluster.min-nr-of-members = 1
               | akka.cluster.retry-unsuccessful-join-after = 10s
               | akka.cluster.allow-weakly-up-members = on
               |}
             """.stripMargin),
-          clusterConfig
-        )
+          clusterConfig)
 
       result shouldBe Valid
     }
 
     "fail when some required keys are NOT provided" in {
 
-      val Invalid(incompatibleKeys) =
-        JoinConfigCompatChecker.fullMatch(
-          requiredKeys,
-          config(
-            """
-              |{
-              | akka.cluster.min-nr-of-members = 1
-              |}
-            """.stripMargin),
-          clusterConfig
-        )
-
-      incompatibleKeys should have size 2
-      incompatibleKeys should contain("akka.cluster.retry-unsuccessful-join-after is missing")
-      incompatibleKeys should contain("akka.cluster.allow-weakly-up-members is missing")
+      JoinConfigCompatChecker.fullMatch(
+        requiredKeys,
+        config("""
+            |{
+            | akka.cluster.min-nr-of-members = 1
+            |}
+          """.stripMargin),
+        clusterConfig) match {
+        case Valid =>
+          fail()
+        case Invalid(incompatibleKeys) =>
+          incompatibleKeys should have size 2
+          incompatibleKeys should contain("akka.cluster.retry-unsuccessful-join-after is missing")
+          incompatibleKeys should contain("akka.cluster.allow-weakly-up-members is missing")
+      }
     }
 
     "fail when all required keys are passed, but some values don't match cluster config" in {
 
-      val Invalid(incompatibleKeys) =
-        JoinConfigCompatChecker.fullMatch(
-          requiredKeys,
-          config(
-            """
-              |{
-              | akka.cluster.min-nr-of-members = 1
-              | akka.cluster.retry-unsuccessful-join-after = 15s
-              | akka.cluster.allow-weakly-up-members = off
-              |}
-            """.stripMargin),
-          clusterConfig
-        )
-
-      incompatibleKeys should have size 2
-      incompatibleKeys should contain("akka.cluster.retry-unsuccessful-join-after is incompatible")
-      incompatibleKeys should contain("akka.cluster.allow-weakly-up-members is incompatible")
+      JoinConfigCompatChecker.fullMatch(
+        requiredKeys,
+        config("""
+            |{
+            | akka.cluster.min-nr-of-members = 1
+            | akka.cluster.retry-unsuccessful-join-after = 15s
+            | akka.cluster.allow-weakly-up-members = off
+            |}
+          """.stripMargin),
+        clusterConfig) match {
+        case Valid =>
+          fail()
+        case Invalid(incompatibleKeys) =>
+          incompatibleKeys should have size 2
+          incompatibleKeys should contain("akka.cluster.retry-unsuccessful-join-after is incompatible")
+          incompatibleKeys should contain("akka.cluster.allow-weakly-up-members is incompatible")
+      }
     }
 
     "fail when all required keys are passed, but some are missing and others don't match cluster config" in {
 
-      val Invalid(incompatibleKeys) =
-        JoinConfigCompatChecker.fullMatch(
-          requiredKeys,
-          config(
-            """
-              |{
-              | akka.cluster.min-nr-of-members = 1
-              | akka.cluster.allow-weakly-up-members = off
-              |}
-            """.stripMargin),
-          clusterConfig
-        )
-
-      incompatibleKeys should have size 2
-      incompatibleKeys should contain("akka.cluster.retry-unsuccessful-join-after is missing")
-      incompatibleKeys should contain("akka.cluster.allow-weakly-up-members is incompatible")
+      JoinConfigCompatChecker.fullMatch(
+        requiredKeys,
+        config("""
+            |{
+            | akka.cluster.min-nr-of-members = 1
+            | akka.cluster.allow-weakly-up-members = off
+            |}
+          """.stripMargin),
+        clusterConfig) match {
+        case Valid =>
+          fail()
+        case Invalid(incompatibleKeys) =>
+          incompatibleKeys should have size 2
+          incompatibleKeys should contain("akka.cluster.retry-unsuccessful-join-after is missing")
+          incompatibleKeys should contain("akka.cluster.allow-weakly-up-members is incompatible")
+      }
     }
   }
 

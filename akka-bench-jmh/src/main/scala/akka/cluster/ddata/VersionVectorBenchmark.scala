@@ -1,24 +1,26 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
 
 import java.util.concurrent.TimeUnit
+
+import org.openjdk.jmh.annotations.{ Scope => JmhScope }
 import org.openjdk.jmh.annotations.Benchmark
 import org.openjdk.jmh.annotations.BenchmarkMode
 import org.openjdk.jmh.annotations.Fork
+import org.openjdk.jmh.annotations.Level
 import org.openjdk.jmh.annotations.Measurement
 import org.openjdk.jmh.annotations.Mode
 import org.openjdk.jmh.annotations.OutputTimeUnit
-import org.openjdk.jmh.annotations.{ Scope ⇒ JmhScope }
-import org.openjdk.jmh.annotations.State
-import org.openjdk.jmh.annotations.Warmup
-import akka.cluster.UniqueAddress
-import akka.actor.Address
 import org.openjdk.jmh.annotations.Param
 import org.openjdk.jmh.annotations.Setup
-import org.openjdk.jmh.annotations.Level
+import org.openjdk.jmh.annotations.State
+import org.openjdk.jmh.annotations.Warmup
+
+import akka.actor.Address
+import akka.cluster.UniqueAddress
 
 @Fork(2)
 @State(JmhScope.Benchmark)
@@ -31,11 +33,11 @@ class VersionVectorBenchmark {
   @Param(Array("1", "2", "5"))
   var size = 0
 
-  val nodeA = UniqueAddress(Address("akka.tcp", "Sys", "aaaa", 2552), 1)
-  val nodeB = UniqueAddress(nodeA.address.copy(host = Some("bbbb")), 2)
-  val nodeC = UniqueAddress(nodeA.address.copy(host = Some("cccc")), 3)
-  val nodeD = UniqueAddress(nodeA.address.copy(host = Some("dddd")), 4)
-  val nodeE = UniqueAddress(nodeA.address.copy(host = Some("eeee")), 5)
+  val nodeA = UniqueAddress(Address("akka", "Sys", "aaaa", 2552), 1L)
+  val nodeB = UniqueAddress(nodeA.address.copy(host = Some("bbbb")), 2L)
+  val nodeC = UniqueAddress(nodeA.address.copy(host = Some("cccc")), 3L)
+  val nodeD = UniqueAddress(nodeA.address.copy(host = Some("dddd")), 4L)
+  val nodeE = UniqueAddress(nodeA.address.copy(host = Some("eeee")), 5L)
   val nodes = Vector(nodeA, nodeB, nodeC, nodeD, nodeE)
   val nodesIndex = Iterator.from(0)
   def nextNode(): UniqueAddress = nodes(nodesIndex.next() % nodes.size)
@@ -47,7 +49,7 @@ class VersionVectorBenchmark {
 
   @Setup(Level.Trial)
   def setup(): Unit = {
-    vv1 = (1 to size).foldLeft(VersionVector.empty)((vv, n) ⇒ vv + nextNode())
+    vv1 = (1 to size).foldLeft(VersionVector.empty)((vv, _) => vv + nextNode())
     vv2 = vv1 + nextNode()
     vv3 = vv1 + nextNode()
     dot1 = VersionVector(nodeA, vv1.versionAt(nodeA))

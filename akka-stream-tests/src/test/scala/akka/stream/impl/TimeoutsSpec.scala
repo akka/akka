@@ -1,53 +1,50 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
 
 import java.util.concurrent.TimeoutException
 
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
+import akka.stream._
 import akka.stream.scaladsl._
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.stream._
-import org.scalatest.{ Matchers, WordSpecLike }
-
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
 
 class TimeoutsSpec extends StreamSpec {
-  implicit val materializer = ActorMaterializer()
 
   "InitialTimeout" must {
 
     "pass through elements unmodified" in assertAllStagesStopped {
-      Await.result(
-        Source(1 to 100).initialTimeout(2.seconds).grouped(200).runWith(Sink.head),
-        3.seconds) should ===(1 to 100)
+      Await.result(Source(1 to 100).initialTimeout(2.seconds).grouped(200).runWith(Sink.head), 3.seconds) should ===(
+        1 to 100)
     }
 
     "pass through error unmodified" in assertAllStagesStopped {
       a[TE] shouldBe thrownBy {
         Await.result(
-          Source(1 to 100)
-            .concat(Source.failed(TE("test")))
-            .initialTimeout(2.seconds)
-            .grouped(200)
-            .runWith(Sink.head),
+          Source(1 to 100).concat(Source.failed(TE("test"))).initialTimeout(2.seconds).grouped(200).runWith(Sink.head),
           3.seconds)
       }
     }
 
     "fail if no initial element passes until timeout" in assertAllStagesStopped {
       val downstreamProbe = TestSubscriber.probe[Int]()
-      Source.maybe[Int]
-        .initialTimeout(1.second)
-        .runWith(Sink.fromSubscriber(downstreamProbe))
+      Source.maybe[Int].initialTimeout(1.second).runWith(Sink.fromSubscriber(downstreamProbe))
 
       downstreamProbe.expectSubscription()
-      downstreamProbe.expectNoMsg(500.millis)
+      downstreamProbe.expectNoMessage(500.millis)
 
       val ex = downstreamProbe.expectError()
       ex.getMessage should ===("The first element has not yet passed through in 1 second.")
@@ -58,17 +55,18 @@ class TimeoutsSpec extends StreamSpec {
   "CompletionTimeout" must {
 
     "pass through elements unmodified" in assertAllStagesStopped {
-      Await.result(
-        Source(1 to 100).completionTimeout(2.seconds).grouped(200).runWith(Sink.head),
-        3.seconds) should ===(1 to 100)
+      Await.result(Source(1 to 100).completionTimeout(2.seconds).grouped(200).runWith(Sink.head), 3.seconds) should ===(
+        1 to 100)
     }
 
     "pass through error unmodified" in assertAllStagesStopped {
       a[TE] shouldBe thrownBy {
         Await.result(
-          Source(1 to 100).concat(Source.failed(TE("test")))
+          Source(1 to 100)
+            .concat(Source.failed(TE("test")))
             .completionTimeout(2.seconds)
-            .grouped(200).runWith(Sink.head),
+            .grouped(200)
+            .runWith(Sink.head),
           3.seconds)
       }
     }
@@ -76,17 +74,15 @@ class TimeoutsSpec extends StreamSpec {
     "fail if not completed until timeout" in assertAllStagesStopped {
       val upstreamProbe = TestPublisher.probe[Int]()
       val downstreamProbe = TestSubscriber.probe[Int]()
-      Source.fromPublisher(upstreamProbe)
-        .completionTimeout(2.seconds)
-        .runWith(Sink.fromSubscriber(downstreamProbe))
+      Source.fromPublisher(upstreamProbe).completionTimeout(2.seconds).runWith(Sink.fromSubscriber(downstreamProbe))
 
       upstreamProbe.sendNext(1)
       downstreamProbe.requestNext(1)
-      downstreamProbe.expectNoMsg(500.millis) // No timeout yet
+      downstreamProbe.expectNoMessage(500.millis) // No timeout yet
 
       upstreamProbe.sendNext(2)
       downstreamProbe.requestNext(2)
-      downstreamProbe.expectNoMsg(500.millis) // No timeout yet
+      downstreamProbe.expectNoMessage(500.millis) // No timeout yet
 
       val ex = downstreamProbe.expectError()
       ex.getMessage should ===("The stream has not been completed in 2 seconds.")
@@ -97,17 +93,14 @@ class TimeoutsSpec extends StreamSpec {
   "IdleTimeout" must {
 
     "pass through elements unmodified" in assertAllStagesStopped {
-      Await.result(
-        Source(1 to 100).idleTimeout(2.seconds).grouped(200).runWith(Sink.head),
-        3.seconds) should ===(1 to 100)
+      Await.result(Source(1 to 100).idleTimeout(2.seconds).grouped(200).runWith(Sink.head), 3.seconds) should ===(
+        1 to 100)
     }
 
     "pass through error unmodified" in assertAllStagesStopped {
       a[TE] shouldBe thrownBy {
         Await.result(
-          Source(1 to 100).concat(Source.failed(TE("test")))
-            .idleTimeout(2.seconds)
-            .grouped(200).runWith(Sink.head),
+          Source(1 to 100).concat(Source.failed(TE("test"))).idleTimeout(2.seconds).grouped(200).runWith(Sink.head),
           3.seconds)
       }
     }
@@ -115,16 +108,14 @@ class TimeoutsSpec extends StreamSpec {
     "fail if time between elements is too large" in assertAllStagesStopped {
       val upstreamProbe = TestPublisher.probe[Int]()
       val downstreamProbe = TestSubscriber.probe[Int]()
-      Source.fromPublisher(upstreamProbe)
-        .idleTimeout(1.seconds)
-        .runWith(Sink.fromSubscriber(downstreamProbe))
+      Source.fromPublisher(upstreamProbe).idleTimeout(1.seconds).runWith(Sink.fromSubscriber(downstreamProbe))
 
       // Two seconds in overall, but won't timeout until time between elements is large enough
       // (i.e. this works differently from completionTimeout)
-      for (_ ← 1 to 4) {
+      for (_ <- 1 to 4) {
         upstreamProbe.sendNext(1)
         downstreamProbe.requestNext(1)
-        downstreamProbe.expectNoMsg(500.millis) // No timeout yet
+        downstreamProbe.expectNoMessage(500.millis) // No timeout yet
       }
 
       val ex = downstreamProbe.expectError()
@@ -136,19 +127,18 @@ class TimeoutsSpec extends StreamSpec {
   "BackpressureTimeout" must {
 
     "pass through elements unmodified" in assertAllStagesStopped {
-      Await.result(Source(1 to 100).backpressureTimeout(1.second).grouped(200).runWith(Sink.head), 3.seconds) should ===(1 to 100)
+      Await.result(Source(1 to 100).backpressureTimeout(1.second).grouped(200).runWith(Sink.head), 3.seconds) should ===(
+        1 to 100)
     }
 
     "succeed if subscriber demand arrives" in assertAllStagesStopped {
       val subscriber = TestSubscriber.probe[Int]()
 
-      Source(1 to 4)
-        .backpressureTimeout(1.second)
-        .runWith(Sink.fromSubscriber(subscriber))
+      Source(1 to 4).backpressureTimeout(1.second).runWith(Sink.fromSubscriber(subscriber))
 
-      for (i ← 1 to 3) {
+      for (i <- 1 to 3) {
         subscriber.requestNext(i)
-        subscriber.expectNoMsg(250.millis)
+        subscriber.expectNoMessage(250.millis)
       }
 
       subscriber.requestNext(4)
@@ -159,17 +149,15 @@ class TimeoutsSpec extends StreamSpec {
       val publisher = TestPublisher.probe[String]()
       val subscriber = TestSubscriber.probe[String]()
 
-      Source.fromPublisher(publisher)
-        .backpressureTimeout(1.second)
-        .runWith(Sink.fromSubscriber(subscriber))
+      Source.fromPublisher(publisher).backpressureTimeout(1.second).runWith(Sink.fromSubscriber(subscriber))
 
       subscriber.request(2)
 
-      subscriber.expectNoMsg(1.second)
+      subscriber.expectNoMessage(1.second)
       publisher.sendNext("Quick Msg")
       subscriber.expectNext("Quick Msg")
 
-      subscriber.expectNoMsg(3.seconds)
+      subscriber.expectNoMessage(3.seconds)
       publisher.sendNext("Slow Msg")
       subscriber.expectNext("Slow Msg")
 
@@ -181,12 +169,10 @@ class TimeoutsSpec extends StreamSpec {
       val publisher = TestPublisher.probe[String]()
       val subscriber = TestSubscriber.probe[String]()
 
-      Source.fromPublisher(publisher)
-        .backpressureTimeout(1.second)
-        .runWith(Sink.fromSubscriber(subscriber))
+      Source.fromPublisher(publisher).backpressureTimeout(1.second).runWith(Sink.fromSubscriber(subscriber))
 
       subscriber.request(16)
-      subscriber.expectNoMsg(2.second)
+      subscriber.expectNoMessage(2.second)
 
       publisher.sendComplete()
       subscriber.expectComplete()
@@ -196,9 +182,7 @@ class TimeoutsSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(publisher)
-        .backpressureTimeout(1.second)
-        .runWith(Sink.fromSubscriber(subscriber))
+      Source.fromPublisher(publisher).backpressureTimeout(1.second).runWith(Sink.fromSubscriber(subscriber))
 
       subscriber.request(1)
       publisher.sendNext(1)
@@ -213,9 +197,7 @@ class TimeoutsSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(publisher)
-        .backpressureTimeout(1.second)
-        .runWith(Sink.fromSubscriber(subscriber))
+      Source.fromPublisher(publisher).backpressureTimeout(1.second).runWith(Sink.fromSubscriber(subscriber))
 
       subscriber.expectSubscription()
 
@@ -228,15 +210,13 @@ class TimeoutsSpec extends StreamSpec {
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(publisher)
-        .backpressureTimeout(1.second)
-        .runWith(Sink.fromSubscriber(subscriber))
+      Source.fromPublisher(publisher).backpressureTimeout(1.second).runWith(Sink.fromSubscriber(subscriber))
 
       subscriber.request(2)
       publisher.sendNext(1)
       subscriber.expectNext(1)
 
-      subscriber.expectNoMsg(2.second)
+      subscriber.expectNoMessage(2.second)
 
       publisher.sendComplete()
       subscriber.expectComplete()
@@ -249,9 +229,8 @@ class TimeoutsSpec extends StreamSpec {
     "not signal error in simple loopback case and pass through elements unmodified" in assertAllStagesStopped {
       val timeoutIdentity = BidiFlow.bidirectionalIdleTimeout[Int, Int](2.seconds).join(Flow[Int])
 
-      Await.result(
-        Source(1 to 100).via(timeoutIdentity).grouped(200).runWith(Sink.head),
-        3.seconds) should ===(1 to 100)
+      Await.result(Source(1 to 100).via(timeoutIdentity).grouped(200).runWith(Sink.head), 3.seconds) should ===(
+        1 to 100)
     }
 
     "not signal error if traffic is one-way" in assertAllStagesStopped {
@@ -288,15 +267,17 @@ class TimeoutsSpec extends StreamSpec {
       val downWrite = TestPublisher.probe[Int]()
       val downRead = TestSubscriber.probe[String]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        import GraphDSL.Implicits._
-        val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
-        Source.fromPublisher(upWrite) ~> timeoutStage.in1
-        timeoutStage.out1 ~> Sink.fromSubscriber(downRead)
-        Sink.fromSubscriber(upRead) <~ timeoutStage.out2
-        timeoutStage.in2 <~ Source.fromPublisher(downWrite)
-        ClosedShape
-      }).run()
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          import GraphDSL.Implicits._
+          val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
+          Source.fromPublisher(upWrite) ~> timeoutStage.in1
+          timeoutStage.out1 ~> Sink.fromSubscriber(downRead)
+          Sink.fromSubscriber(upRead) <~ timeoutStage.out2
+          timeoutStage.in2 <~ Source.fromPublisher(downWrite)
+          ClosedShape
+        })
+        .run()
 
       // Request enough for the whole test
       upRead.request(100)
@@ -317,7 +298,7 @@ class TimeoutsSpec extends StreamSpec {
       downWrite.sendNext(2)
       upRead.expectNext(2)
 
-      upRead.expectNoMsg(500.millis)
+      upRead.expectNoMessage(500.millis)
       val error1 = upRead.expectError()
       val error2 = downRead.expectError()
 
@@ -336,15 +317,17 @@ class TimeoutsSpec extends StreamSpec {
       val downWrite = TestPublisher.probe[Int]()
       val downRead = TestSubscriber.probe[String]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        import GraphDSL.Implicits._
-        val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
-        Source.fromPublisher(upWrite) ~> timeoutStage.in1
-        timeoutStage.out1 ~> Sink.fromSubscriber(downRead)
-        Sink.fromSubscriber(upRead) <~ timeoutStage.out2
-        timeoutStage.in2 <~ Source.fromPublisher(downWrite)
-        ClosedShape
-      }).run()
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          import GraphDSL.Implicits._
+          val timeoutStage = b.add(BidiFlow.bidirectionalIdleTimeout[String, Int](2.seconds))
+          Source.fromPublisher(upWrite) ~> timeoutStage.in1
+          timeoutStage.out1 ~> Sink.fromSubscriber(downRead)
+          Sink.fromSubscriber(upRead) <~ timeoutStage.out2
+          timeoutStage.in2 <~ Source.fromPublisher(downWrite)
+          ClosedShape
+        })
+        .run()
 
       val te = TE("test")
 
@@ -357,9 +340,54 @@ class TimeoutsSpec extends StreamSpec {
 
   }
 
+  "Subscription timeouts" must {
+
+    val subscriptionTimeout =
+      ActorAttributes.streamSubscriptionTimeout(100.millis, StreamSubscriptionTimeoutTerminationMode.cancel)
+
+    "be effective for dangling downstream (no fanout)" in assertAllStagesStopped {
+      val upstream = TestPublisher.probe()
+      val (sub, _) =
+        Source.asSubscriber
+          .viaMat(Flow[Int].map(_.toString))(Keep.left)
+          .toMat(Sink.asPublisher(fanout = false))(Keep.both)
+          .withAttributes(subscriptionTimeout)
+          .run()
+      upstream.subscribe(sub)
+      upstream.expectCancellation()
+    }
+
+    "be effective for dangling downstream (with fanout)" in assertAllStagesStopped {
+      val upstream = TestPublisher.probe()
+      val (sub, _) =
+        Source.asSubscriber
+          .viaMat(Flow[Int].map(_.toString))(Keep.left)
+          .toMat(Sink.asPublisher(fanout = true))(Keep.both)
+          .withAttributes(subscriptionTimeout)
+          .run()
+      upstream.subscribe(sub)
+      upstream.expectCancellation()
+    }
+
+    // this one seems close to impossible to actually implement
+    "be effective for dangling upstream" in pendingUntilFixed(assertAllStagesStopped {
+      val downstream = TestSubscriber.probe[String]()
+      val (_, pub) =
+        Source.asSubscriber
+          .viaMat(Flow[Int].map(_.toString))(Keep.left)
+          .toMat(Sink.asPublisher(fanout = false))(Keep.both)
+          .withAttributes(subscriptionTimeout)
+          .run()
+      pub.subscribe(downstream)
+      downstream.ensureSubscription()
+      downstream.expectError() shouldBe a[SubscriptionTimeoutException]
+    })
+
+  }
+
 }
 
-class TimeoutChecksSpec extends WordSpecLike with Matchers {
+class TimeoutChecksSpec extends AnyWordSpecLike with Matchers {
 
   "Timeout check interval" must {
 

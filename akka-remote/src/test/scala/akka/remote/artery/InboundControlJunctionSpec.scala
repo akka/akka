@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -10,8 +10,6 @@ import akka.Done
 import akka.actor.Address
 import akka.remote.UniqueAddress
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
@@ -29,15 +27,14 @@ object InboundControlJunctionSpec {
 }
 
 class InboundControlJunctionSpec
-  extends AkkaSpec("""
+    extends AkkaSpec("""
                    akka.actor.serialization-bindings {
                      "akka.remote.artery.InboundControlJunctionSpec$TestControlMessage" = java
                    }
-                   """) with ImplicitSender {
+                   akka.stream.materializer.debug.fuzzing-mode = on
+                   """)
+    with ImplicitSender {
   import InboundControlJunctionSpec._
-
-  val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
-  implicit val mat = ActorMaterializer(matSettings)(system)
 
   val addressA = UniqueAddress(Address("akka", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)
@@ -46,13 +43,13 @@ class InboundControlJunctionSpec
 
     "be emitted via side channel" in {
       val observerProbe = TestProbe()
-      val inboundContext = new TestInboundContext(localAddress = addressB)
       val recipient = OptionVal.None // not used
 
-      val ((upstream, controlSubject), downstream) = TestSource.probe[AnyRef]
-        .map(msg ⇒ InboundEnvelope(recipient, msg, OptionVal.None, addressA.uid, OptionVal.None))
+      val ((upstream, controlSubject), downstream) = TestSource
+        .probe[AnyRef]
+        .map(msg => InboundEnvelope(recipient, msg, OptionVal.None, addressA.uid, OptionVal.None))
         .viaMat(new InboundControlJunction)(Keep.both)
-        .map { case env: InboundEnvelope ⇒ env.message }
+        .map { case env: InboundEnvelope => env.message }
         .toMat(TestSink.probe[Any])(Keep.both)
         .run()
 

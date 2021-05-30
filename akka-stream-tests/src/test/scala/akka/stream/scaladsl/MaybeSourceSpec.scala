@@ -1,24 +1,24 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.{ AbruptStageTerminationException, ActorMaterializer }
-import akka.stream.testkit.{ StreamSpec, TestSubscriber }
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.testkit.DefaultTimeout
-
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
+import akka.stream.{ AbruptStageTerminationException, KillSwitches, Materializer }
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.DefaultTimeout
 
-  implicit val materializer = ActorMaterializer()
+class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
 
   "The Maybe Source" must {
 
-    "complete materialized future with None when stream cancels" in assertAllStagesStopped {
+    "complete materialized promise with None when stream cancels" in assertAllStagesStopped {
       val neverSource = Source.maybe[Int]
       val pubSink = Sink.asPublisher[Int](false)
 
@@ -29,15 +29,26 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
       val subs = c.expectSubscription()
 
       subs.request(1000)
-      c.expectNoMsg(300.millis)
+      c.expectNoMessage(300.millis)
 
       subs.cancel()
       f.future.futureValue shouldEqual None
     }
 
+    "complete materialized promise with None when stream cancels with a failure cause" in assertAllStagesStopped {
+      val (promise, killswitch) = Source.maybe[Int].viaMat(KillSwitches.single)(Keep.both).to(Sink.ignore).run()
+      val boom = TE("Boom")
+      killswitch.abort(boom)
+      // Could make sense to fail it with the propagated exception instead but that breaks
+      // the assumptions in the CoupledTerminationFlowSpec
+      promise.future.futureValue should ===(None)
+    }
+
     "allow external triggering of empty completion" in assertAllStagesStopped {
-      val neverSource = Source.maybe[Int].filter(_ ⇒ false)
-      val counterSink = Sink.fold[Int, Int](0) { (acc, _) ⇒ acc + 1 }
+      val neverSource = Source.maybe[Int].filter(_ => false)
+      val counterSink = Sink.fold[Int, Int](0) { (acc, _) =>
+        acc + 1
+      }
 
       val (neverPromise, counterFuture) = neverSource.toMat(counterSink)(Keep.both).run()
 
@@ -71,7 +82,9 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
 
     "allow external triggering of onError" in assertAllStagesStopped {
       val neverSource = Source.maybe[Int]
-      val counterSink = Sink.fold[Int, Int](0) { (acc, _) ⇒ acc + 1 }
+      val counterSink = Sink.fold[Int, Int](0) { (acc, _) =>
+        acc + 1
+      }
 
       val (neverPromise, counterFuture) = neverSource.toMat(counterSink)(Keep.both).run()
 
@@ -82,7 +95,7 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
     }
 
     "complete materialized future when materializer is shutdown" in assertAllStagesStopped {
-      val mat = ActorMaterializer()
+      val mat = Materializer(system)
       val neverSource = Source.maybe[Int]
       val pubSink = Sink.asPublisher[Int](false)
 
@@ -90,7 +103,7 @@ class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
 
       val c = TestSubscriber.manualProbe[Int]()
       neverPub.subscribe(c)
-      val subs = c.expectSubscription()
+      c.expectSubscription()
 
       mat.shutdown()
       f.future.failed.futureValue shouldBe an[AbruptStageTerminationException]

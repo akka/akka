@@ -1,23 +1,22 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
-import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream._
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.stream._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class GraphZipSpec extends TwoStreamsSetup {
   import GraphDSL.Implicits._
 
   override type Outputs = (Int, Int)
 
-  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
+  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture {
     val zip = b.add(Zip[Int, Int]())
 
     override def left: Inlet[Int] = zip.in0
@@ -30,16 +29,18 @@ class GraphZipSpec extends TwoStreamsSetup {
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[(Int, String)]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val zip = b.add(Zip[Int, String]())
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val zip = b.add(Zip[Int, String]())
 
-        Source(1 to 4) ~> zip.in0
-        Source(List("A", "B", "C", "D", "E", "F")) ~> zip.in1
+          Source(1 to 4) ~> zip.in0
+          Source(List("A", "B", "C", "D", "E", "F")) ~> zip.in1
 
-        zip.out ~> Sink.fromSubscriber(probe)
+          zip.out ~> Sink.fromSubscriber(probe)
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       val subscription = probe.expectSubscription()
 
@@ -59,15 +60,17 @@ class GraphZipSpec extends TwoStreamsSetup {
       val upstream1 = TestPublisher.probe[Int]()
       val upstream2 = TestPublisher.probe[String]()
 
-      val completed = RunnableGraph.fromGraph(GraphDSL.create(Sink.ignore) { implicit b ⇒ out ⇒
-        val zip = b.add(Zip[Int, String]())
+      val completed = RunnableGraph
+        .fromGraph(GraphDSL.create(Sink.ignore) { implicit b => out =>
+          val zip = b.add(Zip[Int, String]())
 
-        Source.fromPublisher(upstream1) ~> zip.in0
-        Source.fromPublisher(upstream2) ~> zip.in1
-        zip.out ~> out
+          Source.fromPublisher(upstream1) ~> zip.in0
+          Source.fromPublisher(upstream2) ~> zip.in1
+          zip.out ~> out
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       upstream1.sendNext(1)
       upstream1.sendNext(2)
@@ -84,15 +87,17 @@ class GraphZipSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[String]()
       val downstream = TestSubscriber.probe[(Int, String)]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
-        val zip = b.add(Zip[Int, String]())
+      RunnableGraph
+        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+          val zip = b.add(Zip[Int, String]())
 
-        Source.fromPublisher(upstream1) ~> zip.in0
-        Source.fromPublisher(upstream2) ~> zip.in1
-        zip.out ~> out
+          Source.fromPublisher(upstream1) ~> zip.in0
+          Source.fromPublisher(upstream2) ~> zip.in1
+          zip.out ~> out
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       downstream.request(1)
 
@@ -110,15 +115,17 @@ class GraphZipSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[String]()
       val downstream = TestSubscriber.probe[(Int, String)]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
-        val zip = b.add(Zip[Int, String]())
+      RunnableGraph
+        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+          val zip = b.add(Zip[Int, String]())
 
-        Source.fromPublisher(upstream1) ~> zip.in0
-        Source.fromPublisher(upstream2) ~> zip.in1
-        zip.out ~> out
+          Source.fromPublisher(upstream1) ~> zip.in0
+          Source.fromPublisher(upstream2) ~> zip.in1
+          zip.out ~> out
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       upstream1.sendNext(1)
       upstream2.sendNext("A")
@@ -135,15 +142,17 @@ class GraphZipSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[String]()
       val downstream = TestSubscriber.probe[(Int, String)]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
-        val zip = b.add(Zip[Int, String]())
+      RunnableGraph
+        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+          val zip = b.add(Zip[Int, String]())
 
-        Source.fromPublisher(upstream1) ~> zip.in0
-        Source.fromPublisher(upstream2) ~> zip.in1
-        zip.out ~> out
+          Source.fromPublisher(upstream1) ~> zip.in0
+          Source.fromPublisher(upstream2) ~> zip.in1
+          zip.out ~> out
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       upstream1.sendNext(1)
       upstream1.sendNext(2)
@@ -161,21 +170,23 @@ class GraphZipSpec extends TwoStreamsSetup {
       val upstream2 = TestPublisher.probe[String]()
       val downstream = TestSubscriber.probe[(Int, String)]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
-        val zip = b.add(Zip[Int, String]())
+      RunnableGraph
+        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+          val zip = b.add(Zip[Int, String]())
 
-        Source.fromPublisher(upstream1) ~> zip.in0
-        Source.fromPublisher(upstream2) ~> zip.in1
-        zip.out ~> out
+          Source.fromPublisher(upstream1) ~> zip.in0
+          Source.fromPublisher(upstream2) ~> zip.in1
+          zip.out ~> out
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       downstream.ensureSubscription()
 
       upstream1.sendNext(1)
       upstream1.sendComplete()
-      downstream.expectNoMsg(500.millis)
+      downstream.expectNoMessage(500.millis)
 
       upstream2.sendNext("A")
       upstream2.sendComplete()
@@ -214,7 +225,7 @@ class GraphZipSpec extends TwoStreamsSetup {
       subscriber1.expectSubscriptionAndError(TestException)
 
       val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
-      val subscription2 = subscriber2.expectSubscriptionAndError(TestException)
+      subscriber2.expectSubscriptionAndError(TestException)
     }
 
   }

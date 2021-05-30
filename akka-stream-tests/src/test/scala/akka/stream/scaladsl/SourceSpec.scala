@@ -1,32 +1,33 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
+import akka.Done
+import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.testkit.DefaultTimeout
 import org.scalatest.time.{ Millis, Span }
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
 
-import akka.stream.testkit.Utils.TE
+import scala.annotation.nowarn
+import scala.concurrent.{ Await, Future }
 //#imports
 import akka.stream._
 
 //#imports
-import akka.stream.testkit._
 import akka.NotUsed
-import akka.testkit.EventFilter
-import scala.collection.immutable
-import java.util
-import java.util.stream.BaseStream
-
+import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.EventFilter
 
+import scala.collection.immutable
+import scala.concurrent.duration._
+
+@nowarn // tests assigning to typed val
 class SourceSpec extends StreamSpec with DefaultTimeout {
 
-  implicit val materializer = ActorMaterializer()
-  implicit val config = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
+  implicit val config: PatienceConfig = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
   "Single Source" must {
 
@@ -34,7 +35,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       implicit val ec = system.dispatcher
       //#source-single
       val s: Future[immutable.Seq[Int]] = Source.single(1).runWith(Sink.seq)
-      s.foreach(list ⇒ println(s"Collected elements: $list")) // prints: Collected elements: List(1)
+      s.foreach(list => println(s"Collected elements: $list")) // prints: Collected elements: List(1)
 
       //#source-single
 
@@ -86,52 +87,56 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     "merge from many inputs" in {
       val probes = immutable.Seq.fill(5)(TestPublisher.manualProbe[Int]())
       val source = Source.asSubscriber[Int]
-      val out = TestSubscriber.manualProbe[Int]
+      val out = TestSubscriber.manualProbe[Int]()
 
-      val s = Source.fromGraph(GraphDSL.create(source, source, source, source, source)(immutable.Seq(_, _, _, _, _)) { implicit b ⇒ (i0, i1, i2, i3, i4) ⇒
-        import GraphDSL.Implicits._
-        val m = b.add(Merge[Int](5))
-        i0.out ~> m.in(0)
-        i1.out ~> m.in(1)
-        i2.out ~> m.in(2)
-        i3.out ~> m.in(3)
-        i4.out ~> m.in(4)
-        SourceShape(m.out)
-      }).to(Sink.fromSubscriber(out)).run()
+      val s = Source
+        .fromGraph(GraphDSL.create(source, source, source, source, source)(immutable.Seq(_, _, _, _, _)) {
+          implicit b => (i0, i1, i2, i3, i4) =>
+            import GraphDSL.Implicits._
+            val m = b.add(Merge[Int](5))
+            i0.out ~> m.in(0)
+            i1.out ~> m.in(1)
+            i2.out ~> m.in(2)
+            i3.out ~> m.in(3)
+            i4.out ~> m.in(4)
+            SourceShape(m.out)
+        })
+        .to(Sink.fromSubscriber(out))
+        .run()
 
-      for (i ← 0 to 4) probes(i).subscribe(s(i))
+      for (i <- 0 to 4) probes(i).subscribe(s(i))
       val sub = out.expectSubscription()
       sub.request(10)
 
-      val subs = for (i ← 0 to 4) {
+      for (i <- 0 to 4) {
         val s = probes(i).expectSubscription()
         s.expectRequest()
         s.sendNext(i)
         s.sendComplete()
       }
 
-      val gotten = for (_ ← 0 to 4) yield out.expectNext()
+      val gotten = for (_ <- 0 to 4) yield out.expectNext()
       gotten.toSet should ===(Set(0, 1, 2, 3, 4))
       out.expectComplete()
     }
 
     "combine from many inputs with simplified API" in {
       val probes = immutable.Seq.fill(3)(TestPublisher.manualProbe[Int]())
-      val source = for (i ← 0 to 2) yield Source.fromPublisher(probes(i))
-      val out = TestSubscriber.manualProbe[Int]
+      val source = for (i <- 0 to 2) yield Source.fromPublisher(probes(i))
+      val out = TestSubscriber.manualProbe[Int]()
 
       Source.combine(source(0), source(1), source(2))(Merge(_)).to(Sink.fromSubscriber(out)).run()
       val sub = out.expectSubscription()
       sub.request(3)
 
-      for (i ← 0 to 2) {
+      for (i <- 0 to 2) {
         val s = probes(i).expectSubscription()
         s.expectRequest()
         s.sendNext(i)
         s.sendComplete()
       }
 
-      val gotten = for (_ ← 0 to 2) yield out.expectNext()
+      val gotten = for (_ <- 0 to 2) yield out.expectNext()
       gotten.toSet should ===(Set(0, 1, 2))
       out.expectComplete()
     }
@@ -139,45 +144,38 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     "combine from two inputs with simplified API" in {
       val probes = immutable.Seq.fill(2)(TestPublisher.manualProbe[Int]())
       val source = Source.fromPublisher(probes(0)) :: Source.fromPublisher(probes(1)) :: Nil
-      val out = TestSubscriber.manualProbe[Int]
+      val out = TestSubscriber.manualProbe[Int]()
 
       Source.combine(source(0), source(1))(Merge(_)).to(Sink.fromSubscriber(out)).run()
 
       val sub = out.expectSubscription()
       sub.request(3)
 
-      for (i ← 0 to 1) {
+      for (i <- 0 to 1) {
         val s = probes(i).expectSubscription()
         s.expectRequest()
         s.sendNext(i)
         s.sendComplete()
       }
 
-      val gotten = for (_ ← 0 to 1) yield out.expectNext()
+      val gotten = for (_ <- 0 to 1) yield out.expectNext()
       gotten.toSet should ===(Set(0, 1))
       out.expectComplete()
     }
 
     "combine using Concat strategy two inputs with simplified API" in {
-      //#combine
-      val sources = immutable.Seq(
-        Source(List(1, 2, 3)),
-        Source(List(10, 20, 30)))
+      val sources = immutable.Seq(Source(List(1, 2, 3)), Source(List(10, 20, 30)))
 
-      Source.combine(sources(0), sources(1))(Concat(_))
-        .runWith(Sink.seq)
-        // This will produce the Seq(1, 2, 3, 10, 20, 30)
-        //#combine
-        .futureValue should ===(immutable.Seq(1, 2, 3, 10, 20, 30))
-
+      Source.combine(sources(0), sources(1))(Concat(_)).runWith(Sink.seq).futureValue should ===(
+        immutable.Seq(1, 2, 3, 10, 20, 30))
     }
 
     "combine from two inputs with combinedMat and take a materialized value" in {
-      val queueSource = Source.queue[Int](1, OverflowStrategy.dropBuffer)
+      val queueSource = Source.queue[Int](3)
       val intSeqSource = Source(1 to 3)
 
       // compiler to check the correct materialized value of type = SourceQueueWithComplete[Int] available
-      val combined1: Source[Int, SourceQueueWithComplete[Int]] =
+      val combined1: Source[Int, BoundedSourceQueue[Int]] =
         Source.combineMat(queueSource, intSeqSource)(Concat(_))(Keep.left) //Keep.left (i.e. preserve queueSource's materialized value)
 
       val (queue1, sinkProbe1) = combined1.toMat(TestSink.probe[Int])(Keep.both).run()
@@ -194,7 +192,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       sinkProbe1.expectNext(3)
 
       // compiler to check the correct materialized value of type = SourceQueueWithComplete[Int] available
-      val combined2: Source[Int, SourceQueueWithComplete[Int]] =
+      val combined2: Source[Int, BoundedSourceQueue[Int]] =
         //queueSource to be the second of combined source
         Source.combineMat(intSeqSource, queueSource)(Concat(_))(Keep.right) //Keep.right (i.e. preserve queueSource's materialized value)
 
@@ -219,77 +217,100 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       f.futureValue.size should ===(1000)
       f.futureValue.toSet should ===(Set(42))
     }
+
+    "repeat example" in {
+      // #repeat
+      val source: Source[Int, NotUsed] = Source.repeat(42)
+      val f = source.take(4).runWith(Sink.foreach(println))
+      // 42
+      // 42
+      // 42
+      // 42
+      // #repeat
+      f.futureValue shouldBe Done
+    }
   }
 
   "Unfold Source" must {
-    val expected = List(9227465, 5702887, 3524578, 2178309, 1346269, 832040, 514229, 317811, 196418, 121393, 75025, 46368, 28657, 17711, 10946, 6765, 4181, 2584, 1597, 987, 610, 377, 233, 144, 89, 55, 34, 21, 13, 8, 5, 3, 2, 1, 1, 0)
+    val expected = List(9227465, 5702887, 3524578, 2178309, 1346269, 832040, 514229, 317811, 196418, 121393, 75025,
+      46368, 28657, 17711, 10946, 6765, 4181, 2584, 1597, 987, 610, 377, 233, 144, 89, 55, 34, 21, 13, 8, 5, 3, 2, 1, 1,
+      0)
 
     "generate a finite fibonacci sequence" in {
-      Source.unfold((0, 1)) {
-        case (a, _) if a > 10000000 ⇒ None
-        case (a, b)                 ⇒ Some((b, a + b) → a)
-      }.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }
+      Source
+        .unfold((0, 1)) {
+          case (a, _) if a > 10000000 => None
+          case (a, b)                 => Some((b, a + b) -> a)
+        }
+        .runFold(List.empty[Int]) { case (xs, x) => x :: xs }
         .futureValue should ===(expected)
     }
 
     "terminate with a failure if there is an exception thrown" in {
       val t = new RuntimeException("expected")
-      EventFilter[RuntimeException](message = "expected", occurrences = 1) intercept
-        whenReady(
-          Source.unfold((0, 1)) {
-            case (a, _) if a > 10000000 ⇒ throw t
-            case (a, b)                 ⇒ Some((b, a + b) → a)
-          }.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }.failed) {
-            _ should be theSameInstanceAs (t)
+      EventFilter[RuntimeException](message = "expected", occurrences = 1).intercept(
+        whenReady(Source
+          .unfold((0, 1)) {
+            case (a, _) if a > 10000000 => throw t
+            case (a, b)                 => Some((b, a + b) -> a)
           }
+          .runFold(List.empty[Int]) { case (xs, x) => x :: xs }
+          .failed) { x =>
+          (x should be).theSameInstanceAs(t)
+        })
     }
 
     "generate a finite fibonacci sequence asynchronously" in {
-      Source.unfoldAsync((0, 1)) {
-        case (a, _) if a > 10000000 ⇒ Future.successful(None)
-        case (a, b)                 ⇒ Future(Some((b, a + b) → a))(system.dispatcher)
-      }.runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }
+      Source
+        .unfoldAsync((0, 1)) {
+          case (a, _) if a > 10000000 => Future.successful(None)
+          case (a, b)                 => Future(Some((b, a + b) -> a))(system.dispatcher)
+        }
+        .runFold(List.empty[Int]) { case (xs, x) => x :: xs }
         .futureValue should ===(expected)
     }
 
     "generate an unbounded fibonacci sequence" in {
-      Source.unfold((0, 1))({ case (a, b) ⇒ Some((b, a + b) → a) })
+      Source
+        .unfold((0, 1))({ case (a, b) => Some((b, a + b) -> a) })
         .take(36)
-        .runFold(List.empty[Int]) { case (xs, x) ⇒ x :: xs }
+        .runFold(List.empty[Int]) { case (xs, x) => x :: xs }
         .futureValue should ===(expected)
     }
   }
 
   "Iterator Source" must {
     "properly iterate" in {
-      Source.fromIterator(() ⇒ Iterator.iterate(false)(!_))
-        .grouped(10)
-        .runWith(Sink.head)
-        .futureValue should ===(immutable.Seq(false, true, false, true, false, true, false, true, false, true))
+      Source.fromIterator(() => Iterator.iterate(false)(!_)).grouped(10).runWith(Sink.head).futureValue should ===(
+        immutable.Seq(false, true, false, true, false, true, false, true, false, true))
     }
 
     "fail stream when iterator throws" in {
       Source
-        .fromIterator(() ⇒ (1 to 1000).toIterator.map(k ⇒ if (k < 10) k else throw TE("a")))
+        .fromIterator(() => (1 to 1000).toIterator.map(k => if (k < 10) k else throw TE("a")))
         .runWith(Sink.ignore)
-        .failed.futureValue.getClass should ===(classOf[TE])
+        .failed
+        .futureValue
+        .getClass should ===(classOf[TE])
 
       Source
-        .fromIterator(() ⇒ (1 to 1000).toIterator.map(_ ⇒ throw TE("b")))
+        .fromIterator(() => (1 to 1000).toIterator.map(_ => throw TE("b")))
         .runWith(Sink.ignore)
-        .failed.futureValue.getClass should ===(classOf[TE])
+        .failed
+        .futureValue
+        .getClass should ===(classOf[TE])
     }
 
     "use decider when iterator throws" in {
       Source
-        .fromIterator(() ⇒ (1 to 5).toIterator.map(k ⇒ if (k != 3) k else throw TE("a")))
+        .fromIterator(() => (1 to 5).toIterator.map(k => if (k != 3) k else throw TE("a")))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
         .grouped(10)
         .runWith(Sink.head)
         .futureValue should ===(List(1, 2))
 
       Source
-        .fromIterator(() ⇒ (1 to 5).toIterator.map(_ ⇒ throw TE("b")))
+        .fromIterator(() => (1 to 5).toIterator.map(_ => throw TE("b")))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
         .grouped(10)
         .runWith(Sink.headOption)
@@ -299,30 +320,18 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
   "ZipN Source" must {
     "properly zipN" in {
-      val sources = immutable.Seq(
-        Source(List(1, 2, 3)),
-        Source(List(10, 20, 30)),
-        Source(List(100, 200, 300)))
+      val sources = immutable.Seq(Source(List(1, 2, 3)), Source(List(10, 20, 30)), Source(List(100, 200, 300)))
 
-      Source.zipN(sources)
-        .runWith(Sink.seq)
-        .futureValue should ===(immutable.Seq(
-          immutable.Seq(1, 10, 100),
-          immutable.Seq(2, 20, 200),
-          immutable.Seq(3, 30, 300)))
+      Source.zipN(sources).runWith(Sink.seq).futureValue should ===(
+        immutable.Seq(immutable.Seq(1, 10, 100), immutable.Seq(2, 20, 200), immutable.Seq(3, 30, 300)))
     }
   }
 
   "ZipWithN Source" must {
     "properly zipWithN" in {
-      val sources = immutable.Seq(
-        Source(List(1, 2, 3)),
-        Source(List(10, 20, 30)),
-        Source(List(100, 200, 300)))
+      val sources = immutable.Seq(Source(List(1, 2, 3)), Source(List(10, 20, 30)), Source(List(100, 200, 300)))
 
-      Source.zipWithN[Int, Int](_.sum)(sources)
-        .runWith(Sink.seq)
-        .futureValue should ===(immutable.Seq(111, 222, 333))
+      Source.zipWithN[Int, Int](_.sum)(sources).runWith(Sink.seq).futureValue should ===(immutable.Seq(111, 222, 333))
     }
   }
 
@@ -330,12 +339,26 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
     "continuously generate the same sequence" in {
       val expected = Seq(1, 2, 3, 1, 2, 3, 1, 2, 3)
-      Source.cycle(() ⇒ List(1, 2, 3).iterator).grouped(9).runWith(Sink.head).futureValue should ===(expected)
+      //#cycle
+      Source
+        .cycle(() => List(1, 2, 3).iterator)
+        .grouped(9)
+        .runWith(Sink.head)
+        // This will produce the Seq(1, 2, 3, 1, 2, 3, 1, 2, 3)
+        //#cycle
+        .futureValue should ===(expected)
     }
 
     "throw an exception in case of empty iterator" in {
+      //#cycle-error
       val empty = Iterator.empty
-      assert(Source.cycle(() ⇒ empty).runWith(Sink.head).failed.futureValue.isInstanceOf[IllegalArgumentException])
+      Source
+        .cycle(() => empty)
+        .runWith(Sink.head)
+        // This will return a failed future with an `IllegalArgumentException`
+        //#cycle-error
+        .failed
+        .futureValue shouldBe an[IllegalArgumentException]
     }
   }
 
@@ -346,99 +369,9 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
   }
 
-  "Java Stream source" must {
-    import scala.compat.java8.FunctionConverters._
-    import java.util.stream.{ Stream, IntStream }
-
-    def javaStreamInts = IntStream.iterate(1, { i: Int ⇒ i + 1 }.asJava)
-
-    "work with Java collections" in {
-      val list = new java.util.LinkedList[Integer]()
-      list.add(0)
-      list.add(1)
-      list.add(2)
-
-      StreamConverters.fromJavaStream(() ⇒ list.stream()).map(_.intValue).runWith(Sink.seq).futureValue should ===(List(0, 1, 2))
-    }
-
-    "work with primitive streams" in {
-      StreamConverters.fromJavaStream(() ⇒ IntStream.rangeClosed(1, 10)).map(_.intValue).runWith(Sink.seq).futureValue should ===(1 to 10)
-    }
-
-    "work with an empty stream" in {
-      StreamConverters.fromJavaStream(() ⇒ Stream.empty[Int]()).runWith(Sink.seq).futureValue should ===(Nil)
-    }
-
-    "work with an infinite stream" in {
-      StreamConverters.fromJavaStream(() ⇒ javaStreamInts).take(1000).runFold(0)(_ + _).futureValue should ===(500500)
-    }
-
-    "work with a filtered stream" in {
-      StreamConverters.fromJavaStream(() ⇒ javaStreamInts.filter({ i: Int ⇒ i % 2 == 0 }.asJava))
-        .take(1000).runFold(0)(_ + _).futureValue should ===(1001000)
-    }
-
-    "properly report errors during iteration" in {
-      import akka.stream.testkit.Utils.TE
-      // Filtering is lazy on Java Stream
-
-      val failyFilter: Int ⇒ Boolean = i ⇒ throw TE("failing filter")
-
-      a[TE] must be thrownBy {
-        Await.result(
-          StreamConverters.fromJavaStream(() ⇒ javaStreamInts.filter(failyFilter.asJava)).runWith(Sink.ignore),
-          3.seconds)
-      }
-    }
-
-    "close the underlying stream when completed" in {
-      @volatile var closed = false
-
-      final class EmptyStream[A] extends BaseStream[A, EmptyStream[A]] {
-        override def unordered(): EmptyStream[A] = this
-        override def sequential(): EmptyStream[A] = this
-        override def parallel(): EmptyStream[A] = this
-        override def isParallel: Boolean = false
-
-        override def spliterator(): util.Spliterator[A] = ???
-        override def onClose(closeHandler: Runnable): EmptyStream[A] = ???
-
-        override def iterator(): util.Iterator[A] = new util.Iterator[A] {
-          override def next(): A = ???
-          override def hasNext: Boolean = false
-        }
-
-        override def close(): Unit = closed = true
-      }
-
-      Await.ready(StreamConverters.fromJavaStream(() ⇒ new EmptyStream[Unit]).runWith(Sink.ignore), 3.seconds)
-
-      closed should ===(true)
-    }
-
-    "close the underlying stream when failed" in {
-      @volatile var closed = false
-
-      final class FailingStream[A] extends BaseStream[A, FailingStream[A]] {
-        override def unordered(): FailingStream[A] = this
-        override def sequential(): FailingStream[A] = this
-        override def parallel(): FailingStream[A] = this
-        override def isParallel: Boolean = false
-
-        override def spliterator(): util.Spliterator[A] = ???
-        override def onClose(closeHandler: Runnable): FailingStream[A] = ???
-
-        override def iterator(): util.Iterator[A] = new util.Iterator[A] {
-          override def next(): A = throw new RuntimeException("ouch")
-          override def hasNext: Boolean = true
-        }
-
-        override def close(): Unit = closed = true
-      }
-
-      Await.ready(StreamConverters.fromJavaStream(() ⇒ new FailingStream[Unit]).runWith(Sink.ignore), 3.seconds)
-
-      closed should ===(true)
+  "A Source.run" must {
+    "ignore elements it outputs and only signal the completion of the processing" in {
+      Source.fromIterator(() => (1 to 5).toIterator).map(_ * 10).run().futureValue shouldBe Done
     }
   }
 
@@ -457,7 +390,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
 
     "allow for multiple downstream materialized sources" in {
-      val matValPoweredSource = Source.queue[String](Int.MaxValue, OverflowStrategy.fail)
+      val matValPoweredSource = Source.queue[String](Int.MaxValue)
       val (mat, src) = matValPoweredSource.preMaterialize()
 
       val probe1 = src.runWith(TestSink.probe[String])
@@ -465,25 +398,25 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
       probe1.request(1)
       probe2.request(1)
-      mat.offer("One").futureValue
+      mat.offer("One")
       probe1.expectNext("One")
       probe2.expectNext("One")
     }
 
     "survive cancellations of downstream materialized sources" in {
-      val matValPoweredSource = Source.queue[String](Int.MaxValue, OverflowStrategy.fail)
+      val matValPoweredSource = Source.queue[String](Int.MaxValue)
       val (mat, src) = matValPoweredSource.preMaterialize()
 
       val probe1 = src.runWith(TestSink.probe[String])
       src.runWith(Sink.cancelled)
 
       probe1.request(1)
-      mat.offer("One").futureValue
+      mat.offer("One")
       probe1.expectNext("One")
     }
 
     "propagate failures to downstream materialized sources" in {
-      val matValPoweredSource = Source.queue[String](Int.MaxValue, OverflowStrategy.fail)
+      val matValPoweredSource = Source.queue[String](Int.MaxValue)
       val (mat, src) = matValPoweredSource.preMaterialize()
 
       val probe1 = src.runWith(TestSink.probe[String])
@@ -499,9 +432,22 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
 
     "correctly propagate materialization failures" in {
-      val matValPoweredSource = Source.empty.mapMaterializedValue(_ ⇒ throw new RuntimeException("boom"))
+      val matValPoweredSource = Source.empty.mapMaterializedValue(_ => throw new RuntimeException("boom"))
 
       a[RuntimeException] shouldBe thrownBy(matValPoweredSource.preMaterialize())
+    }
+  }
+
+  "Source.futureSource" must {
+
+    "not cancel substream twice" in assertAllStagesStopped {
+      val result = Source
+        .futureSource(akka.pattern.after(2.seconds)(Future.successful(Source(1 to 2))))
+        .merge(Source(3 to 4))
+        .take(1)
+        .runWith(Sink.ignore)
+
+      Await.result(result, 4.seconds) shouldBe Done
     }
   }
 }

@@ -1,21 +1,19 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, FlowMonitorState }
-import akka.stream.FlowMonitorState._
-
 import scala.concurrent.duration._
 
+import akka.stream.FlowMonitorState
+import akka.stream.FlowMonitorState._
+import akka.stream.Materializer
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
+
 class FlowMonitorSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system)
-
-  implicit val materializer = ActorMaterializer(settings)
 
   "A FlowMonitor" must {
     "return Finished when stream is completed" in {
@@ -27,7 +25,7 @@ class FlowMonitorSpec extends StreamSpec {
     }
 
     "return Finished when stream is cancelled from downstream" in {
-      val ((source, monitor), sink) =
+      val ((_, monitor), sink) =
         TestSource.probe[Any].monitorMat(Keep.both).toMat(TestSink.probe[Any])(Keep.both).run()
       sink.cancel()
       awaitAssert(monitor.state == Finished, 3.seconds)
@@ -71,13 +69,12 @@ class FlowMonitorSpec extends StreamSpec {
     }
 
     "return Failed when stream is abruptly terminated" in {
-      val mat = ActorMaterializer()
-      val (source, monitor) = // notice that `monitor` is like a Keep.both
+      val mat = Materializer(system)
+      val (_, monitor) = // notice that `monitor` is like a Keep.both
         TestSource.probe[Any].monitor.to(Sink.ignore).run()(mat)
       mat.shutdown()
 
-      awaitAssert(
-        monitor.state shouldBe a[FlowMonitorState.Failed], remainingOrDefault)
+      awaitAssert(monitor.state shouldBe a[FlowMonitorState.Failed], remainingOrDefault)
     }
 
   }

@@ -1,33 +1,36 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io.dns
 
+import java.net.Inet4Address
+import java.net.Inet6Address
+import java.net.InetAddress
+import java.net.UnknownHostException
 import java.util
 
-import akka.actor.NoSerializationVerificationNeeded
-import akka.annotation.ApiMayChange
+import scala.collection.{ immutable => im }
 
-import scala.collection.{ immutable ⇒ im }
-import scala.collection.JavaConverters._
+import akka.actor.NoSerializationVerificationNeeded
+import akka.io.IpVersionSelector
+import akka.routing.ConsistentHashingRouter.ConsistentHashable
+import akka.util.ccompat.JavaConverters._
 
 /**
  * Supersedes [[akka.io.Dns]] protocol.
  *
- * Note that one MUST configure `akka.io.dns.resolver = async` to make use of this protocol and resolver.
+ * Note that one MUST configure `akka.io.dns.resolver = async-dns` to make use of this protocol and resolver.
  *
  * Allows for more detailed lookups, by specifying which records should be checked,
  * and responses can more information than plain IP addresses (e.g. ports for SRV records).
  *
  */
-@ApiMayChange
 object DnsProtocol {
 
-  @ApiMayChange
   sealed trait RequestType
   final case class Ip(ipv4: Boolean = true, ipv6: Boolean = true) extends RequestType
-  final case object Srv extends RequestType
+  case object Srv extends RequestType
 
   /**
    * Java API
@@ -44,7 +47,13 @@ object DnsProtocol {
    */
   def srvRequestType(): RequestType = Srv
 
-  final case class Resolve(name: String, requestType: RequestType)
+  /**
+   * Sending this to the [[AsyncDnsManager]] will either lead to a [[Resolved]] or a [[akka.actor.Status.Failure]] response.
+   * If request type are both, both resolutions must succeed or the response is a failure.
+   */
+  final case class Resolve(name: String, requestType: RequestType) extends ConsistentHashable {
+    override def consistentHashKey: Any = name
+  }
 
   object Resolve {
     def apply(name: String): Resolve = Resolve(name, Ip())
@@ -65,14 +74,16 @@ object DnsProtocol {
    * @param records resource records for the query
    * @param additionalRecords records that relate to the query but are not strictly answers
    */
-  @ApiMayChange
-  final case class Resolved(name: String, records: im.Seq[ResourceRecord], additionalRecords: im.Seq[ResourceRecord]) extends NoSerializationVerificationNeeded {
+  final case class Resolved(name: String, records: im.Seq[ResourceRecord], additionalRecords: im.Seq[ResourceRecord])
+      extends NoSerializationVerificationNeeded {
+
     /**
      * Java API
      *
      * Records for the query
      */
     def getRecords(): util.List[ResourceRecord] = records.asJava
+
     /**
      * Java API
      *
@@ -80,15 +91,28 @@ object DnsProtocol {
      *
      */
     def getAdditionalRecords(): util.List[ResourceRecord] = additionalRecords.asJava
+
+    private val _address: Option[InetAddress] = {
+      val ipv4: Option[Inet4Address] = records.collectFirst { case ARecord(_, _, ip: Inet4Address) => ip }
+      val ipv6: Option[Inet6Address] = records.collectFirst { case AAAARecord(_, _, ip)            => ip }
+      IpVersionSelector.getInetAddress(ipv4, ipv6)
+    }
+
+    /**
+     * Return the host, taking into account the "java.net.preferIPv6Addresses" system property.
+     * @throws UnknownHostException
+     */
+    @throws[UnknownHostException]
+    def address(): InetAddress = _address match {
+      case None            => throw new UnknownHostException(name)
+      case Some(ipAddress) => ipAddress
+    }
   }
 
-  @ApiMayChange
   object Resolved {
 
-    @ApiMayChange
     def apply(name: String, records: im.Seq[ResourceRecord]): Resolved =
       new Resolved(name, records, Nil)
   }
 
 }
-

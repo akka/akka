@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
@@ -12,7 +12,7 @@ import akka.stream.stage._
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final object EmptySource extends GraphStage[SourceShape[Nothing]] {
+@InternalApi private[akka] object EmptySource extends GraphStage[SourceShape[Nothing]] {
   val out = Outlet[Nothing]("EmptySource.out")
   override val shape = SourceShape(out)
 
@@ -28,4 +28,3 @@ import akka.stream.stage._
 
   override def toString = "EmptySource"
 }
-

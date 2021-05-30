@@ -1,16 +1,12 @@
-/**
- * Copyright (C) 2016-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2016-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
 
-import scala.concurrent.duration._
-
 import akka.actor.Address
 import akka.remote.UniqueAddress
 import akka.remote.artery.SystemMessageDelivery._
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
@@ -21,25 +17,25 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import akka.util.OptionVal
 
-class SystemMessageAckerSpec extends AkkaSpec with ImplicitSender {
-
-  val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
-  implicit val mat = ActorMaterializer(matSettings)(system)
+class SystemMessageAckerSpec extends AkkaSpec("""
+    akka.stream.materializer.debug.fuzzing-mode = on
+  """) with ImplicitSender {
 
   val addressA = UniqueAddress(Address("akka", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)
   val addressC = UniqueAddress(Address("akka", "sysC", "hostB", 1003), 3)
 
-  private def setupStream(inboundContext: InboundContext, timeout: FiniteDuration = 5.seconds): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
+  private def setupStream(inboundContext: InboundContext): (TestPublisher.Probe[AnyRef], TestSubscriber.Probe[Any]) = {
     val recipient = OptionVal.None // not used
-    TestSource.probe[AnyRef]
+    TestSource
+      .probe[AnyRef]
       .map {
-        case sysMsg @ SystemMessageEnvelope(_, _, ackReplyTo) ⇒
-          InboundEnvelope(recipient, sysMsg, OptionVal.None, ackReplyTo.uid,
-            inboundContext.association(ackReplyTo.uid))
+        case sysMsg @ SystemMessageEnvelope(_, _, ackReplyTo) =>
+          InboundEnvelope(recipient, sysMsg, OptionVal.None, ackReplyTo.uid, inboundContext.association(ackReplyTo.uid))
+        case _ => throw new RuntimeException()
       }
       .via(new SystemMessageAcker(inboundContext))
-      .map { case env: InboundEnvelope ⇒ env.message }
+      .map { case env: InboundEnvelope => env.message }
       .toMat(TestSink.probe[Any])(Keep.both)
       .run()
   }

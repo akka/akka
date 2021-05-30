@@ -1,27 +1,40 @@
-/**
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
 
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
-import akka.actor.{ Address, Scheduler }
-import akka.actor.typed.ActorSystem
-import akka.remote.testkit.{ FlightRecordingSupport, MultiNodeSpec, STMultiNodeSpec }
-import akka.testkit.WatchedByCoroner
-import org.scalatest.{ Matchers, Suite }
-import akka.actor.typed.scaladsl.adapter._
-import akka.cluster.{ ClusterEvent, MemberStatus }
-import akka.remote.testconductor.RoleName
-import com.typesafe.config.{ Config, ConfigFactory }
-
+import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 
-trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner with FlightRecordingSupport with Matchers {
-  self: MultiNodeSpec ⇒
+import org.scalatest.Suite
+import org.scalatest.matchers.should.Matchers
+
+import akka.actor.ActorIdentity
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.Props
+import akka.actor.typed.SpawnProtocol
+import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.adapter._
+import akka.actor.Address
+import akka.actor.Identify
+import akka.actor.Scheduler
+import akka.cluster.ClusterEvent
+import akka.cluster.MemberStatus
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.STMultiNodeSpec
+import akka.testkit.WatchedByCoroner
+import akka.util.Timeout
+
+trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner with Matchers {
+  self: MultiNodeSpec =>
 
   override def initialParticipants: Int = roles.size
 
@@ -48,32 +61,48 @@ trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedB
    */
   implicit def address(role: RoleName): Address = {
     cachedAddresses.get(role) match {
-      case null ⇒
+      case null =>
         val address = node(role).address
         cachedAddresses.put(role, address)
         address
-      case address ⇒ address
+      case address => address
     }
   }
 
   def formCluster(first: RoleName, rest: RoleName*): Unit = {
     runOn(first) {
       cluster.manager ! Join(cluster.selfMember.address)
-      awaitAssert(cluster.state.members.exists { m ⇒
+      awaitAssert(cluster.state.members.exists { m =>
         m.uniqueAddress == cluster.selfMember.uniqueAddress && m.status == MemberStatus.Up
       } should be(true))
     }
     enterBarrier(first.name + "-joined")
 
-    rest foreach { node ⇒
+    rest.foreach { node =>
       runOn(node) {
         cluster.manager ! Join(address(first))
-        awaitAssert(cluster.state.members.exists { m ⇒
+        awaitAssert(cluster.state.members.exists { m =>
           m.uniqueAddress == cluster.selfMember.uniqueAddress && m.status == MemberStatus.Up
         } should be(true))
       }
     }
     enterBarrier("all-joined")
+  }
+
+  private lazy val spawnActor =
+    system.actorOf(PropsAdapter(SpawnProtocol()), "testSpawn").toTyped[SpawnProtocol.Command]
+  def spawn[T](behavior: Behavior[T], name: String): ActorRef[T] = {
+    implicit val timeout: Timeout = testKitSettings.DefaultTimeout
+    val f: Future[ActorRef[T]] = spawnActor.ask(SpawnProtocol.Spawn(behavior, name, Props.empty, _))
+
+    Await.result(f, timeout.duration * 2)
+  }
+
+  def identify[A](name: String, r: RoleName): ActorRef[A] = {
+    import akka.actor.typed.scaladsl.adapter._
+    val sel = system.actorSelection(node(r) / "user" / "testSpawn" / name)
+    sel.tell(Identify(None), testActor)
+    expectMsgType[ActorIdentity].ref.get.toTyped
   }
 
 }

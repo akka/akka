@@ -1,5 +1,5 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -8,19 +8,17 @@ import java.io.File
 import java.nio.file.{ OpenOption, Path }
 import java.nio.file.StandardOpenOption._
 
+import scala.concurrent.Future
+
+import akka.stream.IOResult
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.io._
-import akka.stream.IOResult
 import akka.util.ByteString
-
-import scala.concurrent.Future
 
 /**
  * Factories to create sinks and sources from files
  */
 object FileIO {
-
-  import Sink.{ shape ⇒ sinkShape }
 
   /**
    * Creates a Source from a files contents.
@@ -31,7 +29,8 @@ object FileIO {
    * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
-   * and a possible exception if IO operation was not completed successfully.
+   * and a possible exception if IO operation was not completed successfully. Note that bytes having been read by the source does
+   * not give any guarantee that the bytes were seen by downstream stages.
    *
    * @param f         the file to read from
    * @param chunkSize the size of each read operation, defaults to 8192
@@ -49,7 +48,8 @@ object FileIO {
    * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
-   * and a possible exception if IO operation was not completed successfully.
+   * and a possible exception if IO operation was not completed successfully. Note that bytes having been read by the source does
+   * not give any guarantee that the bytes were seen by downstream stages.
    *
    * @param f         the file path to read from
    * @param chunkSize the size of each read operation, defaults to 8192
@@ -66,7 +66,8 @@ object FileIO {
    * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
-   * and a possible exception if IO operation was not completed successfully.
+   * and a possible exception if IO operation was not completed successfully. Note that bytes having been read by the source does
+   * not give any guarantee that the bytes were seen by downstream stages.
    *
    * @param f         the file path to read from
    * @param chunkSize the size of each read operation, defaults to 8192
@@ -89,7 +90,9 @@ object FileIO {
    * @param options File open options, see [[java.nio.file.StandardOpenOption]], defaults to Set(WRITE, TRUNCATE_EXISTING, CREATE)
    */
   @deprecated("Use `toPath` instead", "2.4.5")
-  def toFile(f: File, options: Set[OpenOption] = Set(WRITE, TRUNCATE_EXISTING, CREATE)): Sink[ByteString, Future[IOResult]] =
+  def toFile(
+      f: File,
+      options: Set[OpenOption] = Set(WRITE, TRUNCATE_EXISTING, CREATE)): Sink[ByteString, Future[IOResult]] =
     toPath(f.toPath, options)
 
   /**
@@ -111,7 +114,9 @@ object FileIO {
    * @param f the file path to write to
    * @param options File open options, see [[java.nio.file.StandardOpenOption]], defaults to Set(WRITE, TRUNCATE_EXISTING, CREATE)
    */
-  def toPath(f: Path, options: Set[OpenOption] = Set(WRITE, TRUNCATE_EXISTING, CREATE)): Sink[ByteString, Future[IOResult]] =
+  def toPath(
+      f: Path,
+      options: Set[OpenOption] = Set(WRITE, TRUNCATE_EXISTING, CREATE)): Sink[ByteString, Future[IOResult]] =
     toPath(f, options, startPosition = 0)
 
   /**
@@ -135,5 +140,5 @@ object FileIO {
    * @param startPosition the start position to write to
    */
   def toPath(f: Path, options: Set[OpenOption], startPosition: Long): Sink[ByteString, Future[IOResult]] =
-    Sink.fromGraph(new FileSink(f, startPosition, options, DefaultAttributes.fileSink, sinkShape("FileSink")))
+    Sink.fromGraph(new FileOutputStage(f, startPosition, options))
 }

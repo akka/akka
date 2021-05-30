@@ -1,0 +1,1 @@
+For more background see the @ref[Error Handling in Streams](../stream-error.md) section.

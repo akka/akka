@@ -1,21 +1,23 @@
-/**
- * Copyright (C) 2017-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2017-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata.typed.javadsl
 
-import akka.cluster.{ ddata ⇒ dd }
-import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.adapter._
 import com.typesafe.config.Config
 
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.adapter._
+import akka.cluster.{ ddata => dd }
+
 object ReplicatorSettings {
+
   /**
    * Create settings from the default configuration
    * `akka.cluster.distributed-data`.
    */
   def create(system: ActorSystem[_]): dd.ReplicatorSettings =
-    dd.ReplicatorSettings(system.toUntyped)
+    dd.ReplicatorSettings(system.toClassic)
 
   /**
    * Create settings from a configuration with the same layout as

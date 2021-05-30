@@ -1,13 +1,22 @@
-/**
- * Copyright (C) 2014-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2014-2021 Lightbend Inc. <https://www.lightbend.com>
  */
+
+syntax = "proto2";
+
 package akka.cluster.typed;
 
 option java_package = "akka.cluster.typed.internal.protobuf";
 option optimize_for = SPEED;
+import "ContainerFormats.proto";
 
 
 message ReceptionistEntry {
   required string actorRef = 1;
   required uint64 systemUid = 2;
+  optional int64 createdTimestamp = 3;
+}
+
+message PubSubMessagePublished {
+  required Payload message = 1;
 }

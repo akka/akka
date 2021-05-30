@@ -4,20 +4,35 @@ Just like `fold` but receives a function that results in a @scala[`Future`] @jav
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #foldAsync }
-
-@@@
+@apidoc[Source.foldAsync](Source) { scala="#foldAsync[T](zero:T)(f:(T,Out)=&gt;scala.concurrent.Future[T]):FlowOps.this.Repr[T]" java="#foldAsync(java.lang.Object,akka.japi.function.Function2)" }
+@apidoc[Flow.foldAsync](Flow) { scala="#foldAsync[T](zero:T)(f:(T,Out)=&gt;scala.concurrent.Future[T]):FlowOps.this.Repr[T]" java="#foldAsync(java.lang.Object,akka.japi.function.Function2)" }
 
 ## Description
 
 Just like `fold` but receives a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.
 
-Note that the `zero` value must be immutable.
+@@@ warning
 
+Note that the `zero` value must be immutable, because otherwise
+the same mutable instance would be shared across different threads
+when running the stream more than once.
+
+@@@
+
+## Example
+
+`foldAsync` is typically used to 'fold up' the incoming values into an aggregate asynchronously. 
+For example, you might want to summarize the incoming values into a histogram:
+
+Scala
+:   @@snip [FoldAsync.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/FoldAsync.scala) { #imports #foldAsync }
+
+Java
+:   @@snip [FoldAsync.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #foldAsync }
+
+## Reactive Streams semantics
 
 @@@div { .callout }
 

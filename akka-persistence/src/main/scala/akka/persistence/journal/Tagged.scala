@@ -1,10 +1,10 @@
-/**
- * Copyright (C) 2015-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2015-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.journal
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * The journal may support tagging of events that are used by the

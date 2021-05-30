@@ -2,18 +2,19 @@
 
 Attaches the given `Sink` to this `Flow`, meaning that elements that pass through this `Flow` will also be sent to the `Sink`.
 
-@ref[Simple operators](../index.md#simple-operators)
+@ref[Fan-out operators](../index.md#fan-out-operators)
 
-@@@ div { .group-scala }
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #alsoTo }
-@@@
+@apidoc[Source.alsoTo](Source) { scala="#alsoTo(that:akka.stream.Graph[akka.stream.SinkShape[Out],_]):FlowOps.this.Repr[Out]" java="#alsoTo(akka.stream.Graph)" }
+@apidoc[Flow.alsoTo](Flow) { scala="#alsoTo(that:akka.stream.Graph[akka.stream.SinkShape[Out],_]):FlowOps.this.Repr[Out]" java="#alsoTo(akka.stream.Graph)" }
+
 
 ## Description
 
 Attaches the given `Sink` to this `Flow`, meaning that elements that pass through this `Flow` will also be sent to the `Sink`.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

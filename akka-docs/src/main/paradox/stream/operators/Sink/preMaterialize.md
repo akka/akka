@@ -4,13 +4,10 @@ Materializes this Sink, immediately returning (1) its materialized value, and (2
 
 @ref[Sink operators](../index.md#sink-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #preMaterialize }
+@apidoc[Sink.preMaterialize](Sink) { scala="#preMaterialize()(implicitmaterializer:akka.stream.Materializer):(Mat,akka.stream.scaladsl.Sink[In,akka.NotUsed])" java="#preMaterialize(akka.actor.ClassicActorSystemProvider)" java="#preMaterialize(akka.stream.Materializer)" }
 
-@@@
 
 ## Description
 

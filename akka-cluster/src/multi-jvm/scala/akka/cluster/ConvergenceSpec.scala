@@ -1,17 +1,18 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
 
-import language.postfixOps
+import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
+import akka.actor.Address
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.duration._
-import akka.actor.Address
 
 final case class ConvergenceMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -19,12 +20,11 @@ final case class ConvergenceMultiNodeConfig(failureDetectorPuppet: Boolean) exte
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
       akka.cluster.failure-detector.threshold = 4
       akka.cluster.allow-weakly-up-members = off
-      """)).
-    withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
+      """)).withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
 }
 
 class ConvergenceWithFailureDetectorPuppetMultiJvmNode1 extends ConvergenceSpec(failureDetectorPuppet = true)
@@ -38,8 +38,8 @@ class ConvergenceWithAccrualFailureDetectorMultiJvmNode3 extends ConvergenceSpec
 class ConvergenceWithAccrualFailureDetectorMultiJvmNode4 extends ConvergenceSpec(failureDetectorPuppet = false)
 
 abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
-  extends MultiNodeSpec(multiNodeConfig)
-  with MultiNodeClusterSpec {
+    extends MultiNodeSpec(multiNodeConfig)
+    with MultiNodeClusterSpec {
 
   def this(failureDetectorPuppet: Boolean) = this(ConvergenceMultiNodeConfig(failureDetectorPuppet))
 
@@ -93,12 +93,12 @@ abstract class ConvergenceSpec(multiNodeConfig: ConvergenceMultiNodeConfig)
       }
 
       def memberStatus(address: Address): Option[MemberStatus] =
-        clusterView.members.collectFirst { case m if m.address == address ⇒ m.status }
+        clusterView.members.collectFirst { case m if m.address == address => m.status }
 
       enterBarrier("after-join")
 
       runOn(first, second, fourth) {
-        for (n ← 1 to 5) {
+        for (_ <- 1 to 5) {
           awaitAssert(clusterView.members.size should ===(4))
           awaitSeenSameState(first, second, fourth)
           memberStatus(first) should ===(Some(MemberStatus.Up))

@@ -1,27 +1,72 @@
-/**
- * Copyright (C) 2009-2018 Lightbend Inc. <https://www.lightbend.com>
+/*
+ * Copyright (C) 2009-2021 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
 
-import akka.actor.{ ExtendedActorSystem, PoisonPill, Props }
+import scala.concurrent.duration._
+
+import akka.actor.{ Actor, ActorRef, ExtendedActorSystem, NoSerializationVerificationNeeded, PoisonPill, Props }
+import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.sharding.ShardCoordinator.Internal.ShardStopped
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
-import akka.testkit.AkkaSpec
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito._
-import org.scalatest.mockito.MockitoSugar
+import akka.cluster.sharding.ShardRegion.{ ExtractEntityId, ExtractShardId, HandOffStopper, Msg }
+import akka.testkit.WithLogCapturing
+import akka.testkit.{ AkkaSpec, TestProbe }
 
-class ClusterShardingInternalsSpec extends AkkaSpec("""akka.actor.provider = "cluster"""") with MockitoSugar {
+object ClusterShardingInternalsSpec {
+  case class HandOffStopMessage() extends NoSerializationVerificationNeeded
+  class EmptyHandlerActor extends Actor {
+    override def receive: Receive = {
+      case _ =>
+    }
 
-  val clusterSharding = spy(new ClusterSharding(system.asInstanceOf[ExtendedActorSystem]))
+    override def postStop(): Unit = {
+      super.postStop()
+    }
+  }
+}
+
+class ClusterShardingInternalsSpec extends AkkaSpec("""
+    |akka.actor.provider = cluster
+    |akka.remote.classic.netty.tcp.port = 0
+    |akka.remote.artery.canonical.port = 0
+    |akka.loglevel = DEBUG
+    |akka.cluster.sharding.verbose-debug-logging = on
+    |akka.cluster.sharding.fail-on-invalid-entity-state-transition = on
+    |akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+    |""".stripMargin) with WithLogCapturing {
+  import ClusterShardingInternalsSpec._
+
+  case class StartingProxy(
+      typeName: String,
+      role: Option[String],
+      dataCenter: Option[DataCenter],
+      extractEntityId: ExtractEntityId,
+      extractShardId: ExtractShardId)
+
+  val probe = TestProbe()
+
+  val clusterSharding = new ClusterSharding(system.asInstanceOf[ExtendedActorSystem]) {
+    override def startProxy(
+        typeName: String,
+        role: Option[String],
+        dataCenter: Option[DataCenter],
+        extractEntityId: ExtractEntityId,
+        extractShardId: ExtractShardId): ActorRef = {
+      probe.ref ! StartingProxy(typeName, role, dataCenter, extractEntityId, extractShardId)
+      ActorRef.noSender
+    }
+  }
 
   "ClusterSharding" must {
+
     "start a region in proxy mode in case of node role mismatch" in {
 
       val settingsWithRole = ClusterShardingSettings(system).withRole("nonExistingRole")
       val typeName = "typeName"
-      val extractEntityId = mock[ShardRegion.ExtractEntityId]
-      val extractShardId = mock[ShardRegion.ExtractShardId]
+      val extractEntityId: ExtractEntityId = { case msg: Msg => ("42", msg) }
+      val extractShardId: ExtractShardId = _ => "37"
 
       clusterSharding.start(
         typeName = typeName,
@@ -29,15 +74,28 @@ class ClusterShardingInternalsSpec extends AkkaSpec("""akka.actor.provider = "cl
         settings = settingsWithRole,
         extractEntityId = extractEntityId,
         extractShardId = extractShardId,
-        allocationStrategy = mock[ShardAllocationStrategy],
+        allocationStrategy = ShardAllocationStrategy.leastShardAllocationStrategy(3, 0.1),
         handOffStopMessage = PoisonPill)
 
-      verify(clusterSharding).startProxy(
-        ArgumentMatchers.eq(typeName),
-        ArgumentMatchers.eq(settingsWithRole.role),
-        ArgumentMatchers.eq(None),
-        ArgumentMatchers.eq(extractEntityId),
-        ArgumentMatchers.eq(extractShardId))
+      probe.expectMsg(StartingProxy(typeName, settingsWithRole.role, None, extractEntityId, extractShardId))
+    }
+
+    "stop entities from HandOffStopper even if the entity doesn't handle handOffStopMessage" in {
+      val probe = TestProbe()
+      val typeName = "typeName"
+      val shard = "7"
+      val emptyHandlerActor = system.actorOf(Props(new EmptyHandlerActor))
+      val handOffStopper = system.actorOf(
+        Props(new HandOffStopper(typeName, shard, probe.ref, Set(emptyHandlerActor), HandOffStopMessage, 10.millis)))
+
+      watch(emptyHandlerActor)
+      expectTerminated(emptyHandlerActor, 1.seconds)
+
+      probe.expectMsg(1.seconds, ShardStopped(shard))
+      probe.lastSender shouldEqual handOffStopper
+
+      watch(handOffStopper)
+      expectTerminated(handOffStopper, 1.seconds)
     }
   }
 }

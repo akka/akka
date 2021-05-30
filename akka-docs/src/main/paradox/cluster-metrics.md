@@ -1,13 +1,16 @@
-# Cluster Metrics Extension
+# Classic Cluster Metrics Extension
 
-## Dependency
+## Module info
 
 To use Cluster Metrics Extension, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
+  bomGroup=com.typesafe.akka bomArtifact=akka-bom_$scala.binary.version$ bomVersionSymbols=AkkaVersion
+  symbol1=AkkaVersion
+  value1="$akka.version$"
   group=com.typesafe.akka
-  artifact=akka-cluster-metrics_$scala.binary_version$
-  version=$akka.version$
+  artifact=akka-cluster-metrics_$scala.binary.version$
+  version=AkkaVersion
 }
 
 and add the following configuration stanza to your `application.conf`
@@ -17,15 +20,10 @@ and add the following configuration stanza to your `application.conf`
 akka.extensions = [ "akka.cluster.metrics.ClusterMetricsExtension" ]
 ```
 
+@@project-info{ projectId="akka-cluster-metrics" }
+
 ## Introduction
 
-To enable usage of the extension you need to add the following dependency to your project:
-
-@@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-cluster-metrics_$scala.binary_version$"
-  version="$akka.version$"
-}
 
 The member nodes of the cluster can collect system health metrics and publish that to other cluster nodes
 and to the registered subscribers on the system event bus with the help of Cluster Metrics Extension.
@@ -34,7 +32,7 @@ Cluster metrics information is primarily used for load-balancing routers,
 and can also be used to implement advanced metrics-based node life cycles,
 such as "Node Let-it-crash" when CPU steal time becomes excessive.
 
-Cluster members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up), if that feature is enabled,
+Cluster members with status @ref:[WeaklyUp](typed/cluster-membership.md#weaklyup-members), if that feature is enabled,
 will participate in Cluster Metrics collection and dissemination.
 
 ## Metrics Collector
@@ -117,7 +115,7 @@ To enable usage of Sigar you can add the following dependency to the user projec
   version="$sigar_loader.version$"
 }
 
-You can download Kamon sigar-loader from [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Csigar-loader)
+You can download Kamon sigar-loader from [Maven Central](https://search.maven.org/search?q=sigar-loader)
 
 ## Adaptive Load Balancing
 
@@ -131,7 +129,7 @@ It can be configured to use a specific MetricsSelector to produce the probabilit
  * `mix` / `MixMetricsSelector` - Combines heap, cpu and load. Weights based on mean of remaining capacity of the combined selectors.
  * Any custom implementation of `akka.cluster.metrics.MetricsSelector`
 
-The collected metrics values are smoothed with [exponential weighted moving average](http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average). In the @ref:[Cluster configuration](cluster-usage.md#cluster-configuration) you can adjust how quickly past data is decayed compared to new data.
+The collected metrics values are smoothed with [exponential weighted moving average](https://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average). In the @ref:[Cluster configuration](cluster-usage.md#cluster-configuration) you can adjust how quickly past data is decayed compared to new data.
 
 Let's take a look at this router in action. What can be more demanding than calculating factorials?
 
@@ -184,12 +182,6 @@ Scala
 
 Java
 :  @@snip [FactorialFrontend.java](/akka-docs/src/test/java/jdocs/cluster/FactorialFrontend.java) { #router-lookup-in-code #router-deploy-in-code }
-
-The easiest way to run **Adaptive Load Balancing** example yourself is to download the ready to run
-@scala[@extref[Akka Cluster Sample with Scala](ecs:akka-samples-cluster-scala)] @java[@extref[Akka Cluster Sample with Java](ecs:akka-samples-cluster-java)]
-together with the tutorial. It contains instructions on how to run the **Adaptive Load Balancing** sample.
-The source code of this sample can be found in the 
-@scala[@extref[Akka Samples Repository](samples:akka-sample-cluster-scala)]@java[@extref[Akka Samples Repository](samples:akka-sample-cluster-java)].
 
 ## Subscribe to Metrics Events
 
