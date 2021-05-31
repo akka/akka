@@ -33,7 +33,7 @@ public class ActorSourceSinkCompileTest {
   {
     final ActorRef<String> ref = null;
 
-    Source.<String>queue(10, OverflowStrategy.dropBuffer())
+    Source.<String>queue(10)
         .map(s -> s + "!")
         .to(ActorSink.actorRef(ref, "DONE", ex -> "FAILED: " + ex.getMessage()));
   }
@@ -41,7 +41,7 @@ public class ActorSourceSinkCompileTest {
   {
     final ActorRef<Protocol> ref = null;
 
-    Source.<String>queue(10, OverflowStrategy.dropBuffer())
+    Source.<String>queue(10)
         .to(
             ActorSink.actorRefWithBackpressure(
                 ref,

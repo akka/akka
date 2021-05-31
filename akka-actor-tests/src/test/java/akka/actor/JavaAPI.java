@@ -194,14 +194,7 @@ public class JavaAPI extends JUnitSuite {
     }
 
     public void onReceive(Object msg) {
-      String reply =
-          String.valueOf(a)
-              + "-"
-              + String.valueOf(b)
-              + "-"
-              + String.valueOf(c)
-              + "-"
-              + String.valueOf(d);
+      String reply = a + "-" + b + "-" + c + "-" + d;
       getSender().tell(reply, getSelf());
     }
   }

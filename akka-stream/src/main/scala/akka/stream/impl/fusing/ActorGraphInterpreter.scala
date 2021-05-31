@@ -829,7 +829,17 @@ import akka.util.OptionVal
         newShells.map(shell => shell.toSnapshot.asInstanceOf[UninitializedInterpreter]))
   }
 
-  override def postStop(): Unit =
+  override def postStop(): Unit = {
+    if (shortCircuitBuffer ne null) {
+      while (!shortCircuitBuffer.isEmpty) {
+        shortCircuitBuffer.poll() match {
+          case b: BoundaryEvent =>
+            // signal to telemetry that this event won't be processed
+            b.cancel()
+          case _ => // ignore
+        }
+      }
+    }
     // avoid creating exception in happy case since it uses self.toString which is somewhat slow
     if (activeInterpreters.nonEmpty || newShells.nonEmpty) {
       val ex = AbruptTerminationException(self)
@@ -837,4 +847,5 @@ import akka.util.OptionVal
       activeInterpreters = Set.empty[GraphInterpreterShell]
       newShells.foreach(s => if (tryInit(s)) s.tryAbort(ex))
     }
+  }
 }

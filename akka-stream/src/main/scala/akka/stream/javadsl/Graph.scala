@@ -519,6 +519,12 @@ object Concat {
   /**
    * Create a new anonymous `Concat` operator with the specified input types.
    */
+  def create[T](inputCount: Int, detachedInputs: Boolean): Graph[UniformFanInShape[T, T], NotUsed] =
+    scaladsl.Concat[T](inputCount, detachedInputs)
+
+  /**
+   * Create a new anonymous `Concat` operator with the specified input types.
+   */
   def create[T](@unused clazz: Class[T]): Graph[UniformFanInShape[T, T], NotUsed] = create()
 
 }
