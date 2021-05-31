@@ -81,7 +81,7 @@ Enable this feature by setting `snapshot-is-optional = true` in the snapshot sto
 
 @@@ warning
 
-Don't set `snapshot-is-optional = true` if events are deleted because that would result in wrong recovered state if snapshot load fails.
+Don't set `snapshot-is-optional = true` if events have been deleted because that would result in wrong recovered state if snapshot load fails.
 
 @@@
 
