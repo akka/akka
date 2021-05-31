@@ -71,6 +71,20 @@ started, `RecoveryFailed` signal is emitted (logging the error by default), and 
 Note that failure to load snapshot is also treated like this, but you can disable loading of snapshots
 if you for example know that serialization format has changed in an incompatible way.
 
+### Optional snapshots
+
+By default, the persistent actor will unconditionally be stopped if the snapshot can't be loaded in the recovery.
+It is possible to make snapshot loading optional. This can be useful when it is alright to ignore snapshot in case
+of for example deserialization errors. When snapshot loading fails it will instead recover by replaying all events.
+
+Enable this feature by setting `snapshot-is-optional = true` in the snapshot store configuration.
+
+@@@ warning
+
+Don't set `snapshot-is-optional = true` if events have been deleted because that would result in wrong recovered state if snapshot load fails.
+
+@@@
+
 ## Snapshot deletion
 
 To free up space, an event sourced actor can automatically delete older snapshots based on the given `RetentionCriteria`.

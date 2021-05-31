@@ -655,36 +655,57 @@ private[persistence] trait Eventsourced
 
     override def recoveryRunning: Boolean = true
 
-    override def stateReceive(receive: Receive, message: Any) =
-      try message match {
-        case LoadSnapshotResult(sso, toSnr) =>
-          timeoutCancellable.cancel()
-          sso.foreach {
-            case SelectedSnapshot(metadata, snapshot) =>
-              val offer = SnapshotOffer(metadata, snapshot)
-              if (recoveryBehavior.isDefinedAt(offer)) {
-                try {
-                  setLastSequenceNr(metadata.sequenceNr)
-                  // Since we are recovering we can ignore the receive behavior from the stack
-                  Eventsourced.super.aroundReceive(recoveryBehavior, offer)
-                } catch {
-                  case NonFatal(t) =>
-                    try onRecoveryFailure(t, None)
-                    finally context.stop(self)
-                    returnRecoveryPermit()
-                }
-              } else {
-                unhandled(offer)
+    override def stateReceive(receive: Receive, message: Any): Unit = {
+      def loadSnapshotResult(snapshot: Option[SelectedSnapshot], toSnr: Long): Unit = {
+        timeoutCancellable.cancel()
+        snapshot.foreach {
+          case SelectedSnapshot(metadata, snapshot) =>
+            val offer = SnapshotOffer(metadata, snapshot)
+            if (recoveryBehavior.isDefinedAt(offer)) {
+              try {
+                setLastSequenceNr(metadata.sequenceNr)
+                // Since we are recovering we can ignore the receive behavior from the stack
+                Eventsourced.super.aroundReceive(recoveryBehavior, offer)
+              } catch {
+                case NonFatal(t) =>
+                  try onRecoveryFailure(t, None)
+                  finally context.stop(self)
+                  returnRecoveryPermit()
               }
-          }
-          changeState(recovering(recoveryBehavior, timeout))
-          journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
+            } else {
+              unhandled(offer)
+            }
+        }
+        changeState(recovering(recoveryBehavior, timeout))
+        journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
+      }
+
+      def isSnapshotOptional: Boolean = {
+        try {
+          Persistence(context.system).configFor(snapshotStore).getBoolean("snapshot-is-optional")
+        } catch {
+          case NonFatal(exc) =>
+            log.error(exc, "Invalid snapshot-is-optional configuration.")
+            false // fail recovery
+        }
+      }
+
+      try message match {
+        case LoadSnapshotResult(snapshot, toSnr) =>
+          loadSnapshotResult(snapshot, toSnr)
 
         case LoadSnapshotFailed(cause) =>
-          timeoutCancellable.cancel()
-          try onRecoveryFailure(cause, event = None)
-          finally context.stop(self)
-          returnRecoveryPermit()
+          if (isSnapshotOptional) {
+            log.info(
+              "Snapshot load error for persistenceId [{}]. Replaying all events since snapshot-is-optional=true",
+              persistenceId)
+            loadSnapshotResult(snapshot = None, recovery.toSequenceNr)
+          } else {
+            timeoutCancellable.cancel()
+            try onRecoveryFailure(cause, event = None)
+            finally context.stop(self)
+            returnRecoveryPermit()
+          }
 
         case RecoveryTick(true) =>
           try onRecoveryFailure(
@@ -700,6 +721,7 @@ private[persistence] trait Eventsourced
           returnRecoveryPermit()
           throw e
       }
+    }
 
     private def returnRecoveryPermit(): Unit =
       extension.recoveryPermitter.tell(RecoveryPermitter.ReturnRecoveryPermit, self)

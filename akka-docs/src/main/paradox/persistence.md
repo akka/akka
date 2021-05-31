@@ -640,6 +640,19 @@ If failure messages are left unhandled by the actor, a default warning log messa
 No default action is performed on the success messages, however you're free to handle them e.g. in order to delete
 an in memory representation of the snapshot, or in the case of failure to attempt save the snapshot again.
 
+### Optional snapshots
+
+By default, the persistent actor will unconditionally be stopped if the snapshot can't be loaded in the recovery.
+It is possible to make snapshot loading optional. This can be useful when it is alright to ignore snapshot in case
+of for example deserialization errors. When snapshot loading fails it will instead recover by replaying all events.
+
+Enable this feature by setting `snapshot-is-optional = true` in the snapshot store configuration. 
+
+@@@ warning
+
+Don't set `snapshot-is-optional = true` if events have been deleted because that would result in wrong recovered state if snapshot load fails.
+
+@@@
 
 ## Scaling out
 

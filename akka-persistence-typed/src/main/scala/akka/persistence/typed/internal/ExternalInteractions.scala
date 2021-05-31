@@ -157,7 +157,12 @@ private[akka] trait JournalInteractions[C, E, S] {
    * is enabled, old messages are deleted based on `SnapshotCountRetentionCriteria.snapshotEveryNEvents`
    * before old snapshots are deleted.
    */
-  protected def internalDeleteEvents(lastSequenceNr: Long, toSequenceNr: Long): Unit =
+  protected def internalDeleteEvents(lastSequenceNr: Long, toSequenceNr: Long): Unit = {
+    if (setup.isSnapshotOptional) {
+      setup.internalLogger.warn(
+        "Delete events shouldn't be used together with snapshot-is-optional=false. " +
+        "That can result in wrong recovered state if snapshot load fails.")
+    }
     if (toSequenceNr > 0) {
       val self = setup.selfClassic
 
@@ -170,6 +175,7 @@ private[akka] trait JournalInteractions[C, E, S] {
             s"toSequenceNr [$toSequenceNr] must be less than or equal to lastSequenceNr [$lastSequenceNr]"),
           toSequenceNr)
     }
+  }
 }
 
 /** INTERNAL API */

@@ -5,6 +5,7 @@
 package akka.persistence
 
 import java.io.IOException
+import java.util.UUID
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -75,7 +76,7 @@ object SnapshotFailureRobustnessSpec {
 
   class FailingLocalSnapshotStore(config: Config) extends LocalSnapshotStore(config) {
     override def save(metadata: SnapshotMetadata, snapshot: Any): Unit = {
-      if (metadata.sequenceNr == 2 || snapshot == "boom") {
+      if (metadata.sequenceNr == 2 || snapshot.toString.startsWith("boom")) {
         val bytes = "b0rkb0rk".getBytes("UTF-8") // length >= 8 to prevent EOF exception
         val tmpFile = withOutputStream(metadata)(_.write(bytes))
         tmpFile.renameTo(snapshotFileForWrite(metadata))
@@ -203,5 +204,48 @@ class SnapshotFailureRobustnessSpec
           cause.getMessage should include("Failed to delete")
       }
     }
+  }
+}
+
+class SnapshotIsOptionalSpec
+    extends PersistenceSpec(
+      PersistenceSpec.config(
+        "inmem",
+        "SnapshotFailureReplayEventsSpec",
+        serialization = "off",
+        extraConfig = Some(s"""
+    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
+    akka.persistence.snapshot-store.local.class = "akka.persistence.SnapshotFailureRobustnessSpec$$FailingLocalSnapshotStore"
+    akka.persistence.snapshot-store.local.dir = "target/persistence-${UUID.randomUUID().toString}"
+    akka.persistence.snapshot-store.local.snapshot-is-optional = true
+  """)))
+    with ImplicitSender {
+
+  import SnapshotFailureRobustnessSpec._
+
+  "A persistentActor with a failing snapshot with snapshot-is-optional=true" must {
+    "fall back to events" in {
+      val sPersistentActor = system.actorOf(Props(classOf[SaveSnapshotTestPersistentActor], name, testActor))
+
+      expectMsg(RecoveryCompleted)
+      sPersistentActor ! Cmd("boom1")
+      expectMsg(1)
+      sPersistentActor ! Cmd("boom2")
+      expectMsg(2)
+
+      system.eventStream.publish(
+        TestEvent.Mute(EventFilter[java.io.NotSerializableException](start = "Error loading snapshot")))
+      try {
+        system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, testActor))
+
+        expectMsg("boom1-1") // from event replay
+        expectMsg("boom2-2") // from event replay
+        expectMsg(RecoveryCompleted)
+        expectNoMessage()
+      } finally {
+        system.eventStream.publish(TestEvent.UnMute(EventFilter.error(start = "Error loading snapshot [")))
+      }
+    }
+
   }
 }
