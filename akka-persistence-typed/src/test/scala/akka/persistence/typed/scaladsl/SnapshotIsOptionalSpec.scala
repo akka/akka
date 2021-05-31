@@ -14,7 +14,6 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.persistence.typed.PersistenceId
 import akka.serialization.jackson.CborSerializable
@@ -68,7 +67,7 @@ class SnapshotIsOptionalSpec
     "fall back to events when deserialization error" in {
       val pid = nextPid()
 
-      val stateProbe1 = TestProbe[State1]()
+      val stateProbe1 = createTestProbe[State1]()
       val b1 = behavior(pid, stateProbe1.ref).snapshotWhen { (_, event, _) =>
         event.e.contains("snapshot")
       }
@@ -79,12 +78,20 @@ class SnapshotIsOptionalSpec
       stateProbe1.expectMessage(State1("|one|snapshot now"))
       testKit.stop(ref1)
 
-      val stateProbe2 = TestProbe[State1]()
+      val stateProbe2 = createTestProbe[State1]()
       val ref2 = spawn(behavior(pid, stateProbe2.ref))
       ref2.tell(Command("get"))
       stateProbe2.expectMessage(State1("|one|snapshot now"))
       testKit.stop(ref2)
     }
 
+    "fail fast if used with retention criteria with delete events" in {
+      val pid = nextPid()
+
+      val stateProbe1 = createTestProbe[State1]()
+      val ref = spawn(behavior(pid, stateProbe1.ref).withRetention(RetentionCriteria.snapshotEvery(10, 3).withDeleteEventsOnSnapshot))
+      createTestProbe().expectTerminated(ref)
+    }
+    
   }
 }
