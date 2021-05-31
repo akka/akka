@@ -119,6 +119,8 @@ By default the `SupervisorStrategy` logs failures unless they are escalated.
 Escalated failures are supposed to be handled, and potentially logged, at a level
 higher in the hierarchy.
 
+Log levels can be controlled by providing a `Decider` and using the appropriate decision methods accepting a `LogLevel` on `SupervisorStrategy`.
+
 You can mute the default logging of a `SupervisorStrategy` by setting
 `loggingEnabled` to `false` when instantiating it. Customized logging
 can be done inside the `Decider`. Note that the reference to the currently
