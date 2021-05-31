@@ -89,9 +89,10 @@ class SnapshotIsOptionalSpec
       val pid = nextPid()
 
       val stateProbe1 = createTestProbe[State1]()
-      val ref = spawn(behavior(pid, stateProbe1.ref).withRetention(RetentionCriteria.snapshotEvery(10, 3).withDeleteEventsOnSnapshot))
+      val ref = spawn(
+        behavior(pid, stateProbe1.ref).withRetention(RetentionCriteria.snapshotEvery(10, 3).withDeleteEventsOnSnapshot))
       createTestProbe().expectTerminated(ref)
     }
-    
+
   }
 }

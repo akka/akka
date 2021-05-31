@@ -70,14 +70,14 @@ private[akka] final class BehaviorSetup[C, E, S](
   val isSnapshotOptional: Boolean =
     Persistence(context.system.classicSystem).configFor(snapshotStore).getBoolean("snapshot-is-optional")
 
-    if (isSnapshotOptional && (retention match {
-      case SnapshotCountRetentionCriteriaImpl(_, _, true) => true
-      case _ => false
-    })) {
-      throw new IllegalArgumentException(
-        "Retention criteria with delete events can't be used together with snapshot-is-optional=false. " +
-          "That can result in wrong recovered state if snapshot load fails.")
-    }
+  if (isSnapshotOptional && (retention match {
+        case SnapshotCountRetentionCriteriaImpl(_, _, true) => true
+        case _                                              => false
+      })) {
+    throw new IllegalArgumentException(
+      "Retention criteria with delete events can't be used together with snapshot-is-optional=false. " +
+      "That can result in wrong recovered state if snapshot load fails.")
+  }
 
   val replicaId: Option[ReplicaId] = replication.map(_.replicaId)
 
