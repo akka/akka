@@ -4,8 +4,6 @@
 
 package jdocs.actor.typed;
 
-import java.util.concurrent.Executor;
-
 import scala.concurrent.ExecutionContextExecutor;
 
 import akka.actor.typed.*;

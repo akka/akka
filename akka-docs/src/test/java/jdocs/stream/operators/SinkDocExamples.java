@@ -8,7 +8,6 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 
 import akka.stream.javadsl.AsPublisher;
-import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 // #takeLast-operator-example
@@ -18,8 +17,6 @@ import org.reactivestreams.Publisher;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 
 public class SinkDocExamples {
 

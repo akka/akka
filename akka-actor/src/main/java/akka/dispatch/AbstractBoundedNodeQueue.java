@@ -6,8 +6,6 @@ package akka.dispatch;
 
 import akka.util.Unsafe;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 /**
  * Lock-free bounded non-blocking multiple-producer single-consumer queue based on the works of:
  *

@@ -5,8 +5,6 @@
 package jdocs.persistence.query;
 
 import akka.actor.ActorSystem;
-import akka.japi.Pair;
-import akka.persistence.PersistentRepr;
 import akka.persistence.query.EventEnvelope;
 import akka.persistence.query.Offset;
 import akka.serialization.Serialization;
@@ -21,8 +19,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-
-import static java.util.stream.Collectors.toList;
 
 // #events-by-tag-publisher
 public class MyEventsByTagSource extends GraphStage<SourceShape<EventEnvelope>> {

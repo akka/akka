@@ -6,7 +6,6 @@ package akka.japi;
 
 import org.junit.Assert;
 import org.junit.Test;
-import scala.util.control.ControlThrowable;
 
 public class ThrowablesTest {
   @Test

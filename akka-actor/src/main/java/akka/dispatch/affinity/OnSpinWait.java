@@ -4,7 +4,6 @@
 
 package akka.dispatch.affinity;
 
-import akka.util.Unsafe;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import akka.annotation.InternalApi;

@@ -11,7 +11,6 @@ import org.junit.Before;
 import org.scalatestplus.junit.JUnitSuite;
 
 import akka.actor.AbstractActor.Receive;
-import org.scalatestplus.junit.JUnitSuite;
 
 import static org.junit.Assert.*;
 

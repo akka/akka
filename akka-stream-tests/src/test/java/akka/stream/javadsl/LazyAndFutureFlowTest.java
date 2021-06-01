@@ -4,7 +4,6 @@
 
 package akka.stream.javadsl;
 
-import akka.NotUsed;
 import akka.stream.StreamTest;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
