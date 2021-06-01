@@ -12,6 +12,8 @@ import akka.serialization._
 import akka.stream.StreamRefMessages
 import akka.stream.impl.streamref._
 
+import java.nio.charset.StandardCharsets
+
 /** INTERNAL API */
 @InternalApi
 private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
@@ -87,7 +89,10 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
 
   private def serializeRemoteSinkFailure(
       d: StreamRefsProtocol.RemoteStreamFailure): StreamRefMessages.RemoteStreamFailure = {
-    StreamRefMessages.RemoteStreamFailure.newBuilder().setCause(UnsafeByteOperations.unsafeWrap(d.msg.getBytes)).build()
+    StreamRefMessages.RemoteStreamFailure
+      .newBuilder()
+      .setCause(UnsafeByteOperations.unsafeWrap(d.msg.getBytes(StandardCharsets.UTF_8)))
+      .build()
   }
 
   private def serializeRemoteSinkCompleted(
