@@ -103,13 +103,13 @@ import scala.util.Success
   private var _currentActorThread: OptionVal[Thread] = OptionVal.None
 
   // context-shared timer needed to allow for nested timer usage
-  def timer: TimerSchedulerCrossDslSupport[T] = _timer match {
-    case OptionVal.Some(timer) => timer
-    case _ =>
+  def timer: TimerSchedulerCrossDslSupport[T] = _timer.orNull match {
+    case null =>
       checkCurrentActorThread()
       val timer = mkTimer()
       _timer = OptionVal.Some(timer)
       timer
+    case timer => timer
   }
 
   protected[this] def mkTimer(): TimerSchedulerCrossDslSupport[T] = new TimerSchedulerImpl[T](this)
@@ -150,14 +150,14 @@ import scala.util.Success
 
   private def loggingContext(): LoggingContext = {
     // lazy init of logging setup
-    _logging match {
-      case OptionVal.Some(l) => l
-      case _ =>
+    _logging.orNull match {
+      case null =>
         val logClass = LoggerClass.detectLoggerClassFromStack(classOf[Behavior[_]])
         val logger = LoggerFactory.getLogger(logClass.getName)
         val l = LoggingContext(logger, classicActorContext.props.deploy.tags, this)
         _logging = OptionVal.Some(l)
         l
+      case l => l
     }
   }
 
@@ -183,11 +183,10 @@ import scala.util.Success
   // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message
   override private[akka] def clearMdc(): Unit = {
     // avoid access to MDC ThreadLocal if not needed, see details in LoggingContext
-    _logging match {
-      case OptionVal.Some(ctx) if ctx.mdcUsed =>
-        ActorMdc.clearMdc()
-        ctx.mdcUsed = false
-      case _ =>
+    val ctx = _logging.orNull
+    if ((ctx ne null) && ctx.mdcUsed) {
+      ActorMdc.clearMdc()
+      ctx.mdcUsed = false
     }
   }
 
@@ -295,14 +294,14 @@ import scala.util.Success
     val boxedMessageClass = BoxedType(messageClass).asInstanceOf[Class[U]]
     _messageAdapters = (boxedMessageClass, f.asInstanceOf[Any => T]) ::
       _messageAdapters.filterNot { case (cls, _) => cls == boxedMessageClass }
-    val ref = messageAdapterRef match {
-      case OptionVal.Some(ref) => ref.asInstanceOf[ActorRef[U]]
-      case _                   =>
+    val ref = messageAdapterRef.orNull match {
+      case null =>
         // AdaptMessage is not really a T, but that is erased
         val ref =
           internalSpawnMessageAdapter[Any](msg => AdaptWithRegisteredMessageAdapter(msg).asInstanceOf[T], "adapter")
         messageAdapterRef = OptionVal.Some(ref)
         ref
+      case ref => ref.asInstanceOf[ActorRef[U]]
     }
     ref.asInstanceOf[ActorRef[U]]
   }
@@ -316,13 +315,14 @@ import scala.util.Success
    * INTERNAL API
    */
   @InternalApi private[akka] def setCurrentActorThread(): Unit = {
-    _currentActorThread match {
-      case OptionVal.Some(t) =>
+    val callerThread = Thread.currentThread()
+    _currentActorThread.orNull match {
+      case null =>
+        _currentActorThread = OptionVal.Some(callerThread)
+      case t =>
         throw new IllegalStateException(
           s"Invalid access by thread from the outside of $self. " +
-          s"Current message is processed by $t, but also accessed from ${Thread.currentThread()}.")
-      case _ =>
-        _currentActorThread = OptionVal.Some(Thread.currentThread())
+          s"Current message is processed by $t, but also accessed from $callerThread.")
     }
   }
 
@@ -338,17 +338,17 @@ import scala.util.Success
    */
   @InternalApi private[akka] def checkCurrentActorThread(): Unit = {
     val callerThread = Thread.currentThread()
-    _currentActorThread match {
-      case OptionVal.Some(t) =>
+    _currentActorThread.orNull match {
+      case null =>
+        throw new UnsupportedOperationException(
+          s"Unsupported access to ActorContext from the outside of $self. " +
+          s"No message is currently processed by the actor, but ActorContext was called from $callerThread.")
+      case t =>
         if (callerThread ne t) {
           throw new UnsupportedOperationException(
             s"Unsupported access to ActorContext operation from the outside of $self. " +
             s"Current message is processed by $t, but ActorContext was called from $callerThread.")
         }
-      case _ =>
-        throw new UnsupportedOperationException(
-          s"Unsupported access to ActorContext from the outside of $self. " +
-          s"No message is currently processed by the actor, but ActorContext was called from $callerThread.")
     }
   }
 }
