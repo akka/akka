@@ -355,7 +355,10 @@ public class BasicPersistentBehaviorTest {
       // #tagging
       @Override
       public Set<String> tagsFor(Event event) {
-        throw new RuntimeException("TODO: inspect the event and return any tags it should have");
+        Set<String> tags = new HashSet<>();
+        tags.add("tag1");
+        tags.add("tag2");
+        return tags;
       }
       // #tagging
       // #supervision
