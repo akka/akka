@@ -4,23 +4,13 @@
 
 package akka.persistence.typed.scaladsl
 
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
-
-import scala.concurrent.duration._
-import scala.util.Success
-import scala.util.Try
-
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.testkit.PersistenceTestKitPlugin
+import akka.persistence.testkit.PersistenceTestKitSnapshotPlugin
 import akka.persistence.typed.DeleteEventsCompleted
 import akka.persistence.typed.DeleteSnapshotsCompleted
 import akka.persistence.typed.DeleteSnapshotsFailed
@@ -33,18 +23,15 @@ import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.serialization.jackson.CborSerializable
 import akka.util.unused
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.util.concurrent.atomic.AtomicInteger
+import scala.concurrent.duration._
+import scala.util.Success
+import scala.util.Try
 
 object EventSourcedBehaviorRetentionSpec extends Matchers {
-
-  def conf: Config = ConfigFactory.parseString(s"""
-    akka.loglevel = INFO
-    # akka.persistence.typed.log-stashing = on
-    akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
-    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-    akka.persistence.snapshot-store.local.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
-    akka.actor.testkit.typed.single-expect-default = 10s # increased for slow disk on Jenkins servers
-    """)
 
   sealed trait Command extends CborSerializable
   case object Increment extends Command
@@ -128,7 +115,8 @@ object EventSourcedBehaviorRetentionSpec extends Matchers {
 }
 
 class EventSourcedBehaviorRetentionSpec
-    extends ScalaTestWithActorTestKit(EventSourcedBehaviorRetentionSpec.conf)
+    extends ScalaTestWithActorTestKit(
+      PersistenceTestKitPlugin.config.withFallback(PersistenceTestKitSnapshotPlugin.config))
     with AnyWordSpecLike
     with LogCapturing {
 

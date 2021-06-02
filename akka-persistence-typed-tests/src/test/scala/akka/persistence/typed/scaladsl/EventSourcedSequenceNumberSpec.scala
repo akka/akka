@@ -4,15 +4,16 @@
 
 package akka.persistence.typed.scaladsl
 
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.typed.{ ActorRef, Behavior }
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedSequenceNumberSpec {
 

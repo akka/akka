@@ -4,31 +4,28 @@
 
 package akka.persistence.typed.scaladsl
 
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicInteger
-
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.serialization.jackson.CborSerializable
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import java.util.concurrent.atomic.AtomicInteger
 
 object SnapshotMutableStateSpec {
 
-  def conf: Config = ConfigFactory.parseString(s"""
+  def conf: Config = PersistenceTestKitPlugin.config.withFallback(ConfigFactory.parseString(s"""
     akka.loglevel = INFO
-    akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     akka.persistence.snapshot-store.plugin = "slow-snapshot-store"
 
     slow-snapshot-store.class = "${classOf[SlowInMemorySnapshotStore].getName}"
-    """)
+    """))
 
   sealed trait Command extends CborSerializable
   case object Increment extends Command

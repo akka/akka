@@ -328,7 +328,12 @@ lazy val persistenceTestkit = akkaModule("akka-persistence-testkit")
   .disablePlugins(MimaPlugin)
 
 lazy val persistenceTypedTests = akkaModule("akka-persistence-typed-tests")
-  .dependsOn(persistenceTyped, persistenceTestkit % "test", actorTestkitTyped % "test", jackson % "test->test")
+  .dependsOn(
+    persistenceTyped,
+    persistenceTestkit % "test",
+    actorTestkitTyped % "test",
+    persistence % "test->test", // for SteppingInMemJournal
+    jackson % "test->test")
   .settings(AkkaBuild.mayChangeSettings)
   .settings(Dependencies.persistenceTypedTests)
   .settings(javacOptions += "-parameters") // for Jackson

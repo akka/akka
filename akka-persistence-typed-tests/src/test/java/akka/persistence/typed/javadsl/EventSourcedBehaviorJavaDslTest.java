@@ -7,6 +7,8 @@ package akka.persistence.typed.javadsl;
 import akka.Done;
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.LoggingTestKit;
+import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
+import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Adapter;
@@ -16,18 +18,16 @@ import akka.persistence.query.EventEnvelope;
 import akka.persistence.query.NoOffset;
 import akka.persistence.query.PersistenceQuery;
 import akka.persistence.query.Sequence;
-import akka.persistence.query.journal.leveldb.javadsl.LeveldbReadJournal;
+import akka.persistence.testkit.PersistenceTestKitPlugin;
+import akka.persistence.testkit.PersistenceTestKitSnapshotPlugin;
+import akka.persistence.testkit.query.javadsl.PersistenceTestKitReadJournal;
 import akka.persistence.typed.*;
-import akka.persistence.typed.scaladsl.EventSourcedBehaviorSpec;
 import akka.serialization.jackson.CborSerializable;
 import akka.stream.javadsl.Sink;
-import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
-import akka.actor.testkit.typed.javadsl.TestProbe;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.collect.Sets;
-import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -42,18 +42,22 @@ import static akka.Done.done;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
-public class PersistentActorJavaDslTest extends JUnitSuite {
+public class EventSourcedBehaviorJavaDslTest extends JUnitSuite {
 
-  public static final Config config =
-      EventSourcedBehaviorSpec.conf().withFallback(ConfigFactory.load());
-
-  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
+  @ClassRule
+  public static final TestKitJunitResource testKit =
+      new TestKitJunitResource(
+          ConfigFactory.parseString(
+                  "akka.loglevel = INFO\n" + "akka.loggers = [\"akka.testkit.TestEventListener\"]")
+              .withFallback(PersistenceTestKitPlugin.getInstance().config())
+              .withFallback(PersistenceTestKitSnapshotPlugin.config()));
 
   @Rule public final LogCapturing logCapturing = new LogCapturing();
 
-  private LeveldbReadJournal queries =
+  private PersistenceTestKitReadJournal queries =
       PersistenceQuery.get(Adapter.toClassic(testKit.system()))
-          .getReadJournalFor(LeveldbReadJournal.class, LeveldbReadJournal.Identifier());
+          .getReadJournalFor(
+              PersistenceTestKitReadJournal.class, PersistenceTestKitReadJournal.Identifier());
 
   interface Command extends CborSerializable {}
 
