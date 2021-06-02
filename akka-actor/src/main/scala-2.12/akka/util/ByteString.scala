@@ -154,7 +154,7 @@ object ByteString {
     }
 
   private[akka] object ByteString1C extends Companion {
-    def fromString(s: String): ByteString1C = new ByteString1C(s.getBytes)
+    def fromString(s: String): ByteString1C = new ByteString1C(s.getBytes(StandardCharsets.UTF_8))
     def apply(bytes: Array[Byte]): ByteString1C = new ByteString1C(bytes)
     val SerializationIdentity = 1.toByte
 
@@ -264,7 +264,7 @@ object ByteString {
   /** INTERNAL API: ByteString backed by exactly one array, with start / end markers */
   private[akka] object ByteString1 extends Companion {
     val empty: ByteString1 = new ByteString1(Array.empty[Byte])
-    def fromString(s: String): ByteString1 = apply(s.getBytes)
+    def fromString(s: String): ByteString1 = apply(s.getBytes(StandardCharsets.UTF_8))
     def apply(bytes: Array[Byte]): ByteString1 = apply(bytes, 0, bytes.length)
     def apply(bytes: Array[Byte], startIndex: Int, length: Int): ByteString1 =
       if (length == 0) empty
@@ -803,8 +803,8 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
    * into it before returning it.
    *
    * This method of exposing the bytes of a ByteString can save one array
-   * copy and allocation in the happy path scenario and which can lead to better performance,
-   * however it also means that one MUST NOT modify the returned in array, or unexpected
+   * copy and allocation in the happy path scenario which can lead to better performance,
+   * however it also means that one MUST NOT modify the returned array, or unexpected
    * immutable data structure contract-breaking behavior will manifest itself.
    *
    * This API is intended for users who need to pass the byte array to some other API, which will

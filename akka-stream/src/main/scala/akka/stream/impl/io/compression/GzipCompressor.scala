@@ -26,7 +26,7 @@ import akka.util.ByteString
     header() ++ super.finishWithBuffer(buffer) ++ trailer()
 
   private def updateCrc(input: ByteString): Unit = {
-    checkSum.update(input.toArray)
+    checkSum.update(input.toArrayUnsafe())
     bytesRead += input.length
   }
   private def header(): ByteString =

@@ -48,7 +48,9 @@ trait Serializer {
   def identifier: Int
 
   /**
-   * Serializes the given object into an Array of Byte
+   * Serializes the given object into an Array of Byte.
+   *
+   * Note that the array must not be mutated by the serializer after it has been returned.
    */
   def toBinary(o: AnyRef): Array[Byte]
 
@@ -130,7 +132,9 @@ abstract class SerializerWithStringManifest extends Serializer {
   def manifest(o: AnyRef): String
 
   /**
-   * Serializes the given object into an Array of Byte
+   * Serializes the given object into an Array of Byte.
+   *
+   * Note that the array must not be mutated by the serializer after it has been returned.
    */
   def toBinary(o: AnyRef): Array[Byte]
 
