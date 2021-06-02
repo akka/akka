@@ -47,8 +47,6 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-import scala.annotation.nowarn
-
 object EventSourcedBehaviorSpec {
 
   class SlowInMemorySnapshotStore extends SnapshotStore {
