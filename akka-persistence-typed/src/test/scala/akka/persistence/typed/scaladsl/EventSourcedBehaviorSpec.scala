@@ -6,18 +6,15 @@ package akka.persistence.typed.scaladsl
 
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
-
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
-
 import akka.Done
 import akka.actor.ActorInitializationException
 import akka.actor.testkit.typed.TestException
@@ -46,6 +43,8 @@ import akka.persistence.typed.SnapshotMetadata
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.serialization.jackson.CborSerializable
 import akka.stream.scaladsl.Sink
+
+import scala.annotation.nowarn
 
 object EventSourcedBehaviorSpec {
 
@@ -286,6 +285,7 @@ class EventSourcedBehaviorSpec
 
   import EventSourcedBehaviorSpec._
 
+  @nowarn("msg=deprecated")
   val queries: LeveldbReadJournal =
     PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 

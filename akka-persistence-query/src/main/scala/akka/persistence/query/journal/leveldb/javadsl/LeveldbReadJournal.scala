@@ -25,6 +25,7 @@ import akka.stream.javadsl.Source
  * for the default [[LeveldbReadJournal#Identifier]]. See `reference.conf`.
  *
  */
+@deprecated("Use another journal implementation", "2.6.15")
 class LeveldbReadJournal(scaladslReadJournal: akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal)
     extends ReadJournal
     with PersistenceIdsQuery

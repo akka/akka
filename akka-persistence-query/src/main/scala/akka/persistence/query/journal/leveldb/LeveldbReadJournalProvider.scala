@@ -9,6 +9,7 @@ import com.typesafe.config.Config
 import akka.actor.ExtendedActorSystem
 import akka.persistence.query.ReadJournalProvider
 
+@deprecated("Use another journal/query implementation", "2.6.15")
 class LeveldbReadJournalProvider(system: ExtendedActorSystem, config: Config) extends ReadJournalProvider {
 
   override val scaladslReadJournal: scaladsl.LeveldbReadJournal =

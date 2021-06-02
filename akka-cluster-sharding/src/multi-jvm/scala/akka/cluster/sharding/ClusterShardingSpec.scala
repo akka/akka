@@ -22,6 +22,8 @@ import akka.remote.testconductor.RoleName
 import akka.testkit._
 import akka.testkit.TestEvent.Mute
 
+import scala.annotation.nowarn
+
 object ClusterShardingSpec {
   //#counter-actor
   case object Increment
@@ -273,6 +275,7 @@ class DDataClusterShardingWithEntityRecoveryMultiJvmNode5 extends DDataClusterSh
 class DDataClusterShardingWithEntityRecoveryMultiJvmNode6 extends DDataClusterShardingWithEntityRecoverySpec
 class DDataClusterShardingWithEntityRecoveryMultiJvmNode7 extends DDataClusterShardingWithEntityRecoverySpec
 
+@nowarn("msg=deprecated")
 abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
     extends MultiNodeClusterShardingSpec(multiNodeConfig)
     with ImplicitSender

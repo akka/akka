@@ -68,7 +68,10 @@ This plugin writes events to a local LevelDB instance.
 
 @@@ warning
 The LevelDB plugin cannot be used in an Akka Cluster since the storage is in a local file system.
-@@@ 
+@@@
+
+The LevelDB journal is deprecated and it is not advised to build new applications with it.
+As a replacement we recommend using [Akka Persistence JDBC](https://doc.akka.io/docs/akka-persistence-jdbc/current/index.html).
 
 The LevelDB journal plugin config entry is `akka.persistence.journal.leveldb`. Enable this plugin by
 defining config property:
@@ -99,14 +102,8 @@ this end, LevelDB offers a special journal compaction function that is exposed v
 
 ### Shared LevelDB journal
 
-For testing purposes a LevelDB instance can also be shared by multiple actor systems (on the same or on different nodes). This, for
-example, allows persistent actors to failover to a backup node and continue using the shared journal instance from the
-backup node.
-
-@@@ warning
-A shared LevelDB instance is a single point of failure and should therefore only be used for testing
-purposes.
-@@@
+The LevelDB journal is deprecated and will be removed from a future Akka version, it is not advised to build new 
+applications with it. For testing in a multi node environment the "inmem" journal together with the @ref[proxy plugin](#persistence-plugin-proxy) can be used, but the actual journal used in production of applications is also a good choice.
 
 @@@ note
 This plugin has been supplanted by @ref:[Persistence Plugin Proxy](#persistence-plugin-proxy).
@@ -165,20 +162,21 @@ you don't have to configure it.
 
 ### Persistence Plugin Proxy
 
-For testing purposes a persistence plugin proxy allows sharing of journals and snapshot stores across multiple actor systems (on the same or
-on different nodes). This, for example, allows persistent actors to failover to a backup node and continue using the
-shared journal instance from the backup node. The proxy works by forwarding all the journal/snapshot store messages to a
-single, shared, persistence plugin instance, and therefore supports any use case supported by the proxied plugin.
+For testing purposes a persistence plugin proxy allows sharing of a journal and snapshot store on a single node across multiple 
+actor systems (on the same or on different nodes). This, for example, allows persistent actors to failover to a backup 
+node and continue using the shared journal instance from the backup node. The proxy works by forwarding all the 
+journal/snapshot store messages to a single, shared, persistence plugin instance, and therefore supports any use case 
+supported by the proxied plugin.
 
 @@@ warning
-A shared journal/snapshot store is a single point of failure and should therefore only be used for testing
+A shared journal/snapshot store is a single point of failure and should only be used for testing
 purposes.
 @@@
 
 The journal and snapshot store proxies are controlled via the `akka.persistence.journal.proxy` and
 `akka.persistence.snapshot-store.proxy` configuration entries, respectively. Set the `target-journal-plugin` or
 `target-snapshot-store-plugin` keys to the underlying plugin you wish to use (for example:
-`akka.persistence.journal.leveldb`). The `start-target-journal` and `start-target-snapshot-store` keys should be
+`akka.persistence.journal.inmem`). The `start-target-journal` and `start-target-snapshot-store` keys should be
 set to `on` in exactly one actor system - this is the system that will instantiate the shared persistence plugin.
 Next, the proxy needs to be told how to find the shared plugin. This can be done by setting the `target-journal-address`
 and `target-snapshot-store-address` configuration keys, or programmatically by calling the
