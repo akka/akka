@@ -67,8 +67,8 @@ private abstract class AbstractSupervisor[I, Thr <: Throwable](strategy: Supervi
 
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = {
     other match {
-      case as: AbstractSupervisor[_, Thr] if throwableClass == as.throwableClass => true
-      case _                                                                     => false
+      case as: AbstractSupervisor[_, _] if throwableClass == as.throwableClass => true
+      case _                                                                   => false
     }
   }
 
@@ -95,7 +95,6 @@ private abstract class AbstractSupervisor[I, Thr <: Throwable](strategy: Supervi
         case Level.INFO  => logger.info(logMessage, unwrapped)
         case Level.DEBUG => logger.debug(logMessage, unwrapped)
         case Level.TRACE => logger.trace(logMessage, unwrapped)
-        case other       => throw new IllegalArgumentException(s"Unknown log level [$other].")
       }
     }
   }

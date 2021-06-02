@@ -5,7 +5,7 @@
 package akka.actor.typed
 package scaladsl
 
-import scala.reflect.{ classTag, ClassTag }
+import scala.reflect.ClassTag
 
 import akka.actor.typed.internal._
 import akka.annotation.{ DoNotInherit, InternalApi }
@@ -222,8 +222,8 @@ object Behaviors {
   final class Supervise[T] private[akka] (val wrapped: Behavior[T]) extends AnyVal {
 
     /** Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws. */
-    def onFailure[Thr <: Throwable: ClassTag](strategy: SupervisorStrategy): Behavior[T] = {
-      val tag = classTag[Thr]
+    def onFailure[Thr <: Throwable](strategy: SupervisorStrategy)(
+        implicit tag: ClassTag[Thr] = ThrowableClassTag): Behavior[T] = {
       val effectiveTag = if (tag == ClassTag.Nothing) ThrowableClassTag else tag
       Supervisor(Behavior.validateAsInitial(wrapped), strategy)(effectiveTag)
     }

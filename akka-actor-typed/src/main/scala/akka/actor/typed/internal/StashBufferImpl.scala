@@ -25,7 +25,7 @@ import java.util.function.Predicate
  * INTERNAL API
  */
 @InternalApi private[akka] object StashBufferImpl {
-  private final class Node[T](var next: Node[T], val message: T) {
+  private[akka] final class Node[T](var next: Node[T], val message: T) {
     def apply(f: T => Unit): Unit = f(message)
   }
 
