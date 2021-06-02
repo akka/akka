@@ -111,8 +111,9 @@ import scala.util.{ Failure, Success, Try }
             }
           }
           try {
-            val matVal =
-              Source.fromGraph(subSource.source).viaMat(flow)(Keep.right).to(subSink.sink).run()(subFusingMaterializer)
+            val matVal = subFusingMaterializer.materialize(
+              Source.fromGraph(subSource.source).viaMat(flow)(Keep.right).to(subSink.sink),
+              inheritedAttributes)
             innerMatValue.success(matVal)
             upstreamFailure match {
               case OptionVal.Some(ex) => subSource.fail(ex)

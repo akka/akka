@@ -147,7 +147,7 @@ import akka.util.OptionVal
           val matVal = try {
             val flow = f(prefix)
             val runnableGraph = Source.fromGraph(theSubSource.source).viaMat(flow)(Keep.right).to(theSubSink.sink)
-            interpreter.subFusingMaterializer.materialize(runnableGraph)
+            interpreter.subFusingMaterializer.materialize(runnableGraph, inheritedAttributes)
           } catch {
             case NonFatal(ex) =>
               matPromise.failure(new NeverMaterializedException(ex))
