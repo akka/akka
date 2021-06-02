@@ -1,0 +1,2 @@
+# Was @InternalApi private[stream]
+ProblemFilters.exclude[MissingClassProblem]("akka.stream.impl.SetupSinkStage")
