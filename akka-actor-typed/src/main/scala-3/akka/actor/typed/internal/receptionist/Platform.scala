@@ -5,8 +5,12 @@
 package akka.actor.typed.internal.receptionist
 
 import akka.actor.typed.ActorRef
+import akka.annotation.InternalApi
 
-private[receptionist] object Platform {
+/**
+ * INTERNAL API
+ */
+@InternalApi private[receptionist] object Platform {
   type Aux[P] = AbstractServiceKey { type Protocol = P }
 
   type Service[K <: Aux[_]] = K match {

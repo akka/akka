@@ -696,7 +696,7 @@ private class ProducerControllerImpl[A: ClassTag](
         context.self ! ResendFirst
       }
       // update the send function
-      val newSend = consumerController.!(_)
+      val newSend = consumerController.tell(_)
       active(s.copy(firstSeqNr = newFirstSeqNr, send = newSend))
     }
 
