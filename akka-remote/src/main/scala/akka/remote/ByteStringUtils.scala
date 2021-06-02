@@ -18,7 +18,7 @@ private[akka] object ByteStringUtils {
   def toProtoByteStringUnsafe(bytes: ByteString): ProtoByteString = {
     if (bytes.isEmpty)
       ProtoByteString.EMPTY
-    else if (bytes.isInstanceOf[ByteString1C]) {
+    else if (bytes.isInstanceOf[ByteString1C] || (bytes.isInstanceOf[ByteString1] && bytes.isCompact)) {
       UnsafeByteOperations.unsafeWrap(bytes.toArrayUnsafe())
     } else {
       // zero copy, reuse the same underlying byte arrays
