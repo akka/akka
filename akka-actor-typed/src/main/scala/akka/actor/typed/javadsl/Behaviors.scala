@@ -28,7 +28,7 @@ import akka.util.unused
 object Behaviors {
 
   private[this] val _two2same = new JapiFunction2[ActorContext[Any], Any, Behavior[Any]] {
-    override def apply(context: ActorContext[Any], msg: Any): Behavior[Any] = same
+    override def apply(context: ActorContext[Any], msg: Any): Behavior[Any] = same()
   }
   private[this] def two2same[T] = _two2same.asInstanceOf[JapiFunction2[ActorContext[T], T, Behavior[T]]]
 
@@ -60,7 +60,7 @@ object Behaviors {
    * avoid the allocation overhead of recreating the current behavior where
    * that is not necessary.
    */
-  def same[T]: Behavior[T] = BehaviorImpl.same
+  def same[T](): Behavior[T] = BehaviorImpl.same
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -68,7 +68,7 @@ object Behaviors {
    * message has not been handled. This hint may be used by composite
    * behaviors that delegate (partial) handling to other behaviors.
    */
-  def unhandled[T]: Behavior[T] = BehaviorImpl.unhandled
+  def unhandled[T](): Behavior[T] = BehaviorImpl.unhandled
 
   /**
    * Return this behavior from message processing to signal that this actor
@@ -79,7 +79,7 @@ object Behaviors {
    * current behavior. All other messages and signals will effectively be
    * ignored.
    */
-  def stopped[T]: Behavior[T] = BehaviorImpl.stopped
+  def stopped[T](): Behavior[T] = BehaviorImpl.stopped
 
   /**
    * Return this behavior from message processing to signal that this actor
@@ -98,12 +98,12 @@ object Behaviors {
   /**
    * A behavior that treats every incoming message as unhandled.
    */
-  def empty[T]: Behavior[T] = BehaviorImpl.empty
+  def empty[T](): Behavior[T] = BehaviorImpl.empty
 
   /**
    * A behavior that ignores every incoming message and returns “same”.
    */
-  def ignore[T]: Behavior[T] = BehaviorImpl.ignore
+  def ignore[T](): Behavior[T] = BehaviorImpl.ignore
 
   /**
    * Construct an actor behavior that can react to incoming messages but not to
@@ -171,7 +171,7 @@ object Behaviors {
    * @param type the supertype of all messages accepted by this behavior
    * @return the behavior builder
    */
-  def receive[T](@unused `type`: Class[T]): BehaviorBuilder[T] = BehaviorBuilder.create[T]
+  def receive[T](@unused `type`: Class[T]): BehaviorBuilder[T] = BehaviorBuilder.create[T]()
 
   /**
    * Construct an actor behavior that can react to lifecycle signals only.

@@ -158,7 +158,7 @@ final class ReceiveBuilder[T] private (
 object ReceiveBuilder {
 
   /** Create a new mutable receive builder */
-  def create[T]: ReceiveBuilder[T] = new ReceiveBuilder[T](Nil, Nil)
+  def create[T](): ReceiveBuilder[T] = new ReceiveBuilder[T](Nil, Nil)
 
   /** INTERNAL API */
   @InternalApi
@@ -213,7 +213,7 @@ private final class BuiltReceive[T](
           handler(msg)
         else receive[M](msg, tail)
       case _ =>
-        Behaviors.unhandled
+        Behaviors.unhandled()
     }
 
 }

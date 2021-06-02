@@ -167,7 +167,8 @@ object BehaviorBuilder {
   /**
    * @return new empty immutable behavior builder.
    */
-  def create[T]: BehaviorBuilder[T] = _empty.asInstanceOf[BehaviorBuilder[T]]
+  // Empty param list to work around https://github.com/lampepfl/dotty/issues/10347
+  def create[T](): BehaviorBuilder[T] = _empty.asInstanceOf[BehaviorBuilder[T]]
 }
 
 /**
@@ -192,7 +193,7 @@ private final class BuiltBehavior[T](messageHandlers: List[Case[T, T]], signalHa
           handler(msg)
         else receive(msg, tail)
       case Nil =>
-        Behaviors.unhandled[T]
+        Behaviors.unhandled[T]()
     }
 
 }

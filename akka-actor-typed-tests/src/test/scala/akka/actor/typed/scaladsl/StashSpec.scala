@@ -76,7 +76,7 @@ object AbstractStashSpec {
                   context.self ! Unstash // continue unstashing until buffer is empty
                   val numberOfMessages = 2
                   context.log.debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
-                  buffer.unstash(unstashing(processed), numberOfMessages, Unstashed)
+                  buffer.unstash(unstashing(processed), numberOfMessages, Unstashed.apply)
                 }
               case Stash =>
                 Behaviors.unhandled
@@ -113,7 +113,7 @@ object AbstractStashSpec {
                   context.self ! Unstash // continue unstashing until buffer is empty
                   val numberOfMessages = 2
                   context.log.debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
-                  buffer.unstash(unstashing(processed), numberOfMessages, Unstashed)
+                  buffer.unstash(unstashing(processed), numberOfMessages, Unstashed.apply)
                 }
               case GetStashSize(replyTo) =>
                 replyTo ! buffer.size
@@ -166,7 +166,7 @@ object AbstractStashSpec {
             context.self ! Unstash // continue unstashing until buffer is empty
             val numberOfMessages = 2
             context.log.debug(s"Unstash $numberOfMessages of ${buffer.size}, starting with ${buffer.head}")
-            buffer.unstash(this, numberOfMessages, Unstashed)
+            buffer.unstash(this, numberOfMessages, Unstashed.apply)
           }
         case Unstashed(message: Msg) =>
           context.log.debug(s"unstashed $message")

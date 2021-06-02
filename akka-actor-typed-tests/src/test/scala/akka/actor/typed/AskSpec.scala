@@ -50,7 +50,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
   "Ask pattern" must {
     "fail the future if the actor is already terminated" in {
       val ref = spawn(behavior)
-      val stopResult: Future[Unit] = ref.ask(Stop)
+      val stopResult: Future[Unit] = ref.ask(Stop.apply)
       stopResult.futureValue
 
       val probe = createTestProbe()
@@ -131,7 +131,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
         import akka.actor.typed.scaladsl.adapter._
         implicit val timeout: Timeout = 3.seconds
         val typedLegacy: ActorRef[AnyRef] = legacyActor
-        (typedLegacy.ask(Ping)).failed.futureValue should ===(ex)
+        typedLegacy.ask(Ping.apply).failed.futureValue should ===(ex)
       } finally {
         akka.testkit.TestKit.shutdownActorSystem(classicSystem)
       }

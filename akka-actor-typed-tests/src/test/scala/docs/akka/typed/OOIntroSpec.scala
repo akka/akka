@@ -30,7 +30,7 @@ object OOIntroSpec {
     final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent]) extends RoomCommand
     //#chatroom-protocol
     //#chatroom-behavior
-    private final case class PublishSessionMessage(screenName: String, message: String) extends RoomCommand
+    final case class PublishSessionMessage(screenName: String, message: String) extends RoomCommand
     //#chatroom-behavior
     //#chatroom-protocol
 
