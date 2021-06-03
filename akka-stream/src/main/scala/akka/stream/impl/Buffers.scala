@@ -5,8 +5,7 @@
 package akka.stream.impl
 
 import java.{ util => ju }
-
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.stream._
 
 /**
@@ -35,7 +34,7 @@ private[akka] object Buffer {
   def apply[T](size: Int, effectiveAttributes: Attributes): Buffer[T] =
     apply(size, effectiveAttributes.mandatoryAttribute[ActorAttributes.MaxFixedBufferSize].size)
 
-  def apply[T](size: Int, max: Int): Buffer[T] =
+  @InternalStableApi def apply[T](size: Int, max: Int): Buffer[T] =
     if (size < FixedQueueSize || size < max) FixedSizeBuffer(size)
     else new BoundedBuffer(size)
 }
@@ -54,7 +53,7 @@ private[akka] object Buffer {
    *
    * Returns a specialized instance for power-of-two sized buffers.
    */
-  @InternalApi private[akka] def apply[T](size: Int): FixedSizeBuffer[T] =
+  @InternalStableApi private[akka] def apply[T](size: Int): FixedSizeBuffer[T] =
     if (size < 1) throw new IllegalArgumentException("size must be positive")
     else if (((size - 1) & size) == 0) new PowerOfTwoFixedSizeBuffer(size)
     else new ModuloFixedSizeBuffer(size)
