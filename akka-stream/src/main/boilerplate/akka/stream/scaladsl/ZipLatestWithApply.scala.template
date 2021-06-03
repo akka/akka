@@ -5,6 +5,7 @@
 package akka.stream.scaladsl
 
 import akka.stream._
+import akka.stream.impl.ContextPropagation
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 
 trait ZipLatestWithApply {
@@ -34,6 +35,7 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[F
       // Without this field the completion signalling would take one extra pull
       private var willShutDown = false
 
+      private val contextPropagation = ContextPropagation()
       [#val inlet0 = new ZipLatestInlet(in0)#
       ]
       private var waitingForTuple = false
@@ -68,7 +70,8 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[F
       private def hasAllValues = [#inlet0.hasValue#&&]
 
       private def pushOutput(): Unit = {
-        push(out, zipper([#inlet0.value#,]))
+        contextPropagation.resumeContext()
+        push(out, zipper([#inlet0.value#]))
         if (willShutDown) completeStage()
         staleTupleValues = true
       }
@@ -85,8 +88,10 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[F
          var hasValue = false
 
          override def onPush() = {
-              value = outer.grab(in)
               hasValue = true
+              value = outer.grab(in)
+              // Only one context can be propagated.
+              if (outer.hasAllValues) contextPropagation.suspendContext()
               outer.staleTupleValues = false
               if (outer.waitingForTuple && outer.hasAllValues) {
                   outer.pushOutput()
