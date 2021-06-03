@@ -130,7 +130,9 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
 
     case DeleteMessagesSuccess(toSequenceNr) =>
       val deleteTo = toSequenceNr - 1
-      val deleteFrom = math.max(0, deleteTo - (keepNrOfBatches * snapshotAfter))
+      // keeping one additional batch of messages in case snapshotAfter has been delayed to the end of a processed batch
+      val keepNrOfBatchesWithSafetyBatch = if (keepNrOfBatches == 0) 0 else keepNrOfBatches + 1
+      val deleteFrom = math.max(0, deleteTo - (keepNrOfBatchesWithSafetyBatch * snapshotAfter))
       log.debug(
         "Messages to [{}] deleted successfully. Deleting snapshots from [{}] to [{}]",
         toSequenceNr,
@@ -154,7 +156,13 @@ private[akka] final class EventSourcedRememberEntitiesShardStore(
     log.debug("Store stopping")
   }
 
-  def saveSnapshot(): Unit = {
+  def saveSnapshotWhenNeeded(): Unit = {
+    if (isSnapshotNeeded) {
+      saveSnapshot()
+    }
+  }
+
+  private def saveSnapshot(): Unit = {
     log.debug("Saving snapshot, sequence number [{}]", snapshotSequenceNr)
     saveSnapshot(state)
   }
