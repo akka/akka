@@ -5,7 +5,6 @@
 package akka.event;
 
 import akka.actor.AbstractActor;
-import akka.japi.pf.ReceiveBuilder;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;

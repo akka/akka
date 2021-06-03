@@ -5,7 +5,6 @@
 package akka.remote
 
 import scala.util.control.NonFatal
-
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.protobufv3.internal.ByteString
@@ -52,7 +51,7 @@ private[akka] object MessageSerializer {
       if (oldInfo eq null)
         Serialization.currentTransportInformation.value = system.provider.serializationInformation
 
-      builder.setMessage(ByteString.copyFrom(serializer.toBinary(message)))
+      builder.setMessage(ByteStringUtils.toProtoByteStringUnsafe(serializer.toBinary(message)))
       builder.setSerializerId(serializer.identifier)
 
       val ms = Serializers.manifestFor(serializer, message)

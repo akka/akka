@@ -24,7 +24,7 @@ class LineNumberSpec extends AkkaSpec {
       }
 
       "work for partial functions" in {
-        LineNumbers(partial) should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 21, 22))
+        LineNumbers(partial) should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 20, 22))
       }
 
       "work for `def`" in {

@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import akka.NotUsed;
-import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.persistence.query.Sequence;
 import akka.persistence.query.Offset;
 import com.typesafe.config.Config;

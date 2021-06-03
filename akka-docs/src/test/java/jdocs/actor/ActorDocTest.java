@@ -13,8 +13,6 @@ import static jdocs.actor.Messages.Swap.Swap;
 import static jdocs.actor.Messages.*;
 import akka.actor.CoordinatedShutdown;
 
-import akka.Done;
-
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.time.Duration;

@@ -4,15 +4,16 @@
 
 package akka.stream.scaladsl
 
+import akka.stream.Attributes.Attribute
+import akka.stream.scaladsl.AttributesSpec.AttributesFlow
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.annotation.nowarn
 import akka.{ Done, NotUsed }
-import akka.stream.AbruptStageTerminationException
-import akka.stream.Materializer
-import akka.stream.NeverMaterializedException
+import akka.stream.{ AbruptStageTerminationException, Attributes, Materializer, NeverMaterializedException }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.Utils._
@@ -27,7 +28,10 @@ class LazyFlowSpec extends StreamSpec("""
     akka.stream.materializer.max-input-buffer-size = 1
   """) {
 
+  import system.dispatcher
   val ex = TE("")
+  case class MyAttribute() extends Attribute
+  val myAttributes = Attributes(MyAttribute())
 
   "Flow.lazyFlow" must {
     // more complete test coverage is for lazyFutureFlow since this is composition of that
@@ -44,6 +48,16 @@ class LazyFlowSpec extends StreamSpec("""
       deferredMatVal.isCompleted should ===(true)
     }
 
+    "provide attributes to inner flow" in assertAllStagesStopped {
+      val attributes = Source
+        .single(Done)
+        .viaMat(Flow.lazyFlow(() => Flow.fromGraph(new AttributesFlow())))(Keep.right)
+        .addAttributes(myAttributes)
+        .to(Sink.head)
+        .run()
+
+      attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
+    }
   }
 
   "Flow.futureFlow" must {
@@ -59,6 +73,17 @@ class LazyFlowSpec extends StreamSpec("""
       val list = result._2
       list.futureValue should equal(Seq("1", "2", "3"))
       deferredMatVal.isCompleted should ===(true)
+    }
+
+    "provide attributes to inner flow" in assertAllStagesStopped {
+      val attributes = Source
+        .single(Done)
+        .viaMat(Flow.futureFlow(Future(Flow.fromGraph(new AttributesFlow()))))(Keep.right)
+        .addAttributes(myAttributes)
+        .to(Sink.head)
+        .run()
+
+      attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
     }
   }
 
@@ -228,6 +253,17 @@ class LazyFlowSpec extends StreamSpec("""
 
       list.failed.futureValue shouldBe an[AbruptStageTerminationException]
       deferredMatVal.failed.futureValue shouldBe an[AbruptStageTerminationException]
+    }
+
+    "provide attributes to inner flow" in assertAllStagesStopped {
+      val attributes = Source
+        .single(Done)
+        .viaMat(Flow.lazyFutureFlow(() => Future(Flow.fromGraph(new AttributesFlow()))))(Keep.right)
+        .addAttributes(myAttributes)
+        .to(Sink.head)
+        .run()
+
+      attributes.futureValue.get[MyAttribute] should contain(MyAttribute())
     }
   }
 

@@ -44,15 +44,15 @@ object AkkaValidatePullRequest extends AutoPlugin {
     prValidatorGithubRepository := Some("akka/akka"))
 
   override lazy val projectSettings = inConfig(ValidatePR)(Defaults.testTasks) ++ Seq(
-      testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "performance"),
-      testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "long-running"),
-      testOptions in ValidatePR += Tests.Argument(TestFrameworks.ScalaTest, "-l", "timing"),
+      ValidatePR / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-l", "performance"),
+      ValidatePR / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-l", "long-running"),
+      ValidatePR / testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-l", "timing"),
       // make it fork just like regular test running
-      fork in ValidatePR := (fork in Test).value,
-      testGrouping in ValidatePR := (testGrouping in Test).value,
-      javaOptions in ValidatePR := (javaOptions in Test).value,
-      prValidatorTasks := Seq(test in ValidatePR) ++ additionalTasks.value,
-      prValidatorEnforcedBuildAllTasks := Seq(test in Test) ++ additionalTasks.value)
+      ValidatePR / fork := (Test / fork).value,
+      ValidatePR / testGrouping := (Test / testGrouping).value,
+      ValidatePR / javaOptions := (Test / javaOptions).value,
+      prValidatorTasks := Seq(ValidatePR / test) ++ additionalTasks.value,
+      prValidatorEnforcedBuildAllTasks := Seq(Test / test) ++ additionalTasks.value)
 }
 
 /**
@@ -97,12 +97,12 @@ object ParadoxWithPrValidation extends AutoPlugin {
 
   override def trigger = allRequirements
   override def requires = AkkaValidatePullRequest && ParadoxPlugin
-  override lazy val projectSettings = Seq(additionalTasks += paradox in Compile)
+  override lazy val projectSettings = Seq(additionalTasks += Compile / paradox)
 }
 
 object UnidocWithPrValidation extends AutoPlugin {
   import AkkaValidatePullRequest._
 
   override def trigger = noTrigger
-  override lazy val projectSettings = Seq(additionalTasks += unidoc in Compile)
+  override lazy val projectSettings = Seq(additionalTasks += Compile / unidoc)
 }

@@ -5,7 +5,6 @@
 package akka.stream.impl
 
 import java.util.function.BinaryOperator
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -29,9 +28,7 @@ import akka.stream.impl.QueueSink.Output
 import akka.stream.impl.QueueSink.Pull
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.AtomicModule
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.SinkQueueWithCancel
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Keep, Sink, SinkQueueWithCancel, Source }
 import akka.stream.stage._
 import akka.util.ccompat._
 
@@ -54,10 +51,6 @@ import akka.util.ccompat._
 
   override def traversalBuilder: TraversalBuilder =
     LinearTraversalBuilder.fromModule(this, attributes).makeIsland(SinkModuleIslandTag)
-
-  // This is okay since we the only caller of this method is right below.
-  // TODO: Remove this, no longer needed
-  protected def newInstance(s: SinkShape[In] @uncheckedVariance): SinkModule[In, Mat]
 
   protected def amendShape(attr: Attributes): SinkShape[In] = {
     val thisN = traversalBuilder.attributes.nameOrDefault(null)
@@ -104,8 +97,6 @@ import akka.util.ccompat._
     (proc, proc)
   }
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
-    new PublisherSink[In](attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[In, Publisher[In]] =
     new PublisherSink[In](attr, amendShape(attr))
 }
@@ -124,9 +115,6 @@ import akka.util.ccompat._
     (fanoutProcessor, fanoutProcessor)
   }
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] =
-    new FanoutPublisherSink[In](attributes, shape)
-
   override def withAttributes(attr: Attributes): SinkModule[In, Publisher[In]] =
     new FanoutPublisherSink[In](attr, amendShape(attr))
 }
@@ -143,8 +131,6 @@ import akka.util.ccompat._
 
   override def create(context: MaterializationContext) = (subscriber, NotUsed)
 
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] =
-    new SubscriberSink[In](subscriber, attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[In, NotUsed] =
     new SubscriberSink[In](subscriber, attr, amendShape(attr))
 }
@@ -157,8 +143,6 @@ import akka.util.ccompat._
     extends SinkModule[Any, NotUsed](shape) {
   override def create(context: MaterializationContext): (Subscriber[Any], NotUsed) =
     (new CancellingSubscriber[Any], NotUsed)
-  override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, NotUsed] =
-    new CancelSink(attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[Any, NotUsed] = new CancelSink(attr, amendShape(attr))
 }
 
@@ -604,7 +588,8 @@ import akka.util.ccompat._
 
         val subOutlet = new SubSourceOutlet[T]("LazySink")
 
-        val matVal = Source.fromGraph(subOutlet.source).runWith(sink)(interpreter.subFusingMaterializer)
+        val matVal = interpreter.subFusingMaterializer
+          .materialize(Source.fromGraph(subOutlet.source).toMat(sink)(Keep.right), inheritedAttributes)
 
         def maybeCompleteStage(): Unit = {
           if (isClosed(in) && subOutlet.isClosed) {

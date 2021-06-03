@@ -30,7 +30,7 @@ object AkkaBuild {
   lazy val rootSettings = Def.settings(
     UnidocRoot.akkaSettings,
     Protobuf.settings,
-    parallelExecution in GlobalScope := System
+    GlobalScope / parallelExecution := System
         .getProperty("akka.parallelExecution", parallelExecutionByDefault.toString)
         .toBoolean,
     // used for linking to API docs (overwrites `project-info.version`)
@@ -68,7 +68,7 @@ object AkkaBuild {
                 ivyConfigurations.value.map(c => ConfigRef(c.name)).toVector,
                 artifacts = packagedArtifacts.value.toVector,
                 resolverName = resolver.name,
-                checksums = checksums.in(publishM2).value.toVector,
+                checksums = (publishM2 / checksums).value.toVector,
                 logging = ivyLoggingLevel.value,
                 overwrite = true)))
     }
@@ -115,22 +115,22 @@ object AkkaBuild {
     resolverSettings,
     TestExtras.Filter.settings,
     // compile options
-    scalacOptions in Compile ++= DefaultScalacOptions,
-    scalacOptions in Compile ++=
+    Compile / scalacOptions ++= DefaultScalacOptions,
+    Compile / scalacOptions ++=
       JdkOptions.targetJdkScalacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
-    scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
-    scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
+    Compile / scalacOptions ++= (if (allWarnings) Seq("-deprecation") else Nil),
+    Test / scalacOptions := (Test / scalacOptions).value.filterNot(opt =>
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
-    javacOptions in Compile ++= {
+    Compile / javacOptions ++= {
       DefaultJavacOptions ++
       JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value)
     },
-    javacOptions in Test ++= DefaultJavacOptions ++
+    Test / javacOptions ++= DefaultJavacOptions ++
       JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
-    javacOptions in Compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
-    javacOptions in doc := Seq(),
+    Compile / javacOptions ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
+    doc / javacOptions := Seq(),
     crossVersion := CrossVersion.binary,
-    ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
+    ThisBuild / ivyLoggingLevel := UpdateLogging.Quiet,
     licenses := Seq(("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html"))),
     homepage := Some(url("https://akka.io/")),
     description := "Akka is a toolkit for building highly concurrent, distributed, and resilient message-driven applications for Java and Scala.",
@@ -158,9 +158,9 @@ object AkkaBuild {
     /**
      * Test settings
      */
-    fork in Test := true,
+    Test / fork := true,
     // default JVM config for tests
-    javaOptions in Test ++= {
+    Test / javaOptions ++= {
       val defaults = Seq(
         // ## core memory settings
         "-XX:+UseG1GC",
@@ -187,8 +187,8 @@ object AkkaBuild {
         defaults
     },
     // all system properties passed to sbt prefixed with "akka." will be passed on to the forked jvms as is
-    javaOptions in Test := {
-      val base = (javaOptions in Test).value
+    Test / javaOptions := {
+      val base = (Test / javaOptions).value
       val akkaSysProps: Seq[String] =
         sys.props.filter(_._1.startsWith("akka")).map { case (key, value) => s"-D$key=$value" }(breakOut)
 
@@ -196,8 +196,8 @@ object AkkaBuild {
     },
     // with forked tests the working directory is set to each module's home directory
     // rather than the Akka root, some tests depend on Akka root being working dir, so reset
-    testGrouping in Test := {
-      val original: Seq[Tests.Group] = (testGrouping in Test).value
+    Test / testGrouping := {
+      val original: Seq[Tests.Group] = (Test / testGrouping).value
 
       original.map { group =>
         group.runPolicy match {
@@ -210,12 +210,12 @@ object AkkaBuild {
         }
       }
     },
-    parallelExecution in Test := System
+    Test / parallelExecution := System
         .getProperty("akka.parallelExecution", parallelExecutionByDefault.toString)
         .toBoolean,
-    logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
+    Test / logBuffered := System.getProperty("akka.logBufferedTests", "false").toBoolean,
     // show full stack traces and test case durations
-    testOptions in Test += Tests.Argument("-oDF"),
+    Test / testOptions += Tests.Argument("-oDF"),
     mavenLocalResolverSettings,
     docLintingSettings,
     JdkOptions.targetJdkSettings,
@@ -238,9 +238,9 @@ object AkkaBuild {
     }
 
   lazy val docLintingSettings = Seq(
-    javacOptions in compile ++= Seq("-Xdoclint:none"),
-    javacOptions in test ++= Seq("-Xdoclint:none"),
-    javacOptions in doc ++= {
+    compile / javacOptions ++= Seq("-Xdoclint:none"),
+    test / javacOptions ++= Seq("-Xdoclint:none"),
+    doc / javacOptions ++= {
       if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
       else Seq("-Xdoclint:none", "--ignore-source-errors")
     })

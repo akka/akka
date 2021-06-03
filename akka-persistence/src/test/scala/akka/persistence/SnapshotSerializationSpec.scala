@@ -68,7 +68,7 @@ object SnapshotSerializationSpec {
 class SnapshotSerializationSpec
     extends PersistenceSpec(
       PersistenceSpec.config(
-        "leveldb",
+        "inmem",
         "SnapshotSerializationSpec",
         serialization = "off",
         extraConfig = Some("""

@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 
 import static jdocs.akka.persistence.typed.AuctionEntity.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ReplicatedAuctionExampleTest extends JUnitSuite {
   @ClassRule
@@ -69,7 +70,7 @@ public class ReplicatedAuctionExampleTest extends JUnitSuite {
         () -> {
           replicaA.tell(new GetHighestBid(replyProbe.ref()));
           Bid bid = replyProbe.expectMessageClass(Bid.class);
-          assertEquals(bid.offer, 202);
+          assertEquals(202, bid.offer);
           return bid;
         });
 
@@ -210,15 +211,15 @@ class AuctionEntity
     }
 
     AuctionState withNewHighestBid(Bid bid) {
-      assert (stillRunning);
-      assert (isHigherBid(bid, highestBid));
+      assertTrue(stillRunning);
+      assertTrue(isHigherBid(bid, highestBid));
       return new AuctionState(
           stillRunning, bid, highestBid.offer, finishedAtDc); // keep last highest bid around
     }
 
     AuctionState withTooLowBid(Bid bid) {
-      assert (stillRunning);
-      assert (isHigherBid(highestBid, bid));
+      assertTrue(stillRunning);
+      assertTrue(isHigherBid(highestBid, bid));
       return new AuctionState(
           stillRunning, highestBid, Math.max(highestCounterOffer, bid.offer), finishedAtDc);
     }

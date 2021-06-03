@@ -85,13 +85,14 @@ private[akka] object BehaviorTags {
     override def toString: String = s"Failed($cause)"
   }
 
-  object StoppedBehavior extends StoppedBehavior[Nothing](OptionVal.None)
+  // used to be `object StoppedBehavior extends ...`  https://github.com/lampepfl/dotty/issues/12602
+  val StoppedBehavior = new StoppedBehavior[Nothing](OptionVal.None)
 
   /**
    * When the cell is stopping this behavior is used, so
    * that PostStop can be sent to previous behavior from `finishTerminate`.
    */
-  private[akka] sealed class StoppedBehavior[T](val postStop: OptionVal[TypedActorContext[T] => Unit])
+  private[akka] final class StoppedBehavior[T](val postStop: OptionVal[TypedActorContext[T] => Unit])
       extends Behavior[T](BehaviorTags.StoppedBehavior) {
 
     def onPostStop(ctx: TypedActorContext[T]): Unit = {

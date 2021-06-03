@@ -7,13 +7,11 @@ package akka.cluster.ddata.protobuf
 import java.io.NotSerializableException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
-
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
@@ -28,7 +26,7 @@ import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.Replicator.Internal._
 import akka.cluster.ddata.VersionVector
 import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
-import akka.protobufv3.internal.ByteString
+import akka.remote.ByteStringUtils
 import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
@@ -267,7 +265,11 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     b.setChunk(status.chunk).setTotChunks(status.totChunks)
     status.digests.foreach {
       case (key, digest) =>
-        b.addEntries(dm.Status.Entry.newBuilder().setKey(key).setDigest(ByteString.copyFrom(digest.toArray)))
+        b.addEntries(
+          dm.Status.Entry
+            .newBuilder()
+            .setKey(key)
+            .setDigest(ByteStringUtils.toProtoByteStringUnsafe(digest.toArrayUnsafe())))
     }
     status.toSystemUid.foreach(b.setToSystemUid) // can be None when sending back to a node of version 2.5.21
     b.setFromSystemUid(status.fromSystemUid.get)
@@ -279,7 +281,9 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     val toSystemUid = if (status.hasToSystemUid) Some(status.getToSystemUid) else None
     val fromSystemUid = if (status.hasFromSystemUid) Some(status.getFromSystemUid) else None
     Status(
-      status.getEntriesList.asScala.iterator.map(e => e.getKey -> AkkaByteString(e.getDigest.toByteArray())).toMap,
+      status.getEntriesList.asScala.iterator
+        .map(e => e.getKey -> AkkaByteString.fromArrayUnsafe(e.getDigest.toByteArray()))
+        .toMap,
       status.getChunk,
       status.getTotChunks,
       toSystemUid,

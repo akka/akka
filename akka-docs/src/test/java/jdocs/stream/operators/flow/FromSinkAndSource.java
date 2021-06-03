@@ -12,8 +12,6 @@ import akka.stream.javadsl.*;
 import akka.stream.testkit.TestPublisher;
 import akka.stream.testkit.TestSubscriber;
 import akka.util.ByteString;
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
 
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;

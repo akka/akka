@@ -25,22 +25,10 @@ private[akka] object ActorContextAdapter {
     }
 
   def toClassic[U](context: scaladsl.ActorContext[_]): classic.ActorContext =
-    context match {
-      case c: TypedActorContext[_] => toClassicImp(c)
-      case _ =>
-        throw new UnsupportedOperationException(
-          "unknown ActorContext type " +
-          s"($context of class ${context.getClass.getName})")
-    }
+    toClassicImp(context)
 
   def toClassic[U](context: javadsl.ActorContext[_]): classic.ActorContext =
-    context match {
-      case c: TypedActorContext[_] => toClassicImp(c)
-      case _ =>
-        throw new UnsupportedOperationException(
-          "unknown ActorContext type " +
-          s"($context of class ${context.getClass.getName})")
-    }
+    toClassicImp(context)
 }
 
 /**

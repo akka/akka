@@ -11,7 +11,6 @@ import akka.actor.SupervisorStrategy;
 import akka.testkit.TestActor;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 
 public class TestKitApiTest {

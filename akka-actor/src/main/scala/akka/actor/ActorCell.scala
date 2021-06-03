@@ -322,6 +322,7 @@ private[akka] trait Cell {
    * schedule the actor to run, depending on which type of cell it is.
    * Is only allowed to throw Fatal Throwables.
    */
+  @InternalStableApi
   final def sendMessage(message: Any, sender: ActorRef): Unit =
     sendMessage(Envelope(message, sender, system))
 

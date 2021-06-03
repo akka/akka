@@ -20,43 +20,6 @@ import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
 
 /** Internal Api */
-@InternalApi private[stream] final class SetupSinkStage[T, M](factory: (Materializer, Attributes) => Sink[T, M])
-    extends GraphStageWithMaterializedValue[SinkShape[T], Future[M]] {
-
-  private val in = Inlet[T]("SetupSinkStage.in")
-  override val shape = SinkShape(in)
-
-  override protected def initialAttributes: Attributes = Attributes.name("setup") and SourceLocation.forLambda(factory)
-
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
-    val matPromise = Promise[M]()
-    (createStageLogic(matPromise), matPromise.future)
-  }
-
-  private def createStageLogic(matPromise: Promise[M]) = new GraphStageLogic(shape) {
-    import SetupStage._
-
-    val subOutlet = new SubSourceOutlet[T]("SetupSinkStage")
-    subOutlet.setHandler(delegateToInlet(() => pull(in), cause => cancel(in, cause)))
-    setHandler(in, delegateToSubOutlet(() => grab(in), subOutlet))
-
-    override def preStart(): Unit = {
-      try {
-        val sink = factory(materializer, attributes)
-
-        val mat = Source.fromGraph(subOutlet.source).runWith(sink.addAttributes(attributes))(subFusingMaterializer)
-        matPromise.success(mat)
-      } catch {
-        case NonFatal(ex) =>
-          matPromise.failure(ex)
-          throw ex
-      }
-    }
-  }
-
-}
-
-/** Internal Api */
 @InternalApi private[stream] final class SetupFlowStage[T, U, M](factory: (Materializer, Attributes) => Flow[T, U, M])
     extends GraphStageWithMaterializedValue[FlowShape[T, U], Future[M]] {
 
@@ -87,11 +50,9 @@ import akka.stream.stage.OutHandler
       try {
         val flow = factory(materializer, attributes)
 
-        val mat = Source
-          .fromGraph(subOutlet.source)
-          .viaMat(flow.addAttributes(attributes))(Keep.right)
-          .to(Sink.fromGraph(subInlet.sink))
-          .run()(subFusingMaterializer)
+        val mat = subFusingMaterializer.materialize(
+          Source.fromGraph(subOutlet.source).viaMat(flow)(Keep.right).to(Sink.fromGraph(subInlet.sink)),
+          attributes)
         matPromise.success(mat)
       } catch {
         case NonFatal(ex) =>
@@ -127,7 +88,7 @@ import akka.stream.stage.OutHandler
       try {
         val source = factory(materializer, attributes)
 
-        val mat = source.addAttributes(attributes).to(Sink.fromGraph(subInlet.sink)).run()(subFusingMaterializer)
+        val mat = subFusingMaterializer.materialize(source.to(Sink.fromGraph(subInlet.sink)), attributes)
         matPromise.success(mat)
       } catch {
         case NonFatal(ex) =>

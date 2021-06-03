@@ -14,6 +14,17 @@ After completion of the original upstream the elements of the given source will 
 
 After completion of the original upstream the elements of the given source will be emitted.
 
+Both streams will be materialized together.
+
+@@@ note
+
+   The `concat` operator is for backwards compatibility reasons "detached" and will eagerly 
+   demand an element from both upstreams when the stream is materialized and will then have a 
+   one element buffer for each of the upstreams, this is most often not what you want, instead
+   use @ref(concatLazy)[concatLazy.md]
+
+@@@
+
 ## Example
 Scala
 :   @@snip [FlowConcatSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowConcatSpec.scala) { #concat }

@@ -83,7 +83,7 @@ object SnapshotSpec {
   }
 }
 
-class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "SnapshotSpec")) with ImplicitSender {
+class SnapshotSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotSpec")) with ImplicitSender {
   import SnapshotProtocol._
   import SnapshotSpec._
 

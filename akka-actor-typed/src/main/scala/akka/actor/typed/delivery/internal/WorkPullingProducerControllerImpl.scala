@@ -621,22 +621,22 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
         else
           onMessageBeforeDurableQueue(msg, Some(replyTo))
 
-      case m: ResendDurableMsg[A] =>
+      case m: ResendDurableMsg[A @unchecked] =>
         onResendDurableMsg(m)
 
       case StoreMessageSentCompleted(MessageSent(seqNr, m: A, _, _, _)) =>
         receiveStoreMessageSentCompleted(seqNr, m)
 
-      case f: StoreMessageSentFailed[A] =>
+      case f: StoreMessageSentFailed[A @unchecked] =>
         receiveStoreMessageSentFailed(f)
 
       case ack: Ack =>
         receiveAck(ack)
 
-      case w: WorkerRequestNext[A] =>
+      case w: WorkerRequestNext[A @unchecked] =>
         receiveWorkerRequestNext(w)
 
-      case curr: CurrentWorkers[A] =>
+      case curr: CurrentWorkers[A @unchecked] =>
         receiveCurrentWorkers(curr)
 
       case GetWorkerStats(replyTo) =>
@@ -646,7 +646,7 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
       case RegisterConsumerDone =>
         Behaviors.same
 
-      case start: Start[A] =>
+      case start: Start[A @unchecked] =>
         receiveStart(start)
 
       case AskTimeout(outKey, outSeqNr) =>

@@ -33,7 +33,7 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
 
       val in =
         Source
-          .queue[String](10, OverflowStrategy.dropBuffer)
+          .queue[String](10)
           .map(_ + "!")
           .to(ActorSink.actorRef(p.ref, "DONE", ex => "FAILED: " + ex.getMessage))
           .run()
@@ -65,7 +65,7 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
 
       val in =
         Source
-          .queue[String](10, OverflowStrategy.dropBuffer)
+          .queue[String](10)
           .to(ActorSink.actorRefWithBackpressure(pilotRef, Msg.apply, Init.apply, "ACK", Complete, _ => Failed))
           .run()
 
@@ -102,7 +102,7 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
 
       val in =
         Source
-          .queue[String](10, OverflowStrategy.dropBuffer)
+          .queue[String](10)
           .to(ActorSink.actorRefWithBackpressure(pilotRef, Msg.apply, Init.apply, Complete, _ => Failed))
           .run()
 

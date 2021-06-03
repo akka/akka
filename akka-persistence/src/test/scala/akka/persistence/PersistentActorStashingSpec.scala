@@ -309,7 +309,5 @@ class SteppingInMemPersistentActorStashingSpec
 
 }
 
-class LeveldbPersistentActorStashingSpec
-    extends PersistentActorStashingSpec(PersistenceSpec.config("leveldb", "LeveldbPersistentActorStashingSpec"))
 class InmemPersistentActorStashingSpec
     extends PersistentActorStashingSpec(PersistenceSpec.config("inmem", "InmemPersistentActorStashingSpec"))

@@ -5,8 +5,6 @@
 package jdocs.cluster;
 
 import java.util.concurrent.TimeUnit;
-import scala.concurrent.Await;
-import scala.concurrent.duration.Duration;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 

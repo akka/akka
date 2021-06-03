@@ -50,7 +50,7 @@ private[akka] final class OutputStreamGraphStage(factory: () => OutputStream, au
       override def onPush(): Unit = {
         val next = grab(in)
         try {
-          outputStream.write(next.toArray)
+          outputStream.write(next.toArrayUnsafe())
           if (autoFlush) outputStream.flush()
 
           bytesWritten += next.size

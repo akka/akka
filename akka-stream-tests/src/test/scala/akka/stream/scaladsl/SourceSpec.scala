@@ -171,11 +171,11 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
 
     "combine from two inputs with combinedMat and take a materialized value" in {
-      val queueSource = Source.queue[Int](1, OverflowStrategy.dropBuffer)
+      val queueSource = Source.queue[Int](3)
       val intSeqSource = Source(1 to 3)
 
       // compiler to check the correct materialized value of type = SourceQueueWithComplete[Int] available
-      val combined1: Source[Int, SourceQueueWithComplete[Int]] =
+      val combined1: Source[Int, BoundedSourceQueue[Int]] =
         Source.combineMat(queueSource, intSeqSource)(Concat(_))(Keep.left) //Keep.left (i.e. preserve queueSource's materialized value)
 
       val (queue1, sinkProbe1) = combined1.toMat(TestSink.probe[Int])(Keep.both).run()
@@ -192,7 +192,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       sinkProbe1.expectNext(3)
 
       // compiler to check the correct materialized value of type = SourceQueueWithComplete[Int] available
-      val combined2: Source[Int, SourceQueueWithComplete[Int]] =
+      val combined2: Source[Int, BoundedSourceQueue[Int]] =
         //queueSource to be the second of combined source
         Source.combineMat(intSeqSource, queueSource)(Concat(_))(Keep.right) //Keep.right (i.e. preserve queueSource's materialized value)
 
@@ -390,7 +390,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
 
     "allow for multiple downstream materialized sources" in {
-      val matValPoweredSource = Source.queue[String](Int.MaxValue, OverflowStrategy.fail)
+      val matValPoweredSource = Source.queue[String](Int.MaxValue)
       val (mat, src) = matValPoweredSource.preMaterialize()
 
       val probe1 = src.runWith(TestSink.probe[String])
@@ -398,25 +398,25 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
       probe1.request(1)
       probe2.request(1)
-      mat.offer("One").futureValue
+      mat.offer("One")
       probe1.expectNext("One")
       probe2.expectNext("One")
     }
 
     "survive cancellations of downstream materialized sources" in {
-      val matValPoweredSource = Source.queue[String](Int.MaxValue, OverflowStrategy.fail)
+      val matValPoweredSource = Source.queue[String](Int.MaxValue)
       val (mat, src) = matValPoweredSource.preMaterialize()
 
       val probe1 = src.runWith(TestSink.probe[String])
       src.runWith(Sink.cancelled)
 
       probe1.request(1)
-      mat.offer("One").futureValue
+      mat.offer("One")
       probe1.expectNext("One")
     }
 
     "propagate failures to downstream materialized sources" in {
-      val matValPoweredSource = Source.queue[String](Int.MaxValue, OverflowStrategy.fail)
+      val matValPoweredSource = Source.queue[String](Int.MaxValue)
       val (mat, src) = matValPoweredSource.preMaterialize()
 
       val probe1 = src.runWith(TestSink.probe[String])

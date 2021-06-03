@@ -6,7 +6,6 @@ package jdocs.stream.operators.sourceorflow;
 
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.japi.function.Creator;
 import akka.japi.function.Function;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;

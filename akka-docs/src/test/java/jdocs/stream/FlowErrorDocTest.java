@@ -21,7 +21,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import akka.actor.ActorSystem;
-import akka.stream.Materializer;
 import akka.stream.Supervision;
 import akka.stream.ActorAttributes;
 import akka.japi.function.Function;

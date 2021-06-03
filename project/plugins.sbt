@@ -1,7 +1,7 @@
 libraryDependencies += Defaults.sbtPluginExtra(
   "com.eed3si9n" % "sbt-assembly" % "0.15.0",
-  (sbtBinaryVersion in pluginCrossBuild).value,
-  (scalaBinaryVersion in pluginCrossBuild).value)
+  (pluginCrossBuild / sbtBinaryVersion).value,
+  (pluginCrossBuild / scalaBinaryVersion).value)
 
 // these comment markers are for including code into the docs
 //#sbt-multi-jvm
@@ -28,4 +28,3 @@ addSbtPlugin("com.hpe.sbt" % "sbt-pull-request-validator" % "1.0.0")
 addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.25")
 addSbtPlugin("com.dwijnand" % "sbt-dynver" % "4.1.1")
 addSbtPlugin("com.lightbend.sbt" % "sbt-publish-rsync" % "0.2")
-addSbtPlugin("ch.epfl.lamp" % "sbt-dotty" % "0.5.4")

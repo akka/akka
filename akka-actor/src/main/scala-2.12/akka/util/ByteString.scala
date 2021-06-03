@@ -154,7 +154,7 @@ object ByteString {
     }
 
   private[akka] object ByteString1C extends Companion {
-    def fromString(s: String): ByteString1C = new ByteString1C(s.getBytes)
+    def fromString(s: String): ByteString1C = new ByteString1C(s.getBytes(StandardCharsets.UTF_8))
     def apply(bytes: Array[Byte]): ByteString1C = new ByteString1C(bytes)
     val SerializationIdentity = 1.toByte
 
@@ -258,12 +258,13 @@ object ByteString {
       buffer.putByteArrayUnsafe(bytes)
     }
 
+    override def toArrayUnsafe(): Array[Byte] = bytes
   }
 
   /** INTERNAL API: ByteString backed by exactly one array, with start / end markers */
   private[akka] object ByteString1 extends Companion {
     val empty: ByteString1 = new ByteString1(Array.empty[Byte])
-    def fromString(s: String): ByteString1 = apply(s.getBytes)
+    def fromString(s: String): ByteString1 = apply(s.getBytes(StandardCharsets.UTF_8))
     def apply(bytes: Array[Byte]): ByteString1 = apply(bytes, 0, bytes.length)
     def apply(bytes: Array[Byte], startIndex: Int, length: Int): ByteString1 =
       if (length == 0) empty
@@ -273,6 +274,7 @@ object ByteString {
 
     def readFromInputStream(is: ObjectInputStream): ByteString1 =
       ByteString1C.readFromInputStream(is).toByteString1
+
   }
 
   /**
@@ -417,6 +419,11 @@ object ByteString {
     }
 
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
+
+    override def toArrayUnsafe(): Array[Byte] = {
+      if (startIndex == 0 && length == bytes.length) bytes
+      else toArray
+    }
   }
 
   private[akka] object ByteStrings extends Companion {
@@ -786,6 +793,25 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   override def toArray[B >: Byte](implicit arg0: ClassTag[B]): Array[B] = iterator.toArray
   override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Unit =
     iterator.copyToArray(xs, start, len)
+
+  /**
+   * Unsafe API: Use only in situations you are completely confident that this is what
+   * you need, and that you understand the implications documented below.
+   *
+   * If the ByteString is backed by a single array it is returned without any copy. If it is backed by a rope
+   * of multiple ByteString instances a new array will be allocated and the contents will be copied
+   * into it before returning it.
+   *
+   * This method of exposing the bytes of a ByteString can save one array
+   * copy and allocation in the happy path scenario which can lead to better performance,
+   * however it also means that one MUST NOT modify the returned array, or unexpected
+   * immutable data structure contract-breaking behavior will manifest itself.
+   *
+   * This API is intended for users who need to pass the byte array to some other API, which will
+   * only read the bytes and never mutate then. For all other intents and purposes, please use the usual
+   * toArray method - which provide the immutability guarantees by copying the backing array.
+   */
+  def toArrayUnsafe(): Array[Byte] = toArray
 
   override def foreach[@specialized U](f: Byte => U): Unit = iterator.foreach(f)
 

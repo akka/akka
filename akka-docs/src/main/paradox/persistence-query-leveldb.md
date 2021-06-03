@@ -1,5 +1,8 @@
 # Persistence Query for LevelDB
 
+The LevelDB journal and query plugin is deprecated and it is not advised to build new applications with it.
+As a replacement we recommend using [Akka Persistence JDBC](https://doc.akka.io/docs/akka-persistence-jdbc/current/index.html).
+
 ## Dependency
 
 To use Persistence Query, you must add the following dependency in your project:

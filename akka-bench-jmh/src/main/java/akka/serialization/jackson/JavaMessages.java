@@ -4,8 +4,6 @@
 
 package akka.serialization.jackson;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;

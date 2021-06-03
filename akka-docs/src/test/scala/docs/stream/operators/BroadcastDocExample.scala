@@ -40,8 +40,8 @@ object BroadcastDocExample {
           val broadcast = builder.add(Broadcast[Int](3))
           source ~> broadcast
           broadcast.out(0) ~> countS
-          broadcast.out(0) ~> minS
-          broadcast.out(0) ~> maxS
+          broadcast.out(1) ~> minS
+          broadcast.out(2) ~> maxS
           ClosedShape
       })
       .run()
@@ -54,8 +54,8 @@ object BroadcastDocExample {
       val broadcast = builder.add(Broadcast[Int](3))
       source ~> broadcast
       broadcast.out(0) ~> Flow[Int].async ~> countS
-      broadcast.out(0) ~> Flow[Int].async ~> minS
-      broadcast.out(0) ~> Flow[Int].async ~> maxS
+      broadcast.out(1) ~> Flow[Int].async ~> minS
+      broadcast.out(2) ~> Flow[Int].async ~> maxS
       ClosedShape
   })
   //#broadcast-async

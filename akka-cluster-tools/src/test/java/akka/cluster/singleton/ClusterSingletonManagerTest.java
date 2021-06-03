@@ -6,9 +6,6 @@ package akka.cluster.singleton;
 
 import akka.actor.ActorSystem;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import akka.actor.ActorRef;
 import akka.actor.Props;
 

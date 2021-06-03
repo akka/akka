@@ -8,8 +8,6 @@ import akka.actor.ActorRef;
 import akka.actor.ActorRefFactory;
 import akka.actor.Props;
 import akka.actor.AbstractActor;
-import akka.util.Timeout;
-import scala.concurrent.duration.FiniteDuration;
 
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;

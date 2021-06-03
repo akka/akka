@@ -23,7 +23,6 @@ import org.junit.Test;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import akka.cluster.Cluster;
 import akka.cluster.ddata.*;
 import akka.japi.pf.ReceiveBuilder;
 

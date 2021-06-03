@@ -55,7 +55,8 @@ object ClusterShardingSettings {
         classicSettings.coordinatorSingletonSettings.singletonName,
         classicSettings.coordinatorSingletonSettings.role,
         classicSettings.coordinatorSingletonSettings.removalMargin,
-        classicSettings.coordinatorSingletonSettings.handOverRetryInterval),
+        classicSettings.coordinatorSingletonSettings.handOverRetryInterval,
+        classicSettings.coordinatorSingletonSettings.leaseSettings),
       leaseSettings = classicSettings.leaseSettings)
   }
 
@@ -99,7 +100,8 @@ object ClusterShardingSettings {
         settings.coordinatorSingletonSettings.singletonName,
         settings.coordinatorSingletonSettings.role,
         settings.coordinatorSingletonSettings.removalMargin,
-        settings.coordinatorSingletonSettings.handOverRetryInterval),
+        settings.coordinatorSingletonSettings.handOverRetryInterval,
+        settings.coordinatorSingletonSettings.leaseSettings),
       leaseSettings = settings.leaseSettings)
 
   }
@@ -448,6 +450,8 @@ final class ClusterShardingSettings(
 
   def withShardRegionQueryTimeout(duration: java.time.Duration): ClusterShardingSettings =
     copy(shardRegionQueryTimeout = duration.asScala)
+
+  def withLeaseSettings(leaseSettings: LeaseUsageSettings) = copy(leaseSettings = Option(leaseSettings))
 
   /**
    * The `role` of the `ClusterSingletonManagerSettings` is not used. The `role` of the

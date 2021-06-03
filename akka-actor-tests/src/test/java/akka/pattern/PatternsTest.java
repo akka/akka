@@ -21,7 +21,6 @@ import scala.concurrent.duration.FiniteDuration;
 import java.util.Arrays;
 import java.util.concurrent.*;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static akka.pattern.Patterns.ask;

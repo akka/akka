@@ -63,7 +63,7 @@ object SnapshotRecoveryWithEmptyJournalSpec {
 class SnapshotRecoveryWithEmptyJournalSpec
     extends PersistenceSpec(
       PersistenceSpec.config(
-        "leveldb",
+        "inmem",
         "SnapshotRecoveryWithEmptyJournalSpec",
         extraConfig = Some(s"""
   akka.persistence.snapshot-store.local.dir = "${SnapshotRecoveryWithEmptyJournalSpec.survivingSnapshotPath}"

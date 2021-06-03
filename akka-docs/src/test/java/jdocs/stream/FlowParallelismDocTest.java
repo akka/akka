@@ -4,8 +4,6 @@
 
 package jdocs.stream;
 
-import static org.junit.Assert.assertEquals;
-
 import akka.NotUsed;
 import jdocs.AbstractJavaTest;
 import akka.testkit.javadsl.TestKit;

@@ -8,8 +8,6 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.control.NoStackTrace
 
-import com.typesafe.config._
-
 import akka.actor._
 import akka.persistence.AtLeastOnceDelivery.{ AtLeastOnceDeliverySnapshot, UnconfirmedWarning }
 import akka.testkit._
@@ -189,7 +187,10 @@ object AtLeastOnceDeliverySpec {
 
 }
 
-abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(config) with ImplicitSender {
+class AtLeastOnceDeliverySpec
+    extends PersistenceSpec(PersistenceSpec.config("inmem", "AtLeastOnceDeliverySpec"))
+    with ImplicitSender {
+
   import akka.persistence.AtLeastOnceDeliverySpec._
 
   "AtLeastOnceDelivery" must {
@@ -440,9 +441,3 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(c
     }
   }
 }
-
-class LeveldbAtLeastOnceDeliverySpec
-    extends AtLeastOnceDeliverySpec(PersistenceSpec.config("leveldb", "AtLeastOnceDeliverySpec"))
-
-class InmemAtLeastOnceDeliverySpec
-    extends AtLeastOnceDeliverySpec(PersistenceSpec.config("inmem", "AtLeastOnceDeliverySpec"))

@@ -159,7 +159,13 @@ object Sink {
    * [[Attributes]] of the [[Sink]] returned by this method.
    */
   def fromMaterializer[T, M](factory: (Materializer, Attributes) => Sink[T, M]): Sink[T, Future[M]] =
-    Sink.fromGraph(new SetupSinkStage(factory))
+    Flow
+      .fromMaterializer({ (mat, attr) =>
+        Flow.fromGraph(GraphDSL.create(factory(mat, attr)) { b => sink =>
+          FlowShape(sink.in, b.materializedValue.outlet)
+        })
+      })
+      .to(Sink.head)
 
   /**
    * Defers the creation of a [[Sink]] until materialization. The `factory` function
@@ -168,8 +174,9 @@ object Sink {
    */
   @deprecated("Use 'fromMaterializer' instead", "2.6.0")
   def setup[T, M](factory: (ActorMaterializer, Attributes) => Sink[T, M]): Sink[T, Future[M]] =
-    Sink.fromGraph(new SetupSinkStage((materializer, attributes) =>
-      factory(ActorMaterializerHelper.downcast(materializer), attributes)))
+    fromMaterializer { (mat, attr) =>
+      factory(ActorMaterializerHelper.downcast(mat), attr)
+    }
 
   /**
    * Helper to create [[Sink]] from `Subscriber`.

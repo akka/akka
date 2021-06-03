@@ -17,7 +17,7 @@ object Whitesource extends AutoPlugin {
     // do not change the value of whitesourceProduct
     whitesourceProduct := "Lightbend Reactive Platform",
     whitesourceAggregateProjectName := {
-      val name = (moduleName in LocalRootProject).value
+      val name = (LocalRootProject / moduleName).value
       val wsVersionName =
         if (isSnapshot.value) {
           val currentGitBranch = "git rev-parse --abbrev-ref HEAD".!!.trim
@@ -25,7 +25,7 @@ object Whitesource extends AutoPlugin {
           else "adhoc"
         } else
           CrossVersion
-            .partialVersion((version in LocalRootProject).value)
+            .partialVersion((LocalRootProject / version).value)
             .map { case (major, minor) => s"$major.$minor-stable" }
             .getOrElse("adhoc")
 

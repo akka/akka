@@ -346,10 +346,10 @@ object ProducerControllerImpl {
     val manifest = Serializers.manifestFor(ser, mAnyRef)
     val serializerId = ser.identifier
     if (bytes.length <= chunkSize) {
-      ChunkedMessage(ByteString(bytes), firstChunk = true, lastChunk = true, serializerId, manifest) :: Nil
+      ChunkedMessage(ByteString.fromArrayUnsafe(bytes), firstChunk = true, lastChunk = true, serializerId, manifest) :: Nil
     } else {
       val builder = Vector.newBuilder[ChunkedMessage]
-      val chunksIter = ByteString(bytes).grouped(chunkSize)
+      val chunksIter = ByteString.fromArrayUnsafe(bytes).grouped(chunkSize)
       var first = true
       while (chunksIter.hasNext) {
         val chunk = chunksIter.next()
@@ -696,7 +696,7 @@ private class ProducerControllerImpl[A: ClassTag](
         context.self ! ResendFirst
       }
       // update the send function
-      val newSend = consumerController ! _
+      val newSend = consumerController.tell(_)
       active(s.copy(firstSeqNr = newFirstSeqNr, send = newSend))
     }
 
@@ -796,7 +796,7 @@ private class ProducerControllerImpl[A: ClassTag](
       case StoreMessageSentCompleted(sent: MessageSent[_]) =>
         receiveStoreMessageSentCompleted(sent.seqNr)
 
-      case f: StoreMessageSentFailed[A] =>
+      case f: StoreMessageSentFailed[A @unchecked] =>
         receiveStoreMessageSentFailed(f)
 
       case Request(newConfirmedSeqNr, newRequestedSeqNr, supportResend, viaTimeout) =>
@@ -817,7 +817,7 @@ private class ProducerControllerImpl[A: ClassTag](
       case ResendFirstUnconfirmed =>
         receiveResendFirstUnconfirmed()
 
-      case start: Start[A] =>
+      case start: Start[A @unchecked] =>
         receiveStart(start)
 
       case RegisterConsumer(consumerController: ActorRef[ConsumerController.Command[A]] @unchecked) =>

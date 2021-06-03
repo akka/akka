@@ -257,7 +257,7 @@ import akka.util.ConstantFun.scalaIdentityFunction
   }
 }
 
-private class ConsumerControllerImpl[A](
+private class ConsumerControllerImpl[A] private (
     context: ActorContext[ConsumerControllerImpl.InternalCommand],
     retryTimer: ConsumerControllerImpl.RetryTimer,
     stashBuffer: StashBuffer[ConsumerControllerImpl.InternalCommand],
@@ -289,7 +289,7 @@ private class ConsumerControllerImpl[A](
   private def active(s: State[A]): Behavior[InternalCommand] = {
     Behaviors
       .receiveMessage[InternalCommand] {
-        case seqMsg: SequencedMessage[A] =>
+        case seqMsg: SequencedMessage[A @unchecked] =>
           val pid = seqMsg.producerId
           val seqNr = seqMsg.seqNr
           val expectedSeqNr = s.receivedSeqNr + 1
@@ -340,13 +340,13 @@ private class ConsumerControllerImpl[A](
         case Confirmed =>
           receiveUnexpectedConfirmed()
 
-        case start: Start[A] =>
+        case start: Start[A @unchecked] =>
           receiveStart(s, start, newState => active(newState))
 
         case ConsumerTerminated(c) =>
           receiveConsumerTerminated(c)
 
-        case reg: RegisterToProducerController[A] =>
+        case reg: RegisterToProducerController[A @unchecked] =>
           receiveRegisterToProducerController(s, reg, newState => active(newState))
 
         case _: DeliverThenStop[_] =>
@@ -426,7 +426,7 @@ private class ConsumerControllerImpl[A](
       throw new IllegalStateException("StashBuffer should be cleared before resending.")
     Behaviors
       .receiveMessage[InternalCommand] {
-        case seqMsg: SequencedMessage[A] =>
+        case seqMsg: SequencedMessage[A @unchecked] =>
           val seqNr = seqMsg.seqNr
 
           if (s.isProducerChanged(seqMsg)) {
@@ -465,13 +465,13 @@ private class ConsumerControllerImpl[A](
         case Confirmed =>
           receiveUnexpectedConfirmed()
 
-        case start: Start[A] =>
+        case start: Start[A @unchecked] =>
           receiveStart(s, start, newState => resending(newState))
 
         case ConsumerTerminated(c) =>
           receiveConsumerTerminated(c)
 
-        case reg: RegisterToProducerController[A] =>
+        case reg: RegisterToProducerController[A @unchecked] =>
           receiveRegisterToProducerController(s, reg, newState => active(newState))
 
         case _: DeliverThenStop[_] =>
@@ -528,7 +528,7 @@ private class ConsumerControllerImpl[A](
     reverseCollectedChunks.foreach { seqMsg =>
       builder ++= seqMsg.message.asInstanceOf[ChunkedMessage].serialized
     }
-    val bytes = builder.result().toArray
+    val bytes = builder.result().toArrayUnsafe()
     val head = collectedChunks.head // this is the last chunk
     val headMessage = head.message.asInstanceOf[ChunkedMessage]
     // serialization exceptions are thrown, because it will anyway be stuck with same error if retried and
@@ -594,7 +594,7 @@ private class ConsumerControllerImpl[A](
               scalaIdentityFunction)
           }
 
-        case msg: SequencedMessage[A] =>
+        case msg: SequencedMessage[_] =>
           flightRecorder.consumerReceivedPreviousInProgress(msg.producerId, msg.seqNr, stashBuffer.size + 1)
           val expectedSeqNr = seqMsg.seqNr + stashBuffer.size + 1
           if (msg.seqNr < expectedSeqNr && msg.producerController == seqMsg.producerController) {
@@ -622,14 +622,14 @@ private class ConsumerControllerImpl[A](
           // no retries when waitingForConfirmation, will be performed from (idle) active
           Behaviors.same
 
-        case start: Start[A] =>
+        case start: Start[A @unchecked] =>
           start.deliverTo ! Delivery(seqMsg.message.asInstanceOf[A], context.self, seqMsg.producerId, seqMsg.seqNr)
           receiveStart(s, start, newState => waitingForConfirmation(newState, seqMsg))
 
         case ConsumerTerminated(c) =>
           receiveConsumerTerminated(c)
 
-        case reg: RegisterToProducerController[A] =>
+        case reg: RegisterToProducerController[A @unchecked] =>
           receiveRegisterToProducerController(s, reg, newState => waitingForConfirmation(newState, seqMsg))
 
         case _: DeliverThenStop[_] =>

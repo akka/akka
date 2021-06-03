@@ -17,7 +17,7 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.japi.function
 import akka.stream.impl.TraversalBuilder
-import akka.util.{ ByteString, OptionVal }
+import akka.util.ByteString
 import akka.util.JavaDurationConverters._
 import akka.util.LineNumbers
 
@@ -122,17 +122,14 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    */
   def getMandatoryAttribute[T <: MandatoryAttribute](c: Class[T]): T = {
     @tailrec
-    def find(list: List[Attribute]): OptionVal[Attribute] = list match {
-      case Nil => OptionVal.None
+    def find(list: List[Attribute]): T = list match {
+      case Nil => throw new IllegalStateException(s"Mandatory attribute [$c] not found")
       case head :: tail =>
-        if (c.isInstance(head)) OptionVal.Some(head)
+        if (c.isInstance(head)) c.cast(head)
         else find(tail)
     }
 
-    find(attributeList) match {
-      case OptionVal.Some(t) => t.asInstanceOf[T]
-      case _                 => throw new IllegalStateException(s"Mandatory attribute [$c] not found")
-    }
+    find(attributeList)
   }
 
   /**

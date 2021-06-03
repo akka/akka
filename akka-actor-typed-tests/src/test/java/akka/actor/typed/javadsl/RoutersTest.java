@@ -16,8 +16,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 
-import java.util.List;
-
 import static org.junit.Assert.assertEquals;
 
 public class RoutersTest extends JUnitSuite {

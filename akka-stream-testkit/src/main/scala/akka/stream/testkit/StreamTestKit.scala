@@ -918,8 +918,6 @@ private[testkit] object StreamTestKit {
       val probe = TestPublisher.probe[T]()
       (probe, probe)
     }
-    override protected def newInstance(shape: SourceShape[T]): SourceModule[T, TestPublisher.Probe[T]] =
-      new ProbeSource[T](attributes, shape)
     override def withAttributes(attr: Attributes): SourceModule[T, TestPublisher.Probe[T]] =
       new ProbeSource[T](attr, amendShape(attr))
   }
@@ -930,8 +928,6 @@ private[testkit] object StreamTestKit {
       val probe = TestSubscriber.probe[T]()
       (probe, probe)
     }
-    override protected def newInstance(shape: SinkShape[T]): SinkModule[T, TestSubscriber.Probe[T]] =
-      new ProbeSink[T](attributes, shape)
     override def withAttributes(attr: Attributes): SinkModule[T, TestSubscriber.Probe[T]] =
       new ProbeSink[T](attr, amendShape(attr))
   }

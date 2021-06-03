@@ -36,8 +36,8 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
 
   override val name = "localReceptionist"
 
-  private type Service[K <: AbstractServiceKey] = ActorRef[K#Protocol]
-  private type Subscriber[K <: AbstractServiceKey] = ActorRef[ReceptionistMessages.Listing[K#Protocol]]
+  private type Service[K <: AbstractServiceKey] = Platform.Service[K]
+  private type Subscriber[K <: AbstractServiceKey] = Platform.Subscriber[K]
 
   private sealed trait InternalCommand
   private final case class RegisteredActorTerminated[T](ref: ActorRef[T]) extends InternalCommand
@@ -65,7 +65,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
       subscriptions: TypedMultiMap[AbstractServiceKey, Subscriber],
       subscriptionsPerActor: Map[ActorRef[_], Set[AbstractServiceKey]]) {
 
-    def serviceInstanceAdded[Key <: AbstractServiceKey, SI <: Service[Key]](key: Key)(serviceInstance: SI): State = {
+    def serviceInstanceAdded[Key <: AbstractServiceKey](key: Key)(serviceInstance: ActorRef[key.Protocol]): State = {
       val newServices = services.inserted(key)(serviceInstance)
       val newServicePerActor =
         servicesPerActor.updated(
@@ -74,7 +74,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
       copy(services = newServices, servicesPerActor = newServicePerActor)
     }
 
-    def serviceInstanceRemoved[Key <: AbstractServiceKey, SI <: Service[Key]](key: Key)(serviceInstance: SI): State = {
+    def serviceInstanceRemoved[Key <: AbstractServiceKey](key: Key)(serviceInstance: ActorRef[key.Protocol]): State = {
       val newServices = services.removed(key)(serviceInstance)
       val newServicePerActor =
         servicesPerActor.get(serviceInstance) match {
@@ -97,7 +97,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
         if (keys.isEmpty) services
         else
           keys.foldLeft(services)((acc, key) =>
-            acc.removed(key.asServiceKey)(serviceInstance.asInstanceOf[Service[AbstractServiceKey]]))
+            acc.removed(key.asServiceKey)(serviceInstance.asInstanceOf[ActorRef[key.Protocol]]))
       val newServicesPerActor = servicesPerActor - serviceInstance
       copy(services = newServices, servicesPerActor = newServicesPerActor)
     }

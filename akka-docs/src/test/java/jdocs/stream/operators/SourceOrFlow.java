@@ -8,7 +8,6 @@ import akka.Done;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.japi.pf.PFBuilder;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 
 import akka.NotUsed;
@@ -19,7 +18,9 @@ import akka.japi.function.Function2;
 // #zip-with-index
 // #or-else
 // #prepend
+// #prependLazy
 // #concat
+// #concatLazy
 // #interleave
 // #merge
 // #merge-sorted
@@ -33,7 +34,9 @@ import java.util.*;
 // #merge
 // #interleave
 // #concat
+// #concatLazy
 // #prepend
+// #prependLazy
 // #or-else
 // #zip-with-index
 // #zip-with
@@ -46,10 +49,8 @@ import akka.stream.Attributes;
 // #log
 
 import java.time.Duration;
-import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.function.IntSupplier;
 
 class SourceOrFlow {
   private static ActorSystem system = null;
@@ -124,11 +125,31 @@ class SourceOrFlow {
     // #prepend
   }
 
+  void prependLazyExample() {
+    // #prepend
+    Source<String, NotUsed> ladies = Source.from(Arrays.asList("Emma", "Emily"));
+    Source<String, NotUsed> gentlemen = Source.from(Arrays.asList("Liam", "William"));
+    gentlemen.prependLazy(ladies).runWith(Sink.foreach(System.out::print), system);
+    // this will print "Emma", "Emily", "Liam", "William"
+
+    // #prepend
+  }
+
   void concatExample() {
     // #concat
     Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
     Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
     sourceA.concat(sourceB).runWith(Sink.foreach(System.out::print), system);
+    // prints 1, 2, 3, 4, 10, 20, 30, 40
+
+    // #concat
+  }
+
+  void concatLazyExample() {
+    // #concat
+    Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
+    Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
+    sourceA.concatLazy(sourceB).runWith(Sink.foreach(System.out::print), system);
     // prints 1, 2, 3, 4, 10, 20, 30, 40
 
     // #concat
