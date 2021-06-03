@@ -59,4 +59,5 @@ branches:
   only:
   - master
   - release-2.5
+  - dev-durable-state
   - /^v\d+\.\d+(\.\d+)?(-\S*)?$/
