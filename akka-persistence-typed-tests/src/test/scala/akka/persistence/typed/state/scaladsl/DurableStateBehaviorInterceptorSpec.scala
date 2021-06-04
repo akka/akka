@@ -19,8 +19,6 @@ import java.util.concurrent.atomic.AtomicInteger
 
 object DurableStateBehaviorInterceptorSpec {
 
-  val journalId = "durable-state-behavior-interceptor-spec"
-
   def conf: Config = ConfigFactory.parseString(s"""
     akka.loglevel = INFO
     akka.persistence.state.plugin = "akka.persistence.state.inmem"
