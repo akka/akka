@@ -34,16 +34,12 @@ class PrimitiveStateSpec
     with LogCapturing {
 
   def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[Int] =
-    DurableStateBehavior[Int, Int](
-      persistenceId,
-      emptyState = 0,
-      commandHandler = (_, command) => {
-        if (command < 0)
-          Effect.stop()
-        else
-          Effect.persist(command).thenReply(probe)(_ => command.toString)
-      })
-      .withDurableStateStorePluginId("akka.persistence.state.inmem")
+    DurableStateBehavior[Int, Int](persistenceId, emptyState = 0, commandHandler = (_, command) => {
+      if (command < 0)
+        Effect.stop()
+      else
+        Effect.persist(command).thenReply(probe)(_ => command.toString)
+    }).withDurableStateStorePluginId("akka.persistence.state.inmem")
 
   "A typed persistent actor with primitive state" must {
     "persist primitive events and update state" in {

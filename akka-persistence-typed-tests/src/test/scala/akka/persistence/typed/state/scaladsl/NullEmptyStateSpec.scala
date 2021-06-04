@@ -37,16 +37,12 @@ class NullEmptyStateSpec
   implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
   def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[String] =
-    DurableStateBehavior[String, String](
-      persistenceId,
-      emptyState = null,
-      commandHandler = (_, command) => {
-        if (command == "stop")
-          Effect.stop()
-        else
-          Effect.persist(command).thenReply(probe)(_ => command)
-      })
-      .withDurableStateStorePluginId("akka.persistence.state.inmem")
+    DurableStateBehavior[String, String](persistenceId, emptyState = null, commandHandler = (_, command) => {
+      if (command == "stop")
+        Effect.stop()
+      else
+        Effect.persist(command).thenReply(probe)(_ => command)
+    }).withDurableStateStorePluginId("akka.persistence.state.inmem")
 
   "A typed persistent actor with primitive state" must {
     "persist events and update state" in {

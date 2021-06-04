@@ -39,9 +39,7 @@ object DurableStateBehaviorInterceptorSpec {
           command match {
             case _ =>
               Effect.persist(command).thenRun(newState => probe ! newState)
-          }
-      )
-      .withDurableStateStorePluginId("akka.persistence.state.inmem")
+          }).withDurableStateStorePluginId("akka.persistence.state.inmem")
     }
 
 }

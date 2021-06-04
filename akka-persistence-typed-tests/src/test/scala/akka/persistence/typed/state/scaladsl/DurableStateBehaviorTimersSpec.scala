@@ -50,8 +50,7 @@ object DurableStateBehaviorTimersSpec {
               case _ =>
                 timers.startSingleTimer("key", "scheduled", Duration.Zero)
                 Effect.persist(command).thenRun(_ => probe ! command)
-            })
-            .withDurableStateStorePluginId("akka.persistence.state.inmem")
+            }).withDurableStateStorePluginId("akka.persistence.state.inmem")
       }
     }
 
@@ -70,8 +69,7 @@ object DurableStateBehaviorTimersSpec {
                 Effect.none
               case _ =>
                 Effect.persist(command).thenRun(_ => probe ! command)
-            })
-            .withDurableStateStorePluginId("akka.persistence.state.inmem")
+            }).withDurableStateStorePluginId("akka.persistence.state.inmem")
       }
     }
 
