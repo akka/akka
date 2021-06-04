@@ -22,8 +22,6 @@ import scala.concurrent.duration._
 
 object DurableStateBehaviorTimersSpec {
 
-  val journalId = "durable-state-behavior-timers-spec"
-
   def conf: Config = ConfigFactory.parseString(s"""
     akka.loglevel = INFO
     akka.persistence.state.plugin = "akka.persistence.state.inmem"
