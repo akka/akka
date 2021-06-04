@@ -24,7 +24,6 @@ object DurableStateBehaviorInterceptorSpec {
     akka.persistence.state.plugin = "akka.persistence.state.inmem"
     akka.persistence.state.inmem {
       class = "akka.persistence.state.inmem.InmemDurableStateStoreProvider"
-      recovery-timeout = 30s
     }
     """)
 
@@ -37,7 +36,7 @@ object DurableStateBehaviorInterceptorSpec {
           command match {
             case _ =>
               Effect.persist(command).thenRun(newState => probe ! newState)
-          }).withDurableStateStorePluginId("akka.persistence.state.inmem")
+          })
     }
 
 }

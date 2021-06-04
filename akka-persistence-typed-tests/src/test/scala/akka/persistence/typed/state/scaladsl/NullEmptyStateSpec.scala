@@ -24,7 +24,6 @@ object NullEmptyStateSpec {
     akka.persistence.state.plugin = "akka.persistence.state.inmem"
     akka.persistence.state.inmem {
       class = "akka.persistence.state.inmem.InmemDurableStateStoreProvider"
-      recovery-timeout = 30s
     }
     """)
 }
@@ -42,7 +41,7 @@ class NullEmptyStateSpec
         Effect.stop()
       else
         Effect.persist(command).thenReply(probe)(_ => command)
-    }).withDurableStateStorePluginId("akka.persistence.state.inmem")
+    })
 
   "A typed persistent actor with primitive state" must {
     "persist events and update state" in {

@@ -27,7 +27,6 @@ object DurableStateBehaviorTimersSpec {
     akka.persistence.state.plugin = "akka.persistence.state.inmem"
     akka.persistence.state.inmem {
       class = "akka.persistence.state.inmem.InmemDurableStateStoreProvider"
-      recovery-timeout = 30s
     }
     """)
 
@@ -48,7 +47,7 @@ object DurableStateBehaviorTimersSpec {
               case _ =>
                 timers.startSingleTimer("key", "scheduled", Duration.Zero)
                 Effect.persist(command).thenRun(_ => probe ! command)
-            }).withDurableStateStorePluginId("akka.persistence.state.inmem")
+            })
       }
     }
 
@@ -67,7 +66,7 @@ object DurableStateBehaviorTimersSpec {
                 Effect.none
               case _ =>
                 Effect.persist(command).thenRun(_ => probe ! command)
-            }).withDurableStateStorePluginId("akka.persistence.state.inmem")
+            })
       }
     }
 

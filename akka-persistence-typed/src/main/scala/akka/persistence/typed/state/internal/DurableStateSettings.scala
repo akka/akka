@@ -62,7 +62,7 @@ import akka.persistence.Persistence
 
     val configPath = if (pluginId == "") defaultPluginId else pluginId
     Persistence.verifyPluginConfigExists(config, configPath, "DurableStateStore")
-    config.getConfig(configPath)
+    config.getConfig(configPath).withFallback(config.getConfig("akka.persistence.state-plugin-fallback"))
   }
 
 }
