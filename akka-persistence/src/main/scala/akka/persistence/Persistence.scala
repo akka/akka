@@ -187,7 +187,7 @@ object Persistence extends ExtensionId[Persistence] with ExtensionIdProvider {
 
   /** Check for default or missing identity. */
   private def isEmpty(text: String) = {
-    text == null || text.length == 0
+    text == null || text.isEmpty
   }
 }
 

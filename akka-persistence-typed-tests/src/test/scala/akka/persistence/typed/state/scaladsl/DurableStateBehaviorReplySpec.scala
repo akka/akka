@@ -25,8 +25,6 @@ object DurableStateBehaviorReplySpec {
     akka.persistence.state.plugin = "akka.persistence.state.inmem"
     akka.persistence.state.inmem {
       class = "akka.persistence.state.inmem.InmemDurableStateStoreProvider"
-      # FIXME we should change this to use a fallback in reference.conf
-      recovery-timeout = 30s
     }
     """)
 
@@ -42,30 +40,28 @@ object DurableStateBehaviorReplySpec {
     Behaviors.setup(ctx => counter(ctx, persistenceId))
 
   def counter(ctx: ActorContext[Command[_]], persistenceId: PersistenceId): DurableStateBehavior[Command[_], State] = {
-    DurableStateBehavior
-      .withEnforcedReplies[Command[_], State](
-        persistenceId,
-        emptyState = State(0),
-        commandHandler = (state, command) =>
-          command match {
+    DurableStateBehavior.withEnforcedReplies[Command[_], State](
+      persistenceId,
+      emptyState = State(0),
+      commandHandler = (state, command) =>
+        command match {
 
-            case IncrementWithConfirmation(replyTo) =>
-              Effect.persist(state.copy(value = state.value + 1)).thenReply(replyTo)(_ => Done)
+          case IncrementWithConfirmation(replyTo) =>
+            Effect.persist(state.copy(value = state.value + 1)).thenReply(replyTo)(_ => Done)
 
-            case IncrementReplyLater(replyTo) =>
-              Effect
-                .persist(state.copy(value = state.value + 1))
-                .thenRun((_: State) => ctx.self ! ReplyNow(replyTo))
-                .thenNoReply()
+          case IncrementReplyLater(replyTo) =>
+            Effect
+              .persist(state.copy(value = state.value + 1))
+              .thenRun((_: State) => ctx.self ! ReplyNow(replyTo))
+              .thenNoReply()
 
-            case ReplyNow(replyTo) =>
-              Effect.reply(replyTo)(Done)
+          case ReplyNow(replyTo) =>
+            Effect.reply(replyTo)(Done)
 
-            case GetValue(replyTo) =>
-              Effect.reply(replyTo)(state)
+          case GetValue(replyTo) =>
+            Effect.reply(replyTo)(state)
 
-          })
-      .withDurableStateStorePluginId("akka.persistence.state.inmem")
+        })
   }
 }
 

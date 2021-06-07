@@ -7,7 +7,6 @@ package akka.persistence.state
 import scala.reflect.ClassTag
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
@@ -16,6 +15,7 @@ import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalApi
+import akka.persistence.Persistence
 import akka.persistence.PersistencePlugin
 import akka.persistence.PluginProvider
 import akka.persistence.state.scaladsl.DurableStateStore
@@ -48,38 +48,47 @@ class DurableStateStoreRegistry(system: ExtendedActorSystem)
       system)(ClassTag(classOf[DurableStateStoreProvider]), DurableStateStoreRegistry.pluginProvider)
     with Extension {
 
-  /**
-   * Scala API: Returns the [[akka.persistence.state.scaladsl.DurableStateStore]] specified by the given
-   * read journal configuration entry.
-   *
-   * The provided durableStateStorePluginConfig will be used to configure the journal plugin instead of the actor system
-   * config.
-   */
-  final def durableStateStoreFor[T <: scaladsl.DurableStateStore[_]](
-      durableStateStorePluginId: String,
-      durableStateStorePluginConfig: Config): T =
-    pluginFor(durableStateStorePluginId, durableStateStorePluginConfig).scaladslPlugin.asInstanceOf[T]
+  private val systemConfig = system.settings.config
+
+  private lazy val defaultPluginId = {
+    val configPath = systemConfig.getString("akka.persistence.state.plugin")
+    Persistence.verifyPluginConfigIsDefined(configPath, "Default DurableStateStore")
+    Persistence.verifyPluginConfigExists(systemConfig, configPath, "DurableStateStore")
+    configPath
+  }
+
+  private def pluginIdOrDefault(pluginId: String): String = {
+    val configPath = if (isEmpty(pluginId)) defaultPluginId else pluginId
+    Persistence.verifyPluginConfigExists(systemConfig, configPath, "DurableStateStore")
+    configPath
+  }
+
+  private def pluginConfig(pluginId: String): Config = {
+    val configPath = pluginIdOrDefault(pluginId)
+    systemConfig.getConfig(configPath).withFallback(systemConfig.getConfig("akka.persistence.state-plugin-fallback"))
+  }
+
+  /** Check for default or missing identity. */
+  private def isEmpty(text: String) = {
+    text == null || text.isEmpty
+  }
 
   /**
    * Scala API: Returns the [[akka.persistence.state.scaladsl.DurableStateStore]] specified by the given
-   * read journal configuration entry.
+   * configuration entry.
    */
-  final def durableStateStoreFor[T <: scaladsl.DurableStateStore[_]](durableStateStorePluginId: String): T =
-    durableStateStoreFor(durableStateStorePluginId, ConfigFactory.empty)
+  final def durableStateStoreFor[T <: scaladsl.DurableStateStore[_]](pluginId: String): T = {
+    pluginFor(pluginIdOrDefault(pluginId), pluginConfig(pluginId)).scaladslPlugin.asInstanceOf[T]
+  }
 
   /**
    * Java API: Returns the [[akka.persistence.state.javadsl.DurableStateStore]] specified by the given
-   * read journal configuration entry.
+   * configuration entry.
    */
   final def getDurableStateStoreFor[T <: javadsl.DurableStateStore[_]](
       @unused clazz: Class[T], // FIXME generic Class could be problematic in Java
-      durableStateStorePluginId: String,
-      durableStateStorePluginConfig: Config): T =
-    pluginFor(durableStateStorePluginId, durableStateStorePluginConfig).javadslPlugin.asInstanceOf[T]
-
-  final def getDurableStateStoreFor[T <: javadsl.DurableStateStore[_]](
-      clazz: Class[T],
-      durableStateStorePluginId: String): T =
-    getDurableStateStoreFor[T](clazz, durableStateStorePluginId, ConfigFactory.empty())
+      pluginId: String): T = {
+    pluginFor(pluginIdOrDefault(pluginId), pluginConfig(pluginId)).javadslPlugin.asInstanceOf[T]
+  }
 
 }
