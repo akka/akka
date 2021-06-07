@@ -26,11 +26,6 @@ import akka.annotation.InternalApi
 }
 
 private[akka] final class ContextPropagationImpl extends ContextPropagation {
-  private val buffer = Buffer[Unit](1, 1)
-  def suspendContext(): Unit = {
-    buffer.enqueue(())
-  }
-  def resumeContext(): Unit = {
-    buffer.dequeue()
-  }
+  def suspendContext(): Unit = ()
+  def resumeContext(): Unit = ()
 }
