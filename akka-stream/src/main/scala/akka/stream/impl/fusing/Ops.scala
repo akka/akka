@@ -2242,7 +2242,7 @@ private[akka] final class StatefulMapConcat[In, Out](val f: () => In => Iterable
     override def onUpstreamFinish(): Unit = onFinish()
 
     override def onPull(): Unit =
-      try pushPull(pullFirstSubElement = true)
+      try pushPull(pullFirstSubElement = false)
       catch handleException
 
     private def handleException: Catcher[Unit] = {
