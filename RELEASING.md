@@ -1,5 +1,13 @@
 # Releasing
 
+Create a new issue from the [Release Train Issue Template](scripts/release-train-issue-template.md):
+
+```
+$ sh ./scripts/create-release-issue.sh 0.x.y
+```
+
+# Manually
+
 ## Prerequisites
 
 ### JDK 8 and JDK 11
