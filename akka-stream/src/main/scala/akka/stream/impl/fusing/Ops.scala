@@ -2218,31 +2218,35 @@ private[akka] final class StatefulMapConcat[In, Out](val f: () => In => Iterable
 
     setHandlers(in, out, this)
 
-    def pushPull(pullFirstSubElement: Boolean): Unit =
-      if (hasNext) {
-        if (!pullFirstSubElement) contextPropagation.resumeContext()
-        push(out, currentIterator.next())
-        if (hasNext) {
-          // suspend context for the next element
-          contextPropagation.suspendContext()
-        }
-        if (!hasNext && isClosed(in)) completeStage()
-      } else if (!isClosed(in))
-        pull(in)
-      else completeStage()
-
     def onFinish(): Unit = if (!hasNext) completeStage()
 
     override def onPush(): Unit =
       try {
         currentIterator = plainFun(grab(in)).iterator
-        pushPull(pullFirstSubElement = true)
+        if (hasNext) {
+          push(out, currentIterator.next())
+          if (hasNext) {
+            // suspend context for the next element
+            contextPropagation.suspendContext()
+          } else if (isClosed(in)) completeStage()
+        } else if (!isClosed(in))
+          pull(in)
+        else completeStage()
       } catch handleException
 
     override def onUpstreamFinish(): Unit = onFinish()
 
     override def onPull(): Unit =
-      try pushPull(pullFirstSubElement = false)
+      try if (hasNext) {
+        contextPropagation.resumeContext()
+        push(out, currentIterator.next())
+        if (hasNext) {
+          // suspend context for the next element
+          contextPropagation.suspendContext()
+        } else if (isClosed(in)) completeStage()
+      } else if (!isClosed(in))
+        pull(in)
+      else completeStage()
       catch handleException
 
     private def handleException: Catcher[Unit] = {
