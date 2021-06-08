@@ -973,6 +973,10 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
         case None =>
           tryAcquireLease()
       }
+
+    case Event(HandOverDone, _) =>
+      // nothing to do
+      stay()
   }
 
   when(WasOldest) {
