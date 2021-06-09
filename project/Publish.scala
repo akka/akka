@@ -9,6 +9,7 @@ import sbt.Keys._
 import java.io.File
 import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
 import com.lightbend.sbt.publishrsync.PublishRsyncPlugin.autoImport.publishRsyncHost
+import xerial.sbt.Sonatype.autoImport.sonatypeProfileName
 
 object Publish extends AutoPlugin {
 
@@ -22,6 +23,7 @@ object Publish extends AutoPlugin {
     credentials ++= akkaCredentials,
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("https://www.lightbend.com")),
+    sonatypeProfileName := "com.typesafe",
     startYear := Some(2009),
     developers := List(
         Developer(
