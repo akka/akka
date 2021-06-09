@@ -28,7 +28,7 @@ object Dependencies {
   val jacksonVersion = "2.11.4"
 
   val scala212Version = "2.12.13"
-  val scala213Version = "2.13.5"
+  val scala213Version = "2.13.6"
   val scala3Version = "3.0.0"
 
   val reactiveStreamsVersion = "1.0.3"
