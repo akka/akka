@@ -25,6 +25,7 @@ jobs:
           java-version: adopt@1.11.0-9
       - name: Publish
         run: |-
+          sudo apt-get install graphviz
           sbt +mimaReportBinaryIssues
           sbt whitesourceCheckPolicies
           sbt ci-release
