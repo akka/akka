@@ -10,6 +10,7 @@ Release Akka $VERSION$
 
 - [ ] Make sure any running [actions](https://github.com/akka/akka/actions) for the commit you would like to release have completed.
 - [ ] Tag the release `git tag -a -s -m 'Release v$VERSION$' v$VERSION$` and push the tag `git push --tags`
+- [ ] Create a [new milestone](https://github.com/akka/akka/milestones) for the next version and close the current one.
 - [ ] Check that the GitHub Actions release build has executed successfully (it should publish artifacts to Sonatype and documentation to Gustav)
 
 ### Check availability
