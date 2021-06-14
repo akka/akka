@@ -64,7 +64,7 @@ object Flow {
    */
   def fromGraph[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] =
     g match {
-      case f: Flow[I, O, M] => f
+      case f: Flow[I, O, M] @unchecked => f
       case other            => new Flow(scaladsl.Flow.fromGraph(other))
     }
 
