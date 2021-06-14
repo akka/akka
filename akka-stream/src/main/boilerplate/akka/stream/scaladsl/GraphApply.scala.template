@@ -21,8 +21,23 @@ trait GraphApply {
   /**
    * Creates a new [[Graph]] by importing the given graph `g1` and passing its [[Shape]]
    * along with the [[GraphDSL.Builder]] to the given create function.
+   *
+   * Deprecated: this method signature does not work with Scala 3 type inference, kept for binary compatiblity.
    */
+  @deprecated("Use createGraph, signature does not work with Scala 3", "2.6.16")
   def create[S <: Shape, Mat](g1: Graph[Shape, Mat])(buildBlock: GraphDSL.Builder[Mat] => (g1.Shape) => S): Graph[S, Mat] = {
+    val builder = new GraphDSL.Builder
+    val s1 = builder.add(g1, Keep.right)
+    val s = buildBlock(builder)(s1)
+
+    createGraph(s, builder)
+  }
+
+  /**
+   * Creates a new [[Graph]] by importing the given graph `g1` and passing its [[Shape]]
+   * along with the [[GraphDSL.Builder]] to the given create function.
+   */
+  def createGraph[S <: Shape, S1 <: Shape, Mat](g1: Graph[S1, Mat])(buildBlock: GraphDSL.Builder[Mat] => S1 => S): Graph[S, Mat] = {
     val builder = new GraphDSL.Builder
     val s1 = builder.add(g1, Keep.right)
     val s = buildBlock(builder)(s1)
@@ -36,7 +51,10 @@ trait GraphApply {
   /**
    * Creates a new [[Graph]] by importing the given graphs and passing their [[Shape]]s
    * along with the [[GraphDSL.Builder]] to the given create function.
+   *
+   * Deprecated: this method signature does not work with Scala 3 type inference, kept for binary compatiblity.
    */
+  @deprecated("Use createGraph, signature does not work with Scala 3", "2.6.16")
   def create[S <: Shape, Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) => Mat)(buildBlock: GraphDSL.Builder[Mat] => ([#g1.Shape#]) => S): Graph[S, Mat] = {
     val builder = new GraphDSL.Builder
     val curried = combineMat.curried
@@ -46,8 +64,22 @@ trait GraphApply {
     val s = buildBlock(builder)([#s1#])
 
     createGraph(s, builder)
-  }#
+  }
 
+  /**
+   * Creates a new [[Graph]] by importing the given graphs and passing their [[Shape]]s
+   * along with the [[GraphDSL.Builder]] to the given create function.
+   */
+  def createGraph[S <: Shape, Mat, [#M1#], [#S1 <: Shape#]]([#g1: Graph[S1, M1]#])(combineMat: ([#M1#]) => Mat)(buildBlock: GraphDSL.Builder[Mat] => ([#S1#]) => S): Graph[S, Mat] = {
+    val builder = new GraphDSL.Builder
+    val curried = combineMat.curried
+    val s##1 = builder.add(g##1, (m##1: M##1) => curried(m##1))
+    [2..#val s1 = builder.add(g1, (f: M1 => Any, m1: M1) => f(m1))#
+    ]
+    val s = buildBlock(builder)([#s1#])
+
+    createGraph(s, builder)
+  }#
   ]
 
   private def createGraph[S <: Shape, Mat](shape: S, graphBuilder: GraphDSL.Builder[Mat]): Graph[S, Mat] =

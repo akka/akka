@@ -161,7 +161,7 @@ object Sink {
   def fromMaterializer[T, M](factory: (Materializer, Attributes) => Sink[T, M]): Sink[T, Future[M]] =
     Flow
       .fromMaterializer({ (mat, attr) =>
-        Flow.fromGraph(GraphDSL.create(factory(mat, attr)) { b => sink =>
+        Flow.fromGraph(GraphDSL.createGraph(factory(mat, attr)) { b => sink =>
           FlowShape(sink.in, b.materializedValue.outlet)
         })
       })
