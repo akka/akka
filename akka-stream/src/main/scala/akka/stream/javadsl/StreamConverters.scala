@@ -17,6 +17,7 @@ import akka.japi.function
 import akka.stream.{ javadsl, scaladsl }
 import akka.stream.IOResult
 import akka.util.ByteString
+import akka.stream.scaladsl.SinkToCompletionStage
 
 /**
  * Converters for interacting with the blocking `java.io` streams APIs and Java 8 Streams
