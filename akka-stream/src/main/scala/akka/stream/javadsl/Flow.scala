@@ -1679,9 +1679,9 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   def recoverWith(
       clazz: Class[_ <: Throwable],
       supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): javadsl.Flow[In, Out, Mat] =
-    recoverWith {
+    recoverWith({
       case elem if clazz.isInstance(elem) => supplier.get()
-    }
+    }: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]])
 
   /**
    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
