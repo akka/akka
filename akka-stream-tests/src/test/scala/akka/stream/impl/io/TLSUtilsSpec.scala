@@ -6,30 +6,101 @@ package akka.stream.impl.io
 
 import akka.stream.TLSClientAuth
 import akka.stream.TLSProtocol.NegotiateNewSession
+import org.scalatest.matchers.should.Matchers
+
 import javax.net.ssl.{ SSLContext, SSLEngine, SSLParameters }
-import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class TLSUtilsSpec extends AnyFunSpec {
+class TLSUtilsSpec extends AnyWordSpecLike with Matchers {
 
-  describe("To have Client authentication defined NEED") {
-    val sslEngine: SSLEngine = SSLContext.getDefault.createSSLEngine()
-    val sslParams: SSLParameters = new SSLParameters()
-    val negotiableSession: NegotiateNewSession =
-      NegotiateNewSession(None, None, Some(TLSClientAuth.Need), Some(sslParams))
+  "TlsUtils.applySessionParameters" must {
 
-    it(
-      "SSLParameters does not by default require client authentication when it is not passed to the constructor of HttpConnectionContext. In that case its default value is used by akka-http.") {
-      assert(!sslParams.getNeedClientAuth)
-    }
+    "use defaults if not requested otherwise" in {
+      // this test confirms the default expectation that forms the basis
+      // of the follow-up tests
+      val sslEngine: SSLEngine = SSLContext.getDefault.createSSLEngine()
+      // by default, need client auth is false
+      sslEngine.getSSLParameters.getNeedClientAuth shouldBe false
 
-    it("NegotiableSession has ClientAuth defined Need") {
-      assert(negotiableSession.clientAuth.contains(TLSClientAuth.Need))
-    }
+      val sslParams: SSLParameters = new SSLParameters()
+      sslParams.getNeedClientAuth shouldBe false // by default is false
 
-    it(
-      "SSLEngine must have ClientAuth defined Need after calling akka.stream.impl.io.TlsUtils.applySessionParameters with sslEngine and negotiableSession") {
+      val negotiableSession: NegotiateNewSession =
+        // NegotiateNewSession requested nothing
+        NegotiateNewSession(None, None, None, Some(sslParams))
+
       TlsUtils.applySessionParameters(sslEngine, negotiableSession)
-      assert(sslEngine.getSSLParameters.getNeedClientAuth)
+
+      // NeedClientAuth stick to defaults
+      sslEngine.getSSLParameters.getNeedClientAuth shouldBe false
+
     }
+
+    "set NeedClientAuth to true by applying SSLParameters" in {
+      val sslEngine: SSLEngine = SSLContext.getDefault.createSSLEngine()
+      val sslParams: SSLParameters = new SSLParameters()
+      sslParams.setNeedClientAuth(true)
+
+      val negotiableSession: NegotiateNewSession =
+        // NegotiateNewSession requested nothing, so sslParams should prevail
+        NegotiateNewSession(None, None, None, Some(sslParams))
+      TlsUtils.applySessionParameters(sslEngine, negotiableSession)
+
+      sslEngine.getSSLParameters.getNeedClientAuth shouldBe true
+    }
+
+    "set NeedClientAuth to true when TLSClientAuth.Need is requested" in {
+      val sslEngine: SSLEngine = SSLContext.getDefault.createSSLEngine()
+      val sslParams: SSLParameters = new SSLParameters()
+
+      val negotiableSession: NegotiateNewSession =
+        NegotiateNewSession(None, None, Some(TLSClientAuth.Need), Some(sslParams))
+      TlsUtils.applySessionParameters(sslEngine, negotiableSession)
+
+      // true because explicitly asked when setting TLSClientAuth.Need
+      sslEngine.getSSLParameters.getNeedClientAuth shouldBe true
+    }
+
+    "set NeedClientAuth to false when TLSClientAuth.None is requested" in {
+      val sslEngine: SSLEngine = SSLContext.getDefault.createSSLEngine()
+      val sslParams: SSLParameters = new SSLParameters()
+      sslParams.setNeedClientAuth(true)
+
+      {
+        val negotiableSession: NegotiateNewSession =
+          // NegotiateNewSession requested nothing, so sslParams should prevail
+          NegotiateNewSession(None, None, None, Some(sslParams))
+        TlsUtils.applySessionParameters(sslEngine, negotiableSession)
+
+        // NeedClientAuth is true because ssl param is applied
+        sslEngine.getSSLParameters.getNeedClientAuth shouldBe true
+      }
+
+      {
+        val negotiableSession: NegotiateNewSession =
+          // NegotiateNewSession requested TLSClientAuth.None, sslParams is overridden
+          NegotiateNewSession(None, None, Some(TLSClientAuth.None), Some(sslParams))
+        TlsUtils.applySessionParameters(sslEngine, negotiableSession)
+
+        // despite ssl params set it to true,
+        // NegotiateNewSession explicitly sets it to false
+        sslEngine.getSSLParameters.getNeedClientAuth shouldBe false
+      }
+    }
+
+    "set WantClientAuth to true when TLSClientAuth.Want is requested" in {
+      val sslEngine: SSLEngine = SSLContext.getDefault.createSSLEngine()
+      val sslParams: SSLParameters = new SSLParameters()
+
+      val negotiableSession: NegotiateNewSession =
+        NegotiateNewSession(None, None, Some(TLSClientAuth.Want), Some(sslParams))
+      TlsUtils.applySessionParameters(sslEngine, negotiableSession)
+
+      // true because explicitly asked when setting TLSClientAuth.Want
+      sslEngine.getSSLParameters.getWantClientAuth shouldBe true
+
+      sslEngine.getSSLParameters.getNeedClientAuth shouldBe false
+    }
+
   }
 }
