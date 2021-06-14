@@ -579,7 +579,7 @@ object Sink {
       onInitMessage: Any,
       ackMessage: Any,
       onCompleteMessage: Any,
-      onFailureMessage: (Throwable) => Any = Status.Failure): Sink[T, NotUsed] =
+      onFailureMessage: (Throwable) => Any = Status.Failure.apply): Sink[T, NotUsed] =
     actorRefWithAck(ref, _ => identity, _ => onInitMessage, Some(ackMessage), onCompleteMessage, onFailureMessage)
 
   /**
