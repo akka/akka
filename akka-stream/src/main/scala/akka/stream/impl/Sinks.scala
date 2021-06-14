@@ -442,17 +442,19 @@ import akka.util.ccompat._
 @InternalApi private[akka] final class MutableCollectorState[T, R](
     collector: java.util.stream.Collector[T, Any, R],
     accumulator: java.util.function.BiConsumer[Any, T],
-    val accumulated: Any)
+    _accumulated: Any)
     extends CollectorState[T, R] {
 
+  override def accumulated(): Any = _accumulated
+
   override def update(elem: T): CollectorState[T, R] = {
-    accumulator.accept(accumulated, elem)
+    accumulator.accept(_accumulated, elem)
     this
   }
 
   override def finish(): R = {
     // only called if completed without elements
-    collector.finisher().apply(accumulated)
+    collector.finisher().apply(_accumulated)
   }
 }
 
