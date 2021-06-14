@@ -109,7 +109,7 @@ import akka.stream.stage._
      * when this accidentally leaks onto threads that are not stopped when this
      * class should be unloaded.
      */
-    override def initialValue = new Array(1)
+    override def initialValue: Array[AnyRef] = new Array(1)
   }
 
   /**
