@@ -314,8 +314,8 @@ object Sink {
    */
   def fromGraph[T, M](g: Graph[SinkShape[T], M]): Sink[T, M] =
     g match {
-      case s: Sink[T, M]@unchecked => s
-      case other         => new Sink(scaladsl.Sink.fromGraph(other))
+      case s: Sink[T, M] @unchecked => s
+      case other                    => new Sink(scaladsl.Sink.fromGraph(other))
     }
 
   /**

@@ -334,7 +334,7 @@ import akka.util.ccompat._
         case QueueSink.Cancel => completeStage()
       }
 
-      def sendDownstream(promise:  Promise[Option[T]]): Unit = {
+      def sendDownstream(promise: Promise[Option[T]]): Unit = {
         val e = buffer.dequeue()
         promise.complete(e)
         e match {

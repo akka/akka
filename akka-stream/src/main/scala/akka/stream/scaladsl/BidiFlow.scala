@@ -232,8 +232,8 @@ object BidiFlow {
    */
   def fromGraph[I1, O1, I2, O2, Mat](graph: Graph[BidiShape[I1, O1, I2, O2], Mat]): BidiFlow[I1, O1, I2, O2, Mat] =
     graph match {
-      case bidi: BidiFlow[I1, O1, I2, O2, Mat]         => bidi
-      case bidi: javadsl.BidiFlow[I1, O1, I2, O2, Mat]@unchecked => bidi.asScala
+      case bidi: BidiFlow[I1, O1, I2, O2, Mat]                    => bidi
+      case bidi: javadsl.BidiFlow[I1, O1, I2, O2, Mat] @unchecked => bidi.asScala
       case other =>
         new BidiFlow(other.traversalBuilder, other.shape)
     }
