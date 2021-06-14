@@ -2085,6 +2085,7 @@ private[stream] object Collect {
       override def toString = s"Reduce.Logic(aggregator=$aggregator)"
 
       private var aggregator: T = _
+      private val empty: T = aggregator
 
       private def decider =
         inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
@@ -2113,7 +2114,7 @@ private[stream] object Collect {
             decider(ex) match {
               case Supervision.Stop => failStage(ex)
               case Supervision.Restart =>
-                aggregator = _: T
+                aggregator = empty
                 setInitialInHandler()
               case _ => ()
 
