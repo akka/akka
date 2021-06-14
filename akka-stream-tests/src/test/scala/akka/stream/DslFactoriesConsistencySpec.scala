@@ -29,7 +29,8 @@ class DslFactoriesConsistencySpec extends AnyWordSpec with Matchers {
       "lazyFutureFlow", // lazyCompletionStageFlow
       "futureFlow", // completionStageFlow
       "futureSink", // completionStageSink
-      "lazyFutureSink" // lazyCompletionStageSink
+      "lazyFutureSink", // lazyCompletionStageSink
+      "createGraph" // renamed/overload of create for getting type inference working in Scala 3
     )
 
   val javaIgnore =
