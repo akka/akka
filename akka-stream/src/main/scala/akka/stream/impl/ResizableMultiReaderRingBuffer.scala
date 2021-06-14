@@ -7,7 +7,7 @@ package akka.stream.impl
 import scala.annotation.tailrec
 import scala.util.control.NoStackTrace
 
-import ResizableMultiReaderRingBuffer._
+import ResizableMultiReaderRingBuffer.{Cursor, Cursors, NothingToReadException}
 
 import akka.annotation.InternalApi
 
