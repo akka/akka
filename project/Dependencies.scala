@@ -36,14 +36,14 @@ object Dependencies {
   val sslConfigVersion = "0.4.2"
 
   val scalaTestVersion = {
-    if (getScalaVersion().startsWith("3.0")) {
+    if (getScalaVersion().startsWith("3.")) {
       "3.2.9"
     } else {
       "3.1.4"
     }
   }
   val scalaTestScalaCheckVersion = {
-    if (getScalaVersion().startsWith("3.0")) {
+    if (getScalaVersion().startsWith("3.")) {
       "1-15"
     } else {
       "1-14"
@@ -56,10 +56,10 @@ object Dependencies {
     System.getProperty("akka.build.scalaVersion", "default") match {
       case twoThirteen if twoThirteen.startsWith("2.13") => scala213Version
       case twoTwelve if twoTwelve.startsWith("2.12")     => scala212Version
-      case three if three.startsWith("3.0")              => scala3Version
+      case three if three.startsWith("3.")               => scala3Version
       case "default"                                     => scala213Version
       case other =>
-        throw new IllegalArgumentException(s"Unsupported scala version [$other]. Must be 2.12, 2.13 or 3.0.")
+        throw new IllegalArgumentException(s"Unsupported scala version [$other]. Must be 2.12, 2.13 or 3.x.")
     }
   }
 
