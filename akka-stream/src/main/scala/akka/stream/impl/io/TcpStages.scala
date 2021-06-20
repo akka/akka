@@ -11,7 +11,6 @@ import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-
 import scala.annotation.nowarn
 
 import akka.{ Done, NotUsed }
@@ -214,6 +213,8 @@ private[stream] object ConnectionSourceStage {
 @InternalApi private[stream] object TcpConnectionStage {
   case object WriteAck extends Tcp.Event
 
+  private case object WriteDelay extends Tcp.Event
+
   trait TcpRole {
     def halfClose: Boolean
   }
@@ -309,6 +310,35 @@ private[stream] object ConnectionSourceStage {
       }
     }
 
+    // FIXME remove these counters
+    private var elemCount = 0L
+    private var writeCount = 0L
+    private var delayCount = 0L
+    private var totalBytes = 0L
+
+    // FIXME tmp config
+    private val smartBatching =
+      "true" == System.getenv("SMART_BATCHING") ||
+      "true" == System.getProperty("SMART_BATCHING")
+
+    var writeDelayCountDown = 0
+    var previousWriteBufferSize = 0
+
+    private val writeDelayMessage = Write(ByteString.empty, WriteDelay)
+
+    private def sendWriteBuffer(): Unit = {
+      writeCount += 1
+      totalBytes += writeBuffer.size
+      if (writeCount % 1000 == 0) {
+        val avgBytes = totalBytes / writeCount
+        println(
+          s"# [${connection.path.uid}] writeBuffer size ${writeBuffer.size}, avg $avgBytes bytes/write, elemCount $elemCount, writeCount $writeCount, delayCount $delayCount") // FIXME
+      }
+      connection ! Write(writeBuffer, WriteAck)
+      writeInProgress = true
+      writeBuffer = ByteString.empty
+    }
+
     // Used for both inbound and outbound connections
     private def connected(evt: (ActorRef, Any)): Unit = {
       val msg = evt._2
@@ -318,13 +348,25 @@ private[stream] object ConnectionSourceStage {
           if (isClosed(bytesOut)) connection ! ResumeReading
           else push(bytesOut, data)
 
+        case WriteDelay =>
+          delayCount += 1
+          writeDelayCountDown -= 1
+          if (writeDelayCountDown == 0 || previousWriteBufferSize == writeBuffer.size || writeBuffer.size >= writeBufferSize) {
+            sendWriteBuffer()
+          } else {
+            previousWriteBufferSize = writeBuffer.size
+            connection ! writeDelayMessage
+          }
+
         case WriteAck =>
-          if (writeBuffer.isEmpty)
+          if (writeBuffer.isEmpty) {
             writeInProgress = false
-          else {
-            connection ! Write(writeBuffer, WriteAck)
-            writeInProgress = true
-            writeBuffer = ByteString.empty
+          } else if (!smartBatching || writeBuffer.size >= writeBufferSize) {
+            sendWriteBuffer()
+          } else {
+            writeDelayCountDown = 20
+            previousWriteBufferSize = writeBuffer.size
+            connection ! writeDelayMessage
           }
 
           if (!writeInProgress && connectionClosePending) {
@@ -414,13 +456,13 @@ private[stream] object ConnectionSourceStage {
       new InHandler {
         override def onPush(): Unit = {
           val elem = grab(bytesIn)
+          elemCount += 1
           ReactiveStreamsCompliance.requireNonNullElement(elem)
           if (writeInProgress) {
             writeBuffer = writeBuffer ++ elem
           } else {
-            connection ! Write(writeBuffer ++ elem, WriteAck)
-            writeInProgress = true
-            writeBuffer = ByteString.empty
+            writeBuffer = writeBuffer ++ elem
+            sendWriteBuffer()
           }
           if (writeBuffer.size < writeBufferSize)
             pull(bytesIn)
