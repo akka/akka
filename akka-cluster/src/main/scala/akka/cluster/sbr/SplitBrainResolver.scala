@@ -27,6 +27,7 @@ import akka.cluster.Member
 import akka.cluster.Reachability
 import akka.cluster.UniqueAddress
 import akka.cluster.sbr.DowningStrategy.Decision
+import akka.dispatch.SuspendDetector
 import akka.event.DiagnosticMarkerBusLoggingAdapter
 import akka.event.Logging
 import akka.pattern.pipe
@@ -145,6 +146,10 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
   import SplitBrainResolver._
 
   val log: DiagnosticMarkerBusLoggingAdapter = Logging.withMarker(this)
+
+  private val suspendTimeout = 1.minute
+  private val suspendDetector = SuspendDetector(context.system) // make sure it's started
+  context.system.eventStream.subscribe(self, classOf[SuspendDetector.SuspendDetected])
 
   @InternalStableApi
   def strategy: DowningStrategy = _strategy
@@ -287,6 +292,7 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
     case Tick                                       => tick()
     case ThisActorSystemQuarantinedEvent(_, remote) => thisActorSystemWasQuarantined(remote)
     case _: ClusterDomainEvent                      => // not interested in other events
+    case s: SuspendDetector.SuspendDetected         => if (s.wasSuspended(suspendTimeout)) suspendDetected()
   }
 
   private def leaderChanged(leaderOption: Option[Address]): Unit = {
@@ -296,53 +302,58 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
   }
 
   private def tick(): Unit = {
-    // note the DownAll due to instability is running on all nodes to make that decision as quickly and
-    // aggressively as possible if time is out
-    if (reachabilityChangedStats.changeCount > 0) {
-      val now = System.nanoTime()
-      val durationSinceLatestChange = (now - reachabilityChangedStats.latestChangeTimestamp).nanos
-      val durationSinceFirstChange = (now - reachabilityChangedStats.firstChangeTimestamp).nanos
+    if (suspendDetector.wasSuspended(suspendTimeout)) {
+      // note that suspend detection is running on all nodes
+      suspendDetected()
+    } else {
+      // note the DownAll due to instability is running on all nodes to make that decision as quickly and
+      // aggressively as possible if time is out
+      if (reachabilityChangedStats.changeCount > 0) {
+        val now = System.nanoTime()
+        val durationSinceLatestChange = (now - reachabilityChangedStats.latestChangeTimestamp).nanos
+        val durationSinceFirstChange = (now - reachabilityChangedStats.firstChangeTimestamp).nanos
 
-      val downAllWhenUnstableEnabled = downAllWhenUnstable > Duration.Zero
-      if (downAllWhenUnstableEnabled && durationSinceFirstChange > (stableAfter + downAllWhenUnstable)) {
-        log.warning(
-          ClusterLogMarker.sbrInstability,
-          "SBR detected instability and will down all nodes: {}",
-          reachabilityChangedStats)
-        actOnDecision(DownAll)
-      } else if (!downAllWhenUnstableEnabled && durationSinceLatestChange > (stableAfter * 2)) {
-        // downAllWhenUnstable is disabled but reset for meaningful logging
-        log.debug("SBR no reachability changes within {} ms, resetting stats", (stableAfter * 2).toMillis)
-        resetReachabilityChangedStats()
+        val downAllWhenUnstableEnabled = downAllWhenUnstable > Duration.Zero
+        if (downAllWhenUnstableEnabled && durationSinceFirstChange > (stableAfter + downAllWhenUnstable)) {
+          log.warning(
+            ClusterLogMarker.sbrInstability,
+            "SBR detected instability and will down all nodes: {}",
+            reachabilityChangedStats)
+          actOnDecision(DownAll)
+        } else if (!downAllWhenUnstableEnabled && durationSinceLatestChange > (stableAfter * 2)) {
+          // downAllWhenUnstable is disabled but reset for meaningful logging
+          log.debug("SBR no reachability changes within {} ms, resetting stats", (stableAfter * 2).toMillis)
+          resetReachabilityChangedStats()
+        }
       }
-    }
 
-    if (isResponsible && strategy.unreachable.nonEmpty && stableDeadline.isOverdue()) {
-      strategy.decide() match {
-        case decision: AcquireLeaseDecision =>
-          strategy.lease match {
-            case Some(lease) =>
-              if (lease.checkLease()) {
-                log.info(
-                  ClusterLogMarker.sbrLeaseAcquired(decision),
-                  "SBR has acquired lease for decision [{}]",
-                  decision)
-                actOnDecision(decision)
-              } else {
-                if (decision.acquireDelay == Duration.Zero)
-                  acquireLease() // reply message is AcquireLeaseResult
-                else {
-                  log.debug("SBR delayed attempt to acquire lease for [{} ms]", decision.acquireDelay.toMillis)
-                  timers.startSingleTimer(AcquireLease, AcquireLease, decision.acquireDelay)
+      if (isResponsible && strategy.unreachable.nonEmpty && stableDeadline.isOverdue()) {
+        strategy.decide() match {
+          case decision: AcquireLeaseDecision =>
+            strategy.lease match {
+              case Some(lease) =>
+                if (lease.checkLease()) {
+                  log.info(
+                    ClusterLogMarker.sbrLeaseAcquired(decision),
+                    "SBR has acquired lease for decision [{}]",
+                    decision)
+                  actOnDecision(decision)
+                } else {
+                  if (decision.acquireDelay == Duration.Zero)
+                    acquireLease() // reply message is AcquireLeaseResult
+                  else {
+                    log.debug("SBR delayed attempt to acquire lease for [{} ms]", decision.acquireDelay.toMillis)
+                    timers.startSingleTimer(AcquireLease, AcquireLease, decision.acquireDelay)
+                  }
+                  context.become(waitingForLease(decision))
                 }
-                context.become(waitingForLease(decision))
-              }
-            case None =>
-              throw new IllegalStateException("Unexpected lease decision although lease is not configured")
-          }
+              case None =>
+                throw new IllegalStateException("Unexpected lease decision although lease is not configured")
+            }
 
-        case decision =>
-          actOnDecision(decision)
+          case decision =>
+            actOnDecision(decision)
+        }
       }
     }
 
@@ -361,6 +372,15 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
       actOnDecision(DowningStrategy.DownSelfQuarantinedByRemote)
     } else {
       log.debug("Remote [{}] quarantined this system but is not part of cluster, ignoring", remote)
+    }
+  }
+
+  private def suspendDetected(): Unit = {
+    if (strategy.allMembersInDC.size > 1) {
+      log.warning(
+        ClusterLogMarker.sbrInstability,
+        "SBR detected that the process was suspended too long and will down itself.")
+      actOnDecision(DowningStrategy.DownSelfSuspended)
     }
   }
 
