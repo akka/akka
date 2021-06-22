@@ -332,11 +332,17 @@ private[stream] object ConnectionSourceStage {
       if (writeCount % 1000 == 0) {
         val avgBytes = totalBytes / writeCount
         println(
-          s"# [${connection.path.uid}] writeBuffer size ${writeBuffer.size}, avg $avgBytes bytes/write, elemCount $elemCount, writeCount $writeCount, delayCount $delayCount") // FIXME
+          s"# [${connection.path.uid}] writeBuffer size ${writeBuffer.size}, avg $avgBytes bytes/write, elemCount $elemCount, writeCount $writeCount, delayCount $delayCount, writeDelayCountDown $writeDelayCountDown") // FIXME
       }
       connection ! Write(writeBuffer, WriteAck)
       writeInProgress = true
       writeBuffer = ByteString.empty
+    }
+
+    private def sendWriteDelay(): Unit = {
+      previousWriteBufferSize = writeBuffer.size
+      writeInProgress = true
+      connection ! writeDelayMessage
     }
 
     // Used for both inbound and outbound connections
@@ -351,22 +357,19 @@ private[stream] object ConnectionSourceStage {
         case WriteDelay =>
           delayCount += 1
           writeDelayCountDown -= 1
-          if (writeDelayCountDown == 0 || previousWriteBufferSize == writeBuffer.size || writeBuffer.size >= writeBufferSize) {
+          if (writeDelayCountDown == 0 || previousWriteBufferSize == writeBuffer.size || writeBuffer.size >= writeBufferSize)
             sendWriteBuffer()
-          } else {
-            previousWriteBufferSize = writeBuffer.size
-            connection ! writeDelayMessage
-          }
+          else
+            sendWriteDelay()
 
         case WriteAck =>
-          if (writeBuffer.isEmpty) {
+          if (writeBuffer.isEmpty)
             writeInProgress = false
-          } else if (!smartBatching || writeBuffer.size >= writeBufferSize) {
+          else if (!smartBatching || writeBuffer.size >= writeBufferSize)
             sendWriteBuffer()
-          } else {
+          else {
             writeDelayCountDown = 20
-            previousWriteBufferSize = writeBuffer.size
-            connection ! writeDelayMessage
+            sendWriteDelay()
           }
 
           if (!writeInProgress && connectionClosePending) {
@@ -460,9 +463,13 @@ private[stream] object ConnectionSourceStage {
           ReactiveStreamsCompliance.requireNonNullElement(elem)
           if (writeInProgress) {
             writeBuffer = writeBuffer ++ elem
-          } else {
+          } else if (!smartBatching || writeBuffer.size >= writeBufferSize) {
             writeBuffer = writeBuffer ++ elem
             sendWriteBuffer()
+          } else {
+            writeBuffer = writeBuffer ++ elem
+            writeDelayCountDown = 20
+            sendWriteDelay()
           }
           if (writeBuffer.size < writeBufferSize)
             pull(bytesIn)
