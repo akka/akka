@@ -3,7 +3,7 @@ Release Akka $VERSION$
 ### Before the release
 
 - [ ] Make sure all important / big PRs have been merged by now
-- [ ] Create a news item draft PR on [akka.io](https://github.com/akka/akka.io), using the milestone and `scripts/authors.scala v2.3.5 v2.3.6`
+- [ ] Create a news item draft PR on [akka.io](https://github.com/akka/akka.io), using the milestone and `scripts/authors.scala v2.6.14 v2.6.15`
 - [ ] Make sure to update `_config.yml` in it
 - In case of a new minor release:
   - [ ] update the branch descriptions at CONTRIBUTING.md#branches-summary
