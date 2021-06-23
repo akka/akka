@@ -59,7 +59,7 @@ Snapshot releases are created from master and published to
 https://oss.sonatype.org/content/repositories/snapshots/com/typesafe/akka/
 
 To create snapshot versions manually, use `sbt clean publishLocal`.
-If you have access, you can use `publishSigned` to publish them to
+If you have access, you can use `+publishSigned` to publish them to
 sonatype.
 
 ## Releasing only updated docs
