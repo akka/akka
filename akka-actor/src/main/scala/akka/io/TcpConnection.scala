@@ -5,20 +5,20 @@
 package akka.io
 
 import java.io.IOException
-import java.net.{InetSocketAddress, SocketException}
+import java.net.{ InetSocketAddress, SocketException }
 import java.nio.ByteBuffer
-import java.nio.channels.{FileChannel, SocketChannel}
+import java.nio.channels.{ FileChannel, SocketChannel }
 import java.nio.channels.SelectionKey._
-import java.nio.file.{Path, Paths}
+import java.nio.file.{ Path, Paths }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.util.control.{NoStackTrace, NonFatal}
+import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.annotation.nowarn
 
 import akka.actor._
-import akka.dispatch.{RequiresMessageQueue, UnboundedMessageQueueSemantics}
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.Inet.SocketOption
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
@@ -389,7 +389,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
 
   override def postStop(): Unit = {
     println(s"# [${self.path.uid}] stop connection") // FIXME
-    
+
     if (writePending) pendingWrite.release()
 
     val interestedInClose: Set[ActorRef] =
