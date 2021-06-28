@@ -4,9 +4,8 @@
 
 package akka.persistence.typed.crdt
 
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.DoNotInherit
 
-@ApiMayChange
 @DoNotInherit
 trait OpCrdt[Operation] { self =>
   type T <: OpCrdt[Operation] { type T = self.T }

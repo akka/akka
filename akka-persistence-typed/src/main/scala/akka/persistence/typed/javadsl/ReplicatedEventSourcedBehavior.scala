@@ -9,14 +9,12 @@ import java.util.Optional
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.TypedActorContext
-import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.persistence.typed.internal.ReplicationContextImpl
 
 /**
  * Base class for replicated event sourced behaviors.
  */
-@ApiMayChange
 abstract class ReplicatedEventSourcedBehavior[Command, Event, State](
     replicationContext: ReplicationContext,
     onPersistFailure: Optional[BackoffSupervisorStrategy])
