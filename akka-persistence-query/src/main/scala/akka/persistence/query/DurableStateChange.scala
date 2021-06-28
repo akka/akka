@@ -16,7 +16,7 @@ package akka.persistence.query
  */
 final class DurableStateChange[A](
     val persistenceId: String,
-    val seqNr: Long,
+    val revision: Long,
     val value: A,
     val offset: Offset,
     val timestamp: Long)
