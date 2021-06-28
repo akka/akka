@@ -1,1 +1,0 @@
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.testkit.StreamTestKit#ProbeS*.newInstance")
