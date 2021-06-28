@@ -25,7 +25,7 @@ object Dependencies {
   val protobufJavaVersion = "3.11.4"
   val logbackVersion = "1.2.3"
 
-  val jacksonVersion = "2.11.4"
+  val jacksonVersion = "2.12.3"
 
   val scala212Version = "2.12.14"
   val scala213Version = "2.13.5"
