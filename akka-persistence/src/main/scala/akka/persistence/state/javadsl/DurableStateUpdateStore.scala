@@ -18,7 +18,7 @@ trait DurableStateUpdateStore[A] extends DurableStateStore[A] {
   /**
    * @param seqNr sequence number for optimistic locking. starts at 1.
    */
-  def upsertObject(persistenceId: String, seqNr: Long, value: A, tag: String): CompletionStage[Done]
+  def upsertObject(persistenceId: String, revision: Long, value: A, tag: String): CompletionStage[Done]
 
   def deleteObject(persistenceId: String): CompletionStage[Done]
 }

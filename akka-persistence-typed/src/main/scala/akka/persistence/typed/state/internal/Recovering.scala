@@ -15,7 +15,7 @@ import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.persistence._
 import akka.persistence.typed.state.internal.DurableStateBehaviorImpl.GetState
-import akka.persistence.typed.state.internal.Running.WithSeqNrAccessible
+import akka.persistence.typed.state.internal.Running.WithRevisionAccessible
 import akka.persistence.state.scaladsl.GetObjectResult
 import akka.persistence.typed.state.RecoveryCompleted
 import akka.persistence.typed.state.RecoveryFailed
@@ -42,7 +42,7 @@ private[akka] object Recovering {
 
   @InternalApi
   private[akka] final case class RecoveryState[State](
-      seqNr: Long,
+      revision: Long,
       state: State,
       receivedPoisonPill: Boolean,
       recoveryStartTime: Long)
@@ -53,13 +53,13 @@ private[akka] object Recovering {
 private[akka] class Recovering[C, S](override val setup: BehaviorSetup[C, S])
     extends DurableStateStoreInteractions[C, S]
     with StashManagement[C, S]
-    with WithSeqNrAccessible {
+    with WithRevisionAccessible {
 
   import InternalProtocol._
   import Recovering.RecoveryState
 
   // Needed for WithSeqNrAccessible
-  private var _currentSequenceNumber = 0L
+  private var _currentRevision = 0L
 
   onRecoveryStart(setup.context)
 
@@ -144,17 +144,17 @@ private[akka] class Recovering[C, S](override val setup: BehaviorSetup[C, S])
       case None    => setup.emptyState
     }
 
-    setup.context.log.debug("Recovered from seqNr [{}]", result.seqNr)
+    setup.context.log.debug("Recovered from revision [{}]", result.revision)
 
     setup.cancelRecoveryTimer()
 
-    onRecoveryCompleted(RecoveryState(result.seqNr, state, receivedPoisonPill, System.nanoTime()))
+    onRecoveryCompleted(RecoveryState(result.revision, state, receivedPoisonPill, System.nanoTime()))
 
   }
 
   private def onRecoveryCompleted(state: RecoveryState[S]): Behavior[InternalProtocol] =
     try {
-      _currentSequenceNumber = state.seqNr
+      _currentRevision = state.revision
       onRecoveryComplete(setup.context)
       tryReturnRecoveryPermit("recovery completed successfully")
       if (setup.internalLogger.isDebugEnabled) {
@@ -169,8 +169,10 @@ private[akka] class Recovering[C, S](override val setup: BehaviorSetup[C, S])
       if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)
         Behaviors.stopped
       else {
-        val runningState = Running
-          .RunningState[S](seqNr = state.seqNr, state = state.state, receivedPoisonPill = state.receivedPoisonPill)
+        val runningState = Running.RunningState[S](
+          revision = state.revision,
+          state = state.state,
+          receivedPoisonPill = state.receivedPoisonPill)
         val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
         tryUnstashOne(new running.HandlingCommands(runningState))
       }
@@ -182,7 +184,7 @@ private[akka] class Recovering[C, S](override val setup: BehaviorSetup[C, S])
     onRecoveryFailure(cause)
   }
 
-  override def currentSequenceNumber: Long =
-    _currentSequenceNumber
+  override def currentRevision: Long =
+    _currentRevision
 
 }

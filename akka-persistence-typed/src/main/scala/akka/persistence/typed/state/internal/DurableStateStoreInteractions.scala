@@ -42,12 +42,13 @@ private[akka] trait DurableStateStoreInteractions[C, S] {
       state: Running.RunningState[S],
       value: Any): Running.RunningState[S] = {
 
-    val newRunningState = state.nextSequenceNr()
+    val newRunningState = state.nextRevision()
     val persistenceId = setup.persistenceId.id
 
     onWriteInitiated(ctx, cmd)
 
-    ctx.pipeToSelf[Done](setup.durableStateStore.upsertObject(persistenceId, newRunningState.seqNr, value, setup.tag)) {
+    ctx.pipeToSelf[Done](
+      setup.durableStateStore.upsertObject(persistenceId, newRunningState.revision, value, setup.tag)) {
       case Success(_)     => InternalProtocol.UpsertSuccess
       case Failure(cause) => InternalProtocol.UpsertFailure(cause)
     }

@@ -19,4 +19,4 @@ trait DurableStateStore[A] {
 
 }
 
-final case class GetObjectResult[A](value: Option[A], seqNr: Long)
+final case class GetObjectResult[A](value: Option[A], revision: Long)

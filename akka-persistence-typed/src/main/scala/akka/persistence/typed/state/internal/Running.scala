@@ -41,14 +41,14 @@ import akka.util.unused
 @InternalApi
 private[akka] object Running {
 
-  trait WithSeqNrAccessible {
-    def currentSequenceNumber: Long
+  trait WithRevisionAccessible {
+    def currentRevision: Long
   }
 
-  final case class RunningState[State](seqNr: Long, state: State, receivedPoisonPill: Boolean) {
+  final case class RunningState[State](revision: Long, state: State, receivedPoisonPill: Boolean) {
 
-    def nextSequenceNr(): RunningState[State] =
-      copy(seqNr = seqNr + 1)
+    def nextRevision(): RunningState[State] =
+      copy(revision = revision + 1)
 
     def applyState[C, E](@unused setup: BehaviorSetup[C, State], updated: State): RunningState[State] = {
       copy(state = updated)
@@ -64,16 +64,16 @@ private[akka] object Running {
     with StashManagement[C, S] {
   import InternalProtocol._
   import Running.RunningState
-  import Running.WithSeqNrAccessible
+  import Running.WithRevisionAccessible
 
   // Needed for WithSeqNrAccessible, when unstashing
-  private var _currentSequenceNumber = 0L
+  private var _currentRevision = 0L
 
   final class HandlingCommands(state: RunningState[S])
       extends AbstractBehavior[InternalProtocol](setup.context)
-      with WithSeqNrAccessible {
+      with WithRevisionAccessible {
 
-    _currentSequenceNumber = state.seqNr
+    _currentRevision = state.revision
 
     def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
       case IncomingCommand(c: C @unchecked) => onCommand(state, c)
@@ -107,7 +107,7 @@ private[akka] object Running {
         newState: S,
         cmd: Any,
         sideEffects: immutable.Seq[SideEffect[S]]): (Behavior[InternalProtocol], Boolean) = {
-      _currentSequenceNumber = state.seqNr + 1
+      _currentRevision = state.revision + 1
 
       val stateAfterApply = state.applyState(setup, newState)
       val stateToPersist = adaptState(newState)
@@ -161,8 +161,8 @@ private[akka] object Running {
 
     setup.setMdcPhase(PersistenceMdc.RunningCmds)
 
-    override def currentSequenceNumber: Long =
-      _currentSequenceNumber
+    override def currentRevision: Long =
+      _currentRevision
   }
 
   // ===============================================
@@ -182,7 +182,7 @@ private[akka] object Running {
       var sideEffects: immutable.Seq[SideEffect[S]],
       persistStartTime: Long = System.nanoTime())
       extends AbstractBehavior[InternalProtocol](setup.context)
-      with WithSeqNrAccessible {
+      with WithRevisionAccessible {
 
     override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
       msg match {
@@ -222,7 +222,7 @@ private[akka] object Running {
 
     final def onUpsertFailed(cause: Throwable): Behavior[InternalProtocol] = {
       onWriteFailed(setup.context, cause)
-      throw new DurableStateStoreException(setup.persistenceId, currentSequenceNumber, cause)
+      throw new DurableStateStoreException(setup.persistenceId, currentRevision, cause)
     }
 
     override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
@@ -235,8 +235,8 @@ private[akka] object Running {
         else Behaviors.unhandled
     }
 
-    override def currentSequenceNumber: Long = {
-      _currentSequenceNumber
+    override def currentRevision: Long = {
+      _currentRevision
     }
   }
 
