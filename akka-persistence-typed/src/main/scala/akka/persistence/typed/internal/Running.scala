@@ -268,7 +268,7 @@ private[akka] object Running {
         state: Running.RunningState[S],
         envelope: ReplicatedEventEnvelope[E],
         replication: ReplicationSetup): Behavior[InternalProtocol] = {
-      setup.internalLogger.infoN(
+      setup.internalLogger.debugN(
         "Replica {} received replicated event. Replica seqs nrs: {}. Envelope {}",
         setup.replication,
         state.seenPerReplica,

@@ -7,12 +7,11 @@ package akka.persistence.typed.crdt
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.util.HashCode
-import akka.annotation.{ ApiMayChange, InternalApi }
+import akka.annotation.InternalApi
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.crdt.ORSet.DeltaOp
 import akka.persistence.typed.internal.{ ManyVersionVector, OneVersionVector, VersionVector }
 
-@ApiMayChange
 object ORSet {
   def empty[A](originReplica: ReplicaId): ORSet[A] = new ORSet(originReplica.id, Map.empty, VersionVector.empty)
   def apply[A](originReplica: ReplicaId): ORSet[A] = empty(originReplica)
@@ -274,7 +273,6 @@ object ORSet {
  *
  * This class is immutable, i.e. "modifying" methods return a new instance.
  */
-@ApiMayChange
 final class ORSet[A] private[akka] (
     val originReplica: String,
     private[akka] val elementsMap: Map[A, ORSet.Dot],
