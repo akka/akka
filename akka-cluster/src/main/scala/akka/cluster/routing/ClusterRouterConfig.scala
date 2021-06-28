@@ -524,6 +524,9 @@ private[akka] trait ClusterRouterActor { this: RouterActor =>
     satisfiesRoles(m.roles) &&
     (settings.allowLocalRoutees || m.address != cluster.selfAddress)
 
+  private def memberShuttingDown(event: MemberEvent): Boolean =
+    event.isInstanceOf[MemberPreparingForShutdown] || event.isInstanceOf[MemberReadyForShutdown]
+
   private def satisfiesRoles(memberRoles: Set[String]): Boolean = settings.useRoles.subsetOf(memberRoles)
 
   def availableNodes: immutable.SortedSet[Address] = {
@@ -579,7 +582,7 @@ private[akka] trait ClusterRouterActor { this: RouterActor =>
       nodes = s.members.collect { case m if isAvailable(m) => m.address }
       addRoutees()
 
-    case m: MemberEvent if isAvailable(m.member) =>
+    case m: MemberEvent if isAvailable(m.member) && !memberShuttingDown(m) =>
       addMember(m.member)
 
     case other: MemberEvent =>
