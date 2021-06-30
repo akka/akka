@@ -267,7 +267,7 @@ private[stream] object ConnectionSourceStage {
 
     @nowarn("msg=deprecated")
     private val coalesceWrites = eagerMaterializer.settings.ioSettings.coalesceWrites
-    private val coalesceWritesDisabled = coalesceWrites == 0
+    private def coalesceWritesDisabled = coalesceWrites == 0
     private var writeDelayCountDown = 0
     private var previousWriteBufferSize = 0
 

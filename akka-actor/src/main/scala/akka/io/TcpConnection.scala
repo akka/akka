@@ -15,6 +15,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.control.{ NoStackTrace, NonFatal }
+
 import scala.annotation.nowarn
 
 import akka.actor._
@@ -385,11 +386,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     }
   }
 
-  println(s"# [${self.path.uid}] start connection") // FIXME
-
   override def postStop(): Unit = {
-    println(s"# [${self.path.uid}] stop connection") // FIXME
-
     if (writePending) pendingWrite.release()
 
     val interestedInClose: Set[ActorRef] =
