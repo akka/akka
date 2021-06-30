@@ -148,8 +148,8 @@ Please refer to its documentation for more details.
 
 #### Joining configured seed nodes
 
-When a new node is started it sends a message to all seed nodes and then sends join command to the one that
-answers first. If no one of the seed nodes replied (might not be started yet)
+When a new node is started it sends a message to all seed nodes and then sends a join command to the one that
+answers first. If none of the seed nodes replies (might not be started yet)
 it retries this procedure until success or shutdown.
 
 You can define the seed nodes in the @ref:[configuration](#configuration) file (application.conf):
@@ -169,7 +169,7 @@ This can also be defined as Java system properties when starting the JVM using t
 
 
 When a new node is started it sends a message to all configured `seed-nodes` and then sends a join command to the
-one that answers first. If none of the seed nodes replied (might not be started yet) it retries this procedure
+one that answers first. If none of the seed nodes replies (might not be started yet) it retries this procedure
 until successful or shutdown.
 
 The seed nodes can be started in any order. It is not necessary to have all
