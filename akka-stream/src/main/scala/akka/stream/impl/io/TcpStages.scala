@@ -213,7 +213,8 @@ private[stream] object ConnectionSourceStage {
 @InternalApi private[stream] object TcpConnectionStage {
   case object WriteAck extends Tcp.Event
 
-  private case object WriteDelay extends Tcp.Event
+  private case object WriteDelayAck extends Tcp.Event
+  private val WriteDelayMessage = Write(ByteString.empty, WriteDelayAck)
 
   trait TcpRole {
     def halfClose: Boolean
@@ -254,8 +255,7 @@ private[stream] object ConnectionSourceStage {
     @nowarn("msg=deprecated")
     private val writeBufferSize = inheritedAttributes
       .get[TcpAttributes.TcpWriteBufferSize](
-        TcpAttributes.TcpWriteBufferSize(
-          ActorMaterializerHelper.downcast(eagerMaterializer).settings.ioSettings.tcpWriteBufferSize))
+        TcpAttributes.TcpWriteBufferSize(eagerMaterializer.settings.ioSettings.tcpWriteBufferSize))
       .size
 
     private var writeBuffer = ByteString.empty
@@ -264,6 +264,12 @@ private[stream] object ConnectionSourceStage {
     private var writeInProgress = false
     // upstream already finished but are still writing the last data to the connection
     private var connectionClosePending = false
+
+    @nowarn("msg=deprecated")
+    private val coalesceWrites = eagerMaterializer.settings.ioSettings.coalesceWrites
+    private val coalesceWritesDisabled = coalesceWrites == 0
+    private var writeDelayCountDown = 0
+    private var previousWriteBufferSize = 0
 
     // No reading until role have been decided
     setHandler(bytesOut, new OutHandler {
@@ -310,39 +316,21 @@ private[stream] object ConnectionSourceStage {
       }
     }
 
-    // FIXME remove these counters
-    private var elemCount = 0L
-    private var writeCount = 0L
-    private var delayCount = 0L
-    private var totalBytes = 0L
-
-    // FIXME tmp config
-    private val smartBatching =
-      "true" == System.getenv("SMART_BATCHING") ||
-      "true" == System.getProperty("SMART_BATCHING")
-
-    var writeDelayCountDown = 0
-    var previousWriteBufferSize = 0
-
-    private val writeDelayMessage = Write(ByteString.empty, WriteDelay)
-
     private def sendWriteBuffer(): Unit = {
-      writeCount += 1
-      totalBytes += writeBuffer.size
-      if (writeCount % 1000 == 0) {
-        val avgBytes = totalBytes / writeCount
-        println(
-          s"# [${connection.path.uid}] writeBuffer size ${writeBuffer.size}, avg $avgBytes bytes/write, elemCount $elemCount, writeCount $writeCount, delayCount $delayCount, writeDelayCountDown $writeDelayCountDown") // FIXME
-      }
       connection ! Write(writeBuffer, WriteAck)
       writeInProgress = true
       writeBuffer = ByteString.empty
     }
 
+    /*
+     * Coalesce more frames by collecting more frames while waiting for round trip to the
+     * connection actor. WriteDelayMessage is an empty Write message and WriteDelayAck will
+     * be sent back as reply.
+     */
     private def sendWriteDelay(): Unit = {
-      previousWriteBufferSize = writeBuffer.size
+      previousWriteBufferSize = writeBuffer.length
       writeInProgress = true
-      connection ! writeDelayMessage
+      connection ! WriteDelayMessage
     }
 
     // Used for both inbound and outbound connections
@@ -354,10 +342,12 @@ private[stream] object ConnectionSourceStage {
           if (isClosed(bytesOut)) connection ! ResumeReading
           else push(bytesOut, data)
 
-        case WriteDelay =>
-          delayCount += 1
+        case WriteDelayAck =>
+          // Immediately flush the write buffer if no more frames have been collected during the WriteDelayMessage
+          // round trip to the connection actor, or if reaching the configured maximum number of round trips, or
+          // if writeBuffer capacity has been exceeded.
           writeDelayCountDown -= 1
-          if (writeDelayCountDown == 0 || previousWriteBufferSize == writeBuffer.size || writeBuffer.size >= writeBufferSize)
+          if (writeDelayCountDown == 0 || previousWriteBufferSize == writeBuffer.length || writeBuffer.length >= writeBufferSize)
             sendWriteBuffer()
           else
             sendWriteDelay()
@@ -365,10 +355,10 @@ private[stream] object ConnectionSourceStage {
         case WriteAck =>
           if (writeBuffer.isEmpty)
             writeInProgress = false
-          else if (!smartBatching || writeBuffer.size >= writeBufferSize)
+          else if (coalesceWritesDisabled || writeBuffer.length >= writeBufferSize)
             sendWriteBuffer()
           else {
-            writeDelayCountDown = 20
+            writeDelayCountDown = coalesceWrites
             sendWriteDelay()
           }
 
@@ -459,19 +449,18 @@ private[stream] object ConnectionSourceStage {
       new InHandler {
         override def onPush(): Unit = {
           val elem = grab(bytesIn)
-          elemCount += 1
           ReactiveStreamsCompliance.requireNonNullElement(elem)
           if (writeInProgress) {
             writeBuffer = writeBuffer ++ elem
-          } else if (!smartBatching || writeBuffer.size >= writeBufferSize) {
+          } else if (coalesceWritesDisabled || writeBuffer.length >= writeBufferSize) {
             writeBuffer = writeBuffer ++ elem
             sendWriteBuffer()
           } else {
             writeBuffer = writeBuffer ++ elem
-            writeDelayCountDown = 20
+            writeDelayCountDown = coalesceWrites
             sendWriteDelay()
           }
-          if (writeBuffer.size < writeBufferSize)
+          if (writeBuffer.length < writeBufferSize)
             pull(bytesIn)
         }
 
