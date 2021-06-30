@@ -369,14 +369,14 @@ configuration descriptions, default values and options.
 A common use case is to start actors after the cluster has been initialized,
 members have joined, and the cluster has reached a certain size.
 
-With a configuration option you can define required number of members
+With a configuration option you can define the required number of members
 before the leader changes member status of 'Joining' members to 'Up'.:
 
 ```
 akka.cluster.min-nr-of-members = 3
 ```
 
-In a similar way you can define required number of members of a certain role
+In a similar way you can define the required number of members of a certain role
 before the leader changes member status of 'Joining' members to 'Up'.:
 
 ```
