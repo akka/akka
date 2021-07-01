@@ -7,12 +7,10 @@ package akka.stream.impl.io
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
-
 import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.annotation.nowarn
-
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.InternalApi
@@ -22,6 +20,7 @@ import akka.io.Tcp
 import akka.io.Tcp._
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance
+import akka.stream.impl.fusing.ActorGraphInterpreter.NotShortCircuitable
 import akka.stream.impl.fusing.GraphStages.detacher
 import akka.stream.scaladsl.{ BidiFlow, Flow, TcpIdleTimeoutException, Tcp => StreamTcp }
 import akka.stream.scaladsl.Tcp.{ OutgoingConnection, ServerBinding }
@@ -213,7 +212,7 @@ private[stream] object ConnectionSourceStage {
 @InternalApi private[stream] object TcpConnectionStage {
   case object WriteAck extends Tcp.Event
 
-  private case object WriteDelayAck extends Tcp.Event
+  case object WriteDelayAck extends Tcp.Event with NotShortCircuitable
 
   trait TcpRole {
     def halfClose: Boolean
@@ -319,6 +318,8 @@ private[stream] object ConnectionSourceStage {
       writeBuffer = ByteString.empty
     }
 
+    val delayCallback = getAsyncCallback[WriteDelayAck.type](o => stageActor.internalReceive((stageActor.ref, o)))
+
     /*
      * Coalesce more frames by collecting more frames while waiting for round trip to the
      * connection actor. WriteDelayMessage is an empty Write message and WriteDelayAck will
@@ -327,7 +328,7 @@ private[stream] object ConnectionSourceStage {
     private def sendWriteDelay(): Unit = {
       previousWriteBufferSize = writeBuffer.length
       writeInProgress = true
-      stageActor.ref ! WriteDelayAck
+      delayCallback.invoke(WriteDelayAck)
     }
 
     // Used for both inbound and outbound connections
