@@ -214,7 +214,6 @@ private[stream] object ConnectionSourceStage {
   case object WriteAck extends Tcp.Event
 
   private case object WriteDelayAck extends Tcp.Event
-  private val WriteDelayMessage = Write(ByteString.empty, WriteDelayAck)
 
   trait TcpRole {
     def halfClose: Boolean
@@ -328,7 +327,7 @@ private[stream] object ConnectionSourceStage {
     private def sendWriteDelay(): Unit = {
       previousWriteBufferSize = writeBuffer.length
       writeInProgress = true
-      connection ! WriteDelayMessage
+      stageActor.ref ! WriteDelayAck
     }
 
     // Used for both inbound and outbound connections
