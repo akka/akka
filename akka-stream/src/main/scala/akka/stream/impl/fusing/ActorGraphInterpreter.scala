@@ -482,6 +482,8 @@ import akka.util.OptionVal
       s"ActorOutputBoundary(port=$internalPortName, demand=$downstreamDemand, finished=$downstreamCompleted)"
   }
 
+  /** Marker trait for AsyncCallback events that should always go through the Actor mailbox */
+  trait NotShortCircuitable
 }
 
 /**
@@ -561,7 +563,9 @@ import akka.util.OptionVal
     new GraphInterpreter(mat, log, logics, connections, (logic, event, promise, handler) => {
       val asyncInput = AsyncInput(this, logic, event, promise, handler)
       val currentInterpreter = GraphInterpreter.currentInterpreterOrNull
-      if (currentInterpreter == null || (currentInterpreter.context ne self))
+      if ((currentInterpreter eq null) ||
+          (currentInterpreter.context ne self) ||
+          event.isInstanceOf[NotShortCircuitable])
         self ! asyncInput
       else enqueueToShortCircuit(asyncInput)
     }, attributes.mandatoryAttribute[ActorAttributes.FuzzingMode].enabled, self)
