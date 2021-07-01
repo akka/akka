@@ -778,7 +778,9 @@ object IOSettings {
     "Use setting 'akka.stream.materializer.io.tcp.write-buffer-size' or attribute TcpAttributes.writeBufferSize instead",
     "2.6.0")
   def apply(config: Config): IOSettings =
-    new IOSettings(tcpWriteBufferSize = math.min(Int.MaxValue, config.getBytes("tcp.write-buffer-size")).toInt)
+    new IOSettings(
+      tcpWriteBufferSize = math.min(Int.MaxValue, config.getBytes("tcp.write-buffer-size")).toInt,
+      coalesceWrites = config.getInt("tcp.coalesce-writes"))
 
   @deprecated(
     "Use setting 'akka.stream.materializer.io.tcp.write-buffer-size' or attribute TcpAttributes.writeBufferSize instead",
