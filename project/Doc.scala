@@ -186,6 +186,6 @@ object BootstrapGenjavadoc extends AutoPlugin {
   override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled
     .ifTrue(Seq(
       unidocGenjavadocVersion := "0.17",
-      Compile / scalacOptions ++= Seq("-P:genjavadoc:fabricateParams=false", "-P:genjavadoc:suppressSynthetic=false", "-P:genjavadoc:strictVisibility=true")))
+      Compile / scalacOptions ++= Seq("-P:genjavadoc:fabricateParams=false", "-P:genjavadoc:suppressSynthetic=false")))
     .getOrElse(Nil)
 }
