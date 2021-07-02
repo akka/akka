@@ -540,7 +540,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
           case d: FiniteDuration =>
             endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + d)
             eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid.toLong))
-          case _ => // disabled
+          case null => // disabled
         }
         Stop
 
