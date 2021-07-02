@@ -26,16 +26,14 @@ object AdaptationFailureSpec {
   def abstractBehaviorHandlingOtherSignals: Behavior[Any] = Behaviors.setup(new AbstractBehaviorHandlingOtherSignals(_))
   class AbstractBehaviorHandlingOtherSignals(ctx: ActorContext[Any]) extends AbstractBehavior[Any](ctx) {
     protected def createReceive: Receive[Any] =
-      newReceiveBuilder.onSignal(classOf[PreRestart], (_: PreRestart) => Behaviors.same()).build()
+      newReceiveBuilder.onSignal(classOf[PreRestart], (_: PreRestart) => Behaviors.same).build()
   }
 
   def abstractBehaviorHandlingMessageAdaptationFailure: Behavior[Any] =
     Behaviors.setup(new AbstractBehaviorHandlingMessageAdaptationFailure(_))
   class AbstractBehaviorHandlingMessageAdaptationFailure(ctx: ActorContext[Any]) extends AbstractBehavior[Any](ctx) {
     protected def createReceive: Receive[Any] =
-      newReceiveBuilder
-        .onSignal(classOf[MessageAdaptionFailure], (_: MessageAdaptionFailure) => Behaviors.same())
-        .build()
+      newReceiveBuilder.onSignal(classOf[MessageAdaptionFailure], (_: MessageAdaptionFailure) => Behaviors.same).build()
   }
 }
 
@@ -87,8 +85,8 @@ class AdaptationFailureSpec extends ScalaTestWithActorTestKit with AnyWordSpecLi
             Behaviors.receiveSignal {
               case (_, Terminated(`ref`)) =>
                 probe.ref ! "actor-stopped"
-                Behaviors.same()
-              case _ => Behaviors.unhandled()
+                Behaviors.same
+              case _ => Behaviors.unhandled
             }
           })
 

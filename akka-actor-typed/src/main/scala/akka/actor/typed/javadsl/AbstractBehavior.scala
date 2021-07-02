@@ -80,5 +80,5 @@ abstract class AbstractBehavior[T](context: ActorContext[T]) extends ExtensibleB
    * Create a new [[ReceiveBuilder]] to define the message dispatch of the `Behavior`.
    * Typically used from [[AbstractBehavior.createReceive]].
    */
-  protected def newReceiveBuilder: ReceiveBuilder[T] = ReceiveBuilder.create()
+  protected def newReceiveBuilder: ReceiveBuilder[T] = ReceiveBuilder.create
 }
