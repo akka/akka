@@ -277,7 +277,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   @volatile private[this] var controlSubject: ControlMessageSubject = _
   @volatile private[this] var messageDispatcher: MessageDispatcher = _
 
-  override val log: MarkerLoggingAdapter = Logging.withMarker(system, getClass)
+  override val log: MarkerLoggingAdapter = Logging.withMarker(system, classOf[ArteryTransport])
 
   val flightRecorder: RemotingFlightRecorder = RemotingFlightRecorder(system)
   log.debug("Using flight recorder {}", flightRecorder)
