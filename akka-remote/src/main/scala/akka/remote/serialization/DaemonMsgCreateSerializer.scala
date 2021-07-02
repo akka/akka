@@ -5,7 +5,6 @@
 package akka.remote.serialization
 
 import scala.collection.immutable
-import scala.reflect.ClassTag
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import util.{ Failure, Success }
@@ -237,7 +236,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
     else
       oldDeserialize[AnyRef](data, system.dynamicAccess.getClassFor[AnyRef](className).get.asInstanceOf[Class[AnyRef]])
 
-  private def oldDeserialize[T: ClassTag](data: ByteString, clazz: Class[T]): T = {
+  private def oldDeserialize[T](data: ByteString, clazz: Class[T]): T = {
     val bytes = data.toByteArray
     serialization.deserialize(bytes, clazz) match {
       case Success(x) =>

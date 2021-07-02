@@ -116,7 +116,6 @@ private[remote] class ArteryTcpTransport(
       outboundContext: OutboundContext,
       streamId: Int,
       bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
-    implicit val sys: ActorSystem = system
 
     val host = outboundContext.remoteAddress.host.get
     val port = outboundContext.remoteAddress.port.get
