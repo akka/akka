@@ -651,7 +651,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
     case ManagementCommand(cmd) =>
       val allStatuses: immutable.Seq[Future[Boolean]] =
         transportMapping.values.iterator.map(transport => transport.managementCommand(cmd)).to(immutable.IndexedSeq)
-      akka.compat.Future.fold(allStatuses)(true)(_ && _).map(ManagementCommandAck).pipeTo(sender())
+      akka.compat.Future.fold(allStatuses)(true)(_ && _).map(ManagementCommandAck.apply).pipeTo(sender())
 
     case Quarantine(address, uidToQuarantineOption) =>
       // Stop writers

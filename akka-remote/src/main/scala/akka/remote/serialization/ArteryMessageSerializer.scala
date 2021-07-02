@@ -98,24 +98,24 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
     manifest match { // most frequent ones first (could be made a HashMap in the future)
       case SystemMessageEnvelopeManifest            => deserializeSystemMessageEnvelope(bytes)
-      case SystemMessageDeliveryAckManifest         => deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Ack)
-      case HandshakeReqManifest                     => deserializeHandshakeReq(bytes, HandshakeReq)
-      case HandshakeRspManifest                     => deserializeWithFromAddress(bytes, HandshakeRsp)
-      case SystemMessageDeliveryNackManifest        => deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Nack)
+      case SystemMessageDeliveryAckManifest         => deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Ack.apply)
+      case HandshakeReqManifest                     => deserializeHandshakeReq(bytes, HandshakeReq.apply)
+      case HandshakeRspManifest                     => deserializeWithFromAddress(bytes, HandshakeRsp.apply)
+      case SystemMessageDeliveryNackManifest        => deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Nack.apply)
       case QuarantinedManifest                      => deserializeQuarantined(ArteryControlFormats.Quarantined.parseFrom(bytes))
       case FlushManifest                            => Flush
       case FlushAckManifest                         => FlushAck
-      case ActorSystemTerminatingManifest           => deserializeWithFromAddress(bytes, ActorSystemTerminating)
-      case ActorSystemTerminatingAckManifest        => deserializeWithFromAddress(bytes, ActorSystemTerminatingAck)
+      case ActorSystemTerminatingManifest           => deserializeWithFromAddress(bytes, ActorSystemTerminating.apply)
+      case ActorSystemTerminatingAckManifest        => deserializeWithFromAddress(bytes, ActorSystemTerminatingAck.apply)
       case ActorRefCompressionAdvertisementManifest => deserializeActorRefCompressionAdvertisement(bytes)
       case ActorRefCompressionAdvertisementAckManifest =>
-        deserializeCompressionTableAdvertisementAck(bytes, ActorRefCompressionAdvertisementAck)
+        deserializeCompressionTableAdvertisementAck(bytes, ActorRefCompressionAdvertisementAck.apply)
       case ClassManifestCompressionAdvertisementManifest =>
-        deserializeCompressionAdvertisement(bytes, identity, ClassManifestCompressionAdvertisement)
+        deserializeCompressionAdvertisement(bytes, identity, ClassManifestCompressionAdvertisement.apply)
       case ClassManifestCompressionAdvertisementAckManifest =>
-        deserializeCompressionTableAdvertisementAck(bytes, ClassManifestCompressionAdvertisementAck)
+        deserializeCompressionTableAdvertisementAck(bytes, ClassManifestCompressionAdvertisementAck.apply)
       case ArteryHeartbeatManifest    => RemoteWatcher.ArteryHeartbeat
-      case ArteryHeartbeatRspManifest => deserializeArteryHeartbeatRsp(bytes, ArteryHeartbeatRsp)
+      case ArteryHeartbeatRspManifest => deserializeArteryHeartbeatRsp(bytes, ArteryHeartbeatRsp.apply)
       case _ =>
         throw new NotSerializableException(
           s"Manifest '$manifest' not defined for ArteryControlMessageSerializer (serializer id $identifier)")
@@ -146,7 +146,7 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
     serializeCompressionAdvertisement(adv)(serializeActorRef)
 
   def deserializeActorRefCompressionAdvertisement(bytes: Array[Byte]): ActorRefCompressionAdvertisement =
-    deserializeCompressionAdvertisement(bytes, deserializeActorRef, ActorRefCompressionAdvertisement)
+    deserializeCompressionAdvertisement(bytes, deserializeActorRef, ActorRefCompressionAdvertisement.apply)
 
   def serializeCompressionAdvertisement[T](adv: CompressionAdvertisement[T])(
       keySerializer: T => String): ArteryControlFormats.CompressionTableAdvertisement = {
