@@ -97,11 +97,13 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef =
     manifest match { // most frequent ones first (could be made a HashMap in the future)
-      case SystemMessageEnvelopeManifest            => deserializeSystemMessageEnvelope(bytes)
-      case SystemMessageDeliveryAckManifest         => deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Ack.apply)
-      case HandshakeReqManifest                     => deserializeHandshakeReq(bytes, HandshakeReq.apply)
-      case HandshakeRspManifest                     => deserializeWithFromAddress(bytes, HandshakeRsp.apply)
-      case SystemMessageDeliveryNackManifest        => deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Nack.apply)
+      case SystemMessageEnvelopeManifest => deserializeSystemMessageEnvelope(bytes)
+      case SystemMessageDeliveryAckManifest =>
+        deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Ack.apply)
+      case HandshakeReqManifest => deserializeHandshakeReq(bytes, HandshakeReq.apply)
+      case HandshakeRspManifest => deserializeWithFromAddress(bytes, HandshakeRsp.apply)
+      case SystemMessageDeliveryNackManifest =>
+        deserializeSystemMessageDeliveryAck(bytes, SystemMessageDelivery.Nack.apply)
       case QuarantinedManifest                      => deserializeQuarantined(ArteryControlFormats.Quarantined.parseFrom(bytes))
       case FlushManifest                            => Flush
       case FlushAckManifest                         => FlushAck

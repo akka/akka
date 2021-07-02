@@ -234,7 +234,8 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
 
   private def oldDeserialize(data: ByteString, className: String): AnyRef =
     if (data.isEmpty && className == "null") null
-    else oldDeserialize[AnyRef](data, system.dynamicAccess.getClassFor[AnyRef](className).get.asInstanceOf[Class[AnyRef]])
+    else
+      oldDeserialize[AnyRef](data, system.dynamicAccess.getClassFor[AnyRef](className).get.asInstanceOf[Class[AnyRef]])
 
   private def oldDeserialize[T: ClassTag](data: ByteString, clazz: Class[T]): T = {
     val bytes = data.toByteArray
@@ -252,7 +253,7 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
           case Success(x) =>
             if (clazz.isInstance(x)) x.asInstanceOf[T]
             else throw e
-          case _             => throw e // the first exception
+          case _ => throw e // the first exception
         }
     }
   }

@@ -117,7 +117,7 @@ private[remote] object AssociationState {
 /**
  * INTERNAL API
  */
-private[remote] final class AssociationState private(
+private[remote] final class AssociationState private (
     val incarnation: Int,
     val lastUsedTimestamp: AtomicLong, // System.nanoTime timestamp
     val controlIdleKillSwitch: OptionVal[SharedKillSwitch],
