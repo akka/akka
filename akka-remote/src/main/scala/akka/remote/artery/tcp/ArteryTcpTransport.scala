@@ -129,7 +129,7 @@ private[remote] class ArteryTcpTransport(
       }
       if (tlsEnabled) {
         val sslProvider = sslEngineProvider.get
-        Tcp().outgoingConnectionWithTls(
+        Tcp(system).outgoingConnectionWithTls(
           remoteAddress,
           createSSLEngine = () => sslProvider.createClientSSLEngine(host, port),
           localAddress,
@@ -139,7 +139,7 @@ private[remote] class ArteryTcpTransport(
           verifySession = session => optionToTry(sslProvider.verifyClientSession(host, session)),
           closing = IgnoreComplete)
       } else {
-        Tcp().outgoingConnection(
+        Tcp(system).outgoingConnection(
           remoteAddress,
           localAddress,
           halfClose = true, // issue https://github.com/akka/akka/issues/24392 if set to false
@@ -244,7 +244,7 @@ private[remote] class ArteryTcpTransport(
     val connectionSource: Source[Tcp.IncomingConnection, Future[ServerBinding]] =
       if (tlsEnabled) {
         val sslProvider = sslEngineProvider.get
-        Tcp().bindWithTls(
+        Tcp(system).bindWithTls(
           interface = bindHost,
           port = bindPort,
           createSSLEngine = () => sslProvider.createServerSSLEngine(bindHost, bindPort),
@@ -254,7 +254,7 @@ private[remote] class ArteryTcpTransport(
           verifySession = session => optionToTry(sslProvider.verifyServerSession(bindHost, session)),
           closing = IgnoreComplete)
       } else {
-        Tcp().bind(interface = bindHost, port = bindPort, halfClose = false)
+        Tcp(system).bind(interface = bindHost, port = bindPort, halfClose = false)
       }
 
     val binding = serverBinding match {
