@@ -289,7 +289,7 @@ private[akka] class RemoteActorRefProvider(
       remoting: String,
       libraryMissing: String,
       link: String): Unit = {
-    system.dynamicAccess.getClassFor(className) match {
+    system.dynamicAccess.getClassFor[Any](className) match {
       case Failure(_: ClassNotFoundException | _: NoClassDefFoundError) =>
         throw new IllegalStateException(
           s"$remoting remoting is enabled but $libraryMissing is not on the classpath, it must be added explicitly. See $link")
