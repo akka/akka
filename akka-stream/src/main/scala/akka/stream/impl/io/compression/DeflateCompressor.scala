@@ -19,12 +19,12 @@ import akka.util.{ ByteString, ByteStringBuilder }
   protected lazy val deflater = new Deflater(level, nowrap)
 
   override final def compressAndFlush(input: ByteString): ByteString = {
-    val buffer = newTempBuffer(input.size)
+    val buffer = newTempBuffer(input.length)
 
     compressWithBuffer(input, buffer) ++ flushWithBuffer(buffer)
   }
   override final def compressAndFinish(input: ByteString): ByteString = {
-    val buffer = newTempBuffer(input.size)
+    val buffer = newTempBuffer(input.length)
 
     compressWithBuffer(input, buffer) ++ finishWithBuffer(buffer)
   }
