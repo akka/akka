@@ -446,6 +446,7 @@ object TestTransport {
  */
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object AssociationRegistry {
+  import TestTransport._
   private final val registries = scala.collection.mutable.Map[String, AssociationRegistry]()
 
   def get(key: String): AssociationRegistry = this.synchronized {
