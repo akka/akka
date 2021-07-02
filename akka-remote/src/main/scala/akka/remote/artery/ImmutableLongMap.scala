@@ -118,7 +118,7 @@ private[akka] class ImmutableLongMap[A >: Null] private (private val keys: Array
   }
 
   override def equals(obj: Any): Boolean = obj match {
-    case other: ImmutableLongMap[A] =>
+    case other: ImmutableLongMap[_] =>
       if (other eq this) true
       else if (size != other.size) false
       else if (size == 0 && other.size == 0) true
