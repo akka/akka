@@ -474,7 +474,7 @@ private[transport] class ThrottledAssociation(
 
   when(WaitOrigin) {
     case Event(InboundPayload(p), ExposedHandle(exposedHandle)) =>
-      throttledMessages = throttledMessages.enqueue(p)
+      throttledMessages = throttledMessages.appended(p: ByteString)
       peekOrigin(p) match {
         case Some(origin) =>
           manager ! Checkin(origin, exposedHandle)
@@ -485,7 +485,7 @@ private[transport] class ThrottledAssociation(
 
   when(WaitMode) {
     case Event(InboundPayload(p), _) =>
-      throttledMessages = throttledMessages.enqueue(p)
+      throttledMessages = throttledMessages.appended(p)
       stay()
     case Event(mode: ThrottleMode, ExposedHandle(exposedHandle)) =>
       inboundThrottleMode = mode
@@ -502,7 +502,7 @@ private[transport] class ThrottledAssociation(
 
   when(WaitUpstreamListener) {
     case Event(InboundPayload(p), _) =>
-      throttledMessages = throttledMessages.enqueue(p)
+      throttledMessages = throttledMessages.appended(p)
       stay()
     case Event(Listener(listener), _) =>
       upstreamListener = listener
@@ -517,7 +517,7 @@ private[transport] class ThrottledAssociation(
       self ! Dequeue
       goto(Throttling)
     case Event(InboundPayload(p), _) =>
-      throttledMessages = throttledMessages.enqueue(p)
+      throttledMessages = throttledMessages.appended(p)
       stay()
   }
 
@@ -585,11 +585,11 @@ private[transport] class ThrottledAssociation(
           inboundThrottleMode = newbucket
           upstreamListener.notify(InboundPayload(payload))
         } else {
-          throttledMessages = throttledMessages.enqueue(payload)
+          throttledMessages = throttledMessages.appended(payload)
           scheduleDequeue(inboundThrottleMode.timeToAvailable(System.nanoTime(), tokens))
         }
       } else {
-        throttledMessages = throttledMessages.enqueue(payload)
+        throttledMessages = throttledMessages.appended(payload)
       }
     }
   }
