@@ -26,7 +26,7 @@ private[ssl] trait SessionVerifier {
  * INTERNAL API
  */
 @InternalApi
-private[ssl] final object NoopSessionVerifier extends SessionVerifier {
+private[ssl] object NoopSessionVerifier extends SessionVerifier {
   override def verifyClientSession(hostname: String, session: SSLSession): Option[Throwable] = None
   override def verifyServerSession(hostname: String, session: SSLSession): Option[Throwable] = None
 }
