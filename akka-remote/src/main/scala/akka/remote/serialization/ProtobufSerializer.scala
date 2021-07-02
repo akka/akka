@@ -55,7 +55,7 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
   // This must lazy otherwise it will deadlock the ActorSystem creation
   private lazy val serialization = SerializationExtension(system)
 
-  private val log = Logging.withMarker(system, getClass)
+  private val log = Logging.withMarker(system, classOf[ProtobufSerializer])
 
   override def includeManifest: Boolean = true
 

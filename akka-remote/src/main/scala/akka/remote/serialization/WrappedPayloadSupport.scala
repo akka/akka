@@ -18,7 +18,7 @@ import akka.serialization.DisabledJavaSerializer
 private[akka] class WrappedPayloadSupport(system: ExtendedActorSystem) {
 
   private lazy val serialization = SerializationExtension(system)
-  private val log = Logging(system, getClass)
+  private val log = Logging(system, classOf[WrappedPayloadSupport])
 
   /**
    * Serialize the `input` along with its `manifest` and `serializerId`.
