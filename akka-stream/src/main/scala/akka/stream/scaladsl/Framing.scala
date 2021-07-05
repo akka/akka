@@ -265,27 +265,27 @@ object Framing {
                 s"Read ${possibleMatchPos - previous} bytes " +
                 s"which is more than $maximumLineBytes without seeing a line terminator"))
           } else if (possibleMatchPos == -1) {
-            if (buffer.size - previous > maximumLineBytes)
+            if (buffer.length - previous > maximumLineBytes)
               failStage(
                 new FramingException(
-                  s"Read ${buffer.size - previous} bytes " +
+                  s"Read ${buffer.length - previous} bytes " +
                   s"which is more than $maximumLineBytes without seeing a line terminator"))
             else {
               // No matching character, we need to accumulate more bytes into the buffer
-              nextPossibleMatch = buffer.size
+              nextPossibleMatch = buffer.length
               doParse()
             }
-          } else if (possibleMatchPos + separatorBytes.size > buffer.size) {
+          } else if (possibleMatchPos + separatorBytes.length > buffer.length) {
             // We have found a possible match (we found the first character of the terminator
             // sequence) but we don't have yet enough bytes. We remember the position to
             // retry from next time.
             nextPossibleMatch = possibleMatchPos
             doParse()
-          } else if (buffer.slice(possibleMatchPos, possibleMatchPos + separatorBytes.size) == separatorBytes) {
+          } else if (buffer.slice(possibleMatchPos, possibleMatchPos + separatorBytes.length) == separatorBytes) {
             // Found a match, mark start and end position and iterate if possible
             indices += (previous -> possibleMatchPos)
-            nextPossibleMatch = possibleMatchPos + separatorBytes.size
-            if (nextPossibleMatch == buffer.size || indices.isFull) {
+            nextPossibleMatch = possibleMatchPos + separatorBytes.length
+            if (nextPossibleMatch == buffer.length || indices.isFull) {
               doParse()
             } else {
               searchIndices()
