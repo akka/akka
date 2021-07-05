@@ -78,9 +78,6 @@ it is recommended to upgrade the oldest node last. This way cluster singletons a
 Otherwise, in the worst case cluster singletons may be migrated from node to node which requires coordination and initialization 
 overhead several times.
 
-[Kubernetes Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) with `RollingUpdate`
-strategy will roll out updates in this preferred order, from newest to oldest. 
-
 ## Cluster Shutdown
  
 ### Graceful shutdown 
