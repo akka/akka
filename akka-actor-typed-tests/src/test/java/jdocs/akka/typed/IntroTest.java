@@ -147,15 +147,6 @@ public interface IntroTest {
   // #hello-world-main
 
   interface CustomDispatchersExample {
-
-    public static class SayHello {
-      public final String name;
-
-      public SayHello(String name) {
-        this.name = name;
-      }
-    }
-
     // #hello-world-main-with-dispatchers
     public class HelloWorldMain extends AbstractBehavior<HelloWorldMain.SayHello> {
 

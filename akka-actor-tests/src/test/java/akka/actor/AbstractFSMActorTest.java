@@ -13,6 +13,8 @@ import org.scalatestplus.junit.JUnitSuite;
 
 public class AbstractFSMActorTest extends JUnitSuite {
 
+  // javac produces an `unchecked` warning about `akka$actor$FSM$$transitionEvent`
+  // https://github.com/lampepfl/dotty/issues/6350
   public static class MyFSM extends AbstractFSM<String, String> {
 
     private final ActorRef probe;

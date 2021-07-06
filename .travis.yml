@@ -38,7 +38,7 @@ jobs:
     - stage: scala3
       name: scala3
       # separate job since only a few modules compile with Scala 3 yet
-      script: jabba install adopt@1.11-0 && jabba use adopt@1.11-0 && sbt -Dakka.build.scalaVersion=3.0 "akka-actor-tests/test:compile" akka-actor-typed/compile
+      script: jabba install adopt@1.11-0 && jabba use adopt@1.11-0 && sbt -Dakka.build.scalaVersion=3.0 akka-actor-tests/test akka-actor-typed-tests/test
 
 stages:
   - name: whitesource

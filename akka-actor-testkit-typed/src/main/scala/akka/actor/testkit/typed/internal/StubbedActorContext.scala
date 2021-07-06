@@ -76,7 +76,7 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   @InternalApi private[akka] val selfInbox = new TestInboxImpl[T](path)
 
   override val self = selfInbox.ref
-  override val system = new ActorSystemStub("StubbedActorContext")
+  override val system: ActorSystemStub = new ActorSystemStub("StubbedActorContext")
   private var _children = TreeMap.empty[String, BehaviorTestKitImpl[_]]
   private val childName = Iterator.from(0).map(Helpers.base64(_))
   private val substituteLoggerFactory = new SubstituteLoggerFactory

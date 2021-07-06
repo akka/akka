@@ -44,7 +44,7 @@ object TestKitSettings {
 
   private object Ext extends ExtensionId[Ext] {
     override def createExtension(system: ActorSystem[_]): Ext = new Ext(system)
-    def get(system: ActorSystem[_]): Ext = apply(system)
+    def get(system: ActorSystem[_]): Ext = this.apply(system)
   }
 
   private class Ext(system: ActorSystem[_]) extends Extension {

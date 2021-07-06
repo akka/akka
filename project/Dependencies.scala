@@ -29,7 +29,7 @@ object Dependencies {
 
   val scala212Version = "2.12.14"
   val scala213Version = "2.13.5"
-  val scala3Version = "3.0.0"
+  val scala3Version = "3.0.2-RC1-bin-20210615-a8bbc0e-NIGHTLY" // includes https://github.com/lampepfl/dotty/pull/12710
 
   val reactiveStreamsVersion = "1.0.3"
 

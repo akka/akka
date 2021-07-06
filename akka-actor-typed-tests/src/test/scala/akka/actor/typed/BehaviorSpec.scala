@@ -448,7 +448,7 @@ class MutableScalaBehaviorSpec extends Messages with Become with Stoppable {
         override def onMessage(message: Command): Behavior[Command] = {
           message match {
             case GetSelf =>
-              monitor ! Self(context.self)
+              monitor ! Self(this.context.self)
               this
             case Miss =>
               monitor ! Missed
