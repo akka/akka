@@ -35,7 +35,7 @@ trait DurableStateStoreQuery[A] extends DurableStateStore[A] {
   def currentChanges(tag: String, offset: Offset): Source[DurableStateChange[A], NotUsed]
 
   /**
-   * Get a source of the most recent changes made to objects of the given entity type since the passed in offset.
+   * Get a source of the most recent changes made to objects of the given tag since the passed in offset.
    *
    * The returned source will never terminate, it effectively watches for changes to the objects and emits changes as
    * they happen.

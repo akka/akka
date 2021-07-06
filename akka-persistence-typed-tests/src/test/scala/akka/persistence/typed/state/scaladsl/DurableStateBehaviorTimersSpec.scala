@@ -24,9 +24,9 @@ object DurableStateBehaviorTimersSpec {
 
   def conf: Config = ConfigFactory.parseString(s"""
     akka.loglevel = INFO
-    akka.persistence.state.plugin = "akka.persistence.state.inmem"
-    akka.persistence.state.inmem {
-      class = "akka.persistence.state.inmem.InmemDurableStateStoreProvider"
+    akka.persistence.state.plugin = "akka.persistence.query.state.inmem"
+    akka.persistence.query.state.inmem {
+      class = "akka.persistence.query.state.inmem.InmemDurableStateStoreProvider"
     }
     """)
 
