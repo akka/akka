@@ -1011,9 +1011,8 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
   builder =>
 
   import ByteString.{ ByteString1, ByteString1C, ByteStrings }
-  private var _first: ByteString = _
   private var _length: Int = 0
-  private var _builder: VectorBuilder[ByteString1] = _
+  private val _builder: VectorBuilder[ByteString1] = new VectorBuilder[ByteString1]()
   private var _temp: Array[Byte] = _
   private var _tempLength: Int = 0
   private var _tempCapacity: Int = 0
@@ -1041,33 +1040,12 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     resizeTemp(len - (_length - _tempLength))
   }
 
-  private def internalAppend(bs: ByteString): Unit = {
-    require(_tempLength == 0) // clearTemp first
-    if (_builder ne null) {
-      _builder += internalToByteString1(bs)
-    } else if (_first ne null) {
-      _builder = new VectorBuilder
-      _builder += internalToByteString1(_first)
-      _builder += internalToByteString1(bs)
-      _first = null
-    } else {
-      _first = bs
-    }
-  }
-
-  private def internalToByteString1(bs: ByteString): ByteString1 =
-    bs match {
-      case b: ByteString1  => b
-      case b: ByteString1C => b.toByteString1
-      case _: ByteStrings  => throw new IllegalStateException("ByteStrings shouldn't be converted")
-    }
-
   private def clearTemp(): Unit = {
     if (_tempLength > 0) {
       val arr = new Array[Byte](_tempLength)
       Array.copy(_temp, 0, arr, 0, _tempLength)
+      _builder += ByteString1(arr)
       _tempLength = 0
-      internalAppend(ByteString1(arr))
     }
   }
 
@@ -1099,11 +1077,14 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     if (bytes.nonEmpty) {
       clearTemp()
       bytes match {
-        case b @ (_: ByteString1 | _: ByteString1C) =>
-          internalAppend(b)
+        case b: ByteString1C =>
+          _builder += b.toByteString1
+          _length += b.length
+        case b: ByteString1 =>
+          _builder += b
           _length += b.length
         case bs: ByteStrings =>
-          bs.bytestrings.foreach(internalAppend)
+          _builder ++= bs.bytestrings
           _length += bs.length
       }
     }
@@ -1120,7 +1101,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
           seq.copyToArray(copied)
 
           clearTemp()
-          internalAppend(ByteString1(copied))
+          _builder += ByteString.ByteString1(copied)
           _length += seq.length
         }
       case seq: collection.IndexedSeq[_] =>
@@ -1138,7 +1119,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
 
   private[akka] def putByteArrayUnsafe(xs: Array[Byte]): this.type = {
     clearTemp()
-    internalAppend(ByteString1(xs))
+    _builder += ByteString1(xs)
     _length += xs.length
     this
   }
@@ -1146,14 +1127,12 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
   /**
    * Java API: append a ByteString to this builder.
    */
-  def append(bs: ByteString): this.type =
-    if (bs.isEmpty) this else this ++= bs
+  def append(bs: ByteString): this.type = if (bs.isEmpty) this else this ++= bs
 
   /**
    * Add a single Byte to this builder.
    */
-  def putByte(x: Byte): this.type =
-    this += x
+  def putByte(x: Byte): this.type = this += x
 
   /**
    * Add a single Short to this builder.
@@ -1319,8 +1298,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     fillByteBuffer(len * 8, byteOrder) { _.asDoubleBuffer.put(array, start, len) }
 
   def clear(): Unit = {
-    _first = null
-    _builder = null // alternative would be to clear and keep the builder
+    _builder.clear()
     _length = 0
     _tempLength = 0
   }
@@ -1329,17 +1307,11 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     if (_length == 0) ByteString.empty
     else {
       clearTemp()
-      if (_builder ne null) {
-        val bytestrings = _builder.result
-        if (bytestrings.size == 1)
-          bytestrings.head
-        else
-          ByteStrings(bytestrings, _length)
-      } else if (_first ne null) {
-        _first
-      } else {
-        ByteString.empty
-      }
+      val bytestrings = _builder.result
+      if (bytestrings.size == 1)
+        bytestrings.head
+      else
+        ByteStrings(bytestrings, _length)
     }
 
   /**
