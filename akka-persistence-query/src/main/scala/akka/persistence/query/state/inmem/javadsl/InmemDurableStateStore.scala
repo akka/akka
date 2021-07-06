@@ -4,10 +4,8 @@
 
 package akka.persistence.query.state.inmem.javadsl
 
-import java.util.Optional
-import java.util.concurrent.{ CompletionStage, ConcurrentHashMap }
+import java.util.concurrent.CompletionStage
 
-import scala.concurrent.Future
 import scala.compat.java8.FutureConverters._
 
 import akka.Done
@@ -18,25 +16,23 @@ import akka.persistence.state.javadsl.{ DurableStateUpdateStore, GetObjectResult
 import akka.stream.javadsl.Source
 
 class InmemDurableStateStore[A] extends DurableStateUpdateStore[A] with DurableStateStoreQuery[A] {
-  val store = new ConcurrentHashMap[String, A]()
-
+  // TODO fix or OK?
+  implicit val ec = scala.concurrent.ExecutionContext.global
+  private val stateStore = new akka.persistence.query.state.inmem.scaladsl.InmemDurableStateStore[A] 
+  
   def getObject(persistenceId: String): CompletionStage[GetObjectResult[A]] =
-    toJava(Future.successful(GetObjectResult(Optional.ofNullable(store.get(persistenceId)), 0)))
+    toJava(stateStore.getObject(persistenceId).map(_.toJava))
 
   def upsertObject(persistenceId: String, seqNr: Long, value: A, tag: String): CompletionStage[Done] =
-    toJava(Future.successful(store.put(persistenceId, value) match {
-      case _ => Done
-    }))
+    toJava(stateStore.upsertObject(persistenceId, seqNr, value, tag))
 
   def deleteObject(persistenceId: String): CompletionStage[Done] =
-    toJava(Future.successful(store.remove(persistenceId) match {
-      case _ => Done
-    }))
+    toJava(stateStore.deleteObject(persistenceId))
 
   def changes(tag: String, offset: Offset): Source[DurableStateChange[A],akka.NotUsed] = {
-    ???
+    stateStore.changes(tag, offset).asJava
   }
   def currentChanges(tag: String, offset: Offset): Source[DurableStateChange[A],akka.NotUsed] = {
-    ???
+    stateStore.currentChanges(tag, offset).asJava
   }
 }
