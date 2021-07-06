@@ -30,7 +30,7 @@ object OOIntroSpec {
     final case class GetSession(screenName: String, replyTo: ActorRef[SessionEvent]) extends RoomCommand
     //#chatroom-protocol
     //#chatroom-behavior
-    final case class PublishSessionMessage(screenName: String, message: String) extends RoomCommand
+    private final case class PublishSessionMessage(screenName: String, message: String) extends RoomCommand
     //#chatroom-behavior
     //#chatroom-protocol
 
@@ -69,7 +69,7 @@ object OOIntroSpec {
       }
     }
 
-    object SessionBehavior {
+    private object SessionBehavior {
       def apply(
           room: ActorRef[PublishSessionMessage],
           screenName: String,
