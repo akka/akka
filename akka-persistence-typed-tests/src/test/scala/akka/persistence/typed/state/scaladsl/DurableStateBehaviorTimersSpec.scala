@@ -20,15 +20,13 @@ import com.typesafe.config.ConfigFactory
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.duration._
 
+import akka.persistence.testkit.PersistenceTestKitDurableStateStorePlugin
+
 object DurableStateBehaviorTimersSpec {
 
-  def conf: Config = ConfigFactory.parseString(s"""
+  def conf: Config = PersistenceTestKitDurableStateStorePlugin.config.withFallback(ConfigFactory.parseString(s"""
     akka.loglevel = INFO
-    akka.persistence.state.plugin = "akka.persistence.state.inmem"
-    akka.persistence.state.inmem {
-      class = "akka.persistence.state.inmem.InmemDurableStateStoreProvider"
-    }
-    """)
+    """))
 
   def testBehavior(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[String] =
     Behaviors.setup { _ =>

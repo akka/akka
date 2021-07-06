@@ -17,15 +17,13 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import akka.persistence.testkit.PersistenceTestKitDurableStateStorePlugin
+
 object NullEmptyStateSpec {
 
-  private def conf: Config = ConfigFactory.parseString(s"""
+  def conf: Config = PersistenceTestKitDurableStateStorePlugin.config.withFallback(ConfigFactory.parseString(s"""
     akka.loglevel = INFO
-    akka.persistence.state.plugin = "akka.persistence.state.inmem"
-    akka.persistence.state.inmem {
-      class = "akka.persistence.state.inmem.InmemDurableStateStoreProvider"
-    }
-    """)
+    """))
 }
 
 class NullEmptyStateSpec

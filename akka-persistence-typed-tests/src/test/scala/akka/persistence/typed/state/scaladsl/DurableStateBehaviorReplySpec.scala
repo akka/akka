@@ -19,14 +19,12 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
 import akka.serialization.jackson.CborSerializable
 
+import akka.persistence.testkit.PersistenceTestKitDurableStateStorePlugin
+
 object DurableStateBehaviorReplySpec {
-  def conf: Config = ConfigFactory.parseString(s"""
+  def conf: Config = PersistenceTestKitDurableStateStorePlugin.config.withFallback(ConfigFactory.parseString(s"""
     akka.loglevel = INFO
-    akka.persistence.state.plugin = "akka.persistence.state.inmem"
-    akka.persistence.state.inmem {
-      class = "akka.persistence.state.inmem.InmemDurableStateStoreProvider"
-    }
-    """)
+    """))
 
   sealed trait Command[ReplyMessage] extends CborSerializable
   final case class IncrementWithConfirmation(replyTo: ActorRef[Done]) extends Command[Done]
