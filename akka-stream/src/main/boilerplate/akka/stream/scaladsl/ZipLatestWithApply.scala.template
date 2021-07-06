@@ -36,7 +36,7 @@ class ZipLatestWith1[[#A1#], O] (val zipper: ([#A1#]) => O) extends GraphStage[F
       private var willShutDown = false
 
       private val contextPropagation = ContextPropagation()
-      [#val inlet0 = new ZipLatestInlet(in0)#
+      [#private val inlet0 = new ZipLatestInlet(in0)#
       ]
       private var waitingForTuple = false
       private var staleTupleValues = true

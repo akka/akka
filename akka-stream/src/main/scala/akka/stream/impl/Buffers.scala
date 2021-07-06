@@ -143,27 +143,42 @@ private[akka] object Buffer {
  */
 @InternalApi private[akka] final class BoundedBuffer[T](val capacity: Int) extends Buffer[T] {
 
+  import BoundedBuffer._
+
   def used: Int = q.used
+
   def isFull: Boolean = q.isFull
+
   def isEmpty: Boolean = q.isEmpty
+
   def nonEmpty: Boolean = q.nonEmpty
 
   def enqueue(elem: T): Unit = q.enqueue(elem)
+
   def dequeue(): T = q.dequeue()
 
   def peek(): T = q.peek()
+
   def clear(): Unit = q.clear()
+
   def dropHead(): Unit = q.dropHead()
+
   def dropTail(): Unit = q.dropTail()
 
-  private final class FixedQueue extends Buffer[T] {
+  private var q: Buffer[T] = new FixedQueue[T](capacity, newBuffer => q = newBuffer)
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object BoundedBuffer {
+  private final class FixedQueue[T](override val capacity: Int, switchBuffer: Buffer[T] => Unit) extends Buffer[T] {
     import Buffer._
 
     private val queue = new Array[AnyRef](FixedQueueSize)
     private var head = 0
     private var tail = 0
 
-    override def capacity = BoundedBuffer.this.capacity
     override def used = tail - head
     override def isFull = used == capacity
     override def isEmpty = tail == head
@@ -171,11 +186,11 @@ private[akka] object Buffer {
 
     override def enqueue(elem: T): Unit =
       if (tail - head == FixedQueueSize) {
-        val queue = new DynamicQueue()
+        val queue = new DynamicQueue[T](capacity)
         while (nonEmpty) {
           queue.enqueue(dequeue())
         }
-        q = queue
+        switchBuffer(queue)
         queue.enqueue(elem)
       } else {
         queue(tail & FixedQueueMask) = elem.asInstanceOf[AnyRef]
@@ -203,8 +218,7 @@ private[akka] object Buffer {
     }
   }
 
-  private final class DynamicQueue() extends ju.LinkedList[T] with Buffer[T] {
-    override def capacity = BoundedBuffer.this.capacity
+  private final class DynamicQueue[T](override val capacity: Int) extends ju.LinkedList[T] with Buffer[T] {
     override def used = size
     override def isFull = size == capacity
     override def nonEmpty = !isEmpty()
@@ -215,6 +229,4 @@ private[akka] object Buffer {
     override def dropHead(): Unit = remove()
     override def dropTail(): Unit = removeLast()
   }
-
-  private var q: Buffer[T] = new FixedQueue
 }

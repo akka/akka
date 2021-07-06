@@ -30,7 +30,7 @@ trait StageLogging { self: GraphStageLogic =>
     if (_log eq null) {
       materializer match {
         case p: MaterializerLoggingProvider =>
-          _log = p.makeLogger(logSource)
+          _log = p.makeLogger(logSource.asInstanceOf[Class[Any]])
         case _ =>
           _log = NoLogging
       }

@@ -40,7 +40,7 @@ import akka.util.NanoTimeTokenBucket
   private val nanosBetweenTokens = per.toNanos / cost
   // 100 ms is a realistic minimum between tokens, otherwise the maximumBurst is adjusted
   // to be able to support higher rates
-  val effectiveMaximumBurst =
+  val effectiveMaximumBurst: Long =
     if (maximumBurst == Throttle.AutomaticMaximumBurst) math.max(1, ((100 * 1000 * 1000) / nanosBetweenTokens))
     else maximumBurst
   require(!(mode == ThrottleMode.Enforcing && effectiveMaximumBurst < 0), "maximumBurst must be > 0 in Enforcing mode")

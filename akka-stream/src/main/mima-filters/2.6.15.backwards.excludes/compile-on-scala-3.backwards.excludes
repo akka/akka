@@ -1,0 +1,8 @@
+# internal
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.MergeHub#MergedSourceLogic.enqueue")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.BoundedBuffer#FixedQueue.this")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.BoundedBuffer#DynamicQueue.this")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.impl.PhasedFusingActorMaterializer.makeLogger")
+
+# Effectively internal
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.MaterializerLoggingProvider.makeLogger")

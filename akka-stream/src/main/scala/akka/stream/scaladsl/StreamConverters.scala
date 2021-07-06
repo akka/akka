@@ -135,7 +135,7 @@ object StreamConverters {
     if (parallelism == 1) javaCollector[T, R](collectorFactory)
     else {
       Sink
-        .fromGraph(GraphDSL.create(Sink.head[R]) { implicit b => sink =>
+        .fromGraph(GraphDSL.createGraph(Sink.head[R]) { implicit b => sink =>
           import GraphDSL.Implicits._
           val factory = collectorFactory.asInstanceOf[() => Collector[T, Any, R]]
           val balance = b.add(Balance[T](parallelism))

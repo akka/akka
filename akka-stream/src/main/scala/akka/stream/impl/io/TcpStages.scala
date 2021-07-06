@@ -177,7 +177,7 @@ import akka.util.ByteString
 
       private def unbindCompleted(): Unit = {
         stageActor.unwatch(listener)
-        unbindPromise.trySuccess(Done)
+        unbindPromise.trySuccess(())
         if (connectionFlowsAwaitingInitialization.get() == 0) completeStage()
         else scheduleOnce(BindShutdownTimer, bindShutdownTimeout)
       }
@@ -192,7 +192,7 @@ import akka.util.ByteString
       override def postStop(): Unit = {
         // a bit unexpected to succeed here rather than fail with abrupt stage termination
         // but there was an existing test case covering this behavior
-        unbindPromise.trySuccess(Done)
+        unbindPromise.trySuccess(())
         bindingPromise.tryFailure(new NoSuchElementException("Binding was unbound before it was completely finished"))
       }
     }
