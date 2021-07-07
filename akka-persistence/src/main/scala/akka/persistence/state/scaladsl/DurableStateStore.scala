@@ -5,7 +5,7 @@
 package akka.persistence.state.scaladsl
 
 import scala.concurrent.Future
-import scala.jdk.OptionConverters._
+import scala.compat.java8.OptionConverters._
 
 /**
  * API for reading durable state objects.
@@ -21,5 +21,5 @@ trait DurableStateStore[A] {
 }
 
 final case class GetObjectResult[A](value: Option[A], revision: Long) {
-  def toJava = akka.persistence.state.javadsl.GetObjectResult(value.toJava, revision)
+  def toJava = akka.persistence.state.javadsl.GetObjectResult(value.asJava, revision)
 }

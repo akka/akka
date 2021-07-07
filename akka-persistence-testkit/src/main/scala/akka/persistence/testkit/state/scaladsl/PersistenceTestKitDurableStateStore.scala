@@ -53,16 +53,16 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
     })
 
   def changes(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = {
-    val seqNr = offset match {
+    val fromOffset = offset match {
       case NoOffset        => earliestOffset
-      case Sequence(seqNr) => seqNr
+      case Sequence(fromOffset) => fromOffset
       case offset =>
         throw new UnsupportedOperationException(s"$offset not supported in PersistenceTestKitDurableStateStore.")
     }
     // TODO Test if this is ok
     val (_, source) = graph.run()
     source
-      .filter(rec => rec.tag == tag && rec.globalOffset >= seqNr && store.contains(rec.persistenceId))
+      .filter(rec => rec.tag == tag && rec.globalOffset > fromOffset && store.contains(rec.persistenceId))
       .map(_.toDurableStateChange)
   }
 
