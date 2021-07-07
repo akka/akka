@@ -20,20 +20,28 @@ import akka.persistence.state.scaladsl.{ DurableStateUpdateStore, GetObjectResul
 import akka.stream.scaladsl.BroadcastHub
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
+import akka.stream.typed.scaladsl.ActorSource
 import akka.stream.OverflowStrategy
 
-// TODO test
+object PersistenceTestKitDurableStateStore {
+  val Identifier = "akka.persistence.testkit.state"
+}
+
 class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
     extends DurableStateUpdateStore[A]
     with DurableStateStoreQuery[A] {
+
   private implicit val sys = system
-  private val store = new TrieMap[String, Record[A]]()
-  private val producer = Source.queue[Record[A]](1024, OverflowStrategy.dropHead)
-  private val graph = producer.toMat(BroadcastHub.sink(bufferSize = 1024))(Keep.both)
-  // Test of this is ok?
-  private val (queue, _) = graph.run()
-  private val earliestOffset = 0L
-  private val lastGlobalOffset = new AtomicLong(earliestOffset)
+  private val store = TrieMap.empty[String, Record[A]]
+
+  private val (publisher, changesSource) =
+    ActorSource
+      .actorRef[Record[A]](PartialFunction.empty, PartialFunction.empty, 256, OverflowStrategy.dropHead)
+      .toMat(BroadcastHub.sink)(Keep.both)
+      .run()
+
+  private val EarliestOffset = 0L
+  private val lastGlobalOffset = new AtomicLong(EarliestOffset)
 
   def getObject(persistenceId: String): Future[GetObjectResult[A]] =
     Future.successful(GetObjectResult(store.get(persistenceId).map(_.value), 0))
@@ -43,7 +51,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
       val globalOffset = lastGlobalOffset.incrementAndGet()
       val record = Record(globalOffset, persistenceId, revision, value, tag)
       store.put(persistenceId, record)
-      queue.offer(record)
+      publisher ! record
       Done
     }
 
@@ -54,15 +62,27 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
 
   def changes(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = {
     val fromOffset = offset match {
-      case NoOffset        => earliestOffset
+      case NoOffset             => EarliestOffset
       case Sequence(fromOffset) => fromOffset
       case offset =>
         throw new UnsupportedOperationException(s"$offset not supported in PersistenceTestKitDurableStateStore.")
     }
-    // TODO Test if this is ok
-    val (_, source) = graph.run()
-    source
-      .filter(rec => rec.tag == tag && rec.globalOffset > fromOffset && store.contains(rec.persistenceId))
+    def byTagFromOffset(rec: Record[A]) = rec.tag == tag && rec.globalOffset > fromOffset
+    def byTagFromOffsetNotDeleted(rec: Record[A]) = byTagFromOffset(rec) && store.contains(rec.persistenceId)
+
+    Source(store.values.toSeq.filter(byTagFromOffset).sortBy(_.globalOffset))
+      .concat(changesSource)
+      .filter(byTagFromOffsetNotDeleted)
+      .statefulMapConcat { () =>
+        var globalOffsetSeen = EarliestOffset
+
+        { record =>
+          if (record.globalOffset > globalOffsetSeen) {
+            globalOffsetSeen = record.globalOffset
+            record :: Nil
+          } else Nil
+        }
+      }
       .map(_.toDurableStateChange)
   }
 

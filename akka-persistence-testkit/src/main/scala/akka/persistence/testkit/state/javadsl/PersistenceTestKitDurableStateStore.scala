@@ -16,6 +16,10 @@ import akka.persistence.state.javadsl.{ DurableStateUpdateStore, GetObjectResult
 import akka.persistence.testkit.state.scaladsl.{ PersistenceTestKitDurableStateStore => SStore }
 import akka.stream.javadsl.Source
 
+object PersistenceTestKitDurableStateStore {
+  val Identifier = "akka.persistence.testkit.state"
+}
+
 class PersistenceTestKitDurableStateStore[A](stateStore: SStore[A])
     extends DurableStateUpdateStore[A]
     with DurableStateStoreQuery[A] {
