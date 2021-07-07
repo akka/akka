@@ -16,16 +16,13 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import java.util.concurrent.atomic.AtomicInteger
+import akka.persistence.testkit.PersistenceTestKitDurableStateStorePlugin
 
 object DurableStateBehaviorInterceptorSpec {
 
-  def conf: Config = ConfigFactory.parseString(s"""
+  def conf: Config = PersistenceTestKitDurableStateStorePlugin.config.withFallback(ConfigFactory.parseString(s"""
     akka.loglevel = INFO
-    akka.persistence.state.plugin = "akka.persistence.testkit.state"
-    akka.persistence.testkit.state {
-      class = "akka.persistence.testkit.state.PersistenceTestKitDurableStateStoreProvider"
-    }
-    """)
+    """))
 
   def testBehavior(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[String] =
     Behaviors.setup { _ =>

@@ -7,7 +7,6 @@ package akka.persistence.testkit.state.javadsl
 import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters._
-
 import akka.Done
 import akka.persistence.query.javadsl.DurableStateStoreQuery
 import akka.persistence.query.DurableStateChange

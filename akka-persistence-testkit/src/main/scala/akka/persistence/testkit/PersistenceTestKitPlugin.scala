@@ -133,3 +133,14 @@ object PersistenceTestKitSnapshotPlugin {
     ).asJava)
 
 }
+
+object PersistenceTestKitDurableStateStorePlugin {
+
+  val PluginId = "akka.persistence.testkit.state"
+
+  import akka.util.ccompat.JavaConverters._
+
+  def getInstance() = this
+
+  val config: Config = ConfigFactory.parseMap(Map("akka.persistence.state.plugin" -> PluginId).asJava)
+}
