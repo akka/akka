@@ -16,7 +16,7 @@ import akka.persistence.testkit.state.scaladsl.{ PersistenceTestKitDurableStateS
 import akka.stream.javadsl.Source
 
 object PersistenceTestKitDurableStateStore {
-  val Identifier = "akka.persistence.testkit.state"
+  val Identifier = akka.persistence.testkit.state.scaladsl.PersistenceTestKitDurableStateStore.Identifier
 }
 
 class PersistenceTestKitDurableStateStore[A](stateStore: SStore[A])
