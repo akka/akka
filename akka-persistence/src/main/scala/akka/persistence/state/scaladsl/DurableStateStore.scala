@@ -6,6 +6,7 @@ package akka.persistence.state.scaladsl
 
 import scala.concurrent.Future
 import scala.jdk.OptionConverters._
+
 /**
  * API for reading durable state objects.
  *
