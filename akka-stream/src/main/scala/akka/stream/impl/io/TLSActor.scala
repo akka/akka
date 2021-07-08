@@ -497,14 +497,15 @@ import akka.util.ByteString
   def applySessionParameters(engine: SSLEngine, sessionParameters: NegotiateNewSession): Unit = {
     sessionParameters.enabledCipherSuites.foreach(cs => engine.setEnabledCipherSuites(cs.toArray))
     sessionParameters.enabledProtocols.foreach(p => engine.setEnabledProtocols(p.toArray))
+
+    sessionParameters.sslParameters.foreach(engine.setSSLParameters)
+
     sessionParameters.clientAuth match {
       case Some(TLSClientAuth.None) => engine.setNeedClientAuth(false)
       case Some(TLSClientAuth.Want) => engine.setWantClientAuth(true)
       case Some(TLSClientAuth.Need) => engine.setNeedClientAuth(true)
       case _                        => // do nothing
     }
-
-    sessionParameters.sslParameters.foreach(engine.setSSLParameters)
   }
 
   def cloneParameters(old: SSLParameters): SSLParameters = {
