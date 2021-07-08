@@ -87,7 +87,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
 
   def currentChanges(tag: String, offset: Offset): Source[DurableStateChange[A], akka.NotUsed] = this.synchronized {
     changes(tag, offset).takeWhile(_.offset match {
-      case Sequence(seqNr) => seqNr <= lastGlobalOffset.get()
+      case Sequence(fromOffset) => fromOffset <= lastGlobalOffset.get()
       case offset =>
         throw new UnsupportedOperationException(s"$offset not supported in PersistenceTestKitDurableStateStore.")
     })
