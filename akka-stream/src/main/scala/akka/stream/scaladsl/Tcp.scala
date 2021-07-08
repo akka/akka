@@ -9,7 +9,6 @@ import java.util.concurrent.TimeoutException
 import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
-
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -17,9 +16,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.NoStackTrace
-
 import scala.annotation.nowarn
-
 import akka.Done
 import akka.NotUsed
 import akka.actor._
@@ -30,6 +27,7 @@ import akka.io.Inet.SocketOption
 import akka.stream._
 import akka.stream.Attributes.Attribute
 import akka.stream.TLSProtocol.NegotiateNewSession
+import akka.stream.impl.TcpImplicitExtensionIdApply
 import akka.stream.impl.fusing.GraphStages.detacher
 import akka.stream.impl.io.ConnectionSourceStage
 import akka.stream.impl.io.OutgoingConnectionStage
@@ -38,7 +36,7 @@ import akka.util.ByteString
 import akka.util.JavaDurationConverters._
 import akka.util.unused
 
-object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
+object Tcp extends ExtensionId[Tcp] with TcpImplicitExtensionIdApply with ExtensionIdProvider {
 
   /**
    * Represents a successful TCP server binding.
@@ -79,8 +77,6 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
    */
   final case class OutgoingConnection(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress)
 
-  def apply()(implicit system: ActorSystem): Tcp = super.apply(system)
-
   override def get(system: ActorSystem): Tcp = super.get(system)
   override def get(system: ClassicActorSystemProvider): Tcp = super.get(system)
 
@@ -90,7 +86,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
 
   // just wraps/unwraps the TLS byte events to provide ByteString, ByteString flows
   private val tlsWrapping: BidiFlow[ByteString, TLSProtocol.SendBytes, TLSProtocol.SslTlsInbound, ByteString, NotUsed] =
-    BidiFlow.fromFlows(Flow[ByteString].map(TLSProtocol.SendBytes), Flow[TLSProtocol.SslTlsInbound].collect {
+    BidiFlow.fromFlows(Flow[ByteString].map(TLSProtocol.SendBytes.apply), Flow[TLSProtocol.SslTlsInbound].collect {
       case sb: TLSProtocol.SessionBytes => sb.bytes
       // ignore other kinds of inbounds (currently only Truncated)
     })

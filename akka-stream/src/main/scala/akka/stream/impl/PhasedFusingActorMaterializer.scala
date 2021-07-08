@@ -610,7 +610,7 @@ private final case class SavedIslandData(
     }
   }
 
-  override def makeLogger(logSource: Class[_]): LoggingAdapter =
+  override def makeLogger(logSource: Class[Any]): LoggingAdapter =
     Logging(system, logSource)
 
   /**

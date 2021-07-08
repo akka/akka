@@ -1203,10 +1203,13 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] => O)(n: Int) extends GraphStage[U
       // Without this field the completion signalling would take one extra pull
       var willShutDown = false
 
+      private val contextPropagation = ContextPropagation()
+
       val grabInlet = grab[A] _
       val pullInlet = pull[A] _
 
       private def pushAll(): Unit = {
+        contextPropagation.resumeContext()
         push(out, zipper(shape.inlets.map(grabInlet)))
         if (willShutDown) completeStage()
         else shape.inlets.foreach(pullInlet)
@@ -1216,20 +1219,22 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] => O)(n: Int) extends GraphStage[U
         shape.inlets.foreach(pullInlet)
       }
 
-      shape.inlets.foreach(in => {
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            pending -= 1
-            if (pending == 0) pushAll()
-          }
+      shape.inlets.zipWithIndex.foreach {
+        case (in, i) =>
+          setHandler(in, new InHandler {
+            override def onPush(): Unit = {
+              // Only one context can be propagated. Picked the first element as an arbitrary but deterministic choice.
+              if (i == 0) contextPropagation.suspendContext()
+              pending -= 1
+              if (pending == 0) pushAll()
+            }
 
-          override def onUpstreamFinish(): Unit = {
-            if (!isAvailable(in)) completeStage()
-            willShutDown = true
-          }
-
-        })
-      })
+            override def onUpstreamFinish(): Unit = {
+              if (!isAvailable(in)) completeStage()
+              willShutDown = true
+            }
+          })
+      }
 
       def onPull(): Unit = {
         pending += n

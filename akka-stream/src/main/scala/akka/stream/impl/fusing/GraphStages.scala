@@ -18,7 +18,7 @@ import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.stream.{ Shape, _ }
 import akka.stream.FlowMonitorState._
-import akka.stream.impl.{ LinearTraversalBuilder, ReactiveStreamsCompliance }
+import akka.stream.impl.{ ContextPropagation, LinearTraversalBuilder, ReactiveStreamsCompliance }
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout._
 import akka.stream.scaladsl._
@@ -82,11 +82,14 @@ import akka.stream.stage._
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new GraphStageLogic(shape) with InHandler with OutHandler {
+        private val contextPropagation = ContextPropagation()
 
         def onPush(): Unit = {
           if (isAvailable(out)) {
             push(out, grab(in))
             tryPull(in)
+          } else {
+            contextPropagation.suspendContext()
           }
         }
 
@@ -96,6 +99,7 @@ import akka.stream.stage._
 
         def onPull(): Unit = {
           if (isAvailable(in)) {
+            contextPropagation.resumeContext()
             push(out, grab(in))
             if (isClosed(in)) completeStage()
             else pull(in)

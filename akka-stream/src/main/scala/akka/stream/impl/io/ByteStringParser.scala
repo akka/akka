@@ -185,8 +185,8 @@ import akka.util.ByteString
 
     private[this] var off = 0
 
-    def hasRemaining: Boolean = off < input.size
-    def remainingSize: Int = input.size - off
+    def hasRemaining: Boolean = off < input.length
+    def remainingSize: Int = input.length - off
 
     def currentOffset: Int = off
 

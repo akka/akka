@@ -12,7 +12,7 @@ For resilience, we adopt the "Let it crash" model which the telecom industry has
 
 Actors also provide the abstraction for transparent distribution and the basis for truly scalable and fault-tolerant applications.
 
-Learn more at [akka.io](http://akka.io/).
+Learn more at [akka.io](https://akka.io/).
 
 Reference Documentation
 -----------------------

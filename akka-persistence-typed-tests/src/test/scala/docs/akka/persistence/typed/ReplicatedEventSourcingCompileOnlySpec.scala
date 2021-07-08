@@ -4,10 +4,13 @@
 
 package docs.akka.persistence.typed
 
+import scala.annotation.nowarn
+
+import akka.actor.typed.ActorSystem
 import akka.persistence.typed.ReplicaId
 import akka.persistence.typed.ReplicationId
-import akka.persistence.typed.scaladsl.{ EventSourcedBehavior, ReplicatedEventSourcing }
-import scala.annotation.nowarn
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
+import akka.persistence.typed.scaladsl.ReplicatedEventSourcing
 
 @nowarn("msg=never used")
 object ReplicatedEventSourcingCompileOnlySpec {
@@ -24,21 +27,36 @@ object ReplicatedEventSourcingCompileOnlySpec {
   trait State
   trait Event
 
-  //#factory-shared
-  ReplicatedEventSourcing.commonJournalConfig(
-    ReplicationId("entityTypeHint", "entityId", DCA),
-    AllReplicas,
-    queryPluginId) { context =>
-    EventSourcedBehavior[Command, State, Event](???, ???, ???, ???)
+  object Shared {
+    //#factory-shared
+    def apply(
+        system: ActorSystem[_],
+        entityId: String,
+        replicaId: ReplicaId): EventSourcedBehavior[Command, State, Event] = {
+      ReplicatedEventSourcing.commonJournalConfig(
+        ReplicationId("MyReplicatedEntity", entityId, replicaId),
+        AllReplicas,
+        queryPluginId) { replicationContext =>
+        EventSourcedBehavior[Command, State, Event](???, ???, ???, ???)
+      }
+    }
+    //#factory-shared
   }
-  //#factory-shared
 
-  //#factory
-  ReplicatedEventSourcing.perReplicaJournalConfig(
-    ReplicationId("entityTypeHint", "entityId", DCA),
-    Map(DCA -> "journalForDCA", DCB -> "journalForDCB")) { context =>
-    EventSourcedBehavior[Command, State, Event](???, ???, ???, ???)
+  object PerReplica {
+    //#factory
+    def apply(
+        system: ActorSystem[_],
+        entityId: String,
+        replicaId: ReplicaId): EventSourcedBehavior[Command, State, Event] = {
+      ReplicatedEventSourcing.perReplicaJournalConfig(
+        ReplicationId("MyReplicatedEntity", entityId, replicaId),
+        Map(DCA -> "journalForDCA", DCB -> "journalForDCB")) { replicationContext =>
+        EventSourcedBehavior[Command, State, Event](???, ???, ???, ???)
+      }
+    }
+
+    //#factory
   }
-  //#factory
 
 }

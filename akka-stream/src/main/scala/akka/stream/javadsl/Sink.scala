@@ -25,6 +25,7 @@ import akka.japi.function
 import akka.japi.function.Creator
 import akka.stream.{ javadsl, scaladsl, _ }
 import akka.stream.impl.LinearTraversalBuilder
+import akka.stream.scaladsl.SinkToCompletionStage
 
 /** Java API */
 object Sink {
@@ -313,8 +314,8 @@ object Sink {
    */
   def fromGraph[T, M](g: Graph[SinkShape[T], M]): Sink[T, M] =
     g match {
-      case s: Sink[T, M] => s
-      case other         => new Sink(scaladsl.Sink.fromGraph(other))
+      case s: Sink[T, M] @unchecked => s
+      case other                    => new Sink(scaladsl.Sink.fromGraph(other))
     }
 
   /**
