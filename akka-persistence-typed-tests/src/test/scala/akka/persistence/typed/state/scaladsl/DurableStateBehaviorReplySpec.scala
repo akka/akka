@@ -31,6 +31,8 @@ object DurableStateBehaviorReplySpec {
   final case class IncrementReplyLater(replyTo: ActorRef[Done]) extends Command[Done]
   final case class ReplyNow(replyTo: ActorRef[Done]) extends Command[Done]
   final case class GetValue(replyTo: ActorRef[State]) extends Command[State]
+  final case object Increment extends Command[Nothing]
+  case class IncrementBy(by: Int) extends Command[Nothing]
 
   final case class State(value: Int) extends CborSerializable
 
@@ -59,6 +61,28 @@ object DurableStateBehaviorReplySpec {
           case GetValue(replyTo) =>
             Effect.reply(replyTo)(state)
 
+          case _ => ???
+
+        })
+  }
+
+  def counterBasic(persistenceId: PersistenceId): DurableStateBehavior[Command[_], State] = {
+    DurableStateBehavior.apply[Command[_], State](
+      persistenceId,
+      emptyState = State(0),
+      commandHandler = (state, command) =>
+        command match {
+
+          case Increment =>
+            Effect.persist(state.copy(value = state.value + 1))
+
+          case IncrementBy(by) =>
+            Effect.persist(state.copy(value = state.value + by))
+
+          case GetValue(replyTo) =>
+            Effect.reply(replyTo)(state)
+          case _ => ???
+
         })
   }
 }
@@ -72,6 +96,22 @@ class DurableStateBehaviorReplySpec
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
+
+  "A typed persistent actor with commands" must {
+    "persist state" in {
+      val c = spawn(counterBasic(nextPid()))
+      val probe = TestProbe[Done]()
+      c ! Increment
+      probe.expectNoMessage()
+      val queryProbe = TestProbe[State]()
+      c ! GetValue(queryProbe.ref)
+      queryProbe.expectMessage(State(1))
+      c ! IncrementBy(5)
+      probe.expectNoMessage()
+      c ! GetValue(queryProbe.ref)
+      queryProbe.expectMessage(State(6))
+    }
+  }
 
   "A typed persistent actor with commands that are expecting replies" must {
 

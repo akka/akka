@@ -9,6 +9,7 @@ project.description: Event Sourcing with Akka Persistence enables actors to pers
 @@@ index
 
 * [persistence](persistence.md)
+* [persistence-durable-state](persistence-durable-state.md)
 * [replicated-eventsourcing](replicated-eventsourcing.md)
 * [cqrs](cqrs.md)
 * [persistence-style](persistence-style.md)
