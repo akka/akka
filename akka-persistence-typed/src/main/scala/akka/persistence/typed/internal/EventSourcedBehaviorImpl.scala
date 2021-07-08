@@ -305,7 +305,6 @@ object ReplicatedEventMetadata {
    * For a journal supporting Replicated Event Sourcing needing to add test coverage, use this instance as metadata and defer
    * to the built in serializer for serialization format
    */
-  @ApiMayChange
   def instanceForJournalTest: Any = ReplicatedEventMetadata(ReplicaId("DC-A"), 1L, VersionVector.empty + "DC-A", true)
 }
 
@@ -328,7 +327,6 @@ object ReplicatedSnapshotMetadata {
    * For a snapshot store supporting Replicated Event Sourcing needing to add test coverage, use this instance as metadata and defer
    * to the built in serializer for serialization format
    */
-  @ApiMayChange
   def instanceForSnapshotStoreTest: Any =
     ReplicatedSnapshotMetadata(
       VersionVector.empty + "DC-B" + "DC-A",

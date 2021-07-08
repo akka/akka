@@ -230,6 +230,7 @@ import akka.stream.stage._
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new TimerGraphStageLogic(shape) with InHandler with OutHandler {
         private var nextDeadline: Long = System.nanoTime + timeout.toNanos
+        private val contextPropagation = ContextPropagation()
 
         setHandlers(in, out, this)
 
@@ -242,6 +243,8 @@ import akka.stream.stage._
           if (isAvailable(out)) {
             push(out, grab(in))
             pull(in)
+          } else {
+            contextPropagation.suspendContext()
           }
         }
 
@@ -251,6 +254,7 @@ import akka.stream.stage._
 
         override def onPull(): Unit = {
           if (isAvailable(in)) {
+            contextPropagation.resumeContext()
             push(out, grab(in))
             if (isClosed(in)) completeStage()
             else pull(in)

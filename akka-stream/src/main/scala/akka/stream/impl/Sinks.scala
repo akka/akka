@@ -299,8 +299,6 @@ import akka.util.ccompat._
 
   require(maxConcurrentPulls > 0, "Max concurrent pulls must be greater than 0")
 
-  type Requested[E] = Promise[Option[E]]
-
   val in = Inlet[T]("queueSink.in")
   override def initialAttributes = DefaultAttributes.queueSink
   override val shape: SinkShape[T] = SinkShape.of(in)
@@ -309,14 +307,13 @@ import akka.util.ccompat._
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val stageLogic = new GraphStageLogic(shape) with InHandler with SinkQueueWithCancel[T] {
-      type Received[E] = Try[Option[E]]
 
       val maxBuffer = inheritedAttributes.get[InputBuffer](InputBuffer(16, 16)).max
       require(maxBuffer > 0, "Buffer size must be greater than 0")
 
       // Allocates one additional element to hold stream closed/failure indicators
-      val buffer: Buffer[Received[T]] = Buffer(maxBuffer + 1, inheritedAttributes)
-      val currentRequests: Buffer[Requested[T]] = Buffer(maxConcurrentPulls, inheritedAttributes)
+      val buffer: Buffer[Try[Option[T]]] = Buffer(maxBuffer + 1, inheritedAttributes)
+      val currentRequests: Buffer[Promise[Option[T]]] = Buffer(maxConcurrentPulls, inheritedAttributes)
 
       override def preStart(): Unit = {
         setKeepGoing(true)
@@ -324,7 +321,7 @@ import akka.util.ccompat._
       }
 
       private val callback = getAsyncCallback[Output[T]] {
-        case QueueSink.Pull(pullPromise) =>
+        case QueueSink.Pull(pullPromise: Promise[Option[T]] @unchecked) =>
           if (currentRequests.isFull)
             pullPromise.failure(
               new IllegalStateException(s"Too many concurrent pulls. Specified maximum is $maxConcurrentPulls. " +
@@ -337,7 +334,7 @@ import akka.util.ccompat._
         case QueueSink.Cancel => completeStage()
       }
 
-      def sendDownstream(promise: Requested[T]): Unit = {
+      def sendDownstream(promise: Promise[Option[T]]): Unit = {
         val e = buffer.dequeue()
         promise.complete(e)
         e match {
@@ -445,17 +442,19 @@ import akka.util.ccompat._
 @InternalApi private[akka] final class MutableCollectorState[T, R](
     collector: java.util.stream.Collector[T, Any, R],
     accumulator: java.util.function.BiConsumer[Any, T],
-    val accumulated: Any)
+    _accumulated: Any)
     extends CollectorState[T, R] {
 
+  override def accumulated(): Any = _accumulated
+
   override def update(elem: T): CollectorState[T, R] = {
-    accumulator.accept(accumulated, elem)
+    accumulator.accept(_accumulated, elem)
     this
   }
 
   override def finish(): R = {
     // only called if completed without elements
-    collector.finisher().apply(accumulated)
+    collector.finisher().apply(_accumulated)
   }
 }
 

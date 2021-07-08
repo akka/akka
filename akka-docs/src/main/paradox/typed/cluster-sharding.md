@@ -284,6 +284,8 @@ the entity when it's supposed to stop itself due to rebalance or passivation. If
 it will be stopped automatically without receiving a specific message. It can be useful to define a custom stop
 message if the entity needs to perform some asynchronous cleanup or interactions before stopping.
 
+The stop message is only sent locally, from the shard to the entity so does not require an entity id to end up in the right actor. When using a custom `ShardingMessageExtractor` without envelopes, the extractor will still have to handle the stop message type to please the compiler, even though it will never actually be passed to the extractor.
+
 ### Automatic Passivation
 
 The entities are automatically passivated if they haven't received a message within the duration configured in

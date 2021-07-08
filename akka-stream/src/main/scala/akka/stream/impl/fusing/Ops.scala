@@ -15,7 +15,7 @@ import akka.stream.Attributes.{ InputBuffer, LogLevels }
 import akka.stream.OverflowStrategies._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.impl.{ ReactiveStreamsCompliance, Buffer => BufferImpl }
+import akka.stream.impl.{ ReactiveStreamsCompliance, Buffer => BufferImpl, ContextPropagation }
 import akka.stream.scaladsl.{ DelayStrategy, Source }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
@@ -78,6 +78,7 @@ import akka.util.ccompat._
       def decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
 
       private var buffer: OptionVal[T] = OptionVal.none
+      private val contextPropagation = ContextPropagation()
 
       override def preStart(): Unit = pull(in)
       override def onPush(): Unit =
@@ -87,9 +88,10 @@ import akka.util.ccompat._
             if (isAvailable(out)) {
               push(out, elem)
               pull(in)
-            } else
+            } else {
               buffer = OptionVal.Some(elem)
-          else pull(in)
+              contextPropagation.suspendContext()
+            } else pull(in)
         } catch {
           case NonFatal(ex) =>
             decider(ex) match {
@@ -101,6 +103,7 @@ import akka.util.ccompat._
       override def onPull(): Unit =
         buffer match {
           case OptionVal.Some(value) =>
+            contextPropagation.resumeContext()
             push(out, value)
             buffer = OptionVal.none
             if (!isClosed(in)) pull(in)
@@ -1059,6 +1062,7 @@ private[stream] object Collect {
       private var agg: Out = null.asInstanceOf[Out]
       private var left: Long = max
       private var pending: In = null.asInstanceOf[In]
+      private val contextPropagation = ContextPropagation()
 
       private def flush(): Unit = {
         if (agg != null) {
@@ -1089,6 +1093,7 @@ private[stream] object Collect {
       def onPush(): Unit = {
         val elem = grab(in)
         val cost = costFn(elem)
+        contextPropagation.suspendContext()
 
         if (agg == null) {
           try {
@@ -1133,6 +1138,7 @@ private[stream] object Collect {
           if (isClosed(in)) completeStage()
           else if (!hasBeenPulled(in)) pull(in)
         } else if (isClosed(in)) {
+          contextPropagation.resumeContext()
           push(out, agg)
           if (pending == null) completeStage()
           else {
@@ -1151,6 +1157,7 @@ private[stream] object Collect {
             pending = null.asInstanceOf[In]
           }
         } else {
+          contextPropagation.resumeContext()
           flush()
           if (!hasBeenPulled(in)) pull(in)
         }
@@ -1182,12 +1189,14 @@ private[stream] object Collect {
   override def createLogic(attr: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
     private var iterator: Iterator[Out] = Iterator.empty
     private var expanded = false
+    private val contextPropagation = ContextPropagation()
 
     override def preStart(): Unit = pull(in)
 
     def onPush(): Unit = {
       iterator = extrapolate(grab(in))
       if (iterator.hasNext) {
+        contextPropagation.suspendContext()
         if (isAvailable(out)) {
           expanded = true
           pull(in)
@@ -1203,6 +1212,7 @@ private[stream] object Collect {
 
     def onPull(): Unit = {
       if (iterator.hasNext) {
+        contextPropagation.resumeContext()
         if (!expanded) {
           expanded = true
           if (isClosed(in)) {
@@ -1765,6 +1775,7 @@ private[stream] object Collect {
       private var totalWeight = 0L
       private var totalNumber = 0
       private var hasElements = false
+      private val contextPropagation = ContextPropagation()
 
       override def preStart() = {
         scheduleWithFixedDelay(GroupedWeightedWithin.groupedWeightedWithinTimer, interval, interval)
@@ -1823,6 +1834,7 @@ private[stream] object Collect {
 
       private def emitGroup(): Unit = {
         groupEmitted = true
+        contextPropagation.resumeContext()
         push(out, buf.result())
         buf.clear()
         if (!finished) startNewGroup()
@@ -1849,6 +1861,7 @@ private[stream] object Collect {
       }
 
       override def onPush(): Unit = {
+        contextPropagation.suspendContext()
         if (pending == null) nextElement(grab(in)) // otherwise keep the element for next round
       }
 
@@ -2072,6 +2085,7 @@ private[stream] object Collect {
       override def toString = s"Reduce.Logic(aggregator=$aggregator)"
 
       private var aggregator: T = _
+      private val empty: T = aggregator
 
       private def decider =
         inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
@@ -2100,7 +2114,7 @@ private[stream] object Collect {
             decider(ex) match {
               case Supervision.Stop => failStage(ex)
               case Supervision.Restart =>
-                aggregator = _: T
+                aggregator = empty
                 setInitialInHandler()
               case _ => ()
 
@@ -2199,15 +2213,20 @@ private[akka] final class StatefulMapConcat[In, Out](val f: () => In => Iterable
     lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
     var currentIterator: Iterator[Out] = _
     var plainFun = f()
+    val contextPropagation = ContextPropagation()
 
     def hasNext = if (currentIterator != null) currentIterator.hasNext else false
 
     setHandlers(in, out, this)
 
-    def pushPull(): Unit =
+    def pushPull(shouldResumeContext: Boolean): Unit =
       if (hasNext) {
+        if (shouldResumeContext) contextPropagation.resumeContext()
         push(out, currentIterator.next())
-        if (!hasNext && isClosed(in)) completeStage()
+        if (hasNext) {
+          // suspend context for the next element
+          contextPropagation.suspendContext()
+        } else if (isClosed(in)) completeStage()
       } else if (!isClosed(in))
         pull(in)
       else completeStage()
@@ -2217,13 +2236,13 @@ private[akka] final class StatefulMapConcat[In, Out](val f: () => In => Iterable
     override def onPush(): Unit =
       try {
         currentIterator = plainFun(grab(in)).iterator
-        pushPull()
+        pushPull(shouldResumeContext = false)
       } catch handleException
 
     override def onUpstreamFinish(): Unit = onFinish()
 
     override def onPull(): Unit =
-      try pushPull()
+      try pushPull(shouldResumeContext = true)
       catch handleException
 
     private def handleException: Catcher[Unit] = {

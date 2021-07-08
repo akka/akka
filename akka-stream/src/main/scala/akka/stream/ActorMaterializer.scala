@@ -778,7 +778,9 @@ object IOSettings {
     "Use setting 'akka.stream.materializer.io.tcp.write-buffer-size' or attribute TcpAttributes.writeBufferSize instead",
     "2.6.0")
   def apply(config: Config): IOSettings =
-    new IOSettings(tcpWriteBufferSize = math.min(Int.MaxValue, config.getBytes("tcp.write-buffer-size")).toInt)
+    new IOSettings(
+      tcpWriteBufferSize = math.min(Int.MaxValue, config.getBytes("tcp.write-buffer-size")).toInt,
+      coalesceWrites = config.getInt("tcp.coalesce-writes"))
 
   @deprecated(
     "Use setting 'akka.stream.materializer.io.tcp.write-buffer-size' or attribute TcpAttributes.writeBufferSize instead",
@@ -809,19 +811,30 @@ object IOSettings {
 @nowarn("msg=deprecated")
 final class IOSettings private (
     @deprecated("Use attribute 'TcpAttributes.TcpWriteBufferSize' to read the concrete setting value", "2.6.0")
-    val tcpWriteBufferSize: Int) {
+    val tcpWriteBufferSize: Int,
+    val coalesceWrites: Int) {
+
+  // constructor for binary compatibility with version 2.6.15 and earlier
+  @deprecated("Use attribute 'TcpAttributes.TcpWriteBufferSize' to read the concrete setting value", "2.6.0")
+  def this(tcpWriteBufferSize: Int) = this(tcpWriteBufferSize, coalesceWrites = 10)
 
   def withTcpWriteBufferSize(value: Int): IOSettings = copy(tcpWriteBufferSize = value)
 
-  private def copy(tcpWriteBufferSize: Int): IOSettings = new IOSettings(tcpWriteBufferSize = tcpWriteBufferSize)
+  def withCoalesceWrites(value: Int): IOSettings = copy(coalesceWrites = value)
+
+  private def copy(tcpWriteBufferSize: Int = tcpWriteBufferSize, coalesceWrites: Int = coalesceWrites): IOSettings =
+    new IOSettings(tcpWriteBufferSize, coalesceWrites)
 
   override def equals(other: Any): Boolean = other match {
-    case s: IOSettings => s.tcpWriteBufferSize == tcpWriteBufferSize
+    case s: IOSettings => s.tcpWriteBufferSize == tcpWriteBufferSize && s.coalesceWrites == coalesceWrites
     case _             => false
   }
 
+  override def hashCode(): Int =
+    31 * tcpWriteBufferSize + coalesceWrites
+
   override def toString =
-    s"""IoSettings(${tcpWriteBufferSize})"""
+    s"""IoSettings($tcpWriteBufferSize,$coalesceWrites)"""
 }
 
 object StreamSubscriptionTimeoutSettings {

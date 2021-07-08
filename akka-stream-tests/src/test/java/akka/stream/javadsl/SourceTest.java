@@ -36,6 +36,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -177,7 +178,6 @@ public class SourceTest extends StreamTest {
     probe.expectMsgEquals(6);
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   public void mustBeAbleToUseGroupBy() throws Exception {
     final Iterable<String> input = Arrays.asList("Aaa", "Abb", "Bcc", "Cdd", "Cee");
@@ -195,22 +195,14 @@ public class SourceTest extends StreamTest {
 
     final CompletionStage<List<List<String>>> future =
         source.grouped(10).runWith(Sink.head(), system);
-    final Object[] result = future.toCompletableFuture().get(1, TimeUnit.SECONDS).toArray();
-    Arrays.sort(
-        result,
-        (Comparator<Object>)
-            (Object)
-                new Comparator<List<String>>() {
-                  @Override
-                  public int compare(List<String> o1, List<String> o2) {
-                    return o1.get(0).charAt(0) - o2.get(0).charAt(0);
-                  }
-                });
+    final List<List<String>> result =
+        future.toCompletableFuture().get(1, TimeUnit.SECONDS).stream()
+            .sorted(Comparator.comparingInt(list -> list.get(0).charAt(0)))
+            .collect(Collectors.toList());
 
-    assertArrayEquals(
-        new Object[] {
-          Arrays.asList("Aaa", "Abb"), Arrays.asList("Bcc"), Arrays.asList("Cdd", "Cee")
-        },
+    assertEquals(
+        Arrays.asList(
+            Arrays.asList("Aaa", "Abb"), Arrays.asList("Bcc"), Arrays.asList("Cdd", "Cee")),
         result);
   }
 

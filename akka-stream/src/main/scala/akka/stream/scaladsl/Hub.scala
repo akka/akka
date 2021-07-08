@@ -239,7 +239,7 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int, drainingEnabled: Boo
     def isDraining: Boolean = drainingEnabled && draining
 
     // External API
-    def enqueue(ev: Event): Unit = {
+    private[MergeHub] def enqueue(ev: Event): Unit = {
       queue.add(ev)
       /*
        * Simple volatile var is enough, there is no need for a CAS here. The first important thing to note

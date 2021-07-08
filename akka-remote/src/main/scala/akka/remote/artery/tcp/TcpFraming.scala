@@ -69,7 +69,7 @@ import akka.util.ByteString
 
     case object ReadMagic extends Step {
       override def parse(reader: ByteReader): ParseResult[EnvelopeBuffer] = {
-        val magic = reader.take(TcpFraming.Magic.size)
+        val magic = reader.take(TcpFraming.Magic.length)
         if (magic == TcpFraming.Magic)
           ParseResult(None, ReadStreamId)
         else

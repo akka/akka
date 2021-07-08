@@ -27,9 +27,9 @@ object Dependencies {
 
   val jacksonVersion = "2.11.4"
 
-  val scala212Version = "2.12.13"
+  val scala212Version = "2.12.14"
   val scala213Version = "2.13.5"
-  val scala3Version = "3.0.0"
+  val scala3Version = "3.0.1-RC1"
 
   val reactiveStreamsVersion = "1.0.3"
 
@@ -93,7 +93,7 @@ object Dependencies {
 
     val sigar = "org.fusesource" % "sigar" % "1.6.4" // ApacheV2
 
-    val jctools = "org.jctools" % "jctools-core" % "3.2.0" // ApacheV2
+    val jctools = "org.jctools" % "jctools-core" % "3.3.0" // ApacheV2
 
     // reactive streams
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
@@ -131,7 +131,7 @@ object Dependencies {
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.6" % "test"
-      val gson = "com.google.code.gson" % "gson" % "2.8.6" % "test"
+      val gson = "com.google.code.gson" % "gson" % "2.8.7" % "test"
     }
 
     object Test {
