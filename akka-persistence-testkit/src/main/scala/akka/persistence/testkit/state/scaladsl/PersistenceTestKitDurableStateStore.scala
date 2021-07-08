@@ -69,7 +69,7 @@ class PersistenceTestKitDurableStateStore[A](val system: ExtendedActorSystem)
     def byTagFromOffset(rec: Record[A]) = rec.tag == tag && rec.globalOffset > fromOffset
     def byTagFromOffsetNotDeleted(rec: Record[A]) = byTagFromOffset(rec) && store.contains(rec.persistenceId)
 
-    Source(store.values.toSeq.filter(byTagFromOffset _).sortBy(_.globalOffset))
+    Source(store.values.toVector.filter(byTagFromOffset _).sortBy(_.globalOffset))
       .concat(changesSource)
       .filter(byTagFromOffsetNotDeleted _)
       .statefulMapConcat { () =>
