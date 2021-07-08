@@ -52,8 +52,9 @@ class PersistenceTestKitDurableStateStoreSpec
       val secondStateChange = testSink.request(1).expectNext()
       secondStateChange.value should be(recordChange)
       secondStateChange.revision should be(2L)
-      assert(
-        secondStateChange.offset.asInstanceOf[Sequence].value > firstStateChange.offset.asInstanceOf[Sequence].value)
+      secondStateChange.offset
+        .asInstanceOf[Sequence]
+        .value should be >= (firstStateChange.offset.asInstanceOf[Sequence].value)
     }
 
     "find tagged current state changes ordered by upsert" in {
