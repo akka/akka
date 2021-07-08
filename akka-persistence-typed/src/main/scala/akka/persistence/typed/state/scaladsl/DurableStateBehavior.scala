@@ -13,11 +13,16 @@ import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.InterceptorImpl
 import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.scaladsl.ActorContext
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.state.internal._
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotAdapter
 
+/**
+ * API May Change
+ */
+@ApiMayChange
 object DurableStateBehavior {
 
   /**
@@ -106,8 +111,10 @@ object DurableStateBehavior {
  * Further customization of the `DurableStateBehavior` can be done with the methods defined here.
  *
  * Not for user extension
+ *
+ * API May Change
  */
-@DoNotInherit trait DurableStateBehavior[Command, State] extends DeferredBehavior[Command] {
+@ApiMayChange @DoNotInherit trait DurableStateBehavior[Command, State] extends DeferredBehavior[Command] {
 
   def persistenceId: PersistenceId
 

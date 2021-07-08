@@ -5,6 +5,7 @@
 package akka.persistence.typed.state.javadsl
 
 import akka.actor.typed.ActorRef
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.japi.function
@@ -21,8 +22,10 @@ import akka.persistence.typed.state.internal._
  * Created via [[DurableStateBehavior.Effect]].
  *
  * Not for user extension
+ *
+ * API May Change
  */
-@DoNotInherit sealed class EffectFactories[State] {
+@ApiMayChange @DoNotInherit sealed class EffectFactories[State] {
 
   /**
    * Persist new state.

@@ -7,12 +7,16 @@ package akka.persistence.state.scaladsl
 import scala.concurrent.Future
 
 import akka.Done
+import akka.annotation.ApiMayChange
 
 /**
  * API for updating durable state objects.
  *
  * For Java API see [[akka.persistence.state.javadsl.DurableStateUpdateStore]].
+ *
+ * API May Change
  */
+@ApiMayChange
 trait DurableStateUpdateStore[A] extends DurableStateStore[A] {
 
   /**

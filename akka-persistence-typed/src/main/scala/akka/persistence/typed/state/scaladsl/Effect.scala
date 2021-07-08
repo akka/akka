@@ -5,13 +5,17 @@
 package akka.persistence.typed.state.scaladsl
 
 import akka.actor.typed.ActorRef
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.state.internal.SideEffect
 import akka.persistence.typed.state.internal._
 
 /**
  * Factory methods for creating [[Effect]] directives - how a `DurableStateBehavior` reacts on a command.
+ *
+ * API May Change
  */
+@ApiMayChange
 object Effect {
 
   /**
