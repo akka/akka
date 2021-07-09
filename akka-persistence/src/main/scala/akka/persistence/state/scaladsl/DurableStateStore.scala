@@ -6,6 +6,8 @@ package akka.persistence.state.scaladsl
 
 import scala.concurrent.Future
 import scala.compat.java8.OptionConverters._
+
+import akka.annotation.ApiMayChange
 import akka.persistence.state.javadsl.{ GetObjectResult => JGetObjectResult }
 
 /**
@@ -14,7 +16,10 @@ import akka.persistence.state.javadsl.{ GetObjectResult => JGetObjectResult }
  * For Java API see [[akka.persistence.state.javadsl.DurableStateStore]].
  *
  * See also [[DurableStateUpdateStore]]
+ *
+ * API May Change
  */
+@ApiMayChange
 trait DurableStateStore[A] {
 
   def getObject(persistenceId: String): Future[GetObjectResult[A]]
