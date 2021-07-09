@@ -13,9 +13,9 @@ import akka.persistence.typed.PersistenceId;
 
 // #behavior
 
-//#effects
+// #effects
 import akka.Done;
-//#effects
+// #effects
 
 public class DurableStatePersistentBehaviorTest {
 
@@ -197,9 +197,11 @@ public class DurableStatePersistentBehaviorTest {
         return newCommandHandlerBuilder()
             .forAnyState()
             .onCommand(
-                IncrementWithConfirmation.class, 
-                (state, command) -> Effect().persist(new State(state.get() + 1))
-                                            .thenReply(command.replyTo, (st) -> Done.getInstance()))
+                IncrementWithConfirmation.class,
+                (state, command) ->
+                    Effect()
+                        .persist(new State(state.get() + 1))
+                        .thenReply(command.replyTo, (st) -> Done.getInstance()))
             .onCommand(
                 GetValue.class, (state, command) -> Effect().reply(command.replyTo, state.get()))
             .build();
