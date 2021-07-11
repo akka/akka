@@ -158,8 +158,9 @@ public class LoggingAdapterTest extends JUnitSuite {
             assertEquals(level, log.level());
             assertEquals(mdc, log.getMDC().toString());
             if (cause != null) {
-              Error error = (Error) log;
-              assertSame(cause, error.cause());
+              assert (event instanceof LogEventWithCause);
+              LogEventWithCause causedEvent = (LogEventWithCause) event;
+              assertSame(cause, causedEvent.cause());
             }
             return null;
           });
