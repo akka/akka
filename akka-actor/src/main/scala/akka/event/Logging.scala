@@ -1199,6 +1199,7 @@ trait LoggingAdapter {
   protected def notifyError(message: String): Unit
   protected def notifyError(cause: Throwable, message: String): Unit
   protected def notifyWarning(message: String): Unit
+  protected def notifyWarning(@unused cause: Throwable, message: String): Unit = notifyWarning(message)
   protected def notifyInfo(message: String): Unit
   protected def notifyDebug(message: String): Unit
 
@@ -1284,6 +1285,49 @@ trait LoggingAdapter {
    */
   def error(template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
     if (isErrorEnabled) notifyError(format(template, arg1, arg2, arg3, arg4))
+  }
+
+  /**
+   * Log message at warning level, including the exception that indicated the warning.
+   * @see [[LoggingAdapter]]
+   */
+  def warning(cause: Throwable, message: String): Unit = {
+    if (isWarningEnabled) notifyWarning(cause, message)
+  }
+
+  /**
+   * Message template with 1 replacement argument.
+   *
+   * If `arg1` is an `Array` it will be expanded into replacement arguments, which is useful when
+   * there are more than four arguments.
+   * @see [[LoggingAdapter]]
+   */
+  def warning(cause: Throwable, template: String, arg1: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(cause, format1(template, arg1))
+  }
+
+  /**
+   * Message template with 2 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
+  def warning(cause: Throwable, template: String, arg1: Any, arg2: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(cause, format(template, arg1, arg2))
+  }
+
+  /**
+   * Message template with 3 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
+  def warning(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(cause, format(template, arg1, arg2, arg3))
+  }
+
+  /**
+   * Message template with 4 replacement arguments.
+   * @see [[LoggingAdapter]]
+   */
+  def warning(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit = {
+    if (isWarningEnabled) notifyWarning(cause, format(template, arg1, arg2, arg3, arg4))
   }
 
   /**
@@ -1975,15 +2019,17 @@ class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class
   def isInfoEnabled = loggingFilter.isInfoEnabled(logClass, logSource)
   def isDebugEnabled = loggingFilter.isDebugEnabled(logClass, logSource)
 
-  protected def notifyError(message: String): Unit =
+  override protected def notifyError(message: String): Unit =
     bus.publish(Error(logSource, logClass, message, mdc))
-  protected def notifyError(cause: Throwable, message: String): Unit =
+  override protected def notifyError(cause: Throwable, message: String): Unit =
     bus.publish(Error(cause, logSource, logClass, message, mdc))
-  protected def notifyWarning(message: String): Unit =
+  override protected def notifyWarning(message: String): Unit =
     bus.publish(Warning(logSource, logClass, message, mdc))
-  protected def notifyInfo(message: String): Unit =
+  override protected def notifyWarning(cause: Throwable, message: String): Unit =
+    bus.publish(Warning(cause, logSource, logClass, message, mdc))
+  override protected def notifyInfo(message: String): Unit =
     bus.publish(Info(logSource, logClass, message, mdc))
-  protected def notifyDebug(message: String): Unit =
+  override protected def notifyDebug(message: String): Unit =
     bus.publish(Debug(logSource, logClass, message, mdc))
 }
 
@@ -2006,6 +2052,7 @@ object NoLogging extends LoggingAdapter {
   final protected override def notifyError(message: String): Unit = ()
   final protected override def notifyError(cause: Throwable, message: String): Unit = ()
   final protected override def notifyWarning(message: String): Unit = ()
+  final protected override def notifyWarning(cause: Throwable, message: String): Unit = ()
   final protected override def notifyInfo(message: String): Unit = ()
   final protected override def notifyDebug(message: String): Unit = ()
 }
@@ -2029,6 +2076,7 @@ object NoMarkerLogging extends MarkerLoggingAdapter(null, "source", classOf[Stri
   final protected override def notifyError(message: String): Unit = ()
   final protected override def notifyError(cause: Throwable, message: String): Unit = ()
   final protected override def notifyWarning(message: String): Unit = ()
+  final protected override def notifyWarning(cause: Throwable, message: String): Unit = ()
   final protected override def notifyInfo(message: String): Unit = ()
   final protected override def notifyDebug(message: String): Unit = ()
   final override def error(marker: LogMarker, cause: Throwable, message: String): Unit = ()
