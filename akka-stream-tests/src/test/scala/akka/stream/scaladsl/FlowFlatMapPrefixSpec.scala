@@ -5,10 +5,20 @@
 package akka.stream.scaladsl
 
 import akka.stream.Attributes.Attribute
-import akka.stream.stage.{GraphStage, GraphStageLogic, InHandler, OutHandler}
-import akka.{Done, NotUsed}
-import akka.stream.{AbruptStageTerminationException, AbruptTerminationException, Attributes, FlowShape, Inlet, Materializer, NeverMaterializedException, Outlet, SubscriptionWithCancelException}
-import akka.stream.testkit.{StreamSpec, TestPublisher, TestSubscriber}
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.{ Done, NotUsed }
+import akka.stream.{
+  AbruptStageTerminationException,
+  AbruptTerminationException,
+  Attributes,
+  FlowShape,
+  Inlet,
+  Materializer,
+  NeverMaterializedException,
+  Outlet,
+  SubscriptionWithCancelException
+}
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 
@@ -612,20 +622,22 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
   }
 
   "attributes propagation" must {
-    case class CustomAttribute(n : Int) extends Attribute
-    class WithAttr[A] extends GraphStage[FlowShape[A, (A, Option[CustomAttribute])]]{
-      override val shape: FlowShape[A, (A, Option[CustomAttribute])] = FlowShape(Inlet[A]("in"), Outlet[(A, Option[CustomAttribute])]("out"))
-      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) with InHandler with OutHandler {
-        val attr = inheritedAttributes.get[CustomAttribute]
+    case class CustomAttribute(n: Int) extends Attribute
+    class WithAttr[A] extends GraphStage[FlowShape[A, (A, Option[CustomAttribute])]] {
+      override val shape: FlowShape[A, (A, Option[CustomAttribute])] =
+        FlowShape(Inlet[A]("in"), Outlet[(A, Option[CustomAttribute])]("out"))
+      override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+        new GraphStageLogic(shape) with InHandler with OutHandler {
+          val attr = inheritedAttributes.get[CustomAttribute]
 
-        setHandlers(shape.in, shape.out, this)
+          setHandlers(shape.in, shape.out, this)
 
-        override def onPush(): Unit = push(shape.out, grab(shape.in) -> attr)
+          override def onPush(): Unit = push(shape.out, grab(shape.in) -> attr)
 
-        override def onPull(): Unit = pull(shape.in)
-      }
+          override def onPull(): Unit = pull(shape.in)
+        }
     }
-    def withAttr[A] = Flow fromGraph new WithAttr[A]
+    def withAttr[A] = Flow.fromGraph(new WithAttr[A])
     "baseline behaviour" in {
       Source
         .single("1")
@@ -633,34 +645,29 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         .map(_._2)
         .withAttributes(Attributes(CustomAttribute(42)))
         .runWith(Sink.head)
-        .futureValue should be (Some(CustomAttribute(42)))
+        .futureValue should be(Some(CustomAttribute(42)))
     }
 
     "propagate attribute applied to flatMapPrefix" in {
       Source
         .single("1")
-        .flatMapPrefix(0){_ =>
-          Flow[String]
-            .via(withAttr)
-            .map(_._2)
+        .flatMapPrefix(0) { _ =>
+          Flow[String].via(withAttr).map(_._2)
         }
         .withAttributes(Attributes(CustomAttribute(42)))
         .runWith(Sink.head)
-        .futureValue should be (Some(CustomAttribute(42)))
+        .futureValue should be(Some(CustomAttribute(42)))
     }
 
     "respect attributes override" in {
       Source
         .single("1")
-        .flatMapPrefix(0){_ =>
-          Flow[String]
-            .via(withAttr)
-            .map(_._2)
-            .withAttributes(Attributes(CustomAttribute(24)))
+        .flatMapPrefix(0) { _ =>
+          Flow[String].via(withAttr).map(_._2).withAttributes(Attributes(CustomAttribute(24)))
         }
         .withAttributes(Attributes(CustomAttribute(42)))
         .runWith(Sink.head)
-        .futureValue should be (Some(CustomAttribute(24)))
+        .futureValue should be(Some(CustomAttribute(24)))
     }
   }
 }
