@@ -26,6 +26,7 @@ import java.time.Duration;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 public class LoggingAdapterTest extends JUnitSuite {
 
@@ -158,7 +159,7 @@ public class LoggingAdapterTest extends JUnitSuite {
             assertEquals(level, log.level());
             assertEquals(mdc, log.getMDC().toString());
             if (cause != null) {
-              assert (event instanceof LogEventWithCause);
+              assertTrue(event instanceof LogEventWithCause);
               LogEventWithCause causedEvent = (LogEventWithCause) event;
               assertSame(cause, causedEvent.cause());
             }
