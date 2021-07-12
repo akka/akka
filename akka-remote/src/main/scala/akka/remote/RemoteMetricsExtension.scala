@@ -67,7 +67,7 @@ private[akka] class RemoteMetricsOn(system: ExtendedActorSystem) extends RemoteM
 
   private val logFrameSizeExceeding: Int =
     RARP(system).provider.remoteSettings.LogFrameSizeExceeding.getOrElse(Int.MaxValue)
-  private val log = Logging(system, this.getClass)
+  private val log = Logging(system, classOf[RemoteMetrics])
   private val maxPayloadBytes: ConcurrentHashMap[Class[_], Integer] = new ConcurrentHashMap
 
   override def logPayloadBytes(msg: Any, payloadBytes: Int): Unit =

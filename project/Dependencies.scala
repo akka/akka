@@ -293,14 +293,15 @@ object Dependencies {
         jacksonCore,
         jacksonAnnotations,
         jacksonDatabind,
-        jacksonScala,
         jacksonJdk8,
         jacksonJsr310,
         jacksonParameterNames,
         jacksonCbor,
         lz4Java,
         Test.junit,
-        Test.scalatest)
+        Test.scalatest) ++
+    (if (getScalaVersion() == scala3Version) Seq.empty
+    else Seq(jacksonScala))
 
   val osgi = l ++= Seq(
         osgiCore,

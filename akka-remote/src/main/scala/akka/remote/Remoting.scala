@@ -157,7 +157,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
   override def localAddressForRemote(remote: Address): Address =
     Remoting.localAddressForRemote(transportMapping, remote)
 
-  val log: LoggingAdapter = Logging(system.eventStream, getClass)
+  val log: LoggingAdapter = Logging(system.eventStream, classOf[Remoting])
   val eventPublisher = new EventPublisher(system, log, RemoteLifecycleEventsLogLevel)
 
   private def notifyError(msg: String, cause: Throwable): Unit =
@@ -540,7 +540,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
           case d: FiniteDuration =>
             endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + d)
             eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid.toLong))
-          case _ => // disabled
+          case null => // disabled
         }
         Stop
 
@@ -651,7 +651,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
     case ManagementCommand(cmd) =>
       val allStatuses: immutable.Seq[Future[Boolean]] =
         transportMapping.values.iterator.map(transport => transport.managementCommand(cmd)).to(immutable.IndexedSeq)
-      akka.compat.Future.fold(allStatuses)(true)(_ && _).map(ManagementCommandAck).pipeTo(sender())
+      akka.compat.Future.fold(allStatuses)(true)(_ && _).map(ManagementCommandAck.apply).pipeTo(sender())
 
     case Quarantine(address, uidToQuarantineOption) =>
       // Stop writers

@@ -10,7 +10,6 @@ import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-import TestTransport._
 import com.typesafe.config.Config
 
 import akka.actor._
@@ -29,10 +28,12 @@ import akka.util.ByteString
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class TestTransport(
     val localAddress: Address,
-    final val registry: AssociationRegistry,
+    final val registry: TestTransport.AssociationRegistry,
     val maximumPayloadBytes: Int = 32000,
     val schemeIdentifier: String = "test")
     extends Transport {
+
+  import TestTransport._
 
   def this(system: ExtendedActorSystem, conf: Config) = {
     this(
@@ -445,6 +446,7 @@ object TestTransport {
  */
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object AssociationRegistry {
+  import TestTransport._
   private final val registries = scala.collection.mutable.Map[String, AssociationRegistry]()
 
   def get(key: String): AssociationRegistry = this.synchronized {

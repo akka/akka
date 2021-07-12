@@ -117,7 +117,7 @@ private[remote] object AssociationState {
 /**
  * INTERNAL API
  */
-private[remote] final class AssociationState(
+private[remote] final class AssociationState private (
     val incarnation: Int,
     val lastUsedTimestamp: AtomicLong, // System.nanoTime timestamp
     val controlIdleKillSwitch: OptionVal[SharedKillSwitch],
@@ -277,7 +277,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   @volatile private[this] var controlSubject: ControlMessageSubject = _
   @volatile private[this] var messageDispatcher: MessageDispatcher = _
 
-  override val log: MarkerLoggingAdapter = Logging.withMarker(system, getClass)
+  override val log: MarkerLoggingAdapter = Logging.withMarker(system, classOf[ArteryTransport])
 
   val flightRecorder: RemotingFlightRecorder = RemotingFlightRecorder(system)
   log.debug("Using flight recorder {}", flightRecorder)
