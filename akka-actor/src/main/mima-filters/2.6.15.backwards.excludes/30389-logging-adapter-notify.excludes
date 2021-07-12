@@ -1,2 +1,2 @@
 # additional overload added
-ProblemFilters.exclude[ReversedMissingMethodProblem("akka.event.LoggingAdapter.notifyWarning")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.event.LoggingAdapter.notifyWarning")
