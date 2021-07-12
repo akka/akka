@@ -451,28 +451,28 @@ trait GraphInterpreterSpecKit extends StreamSpec {
     override def step(): Unit = interpreter.execute(eventLimit = if (!chasing) 1 else 2)
 
     class UpstreamPortProbe[T] extends UpstreamProbe[T]("upstreamPort") {
-      def isAvailable: Boolean = isAvailable(out)
-      def isClosed: Boolean = isClosed(out)
+      def isAvailable: Boolean = isAvailable(this.out)
+      def isClosed: Boolean = isClosed(this.out)
 
-      def push(elem: T): Unit = push(out, elem)
-      def complete(): Unit = complete(out)
-      def fail(ex: Throwable): Unit = fail(out, ex)
+      def push(elem: T): Unit = push(this.out, elem)
+      def complete(): Unit = complete(this.out)
+      def fail(ex: Throwable): Unit = fail(this.out, ex)
     }
 
     class DownstreamPortProbe[T] extends DownstreamProbe[T]("upstreamPort") {
-      def isAvailable: Boolean = isAvailable(in)
-      def hasBeenPulled: Boolean = hasBeenPulled(in)
-      def isClosed: Boolean = isClosed(in)
+      def isAvailable: Boolean = isAvailable(this.in)
+      def hasBeenPulled: Boolean = hasBeenPulled(this.in)
+      def isClosed: Boolean = isClosed(this.in)
 
-      def pull(): Unit = pull(in)
-      def cancel(): Unit = cancel(in)
-      def grab(): T = grab(in)
+      def pull(): Unit = pull(this.in)
+      def cancel(): Unit = cancel(this.in)
+      def grab(): T = grab(this.in)
 
-      setHandler(in, new InHandler {
+      setHandler(this.in, new InHandler {
 
         // Modified onPush that does not grab() automatically the element. This accesses some internals.
         override def onPush(): Unit = {
-          val internalEvent = portToConn(in.id).slot
+          val internalEvent = portToConn(DownstreamPortProbe.this.in.id).slot
 
           internalEvent match {
             case Failed(_, elem) => lastEvent += OnNext(DownstreamPortProbe.this, elem)
