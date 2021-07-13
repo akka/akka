@@ -38,7 +38,7 @@ object AccountExampleWithOptionDurableState {
     val Zero = BigDecimal(0)
 
     // type alias to reduce boilerplate
-    type ReplyEffect = akka.persistence.typed.scaladsl.ReplyEffect[Event, Option[Account]]
+    type ReplyEffect = akka.persistence.typed.state.scaladsl.ReplyEffect[Option[Account]]
 
     // State
     sealed trait Account extends CborSerializable {
@@ -50,11 +50,11 @@ object AccountExampleWithOptionDurableState {
       override def applyCommand(cmd: Command): ReplyEffect =
         cmd match {
           case Deposit(amount, replyTo) =>
-            Effect.persist(copy(balance = balance + amount)).thenReply(replyTo)(_ => StatusReply.Ack)
+            Effect.persist(Some(copy(balance = balance + amount))).thenReply(replyTo)(_ => StatusReply.Ack)
 
           case Withdraw(amount, replyTo) =>
             if (canWithdraw(amount))
-              Effect.persist(copy(balance = balance - amount)).thenReply(replyTo)(_ => StatusReply.Ack)
+              Effect.persist(Some(copy(balance = balance - amount))).thenReply(replyTo)(_ => StatusReply.Ack)
             else
               Effect.reply(replyTo)(StatusReply.Error(s"Insufficient balance $balance to be able to withdraw $amount"))
 
@@ -63,7 +63,7 @@ object AccountExampleWithOptionDurableState {
 
           case CloseAccount(replyTo) =>
             if (balance == Zero)
-              Effect.persist(ClosedAccount).thenReply(replyTo)(_ => StatusReply.Ack)
+              Effect.persist(Some(ClosedAccount)).thenReply(replyTo)(_ => StatusReply.Ack)
             else
               Effect.reply(replyTo)(StatusReply.Error("Can't close account with non-zero balance"))
 
@@ -114,7 +114,7 @@ object AccountExampleWithOptionDurableState {
     def onFirstCommand(cmd: Command): ReplyEffect = {
       cmd match {
         case CreateAccount(replyTo) =>
-          Effect.persist(OpenedAccount(Zero)).thenReply(replyTo)(_ => StatusReply.Ack)
+          Effect.persist(Some(OpenedAccount(Zero))).thenReply(replyTo)(_ => StatusReply.Ack)
         case _ =>
           // CreateAccount before handling any other commands
           Effect.unhandled.thenNoReply()

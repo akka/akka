@@ -114,7 +114,7 @@ trait Effect[+State]
  * Not for user extension.
  */
 @DoNotInherit
-trait EffectBuilder[State] extends Effect[State] {
+trait EffectBuilder[+State] extends Effect[State] {
   /* The state that will be persisted in this effect */
   def state: Option[State]
 
@@ -166,7 +166,7 @@ trait EffectBuilder[State] extends Effect[State] {
  *
  * Not intended for user extension.
  */
-@DoNotInherit trait ReplyEffect[State] extends Effect[State] {
+@DoNotInherit trait ReplyEffect[+State] extends Effect[State] {
 
   /**
    * Unstash the commands that were stashed with [[Effect.stash]].
