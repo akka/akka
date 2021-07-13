@@ -48,7 +48,7 @@ private object AggregateServiceDiscovery {
 @InternalApi
 private[akka] final class AggregateServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
 
-  private val log = Logging(system, getClass)
+  private val log = Logging(system, classOf[AggregateServiceDiscovery])
 
   private val settings =
     new AggregateServiceDiscoverySettings(system.settings.config.getConfig("akka.discovery.aggregate"))

@@ -71,7 +71,7 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
   import DnsServiceDiscovery._
   import ServiceDiscovery._
 
-  private val log = Logging(system, getClass)
+  private val log = Logging(system, classOf[DnsServiceDiscovery])
   private val dns = initializeDns()
 
   // exposed for testing
