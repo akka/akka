@@ -25,7 +25,7 @@ object Jdk9 extends AutoPlugin {
         Seq(
           (Compile / sourceDirectory).value / SCALA_SOURCE_DIRECTORY,
           (Compile / sourceDirectory).value / JAVA_SOURCE_DIRECTORY)),
-    scalacOptions := AkkaBuild.DefaultScalacOptions ++ notOnJdk8(Seq("-release", "11")),
+    scalacOptions := AkkaBuild.DefaultScalacOptions.value ++ notOnJdk8(Seq("-release", "11")),
     javacOptions := AkkaBuild.DefaultJavacOptions ++ notOnJdk8(Seq("--release", "11")))
 
   val testJdk9Settings = Seq(
@@ -34,7 +34,7 @@ object Jdk9 extends AutoPlugin {
         Seq(
           (Test / sourceDirectory).value / SCALA_TEST_SOURCE_DIRECTORY,
           (Test / sourceDirectory).value / JAVA_TEST_SOURCE_DIRECTORY)),
-    scalacOptions := AkkaBuild.DefaultScalacOptions ++ notOnJdk8(Seq("-release", "11")),
+    scalacOptions := AkkaBuild.DefaultScalacOptions.value ++ notOnJdk8(Seq("-release", "11")),
     javacOptions := AkkaBuild.DefaultJavacOptions ++ notOnJdk8(Seq("--release", "11")),
     compile := compile.dependsOn(CompileJdk9 / compile).value,
     classpathConfiguration := TestJdk9,
