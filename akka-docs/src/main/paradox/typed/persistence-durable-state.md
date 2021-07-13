@@ -1,9 +1,7 @@
 ---
-project.description: Durable State with Akka Persistence enables actors to persist your state for recovery on failure or when migrated within a cluster.
+project.description: Durable State with Akka Persistence enables actors to persist its state for recovery on failure or when migrated within a cluster.
 ---
 # Durable State
-
-You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Akka Persistence](../persistence.md).
 
 ## Module info
 
@@ -63,7 +61,7 @@ Next we'll discuss each of these in detail.
 ### PersistenceId
 
 The @apidoc[akka.persistence.typed.PersistenceId] is the stable unique identifier for the persistent actor in the backend
-event journal and snapshot store.
+durabe state store.
 
 @ref:[Cluster Sharding](cluster-sharding.md) is typically used together with `DurableStateBehavior` to ensure
 that there is only one active entity for each `PersistenceId` (`entityId`).
@@ -78,14 +76,6 @@ to help with constructing such `PersistenceId` from an `entityTypeHint` and `ent
 The default separator when concatenating the `entityTypeHint` and `entityId` is `|`, but a custom separator
 is supported.
 
-@@@ note
-
-The `|` separator is also used in Lagom's `scaladsl.PersistentEntity` but no separator is used
-in Lagom's `javadsl.PersistentEntity`. For compatibility with Lagom's `javadsl.PersistentEntity`
-you should use `""` as the separator.
-
-@@@
-
 The @ref:[Persistence example in the Cluster Sharding documentation](cluster-sharding.md#persistence-example)
 illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the
 `EntityContext`.
@@ -96,18 +86,17 @@ A custom identifier can be created with `PersistenceId.ofUniqueId`.
 
 The command handler is a function with 2 parameters, the current `State` and the incoming `Command`.
 
-A command handler returns an `Effect` directive that defines what event or events, if any, to persist. 
+A command handler returns an `Effect` directive that defines what state, if any, to persist. 
 Effects are created using @java[a factory that is returned via the `Effect()` method] @scala[the `Effect` factory].
 
 The two most commonly used effects are: 
 
-* `persist` will persist one single event or several events atomically, i.e. all events
-  are stored or none of them are stored if there is an error
-* `none` no events are to be persisted, for example a read-only command
+* `persist` will persist state atomically, i.e. all state will be stored or none of them are stored if there is an error
+* `none` no state to be persisted, for example a read-only command
 
 More effects are explained in @ref:[Effects and Side Effects](#effects-and-side-effects).
 
-In addition to returning the primary `Effect` for the command `EventSourcedBehavior`s can also 
+In addition to returning the primary `Effect` for the command `DurableStateBehavior`s can also 
 chain side effects that are to be performed after successful persist which is achieved with the `thenRun`
 function e.g @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
 
@@ -154,13 +143,12 @@ Java
 
 ## Effects and Side Effects
 
-A command handler returns an `Effect` directive that defines what event or events, if any, to persist. 
+A command handler returns an `Effect` directive that defines what state, if any, to persist. 
 Effects are created using @java[a factory that is returned via the `Effect()` method] @scala[the `Effect` factory]
 and can be one of: 
 
-* `persist` will persist one single event or several events atomically, i.e. all events
-  are stored or none of them are stored if there is an error
-* `none` no events are to be persisted, for example a read-only command
+* `persist` will persist state atomically, i.e. all states are stored or none of them are stored if there is an error
+* `none` no state to be persisted, for example a read-only command
 * `unhandled` the command is unhandled (not supported) in current state
 * `stop` stop this actor
 * `stash` the current command is stashed
@@ -215,6 +203,6 @@ Side effects are not run when the actor is restarted or started again after bein
 The side effects are executed sequentially, it is not possible to execute side effects in parallel, unless they
 call out to something that is running concurrently (for example sending a message to another actor).
 
-It's possible to execute a side effect before persisting the event, but that can result in that the
-side effect is performed but the event is not stored if the persist fails.
+It's possible to execute a side effect before persisting the state, but that can result in that the
+side effect is performed but the state is not stored if the persist fails.
 
