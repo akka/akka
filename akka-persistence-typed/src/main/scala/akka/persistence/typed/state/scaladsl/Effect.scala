@@ -102,7 +102,7 @@ object Effect {
  * Not for user extension.
  */
 @DoNotInherit
-trait Effect[State]
+trait Effect[+State]
 
 /**
  *  A command handler returns an `Effect` directive that defines what state to persist.

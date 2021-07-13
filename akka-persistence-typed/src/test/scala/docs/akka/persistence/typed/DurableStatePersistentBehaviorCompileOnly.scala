@@ -6,6 +6,8 @@ package docs.akka.persistence.typed
 
 import akka.actor.typed.ActorRef
 import akka.Done
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.state.scaladsl.Effect
 
 //#structure
@@ -71,6 +73,8 @@ object DurableStatePersistentBehaviorCompileOnly {
   }
   //#structure
 
+  import MyPersistentCounter._
+
   object MyPersistentCounterWithReplies {
 
     //#effects
@@ -95,5 +99,23 @@ object DurableStatePersistentBehaviorCompileOnly {
           })
     }
     //#effects
+  }
+
+  object BehaviorWithContext {
+    // #actor-context
+    import akka.persistence.typed.state.scaladsl.Effect
+    import akka.persistence.typed.state.scaladsl.DurableStateBehavior.CommandHandler
+
+    def apply(): Behavior[String] =
+      Behaviors.setup { context =>
+        DurableStateBehavior[String, State](
+          persistenceId = PersistenceId.ofUniqueId("myPersistenceId"),
+          emptyState = State(0),
+          commandHandler = CommandHandler.command { cmd =>
+            context.log.info("Got command {}", cmd)
+            Effect.none
+          })
+      }
+    // #actor-context
   }
 }

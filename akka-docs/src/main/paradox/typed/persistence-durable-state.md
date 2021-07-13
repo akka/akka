@@ -206,3 +206,88 @@ call out to something that is running concurrently (for example sending a messag
 It's possible to execute a side effect before persisting the state, but that can result in that the
 side effect is performed but the state is not stored if the persist fails.
 
+## Cluster Sharding and DurableStateBehavior
+
+In a use case where the number of persistent actors needed is higher than what would fit in the memory of one node or
+where resilience is important so that if a node crashes the persistent actors are quickly started on a new node and can
+resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a
+cluster and address them by id.
+
+The `DurableStateBehavior` can then be run as with any plain actor as described in @ref:[actors documentation](actors.md),
+but since Akka Persistence is based on the single-writer principle the persistent actors are typically used together
+with Cluster Sharding. For a particular `persistenceId` only one persistent actor instance should be active at one time.
+Cluster Sharding ensures that there is only one active entity for each id. 
+
+## Accessing the ActorContext
+
+If the @apidoc[DurableStateBehavior] needs to use the @apidoc[typed.*.ActorContext], for example to spawn child actors, it can be obtained by
+wrapping construction with `Behaviors.setup`:
+
+Scala
+:  @@snip [DurableStatePersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/DurableStatePersistentBehaviorCompileOnly.scala) { #actor-context }
+
+Java
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/DurableStatePersistentBehaviorTest.java) { #actor-context }
+
+## Changing Behavior
+
+After processing a message, actors are able to return the `Behavior` that is used
+for the next message.
+
+As you can see in the above examples this is not supported by persistent actors. Instead, the state is
+persisted as an `Effect` by the `commandHandler`. 
+
+The reason a new behavior can't be returned is that behavior is part of the actor's
+state and must also carefully be reconstructed during recovery from the persisted state. This would imply
+that the state needs to be encoded such that the behavior can also be restored from it. 
+That would be very prone to mistakes and thus not allowed in Akka Persistence.
+
+For basic actors you can use the same set of command handlers independent of what state the entity is in.
+For more complex actors it's useful to be able to change the behavior in the sense
+that different functions for processing commands may be defined depending on what state the actor is in.
+This is useful when implementing finite state machine (FSM) like entities.
+
+The next example demonstrates how to define different behavior based on the current `State`. It shows an actor that
+represents the state of a blog post. Before a post is started the only command it can process is to `AddPost`.
+Once it is started then one can look it up with `GetPost`, modify it with `ChangeBody` or publish it with `Publish`.
+
+The state is captured by:
+
+Scala
+:  @@snip [BlogPostEntityDurableState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntityDurableState.scala) { #state }
+
+Java
+:  @@snip [BlogPostEntityDurableState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntityDurableState.java) { #state }
+
+The commands, of which only a subset are valid depending on the state:
+
+Scala
+:  @@snip [BlogPostEntityDurableState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntityDurableState.scala) { #commands }
+
+Java
+:  @@snip [BlogPostEntityDurableState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntityDurableState.java) { #commands }
+
+@java[The command handler to process each command is decided by the state class (or state predicate) that is
+given to the `forStateType` of the `CommandHandlerBuilder` and the match cases in the builders.]
+@scala[The command handler to process each command is decided by first looking at the state and then the command.
+It typically becomes two levels of pattern matching, first on the state and then on the command.]
+Delegating to methods is a good practice because the one-line cases give a nice overview of the message dispatch.
+
+Scala
+:  @@snip [BlogPostEntityDurableState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntityDurableState.scala) { #command-handler }
+
+Java
+:  @@snip [BlogPostEntityDurableState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntityDurableState.java) { #command-handler }
+
+And finally the behavior is created @scala[from the `DurableStateBehavior.apply`]:
+
+Scala
+:  @@snip [BlogPostEntityDurableState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntityDurableState.scala) { #behavior }
+
+Java
+:  @@snip [BlogPostEntityDurableState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntityDurableState.java) { #behavior }
+
+This can be taken one or two steps further by defining the command handlers in the state class as
+illustrated in @ref:[command handlers in the state](persistence-style-durable-state.md#command-handlers-in-the-state).
+
+There is also an example illustrating an @ref:[optional initial state](persistence-style-durable-state.md#optional-initial-state).

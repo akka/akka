@@ -7,6 +7,8 @@ package jdocs.akka.persistence.typed;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.persistence.typed.state.javadsl.CommandHandler;
+import akka.actor.typed.javadsl.ActorContext;
+import akka.actor.typed.javadsl.Behaviors;
 // #behavior
 import akka.persistence.typed.state.javadsl.DurableStateBehavior;
 import akka.persistence.typed.PersistenceId;
@@ -208,5 +210,48 @@ public class DurableStatePersistentBehaviorTest {
       }
       // #effects
     }
+  }
+
+  interface WithActorContext {
+
+    // #actor-context
+    public class MyPersistentBehavior
+        extends DurableStateBehavior<MyPersistentBehavior.Command, MyPersistentBehavior.State> {
+      // #actor-context
+
+      interface Command {}
+
+      public static class State {}
+      // #actor-context
+
+      public static Behavior<Command> create(PersistenceId persistenceId) {
+        return Behaviors.setup(ctx -> new MyPersistentBehavior(persistenceId, ctx));
+      }
+
+      // this makes the context available to the command handler etc.
+      private final ActorContext<Command> context;
+
+      // optionally if you only need `ActorContext.getSelf()`
+      private final ActorRef<Command> self;
+
+      public MyPersistentBehavior(PersistenceId persistenceId, ActorContext<Command> ctx) {
+        super(persistenceId);
+        this.context = ctx;
+        this.self = ctx.getSelf();
+      }
+
+      // #actor-context
+      @Override
+      public State emptyState() {
+        return null;
+      }
+
+      @Override
+      public CommandHandler<Command, State> commandHandler() {
+        return null;
+      }
+      // #actor-context
+    }
+    // #actor-context
   }
 }
