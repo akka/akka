@@ -27,15 +27,19 @@ import java.math.BigDecimal;
 public interface AccountExampleWithNullDurableState {
 
   // #account-entity
+  // #withEnforcedReplies
   public class AccountEntity
       extends DurableStateBehaviorWithEnforcedReplies<
           AccountEntity.Command, AccountEntity.Account> {
+    // #withEnforcedReplies
 
     public static final EntityTypeKey<Command> ENTITY_TYPE_KEY =
         EntityTypeKey.create(Command.class, "Account");
 
     // Command
+    // #reply-command
     interface Command extends CborSerializable {}
+    // #reply-command
 
     public static class CreateAccount implements Command {
       public final ActorRef<StatusReply<Done>> replyTo;
@@ -179,6 +183,7 @@ public interface AccountExampleWithNullDurableState {
           .thenReply(command.replyTo, account2 -> StatusReply.ack());
     }
 
+    // #reply
     private ReplyEffect<Account> withdraw(OpenedAccount account, Withdraw command) {
       if (!account.canWithdraw(command.amount)) {
         return Effect()
@@ -191,6 +196,7 @@ public interface AccountExampleWithNullDurableState {
             .thenReply(command.replyTo, account2 -> StatusReply.ack());
       }
     }
+    // #reply
 
     private ReplyEffect<Account> getBalance(OpenedAccount account, GetBalance command) {
       return Effect().reply(command.replyTo, new CurrentBalance(account.balance));

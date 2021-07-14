@@ -291,3 +291,101 @@ This can be taken one or two steps further by defining the command handlers in t
 illustrated in @ref:[command handlers in the state](persistence-style-durable-state.md#command-handlers-in-the-state).
 
 There is also an example illustrating an @ref:[optional initial state](persistence-style-durable-state.md#optional-initial-state).
+
+## Replies
+
+The @ref:[Request-Response interaction pattern](interaction-patterns.md#request-response) is very common for
+persistent actors, because you typically want to know if the command was rejected due to validation errors and
+when accepted you want a confirmation when the events have been successfully stored.
+
+Therefore you typically include a @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`]. If the 
+command can either have a successful response or a validation error returned, the generic response type @scala[`StatusReply[ReplyType]]`]
+@java[`StatusReply<ReplyType>`] can be used. If the successful reply does not contain a value but is more of an acknowledgement
+a pre defined @scala[`StatusReply.Ack`]@java[`StatusReply.ack()`] of type @scala[`StatusReply[Done]`]@java[`StatusReply<Done>`]
+can be used.
+
+After validation errors or after persisting events, using a `thenRun` side effect, the reply message can
+be sent to the `ActorRef`.
+
+Scala
+:  @@snip [BlogPostEntityDurableState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntityDurableState.scala) { #reply-command }
+
+Java
+:  @@snip [BlogPostEntityDurableState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntityDurableState.java) { #reply-command }
+
+
+Scala
+:  @@snip [BlogPostEntityDurableState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntityDurableState.scala) { #reply }
+
+Java
+:  @@snip [BlogPostEntityDurableState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntityDurableState.java) { #reply }
+
+
+Since this is such a common pattern there is a reply effect for this purpose. It has the nice property that
+it can be used to enforce that replies are not forgotten when implementing the `DurableStateBehavior`.
+If it's defined with @scala[`DurableStateBehavior.withEnforcedReplies`]@java[`DurableStateBehaviorWithEnforcedReplies`]
+there will be compilation errors if the returned effect isn't a `ReplyEffect`, which can be
+created with @scala[`Effect.reply`]@java[`Effect().reply`], @scala[`Effect.noReply`]@java[`Effect().noReply`],
+@scala[`Effect.thenReply`]@java[`Effect().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effect().thenNoReply`].
+
+Scala
+:  @@snip [AccountExampleWithCommandHandlersInDurableState.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleWithCommandHandlersInDurableState.scala) { #withEnforcedReplies }
+
+Java
+:  @@snip [AccountExampleWithNullDurableState.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleWithNullDurableState.java) { #withEnforcedReplies }
+
+The commands must have a field of @scala[`ActorRef[ReplyMessageType]`]@java[`ActorRef<ReplyMessageType>`] that can then be used to send a reply.
+
+Scala
+:  @@snip [AccountExampleWithCommandHandlersInDurableState.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleWithCommandHandlersInDurableState.scala) { #reply-command }
+
+Java
+:  @@snip [AccountExampleWithNullDurableState.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleWithNullDurableState.java) { #reply-command }
+
+The `ReplyEffect` is created with @scala[`Effect.reply`]@java[`Effect().reply`], @scala[`Effect.noReply`]@java[`Effect().noReply`],
+@scala[`Effect.thenReply`]@java[`Effect().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effect().thenNoReply`].
+
+@java[Note that command handlers are defined with `newCommandHandlerWithReplyBuilder` when using
+`EventSourcedBehaviorWithEnforcedReplies`, as opposed to newCommandHandlerBuilder when using `EventSourcedBehavior`.]
+
+Scala
+:  @@snip [AccountExampleWithCommandHandlersInDurableState.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleWithCommandHandlersInDurableState.scala) { #reply }
+
+Java
+:  @@snip [AccountExampleWithNullDurableState.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleWithNullDurableState.java) { #reply }
+
+These effects will send the reply message even when @scala[`DurableStateBehavior.withEnforcedReplies`]@java[`DurableStateBehaviorWithEnforcedReplies`]
+is not used, but then there will be no compilation errors if the reply decision is left out.
+
+Note that the `noReply` is a way of making conscious decision that a reply shouldn't be sent for a specific
+command or the reply will be sent later, perhaps after some asynchronous interaction with other actors or services.
+
+## Serialization
+
+The same @ref:[serialization](../serialization.md) mechanism as for actor messages is also used for persistent actors.
+
+You need to enable @ref:[serialization](../serialization.md) for your commands (messages) and state.
+@ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
+
+## Tagging
+
+Persistence allows you to use tags in persistence query.
+
+Scala
+:  @@snip [DurableStatePersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/DurableStatePersistentBehaviorCompileOnly.scala) { #tagging }
+
+Java
+:  @@snip [DurableStatePersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/DurableStatePersistentBehaviorTest.java) { #tagging }
+
+## Wrapping DurableStateBehavior
+
+When creating an `DurableStateBehavior`, it is possible to wrap `DurableStateBehavior` in
+other behaviors such as `Behaviors.setup` in order to access the `ActorContext` object. For instance
+to access the logger from within the `ActorContext` to log for debugging the `commandHandler`.
+
+Scala
+:  @@snip [DurableStatePersistentActorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/DurableStatePersistentBehaviorCompileOnly.scala) { #wrapPersistentBehavior }
+
+Java
+:  @@snip [DurableStatePersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/DurableStatePersistentBehaviorTest.java) { #wrapPersistentBehavior }

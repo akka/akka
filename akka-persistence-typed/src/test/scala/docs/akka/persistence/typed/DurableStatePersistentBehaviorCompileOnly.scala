@@ -118,4 +118,34 @@ object DurableStatePersistentBehaviorCompileOnly {
       }
     // #actor-context
   }
+
+  object TaggingBehavior {
+    def apply(): Behavior[Command[_]] =
+      //#tagging
+      DurableStateBehavior[Command[_], State](
+        persistenceId = PersistenceId.ofUniqueId("abc"),
+        emptyState = State(0),
+        commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"))
+        .withTag("tag1")
+        .withTag("tag2")
+    //#tagging
+  }
+
+  object WrapBehavior {
+    import akka.persistence.typed.state.scaladsl.Effect
+    import akka.persistence.typed.state.scaladsl.DurableStateBehavior.CommandHandler
+
+    def apply(): Behavior[Command[_]] =
+      //#wrapPersistentBehavior
+      Behaviors.setup[Command[_]] { context =>
+        DurableStateBehavior[Command[_], State](
+          persistenceId = PersistenceId.ofUniqueId("abc"),
+          emptyState = State(0),
+          commandHandler = CommandHandler.command { cmd =>
+            context.log.info("Got command {}", cmd)
+            Effect.none
+          })
+      }
+    //#wrapPersistentBehavior
+  }
 }

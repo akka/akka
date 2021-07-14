@@ -25,10 +25,14 @@ object AccountExampleWithCommandHandlersInDurableState {
   //#account-entity
   object AccountEntity {
     // Command
+    //#reply-command
     sealed trait Command extends CborSerializable
+    //#reply-command
     final case class CreateAccount(replyTo: ActorRef[StatusReply[Done]]) extends Command
     final case class Deposit(amount: BigDecimal, replyTo: ActorRef[StatusReply[Done]]) extends Command
+    //#reply-command
     final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[StatusReply[Done]]) extends Command
+    //#reply-command
     final case class GetBalance(replyTo: ActorRef[CurrentBalance]) extends Command
     final case class CloseAccount(replyTo: ActorRef[StatusReply[Done]]) extends Command
 
@@ -59,14 +63,9 @@ object AccountExampleWithCommandHandlersInDurableState {
 
       override def applyCommand(cmd: Command): ReplyEffect =
         cmd match {
-          case Deposit(amount, replyTo) =>
-            Effect.persist(copy(balance = balance + amount)).thenReply(replyTo)(_ => StatusReply.Ack)
+          case cmd @ Deposit(_, _) => deposit(cmd)
 
-          case Withdraw(amount, replyTo) =>
-            if (canWithdraw(amount))
-              Effect.persist(copy(balance = balance - amount)).thenReply(replyTo)(_ => StatusReply.Ack)
-            else
-              Effect.reply(replyTo)(StatusReply.Error(s"Insufficient balance $balance to be able to withdraw $amount"))
+          case cmd @ Withdraw(_, _) => withdraw(cmd)
 
           case GetBalance(replyTo) =>
             Effect.reply(replyTo)(CurrentBalance(balance))
@@ -82,9 +81,23 @@ object AccountExampleWithCommandHandlersInDurableState {
 
         }
 
-      def canWithdraw(amount: BigDecimal): Boolean = {
+      private def canWithdraw(amount: BigDecimal): Boolean = {
         balance - amount >= Zero
       }
+
+      //#reply
+      private def deposit(cmd: Deposit) = {
+        Effect.persist(copy(balance = balance + cmd.amount)).thenReply(cmd.replyTo)(_ => StatusReply.Ack)
+      }
+
+      private def withdraw(cmd: Withdraw) = {
+        if (canWithdraw(cmd.amount))
+          Effect.persist(copy(balance = balance - cmd.amount)).thenReply(cmd.replyTo)(_ => StatusReply.Ack)
+        else
+          Effect.reply(cmd.replyTo)(
+            StatusReply.Error(s"Insufficient balance ${balance} to be able to withdraw ${cmd.amount}"))
+      }
+      //#reply
 
     }
     case object ClosedAccount extends Account {
@@ -110,10 +123,12 @@ object AccountExampleWithCommandHandlersInDurableState {
     val TypeKey: EntityTypeKey[Command] =
       EntityTypeKey[Command]("Account")
 
+    //#withEnforcedReplies
     def apply(persistenceId: PersistenceId): Behavior[Command] = {
       DurableStateBehavior
         .withEnforcedReplies[Command, Account](persistenceId, EmptyAccount, (state, cmd) => state.applyCommand(cmd))
     }
+    //#withEnforcedReplies
   }
   //#account-entity
 

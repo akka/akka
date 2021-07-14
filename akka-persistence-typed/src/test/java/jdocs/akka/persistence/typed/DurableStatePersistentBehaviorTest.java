@@ -6,6 +6,7 @@ package jdocs.akka.persistence.typed;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.SupervisorStrategy;
 import akka.persistence.typed.state.javadsl.CommandHandler;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
@@ -18,6 +19,8 @@ import akka.persistence.typed.PersistenceId;
 // #effects
 import akka.Done;
 // #effects
+
+import java.time.Duration;
 
 public class DurableStatePersistentBehaviorTest {
 
@@ -253,5 +256,98 @@ public class DurableStatePersistentBehaviorTest {
       // #actor-context
     }
     // #actor-context
+  }
+
+  interface More {
+
+    // #supervision
+    public class MyPersistentBehavior
+        extends DurableStateBehavior<MyPersistentBehavior.Command, MyPersistentBehavior.State> {
+
+      // #supervision
+      interface Command {}
+
+      public static class State {}
+      // #supervision
+
+      public static Behavior<Command> create(PersistenceId persistenceId) {
+        return new MyPersistentBehavior(persistenceId);
+      }
+
+      private MyPersistentBehavior(PersistenceId persistenceId) {
+        super(
+            persistenceId,
+            SupervisorStrategy.restartWithBackoff(
+                Duration.ofSeconds(10), Duration.ofSeconds(30), 0.2));
+      }
+
+      // #supervision
+
+      @Override
+      public State emptyState() {
+        return new State();
+      }
+
+      @Override
+      public CommandHandler<Command, State> commandHandler() {
+        return (state, command) -> {
+          throw new RuntimeException("TODO: process the command & return an Effect");
+        };
+      }
+
+      // #tagging
+      @Override
+      public String tag() {
+        return "tag1";
+      }
+      // #tagging
+      // #supervision
+    }
+    // #supervision
+  }
+
+  interface More2 {
+
+    // #wrapPersistentBehavior
+    public class MyPersistentBehavior
+        extends DurableStateBehavior<MyPersistentBehavior.Command, MyPersistentBehavior.State> {
+
+      // #wrapPersistentBehavior
+      interface Command {}
+
+      public static class State {}
+      // #wrapPersistentBehavior
+
+      public static Behavior<Command> create(PersistenceId persistenceId) {
+        return Behaviors.setup(context -> new MyPersistentBehavior(persistenceId, context));
+      }
+
+      private final ActorContext<Command> context;
+
+      private MyPersistentBehavior(PersistenceId persistenceId, ActorContext<Command> context) {
+        super(
+            persistenceId,
+            SupervisorStrategy.restartWithBackoff(
+                Duration.ofSeconds(10), Duration.ofSeconds(30), 0.2));
+        this.context = context;
+      }
+
+      // #wrapPersistentBehavior
+
+      @Override
+      public State emptyState() {
+        return new State();
+      }
+
+      // #wrapPersistentBehavior
+      @Override
+      public CommandHandler<Command, State> commandHandler() {
+        return (state, command) -> {
+          context.getLog().info("In command handler");
+          return Effect().none();
+        };
+      }
+      // #wrapPersistentBehavior
+    }
   }
 }
