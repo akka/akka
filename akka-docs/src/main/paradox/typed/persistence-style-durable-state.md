@@ -20,7 +20,7 @@ there is no state yet.
 @java[`null` can then be used as the `emptyState`, but be aware of that the `state` parameter
 will then be `null` for the first commands until the first non-null state has been persisted 
 It's possible to use `Optional` instead of `null` but that results in rather much boilerplate
-to unwrap the `Optional` state parameter and therefore `null` is probably preferred. The following example
+to unwrap the `Optional` state parameter and therefore `null` is preferred. The following example
 illustrates using `null` as the `emptyState`.]
 @scala[`Option[State]` can be used as the state type and `None` as the `emptyState`. Pattern matching
 is then used in command handlers at the outer layer before delegating to the state or other methods.]

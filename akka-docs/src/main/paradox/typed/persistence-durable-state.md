@@ -20,20 +20,20 @@ To use Akka Persistence, add the module to your project:
   scope2=test
 }
 
-You also have to select journal plugin and optionally snapshot store plugin, see 
-@ref:[Persistence Plugins](../persistence-plugins.md).
+You also have to select durable state store plugin, see @ref:[Persistence Plugins](../persistence-plugins.md).
+
 
 @@project-info{ projectId="akka-persistence-typed" }
 
 ## Introduction
 
-This model of Akka Persistence enables a stateful actor / entity to store the full state afer processing each command instead of using event sourcing. This reduces the conceptual complexity and can be a handy tool for simple use cases. Very much like a CRUD based operation, the API is conceptually simple - a function from current state and incoming command to the next state which replaces the current state in the database. 
+This model of Akka Persistence enables a stateful actor / entity to store the full state after processing each command instead of using event sourcing. This reduces the conceptual complexity and can be a handy tool for simple use cases. Very much like a CRUD based operation, the API is conceptually simple - a function from current state and incoming command to the next state which replaces the current state in the database. 
 
 ```
 (State, Command) => State
 ```
 
-The current state is always stored in the database. Akka Persistence would read that state and store it in memory. After processing of the command is finished, the new state will be stored in the database. The processing of the next command will not start until the state has been successfully stored in the database.
+The current state is always stored in the database. Since only the latest state is stored, we don't have access to any of the history of changes, unlike event sourced storage. Akka Persistence would read that state and store it in memory. After processing of the command is finished, the new state will be stored in the database. The processing of the next command will not start until the state has been successfully stored in the database.
 
 The database specific implementations can be added to existing Akka Persistence plugin implementations, starting with the JDBC plugin. The plugin would serialize the state and store as a blob with the persistenceId as the primary key. 
 
@@ -66,10 +66,11 @@ durabe state store.
 @ref:[Cluster Sharding](cluster-sharding.md) is typically used together with `DurableStateBehavior` to ensure
 that there is only one active entity for each `PersistenceId` (`entityId`).
 
-The `entityId` in Cluster Sharding is the business domain identifier of the entity. The `entityId` might not
-be unique enough to be used as the `PersistenceId` by itself. For example two different types of
-entities may have the same `entityId`. To create a unique `PersistenceId` the `entityId` should be prefixed
-with a stable name of the entity type, which typically is the same as the `EntityTypeKey.name` that
+The `entityId` in Cluster Sharding is the business domain identifier which uniquely identifies the instance of
+that specific `EntityType`. This means that across the cluster we have a unique combination of (`EntityType`, `EntityId`).
+Hence the `entityId` might not be unique enough to be used as the `PersistenceId` by itself. For example 
+two different types of entities may have the same `entityId`. To create a unique `PersistenceId` the `entityId` 
+should be prefixed with a stable name of the entity type, which typically is the same as the `EntityTypeKey.name` that
 is used in Cluster Sharding. There are @scala[`PersistenceId.apply`]@java[`PersistenceId.of`] factory methods
 to help with constructing such `PersistenceId` from an `entityTypeHint` and `entityId`.
 
@@ -96,7 +97,7 @@ The two most commonly used effects are:
 
 More effects are explained in @ref:[Effects and Side Effects](#effects-and-side-effects).
 
-In addition to returning the primary `Effect` for the command `DurableStateBehavior`s can also 
+In addition to returning the primary `Effect` for the command, `DurableStateBehavior`s can also 
 chain side effects that are to be performed after successful persist which is achieved with the `thenRun`
 function e.g @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
 
@@ -147,7 +148,9 @@ A command handler returns an `Effect` directive that defines what state, if any,
 Effects are created using @java[a factory that is returned via the `Effect()` method] @scala[the `Effect` factory]
 and can be one of: 
 
-* `persist` will persist state atomically, i.e. all states are stored or none of them are stored if there is an error
+* `persist` will persist the latest state. If it's a new persistence id, the record will be inserted. In case of an existing
+persistence id, the record will be updated only if the revision number of the incoming record is 1 more than the already
+existing record. Otherwise `persist` will fail.
 * `none` no state to be persisted, for example a read-only command
 * `unhandled` the command is unhandled (not supported) in current state
 * `stop` stop this actor
@@ -171,8 +174,8 @@ In addition to `thenRun` the following actions can also be performed after succe
 * `thenReply` send a reply message to the given `ActorRef`
 
 In the example below, we use a different constructor of `DurableStateBehavior.withEnforcedReplies`, which creates
-a `Behavior` for a persistent actor that ensures that replies to commands are not forgotten. Hence it will be
-a compilation error if the returned effect isn't a `ReplyEffect`.
+a `Behavior` for a persistent actor that ensures that every command sends a reply back. Hence it will be
+a compilation error if the returned effect from a `CommandHandler` isn't a `ReplyEffect`.
 
 Instead of `Increment` we will have a new command `IncrementWithConfirmation` that, along with persistence will also
 send an acknowledgement as a reply to the `ActorRef` passed in the command. 
@@ -185,8 +188,8 @@ Scala
 Java
 :  @@snip [DurableStatePersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/DurableStatePersistentBehaviorTest.java) { #effects }
 
-Most of the time this will be done with the `thenRun` method on the `Effect` above. You can factor out
-common side effects into functions and reuse for several commands. For example:
+The most common way to have a side-effect is to use the `thenRun` method on `Effect`. In case you have multiple side-effects
+that needs to be run for several commands, you can factor them out into functions and reuse for all the commands. For example:
 
 Scala
 :  @@snip [PersistentActorCompileOnlyTest.scala](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #commonChainedEffects }
@@ -204,24 +207,23 @@ The side effects are executed sequentially, it is not possible to execute side e
 call out to something that is running concurrently (for example sending a message to another actor).
 
 It's possible to execute a side effect before persisting the state, but that can result in that the
-side effect is performed but the state is not stored if the persist fails.
+side effect is performed but that the state is not stored if the persist fails.
 
 ## Cluster Sharding and DurableStateBehavior
 
-In a use case where the number of persistent actors needed is higher than what would fit in the memory of one node or
-where resilience is important so that if a node crashes the persistent actors are quickly started on a new node and can
-resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a
-cluster and address them by id.
+@ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a
+cluster, addressing them by id. It makes it possible to have more persistent actors exist in the cluster than what 
+would fit in the memory of one node. Cluster sharding improves the resilience of the cluster. If a node crashes, 
+the persistent actors are quickly started on a new node and can resume operations.
 
-The `DurableStateBehavior` can then be run as with any plain actor as described in @ref:[actors documentation](actors.md),
-but since Akka Persistence is based on the single-writer principle the persistent actors are typically used together
+The `DurableStateBehavior` can then be run as any plain actor as described in @ref:[actors documentation](actors.md),
+but since Akka Persistence is based on the single-writer principle, the persistent actors are typically used together
 with Cluster Sharding. For a particular `persistenceId` only one persistent actor instance should be active at one time.
-Cluster Sharding ensures that there is only one active entity for each id. 
+Cluster Sharding ensures that there is only one active entity (or actor instance) for each id. 
 
 ## Accessing the ActorContext
 
-If the @apidoc[DurableStateBehavior] needs to use the @apidoc[typed.*.ActorContext], for example to spawn child actors, it can be obtained by
-wrapping construction with `Behaviors.setup`:
+If the @apidoc[DurableStateBehavior] needs to use the @apidoc[typed.*.ActorContext], for example to spawn child actors, it can be obtained by wrapping construction with `Behaviors.setup`:
 
 Scala
 :  @@snip [DurableStatePersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/DurableStatePersistentBehaviorCompileOnly.scala) { #actor-context }
@@ -240,7 +242,7 @@ persisted as an `Effect` by the `commandHandler`.
 The reason a new behavior can't be returned is that behavior is part of the actor's
 state and must also carefully be reconstructed during recovery from the persisted state. This would imply
 that the state needs to be encoded such that the behavior can also be restored from it. 
-That would be very prone to mistakes and thus not allowed in Akka Persistence.
+That would be very prone to mistakes which is why it is not allowed in Akka Persistence.
 
 For basic actors you can use the same set of command handlers independent of what state the entity is in.
 For more complex actors it's useful to be able to change the behavior in the sense
@@ -271,7 +273,7 @@ Java
 given to the `forStateType` of the `CommandHandlerBuilder` and the match cases in the builders.]
 @scala[The command handler to process each command is decided by first looking at the state and then the command.
 It typically becomes two levels of pattern matching, first on the state and then on the command.]
-Delegating to methods is a good practice because the one-line cases give a nice overview of the message dispatch.
+Delegating to methods like `addPost`, `changeBody`, `publish` etc. is a good practice because the one-line cases give a nice overview of the message dispatch.
 
 Scala
 :  @@snip [BlogPostEntityDurableState.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntityDurableState.scala) { #command-handler }
@@ -287,7 +289,7 @@ Scala
 Java
 :  @@snip [BlogPostEntityDurableState.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntityDurableState.java) { #behavior }
 
-This can be taken one or two steps further by defining the command handlers in the state class as
+This can be refactored one or two steps further by defining the command handlers in the state class as
 illustrated in @ref:[command handlers in the state](persistence-style-durable-state.md#command-handlers-in-the-state).
 
 There is also an example illustrating an @ref:[optional initial state](persistence-style-durable-state.md#optional-initial-state).
@@ -322,7 +324,7 @@ Java
 
 
 Since this is such a common pattern there is a reply effect for this purpose. It has the nice property that
-it can be used to enforce that replies are not forgotten when implementing the `DurableStateBehavior`.
+it can be used to enforce that you do not forget to specify replies when implementing the `DurableStateBehavior`.
 If it's defined with @scala[`DurableStateBehavior.withEnforcedReplies`]@java[`DurableStateBehaviorWithEnforcedReplies`]
 there will be compilation errors if the returned effect isn't a `ReplyEffect`, which can be
 created with @scala[`Effect.reply`]@java[`Effect().reply`], @scala[`Effect.noReply`]@java[`Effect().noReply`],
@@ -357,8 +359,8 @@ Java
 These effects will send the reply message even when @scala[`DurableStateBehavior.withEnforcedReplies`]@java[`DurableStateBehaviorWithEnforcedReplies`]
 is not used, but then there will be no compilation errors if the reply decision is left out.
 
-Note that the `noReply` is a way of making conscious decision that a reply shouldn't be sent for a specific
-command or the reply will be sent later, perhaps after some asynchronous interaction with other actors or services.
+Note that the `noReply` is a way of making a conscious decision that a reply shouldn't be sent for a specific
+command or that a reply will be sent later, perhaps after some asynchronous interaction with other actors or services.
 
 ## Serialization
 
@@ -370,7 +372,8 @@ recommendation if you don't have other preference.
 
 ## Tagging
 
-Persistence allows you to use tags in persistence query.
+Persistence allows you to use tags in persistence query. Tagging allows you to identify a subset of states in the durable store
+and separately consume them as a stream through the `DurableStateStoreQuery` interface. 
 
 Scala
 :  @@snip [DurableStatePersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/DurableStatePersistentBehaviorCompileOnly.scala) { #tagging }
@@ -380,7 +383,7 @@ Java
 
 ## Wrapping DurableStateBehavior
 
-When creating an `DurableStateBehavior`, it is possible to wrap `DurableStateBehavior` in
+When creating a `DurableStateBehavior`, it is possible to wrap `DurableStateBehavior` in
 other behaviors such as `Behaviors.setup` in order to access the `ActorContext` object. For instance
 to access the logger from within the `ActorContext` to log for debugging the `commandHandler`.
 

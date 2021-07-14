@@ -261,8 +261,10 @@ public class DurableStatePersistentBehaviorTest {
   interface More {
 
     // #supervision
+    // #tagging
     public class MyPersistentBehavior
         extends DurableStateBehavior<MyPersistentBehavior.Command, MyPersistentBehavior.State> {
+      // #tagging
 
       // #supervision
       interface Command {}
