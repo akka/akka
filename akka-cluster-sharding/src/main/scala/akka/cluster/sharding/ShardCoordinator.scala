@@ -597,7 +597,7 @@ object ShardCoordinator {
         shardRegionFrom ! HandOff(shard)
         context.become(stoppingShard, discardOld = true)
       } else {
-        log.debug("{}: Remaining shard regions: {}", typeName, remaining.size)
+        log.debug("{}: Remaining shard regions for shard [{}]: {}", typeName, shard, remaining.size)
       }
     }
 

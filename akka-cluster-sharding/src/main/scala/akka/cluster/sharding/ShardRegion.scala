@@ -836,7 +836,7 @@ private[akka] class ShardRegion(
         }
         sender() ! BeginHandOffAck(shard)
       } else {
-        log.debug("{}: Ignoring begin handoff as preparing to shutdown", typeName)
+        log.debug("{}: Ignoring begin handoff of shard [{}] as preparing to shutdown", typeName, shard)
       }
 
     case msg @ HandOff(shard) =>
