@@ -1,5 +1,5 @@
 ---
-project.description: Event Sourcing with Akka Persistence enables actors to persist your events for recovery on failure or when migrated within a cluster.
+project.description: Use of Akka Persistence with Event Sourcing enables actors to persist your events for recovery on failure or when migrated within a cluster.
 ---
 
 # Persistence (Event Sourcing)

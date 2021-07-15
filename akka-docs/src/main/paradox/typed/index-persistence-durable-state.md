@@ -1,5 +1,5 @@
 ---
-project.description: Event Sourcing with Akka Persistence enables actors to persist your events for recovery on failure or when migrated within a cluster.
+project.description: Durable state with Akka Persistence enables actors to persist the latest version of the state. This persistence is used for recovery on failure, or when migrating within a cluster.
 ---
 
 # Persistence (Durable State)

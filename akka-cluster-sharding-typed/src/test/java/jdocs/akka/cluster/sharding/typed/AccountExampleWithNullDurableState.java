@@ -19,10 +19,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import java.math.BigDecimal;
 
 /**
- * Bank account example illustrating: - different state classes representing the lifecycle of the
- * account - null as emptyState - event handlers that delegate to methods in the state classes -
- * command handlers that delegate to methods in the DurableStateBehavior class - replies of various
- * types, using DurableStateBehaviorWithEnforcedReplies
+ * This bank account example illustrates the following: - different state classes representing the
+ * lifecycle of the account - null as emptyState - command handlers that delegate to methods in the
+ * DurableStateBehavior class, and - replies of various types that use
+ * DurableStateBehaviorWithEnforcedReplies
  */
 public interface AccountExampleWithNullDurableState {
 

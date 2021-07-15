@@ -15,7 +15,7 @@ import akka.persistence.typed.state.scaladsl.DurableStateBehavior
 import akka.serialization.jackson.CborSerializable
 
 /**
- * Bank account example illustrating:
+ * This bank account example illustrates:
  * - Option[State] that is starting with None as the initial state
  * - command handlers in the state classes
  * - replies of various types, using withEnforcedReplies
