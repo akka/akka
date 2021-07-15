@@ -655,6 +655,7 @@ private[akka] class ShardRegion(
 
   override def postStop(): Unit = {
     super.postStop()
+    coordinator.foreach(_ ! RegionStopped(context.self))
     cluster.unsubscribe(self)
     gracefulShutdownProgress.trySuccess(Done)
   }
