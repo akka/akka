@@ -855,7 +855,12 @@ abstract class ShardCoordinator(
                 if (verboseDebug)
                   log.debug(
                     "{}: Graceful shutdown of {} region [{}] with [{}] shards [{}] started",
-                    Array(typeName, if (region.path.address.hasLocalScope) "local" else "", region, shards.size, shards.mkString(", ")))
+                    Array(
+                      typeName,
+                      if (region.path.address.hasLocalScope) "local" else "",
+                      region,
+                      shards.size,
+                      shards.mkString(", ")))
                 else
                   log.debug("{}: Graceful shutdown of region [{}] with [{}] shards", typeName, region, shards.size)
               }
@@ -920,7 +925,8 @@ abstract class ShardCoordinator(
     }: Receive).orElse[Any, Unit](receiveTerminated)
 
   private def terminate(): Unit = {
-    if (aliveRegions.exists(_.path.address.hasLocalScope) || gracefulShutdownInProgress.exists(_.path.address.hasLocalScope)) {
+    if (aliveRegions.exists(_.path.address.hasLocalScope) || gracefulShutdownInProgress.exists(
+          _.path.address.hasLocalScope)) {
       log.debug("{}: Deferring coordinator termination until local region has terminated", typeName)
       waitingForLocalRegionToTerminate = true
     } else {
@@ -1067,7 +1073,11 @@ abstract class ShardCoordinator(
     rebalanceWorkers.foreach(_ ! RebalanceWorker.ShardRegionTerminated(ref))
     if (state.regions.contains(ref)) {
       if (log.isDebugEnabled) {
-        log.debug("{}: ShardRegion terminated{}: [{}] {}", typeName, if (gracefulShutdownInProgress.contains(ref)) " (gracefully)" else "", ref)
+        log.debug(
+          "{}: ShardRegion terminated{}: [{}] {}",
+          typeName,
+          if (gracefulShutdownInProgress.contains(ref)) " (gracefully)" else "",
+          ref)
       }
       regionTerminationInProgress += ref
       state.regions(ref).foreach { s =>

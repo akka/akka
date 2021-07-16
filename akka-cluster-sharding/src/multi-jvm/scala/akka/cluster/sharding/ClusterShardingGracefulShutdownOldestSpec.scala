@@ -15,7 +15,8 @@ import scala.concurrent.Await
 abstract class ClusterShardingGracefulShutdownOldestSpecConfig(mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
-      additionalConfig = "akka.persistence.journal.leveldb-shared.store.native = off", loglevel = "DEBUG") {
+      additionalConfig = "akka.persistence.journal.leveldb-shared.store.native = off",
+      loglevel = "DEBUG") {
   val first = role("first")
   val second = role("second")
 }
@@ -64,7 +65,6 @@ object ClusterShardingGracefulShutdownOldestSpec {
     }
   }
 
-
 }
 
 object PersistentClusterShardingGracefulShutdownOldestSpecConfig
@@ -77,13 +77,16 @@ class PersistentClusterShardingGracefulShutdownOldestSpec
 class DDataClusterShardingGracefulShutdownOldestSpec
     extends ClusterShardingGracefulShutdownOldestSpec(DDataClusterShardingGracefulShutdownOldestSpecConfig)
 
-class PersistentClusterShardingGracefulShutdownOldestMultiJvmNode1 extends PersistentClusterShardingGracefulShutdownOldestSpec
-class PersistentClusterShardingGracefulShutdownOldestMultiJvmNode2 extends PersistentClusterShardingGracefulShutdownOldestSpec
+class PersistentClusterShardingGracefulShutdownOldestMultiJvmNode1
+    extends PersistentClusterShardingGracefulShutdownOldestSpec
+class PersistentClusterShardingGracefulShutdownOldestMultiJvmNode2
+    extends PersistentClusterShardingGracefulShutdownOldestSpec
 
 class DDataClusterShardingGracefulShutdownOldestMultiJvmNode1 extends DDataClusterShardingGracefulShutdownOldestSpec
 class DDataClusterShardingGracefulShutdownOldestMultiJvmNode2 extends DDataClusterShardingGracefulShutdownOldestSpec
 
-abstract class ClusterShardingGracefulShutdownOldestSpec(multiNodeConfig: ClusterShardingGracefulShutdownOldestSpecConfig)
+abstract class ClusterShardingGracefulShutdownOldestSpec(
+    multiNodeConfig: ClusterShardingGracefulShutdownOldestSpecConfig)
     extends MultiNodeClusterShardingSpec(multiNodeConfig)
     with ImplicitSender {
 
@@ -135,7 +138,11 @@ abstract class ClusterShardingGracefulShutdownOldestSpec(multiNodeConfig: Cluste
     "gracefully shutdown the oldest region" in within(30.seconds) {
       runOn(first) {
         val coordinator = awaitAssert {
-          Await.result(system.actorSelection(s"/system/sharding/${typeName}Coordinator/singleton/coordinator").resolveOne(remainingOrDefault), remainingOrDefault)
+          Await.result(
+            system
+              .actorSelection(s"/system/sharding/${typeName}Coordinator/singleton/coordinator")
+              .resolveOne(remainingOrDefault),
+            remainingOrDefault)
         }
         val terminationProbe = TestProbe()
         system.actorOf(TerminationOrderActor.props(terminationProbe.ref, coordinator, region))
