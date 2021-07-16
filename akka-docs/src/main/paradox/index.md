@@ -10,6 +10,7 @@
 * [index-actors](typed/index.md)
 * [index-cluster](typed/index-cluster.md)
 * [index-persistence](typed/index-persistence.md)
+* [index-persistence-durable-state](typed/index-persistence-durable-state.md)
 * [stream/index](stream/index.md)
 * [discovery](discovery/index.md)
 * [index-utilities](index-utilities.md)
