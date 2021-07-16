@@ -4,18 +4,28 @@
 
 package akka.cluster.sharding
 
-import scala.concurrent.duration._
+import akka.Done
 
+import scala.concurrent.duration._
 import akka.actor._
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
-import akka.cluster.sharding.ShardRegion.GracefulShutdown
+import akka.cluster.sharding.ShardRegion.{ CurrentRegions, GracefulShutdown }
 import akka.remote.testconductor.RoleName
 import akka.testkit._
+
+import scala.concurrent.Future
 
 abstract class ClusterShardingGracefulShutdownSpecConfig(mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
-      additionalConfig = "akka.persistence.journal.leveldb-shared.store.native = off") {
+      additionalConfig =
+        """
+        akka.loglevel = info
+        akka.persistence.journal.leveldb-shared.store.native = off
+        # We set this high to allow pausing coordinated shutdown make sure the handoff completes 'immediately' and not
+        # relies on the member removal, which could make things take longer then necessary
+        akka.coordinated-shutdown.phases.cluster-sharding-shutdown-region.timeout = 60s
+        """) {
   val first = role("first")
   val second = role("second")
 }
@@ -66,11 +76,10 @@ abstract class ClusterShardingGracefulShutdownSpec(multiNodeConfig: ClusterShard
   lazy val region = ClusterSharding(system).shardRegion(typeName)
 
   s"Cluster sharding ($mode)" must {
-
     "start some shards in both regions" in within(30.seconds) {
       startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second))
 
-      join(first, first, typeName)
+      join(first, first, typeName) // oldest
       join(second, first, typeName)
 
       awaitAssert {
@@ -83,11 +92,20 @@ abstract class ClusterShardingGracefulShutdownSpec(multiNodeConfig: ClusterShard
         regionAddresses.size should be(2)
       }
       enterBarrier("after-2")
+
+      region ! ShardRegion.GetCurrentRegions
+      expectMsgType[CurrentRegions].regions.size should be(2)
     }
 
-    "gracefully shutdown a region" in within(30.seconds) {
+    "gracefully shutdown the region on the newest node" in within(30.seconds) {
       runOn(second) {
-        region ! ShardRegion.GracefulShutdown
+        // Make sure the 'cluster-sharding-shutdown-region' phase takes at least 40 seconds,
+        // to validate region shutdown completion is propagated immediately and not postponed
+        // until when the cluster member leaves
+        CoordinatedShutdown(system).addTask("cluster-sharding-shutdown-region", "postpone-actual-stop")(() => {
+          akka.pattern.after(40.seconds)(Future.successful(Done))
+        })
+        CoordinatedShutdown(system).run(CoordinatedShutdown.unknownReason)
       }
 
       runOn(first) {
@@ -101,6 +119,16 @@ abstract class ClusterShardingGracefulShutdownSpec(multiNodeConfig: ClusterShard
         }
       }
       enterBarrier("handoff-completed")
+
+      // Check that the coordinator is correctly notified the region has stopped:
+      runOn(first) {
+        // the coordinator side should observe that the region has stopped
+        awaitAssert {
+          region ! ShardRegion.GetCurrentRegions
+          expectMsgType[CurrentRegions].regions.size should be(1)
+        }
+        // without having to wait for the member to be entirely removed (as that would cause unnecessary latency)
+      }
 
       runOn(second) {
         watch(region)

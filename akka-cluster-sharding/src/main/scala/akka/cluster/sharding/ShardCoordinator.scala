@@ -1011,6 +1011,7 @@ abstract class ShardCoordinator(
       }
 
     case RegionStopped(ref) =>
+      log.debug("{}: ShardRegion stopped: [{}]", typeName, ref)
       regionTerminated(ref)
 
     case DelayedShardRegionTerminated(ref) =>
