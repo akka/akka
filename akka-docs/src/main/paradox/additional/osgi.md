@@ -15,7 +15,7 @@ To use Akka in OSGi, you must add the following dependency in your project:
 
 ## Background
 
-[OSGi](https://www.osgi.org/developer/where-to-start/) is a mature packaging and deployment standard for component-based systems. It
+[OSGi](https://www.osgi.org/resources/where-to-start/) is a mature packaging and deployment standard for component-based systems. It
 has similar capabilities as Project Jigsaw (originally scheduled for JDK 1.8), but has far stronger facilities to
 support legacy Java code. This is to say that while Jigsaw-ready modules require significant changes to most source files
 and on occasion to the structure of the overall application, OSGi can be used to modularize almost any Java code as far
@@ -34,7 +34,7 @@ For more information than is provided here, [OSGi In Action](https://www.manning
 ## Core Components and Structure of OSGi Applications
 
 The fundamental unit of deployment in OSGi is the `Bundle`. A bundle is a Java JAR with *additional
-entries <https://www.osgi.org/bundle-headers-reference/>* in `MANIFEST.MF` that minimally expose the name and version
+entries <https://docs.osgi.org/reference/bundle-headers.html>* in `MANIFEST.MF` that minimally expose the name and version
 of the bundle and packages for import and export. Since these manifest entries are ignored outside OSGi deployments,
 a bundle can interchangeably be used as a JAR in the JRE.
 
