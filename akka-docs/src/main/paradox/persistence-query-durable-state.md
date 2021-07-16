@@ -32,7 +32,7 @@ recommend (in the spirit of CQRS) of splitting up the write/read sides into sepa
 
 ## Using query with Akka Projections
 
-Akka Persistence and Akka Projections together can be used to develop an Event Sourced CQRS application where the 
+Akka Persistence and Akka Projections together can be used to develop a CQRS application where the 
 durable state is stored in a database and fetched as an asynchronous stream to the user. Currently queries on 
 durable state, provided by the interface in `DurableStateStoreQuery`, is used to implement Akka Projections' 
 tag based searches.
