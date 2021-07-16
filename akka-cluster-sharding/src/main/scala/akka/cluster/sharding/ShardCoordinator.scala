@@ -927,6 +927,12 @@ abstract class ShardCoordinator(
   private def terminate(): Unit = {
     if (aliveRegions.exists(_.path.address.hasLocalScope) || gracefulShutdownInProgress.exists(
           _.path.address.hasLocalScope)) {
+      aliveRegions
+        .find(_.path.address.hasLocalScope)
+        .foreach(region =>
+          // region will get this from taking part in coordinated shutdown, but for good measure
+          region ! ShardRegion.GracefulShutdown)
+
       log.debug("{}: Deferring coordinator termination until local region has terminated", typeName)
       waitingForLocalRegionToTerminate = true
     } else {

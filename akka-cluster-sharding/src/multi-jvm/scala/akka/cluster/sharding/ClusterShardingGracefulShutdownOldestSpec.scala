@@ -15,8 +15,7 @@ import scala.concurrent.Await
 abstract class ClusterShardingGracefulShutdownOldestSpecConfig(mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
-      additionalConfig = "akka.persistence.journal.leveldb-shared.store.native = off",
-      loglevel = "DEBUG") {
+      additionalConfig = "akka.persistence.journal.leveldb-shared.store.native = off") {
   val first = role("first")
   val second = role("second")
 }
