@@ -65,9 +65,8 @@ durabe state store.
 
 @ref:[Cluster Sharding](cluster-sharding.md) is typically used together with `DurableStateBehavior` to ensure
 that there is only one active entity for each `PersistenceId` (`entityId`). There are techniques to ensure this 
-uniqueness, an example of which can be found in the @ref:[Persistence example in the Cluster Sharding documentation]
-(cluster-sharding.md#persistence-example). This illustrates how to construct the `PersistenceId` from the 
-`entityTypeKey` and `entityId` provided by the `EntityContext`.
+uniqueness, an example of which can be found in the 
+@ref:[Persistence example in the Cluster Sharding documentation](cluster-sharding.md#persistence-example). This illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the `EntityContext`.
 
 The `entityId` in Cluster Sharding is the business domain identifier which uniquely identifies the instance of
 that specific `EntityType`. This means that across the cluster we have a unique combination of (`EntityType`, `EntityId`).

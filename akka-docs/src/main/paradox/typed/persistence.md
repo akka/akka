@@ -108,9 +108,8 @@ event journal and snapshot store.
 
 @ref:[Cluster Sharding](cluster-sharding.md) is typically used together with `EventSourcedBehavior` to ensure
 that there is only one active entity for each `PersistenceId` (`entityId`). There are techniques to ensure this 
-uniqueness, an example of which can be found in the @ref:[Persistence example in the Cluster Sharding documentation]
-(cluster-sharding.md#persistence-example). This illustrates how to construct the `PersistenceId` from the 
-`entityTypeKey` and `entityId` provided by the `EntityContext`.
+uniqueness, an example of which can be found in the 
+@ref:[Persistence example in the Cluster Sharding documentation](cluster-sharding.md#persistence-example). This illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the `EntityContext`.
 
 The `entityId` in Cluster Sharding is the business domain identifier of the entity. The `entityId` might not
 be unique enough to be used as the `PersistenceId` by itself. For example two different types of
