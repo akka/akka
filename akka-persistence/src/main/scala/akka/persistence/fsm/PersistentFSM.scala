@@ -160,7 +160,7 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
       def applyStateOnLastHandler() = {
         handlersExecutedCounter += 1
         if (handlersExecutedCounter == eventsToPersist.size) {
-          super.applyState(nextState.copy(stateData = nextData))
+          super.applyState(nextState.copy0(stateData = nextData))
           currentStateTimeout = nextState.timeout
           nextState.afterTransitionDo(stateData)
           if (doSnapshot) {
@@ -389,7 +389,7 @@ object PersistentFSM {
      * Copy object and update values if needed.
      */
     @InternalApi
-    private[akka] def copy(
+    private[akka] def copy0(
         stateName: S = stateName,
         stateData: D = stateData,
         timeout: Option[FiniteDuration] = timeout,
@@ -409,8 +409,8 @@ object PersistentFSM {
      * Use Duration.Inf to deactivate an existing timeout.
      */
     def forMax(timeout: Duration): State[S, D, E] = timeout match {
-      case f: FiniteDuration => copy(timeout = Some(f))
-      case _                 => copy(timeout = PersistentFSM.SomeMaxFiniteDuration) // we need to differentiate "not set" from disabled
+      case f: FiniteDuration => copy0(timeout = Some(f))
+      case _                 => copy0(timeout = PersistentFSM.SomeMaxFiniteDuration) // we need to differentiate "not set" from disabled
     }
 
     /**
@@ -431,7 +431,7 @@ object PersistentFSM {
      * @return this state transition descriptor
      */
     def replying(replyValue: Any): State[S, D, E] = {
-      copy(replies = replyValue :: replies)
+      copy0(replies = replyValue :: replies)
     }
 
     @InternalApi
@@ -440,7 +440,7 @@ object PersistentFSM {
       "Internal API easily to be confused with regular FSM's using. Use regular events (`applying`). Internally, `copy` can be used instead.",
       "2.5.5")
     private[akka] def using(@deprecatedName(Symbol("nextStateDate")) nextStateData: D): State[S, D, E] = {
-      copy(stateData = nextStateData)
+      copy0(stateData = nextStateData)
     }
 
     /**
@@ -448,26 +448,26 @@ object PersistentFSM {
      */
     @InternalApi
     private[akka] def withStopReason(reason: Reason): State[S, D, E] = {
-      copy(stopReason = Some(reason))
+      copy0(stopReason = Some(reason))
     }
 
     @InternalApi
     private[akka] def withNotification(notifies: Boolean): State[S, D, E] = {
-      copy(notifies = notifies)
+      copy0(notifies = notifies)
     }
 
     /**
      * Specify domain events to be applied when transitioning to the new state.
      */
     @varargs def applying(events: E*): State[S, D, E] = {
-      copy(domainEvents = domainEvents ++ events)
+      copy0(domainEvents = domainEvents ++ events)
     }
 
     /**
      * Register a handler to be triggered after the state has been persisted successfully
      */
     def andThen(handler: D => Unit): State[S, D, E] = {
-      copy(afterTransitionDo = handler)
+      copy0(afterTransitionDo = handler)
     }
   }
 
