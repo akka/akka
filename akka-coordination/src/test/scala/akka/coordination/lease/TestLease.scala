@@ -61,7 +61,7 @@ object TestLease {
 class TestLease(settings: LeaseSettings, system: ExtendedActorSystem) extends Lease(settings) {
   import TestLease._
 
-  val log = Logging(system, getClass)
+  val log = Logging(system, classOf[TestLease])
   val probe = TestProbe()(system)
 
   log.info("Creating lease {}", settings)
