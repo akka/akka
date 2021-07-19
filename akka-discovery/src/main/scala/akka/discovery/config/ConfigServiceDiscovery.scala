@@ -50,7 +50,7 @@ private object ConfigServicesParser {
 @InternalApi
 private[akka] class ConfigServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
 
-  private val log = Logging(system, getClass)
+  private val log = Logging(system, classOf[ConfigServiceDiscovery])
 
   private val resolvedServices = ConfigServicesParser.parse(
     system.settings.config.getConfig(system.settings.config.getString("akka.discovery.config.services-path")))
