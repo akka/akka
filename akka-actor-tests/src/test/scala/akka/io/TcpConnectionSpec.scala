@@ -390,28 +390,19 @@ class TcpConnectionSpec extends AkkaSpec("""
         connectionHandler.expectNoMessage(100.millis)
 
         connectionActor ! ResumeReading
-        interestCallReceiver.expectMsg(OP_READ)
-        selector.send(connectionActor, ChannelReadable)
         connectionHandler.expectMsgType[Received].data.decodeString("ASCII") should ===(ts)
 
-        interestCallReceiver.expectNoMessage(100.millis)
         connectionHandler.expectNoMessage(100.millis)
 
         connectionActor ! ResumeReading
-        interestCallReceiver.expectMsg(OP_READ)
-        selector.send(connectionActor, ChannelReadable)
         connectionHandler.expectMsgType[Received].data.decodeString("ASCII") should ===(us)
 
-        // make sure that after reading all pending data we don't yet register for reading more data
-        interestCallReceiver.expectNoMessage(100.millis)
         connectionHandler.expectNoMessage(100.millis)
 
         val vs = "v" * (maxBufferSize / 2)
         serverSideChannel.write(ByteBuffer.wrap(vs.getBytes("ASCII")))
 
         connectionActor ! ResumeReading
-        interestCallReceiver.expectMsg(OP_READ)
-        selector.send(connectionActor, ChannelReadable)
 
         connectionHandler.expectMsgType[Received].data.decodeString("ASCII") should ===(vs)
       } finally shutdown(system)
