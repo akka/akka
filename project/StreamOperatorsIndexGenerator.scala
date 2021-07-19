@@ -180,9 +180,14 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     val sourceAndFlow =
       defs.collect { case ("Source", method) => method }.intersect(defs.collect { case ("Flow", method) => method })
 
+    val predefinedSourceAndFlow = Set(
+      "flattenConcat",
+      "flattenMerge"
+    )
+
     val groupedDefs =
       defs.map {
-        case (element @ ("Source" | "Flow"), method) if sourceAndFlow.contains(method) =>
+        case (element @ ("Source" | "Flow"), method) if sourceAndFlow.contains(method) || predefinedSourceAndFlow(method) =>
           ("Source/Flow", method, s"Source-or-Flow/$method.md")
         case (`noElement`, method) =>
           (noElement, method, s"$method.md")
@@ -260,7 +265,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       (description, categoryName)
     } catch {
       case NonFatal(ex) =>
-        throw new RuntimeException(s"Unable to extract details from $file", ex)
+        throw new RuntimeException(s"Unable to extract details from $file, error:${ex.getMessage}", ex)
     }
 
 }

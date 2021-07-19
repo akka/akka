@@ -454,7 +454,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
             })
           }
         }))
-        .flatMapConcat(identity)
+        .flattenConcat
         .runWith(Sink.ignore)
       done.future.futureValue // would throw on failure
     }

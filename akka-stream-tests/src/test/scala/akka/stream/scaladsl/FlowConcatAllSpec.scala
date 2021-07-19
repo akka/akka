@@ -9,7 +9,6 @@ import scala.util.control.NoStackTrace
 import akka.NotUsed
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.util.ConstantFun
 
 class FlowConcatAllSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
@@ -30,7 +29,7 @@ class FlowConcatAllSpec extends StreamSpec("""
       val main = Source(List(s1, s2, s3, s4, s5))
 
       val subscriber = TestSubscriber.manualProbe[Int]()
-      main.flatMapConcat(ConstantFun.scalaIdentityFunction).to(Sink.fromSubscriber(subscriber)).run()
+      main.flattenConcat.to(Sink.fromSubscriber(subscriber)).run()
       val subscription = subscriber.expectSubscription()
       subscription.request(10)
       for (i <- 1 to 10)
@@ -46,7 +45,7 @@ class FlowConcatAllSpec extends StreamSpec("""
         .prefixAndTail(0)
         .map(_._2)
         .concatSubstreams
-        .flatMapConcat(ConstantFun.scalaIdentityFunction)
+        .flattenConcat
         .runWith(Sink.fromSubscriber(subscriber))
 
       for (i <- 1 to 10)
@@ -59,11 +58,7 @@ class FlowConcatAllSpec extends StreamSpec("""
     "on onError on master stream cancel the current open substream and signal error" in assertAllStagesStopped {
       val publisher = TestPublisher.manualProbe[Source[Int, NotUsed]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
-      Source
-        .fromPublisher(publisher)
-        .flatMapConcat(ConstantFun.scalaIdentityFunction)
-        .to(Sink.fromSubscriber(subscriber))
-        .run()
+      Source.fromPublisher(publisher).flattenConcat.to(Sink.fromSubscriber(subscriber)).run()
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
@@ -83,11 +78,7 @@ class FlowConcatAllSpec extends StreamSpec("""
     "on onError on master stream cancel the currently opening substream and signal error" in assertAllStagesStopped {
       val publisher = TestPublisher.manualProbe[Source[Int, NotUsed]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
-      Source
-        .fromPublisher(publisher)
-        .flatMapConcat(ConstantFun.scalaIdentityFunction)
-        .to(Sink.fromSubscriber(subscriber))
-        .run()
+      Source.fromPublisher(publisher).flattenConcat.to(Sink.fromSubscriber(subscriber)).run()
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
@@ -127,11 +118,7 @@ class FlowConcatAllSpec extends StreamSpec("""
     "on onError on open substream, cancel the master stream and signal error " in assertAllStagesStopped {
       val publisher = TestPublisher.manualProbe[Source[Int, NotUsed]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
-      Source
-        .fromPublisher(publisher)
-        .flatMapConcat(ConstantFun.scalaIdentityFunction)
-        .to(Sink.fromSubscriber(subscriber))
-        .run()
+      Source.fromPublisher(publisher).flattenConcat.to(Sink.fromSubscriber(subscriber)).run()
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
@@ -151,11 +138,7 @@ class FlowConcatAllSpec extends StreamSpec("""
     "on cancellation cancel the current open substream and the master stream" in assertAllStagesStopped {
       val publisher = TestPublisher.manualProbe[Source[Int, NotUsed]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
-      Source
-        .fromPublisher(publisher)
-        .flatMapConcat(ConstantFun.scalaIdentityFunction)
-        .to(Sink.fromSubscriber(subscriber))
-        .run()
+      Source.fromPublisher(publisher).flattenConcat.to(Sink.fromSubscriber(subscriber)).run()
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
@@ -176,11 +159,7 @@ class FlowConcatAllSpec extends StreamSpec("""
     "on cancellation cancel the currently opening substream and the master stream" in assertAllStagesStopped {
       val publisher = TestPublisher.manualProbe[Source[Int, NotUsed]]()
       val subscriber = TestSubscriber.manualProbe[Int]()
-      Source
-        .fromPublisher(publisher)
-        .flatMapConcat(ConstantFun.scalaIdentityFunction)
-        .to(Sink.fromSubscriber(subscriber))
-        .run()
+      Source.fromPublisher(publisher).flattenConcat.to(Sink.fromSubscriber(subscriber)).run()
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
@@ -204,11 +183,7 @@ class FlowConcatAllSpec extends StreamSpec("""
       val up = TestPublisher.manualProbe[Source[Int, NotUsed]]()
       val down = TestSubscriber.manualProbe[Int]()
 
-      val flowSubscriber = Source
-        .asSubscriber[Source[Int, NotUsed]]
-        .flatMapConcat(ConstantFun.scalaIdentityFunction)
-        .to(Sink.fromSubscriber(down))
-        .run()
+      val flowSubscriber = Source.asSubscriber[Source[Int, NotUsed]].flattenConcat.to(Sink.fromSubscriber(down)).run()
 
       val downstream = down.expectSubscription()
       downstream.cancel()

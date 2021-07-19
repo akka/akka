@@ -291,7 +291,7 @@ class FlowSplitWhenSpec extends StreamSpec("""
       val testStreamWithTightTimeout =
         testSource.lift
           .delay(1.second)
-          .flatMapConcat(identity)
+          .flattenConcat
           .toMat(Sink.ignore)(Keep.right)
           .withAttributes(ActorAttributes
             .streamSubscriptionTimeout(500.milliseconds, StreamSubscriptionTimeoutTerminationMode.cancel))
