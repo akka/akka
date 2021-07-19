@@ -66,7 +66,7 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore =
   private def writeIdMapping(id: String, numericId: Int): Int = {
     idMap = idMap + (id -> numericId)
     leveldb.put(keyToBytes(mappingKey(numericId)), id.getBytes(UTF_8))
-    newPersistenceIdAdded(id)
+    this.newPersistenceIdAdded(id)
     numericId
   }
 
