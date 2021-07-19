@@ -163,7 +163,7 @@ object SerializationDocSpec {
     final case class Lion(name: String) extends Animal
     final case class Elephant(name: String, age: Int) extends Animal
 
-    @JsonDeserialize(using = classOf[UnicornDeserializer])
+    @JsonDeserialize(`using` = classOf[UnicornDeserializer])
     sealed trait Unicorn extends Animal
     @JsonTypeName("unicorn")
     case object Unicorn extends Unicorn

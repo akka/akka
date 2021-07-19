@@ -151,8 +151,8 @@ object ScalaTestMessages {
   }
 
   final case class WithAkkaSerializer(
-      @JsonDeserialize(using = classOf[AkkaSerializationDeserializer])
-      @JsonSerialize(using = classOf[AkkaSerializationSerializer])
+      @JsonDeserialize(`using` = classOf[AkkaSerializationDeserializer])
+      @JsonSerialize(`using` = classOf[AkkaSerializationSerializer])
       akkaSerializer: HasAkkaSerializer)
       extends TestMessage
 }
