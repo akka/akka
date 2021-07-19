@@ -282,7 +282,7 @@ private[akka] object ConcurrentAsyncCallbackState {
   // stream is initialized and so no threads can just send events without any synchronization overhead
   case object Initialized extends State[Nothing]
   // Event with feedback promise
-  final case class Event[E](e: E, handlingPromise: Promise[Done])
+  final case class Event[+E](e: E, handlingPromise: Promise[Done])
 
   val NoPendingEvents = Pending[Nothing](Nil)
 }
@@ -1243,7 +1243,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
           // started - can just dispatch async message to interpreter
           onAsyncInput(event, promise)
 
-        case list @ Pending(l) =>
+        case list @ Pending(l: List[Event[T]]) =>
           // not started yet
           if (!currentState.compareAndSet(list, Pending[T](Event[T](event, promise) :: l)))
             invokeWithPromise(event, promise)

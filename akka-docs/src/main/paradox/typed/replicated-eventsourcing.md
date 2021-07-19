@@ -1,13 +1,5 @@
 # Replicated Event Sourcing
 
-@@@ warning
-
-This module is marked as @ref:[may change](../common/may-change.md) because it is a new feature that
-needs feedback from real usage before finalizing the API. This means that API or semantics can change without
-warning or deprecation period. It is also not recommended to use this module in production just yet.
-
-@@@
-
 @ref[Event Sourcing](./persistence.md) with `EventSourcedBehavior`s is based on the single writer principle, which means that there can only be one active instance of a `EventSourcedBehavior` 
 with a given `persistenceId`. Otherwise, multiple instances would store interleaving events based on different states, and when these events would later be replayed it would not be possible to reconstruct the correct state.
 

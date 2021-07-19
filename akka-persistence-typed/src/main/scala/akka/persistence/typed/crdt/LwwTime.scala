@@ -3,14 +3,12 @@
  */
 
 package akka.persistence.typed.crdt
-import akka.annotation.ApiMayChange
 import akka.persistence.typed.ReplicaId
 
 /**
  * Utility class for comparing timestamp replica
  * identifier when implementing last-writer wins.
  */
-@ApiMayChange
 final case class LwwTime(timestamp: Long, originReplica: ReplicaId) {
 
   /**

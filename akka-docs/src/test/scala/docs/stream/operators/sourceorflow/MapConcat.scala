@@ -26,6 +26,7 @@ object MapConcat {
     // 2
     // 2
     // 3
+    // 3
     //#map-concat
 
   }

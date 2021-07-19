@@ -496,7 +496,7 @@ private[remote] class ReliableDeliverySupervisor(
       // If we have not confirmed the remote UID we cannot transfer the system message at this point just buffer it.
       // GotUid will kick resendAll() causing the messages to be properly written.
       // Flow control by not sending more when we already have many outstanding.
-      if (uidConfirmed && resendBuffer.nonAcked.size <= settings.SysResendLimit)
+      if (uidConfirmed && resendBuffer.nonAcked.length <= settings.SysResendLimit)
         writer ! sequencedSend
     } else writer ! send
 
@@ -1130,7 +1130,7 @@ private[remote] class EndpointReader(
   override def receive: Receive = {
     case Disassociated(info) => handleDisassociated(info)
 
-    case InboundPayload(p) if p.size <= transport.maximumPayloadBytes =>
+    case InboundPayload(p) if p.length <= transport.maximumPayloadBytes =>
       val (ackOption, msgOption) = tryDecodeMessageAndAck(p)
 
       for (ack <- ackOption; reliableDelivery <- reliableDeliverySupervisor) reliableDelivery ! ack
@@ -1180,7 +1180,7 @@ private[remote] class EndpointReader(
     case StopReading(writer, replyTo) =>
       replyTo ! StoppedReading(writer)
 
-    case InboundPayload(p) if p.size <= transport.maximumPayloadBytes =>
+    case InboundPayload(p) if p.length <= transport.maximumPayloadBytes =>
       val (ackOption, msgOption) = tryDecodeMessageAndAck(p)
       for (ack <- ackOption; reliableDelivery <- reliableDeliverySupervisor) reliableDelivery ! ack
 

@@ -15,12 +15,10 @@ import akka.util.ccompat.JavaConverters._
 import java.util.{ Set => JSet }
 
 import akka.actor.typed.Behavior
-import akka.annotation.ApiMayChange
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.persistence.typed.ReplicationId
 import akka.persistence.typed.ReplicationId.Separator
 
-@ApiMayChange
 object ReplicatedEntityProvider {
 
   /**
@@ -138,7 +136,6 @@ object ReplicatedEntityProvider {
  *
  * @tparam M The type of messages the replicated entity accepts
  */
-@ApiMayChange
 final class ReplicatedEntityProvider[M] private (
     val replicas: immutable.Seq[(ReplicatedEntity[M], String)],
     val directReplication: Boolean) {
@@ -155,7 +152,6 @@ final class ReplicatedEntityProvider[M] private (
 
 }
 
-@ApiMayChange
 object ReplicatedEntity {
 
   /**
@@ -181,5 +177,4 @@ object ReplicatedEntity {
  * Settings for a specific replica id in replicated sharding
  * Currently only Entity's with ShardingEnvelope are supported but this may change in the future
  */
-@ApiMayChange
 final class ReplicatedEntity[M] private (val replicaId: ReplicaId, val entity: Entity[M, ShardingEnvelope[M]])

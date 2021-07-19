@@ -67,7 +67,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
 
   lazy val nowarnSettings = {
     Dependencies.getScalaVersion() match {
-      case three if three.startsWith("3.0") =>
+      case three if three.startsWith("3.") =>
         Seq(Compile / scalacOptions := Seq(), Compile / doc / scalacOptions := Seq())
       case _ =>
         Seq(
@@ -99,7 +99,7 @@ object AkkaDisciplinePlugin extends AutoPlugin {
         Compile / scalacOptions ++= Seq("-Xfatal-warnings"),
         Test / scalacOptions --= testUndicipline,
         Compile / javacOptions ++= (
-            if (Dependencies.getScalaVersion().startsWith("3.0")) {
+            if (Dependencies.getScalaVersion().startsWith("3.")) {
               Seq()
             } else {
               if (!nonFatalJavaWarningsFor(name.value)) Seq("-Werror", "-Xlint:deprecation", "-Xlint:unchecked")

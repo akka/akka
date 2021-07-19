@@ -15,7 +15,7 @@ object Dependencies {
     .withRank(KeyRanks.Invisible) // avoid 'unused key' warning
 
   val junitVersion = "4.13.2"
-  val slf4jVersion = "1.7.30"
+  val slf4jVersion = "1.7.31"
   // check agrona version when updating this
   val aeronVersion = "1.32.0"
   // needs to be inline with the aeron version, check
@@ -29,21 +29,21 @@ object Dependencies {
 
   val scala212Version = "2.12.14"
   val scala213Version = "2.13.6"
-  val scala3Version = "3.0.0"
+  val scala3Version = "3.0.1-RC1"
 
   val reactiveStreamsVersion = "1.0.3"
 
   val sslConfigVersion = "0.4.2"
 
   val scalaTestVersion = {
-    if (getScalaVersion().startsWith("3.0")) {
+    if (getScalaVersion().startsWith("3.")) {
       "3.2.9"
     } else {
       "3.1.4"
     }
   }
   val scalaTestScalaCheckVersion = {
-    if (getScalaVersion().startsWith("3.0")) {
+    if (getScalaVersion().startsWith("3.")) {
       "1-15"
     } else {
       "1-14"
@@ -56,10 +56,10 @@ object Dependencies {
     System.getProperty("akka.build.scalaVersion", "default") match {
       case twoThirteen if twoThirteen.startsWith("2.13") => scala213Version
       case twoTwelve if twoTwelve.startsWith("2.12")     => scala212Version
-      case three if three.startsWith("3.0")              => scala3Version
+      case three if three.startsWith("3.")               => scala3Version
       case "default"                                     => scala213Version
       case other =>
-        throw new IllegalArgumentException(s"Unsupported scala version [$other]. Must be 2.12, 2.13 or 3.0.")
+        throw new IllegalArgumentException(s"Unsupported scala version [$other]. Must be 2.12, 2.13 or 3.x.")
     }
   }
 
@@ -71,8 +71,8 @@ object Dependencies {
         CrossVersion.partialVersion(scalaVersion.value) match {
           // java8-compat is only used in a couple of places for 2.13,
           // it is probably possible to remove the dependency if needed.
-          case Some((3, _))            => "0.9.0"
-          case Some((2, n)) if n >= 13 => "0.9.0"
+          case Some((3, _))            => "1.0.0"
+          case Some((2, n)) if n >= 13 => "1.0.0"
           case _                       => "0.8.0"
         }
       })
@@ -125,18 +125,18 @@ object Dependencies {
     val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion // ApacheV2
     val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion // ApacheV2
     val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion // ApacheV2
-    val lz4Java = "org.lz4" % "lz4-java" % "1.7.1" // ApacheV2
+    val lz4Java = "org.lz4" % "lz4-java" % "1.8.0" // ApacheV2
 
     val logback = "ch.qos.logback" % "logback-classic" % logbackVersion // EPL 1.0
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.6" % "test"
-      val gson = "com.google.code.gson" % "gson" % "2.8.6" % "test"
+      val gson = "com.google.code.gson" % "gson" % "2.8.7" % "test"
     }
 
     object Test {
       val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % "test" // ApacheV2
-      val commonsIo = "commons-io" % "commons-io" % "2.8.0" % "test" // ApacheV2
+      val commonsIo = "commons-io" % "commons-io" % "2.10.0" % "test" // ApacheV2
       val commonsCodec = "commons-codec" % "commons-codec" % "1.15" % "test" // ApacheV2
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
       val logback = Compile.logback % "test" // EPL 1.0
@@ -162,8 +162,8 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.21" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.21" % "test" // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.24" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.24" % "test" // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
       val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)

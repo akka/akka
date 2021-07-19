@@ -112,7 +112,7 @@ does a conformance check; if you need the class to be equal, @scala[have a look 
    An object which is an instance of the given type (after erasure) must be
 received within the allotted time frame; the object will be returned. This
 method is approximately equivalent to
-`expectMsgClass(implicitly[ClassTag[T]].runtimeClass)`.]
+`expectMsgClass(implicitly[ClassTag[T]].runtimeClass)`.
 
 @@@
 

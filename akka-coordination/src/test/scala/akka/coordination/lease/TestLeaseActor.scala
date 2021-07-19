@@ -98,7 +98,7 @@ class TestLeaseActorClient(settings: LeaseSettings, system: ExtendedActorSystem)
   import TestLeaseActor.Create
   import TestLeaseActor.Release
 
-  private val log = Logging(system, getClass)
+  private val log = Logging(system, classOf[TestLeaseActorClient])
   val leaseActor = TestLeaseActorClientExt(system).getLeaseActor()
 
   log.info("lease created {}", settings)

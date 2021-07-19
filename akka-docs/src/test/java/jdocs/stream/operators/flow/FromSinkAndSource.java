@@ -14,6 +14,8 @@ import akka.stream.testkit.TestSubscriber;
 import akka.util.ByteString;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 public class FromSinkAndSource {
@@ -31,7 +33,15 @@ public class FromSinkAndSource {
     Flow<ByteString, ByteString, NotUsed> serverFlow = Flow.fromSinkAndSource(sink, source);
 
     Source<Tcp.IncomingConnection, CompletionStage<Tcp.ServerBinding>> connectionStream =
-        Tcp.get(system).bind("127.0.0.1", 9999);
+        Tcp.get(system)
+            .bind(
+                "127.0.0.1", // interface
+                9999, // port
+                100, // backlog
+                Collections.emptyList(), // socket options
+                true, // Important: half close enabled
+                Optional.empty() // idle timeout
+                );
 
     connectionStream.runForeach(
         incomingConnection -> incomingConnection.handleWith(serverFlow, system), system);

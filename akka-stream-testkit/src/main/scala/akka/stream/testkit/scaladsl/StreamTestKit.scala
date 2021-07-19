@@ -150,7 +150,7 @@ object StreamTestKit {
             builder.append(s"[label=shouldPush, color=red, dir=back];")
           case ConnectionSnapshot.Closed =>
             builder.append("[style=dotted, label=closed, dir=both];")
-          case _ =>
+          case null =>
         }
         builder.append("\n")
       }

@@ -622,7 +622,7 @@ object Source {
    */
   def fromGraph[T, M](g: Graph[SourceShape[T], M]): Source[T, M] =
     g match {
-      case s: Source[T, M]                 => s
+      case s: Source[T, M] @unchecked      => s
       case s if s eq scaladsl.Source.empty => empty().asInstanceOf[Source[T, M]]
       case other                           => new Source(scaladsl.Source.fromGraph(other))
     }
@@ -2131,9 +2131,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def recoverWith(
       clazz: Class[_ <: Throwable],
       supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
-    recoverWith {
+    recoverWith({
       case elem if clazz.isInstance(elem) => supplier.get()
-    }
+    }: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]])
 
   /**
    * RecoverWithRetries allows to switch to alternative Source on flow failure. It will stay in effect after
@@ -2195,7 +2195,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
       supplier: Supplier[Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
     recoverWithRetries(attempts, {
       case elem if clazz.isInstance(elem) => supplier.get()
-    })
+    }: PartialFunction[Throwable, Graph[SourceShape[Out], NotUsed]])
 
   /**
    * Transform each input element into an `Iterable` of output elements that is

@@ -8,23 +8,21 @@ import java.security.KeyStore
 import java.security.cert.CertPathValidatorException
 import java.util.Collections
 import javax.net.ssl._
-
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
 import com.typesafe.sslconfig.ssl._
 import com.typesafe.sslconfig.util.LoggerFactory
-
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.event.Logging
+import akka.stream.impl.AkkaSSLConfigExtensionIdApply
 
 @deprecated("Use Tcp and TLS with SSLEngine parameters instead. Setup the SSLEngine with needed parameters.", "2.6.0")
-object AkkaSSLConfig extends ExtensionId[AkkaSSLConfig] with ExtensionIdProvider {
+object AkkaSSLConfig extends ExtensionId[AkkaSSLConfig] with AkkaSSLConfigExtensionIdApply with ExtensionIdProvider {
 
   //////////////////// EXTENSION SETUP ///////////////////
 
   override def get(system: ActorSystem): AkkaSSLConfig = super.get(system)
   override def get(system: ClassicActorSystemProvider): AkkaSSLConfig = super.get(system)
-  def apply()(implicit system: ActorSystem): AkkaSSLConfig = super.apply(system)
 
   override def lookup = AkkaSSLConfig
 
@@ -44,7 +42,7 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
 
   private val mkLogger = new AkkaLoggerFactory(system)
 
-  private val log = Logging(system, getClass)
+  private val log = Logging(system, classOf[AkkaSSLConfig])
   log.debug("Initializing AkkaSSLConfig extension...")
 
   /** Can be used to modify the underlying config, most typically used to change a few values in the default config */
