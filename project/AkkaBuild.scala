@@ -87,8 +87,8 @@ object AkkaBuild {
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
-  final val DefaultScalacOptions = {
-    if (Dependencies.getScalaVersion().startsWith("3.0")) {
+  final val DefaultScalacOptions = Def.setting {
+    if (scalaVersion.value.startsWith("3.")) {
       Seq(
         "-encoding",
         "UTF-8",
@@ -115,9 +115,9 @@ object AkkaBuild {
     resolverSettings,
     TestExtras.Filter.settings,
     // compile options
-    Compile / scalacOptions ++= DefaultScalacOptions,
+    Compile / scalacOptions ++= DefaultScalacOptions.value,
     Compile / scalacOptions ++=
-      JdkOptions.targetJdkScalacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
+      JdkOptions.targetJdkScalacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value, scalaVersion.value),
     Compile / scalacOptions ++= (if (allWarnings) Seq("-deprecation") else Nil),
     Test / scalacOptions := (Test / scalacOptions).value.filterNot(opt =>
         opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
