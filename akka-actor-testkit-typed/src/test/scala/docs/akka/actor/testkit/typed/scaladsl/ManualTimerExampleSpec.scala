@@ -68,6 +68,26 @@ class ManualTimerExampleSpec
       }
     }
 
+    "detect a message received during specified period" in {
+      case object Tick
+      case object Tock
+
+      val probe = TestProbe[Tock.type]()
+      val behavior = Behaviors.withTimers[Tick.type] { timer =>
+        timer.startSingleTimer(Tick, 10.millis)
+        Behaviors.receiveMessage { _ =>
+          probe.ref ! Tock
+          Behaviors.same
+        }
+      }
+
+      spawn(behavior)
+
+      assertThrows[AssertionError] {
+        manualTime.expectNoMessageFor(10.millis, probe)
+      }
+    }
+
     "replace timer" in {
       sealed trait Command
       case class Tick(n: Int) extends Command
