@@ -655,6 +655,8 @@ private[akka] class ShardRegion(
 
   override def postStop(): Unit = {
     super.postStop()
+    log.debug("{}: Region stopped", typeName)
+    coordinator.foreach(_ ! RegionStopped(context.self))
     cluster.unsubscribe(self)
     gracefulShutdownProgress.trySuccess(Done)
   }
@@ -836,7 +838,7 @@ private[akka] class ShardRegion(
         }
         sender() ! BeginHandOffAck(shard)
       } else {
-        log.debug("{}: Ignoring begin handoff as preparing to shutdown", typeName)
+        log.debug("{}: Ignoring begin handoff of shard [{}] as preparing to shutdown", typeName, shard)
       }
 
     case msg @ HandOff(shard) =>

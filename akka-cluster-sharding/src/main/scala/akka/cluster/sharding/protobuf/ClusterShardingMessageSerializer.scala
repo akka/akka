@@ -67,6 +67,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   private val HandOffManifest = "BJ"
   private val ShardStoppedManifest = "BK"
   private val GracefulShutdownReqManifest = "BL"
+  private val RegionStoppedManifest = "BM"
 
   private val EntityStateManifest = "CA"
   private val EntityStartedManifest = "CB"
@@ -152,6 +153,9 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     GracefulShutdownReqManifest -> { bytes =>
       GracefulShutdownReq(actorRefMessageFromBinary(bytes))
     },
+    RegionStoppedManifest -> { bytes =>
+      RegionStopped(actorRefMessageFromBinary(bytes))
+    },
     GetShardStatsManifest -> { _ =>
       GetShardStats
     },
@@ -225,6 +229,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case _: HandOff             => HandOffManifest
     case _: ShardStopped        => ShardStoppedManifest
     case _: GracefulShutdownReq => GracefulShutdownReqManifest
+    case _: RegionStopped       => RegionStoppedManifest
 
     case _: StartEntity    => StartEntityManifest
     case _: StartEntityAck => StartEntityAckManifest
@@ -273,6 +278,7 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case ShardStopped(shardId)    => shardIdMessageToProto(shardId).toByteArray
     case GracefulShutdownReq(ref) =>
       actorRefMessageToProto(ref).toByteArray
+    case RegionStopped(ref) => actorRefMessageToProto(ref).toByteArray
 
     case m: EntityState     => entityStateToProto(m).toByteArray
     case m: EntitiesStarted => entitiesStartedToProto(m).toByteArray

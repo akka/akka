@@ -404,6 +404,11 @@ object ShardCoordinator {
     @SerialVersionUID(1L) final case class ShardStopped(shard: ShardId) extends CoordinatorCommand
 
     /**
+     * Notification when the entire shard region has stopped
+     */
+    @SerialVersionUID(1L) final case class RegionStopped(shardRegion: ActorRef) extends CoordinatorCommand
+
+    /**
      * `ShardRegion` requests full handoff to be able to shutdown gracefully.
      */
     @SerialVersionUID(1L) final case class GracefulShutdownReq(shardRegion: ActorRef)
@@ -597,7 +602,7 @@ object ShardCoordinator {
         shardRegionFrom ! HandOff(shard)
         context.become(stoppingShard, discardOld = true)
       } else {
-        log.debug("{}: Remaining shard regions: {}", typeName, remaining.size)
+        log.debug("{}: Remaining shard regions for shard [{}]: {}", typeName, shard, remaining.size)
       }
     }
 
@@ -1024,6 +1029,10 @@ abstract class ShardCoordinator(
       } else if (state.regionProxies.contains(ref)) {
         regionProxyTerminated(ref)
       }
+
+    case RegionStopped(ref) =>
+      log.debug("{}: ShardRegion stopped: [{}]", typeName, ref)
+      regionTerminated(ref)
 
     case DelayedShardRegionTerminated(ref) =>
       regionTerminated(ref)
