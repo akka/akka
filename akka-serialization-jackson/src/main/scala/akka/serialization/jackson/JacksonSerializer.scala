@@ -177,7 +177,7 @@ import akka.util.OptionVal
   // TODO issue #27107: it should be possible to implement ByteBufferSerializer as well, using Jackson's
   //      ByteBufferBackedOutputStream/ByteBufferBackedInputStream
 
-  private val log = Logging.withMarker(system, getClass)
+  private val log = Logging.withMarker(system, classOf[JacksonSerializer])
   private val conf = JacksonObjectMapperProvider.configForBinding(bindingName, system.settings.config)
   private val isDebugEnabled = conf.getBoolean("verbose-debug-logging") && log.isDebugEnabled
   private final val BufferSize = 1024 * 4

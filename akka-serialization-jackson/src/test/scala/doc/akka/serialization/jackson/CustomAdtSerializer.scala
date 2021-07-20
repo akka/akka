@@ -16,8 +16,8 @@ object CustomAdtSerializer {
   import com.fasterxml.jackson.databind.deser.std.StdDeserializer
   import com.fasterxml.jackson.databind.ser.std.StdSerializer
 
-  @JsonSerialize(using = classOf[DirectionJsonSerializer])
-  @JsonDeserialize(using = classOf[DirectionJsonDeserializer])
+  @JsonSerialize(`using` = classOf[DirectionJsonSerializer])
+  @JsonDeserialize(`using` = classOf[DirectionJsonDeserializer])
   sealed trait Direction
 
   object Direction {

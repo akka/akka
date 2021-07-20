@@ -293,14 +293,22 @@ object Dependencies {
         jacksonCore,
         jacksonAnnotations,
         jacksonDatabind,
-        jacksonScala,
         jacksonJdk8,
         jacksonJsr310,
         jacksonParameterNames,
         jacksonCbor,
         lz4Java,
         Test.junit,
-        Test.scalatest)
+        Test.scalatest) ++
+    (if (getScalaVersion() == scala3Version)
+      // jackson-module-scala is only available for Scala 3 from 2.13.0 onwards.
+      // since we don't depend on it ourselves, but provide it as a transitive
+      // dependency for convenience, we can leave it out for Scala 3 for now,
+      // and depend on 2.13.0-rc1 for our tests. Eventually we should consider
+      // whether to update all jackson artifacts for Scala 3.
+      Seq("com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.0-rc1" % "test")
+    else
+      Seq(jacksonScala))
 
   val osgi = l ++= Seq(
         osgiCore,
