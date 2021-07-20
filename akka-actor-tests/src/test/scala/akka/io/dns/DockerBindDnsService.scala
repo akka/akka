@@ -72,7 +72,8 @@ abstract class DockerBindDnsService(config: Config) extends AkkaSpec(config) wit
       })
 
     val creation = client.createContainer(containerConfig, containerName)
-    creation.warnings() should be(null).or(have(size(0)))
+    if (creation.warnings() != null)
+      creation.warnings() should have(size(0))
     id = Some(creation.id())
 
     client.startContainer(creation.id())
