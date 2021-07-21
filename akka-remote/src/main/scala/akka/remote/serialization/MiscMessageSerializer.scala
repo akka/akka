@@ -485,16 +485,16 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       a.getProtocol,
       a.getSystem,
       // technically the presence of hostname and port are guaranteed, see our serializeAddressData
-      a.getHostname,
-      a.getPort)
+      if (a.hasHostname) Some(a.getHostname) else None,
+      if (a.hasPort) Some(a.getPort) else None)
   }
   private def addressFromProto(a: ArteryControlFormats.Address): Address = {
     Address(
       a.getProtocol,
       a.getSystem,
       // technically the presence of hostname and port are guaranteed, see our serializeAddressData
-      a.getHostname,
-      a.getPort)
+      if (a.hasHostname) Some(a.getHostname) else None,
+      if (a.hasPort) Some(a.getPort) else None)
   }
 
   private def deserializeUniqueAddress(bytes: Array[Byte]): UniqueAddress = {
