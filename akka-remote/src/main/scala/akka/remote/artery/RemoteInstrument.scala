@@ -99,7 +99,7 @@ abstract class RemoteInstrument {
     .settings
   private val logFrameSizeExceeding = settings.LogFrameSizeExceeding.get
 
-  private val log = Logging(system, this.getClass)
+  private val log = Logging(system, classOf[LoggingRemoteInstrument])
 
   private val maxPayloadBytes: ConcurrentHashMap[Class[_], Integer] = new ConcurrentHashMap
 

@@ -21,7 +21,7 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
 
   private lazy val serialization = SerializationExtension(system)
   private val payloadSupport = new WrappedPayloadSupport(system)
-  private val log = Logging(system, getClass)
+  private val log = Logging(system, classOf[ThrowableSupport])
 
   def serializeThrowable(t: Throwable): Array[Byte] = {
     toProtobufThrowable(t).build().toByteArray

@@ -115,9 +115,6 @@ final case class QuarantinedEvent(address: Address, longUid: Long) extends Remot
   @deprecated("Use long uid", "2.4.x")
   def uid: Int = longUid.toInt
 
-  @nowarn("msg=deprecated")
-  @deprecated("Use long uid copy method", "2.4.x")
-  def copy(address: Address = address, uid: Int = uid) = new QuarantinedEvent(address, uid.toLong)
 }
 
 /**

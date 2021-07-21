@@ -360,7 +360,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
   @volatile private var boundTo: Address = _
   @volatile private var serverChannel: Channel = _
 
-  private val log = Logging.withMarker(system, this.getClass)
+  private val log = Logging.withMarker(system, classOf[NettyTransport])
 
   /**
    * INTERNAL API

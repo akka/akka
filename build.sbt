@@ -399,6 +399,7 @@ lazy val remote =
     .settings(OSGi.remote)
     .settings(Protobuf.settings)
     .settings(Test / parallelExecution := false)
+    .settings(serialversionRemoverPluginSettings)
     .enablePlugins(Jdk9)
 
 lazy val remoteTests = akkaModule("akka-remote-tests")
