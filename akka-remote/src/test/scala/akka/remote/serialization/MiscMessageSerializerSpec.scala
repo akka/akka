@@ -8,8 +8,10 @@ import java.io.NotSerializableException
 import java.util.Optional
 import java.util.concurrent.TimeoutException
 
+import scala.annotation.nowarn
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
 import com.typesafe.config.ConfigFactory
 import akka.{ Done, NotUsed }
 import akka.actor._
@@ -159,11 +161,13 @@ class MiscMessageSerializerSpec extends AkkaSpec(MiscMessageSerializerSpec.testC
       }
     }
 
+    @nowarn("msg=Unused import")
     def verifySerialization(msg: AnyRef): Unit = {
       val serializer = new MiscMessageSerializer(system.asInstanceOf[ExtendedActorSystem])
       val result = serializer.fromBinary(serializer.toBinary(msg), serializer.manifest(msg))
       msg match {
         case t: Throwable =>
+          import org.scalactic.TripleEquals.unconstrainedEquality
           // typically no equals in exceptions
           result.getClass should ===(t.getClass)
           result.asInstanceOf[Throwable].getMessage should ===(t.getMessage)

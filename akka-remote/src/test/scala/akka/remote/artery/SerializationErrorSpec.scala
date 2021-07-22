@@ -41,7 +41,7 @@ class SerializationErrorSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defau
       remoteRef ! "ping"
       expectMsg("ping")
 
-      EventFilter[java.io.NotSerializableException](start = "Failed to serialize message", occurrences = 1).intercept {
+      EventFilter[Exception](start = "Failed to serialize message", occurrences = 1).intercept {
         remoteRef ! NotSerializableMsg
       }
 

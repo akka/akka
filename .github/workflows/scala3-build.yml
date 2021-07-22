@@ -34,14 +34,16 @@ jobs:
             akka-actor-testkit-typed/test \
             akka-actor-typed/compile \
             akka-actor-typed-tests/test \
+            akka-coordination/test \
             akka-discovery/test \
             akka-pki/test \
             akka-protobuf/test \
             akka-protobuf-v3/test \
-            akka-slf4j/test \akka-stream/test \
-            akka-stream-tests-tck/test \
-            akka-coordination/test \
             akka-serialization-jackson/test:compile \
-            akka-testkit/test \
+            akka-slf4j/test \
+            akka-stream/test \
             akka-stream-testkit/test \
-            akka-remote/compile
+            akka-stream-tests-tck/test \
+            akka-remote/test \
+            akka-remote-tests/test \
+            akka-testkit/test

@@ -111,7 +111,7 @@ class ImmutableLongMapSpec extends AnyWordSpec with Matchers {
 
       m1.remove(5L) should be(m1)
 
-      m1.remove(10L).remove(20L).remove(30L) should be(ImmutableLongMap.empty)
+      m1.remove(10L).remove(20L).remove(30L) should be(ImmutableLongMap.empty[String])
     }
 
     "get None when entry doesn't exist" in {
