@@ -485,14 +485,16 @@ object StyleGuideDocExamples {
       @nowarn
       private def counter(remaining: Int): Behavior[Command] = {
         //#pattern-match-without-guard
-        Behaviors.receiveMessage {
-          case Down =>
-            if (remaining == 1) {
-              notifyWhenZero.tell(Done)
-              zero
-            } else
-              counter(remaining - 1)
-        }
+        // `@unchecked` for Scala 3, which doesn't support @nowarn
+        Behaviors.receiveMessage(x =>
+          (x: @unchecked) match {
+            case Down =>
+              if (remaining == 1) {
+                notifyWhenZero.tell(Done)
+                zero
+              } else
+                counter(remaining - 1)
+          })
         //#pattern-match-without-guard
       }
 

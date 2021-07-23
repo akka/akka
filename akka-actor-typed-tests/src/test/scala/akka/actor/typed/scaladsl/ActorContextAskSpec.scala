@@ -53,7 +53,7 @@ class ActorContextAskSpec
       val snitch = Behaviors.setup[Pong] { context =>
         // Timeout comes from TypedAkkaSpec
 
-        context.ask(pingPong, Ping) {
+        context.ask(pingPong, Ping.apply) {
           case Success(_)  => Pong(context.self.path.name + "1", Thread.currentThread().getName)
           case Failure(ex) => throw ex
         }
@@ -86,7 +86,7 @@ class ActorContextAskSpec
       })
 
       val snitch = Behaviors.setup[AnyRef] { context =>
-        context.ask(pingPong, Ping) {
+        context.ask(pingPong, Ping.apply) {
           case Success(message) => throw new NotImplementedError(message.toString)
           case Failure(x)       => x
         }
@@ -194,7 +194,7 @@ class ActorContextAskSpec
 
       val probe = createTestProbe[Any]()
       spawn(Behaviors.setup[Pong.type] { ctx =>
-        ctx.askWithStatus(probe.ref, Ping) {
+        ctx.askWithStatus(probe.ref, Ping.apply) {
           case Success(Pong) => Pong
           case Failure(ex)   => throw ex
         }
@@ -217,7 +217,7 @@ class ActorContextAskSpec
 
       val probe = createTestProbe[Any]()
       spawn(Behaviors.setup[Throwable] { ctx =>
-        ctx.askWithStatus(probe.ref, Ping) {
+        ctx.askWithStatus(probe.ref, Ping.apply) {
           case Failure(ex) => ex
           case wat         => throw new IllegalArgumentException(s"Unexpected response $wat")
         }
@@ -241,7 +241,7 @@ class ActorContextAskSpec
       val probe = createTestProbe[Any]()
       case class Message(any: Any)
       spawn(Behaviors.setup[Throwable] { ctx =>
-        ctx.askWithStatus(probe.ref, Ping) {
+        ctx.askWithStatus(probe.ref, Ping.apply) {
           case Failure(ex) => ex
           case wat         => throw new IllegalArgumentException(s"Unexpected response $wat")
         }

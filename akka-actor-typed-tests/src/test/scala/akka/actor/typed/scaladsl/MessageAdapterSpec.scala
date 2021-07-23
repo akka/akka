@@ -281,7 +281,7 @@ class MessageAdapterSpec
     val deadLetterProbe = testKit.createDeadLetterProbe()
 
     val snitch = Behaviors.setup[PingReply] { context =>
-      val replyTo = context.messageAdapter[Pong](PingReply)
+      val replyTo = context.messageAdapter[Pong](PingReply.apply)
       pingProbe.ref ! Ping(replyTo)
       Behaviors.stopped
     }

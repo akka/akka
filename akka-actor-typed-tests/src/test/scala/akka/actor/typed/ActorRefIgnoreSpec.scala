@@ -44,7 +44,7 @@ class ActorRefIgnoreSpec extends ScalaTestWithActorTestKit() with AnyWordSpecLik
     implicit val timeout: Timeout = 1.second
 
     // send a message to interactWithRef
-    context.ask(askMeRef, Request) {
+    context.ask(askMeRef, Request.apply) {
       case Success(res) => res
       case Failure(ex)  => throw ex
     }

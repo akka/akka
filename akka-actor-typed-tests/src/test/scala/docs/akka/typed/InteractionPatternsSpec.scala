@@ -80,7 +80,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
       val probe = createTestProbe[CookieFabric.Response]()
       // shhh, don't tell anyone
       import scala.language.reflectiveCalls
-      val context = new {
+      val context: { def self: ActorRef[CookieFabric.Response] } = new {
         def self = probe.ref
       }
 
@@ -259,7 +259,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
           // as OpenThePodBayDoorsPlease is a case class it has a factory apply method
           // that is what we are passing as the second parameter here it could also be written
           // as `ref => OpenThePodBayDoorsPlease(ref)`
-          context.ask(hal, Hal.OpenThePodBayDoorsPlease) {
+          context.ask(hal, Hal.OpenThePodBayDoorsPlease.apply) {
             case Success(Hal.Response(message)) => AdaptedResponse(message)
             case Failure(_)                     => AdaptedResponse("Request failed")
           }
@@ -269,7 +269,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
           // changed at the time the response arrives and the transformation is done, best is to
           // use immutable state we have closed over like here.
           val requestId = 1
-          context.ask(hal, Hal.OpenThePodBayDoorsPlease) {
+          context.ask(hal, Hal.OpenThePodBayDoorsPlease.apply) {
             case Success(Hal.Response(message)) => AdaptedResponse(s"$requestId: $message")
             case Failure(_)                     => AdaptedResponse(s"$requestId: Request failed")
           }
@@ -324,7 +324,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
 
           // A StatusReply.Success(m) ends up as a Success(m) here, while a
           // StatusReply.Error(text) becomes a Failure(ErrorMessage(text))
-          context.askWithStatus(hal, Hal.OpenThePodBayDoorsPlease) {
+          context.askWithStatus(hal, Hal.OpenThePodBayDoorsPlease.apply) {
             case Success(message)                        => AdaptedResponse(message)
             case Failure(StatusReply.ErrorMessage(text)) => AdaptedResponse(s"Request denied: $text")
             case Failure(_)                              => AdaptedResponse("Request failed")
