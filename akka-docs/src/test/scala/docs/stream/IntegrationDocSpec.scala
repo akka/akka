@@ -203,7 +203,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val onErrorMessage = (ex: Throwable) => AckingReceiver.StreamFailure(ex)
 
     val probe = TestProbe()
-    val receiver = system.actorOf(Props(new AckingReceiver(probe.ref, ackWith = AckMessage)))
+    val receiver = system.actorOf(Props(new AckingReceiver(probe.ref)))
     val sink = Sink.actorRefWithBackpressure(
       receiver,
       onInitMessage = InitMessage,
@@ -229,7 +229,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     final case class StreamFailure(ex: Throwable)
   }
 
-  class AckingReceiver(probe: ActorRef, ackWith: Any) extends Actor with ActorLogging {
+  class AckingReceiver(probe: ActorRef) extends Actor with ActorLogging {
     import AckingReceiver._
 
     def receive: Receive = {
