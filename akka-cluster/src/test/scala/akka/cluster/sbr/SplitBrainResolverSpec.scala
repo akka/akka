@@ -935,7 +935,21 @@ class SplitBrainResolverSpec
       val reverseDecision3 = strategy3.reverseDecision(decision3.asInstanceOf[AcquireLeaseDecision])
       reverseDecision3 should ===(ReverseDownIndirectlyConnected)
       strategy3.nodesToDown(reverseDecision3) should ===(Set(memberB, memberC, memberD, memberE).map(_.uniqueAddress))
+    }
 
+    "down indirectly connected to already downed node during clean partition: {A, B, C, D} | {(E, F)} => {A, B, C, D}" in new Setup2(role = None) {
+      val memberELeaving = leaving(memberE)
+      val memberFDown = downed(memberF)
+      side1 = Set(memberA, memberB, memberC, memberD)
+      side2 = Set(memberELeaving, memberFDown)
+      // trouble when indirectly connected happens before clean partition
+      indirectlyConnected = List(memberELeaving -> memberFDown)
+
+      // from side1 of the partition, majority
+      assertDowningSide(side1, Set(memberELeaving))
+
+      // from side2 of the partition, minority
+      assertDowningSide(side2, Set(memberA, memberB, memberC, memberD, memberELeaving))
     }
   }
 
