@@ -27,7 +27,9 @@ jobs:
 
       - name: Compile and test selected modules on Scala 3
         run: |
-          sbt -jvm-opts .jvmopts-ci -Dakka.build.scalaVersion=3.0 \
+          sbt -jvm-opts .jvmopts-ci \
+            -Dakka.build.scalaVersion=3.0 \
+            -Dakka.test.tags.exclude=performance,timing,long-running \
             akka-actor-tests/test \
             akka-actor-testkit-typed/test \
             akka-actor-typed/compile \
