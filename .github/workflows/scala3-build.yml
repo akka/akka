@@ -33,7 +33,7 @@ jobs:
 
       - name: Compile all code with fatal warnings for Java 11, Scala 3
         run: |
-          sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=3.0 \
+          sbt -jvm-opts .jvmopts-ci -Dakka.build.scalaVersion=3.0 \
             akka-actor-tests/test \
             akka-actor-testkit-typed/test \
             akka-actor-typed/compile \

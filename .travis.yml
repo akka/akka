@@ -28,7 +28,7 @@ cache:
     - $HOME/.jabba/jdk
 
 # script for the default 'test' stage:
-script: sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile ;headerCheckAll"
+script: sbt -jvm-opts .jvmopts-ci -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile ;headerCheckAll"
 
 stages:
   - name: whitesource
