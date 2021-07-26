@@ -35,6 +35,10 @@ This model of Akka Persistence enables a stateful actor / entity to store the fu
 
 The current state is always stored in the database. Since only the latest state is stored, we don't have access to any of the history of changes, unlike event sourced storage. Akka Persistence would read that state and store it in memory. After processing of the command is finished, the new state will be stored in the database. The processing of the next command will not start until the state has been successfully stored in the database.
 
+Akka Persistence also supports @ref:[Event Sourcing](persistence.md) based implementation, where only the _events_ that 
+are persisted by the actor are stored, not the actual state of the actor. By storing all events, using this model, 
+a stateful actor can be recovered by replaying the stored events to the actor, allowing it to rebuild its state.
+
 The database specific implementations can be added to existing Akka Persistence plugin implementations, starting with the JDBC plugin. The plugin would serialize the state and store as a blob with the persistenceId as the primary key. 
 
 ## Example and core API

@@ -35,7 +35,11 @@ Persistence is that only the _events_ that are persisted by the actor are stored
 (though actor state snapshot support is also available). The events are persisted by appending to storage (nothing is ever mutated) which
 allows for very high transaction rates and efficient replication. A stateful actor is recovered by replaying the stored
 events to the actor, allowing it to rebuild its state. This can be either the full history of changes
-or starting from a checkpoint in a snapshot which can dramatically reduce recovery times.
+or starting from a checkpoint in a snapshot which can dramatically reduce recovery times. 
+
+Akka Persistence also supports @ref:[Durable State Behaviors](persistence-durable-state.md), which is based on 
+persistence of the latest state of the actor. In this implementation, the _latest_ state is persisted, instead of events. 
+Hence this is more similar to CRUD based applications.
 
 The [Event Sourcing with Akka 2.6 video](https://akka.io/blog/news/2020/01/07/akka-event-sourcing-video)
 is a good starting point for learning Event Sourcing, together with the @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) 

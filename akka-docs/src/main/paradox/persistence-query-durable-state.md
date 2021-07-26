@@ -20,15 +20,13 @@ This will also add dependency on the @ref[Akka Persistence](persistence.md) modu
 
 ## Introduction
 
-Akka persistence query complements @ref:[Durable State Behaviors](typed/persistence-durable-state.md) by providing a universal asynchronous stream based
-query interface that various state store plugins can implement in order to expose their query capabilities.
+Akka persistence query provides a query interface to @ref:[Durable State Behaviors](typed/persistence-durable-state.md).
+These queries are based on asynchronous streams, very much like the ones offered in the @ref:[Event Sourcing](persistence-query.md)
+based implementation. Various state store plugins can implement these interfaces in order to expose their query capabilities.
 
-The most typical use case of persistence query is implementing the so-called query side (also known as "read side")
-in the popular CQRS architecture pattern - in which the writing side of the application (e.g. implemented using Akka
-persistence) is completely separated from the "query side". Akka Persistence Query itself is *not* directly the query
-side of an application, however it can help to migrate data from the write side to the query side database. In very
-simple scenarios Persistence Query may be powerful enough to fulfill the query needs of your app, however we highly
-recommend (in the spirit of CQRS) of splitting up the write/read sides into separate datastores as the need arises.
+One of the rationales behind having a separate query module for Akka Persistence is for implementing the so-called 
+query side (also known as "read side") in the popular CQRS architecture pattern - in which the writing side of the 
+application (e.g. implemented using Akka persistence) is completely separated from the "query side".
 
 ## Using query with Akka Projections
 
