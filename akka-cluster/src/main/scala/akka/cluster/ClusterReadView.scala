@@ -55,7 +55,7 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
   private val eventBusListener: ActorRef = {
     cluster.system
       .systemActorOf(Props(new Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
-        override def preStart(): Unit = cluster.subscribe(self, classOf[ClusterDomainEvent])
+        override def preStart(): Unit = cluster.subscribe(this.self, classOf[ClusterDomainEvent])
 
         def receive: Receive = {
           case e: ClusterDomainEvent if !_closed =>

@@ -313,6 +313,7 @@ object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
   def apply(remoteUniqueAddress: akka.remote.UniqueAddress): UniqueAddress =
     new UniqueAddress(remoteUniqueAddress.address, remoteUniqueAddress.uid)
 
+  def apply(address: Address, longUid: Long) = new UniqueAddress(address, longUid)
 }
 
 /**
@@ -321,9 +322,17 @@ object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
  * incarnations of a member with same hostname and port.
  */
 @SerialVersionUID(1L)
-final case class UniqueAddress(address: Address, longUid: Long) extends Ordered[UniqueAddress] {
+final class UniqueAddress(val address: Address, val longUid: Long) extends Ordered[UniqueAddress] {
 
   override def hashCode = java.lang.Long.hashCode(longUid)
+
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case ua: UniqueAddress => this.address.equals(ua.address) && this.longUid.equals(ua.longUid)
+      case _                 => false
+    }
+
+  override def toString = s"UniqueAddress($address,$longUid)"
 
   def compare(that: UniqueAddress): Int = {
     val result = Member.addressOrdering.compare(this.address, that.address)

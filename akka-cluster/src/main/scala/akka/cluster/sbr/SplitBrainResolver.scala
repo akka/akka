@@ -374,7 +374,7 @@ import akka.remote.artery.ThisActorSystemQuarantinedEvent
             log.error(t, "SBR acquire of lease failed")
             false
         }
-        .map(AcquireLeaseResult)
+        .map(AcquireLeaseResult.apply)
         .pipeTo(self))
   }
 

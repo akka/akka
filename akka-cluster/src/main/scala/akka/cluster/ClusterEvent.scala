@@ -522,7 +522,7 @@ object ClusterEvent {
       val oldUnreachableDcs = otherDcs.filterNot(isDataCenterReachable(oldState))
       val currentUnreachableDcs = otherDcs.filterNot(isDataCenterReachable(newState))
 
-      currentUnreachableDcs.diff(oldUnreachableDcs).iterator.map(UnreachableDataCenter).to(immutable.IndexedSeq)
+      currentUnreachableDcs.diff(oldUnreachableDcs).iterator.map(UnreachableDataCenter.apply).to(immutable.IndexedSeq)
     }
   }
 
@@ -541,7 +541,7 @@ object ClusterEvent {
       val oldUnreachableDcs = otherDcs.filterNot(isDataCenterReachable(oldState))
       val currentUnreachableDcs = otherDcs.filterNot(isDataCenterReachable(newState))
 
-      oldUnreachableDcs.diff(currentUnreachableDcs).iterator.map(ReachableDataCenter).to(immutable.IndexedSeq)
+      oldUnreachableDcs.diff(currentUnreachableDcs).iterator.map(ReachableDataCenter.apply).to(immutable.IndexedSeq)
     }
   }
 

@@ -127,12 +127,12 @@ class ClusterDomainEventSpec extends AnyWordSpec with Matchers with BeforeAndAft
         diffUnreachableDataCenter(
           MembershipState(g1, member.uniqueAddress, member.dataCenter, crossDcConnections = 5),
           MembershipState(g2, member.uniqueAddress, member.dataCenter, crossDcConnections = 5)) should ===(
-          otherDc.map(UnreachableDataCenter))
+          otherDc.map(UnreachableDataCenter.apply))
 
         diffReachableDataCenter(
           MembershipState(g2, member.uniqueAddress, member.dataCenter, crossDcConnections = 5),
           MembershipState(g1, member.uniqueAddress, member.dataCenter, crossDcConnections = 5)) should ===(
-          otherDc.map(ReachableDataCenter))
+          otherDc.map(ReachableDataCenter.apply))
       }
     }
 
