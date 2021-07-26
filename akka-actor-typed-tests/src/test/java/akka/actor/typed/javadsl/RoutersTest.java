@@ -4,6 +4,8 @@
 
 package akka.actor.typed.javadsl;
 
+import java.util.List;
+
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
@@ -17,6 +19,7 @@ import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class RoutersTest extends JUnitSuite {
 
@@ -55,10 +58,11 @@ public class RoutersTest extends JUnitSuite {
     String broadcastMsg = "bc-message";
     pool.tell(broadcastMsg);
 
-    assertEquals(notBroadcastMsg, probe.receiveMessage());
+    List<String> messages = probe.receiveSeveralMessages(5);
+    assertTrue("non-broadcast message arrives", messages.contains(notBroadcastMsg));
 
-    for (String msg : probe.receiveSeveralMessages(4)) {
-      assertEquals(broadcastMsg, msg);
-    }
+    int broadcast = 0;
+    for (String msg : messages) if (msg == broadcastMsg) broadcast++;
+    assertEquals("broadcast message arrives 4 times", broadcast, 4);
   }
 }
