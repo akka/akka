@@ -30,6 +30,12 @@ cache:
 # script for the default 'test' stage:
 script: sbt -jvm-opts .jvmopts-ci -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile ;headerCheckAll"
 
+jobs:
+  include:
+    - stage: whitesource
+      name: whitesource
+      script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
+
 stages:
   - name: whitesource
     if: repo = akka/akka AND ((branch = master AND type != pull_request) OR tag =~ ^v)
