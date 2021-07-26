@@ -30,22 +30,10 @@ cache:
 # script for the default 'test' stage:
 script: sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile ;headerCheckAll"
 
-jobs:
-  include:
-    - stage: whitesource
-      name: whitesource
-      script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
-    - stage: scala3
-      name: scala3
-      # separate job since only a few modules compile with Scala 3 yet
-      script: jabba install adopt@1.11-0 && jabba use adopt@1.11-0 && sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=3.0 akka-actor-tests/test akka-actor-testkit-typed/test akka-actor-typed/compile akka-actor-typed-tests/test akka-discovery/test akka-pki/test akka-protobuf/test akka-protobuf-v3/test akka-slf4j/test akka-stream/test akka-stream-tests-tck/test akka-coordination/test akka-serialization-jackson/test:compile akka-testkit/test akka-stream-testkit/test akka-remote/compile
-
 stages:
   - name: whitesource
     if: repo = akka/akka AND ((branch = master AND type != pull_request) OR tag =~ ^v)
   - name: test
-    if: type == pull_request OR NOT tag =~ ^v
-  - name: scala3
     if: type == pull_request OR NOT tag =~ ^v
 
 env:
