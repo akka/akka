@@ -21,6 +21,7 @@ import org.scalatest.time.Span
 import org.scalatest.time.SpanSugar._
 import org.scalatest.wordspec.AnyWordSpec
 
+import akka.testkit.TimingTest
 import akka.util.DefaultExecutionContext._
 import akka.util.ccompat.JavaConverters._
 
@@ -123,7 +124,7 @@ class BoundedBlockingQueueSpec
       (events should contain).inOrder(offer("a"), poll, offer("b"))
     }
 
-    "check the backing queue size before offering" in {
+    "check the backing queue size before offering" taggedAs TimingTest in {
       val TestContext(queue, events, _, notFull, lock, _) = newBoundedBlockingQueue(1)
       queue.offer("a")
 

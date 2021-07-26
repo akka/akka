@@ -32,8 +32,8 @@ final class ActorContextPipeToSelfSpec
     with LogCapturing {
 
   "The Scala DSL ActorContext pipeToSelf" must {
-    "handle success" in { responseFrom(Future.successful("hi")) should ===("ok: hi") }
-    "handle failure" in { responseFrom(Future.failed(Fail)) should ===(s"ko: $Fail") }
+    "handle success" in { responseFrom(Future.successful("hi"), "success") should ===("ok: hi") }
+    "handle failure" in { responseFrom(Future.failed(Fail), "failure") should ===(s"ko: $Fail") }
     "handle adapted null" in {
       val probe = testKit.createTestProbe[String]()
       val promise = Promise[String]()
@@ -63,7 +63,7 @@ final class ActorContextPipeToSelfSpec
 
   object Fail extends NoStackTrace
 
-  private def responseFrom(future: Future[String]) = {
+  private def responseFrom(future: Future[String], postfix: String) = {
     final case class Msg(response: String, selfName: String, threadName: String)
 
     val probe = TestProbe[Msg]()
@@ -77,14 +77,14 @@ final class ActorContextPipeToSelfSpec
         Behaviors.stopped
       }
     }
-    val name = "pipe-to-self-spec"
+    val name = s"pipe-to-self-spec-$postfix"
     val props = Props.empty.withDispatcherFromConfig("pipe-to-self-spec-dispatcher")
 
     spawn(behavior, name, props)
 
     val msg = probe.expectMessageType[Msg]
 
-    msg.selfName should ===("pipe-to-self-spec")
+    msg.selfName should ===(name)
     msg.threadName should startWith("ActorContextPipeToSelfSpec-pipe-to-self-spec-dispatcher")
     msg.response
   }
