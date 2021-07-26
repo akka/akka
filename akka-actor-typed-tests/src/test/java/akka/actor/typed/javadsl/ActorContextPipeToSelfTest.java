@@ -49,12 +49,12 @@ public final class ActorContextPipeToSelfTest extends JUnitSuite {
 
   @Test
   public void handlesSuccess() {
-    assertEquals("ok: hi", responseFrom(CompletableFuture.completedFuture("hi")));
+    assertEquals("ok: hi", responseFrom(CompletableFuture.completedFuture("hi"), "success"));
   }
 
   @Test
   public void handlesFailure() {
-    assertEquals("ko: boom", responseFrom(failedFuture(new RuntimeException("boom"))));
+    assertEquals("ko: boom", responseFrom(failedFuture(new RuntimeException("boom")), "failure"));
   }
 
   @Test
@@ -110,7 +110,7 @@ public final class ActorContextPipeToSelfTest extends JUnitSuite {
     return future;
   }
 
-  private String responseFrom(final CompletionStage<String> future) {
+  private String responseFrom(final CompletionStage<String> future, String postfix) {
     final TestProbe<Msg> probe = testKit.createTestProbe();
     final Behavior<Msg> behavior =
         Behaviors.setup(
@@ -134,14 +134,14 @@ public final class ActorContextPipeToSelfTest extends JUnitSuite {
                     return Behaviors.stopped();
                   });
             });
-    final String name = "pipe-to-self-spec";
+    final String name = "pipe-to-self-spec-" + postfix;
     final Props props = Props.empty().withDispatcherFromConfig("pipe-to-self-spec-dispatcher");
 
     testKit.spawn(behavior, name, props);
 
     final Msg msg = probe.expectMessageClass(Msg.class);
 
-    assertEquals("pipe-to-self-spec", msg.selfName);
+    assertEquals(name, msg.selfName);
     assertThat(
         msg.threadName, startsWith("ActorContextPipeToSelfTest-pipe-to-self-spec-dispatcher"));
     return msg.response;
