@@ -322,9 +322,16 @@ object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
  * incarnations of a member with same hostname and port.
  */
 @SerialVersionUID(1L)
-final class UniqueAddress(val address: Address, val longUid: Long) extends Ordered[UniqueAddress] {
+final class UniqueAddress(val address: Address, val longUid: Long) extends Product with Serializable with Ordered[UniqueAddress] {
 
   override def hashCode = java.lang.Long.hashCode(longUid)
+
+  override def productArity: Int = 2
+  override def productElement(n: Int): Any = n match {
+    case 0 => address
+    case 1 => longUid
+  }
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[UniqueAddress]
 
   override def equals(obj: Any): Boolean =
     obj match {

@@ -74,7 +74,7 @@ final class ClusterRouterGroupSettings(
     val routeesPaths: immutable.Seq[String],
     val allowLocalRoutees: Boolean,
     val useRoles: Set[String])
-    extends ClusterRouterSettingsBase {
+    extends Serializable with ClusterRouterSettingsBase {
 
   override def hashCode(): Int = {
     var seed = HashCode.SEED
@@ -90,7 +90,7 @@ final class ClusterRouterGroupSettings(
       case that: ClusterRouterGroupSettings =>
         this.totalInstances.equals(that.totalInstances) &&
         this.routeesPaths.equals(that.routeesPaths) &&
-        this.allowLocalRoutees.equals(that.allowLocalRoutees) &&
+        this.allowLocalRoutees == that.allowLocalRoutees &&
         this.useRoles.equals(that.useRoles)
       case _ => false
     }
@@ -207,7 +207,7 @@ final class ClusterRouterPoolSettings(
     val maxInstancesPerNode: Int,
     val allowLocalRoutees: Boolean,
     val useRoles: Set[String])
-    extends ClusterRouterSettingsBase {
+    extends Serializable with ClusterRouterSettingsBase {
 
   override def hashCode(): Int = {
     var seed = HashCode.SEED
@@ -223,7 +223,7 @@ final class ClusterRouterPoolSettings(
       case that: ClusterRouterPoolSettings =>
         this.totalInstances.equals(that.totalInstances) &&
         this.maxInstancesPerNode.equals(that.maxInstancesPerNode) &&
-        this.allowLocalRoutees.equals(that.allowLocalRoutees) &&
+        this.allowLocalRoutees == that.allowLocalRoutees &&
         this.useRoles.equals(that.useRoles)
       case _ => false
     }
