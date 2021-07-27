@@ -74,7 +74,8 @@ final class ClusterRouterGroupSettings(
     val routeesPaths: immutable.Seq[String],
     val allowLocalRoutees: Boolean,
     val useRoles: Set[String])
-    extends Serializable with ClusterRouterSettingsBase {
+    extends Serializable
+    with ClusterRouterSettingsBase {
 
   override def hashCode(): Int = {
     var seed = HashCode.SEED
@@ -207,7 +208,8 @@ final class ClusterRouterPoolSettings(
     val maxInstancesPerNode: Int,
     val allowLocalRoutees: Boolean,
     val useRoles: Set[String])
-    extends Serializable with ClusterRouterSettingsBase {
+    extends Serializable
+    with ClusterRouterSettingsBase {
 
   override def hashCode(): Int = {
     var seed = HashCode.SEED
