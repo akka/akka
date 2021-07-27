@@ -12,6 +12,7 @@ import java.util.concurrent.locks.ReentrantLock
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import org.scalatest.exceptions.TestFailedException
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -127,7 +128,14 @@ class CoronerSpec extends AnyWordSpec with Matchers {
         val sectionHeading = "Deadlocks found for monitors and ownable synchronizers"
         report should include(sectionHeading)
         val deadlockSection = report.split(sectionHeading)(1)
-        deadlockSection should include("deadlock-thread-a")
+        try {
+          deadlockSection should include("deadlock-thread-a")
+        } catch {
+          case e: TestFailedException =>
+            val (_, report) = captureOutput(Coroner.printReport("Deadlock test", _))
+            println(report)
+            throw e
+        }
         deadlockSection should include("deadlock-thread-b")
       } else {
         val sectionHeading = "Deadlocks found for monitors, but NOT ownable synchronizers"
