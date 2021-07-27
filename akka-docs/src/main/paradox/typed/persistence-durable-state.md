@@ -93,7 +93,7 @@ Effects are created using @java[a factory that is returned via the `Effect()` me
 
 The two most commonly used effects are: 
 
-* `persist` will persist the latest value of the state. No history of state changes will be stored though
+* `persist` will persist the latest value of the state. No history of state changes will be stored
 * `none` no state to be persisted, for example a read-only command
 
 More effects are explained in @ref:[Effects and Side Effects](#effects-and-side-effects).
