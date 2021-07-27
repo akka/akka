@@ -36,8 +36,8 @@ class ActorRefResolveCacheQuarantineSpec
       val remoteSelection1 = clientSystem1.actorSelection(rootActorPath(system) / "user" / "echo")
 
       // PromiseActorRef (temp) doesn't include a uid in the ActorRef
-      val reply1 = remoteSelection1 ? "hello-1"
-      reply1.futureValue shouldBe "hello-1"
+      val reply1 = (remoteSelection1 ? "hello-1").futureValue
+      reply1 shouldBe "hello-1"
 
       shutdown(clientSystem1)
 
@@ -51,8 +51,8 @@ class ActorRefResolveCacheQuarantineSpec
           extraConfig = Some(s"akka.remote.artery.canonical.port = $port1"))
       val remoteSelection2 = clientSystem2.actorSelection(rootActorPath(system) / "user" / "echo")
 
-      val reply2 = remoteSelection2 ? "hello-2"
-      reply2.futureValue shouldBe "hello-2"
+      val reply2 = (remoteSelection2 ? "hello-2").futureValue
+      reply2 shouldBe "hello-2"
     }
 
   }

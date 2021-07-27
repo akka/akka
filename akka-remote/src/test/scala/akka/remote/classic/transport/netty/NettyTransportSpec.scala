@@ -155,7 +155,7 @@ trait BindBehavior {
 
     s"bind to specified tcp address" in {
       val address = SocketUtil.temporaryServerAddress(address = "127.0.0.1")
-      val bindAddress =
+      val bindAddress: InetSocketAddress =
         try SocketUtil.temporaryServerAddress(address = "127.0.1.1")
         catch {
           case e: java.net.BindException =>

@@ -138,7 +138,7 @@ class AckedDeliverySpec extends AkkaSpec {
       b8.nonAcked should ===(Vector(msg3, msg4))
 
       val b9 = b8.acknowledge(Ack(SeqNo(4)))
-      b9.nonAcked should ===(Vector.empty)
+      b9.nonAcked should ===(Vector.empty[Sequenced])
 
     }
 
@@ -172,8 +172,8 @@ class AckedDeliverySpec extends AkkaSpec {
       b6.nacked should ===(Vector(msg2, msg3))
 
       val b7 = b6.acknowledge(Ack(SeqNo(4)))
-      b7.nonAcked should ===(Vector.empty)
-      b7.nacked should ===(Vector.empty)
+      b7.nonAcked should ===(Vector.empty[Sequenced])
+      b7.nacked should ===(Vector.empty[Sequenced])
     }
 
     "throw exception if non-buffered sequence number is NACKed" in {
@@ -201,7 +201,7 @@ class AckedDeliverySpec extends AkkaSpec {
       val msg5 = msg(5)
 
       val (b1, deliver1, ack1) = b0.receive(msg1).extractDeliverable
-      deliver1 should ===(Vector.empty)
+      deliver1 should ===(Vector.empty[Sequenced])
       ack1 should ===(Ack(SeqNo(1), nacks = Set(SeqNo(0))))
 
       val (b2, deliver2, ack2) = b1.receive(msg0).extractDeliverable
@@ -209,7 +209,7 @@ class AckedDeliverySpec extends AkkaSpec {
       ack2 should ===(Ack(SeqNo(1)))
 
       val (b3, deliver3, ack3) = b2.receive(msg4).extractDeliverable
-      deliver3 should ===(Vector.empty)
+      deliver3 should ===(Vector.empty[Sequenced])
       ack3 should ===(Ack(SeqNo(4), nacks = Set(SeqNo(2), SeqNo(3))))
 
       val (b4, deliver4, ack4) = b3.receive(msg2).extractDeliverable
@@ -217,7 +217,7 @@ class AckedDeliverySpec extends AkkaSpec {
       ack4 should ===(Ack(SeqNo(4), nacks = Set(SeqNo(3))))
 
       val (b5, deliver5, ack5) = b4.receive(msg5).extractDeliverable
-      deliver5 should ===(Vector.empty)
+      deliver5 should ===(Vector.empty[Sequenced])
       ack5 should ===(Ack(SeqNo(5), nacks = Set(SeqNo(3))))
 
       val (_, deliver6, ack6) = b5.receive(msg3).extractDeliverable
@@ -238,7 +238,7 @@ class AckedDeliverySpec extends AkkaSpec {
 
       val (_, deliver, ack) = buf3.extractDeliverable
 
-      deliver should ===(Vector.empty)
+      deliver should ===(Vector.empty[Sequenced])
       ack should ===(Ack(SeqNo(2)))
     }
 

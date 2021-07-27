@@ -281,8 +281,6 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
           h.remoteAddress should ===(remoteAkkaAddress)
           h.localAddress should ===(localAkkaAddress)
           h
-
-        case _ => fail()
       }
 
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
@@ -318,8 +316,6 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
           h.remoteAddress should ===(remoteAkkaAddress)
           h.localAddress should ===(localAkkaAddress)
           h
-
-        case _ => fail()
       }
 
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
@@ -355,8 +351,6 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
           h.remoteAddress should ===(remoteAkkaAddress)
           h.localAddress should ===(localAkkaAddress)
           h
-
-        case _ => fail()
       }
 
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
@@ -395,8 +389,6 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
           h.remoteAddress should ===(remoteAkkaAddress)
           h.localAddress should ===(localAkkaAddress)
           h
-
-        case _ => fail()
       }
 
       stateActor ! Disassociated(AssociationHandle.Unknown)

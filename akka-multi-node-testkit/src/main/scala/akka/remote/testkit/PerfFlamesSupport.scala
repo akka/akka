@@ -14,7 +14,7 @@ import akka.remote.testconductor.RoleName
 /**
  * INTERNAL API: Support trait allowing trivially recording perf metrics from [[MultiNodeSpec]]s
  */
-private[akka] trait PerfFlamesSupport { _: MultiNodeSpec =>
+private[akka] trait PerfFlamesSupport { self: MultiNodeSpec =>
 
   /**
    * Runs `perf-java-flames` script on given node (JVM process).

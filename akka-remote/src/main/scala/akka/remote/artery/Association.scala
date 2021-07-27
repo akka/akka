@@ -250,7 +250,7 @@ private[remote] class Association(
    */
   @volatile
   @nowarn("msg=never used")
-  private[this] var _sharedStateDoNotCallMeDirectly: AssociationState = AssociationState()
+  private[artery] var _sharedStateDoNotCallMeDirectly: AssociationState = AssociationState()
 
   /**
    * Helper method for access to underlying state via Unsafe

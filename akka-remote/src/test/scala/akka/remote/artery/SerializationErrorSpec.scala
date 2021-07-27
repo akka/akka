@@ -11,7 +11,7 @@ import akka.testkit.TestActors
 
 object SerializationErrorSpec {
 
-  object NotSerializableMsg
+  class NotSerializableMsg
 
 }
 
@@ -42,7 +42,7 @@ class SerializationErrorSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defau
       expectMsg("ping")
 
       EventFilter[java.io.NotSerializableException](start = "Failed to serialize message", occurrences = 1).intercept {
-        remoteRef ! NotSerializableMsg
+        remoteRef ! new NotSerializableMsg()
       }
 
       remoteRef ! "ping2"
