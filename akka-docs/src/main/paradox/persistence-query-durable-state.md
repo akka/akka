@@ -32,5 +32,14 @@ application implemented using Akka persistence, is completely separated from the
 
 Akka Persistence and Akka Projections together can be used to develop a CQRS application. In the application the 
 durable state is stored in a database and fetched as an asynchronous stream to the user. Currently queries on 
-durable state, provided by the interface in `DurableStateStoreQuery`, is used to implement tag based searches in 
-Akka Projections.
+durable state, provided by the `DurableStateStoreQuery` interface, is used to implement tag based searches in 
+Akka Projections. 
+
+The example below shows how to get the  `DurableStateStoreQuery` from the DurableStateStoreRegistry extension.
+
+Scala
+:  @@snip [DurableStateStoreQueryUsageCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/DurableStateStoreQueryUsageCompileOnlySpec.scala) { #get-durable-state-store-query-example }
+
+Java
+:  @@snip [DurableStateStoreQueryUsageCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/DurableStateStoreQueryUsageCompileOnlyTest.java) { #get-durable-state-store-query-example } 
+
