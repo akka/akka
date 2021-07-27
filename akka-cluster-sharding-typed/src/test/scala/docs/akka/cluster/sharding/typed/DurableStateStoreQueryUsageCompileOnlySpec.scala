@@ -14,8 +14,7 @@ object DurableStateStoreQueryUsageCompileOnlySpec {
   def getQuery[Record](system: ActorSystem, pluginId: String) = {
     //#get-durable-state-store-query-example
     val durableStateStoreQuery =
-      DurableStateStoreRegistry(system)
-        .durableStateStoreFor[DurableStateStoreQuery[Record]](pluginId)
+      DurableStateStoreRegistry(system).durableStateStoreFor[DurableStateStoreQuery[Record]](pluginId)
     //#get-durable-state-store-query-example
   }
 }
