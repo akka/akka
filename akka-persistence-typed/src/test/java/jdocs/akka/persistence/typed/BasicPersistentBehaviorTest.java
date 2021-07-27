@@ -130,7 +130,7 @@ public class BasicPersistentBehaviorTest {
           List<String> newItems = new ArrayList<>(items);
           newItems.add(0, data);
           // keep 5 items
-          List<String> latest = newItems.subList(0, Math.min(4, newItems.size() - 1));
+          List<String> latest = newItems.subList(0, Math.min(5, newItems.size()));
           return new State(latest);
         }
       }
