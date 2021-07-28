@@ -42,7 +42,7 @@ class NullEmptyStateSpec
     })
 
   "A typed persistent actor with primitive state" must {
-    "persist events and update state" in {
+    "persist and update state" in {
       val probe = TestProbe[String]()
       val b = primitiveState(PersistenceId.ofUniqueId("a"), probe.ref)
       val ref1 = spawn(b)
@@ -54,7 +54,6 @@ class NullEmptyStateSpec
       probe.expectTerminated(ref1)
 
       val _ = spawn(b)
-      // no events, no replay and hence no messages
       probe.expectNoMessage()
     }
   }
