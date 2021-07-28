@@ -80,7 +80,7 @@ class DurableStateBehaviorReplySpec
 
   "A typed persistent actor with commands that are expecting replies" must {
 
-    "persist an event thenReply" in {
+    "persist state thenReply" in {
       val c = spawn(counter(nextPid()))
       val probe = TestProbe[Done]()
       c ! IncrementWithConfirmation(probe.ref)
@@ -92,7 +92,7 @@ class DurableStateBehaviorReplySpec
       probe.expectMessage(Done)
     }
 
-    "persist an event thenReply later" in {
+    "persist state thenReply later" in {
       val c = spawn(counter(nextPid()))
       val probe = TestProbe[Done]()
       c ! IncrementReplyLater(probe.ref)

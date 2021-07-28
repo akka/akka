@@ -35,7 +35,7 @@ durable state is stored in a database and fetched as an asynchronous stream to t
 durable state, provided by the `DurableStateStoreQuery` interface, is used to implement tag based searches in 
 Akka Projections. 
 
-The example below shows how to get the  `DurableStateStoreQuery` from the DurableStateStoreRegistry extension.
+The example below shows how to get the  `DurableStateStoreQuery` from the `DurableStateStoreRegistry` extension.
 
 Scala
 :  @@snip [DurableStateStoreQueryUsageCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/DurableStateStoreQueryUsageCompileOnlySpec.scala) { #get-durable-state-store-query-example }

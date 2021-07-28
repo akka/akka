@@ -4,10 +4,6 @@
 
 package akka.persistence.typed.state.scaladsl
 
-/*
- * Copyright (C) 2018-2021 Lightbend Inc. <https://www.lightbend.com>
- */
-
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
@@ -39,7 +35,7 @@ class PrimitiveStateSpec
     })
 
   "A typed persistent actor with primitive state" must {
-    "persist primitive events and update state" in {
+    "persist primitive state and update" in {
       val probe = TestProbe[String]()
       val b = primitiveState(PersistenceId.ofUniqueId("a"), probe.ref)
       val ref1 = spawn(b)
@@ -52,11 +48,9 @@ class PrimitiveStateSpec
       probe.expectTerminated(ref1)
 
       val ref2 = spawn(b)
-      // no events, no replay and hence no messages
       probe.expectNoMessage()
       ref2 ! 3
       probe.expectMessage("3")
     }
-
   }
 }
