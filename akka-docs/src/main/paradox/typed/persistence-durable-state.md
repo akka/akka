@@ -35,6 +35,9 @@ This model of Akka Persistence enables a stateful actor / entity to store the fu
 
 The current state is always stored in the database. Since only the latest state is stored, we don't have access to any of the history of changes, unlike event sourced storage. Akka Persistence would read that state and store it in memory. After processing of the command is finished, the new state will be stored in the database. The processing of the next command will not start until the state has been successfully stored in the database.
 
+Akka Persistence also supports @ref:[Event Sourcing](persistence.md) based implementation, where only the _events_ that are persisted by the actor are stored, but not the actual state of the actor. By storing all events, using this model, 
+a stateful actor can be recovered by replaying the stored events to the actor, which allows it to rebuild its state.
+
 The database specific implementations can be added to existing Akka Persistence plugin implementations, starting with the JDBC plugin. The plugin would serialize the state and store as a blob with the persistenceId as the primary key. 
 
 ## Example and core API
@@ -64,7 +67,9 @@ The @apidoc[akka.persistence.typed.PersistenceId] is the stable unique identifie
 durabe state store.
 
 @ref:[Cluster Sharding](cluster-sharding.md) is typically used together with `DurableStateBehavior` to ensure
-that there is only one active entity for each `PersistenceId` (`entityId`).
+that there is only one active entity for each `PersistenceId` (`entityId`). There are techniques to ensure this 
+uniqueness, an example of which can be found in the 
+@ref:[Persistence example in the Cluster Sharding documentation](cluster-sharding.md#persistence-example). This illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the `EntityContext`.
 
 The `entityId` in Cluster Sharding is the business domain identifier which uniquely identifies the instance of
 that specific `EntityType`. This means that across the cluster we have a unique combination of (`EntityType`, `EntityId`).
@@ -77,10 +82,6 @@ to help with constructing such `PersistenceId` from an `entityTypeHint` and `ent
 The default separator when concatenating the `entityTypeHint` and `entityId` is `|`, but a custom separator
 is supported.
 
-The @ref:[Persistence example in the Cluster Sharding documentation](cluster-sharding.md#persistence-example)
-illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the
-`EntityContext`.
-
 A custom identifier can be created with `PersistenceId.ofUniqueId`.  
 
 ### Command handler
@@ -92,7 +93,7 @@ Effects are created using @java[a factory that is returned via the `Effect()` me
 
 The two most commonly used effects are: 
 
-* `persist` will persist state atomically, i.e. all state will be stored or none of them are stored if there is an error
+* `persist` will persist the latest value of the state. No history of state changes will be stored
 * `none` no state to be persisted, for example a read-only command
 
 More effects are explained in @ref:[Effects and Side Effects](#effects-and-side-effects).

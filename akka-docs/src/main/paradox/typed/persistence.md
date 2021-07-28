@@ -32,10 +32,14 @@ You also have to select journal plugin and optionally snapshot store plugin, see
 Akka Persistence enables stateful actors to persist their state so that it can be recovered when an actor
 is either restarted, such as after a JVM crash, by a supervisor or a manual stop-start, or migrated within a cluster. The key concept behind Akka
 Persistence is that only the _events_ that are persisted by the actor are stored, not the actual state of the actor
-(though actor state snapshot support is also available). The events are persisted by appending to storage (nothing is ever mutated) which
+(although actor state snapshot support is available). The events are persisted by appending to storage (nothing is ever mutated) which
 allows for very high transaction rates and efficient replication. A stateful actor is recovered by replaying the stored
 events to the actor, allowing it to rebuild its state. This can be either the full history of changes
-or starting from a checkpoint in a snapshot which can dramatically reduce recovery times.
+or starting from a checkpoint in a snapshot, which can dramatically reduce recovery times. 
+
+Akka Persistence also supports @ref:[Durable State Behaviors](persistence-durable-state.md), which is based on 
+persistence of the latest state of the actor. In this implementation, the _latest_ state is persisted, instead of events. 
+Hence this is more similar to CRUD based applications.
 
 The [Event Sourcing with Akka 2.6 video](https://akka.io/blog/news/2020/01/07/akka-event-sourcing-video)
 is a good starting point for learning Event Sourcing, together with the @extref[Microservices with Akka tutorial](platform-guide:microservices-tutorial/) 
@@ -107,7 +111,9 @@ The @apidoc[akka.persistence.typed.PersistenceId] is the stable unique identifie
 event journal and snapshot store.
 
 @ref:[Cluster Sharding](cluster-sharding.md) is typically used together with `EventSourcedBehavior` to ensure
-that there is only one active entity for each `PersistenceId` (`entityId`).
+that there is only one active entity for each `PersistenceId` (`entityId`). There are techniques to ensure this 
+uniqueness, an example of which can be found in the 
+@ref:[Persistence example in the Cluster Sharding documentation](cluster-sharding.md#persistence-example). This illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the `EntityContext`.
 
 The `entityId` in Cluster Sharding is the business domain identifier of the entity. The `entityId` might not
 be unique enough to be used as the `PersistenceId` by itself. For example two different types of
@@ -126,10 +132,6 @@ in Lagom's `javadsl.PersistentEntity`. For compatibility with Lagom's `javadsl.P
 you should use `""` as the separator.
 
 @@@
-
-The @ref:[Persistence example in the Cluster Sharding documentation](cluster-sharding.md#persistence-example)
-illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the
-`EntityContext`.
 
 A custom identifier can be created with `PersistenceId.ofUniqueId`.  
 
@@ -293,10 +295,10 @@ multiple events. This is signalled to an `EventSourcedBehavior` via an `EventRej
 
 ## Cluster Sharding and EventSourcedBehavior
 
-In a use case where the number of persistent actors needed is higher than what would fit in the memory of one node or
-where resilience is important so that if a node crashes the persistent actors are quickly started on a new node and can
-resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a
-cluster and address them by id.
+@ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a
+cluster, addressing them by id. It makes it possible to have more persistent actors exist in the cluster than what 
+would fit in the memory of one node. Cluster sharding improves the resilience of the cluster. If a node crashes, 
+the persistent actors are quickly started on a new node and can resume operations.
 
 The `EventSourcedBehavior` can then be run as with any plain actor as described in @ref:[actors documentation](actors.md),
 but since Akka Persistence is based on the single-writer principle the persistent actors are typically used together
