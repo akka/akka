@@ -65,11 +65,7 @@ object ClusterRouterGroupSettings {
     new ClusterRouterGroupSettings(totalInstances, routeesPaths, allowLocalRoutees, useRoles)
 
   def unapply(settings: ClusterRouterGroupSettings): Option[(Int, immutable.Seq[String], Boolean, Set[String])] =
-    Some((
-      settings.totalInstances,
-      settings.routeesPaths,
-      settings.allowLocalRoutees,
-      settings.useRoles))
+    Some((settings.totalInstances, settings.routeesPaths, settings.allowLocalRoutees, settings.useRoles))
 }
 
 /**
@@ -214,12 +210,7 @@ object ClusterRouterPoolSettings {
           config.getString("cluster.use-role")))
 
   def unapply(settings: ClusterRouterPoolSettings): Option[(Int, Int, Boolean, Set[String])] =
-    Some((
-      settings.totalInstances,
-      settings.maxInstancesPerNode,
-      settings.allowLocalRoutees,
-      settings.useRoles
-    ))
+    Some((settings.totalInstances, settings.maxInstancesPerNode, settings.allowLocalRoutees, settings.useRoles))
 }
 
 /**
