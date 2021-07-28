@@ -76,13 +76,19 @@ object EventSourcedActorFailureSpec {
 
   }
 
-  class OnRecoveryFailurePersistentActor(name: String, probe: ActorRef) extends ExamplePersistentActor(name) {
+  class OnRecoveryFailurePersistentActor(name: String, probe: ActorRef, failOnRecoveryCompleted: Boolean)
+      extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(txt) => persist(Evt(txt))(updateState)
     }
 
     override protected def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit =
       probe ! "recovery-failure:" + cause.getMessage
+
+    override def receiveRecover: Receive = super.receiveRecover.orElse {
+      case RecoveryCompleted if failOnRecoveryCompleted =>
+        throw new TestException("RecoveryCompleted")
+    }
   }
 
   class Supervisor(testActor: ActorRef) extends Actor {
@@ -107,18 +113,32 @@ object EventSourcedActorFailureSpec {
 
   }
 
-  class FailingRecovery(name: String) extends ExamplePersistentActor(name) {
+  abstract class AbstractFailingRecovery(name: String) extends ExamplePersistentActor(name) {
 
     override val receiveCommand: Receive = commonBehavior.orElse {
       case Cmd(data) => persist(Evt(s"${data}"))(updateState)
     }
 
-    val failingRecover: Receive = {
-      case Evt(data) if data == "bad" =>
-        throw new SimulatedException("Simulated exception from receiveRecover")
+    protected def shouldFail(message: Any): Boolean
+
+    private val failingRecover: Receive = {
+      case msg if shouldFail(msg) =>
+        throw new SimulatedException(s"Simulated exception from receiveRecover by message $msg")
     }
 
     override def receiveRecover: Receive = failingRecover.orElse[Any, Unit](super.receiveRecover)
+
+  }
+
+  class FailingRecoveryOnMessage(name: String) extends AbstractFailingRecovery(name) {
+
+    override protected def shouldFail(message: Any): Boolean = message == Evt("bad")
+
+  }
+
+  class FailingRecoveryOnRecoveryCompleted(name: String) extends AbstractFailingRecovery(name) {
+
+    override protected def shouldFail(message: Any): Boolean = message == RecoveryCompleted
 
   }
 
@@ -161,7 +181,7 @@ class EventSourcedActorFailureSpec
   system.eventStream.publish(TestEvent.Mute(EventFilter[akka.pattern.AskTimeoutException]()))
 
   def prepareFailingRecovery(): Unit = {
-    val persistentActor = namedPersistentActor[FailingRecovery]
+    val persistentActor = namedPersistentActor[FailingRecoveryOnMessage]
     persistentActor ! Cmd("a")
     persistentActor ! Cmd("b")
     persistentActor ! Cmd("bad")
@@ -184,7 +204,7 @@ class EventSourcedActorFailureSpec
       expectTerminated(ref)
     }
     "call onRecoveryFailure when recovery from persisted events fails" in {
-      val props = Props(classOf[OnRecoveryFailurePersistentActor], name, testActor)
+      val props = Props(classOf[OnRecoveryFailurePersistentActor], name, testActor, false)
 
       val persistentActor = system.actorOf(props)
       persistentActor ! Cmd("corrupt")
@@ -195,12 +215,21 @@ class EventSourcedActorFailureSpec
       // note that if we used testActor as failure detector passed in
       // the props we'd have a race on our hands (#21229)
       val failProbe = TestProbe()
-      val sameNameProps = Props(classOf[OnRecoveryFailurePersistentActor], name, failProbe.ref)
+      val sameNameProps = Props(classOf[OnRecoveryFailurePersistentActor], name, failProbe.ref, false)
       system.actorOf(Props(classOf[Supervisor], testActor)) ! sameNameProps
       val ref = expectMsgType[ActorRef]
       failProbe.expectMsg("recovery-failure:blahonga 1 1")
       watch(ref)
       expectTerminated(ref)
+    }
+    "call onRecoveryFailure from RecoveryCompleted event fails" in {
+      val failProbe = TestProbe()
+      val props = Props(classOf[OnRecoveryFailurePersistentActor], name, failProbe.ref, true)
+
+      val persistentActor = system.actorOf(props)
+      failProbe.expectMsg("recovery-failure:RecoveryCompleted")
+      watch(persistentActor)
+      expectTerminated(persistentActor)
     }
     "call onPersistFailure and stop when persist fails" in {
       system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[Behavior1PersistentActor], name)
@@ -233,11 +262,20 @@ class EventSourcedActorFailureSpec
       persistentActor ! GetState
       expectMsg(List("a-1", "a-2"))
     }
-    "stop if receiveRecover fails" in {
+    "stop if receiveRecover fails on custom message" in {
       prepareFailingRecovery()
 
       // recover by creating another with same name
-      system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[FailingRecovery], name)
+      system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[FailingRecoveryOnMessage], name)
+      val ref = expectMsgType[ActorRef]
+      watch(ref)
+      expectTerminated(ref)
+    }
+    "stop if receiveRecover fails on RecoveryCompleted message" in {
+      prepareFailingRecovery()
+
+      // recover by creating another with same name
+      system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[FailingRecoveryOnRecoveryCompleted], name)
       val ref = expectMsgType[ActorRef]
       watch(ref)
       expectTerminated(ref)

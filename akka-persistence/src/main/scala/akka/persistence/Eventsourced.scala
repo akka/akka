@@ -775,7 +775,13 @@ private[persistence] trait Eventsourced
             setLastSequenceNr(highestSeqNr)
             _recoveryRunning = false
             try Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
-            finally transitToProcessingState() // in finally in case exception and resume strategy
+            catch {
+              case NonFatal(t) =>
+                try onRecoveryFailure(t, Some(RecoveryCompleted))
+                finally context.stop(self)
+            }
+
+            transitToProcessingState() // in finally in case exception and resume strategy
             // if exception from RecoveryCompleted the permit is returned in below catch
             returnRecoveryPermit()
           case ReplayMessagesFailure(cause) =>
