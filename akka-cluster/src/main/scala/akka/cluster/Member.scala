@@ -305,7 +305,6 @@ object MemberStatus {
 }
 
 object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
-
   // for binary compatibility
   @deprecated("Use Long UID apply instead", since = "2.4.11")
   def apply(address: Address, uid: Int) = new UniqueAddress(address, uid.toLong)
@@ -314,6 +313,8 @@ object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
     new UniqueAddress(remoteUniqueAddress.address, remoteUniqueAddress.uid)
 
   def apply(address: Address, longUid: Long) = new UniqueAddress(address, longUid)
+
+  def unapply(address: UniqueAddress): Option[(Address, Long)] = Some((address.address, address.longUid))
 }
 
 /**

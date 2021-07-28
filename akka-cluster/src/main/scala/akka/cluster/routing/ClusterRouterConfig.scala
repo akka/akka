@@ -63,6 +63,13 @@ object ClusterRouterGroupSettings {
       allowLocalRoutees: Boolean,
       useRoles: Set[String]): ClusterRouterGroupSettings =
     new ClusterRouterGroupSettings(totalInstances, routeesPaths, allowLocalRoutees, useRoles)
+
+  def unapply(settings: ClusterRouterGroupSettings): Option[(Int, immutable.Seq[String], Boolean, Set[String])] =
+    Some((
+      settings.totalInstances,
+      settings.routeesPaths,
+      settings.allowLocalRoutees,
+      settings.useRoles))
 }
 
 /**
@@ -74,7 +81,8 @@ final class ClusterRouterGroupSettings(
     val routeesPaths: immutable.Seq[String],
     val allowLocalRoutees: Boolean,
     val useRoles: Set[String])
-    extends Serializable
+    extends Product
+    with Serializable
     with ClusterRouterSettingsBase {
 
   override def hashCode(): Int = {
@@ -84,6 +92,15 @@ final class ClusterRouterGroupSettings(
     seed = HashCode.hash(seed, allowLocalRoutees)
     seed = HashCode.hash(seed, useRoles)
     seed
+  }
+
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[ClusterRouterGroupSettings]
+  override def productArity: Int = 4
+  override def productElement(n: Int): Any = n match {
+    case 0 => totalInstances
+    case 1 => routeesPaths
+    case 2 => allowLocalRoutees
+    case 3 => useRoles
   }
 
   override def equals(obj: Any): Boolean =
@@ -195,6 +212,14 @@ object ClusterRouterPoolSettings {
       allowLocalRoutees = config.getBoolean("cluster.allow-local-routees"),
       useRoles = config.getStringList("cluster.use-roles").asScala.toSet ++ ClusterRouterSettingsBase.useRoleOption(
           config.getString("cluster.use-role")))
+
+  def unapply(settings: ClusterRouterPoolSettings): Option[(Int, Int, Boolean, Set[String])] =
+    Some((
+      settings.totalInstances,
+      settings.maxInstancesPerNode,
+      settings.allowLocalRoutees,
+      settings.useRoles
+    ))
 }
 
 /**
@@ -208,7 +233,8 @@ final class ClusterRouterPoolSettings(
     val maxInstancesPerNode: Int,
     val allowLocalRoutees: Boolean,
     val useRoles: Set[String])
-    extends Serializable
+    extends Product
+    with Serializable
     with ClusterRouterSettingsBase {
 
   override def hashCode(): Int = {
@@ -218,6 +244,15 @@ final class ClusterRouterPoolSettings(
     seed = HashCode.hash(seed, allowLocalRoutees)
     seed = HashCode.hash(seed, useRoles)
     seed
+  }
+
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[ClusterRouterPoolSettings]
+  override def productArity: Int = 4
+  override def productElement(n: Int): Any = n match {
+    case 0 => totalInstances
+    case 1 => maxInstancesPerNode
+    case 2 => allowLocalRoutees
+    case 3 => useRoles
   }
 
   override def equals(obj: Any): Boolean =
