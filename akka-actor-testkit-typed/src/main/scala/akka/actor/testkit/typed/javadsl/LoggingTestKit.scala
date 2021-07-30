@@ -77,6 +77,11 @@ import akka.annotation.DoNotInherit
   def withMdc(newMdc: java.util.Map[String, String]): LoggingTestKit
 
   /**
+   * After matching the expected number of hits, check for excess messages
+   */
+  def withCheckExcess(check: Boolean): LoggingTestKit
+
+  /**
    * Matching events for which the supplied function returns `true`.
    */
   def withCustom(newCustom: Function[LoggingEvent, Boolean]): LoggingTestKit
