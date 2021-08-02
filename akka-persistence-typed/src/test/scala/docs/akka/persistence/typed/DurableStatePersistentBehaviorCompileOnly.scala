@@ -127,7 +127,6 @@ object DurableStatePersistentBehaviorCompileOnly {
         emptyState = State(0),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"))
         .withTag("tag1")
-        .withTag("tag2")
     //#tagging
   }
 

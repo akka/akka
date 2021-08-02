@@ -13,7 +13,7 @@ import akka.annotation.ApiMayChange
 import akka.persistence.state.scaladsl.{ GetObjectResult => SGetObjectResult }
 
 /**
- * API for reading durable state objects.
+ * API for reading durable state objects with payload `A`.
  *
  * For Scala API see [[akka.persistence.state.scaladsl.DurableStateStore]].
  *

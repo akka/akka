@@ -11,7 +11,7 @@ import akka.annotation.ApiMayChange
 import akka.persistence.state.javadsl.{ GetObjectResult => JGetObjectResult }
 
 /**
- * API for reading durable state objects.
+ * API for reading durable state objects with payload `A`.
  *
  * For Java API see [[akka.persistence.state.javadsl.DurableStateStore]].
  *

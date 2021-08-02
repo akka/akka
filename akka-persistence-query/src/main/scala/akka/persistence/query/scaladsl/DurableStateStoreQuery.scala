@@ -30,7 +30,7 @@ trait DurableStateStoreQuery[A] extends DurableStateStore[A] {
    * This will return changes that occurred up to when the `Source` returned by this call is materialized. Changes to
    * objects made since materialization are not guaranteed to be included in the results.
    *
-   * @param tag The type of entity to get changes for.
+   * @param tag The tag to get changes for.
    * @param offset The offset to get changes since. Must either be [[akka.persistence.query.NoOffset]] to get
    *               changes since the beginning of time, or an offset that has been previously returned by this query.
    *               Any other offsets are invalid.
@@ -49,7 +49,7 @@ trait DurableStateStoreQuery[A] extends DurableStateStore[A] {
    * in quick succession are likely to be skipped, with only the last update resulting in a change event from this
    * source.
    *
-   * @param tag The type of entity to get changes for.
+   * @param tag The tag to get changes for.
    * @param offset The offset to get changes since. Must either be [[akka.persistence.query.NoOffset]] to get
    *               changes since the beginning of time, or an offset that has been previously returned by this query.
    *               Any other offsets are invalid.

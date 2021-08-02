@@ -35,6 +35,8 @@ durable state is stored in a database and fetched as an asynchronous stream to t
 durable state, provided by the `DurableStateStoreQuery` interface, is used to implement tag based searches in 
 Akka Projections. 
 
+At present the query is based on _tags_. So if you have not tagged your objects, this query cannot be used.
+
 The example below shows how to get the  `DurableStateStoreQuery` from the `DurableStateStoreRegistry` extension.
 
 Scala
