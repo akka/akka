@@ -1,0 +1,46 @@
+name: Nightly jkd11
+
+on:
+  schedule:
+    - cron:  '0 6 * * *'
+
+jobs:
+  compile-and-test:
+    name: Compile and test
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.11
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Compile and test for JDK11
+        run: |-
+          sbt -jvm-opts .jvmopts-ci \
+            -Dakka.test.timefactor=1 \
+            -Dakka.genjavadoc.enabled=true \
+            -Dakka.test.multi-in-test=false \
+            clean test checkTestsHaveRun
+
+      - name: Email on failure
+        if: ${{ failure() }}
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{secrets.MAIL_USERNAME}}
+          password: ${{secrets.MAIL_PASSWORD}}
+          subject: Nightly jkd11 Failed (Akka)
+          to: akka.official@gmail.com
+          from: Akka CI (GHActions)
+          body: |
+            Nightly jkd11 of ${{github.repository}} failed!
+            https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}

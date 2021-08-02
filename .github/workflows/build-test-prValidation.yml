@@ -27,6 +27,7 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
 
+## https://github.com/akka/akka/issues/30459
 #    ghtag "$ghprbPullId" akka akka '["validating"]' "tested needs-attention"
 
       - name: Code style check
@@ -44,7 +45,7 @@ jobs:
           scalafmtCheckAll scalafmtSbtCheck test:compile
 
   Check-Publish:
-    name: PR Validation
+    name: Check publishing locally
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -114,6 +115,7 @@ jobs:
           -Dakka.log.timestamps=true \
           ${{ matrix.project }}/validatePullRequest
 
+## https://github.com/akka/akka/issues/30459
 ## if success
 #    ghtag "$ghprbPullId" akka akka '["tested"]' "validating needs-attention"
 ## if aborted or unstable
