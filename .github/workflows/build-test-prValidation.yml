@@ -1,0 +1,120 @@
+name: PRValidation Workflow
+
+on:
+  pull_request:
+
+concurrency:
+  # Only run once for latest commit per ref and cancel other (previous) runs.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-code-style:
+    name: Checks
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8.0
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+#    ghtag "$ghprbPullId" akka akka '["validating"]' "tested needs-attention"
+
+      - name: Code style check
+        run: |-
+          # MiMa is disabled in GHActions because it's already covered in Travis builds (travis runs for multiple scala versions)
+          sbt -jvm-opts .jvmopts-ci \
+          -Dakka.mima.enabled=false \
+          -Dakka.ci-server=true \
+          -Dakka.test.multi-in-test=false \
+          -Dakka.test.multi-node=false \
+          -Dakka.cluster.assert=on \
+          -Dsbt.override.build.repos=false \
+          -Dsbt.log.noformat=false \
+          -Dakka.log.timestamps=true \
+          scalafmtCheckAll scalafmtSbtCheck test:compile
+
+  Check-Publish:
+    name: PR Validation
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8.0
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Akka publishLocal
+        run: |-
+          sbt -jvm-opts .jvmopts-ci \
+          -Dakka.mima.enabled=false \
+          -Dakka.ci-server=true \
+          -Dakka.test.tags.exclude=performance,timing,long-running,gh-exclude \
+          -Dakka.test.multi-in-test=false \
+          -Dakka.test.timefactor=1 \
+          -Dakka.cluster.assert=on \
+          -Dsbt.override.build.repos=false \
+          -Dakka.test.multi-node=false \
+          -Dsbt.log.noformat=false \
+          -Dakka.log.timestamps=true \
+          publishLocal publishM2
+
+
+  PR-Validation:
+    name: PR Validation
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix: 
+        project: [akka-actor,akka-actor-testkit-typed,akka-actor-typed,akka-cluster,akka-cluster-metrics,akka-cluster-sharding,akka-cluster-sharding-typed,akka-cluster-tools,akka-cluster-typed,akka-coordination,akka-discovery,akka-distributed-data,akka-serialization-jackson,akka-multi-node-testkit,akka-osgi,akka-persistence,akka-persistence-query,akka-persistence-typed,akka-persistence-testkit,akka-protobuf,akka-protobuf-v3,akka-pki,akka-remote,akka-slf4j,akka-stream,akka-stream-testkit,akka-stream-typed,akka-testkit,akka-actor-tests,akka-actor-typed-tests,akka-docs,akka-bill-of-materials,akka-persistence-shared,akka-persistence-tck,akka-persistence-typed-tests,akka-remote-tests,akka-stream-tests,akka-stream-tests-tck]
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8.0
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Akka validatePR
+        run: |-
+          sbt -jvm-opts .jvmopts-ci \
+          -Dakka.mima.enabled=false \
+          -Dakka.ci-server=true \
+          -Dakka.test.tags.exclude=performance,timing,long-running,gh-exclude \
+          -Dakka.test.multi-in-test=false \
+          -Dakka.test.timefactor=1 \
+          -Dakka.cluster.assert=on \
+          -Dsbt.override.build.repos=false \
+          -Dakka.test.multi-node=false \
+          -Dsbt.log.noformat=false \
+          -Dakka.log.timestamps=true \
+          ${{ matrix.project }}/validatePullRequest
+
+## if success
+#    ghtag "$ghprbPullId" akka akka '["tested"]' "validating needs-attention"
+## if aborted or unstable
+#    ghtag "$ghprbPullId" akka akka '["needs-attention"]' "tested validating"

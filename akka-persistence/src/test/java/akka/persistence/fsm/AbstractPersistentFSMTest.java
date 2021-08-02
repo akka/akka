@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.UUID;
 import java.time.Duration;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.scalatestplus.junit.JUnitSuite;
 
@@ -148,7 +149,10 @@ public class AbstractPersistentFSMTest extends JUnitSuite {
     };
   }
 
+  // This test is flaky (https://github.com/akka/akka/issues/24723) and that failure issue was
+  // already deemed obsolete.  Plus, the whole test is marked as deprecated. Ignoring...
   @Test
+  @Ignore
   public void testSuccessfulRecoveryWithCorrectStateData() {
     new TestKit(system) {
       {

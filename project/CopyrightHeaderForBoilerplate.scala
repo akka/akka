@@ -18,7 +18,7 @@ object CopyrightHeaderForBoilerplate extends CopyrightHeader {
     Seq(Compile, Test).flatMap { config =>
       inConfig(config) {
         Seq(
-         config / headerSources ++=
+          config / headerSources ++=
             (((config / sourceDirectory).value / "boilerplate") ** "*.template").get,
           headerMappings := headerMappings.value ++ Map(HeaderFileType("template") -> cStyleComment))
       }

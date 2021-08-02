@@ -157,24 +157,23 @@ object UnidocRoot extends AutoPlugin {
         JavaUnidoc / unidocProjectFilter := unidocRootProjectFilter(unidocRootIgnoreProjects.value),
         ScalaUnidoc / apiMappings := (Compile / doc / apiMappings).value) ++
       UnidocRoot.CliOptions.genjavadocEnabled
-        .ifTrue(
-          Seq(
-            JavaUnidoc / unidocAllSources ~= { v =>
-              v.map(_.filterNot(s =>
-                  // akka.stream.scaladsl.GraphDSL.Implicits.ReversePortsOps
-                  // contains code that genjavadoc turns into (probably
-                  // incorrect) Java code that in turn confuses the javadoc
-                  // tool.
-                  s.getAbsolutePath.endsWith("scaladsl/GraphDSL.java") ||
-                  // Since adding -P:genjavadoc:strictVisibility=true,
-                  // the javadoc tool would NullPointerException while
-                  // determining the upper bound for some generics:
-                  s.getAbsolutePath.endsWith("TopicImpl.java") ||
-                  s.getAbsolutePath.endsWith("PersistencePlugin.java") ||
-                  s.getAbsolutePath.endsWith("GraphDelegate.java") ||
-                  s.getAbsolutePath.contains("/impl/")
-                  ))
-            }))
+        .ifTrue(Seq(JavaUnidoc / unidocAllSources ~= { v =>
+          v.map(
+            _.filterNot(
+              s =>
+                // akka.stream.scaladsl.GraphDSL.Implicits.ReversePortsOps
+                // contains code that genjavadoc turns into (probably
+                // incorrect) Java code that in turn confuses the javadoc
+                // tool.
+                s.getAbsolutePath.endsWith("scaladsl/GraphDSL.java") ||
+                // Since adding -P:genjavadoc:strictVisibility=true,
+                // the javadoc tool would NullPointerException while
+                // determining the upper bound for some generics:
+                s.getAbsolutePath.endsWith("TopicImpl.java") ||
+                s.getAbsolutePath.endsWith("PersistencePlugin.java") ||
+                s.getAbsolutePath.endsWith("GraphDelegate.java") ||
+                s.getAbsolutePath.contains("/impl/")))
+        }))
         .getOrElse(Nil))
   }
 }
@@ -197,6 +196,9 @@ object BootstrapGenjavadoc extends AutoPlugin {
   override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled
     .ifTrue(Seq(
       unidocGenjavadocVersion := "0.18",
-      Compile / scalacOptions ++= Seq("-P:genjavadoc:fabricateParams=false", "-P:genjavadoc:suppressSynthetic=false", "-P:genjavadoc:strictVisibility=true")))
+      Compile / scalacOptions ++= Seq(
+          "-P:genjavadoc:fabricateParams=false",
+          "-P:genjavadoc:suppressSynthetic=false",
+          "-P:genjavadoc:strictVisibility=true")))
     .getOrElse(Nil)
 }
