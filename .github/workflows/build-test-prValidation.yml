@@ -1,0 +1,36 @@
+name: PRValidation Workflow
+
+on:
+  pull_request:
+  push:
+    branches: [ master ]
+    tags-ignore: [ v* ]
+
+jobs:
+  check-code-style:
+    name: Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8.0
+
+      - name: Cache Coursier cache
+        uses: coursier/cache-action@v6.2
+
+      - name: Code style check
+        run: |-
+          cp .sbtopts-ghactions .sbtopts
+          sbt scalafmtCheckAll scalafmtSbtCheck test:compile
+
+      - name: Akka validatePR
+        run: |-
+          cp .sbtopts-ghactions .sbtopts
+          sbt publishLocal publishM2 validatePullRequest
