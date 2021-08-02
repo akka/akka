@@ -765,7 +765,6 @@ private[persistence] trait Eventsourced
                 timeoutCancellable.cancel()
                 try onRecoveryFailure(t, Some(p.payload))
                 finally context.stop(self)
-                returnRecoveryPermit()
             }
           case RecoverySuccess(highestJournalSeqNr) =>
             timeoutCancellable.cancel()
@@ -774,21 +773,19 @@ private[persistence] trait Eventsourced
             sequenceNr = highestSeqNr
             setLastSequenceNr(highestSeqNr)
             _recoveryRunning = false
-            try Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
-            catch {
+            try {
+              Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
+              transitToProcessingState()
+            } catch {
               case NonFatal(t) =>
                 try onRecoveryFailure(t, Some(RecoveryCompleted))
                 finally context.stop(self)
             }
 
-            transitToProcessingState() // in finally in case exception and resume strategy
-            // if exception from RecoveryCompleted the permit is returned in below catch
-            returnRecoveryPermit()
           case ReplayMessagesFailure(cause) =>
             timeoutCancellable.cancel()
             try onRecoveryFailure(cause, event = None)
             finally context.stop(self)
-            returnRecoveryPermit()
           case RecoveryTick(false) if !eventSeenInInterval =>
             timeoutCancellable.cancel()
             try onRecoveryFailure(
@@ -796,18 +793,13 @@ private[persistence] trait Eventsourced
                 s"Recovery timed out, didn't get event within $timeout, highest sequence number seen $lastSequenceNr"),
               event = None)
             finally context.stop(self)
-            returnRecoveryPermit()
           case RecoveryTick(false) =>
             eventSeenInInterval = false
           case RecoveryTick(true) =>
           // snapshot tick, ignore
           case other =>
             stashInternally(other)
-        } catch {
-          case NonFatal(e) =>
-            returnRecoveryPermit()
-            throw e
-        }
+        } finally returnRecoveryPermit()
 
       private def returnRecoveryPermit(): Unit =
         extension.recoveryPermitter.tell(RecoveryPermitter.ReturnRecoveryPermit, self)
