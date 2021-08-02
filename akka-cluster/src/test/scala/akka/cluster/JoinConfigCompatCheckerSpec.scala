@@ -620,7 +620,7 @@ class JoinConfigCompatCheckerSpec extends AkkaSpec with ClusterTestKit {
       val clusterTestUtil = new ClusterTestUtil(system.name)
       try {
         val sys = clusterTestUtil.newActorSystem(joinNodeConfig.withFallback(configWithChecker))
-        Cluster(sys).settings.ConfigCompatCheckers should ===(Set.empty)
+        Cluster(sys).settings.ConfigCompatCheckers should ===(Set.empty[String])
       } finally {
         clusterTestUtil.shutdownAll()
       }

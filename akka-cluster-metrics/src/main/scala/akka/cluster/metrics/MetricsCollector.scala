@@ -49,7 +49,7 @@ private[metrics] object MetricsCollector {
 
   /** Try to create collector instance in the order of priority. */
   def apply(system: ActorSystem): MetricsCollector = {
-    val log = Logging(system, getClass)
+    val log = Logging(system, classOf[MetricsCollector])
     val settings = ClusterMetricsSettings(system.settings.config)
     import settings._
 

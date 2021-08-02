@@ -34,6 +34,7 @@ jobs:
             akka-actor-testkit-typed/test \
             akka-actor-typed/compile \
             akka-actor-typed-tests/test \
+            akka-cluster/Test/compile \
             akka-coordination/test \
             akka-discovery/test \
             akka-pki/test \

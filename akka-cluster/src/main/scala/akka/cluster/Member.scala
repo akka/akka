@@ -305,7 +305,6 @@ object MemberStatus {
 }
 
 object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
-
   // for binary compatibility
   @deprecated("Use Long UID apply instead", since = "2.4.11")
   def apply(address: Address, uid: Int) = new UniqueAddress(address, uid.toLong)
@@ -313,6 +312,9 @@ object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
   def apply(remoteUniqueAddress: akka.remote.UniqueAddress): UniqueAddress =
     new UniqueAddress(remoteUniqueAddress.address, remoteUniqueAddress.uid)
 
+  def apply(address: Address, longUid: Long) = new UniqueAddress(address, longUid)
+
+  def unapply(address: UniqueAddress): Option[(Address, Long)] = Some((address.address, address.longUid))
 }
 
 /**
@@ -321,9 +323,27 @@ object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
  * incarnations of a member with same hostname and port.
  */
 @SerialVersionUID(1L)
-final case class UniqueAddress(address: Address, longUid: Long) extends Ordered[UniqueAddress] {
+final class UniqueAddress(val address: Address, val longUid: Long)
+    extends Product
+    with Serializable
+    with Ordered[UniqueAddress] {
 
   override def hashCode = java.lang.Long.hashCode(longUid)
+
+  override def productArity: Int = 2
+  override def productElement(n: Int): Any = n match {
+    case 0 => address
+    case 1 => longUid
+  }
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[UniqueAddress]
+
+  override def equals(obj: Any): Boolean =
+    obj match {
+      case ua: UniqueAddress => this.address.equals(ua.address) && this.longUid.equals(ua.longUid)
+      case _                 => false
+    }
+
+  override def toString = s"UniqueAddress($address,$longUid)"
 
   def compare(that: UniqueAddress): Int = {
     val result = Member.addressOrdering.compare(this.address, that.address)

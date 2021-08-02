@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
 
+import akka.actor.ActorRef
 import akka.actor.ActorSelection
 import akka.annotation.InternalApi
 import akka.remote.testconductor.RoleName
@@ -112,7 +113,7 @@ abstract class MultiDcHeartbeatTakingOverSpec
     }
 
     "be healthy" taggedAs LongRunningTest in within(5.seconds) {
-      implicit val sender = observer.ref
+      implicit val sender: ActorRef = observer.ref
       runOn(expectedAlphaHeartbeaterRoles.toList: _*) {
         awaitAssert {
           selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
@@ -156,7 +157,7 @@ abstract class MultiDcHeartbeatTakingOverSpec
 
       enterBarrier("after-alpha-monitoring-node-left")
 
-      implicit val sender = observer.ref
+      implicit val sender: ActorRef = observer.ref
       val expectedAlphaMonitoringNodesAfterLeaving =
         (takeNOldestMembers(dataCenter = "alpha", 3).filterNot(_.status == MemberStatus.Exiting))
       runOn(membersAsRoles(expectedAlphaMonitoringNodesAfterLeaving).toList: _*) {

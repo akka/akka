@@ -15569,7 +15569,7 @@ public final class ClusterMessages {
    *
    * Protobuf type {@code VectorClock}
    */
-  public  static final class VectorClock extends
+  public static final class VectorClock extends
       akka.protobufv3.internal.GeneratedMessageV3 implements
       // @@protoc_insertion_point(message_implements:VectorClock)
       VectorClockOrBuilder {
@@ -15691,7 +15691,7 @@ public final class ClusterMessages {
     /**
      * Protobuf type {@code VectorClock.Version}
      */
-    public  static final class Version extends
+    public static final class Version extends
         akka.protobufv3.internal.GeneratedMessageV3 implements
         // @@protoc_insertion_point(message_implements:VectorClock.Version)
         VersionOrBuilder {
@@ -15977,23 +15977,23 @@ public final class ClusterMessages {
       }
 
       @java.lang.Override
-      public Builder newBuilderForType() { return newBuilder(); }
-      public static Builder newBuilder() {
+      public Version.Builder newBuilderForType() { return newBuilder(); }
+      public static Version.Builder newBuilder() {
         return DEFAULT_INSTANCE.toBuilder();
       }
       public static Builder newBuilder(akka.cluster.protobuf.msg.ClusterMessages.VectorClock.Version prototype) {
         return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
       }
       @java.lang.Override
-      public Builder toBuilder() {
+      public Version.Builder toBuilder() {
         return this == DEFAULT_INSTANCE
-            ? new Builder() : new Builder().mergeFrom(this);
+            ? new Version.Builder() : new Version.Builder().mergeFrom(this);
       }
 
       @java.lang.Override
-      protected Builder newBuilderForType(
+      protected Version.Builder newBuilderForType(
           akka.protobufv3.internal.GeneratedMessageV3.BuilderParent parent) {
-        Builder builder = new Builder(parent);
+        Version.Builder builder = new Version.Builder(parent);
         return builder;
       }
       /**

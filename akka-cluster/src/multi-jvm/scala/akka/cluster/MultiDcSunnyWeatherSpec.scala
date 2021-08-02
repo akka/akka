@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
 
+import akka.actor.ActorRef
 import akka.annotation.InternalApi
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
@@ -94,7 +95,7 @@ abstract class MultiDcSunnyWeatherSpec
       expectedAlphaHeartbeaterRoles.size should ===(2)
       expectedBetaHeartbeaterRoles.size should ===(2)
 
-      implicit val sender = observer.ref
+      implicit val sender: ActorRef = observer.ref
       runOn(expectedAlphaHeartbeaterRoles.toList: _*) {
         selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
         observer.expectMsgType[CrossDcHeartbeatSender.MonitoringActive](5.seconds)
@@ -120,7 +121,7 @@ abstract class MultiDcSunnyWeatherSpec
 
       enterBarrier("checking-activeReceivers")
 
-      implicit val sender = observer.ref
+      implicit val sender: ActorRef = observer.ref
       selectCrossDcHeartbeatSender ! CrossDcHeartbeatSender.ReportStatus()
       observer.expectMsgType[CrossDcHeartbeatSender.MonitoringStateReport](5.seconds) match {
         case CrossDcHeartbeatSender.MonitoringDormant()     => // ok ...
