@@ -24,6 +24,7 @@ jobs:
           # setup the authorized key
           ssh-keygen -t ed25519 -a 100 -f ${HOME}/.ssh/id_rsa -q -N ""
           sudo ssh-keyscan -H 127.0.0.1 >> ${HOME}/.ssh/known_hosts
+          sudo ssh-keyscan -H localhost >> ${HOME}/.ssh/known_hosts
           sudo cat ${HOME}/.ssh/id_rsa.pub >> ${HOME}/.ssh/authorized_keys
 
           # fix the filesystem permissions
@@ -51,6 +52,10 @@ jobs:
         env:
           JOB_ID: ${{ github.run_id }}
         run: |
+          # Check if needed here
+          sudo ssh-keyscan -H 127.0.0.1 >> ${HOME}/.ssh/known_hosts
+          sudo ssh-keyscan -H localhost >> ${HOME}/.ssh/known_hosts
+
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.test.timefactor=1 \
             -Dakka.cluster.assert=on \
