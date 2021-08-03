@@ -26,10 +26,10 @@ jobs:
           sudo cat ${HOME}/.ssh/id_rsa.pub >> ${HOME}/.ssh/authorized_keys
 
           # sudo chmod go-w ~/
-          sudo chmod 700 ~/.ssh
+          # sudo chmod 700 ~/.ssh
           sudo chmod 600 ~/.ssh/authorized_keys
 
-          # sudo service sshd restart
+          sudo service sshd restart
 
           ssh runner@127.0.0.1 uptime
 
