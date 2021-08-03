@@ -21,4 +21,4 @@ jobs:
       - name: Test
         run: |-
           cp .sbtopts-nightly-cluster-metrics-sigar .sbtopts
-          sbt -jvmopts .jvmopts-nightly-cluster-metrics-sigar clean akka-cluster-metrics/test
+          sbt -jvm-opts .jvmopts-nightly-cluster-metrics-sigar clean akka-cluster-metrics/test
