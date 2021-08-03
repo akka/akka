@@ -8,8 +8,6 @@
 -XX:MaxGCPauseMillis=750
 -XX:-UseBiasedLocking
 -XX:+UseCompressedOops
--XX:+PrintGCDetails
--XX:+PrintGCTimeStamps
 -XX:MetaspaceSize=512M
 -XX:-ClassUnloadingWithConcurrentMark
 -Djava.security.egd=file:/dev/./urandom
