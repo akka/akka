@@ -28,6 +28,11 @@ jobs:
             ssh-agent -a $SSH_AUTH_SOCK > /dev/null
             ssh-add - <<< "$(cat ${HOME}/.ssh/id_rsa)"
 
+      - name: Setup tmate session
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        uses: mxschmitt/action-tmate@v3
+
       - name: Debug
         env:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
