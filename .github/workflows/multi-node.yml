@@ -21,16 +21,20 @@ jobs:
         run: |
           mkdir -p ~/.ssh
 
+          # setup the authorized key
           ssh-keygen -t ed25519 -a 100 -f ${HOME}/.ssh/id_rsa -q -N ""
           sudo ssh-keyscan -H 127.0.0.1 >> ${HOME}/.ssh/known_hosts
           sudo cat ${HOME}/.ssh/id_rsa.pub >> ${HOME}/.ssh/authorized_keys
+
+          # fix the filesystem permissions
+          sudo chmod go-w ~/
           sudo chmod 700 ~/.ssh
           sudo chmod 600 ~/.ssh/authorized_keys
+
+          # restart the ssh daemon
           sudo service sshd restart
 
           ssh runner@127.0.0.1 uptime
-
-          echo ${JAVA_HOME}/bin/java
 
       - name: Set up JDK 11
         uses: olafurpg/setup-scala@v10
