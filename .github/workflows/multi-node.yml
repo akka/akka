@@ -23,7 +23,7 @@ jobs:
 
       - uses: webfactory/ssh-agent@5f066a372ec13036ab7cb9a8adf18c936f8d2043
         with:
-            ssh-private-key: ${HOME}/.ssh/id_rsa
+            ssh-private-key: $(cat ${HOME}/.ssh/id_rsa)
 
       - name: Debug
         run: |
