@@ -23,19 +23,3 @@ jobs:
         run: |-
           cp .sbtopts-nightly-cluster-metrics-sigar .sbtopts
           sbt -jvmopts .jvmopts-nightly-cluster-metrics-sigar clean akka-cluster-metrics/test
-      - name: Email on failure
-        if: ${{ failure() }}
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          # Using port 465 already sets `secure: true`
-          secure: true
-          username: ${{secrets.MAIL_USERNAME}}
-          password: ${{secrets.MAIL_PASSWORD}}
-          subject: PRValidation Failed (Akka)
-          to: akka.official@gmail.com
-          from: Akka CI (GHActions)
-          body: |
-            Nightly Sigar of ${{github.repository}} failed!
-            https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
