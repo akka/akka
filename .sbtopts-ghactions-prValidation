@@ -3,7 +3,7 @@
 -J-Xmx3072M
 -J-Xms1024M
 
-# MiMa is disabled in GHActiosn because it's already covered in Travis builds (travis runs for multiple scala versions)
+# MiMa is disabled in GHActions because it's already covered in Travis builds (travis runs for multiple scala versions)
 -Dakka.mima.enabled=false
 -Dakka.ci-server=true 
 -Dakka.test.tags.exclude=performance,timing,long-running 
