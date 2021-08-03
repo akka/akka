@@ -22,10 +22,10 @@ jobs:
           echo "1"
           ssh-keygen -t ed25519 -a 100 -f ${HOME}/.ssh/id_rsa -q -N ""
           echo "2"
-          cat ${HOME}/.ssh/id_rsa.pub | ssh $(whoami)@127.0.0.1 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
-          echo "3"
           ssh-keyscan -H 127.0.0.1 >> ~/.ssh/known_hosts
-
+          echo "3"
+          cat ${HOME}/.ssh/id_rsa.pub | ssh $(whoami)@127.0.0.1 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+          
           echo "Now the truth"
           ssh -o StrictHostKeyChecking=no $(whoami)@127.0.0.1 uptime
 
