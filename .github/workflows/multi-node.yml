@@ -44,8 +44,8 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
 
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
 
       - name: Multi node test
         env:
@@ -62,6 +62,7 @@ jobs:
             -Dmultinode.XX:+UseCompressedOops \
             -Dmultinode.Xms256M \
             -Dmultinode.Xmx512M \
+            -Dmultinode.host=127.0.0.1 \
             clean \
             test:compile \
             akka-cluster-tools/multiNodeTest
