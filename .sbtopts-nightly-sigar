@@ -1,4 +1,6 @@
--J-XX:+UseG1GC -Xms3g -Xmx3g 
+-J-XX:+UseG1GC 
+-J-Xms3g 
+-J-Xmx3g 
 -J-XX:-UseBiasedLocking 
 -J-XX:+UseCompressedOops 
 -J-XX:+PrintGCDetails 
