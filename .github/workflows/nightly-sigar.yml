@@ -1,0 +1,24 @@
+name: Akka Nightly Sigar Build
+
+on:
+  schedule:
+    - cron: '0 0 * * 1-7'
+jobs:
+  sbt:
+    name: Test Akka Cluster Metrics
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          # we don't know what commit the last tag was it's safer to get entire repo so previousStableVersion resolves
+          fetch-depth: 0
+      - name: Set up JDK 8
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8-0
+      - name: Test
+        run: |-
+          cp .sbtopts-nightly-sigar .sbtopts
+          sbt clean 
+          sbt akka-cluster-metrics/test

@@ -1,0 +1,19 @@
+-J-XX:+UseG1GC -Xms3g -Xmx3g 
+-J-XX:-UseBiasedLocking 
+-J-XX:+UseCompressedOops 
+-J-XX:+PrintGCDetails 
+-J-XX:+PrintGCTimeStamps 
+-J-XX:MaxPermSize=512M 
+-J-XX:MetaspaceSize=512M 
+-J-Xss2m 
+-J-XX:ReservedCodeCacheSize=256m 
+-Djava.security.egd=file:/dev/./urandom
+-Dakka.test.sigar=true 
+-Dakka.cluster.assert=on  
+-Dakka.test.metrics.reporters.0=console 
+-Dakka.test.metrics.reporters.1=graphit 
+-Dakka.test.metrics.reporter.graphite.prefix=jenkins 
+-Dakka.test.metrics.reporter.graphite.host=54.72.154.120 
+-Dakka.sbt.statsd=false 
+-Dakka.test.multi-node.java=/usr/lib/jvm/jdk8u192-b12/bin/java 
+-Dmultinode.XX:MetaspaceSize=128M
