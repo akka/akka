@@ -18,8 +18,8 @@ jobs:
       #     fetch-depth: 0
 
       - name: Debug
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+        # env:
+        #   SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         run: |
           mkdir -p ~/.ssh
 
