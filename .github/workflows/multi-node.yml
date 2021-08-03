@@ -17,9 +17,7 @@ jobs:
       #   with:
       #     fetch-depth: 0
 
-      - name: Debug
-        # env:
-        #   SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+      - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
 
@@ -27,14 +25,11 @@ jobs:
           sudo ssh-keyscan -H 127.0.0.1 >> ${HOME}/.ssh/known_hosts
           sudo cat ${HOME}/.ssh/id_rsa.pub >> ${HOME}/.ssh/authorized_keys
 
-          # ssh-agent -a $SSH_AUTH_SOCK > /dev/null
-          # ssh-add - <<< "$(cat ${HOME}/.ssh/id_rsa)"
-
-          sudo chmod go-w ~/
+          # sudo chmod go-w ~/
           sudo chmod 700 ~/.ssh
           sudo chmod 600 ~/.ssh/authorized_keys
 
-          sudo service sshd restart
+          # sudo service sshd restart
 
           ssh runner@127.0.0.1 uptime
 
