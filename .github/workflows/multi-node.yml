@@ -17,33 +17,43 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK 11
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.11.0-9
-
-      - name: Cache Coursier cache
-        uses: coursier/cache-action@v6.2
-
-      - name: Multi node test
-        env:
-          JOB_ID: ${{ github.run_id }}
+      - name: Debug
         run: |
-          sbt -jvm-opts .jvmopts-ci \
-            -Dakka.test.timefactor=1 \
-            -Dakka.cluster.assert=on \
-            -Dsbt.override.build.repos=false \
-            -Dakka.test.multi-node=true \
-            -Dakka.test.multi-node.targetDirName=${PWD}/target/${JOB_ID} \
-            -Dakka.test.multi-node.java=$(which java) \
-            -Dmultinode.XX:MetaspaceSize=128M \
-            -Dmultinode.XX:+UseCompressedOops \
-            -Dmultinode.Xms256M \
-            -Dmultinode.Xmx512M \
-            clean \
-            test:compile \
-            test
+          ssh-keygen -t ed25519 -a 100 -f ${HOME}/.ssh/id_rsa -q -N ""
+          cat ${HOME}/.ssh/id_rsa.pub | ssh $(whoami)@127.0.0.1 "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+          ssh-keyscan -H 127.0.0.1 >> ~/.ssh/known_hosts
 
-            # Needed ???
-            # publishLocal \
-            # publishM2
+          echo "Now the truth"
+          ssh $(whoami)@127.0.0.1
+
+
+      # - name: Set up JDK 11
+      #   uses: olafurpg/setup-scala@v10
+      #   with:
+      #     java-version: adopt@1.11.0-9
+
+      # - name: Cache Coursier cache
+      #   uses: coursier/cache-action@v6.2
+
+      # - name: Multi node test
+      #   env:
+      #     JOB_ID: ${{ github.run_id }}
+      #   run: |
+      #     sbt -jvm-opts .jvmopts-ci \
+      #       -Dakka.test.timefactor=1 \
+      #       -Dakka.cluster.assert=on \
+      #       -Dsbt.override.build.repos=false \
+      #       -Dakka.test.multi-node=true \
+      #       -Dakka.test.multi-node.targetDirName=${PWD}/target/${JOB_ID} \
+      #       -Dakka.test.multi-node.java=$(which java) \
+      #       -Dmultinode.XX:MetaspaceSize=128M \
+      #       -Dmultinode.XX:+UseCompressedOops \
+      #       -Dmultinode.Xms256M \
+      #       -Dmultinode.Xmx512M \
+      #       clean \
+      #       test:compile \
+      #       test
+
+      #       # Needed ???
+      #       # publishLocal \
+      #       # publishM2
