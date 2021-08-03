@@ -45,17 +45,10 @@ jobs:
       - name: Cache Coursier cache
         uses: coursier/cache-action@v6.2
 
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
-
       - name: Multi node test
         env:
           JOB_ID: ${{ github.run_id }}
         run: |
-          # Check if needed here
-          sudo ssh-keyscan -H 127.0.0.1 >> ${HOME}/.ssh/known_hosts
-          sudo ssh-keyscan -H localhost >> ${HOME}/.ssh/known_hosts
-
           sbt -jvm-opts .jvmopts-ci \
             -Dakka.test.timefactor=1 \
             -Dakka.cluster.assert=on \
