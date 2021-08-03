@@ -18,6 +18,8 @@ jobs:
       #     fetch-depth: 0
 
       - name: Debug
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
         run: |
           mkdir -p ~/.ssh
 
@@ -25,12 +27,15 @@ jobs:
           sudo ssh-keyscan -H 127.0.0.1 >> ${HOME}/.ssh/known_hosts
           sudo cat ${HOME}/.ssh/id_rsa.pub >> ${HOME}/.ssh/authorized_keys
 
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add - <<< "${{ secrets.SSH_PRIVATE_KEY }}"
+
           sudo chmod go-w ~/
           sudo chmod 700 ~/.ssh
           sudo chmod 600 ~/.ssh/authorized_keys
 
-          sudo echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config
-          sudo echo "AuthorizedKeysFile      .ssh/authorized_keys" >> /etc/ssh/sshd_config
+          # sudo echo "PubkeyAuthentication yes" >> /etc/ssh/sshd_config
+          # sudo echo "AuthorizedKeysFile      .ssh/authorized_keys" >> /etc/ssh/sshd_config
 
           sudo service sshd restart
 
