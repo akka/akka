@@ -27,10 +27,10 @@ jobs:
 
       - name: Code style check
         run: |-
-          cp .sbtopts-ghactions .sbtopts
+          cp .sbtopts-ghactions-prValidation .sbtopts
           sbt scalafmtCheckAll scalafmtSbtCheck test:compile
 
       - name: Akka validatePR
         run: |-
-          cp .sbtopts-ghactions .sbtopts
+          cp .sbtopts-ghactions-prValidation .sbtopts
           sbt publishLocal publishM2 validatePullRequest
