@@ -2,7 +2,8 @@ name: Akka Nightly Sigar Build
 
 on:
   schedule:
-    - cron: '0 0 * * 1-7'
+    - cron:  '0 0 * * 0-6'
+
 jobs:
   sbt:
     name: Test Akka Cluster Metrics
