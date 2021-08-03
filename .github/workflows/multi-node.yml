@@ -53,7 +53,7 @@ jobs:
           JOB_ID: ${{ github.run_id }}
         run: |
           # Check if needed here
-          # sudo ssh-keyscan -H 127.0.0.1 >> ${HOME}/.ssh/known_hosts
+          sudo ssh-keyscan -H 127.0.0.1 >> ${HOME}/.ssh/known_hosts
           sudo ssh-keyscan -H localhost >> ${HOME}/.ssh/known_hosts
 
           sbt -jvm-opts .jvmopts-ci \
